@@ -25,6 +25,7 @@ local(*APPEND_IN);
 my $audit_dir = &get_audit_dir();
 my $datadir = "$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager_auditing";
 my $audit_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-job-manager-audit.conf";
+my $argument_string = "-c $audit_conf";
 
 if (! exists $ENV{GLOBUS_OPTIONS})
 {
@@ -38,7 +39,20 @@ if ($audit_dir eq '')
     exit(0);
 }
 
-my $pid = open(APPEND_IN, "|$ENV{GLOBUS_LOCATION}/libexec/globus-gram-append-audit-records -c  $audit_conf");
+# Check if "--check" was added as commandline argument.
+# This will cause the AuditDatabaseAppender to check the database
+# connection and that the record with the given job_grid_id was inserted 
+# into the database successfully
+my $count = scalar(@ARGV);
+for(my $i=0; $i<$count; $i++)
+{
+  if ($ARGV[$i] eq "--check") 
+  {
+    $argument_string = $argument_string . " $ARGV[$i]";
+  }
+} 
+
+my $pid = open(APPEND_IN, "|$ENV{GLOBUS_LOCATION}/libexec/globus-gram-append-audit-records $argument_string");
 select APPEND_IN; $|=1;
 select STDOUT;
 my @cleanup_list = ();
@@ -64,16 +78,23 @@ foreach (glob("$audit_dir/*.gramaudit"))
     {
         next;
     }
-
     print APPEND_IN "$record\n" || die "Unable to write record to appender\n";
 }
 
 close(APPEND_IN);
 
-if ($? == 0)
+# 0 or 1 as return value expected:
+# 0=success, 1=failure in the AuditDatabaseAppender class
+my $success = $?;
+
+if ($success == 0)
 {
     unlink(@cleanup_list);
 }
+
+exit $success >> 8;
+
+
 
 
 sub get_audit_dir
