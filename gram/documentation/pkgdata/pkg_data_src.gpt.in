@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_documentation" >
 
-  <Aging_Version Age="0" Major="1" Minor="7" />
+  <Aging_Version Age="0" Major="1" Minor="8" />
   <Description >GRAM Client Library</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Beta2" />
@@ -15,7 +15,7 @@
     <Source_Dependencies Type="doc_runtime" >
       <Dependency Name="globus_gram_protocol" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gram_client" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="globus_gram_job_manager" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_gram_job_manager" Package="doc" > <Version > <Simple_Version Major="8" /> </Version> </Dependency>
     </Source_Dependencies>
     
 
