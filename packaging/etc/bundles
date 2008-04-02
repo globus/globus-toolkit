@@ -803,6 +803,7 @@ BUNDLE gt4-gram-test-no-c
         globus_gridmap_and_execute_test
 
 BUNDLE gt4-cas
+        globus_cas_database_setup
         globus_wsrf_cas_client_java
         globus_wsrf_cas_service_java
         globus_wsrf_cas_common
