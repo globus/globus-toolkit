@@ -63,7 +63,7 @@ Syntax: globus-personal-gatekeeper [options]
     -debug
     Displays extra output
 
-    -start [-jmtype <type>] [-port <port>] [-log=always|never|on_error] [-seg]
+    -start [-jmtype <type>] [-auditdir <dir>] [-port <port>] [-log=always|never|on_error] [-seg]
     Starts a new gatekeeper, mapping default service to a
     jobmanager. By default, the jobmanager is configured with
     jmtype=fork. The option -port can be used to restrict the
@@ -71,7 +71,8 @@ Syntax: globus-personal-gatekeeper [options]
     system choose a port. The -log switch causes the job manager
     to choose when log files will be created in the user's home directory.
     If -seg is used, then the Scheduler Event Generator will be used to 
-    poll job state.
+    poll job state. The --auditdir switch tells the jobmanager where
+    to store the audit-records
 
     -list
     Scans for active personal gatekeepers. If found, an
@@ -314,7 +315,11 @@ while [ -n "$1" ]; do
         -seg)
                 seg=1
                 ;;
-	*)
+	-auditdir)
+                auditdir="$2"
+                shift
+                ;;
+        *)
 		startargs="$startargs $1"
 		;;
 	esac
@@ -375,15 +380,15 @@ done
 
 subject=`${bindir}/grid-proxy-info -identity`
 
-    ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
+${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
 
-    ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
+${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
 stderr_log,local_cred - ${libexecdir}/globus-job-manager globus-job-manager -conf ${scratch}/jobmanager.conf
 EOF
 
-    ${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
+${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
 -gridmap ${scratch}/gridmap
 -home ${GLOBUS_LOCATION}
 -e libexec
@@ -402,7 +407,7 @@ host_manufacturer=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $2}'`
 host_osname=`${GLOBUS_SH_UNAME-uname} -s`
 host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 
-    ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
+${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION}
 -type ${jmtype}
 -rdn jobmanager 
@@ -416,6 +421,19 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 -state-file-dir ${statefiledir}
 ${startargs}
 EOF
+
+
+if [ ! -z "${auditdir}" ]; then
+  if [ -x "${GLOBUS_LOCATION}/bin/globus-version" ]; then
+      globus_toolkit_version=`${GLOBUS_LOCATION}/bin/globus-version`
+  else
+      globus_toolkit_version="Unknown"
+  fi
+    ${GLOBUS_SH_CAT-cat} >> ${scratch}/jobmanager.conf <<EOF
+-audit-directory ${auditdir}
+-globus-toolkit-version $globus_toolkit_version
+EOF
+fi
 
 if test $seg -eq 1; then
     echo "-seg-module $jmtype" >> ${scratch}/jobmanager.conf
