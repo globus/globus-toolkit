@@ -1044,8 +1044,6 @@ Makefile
 include/Makefile
 include/xmlsec/Makefile
 src/Makefile
-docs/Makefile
-docs/api/Makefile
 man/Makefile
 pkgdata/Makefile
 pkgdata/pkg_data_src.gpt
