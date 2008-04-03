@@ -24,10 +24,16 @@ be set to the HPNBufferSize value. The default is 2MB but user adjustable.
 If an HPN to HPN connection is established a number of different things might
 happen based on the user options and conditions. 
 
+Conditions: HPNBufferSize NOT Set, TCPRcvBufPoll enabled, TCPRcvBuf NOT Set 
+HPN Buffer Size = up to 64MB 
+This is the default state. The HPN buffer size will grow to a maximum of 64MB 
+as the TCP receive buffer grows. The maximum HPN Buffer size of 64MB is 
+geared towards 10GigE transcontinental connections. 
+
 Conditions: HPNBufferSize NOT Set, TCPRcvBufPoll disabled, TCPRcvBuf NOT Set
 HPN Buffer Size = TCP receive buffer value. 
-This is the default unmodified behaviour. Users on autotuning systesm should 
-enabled TCPRcvBufPoll in the ssh_cofig and sshd_config
+Users on non-autotuning systesm should disable TCPRcvBufPoll in the 
+ssh_cofig and sshd_config
 
 Conditions: HPNBufferSize SET, TCPRcvBufPoll disabled, TCPRcvBuf NOT Set
 HPN Buffer Size = minmum of TCP receive buffer and HPNBufferSize. 
@@ -37,14 +43,8 @@ Conditions: HPNBufferSize SET, TCPRcvBufPoll disabled, TCPRcvBuf SET
 HPN Buffer Size = minmum of TCPRcvBuf and HPNBufferSize. 
 Generally there is no need to set both.
 
-Conditions: HPNBufferSize NOT Set, TCPRcvBufPoll enabled, TCPRcvBuf NOT Set HPN 
-Buffer Size = Maximum HPN Buffer Size (64MB). 
-The maximum HPN Buffer size of 64MB is geared towards 10GigE transcontinental 
-connections. Users with less extravagant networks should reduce this via the 
-configuration files to a more reasonable size.
-
 Conditions: HPNBufferSize SET, TCPRcvBufPoll enabled, TCPRcvBuf NOT Set
-HPN Buffer Size = HPNBufferSize
+HPN Buffer Size = grows to HPNBufferSize
 The buffer will grow up to the maximum size specified here. 
 
 Conditions: HPNBufferSize SET, TCPRcvBufPoll enabled, TCPRcvBuf SET
@@ -74,7 +74,7 @@ TcpRcvBufPoll=[yes/no] client/server
       enable of disable the polling of the tcp receive buffer through the life 
 of the connection. You would want to make sure that this option is enabled 
 for systems making use of autotuning kernels (linux 2.4.24+, 2.6, MS Vista) 
-default is no.
+default is yes.
 
 NoneEnabled=[yes/no] client/server
       enable or disable the use of the None cipher. Care must always be used 

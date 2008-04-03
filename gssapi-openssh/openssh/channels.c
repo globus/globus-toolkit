@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.270 2007/06/25 08:20:03 dtucker Exp $ */
+/* $OpenBSD: channels.c,v 1.273 2008/04/02 21:36:51 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -770,10 +770,13 @@ int channel_tcpwinsz () {
         u_int32_t tcpwinsz = 0;
         socklen_t optsz = sizeof(tcpwinsz);
 	int ret = -1;
+
+	/* if we aren't on a socket return 128KB*/
 	if(!packet_connection_is_on_socket()) 
-	    return(131072);
+	    return(128*1024);
 	ret = getsockopt(packet_get_connection_in(),
 			 SOL_SOCKET, SO_RCVBUF, &tcpwinsz, &optsz);
+	/* return no more than 64MB */
 	if ((ret == 0) && tcpwinsz > BUFFER_MAX_LEN_HPN)
 	    tcpwinsz = BUFFER_MAX_LEN_HPN;
 	debug2("tcpwinsz: %d for connection: %d", tcpwinsz, 
@@ -787,10 +790,8 @@ channel_pre_open(Channel *c, fd_set *readset, fd_set *writeset)
 	u_int limit = compat20 ? c->remote_window : packet_get_maxsize();
 
         /* check buffer limits */
-	if (!c->tcpwinsz) 
+	if ((!c->tcpwinsz) || (c->dynamic_window > 0))
     	    c->tcpwinsz = channel_tcpwinsz();
-	if (c->dynamic_window > 0)
-	    c->tcpwinsz = channel_tcpwinsz();
 	
 	limit = MIN(limit, 2 * c->tcpwinsz);
 	
@@ -1688,7 +1689,8 @@ channel_check_window(Channel *c)
 		u_int addition = 0;
 		/* adjust max window size if we are in a dynamic environment */
 		if (c->dynamic_window && (c->tcpwinsz > c->local_window_max)) {
-			addition = c->tcpwinsz - c->local_window_max;
+			/* grow the window somewhat aggressively to maintain pressure */
+			addition = 1.5*(c->tcpwinsz - c->local_window_max);
 			c->local_window_max += addition;
 		}
 		packet_start(SSH2_MSG_CHANNEL_WINDOW_ADJUST);
@@ -1901,11 +1903,12 @@ channel_after_select(fd_set *readset, fd_set *writeset)
 
 
 /* If there is data to send to the connection, enqueue some of it now. */
-void
+int
 channel_output_poll(void)
 {
 	Channel *c;
 	u_int i, len;
+	int packet_length = 0;
 
 	for (i = 0; i < channels_alloc; i++) {
 		c = channels[i];
@@ -1945,7 +1948,7 @@ channel_output_poll(void)
 					packet_start(SSH2_MSG_CHANNEL_DATA);
 					packet_put_int(c->remote_id);
 					packet_put_string(data, dlen);
-					packet_send();
+					packet_length = packet_send();
 					c->remote_window -= dlen + 4;
 					xfree(data);
 				}
@@ -1975,7 +1978,7 @@ channel_output_poll(void)
 				    SSH2_MSG_CHANNEL_DATA : SSH_MSG_CHANNEL_DATA);
 				packet_put_int(c->remote_id);
 				packet_put_string(buffer_ptr(&c->input), len);
-				packet_send();
+				packet_length = packet_send();
 				buffer_consume(&c->input, len);
 				c->remote_window -= len;
 			}
@@ -2010,12 +2013,13 @@ channel_output_poll(void)
 			packet_put_int(c->remote_id);
 			packet_put_int(SSH2_EXTENDED_DATA_STDERR);
 			packet_put_string(buffer_ptr(&c->extended), len);
-			packet_send();
+			packet_length = packet_send();
 			buffer_consume(&c->extended, len);
 			c->remote_window -= len;
 			debug2("channel %d: sent ext data %d", c->self, len);
 		}
 	}
+	return (packet_length);
 }
 
 
@@ -2416,7 +2420,7 @@ channel_setup_fwd_listener(int type, const char *listen_addr, u_short listen_por
 			wildcard = 1;
 	} else if (gateway_ports || is_client) {
 		if (((datafellows & SSH_OLD_FORWARD_ADDR) &&
-		    strcmp(listen_addr, "0.0.0.0") == 0) ||
+		    strcmp(listen_addr, "0.0.0.0") == 0 && is_client == 0) ||
 		    *listen_addr == '\0' || strcmp(listen_addr, "*") == 0 ||
 		    (!is_client && gateway_ports == 1))
 			wildcard = 1;
@@ -2440,10 +2444,11 @@ channel_setup_fwd_listener(int type, const char *listen_addr, u_short listen_por
 		if (addr == NULL) {
 			/* This really shouldn't happen */
 			packet_disconnect("getaddrinfo: fatal error: %s",
-			    gai_strerror(r));
+			    ssh_gai_strerror(r));
 		} else {
 			error("channel_setup_fwd_listener: "
-			    "getaddrinfo(%.64s): %s", addr, gai_strerror(r));
+			    "getaddrinfo(%.64s): %s", addr,
+			    ssh_gai_strerror(r));
 		}
 		return 0;
 	}
@@ -2488,9 +2493,9 @@ channel_setup_fwd_listener(int type, const char *listen_addr, u_short listen_por
 		/* Allocate a channel number for the socket. */
 		/* explicitly test for hpn disabled option. if true use smaller window size */
 		if (hpn_disabled)
-			c = channel_new("port listener", type, sock, sock, -1,
-		    	  CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
-		    	  0, "port listener", 1); 
+		c = channel_new("port listener", type, sock, sock, -1,
+		    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
+		    0, "port listener", 1);
 		else
 			c = channel_new("port listener", type, sock, sock, -1,
 		    	  hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
@@ -2772,7 +2777,7 @@ connect_to(const char *host, u_short port)
 	snprintf(strport, sizeof strport, "%d", port);
 	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0) {
 		error("connect_to %.100s: unknown host (%s)", host,
-		    gai_strerror(gaierr));
+		    ssh_gai_strerror(gaierr));
 		return -1;
 	}
 	for (ai = aitop; ai; ai = ai->ai_next) {
@@ -2915,7 +2920,7 @@ x11_create_display_inet(int x11_display_offset, int x11_use_localhost,
 		hints.ai_socktype = SOCK_STREAM;
 		snprintf(strport, sizeof strport, "%d", port);
 		if ((gaierr = getaddrinfo(NULL, strport, &hints, &aitop)) != 0) {
-			error("getaddrinfo: %.100s", gai_strerror(gaierr));
+			error("getaddrinfo: %.100s", ssh_gai_strerror(gaierr));
 			return -1;
 		}
 		for (ai = aitop; ai; ai = ai->ai_next) {
@@ -2945,9 +2950,6 @@ x11_create_display_inet(int x11_display_offset, int x11_use_localhost,
 			if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0) {
 				debug2("bind port %d: %.100s", port, strerror(errno));
 				close(sock);
-
-				if (ai->ai_next)
-					continue;
 
 				for (n = 0; n < num_socks; n++) {
 					close(socks[n]);
@@ -2990,11 +2992,12 @@ x11_create_display_inet(int x11_display_offset, int x11_use_localhost,
 	*chanids = xcalloc(num_socks + 1, sizeof(**chanids));
 	for (n = 0; n < num_socks; n++) {
 		sock = socks[n];
+		/* Is this really necassary? */
 		if (hpn_disabled) 
-			nc = channel_new("x11 listener",
-			    SSH_CHANNEL_X11_LISTENER, sock, sock, -1,
-			    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
-			    0, "X11 inet listener", 1);
+		nc = channel_new("x11 listener",
+		    SSH_CHANNEL_X11_LISTENER, sock, sock, -1,
+		    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
+		    0, "X11 inet listener", 1);
 		else 
 			nc = channel_new("x11 listener",
 			    SSH_CHANNEL_X11_LISTENER, sock, sock, -1,
@@ -3094,7 +3097,8 @@ x11_connect_display(void)
 	hints.ai_socktype = SOCK_STREAM;
 	snprintf(strport, sizeof strport, "%u", 6000 + display_number);
 	if ((gaierr = getaddrinfo(buf, strport, &hints, &aitop)) != 0) {
-		error("%.100s: unknown host. (%s)", buf, gai_strerror(gaierr));
+		error("%.100s: unknown host. (%s)", buf,
+		ssh_gai_strerror(gaierr));
 		return -1;
 	}
 	for (ai = aitop; ai; ai = ai->ai_next) {

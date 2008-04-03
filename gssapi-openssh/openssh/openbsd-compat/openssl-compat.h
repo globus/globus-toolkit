@@ -19,6 +19,11 @@
 #include "includes.h"
 #include <openssl/evp.h>
 
+/* OPENSSL_free() is Free() in versions before OpenSSL 0.9.6 */
+#if !defined(OPENSSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x0090600f)
+# define OPENSSL_free(x) Free(x)
+#endif
+
 #if OPENSSL_VERSION_NUMBER < 0x00906000L
 # define SSH_OLD_EVP
 # define EVP_CIPHER_CTX_get_app_data(e)		((e)->app_data)
@@ -79,8 +84,8 @@ extern const EVP_CIPHER *evp_acss(void);
 #  ifdef SSLeay_add_all_algorithms
 #   undef SSLeay_add_all_algorithms
 #  endif
-#  define SSLeay_add_all_algorithms()	ssh_SSLeay_add_all_algorithms()
-#endif
+#  define SSLeay_add_all_algorithms()  ssh_SSLeay_add_all_algorithms()
+# endif
 
 int ssh_EVP_CipherInit(EVP_CIPHER_CTX *, const EVP_CIPHER *, unsigned char *,
     unsigned char *, int);

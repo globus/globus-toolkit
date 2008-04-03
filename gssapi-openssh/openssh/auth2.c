@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2.c,v 1.115 2007/04/14 22:01:58 stevesk Exp $ */
+/* $OpenBSD: auth2.c,v 1.116 2007/09/29 00:25:51 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -44,6 +44,7 @@
 #include "dispatch.h"
 #include "pathnames.h"
 #include "buffer.h"
+#include "canohost.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
@@ -70,6 +71,9 @@ extern Authmethod method_gssapi;
 extern Authmethod method_gssapi_compat;
 #endif
 
+static int log_flag = 0;
+
+
 Authmethod *authmethods[] = {
 	&method_none,
 	&method_pubkey,
@@ -93,7 +97,6 @@ static void input_userauth_request(int, u_int32_t, void *);
 /* helper */
 static Authmethod *authmethod_lookup(const char *);
 static char *authmethods_get(void);
-int user_key_allowed(struct passwd *, Key *);
 
 /*
  * loop until authctxt->success == TRUE
@@ -178,6 +181,11 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 
 	debug("userauth-request for user %s service %s method %s",
 	      user[0] ? user : "<implicit>", service, method);
+	if (!log_flag) {
+		logit("SSH: Server;Ltype: Authname;Remote: %s-%d;Name: %s", 
+		      get_remote_ipaddr(), get_remote_port(), user);
+		log_flag = 1;
+	}
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
 	if ((style = strchr(user, ':')) != NULL)

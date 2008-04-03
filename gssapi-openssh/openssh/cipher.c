@@ -55,6 +55,7 @@ extern const EVP_CIPHER *evp_ssh1_bf(void);
 extern const EVP_CIPHER *evp_ssh1_3des(void);
 extern void ssh1_3des_iv(EVP_CIPHER_CTX *, int, u_char *, int);
 extern const EVP_CIPHER *evp_aes_128_ctr(void);
+extern const EVP_CIPHER *evp_aes_ctr_mt(void);
 extern void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, u_int);
 
 struct Cipher {
@@ -81,9 +82,9 @@ struct Cipher {
 	{ "aes256-cbc",		SSH_CIPHER_SSH2, 16, 32, 0, EVP_aes_256_cbc },
 	{ "rijndael-cbc@lysator.liu.se",
 				SSH_CIPHER_SSH2, 16, 32, 0, EVP_aes_256_cbc },
-	{ "aes128-ctr",		SSH_CIPHER_SSH2, 16, 16, 0, evp_aes_128_ctr },
-	{ "aes192-ctr",		SSH_CIPHER_SSH2, 16, 24, 0, evp_aes_128_ctr },
-	{ "aes256-ctr",		SSH_CIPHER_SSH2, 16, 32, 0, evp_aes_128_ctr },
+	{ "aes128-ctr",		SSH_CIPHER_SSH2, 16, 16, 0, evp_aes_ctr_mt },
+	{ "aes192-ctr",		SSH_CIPHER_SSH2, 16, 24, 0, evp_aes_ctr_mt },
+	{ "aes256-ctr",		SSH_CIPHER_SSH2, 16, 32, 0, evp_aes_ctr_mt },
 #ifdef USE_CIPHER_ACSS
 	{ "acss@openssh.org",	SSH_CIPHER_SSH2, 16, 5, 0, EVP_acss },
 #endif

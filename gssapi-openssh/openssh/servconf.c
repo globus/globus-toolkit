@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.172 2007/04/23 10:15:39 dtucker Exp $ */
+/* $OpenBSD: servconf.c,v 1.177 2008/02/10 10:54:28 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -130,6 +130,7 @@ initialize_server_options(ServerOptions *options)
 	options->permit_tun = -1;
 	options->num_permitted_opens = -1;
 	options->adm_forced_command = NULL;
+	options->chroot_directory = NULL;
         options->none_enabled = -1;
         options->tcp_rcv_buf_poll = -1;
         options->hpn_disabled = -1;
@@ -275,16 +276,12 @@ fill_default_server_options(ServerOptions *options)
 	if (options->hpn_disabled == -1) 
 		options->hpn_disabled = 0;
 
-	if (options->hpn_buffer_size == -1) 
-	{
+	if (options->hpn_buffer_size == -1) {
 		/* option not explicitly set. Now we have to figure out */
 		/* what value to use */
-		if (options->hpn_disabled == 1) 
-		{
+		if (options->hpn_disabled == 1) {
 			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
-		}
-		else 
-		{
+		} else {
 			/* get the current RCV size and set it to that */
 			/*create a socket but don't connect it */
 			/* we use that the get the rcv socket size */
@@ -296,22 +293,20 @@ fill_default_server_options(ServerOptions *options)
 			debug ("HPN Buffer Size: %d", options->hpn_buffer_size);
 			
 		} 
-	}
-	else 
-	{
+	} else {
 		/* we have to do this incase the user sets both values in a contradictory */
 		/* manner. hpn_disabled overrrides hpn_buffer_size*/
-		if (options->hpn_disabled <= 0) 
-		{
-			if (options->hpn_buffer_size == 0)
-				options->hpn_buffer_size = 1;
-			/* limit the maximum buffer to 64MB */
-			if (options->hpn_buffer_size > 64*1024)
-				options->hpn_buffer_size = 64*1024;
-			options->hpn_buffer_size *=1024;
-		}
-		else
-			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
+ 		if (options->hpn_disabled <= 0) {
+  			if (options->hpn_buffer_size == 0)
+  				options->hpn_buffer_size = 1;
+  			/* limit the maximum buffer to 64MB */
+			if (options->hpn_buffer_size > 64*1024) {
+				options->hpn_buffer_size = 64*1024*1024;
+			} else {
+				options->hpn_buffer_size *= 1024;
+			}
+		} else
+			options->hpn_buffer_size = CHAN_TCP_WINDOW_DEFAULT;
 	}
 
 	/* Turn privilege separation on by default */
@@ -357,12 +352,13 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
+	sGssAuthentication, sGssCleanupCreds,
+    sGssStrictAcceptor,
 	sGssKeyEx, 
     sGssCredsPath,
 	sGsiAllowLimitedProxy,
     sAcceptEnv, sPermitTunnel,
-	sMatch, sPermitOpen, sForceCommand,
+	sMatch, sPermitOpen, sForceCommand, sChrootDirectory,
 	sUsePrivilegeSeparation, sNoneEnabled, sTcpRcvBufPoll, 
         sHPNDisabled, sHPNBufferSize,
 	sDeprecated, sUnsupported
@@ -393,7 +389,7 @@ static struct {
 	{ "serverkeybits", sServerKeyBits, SSHCFG_GLOBAL },
 	{ "logingracetime", sLoginGraceTime, SSHCFG_GLOBAL },
 	{ "keyregenerationinterval", sKeyRegenerationTime, SSHCFG_GLOBAL },
-	{ "permitrootlogin", sPermitRootLogin, SSHCFG_GLOBAL },
+	{ "permitrootlogin", sPermitRootLogin, SSHCFG_ALL },
 	{ "syslogfacility", sLogFacility, SSHCFG_GLOBAL },
 	{ "loglevel", sLogLevel, SSHCFG_GLOBAL },
 	{ "rhostsauthentication", sDeprecated, SSHCFG_GLOBAL },
@@ -492,6 +488,7 @@ static struct {
  	{ "match", sMatch, SSHCFG_ALL },
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
+	{ "chrootdirectory", sChrootDirectory, SSHCFG_ALL },
         { "noneenabled", sNoneEnabled },
         { "hpndisabled", sHPNDisabled },
         { "hpnbuffersize", sHPNBufferSize },
@@ -552,7 +549,7 @@ add_one_listen_addr(ServerOptions *options, char *addr, u_short port)
 	if ((gaierr = getaddrinfo(addr, strport, &hints, &aitop)) != 0)
 		fatal("bad addr or host: %s (%s)",
 		    addr ? addr : "<NULL>",
-		    gai_strerror(gaierr));
+		    ssh_gai_strerror(gaierr));
 	for (ai = aitop; ai->ai_next; ai = ai->ai_next)
 		;
 	ai->ai_next = options->listen_addrs;
@@ -715,6 +712,8 @@ process_server_config_line(ServerOptions *options, char *line,
 {
 	char *cp, **charptr, *arg, *p;
 	int cmdline = 0, *intptr, value, n;
+	SyslogFacility *log_facility_ptr;
+	LogLevel *log_level_ptr;
 	ServerOpCodes opcode;
 	u_short port;
 	u_int i, flags = 0;
@@ -898,7 +897,7 @@ parse_filename:
 			fatal("%s line %d: Bad yes/"
 			    "without-password/forced-commands-only/no "
 			    "argument: %s", filename, linenum, arg);
-		if (*intptr == -1)
+		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
 
@@ -1119,25 +1118,25 @@ parse_flag:
 		goto parse_flag;
 
 	case sLogFacility:
-		intptr = (int *) &options->log_facility;
+		log_facility_ptr = &options->log_facility;
 		arg = strdelim(&cp);
 		value = log_facility_number(arg);
 		if (value == SYSLOG_FACILITY_NOT_SET)
 			fatal("%.200s line %d: unsupported log facility '%s'",
 			    filename, linenum, arg ? arg : "<NONE>");
-		if (*intptr == -1)
-			*intptr = (SyslogFacility) value;
+		if (*log_facility_ptr == -1)
+			*log_facility_ptr = (SyslogFacility) value;
 		break;
 
 	case sLogLevel:
-		intptr = (int *) &options->log_level;
+		log_level_ptr = &options->log_level;
 		arg = strdelim(&cp);
 		value = log_level_number(arg);
 		if (value == SYSLOG_LEVEL_NOT_SET)
 			fatal("%.200s line %d: unsupported log level '%s'",
 			    filename, linenum, arg ? arg : "<NONE>");
-		if (*intptr == -1)
-			*intptr = (LogLevel) value;
+		if (*log_level_ptr == -1)
+			*log_level_ptr = (LogLevel) value;
 		break;
 
 	case sAllowTcpForwarding:
@@ -1288,6 +1287,7 @@ parse_flag:
 	case sBanner:
 		charptr = &options->banner;
 		goto parse_filename;
+
 	/*
 	 * These options can contain %X options expanded at
 	 * connect time, so that you can specify paths like:
@@ -1396,6 +1396,17 @@ parse_flag:
 			options->adm_forced_command = xstrdup(cp + len);
 		return 0;
 
+	case sChrootDirectory:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing file name.",
+			    filename, linenum);
+		if (*activep && *charptr == NULL)
+			*charptr = xstrdup(arg);
+		break;
+
 	case sDeprecated:
 		logit("%s line %d: Deprecated option %s",
 		    filename, linenum, arg);
@@ -1492,6 +1503,7 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 	M_CP_INTOPT(kerberos_authentication);
 	M_CP_INTOPT(hostbased_authentication);
 	M_CP_INTOPT(kbd_interactive_authentication);
+	M_CP_INTOPT(permit_root_login);
 
 	M_CP_INTOPT(allow_tcp_forwarding);
 	M_CP_INTOPT(gateway_ports);
@@ -1503,6 +1515,7 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 	if (preauth)
 		return;
 	M_CP_STROPT(adm_forced_command);
+	M_CP_STROPT(chroot_directory);
 }
 
 #undef M_CP_INTOPT
