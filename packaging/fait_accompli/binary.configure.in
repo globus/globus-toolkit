@@ -17,7 +17,7 @@ prewsmds=""
 AC_SUBST(prewsmds, $prewsmds)
 rndvz="globus_rendezvous"
 AC_SUBST(rndvz, $rndvz)
-rls=""
+rls="globus-rls-server"
 AC_SUBST(rls, $rls)
 
 openssl="globus_binary_openssl"
