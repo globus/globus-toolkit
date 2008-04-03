@@ -45,6 +45,3 @@
 #   Tunnel no
 #   TunnelDevice any:any
 #   PermitLocalCommand no
-
-Host *
-  ForwardX11 yes
