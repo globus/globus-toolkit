@@ -54,10 +54,10 @@
 #define CACHELINE_LEN	64
 
 /* Collect thread stats and print at cancellation when in debug mode */
-// #define CIPHER_THREAD_STATS
+/* #define CIPHER_THREAD_STATS */
 
 /* Use single-byte XOR instead of 8-byte XOR */
-// #define CIPHER_BYTE_XOR
+/* #define CIPHER_BYTE_XOR */
 /*-------------------- END TUNABLES --------------------*/
 
 
