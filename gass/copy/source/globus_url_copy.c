@@ -2707,11 +2707,14 @@ globus_l_guc_parse_arguments(
             return -1;
         }
 
-        if(globus_l_guc_parse_file(file_name, &guc_info->user_url_list) != 0)
+        if(globus_l_guc_parse_file(file_name, &guc_info->expanded_url_list) != 0)
         {
             globus_free(file_name);
             return -1;
         }
+        globus_fifo_enqueue(
+            &guc_info->user_url_list, 
+            globus_fifo_dequeue(&guc_info->expanded_url_list));
 
         globus_free(file_name);
     }
