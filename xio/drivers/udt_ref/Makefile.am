@@ -10,12 +10,12 @@ SUBDIRS = \
 flavorinclude_HEADERS = \
     globus_xio_udt_ref.h
 
-INCLUDES = $(GPT_INCLUDES) -I $(UDT_PATH)/src
+INCLUDES = $(GPT_INCLUDES) 
 
 lib_LTLIBRARIES = libglobus_xio_udt_driver_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_xio_udt_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@ $(UDT_PATH)/src/libudt.a 
+	@GPT_LIB_LINKS@ 
 libglobus_xio_udt_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_udt_ref.cpp
 libglobus_xio_udt_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
