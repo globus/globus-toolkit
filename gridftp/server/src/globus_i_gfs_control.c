@@ -25,6 +25,8 @@ typedef struct
     char *                              remote_contact;
     char *                              local_contact;
 
+    char *                              scks_alg;
+    char *                              scks_val;
     char *                              rnfr_pathname;
 
     globus_i_gfs_server_close_cb_t      close_func;
@@ -1018,95 +1020,104 @@ globus_l_gfs_request_command(
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
 
     }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "CHMOD") == 0)
+    else if(strcmp(cmd_array[0], "SCKS") == 0)
     {
-        command_info->command = GLOBUS_GFS_CMD_SITE_CHMOD;
-        globus_l_gfs_get_full_path(
-            instance, cmd_array[3], &command_info->pathname);
-        if(command_info->pathname == NULL)
-        {
-            goto err;
-        }
-        command_info->chmod_mode = strtol(cmd_array[2], NULL, 8);
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-    }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "DSI") == 0)
-    {
-        command_info->command = GLOBUS_GFS_CMD_SITE_DSI;
-        command_info->pathname = strdup(cmd_array[2]);
-        if(command_info->pathname == NULL)
-        {
-            goto err;
-        }
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-    }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "AUTHZ_ASSERT") == 0)
-    {
-        command_info->command = GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT;
-        command_info->authz_assert = strdup(cmd_array[2]);
-        if(command_info->authz_assert == NULL)
-        {
-            goto err;
-        }
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-    }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "RDEL") == 0)
-    {
-        command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
-        command_info->pathname = strdup(cmd_array[2]);
-        if(command_info->pathname == NULL)
-        {
-            goto err;
-        }
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-    }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "VERSION") == 0)
-    {
-        char                            version_string[1024];
+        instance->scks_alg = globus_libc_strdup(cmd_array[1]);
+        instance->scks_val = globus_libc_strdup(cmd_array[2]);
 
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-        snprintf(version_string, sizeof(version_string),
-            "200 %s\r\n", globus_i_gfs_config_string("version_string"));
-        globus_gsc_959_finished_command(op, version_string);
+        globus_gsc_959_finished_command(op, "200 OK\r\n");
         done = GLOBUS_TRUE;
+
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "SETNETSTACK") == 0)
+    else if(strcmp(cmd_array[0], "SITE") == 0)
     {
-        command_info->command = GLOBUS_GFS_CMD_SITE_SETNETSTACK;
-        command_info->pathname = strdup(cmd_array[2]);
-        if(command_info->pathname == NULL)
+        if(strcmp(cmd_array[1], "CHMOD") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_CHMOD;
+            globus_l_gfs_get_full_path(
+                instance, cmd_array[3], &command_info->pathname);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            command_info->chmod_mode = strtol(cmd_array[2], NULL, 8);
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "DSI") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_DSI;
+            command_info->pathname = strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "AUTHZ_ASSERT") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT;
+            command_info->authz_assert = strdup(cmd_array[2]);
+            if(command_info->authz_assert == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "RDEL") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
+            command_info->pathname = strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "VERSION") == 0)
+        {
+            char                            version_string[1024];
+    
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+            snprintf(version_string, sizeof(version_string),
+                "200 %s\r\n", globus_i_gfs_config_string("version_string"));
+            globus_gsc_959_finished_command(op, version_string);
+            done = GLOBUS_TRUE;
+        }
+        else if(strcmp(cmd_array[1], "SETNETSTACK") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_SETNETSTACK;
+            command_info->pathname = strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "SETDISKSTACK") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_SETDISKSTACK;
+            command_info->pathname = strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "CLIENTINFO") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_CLIENTINFO;
+            command_info->pathname = strdup(cmd_array[2]);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else
         {
             goto err;
         }
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-    }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "SETDISKSTACK") == 0)
-    {
-        command_info->command = GLOBUS_GFS_CMD_SITE_SETDISKSTACK;
-        command_info->pathname = strdup(cmd_array[2]);
-        if(command_info->pathname == NULL)
-        {
-            goto err;
-        }
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
-    }
-    else if(strcmp(cmd_array[0], "SITE") == 0 &&
-        strcmp(cmd_array[1], "CLIENTINFO") == 0)
-    {
-        command_info->command = GLOBUS_GFS_CMD_SITE_CLIENTINFO;
-        command_info->pathname = strdup(cmd_array[2]);
-        if(command_info->pathname == NULL)
-        {
-            goto err;
-        }
-        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
     else
     {
@@ -1207,6 +1218,14 @@ globus_l_gfs_request_transfer_event(
             if(info->module_args)
             {
                 globus_free(info->module_args);
+            }
+            if(info->expected_checksum_alg)
+            {
+                globus_free(info->expected_checksum_alg);
+            }
+            if(info->expected_checksum)
+            {
+                globus_free(info->expected_checksum);
             }
             globus_free(info);
         }
@@ -1328,6 +1347,7 @@ globus_l_gfs_data_transfer_cb(
 
     request = (globus_l_gfs_request_info_t *) user_arg;
     op = request->control_op;
+    
 
     destroy_req = !request->transfer_events;
     if(reply->result != GLOBUS_SUCCESS)
@@ -1368,6 +1388,14 @@ globus_l_gfs_data_transfer_cb(
             if(info->module_args)
             {
                 globus_free(info->module_args);
+            }
+            if(info->expected_checksum_alg)
+            {
+                globus_free(info->expected_checksum_alg);
+            }
+            if(info->expected_checksum)
+            {
+                globus_free(info->expected_checksum);
             }
             globus_free(info);
         }
@@ -1540,6 +1568,14 @@ globus_l_gfs_request_recv(
         {
             recv_info->module_args = globus_libc_strdup(mod_parms);
         }
+    if(instance->scks_val != NULL)
+    {
+        recv_info->expected_checksum_alg = instance->scks_alg;
+        recv_info->expected_checksum = instance->scks_val;
+        instance->scks_alg = NULL;
+        instance->scks_val = NULL;
+    }
+
     }
         
     globus_l_gfs_get_full_path(instance, path, &recv_info->pathname);
@@ -1547,7 +1583,7 @@ globus_l_gfs_request_recv(
     recv_info->stripe_count = 1;
     recv_info->node_count = 1;
     recv_info->data_arg = data_handle;
-
+        
     globus_i_gfs_data_request_recv(
         NULL,
         instance->session_arg,
@@ -2169,6 +2205,19 @@ globus_l_gfs_add_commands(
     }
     result = globus_gsc_959_command_add(
         control_handle,
+        "SCKS",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SCKS <sp> algorithm <sp> checksum",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
         "RNFR",
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -2335,7 +2384,9 @@ globus_i_gfs_control_start(
     instance->close_func = close_func;
     instance->close_arg = close_arg;
     instance->xio_handle = handle;
-    instance->rnfr_pathname = GLOBUS_NULL;
+    instance->rnfr_pathname = NULL;
+    instance->scks_alg = NULL;
+    instance->scks_val = NULL;
     instance->remote_contact = globus_libc_strdup(remote_contact);
     if(!instance->remote_contact)
     {

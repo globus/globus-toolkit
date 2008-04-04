@@ -3262,6 +3262,9 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeChar(buffer, len, ch);
     trans_info->truncate = (globus_bool_t) ch;
 
+    GFSDecodeString(buffer, len, trans_info->expected_checksum);
+    GFSDecodeString(buffer, len, trans_info->expected_checksum_alg);
+
     /* unpack range list */
     GFSDecodeUInt32(buffer, len, range_size);
     for(ctr = 0; ctr < range_size; ctr++)
@@ -5396,6 +5399,10 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, trans_info->truncate);
+    GFSEncodeString(
+        buffer, ipc->buffer_size, ptr, trans_info->expected_checksum);
+    GFSEncodeString(
+        buffer, ipc->buffer_size, ptr, trans_info->expected_checksum_alg);
 
     /* pack range list */
     range_size = globus_range_list_size(trans_info->range_list);

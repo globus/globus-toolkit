@@ -365,6 +365,11 @@ typedef struct globus_gfs_transfer_info_s
 
     /** client requested storage space size */
     globus_off_t                        alloc_size;
+    
+    /** expected checksum */
+    char *                              expected_checksum;
+    /** expected checksum algorithm */
+    char *                              expected_checksum_alg;
 } globus_gfs_transfer_info_t;
 
 /*

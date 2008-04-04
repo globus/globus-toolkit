@@ -45,6 +45,26 @@ GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_FILE);
 
 #define GLOBUS_L_GFS_FILE_CKSM_BS 1024*1024
 
+typedef void
+(*globus_l_gfs_file_cksm_cb_t)(
+    globus_result_t                     result,
+    char *                              cksm,
+    void *                              user_arg);
+
+typedef struct globus_l_gfs_file_cksm_monitor_s
+{
+
+    globus_gfs_operation_t              op;
+    globus_off_t                        offset;
+    globus_off_t                        length;
+    globus_off_t                        count;
+    globus_off_t                        read_left;
+    globus_size_t                       block_size;
+    globus_l_gfs_file_cksm_cb_t         internal_cb;
+    void *                              internal_cb_arg;
+    MD5_CTX                             mdctx;
+    globus_byte_t                       buffer[1];
+} globus_l_gfs_file_cksm_monitor_t;
 typedef struct 
 {
     gss_cred_id_t                       cred;
@@ -60,6 +80,7 @@ typedef struct
     globus_priority_q_t                 queue;
     globus_list_t *                     buffer_list;
     globus_gfs_operation_t              op;
+    char *                              pathname;
     globus_xio_handle_t                 file_handle;
     globus_off_t                        file_offset;
     globus_off_t                        read_offset;
@@ -79,6 +100,8 @@ typedef struct
     globus_bool_t                       aborted;
     int                                 concurrency_check;
     int                                 concurrency_check_interval;
+    char *                              expected_cksm;
+    char *                              expected_cksm_alg;
     /* added for multicast stuff, but cold be genreally useful */
     gfs_l_file_session_t *              session;
 
@@ -102,6 +125,17 @@ typedef struct gfs_l_file_stack_entry_s
 
 static globus_xio_driver_t              globus_l_gfs_file_driver;
 
+static
+globus_result_t
+globus_l_gfs_file_cksm(
+    globus_gfs_operation_t              op,
+    const char *                        pathname,
+    const char *                        algorithm,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    globus_l_gfs_file_cksm_cb_t         internal_cb,
+    void *                              internal_cb_arg);
+    
 static
 globus_result_t
 globus_l_gfs_file_make_stack(
@@ -268,7 +302,10 @@ globus_l_gfs_file_monitor_init(
     monitor->aborted = GLOBUS_FALSE;
     monitor->concurrency_check = 2;
     monitor->concurrency_check_interval = 2;
-        
+    monitor->expected_cksm = NULL;
+    monitor->expected_cksm_alg = NULL;
+    monitor->pathname = NULL;
+
     *u_monitor = monitor;
     
     GlobusGFSFileDebugExit();
@@ -312,11 +349,65 @@ globus_l_gfs_file_monitor_destroy(
         globus_memory_push_node(&monitor->mem, buffer);
     }
     
+    if(monitor->pathname)
+    {
+        globus_free(monitor->pathname);
+    }
+    
+    if(monitor->expected_cksm)
+    {
+        globus_free(monitor->expected_cksm);
+    }
+    if(monitor->expected_cksm_alg)
+    {
+        globus_free(monitor->expected_cksm_alg);
+    }
+    
     globus_priority_q_destroy(&monitor->queue);
     globus_list_free(monitor->buffer_list);
     globus_memory_destroy(&monitor->mem);
     globus_mutex_destroy(&monitor->lock);
     globus_free(monitor);
+
+    GlobusGFSFileDebugExit();
+}
+
+
+static
+void
+globus_l_gfs_file_cksm_verify(
+    globus_result_t                     result,
+    char *                              cksm,
+    void *                              user_arg)
+{
+    globus_l_file_monitor_t *           monitor;
+    GlobusGFSName(globus_l_gfs_file_cksm_verify);
+    GlobusGFSFileDebugEnter();
+    
+    monitor = (globus_l_file_monitor_t *) user_arg;
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        monitor->finish_result = 
+            GlobusGFSErrorWrapFailed("checksum verification", result);
+    }
+    else if(strcmp(monitor->expected_cksm, cksm) != 0)
+    {
+        char *                          msg = NULL;
+        msg = globus_common_create_string(
+            "Actual checksum of %s does not match expected checksum of %s.",
+            cksm, monitor->expected_cksm);
+        monitor->finish_result = GlobusGFSErrorGeneric(msg);
+        if(msg)
+        {
+            globus_free(msg);
+        }                       
+    }
+
+    globus_gridftp_server_finished_transfer(
+        monitor->op, monitor->finish_result);
+    
+    globus_l_gfs_file_monitor_destroy(monitor);
 
     GlobusGFSFileDebugExit();
 }
@@ -334,22 +425,41 @@ globus_l_gfs_file_close_cb(
     monitor = (globus_l_file_monitor_t *) user_arg;
 
     GlobusGFSFileDebugEnter();
-
-    /* must lock/unlock or we can get to the destroy before the 
-       registeration locak has actually released... crazy threads */
-    globus_mutex_lock(&monitor->lock);
+    
+    if(monitor != NULL)
     {
-        if(monitor->finish_result == GLOBUS_SUCCESS)
+        /* must lock/unlock or we can get to the destroy before the 
+           registeration locak has actually released... crazy threads */
+        globus_mutex_lock(&monitor->lock);
         {
-            monitor->finish_result = result;
+            if(monitor->finish_result == GLOBUS_SUCCESS)
+            {
+                monitor->finish_result = result;
+            }
+        }
+        globus_mutex_unlock(&monitor->lock);
+
+        if(monitor->finish_result == GLOBUS_SUCCESS && 
+            monitor->expected_cksm != NULL)
+        {
+            /* verify file before finishing */
+            result = globus_l_gfs_file_cksm(
+                NULL, 
+                monitor->pathname, 
+                monitor->expected_cksm_alg,
+                0,
+                -1,
+                globus_l_gfs_file_cksm_verify,
+                monitor);
+        }
+        else
+        {
+            globus_gridftp_server_finished_transfer(
+                monitor->op, monitor->finish_result);
+        
+            globus_l_gfs_file_monitor_destroy(monitor);
         }
     }
-    globus_mutex_unlock(&monitor->lock);
-
-    globus_gridftp_server_finished_transfer(
-        monitor->op, monitor->finish_result);
-
-    globus_l_gfs_file_monitor_destroy(monitor);
 
     GlobusGFSFileDebugExit();
 }
@@ -979,19 +1089,6 @@ error:
     return result;
 }
 
-typedef struct globus_l_gfs_file_cksm_monitor_s
-{
-
-    globus_gfs_operation_t              op;
-    globus_off_t                        offset;
-    globus_off_t                        length;
-    globus_off_t                        count;
-    globus_off_t                        read_left;
-    globus_size_t                       block_size;
-    MD5_CTX                             mdctx;
-    globus_byte_t                       buffer[1];
-} globus_l_gfs_file_cksm_monitor_t;
-
 static
 void
 globus_l_gfs_file_cksm_read_cb(
@@ -1076,8 +1173,16 @@ globus_l_gfs_file_cksm_read_cb(
         }
         md5ptr = '\0';
             
-        globus_gridftp_server_finished_command(
-            monitor->op, GLOBUS_SUCCESS, md5sum);
+        if(monitor->internal_cb)
+        {
+            monitor->internal_cb(
+                GLOBUS_SUCCESS, md5sum, monitor->internal_cb_arg);
+        }
+        else
+        {
+            globus_gridftp_server_finished_command(
+                monitor->op, GLOBUS_SUCCESS, md5sum);
+        }   
         
         globus_free(monitor);
             
@@ -1170,7 +1275,14 @@ error_seek:
 error_open:
     globus_xio_close(handle, NULL);
     handle = NULL;
-    globus_gridftp_server_finished_command(monitor->op, result, NULL);    
+    if(monitor->internal_cb)
+    {
+        monitor->internal_cb(result, NULL, monitor->internal_cb_arg);
+    }
+    else
+    {
+        globus_gridftp_server_finished_command(monitor->op, result, NULL);
+    }   
     globus_free(monitor);
     
     GlobusGFSFileDebugExitWithError();
@@ -1184,7 +1296,9 @@ globus_l_gfs_file_cksm(
     const char *                        pathname,
     const char *                        algorithm,
     globus_off_t                        offset,
-    globus_off_t                        length)
+    globus_off_t                        length,
+    globus_l_gfs_file_cksm_cb_t         internal_cb,
+    void *                              internal_cb_arg)
 {
     globus_result_t                     result;
     globus_xio_attr_t                   attr;
@@ -1255,6 +1369,8 @@ globus_l_gfs_file_cksm(
     monitor->offset = offset;
     monitor->length = length;
     monitor->block_size = block_size;
+    monitor->internal_cb = internal_cb;
+    monitor->internal_cb_arg = internal_cb_arg;
 
     result = globus_xio_register_open(
         file_handle,
@@ -1335,7 +1451,9 @@ globus_l_gfs_file_command(
             cmd_info->pathname, 
             cmd_info->cksm_alg,
             cmd_info->cksm_offset,
-            cmd_info->cksm_length);
+            cmd_info->cksm_length,
+            NULL,
+            NULL);
         break;
       
       default:
@@ -1924,6 +2042,8 @@ globus_l_gfs_file_recv(
         &monitor->transfer_delta);*/
     
     monitor->op = op;
+    monitor->pathname = globus_libc_strdup(transfer_info->pathname);
+    
     open_flags = GLOBUS_XIO_FILE_BINARY | 
         GLOBUS_XIO_FILE_CREAT | 
         GLOBUS_XIO_FILE_WRONLY;
@@ -1931,7 +2051,18 @@ globus_l_gfs_file_recv(
     {
         open_flags |= GLOBUS_XIO_FILE_TRUNC;
     }
-        
+    
+    if(transfer_info->expected_checksum)
+    {
+        monitor->expected_cksm = 
+            globus_libc_strdup(transfer_info->expected_checksum);
+    }
+    if(transfer_info->expected_checksum_alg)
+    {
+        monitor->expected_cksm_alg = 
+            globus_libc_strdup(transfer_info->expected_checksum_alg);
+    }
+    
     result = globus_l_gfs_file_open(
         &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
@@ -2340,6 +2471,8 @@ globus_l_gfs_file_send(
     monitor->session = (gfs_l_file_session_t *) user_arg;
 
     monitor->op = op;
+    monitor->pathname = globus_libc_strdup(transfer_info->pathname);
+
     open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
 
     result = globus_l_gfs_file_open(
