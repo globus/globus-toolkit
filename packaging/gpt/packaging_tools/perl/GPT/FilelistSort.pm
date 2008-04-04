@@ -160,7 +160,7 @@ sub extract_static_libs {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'name'} =~ /\.a$/ and $_->{'dir'} =~ m!lib/*$!) {
+    if ($_->{'name'} =~ /\.a$/ and $_->{'dir'} =~ m!lib/!) {
       push @newlist, $_;
     }
   }
