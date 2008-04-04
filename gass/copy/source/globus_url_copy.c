@@ -126,6 +126,7 @@ typedef struct
     int                                 nl_level;
     int                                 nl_interval;
     globus_bool_t                       ipv6;
+    globus_bool_t                       gridftp2;
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
     globus_bool_t                       pipeline;
@@ -393,6 +394,8 @@ const char * long_usage =
 "       If set to >0, Blocked mode will be used, with this as the blocksize.\n"
 "  -ipv6\n"
 "       use ipv6 when available (EXPERIMENTAL)\n"
+"  -g2 | -gridftp2\n"
+"       use GridFTP v2 protocol enhancements when possible\n"
 "  -dp | -delayed-pasv\n"
 "       enable delayed passive\n"
 "  -mn | -module-name <gridftp storage module name>\n"
@@ -524,6 +527,7 @@ enum
     arg_fast,
     arg_list,
     arg_ipv6,
+    arg_gridftp2,
     arg_udt,
     arg_nl_bottleneck,
     arg_nl_interval,
@@ -591,6 +595,7 @@ flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
+flagdef(arg_gridftp2, "-g2","-gridftp2");
 flagdef(arg_udt, "-u","-udt");
 flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
 flagdef(arg_pipeline, "-pp","-pipeline");
@@ -683,6 +688,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_nl_bottleneck);        \
     setupopt(arg_nl_interval);        \
     setupopt(arg_ipv6);         	\
+    setupopt(arg_gridftp2);         	\
     setupopt(arg_net_stack_str);        \
     setupopt(arg_disk_stack_str);        \
     setupopt(arg_authz_assert);         \
@@ -846,6 +852,7 @@ globus_l_guc_ext(
     ext_info.partial_length = guc_info->partial_length;
     ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
     ext_info.ipv6 = guc_info->ipv6;
+    ext_info.gridftp2 = guc_info->gridftp2;
     ext_info.net_stack_str = guc_info->net_stack_str;
     ext_info.disk_stack_str = guc_info->disk_stack_str;
     ext_info.src_authz_assert = guc_info->src_authz_assert;
@@ -2286,6 +2293,7 @@ globus_l_guc_parse_arguments(
     guc_info->nl_level = 0;
     guc_info->nl_interval = 0;
     guc_info->ipv6 = GLOBUS_FALSE;
+    guc_info->gridftp2 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->delayed_pasv = GLOBUS_FALSE;
     guc_info->pipeline = GLOBUS_FALSE;
@@ -2544,6 +2552,9 @@ globus_l_guc_parse_arguments(
 
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
+	    break;
+	case arg_gridftp2:
+	    guc_info->gridftp2 = GLOBUS_TRUE;
 	    break;
         case arg_net_stack_str:
             guc_info->net_stack_str = globus_libc_strdup(instance->values[0]);
@@ -3466,6 +3477,19 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, _GASCSL("Error: Unable to set rfc1738 support %s\n"),
+                globus_error_print_friendly(globus_error_peek(result)));
+
+            return -1;
+        }
+    }        
+
+    if(guc_info->gridftp2)
+    {
+        result = globus_ftp_client_handleattr_set_gridftp2(
+            &ftp_handleattr, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, _GASCSL("Error: Unable to enable gridftp2 support %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;

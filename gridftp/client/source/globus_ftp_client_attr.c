@@ -73,6 +73,7 @@ globus_ftp_client_handleattr_init(
     i_attr->pipeline_callback = GLOBUS_NULL;
     i_attr->pipeline_arg = GLOBUS_NULL;
     i_attr->pipeline_done = GLOBUS_FALSE;
+    i_attr->gridftp2 = GLOBUS_FALSE;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -344,6 +345,79 @@ globus_ftp_client_handleattr_get_rfc1738_url(
     return globus_error_put(err);
 }
 /* globus_ftp_client_handleattr_get_rfc1738_url() */
+/*@}*/
+
+
+/**
+ * @name GridFTP2 support
+ */
+/*@{*/
+/**
+ * Enable/Disable GridFTP2 [GFD.41] support for servers supporting
+ * it. @ingroup globus_ftp_client_handleattr
+ *
+ *
+ * @param attr
+ *        Attribute to modify
+ * @param gridftp
+ *        Set to GLOBUS_TRUE to enable GridFTP2 support.
+ *        Default of GLOBUS_FALSE specifies that GridFTP is disabled.
+ */
+globus_result_t
+globus_ftp_client_handleattr_set_gridftp2(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				gridftp2)
+{
+    globus_object_t *				err = GLOBUS_SUCCESS;
+    globus_i_ftp_client_handleattr_t *		i_attr;
+    GlobusFuncName(globus_ftp_client_handleattr_set_gridftp2);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
+
+    i_attr->gridftp2 = gridftp2;
+
+    return GLOBUS_SUCCESS;
+
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_set_gridftp2() */
+
+globus_result_t
+globus_ftp_client_handleattr_get_gridftp2(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				gridftp2)
+{
+    const globus_i_ftp_client_handleattr_t *	i_attr;
+    globus_object_t *				err = GLOBUS_SUCCESS;
+    GlobusFuncName(globus_ftp_client_handleattr_get_gridftp2);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    if(gridftp2 == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("gridftp2");
+
+	goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_handleattr_t **) attr;
+    (*gridftp2) = i_attr->gridftp2;
+
+    return GLOBUS_SUCCESS;
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_get_griftp2() */
 /*@}*/
 
 /**
@@ -3362,6 +3436,7 @@ globus_i_ftp_client_handleattr_copy(
     dest->pipeline_callback = src->pipeline_callback;
     dest->pipeline_arg = src->pipeline_arg;
     dest->pipeline_done = src->pipeline_done;
+    dest->gridftp2 = src->gridftp2;
     tmp = src->url_cache;
 
     while(!globus_list_empty(tmp))

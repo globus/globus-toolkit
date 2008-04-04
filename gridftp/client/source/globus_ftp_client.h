@@ -535,6 +535,16 @@ globus_ftp_client_handleattr_get_pipeline(
     void **                                     pipeline_arg);
 
 globus_result_t
+globus_ftp_client_handleattr_set_gridftp2(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				gridftp2);
+
+globus_result_t
+globus_ftp_client_handleattr_get_gridftp2(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				gridftp2);
+
+globus_result_t
 globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *		attr,
     globus_netlogger_handle_t *	                nl_handle);
@@ -1135,6 +1145,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_AUTHZ_ASSERT,
     GLOBUS_FTP_CLIENT_FEATURE_SITE_SETNETSTACK,
     GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV,
+    GLOBUS_FTP_CLIENT_FEATURE_GETPUT,
     GLOBUS_FTP_CLIENT_FEATURE_MLST,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,
     GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,

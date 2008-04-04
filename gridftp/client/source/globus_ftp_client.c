@@ -487,10 +487,15 @@ globus_i_ftp_target_state_to_string(
     static const char * setup_mlst              = "SETUP_MLST";
     static const char * mlst                    = "MLST";
     static const char * setup_stat              = "SETUP_STAT";
+    static const char * setup_getput_get        = "SETUP_GETPUT_GET";
+    static const char * setup_getput_put        = "SETUP_GETPUT_PUT";
     static const char * stat                    = "STAT";
     static const char * retr                    = "RETR";
     static const char * stor                    = "STOR";
     static const char * mdtm                    = "MDTM";
+    static const char * getput_pasv_get         = "GETPUT_PASV_GET";
+    static const char * getput_pasv_put         = "GETPUT_PASV_PUT";
+    static const char * getput_pasv_transfer    = "GETPUT_PASV_TRANSFER";
     static const char * ready_for_data          = "READY_FOR_DATA";
     static const char * need_last_block         = "NEED_LAST_BLOCK";
     static const char * need_empty_queue        = "NEED_EMPTY_QUEUE";
@@ -624,6 +629,12 @@ globus_i_ftp_target_state_to_string(
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_STAT:
             return setup_stat;
             break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_GETPUT_GET:
+            return setup_getput_get;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_GETPUT_PUT:
+            return setup_getput_put;
+            break;
         case GLOBUS_FTP_CLIENT_TARGET_STAT:
             return stat;
             break;
@@ -674,6 +685,15 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_MDTM:
             return mdtm;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_GETPUT_PASV_GET:
+            return getput_pasv_get;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_GETPUT_PASV_PUT:
+            return getput_pasv_put;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_GETPUT_PASV_TRANSFER:
+            return getput_pasv_transfer;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA:
             return ready_for_data;

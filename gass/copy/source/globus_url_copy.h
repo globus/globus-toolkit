@@ -57,6 +57,7 @@ typedef struct globus_guc_info_s
     globus_off_t                        partial_length;
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       ipv6;
+    globus_bool_t                       gridftp2;
     globus_bool_t                       udt;
     globus_bool_t                       allo;
     char *                              net_stack_str;
