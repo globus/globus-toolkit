@@ -52,55 +52,10 @@
 
 /* Processor cacheline length */
 #define CACHELINE_LEN	64
-
-/* Collect thread stats and print at cancellation when in debug mode */
-/* #define CIPHER_THREAD_STATS */
-
-/* Use single-byte XOR instead of 8-byte XOR */
-/* #define CIPHER_BYTE_XOR */
 /*-------------------- END TUNABLES --------------------*/
 
 
 const EVP_CIPHER *evp_aes_ctr_mt(void);
-
-#ifdef CIPHER_THREAD_STATS
-/*
- * Struct to collect thread stats
- */
-struct thread_stats {
-	u_int	fills;
-	u_int	skips;
-	u_int	waits;
-	u_int	drains;
-};
-
-/*
- * Debug print the thread stats
- * Use with pthread_cleanup_push for displaying at thread cancellation
- */
-static void
-thread_loop_stats(void *x)
-{
-	struct thread_stats *s = x;
-
-	debug("tid %lu - %u fills, %u skips, %u waits", pthread_self(),
-			s->fills, s->skips, s->waits);
-}
-
- #define STATS_STRUCT(s)	struct thread_stats s
- #define STATS_INIT(s)		{ memset(&s, 0, sizeof(s)); }
- #define STATS_FILL(s)		{ s.fills++; }
- #define STATS_SKIP(s)		{ s.skips++; }
- #define STATS_WAIT(s)		{ s.waits++; }
- #define STATS_DRAIN(s)		{ s.drains++; }
-#else
- #define STATS_STRUCT(s)
- #define STATS_INIT(s)
- #define STATS_FILL(s)
- #define STATS_SKIP(s)
- #define STATS_WAIT(s)
- #define STATS_DRAIN(s)
-#endif
 
 /* Keystream Queue state */
 enum {
@@ -127,7 +82,6 @@ struct ssh_aes_ctr_ctx
 {
 	struct kq	q[NUMKQ];
 	AES_KEY		aes_ctx;
-	STATS_STRUCT(stats);
 	u_char		aes_counter[AES_BLOCK_SIZE];
 	pthread_t	tid[CIPHER_THREADS];
 	int		state;
@@ -185,17 +139,10 @@ static void *
 thread_loop(void *x)
 {
 	AES_KEY key;
-	STATS_STRUCT(stats);
 	struct ssh_aes_ctr_ctx *c = x;
 	struct kq *q;
 	int i;
 	int qidx;
-
-	/* Threads stats on cancellation */
-	STATS_INIT(stats);
-#ifdef CIPHER_THREAD_STATS
-	pthread_cleanup_push(thread_loop_stats, &stats);
-#endif
 
 	/* Thread local copy of AES key */
 	memcpy(&key, &c->aes_ctx, sizeof(key));
@@ -214,13 +161,10 @@ thread_loop(void *x)
 			}
 			ssh_ctr_add(q->ctr, KQLEN * (NUMKQ - 1), AES_BLOCK_SIZE);
 			q->qstate = KQDRAINING;
-			STATS_FILL(stats);
 			pthread_cond_broadcast(&q->cond);
 		}
 		pthread_mutex_unlock(&q->lock);
 	}
-	else 
-		STATS_SKIP(stats);
 
 	/*
  	 * Normal case is to find empty queues and fill them, skipping over
@@ -240,7 +184,6 @@ thread_loop(void *x)
 		pthread_mutex_lock(&q->lock);
 		pthread_cleanup_push(thread_loop_cleanup, &q->lock);
 		while (q->qstate == KQDRAINING || q->qstate == KQINIT) {
-			STATS_WAIT(stats);
 			pthread_cond_wait(&q->cond, &q->lock);
 		}
 		pthread_cleanup_pop(0);
@@ -248,7 +191,6 @@ thread_loop(void *x)
 		/* If filling or full, somebody else got it, skip */
 		if (q->qstate != KQEMPTY) {
 			pthread_mutex_unlock(&q->lock);
-			STATS_SKIP(stats);
 			continue;
 		}
 
@@ -268,15 +210,9 @@ thread_loop(void *x)
 		pthread_mutex_lock(&q->lock);
 		ssh_ctr_add(q->ctr, KQLEN * (NUMKQ - 1), AES_BLOCK_SIZE);
 		q->qstate = KQFULL;
-		STATS_FILL(stats);
 		pthread_cond_signal(&q->cond);
 		pthread_mutex_unlock(&q->lock);
 	}
-
-#ifdef CIPHER_THREAD_STATS
-	/* Stats */
-	pthread_cleanup_pop(1);
-#endif
 
 	return NULL;
 }
@@ -339,7 +275,6 @@ ssh_aes_ctr(EVP_CIPHER_CTX *ctx, u_char *dest, const u_char *src,
 			q = &c->q[c->qidx];
 			pthread_mutex_lock(&q->lock);
 			while (q->qstate != KQFULL) {
-				STATS_WAIT(c->stats);
 				pthread_cond_wait(&q->cond, &q->lock);
 			}
 			q->qstate = KQDRAINING;
@@ -348,7 +283,6 @@ ssh_aes_ctr(EVP_CIPHER_CTX *ctx, u_char *dest, const u_char *src,
 			/* Mark consumed queue empty and signal producers */
 			pthread_mutex_lock(&oldq->lock);
 			oldq->qstate = KQEMPTY;
-			STATS_DRAIN(c->stats);
 			pthread_cond_broadcast(&oldq->cond);
 			pthread_mutex_unlock(&oldq->lock);
 		}
@@ -376,8 +310,6 @@ ssh_aes_ctr_init(EVP_CIPHER_CTX *ctx, const u_char *key, const u_char *iv,
 			pthread_cond_init(&c->q[i].cond, NULL);
 		}
 
-		STATS_INIT(c->stats);
-		
 		EVP_CIPHER_CTX_set_app_data(ctx, c);
 	}
 
@@ -434,10 +366,6 @@ ssh_aes_ctr_cleanup(EVP_CIPHER_CTX *ctx)
 	int i;
 
 	if ((c = EVP_CIPHER_CTX_get_app_data(ctx)) != NULL) {
-#ifdef CIPHER_THREAD_STATS
-		debug("main thread: %u drains, %u waits", c->stats.drains,
-				c->stats.waits);
-#endif
 		/* Cancel pregen threads */
 		for (i = 0; i < CIPHER_THREADS; i++)
 			pthread_cancel(c->tid[i]);
