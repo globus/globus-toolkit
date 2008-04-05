@@ -267,6 +267,10 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"banner_terse", "banner_terse", NULL, "banner-terse", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "When this is set, the minimum allowed banner message will be displayed "
     "to unauthenticated clients.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"banner_append", "banner_append", NULL, "banner-append", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "When this is set, the message set in the 'banner' or 'banner_file' option "
+    "will be appended to the default banner message rather than replacing it.", 
+    NULL, NULL,GLOBUS_FALSE, NULL},
  {"login_msg", "login_msg", NULL, "login-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Message to display to the client after authentication.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"login_msg_file", "login_msg_file", NULL, "login-msg-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -1643,11 +1647,11 @@ globus_l_gfs_config_misc()
     char *                              ptr;
     char *                              default_dsi;
     int                                 rc;
-    globus_bool_t                       bool_value;
     char *                              value;
     char *                              data;
     globus_result_t                     result;
     char                                ipaddr[256];
+    char *                              default_banner;
     GlobusGFSName(globus_l_gfs_config_misc);
     GlobusGFSDebugEnter();
     
@@ -1768,30 +1772,48 @@ globus_l_gfs_config_misc()
         globus_free(hostname);
     }            
 
+    default_banner = globus_common_create_string(
+        "%s GridFTP Server %d.%d (%s, %d-%d) [%s] ready.",
+        globus_i_gfs_config_string("fqdn"),
+        local_version.major,
+        local_version.minor,
+        build_flavor,
+        local_version.timestamp,
+        local_version.branch_id,
+        toolkit_id);
         
-    if((bool_value = globus_i_gfs_config_bool("banner_terse")) == GLOBUS_TRUE)
+    data = NULL;
+    if(globus_i_gfs_config_bool("banner_terse"))
     {
-        globus_l_gfs_config_set("banner", 0, globus_libc_strdup(""));                
+        data = globus_libc_strdup("");                
     }
     else if((value = globus_i_gfs_config_string("banner_file")) != GLOBUS_NULL)
     {
         rc = globus_l_config_loadfile(value, &data);
-        globus_l_gfs_config_set("banner", 0, data);                
     }
-    else if(globus_i_gfs_config_string("banner") == GLOBUS_NULL)
+    else if((value = globus_i_gfs_config_string("banner")) != GLOBUS_NULL)
     {
-            data = globus_common_create_string(
-                "%s GridFTP Server %d.%d (%s, %d-%d) [%s] ready.",
-                globus_i_gfs_config_string("fqdn"),
-                local_version.major,
-                local_version.minor,
-                build_flavor,
-                local_version.timestamp,
-                local_version.branch_id,
-                toolkit_id);
-            globus_l_gfs_config_set("banner", 0, data);
+        data = globus_libc_strdup(value);
     }
-
+    
+    if(data != NULL)
+    {
+        if(globus_i_gfs_config_bool("banner_append"))
+        {
+            char *                      banner;
+            banner = 
+                globus_common_create_string("%s %s", default_banner, data);
+            globus_free(data);
+            data = banner;
+        }
+        globus_free(default_banner);
+    }
+    else
+    {
+        data = default_banner;
+    }
+    globus_l_gfs_config_set("banner", 1, data);                
+       
     data = globus_common_create_string(
             "%d.%d (%s, %d-%d) [%s]",
             local_version.major,
