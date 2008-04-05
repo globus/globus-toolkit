@@ -120,6 +120,7 @@ typedef struct
 {
     globus_xio_system_socket_handle_t   system;
     globus_xio_system_socket_t          fd;
+    int                                 socket_sa_family;
     globus_bool_t                       connected;
     globus_bool_t                       converted;
     globus_bool_t                       no_ipv6;
@@ -480,8 +481,16 @@ globus_l_xio_udp_attr_cntl(
             {
                 if(cmd == GLOBUS_XIO_UDP_SET_CONTACT)
                 {
-                    GlobusLibcSockaddrCopy(
-                        attr->addr, *addrinfo->ai_addr, addrinfo->ai_addrlen);
+                    result = globus_libc_addr_convert_family(
+                       (globus_sockaddr_t *) addrinfo->ai_addr,
+                       &attr->addr,
+                       attr->no_ipv6 ? AF_INET : AF_INET6);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                       result = GlobusXIOErrorWrapFailed(
+                           "globus_libc_addr_convert_family", result);
+                       goto error_no_addrinfo;
+                    }
                     attr->use_addr = GLOBUS_TRUE;
                 }
                 else
@@ -490,10 +499,6 @@ globus_l_xio_udp_attr_cntl(
                         *addrinfo->ai_addr, addrinfo->ai_addrlen);
                     attr->join_multicast = GLOBUS_TRUE;
                 }
-            
-                GlobusLibcSockaddrCopy(
-                    attr->addr, *addrinfo->ai_addr, addrinfo->ai_addrlen);
-                attr->use_addr = GLOBUS_TRUE;
             }
             else
             {
@@ -957,6 +962,7 @@ globus_l_xio_udp_create_listener(
     }
     
     handle->fd = fd;
+    handle->socket_sa_family = addrinfo->ai_family;
     globus_libc_freeaddrinfo(save_addrinfo);
 
     return GLOBUS_SUCCESS;
@@ -1303,6 +1309,7 @@ globus_l_xio_udp_write(
     globus_l_handle_t *                 handle;
     globus_l_attr_t *                   attr;
     globus_sockaddr_t *                 addr;
+    globus_sockaddr_t                   tmp_addr;
     globus_size_t                       nbytes;
     globus_result_t                     result;
     int                                 total;
@@ -1319,6 +1326,20 @@ globus_l_xio_udp_write(
         if(attr && attr->use_addr)
         {
             addr = &attr->addr;
+            if(handle->socket_sa_family != GlobusLibcSockaddrGetFamily(addr))
+            {
+                result = globus_libc_addr_convert_family(
+                    &attr->addr,
+                    &tmp_addr,
+                    handle->socket_sa_family);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GlobusXIOErrorWrapFailed(
+                        "globus_libc_addr_convert_family", result);
+                    /* continue */
+                }
+                addr = &tmp_addr;
+            }
         }
     }
 

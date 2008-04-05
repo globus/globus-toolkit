@@ -52,6 +52,7 @@ static int s_object_init (void)
 static int s_object_destroy (void)
 {
 /*    return local_mutex_destroy(&s_object_ref_mutex); */
+    return 0;
 }
 
 #include "version.h"

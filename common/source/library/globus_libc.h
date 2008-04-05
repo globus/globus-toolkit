@@ -679,6 +679,13 @@ globus_libc_addr_to_contact_string(
     int                                 opts_mask,
     char **                             contact_string);
 
+/* copy and convert an addr between ipv4 and v4mapped */
+globus_result_t
+globus_libc_addr_convert_family(
+    const globus_sockaddr_t *           src,
+    globus_sockaddr_t *                 dest,
+    int                                 dest_family);
+
 globus_result_t
 globus_libc_contact_string_to_ints(
     const char *                        contact_string,

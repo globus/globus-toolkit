@@ -1380,7 +1380,6 @@ globus_libc_gethostbyname_r(
     int *                               h_errnop)
 {
     struct hostent *                    hp = GLOBUS_NULL;
-    int                                 test[4];
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
     struct hostent_data                 hp_data;
     int                                 rc;
@@ -3619,6 +3618,103 @@ globus_libc_addr_is_wildcard(
 
     return result;
 }
+
+
+/* copy and convert an addr between ipv4 and v4mapped */
+globus_result_t
+globus_libc_addr_convert_family(
+    const globus_sockaddr_t *   src,
+    globus_sockaddr_t *         dest,
+    int                         dest_family)
+{
+    globus_result_t             result = GLOBUS_SUCCESS;
+    const struct sockaddr *     sa = (const struct sockaddr *) src;
+
+    if(sa->sa_family == dest_family)
+    {
+        GlobusLibcSockaddrCopy(*dest, *sa, GlobusLibcSockaddrLen(sa));
+    }
+#if AF_INET6
+    else if(sa->sa_family == AF_INET && dest_family == AF_INET6)
+    {
+        struct sockaddr_in *    s = (struct sockaddr_in *) src;
+        struct sockaddr_in6 *   d = (struct sockaddr_in6 *) dest;
+
+        memset(d, 0, sizeof(*d));
+        d->sin6_family = AF_INET6;
+        d->sin6_port = s->sin_port;
+
+        if(globus_libc_addr_is_wildcard(src))
+        {
+            d->sin6_addr = in6addr_any;
+        }
+        else if(globus_libc_addr_is_loopback(src))
+        {
+            d->sin6_addr = in6addr_loopback;
+        }
+        else
+        {
+            /* create ipv4 mapped addr */
+            *((uint32_t *) &(d->sin6_addr.s6_addr[8])) = htonl(0xffff);
+            *((uint32_t *) &(d->sin6_addr.s6_addr[12])) = s->sin_addr.s_addr;
+        }
+    }
+    else if(sa->sa_family == AF_INET6 && dest_family == AF_INET)
+    {
+        struct sockaddr_in6 *   s = (struct sockaddr_in6 *) src;
+        struct sockaddr_in *    d = (struct sockaddr_in *) dest;
+
+        memset(d, 0, sizeof(*d));
+        d->sin_family = AF_INET;
+        d->sin_port = s->sin6_port;
+
+        if(globus_libc_addr_is_wildcard(src))
+        {
+            d->sin_addr.s_addr = htonl(INADDR_ANY);
+        }
+        else if(globus_libc_addr_is_loopback(src))
+        {
+            d->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        }
+        else if(IN6_IS_ADDR_V4MAPPED(&s->sin6_addr) ||
+            IN6_IS_ADDR_V4COMPAT(&s->sin6_addr))
+        {
+            d->sin_addr.s_addr = *((uint32_t *) &(s->sin6_addr.s6_addr[12]));
+        }
+        else
+        {
+            result = globus_error_put(
+                globus_error_construct_error(
+                   GLOBUS_COMMON_MODULE,
+                   GLOBUS_NULL,
+                   0,
+                   __FILE__,
+                   "globus_libc_addr_convert_family",
+                   __LINE__,
+                   "Can't convert non-mapped ipv6 to ipv4"));
+        }
+    }
+#endif
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_error(
+               GLOBUS_COMMON_MODULE,
+               GLOBUS_NULL,
+               0,
+               __FILE__,
+               "globus_libc_addr_convert_family",
+               __LINE__,
+               "Can't convert unsupported protocol family."));
+    }
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusLibcSockaddrCopy(*dest, *sa, GlobusLibcSockaddrLen(sa));
+    }
+
+    return result;
+}
+
 
 globus_result_t
 globus_libc_addr_to_contact_string(
