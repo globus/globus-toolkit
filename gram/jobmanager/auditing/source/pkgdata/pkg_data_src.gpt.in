@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_auditing">
 
-    <Aging_Version Age="0" Major="0" Minor="3"/>
+    <Aging_Version Age="0" Major="0" Minor="4"/>
     <Description>GRAM Jobmanager Auditing</Description>
     <Functional_Group>Pre-WS GRAM</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -26,7 +26,7 @@
                 </Version>
             </Setup_Dependency>
 
-            <Setup_Dependency Name="globus_gram_job_manager_auditing_setup">
+            <Setup_Dependency Name="globus_gram_job_manager_auditing_setup_scripts">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
