@@ -160,7 +160,9 @@ sub extract_static_libs {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'name'} =~ /\.a$/ and $_->{'dir'} =~ m!lib/!) {
+    # Changed to allow for lib/subdir/lib.a while still allowing
+    # lib/lib.a, where apparently the dir is just lib, not lib/
+    if ($_->{'name'} =~ /\.a$/ and $_->{'dir'} =~ m!lib$|lib/!) {
       push @newlist, $_;
     }
   }
