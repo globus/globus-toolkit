@@ -67,6 +67,18 @@ if test "x$AIX" = "xyes"; then
 fi
 AC_SUBST(aixargs,$aixargs)
 
+gridway="gridway"
+AC_ARG_ENABLE(gridway, AC_HELP_STRING([--disable-gridway],\
+   [Disable the build of gridway.  Default is enabled.]),\
+   [if test $enableval = "no"; then gridway=""; fi], [])
+AC_SUBST(gridway, $gridway)
+
+gridshib="gridshib-bundle"
+AC_ARG_ENABLE(gridshib, AC_HELP_STRING([--disable-gridshib],\
+   [Disable the build of gridshib.  Default is enabled.]),\
+   [if test $enableval = "no"; then gridshib=""; fi], [])
+AC_SUBST(gridshib, $gridshib)
+
 openssl="globus_system_openssl"
 AC_ARG_ENABLE(system-openssl, AC_HELP_STRING([--disable-system-openssl],\
    [Use the globus_openssl package instead of system openssl.  Default is to use the system openssl.]),\

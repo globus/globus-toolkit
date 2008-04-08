@@ -55,6 +55,8 @@ globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs	gpt
 globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote	gpt
 globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt
 globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt
+globus_wsrf_gram_service_auditing_unit_test ws-gram/service/java/test/auditing tar
+globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt
 globus_gram_myjob	gram/myjob/source	gpt
 globus_gram_protocol	gram/protocol/source	gpt
 globus_gram_protocol_test	gram/protocol/test	gpt
