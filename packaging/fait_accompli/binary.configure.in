@@ -23,6 +23,24 @@ AC_SUBST(rls, $rls)
 openssl="globus_binary_openssl"
 AC_SUBST(globus_openssl, $openssl)
 
+gridway="gridway"
+AC_ARG_ENABLE(gridway, AC_HELP_STRING([--disable-gridway],\
+   [Disable the build of gridway.  Default is enabled.]),\
+   [if test $enableval = "no"; then gridway=""; fi], [])
+AC_SUBST(gridway, $gridway)
+
+gridshib="gridshib_bundle"
+AC_ARG_ENABLE(gridshib, AC_HELP_STRING([--disable-gridshib],\
+   [Disable the build of gridshib.  Default is enabled.]),\
+   [if test $enableval = "no"; then gridshib=""; fi], [])
+AC_SUBST(gridshib, $gridshib)
+
+netlogger=""
+AC_ARG_ENABLE(netlogger, AC_HELP_STRING([--enable-netlogger],\
+   [Build netlogger libraries.  Default is disabled.]),
+   [if test $enableval = "yes"; then netlogger="netlogger_c"; fi], [])
+AC_SUBST(netlogger, $netlogger)
+
 prewsgram="prewsgram"
 AC_ARG_ENABLE(prewsgram, AC_HELP_STRING([--disable-prewsgram],\
    [Don't build pre-webservices [GRAM].  Default is enabled.]),\
