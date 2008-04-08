@@ -1,4 +1,4 @@
-all: gpt @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ @rndvz@ @gridway@ @gridshib@ @netlogger@ done
+all: gpt @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ @rndvz@ @gridshib@ @netlogger@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
