@@ -139,6 +139,7 @@ globus_gridmap_callout_setup    gsi/gridmap_callout/setup       dirt.sh
 globus_gridmap_callout_error    gsi/gridmap_callout/error       dirt.sh
 globus_xio                      xio/src                         dirt.sh
 globus_xio_test                 xio/test                        dirt.sh
+globus_xio_netlogger_driver     xio/drivers/netlog              dirt.sh
 globus_gridftp_server_control   gridftp/server-lib/src          dirt.sh
 globus_gridftp_server_test      gridftp/server-lib/test         dirt.sh
 globus_gridftp_server           gridftp/server/src              dirt.sh
