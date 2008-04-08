@@ -39,7 +39,8 @@ my %virtual_packages = ("trusted_ca_setup" => 1,
                         "globus_gram_job_manager_service_setup" => 1,
                         "mmjfs_service_setup" => 1,
                         "mjs_service_setup" => 1,
-                         "simple_ca_setup" => 1);
+                        "simple_ca_setup" => 1,
+                        "netlogger_c" => 1 );
 
 # package_name => [ tree, subdir, build_type, 
 #                   (patch-n-build file, if exists), (per-package tag) ]
