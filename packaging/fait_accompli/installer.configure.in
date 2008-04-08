@@ -73,7 +73,7 @@ AC_ARG_ENABLE(gridway, AC_HELP_STRING([--disable-gridway],\
    [if test $enableval = "no"; then gridway=""; fi], [])
 AC_SUBST(gridway, $gridway)
 
-gridshib="gridshib-bundle"
+gridshib="gridshib_bundle"
 AC_ARG_ENABLE(gridshib, AC_HELP_STRING([--disable-gridshib],\
    [Disable the build of gridshib.  Default is enabled.]),\
    [if test $enableval = "no"; then gridshib=""; fi], [])
