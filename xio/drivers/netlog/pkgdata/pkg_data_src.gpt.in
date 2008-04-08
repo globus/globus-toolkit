@@ -16,6 +16,18 @@
                 </Version>
             </Dependency>
 
+            <Dependency Name="globus_ftp_client">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gass_copy">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+
             <Dependency Name="netlogger_c">
                 <Version>
                     <Simple_Version Major="4"/>
@@ -28,6 +40,18 @@
             <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+            
+            <Dependency Name="globus_ftp_client">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gass_copy">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
 
