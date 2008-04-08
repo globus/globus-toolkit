@@ -235,6 +235,11 @@ AC_ARG_ENABLE(webmds, AC_HELP_STRING([--disable-webmds],\
    [Don't build webmds.  Default is enabled.]),
    [if test $enableval = "no"; then webmds=" "; fi], [])
 AC_SUBST(webmds, $webmds)
+netlogger=""
+AC_ARG_ENABLE(netlogger, AC_HELP_STRING([--enable-netlogger],\
+   [Build netlogger libraries.  Default is disabled.]),
+   [if test $enableval = "yes"; then netlogger="netlogger_c"; fi], [])
+AC_SUBST(netlogger, $netlogger)
 
 # java
 AC_PATH_PROG(JAVAC_PATH, javac)

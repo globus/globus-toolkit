@@ -1,4 +1,4 @@
-all: gpt @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ @rndvz@ done
+all: gpt @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ @rndvz@ @netlogger@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
@@ -64,5 +64,9 @@ globus_openssl-only: @globus_openssl@-only
 globus_openssl-only-thr: @globus_openssl@-only-thr
 globus_binary_openssl:
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_openssl-*/*.tar.gz
+
+# Netlogger incubator
+netlogger_c: gpt globus_core globus_common
+	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees/netlogger-c-4.0.1 ${FLAVOR}
 
 # Bundle dependencies, expressed in packages.
