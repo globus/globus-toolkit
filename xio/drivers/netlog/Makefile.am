@@ -1,8 +1,6 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-NETLOGGER_PATH=@NETLOGGER_PATH@
-
 SUBDIRS = \
 	pkgdata \
 	doxygen
@@ -10,25 +8,25 @@ SUBDIRS = \
 flavorinclude_HEADERS = \
     globus_xio_netlogger.h
 
-INCLUDES = $(GPT_INCLUDES) -I $(NETLOGGER_PATH)/include
+INCLUDES = $(GPT_INCLUDES) 
 
 lib_LTLIBRARIES = libglobus_xio_netlogger_driver_$(GLOBUS_FLAVOR_NAME).la \
                libclient_netlogger_plugin_$(GLOBUS_FLAVOR_NAME).la
 
 libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-    @GPT_LIB_LINKS@  $(NETLOGGER_PATH)/lib/libnl.a -luuid
+    @GPT_LIB_LINKS@ 
 libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_SOURCES = \
     globus_ftp_client_nl_plugin.c
 libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib -rpath $(NETLOGGER_PATH)/lib
+	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib 
 
 
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnl.a -luuid
+	@GPT_LIB_LINKS@ 
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_netlogger.c
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib -rpath $(NETLOGGER_PATH)/lib
+	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib 
 
 EXTRA_DIST = version.h.in
 

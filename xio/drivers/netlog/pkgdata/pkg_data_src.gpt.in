@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_xio_netlogger_driver" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="1" Age="0"/>
+    <Aging_Version Major="1" Minor="1" Age="0"/>
     <Description> Globus XIO Netlogger Driver</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
@@ -15,6 +15,13 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+
+            <Dependency Name="netlogger_c">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
@@ -23,6 +30,13 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+
+            <Dependency Name="netlogger_c">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+
         </Source_Dependencies>
 
         <With_Flavors build="yes"/>
