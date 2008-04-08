@@ -372,4 +372,3 @@ gridshib_tests gridshib/gt/service/java/test tar null gridshib_gt_0_6_0_branch
 gridway	gridway	tar	null	gw_5_4_branch
 globus_wsrf_bp_schemas wsrf/c/core/tests/ogsa-bp/schema gpt
 globus_c_wsrf_bp_interop wsrf/c/core/tests/ogsa-bp/bindings gpt
-globus_xio_netlogger_driver xio/drivers/netlog
