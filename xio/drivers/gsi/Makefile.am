@@ -15,7 +15,8 @@ lib_LTLIBRARIES = libglobus_xio_gsi_driver_$(GLOBUS_FLAVOR_NAME).la
 libglobus_xio_gsi_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	@GPT_LIB_LINKS@
 libglobus_xio_gsi_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
-	globus_i_xio_gsi.h  globus_xio_gsi.h globus_xio_gsi.c
+	globus_i_xio_gsi.h  globus_xio_gsi.h globus_xio_gsi.c \
+        ao10ge_ssl_ioctl.h 
 libglobus_xio_gsi_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 

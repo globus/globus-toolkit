@@ -55,10 +55,10 @@ if !MINIMAL_SSL
 endif
 
 opensslinclude_HEADERS= \
-	evp.h
+	evp.h \
+    	cipher-ctr.h
 
 noinst_HEADERS = \
-        ao10ge_ssl_ioctl.h \
 	evp_locl.h
 Test_Sources = \
 	evp_test.c \

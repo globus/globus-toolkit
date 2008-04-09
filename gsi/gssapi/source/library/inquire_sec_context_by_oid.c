@@ -28,6 +28,7 @@
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
+#include "openssl/cipher-ctr.h"
 
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
@@ -35,6 +36,10 @@
 static char *rcsid = "$Id$";
 
 extern const gss_OID_desc * const gss_ext_x509_cert_chain_oid;
+extern const gss_OID_desc * const gss_ext_aes128_outgoing_key_oid;
+extern const gss_OID_desc * const gss_ext_aes128_outgoing_iv_oid;
+extern const gss_OID_desc * const gss_ext_aes128_incoming_key_oid;
+extern const gss_OID_desc * const gss_ext_aes128_incoming_iv_oid;
 
 /**
  * @name Inquire Sec Context by OID
@@ -155,7 +160,147 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto exit;
     }
 
-    if(((gss_OID_desc *)desired_object)->length !=
+    if (g_OID_equal(desired_object, gss_ext_aes128_outgoing_key_oid))
+    {
+        if (!strcmp(SSL_get_cipher_name(context->gss_ssl), "AES128-CTR-SHA"))
+        {
+            EVP_CIPHER_CTX * write_context = context->gss_ssl->enc_write_ctx;
+            struct ssh_aes_ctr_ctx *c;
+
+            if (! write_context)
+            {
+                major_status = GSS_S_COMPLETE;
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+            /* outgoing key */
+            c = EVP_CIPHER_CTX_get_app_data(write_context);
+
+            data_set_buffer.length = sizeof(c->key);
+            data_set_buffer.value = c->key;
+            major_status = gss_add_buffer_set_member(
+                    minor_status,
+                    &data_set_buffer,
+                    data_set);
+
+            if (major_status != GSS_S_COMPLETE)
+            {
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+        }
+    }
+    else if (g_OID_equal(desired_object, gss_ext_aes128_outgoing_iv_oid))
+    {
+        if (!strcmp(SSL_get_cipher_name(context->gss_ssl), "AES128-CTR-SHA"))
+        {
+            EVP_CIPHER_CTX * write_context = context->gss_ssl->enc_write_ctx;
+            struct ssh_aes_ctr_ctx *c;
+
+            if (! write_context)
+            {
+                major_status = GSS_S_COMPLETE;
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+            c = EVP_CIPHER_CTX_get_app_data(write_context);
+
+            data_set_buffer.length = sizeof(c->aes_counter);
+            data_set_buffer.value = c->aes_counter;
+            major_status = gss_add_buffer_set_member(
+                    minor_status,
+                    &data_set_buffer,
+                    data_set);
+            if (major_status != GSS_S_COMPLETE)
+            {
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+        }
+    }
+    else if (g_OID_equal(desired_object, gss_ext_aes128_incoming_key_oid))
+    {
+        if (!strcmp(SSL_get_cipher_name(context->gss_ssl), "AES128-CTR-SHA"))
+        {
+            EVP_CIPHER_CTX * read_context = context->gss_ssl->enc_read_ctx;
+            struct ssh_aes_ctr_ctx *c;
+
+            if (! read_context)
+            {
+                major_status = GSS_S_COMPLETE;
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+            /* incoming key */
+            c = EVP_CIPHER_CTX_get_app_data(read_context);
+
+            data_set_buffer.length = sizeof(c->key);
+            data_set_buffer.value = c->key;
+            major_status = gss_add_buffer_set_member(
+                    minor_status,
+                    &data_set_buffer,
+                    data_set);
+
+            if (major_status != GSS_S_COMPLETE)
+            {
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+        }
+    }
+    else if (g_OID_equal(desired_object, gss_ext_aes128_incoming_iv_oid))
+    {
+        if (!strcmp(SSL_get_cipher_name(context->gss_ssl), "AES128-CTR-SHA"))
+        {
+            EVP_CIPHER_CTX * read_context = context->gss_ssl->enc_read_ctx;
+            struct ssh_aes_ctr_ctx *c;
+
+            if (! read_context)
+            {
+                major_status = GSS_S_COMPLETE;
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+            c = EVP_CIPHER_CTX_get_app_data(read_context);
+
+            data_set_buffer.length = sizeof(c->aes_counter);
+            data_set_buffer.value = c->aes_counter;
+            major_status = gss_add_buffer_set_member(
+                    minor_status,
+                    &data_set_buffer,
+                    data_set);
+            if (major_status != GSS_S_COMPLETE)
+            {
+                gss_release_buffer_set(minor_status, data_set);
+                *data_set = NULL;
+
+                goto exit;
+            }
+
+        }
+    }
+    else if(((gss_OID_desc *)desired_object)->length !=
        gss_ext_x509_cert_chain_oid->length ||
        memcmp(((gss_OID_desc *)desired_object)->elements,
               gss_ext_x509_cert_chain_oid->elements,
@@ -231,12 +376,13 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 data_set_buffer.value = asn1_oct_string->data;
                 data_set_buffer.length = asn1_oct_string->length;
 
-                OPENSSL_free(asn1_oct_string);
-            
                 major_status = gss_add_buffer_set_member(
                     &local_minor_status,
                     &data_set_buffer,
                     data_set);
+
+                ASN1_STRING_free(asn1_oct_string);
+
                 if(GSS_ERROR(major_status))
                 {
                     GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(

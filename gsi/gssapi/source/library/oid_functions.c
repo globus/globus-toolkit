@@ -105,6 +105,26 @@ static const gss_OID_desc gss_ext_x509_cert_chain_oid_desc =
 const gss_OID_desc * const gss_ext_x509_cert_chain_oid =
                 &gss_ext_x509_cert_chain_oid_desc;
 
+static const gss_OID_desc gss_ext_aes128_outgoing_key_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x09"}; 
+const gss_OID_desc * const gss_ext_aes128_outgoing_key_oid =
+                &gss_ext_aes128_outgoing_key_desc;
+
+static const gss_OID_desc gss_ext_aes128_outgoing_iv_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x0a"}; 
+const gss_OID_desc * const gss_ext_aes128_outgoing_iv_oid =
+                &gss_ext_aes128_outgoing_iv_desc;
+
+static const gss_OID_desc gss_ext_aes128_incoming_key_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x0b"}; 
+const gss_OID_desc * const gss_ext_aes128_incoming_key_oid =
+                &gss_ext_aes128_incoming_key_desc;
+
+static const gss_OID_desc gss_ext_aes128_incoming_iv_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x0c"}; 
+const gss_OID_desc * const gss_ext_aes128_incoming_iv_oid =
+                &gss_ext_aes128_incoming_iv_desc;
+
 
 /**
  * @name Add OID Set Member

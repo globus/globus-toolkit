@@ -26,6 +26,9 @@
 #include "globus_gss_assist.h"
 #include "globus_error_gssapi.h"
 
+#include <net/if.h>
+#include <linux/sockios.h>
+
 #define GLOBUS_XIO_GSI_DRIVER_MODULE GlobusXIOMyModule(gsi)
 
 /* create/calculate a token header */
@@ -225,7 +228,21 @@ typedef struct
     globus_bool_t                       eof;
     int                                 connection_id;
     globus_xio_driver_handle_t          xio_driver_handle;
+    /*Added for AES128-CTR hw acceleration support */
     int                                 socket_fd;
+    struct sockaddr                     initname;
+    socklen_t                           initnamelen;
+    struct sockaddr                     acceptname;
+    socklen_t                           acceptnamelen;
+    globus_bool_t                       use_hardware_aes128_ctr;
+    char                                ifname[IFNAMSIZ];
+    gss_buffer_desc                     write_key;
+    gss_buffer_desc                     write_iv;
+    int                                 write_session;
+    gss_buffer_desc                     write_finish_token;
+    gss_buffer_desc                     read_key;
+    gss_buffer_desc                     read_iv;
+    int                                 read_session;
 } globus_l_handle_t;
 
 /*

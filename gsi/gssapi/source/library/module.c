@@ -34,10 +34,10 @@ static int globus_l_gsi_gssapi_activate(void);
 static int globus_l_gsi_gssapi_deactivate(void);
 
 /* Allow AES128-CTR cipher to retrieve fd information */
-globus_thread_key_t globus_i_gsi_gssapi_aes_fd_key;
+globus_thread_key_t globus_i_gsi_gssapi_hw_aes_key;
 typedef int (*aes_get_fd_callback_t)(void);
-extern void aes_set_fd_callback_func(aes_get_fd_callback_t func);
-static int globus_l_gsi_gssapi_aes_get_fd_callback(void);
+extern void aes_set_hw_callback(aes_get_fd_callback_t func);
+static int globus_l_gsi_gssapi_aes_get_hw_callback(void);
 
 /**
  * Debugging level
@@ -138,8 +138,8 @@ globus_l_gsi_gssapi_activate(void)
     }
 
     /* For hardware-assisted AES128-CTR cipher */
-    globus_thread_key_create(&globus_i_gsi_gssapi_aes_fd_key, NULL);
-    aes_set_fd_callback_func(globus_l_gsi_gssapi_aes_get_fd_callback);
+    globus_thread_key_create(&globus_i_gsi_gssapi_hw_aes_key, NULL);
+    aes_set_hw_callback(globus_l_gsi_gssapi_aes_get_hw_callback);
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -189,18 +189,13 @@ globus_l_gsi_gssapi_activate_once(void)
 
 static
 int
-globus_l_gsi_gssapi_aes_get_fd_callback(void)
+globus_l_gsi_gssapi_aes_get_hw_callback(void)
 {
-    int * fdp;
-    fdp = globus_thread_getspecific(globus_i_gsi_gssapi_aes_fd_key);
+    int use_hw_crypto;
 
-    if (!fdp)
-    {
-        return -1;
-    }
-    else
-    {
-        return *fdp;
-    }
+    use_hw_crypto = (int)
+            globus_thread_getspecific(globus_i_gsi_gssapi_hw_aes_key);
+
+    return (use_hw_crypto == 1);
 }
 #endif

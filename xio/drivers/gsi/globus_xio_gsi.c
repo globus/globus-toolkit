@@ -19,9 +19,14 @@
 #include "globus_xio_tcp_driver.h"
 #include "version.h"
 
+#include "openssl/ssl3.h"
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include "ao10ge_ssl_ioctl.h"
+
 /* 32 MB */
 #define MAX_TOKEN_LENGTH 2<<24
-
+#define MAX_AES128_CTR_TOKEN_LENGTH (16*1024*1024)
 /* default attributes */
 
 static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
@@ -42,7 +47,11 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
 static int                              connection_count = 0;
 static globus_mutex_t                   connection_mutex;
 static globus_xio_driver_t              globus_l_gsi_tcp_driver;
-
+extern gss_OID                          GSS_USE_HARDWARE_AES128_CTR;
+extern gss_OID                          gss_ext_aes128_outgoing_key_oid;
+extern gss_OID                          gss_ext_aes128_outgoing_iv_oid;
+extern gss_OID                          gss_ext_aes128_incoming_key_oid;
+extern gss_OID                          gss_ext_aes128_incoming_iv_oid;
 
 static
 globus_result_t
@@ -73,11 +82,48 @@ globus_l_xio_gsi_close_cb(
     globus_result_t                     result,
     void *                              user_arg);
 
+
 static
-void
-globus_l_xio_gsi_setup_channel_bindings(
+globus_result_t
+globus_l_xio_gsi_can_use_hardware_crypto(
     globus_l_handle_t *                 handle,
     globus_xio_operation_t              op);
+
+static
+int
+get_iface_for_address(
+    int                                 sockfd,
+    struct sockaddr_in *                address,
+    char                                ifname[]);
+
+static
+void
+globus_l_xio_gsi_create_aes128_ctr_session(
+    globus_l_handle_t *                 handle);
+
+static
+int
+globus_l_xio_gsi_create_session(
+    gss_buffer_t                key,
+    gss_buffer_t                iv,
+    char *                      iface,
+    struct sockaddr *           srcname,
+    socklen_t                   srcnamelen,
+    struct sockaddr *           dstname,
+    socklen_t                   dstnamelen,
+    int                         connection_id);
+
+static
+void
+globus_l_xio_gsi_destroy_session(
+    char *                      iface,
+    int                         session);
+
+static
+void
+globus_l_xio_extract_finish_record(
+    gss_buffer_t                        token,
+    gss_buffer_t                        finish_token);
 
 static int
 globus_l_xio_gsi_activate();
@@ -937,7 +983,45 @@ globus_l_xio_gsi_write_token_cb(
         goto error_pass_close;
     }
     
-    if(handle->done == GLOBUS_TRUE)
+    if (handle->use_hardware_aes128_ctr &&
+             handle->write_session == 0 &&
+             handle->write_finish_token.value != NULL)
+    {
+        int rc;
+        int value;
+
+        /* Wait for token output queue to be emptied */
+        do
+        {
+            rc = ioctl(handle->socket_fd, SIOCOUTQ, &value);
+
+            if (rc < 0)
+            {
+                break;
+            }
+            if (value > 0)
+            {
+                sleep(1);
+            }
+        }
+        while (value > 0);
+        sleep(1);
+
+        /* Create AES128 session for this write */
+        globus_l_xio_gsi_create_aes128_ctr_session(handle);
+
+        globus_assert(handle->write_session != 0);
+
+        handle->read_iovec[1].iov_base = handle->write_finish_token.value;
+        handle->read_iovec[1].iov_len = handle->write_finish_token.length;
+        wait_for = handle->write_finish_token.length;
+        iovec = &handle->read_iovec[1];
+        iovec_count = 1;
+
+        result = globus_xio_driver_pass_write(op, iovec, iovec_count, wait_for,
+                                 globus_l_xio_gsi_write_token_cb, handle);
+    }
+    else if(handle->done == GLOBUS_TRUE)
     {
         /* done */
         if(handle->result_obj != NULL)
@@ -1166,13 +1250,29 @@ globus_l_xio_gsi_read_token_cb(
                     &output_token,
                     &handle->ret_flags,
                     &handle->time_rec);
+
+                if (handle->use_hardware_aes128_ctr &&
+                    handle->read_session == 0)
+                {
+                    globus_l_xio_gsi_create_aes128_ctr_session(handle);
+                }
             }
             else
             {
-                if (! handle->attr->channel_bindings)
+                if (handle->ifname[0] == 0)
                 {
-                    globus_l_xio_gsi_setup_channel_bindings(handle, op);
+                    globus_l_xio_gsi_can_use_hardware_crypto(handle, op);
+
+                    if (handle->use_hardware_aes128_ctr)
+                    {
+                        gss_set_sec_context_option(
+                                &minor_status,
+                                &handle->context,
+                                GSS_USE_HARDWARE_AES128_CTR,
+                                GSS_C_NO_BUFFER);
+                    }
                 }
+
                 major_status = gss_accept_sec_context(
                     &minor_status,
                     &handle->context,
@@ -1185,6 +1285,12 @@ globus_l_xio_gsi_read_token_cb(
                     &handle->ret_flags,
                     &handle->time_rec,
                     &handle->delegated_cred);
+
+                if (handle->use_hardware_aes128_ctr &&
+                    handle->read_session == 0)
+                {
+                    globus_l_xio_gsi_create_aes128_ctr_session(handle);
+                }
             }
 
             GlobusXIOGSIDebugPrintf(
@@ -1245,7 +1351,8 @@ globus_l_xio_gsi_read_token_cb(
             handle->attr->prot_level ==
             GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
             GSS_C_QOP_DEFAULT,
-            (4294967295U),
+            handle->use_hardware_aes128_ctr
+                ? MAX_AES128_CTR_TOKEN_LENGTH : (4294967295U),
             &handle->max_wrap_size);
         if(GSS_ERROR(major_status))
         {
@@ -1393,6 +1500,23 @@ globus_l_xio_gsi_read_token_cb(
             
             wait_for = iovec[0].iov_len + iovec[1].iov_len;
         }
+        else if (handle->use_hardware_aes128_ctr &&
+                 handle->write_session == 0)
+        {
+            /* Check for ChangeCipherSpec SSL record. If present, delay the
+             * next followin records (Finish) until after the first is
+             * sent and the hw crypto session is established.
+             */
+            globus_l_xio_extract_finish_record(
+                    &output_token,
+                    &handle->write_finish_token);
+
+            iovec = &(handle->read_iovec[1]);
+            iovec_count = 1;
+            iovec[0].iov_len = output_token.length;
+            iovec[0].iov_base = output_token.value;
+            wait_for = iovec[0].iov_len;
+        }
         else
         {
             iovec = &(handle->read_iovec[1]);
@@ -1486,7 +1610,6 @@ globus_l_xio_gsi_open_cb(
     globus_xio_iovec_t *                iovec;
     int                                 iovec_count;
     globus_size_t                       wait_for;
-    
     GlobusXIOName(globus_l_xio_gsi_open_cb);
     GlobusXIOGSIDebugInternalEnter();
 
@@ -1509,9 +1632,15 @@ globus_l_xio_gsi_open_cb(
         OM_uint32                       minor_status;
         gss_buffer_desc 	        output_token = GSS_C_EMPTY_BUFFER;
 
-        if (! handle->attr->channel_bindings)
+        globus_l_xio_gsi_can_use_hardware_crypto(handle, op);
+
+        if (handle->use_hardware_aes128_ctr)
         {
-            globus_l_xio_gsi_setup_channel_bindings(handle, op);
+            gss_set_sec_context_option(
+                    &minor_status,
+                    &handle->context,
+                    GSS_USE_HARDWARE_AES128_CTR,
+                    GSS_C_NO_BUFFER);
         }
 
         major_status = gss_init_sec_context(&minor_status,
@@ -1521,7 +1650,7 @@ globus_l_xio_gsi_open_cb(
                                             handle->attr->mech_type,
                                             handle->attr->req_flags,
                                             handle->attr->time_req, 
-                                            handle->attr->channel_bindings,
+                                            NULL,
                                             GSS_C_NO_BUFFER,
                                             &handle->mech_used,
                                             &output_token,
@@ -1559,7 +1688,8 @@ globus_l_xio_gsi_open_cb(
                 handle->attr->prot_level ==
                 GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
                 GSS_C_QOP_DEFAULT,
-                (4294967295U),
+                handle->use_hardware_aes128_ctr
+                    ? MAX_AES128_CTR_TOKEN_LENGTH : (4294967295U),
                 &handle->max_wrap_size);
 
             if(GSS_ERROR(major_status))
@@ -1817,14 +1947,27 @@ globus_l_xio_gsi_close(
     globus_xio_operation_t              op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_l_handle_t *                 handle;
 
     GlobusXIOName(globus_l_xio_gsi_close);
     GlobusXIOGSIDebugEnter();
     
+    handle = (globus_l_handle_t *) driver_specific_handle;
+
     if(!driver_specific_handle)
     {
         GlobusXIOGSIDebugExitWithError();
         return GlobusXIOErrorParameter("driver_specific_handle");
+    }
+
+    if (handle->read_session)
+    {
+        globus_l_xio_gsi_destroy_session(handle->ifname, handle->read_session);
+    }
+
+    if (handle->write_session)
+    {
+        globus_l_xio_gsi_destroy_session(handle->ifname, handle->write_session);
     }
     
     globus_l_xio_gsi_handle_destroy(
@@ -4023,18 +4166,23 @@ globus_l_xio_gsi_setup_target_name(
 }
 
 static
-void
-globus_l_xio_gsi_setup_channel_bindings(
+globus_result_t
+globus_l_xio_gsi_can_use_hardware_crypto(
     globus_l_handle_t *                 handle,
     globus_xio_operation_t              op)
 {
-    gss_channel_bindings_t              bindings;
     globus_xio_driver_handle_t          driver_handle;
-    struct sockaddr                     initname;
-    globus_socklen_t                    initnamelen = sizeof(initname);
-    struct sockaddr                     acceptname;
-    globus_socklen_t                    acceptnamelen = sizeof(acceptname);
     globus_result_t                     result;
+    char *                              isconfig_path = getenv("ISCONFIG_PATH");
+
+    if (isconfig_path == NULL)
+    {
+        handle->use_hardware_aes128_ctr = GLOBUS_FALSE;
+        return GLOBUS_FAILURE;
+    }
+
+    handle->initnamelen = sizeof(struct sockaddr);
+    handle->acceptnamelen = sizeof(struct sockaddr);
 
     driver_handle = globus_xio_operation_get_driver_handle(op);
     result = globus_xio_driver_handle_cntl(
@@ -4046,33 +4194,410 @@ globus_l_xio_gsi_setup_channel_bindings(
     {
         result = globus_xio_system_socket_getsockname(
             handle->socket_fd,
-            handle->attr->init ? (&initname) : (&acceptname),
-            handle->attr->init ? (&initnamelen) : (&acceptnamelen));
+            handle->attr->init
+                ? (&handle->initname) : (&handle->acceptname),
+            handle->attr->init
+                ? (&handle->initnamelen) : (&handle->acceptnamelen));
     }
     if (result == GLOBUS_SUCCESS && handle->socket_fd >= 0)
     {
         result = globus_xio_system_socket_getpeername(
             handle->socket_fd,
-            handle->attr->init ? (&acceptname) : (&initname),
-            handle->attr->init ? (&acceptnamelen) : (&initnamelen));
+            handle->attr->init
+                ? (&handle->acceptname) : (&handle->initname),
+            handle->attr->init
+                ? (&handle->acceptnamelen) : (&handle->initnamelen));
     }
     if (result == GLOBUS_SUCCESS)
     {
-        if (initname.sa_family == AF_INET &&
-            acceptname.sa_family == AF_INET)
+        if (handle->initname.sa_family == AF_INET &&
+            handle->acceptname.sa_family == AF_INET)
         {
-            bindings = malloc(sizeof (struct gss_channel_bindings_struct));
+            result = get_iface_for_address(
+                    handle->socket_fd,
+                    (struct sockaddr_in *)
+                    (handle->attr->init
+                        ? &handle->initname : &handle->acceptname),
+                    handle->ifname);
+        }
+    }
+    if (result == GLOBUS_SUCCESS)
+    {
+        struct ssl_oe_get ifd;
+        struct ifreq ifr;
 
-            bindings->initiator_addrtype = GSS_C_AF_INET;
-            bindings->initiator_address.value = &initname;
-            bindings->initiator_address.length = initnamelen;
-            bindings->acceptor_addrtype = GSS_C_AF_INET;
-            bindings->acceptor_address.value = &acceptname;
-            bindings->acceptor_address.length = acceptnamelen;
-            bindings->application_data.value = &handle->socket_fd;
-            bindings->application_data.length = sizeof(handle->socket_fd);
+        /* Check if interface for this socket has SSL OE capability */
+        memset(&ifd, 0, sizeof(ifd));
+        ifd.cmd = SSLOECAPS;
+        strcpy(ifr.ifr_name, handle->ifname);
+        ifr.ifr_data = (void *)&ifd;
+        if (ioctl(handle->socket_fd, AODEVPRIVGET, &ifr) < 0 ||
+            ifd.magic != AOFSD_OE_MAGIC)
+        {
+            result = GLOBUS_FAILURE;
+        }
+        else
+        {
+            handle->use_hardware_aes128_ctr = GLOBUS_TRUE;
+        }
+    }
 
-            handle->attr->channel_bindings = bindings;
+    return result;
+}
+
+#define IFC_BUFFER_SIZE (128 * sizeof(struct ifreq))
+
+static
+int
+get_iface_for_address(
+    int                                 sockfd,
+    struct sockaddr_in *                address,
+    char                                ifname[])
+{
+    struct sockaddr_in * iface_in = NULL;
+    struct ifconf ifc;
+    struct ifreq * ifrp;
+    int left;
+
+    ifname[0] = '\0';
+
+    ifc.ifc_buf = malloc(IFC_BUFFER_SIZE);
+    ifc.ifc_len = IFC_BUFFER_SIZE;
+
+    if (ioctl(sockfd, SIOCGIFCONF, (caddr_t) &ifc) < 0)
+    {
+        return -1;
+    }
+
+    left = ifc.ifc_len;
+    ifrp = ifc.ifc_req;
+
+    while (left)
+    {
+        if (ifrp->ifr_addr.sa_family == address->sin_family &&
+            ifrp->ifr_addr.sa_family == AF_INET)
+        {
+            iface_in = (struct sockaddr_in *) &ifrp->ifr_addr;
+
+            if (memcmp(&address->sin_addr, &iface_in->sin_addr,
+                        sizeof(struct in_addr)) == 0)
+            {
+                strncpy(ifname, ifrp->ifr_name, IFNAMSIZ);
+                break;
+            }
+        }
+        ifrp++;
+        left -= sizeof(struct ifreq);
+        iface_in = NULL;
+    }
+    free(ifc.ifc_buf);
+
+    return (left == 0) ? -1 : 0;
+}
+
+static
+void
+globus_l_xio_gsi_create_aes128_ctr_session(
+    globus_l_handle_t *                 handle)
+{
+    if (handle->write_session == 0)
+    {
+        OM_uint32 maj, min;
+        gss_buffer_set_t buffer_set = GSS_C_NO_BUFFER_SET;
+
+        if (handle->write_key.value == NULL)
+        {
+            maj = gss_inquire_sec_context_by_oid(
+                    &min,
+                    handle->context,
+                    gss_ext_aes128_outgoing_key_oid,
+                    &buffer_set);
+            if (maj == GSS_S_COMPLETE && 
+                buffer_set != GSS_C_NO_BUFFER_SET &&
+                buffer_set->count == 1)
+            {
+                handle->write_key.length = 
+                        buffer_set->elements[0].length;
+                handle->write_key.value =
+                        malloc(buffer_set->elements[0].length);
+                memcpy(handle->write_key.value,
+                        buffer_set->elements[0].value,
+                        buffer_set->elements[0].length);
+            }
+            gss_release_buffer_set(&min, &buffer_set);
+        }
+
+        if (handle->write_iv.value == NULL)
+        {
+            maj = gss_inquire_sec_context_by_oid(
+                    &min,
+                    handle->context,
+                    gss_ext_aes128_outgoing_iv_oid,
+                    &buffer_set);
+            if (maj == GSS_S_COMPLETE && 
+                buffer_set != GSS_C_NO_BUFFER_SET &&
+                buffer_set->count == 1)
+            {
+                handle->write_iv.length = 
+                        buffer_set->elements[0].length;
+                handle->write_iv.value =
+                        malloc(buffer_set->elements[0].length);
+                memcpy(handle->write_iv.value,
+                        buffer_set->elements[0].value,
+                        buffer_set->elements[0].length);
+            }
+            gss_release_buffer_set(&min, &buffer_set);
+        }
+
+        if (handle->write_key.value && handle->write_iv.value)
+        {
+            handle->write_session = globus_l_xio_gsi_create_session(
+                            &handle->write_key,
+                            &handle->write_iv,
+                            handle->ifname,
+                            handle->attr->init
+                                ? &handle->initname : &handle->acceptname,
+                            handle->attr->init
+                                ?  handle->initnamelen : handle->acceptnamelen,
+                            handle->attr->init
+                                ? &handle->acceptname : &handle->initname,
+                            handle->attr->init
+                                ?  handle->acceptnamelen : handle->initnamelen,
+                            handle->connection_id);
+        }
+    }
+
+    if (handle->read_session == 0)
+    {
+        OM_uint32 maj, min;
+        gss_buffer_set_t buffer_set = GSS_C_NO_BUFFER_SET;
+
+        if (handle->read_key.value == NULL)
+        {
+            maj = gss_inquire_sec_context_by_oid(
+                    &min,
+                    handle->context,
+                    gss_ext_aes128_incoming_key_oid,
+                    &buffer_set);
+            if (maj == GSS_S_COMPLETE && 
+                buffer_set != GSS_C_NO_BUFFER_SET &&
+                buffer_set->count == 1)
+            {
+                handle->read_key.length = 
+                        buffer_set->elements[0].length;
+                handle->read_key.value =
+                        malloc(buffer_set->elements[0].length);
+                memcpy(handle->read_key.value,
+                        buffer_set->elements[0].value,
+                        buffer_set->elements[0].length);
+            }
+            gss_release_buffer_set(&min, &buffer_set);
+        }
+
+        if (handle->read_iv.value == NULL)
+        {
+            maj = gss_inquire_sec_context_by_oid(
+                    &min,
+                    handle->context,
+                    gss_ext_aes128_incoming_iv_oid,
+                    &buffer_set);
+            if (maj == GSS_S_COMPLETE && 
+                buffer_set != GSS_C_NO_BUFFER_SET &&
+                buffer_set->count == 1)
+            {
+                handle->read_iv.length = 
+                        buffer_set->elements[0].length;
+                handle->read_iv.value =
+                        malloc(buffer_set->elements[0].length);
+                memcpy(handle->read_iv.value,
+                        buffer_set->elements[0].value,
+                        buffer_set->elements[0].length);
+            }
+            gss_release_buffer_set(&min, &buffer_set);
+        }
+
+        if (handle->read_key.value && handle->read_iv.value)
+        {
+            handle->read_session = globus_l_xio_gsi_create_session(
+                            &handle->read_key,
+                            &handle->read_iv,
+                            handle->ifname,
+                            (!handle->attr->init)
+                                ? &handle->initname : &handle->acceptname,
+                            (!handle->attr->init)
+                                ?  handle->initnamelen : handle->acceptnamelen,
+                            (!handle->attr->init)
+                                ? &handle->acceptname : &handle->initname,
+                            (!handle->attr->init)
+                                ?  handle->acceptnamelen : handle->initnamelen,
+                            handle->connection_id);
         }
     }
 }
+/* globus_l_xio_gsi_create_aes128_ctr_session() */
+
+static
+int
+globus_l_xio_gsi_create_session(
+    gss_buffer_t                key,
+    gss_buffer_t                iv,
+    char *                      iface,
+    struct sockaddr *           srcname,
+    socklen_t                   srcnamelen,
+    struct sockaddr *           dstname,
+    socklen_t                   dstnamelen,
+    int                         connection_id)
+{
+    pid_t                       pid;
+    int                         id;
+    char                        idstring[12];
+    char                        srcip[16];
+    char                        dstip[16];
+    char                        sport[6];
+    char                        dport[6];
+    char                        keyfilename[] = "/tmp/key.XXXXXX";
+    char                        ivfilename[] = "/tmp/iv.XXXXXX";
+    int                         keyfd;
+    int                         ivfd;
+    char *                      isconfig_path = getenv("ISCONFIG_PATH");
+
+    /* Use connection count here to distinguish multiple sessions per handle */
+    globus_mutex_lock(&connection_mutex);
+    id = ((getpid() & 0xffff) << 16) |
+         ((connection_id & 0xff) << 8) |
+         ++connection_count;
+    globus_mutex_unlock(&connection_mutex);
+
+    sprintf(idstring, "%d", id);
+    globus_libc_getnameinfo((globus_sockaddr_t *) srcname,
+                            srcip, sizeof(srcip),
+                            sport, sizeof(sport),
+                            NI_NUMERICHOST|NI_NUMERICSERV);
+    globus_libc_getnameinfo((globus_sockaddr_t *) dstname,
+                            dstip, sizeof(dstip),
+                            dport, sizeof(dport),
+                            NI_NUMERICHOST|NI_NUMERICSERV);
+    keyfd = mkstemp(keyfilename);
+    write(keyfd, key->value, key->length);
+    close(keyfd);
+
+    ivfd = mkstemp(ivfilename);
+    write(ivfd, iv->value, iv->length);
+    close(ivfd);
+
+    pid = fork();
+
+    if (pid < 0)
+    {
+        return 0;
+    }
+    else if (pid == 0)
+    {
+        /* Child */
+        char * args[] = { isconfig_path, iface, "--id", idstring,
+                          "--src", srcip, "--dst", dstip,
+                          "--sport", sport, "--dport", dport,
+                          "--key", keyfilename, 
+                          "--iv", ivfilename, NULL};
+
+        execv(args[0], args);
+        _exit(-1);
+    }
+    else
+    {
+        /* Parent */
+        waitpid(pid, NULL, 0);
+
+        remove(keyfilename);
+        remove(ivfilename);
+    }
+
+    return id;
+}
+/* globus_l_xio_gsi_create_session() */
+
+static
+void
+globus_l_xio_gsi_destroy_session(
+    char *                      iface,
+    int                         session)
+{
+    pid_t                       pid;
+    char                        idstring[12];
+    char *                      isconfig_path = getenv("ISCONFIG_PATH");
+
+    if (session == 0)
+    {
+        return;
+    }
+    sprintf(idstring, "%d", session);
+
+    pid = fork();
+
+    if (pid < 0)
+    {
+        return;
+    }
+    else if (pid == 0)
+    {
+        char * args[] = { isconfig_path, iface, "-d", "--id", idstring, NULL };
+
+        execv(args[0], args);
+        _exit(-1);
+    }
+    else
+    {
+        waitpid(pid, NULL, 0);
+    }
+}
+/* globus_l_xio_gsi_destroy_session() */
+
+static
+inline
+size_t
+globus_l_xio_token_length(
+    const unsigned char *               token)
+{
+    return (3 + (token[3] << 8) + token[4]);
+}
+/* globus_l_xio_token_length() */
+
+static
+void
+globus_l_xio_extract_finish_record(
+    gss_buffer_t                        token,
+    gss_buffer_t                        finish_token)
+{
+    const unsigned char                 change_cipher_spec_token[] =
+    { SSL3_RT_CHANGE_CIPHER_SPEC,
+      SSL3_VERSION_MAJOR, SSL3_VERSION_MINOR, 
+      0x00, 0x01, 0x01
+    };
+    unsigned char *                     ssl_token_ptr;
+    size_t                              i;
+    size_t                              token_length;
+
+    i = 0;
+    ssl_token_ptr = token->value;
+
+    for (i = 0; i < token->length; i += token_length)
+    {
+        unsigned char * this_token = ssl_token_ptr + i;
+
+        token_length = 5 + ((this_token[3] << 8) | this_token[4]);
+
+        if (!memcmp(change_cipher_spec_token,
+                    this_token,
+                    sizeof(change_cipher_spec_token)))
+        {
+            finish_token->length = token->length - (i + token_length);
+            finish_token->value = malloc(finish_token->length);
+
+            memcpy(finish_token->value, this_token + token_length,
+                    finish_token->length);
+            token->length -= finish_token->length;
+            return;
+        }
+    }
+}
+/* globus_l_xio_extract_finish_record() */

@@ -156,6 +156,7 @@ typedef struct gss_ctx_id_desc_struct{
     int                                 locally_initiated;
     gss_delegation_state_t              delegation_state;
     gss_OID_set                         extension_oids;
+    globus_bool_t                       use_hardware_crypto;
 } gss_ctx_id_desc;
 
 extern

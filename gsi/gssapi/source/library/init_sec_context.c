@@ -59,7 +59,6 @@ GSS_CALLCONV gss_init_sec_context(
     OM_uint32                           local_minor_status;
     OM_uint32                           local_major_status;
     globus_result_t                     local_result;
-    int                                 channel_fd;
     int                                 rc;
     char                                cbuf[1];
     globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -124,23 +123,6 @@ GSS_CALLCONV gss_init_sec_context(
         goto error_exit;
     }
 
-    if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
-    {
-        if (input_chan_bindings->initiator_addrtype != GSS_C_AF_INET ||
-            input_chan_bindings->acceptor_addrtype != GSS_C_AF_INET)
-        {
-            major_status = GSS_S_BAD_BINDINGS;
-            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                (_GGSL("Unsupported channel bindings")));
-            goto error_exit;
-        }
-        channel_fd = * (int *) input_chan_bindings->application_data.value;
-
-        globus_thread_setspecific(globus_i_gsi_gssapi_aes_fd_key, &channel_fd);
-    }
-    
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
@@ -176,9 +158,13 @@ GSS_CALLCONV gss_init_sec_context(
         {
             *ret_flags = 0 ;
         }
+        globus_thread_setspecific(globus_i_gsi_gssapi_hw_aes_key,
+                                  (void *) context->use_hardware_crypto);
     }
     else
     {
+        globus_thread_setspecific(globus_i_gsi_gssapi_hw_aes_key,
+                                  (void *) context->use_hardware_crypto);
         /* first time there is no input token, but after that
          * there will always be one
          */
@@ -283,13 +269,12 @@ GSS_CALLCONV gss_init_sec_context(
                 char *                  expected_name;
                 char *                  actual_name;
                     
-                if(g_OID_equal(((gss_name_desc*)  target_name)->name_oid,
+                if(g_OID_equal(((const gss_name_desc*)  target_name)->name_oid,
                                GSS_C_NT_HOSTBASED_SERVICE))
                 {
-                    expected_name = globus_i_gsi_gssapi_get_hostname(
-                        (gss_name_desc*)  target_name);
-                    actual_name = globus_i_gsi_gssapi_get_hostname(
-                        (gss_name_desc*)
+                    expected_name = (char *) globus_i_gsi_gssapi_get_hostname(
+                        target_name);
+                    actual_name = (char *) globus_i_gsi_gssapi_get_hostname(
                         context->peer_cred_handle->globusid);
                     if(actual_name == NULL)
                     {
@@ -531,7 +516,7 @@ GSS_CALLCONV gss_init_sec_context(
     *context_handle_P = (gss_ctx_id_t) context;
  
  exit:
-    globus_thread_setspecific(globus_i_gsi_gssapi_aes_fd_key, NULL);
+    globus_thread_setspecific(globus_i_gsi_gssapi_hw_aes_key, NULL);
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
