@@ -74,8 +74,8 @@ push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/no-such-bin/s
 # causing the client to receive a FAILED notification.
 # In the 2nd case, the credential is a full proxy, so the job is not canceled
 # and the job terminates normally
-push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/bin/sh)(arguments = -c \"eval \"\"\$GLOBUS_LOCATION/bin/grid-proxy-info -type | grep limited && \$GLOBUS_LOCATION/bin/globusrun -k \$GLOBUS_GRAM_JOB_CONTACT; sleep 30 \"\"\")(environment = (GLOBUS_LOCATION \$(GLOBUS_LOCATION)) (PATH \"/bin:/usr/bin\")$x509_certdir_string) (library_path = \$(GLOBUS_LOCATION)/lib)', 8);");
-push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/bin/sh)(arguments = -c \"eval \"\"\$GLOBUS_LOCATION/bin/grid-proxy-info -type | grep limited && \$GLOBUS_LOCATION/bin/globusrun -k \$GLOBUS_GRAM_JOB_CONTACT; sleep 30\"\"\")(environment = (GLOBUS_LOCATION \$(GLOBUS_LOCATION))(PATH \"/bin:/usr/bin\") $x509_certdir_string) (library_path = \$(GLOBUS_LOCATION)/lib)', 0, '-f');");
+push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/bin/sh)(arguments = -c \"eval \"\"\$GLOBUS_LOCATION/bin/globusrun -k \$GLOBUS_GRAM_JOB_CONTACT; sleep 30 \"\"\")(environment = (GLOBUS_LOCATION \$(GLOBUS_LOCATION)) (PATH \"/bin:/usr/bin\")$x509_certdir_string) (library_path = \$(GLOBUS_LOCATION)/lib)', 8);");
+push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/bin/sh)(arguments = -c \"eval \"\"\$GLOBUS_LOCATION/bin/globusrun -k \$GLOBUS_GRAM_JOB_CONTACT; sleep 30\"\"\")(environment = (GLOBUS_LOCATION \$(GLOBUS_LOCATION))(PATH \"/bin:/usr/bin\") $x509_certdir_string) (library_path = \$(GLOBUS_LOCATION)/lib)', 0, '-f');");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
