@@ -56,6 +56,7 @@
 #   3. (pending) Store a credential (CoG myproxy put).
 
 use IPC::Open3;
+use Socket;
 
 #
 # handle cmdline options
@@ -184,7 +185,7 @@ umask(0077);
 #
 if ($startserver) {
     $ENV{'MYPROXY_SERVER'} = "localhost";
-    $ENV{'MYPROXY_SERVER_PORT'} = 49152 + ($< % 16384);
+    $ENV{'MYPROXY_SERVER_PORT'} = openport(49152 + ($< % 16384));
     $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
     chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
     die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
@@ -1700,4 +1701,30 @@ sub dodbperftest {
 	print $dbsize, " myproxy-destroys in ";
 	print $endtime-$starttime, " seconds.\n";
     }
+}
+
+sub openport {
+  $sockaddr = 'S n a4 x8';
+  $host = "127.0.0.1";
+  local($port) = @_;
+  @list = getprotobyname('tcp');
+  $proto = $list[2];
+  @list = gethostbyaddr(inet_aton($host), AF_INET);
+  $addr = $list[4];
+  while ($port < 65535) {
+    print "trying port $port\n";
+    $destaddr = pack($sockaddr, AF_INET, $port, $addr);
+    socket(S, AF_INET, SOCK_STREAM, $proto) || die $!;
+    print "created socket\n";
+    connect(S, $destaddr);
+    print "connect: $!\n";
+    if ($! =~ /Connection refused/) {
+      print "found port $port\n";
+      return $port;
+    }
+    print $!, "\n";
+    close(S);
+    $port++;
+  }
+  die "failed to find available port";
 }
