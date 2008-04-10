@@ -47,6 +47,7 @@
 #  27. Restart slave server and destroy cred (myproxy-destroy) 
 
 use IPC::Open3;
+use Socket;
 
 #
 # handle cmdline options
@@ -85,11 +86,9 @@ die "grid-proxy-info failed, stopped"
     if (!defined($timeleft) || $timeleft eq "");
 die "proxy expired, stopped" if ($timeleft < 60);
 die "proxy lifetime too short, stopped" if ($timeleft < 60*60*3);
-$cert_subject = `$grid_proxy_info -subject`;
-die "grid-proxy-info -subject failed, stopped"
+chomp($cert_subject = `$grid_proxy_info -identity`);
+die "grid-proxy-info -identity failed, stopped"
     if (!defined($cert_subject) || $cert_subject eq "");
-$cert_subject = (split(/\/CN=proxy|\/CN=limited proxy|\/CN=\d+/,
-		       $cert_subject))[0];
 
 #
 # check for the commands I want to run
@@ -123,10 +122,10 @@ $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 
-my $mport   = 49152 + ($< % 16380);
-my $s1port  = $mport + 1;
-my $s2port  = $mport + 2;
-my $s3port  = $mport + 3;
+my $mport   = openport(49152 + ($< % 16380));
+my $s1port  = openport($mport + 1);
+my $s2port  = openport($mport + 2);
+my $s3port  = openport($mport + 3);
 
 my $masterpid     = undef;
 my $masterdir     = undef;
@@ -1051,3 +1050,23 @@ sub docleanup {
   }
 }
 
+sub openport {
+  $sockaddr = 'S n a4 x8';
+  $host = "127.0.0.1";
+  local($port) = @_;
+  @list = getprotobyname('tcp');
+  $proto = $list[2];
+  @list = gethostbyaddr(inet_aton($host), AF_INET);
+  $addr = $list[4];
+  while ($port < 65535) {
+    $destaddr = pack($sockaddr, AF_INET, $port, $addr);
+    socket(S, AF_INET, SOCK_STREAM, $proto) || die $!;
+    connect(S, $destaddr);
+    if ($! =~ /Connection refused/) {
+      return $port;
+    }
+    close(S);
+    $port++;
+  }
+  die "failed to find available port";
+}
