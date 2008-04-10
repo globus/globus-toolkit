@@ -1712,17 +1712,12 @@ sub openport {
   @list = gethostbyaddr(inet_aton($host), AF_INET);
   $addr = $list[4];
   while ($port < 65535) {
-    print "trying port $port\n";
     $destaddr = pack($sockaddr, AF_INET, $port, $addr);
     socket(S, AF_INET, SOCK_STREAM, $proto) || die $!;
-    print "created socket\n";
     connect(S, $destaddr);
-    print "connect: $!\n";
     if ($! =~ /Connection refused/) {
-      print "found port $port\n";
       return $port;
     }
-    print $!, "\n";
     close(S);
     $port++;
   }
