@@ -131,6 +131,23 @@ ssh_aes_ctr_init(EVP_CIPHER_CTX *ctx, const u_char *key, const u_char *iv,
             memcpy(c->key, key, AES_BLOCK_SIZE);
         }
 
+        if (c->debug)
+        {
+            int i;
+
+            fprintf(stderr, "AES128CTR: Key:\n");
+            for (i = 0; i < EVP_CIPHER_CTX_key_length(ctx); i++)
+            {
+                fprintf(stderr, "0x%02x%c", key[i], (i%8 == 7) ? '\n' : ' ');
+            }
+
+            fprintf(stderr, "AES128CTR: IV:\n");
+            for (i = 0; i < EVP_CIPHER_CTX_key_length(ctx); i++)
+            {
+                fprintf(stderr, "0x%02x%c", iv[i], (i%8 == 7) ? '\n' : ' ');
+            }
+        }
+
 	return (1);
 }
 
