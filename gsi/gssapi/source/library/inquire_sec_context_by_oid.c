@@ -129,12 +129,12 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto unlock_exit;
     }
 
     if(cert_count == 0)
     {
-        goto exit;
+        goto unlock_exit;
     }
     
     major_status = gss_create_empty_buffer_set(&local_minor_status, data_set);
@@ -144,7 +144,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
-        goto exit;
+        goto unlock_exit;
     }
     
     local_result = globus_gsi_callback_get_cert_chain(
@@ -157,7 +157,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         major_status = GSS_S_FAILURE;
         cert_chain = NULL;
-        goto exit;
+        goto unlock_exit;
     }
 
     if (g_OID_equal(desired_object, gss_ext_aes128_outgoing_key_oid))
@@ -173,7 +173,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
             /* outgoing key */
@@ -191,7 +191,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
         }
@@ -209,7 +209,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
             c = EVP_CIPHER_CTX_get_app_data(write_context);
@@ -225,7 +225,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
         }
@@ -243,7 +243,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
             /* incoming key */
@@ -261,7 +261,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
         }
@@ -279,7 +279,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
             c = EVP_CIPHER_CTX_get_app_data(read_context);
@@ -295,7 +295,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 gss_release_buffer_set(minor_status, data_set);
                 *data_set = NULL;
 
-                goto exit;
+                goto unlock_exit;
             }
 
         }
@@ -316,7 +316,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
                 (_GGSL("Couldn't create ASN1 object")));
             major_status = GSS_S_FAILURE;
-            goto exit;
+            goto unlock_exit;
         }
 
         asn1_desired_obj->length = ((gss_OID_desc *)desired_object)->length;
@@ -346,7 +346,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                         (_GGSL("Couldn't get extension at index %d "
                          "from cert in credential."), found_index));
                     major_status = GSS_S_FAILURE;
-                    goto exit;
+                    goto unlock_exit;
                 }
 
                 asn1_oct_string = X509_EXTENSION_get_data(extension);
@@ -358,7 +358,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                         (_GGSL("Couldn't get cert extension in the form of an "
                          "ASN1 octet string.")));
                     major_status = GSS_S_FAILURE;
-                    goto exit;
+                    goto unlock_exit;
                 }
 
                 asn1_oct_string = ASN1_OCTET_STRING_dup(asn1_oct_string);
@@ -370,7 +370,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
                         (_GGSL("Failed to make copy of extension data")));
                     major_status = GSS_S_FAILURE;
-                    goto exit;
+                    goto unlock_exit;
                 }
 
                 data_set_buffer.value = asn1_oct_string->data;
@@ -388,7 +388,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                         minor_status, local_minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
-                    goto exit;
+                    goto unlock_exit;
                 }
             }
         } 
@@ -408,7 +408,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
                     (_GGSL("Failed to serialize certificate")));
                 major_status = GSS_S_FAILURE;
-                goto exit;                
+                goto unlock_exit;                
             }
             
             tmp_ptr = realloc(data_set_buffer.value,
@@ -418,7 +418,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             {
                 GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
                 major_status = GSS_S_FAILURE;
-                goto exit;                
+                goto unlock_exit;                
             }
 
             data_set_buffer.value = tmp_ptr;
@@ -431,7 +431,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
                     (_GGSL("Failed to serialize certificate")));
                 major_status = GSS_S_FAILURE;
-                goto exit;                
+                goto unlock_exit;                
             }
 
             major_status = gss_add_buffer_set_member(
@@ -443,7 +443,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                     minor_status, local_minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
-                goto exit;
+                goto unlock_exit;
             }
         }
         
@@ -452,10 +452,11 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             free(data_set_buffer.value);
         }
     }
- exit:
-
+unlock_exit:
     /* unlock the context mutex */
     globus_mutex_unlock(&context->mutex);
+
+ exit:
 
     if(cert_chain != NULL)
     {
