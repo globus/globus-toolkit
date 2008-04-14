@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_common_test">
 
-    <Aging_Version Age="0" Major="2" Minor="3"/>
+    <Aging_Version Age="0" Major="2" Minor="4"/>
     <Description>Common Test</Description>
     <Functional_Group>Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -21,7 +21,7 @@
 
             <Dependency Name="globus_core">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

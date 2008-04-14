@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_simple_ca_setup" >
 
-  <Aging_Version Age="0" Major="0" Minor="29" />
+  <Aging_Version Age="0" Major="0" Minor="30" />
   <Description>Simple CA Setup Package</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="beta" />
@@ -15,7 +15,7 @@
     <Source_Dependencies Type="pgm_runtime">
            <Dependency Name="globus_core" Package="pgm"> 
                 <Version>
-                    <Simple_Version Major="4"/>
+                    <Simple_Version Major="5"/>
                 </Version> 
             </Dependency>
             <Dependency Name="globus_common" Package="pgm"> 
@@ -33,7 +33,7 @@
     <Source_Dependencies Type="compile">
             <Dependency Name="globus_core"> 
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="5"/>
                 </Version> 
             </Dependency>
     </Source_Dependencies>
