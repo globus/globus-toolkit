@@ -68,13 +68,29 @@ ssh_aes_ctr(EVP_CIPHER_CTX *ctx, u_char *dest, const u_char *src,
         {
             if (c->debug)
             {
+                int i;
                 fprintf(stderr,
-                        "ssh_aes_ctr software crypto: [ctx = %p]\n", ctx);
+                        "ssh_aes_ctr software crypto:\nCrypting with key:\n    ");
+                for (i = 0; i < AES_BLOCK_SIZE; i++) {
+                        fprintf(stderr, "0x%02x%s", c->key[i], i == 7 ? "\n    " : " ");
+                }
+                fprintf(stderr, "\n");
             }
             while ((len--) > 0) {
                     if (n == 0) {
                             AES_encrypt(c->aes_counter, buf, &c->aes_ctx);
                             ssh_ctr_inc(c->aes_counter, AES_BLOCK_SIZE);
+                            if (c->debug) {
+                                    int i;
+                                    fprintf(stderr, "Incrementing counter\n    ");
+
+                                    for (i = 0; i < AES_BLOCK_SIZE; i++) {
+                                            fprintf(stderr, "0x%02x%s",
+                                                    (unsigned int) c->aes_counter[i],
+                                                    i == 7 ? "\n    " : " ");
+                                    }
+                                    fprintf(stderr, "\n");
+                            }
                     }
                     *(dest++) = *(src++) ^ buf[n];
                     n = (n + 1) % AES_BLOCK_SIZE;
