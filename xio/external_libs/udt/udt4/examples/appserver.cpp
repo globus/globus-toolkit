@@ -3,6 +3,7 @@
    #include <cstdlib>
    #include <cstring>
    #include <netdb.h>
+   #include <pthread.h>
 #else
    #include <winsock2.h>
    #include <ws2tcpip.h>
