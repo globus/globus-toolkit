@@ -86,7 +86,7 @@ struct option long_options[] =
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhs:p:t:c:y:C:l:vVndr:R:Z:xXaAk:K:SL";
+static char short_options[] = "uhs:p:t:c:y:C:l:vVndr:R:Z:xXaAk:K:SLm:";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";

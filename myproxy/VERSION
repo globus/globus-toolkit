@@ -14,6 +14,7 @@ v4.3 XX Xxx 2008
     common case when an incorrect passphrase is given.  also stop
     appending "invalid pass phrase" to the more specific error
     message from PAM or OpenSSL.
+  - fix -m command-line option for myproxy-init and myproxy-logon
 
 v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init
