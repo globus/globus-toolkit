@@ -522,7 +522,11 @@ grid_proxy_init(int seconds,
     proxy_mode = getenv("GT_PROXY_MODE");
     if (proxy_mode) {
         if (strcmp(proxy_mode, "old") == 0) {
-            proxyopt = " -old";
+            if (voms) {
+                proxyopt = " -proxyver=2";
+            } else {
+                proxyopt = " -old";
+            }
         } else if (strcmp(proxy_mode, "rfc") == 0) {
             proxyopt = " -rfc";
         }
