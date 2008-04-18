@@ -799,7 +799,8 @@ globus_gsi_cert_utils_get_base_name(
         }
 
         if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type) &&
-           GLOBUS_GSI_CERT_UTILS_IS_IMPERSONATION_PROXY(cert_type))
+           (GLOBUS_GSI_CERT_UTILS_IS_IMPERSONATION_PROXY(cert_type) ||
+           GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type)) )
         {
             depth++;
         }
