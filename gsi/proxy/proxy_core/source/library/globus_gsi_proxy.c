@@ -1058,6 +1058,7 @@ globus_l_gsi_proxy_sign_key(
     globus_result_t                     result = GLOBUS_SUCCESS;
     ASN1_INTEGER *                      serial_number = NULL;
     globus_gsi_cert_utils_cert_type_t   proxy_type = 0;
+    globus_gsi_cert_utils_cert_type_t   old_type = 0;
     
     static char *                       _function_name_ =
         "globus_l_gsi_proxy_sign_key";
@@ -1128,6 +1129,27 @@ globus_l_gsi_proxy_sign_key(
     if(result != GLOBUS_SUCCESS)
     {
         goto done;
+    }
+
+    if ((handle->type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK) == 0)
+    {
+        old_type = handle->type;
+
+        /* Refined type by adding format from issuer cert---
+         * update proxy handle to include correct format-related policy info
+         */
+        result = globus_gsi_proxy_handle_set_type(
+                handle,
+                proxy_type);
+        if (result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509,
+                (_PCSL("Couldn't set proxy type")));
+            goto done;
+        }
+        handle->type = old_type;
     }
 
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(proxy_type))
@@ -1556,6 +1578,7 @@ globus_l_gsi_proxy_sign_key(
     if(result != GLOBUS_SUCCESS && *signed_cert)
     {
         X509_free(*signed_cert); 
+        *signed_cert = NULL;
     }
     
     if(pci_NID != NID_undef)
