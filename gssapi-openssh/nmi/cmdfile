@@ -13,6 +13,6 @@ platforms = ia64_sles_9, ppc_aix_5.2, ppc_macos_10.4, sun4u_sol_5.9, x86_64_rhas
 #prereqs = zlib-1.2.3
 prereqs_ppc_macos_10.4 = curl-7.15.1, openssl-0.9.7-shared
 prereqs_sun4u_sol_5.9 = curl-7.15.1, tar-1.14, patch-2.5.4, m4-1.4.1, flex-2.5.4a, make-3.80, byacc-1.9, gzip-1.2.4, gcc-3.4.3, coreutils-5.2.1, perl-5.8.5, openssl-0.9.7-shared
-prereqs_ppc_aix_5.2 = tar-1.14, make-3.80, flex-2.5.4a, perl-5.8.5, bison-1.25, vac-6, vacpp-6, openssl-0.9.8e-shared
+prereqs_ppc_aix_5.2 = tar-1.14, make-3.80, flex-2.5.4a, perl-5.8.5, bison-1.25, vac-6, vacpp-6, openssl-0.9.7-shared
 prereqs_x86_fc_4 = openssl-0.9.8e-shared
 notify = jbasney@ncsa.uiuc.edu
