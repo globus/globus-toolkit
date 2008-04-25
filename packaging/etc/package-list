@@ -360,8 +360,8 @@ globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema	tar
 
 myproxy		myproxy	gpt	null	HEAD
 
-gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_4_2
-gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_4_2
+gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null GPT-branch
+gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null HEAD
 
 gridshib_common	gridshib/gt/common/java/source tar null gridshib_gt_0_6_0_branch
 gridshib_schema gridshib/gt/common/schema tar null gridshib_gt_0_6_0_branch
