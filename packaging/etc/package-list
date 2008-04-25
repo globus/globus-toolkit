@@ -358,7 +358,7 @@ globus_c_wsrf_index_bindings                ws-mds/index/c/bindings  gpt
 globus_wsrf_mds_gkrellm                     ws-mds/gkrellm/source	tar
 globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema	tar
 
-myproxy		myproxy	gpt	null	MYPROXY_4_2
+myproxy		myproxy	gpt	null	HEAD
 
 gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_4_2
 gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_4_2
