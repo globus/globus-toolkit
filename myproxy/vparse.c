@@ -148,11 +148,8 @@ tokenize_line(char *line,
         token_end = strchr(pline, closing_char);
 	    while (token_end &&
                strchr(options->escaping_chars, *(token_end - 1)) != NULL) {
-            pline = token_end+1;
-            if (*pline == NUL) {
-                token_end = NULL;
-            } else {
-                token_end = strchr(pline, closing_char);
+            if (++token_end) {
+                token_end = strchr(token_end, closing_char);
             }
         }
 	}
