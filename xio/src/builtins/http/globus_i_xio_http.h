@@ -82,6 +82,10 @@ typedef struct
      */
     globus_xio_operation_t              operation;
     /**
+     * Driver handle associated with the operation
+     */
+    globus_xio_driver_handle_t          driver_handle;
+    /**
      * Number of bytes copied into user buffers already (for residue handling
      * in reads).
      */

@@ -708,7 +708,7 @@ globus_l_xio_http_client_read_response_callback(
                  * has been registered should be cancelled.
                  */
                 result = globus_xio_driver_operation_cancel(
-                        http_handle->handle,
+                        http_handle->write_operation.driver_handle,
                         http_handle->write_operation.operation);
                 globus_assert(result == GLOBUS_SUCCESS);
             }
@@ -796,6 +796,7 @@ globus_l_xio_http_client_read_response_callback(
             http_handle->read_operation.iov = NULL;
             http_handle->read_operation.iovcnt = 0;
             http_handle->read_operation.operation = NULL;
+            http_handle->read_operation.driver_handle = NULL;
             http_handle->read_operation.nbytes = 0;
 
             finish_read = GLOBUS_TRUE;
@@ -864,6 +865,7 @@ error_exit:
         http_handle->read_operation.iov = NULL;
         http_handle->read_operation.iovcnt = 0;
         http_handle->read_operation.operation = NULL;
+        http_handle->read_operation.driver_handle = NULL;
         http_handle->read_operation.nbytes = 0;
 
         finish_read = GLOBUS_TRUE;

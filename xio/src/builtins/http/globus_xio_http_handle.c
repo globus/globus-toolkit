@@ -113,10 +113,12 @@ globus_i_xio_http_handle_init(
     http_handle->read_operation.iov = NULL;
     http_handle->read_operation.iovcnt = 0;
     http_handle->read_operation.operation = NULL;
+    http_handle->read_operation.driver_handle = NULL;
     http_handle->read_operation.nbytes = 0;
     http_handle->write_operation.iov = NULL;
     http_handle->write_operation.iovcnt = 0;
     http_handle->write_operation.operation = NULL;
+    http_handle->write_operation.driver_handle = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->user_close = GLOBUS_FALSE;
     http_handle->read_response = GLOBUS_FALSE;
@@ -195,10 +197,12 @@ globus_i_xio_http_handle_reinit(
     http_handle->read_operation.iov = NULL;
     http_handle->read_operation.iovcnt = 0;
     http_handle->read_operation.operation = NULL;
+    http_handle->read_operation.driver_handle = NULL;
     http_handle->read_operation.nbytes = 0;
     http_handle->write_operation.iov = NULL;
     http_handle->write_operation.iovcnt = 0;
     http_handle->write_operation.operation = NULL;
+    http_handle->write_operation.driver_handle = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->user_close = GLOBUS_FALSE;
     http_handle->read_response = GLOBUS_FALSE;
@@ -516,6 +520,7 @@ globus_l_xio_http_write_eof_callback(
     globus_xio_driver_operation_destroy(op);
 
     http_handle->write_operation.operation = NULL;
+    http_handle->write_operation.driver_handle = NULL;
 
     if (http_handle->close_operation != NULL)
     {
