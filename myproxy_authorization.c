@@ -406,7 +406,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
       }
    }
    
-   if (config->pubcookie_cert) {
+   if (config && config->pubcookie_cert) {
        myproxy_debug("attempting pubcookie verification");
        if (!cred_passphrase_match) {
 	   cred_passphrase_match =

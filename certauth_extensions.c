@@ -236,6 +236,14 @@ tokenize_to_x509_name( char * dn, X509_NAME * name ) {
   while ( tok != NULL ) {
 
     subtok = strchr( tok, '=' );
+    if (subtok == NULL) {
+      verror_put_string("Error adding '%s' to x509 name", tok);
+      verror_put_string("Invalid field name");
+      ssl_error_to_verror();
+      return_value = 1;
+      goto end;
+    }
+
     toksplit = subtok;
 
     subtok++;
@@ -520,8 +528,7 @@ generate_certificate( X509_REQ                 *request,
   int             return_value = 1;  
   int             not_after;
   int             lockfd = -1;
-  char          * userdn;
-  char          * certificate_issuer = NULL;
+  char          * userdn = NULL;
   char          * serial = NULL;
 
   X509           * issuer_cert = NULL;
@@ -811,8 +818,6 @@ generate_certificate( X509_REQ                 *request,
     free(userdn);
     userdn = NULL;
   }
-  if (certificate_issuer)
-    free(certificate_issuer);
   if (serial)
     free(serial);
   if (lockfd != -1) close(lockfd);

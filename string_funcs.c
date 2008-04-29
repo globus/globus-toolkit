@@ -223,7 +223,6 @@ copy_file(const char *source,
     do 
     {
         bytes_read = read(src_fd, buffer, sizeof(buffer)-1);
-	buffer[bytes_read]='\0';
 
         if (bytes_read == -1)
         {
@@ -232,6 +231,7 @@ copy_file(const char *source,
             goto error;
         }
 
+        buffer[bytes_read]='\0';
         if (bytes_read != 0)
         {
             if (write(dst_fd, buffer, bytes_read) == -1)

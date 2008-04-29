@@ -463,7 +463,7 @@ int makeproxy(const char certfile[], const char keyfile[],
  cleanup:
     if (certbuf) free(certbuf);
     if (keybuf) free(keybuf);
-    if (fd) close(fd);
+    if (fd >= 0) close(fd);
 
     return return_value;
 }

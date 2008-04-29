@@ -800,7 +800,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     }
     
     /* XXX request_passphrase is a static buffer. Why? */
-    strncpy(request->passphrase, buf, sizeof(request->passphrase));
+    strncpy(request->passphrase, buf, sizeof(request->passphrase)-1);
 
     /* new passphrase (for change passphrase only) */
     len = convert_message(data,
@@ -817,7 +817,8 @@ myproxy_deserialize_request(const char *data, const int datalen,
     	if (len == -2)
 		request->new_passphrase[0] = '\0';
 	else
-		strncpy (request->new_passphrase, buf, sizeof(request->new_passphrase));
+		strncpy (request->new_passphrase, buf,
+                 sizeof(request->new_passphrase)-1);
     
     /* lifetime */
     len = convert_message(data,

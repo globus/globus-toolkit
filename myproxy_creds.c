@@ -376,6 +376,10 @@ write_data_file(const struct myproxy_creds *creds,
     int data_file_open_flags = O_CREAT | O_EXCL | O_WRONLY;
     int return_code = -1;
 
+    if (data_file_path == NULL) {
+        goto error;
+    }
+
     /* Unlink the file if it exists so we are sure to create it
        with the correct mode. */
     unlink(data_file_path);
