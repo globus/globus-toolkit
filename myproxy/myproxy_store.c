@@ -506,9 +506,15 @@ makecertfile(const char   certfile[],
 
 
     /* Figure out how much memory we are going to need */
-    stat( certfile, &s );
+    if (stat( certfile, &s ) < 0) {
+        fprintf(stderr, "Failed to stat %s: %s\n", certfile, strerror(errno));
+        goto cleanup;
+    }
     bytes = s.st_size;
-    stat( keyfile, &s );
+    if (stat( keyfile, &s ) < 0) {
+        fprintf(stderr, "Failed to stat %s: %s\n", keyfile, strerror(errno));
+        goto cleanup;
+    }
     bytes += s.st_size;
 
     *credbuf = malloc( bytes + 1 );

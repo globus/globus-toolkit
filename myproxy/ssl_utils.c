@@ -1345,7 +1345,6 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 			  unsigned char			**output_buffer,
 			  int				*output_buffer_length)
 {
-    X509_REQ			*request = NULL;
     X509			*proxy_certificate = NULL;
     int				return_status = SSL_ERROR;
     BIO				*bio = NULL;
@@ -1518,11 +1517,6 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	BIO_free(bio);
     }
     
-    if (request != NULL)
-    {
-	X509_REQ_free(request);
-    }
-    
     if (proxy_certificate != NULL)
     {
 	X509_free(proxy_certificate);
@@ -1661,10 +1655,10 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
 	      goto error;
 	  }
       }
-      strncpy(path, user_cert, sizeof(path));
+      strncpy(path, user_cert, sizeof(path)-1);
       free(user_cert);
    } else {
-      strncpy(path, proxyfile, sizeof(path));
+      strncpy(path, proxyfile, sizeof(path)-1);
    }
 
    creds = ssl_credentials_new();

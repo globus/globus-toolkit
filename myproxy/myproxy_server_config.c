@@ -513,7 +513,7 @@ regex_compare(const char *regex,
 
 #ifdef HAVE_REGCOMP
     {
-	regex_t preg;
+        regex_t preg = { 0 };
 
 	if (regcomp(&preg, buf, REG_EXTENDED))
 	{

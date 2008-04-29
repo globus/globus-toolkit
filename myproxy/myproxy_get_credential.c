@@ -557,7 +557,7 @@ write_cert( char       *path,
     retval = 0;
 
 error:
-    if( fd )
+    if( fd >= 0 )
     {
       close( fd );
     }
@@ -621,7 +621,7 @@ write_key( char       *path,
     retval = 0;
 
 error:
-    if( fd )
+    if( fd >= 0)
     {
       close( fd );
     }

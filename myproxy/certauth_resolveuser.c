@@ -456,7 +456,7 @@ int user_dn_lookup( char * username, char ** dn,
 
   myproxy_debug("user_dn_lookup()");
 
-  if (strcmp(username, cached_username) == 0) {
+  if (username && strcmp(username, cached_username) == 0) {
       myproxy_debug("using cached value");
       *dn = strdup(cached_dn);
       goto end;

@@ -1502,7 +1502,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     int			return_value = GSI_SOCKET_ERROR;
     unsigned char	*output_buffer = NULL;
     int			output_buffer_len;
-    char		filename[L_tmpnam];
+    char		filename[L_tmpnam] = { 0 };
     int			fd = -1;
 
 
@@ -1560,10 +1560,9 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
     unsigned char             *input_buffer       = NULL;
     size_t                     input_buffer_length;
-    unsigned char             *output_buffer      = NULL;
     unsigned char             *fmsg;
     int                        i;
-    char                       filename[L_tmpnam];
+    char                       filename[L_tmpnam] = { 0 };
     char                      *certstart;
     int                        rval, 
                                fd                 = 0;
@@ -1656,11 +1655,6 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       GSI_SOCKET_free_token(input_buffer);
     }
 
-    if (output_buffer != NULL)
-    {
-      ssl_free_buffer(output_buffer);
-    }
-
     if (creds != NULL)
     {
       ssl_credentials_destroy(creds);
@@ -1671,7 +1665,7 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       ssl_proxy_restrictions_destroy(proxy_restrictions);
     }
 
-    if( fd )
+    if( fd >= 0)
     {
       close( fd );
     }
@@ -1690,7 +1684,6 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
 {
     int                        return_value       = GSI_SOCKET_ERROR;
     SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
-    unsigned char             *input_buffer       = NULL;
     unsigned char             *output_buffer      = NULL;
 
     if (self == NULL)
@@ -1716,11 +1709,6 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
     return_value = GSI_SOCKET_SUCCESS;
 
   error:
-    if (input_buffer != NULL)
-    {
-      GSI_SOCKET_free_token(input_buffer);
-    }
-
     if (output_buffer != NULL)
     {
       ssl_free_buffer(output_buffer);
@@ -1739,7 +1727,6 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
                      const char *source_credentials)
 {
     int                          return_value       = GSI_SOCKET_ERROR;
-    unsigned char               *input_buffer       = NULL;
     unsigned char               *output_buffer      = NULL;
     int                          output_buffer_length;
 
@@ -1776,11 +1763,6 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
     return_value = GSI_SOCKET_SUCCESS;
 
   error:
-    if (input_buffer != NULL)
-    {
-      GSI_SOCKET_free_token(input_buffer);
-    }
-
     if (output_buffer != NULL)
     {
       free(output_buffer);
