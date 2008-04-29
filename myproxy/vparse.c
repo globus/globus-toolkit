@@ -143,14 +143,18 @@ tokenize_line(char *line,
 	    /* Yes, skip over opening quote and look for closing quote */
 	    pline++;
 	    token_start = pline;
-	    
+
 	    /* Find unescaped closing character */
-	    do
-	    {
-		token_end = strchr(pline, closing_char);
-	    }
-	    while (pline &&
-		   strchr(options->escaping_chars, *(pline - 1)) != NULL);
+        token_end = strchr(pline, closing_char);
+	    while (token_end &&
+               strchr(options->escaping_chars, *(token_end - 1)) != NULL) {
+            pline = token_end+1;
+            if (*pline == NUL) {
+                token_end = NULL;
+            } else {
+                token_end = strchr(pline, closing_char);
+            }
+        }
 	}
 	else
 	{
