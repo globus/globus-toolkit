@@ -291,6 +291,11 @@ main(int argc, char *argv[])
 		close(2);
 	     }
 	     close(listenfd);
+         if (server_context->request_timeout == 0) {
+             alarm(MYPROXY_DEFAULT_TIMEOUT);
+         } else if (server_context->request_timeout > 0) {
+             alarm(server_context->request_timeout);
+         }
 	  }
 	  my_signal(SIGCHLD, SIG_DFL);
 	  if (handle_client(socket_attrs, server_context) < 0) {

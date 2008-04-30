@@ -430,6 +430,10 @@ line_parse_callback(void *context_arg,
         /* ignore. used by myproxy-replicate. */
     }
 
+    else if (strcmp(directive, "request_timeout") == 0) {
+	context->request_timeout = atoi(tokens[1]);
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);
