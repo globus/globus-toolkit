@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2007-08-20" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2008-04-30" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -251,6 +251,13 @@ certificates as if they were full proxy certificates.
 You can optionally specify the string to be prepended to every message
 written to the syslog.  If not specified, the name defaults to the the
 program name, i.e. myproxy-server.
+.TP
+.BI request_timeout " seconds"
+Specifies the maximum time a 
+.BR myproxy-server (8)
+child process should spend servicing a client request before aborting.
+By default, child processes will abort after 120 seconds.
+A negative value will disable the timeout.
 .PP
 The MyProxy server can be optionally configured for authentication
 based on Pluggable Authentication Modules (PAM) and/or

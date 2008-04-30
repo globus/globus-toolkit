@@ -61,6 +61,7 @@ typedef struct
   int check_multiple_credentials;   /* Check multiple creds for U/P match */
   char *syslog_ident;               /* Identity for logging to syslog */
   int limited_proxy;                /* Should we delegate a limited proxy? */
+  int request_timeout;              /* Timeout for child processes */
 } myproxy_server_context_t;
 
 typedef struct myproxy_server_peer_t {
