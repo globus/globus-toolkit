@@ -237,7 +237,7 @@ read_token(const int sock,
 	    *p_buffer = NULL;
 	    return -1;
 	}
-    } while (retval == 1);
+    } while (retval == 1 && tot_buffer_len < MAX_TOKEN_LEN);
     
 done:
     return tot_buffer_len;
