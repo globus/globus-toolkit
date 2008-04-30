@@ -200,6 +200,7 @@ globus_l_xio_http_reopen(
 
     http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
     http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+    http_handle->reopen_in_progress = GLOBUS_TRUE;
 
     result = globus_i_xio_http_client_write_request(op, http_handle);
 error_exit:
@@ -1566,6 +1567,7 @@ globus_i_xio_http_write_callback(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_i_xio_http_header_info_t *   headers;
+    GlobusXIOName(globus_i_xio_http_write_callback);
 
     if (http_handle->target_info.is_client)
     {
@@ -1616,6 +1618,14 @@ globus_i_xio_http_write_callback(
     http_handle->write_operation.driver_handle = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->write_operation.wait_for = 0;
+    if (result != GLOBUS_SUCCESS && http_handle->reopen_in_progress)
+    {
+        globus_object_t *               err;
+
+        err = globus_error_get(result);
+
+        result = GlobusXIOHttpErrorPersistentConnectionDropped(err);
+    }
 
     globus_mutex_unlock(&http_handle->mutex);
 

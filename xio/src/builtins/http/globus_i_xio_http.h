@@ -391,6 +391,12 @@ typedef struct globus_i_xio_http_handle_s
      * Cancellation info
      */
     globus_i_xio_http_cancellation_t *  cancellation;
+    /**
+     * Set to true if a connection is reused, so that we can
+     * return a "persistent connection" error if the server
+     * drops us
+     */
+    globus_bool_t                       reopen_in_progress;
 }
 globus_i_xio_http_handle_t;
 
@@ -790,6 +796,21 @@ GlobusXIODeclareModule(http);
 #define GlobusXIOHttpErrorEOF()                                             \
     globus_error_put(                                                       \
         GlobusXIOHttpErrorObjEOF())
+
+#define GlobusXIOHttpErrorPersistentConnectionDropped(cause) \
+    globus_error_put( \
+        GlobusXIOHTTPErrorObjPersistentConnectionDropped(cause))
+
+#define GlobusXIOHTTPErrorObjPersistentConnectionDropped(cause) \
+        globus_error_construct_error( \
+            GLOBUS_XIO_HTTP_MODULE, \
+            cause, \
+            GLOBUS_XIO_HTTP_ERROR_PERSISTENT_CONNECTION_DROPPED, \
+            __FILE__, \
+            _xio_name, \
+            __LINE__, \
+            "Persistent connection dropped")
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #endif /* GLOBUS_I_XIO_HTTP_H */

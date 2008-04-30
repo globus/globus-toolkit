@@ -625,6 +625,15 @@ free_read_buffer_exit:
     globus_libc_free(http_handle->read_buffer.iov_base);
     http_handle->read_buffer.iov_len = 0;
 error_exit:
+    if (http_handle->reopen_in_progress)
+    {
+        globus_object_t * cause = NULL;
+        if (result != GLOBUS_SUCCESS)
+        {
+            cause = globus_error_get(result);
+        }
+        result = GlobusXIOHttpErrorPersistentConnectionDropped(cause);
+    }
 
     if(http_handle->delay_write_header)
     {
@@ -711,6 +720,10 @@ globus_l_xio_http_client_read_response_callback(
                         http_handle->write_operation.driver_handle,
                         http_handle->write_operation.operation);
                 globus_assert(result == GLOBUS_SUCCESS);
+            }
+            if (http_handle->reopen_in_progress)
+            {
+                response_error = GlobusXIOHTTPErrorObjPersistentConnectionDropped(response_error);
             }
             /* don't go to error exit yet because we may need to clean up
              * the cancel info

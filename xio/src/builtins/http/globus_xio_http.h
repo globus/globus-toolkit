@@ -433,7 +433,11 @@ typedef enum
     /**
      * Server side fake EOF
      */
-    GLOBUS_XIO_HTTP_ERROR_EOF
+    GLOBUS_XIO_HTTP_ERROR_EOF,
+    /**
+     * Persistent connection dropped by the server.
+     */
+    GLOBUS_XIO_HTTP_ERROR_PERSISTENT_CONNECTION_DROPPED
 }
 globus_xio_http_errors_t;
 
