@@ -88,7 +88,7 @@ if test -d gssapi-openssh/openssh; then
       --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
       --with-zlib=$ZLIB_LOCATION \
       --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
-    make install
+    make install-nokeys # nonroot
   fi
   cd ../..
 fi
@@ -137,7 +137,7 @@ if test -f nightly.tar.gz; then
                 --with-zlib=$ZLIB_LOCATION \
                 --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
             make clean
-            make install
+            make install-nokeys # nonroot
         fi
     fi
 fi
