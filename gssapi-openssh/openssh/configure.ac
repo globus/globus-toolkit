@@ -117,6 +117,10 @@ if test "x$gsi_path" != "xno" ; then
 		AC_MSG_ERROR(globus-makefile-header failed)
 	fi
 
+	if (test -n "$LIBPATH"); then
+		blibpath="$LIBPATH"
+	fi
+
 	AC_DEFINE(HAVE_GSSAPI_H)
 
     CC="$GLOBUS_CC"
