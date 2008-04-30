@@ -51,7 +51,7 @@
 #include "http_test_common.h"
 
 int                                     done = 0;
-char *                                  message_body;
+globus_byte_t *                         message_body;
 long                                    file_size;
 globus_xio_http_version_t               version = GLOBUS_XIO_HTTP_VERSION_UNSET;
 size_t                                  buffer_size = 0;
@@ -85,7 +85,7 @@ static
 globus_result_t
 globus_l_xio_test_write_buffer(
     globus_xio_handle_t                 handle,
-    char *                              message,
+    globus_byte_t *                     message,
     globus_size_t                       message_size,
     globus_size_t                       buffer_size);
 
@@ -93,7 +93,7 @@ static
 globus_result_t
 globus_l_xio_test_read_buffer(
     globus_xio_handle_t                 handle,
-    char *                              message,
+    globus_byte_t *                     message,
     globus_size_t                       message_size,
     globus_size_t                       buffer_size);
 
@@ -123,7 +123,7 @@ client_main(
     char                                content_length_buffer[64];
     globus_xio_http_header_t            headers[2];
     globus_xio_data_descriptor_t        descriptor;
-    char                                buffer[1];
+    globus_byte_t                       buffer[1];
     globus_xio_handle_t                 handle;
     int                                 status_code;
     char *                              reason_phrase;
@@ -461,11 +461,11 @@ static
 globus_result_t
 globus_l_xio_test_write_buffer(
     globus_xio_handle_t                 handle,
-    char *                              message,
+    globus_byte_t *                     message,
     globus_size_t                       message_size,
     globus_size_t                       buffer_size)
 {
-    char *                              ptr = message;
+    globus_byte_t *                     ptr = message;
     globus_size_t                       left = message_size;
     globus_size_t                       to_write;
     globus_size_t                       nbytes;
@@ -517,7 +517,7 @@ static
 globus_result_t
 globus_l_xio_test_read_buffer(
     globus_xio_handle_t                 handle,
-    char *                              message,
+    globus_byte_t *                     message,
     globus_size_t                       message_size,
     globus_size_t                       buffer_size)
 {
@@ -526,7 +526,7 @@ globus_l_xio_test_read_buffer(
     globus_size_t                       to_read;
     globus_size_t                       nbytes;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    char *                              buffer;
+    globus_byte_t *                     buffer;
     GlobusXIOName(globus_l_xio_test_read_buffer);
 
     if (buffer_size == 0)
@@ -582,7 +582,8 @@ globus_l_xio_test_read_buffer(
         fprintf(stderr, "Error reading from http: %s\n",
                 globus_object_printable_to_string(globus_error_peek(result)));
 
-        fprintf(stderr, "after reading %u of %u bytes\n", offset, message_size);
+        fprintf(stderr, "after reading %lu of %lu bytes\n",
+                (unsigned long) offset, (unsigned long) message_size);
     }
 
     return result;
@@ -619,7 +620,7 @@ main(
                 break;
             case 'c':
                 server = GLOBUS_FALSE;
-                contact = gets(gets_buffer);
+                contact = fgets(gets_buffer, sizeof(gets_buffer), stdin);
                 break;
             case 's':
                 server = GLOBUS_TRUE;

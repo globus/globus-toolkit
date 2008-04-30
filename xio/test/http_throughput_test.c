@@ -89,7 +89,7 @@ client_test(
     globus_xio_http_header_t            headers[2];
     globus_xio_handle_t                 handle;
     int                                 i;
-    int                                 nbytes;
+    size_t                              nbytes;
     globus_xio_data_descriptor_t        descriptor;
     int                                 status_code;
     char *                              reason_phrase;
@@ -109,7 +109,7 @@ client_test(
             ((info->transfer_encoding != NULL)
                 && strcmp(info->transfer_encoding, IDENTITY) == 0))
     {
-        sprintf(content_length_buffer, "%d", info->size);
+        sprintf(content_length_buffer, "%lu", (unsigned long) info->size);
 
         headers[header_cnt].name = "Content-Length";
         headers[header_cnt].value = &content_length_buffer[0];
@@ -298,7 +298,7 @@ globus_l_xio_test_server_request_callback(
     char                                content_length_buffer[64];
     int                                 rc=0;
     int					i;
-    int					nbytes;
+    size_t				nbytes;
 
     test_server = (http_test_server_t*) user_arg;
     info = test_server->info;
@@ -357,7 +357,7 @@ globus_l_xio_test_server_request_callback(
 	    ((info->transfer_encoding != NULL)
 		&& strcmp(info->transfer_encoding, IDENTITY) == 0))
     {
-	    sprintf(content_length_buffer, "%d", info->size);
+	    sprintf(content_length_buffer, "%lu", (unsigned long) info->size);
 
 	    response_headers[header_cnt].name = "Content-Length";
 	    response_headers[header_cnt].value = &content_length_buffer[0];
@@ -445,7 +445,7 @@ main(
                 exit(0);
             case 'c':
                 server = GLOBUS_FALSE;
-                info->contact = gets(gets_buffer);
+                info->contact = fgets(gets_buffer, sizeof(gets_buffer), stdin);
                 break;
             case 's':
                 server = GLOBUS_TRUE;
@@ -552,7 +552,6 @@ main(
 	performance_write_timers(&perf);
     }
 
-cleanup_exit:
     globus_xio_stack_destroy(info->stack);
     globus_xio_driver_unload(info->tcp_driver);
     globus_xio_driver_unload(info->http_driver);

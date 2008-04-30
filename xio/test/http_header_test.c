@@ -142,7 +142,7 @@ client_main(
     int                                 status_code;
     char *                              reason_phrase;
     globus_xio_data_descriptor_t        descriptor;
-    char                                buffer[1];
+    globus_byte_t                       buffer[1];
     globus_hashtable_t                  headers;
 
     rc = read_test_file(filename);
@@ -497,7 +497,7 @@ int main(int argc, char * argv[])
                 break;
             case 'c':
                 server = GLOBUS_FALSE;
-                contact = gets(gets_buffer);
+                contact = fgets(gets_buffer, sizeof(gets_buffer), stdin);
                 break;
             case 's':
                 server = GLOBUS_TRUE;

@@ -106,7 +106,7 @@ client_test(
     globus_xio_handle_t                 handle;
     int                                 i;
     globus_xio_data_descriptor_t        descriptor;
-    char                                buffer[1];
+    globus_byte_t                       buffer[1];
     int                                 status_code;
     char *                              reason_phrase;
     globus_utp_start_timer(timer);
@@ -123,7 +123,7 @@ client_test(
             ((info->transfer_encoding != NULL)
                 && strcmp(info->transfer_encoding, IDENTITY) == 0))
     {
-        sprintf(content_length_buffer, "%d", info->size);
+        sprintf(content_length_buffer, "%lu", (unsigned long) info->size);
 
         headers[header_cnt].name = "Content-Length";
         headers[header_cnt].value = &content_length_buffer[0];
@@ -334,7 +334,8 @@ globus_l_xio_test_server_request_callback(
                 ((info->transfer_encoding != NULL)
                     && strcmp(info->transfer_encoding, IDENTITY) == 0))
         {
-                sprintf(content_length_buffer, "%d", info->size);
+                sprintf(content_length_buffer, "%lu",
+                        (unsigned long) info->size);
 
                 response_headers[header_cnt].name = "Content-Length";
                 response_headers[header_cnt].value = &content_length_buffer[0];
@@ -526,7 +527,7 @@ main(
                 exit(0);
             case 'c':
                 server = GLOBUS_FALSE;
-                info->contact = gets(gets_buffer);
+                info->contact = fgets(gets_buffer, sizeof(gets_buffer), stdin);
                 break;
             case 's':
                 server = GLOBUS_TRUE;

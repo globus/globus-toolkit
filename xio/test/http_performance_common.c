@@ -537,7 +537,7 @@ http_l_test_server_open_callback(
     void *                              user_arg)
 {
     http_test_server_t *                test_server = user_arg;
-    char                                buffer[1];
+    globus_byte_t                       buffer[1];
 
     /* Processing is done in the request callback */
     result = globus_xio_register_read(
@@ -863,7 +863,8 @@ performance_start_master(
         latency = burp_time/(info->iterations * 2.0);
         bw = info->size/(latency * 2.0);
 	bw = bw / (1024.0 * 1024.0);
-	sprintf(namebuf, "%s-%d-%lf-%lf", perf->name, info->size, latency, bw);
+	sprintf(namebuf, "%s-%lu-%lf-%lf", perf->name,
+                (unsigned long) info->size, latency, bw);
 	globus_utp_name_timer(timer, namebuf);
 
         info->size = perf->next_size(info->size);

@@ -512,7 +512,7 @@ http_l_test_server_open_callback(
     void *                              user_arg)
 {
     http_test_server_t *                test_server = user_arg;
-    static char                         buffer[1];
+    static globus_byte_t                buffer[1];
 
     globus_assert(result == GLOBUS_SUCCESS);
     result = globus_xio_register_read(
