@@ -9,6 +9,8 @@
 /* Maximum pass phrase length */
 #define MAX_PASS_LEN  1024 /* Arbitrary */
 
+#define MAX_TOKEN_LEN 0x100000 /* Network tokens no larger than 1MB */
+
 /* Define default myproxy-server -- should probably be put in config file */
 #define MYPROXY_SERVER_PORT            7512
 

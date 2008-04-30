@@ -19,6 +19,8 @@ v4.3 XX Xxx 2008
   - add a default timeout of 120 seconds for myproxy-server child
     processes to service requests before aborting, customizable via
     the myproxy-server.config request_timeout parameter
+  - in myproxy-server, read incoming messages up to 1MB maximum to
+    avoid memory exhaustion under heavy load
 
 v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init
