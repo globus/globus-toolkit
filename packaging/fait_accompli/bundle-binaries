@@ -4,9 +4,21 @@ if [ x$1 = "x" ]; then
    echo Please supply a GLOBUS_LOCATION as the first argument
    exit 253
 fi
+if [ x$2 = "x" ]; then
+   echo Please supply a directory containing the source Makefile.in
+   echo as the second argument
+   exit 252
+fi
 
 GLOBUS_LOCATION=$1
 SOURCE_MAKEFILE=$2
+
+if [ ! -f $SOURCE_MAKEFILE ]; then
+   echo I require the Makefile.in from a source installer to create the
+   echo binary installer.
+   exit 251
+fi
+
 
 PATH="$GLOBUS_LOCATION/bin:$GLOBUS_LOCATION/sbin:$PATH"
 LD_LIBRARY_PATH="$GLOBUS_LOCATION/lib:$PATH"
@@ -62,11 +74,7 @@ rm packagelist
 cd ../
 
 echo Generating configure/Makefile.in for binary installer
-if [ -f $SOURCE_MAKEFILE ]; then
-   fait_accompli/binary-makefile-generator $SOURCE_MAKEFILE > tmp/Makefile.in
-else
-   cp fait_accompli/binary.Makefile.in tmp/Makefile.in
-fi
+fait_accompli/binary-makefile-generator $SOURCE_MAKEFILE > tmp/Makefile.in
 
 source-trees/autotools/bin/autoconf fait_accompli/binary.configure.in > tmp/configure
 chmod +x tmp/configure
