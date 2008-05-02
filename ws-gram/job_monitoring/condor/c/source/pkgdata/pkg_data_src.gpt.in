@@ -15,12 +15,12 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="5" /> </Version> </Dependency>
-      <Dependency Name="globus_scheduler_event_generator" > <Version > <Simple_Version Major="0" /> </Version> </Dependency>
+      <Dependency Name="globus_scheduler_event_generator" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="globus_scheduler_event_generator" > <Version > <Simple_Version Major="0" /> </Version> </Dependency>
+      <Dependency Name="globus_scheduler_event_generator" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Setup_Dependency PkgType="rtl">

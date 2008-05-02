@@ -20,7 +20,7 @@
       </Dependency>
       <Dependency Name="globus_scheduler_event_generator">
         <Version>
-          <Simple_Version Major="0"/>
+          <Simple_Version Major="2"/>
         </Version>
       </Dependency>
     </Source_Dependencies>
@@ -32,7 +32,7 @@
       </Dependency>
       <Dependency Name="globus_scheduler_event_generator">
         <Version>
-          <Simple_Version Major="0"/>
+          <Simple_Version Major="2"/>
         </Version>
       </Dependency>
     </Source_Dependencies>

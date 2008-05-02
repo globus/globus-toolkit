@@ -156,16 +156,14 @@ time_t
 seg_l_timegm(
     const struct tm *                   tm);
 
-globus_module_descriptor_t
-globus_scheduler_event_module_ptr =
+GlobusExtensionDefineModule(globus_seg_job_manager) =
 {
-    "globus_scheduler_event_generator_job_manager",
+    "globus_seg_job_manager",
     globus_l_job_manager_module_activate,
     globus_l_job_manager_module_deactivate,
     NULL,
     NULL,
-    &local_version,
-    NULL
+    &local_version
 };
 
 static

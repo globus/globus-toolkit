@@ -180,16 +180,14 @@ int
 globus_l_fork_find_logfile(
     globus_l_fork_logfile_state_t *     state);
 
-globus_module_descriptor_t
-globus_scheduler_event_module_ptr =
+GlobusExtensionDefineModule(globus_seg_fork) =
 {
-    "globus_scheduler_event_generator_fork",
+    "globus_seg_fork",
     globus_l_fork_module_activate,
     globus_l_fork_module_deactivate,
     NULL,
     NULL,
-    &local_version,
-    NULL
+    &local_version
 };
 
 static

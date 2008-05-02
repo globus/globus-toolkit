@@ -19,8 +19,6 @@
 #include "globus_scheduler_event_generator_app.h"
 #include "version.h"
 
-#include "ltdl.h"
-
 static
 int
 globus_l_seg_activate(void);
@@ -40,8 +38,7 @@ globus_module_descriptor_t globus_i_scheduler_event_generator_module =
     NULL
 };
 
-static lt_dlhandle                      globus_l_seg_scheduler_handle;
-static globus_module_descriptor_t *     globus_l_seg_scheduler_module;
+static char *                           globus_l_seg_extension;
 static time_t                           globus_l_seg_timestamp;
 static globus_mutex_t                   globus_l_seg_mutex;
 static globus_scheduler_event_generator_fault_handler_t
@@ -56,20 +53,14 @@ globus_l_seg_activate(void)
 {
     int                                 rc;
 
-    rc = lt_dlinit();
-    if (rc != 0)
-    {
-        goto error;
-    }
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
 
     if (rc != GLOBUS_SUCCESS)
     {
-        goto dlexit_error;
+        goto error;
     }
 
-    globus_l_seg_scheduler_handle = NULL;
-    globus_l_seg_scheduler_module = NULL;
+    globus_l_seg_extension = NULL;
     globus_l_seg_timestamp = 0;
     globus_l_seg_fault_handler = NULL;
     globus_l_seg_fault_arg = NULL;
@@ -77,12 +68,8 @@ globus_l_seg_activate(void)
     globus_l_seg_event_arg = NULL;
 
     globus_mutex_init(&globus_l_seg_mutex, NULL);
-    return 0;
-
-dlexit_error:
-    lt_dlexit();
 error:
-    return 1;
+    return rc;
 }
 /* globus_l_seg_activate() */
 
@@ -90,20 +77,16 @@ static
 int
 globus_l_seg_deactivate(void)
 {
-    if (globus_l_seg_scheduler_module)
+    if (globus_l_seg_extension)
     {
-        globus_module_deactivate(globus_l_seg_scheduler_module);
-    }
-
-    if (globus_l_seg_scheduler_handle)
-    {
-        lt_dlclose(globus_l_seg_scheduler_handle);
+        globus_extension_deactivate(globus_l_seg_extension);
+        free(globus_l_seg_extension);
+        globus_l_seg_extension = NULL;
     }
 
     globus_mutex_destroy(&globus_l_seg_mutex);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
-    lt_dlexit();
     return 0;
 }
 /* globus_l_seg_deactivate() */
@@ -455,14 +438,9 @@ globus_scheduler_event_generator_load_module(
 {
     globus_result_t                     result;
     int                                 rc;
-    const char *                        flavor_name = GLOBUS_FLAVOR_NAME;
-    const char *                        symbol_name
-            = "globus_scheduler_event_module_ptr";
-    char *                              globus_loc = NULL;
-    char *                              module_path = NULL;
 
     globus_mutex_lock(&globus_l_seg_mutex);
-    if (globus_l_seg_scheduler_handle != NULL)
+    if (globus_l_seg_extension != NULL)
     {
         result = GLOBUS_SEG_ERROR_ALREADY_SET;
 
@@ -471,84 +449,38 @@ globus_scheduler_event_generator_load_module(
 
     if (module_name[0] != '/')
     {
-        result = globus_location(&globus_loc);
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
-
-            goto unlock_error;
-        }
-
-        module_path = globus_libc_malloc(strlen(globus_loc) +
-                strlen("%s/lib/libglobus_seg_%s_%s.la") + strlen(module_name) +
-                strlen(flavor_name));
-
-        if (module_path == NULL)
-        {
-            result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
-
-            goto free_globus_location_error;
-        }
-
-        sprintf(module_path, "%s/lib/libglobus_seg_%s_%s.la",
-                globus_loc, module_name, flavor_name);
-        globus_l_seg_scheduler_handle = lt_dlopen(module_path);
+        globus_l_seg_extension = globus_common_create_string(
+                "globus_seg_%s", module_name);
     }
     else
     {
-        globus_l_seg_scheduler_handle = lt_dlopen(module_name);
+        globus_l_seg_extension = globus_libc_strdup(module_name);
     }
 
-    if (globus_l_seg_scheduler_handle == NULL)
+    if (globus_l_seg_extension == NULL)
     {
-        result = GLOBUS_SEG_ERROR_LOADING_MODULE(
-                module_path ? module_path : module_name,
-                lt_dlerror());
+        result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
 
-        goto free_module_path_error;
+        goto unlock_error;
     }
-    globus_l_seg_scheduler_module = (globus_module_descriptor_t *)
-            lt_dlsym(globus_l_seg_scheduler_handle, symbol_name);
+    rc = globus_extension_activate(globus_l_seg_extension);
 
-    if (globus_l_seg_scheduler_module == NULL)
-    {
-        result = GLOBUS_SEG_ERROR_INVALID_MODULE(module_name, lt_dlerror());
-
-        goto dlclose_error;
-    }
-
-    rc = globus_module_activate(globus_l_seg_scheduler_module);
-
-    if (rc != 0)
+    if (rc != GLOBUS_SUCCESS)
     {
         result = GLOBUS_SEG_ERROR_INVALID_MODULE(
                 module_name,
                 "activation failed");
 
-        goto dlclose_error;
+        goto free_extension_error;
     }
-
     globus_mutex_unlock(&globus_l_seg_mutex);
-
-    globus_libc_free(globus_loc);
-    globus_libc_free(module_path);
 
     return GLOBUS_SUCCESS;
 
-dlclose_error:
-    lt_dlclose(globus_l_seg_scheduler_handle);
-    globus_l_seg_scheduler_handle = NULL;
-    globus_l_seg_scheduler_module = NULL;
-free_module_path_error:
-    if (module_path != NULL)
+free_extension_error:
+    if (globus_l_seg_extension != NULL)
     {
-        globus_libc_free(module_path);
-    }
-free_globus_location_error:
-    if (globus_loc != NULL)
-    {
-        globus_libc_free(globus_loc);
+        globus_libc_free(globus_l_seg_extension);
     }
 unlock_error:
     globus_mutex_unlock(&globus_l_seg_mutex);
