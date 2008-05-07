@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_xmlsec1" Format_Version="0.02">
 
-    <Aging_Version Major="1" Minor="8" Age="0"/>
+    <Aging_Version Major="1" Minor="10" Age="0"/>
     <Description >XMLSec Library</Description>
     <Functional_Group >XMLSec</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
