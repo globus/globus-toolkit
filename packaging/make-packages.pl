@@ -458,6 +458,16 @@ sub create_makefile_installer
                    print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
               }
          }
+
+         # Barf.  netlogger_c is provided as an external package, so it's in virtual_packages
+         # But globus_xio_netlogger_driver expresses a real GPT dep on it, so we need to
+         # re-add it here so make -j2 builds won't try to build the driver before netlogger_c
+         if ( $pack=~/globus_xio_netlogger_driver/ )
+         {
+              print INS " netlogger_c";
+              print PAC "package('netlogger_c');\n";
+         }
+
          print INS "\n";
          print PAC "cd ('\$GLOBUS_LOCATION')\n";
          print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}.tar.gz')\n";

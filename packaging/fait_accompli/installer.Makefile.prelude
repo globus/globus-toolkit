@@ -1,4 +1,4 @@
-all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh gt4-java-ws-core gt4-java-admin gt4-mds gt4-delegation gt4-rft gt4-gram @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ gt4-cas webmds gt4-c-ws-core @i18n@ prews-test wstests gt4-replicator globus_rendezvous @gridshib@ @netlogger@ done
+all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh gt4-java-ws-core gt4-java-admin gt4-mds gt4-delegation gt4-rft gt4-gram @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ gt4-cas webmds gt4-c-ws-core @i18n@ prews-test wstests gt4-replicator globus_rendezvous gridway @gridshib@ @netlogger@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
@@ -67,6 +67,6 @@ globus_binary_openssl:
 
 # Netlogger incubator
 netlogger_c: gpt globus_core globus_common
-	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees/netlogger-c-4.0.1 ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees/netlogger-c-4.0.2 ${FLAVOR}
 
 # Bundle dependencies, expressed in packages.
