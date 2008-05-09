@@ -3,6 +3,37 @@
 #include "globus_gsi_credential.h"
 #include "openssl/bn.h"
 
+char *
+indent_string(const char * str)
+{
+    char * new_line;
+    char * old_line;
+    char * output;
+    int i=1;
+
+    for (new_line = (char *) str; new_line != NULL; new_line = strchr(new_line+1, '\n'))
+    {
+        i++;
+    }
+
+    output = malloc(strlen(str) + (i*4) + 1);
+    i = 0;
+
+    for (new_line = strchr(str, '\n'), old_line = (char *) str;
+         new_line != NULL;
+         old_line = new_line+1, new_line = strchr(new_line+1, '\n'))
+    {
+        memcpy(output+i, "    ", 4);
+        i += 4;
+        memcpy(output+i, old_line, new_line - old_line);
+        i += new_line - old_line;
+        output[i++] = '\n';
+    }
+    output[i] = 0;
+
+    return output;
+}
+
 int main(int argc, char * argv[])
 {
     int                                 rc;
@@ -12,6 +43,8 @@ int main(int argc, char * argv[])
     char                                *cert = NULL;
     char                                *key = NULL;
     char                                *p;
+    char                                *subject_name;
+    char                                *home;
     globus_gsi_cred_handle_t            handle;
     X509 *                              x509_cert;
     EVP_PKEY *                          pubkey = NULL;
@@ -65,41 +98,95 @@ int main(int argc, char * argv[])
         goto out;
     }
 
+    printf("Checking Environment Variables\n"
+           "==============================\n");
+    printf("Checking if X509_CERT_DIR is set... ");
+    cert_dir = getenv("X509_CERT_DIR");
+    printf("%s\n", cert_dir ? cert_dir : "no");
+    printf("Checking if X509_USER_CERT is set... ");
+    cert = getenv("X509_USER_CERT");
+    printf("%s\n", cert ? cert : "no");
+    printf("Checking if X509_USER_KEY is set... ");
+    key = getenv("X509_USER_KEY");
+    printf("%s\n", key ? key : "no");
+    printf("Checking if X509_USER_PROXY is set... ");
+    key = getenv("X509_USER_PROXY");
+    printf("%s\n", key ? key : "no");
+
+    printf("\nChecking Security Directories\n"
+           "=======================\n");
     printf("Determining trusted cert path... ");
     result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
     if (result != GLOBUS_SUCCESS)
     {
         printf("failed\n%s",
-               globus_error_print_friendly(globus_error_peek(result)));
+               indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
         goto out;
     }
     else
     {
         printf("%s\n", cert_dir);
     }
+
+    printf("Checking for cog.properties... ");
+    result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home);
+    if (result == GLOBUS_SUCCESS)
+    {
+        char * cog_properties_path = globus_common_create_string(
+                "%s/.globus/cog.properties",
+                home);
+        if (cog_properties_path == NULL)
+        {
+            printf("failed\n");
+        }
+        else if (access(cog_properties_path, F_OK) == 0)
+        {
+            printf("found\n"
+"    WARNING: If the cog.properties file contains security properties, \n"
+"             Java apps will ignore the security paths described in the GSI\n"
+"             documentation\n");
+        }
+        else
+        {
+            printf("not found\n");
+        }
+    }
+    else
+    {
+        printf("failed\n%s\n",
+               indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
+    }
+
     result = globus_gsi_callback_data_init(&callback_data);
     if (result != GLOBUS_SUCCESS)
     {
         printf("failed\n%s\n",
-                globus_error_print_friendly(globus_error_peek(result)));
+                indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
         goto out;
     }
     result = globus_gsi_callback_set_cert_dir(callback_data, cert_dir);
     if (result != GLOBUS_SUCCESS)
     {
         printf("Internal error: setting cert_dir\n%s\n",
-                globus_error_print_friendly(globus_error_peek(result)));
+                indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
         goto out;
     }
 
     if (personal)
     {
+        printf("\nChecking Default Credentials\n"
+               "==============================\n");
         printf("Determining certificate and key file names... ");
         result = GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(&cert, &key);
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                   indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
             goto out;
         }
         else
@@ -139,7 +226,8 @@ int main(int argc, char * argv[])
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
             goto out;
         }
         else
@@ -168,7 +256,8 @@ int main(int argc, char * argv[])
                 else
                 {
                     printf("failed\n%s\n",
-                            globus_error_print_friendly(globus_error_peek(result)));
+                        indent_string(
+                            globus_error_print_friendly(globus_error_peek(result))));
                 }
                 goto out;
             }
@@ -178,12 +267,26 @@ int main(int argc, char * argv[])
             }
         }
 
+        printf("Checking Certificate Subject... ");
+        result = globus_gsi_cred_get_subject_name(handle, &subject_name);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("failed\n%s\n",
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
+        }
+        else
+        {
+            printf("\"%s\"\n", subject_name);
+        }
+
         printf("Checking cert... ");
         result = globus_gsi_cred_get_cert(handle, &x509_cert);
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
         }
         else
         {
@@ -195,7 +298,8 @@ int main(int argc, char * argv[])
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
         }
         else
         {
@@ -251,7 +355,8 @@ int main(int argc, char * argv[])
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
         }
         else
         {
@@ -265,11 +370,15 @@ int main(int argc, char * argv[])
         goto out;
     }
 
-    printf("Checking trusted certificates...\n");
+    printf("\nChecking trusted certificates...\n"
+           "================================\n");
+    printf("Getting trusted certificate list...\n");
     result = GLOBUS_GSI_SYSCONFIG_GET_CA_CERT_FILES(cert_dir, &cert_list);
     if (result != GLOBUS_SUCCESS)
     {
-        printf("%s\n", globus_error_print_friendly(globus_error_peek(result)));
+        printf("%s\n",
+                indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
         goto out;
     }
     while (! globus_fifo_empty(&cert_list))
@@ -283,25 +392,28 @@ int main(int argc, char * argv[])
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
             continue;
         }
         result = globus_gsi_cred_get_subject_name(handle, &ca_subject_name);
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                   globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
             continue;
         }
 
         printf("ok\nVerifying certificate chain for \"%s\"... ",
-               ca_subject_name);
+               ca_cert_file);
         result = globus_gsi_cred_verify_cert_chain(
             handle, callback_data);
         if (result != GLOBUS_SUCCESS)
         {
             printf("failed\n%s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
             continue;
         }
         printf("ok\n");
