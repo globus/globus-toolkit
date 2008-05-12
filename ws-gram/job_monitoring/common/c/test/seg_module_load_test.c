@@ -25,15 +25,14 @@
 
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
+#include "globus_scheduler_event_generator_app.h"
 
 int main(int argc, char *argv[])
 {
     int                                 rc;
     globus_result_t                     result;
-    char                                modname_fmt[] =
-            "%s/test/globus_scheduler_event_generator_test"
-            "/libglobus_seg_load_test_module_%s.la";
-    char *                              modname;
+    char                                modname[] =
+                                        "load_test_module";
     char *                              globus_loc = NULL;
     int                                 notok=3;
 
@@ -51,10 +50,6 @@ int main(int argc, char *argv[])
         rc = 1;
         goto error;
     }
-
-    modname = malloc(sizeof(modname_fmt) + strlen(globus_loc) + 
-            strlen(GLOBUS_FLAVOR_NAME));
-    sprintf(modname, modname_fmt, globus_loc, GLOBUS_FLAVOR_NAME);
 
     result = globus_scheduler_event_generator_load_module(modname);
 

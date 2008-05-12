@@ -22,21 +22,18 @@
 
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
+#include "globus_scheduler_event_generator_app.h"
 
 int main(int argc, char *argv[])
 {
     int                                 rc;
     globus_result_t                     result;
-    char                                modname_fmt[] =
-            "%s/test/globus_scheduler_event_generator_test"
-            "/libglobus_seg_timestamp_test_module_%s.la";
-    char *                              modname;
+    char                                modname[] =
+                                        "timestamp_test_module";
     time_t                              test_stamp=42;
     char                                test_stamp_str[] = "42";
     char *                              globus_loc = NULL;
     int                                 notok=2;
-
-
 
     printf("1..2\n");
 
@@ -53,9 +50,6 @@ int main(int argc, char *argv[])
         goto deactivate_error;
     }
 
-    modname = malloc(sizeof(modname_fmt) + strlen(GLOBUS_FLAVOR_NAME)
-            +strlen(globus_loc));
-    sprintf(modname, modname_fmt, globus_loc, GLOBUS_FLAVOR_NAME);
     globus_libc_setenv("TEST_MODULE_TIMESTAMP", "0", GLOBUS_TRUE);
 
     result = globus_scheduler_event_generator_load_module(modname);

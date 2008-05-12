@@ -80,7 +80,6 @@ globus_l_seg_deactivate(void)
     if (globus_l_seg_extension)
     {
         globus_extension_deactivate(globus_l_seg_extension);
-        free(globus_l_seg_extension);
         globus_l_seg_extension = NULL;
     }
 

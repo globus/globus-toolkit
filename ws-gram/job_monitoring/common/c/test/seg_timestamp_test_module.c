@@ -25,9 +25,9 @@ static
 int
 globus_l_test_module_deactivate(void);
 
-globus_module_descriptor_t              globus_scheduler_event_module_ptr =
+GlobusExtensionDefineModule(globus_seg_timestamp_test_module) =
 {
-    "test module",
+    "globus_seg_timestamp_test_module",
     globus_l_test_module_activate,
     globus_l_test_module_deactivate,
     NULL,
