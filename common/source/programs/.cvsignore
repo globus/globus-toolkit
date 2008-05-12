@@ -1,7 +1,0 @@
-Makefile.in
-Makefile
-globus-sh-exec
-globus-version
-*.lo
-*.la
-.libs
