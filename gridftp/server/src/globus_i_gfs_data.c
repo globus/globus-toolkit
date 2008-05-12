@@ -1887,6 +1887,8 @@ globus_i_gfs_data_init()
         exit(1);
     }
 
+    globus_mutex_init(&gfs_l_data_brain_mutex, NULL);
+
     /* XXX is this is how we want to know this? */
     globus_l_gfs_data_is_remote_node = globus_i_gfs_config_bool("data_node");
 
@@ -6074,7 +6076,6 @@ globus_i_gfs_data_session_start(
     session_handle->ref = 1;
     session_handle->del_cred = session_info->del_cred;
 
-    globus_mutex_init(&gfs_l_data_brain_mutex, NULL);
 
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
