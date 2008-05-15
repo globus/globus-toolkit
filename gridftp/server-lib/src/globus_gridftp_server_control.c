@@ -26,7 +26,7 @@
 #endif
 
 #define DEFAULT_MAX_Q_LEN               10
-#define GSU_MAX_USERNAME_LENGTH         64
+#define GSU_MAX_USERNAME_LENGTH         256
 #define GSU_MAX_PW_LENGTH               GSU_MAX_USERNAME_LENGTH*6
 #define GSC_MAX_COMMAND_NAME_LEN        4
 #define GLOBUS_L_GSC_DEFAULT_220   "GridFTP Server.\n"
@@ -3558,6 +3558,7 @@ globus_libc_cached_getgrgid(
             goto error_group;
         }
         strncpy(name, gr->gr_name, GSU_MAX_USERNAME_LENGTH);
+        name[GSU_MAX_USERNAME_LENGTH - 1] = '\0';
         grent->gr_gid = gr->gr_gid;
         /* we don't use other members */
         globus_libc_unlock();
@@ -3917,6 +3918,7 @@ globus_i_gsc_list_single_line(
     char *                              grpname;
     char                                user[GSU_MAX_USERNAME_LENGTH];
     char                                grp[GSU_MAX_USERNAME_LENGTH];
+    int                                 tmplen;
     struct passwd *                     pw;
     struct group *                      gr;
     struct tm *                         tm;
@@ -4011,13 +4013,29 @@ globus_i_gsc_list_single_line(
         perms[9] = 'x';
     }
 
-    sprintf(user, "        ");
-    tmp_ptr = user + (8 - strlen(username));
-    sprintf(tmp_ptr, "%s", username);
+    tmplen = strlen(username);
+    if(tmplen < 8)
+    {
+        sprintf(user, "        ");
+        tmp_ptr = user + (8 - tmplen);
+        sprintf(tmp_ptr, "%s", username);
+    }
+    else
+    {
+        snprintf(user, sizeof(user), "%s", username);
+    }
     
-    sprintf(grp, "        ");
-    tmp_ptr = grp + (8 - strlen(grpname));
-    sprintf(tmp_ptr, "%s", grpname);
+    tmplen = strlen(grpname);
+    if(tmplen < 8)
+    {
+        sprintf(grp, "        ");
+        tmp_ptr = grp + (8 - tmplen);
+        sprintf(tmp_ptr, "%s", grpname);
+    }
+    else
+    {
+        snprintf(grp, sizeof(grp), "%s", grpname);
+    }
 
     tmp_ptr = globus_common_create_string(
         "%s %3d %s %s %12"GLOBUS_OFF_T_FORMAT" %s %2d %02d:%02d %s",
