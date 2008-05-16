@@ -1,4 +1,4 @@
-all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh gt4-java-ws-core gt4-java-admin gt4-mds gt4-delegation gt4-rft gt4-gram @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ gt4-cas webmds gt4-c-ws-core @i18n@ prews-test wstests gt4-replicator globus_rendezvous gridway @gridshib@ @netlogger@ done
+all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh gt4-java-ws-core gt4-java-admin gt4-mds gt4-delegation gt4-rft gt4-gram @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ gt4-cas webmds gt4-c-ws-core @i18n@ prews-test wstests gt4-replicator globus_rendezvous gridway @gridshib@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
@@ -31,7 +31,7 @@ common: gpt globus_core globus_libtool globus_common globus_common_setup
 i18n: gpt common globus-internationalization globus-internationalization-thr
 prews: gridftp prewsgram
 prewsgram: gpt globus-resource-management-sdk-thr globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
-gridftp: gpt globus-data-management-sdk-thr globus-data-management-server-thr globus-data-management-server globus-data-management-client globus-data-management-sdk 
+gridftp: gpt globus-data-management-sdk-thr globus-data-management-server-thr globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
 rls: gpt globus-rls-server
 drs: gpt common globus_rls_client wsjava gt4-delegation gt4-replicator
 wsjava: gpt gt4-java-ws-core gt4-java-ws-core-test
