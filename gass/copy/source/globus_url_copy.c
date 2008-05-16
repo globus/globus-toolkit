@@ -436,6 +436,9 @@ const char * long_usage =
 "      third-party transfers benefit from this. *EXPERIMENTAL*\n"
 "  -concurrency | -cc\n"
 "      Number of concurrent ftp connections to use for multiple transfers.\n"
+"  -nl-bottleneck | -nlb\n"
+"      Use NetLogger to estimate speeds of disk and network read/write\n"
+"      system calls, and attempt to determine the bottleneck component\n"
 "\n";
 
 /***********
@@ -604,9 +607,9 @@ flagdef(arg_noallo, "-no-allo","-no-allocate");
 flagdef(arg_cache_authz_assert, "-cache-aa","-cache-authz-assert");
 flagdef(arg_cache_src_authz_assert, "-cache-saa","-cache-src-authz-assert");
 flagdef(arg_cache_dst_authz_assert, "-cache-daa","-cache-dst-authz-assert");
+flagdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck");
 
 oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
-oneargdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck", NULL, NULL);
 oneargdef(arg_nl_interval, "-nli","-nl-interval", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
 oneargdef(arg_mc, "-MC", "-multicast", NULL, NULL);
@@ -2526,18 +2529,12 @@ globus_l_guc_parse_arguments(
 	    break;
 	case arg_nl_bottleneck:
 	    guc_info->nl_bottleneck = GLOBUS_TRUE;
-        sc = sscanf(instance->values[0], "%d", &guc_info->nl_level);
-        if(sc != 1)
-        {
-		    fprintf(stderr, 
-               _GASCSL("Error: Argument to nl-bottleneck must be a 4 bit mask"
-                "\n"));
-            return -1;
-        }
+        guc_info->nl_level = 15;
 	    break;
 
     case arg_nl_interval:
         guc_info->nl_bottleneck = GLOBUS_TRUE;
+        guc_info->nl_level = 15;
         sc = sscanf(instance->values[0], "%d", &guc_info->nl_interval);
         if(sc != 1)
         {
@@ -2546,7 +2543,6 @@ globus_l_guc_parse_arguments(
                 "\n"));
             return -1;
         } 
-        guc_info->nl_level |= 4;  /* turn on interval debugging */
         break;
 
 
