@@ -5,8 +5,7 @@ if [ x$1 = "x" ]; then
    exit 253
 fi
 if [ x$2 = "x" ]; then
-   echo Please supply a directory containing the source Makefile.in
-   echo as the second argument
+   echo Please supply the path to a source Makefile.in as the second argument
    exit 252
 fi
 
