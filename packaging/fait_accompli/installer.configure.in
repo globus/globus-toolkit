@@ -48,6 +48,12 @@ AC_ARG_WITH(flavor, AC_HELP_STRING([--with-flavor=flavor],\
 
 if test "x$flavor" = "x"; then
    echo "Unable to guess flavor. Please use --with-flavor= to specify one"
+   echo Use gcc as a prefix if you build with gcc, vendorcc if you build with cc
+   echo Use 32 in the middle if you build 32bit, 64 if you build 64 bit.
+   echo Add dbg if you want them built with debugging.
+   echo
+   echo So, gcc32dbg or vendorcc64 are both examples of valid flavors.
+
    exit 1
 fi
 thr=pthr
