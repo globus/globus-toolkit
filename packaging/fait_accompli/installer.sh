@@ -87,6 +87,7 @@ fi
 
 
 cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
+rm -fr $INSTALLER/source-trees/autotools
 
 HAVE_LNDIR=0
 lndir > /dev/null 2>&1;
