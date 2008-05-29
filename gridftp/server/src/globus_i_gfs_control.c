@@ -283,6 +283,7 @@ globus_l_gfs_get_full_path(
     GlobusGFSName(globus_l_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
+    *out_path = NULL;
     if(!in_path)
     {
         result = GlobusGFSErrorGeneric("invalid pathname");
@@ -725,7 +726,11 @@ globus_l_gfs_request_stat(
         goto error_init;
     }
 
-    globus_l_gfs_get_full_path(instance, path, &stat_info->pathname);
+    result = globus_l_gfs_get_full_path(instance, path, &stat_info->pathname);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_init;
+    }
     stat_info->file_only =
         (mask & GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY) ?
             GLOBUS_TRUE : GLOBUS_FALSE;
