@@ -21,6 +21,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class StripeReport {
@@ -62,6 +64,7 @@ public class StripeReport {
         String inputDate = args[args.length - 1];
 
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         HistogramParser streamHist = new HistogramParser(
                 "Number of Packets shown by Streams Used",
@@ -86,8 +89,8 @@ public class StripeReport {
             ResultSet rs = dbr.retrieve(
                     "SELECT num_streams, COUNT(*) "+
                     "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + startDate + "' " +
-                    "AND   date(send_time) <  '" + ts.getTime() + "' "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
                     "GROUP BY num_streams;");
             while (rs.next()) {
                 String num_streams = rs.getString(1);
@@ -100,8 +103,8 @@ public class StripeReport {
             rs = dbr.retrieve(
                     "SELECT num_stripes, COUNT(*) "+
                     "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + startDate + "' " +
-                    "AND   date(send_time) <  '" + ts.getTime() + "' "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
                     "GROUP BY num_stripes;");
             while (rs.next()) {
                 String num_stripes = rs.getString(1);

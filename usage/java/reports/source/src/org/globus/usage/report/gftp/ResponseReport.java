@@ -21,6 +21,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class ResponseReport {
@@ -79,6 +81,8 @@ public class ResponseReport {
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             String startTime = ts.getFormattedTime();
             Date startDate = ts.getTime();
@@ -93,8 +97,8 @@ public class ResponseReport {
             rs = dbr.retrieve(
                     "SELECT stor_or_retr, COUNT(*) " +
                     "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + startDate + "' " +
-                    "  AND date(send_time) <  '" + ts.getTime() + "' " +
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
                     "GROUP BY stor_or_retr;");
 
             while (rs.next()) {
@@ -118,8 +122,8 @@ public class ResponseReport {
                     "                              ' (' IN gftp_version) - 1) " +
                     "     AS version, COUNT(*) "+
                     "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + startDate + "' " +
-                    "  AND date(send_time) <  '" + ts.getTime() + "' " +
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
                     "GROUP BY version;");
 
             while (rs.next()) {
@@ -133,8 +137,8 @@ public class ResponseReport {
             rs = dbr.retrieve(
                     "SELECT ftp_return_code, COUNT(*) " +
                     "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + startDate + "' " +
-                    "  AND date(send_time) <  '" + ts.getTime() + "' " +
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
                     "GROUP BY ftp_return_code;");
 
             while (rs.next()) {

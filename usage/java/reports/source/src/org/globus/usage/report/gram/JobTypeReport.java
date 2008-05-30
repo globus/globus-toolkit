@@ -20,8 +20,9 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import java.util.Locale;
 
@@ -73,6 +74,8 @@ public class JobTypeReport {
 
         System.out.println("<job-type-report>");
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             int type_count[] = new int[5];
             int totalJobs = 0;
@@ -83,8 +86,8 @@ public class JobTypeReport {
                     "    SELECT job_type, COUNT(*) "+
                     "    FROM gram_packets " +
                     "        WHERE " +
-                    "            send_time >= '" + ts.getTime() + "' " +
-                    "        AND send_time < '" + ts.stepTime() + "' " +
+                    "            send_time >= '" + dateFormat.format(ts.getTime()) + "' " +
+                    "        AND send_time < '" + dateFormat.format(ts.stepTime()) + "' " +
                     "    GROUP BY job_type;");
 
             while (rs.next()) {

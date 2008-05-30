@@ -21,6 +21,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class BufferReport {
@@ -80,6 +82,7 @@ public class BufferReport {
         HistogramParser packetHist = new HistogramParser("Transfer Number",
                 "GFTPpackethistogram", "Number of GFTP Transfers", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         while (ts.next()) {
             Date startD = ts.getTime();
             String startS = ts.getFormattedTime();
@@ -99,9 +102,9 @@ public class BufferReport {
                 "    (SELECT num_bytes "+
                 "    FROM gftp_packets "+
                 "    WHERE "+
-                "        DATE(send_time) >= '" + startD + "' "+
+                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
                 "    AND "+
-                "       DATE(send_time) < '" + ts.getTime() + "' "+
+                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
                 "    )" +
                 "    AS c " +
                 "INNER JOIN " +
@@ -128,9 +131,9 @@ public class BufferReport {
                 "    (SELECT block_size "+
                 "    FROM gftp_packets "+
                 "    WHERE "+
-                "        DATE(send_time) >= '" + startD + "' "+
+                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
                 "    AND "+
-                "       DATE(send_time) < '" + ts.getTime() + "' "+
+                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
                 "    )" +
                 "    AS c " +
                 "INNER JOIN "+
@@ -158,9 +161,9 @@ public class BufferReport {
                 "    (SELECT buffer_size "+
                 "    FROM gftp_packets "+
                 "    WHERE "+
-                "        DATE(send_time) >= '" + startD + "' "+
+                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
                 "    AND "+
-                "       DATE(send_time) < '" + ts.getTime() + "' "+
+                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
                 "    )" +
                 "    AS c " +
                 "INNER JOIN "+
@@ -188,9 +191,9 @@ public class BufferReport {
                 "    (SELECT (num_bytes / EXTRACT(EPOCH from (end_time-start_time))) as transfer_rate "+
                 "    FROM gftp_packets "+
                 "    WHERE "+
-                "        DATE(send_time) >= '" + startD + "' "+
+                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
                 "    AND "+
-                "       DATE(send_time) < '" + ts.getTime() + "' " +
+                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
                 "    AND "+
                 "        end_time > start_time "+
                 "    AND "+
@@ -218,9 +221,9 @@ public class BufferReport {
                     "SELECT COUNT(1) "+
                     "FROM gftp_packets "+
                     "WHERE " +
-                    "    DATE(send_time) >= '" + startD + "' " +
+                    "    DATE(send_time) >= '" + dateFormat.format(startD) + "' " +
                     "AND " +
-                    "    DATE(send_time) <  '" + ts.getTime() + "';");
+                    "    DATE(send_time) <  '" + dateFormat.format(ts.getTime()) + "';");
             while (rs.next()) {
                 long transfers = rs.getLong(1);
 

@@ -20,8 +20,9 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import java.util.Date;
 import java.util.Locale;
@@ -80,6 +81,8 @@ public class FeaturesReport {
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             totalJobs = 0;
             JCEused = 0;
@@ -126,9 +129,9 @@ public class FeaturesReport {
                     "     COUNT(1) " +
                     "FROM gram_packets " +
                     "    WHERE "+
-                    "        DATE(send_time) >= '" + startingTime + "' " +
+                    "        DATE(send_time) >= '" + dateFormat.format(startingTime) + "' " +
                     "    AND "+
-                    "        DATE(send_time) < '" + ts.stepTime() + "';");
+                    "        DATE(send_time) < '" + dateFormat.format(ts.stepTime()) + "';");
 
             rs.next();
             JCEused = rs.getInt(1);

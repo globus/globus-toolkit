@@ -21,8 +21,9 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import java.util.Date;
 import java.util.Locale;
@@ -90,6 +91,8 @@ public class ErrorReport {
                 "Breakdown of Fault Classes", "faulthistogram",
                 "Number of Jobs with Fault Class", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             Date startTime = ts.getTime();
             String startDate = ts.getFormattedTime();
@@ -105,8 +108,8 @@ public class ErrorReport {
             ResultSet rs = dbr.retrieve(
                     "SELECT gt2_error_code, fault_class, COUNT(*) "+
                     "    FROM gram_packets "+
-                    "    WHERE DATE(send_time) >= '" + startTime + "' "+
-                    "        AND DATE(send_time) < '" + ts.getTime() + "' "+
+                    "    WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' "+
+                    "        AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
                     "    GROUP BY gt2_error_code, fault_class ;");
             while (rs.next()) {
                 int gt2_error_code = rs.getInt(1);

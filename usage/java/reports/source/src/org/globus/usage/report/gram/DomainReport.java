@@ -23,6 +23,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class DomainReport {
@@ -74,6 +76,8 @@ public class DomainReport {
                 "Total Jobs Shown by Domain", "domainhistogram",
                 "Number of Jobs", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         System.out.println("<report>");
 
         while (ts.next()) {
@@ -91,8 +95,8 @@ public class DomainReport {
             ResultSet rs = dbr.retrieve(
                     "SELECT ip_address, COUNT(*) " +
                     "FROM gram_packets " +
-                    "WHERE DATE(send_time) >= '" + startTime + "' " +
-                    "AND DATE(send_time) < '" + ts.getTime() + "' " +
+                    "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
+                    "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
                     "GROUP BY ip_address;");
 
             while (rs.next()) {
