@@ -17,6 +17,10 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 
+struct passwd *
+globus_l_gfs_getpwuid(
+    uid_t                               uid);
+
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER);
 
 typedef struct
@@ -279,6 +283,7 @@ globus_l_gfs_get_full_path(
     char                                    path[MAXPATHLEN];
     char *                                  cwd = GLOBUS_NULL;
     int                                     cwd_len;
+    int                                     sc;
     char *                                  slash = "/";
     GlobusGFSName(globus_l_gfs_get_full_path);
     GlobusGFSDebugEnter();
@@ -305,19 +310,46 @@ globus_l_gfs_get_full_path(
         if(*in_path == '/')
         {
             in_path++;
+            cwd = globus_libc_strdup(instance->home_dir);
         }
         else if(*in_path == '\0')
         {
             slash = "";
+            cwd = globus_libc_strdup(instance->home_dir);
         }
         else
         {
-            /* XXX expand other usernames here */
-            result = GlobusGFSErrorGeneric(
-                "Cannot expand ~");
-            goto done;            
+            char workbuf[MAXPATHLEN];
+            char  * hd_name = strdup(in_path);
+            char * tmp_ptr = strchr(hd_name, '/');
+            struct passwd  l_pwd;
+            struct passwd * res_pwd;
+
+            in_path = strchr(in_path, '/');
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = '\0';
+            }
+            else
+            {
+                in_path = "";
+            }
+
+            sc = globus_libc_getpwnam_r(hd_name, &l_pwd,
+                workbuf,
+                MAXPATHLEN,
+                &res_pwd);
+            free(hd_name);
+            if(sc != 0)
+            {
+                /* XXX expand other usernames here */
+                result = GlobusGFSErrorGeneric(
+                    "Cannot expand ~");
+                goto done;  
+            }
+                      
+            cwd = globus_libc_strdup(res_pwd->pw_dir);
         } 
-        cwd = globus_libc_strdup(instance->home_dir);
         cwd_len = strlen(cwd);
         if(cwd[cwd_len - 1] == '/')
         {
