@@ -21,6 +21,7 @@ import org.globus.usage.report.common.IPEntry;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -77,6 +78,8 @@ public class DomainReport {
                 "Total MDS Resources Created Shown by Domain",
                 "mdsdomainhistogram", "Number of Resources Created", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             String startDate = ts.getFormattedTime();
             Date startTime = ts.getTime();
@@ -88,8 +91,8 @@ public class DomainReport {
             ResultSet rs = dbr.retrieve(
                     "SELECT ip_address, COUNT(*) " +
                     "FROM mds_packets " +
-                    "WHERE DATE(send_time) >= '" + startTime + "' " +
-                    "AND DATE(send_time) < '" + ts.getTime() + "' " +
+                    "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
+                    "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
                     "GROUP BY ip_address;");
 
             while (rs.next()) {
