@@ -81,38 +81,36 @@ public class HostReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            HashMap iptracker = new HashMap();
-
             hostHist.nextEntry(startS, ts.getFormattedTime());
             ipHist.nextEntry(startS, ts.getFormattedTime());
 
             ResultSet rs = dbr
                     .retrieve("gftp_packets",
-                            new String[] { "Distinct(hostname)" }, startD, ts
-                                    .getTime());
+                            new String[] { "DISTINCT(SUBSTRING(hostname, 1, POSITION('/' in hostname)-1))" }, startD, ts.getTime());
 
             while (rs.next()) {
                 String hostname = rs.getString(1);
-                String ip = hostname.substring(hostname.indexOf("/") + 1,
-                        hostname.length());
-                hostname = hostname.substring(0, hostname.lastIndexOf("/"));
+                int dotIndex;
 
-                if (hostname.indexOf(".") != -1) {
-                    hostname = hostname.substring(hostname.lastIndexOf("."),
-                            hostname.length());
-                    hostHist.addData(hostname, 1);
+                if ((dotIndex = hostname.lastIndexOf(".")) != -1) {
+                    hostHist.addData(hostname.substring(dotIndex), 1);
                 } else {
                     hostHist.addData("unknown", 1);
                 }
-                iptracker.put(ip, "");
-            }
-            Iterator keys = iptracker.keySet().iterator();
-            while (keys.hasNext()) {
-                IPEntry ipentry = IPEntry.getIPEntry((String) keys.next());
-                ipHist.addData(ipentry.getDomain(), 1);
             }
             rs.close();
 
+            rs = dbr
+                    .retrieve("gftp_packets",
+                            new String[] { "DISTINCT(SUBSTRING(hostname, POSITION('/' in hostname)+1))" }, startD, ts.getTime());
+                    
+            while (rs.next()) {
+                String ip = rs.getString(1);
+                IPEntry ipentry = IPEntry.getIPEntry(ip);
+
+                ipHist.addData(ipentry.getDomain(), 1);
+            }
+            rs.close();
         }
         dbr.close();
         System.out.println("<report>");

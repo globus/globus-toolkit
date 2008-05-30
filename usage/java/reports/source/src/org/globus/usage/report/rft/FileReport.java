@@ -100,19 +100,29 @@ public class FileReport {
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();
 
-            ResultSet rs = dbr.retrieve("rft_packets", new String[] {
-                    "number_of_files", "number_of_bytes", "request_type" },
-                    startD, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT request_type, SUM(number_of_files), SUM(number_of_bytes), COUNT(*) "+
+                    "    FROM rft_packets " +
+                    "    WHERE DATE(send_time) >= '" + startD + "' " +
+                    "      AND DATE(send_time) <  '" + ts.getTime() + "' " +
+                    "    GROUP BY request_type;");
+
             while (rs.next()) {
-                requests++;
-                if (rs.getInt(3) == 0) {
-                    numFilesTransfer += rs.getInt(1);
-                    transfer++;
-                } else if (rs.getInt(3) == 1) {
-                    numFilesDelete += rs.getInt(1);
-                    delete++;
+                int request_type = rs.getInt(1);
+                int number_of_files = rs.getInt(2);
+                long number_of_bytes = rs.getLong(3);
+                int count = rs.getInt(4);
+
+                requests += count;
+
+                if (request_type == 0) {
+                    numFilesTransfer += number_of_files;
+                    transfer += count;
+                } else if (request_type == 1) {
+                    numFilesDelete += number_of_files;
+                    delete += count;
                 }
-                numBytes += rs.getLong(2);
+                numBytes += number_of_bytes;
             }
 
             byteHist.addData("Number of Bytes", (double) numBytes / transfer);

@@ -26,7 +26,9 @@ public class Slotter {
 
     private Vector slots;
 
+    private int num_slots;
     private long[] values;
+    private long[] threshold;
 
     public Slotter(String name) throws IOException {
 
@@ -58,14 +60,21 @@ public class Slotter {
             }
         } finally {
             if (in != null) {
-        	try { in.close(); } catch (IOException e) {}
+                try { in.close(); } catch (IOException e) {}
             }
             in.close();
         }
-        
-        values = new long[slots.size()];
+
+        num_slots = (int) slots.size();
+        values = new long[num_slots];
         for (int i = 0; i < values.length; i++) {
             values[i] = 0;
+        }
+        threshold = new long[num_slots];
+        String prevSlot = (String) this.slots.get(0);
+        for (int i = 0; i < this.slots.size(); i++) {
+            String slot = (String) this.slots.get(i);
+            threshold[i] = slotValue(slot);
         }
     }
 
@@ -97,11 +106,11 @@ public class Slotter {
     }
 
     public void addValue(double value) {
-        values[slots.indexOf(this.whichSlot(value))]++;
+        addValue(value, 1);
     }
 
-    public void addValue(double value, int valueToAdd) {
-        values[slots.indexOf(this.whichSlot(value))] += valueToAdd;
+    public void addValue(double value, long valueToAdd) {
+        values[whichSlot(value)] += valueToAdd;
     }
 
     public void output(PrintStream io) {
@@ -119,16 +128,30 @@ public class Slotter {
         }
     }
 
-    public String whichSlot(double value) {
-        String prevSlot = (String) this.slots.get(0);
-        for (int i = 1; i < this.slots.size(); i++) {
-            String slot = (String) this.slots.get(i);
-            if (value >= slotValue(prevSlot) && value < slotValue(slot)) {
-                return prevSlot;
+    public int whichSlot(double value) {
+        for (int i = 1; i < num_slots; i++) {
+            long slot = this.threshold[i];
+
+            if (value < slot) {
+                return i-1;
             }
-            prevSlot = slot;
         }
-        return prevSlot;
+        return num_slots-1;
     }
 
+    public String whichSlotString(double value) {
+        return (String) slots.get(whichSlot(value));
+    }
+
+    public long getSlotThreshold(int which) {
+        return threshold[which];
+    }
+
+    public String getSlotName(int which) {
+        return (String) slots.get(which);
+    }
+
+    public int getNumSlots() {
+        return num_slots;
+    }
 }

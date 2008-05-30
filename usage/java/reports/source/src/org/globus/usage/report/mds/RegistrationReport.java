@@ -86,13 +86,16 @@ public class RegistrationReport {
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();
 
-            ResultSet rs = dbr.retrieve("mds_packets", new String[] {
-                    "lifetime_reg_count", "current_reg_count" },
-                    startD, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT " +
+                    "  COUNT(*), SUM(lifetime_reg_count), SUM(current_reg_count) " +
+                    "FROM mds_packets " +
+                    "WHERE DATE(send_time) >= '" + startD + "' AND " +
+                    "      DATE(send_time) < '" + ts.getTime() + "'");
             while (rs.next()) {
-                numRegistrations++;
-                totalLifetimeRegCount += rs.getInt(1);
-                totalCurrentRegCount += rs.getInt(2);
+                numRegistrations = rs.getInt(1);
+                totalLifetimeRegCount = rs.getInt(2);
+                totalCurrentRegCount = rs.getInt(3);
             }
 
             lifetimeRegistrationHist.addData("Lifetime Registrations made ",

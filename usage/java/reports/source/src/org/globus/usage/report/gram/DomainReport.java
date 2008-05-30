@@ -77,8 +77,9 @@ public class DomainReport {
         System.out.println("<report>");
 
         while (ts.next()) {
-            IPTable iptracker = new IPTable();
             int totalJobs = 0;
+            int isiJobs = 0;
+            int mcsJobs = 0;
 
             String startDate = ts.getFormattedTime();
             Date startTime = ts.getTime();
@@ -87,31 +88,30 @@ public class DomainReport {
             internalReport.nextEntry(startDate, ts.getFormattedTime());
             domainReport.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("gram_packets",
-                    new String[] { "ip_address" }, startTime, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT ip_address, COUNT(*) " +
+                    "FROM gram_packets " +
+                    "WHERE DATE(send_time) >= '" + startTime + "' " +
+                    "AND DATE(send_time) < '" + ts.getTime() + "' " +
+                    "GROUP BY ip_address;");
+
             while (rs.next()) {
-                totalJobs++;
-                IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                iptracker.addDomain(ipEntry.getDomain());
-                domainReport.addData(ipEntry.getDomain(), 1);
+                String ip_address = rs.getString(1);
+                int job_count = rs.getInt(2);
+                IPEntry ipEntry = IPEntry.getIPEntry(ip_address);
+                String domain = ipEntry.getDomain();
+
+                totalJobs += job_count;
+                if (domain.equals("ISI")) {
+                    isiJobs += job_count;
+                } else if (domain.equals("MCS")) {
+                    mcsJobs += job_count;
+                }
+                domainReport.addData(domain, job_count);
             }
 
-            if (iptracker.getDomains().containsKey("ISI")) {
-                internalReport.addData("ISI", 100.0
-                        * ((IPTable.DomainEntry) iptracker.getDomains().get(
-                                "ISI")).getCount() / totalJobs);
-            } else {
-                internalReport.addData("ISI", 0);
-            }
-
-            if (iptracker.getDomains().containsKey("MCS")) {
-                internalReport.addData("MCS", 100.0
-                        * ((IPTable.DomainEntry) iptracker.getDomains().get(
-                                "MCS")).getCount() / totalJobs);
-            } else {
-                internalReport.addData("MCS", 0);
-            }
-
+            internalReport.addData("ISI", 100.0 * isiJobs / totalJobs);
+            internalReport.addData("MCS", 100.0 * mcsJobs / totalJobs);
         }
         internalReport.output(System.out);
         domainReport.output(System.out);

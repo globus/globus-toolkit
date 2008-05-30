@@ -140,8 +140,8 @@ public class GRAMUsageDiff extends SlotWeekHelper {
             
         String startDateStr = dateFormat.format(sDate);
         String endDateStr = dateFormat.format(endDate);
-        String timeFilter = "send_time >= '" + startDateStr + 
-            "' and send_time < '" + endDateStr + "'";
+        String timeFilter = "DATE(send_time) >= '" + startDateStr + 
+            "' and DATE(send_time) < '" + endDateStr + "'";
                 
         String query = baseQueryStart + table + baseQueryEnd + timeFilter
             + " order by send_time";

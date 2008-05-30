@@ -87,19 +87,18 @@ public class DomainReport {
             ipReport.nextEntry(startDate, ts.getFormattedTime());
             domainReport.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("rft_packets",
-                    new String[] { "ip_address" }, startTime, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT ip_address, COUNT(*) " +
+                    "FROM rft_packets " +
+                    "WHERE DATE(send_time) >= '" + startTime + "' " +
+                    "  AND DATE(send_time) < '" + ts.getTime() + "' " +
+                    "GROUP BY ip_address;");
 
             while (rs.next()) {
-                IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                iptracker.put(rs.getString(1), "");
-                domainReport.addData(ipEntry.getDomain(), 1);
-            }
-
-            Iterator ipIterator = iptracker.keySet().iterator();
-            while (ipIterator.hasNext()) {
-                IPEntry ipEntry = IPEntry
-                        .getIPEntry((String) ipIterator.next());
+                String ip = rs.getString(1);
+                int count = rs.getInt(2);
+                IPEntry ipEntry = IPEntry.getIPEntry(ip);
+                domainReport.addData(ipEntry.getDomain(), count);
                 ipReport.addData(ipEntry.getDomain(), 1);
             }
             rs.close();

@@ -73,38 +73,28 @@ public class JobTypeReport {
 
         System.out.println("<job-type-report>");
 
-        int totalJobs;
-        int singleJobs;
-        int MPIJobs;
-        int condorJobs;
-        int multipleJobs;
-
         while (ts.next()) {
-            totalJobs = 0;
-            singleJobs = 0;
-            MPIJobs = 0;
-            condorJobs = 0;
-            multipleJobs = 0;
+            int type_count[] = new int[5];
+            int totalJobs = 0;
 
             String startDate = ts.getFormattedTime();
 
-            ResultSet rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "job_type" }, ts.getTime(), ts.stepTime());
+            ResultSet rs = dbr.retrieve(
+                    "    SELECT job_type, COUNT(*) "+
+                    "    FROM gram_packets " +
+                    "        WHERE " +
+                    "            send_time >= '" + ts.getTime() + "' " +
+                    "        AND send_time < '" + ts.stepTime() + "' " +
+                    "    GROUP BY job_type;");
 
             while (rs.next()) {
-                totalJobs++;
                 int type = rs.getInt(1);
-                if (type == 0 || type == 2) {
-                    multipleJobs++;
-                } else if (type == 1) {
-                    singleJobs++;
-                } else if (type == 3) {
-                    MPIJobs++;
-                } else if (type == 4) {
-                    condorJobs++;
-                }
+                type_count[type] = rs.getInt(2);
+                totalJobs += type_count[type];
             }
             rs.close();
+
+            type_count[2] += type_count[0];
 
             System.out.println(" <entry>");
             System.out.println("\t<start-date>" + startDate + "</start-date>");
@@ -113,16 +103,16 @@ public class JobTypeReport {
 
             System.out.println("\t<job-types>");
             System.out.println("\t\t<single-jobs>"
-                    + f.format(100.0 * singleJobs / totalJobs)
+                    + f.format(100.0 * type_count[1] / totalJobs)
                     + "</single-jobs>");
             System.out.println("\t\t<multiple-jobs>"
-                    + f.format(100.0 * multipleJobs / totalJobs)
+                    + f.format(100.0 * type_count[2] / totalJobs)
                     + "</multiple-jobs>");
             System.out.println("\t\t<condor-jobs>"
-                    + f.format(100.0 * condorJobs / totalJobs)
+                    + f.format(100.0 * type_count[4] / totalJobs)
                     + "</condor-jobs>");
             System.out.println("\t\t<MPI-jobs>"
-                    + f.format(100.0 * MPIJobs / totalJobs) + "</MPI-jobs>");
+                    + f.format(100.0 * type_count[3] / totalJobs) + "</MPI-jobs>");
             System.out.println("\t</job-types>");
 
             System.out.println(" </entry>");

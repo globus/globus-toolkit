@@ -178,8 +178,8 @@ public class ServiceReport {
 
             String startDateStr = dateFormat.format(startDate);
             String endDateStr = dateFormat.format(endDate);
-            String timeFilter = "send_time >= '" + startDateStr + 
-                "' and send_time < '" + endDateStr + "'";
+            String timeFilter = "DATE(send_time) >= '" + startDateStr + 
+                "' and DATE(send_time) < '" + endDateStr + "'";
                 
 
             System.out.println("<service-report container_type=\"" + 
