@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=TRUNK
+VERSION=4.2.0
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
@@ -64,13 +64,14 @@ mkdir $INSTALLER
 cat fait_accompli/installer.Makefile.prelude farfleblatt > $INSTALLER/Makefile.in
 rm farfleblatt
 
-source-trees/autotools/bin/autoconf fait_accompli/installer.configure.in > $INSTALLER/configure
+sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt
+source-trees/autotools/bin/autoconf farfleblatt > $INSTALLER/configure
 chmod +x $INSTALLER/configure
 cp $AUTOTOOLS/install-sh $INSTALLER
 cp $AUTOTOOLS/config.sub $INSTALLER
 cp $AUTOTOOLS/config.guess $INSTALLER
-cp fait_accompli/installer.INSTALL $INSTALLER/INSTALL
-cp fait_accompli/installer.README $INSTALLER/README
+sed -e "s/@version@/$VERSION/g" fait_accompli/installer.INSTALL > $INSTALLER/INSTALL
+sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/README
 
 # untar GPT into the installer dir
 tar -C $INSTALLER -xzf $GPT

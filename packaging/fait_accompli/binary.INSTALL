@@ -14,13 +14,13 @@ Optional software:
 
 Overview:
 ========
-    1.  Installing Globus Toolkit 4.0.0
+    1.  Installing Globus Toolkit @version@
     2.  Installing optional bundles
-    3.  Installing only a subset of GT4.0.0
+    3.  Installing only a subset of GT@version@
     4.  Platform-specific notes
 
 
-1. Installing Globus Toolkit 4.0.0
+1. Installing Globus Toolkit @version@
 ==================================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
@@ -38,7 +38,7 @@ globus$ make
 globus$ make install
 
 If you do not specify a prefix, it will try to install into
-/usr/local/globus-4.0.0 The build will only be successful if
+/usr/local/globus-@version@ The build will only be successful if
 the globus user has write access to the target directory.
 
 Then see http://www-unix.globus.org/toolkit/docs/4.0/
@@ -63,7 +63,7 @@ If you want to enable internationalization, say:
 If you want to install the Data Replication Service tech preview:
 --enable-drs
 
-3. Installing only a subset of GT4.0.0
+3. Installing only a subset of GT@version@
 ======================================
 You do not have to build every subcomponent of this release.  The
 makefile specifies subtargets for different functional subpieces.

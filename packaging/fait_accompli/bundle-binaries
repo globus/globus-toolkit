@@ -82,7 +82,7 @@ echo Adding GPT source to binary installer
 tar -C tmp -xzf gpt-*.tar.gz
 
 echo Adding README/INSTALL
-cp fait_accompli/binary.INSTALL tmp/INSTALL
-cp fait_accompli/binary.README tmp/README
+sed -e "s/@version@/$VERSION/g" fait_accompli/binary.INSTALL > tmp/INSTALL
+sed -e "s/@version@/$VERSION/g" fait_accompli/binary.README > tmp/README
 
 echo Done.

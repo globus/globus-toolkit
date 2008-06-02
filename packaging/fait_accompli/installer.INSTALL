@@ -1,46 +1,39 @@
 The most up-to-date instructions are stored on the web, at
-http://www.globus.org/toolkit/docs/development/4.1.2/admin/docbook/ 
+http://www.globus.org/toolkit/docs/@version@/admin/docbook/ 
 (the full reference)
-and http://www.globus.org/toolkit/docs/development/4.1.2/admin/docbook/quickstart.html
+and http://www.globus.org/toolkit/docs/@version@/admin/docbook/quickstart.html
 (the fastest way to get up and running).
 
 The instructions below are current as of the date of release.
 
-
 Required software
-    * JDK 1.4.2+
-    * Ant 1.5+ (do not use the ant in Fedora Core 2)
+    * JDK 1.5.0+
+    * Ant 1.5+ 
     * C compiler. If gcc, avoid version 3.2.  3.2.1 and 2.95.x are okay.
     * C++ compiler. Pick whichever version matches your C compiler.
     * GNU tar
     * GNU make
     * GNU sed
     * zlib 1.1.4+
-    * JDBC compliant database. For instance, postgres 7.1+
 
 Optional software:
     * sudo (Required for GRAM) 
-    * IODBC (Required for RLS.  For instance, version 3.0.5)
     * Tomcat (Required for WebMDS)
 
 Overview:
 ========
-    1.  Installing Globus Toolkit 4.1.2
+    1.  Installing Globus Toolkit @version@
     2.  Installing optional bundles
-    3.  Installing only a subset of GT4.1.2
+    3.  Installing only a subset of GT@version@
     4.  Platform-specific notes
 
 
-1. Installing Globus Toolkit 4.1.2
+1. Installing Globus Toolkit @version@
 ==================================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
 java executable on your PATH.  Be sure to set JAVA_HOME to the
 top-level directory of your java installation before installing.
-
-If you want to build RLS, install IODBC.  If you do not, the build of
-RLS will be skipped.  See "Optional Bundles" for more details about
-installing RLS.
 
 Create a user named "globus". The globus user should own this
 installer directory and the installation directory.  If the installation
@@ -53,11 +46,11 @@ globus$ make
 globus$ make install
 
 If you do not specify a prefix, it will try to install into
-/usr/local/globus-4.1.2 The build will only be successful if
+/usr/local/globus-@version@ The build will only be successful if
 the globus user has write access to the target directory.
 
-Then see http://www-unix.globus.org/toolkit/docs/development/4.1.2/ or
-http://www.globus.org/toolkit/docs/development/4.1.2/admin/docbook/quickstart.html
+Then see http://www-unix.globus.org/toolkit/docs/development/@version@/ or
+http://www.globus.org/toolkit/docs/development/@version@/admin/docbook/quickstart.html
 for setup details.
 
 
@@ -70,16 +63,11 @@ option to your configure line:
 --enable-wsgram-lsf           For LSF
 --enable-wsgram-pbs           For PBS
 
-If you installed IODBC for RLS, add the following two items:
---enable-rls --with-iodbc=/path/to/iodbc
+RLS will use a builtin IODBC driver unless you specify otherwise.
+If you installed IODBC for RLS, add the following to the configure script:
+--with-iodbc=/path/to/iodbc
 
-If you want to enable internationalization, say:
---enable-i18n
-
-If you want to install the Data Replication Service tech preview:
---enable-drs
-
-3. Installing only a subset of GT4.1.2
+3. Installing only a subset of GT@version@
 ======================================
 You do not have to build every subcomponent of this release.  The
 makefile specifies subtargets for different functional subpieces.
@@ -116,7 +104,7 @@ $ make gridftp install
 4. Platform notes
 =================
 The latest platform notes are at:
-http://www.globus.org/toolkit/docs/development/4.1.2/admin/docbook/gtadmin-platform.html
+http://www.globus.org/toolkit/docs/development/@version@/admin/docbook/gtadmin-platform.html
 
     * Apple MacOS X
     * Debian
