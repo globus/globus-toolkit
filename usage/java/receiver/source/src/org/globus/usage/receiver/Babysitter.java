@@ -33,16 +33,50 @@ import java.io.InputStreamReader;
 
 public class Babysitter {
     public static void main(String[] args) throws IOException {
+        String command = null;
         int controlPort = 4811;
+        String USAGE = "Usage: globus-usage-babysitter [--help] COMMAND [port]";
+        String HELP  = "Where COMMAND is:\n"+
+                       "    check                      Check status of receiver\n" +
+                       "    clear                      Check status are reset packet counts\n" +
+                       "    stop                       Stop the receiver process\n" +
+                       "    flush                      Flush received but not processed packets to disk\nand PORT is the TCP port number of the globus-usage-receiver's control socket";
 
-        if (args.length < 1) {
-            System.err.println("Usage: java Babysitter <command> [port]");
+        for (int i = 0; i < args.length; i++) {
+            if ((args[i].compareToIgnoreCase("-h") == 0) ||
+                (args[i].compareToIgnoreCase("--help") == 0) ||
+                (args[i].compareToIgnoreCase("-help") == 0)) {
+                System.out.println(USAGE);
+                System.out.println(HELP);
+                System.exit(0);
+            } else if (command == null) {
+                command = args[i];
+            } else if (i != (args.length - 1)) {
+                System.err.println("Unexpected parameter " + args[i]);
+                System.err.println(USAGE);
+                System.exit(1);
+            } else {
+                try {
+                    controlPort = Integer.parseInt(args[i]);
+                    if (controlPort < 0 || controlPort > 65536) {
+                        System.err.println("Invalid control port " + args[i]);
+                        System.err.println(USAGE);
+                        System.exit(1);
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid control port " + args[i]);
+                    System.err.println(USAGE);
+                    System.exit(1);
+                }
+            }
+        }
+
+        if (command == null) {
+            System.err.println("Missing COMMAND parameter");
+            System.err.println(USAGE);
             System.exit(1);
         }
 
-        if (args.length == 2) {
-            controlPort = Integer.parseInt(args[1]);
-        }
 
         Socket controlSocket = null;
         PrintWriter out = null;

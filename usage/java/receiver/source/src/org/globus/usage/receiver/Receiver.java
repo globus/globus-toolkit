@@ -46,6 +46,7 @@ public class Receiver {
             "org.globus.usage.receiver.handlers.GridFTPPacketHandler " +
             "org.globus.usage.receiver.handlers.JavaCorePacketHandler " +
             "org.globus.usage.receiver.handlers.JavaCorePacketHandlerV2 " +
+            "org.globus.usage.receiver.handlers.JavaCorePacketHandlerV3 " +
             "org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler " +
             "org.globus.usage.receiver.handlers.RFTPacketHandler " +
             "org.globus.usage.receiver.handlers.RLSPacketHandler " +
@@ -185,6 +186,7 @@ public class Receiver {
         String databaseURL;
         Properties props = new Properties();
         InputStream propsIn;
+        String USAGE = "USAGE: globus-usage-receiver [-help] [port]";
         final Receiver receiver;
 
         // Open properties file (which gets compiled into jar) to read
@@ -209,16 +211,38 @@ public class Receiver {
                                       props.getProperty("control-port"));
             }
 
-            if (args.length == 1) {
-                /*Get listening port number from command line*/
-                port = Integer.parseInt(args[0]);
-                props.setProperty("listening-port", args[0]);
-            } else {
-                /*or else, read port from properties file:*/
+            for (int i = 0; i < args.length; i++) {
+                if ((args[i].compareToIgnoreCase("-help") == 0) ||
+                    (args[i].compareToIgnoreCase("-h") == 0) ||
+                    (args[i].compareToIgnoreCase("--help") == 0)) {
+                    System.out.println(USAGE);
+                    System.exit(0);
+                } else if (i != (args.length - 1)) {
+                    System.err.println("Unknown parameter " + args[i]);
+                    System.err.println(USAGE);
+                    System.exit(1);
+                } else {
+                    try {
+                        port = Integer.parseInt(args[i]);
+                        props.setProperty("listening-port", args[i]);
+
+                        if (port < 0 || port > 65536) {
+                            System.err.println("Illegal port number " + args[i]);
+                            System.exit(1);
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Unknown parameter " + args[i]);
+                        System.err.println(USAGE);
+                        System.exit(1);
+                    }
+                }
+            }
+
+            if (port == 0) {
                 port = Integer.parseInt(
                         props.getProperty("listening-port", DEFAULT_PORT_STRING));
             }
-
+            
             if (props.getProperty("handlers") == null) {
                 log.warn("Using default handler set");
                 props.setProperty("handlers", defaultHandlers);
