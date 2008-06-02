@@ -23,7 +23,11 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Vector;
 
 public class SchedulerReport {
 
@@ -70,8 +74,20 @@ public class SchedulerReport {
 
         System.out.println("<report>");
 
-        String[] schedulerNames = { "Fork", "Condor", "PBS", "LSF",
-                "Loadleveler", "SGE" };
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date queryStartDate = dateFormat.parse(inputDate);
+        Calendar queryCalendar = new java.util.GregorianCalendar();
+        queryCalendar.setTime(queryStartDate);
+        queryCalendar.add(stepStr.equals("day") ? Calendar.DATE : Calendar.MONTH, n);
+        Date queryEndDate = queryCalendar.getTime();
+
+        ResultSet rs = dbr.retrieve(new String("gram_packets"),
+                    new String[] { "DISTINCT LOWER(scheduler_type)" }, 
+                    queryStartDate, queryEndDate);
+        Vector schedulerNames = new Vector(10);
+        while (rs.next()) {
+            schedulerNames.add(rs.getString(1));
+        }
 
         HistogramParser jobHist = new HistogramParser(
                 "Total Jobs by Scheduler Used", "jobhistogram",
@@ -88,7 +104,7 @@ public class SchedulerReport {
 
             jobHist.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve(new String("gram_packets"),
+            rs = dbr.retrieve(new String("gram_packets"),
                     new String[] { "Count(*)" }, startTime, ts.getTime());
 
             rs.next();
@@ -100,27 +116,28 @@ public class SchedulerReport {
                     + "</end-date>");
             System.out.println("\t<total-jobs>" + totalJobs + "</total-jobs>");
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < schedulerNames.size(); i++) {
+                String scheduler = ((String) schedulerNames.get(i)).toLowerCase();
                 iptracker = new IPTable();
                 System.out.println("\t<scheduler>");
                 System.out
-                        .println("\t\t<name>" + schedulerNames[i] + "</name>");
+                        .println("\t\t<name>" + scheduler + "</name>");
                 System.out.println("\t\t<index>" + (i + 1) + "</index>");
 
                 rs = dbr.retrieve(new String("gram_packets"),
-                        new String[] { "Count(*)" },
-                        new String[] { "scheduler_type LIKE '"
-                                + schedulerNames[i] + "%'" }, startTime, ts
-                                .getTime());
+                        new String[] { "COUNT(*)" },
+                        new String[] { "LOWER(scheduler_type) = '"
+                                + scheduler + "'" },
+                                startTime, ts.getTime());
                 rs.next();
 
                 System.out.println("\t\t<jobs>" + rs.getInt(1) + "</jobs>");
-                jobHist.addData(schedulerNames[i], rs.getInt(1));
+                jobHist.addData(scheduler, rs.getInt(1));
 
                 rs = dbr.retrieve(new String("gram_packets"),
                         new String[] { "DISTINCT ip_address" },
-                        new String[] { "scheduler_type LIKE '%"
-                                + schedulerNames[i] + "%'" }, startTime, ts
+                        new String[] { "LOWER(scheduler_type) = '"
+                                + scheduler + "'" }, startTime, ts
                                 .getTime());
 
                 while (rs.next()) {
