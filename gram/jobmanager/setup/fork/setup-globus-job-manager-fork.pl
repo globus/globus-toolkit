@@ -42,6 +42,7 @@ BEGIN
 
 use Grid::GPT::Setup;
 use Getopt::Long;
+use File::Path;
 
 my $name                = 'jobmanager-fork';
 my $softenv_dir         = '';
@@ -63,7 +64,7 @@ my $setupdir        = "$globusdir/setup/globus";
 
 chdir $setupdir;
 
-mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
+File::Path::mkpath($ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager" , 0, 0777);
 
 print `./find-fork-tools --with-softenv-dir=$softenv_dir`;
 
