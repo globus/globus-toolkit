@@ -1,5 +1,7 @@
 #!/bin/sh
 
+VERSION=4.2.0 
+
 if [ x$1 = "x" ]; then
    echo Please supply a GLOBUS_LOCATION as the first argument
    exit 253
