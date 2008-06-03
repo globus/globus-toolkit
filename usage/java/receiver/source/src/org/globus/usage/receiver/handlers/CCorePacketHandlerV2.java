@@ -70,7 +70,7 @@ public class CCorePacketHandlerV2 extends DefaultPacketHandler {
 	ps.setShort(1, cPack.getComponentCode());
 	ps.setShort(2, cPack.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(cPack.getTimestamp()));
-	ps.setString(4, Util.getAddressAsString(cPack.getHostIP()));
+	ps.setString(4, cPack.getHostIP().getHostAddress());
         ps.setInt(5, cPack.getId());
         ps.setInt(6, cPack.getEvent());
         ps.setString(7, cPack.getServices());
