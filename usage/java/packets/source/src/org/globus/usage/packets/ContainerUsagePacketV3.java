@@ -181,7 +181,13 @@ public class ContainerUsagePacketV3 extends ContainerUsageBasePacket {
             byte [] jvmData = new byte[JVM_INFO_LEN];
             buf.get(jvmData);
             this.jvmInfo = new String(jvmData);        
+
+            int truncationPoint = jvmInfo.indexOf("\u0000");
+            if (truncationPoint != -1) {
+                this.jvmInfo = this.jvmInfo.substring(0, truncationPoint);
+            }
         }
+
         
         // read service list
         short len = buf.getShort();
