@@ -691,6 +691,7 @@ BUNDLE gt4-rft
 
 BUNDLE gt4-rft-test
         globus_wsrf_rft_test
+        globus_crft_test
 
 BUNDLE gt4-gram
         globus_c_delegation_client_bindings
