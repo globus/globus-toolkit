@@ -32,7 +32,7 @@ runReport2() {
 
   OUTPUT=$PWD/$REPORT_OUTPUT
 
-  $GLOBUS_LOCATION/bin/$REPORT_NAME "$@" > $OUTPUT
+  time $GLOBUS_LOCATION/bin/$REPORT_NAME "$@" > $OUTPUT
   if [ $? != 0 ]; then
     echo "Error: Failed to generate the report"
     exit 2
