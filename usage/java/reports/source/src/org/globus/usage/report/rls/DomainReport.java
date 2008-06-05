@@ -72,7 +72,7 @@ public class DomainReport {
 
         HistogramParser ipReport = new HistogramParser(
                 "Number of Unique IP Addresses Using RLS Broken Down by Domain",
-                "rlsiphistogram", "Number of Unique IP Addresses", n);
+                "rlsiphistogram", "Number of Unique IP Addresses", ts);
 
         while (ts.next()) {
             Set ips = new java.util.HashSet();
@@ -81,7 +81,7 @@ public class DomainReport {
             Date startTime = ts.getTime();
             ts.stepTime();
 
-            ipReport.nextEntry(startDate, ts.getFormattedTime());
+            ipReport.nextEntry();
 
             ResultSet rs = dbr.retrieve("rls_packets",
                     new String[] { "DISTINCT ip_address" }, startTime, ts.getTime());

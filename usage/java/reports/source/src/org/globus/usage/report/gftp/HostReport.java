@@ -70,19 +70,19 @@ public class HostReport {
 
         HistogramParser hostHist = new HistogramParser(
                 "Number of Unique Hostnames Shown by Domain",
-                "GFTPhosthistogram", "Number of Hosts", n);
+                "GFTPhosthistogram", "Number of Hosts", ts);
 
         HistogramParser ipHist = new HistogramParser(
                 "Number of Unique IPs Shown by Domain", "GFTPiphistogram",
-                "Number of IP Addresses", n);
+                "Number of IP Addresses", ts);
 
         while (ts.next()) {
             Date startD = ts.getTime();
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            hostHist.nextEntry(startS, ts.getFormattedTime());
-            ipHist.nextEntry(startS, ts.getFormattedTime());
+            hostHist.nextEntry();
+            ipHist.nextEntry();
 
             ResultSet rs = dbr
                     .retrieve("gftp_packets",

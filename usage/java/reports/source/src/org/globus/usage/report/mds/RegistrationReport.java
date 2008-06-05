@@ -68,10 +68,10 @@ public class RegistrationReport {
 
         HistogramParser lifetimeRegistrationHist = new HistogramParser(
                 "Average Number of Lifetime Registrations to MDS Service",
-                "mdslifetimeregistrationhistogram", "Number of Registrations", n);
+                "mdslifetimeregistrationhistogram", "Number of Registrations", ts);
         HistogramParser currentRegistrationHist = new HistogramParser(
                 "Average Number of Current Registrations to MDS Service",
-                "mdscurrentregistrationhistogram", "Number of Registrations", n);
+                "mdscurrentregistrationhistogram", "Number of Registrations", ts);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -84,11 +84,10 @@ public class RegistrationReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            lifetimeRegistrationHist.nextEntry(startS, ts.getFormattedTime());
-            currentRegistrationHist.nextEntry(startS, ts.getFormattedTime());
+            lifetimeRegistrationHist.nextEntry();
+            currentRegistrationHist.nextEntry();
 
             DatabaseRetriever dbr = new DatabaseRetriever();
-            String startDate = ts.getFormattedTime();
 
             ResultSet rs = dbr.retrieve(
                     "SELECT " +
