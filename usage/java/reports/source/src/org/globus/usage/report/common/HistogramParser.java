@@ -15,62 +15,65 @@
  */
 package org.globus.usage.report.common;
 
-import java.util.Vector;
-import java.util.HashMap;
-import java.util.Iterator;
-
 import java.io.IOException;
 import java.io.PrintStream;
 
+import java.sql.ResultSet;
+
+import java.text.SimpleDateFormat;
+
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Vector;
+
+
 public class HistogramParser {
+    static private SimpleDateFormat dayFormat;
+    static private SimpleDateFormat monthFormat;
+    static private SimpleDateFormat sqlDateFormat;
+
+    static {
+        dayFormat = new SimpleDateFormat("MMM d,''yy");
+        monthFormat = new SimpleDateFormat("MMM, ''yy");
+        sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    }
 
     private String title;
-
     private String output;
-
     private String axisName;
-
-    private HashMap uniqueItems;
-
-    private Entry[] entries;
-
+    private HashMap uniqueItems; // itemName -> ItemEntry
+    private Entry[] entries; // indexed by step number
     private int index;
-
     private long totalData;
+    private TimeStep ts;
+    private SimpleDateFormat dateFormat;
+    private String stepDuration;
 
-    private boolean rangeSlotted;
-
-    private Slotter slots;
-
-    public HistogramParser(String t, String o, String a, int stepNumber) {
+    public HistogramParser(String t, String o, String a, TimeStep ts) {
         uniqueItems = new HashMap(5);
         title = t;
         output = o;
         axisName = a;
-        entries = new Entry[stepNumber];
+        entries = new Entry[ts.getSteps()];
         index = -1;
-        rangeSlotted = false;
         totalData = 0;
+        ts = new TimeStep(ts.getTime(), ts.getStepSize(), ts.getSteps());
+        if (ts.getStepSize() == Calendar.MONTH) {
+            dateFormat = monthFormat;
+            stepDuration = "month";
+        } else {
+            dateFormat = dayFormat;
+            stepDuration = "day";
+        }
     }
 
-    public HistogramParser(String t, String o, int stepNumber, String rangeName)
-            throws IOException {
-        uniqueItems = new HashMap(5);
-        title = t;
-        output = o;
-        axisName = "count";
-        entries = new Entry[stepNumber];
-        index = -1;
-        rangeSlotted = true;
-        slots = new Slotter(rangeName);
-        totalData = 0;
-    }
-
-    public void nextEntry(String start, String endString) {
-        index++;
-        entries[index] = new Entry();
-        entries[index].addStartDate(start);
-        entries[index].addEndDate(endString);
+    public void nextEntry() {
+        entries[++index] = new Entry(ts.getTime(), ts.stepTime());
     }
 
     public void addData(String item) {
@@ -80,7 +83,7 @@ public class HistogramParser {
     public void addData(String item, double data) {
         ItemEntry entry = (ItemEntry) uniqueItems.get(item);
         if (entry == null) {
-            entry = new ItemEntry(0);
+            entry = new ItemEntry(item);
             uniqueItems.put(item, entry);
         }
         entry.add(data);
@@ -100,175 +103,191 @@ public class HistogramParser {
         }
     }
 
-    public void addRangedData(double value) {
-        this.slots.addValue(value, 1);
-    }
-
-    public void addRangedData(double value, long valueToAdd) {
-        this.slots.addValue(value, valueToAdd);
-        this.addData(slots.whichSlotString(value), valueToAdd);
-    }
-
     public void output(PrintStream io) {
         io.println("<histogram>");
         io.println(" <title>" + title + "</title>");
         io.println(" <output>" + output + "</output>");
         io.println(" <axis>" + axisName + "</axis>");
 
-        String[] itemNames = new String[uniqueItems.size()];
-        String itemName;
-
         Iterator iter = uniqueItems.keySet().iterator();
+        List itemEntries = new Vector();
+
         while (iter.hasNext()) {
-            int x = 0;
-            itemName = (String) iter.next();
-            while (x < itemNames.length && itemNames[x] != ""
-                    && itemNames[x] != null) {
-                if (((ItemEntry) uniqueItems.get(itemName)).get() < ((ItemEntry) uniqueItems
-                        .get(itemNames[x])).get()) {
-                    String temp = itemNames[x];
-                    itemNames[x] = itemName;
-                    itemName = temp;
+            String itemName = (String) iter.next();
+            itemEntries.add(uniqueItems.get(itemName));
+        }
+        Collections.sort(itemEntries);
+
+        int otherCount = 0;
+        {
+            ListIterator li = itemEntries.listIterator();
+            while (li.hasNext()) {
+                ItemEntry ie = (ItemEntry) li.next();
+                if ((ie.get() / totalData) < .005) {
+                    otherCount++;
                 }
-                x++;
-            }
-            itemNames[x] = itemName;
-        }
-        Vector other = new Vector();
-        iter = uniqueItems.keySet().iterator();
-        while (iter.hasNext()) {
-            itemName = (String) iter.next();
-            if (((ItemEntry) uniqueItems.get(itemName)).get() / totalData < .005) {
-                other.add(itemName);
             }
         }
+
         for (int i = 0; i < entries.length; i++) {
             io.println(" <entry>");
-            io.println("\t<start-date>" + entries[i].getStartDate()
-                    + "</start-date>");
-            io
-                    .println("\t<end-date>" + entries[i].getEndDate()
-                            + "</end-date>");
+            io.println("\t<start-date>"
+                       + formatDate(entries[i].getStartDate())
+                       + "</start-date>");
+            io.println("\t<end-date>"
+                       + formatDate(entries[i].getEndDate())
+                       + "</end-date>");
 
-            int itemIndex = 0;
-            if (other.size() > 0) {
+            long remaining = totalData;
+            ListIterator li = itemEntries.listIterator();
+
+            if (otherCount > 0) {
                 double otherValue = 0;
                 io.println("\t<item>");
                 io.println("\t\t<name> other </name>");
 
-                while (other.contains(itemNames[itemIndex])) {
+                while (otherCount-- > 0) {
+                    ItemEntry ie = (ItemEntry) li.next();
+
                     io.println("\t\t<sub-item>");
-                    io.println("\t\t\t<name>" + itemNames[itemIndex]
+                    io.println("\t\t\t<name>" + ie.name
                             + "</name>");
                     io.println("\t\t\t<single-value>"
-                            + entries[i].getData(itemNames[itemIndex])
+                            + entries[i].getData(ie.name)
                             + "</single-value>");
                     io.println("\t\t</sub-item>");
-                    otherValue += entries[i].getData(itemNames[itemIndex]);
-                    itemIndex++;
+                    otherValue += entries[i].getData(ie.name);
                 }
-                io.println("\t\t<single-value>" + (int) otherValue
+                io.println("\t\t<single-value>" + (long) otherValue
                         + "</single-value>");
-                for (int x = itemIndex; x < itemNames.length; x++) {
-                    otherValue += entries[i].getData(itemNames[x]);
-                }
-                io.println("\t\t<value>" + otherValue + "</value>");
+                io.println("\t\t<value>" + remaining + "</value>");
                 io.println("\t</item>");
+                remaining -= otherValue;
             }
 
-            while (itemIndex < itemNames.length) {
-                io.println("\t<item>");
-                io.println("\t\t<name>" + itemNames[itemIndex] + "</name>");
+            while (li.hasNext()) {
+                ItemEntry ie = (ItemEntry) li.next();
+                double value = entries[i].getData(ie.name);
 
-                double value = entries[i].getData(itemNames[itemIndex]);
-                io.println("\t\t<single-value>" + (int) value
+                io.println("\t<item>");
+                io.println("\t\t<name>" + ie.name + "</name>");
+
+                io.println("\t\t<single-value>" + (long) value
                         + "</single-value>");
 
-                itemIndex++;
-                for (int x = itemIndex; x < itemNames.length; x++) {
-                    value += entries[i].getData(itemNames[x]);
-                }
-                io.println("\t\t<value>" + value + "</value>");
+                io.println("\t\t<value>" + remaining + "</value>");
                 io.println("\t</item>");
+
+                remaining -= value;
             }
             io.println(" </entry>");
         }
-        if (!rangeSlotted) {
-            System.out.println(" <slots>");
-            System.out.println("\t<start-date>" + entries[0].getStartDate()
-                    + "</start-date>");
-            System.out.println("\t<end-date>"
-                    + entries[entries.length - 1].getStartDate()
-                    + "</end-date>");
-            Iterator iter2 = uniqueItems.keySet().iterator();
-            while (iter2.hasNext()) {
-                System.out.println("\t<item>");
-                itemName = (String) iter2.next();
-                System.out.println("\t\t<name>" + itemName + "</name>");
-                System.out.println("\t\t<single-value>"
-                        + ((ItemEntry) uniqueItems.get(itemName)).get()
-                        + "</single-value>");
-                System.out.println("\t</item>");
-            }
-            System.out.println(" </slots>");
-        } else if (rangeSlotted) {
-            System.out.println(" <slots>");
-            System.out.println("\t<start-date>" + entries[0].getStartDate()
-                    + "</start-date>");
-            System.out.println("\t<end-date>"
-                    + entries[entries.length - 1].getStartDate()
-                    + "</end-date>");
-            slots.output(io);
-            System.out.println(" </slots>");
-        }
+
+        io.println(" <slots>");
+        io.println("\t<start-date>" + formatDate(entries[0].getStartDate())
+                + "</start-date>");
+        io.println("\t<end-date>"
+                + formatDate(entries[entries.length - 1].getStartDate())
+                + "</end-date>");
+
+        outputSlots(io);
+
+        io.println(" </slots>");
         io.println("</histogram>");
     }
 
-    public int getNumSlots() {
-        return slots.getNumSlots();
+    public void outputSlots(PrintStream io) {
+        Iterator iter = uniqueItems.keySet().iterator();
+        List itemEntries = new Vector();
+
+        while (iter.hasNext()) {
+            String itemName = (String) iter.next();
+            itemEntries.add(uniqueItems.get(itemName));
+        }
+        Collections.sort(itemEntries);
+
+        ListIterator li = itemEntries.listIterator();
+        while (li.hasNext()) {
+            ItemEntry ie = (ItemEntry) li.next();
+
+            io.println("\t<item>");
+            io.println("\t\t<name>" + ie.name + "</name>");
+            io.println("\t\t<single-value>"
+                    + ie.get()
+                    + "</single-value>");
+            io.println("\t</item>");
+        }
+    }
+    
+    public void upload(DatabaseRetriever dbr) throws Exception {
+        for (int i = 0; i < entries.length; i++) {
+            ResultSet rs;
+            String dateString = sqlDateFormat.format(entries[i].getStartDate());
+            String durationString = "1 " + stepDuration;
+            long id;
+
+            dbr.update("INSERT INTO histogram_metadata " +
+                "(report_name, report_date, duration, title, axis) " +
+                "VALUES('" + output + "', '" + dateString + "', '" +
+                durationString + "', '" + title + "', '" + axisName + "');");
+            
+            rs = dbr.retrieve("SELECT id "
+                       + "FROM histogram_metadata "
+                       + "WHERE report_name = '" + output + "' "
+                       + "AND report_date = '" + dateString + "' "
+                       + "AND duration = '1 " + durationString + "' "
+                       + "AND title = '" + title + "' "
+                       + "AND axis = '" + axisName + "' ");
+
+            id = -1;
+            while (rs.next()) {
+                id = rs.getLong(1);
+            }
+            rs.close();
+
+            if (id == -1) {
+                throw new Exception("Error determining id");
+            }
+
+            Iterator iter = uniqueItems.keySet().iterator();
+
+            while (iter.hasNext()) {
+                String itemName = (String) iter.next();
+
+                dbr.update("INSERT into histograms(id, item, value) "
+                         + "VALUES(" + id + ", '" + itemName + "', "
+                         + entries[i].getData(itemName) + "');");
+            }
+        }
     }
 
-    public long getSlotThreshold(int which) {
-        return slots.getSlotThreshold(which);
-    }
-        
-    public String getSlotName(int which) {
-        return slots.getSlotName(which);
+    private String formatDate(Date date) {
+        return dateFormat.format(date);
     }
 
     public static class Entry {
-        private String startDate;
-
-        private String endDate;
-
+        private Date start;
+        private Date end;
         private HashMap itemMap;
 
-        public Entry() {
-            startDate = "";
-            endDate = "";
+        public Entry(Date start, Date end) {
             itemMap = new HashMap(5);
+            this.start = start;
+            this.end = end;
         }
 
-        public void addStartDate(String start) {
-            startDate = start;
+        public Date getStartDate() {
+            return start;
         }
 
-        public void addEndDate(String endString) {
-            endDate = endString;
-        }
-
-        public String getStartDate() {
-            return startDate;
-        }
-
-        public String getEndDate() {
-            return endDate;
+        public Date getEndDate() {
+            return start;
         }
 
         public void addData(String keyName, double data) {
             ItemEntry entry = (ItemEntry) itemMap.get(keyName);
             if (entry == null) {
-                entry = new ItemEntry(0);
+                entry = new ItemEntry(keyName, 0);
                 itemMap.put(keyName, entry);
             }
             entry.add(data);
@@ -282,13 +301,19 @@ public class HistogramParser {
                 return entry.get();
             }
         }
-
     }
 
-    public static class ItemEntry {
+    public static class ItemEntry implements Comparable {
+        private String name;
         private double data;
 
-        public ItemEntry(double in) {
+        public ItemEntry(String name) {
+            this.name = name;
+            this.data = 0;
+        }
+
+        public ItemEntry(String name, double in) {
+            this.name = name;
             this.data = in;
         }
 
@@ -298,6 +323,17 @@ public class HistogramParser {
 
         public double get() {
             return this.data;
+        }
+
+        public int compareTo(Object o) throws ClassCastException {
+            ItemEntry ie = (ItemEntry) o;
+            if (data > ie.data) {
+                return 1;
+            } else if (get() == ie.data) {
+                return 0;
+            } else {
+                return -1;
+            }
         }
 
     }

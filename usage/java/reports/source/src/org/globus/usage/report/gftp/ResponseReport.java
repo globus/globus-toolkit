@@ -68,16 +68,16 @@ public class ResponseReport {
         HistogramParser transferHist = new HistogramParser(
                 "Number of Packets Shown by Transfer Type",
                 "GFTPtransferhistogram",
-                "Number of GFTP Packets with Given Transfer Type", n);
+                "Number of GFTP Packets with Given Transfer Type", ts);
 
         HistogramParser responseHist = new HistogramParser(
                 "Number of Packets Shown by FTP Reponse Code",
                 "GFTPresponsehistogram",
-                "Number of GFTP Packets with Given Response Code", n);
+                "Number of GFTP Packets with Given Response Code", ts);
 
         HistogramParser versionHist = new HistogramParser(
                 "Number of Packets shown by GFTP Version",
-                "GFTPversionhistogram", "Number of Packets of Given Version", n);
+                "GFTPversionhistogram", "Number of Packets of Given Version", ts);
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
@@ -88,9 +88,9 @@ public class ResponseReport {
             Date startDate = ts.getTime();
             ts.stepTime();
 
-            versionHist.nextEntry(startTime, ts.getFormattedTime());
-            transferHist.nextEntry(startTime, ts.getFormattedTime());
-            responseHist.nextEntry(startTime, ts.getFormattedTime());
+            versionHist.nextEntry();
+            transferHist.nextEntry();
+            responseHist.nextEntry();
 
             ResultSet rs;
             

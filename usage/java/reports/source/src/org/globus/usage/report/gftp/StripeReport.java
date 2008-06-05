@@ -69,12 +69,12 @@ public class StripeReport {
         HistogramParser streamHist = new HistogramParser(
                 "Number of Packets shown by Streams Used",
                 "GFTPstreamhistogram",
-                "Number of GFTP Packets with Given Number of Streams", n);
+                "Number of GFTP Packets with Given Number of Streams", ts);
 
         HistogramParser stripeHist = new HistogramParser(
                 "Number of Packets Shown by Stripes Used",
                 "GFTPstripehistogram",
-                "Number of GFTP Packets with Given Number of Stripes", n);
+                "Number of GFTP Packets with Given Number of Stripes", ts);
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
@@ -83,8 +83,8 @@ public class StripeReport {
             Date startDate = ts.getTime();
             ts.stepTime();
 
-            streamHist.nextEntry(startTime, ts.getFormattedTime());
-            stripeHist.nextEntry(startTime, ts.getFormattedTime());
+            streamHist.nextEntry();
+            stripeHist.nextEntry();
 
             ResultSet rs = dbr.retrieve(
                     "SELECT num_streams, COUNT(*) "+

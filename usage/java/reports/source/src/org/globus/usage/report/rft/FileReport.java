@@ -68,19 +68,19 @@ public class FileReport {
 
         HistogramParser fileHist = new HistogramParser(
                 "Average Number of Files Transfered by a RFT Resource",
-                "rftfilehistogram", "Number of Files", n);
+                "rftfilehistogram", "Number of Files", ts);
 
         HistogramParser deleteHist = new HistogramParser(
                 "Average Number of Files Deleted by a RFT Resource",
-                "rftdeletehistogram", "Number of Files Deleted", n);
+                "rftdeletehistogram", "Number of Files Deleted", ts);
 
         HistogramParser byteHist = new HistogramParser(
                 "Average Number of Bytes Transfered by a RFT Resource",
-                "rftbytehistogram", "Bytes Transferred", n);
+                "rftbytehistogram", "Bytes Transferred", ts);
 
         HistogramParser typeHist = new HistogramParser(
                 "Percent of Requests for Deletion vs. Transfer",
-                "rfttypehistogram", "Percent of total requests", n);
+                "rfttypehistogram", "Percent of total requests", ts);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -96,10 +96,10 @@ public class FileReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            typeHist.nextEntry(startS, ts.getFormattedTime());
-            deleteHist.nextEntry(startS, ts.getFormattedTime());
-            fileHist.nextEntry(startS, ts.getFormattedTime());
-            byteHist.nextEntry(startS, ts.getFormattedTime());
+            typeHist.nextEntry();
+            deleteHist.nextEntry();
+            fileHist.nextEntry();
+            byteHist.nextEntry();
 
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();
