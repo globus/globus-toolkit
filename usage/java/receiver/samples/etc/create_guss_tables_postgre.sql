@@ -64,8 +64,8 @@ CREATE TABLE rft_packets(
     number_of_files BIGINT,
     number_of_bytes BIGINT,
     number_of_resources BIGINT,
-    creation_time TIMESTAMP,
-    factory_start_time TIMESTAMP,
+    creation_time BIGINT,
+    factory_start_time BIGINT,
     PRIMARY KEY (id)
 );
 
