@@ -64,8 +64,8 @@ CREATE TABLE rft_packets(
     number_of_files BIGINT,
     number_of_bytes BIGINT,
     number_of_resources BIGINT,
-    creation_time BIGINT,
-    factory_start_time BIGINT,
+    creation_time TIMESTAMP,
+    factory_start_time TIMESTAMP,
     PRIMARY KEY (id)
 );
 
@@ -108,6 +108,19 @@ CREATE TABLE java_ws_core_packets(
     service_request_count INT,
     jvm_info VARCHAR(64)
 );
+
+-- To upgrade from previous version:
+-- ALTER TABLE java_ws_core_packets ADD version_major SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD version_minor SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD version_micro SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD port_number INT;
+-- ALTER TABLE java_ws_core_packets ADD thread_pool_size SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD thread_count SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD max_threads SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD threads_high_water_mark SMALLINT;
+-- ALTER TABLE java_ws_core_packets ADD service_request_count INT;
+-- ALTER TABLE java_ws_core_packets ADD jvm_info VARCHAR(64);
+
 
 CREATE TABLE gram_packets( 
     id SERIAL,
