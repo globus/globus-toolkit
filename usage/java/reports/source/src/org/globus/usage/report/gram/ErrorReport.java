@@ -85,11 +85,11 @@ public class ErrorReport {
         DatabaseRetriever dbr = new DatabaseRetriever();
 
         HistogramParser gt2hist = new HistogramParser("Breakdown of GT2 Codes",
-                "gt2histogram", "Jobs with Each Error code", ts);
+                "gt2histogram", "Jobs with Each Error code", n);
 
         HistogramParser faulthist = new HistogramParser(
                 "Breakdown of Fault Classes", "faulthistogram",
-                "Number of Jobs with Fault Class", ts);
+                "Number of Jobs with Fault Class", n);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -98,8 +98,8 @@ public class ErrorReport {
             String startDate = ts.getFormattedTime();
             ts.stepTime();
 
-            gt2hist.nextEntry();
-            faulthist.nextEntry();
+            gt2hist.nextEntry(startDate, ts.getFormattedTime());
+            faulthist.nextEntry(startDate, ts.getFormattedTime());
 
             int totalJobs = 0;
             int gt2Jobs = 0;

@@ -68,15 +68,15 @@ public class UptimeReport {
 
         HistogramParser typeHist = new HistogramParser(
                 "Percent of RLS Deployments By Type (LRC, RLI, or Both)",
-                "rlstypehistogram", "Percent of total deployments", ts);
+                "rlstypehistogram", "Percent of total deployments", n);
 
         HistogramParser uptimeHist = new HistogramParser(
                 "Maximum Uptime of RLS Deployments",
-                "rlsuptimehistogram", "Number of deployments", ts);
+                "rlsuptimehistogram", "Number of deployments", n);
 
         HistogramParser verHist = new HistogramParser(
                 "Percent of RLS Deployments By Version",
-                "rlsverhistogram", "Percent of total deployments", ts);
+                "rlsverhistogram", "Percent of total deployments", n);
 
         while (ts.next()) {
             Map rlss = new java.util.HashMap();
@@ -85,9 +85,9 @@ public class UptimeReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            typeHist.nextEntry();
-            uptimeHist.nextEntry();
-            verHist.nextEntry();
+            typeHist.nextEntry(startS, ts.getFormattedTime());
+            uptimeHist.nextEntry(startS, ts.getFormattedTime());
+            verHist.nextEntry(startS, ts.getFormattedTime());
 
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();

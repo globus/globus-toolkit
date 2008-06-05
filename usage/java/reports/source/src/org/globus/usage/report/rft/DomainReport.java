@@ -74,10 +74,10 @@ public class DomainReport {
 
         HistogramParser ipReport = new HistogramParser(
                 "Number of Unique IP Addresses Using RFT Broken Down by Domain",
-                "rftiphistogram", "Number of Unique IP Addresses", ts);
+                "rftiphistogram", "Number of Unique IP Addresses", n);
         HistogramParser domainReport = new HistogramParser(
                 "Total RFT Resources Created Shown by Domain",
-                "rftdomainhistogram", "Number of Resources Created", ts);
+                "rftdomainhistogram", "Number of Resources Created", n);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         while (ts.next()) {
@@ -87,8 +87,8 @@ public class DomainReport {
             Date startTime = ts.getTime();
             ts.stepTime();
 
-            ipReport.nextEntry();
-            domainReport.nextEntry();
+            ipReport.nextEntry(startDate, ts.getFormattedTime());
+            domainReport.nextEntry(startDate, ts.getFormattedTime());
 
             ResultSet rs = dbr.retrieve(
                     "SELECT ip_address, COUNT(*) " +

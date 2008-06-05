@@ -91,7 +91,7 @@ public class SchedulerReport {
 
         HistogramParser jobHist = new HistogramParser(
                 "Total Jobs by Scheduler Used", "jobhistogram",
-                "Total Jobs Shown by Scheduler Used", ts);
+                "Total Jobs Shown by Scheduler Used", n);
 
         while (ts.next()) {
             int totalJobs = 0;
@@ -102,7 +102,7 @@ public class SchedulerReport {
 
             ts.stepTime();
 
-            jobHist.nextEntry();
+            jobHist.nextEntry(startDate, ts.getFormattedTime());
 
             rs = dbr.retrieve(new String("gram_packets"),
                     new String[] { "Count(*)" }, startTime, ts.getTime());

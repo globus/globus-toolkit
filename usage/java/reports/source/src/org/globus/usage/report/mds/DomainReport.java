@@ -73,10 +73,10 @@ public class DomainReport {
 
         HistogramParser ipReport = new HistogramParser(
                 "Number of Unique IP Addresses Using MDS Broken Down by Domain",
-                "mdsiphistogram", "Number of Unique IP Addresses", ts);
+                "mdsiphistogram", "Number of Unique IP Addresses", n);
         HistogramParser domainReport = new HistogramParser(
                 "Total MDS Resources Created Shown by Domain",
-                "mdsdomainhistogram", "Number of Resources Created", ts);
+                "mdsdomainhistogram", "Number of Resources Created", n);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -85,8 +85,8 @@ public class DomainReport {
             Date startTime = ts.getTime();
             ts.stepTime();
 
-            ipReport.nextEntry();
-            domainReport.nextEntry();
+            ipReport.nextEntry(startDate, ts.getFormattedTime());
+            domainReport.nextEntry(startDate, ts.getFormattedTime());
 
             ResultSet rs = dbr.retrieve(
                     "SELECT ip_address, COUNT(*) " +

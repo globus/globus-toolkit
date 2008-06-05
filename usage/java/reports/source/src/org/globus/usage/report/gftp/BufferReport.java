@@ -17,7 +17,6 @@ package org.globus.usage.report.gftp;
 
 import org.globus.usage.report.common.DatabaseRetriever;
 import org.globus.usage.report.common.HistogramParser;
-import org.globus.usage.report.common.SlottedHistogramParser;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
@@ -68,22 +67,20 @@ public class BufferReport {
 
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
-        SlottedHistogramParser bufferHist = new SlottedHistogramParser(
-                "TCP Buffer Size",
-                "GFTPtcphistogram", ts, "buffer");
+        HistogramParser bufferHist = new HistogramParser("TCP Buffer Size",
+                "GFTPtcphistogram", n, "buffer");
 
-        SlottedHistogramParser blockHist = new SlottedHistogramParser(
-                "Block Size", "GFTPblockhistogram", ts, "block");
+        HistogramParser blockHist = new HistogramParser("Block Size",
+                "GFTPblockhistogram", n, "block");
 
-        SlottedHistogramParser byteHist = new SlottedHistogramParser(
-                "Size of Transfer",
-                "GFTPbytehistogram", ts, "byte");
+        HistogramParser byteHist = new HistogramParser("Size of Transfer",
+                "GFTPbytehistogram", n, "byte");
 
-        SlottedHistogramParser bandwidthHist = new SlottedHistogramParser(
-                "Amount of Bandwidth", "GFTPbandwidthhistogram", ts, "bandwidth");
+        HistogramParser bandwidthHist = new HistogramParser(
+                "Amount of Bandwidth", "GFTPbandwidthhistogram", n, "bandwidth");
 
         HistogramParser packetHist = new HistogramParser("Transfer Number",
-                "GFTPpackethistogram", "Number of GFTP Transfers", ts);
+                "GFTPpackethistogram", "Number of GFTP Transfers", n);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         while (ts.next()) {
@@ -91,11 +88,11 @@ public class BufferReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            bufferHist.nextEntry();
-            blockHist.nextEntry();
-            bandwidthHist.nextEntry();
-            byteHist.nextEntry();
-            packetHist.nextEntry();
+            bufferHist.nextEntry(startS, ts.getFormattedTime());
+            blockHist.nextEntry(startS, ts.getFormattedTime());
+            bandwidthHist.nextEntry(startS, ts.getFormattedTime());
+            byteHist.nextEntry(startS, ts.getFormattedTime());
+            packetHist.nextEntry(startS, ts.getFormattedTime());
 
             String startDate = ts.getFormattedTime();
             ResultSet rs;
@@ -126,7 +123,7 @@ public class BufferReport {
                 double numBytes = rs.getDouble(1);
                 long count = rs.getLong(2);
 
-                byteHist.addData(numBytes, count);
+                byteHist.addRangedData(numBytes, count);
             }
 
             rs = dbr.retrieve(
@@ -155,7 +152,7 @@ public class BufferReport {
                 double blockSize = rs.getDouble(1);
                 long count = rs.getLong(2);
 
-                blockHist.addData(blockSize, count);
+                blockHist.addRangedData(blockSize, count);
             }
             rs.close();
 
@@ -185,7 +182,7 @@ public class BufferReport {
                 double bufferSize = rs.getDouble(1);
                 long count = rs.getLong(2);
 
-                bufferHist.addData(bufferSize, count);
+                bufferHist.addRangedData(bufferSize, count);
             }
             rs.close();
 
@@ -217,7 +214,7 @@ public class BufferReport {
                 double bandwidth = rs.getDouble(1);
                 long count = rs.getLong(2);
 
-                bandwidthHist.addData(bandwidth, count);
+                bandwidthHist.addRangedData(bandwidth, count);
             }
 
             rs = dbr.retrieve(
@@ -244,7 +241,7 @@ public class BufferReport {
         System.out.println("</report>");
     }
 
-    private static String getSlotBinsAsTable(SlottedHistogramParser parser) {
+    private static String getSlotBinsAsTable(HistogramParser parser) {
         int num_slots = parser.getNumSlots();
         String result = new String();
         long lastThreshold = parser.getSlotThreshold(0);

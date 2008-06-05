@@ -68,15 +68,15 @@ public class ReplicaReport {
 
         HistogramParser replicaHist = new HistogramParser(
                 "Total Number of Replicas Registered in LRCs",
-                "rlslrcreplicahistogram", "Number of Replicas", ts);
+                "rlslrcreplicahistogram", "Number of Replicas", n);
 
         HistogramParser mappingHist = new HistogramParser(
                 "Total Number of Mappings Registered in LRCs",
-                "rlslrcmappinghistogram", "Number of Mappings", ts);
+                "rlslrcmappinghistogram", "Number of Mappings", n);
 
         HistogramParser scaleHist = new HistogramParser(
                 "Scale of LRCs (between empty and over 1M entries)",
-                "rlslrcscalehistogram", "Number of LRCs", ts);
+                "rlslrcscalehistogram", "Number of LRCs", n);
 
         while (ts.next()) {
             Map lrcs = new java.util.HashMap();
@@ -95,9 +95,9 @@ public class ReplicaReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            replicaHist.nextEntry();
-            mappingHist.nextEntry();
-            scaleHist.nextEntry();
+            replicaHist.nextEntry(startS, ts.getFormattedTime());
+            mappingHist.nextEntry(startS, ts.getFormattedTime());
+            scaleHist.nextEntry(startS, ts.getFormattedTime());
 
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();

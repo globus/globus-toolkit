@@ -71,10 +71,10 @@ public class DomainReport {
 
         HistogramParser internalReport = new HistogramParser(
                 "Internal MCS/ISI packets recieved", "internalhistogram",
-                "% of Jobs from MCS/ISI", ts);
+                "% of Jobs from MCS/ISI", n);
         HistogramParser domainReport = new HistogramParser(
                 "Total Jobs Shown by Domain", "domainhistogram",
-                "Number of Jobs", ts);
+                "Number of Jobs", n);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -89,8 +89,8 @@ public class DomainReport {
             Date startTime = ts.getTime();
             ts.stepTime();
 
-            internalReport.nextEntry();
-            domainReport.nextEntry();
+            internalReport.nextEntry(startDate, ts.getFormattedTime());
+            domainReport.nextEntry(startDate, ts.getFormattedTime());
 
             ResultSet rs = dbr.retrieve(
                     "SELECT ip_address, COUNT(*) " +

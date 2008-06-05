@@ -45,19 +45,11 @@ public class TimeStep {
     }
 
     public TimeStep(int stepNumber, String date) throws ParseException {
-        new TimeStep("day", stepNumber, date);
+        new TimeStep(new String("day"), stepNumber, date);
     }
 
     public TimeStep(String date) throws ParseException {
-        new TimeStep("day", 1, date);
-    }
-
-    public TimeStep(Date startDate, int stepSize, int steps) {
-        this.steps = steps;
-        this.stepNumber = steps;
-        stepSize = stepSize;
-        calendar = Calendar.getInstance();
-        calendar.setTime(startDate);
+        new TimeStep(new String("day"), 1, date);
     }
 
     public boolean next() {
@@ -66,14 +58,6 @@ public class TimeStep {
 
     public Date getTime() {
         return calendar.getTime();
-    }
-
-    public int getStepSize() {
-        return stepSize;
-    }
-
-    public int getSteps() {
-        return steps;
     }
 
     public String getFormattedTime() {
