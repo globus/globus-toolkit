@@ -1,4 +1,4 @@
-all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh gt4-java-ws-core gt4-java-admin gt4-mds gt4-delegation gt4-rft gt4-gram @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ gt4-cas webmds gt4-c-ws-core @i18n@ prews-test globus-gsi-test wstests gt4-replicator globus_rendezvous gridway @gridshib@ done
+all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh gt4-java-ws-core gt4-java-admin gt4-mds gt4-delegation gt4-rft gt4-gram @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ gt4-cas webmds gt4-c-ws-core @i18n@ prews-test globus-gsi-test wstests gt4-replicator globus_rendezvous @gridway@ @gridshib@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
