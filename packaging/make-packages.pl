@@ -1030,16 +1030,23 @@ sub install_globus_core()
 # --------------------------------------------------------------------
 {
     system("mkdir -p $pkglog");
+    my $dir = $cvs_archives{gt}[2];
+    my $coresrcdir = $dir . "/core/source";
+
     if ( $inplace ) {
-        my $dir = $cvs_archives{gt}[2];
         my $_cwd = cwd();
-        chdir $dir . "/core/source";
-        if ( !$avoid_bootstrap || ! -e 'configure') {
-           log_system("./bootstrap", "$pkglog/globus_core");
-           paranoia("Bootstrap of globus_core in CVS failed.");
+        if ( -d "$coresrcdir" ) {
+  	    chdir $dir . "/core/source";
+            if ( !$avoid_bootstrap || ! -e 'configure') {
+               log_system("./bootstrap", "$pkglog/globus_core");
+               paranoia("Bootstrap of globus_core in CVS failed.");
+            }
+            log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor", "$pkglog/globus_core");
+            paranoia("gpt-build of globus_core from CVS failed.");
+        } else {
+            print "Your checkout doesn't have core/source in it, so I will not\n";
+            print "try to build globus_core for you.\n"
         }
-        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor", "$pkglog/globus_core");
-        paranoia("gpt-build of globus_core from CVS failed.");
         chdir $_cwd;
     } else {
         print "$ENV{PWD}";
