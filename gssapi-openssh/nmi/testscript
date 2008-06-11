@@ -92,12 +92,13 @@ if test -d gssapi-openssh/openssh; then
   fi
   cd ../..
 fi
+rm -rf gt*-installer
 if test -f nightly.tar.gz; then
     echo ==================================================
     echo Installing GT CVS Trunk...
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
     tar xfz nightly.tar.gz
-    cd gtTRUNK-all-source-installer
+    cd gt*-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
                 --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
     make gsi-openssh install

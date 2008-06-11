@@ -45,7 +45,7 @@ fi
 echo ==================================================
 echo Installing Globus Toolkit...
 tar xfz gt*-all-source-installer.tar.gz
-cd gt4*-installer
+cd gt*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
 make gsi-myproxy install
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
@@ -78,12 +78,13 @@ grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
 myproxy-test -startserver $valgrind
 myproxy-test-replicate
 cd ..
+rm -rf gt*-installer
 if test -f nightly.tar.gz; then
     echo ==================================================
     echo Installing GT CVS Trunk...
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
     tar xfz nightly.tar.gz
-    cd gtTRUNK-all-source-installer
+    cd gt*-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make gsi-myproxy install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
