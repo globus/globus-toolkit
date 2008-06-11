@@ -78,6 +78,7 @@ public class ReplicaReport {
                 "Scale of LRCs (between empty and over 1M entries)",
                 "rlslrcscalehistogram", "Number of LRCs", ts);
 
+        DatabaseRetriever dbr = new DatabaseRetriever();
         while (ts.next()) {
             Map lrcs = new java.util.HashMap();
             int numLrcLFNs = 0;
@@ -90,6 +91,10 @@ public class ReplicaReport {
             int num100 = 0;
             int numSub100 = 0;
             int numEmpty = 0;
+
+            boolean cachedReplicaHist;
+            boolean cachedMappingHist;
+            boolean cachedScaleHist;
             
             Date startD = ts.getTime();
             String startS = ts.getFormattedTime();
@@ -99,81 +104,95 @@ public class ReplicaReport {
             mappingHist.nextEntry();
             scaleHist.nextEntry();
 
-            DatabaseRetriever dbr = new DatabaseRetriever();
-            String startDate = ts.getFormattedTime();
+            cachedReplicaHist = replicaHist.downloadCurrent(dbr);
+            cachedMappingHist = mappingHist.downloadCurrent(dbr);
+            cachedScaleHist = scaleHist.downloadCurrent(dbr);
 
-            ResultSet rs = dbr.retrieve("rls_packets", new String[] {
-                    "ip_address", "lfn", "pfn", "mappings" },
-                    startD, ts.getTime());
-            while (rs.next()) {
+            if (!(cachedReplicaHist && cachedMappingHist && cachedScaleHist)) {
+                ResultSet rs = dbr.retrieve("rls_packets", new String[] {
+                        "ip_address", "lfn", "pfn", "mappings" },
+                        startD, ts.getTime());
+                while (rs.next()) {
 
-                // Get raw data from resultset
-                String ip = rs.getString(1);
-                int lfns = rs.getInt(2);
-                int pfns = rs.getInt(3);
-                int maps = rs.getInt(4);
+                    // Get raw data from resultset
+                    String ip = rs.getString(1);
+                    int lfns = rs.getInt(2);
+                    int pfns = rs.getInt(3);
+                    int maps = rs.getInt(4);
 
-                // Find existing RLS entry or create new one
-                RLSEntry lrc;
-                if (lrcs.containsKey(ip)) {
-                    lrc = (RLSEntry) lrcs.get(ip);
+                    // Find existing RLS entry or create new one
+                    RLSEntry lrc;
+                    if (lrcs.containsKey(ip)) {
+                        lrc = (RLSEntry) lrcs.get(ip);
+                    }
+                    else {
+                        lrc = new RLSEntry();
+                        lrcs.put(ip, lrc);
+                    }
+
+                    // Update replica count for RLS entry
+                    if (lrc.lfn < lfns)
+                        lrc.lfn = lfns;
+                    if (lrc.pfn < pfns)
+                        lrc.pfn = pfns;
+                    if (lrc.map < maps)
+                        lrc.map = maps;
                 }
-                else {
-                    lrc = new RLSEntry();
-                    lrcs.put(ip, lrc);
+
+                // Produce stats
+                Iterator iter = lrcs.keySet().iterator();
+                while (iter.hasNext()) {
+                    Object key = iter.next();
+                    RLSEntry lrc = (RLSEntry) lrcs.get(key);
+                    
+                    int tot = lrc.lfn + lrc.pfn;
+                    
+                    numLrcLFNs += lrc.lfn;
+                    numLrcPFNs += lrc.pfn;
+                    numLrcMAPs += lrc.map;
+
+                    if (tot == 0)
+                        numEmpty++;
+                    else if (tot > 1000000)
+                        num1M++;
+                    else if (tot > 100000)
+                        num100G++;
+                    else if (tot > 10000)
+                        num10G++;
+                    else if (tot > 1000)
+                        num1G++;
+                    else if (tot > 100)
+                        num100++;
+                    else
+                        numSub100++;
                 }
 
-                // Update replica count for RLS entry
-                if (lrc.lfn < lfns)
-                    lrc.lfn = lfns;
-                if (lrc.pfn < pfns)
-                    lrc.pfn = pfns;
-                if (lrc.map < maps)
-                    lrc.map = maps;
+                if (! cachedReplicaHist) {
+                    replicaHist.addData("LFNs", numLrcLFNs);
+                    replicaHist.addData("PFNs", numLrcPFNs);
+                }
+                if (! cachedMappingHist) {
+                    mappingHist.addData("Mappings", numLrcMAPs);
+                }
+                if (! cachedScaleHist) {
+                    scaleHist.addData("Over 1M Entries", num1M);
+                    scaleHist.addData("Over 100K Entries", num100G);
+                    scaleHist.addData("Over 10K Entries", num10G);
+                    scaleHist.addData("Over 1K Entries", num1G);
+                    scaleHist.addData("Over 100 Entries", num100);
+                    scaleHist.addData("Under 100 Entries", numSub100);
+                    scaleHist.addData("Empty", numEmpty);
+                }
+
+                rs.close();
             }
-
-            // Produce stats
-            Iterator iter = lrcs.keySet().iterator();
-            while (iter.hasNext()) {
-                Object key = iter.next();
-                RLSEntry lrc = (RLSEntry) lrcs.get(key);
-                
-                int tot = lrc.lfn + lrc.pfn;
-                
-                numLrcLFNs += lrc.lfn;
-                numLrcPFNs += lrc.pfn;
-                numLrcMAPs += lrc.map;
-
-                if (tot == 0)
-                    numEmpty++;
-                else if (tot > 1000000)
-                    num1M++;
-                else if (tot > 100000)
-                    num100G++;
-                else if (tot > 10000)
-                    num10G++;
-                else if (tot > 1000)
-                    num1G++;
-                else if (tot > 100)
-                    num100++;
-                else
-                    numSub100++;
-            }
-
-            replicaHist.addData("LFNs", numLrcLFNs);
-            replicaHist.addData("PFNs", numLrcPFNs);
-            mappingHist.addData("Mappings", numLrcMAPs);
-            scaleHist.addData("Over 1M Entries", num1M);
-            scaleHist.addData("Over 100K Entries", num100G);
-            scaleHist.addData("Over 10K Entries", num10G);
-            scaleHist.addData("Over 1K Entries", num1G);
-            scaleHist.addData("Over 100 Entries", num100);
-            scaleHist.addData("Under 100 Entries", numSub100);
-            scaleHist.addData("Empty", numEmpty);
-
-            rs.close();
-            dbr.close();
         }
+        replicaHist.upload(dbr);
+        mappingHist.upload(dbr);
+        scaleHist.upload(dbr);
+
+        dbr.close();
+
         System.out.println("<report>");
         replicaHist.output(System.out);
         mappingHist.output(System.out);

@@ -60,9 +60,6 @@ longuptime)
 longuptime2)
         runReport "jwscore-container-long-up-2-report" "longuptime.xml" "gnuplot-long-uptime" "longuptime.gnuplot" "$@"
         ;;
-event)
-        runReport "jwscore-container-event-report" "event.xml" "gnuplot-event" "event.gnuplot" "$@"
-        ;;
 container)
         runReport "jwscore-container-report" "containers.xml" "gnuplot-container" "uniqueservices.gnuplot containers.gnuplot services.gnuplot" "$@"
         ;;

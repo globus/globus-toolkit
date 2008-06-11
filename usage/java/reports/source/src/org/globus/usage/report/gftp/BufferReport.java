@@ -100,141 +100,160 @@ public class BufferReport {
             String startDate = ts.getFormattedTime();
             ResultSet rs;
 
-            rs = dbr.retrieve(
-                "SELECT bin.min_rate, COUNT(*) FROM "+
-                "    (SELECT num_bytes "+
-                "    FROM gftp_packets "+
-                "    WHERE "+
-                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
-                "    AND "+
-                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
-                "    )" +
-                "    AS c " +
-                "INNER JOIN " +
-                "    (" +
-                getSlotBinsAsTable(byteHist) +
-                "    ) as bin "+
-                "ON "+
-                "    (bin.min_rate <= c.num_bytes) "+
-                "AND " + 
-                "    (((bin.max_rate IS NOT NULL) " +
-                "        AND bin.max_rate > c.num_bytes) " +
-                "    OR bin.max_rate IS NULL)  "+
-                "GROUP BY bin.min_rate;");
+            if (! byteHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                    "SELECT bin.min_rate, COUNT(*) FROM "+
+                    "    (SELECT num_bytes "+
+                    "    FROM gftp_packets "+
+                    "    WHERE "+
+                    "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
+                    "    AND "+
+                    "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
+                    "    )" +
+                    "    AS c " +
+                    "INNER JOIN " +
+                    "    (" +
+                    getSlotBinsAsTable(byteHist) +
+                    "    ) as bin "+
+                    "ON "+
+                    "    (bin.min_rate <= c.num_bytes) "+
+                    "AND " + 
+                    "    (((bin.max_rate IS NOT NULL) " +
+                    "        AND bin.max_rate > c.num_bytes) " +
+                    "    OR bin.max_rate IS NULL)  "+
+                    "GROUP BY bin.min_rate;");
 
-            while (rs.next()) {
-                double numBytes = rs.getDouble(1);
-                long count = rs.getLong(2);
+                while (rs.next()) {
+                    double numBytes = rs.getDouble(1);
+                    long count = rs.getLong(2);
 
-                byteHist.addData(numBytes, count);
+                    byteHist.addData(numBytes, count);
+                }
             }
 
-            rs = dbr.retrieve(
-                "SELECT bin.min_rate, COUNT(*) FROM "+
-                "    (SELECT block_size "+
-                "    FROM gftp_packets "+
-                "    WHERE "+
-                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
-                "    AND "+
-                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
-                "    )" +
-                "    AS c " +
-                "INNER JOIN "+
-                "    (" +
-                getSlotBinsAsTable(blockHist) +
-                "    ) as bin "+
-                "ON "+
-                "    (bin.min_rate <= c.block_size) "+
-                "AND " + 
-                "    (((bin.max_rate IS NOT NULL) " +
-                "        AND bin.max_rate > c.block_size) " +
-                "    OR bin.max_rate IS NULL)  "+
-                "GROUP BY bin.min_rate;");
 
-            while (rs.next()) {
-                double blockSize = rs.getDouble(1);
-                long count = rs.getLong(2);
+            if (! blockHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                    "SELECT bin.min_rate, COUNT(*) FROM "+
+                    "    (SELECT block_size "+
+                    "    FROM gftp_packets "+
+                    "    WHERE "+
+                    "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
+                    "    AND "+
+                    "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
+                    "    )" +
+                    "    AS c " +
+                    "INNER JOIN "+
+                    "    (" +
+                    getSlotBinsAsTable(blockHist) +
+                    "    ) as bin "+
+                    "ON "+
+                    "    (bin.min_rate <= c.block_size) "+
+                    "AND " + 
+                    "    (((bin.max_rate IS NOT NULL) " +
+                    "        AND bin.max_rate > c.block_size) " +
+                    "    OR bin.max_rate IS NULL)  "+
+                    "GROUP BY bin.min_rate;");
 
-                blockHist.addData(blockSize, count);
-            }
-            rs.close();
+                while (rs.next()) {
+                    double blockSize = rs.getDouble(1);
+                    long count = rs.getLong(2);
 
-            rs = dbr.retrieve(
-                "SELECT bin.min_rate, COUNT(*) FROM "+
-                "    (SELECT buffer_size "+
-                "    FROM gftp_packets "+
-                "    WHERE "+
-                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
-                "    AND "+
-                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
-                "    )" +
-                "    AS c " +
-                "INNER JOIN "+
-                "    (" +
-                getSlotBinsAsTable(bufferHist) +
-                "    ) as bin "+
-                "ON "+
-                "    (bin.min_rate <= c.buffer_size) "+
-                "AND " +
-                "    (((bin.max_rate IS NOT NULL) " +
-                "        AND bin.max_rate > c.buffer_size) " +
-                "    OR bin.max_rate IS NULL)  "+
-                "GROUP BY bin.min_rate;");
-
-            while (rs.next()) {
-                double bufferSize = rs.getDouble(1);
-                long count = rs.getLong(2);
-
-                bufferHist.addData(bufferSize, count);
-            }
-            rs.close();
-
-            rs = dbr.retrieve(
-                "SELECT bin.min_rate, COUNT(*) FROM "+
-                "    (SELECT (num_bytes / EXTRACT(EPOCH from (end_time-start_time))) as transfer_rate "+
-                "    FROM gftp_packets "+
-                "    WHERE "+
-                "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
-                "    AND "+
-                "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
-                "    AND "+
-                "        end_time > start_time "+
-                "    AND "+
-                "         num_bytes > 0) as c " +
-                "INNER JOIN "+
-                "    (" +
-                getSlotBinsAsTable(bandwidthHist) +
-                "    ) as bin "+
-                "ON "+
-                "    (bin.min_rate <= c.transfer_rate) "+
-                "AND  "+
-                "    (((bin.max_rate IS NOT NULL) " +
-                "        AND bin.max_rate > c.transfer_rate) " +
-                "    OR bin.max_rate IS NULL)  "+
-                "GROUP BY bin.min_rate;");
-
-            while (rs.next()) {
-                double bandwidth = rs.getDouble(1);
-                long count = rs.getLong(2);
-
-                bandwidthHist.addData(bandwidth, count);
+                    blockHist.addData(blockSize, count);
+                }
+                rs.close();
             }
 
-            rs = dbr.retrieve(
-                    "SELECT COUNT(1) "+
-                    "FROM gftp_packets "+
-                    "WHERE " +
-                    "    DATE(send_time) >= '" + dateFormat.format(startD) + "' " +
+            if (! bufferHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                    "SELECT bin.min_rate, COUNT(*) FROM "+
+                    "    (SELECT buffer_size "+
+                    "    FROM gftp_packets "+
+                    "    WHERE "+
+                    "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
+                    "    AND "+
+                    "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
+                    "    )" +
+                    "    AS c " +
+                    "INNER JOIN "+
+                    "    (" +
+                    getSlotBinsAsTable(bufferHist) +
+                    "    ) as bin "+
+                    "ON "+
+                    "    (bin.min_rate <= c.buffer_size) "+
                     "AND " +
-                    "    DATE(send_time) <  '" + dateFormat.format(ts.getTime()) + "';");
-            while (rs.next()) {
-                long transfers = rs.getLong(1);
+                    "    (((bin.max_rate IS NOT NULL) " +
+                    "        AND bin.max_rate > c.buffer_size) " +
+                    "    OR bin.max_rate IS NULL)  "+
+                    "GROUP BY bin.min_rate;");
 
-                packetHist.addData("Number of Transfers", transfers);
+                while (rs.next()) {
+                    double bufferSize = rs.getDouble(1);
+                    long count = rs.getLong(2);
+
+                    bufferHist.addData(bufferSize, count);
+                }
+                rs.close();
             }
-            rs.close();
+
+            if (! bandwidthHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                    "SELECT bin.min_rate, COUNT(*) FROM "+
+                    "    (SELECT (num_bytes / EXTRACT(EPOCH from (end_time-start_time))) as transfer_rate "+
+                    "    FROM gftp_packets "+
+                    "    WHERE "+
+                    "        DATE(send_time) >= '" + dateFormat.format(startD) + "' "+
+                    "    AND "+
+                    "       DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
+                    "    AND "+
+                    "        end_time > start_time "+
+                    "    AND "+
+                    "         num_bytes > 0) as c " +
+                    "INNER JOIN "+
+                    "    (" +
+                    getSlotBinsAsTable(bandwidthHist) +
+                    "    ) as bin "+
+                    "ON "+
+                    "    (bin.min_rate <= c.transfer_rate) "+
+                    "AND  "+
+                    "    (((bin.max_rate IS NOT NULL) " +
+                    "        AND bin.max_rate > c.transfer_rate) " +
+                    "    OR bin.max_rate IS NULL)  "+
+                    "GROUP BY bin.min_rate;");
+
+                while (rs.next()) {
+                    double bandwidth = rs.getDouble(1);
+                    long count = rs.getLong(2);
+
+                    bandwidthHist.addData(bandwidth, count);
+                }
+                rs.close();
+            }
+
+            if (! packetHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                        "SELECT COUNT(*) "+
+                        "FROM gftp_packets "+
+                        "WHERE " +
+                        "    DATE(send_time) >= '" + dateFormat.format(startD) + "' " +
+                        "AND " +
+                        "    DATE(send_time) <  '" + dateFormat.format(ts.getTime()) + "';");
+                while (rs.next()) {
+                    long transfers = rs.getLong(1);
+
+                    packetHist.addData("Number of Transfers", transfers);
+                }
+                rs.close();
+            }
         }
+
+        packetHist.upload(dbr);
+        byteHist.upload(dbr);
+        bandwidthHist.upload(dbr);
+        blockHist.upload(dbr);
+        bufferHist.upload(dbr);
         dbr.close();
+
         System.out.println("<report>");
         packetHist.output(System.out);
         byteHist.output(System.out);

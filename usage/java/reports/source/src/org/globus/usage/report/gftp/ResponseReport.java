@@ -94,62 +94,73 @@ public class ResponseReport {
 
             ResultSet rs;
             
-            rs = dbr.retrieve(
-                    "SELECT stor_or_retr, COUNT(*) " +
-                    "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
-                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
-                    "GROUP BY stor_or_retr;");
+            if (! transferHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                        "SELECT stor_or_retr, COUNT(*) " +
+                        "FROM gftp_packets "+
+                        "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                        "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
+                        "GROUP BY stor_or_retr;");
 
-            while (rs.next()) {
-                int type = rs.getInt(1);
-                int count = rs.getInt(2);
+                while (rs.next()) {
+                    int type = rs.getInt(1);
+                    int count = rs.getInt(2);
 
-                if (type == 0) {
-                    transferHist.addData("STOR", count);
-                } else if (type == 1) {
-                    transferHist.addData("RETR", count);
-                } else if (type == 2) {
-                    transferHist.addData("Other", count);
+                    if (type == 0) {
+                        transferHist.addData("STOR", count);
+                    } else if (type == 1) {
+                        transferHist.addData("RETR", count);
+                    } else if (type == 2) {
+                        transferHist.addData("Other", count);
+                    }
                 }
+                rs.close();
             }
-            rs.close();
 
-            rs = dbr.retrieve(
-                    "SELECT " +
-                    "     SUBSTRING( "+
-                    "         gftp_version, 1, POSITION( "+
-                    "                              ' (' IN gftp_version) - 1) " +
-                    "     AS version, COUNT(*) "+
-                    "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
-                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
-                    "GROUP BY version;");
+            if (! versionHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                        "SELECT " +
+                        "     SUBSTRING( "+
+                        "         gftp_version, 1, POSITION( "+
+                        "                              ' (' IN gftp_version) - 1) " +
+                        "     AS version, COUNT(*) "+
+                        "FROM gftp_packets "+
+                        "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                        "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
+                        "GROUP BY version;");
 
-            while (rs.next()) {
-                String version = rs.getString(1);
-                int count = rs.getInt(2);
+                while (rs.next()) {
+                    String version = rs.getString(1);
+                    int count = rs.getInt(2);
 
-                versionHist.addData(version, count);
+                    versionHist.addData(version, count);
+                }
+                rs.close();
             }
-            rs.close();
 
-            rs = dbr.retrieve(
-                    "SELECT ftp_return_code, COUNT(*) " +
-                    "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
-                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
-                    "GROUP BY ftp_return_code;");
+            if (!responseHist.downloadCurrent(dbr)) {
+                rs = dbr.retrieve(
+                        "SELECT ftp_return_code, COUNT(*) " +
+                        "FROM gftp_packets "+
+                        "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                        "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
+                        "GROUP BY ftp_return_code;");
 
-            while (rs.next()) {
-                String ftp_return_code = rs.getString(1);
-                int count = rs.getInt(2);
+                while (rs.next()) {
+                    String ftp_return_code = rs.getString(1);
+                    int count = rs.getInt(2);
 
-                responseHist.addData(ftp_return_code, count);
+                    responseHist.addData(ftp_return_code, count);
+                }
+                rs.close();
             }
-            rs.close();
         }
+        versionHist.upload(dbr);
+        transferHist.upload(dbr);
+        responseHist.upload(dbr);
+
         dbr.close();
+
         System.out.println("<report>");
         versionHist.output(System.out);
         transferHist.output(System.out);

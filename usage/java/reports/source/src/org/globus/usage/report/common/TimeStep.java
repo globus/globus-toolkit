@@ -21,41 +21,44 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 public class TimeStep {
-    int stepSize;
-
-    int stepNumber;
-
-    int steps;
-
+    int stepSize; /* Units of step Calendar.DATE, Calendar.MONTH */
+    int stepMultiplier; /* Number of units per step 7 days, 2 months, etc */
+    int stepNumber; /* Number of steps */
+    int steps; /* Number of remaining steps */
     Calendar calendar;
 
     public TimeStep(String step, int stepNumber, String date)
-            throws ParseException {
+    throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        steps = stepNumber;
-        this.stepNumber = stepNumber;
+        int stepSize;
+
         if (step.equalsIgnoreCase("day")) {
             stepSize = Calendar.DATE;
         } else {
             stepSize = Calendar.MONTH;
         }
 
-        Date currentDate = dateFormat.parse(date);
-        calendar = dateFormat.getCalendar();
+        init(dateFormat.parse(date), stepSize, stepNumber, 1);
     }
 
-    public TimeStep(int stepNumber, String date) throws ParseException {
-        new TimeStep("day", stepNumber, date);
-    }
-
-    public TimeStep(String date) throws ParseException {
-        new TimeStep("day", 1, date);
+    public TimeStep(TimeStep ts) {
+        init(ts.calendar.getTime(), ts.stepSize, ts.steps, ts.stepMultiplier);
     }
 
     public TimeStep(Date startDate, int stepSize, int steps) {
+        init(startDate, stepSize, steps, 1);
+    }
+
+    public TimeStep(Date startDate, int stepSize, int steps, int stepMultiplier) {
+        init(startDate, stepSize, steps, stepMultiplier);
+    }
+
+    private void init(Date startDate, int stepSize, int steps,
+            int stepMultiplier) {
+        this.stepMultiplier = stepMultiplier;
         this.steps = steps;
         this.stepNumber = steps;
-        stepSize = stepSize;
+        this.stepSize = stepSize;
         calendar = Calendar.getInstance();
         calendar.setTime(startDate);
     }
@@ -76,6 +79,9 @@ public class TimeStep {
         return steps;
     }
 
+    public int getStepMultiplier() {
+        return stepMultiplier;
+    }
     public String getFormattedTime() {
         if (stepSize == Calendar.MONTH) {
             SimpleDateFormat df = new SimpleDateFormat("MMM,''yy");
@@ -96,7 +102,7 @@ public class TimeStep {
 
     public Date stepTime() {
         if (steps > 0) {
-            calendar.add(stepSize, 1);
+            calendar.add(stepSize, stepMultiplier);
             steps = steps - 1;
             return calendar.getTime();
         } else {

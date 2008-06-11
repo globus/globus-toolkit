@@ -15,6 +15,8 @@
  */
 package org.globus.usage.report.jwscore;
 
+import java.net.UnknownHostException;
+
 import java.sql.ResultSet;
 
 import java.util.HashMap;
@@ -82,7 +84,13 @@ public class ContainerReport {
             }
         } 
 
-        boolean isPrivateAddress = ServiceEntry.isPrivateAddress(ip);
+        boolean isPrivateAddress = true;
+        try {
+            isPrivateAddress = ServiceEntry.isPrivateAddress(ip);
+        } catch (UnknownHostException e) {
+            ;
+        }
+
         if (ip.startsWith("/")) {
             ip = ip.substring(1);
         }

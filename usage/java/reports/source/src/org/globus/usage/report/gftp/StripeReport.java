@@ -86,34 +86,42 @@ public class StripeReport {
             streamHist.nextEntry();
             stripeHist.nextEntry();
 
-            ResultSet rs = dbr.retrieve(
-                    "SELECT num_streams, COUNT(*) "+
-                    "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
-                    "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
-                    "GROUP BY num_streams;");
-            while (rs.next()) {
-                String num_streams = rs.getString(1);
-                int count = rs.getInt(2);
+            if (! streamHist.downloadCurrent(dbr)) {
+                ResultSet rs = dbr.retrieve(
+                        "SELECT num_streams, COUNT(*) "+
+                        "FROM gftp_packets "+
+                        "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                        "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
+                        "GROUP BY num_streams;");
+                while (rs.next()) {
+                    String num_streams = rs.getString(1);
+                    int count = rs.getInt(2);
 
-                streamHist.addData(num_streams, count);
+                    streamHist.addData(num_streams, count);
+                }
+                rs.close();
             }
-            rs.close();
 
-            rs = dbr.retrieve(
-                    "SELECT num_stripes, COUNT(*) "+
-                    "FROM gftp_packets "+
-                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
-                    "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
-                    "GROUP BY num_stripes;");
-            while (rs.next()) {
-                String num_stripes = rs.getString(1);
-                int count = rs.getInt(2);
+            if (! stripeHist.downloadCurrent(dbr)) {
+                ResultSet rs = dbr.retrieve(
+                        "SELECT num_stripes, COUNT(*) "+
+                        "FROM gftp_packets "+
+                        "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                        "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
+                        "GROUP BY num_stripes;");
+                while (rs.next()) {
+                    String num_stripes = rs.getString(1);
+                    int count = rs.getInt(2);
 
-                stripeHist.addData(num_stripes, count);
+                    stripeHist.addData(num_stripes, count);
+                }
             }
         }
+
+        streamHist.upload(dbr);
+        stripeHist.upload(dbr);
         dbr.close();
+
         System.out.println("<report>");
         streamHist.output(System.out);
         stripeHist.output(System.out);

@@ -56,7 +56,14 @@ public class ServiceReport {
             }
         } 
 
-        boolean isPrivateAddress = ServiceEntry.isPrivateAddress(ip);
+        boolean isPrivateAddress = true;
+        
+        try {
+            isPrivateAddress = ServiceEntry.isPrivateAddress(ip);
+        } catch (java.net.UnknownHostException e) {
+            ;
+        }
+
         if (ip.startsWith("/")) {
             ip = ip.substring(1);
         }

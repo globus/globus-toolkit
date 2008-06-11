@@ -75,6 +75,8 @@ public class RegistrationReport {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
+        DatabaseRetriever dbr = new DatabaseRetriever();
+
         while (ts.next()) {
             int numRegistrations = 0;
             int totalLifetimeRegCount = 0;
@@ -87,27 +89,35 @@ public class RegistrationReport {
             lifetimeRegistrationHist.nextEntry();
             currentRegistrationHist.nextEntry();
 
-            DatabaseRetriever dbr = new DatabaseRetriever();
+            boolean lifetimeCached = lifetimeRegistrationHist.downloadCurrent(
+                    dbr);
+            boolean currentCached = currentRegistrationHist.downloadCurrent(
+                    dbr);
 
-            ResultSet rs = dbr.retrieve(
-                    "SELECT " +
-                    "  COUNT(*), SUM(lifetime_reg_count), SUM(current_reg_count) " +
-                    "FROM mds_packets " +
-                    "WHERE DATE(send_time) >= '" + dateFormat.format(startD) + "' AND " +
-                    "      DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "'");
-            while (rs.next()) {
-                numRegistrations = rs.getInt(1);
-                totalLifetimeRegCount = rs.getInt(2);
-                totalCurrentRegCount = rs.getInt(3);
+            if (! (lifetimeCached && currentCached)) {
+                ResultSet rs = dbr.retrieve("mds_packets",
+                        new String[] {
+                            "COUNT(*)",
+                            "SUM(lifetime_reg_count)",
+                            "SUM(current_reg_count)"
+                        });
+                while (rs.next()) {
+                    numRegistrations = rs.getInt(1);
+                    totalLifetimeRegCount = rs.getInt(2);
+                    totalCurrentRegCount = rs.getInt(3);
+                }
+                rs.close();
+
+                lifetimeRegistrationHist.addData("Lifetime Registrations made ",
+                        (double) totalLifetimeRegCount / numRegistrations);
+                currentRegistrationHist.addData("Current Registrations made ",
+                        (double) totalCurrentRegCount / numRegistrations);
             }
-
-            lifetimeRegistrationHist.addData("Lifetime Registrations made ",
-                    (double) totalLifetimeRegCount / numRegistrations);
-            currentRegistrationHist.addData("Current Registrations made ",
-                    (double) totalCurrentRegCount / numRegistrations);
-            rs.close();
-            dbr.close();
         }
+        lifetimeRegistrationHist.upload(dbr);
+        currentRegistrationHist.upload(dbr);
+        dbr.close();
+
         System.out.println("<report>");
         lifetimeRegistrationHist.output(System.out);
         currentRegistrationHist.output(System.out);

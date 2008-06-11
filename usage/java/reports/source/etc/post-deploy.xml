@@ -67,12 +67,6 @@ Build Instructions:
             <property name="class.name" 
                 value="org.globus.usage.report.jwscore.ContainerLongUpReportV2"/>
         </ant>
-        <ant antfile="${build.launcher}" 
-             target="generateLauncher">
-            <property name="launcher-name" value="jwscore-container-event-report"/>
-            <property name="class.name" 
-                value="org.globus.usage.report.jwscore.ContainerEventReport"/>
-        </ant>
 
         <!-- Combined Reports -->
         <ant antfile="${build.launcher}"

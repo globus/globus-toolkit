@@ -37,31 +37,45 @@ public class IPEntry {
     
     public static IPEntry getIPEntry(String ip, boolean groupCommon) {
         String hostname = null;
-        if (ip.startsWith("/")) {
-            ip = ip.substring(1, ip.length());
+        int slashOff = ip.indexOf('/');
+
+        if (slashOff != -1 ) {
+            hostname = ip.substring(0, slashOff);
+            ip = ip.substring(slashOff+1);
         }
+
         try {
-            hostname = InetAddress.getByName(ip).getHostName();
+            InetAddress ia = InetAddress.getByName(ip);
+
+            if (groupCommon) {
+                byte [] addressBytes = ia.getAddress();
+
+                if (IPTable.isPrivateAddress(ia)) {
+                    return new IPEntry("Private");
+                } else if (addressBytes.length == 4) {
+                    if (addressBytes[0] == 128 && addressBytes[1] == 9) {
+                        return new IPEntry("ISI");
+                    } else if (addressBytes[0] == 140 &&
+                               addressBytes[1] == 221) {
+                        return new IPEntry("MCS");
+                    }
+                }
+            } else if (IPTable.isPrivateAddress(ia)) {
+                return IPEntry.NULL_IP;
+            }
+
+            if (hostname == null) {
+                hostname = ia.getHostName();
+            }
         } catch (Exception e) {
             return IPEntry.NULL_IP;
         }
 
-        if (groupCommon) {
-            if (ip.startsWith("128.9")) {
-                return new IPEntry("ISI");
-            } else if (ip.startsWith("140.221")) {
-                return new IPEntry("MCS");
-            } else if (IPTable.isPrivateAddress("/" + ip)) {
-                return new IPEntry("Private");
-            }
-        }
 
         int pos = hostname.lastIndexOf('.');
         if (pos != -1) {
             String domain = hostname.substring(pos + 1);
-            if (Character.isDigit(domain.charAt(0))) {
-                // System.out.println("unable to get domain: "+ ip);
-            } else {
+            if (! Character.isDigit(domain.charAt(0))) {
                 return new IPEntry(domain.toLowerCase());
             }
         }

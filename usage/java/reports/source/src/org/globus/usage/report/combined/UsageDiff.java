@@ -21,6 +21,8 @@ import java.util.Date;
 import java.sql.ResultSet;
 
 import org.globus.usage.report.common.DatabaseRetriever;
+import org.globus.usage.report.common.HistogramParser;
+import org.globus.usage.report.common.TimeStep;
 
 public class UsageDiff {
     public static void main(String[] args) throws Exception {
@@ -33,6 +35,8 @@ public class UsageDiff {
                 + " -t <table>            Database table to process [default: gram_packets]\n" 
                 + " -c <host-column>      Database column containing unique host identifier [default: ip_address]\n"
                 + " -r <report-name>      Name of the report [default: combined-gramusagediff-report]";
+        int SECS_IN_WEEK = 7 * 24 * 60 * 60;
+        int MSECS_IN_WEEK = 7 * 24 * 60 * 60 * 1000;
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -103,6 +107,14 @@ public class UsageDiff {
         String startDateStr = dateFormat.format(sDate);
         String endDateStr = dateFormat.format(endDate);
 
+        TimeStep ts = new TimeStep(sDate, step, 1, n);
+        HistogramParser histogram = new HistogramParser(
+            "Usage time difference per unique address" , reportName,
+            "count" ,ts);
+
+        int totalWeeks = (int)
+                ((endDate.getTime() - sDate.getTime()) / MSECS_IN_WEEK);
+
         String query = "SELECT summary.weeks, COUNT(*) " +
                        "FROM( " +
                        "    SELECT " +
@@ -121,32 +133,35 @@ public class UsageDiff {
                        "GROUP BY " +
                        "    summary.weeks ORDER BY summary.weeks;";
 
-        System.err.println(query);
         System.out.println("<" + reportName + ">");
         System.out.println("  <start-date>" + startDateStr + "</start-date>");
         System.out.println("  <end-date>" + endDateStr + "</end-date>");
 
         ResultSet rs = null;
 
-        rs = dbr.retrieve(query);
+        histogram.nextEntry();
 
-        while (rs.next())
-        {
-            int weeks = rs.getInt(1);
-            long count = rs.getLong(2);
-            int weeks_in_secs = weeks * 7 * 24 * 60 * 60;
-            String unit = (weeks == 1) ? " week" : " weeks";
-
-            System.out.println("  <slot>");
-            System.out.println("   <time>" + weeks_in_secs + "</time>");
-            System.out.println("   <timeStr>" + weeks + unit + "</timeStr>");
-            System.out.println("   <count>" + count + "</count>");
-            System.out.println("  </slot>");
+        for (i = 0; i < totalWeeks; i++) {
+            histogram.addData(i + ((i == 1) ? " week" : " weeks"), 0);
         }
-        rs.close();
+
+        if (! histogram.downloadCurrent(dbr)) {
+            rs = dbr.retrieve(query);
+            while (rs.next())
+            {
+                int weeks = rs.getInt(1);
+                long count = rs.getLong(2);
+                long weeks_in_secs = weeks * SECS_IN_WEEK;
+                String unit = (weeks == 1) ? " week" : " weeks";
+
+                histogram.addData(weeks + unit, count);
+            }
+            rs.close();
+        }
+
+        histogram.upload(dbr);
+        histogram.output(System.out);
         dbr.close();
-
         System.out.println("</" + reportName + ">");
-
     }
 }

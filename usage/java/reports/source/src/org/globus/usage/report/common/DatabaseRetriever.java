@@ -17,10 +17,13 @@ package org.globus.usage.report.common;
 
 import java.sql.DriverManager;
 import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.ResultSet;
-import java.util.Date;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import java.text.SimpleDateFormat;
+
+import java.util.Date;
 
 public class DatabaseRetriever {
 
@@ -49,6 +52,17 @@ public class DatabaseRetriever {
         }
     }
     
+    public ResultSet retrieve(String packetType,
+                              String[] columns) throws Exception {
+        return retrieve(packetType, columns, new String[0], (String) null, (String) null);
+    }
+
+    public ResultSet retrieve(String packetType,
+                              String[] columns,
+                              String[] conditions) throws Exception {
+        return retrieve(packetType, columns, conditions, (String) null, (String) null);
+    }
+
     public ResultSet retrieve(String packetType,
                               String[] columns,
                               Date startDate,
@@ -129,15 +143,46 @@ public class DatabaseRetriever {
             query = query + columns[n] + ",";
         }
 
-        query = query + columns[columns.length - 1] + " from " + packetType
-                + " where ";
-        
-        for (int n = 0; n < conditions.length; n++) {
-            query = query + conditions[n] + " and ";
+        query = query + columns[columns.length - 1] + " from " + packetType;
+
+        if (conditions.length > 0 || startDateString != null  || endDateString != null) {
+            query = query + " where ";
         }
 
-        query = query + "date(send_time) >= '" + startDateString
+        boolean firstCondition = true;
+        
+        for (int n = 0; n < conditions.length; n++) {
+            if (firstCondition) {
+                firstCondition = false;
+            } else {
+                query = query + " and ";
+            }
+            query = query + conditions[n];
+        }
+
+        if (startDateString != null && endDateString != null ) {
+            if (firstCondition) {
+                firstCondition = false;
+            } else {
+                query = query + " and ";
+            }
+            query = query + "date(send_time) >= '" + startDateString
                 + "' and date(send_time) < '" + endDateString + "'";
+        } else if (startDateString != null) {
+            if (firstCondition) {
+                firstCondition = false;
+            } else {
+                query = query + " and ";
+            }
+            query = query + "date(send_time) >= '" + startDateString + "'";
+        } else if (endDateString != null) {
+            if (firstCondition) {
+                firstCondition = false;
+            } else {
+                query = query + " and ";
+            }
+            query = query + "date(send_time) < '" + endDateString + "'";
+        }
 
         return query;
     }
@@ -150,6 +195,10 @@ public class DatabaseRetriever {
             }
             this.stmt = null;
         }
+    }
+
+    public void commit() throws SQLException {
+        this.con.commit();
     }
     
     public void closeConnection() {

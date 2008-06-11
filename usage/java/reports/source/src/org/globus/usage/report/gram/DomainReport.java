@@ -113,12 +113,18 @@ public class DomainReport {
                 }
                 domainReport.addData(domain, job_count);
             }
+            rs.close();
 
             internalReport.addData("ISI", 100.0 * isiJobs / totalJobs);
             internalReport.addData("MCS", 100.0 * mcsJobs / totalJobs);
         }
         internalReport.output(System.out);
         domainReport.output(System.out);
+
+        domainReport.upload(dbr);
+        internalReport.upload(dbr);
+
+        dbr.close();
         System.out.println("</report>");
     }
 }

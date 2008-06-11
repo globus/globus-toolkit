@@ -56,14 +56,4 @@
          out="${user.dir}/service.data"/>
  </target>
 
- <target name="gnuplot-event">
-   <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="event/gnuplot-event-instructions.xsl" 
-         in="${in.xml}"
-         out="${user.dir}/event.gnuplot"/>
-   <xslt style="event/gnuplot-event-data.xsl" 
-         in="${in.xml}"
-         out="${user.dir}/event.data"/>
- </target>
-
 </project>

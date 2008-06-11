@@ -81,28 +81,44 @@ public class DomainReport {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         while (ts.next()) {
-            String startDate = ts.getFormattedTime();
             Date startTime = ts.getTime();
             ts.stepTime();
 
             ipReport.nextEntry();
             domainReport.nextEntry();
 
-            ResultSet rs = dbr.retrieve(
-                    "SELECT ip_address, COUNT(*) " +
-                    "FROM mds_packets " +
-                    "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
-                    "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
-                    "GROUP BY ip_address;");
+            boolean ipCached = ipReport.downloadCurrent(dbr);
+            boolean domainCached = domainReport.downloadCurrent(dbr);
 
-            while (rs.next()) {
-                String ip_address = rs.getString(1);
-                int count = rs.getInt(2);
-                IPEntry ipEntry = IPEntry.getIPEntry(ip_address);
-                domainReport.addData(ipEntry.getDomain(), count);
-                ipReport.addData(ipEntry.getDomain(), 1);
+            if ((ipCached && domainCached)) {
+                System.err.println("Skipping query for range "
+                        + dateFormat.format(startTime) + " to "
+                        + dateFormat.format(ts.getTime()) + " because of cached histogram");
+            } else {
+                ResultSet rs = dbr.retrieve(
+                        "SELECT ip_address, COUNT(*) " +
+                        "FROM mds_packets " +
+                        "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
+                        "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
+                        "GROUP BY ip_address;");
+
+                while (rs.next()) {
+                    String ip_address = rs.getString(1);
+                    int count = rs.getInt(2);
+                    IPEntry ipEntry = IPEntry.getIPEntry(ip_address);
+                    if (! domainCached) {
+                        domainReport.addData(ipEntry.getDomain(), count);
+                    }
+                    if (! ipCached) {
+                        ipReport.addData(ipEntry.getDomain(), 1);
+                    }
+                }
+                rs.close();
             }
+
         }
+        ipReport.upload(dbr);
+        domainReport.upload(dbr);
         dbr.close();
         ipReport.output(System.out);
         domainReport.output(System.out);

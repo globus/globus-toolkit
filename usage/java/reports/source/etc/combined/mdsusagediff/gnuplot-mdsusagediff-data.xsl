@@ -7,10 +7,11 @@
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
 
 <xsl:template match="/"> 
-  <xsl:for-each select="combined-mdsusagediff-report/slot">
+  <xsl:for-each select="//slots/item">
+      <xsl:sort select="substring-before(name, ' ')" data-type="number"/>
       <xsl:number value="position()"/>
       <xsl:text> </xsl:text>
-      <xsl:value-of select="count"/>
+      <xsl:value-of select="single-value"/>
 <xsl:text>
 </xsl:text>
   </xsl:for-each>

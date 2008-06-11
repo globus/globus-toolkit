@@ -84,35 +84,46 @@ public class HostReport {
             hostHist.nextEntry();
             ipHist.nextEntry();
 
-            ResultSet rs = dbr
-                    .retrieve("gftp_packets",
-                            new String[] { "DISTINCT(SUBSTRING(hostname, 1, POSITION('/' in hostname)-1))" }, startD, ts.getTime());
+            if (! hostHist.downloadCurrent(dbr)) {
+                ResultSet rs = dbr.retrieve(
+                        "gftp_packets", new String[] { "DISTINCT hostname" },
+                        startD, ts.getTime());
 
-            while (rs.next()) {
-                String hostname = rs.getString(1);
-                int dotIndex;
+                while (rs.next()) {
+                    String hostname = rs.getString(1);
+                    int dotIndex;
+                    hostname = hostname.substring(0, hostname.lastIndexOf("/"));
 
-                if ((dotIndex = hostname.lastIndexOf(".")) != -1) {
-                    hostHist.addData(hostname.substring(dotIndex), 1);
-                } else {
-                    hostHist.addData("unknown", 1);
+                    if ((dotIndex = hostname.lastIndexOf(".")) != -1) {
+                        hostHist.addData(hostname.substring(dotIndex), 1);
+                    } else {
+                        hostHist.addData("unknown", 1);
+                    }
                 }
+                rs.close();
             }
-            rs.close();
 
-            rs = dbr
-                    .retrieve("gftp_packets",
-                            new String[] { "DISTINCT(SUBSTRING(hostname, POSITION('/' in hostname)+1))" }, startD, ts.getTime());
-                    
-            while (rs.next()) {
-                String ip = rs.getString(1);
-                IPEntry ipentry = IPEntry.getIPEntry(ip);
 
-                ipHist.addData(ipentry.getDomain(), 1);
+            if (! ipHist.downloadCurrent(dbr)) {
+                ResultSet rs = dbr.retrieve(
+                        "gftp_packets",
+                        new String[] { "DISTINCT ip_address " },
+                        startD, ts.getTime());
+                        
+                while (rs.next()) {
+                    String ip = rs.getString(1);
+                    IPEntry ipentry = IPEntry.getIPEntry(ip);
+
+                    ipHist.addData(ipentry.getDomain(), 1);
+                }
+                rs.close();
             }
-            rs.close();
         }
+
+        ipHist.upload(dbr);
+        hostHist.upload(dbr);
         dbr.close();
+
         System.out.println("<report>");
         ipHist.output(System.out);
         hostHist.output(System.out);

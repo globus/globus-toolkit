@@ -48,50 +48,50 @@
 
  <target name="gnuplot-mdsusagediff">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="mdsusagediff/gnuplot-mdsusagediff-instructions.xsl" 
+   <xslt style="gnuplot-usagediff-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/mdsusagediff.gnuplot"/>
-   <xslt style="mdsusagediff/gnuplot-mdsusagediff-data.xsl" 
+   <xslt style="gnuplot-usagediff-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/mdsusagediff.data"/>
  </target>
 
  <target name="gnuplot-gramusagediff">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="gramusagediff/gnuplot-gramusagediff-instructions.xsl" 
+   <xslt style="gnuplot-usagediff-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/gramusagediff.gnuplot"/>
-   <xslt style="gramusagediff/gnuplot-gramusagediff-data.xsl" 
+   <xslt style="gnuplot-usagediff-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/gramusagediff.data"/>
  </target>
 
  <target name="gnuplot-rftusagediff">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="rftusagediff/gnuplot-rftusagediff-instructions.xsl" 
+   <xslt style="gnuplot-usagediff-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/rftusagediff.gnuplot"/>
-   <xslt style="rftusagediff/gnuplot-rftusagediff-data.xsl" 
+   <xslt style="gnuplot-usagediff-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/rftusagediff.data"/>
  </target>
 
  <target name="gnuplot-gftpusagediff">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="gftpusagediff/gnuplot-gftpusagediff-instructions.xsl" 
+   <xslt style="gnuplot-usagediff-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/gftpusagediff.gnuplot"/>
-   <xslt style="gftpusagediff/gnuplot-gftpusagediff-data.xsl" 
+   <xslt style="gnuplot-usagediff-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/gftpusagediff.data"/>
  </target>
 
  <target name="gnuplot-rlsusagediff">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="rlsusagediff/gnuplot-rlsusagediff-instructions.xsl" 
+   <xslt style="gnuplot-usagediff-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/rlsusagediff.gnuplot"/>
-   <xslt style="rlsusagediff/gnuplot-rlsusagediff-data.xsl" 
+   <xslt style="gnuplot-usagediff-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/rlsusagediff.data"/>
  </target>

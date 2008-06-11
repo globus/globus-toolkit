@@ -62,7 +62,8 @@ public class HistogramParser {
         entries = new Entry[ts.getSteps()];
         index = -1;
         totalData = 0;
-        ts = new TimeStep(ts.getTime(), ts.getStepSize(), ts.getSteps());
+        this.ts = new TimeStep(ts);
+
         if (ts.getStepSize() == Calendar.MONTH) {
             dateFormat = monthFormat;
             stepDuration = "month";
@@ -223,23 +224,29 @@ public class HistogramParser {
         for (int i = 0; i < entries.length; i++) {
             ResultSet rs;
             String dateString = sqlDateFormat.format(entries[i].getStartDate());
-            String durationString = "1 " + stepDuration;
-            long id;
+            String durationString = ts.getStepMultiplier() + stepDuration;
+            long id = -1;
 
-            dbr.update("INSERT INTO histogram_metadata " +
+            if (entries[i].cached) {
+                continue;
+            }
+
+            String insertStatement = "INSERT INTO histogram_metadata " +
                 "(report_name, report_date, duration, title, axis) " +
                 "VALUES('" + output + "', '" + dateString + "', '" +
-                durationString + "', '" + title + "', '" + axisName + "');");
-            
-            rs = dbr.retrieve("SELECT id "
+                durationString + "', '" + title + "', '" + axisName + "');";
+            String idQuery = "SELECT id "
                        + "FROM histogram_metadata "
                        + "WHERE report_name = '" + output + "' "
                        + "AND report_date = '" + dateString + "' "
-                       + "AND duration = '1 " + durationString + "' "
+                       + "AND duration = '" + durationString + "' "
                        + "AND title = '" + title + "' "
-                       + "AND axis = '" + axisName + "' ");
+                       + "AND axis = '" + axisName + "' ";
 
-            id = -1;
+            dbr.update(insertStatement);
+            
+            rs = dbr.retrieve(idQuery);
+
             while (rs.next()) {
                 id = rs.getLong(1);
             }
@@ -255,10 +262,51 @@ public class HistogramParser {
                 String itemName = (String) iter.next();
 
                 dbr.update("INSERT into histograms(id, item, value) "
-                         + "VALUES(" + id + ", '" + itemName + "', "
+                         + "VALUES(" + id + ", '" + itemName + "', '"
                          + entries[i].getData(itemName) + "');");
             }
         }
+        dbr.commit();
+    }
+
+    public boolean downloadCurrent(DatabaseRetriever dbr) throws Exception {
+        ResultSet rs;
+        String dateString = sqlDateFormat.format(entries[index].getStartDate());
+        String durationString = ts.getStepMultiplier() + stepDuration;
+        long id;
+
+        String idQuery = "SELECT id "
+                   + "FROM histogram_metadata "
+                   + "WHERE report_name = '" + output + "' "
+                   + "AND report_date = '" + dateString + "' "
+                   + "AND duration = '" + durationString + "' "
+                   + "AND title = '" + title + "' "
+                   + "AND axis = '" + axisName + "' ";
+
+        rs = dbr.retrieve(idQuery);
+
+        id = -1;
+        while (rs.next()) {
+            id = rs.getLong(1);
+        }
+        rs.close();
+
+        System.err.println("id query\n" + idQuery + "\nyields " + id);
+
+        if (id == -1) {
+            return false;
+        }
+
+        rs = dbr.retrieve("histograms", new String[] { "item", "value" }, new String [] { "id = " + id });
+        while (rs.next()) {
+            String item = rs.getString(1);
+            double data = rs.getDouble(2);
+            addData(item, data);
+        }
+        rs.close();
+        entries[index].cached = true;
+
+        return true;
     }
 
     private String formatDate(Date date) {
@@ -269,11 +317,13 @@ public class HistogramParser {
         private Date start;
         private Date end;
         private HashMap itemMap;
+        private boolean cached;
 
         public Entry(Date start, Date end) {
             itemMap = new HashMap(5);
             this.start = start;
             this.end = end;
+            this.cached = false;
         }
 
         public Date getStartDate() {
@@ -281,7 +331,7 @@ public class HistogramParser {
         }
 
         public Date getEndDate() {
-            return start;
+            return end;
         }
 
         public void addData(String keyName, double data) {

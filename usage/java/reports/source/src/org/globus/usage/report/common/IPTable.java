@@ -15,6 +15,9 @@
  */
 package org.globus.usage.report.common;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -97,26 +100,22 @@ public class IPTable {
         out.println(tab + "</domains>");
     }
 
-    // FIXME: does not handle ipv6 address
-    public static boolean isPrivateAddress(String address) {
-        // TODO: could use InetAddress instead?!
-        if (address.startsWith("/127.") || address.startsWith("/10.")
-                || address.startsWith("/192.168.")) {
-            return true;
-        } else if (address.startsWith("/172.")) {
-            int start = "/172.".length();
-            int pos = address.indexOf('.', start + 1);
-            if (pos != -1) {
-                String octet = address.substring(start, pos);
-                int octetValue = Integer.parseInt(octet);
-                if (octetValue >= 16 || octetValue <= 31) {
-                    return true;
-                }
-            }
-            return false;
-        } else {
-            return false;
-        }
+    public static boolean isPrivateAddress(String address)
+    throws UnknownHostException{
+        int slashOff = address.indexOf("/");
+
+        address = address.substring(slashOff+1);
+
+        InetAddress ia = InetAddress.getByName(address);
+
+        return isPrivateAddress(ia);
+    }
+
+    public static boolean isPrivateAddress(InetAddress address) {
+        return address.isLoopbackAddress() ||
+               address.isLinkLocalAddress() ||
+               address.isLoopbackAddress() ||
+               address.isSiteLocalAddress();
     }
 
     public static class DomainEntry implements Comparator {
