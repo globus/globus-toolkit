@@ -98,7 +98,6 @@ if test "x$gsi_path" != "xno" ; then
 	if test ! -d "$GLOBUS_INCLUDE" ; then
 		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
 	fi
-	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
 	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
 		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
@@ -108,17 +107,8 @@ if test "x$gsi_path" != "xno" ; then
 		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
 	. ./gpt_build_tmp.sh
-	if test -n "${need_dash_r}"; then
-		GSI_LDFLAGS="-L${gsi_path}/lib -R${gsi_path}/lib"
-	else
-		GSI_LDFLAGS="-L${gsi_path}/lib"
-	fi
 	if test -z "$GLOBUS_PKG_LIBS" ; then
 		AC_MSG_ERROR(globus-makefile-header failed)
-	fi
-
-	if (test -n "$LIBPATH"); then
-		blibpath="$LIBPATH"
 	fi
 
 	AC_DEFINE(HAVE_GSSAPI_H)
@@ -1991,7 +1981,7 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
-if test -z "$GSI_LDFLAGS" ; then
+if test -z "$GLOBUS_LDFLAGS" ; then
 LIBS="-lcrypto $LIBS"
 fi
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL, 1,
@@ -3421,6 +3411,16 @@ AC_ARG_WITH(selinux,
 		LIBS="$save_LIBS"
 	fi ]
 )
+
+# Finish configuring Globus GSSAPI
+if test "x$gsi_path" != "xno" ; then
+	if test ! -z "$need_dash_r" ; then
+		LDFLAGS="$LDFLAGS -R${gsi_path}/lib"
+	fi
+	if test ! -z "$blibpath" ; then
+		blibpath="$blibpath:${gsi_path}/lib"
+	fi
+fi
 
 # Check whether the user wants GSSAPI mechglue support
 AC_ARG_WITH(mechglue,
