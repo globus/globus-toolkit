@@ -17,14 +17,6 @@ AC_SUBST(aixargs, $aixargs)
 openssl="globus_binary_openssl"
 AC_SUBST(globus_openssl, $openssl)
 
-if test -d binary-trees/gridway*; then
-   gridway="gridway"
-else
-   gridway=""
-fi
-
-AC_SUBST(gridway, $gridway)
-
 gridshib=""
 AC_SUBST(gridshib, $gridshib)
 netlogger=""
