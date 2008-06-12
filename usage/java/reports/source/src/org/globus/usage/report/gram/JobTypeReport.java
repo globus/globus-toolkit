@@ -21,8 +21,6 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Locale;
@@ -66,9 +64,6 @@ public class JobTypeReport {
 
         String inputDate = args[args.length - 1];
 
-        DecimalFormat f = (DecimalFormat) NumberFormat.getInstance(Locale.US);
-        f.setMaximumFractionDigits(3);
-
         DatabaseRetriever dbr = new DatabaseRetriever();
 
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
@@ -84,6 +79,9 @@ public class JobTypeReport {
 
         while (ts.next()) {
             String startDate = ts.getFormattedTime();
+            System.err.println("STEP");
+            String startTime = dateFormat.format(ts.getTime());
+            String endTime = dateFormat.format(ts.stepTime());
             jobtypeHistogram.nextEntry();
 
             if (! jobtypeHistogram.downloadCurrent(dbr)) {
@@ -91,8 +89,8 @@ public class JobTypeReport {
                         "    SELECT job_type, COUNT(*) "+
                         "    FROM gram_packets " +
                         "        WHERE " +
-                        "            send_time >= '" + dateFormat.format(ts.getTime()) + "' " +
-                        "        AND send_time < '" + dateFormat.format(ts.stepTime()) + "' " +
+                        "            send_time >= '" + startTime + "' " +
+                        "        AND send_time < '" + endTime + "' " +
                         "    GROUP BY job_type;");
 
                 while (rs.next()) {

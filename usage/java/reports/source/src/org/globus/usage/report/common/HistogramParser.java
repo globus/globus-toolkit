@@ -20,6 +20,8 @@ import java.io.PrintStream;
 
 import java.sql.ResultSet;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Calendar;
@@ -29,15 +31,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Vector;
 
-
 public class HistogramParser {
-    static private SimpleDateFormat dayFormat;
-    static private SimpleDateFormat monthFormat;
-    static private SimpleDateFormat sqlDateFormat;
+    static protected SimpleDateFormat dayFormat;
+    static protected SimpleDateFormat monthFormat;
+    static protected SimpleDateFormat sqlDateFormat;
+    static protected DecimalFormat valueFormat;
 
     static {
+        valueFormat = (DecimalFormat) NumberFormat.getInstance(Locale.US);
+        valueFormat.setMaximumFractionDigits(3);
         dayFormat = new SimpleDateFormat("MMM d,''yy");
         monthFormat = new SimpleDateFormat("MMM, ''yy");
         sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -49,7 +54,7 @@ public class HistogramParser {
     private HashMap uniqueItems; // itemName -> ItemEntry
     private Entry[] entries; // indexed by step number
     private int index;
-    private long totalData;
+    private double totalData;
     protected TimeStep ts;
     private SimpleDateFormat dateFormat;
     private String stepDuration;
@@ -74,7 +79,7 @@ public class HistogramParser {
     }
 
     public void nextEntry() {
-        entries[++index] = new Entry(ts.getTime(), ts.stepTime());
+        nextEntry(new Entry(ts.getTime(), ts.stepTime()));
     }
 
     protected void nextEntry(Entry e) {
@@ -95,6 +100,14 @@ public class HistogramParser {
 
         entries[index].addData(item, data);
         totalData += data;
+    }
+
+    protected Iterator itemEntryIterator() {
+        return uniqueItems.entrySet().iterator();
+    }
+
+    protected double getTotal() {
+        return totalData;
     }
 
     public double getData(String item) {
@@ -143,7 +156,7 @@ public class HistogramParser {
                        + formatDate(entries[i].getEndDate())
                        + "</end-date>");
 
-            long remaining = totalData;
+            double remaining = totalData;
             ListIterator li = itemEntries.listIterator();
 
             if (otherCount > 0) {
@@ -158,13 +171,13 @@ public class HistogramParser {
                     io.println("\t\t\t<name>" + ie.name
                             + "</name>");
                     io.println("\t\t\t<single-value>"
-                            + entries[i].getData(ie.name)
+                            + valueFormat.format(entries[i].getData(ie.name))
                             + "</single-value>");
                     io.println("\t\t</sub-item>");
                     otherValue += entries[i].getData(ie.name);
                 }
-                io.println("\t\t<single-value>" + (long) otherValue
-                        + "</single-value>");
+                io.println("\t\t<single-value>"
+                        + valueFormat.format(otherValue) + "</single-value>");
                 io.println("\t\t<value>" + remaining + "</value>");
                 io.println("\t</item>");
                 remaining -= otherValue;
@@ -177,10 +190,11 @@ public class HistogramParser {
                 io.println("\t<item>");
                 io.println("\t\t<name>" + ie.name + "</name>");
 
-                io.println("\t\t<single-value>" + (long) value
-                        + "</single-value>");
+                io.println("\t\t<single-value>"
+                        + valueFormat.format(value) + "</single-value>");
 
-                io.println("\t\t<value>" + remaining + "</value>");
+                io.println("\t\t<value>" + valueFormat.format(remaining)
+                        + "</value>");
                 io.println("\t</item>");
 
                 remaining -= value;
@@ -218,7 +232,7 @@ public class HistogramParser {
             io.println("\t<item>");
             io.println("\t\t<name>" + ie.name + "</name>");
             io.println("\t\t<single-value>"
-                    + ie.get()
+                    + valueFormat.format(ie.get())
                     + "</single-value>");
             io.println("\t</item>");
         }
@@ -375,6 +389,10 @@ public class HistogramParser {
 
         public double get() {
             return this.data;
+        }
+
+        public String getName() {
+            return this.name;
         }
 
         public int compareTo(Object o) throws ClassCastException {

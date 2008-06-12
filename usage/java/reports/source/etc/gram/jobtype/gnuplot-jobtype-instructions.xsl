@@ -30,7 +30,7 @@ set key below
 </xsl:text>
 
 <xsl:text>set xtics (</xsl:text>
- <xsl:for-each select="job-type-report/entry">
+ <xsl:for-each select="job-type-report/histogram/entry">
       <xsl:text>&quot;</xsl:text>
       <xsl:value-of select="start-date"/>
       <xsl:text>&quot; </xsl:text><xsl:number value="position()"/>

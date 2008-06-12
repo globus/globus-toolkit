@@ -3,16 +3,16 @@
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
 
 <xsl:template match="/">
-	<xsl:for-each select="job-type-report/entry">
+	<xsl:for-each select="job-type-report/histogram/entry">
 		<xsl:number value="position()"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select="job-types/single-jobs"/>
+		<xsl:value-of select=".//name[text() = 'single']/following-sibling::single-value"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select="job-types/multiple-jobs"/>
+		<xsl:value-of select=".//name[text() = 'multiple']/following-sibling::single-value"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select="job-types/condor-jobs"/>
+		<xsl:value-of select=".//name[text() = 'condor']/following-sibling::single-value"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select="job-types/MPI-jobs"/>
+		<xsl:value-of select=".//name[text() = 'mpi']/following-sibling::single-value"/>
 		<xsl:text>
 </xsl:text>
 </xsl:for-each>

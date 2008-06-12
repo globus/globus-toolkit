@@ -15,7 +15,10 @@
  */
 package org.globus.usage.report.common;
 
+import java.io.PrintStream;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 
 public class PercentageHistogramParser extends HistogramParser {
     public PercentageHistogramParser(String t, String o, String a, TimeStep ts) {
@@ -24,6 +27,23 @@ public class PercentageHistogramParser extends HistogramParser {
 
     public void nextEntry() {
         nextEntry(new PercentageEntry(ts.getTime(), ts.stepTime()));
+    }
+
+    public void outputSlots(PrintStream io) {
+        Iterator i = itemEntryIterator();
+        double total = getTotal();
+
+        while (i.hasNext()) {
+            Map.Entry entry = (Map.Entry) i.next();
+            ItemEntry ie = (ItemEntry) entry.getValue();
+
+            io.println("\t<item>");
+            io.println("\t\t<name>" + ie.getName() + "</name>");
+            io.println("\t\t<single-value>"
+                    + valueFormat.format(100.0 * ie.get() / total)
+                    + "</single-value>");
+            io.println("\t</item>");
+        }
     }
 
     public static class PercentageEntry extends Entry {
