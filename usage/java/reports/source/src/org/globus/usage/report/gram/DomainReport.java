@@ -92,31 +92,42 @@ public class DomainReport {
             internalReport.nextEntry();
             domainReport.nextEntry();
 
-            ResultSet rs = dbr.retrieve(
-                    "SELECT ip_address, COUNT(*) " +
-                    "FROM gram_packets " +
-                    "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
-                    "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
-                    "GROUP BY ip_address;");
+            boolean internalReportCached = internalReport.downloadCurrent(dbr);
+            boolean domainReportCached = domainReport.downloadCurrent(dbr);
 
-            while (rs.next()) {
-                String ip_address = rs.getString(1);
-                int job_count = rs.getInt(2);
-                IPEntry ipEntry = IPEntry.getIPEntry(ip_address);
-                String domain = ipEntry.getDomain();
+            if (! (internalReportCached && domainReportCached)) {
+                ResultSet rs = dbr.retrieve(
+                        "SELECT ip_address, COUNT(*) " +
+                        "FROM gram_packets " +
+                        "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
+                        "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
+                        "GROUP BY ip_address;");
 
-                totalJobs += job_count;
-                if (domain.equals("ISI")) {
-                    isiJobs += job_count;
-                } else if (domain.equals("MCS")) {
-                    mcsJobs += job_count;
+                while (rs.next()) {
+                    String ip_address = rs.getString(1);
+                    int job_count = rs.getInt(2);
+                    IPEntry ipEntry = IPEntry.getIPEntry(ip_address);
+                    String domain = ipEntry.getDomain();
+
+                    if (! internalReportCached) {
+                        totalJobs += job_count;
+                        if (domain.equals("ISI")) {
+                            isiJobs += job_count;
+                        } else if (domain.equals("MCS")) {
+                            mcsJobs += job_count;
+                        }
+                    }
+
+                    if (! domainReportCached) {
+                        domainReport.addData(domain, job_count);
+                    }
                 }
-                domainReport.addData(domain, job_count);
+                rs.close();
             }
-            rs.close();
-
-            internalReport.addData("ISI", 100.0 * isiJobs / totalJobs);
-            internalReport.addData("MCS", 100.0 * mcsJobs / totalJobs);
+            if (!internalReportCached) {
+                internalReport.addData("ISI", 100.0 * isiJobs / totalJobs);
+                internalReport.addData("MCS", 100.0 * mcsJobs / totalJobs);
+            }
         }
         internalReport.output(System.out);
         domainReport.output(System.out);
