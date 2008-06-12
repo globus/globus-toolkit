@@ -8,40 +8,40 @@
 
  <target name="gnuplot-rftfreqdist">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="rftfreqdist/gnuplot-freqdist-instructions.xsl" 
+   <xslt style="gnuplot-freqdist-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/rftfreqdist.gnuplot"/>
-   <xslt style="rftfreqdist/gnuplot-freqdist-data.xsl" 
+   <xslt style="gnuplot-freqdist-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/rftfreqdist.data"/>
  </target>
 
  <target name="gnuplot-gftpfreqdist">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="gftpfreqdist/gnuplot-gftpfreqdist-instructions.xsl"
+   <xslt style="gnuplot-freqdist-instructions.xsl"
          in="${in.xml}"
          out="${user.dir}/gftpfreqdist.gnuplot"/>
-   <xslt style="gftpfreqdist/gnuplot-gftpfreqdist-data.xsl"
+   <xslt style="gnuplot-freqdist-data.xsl"
          in="${in.xml}"
          out="${user.dir}/gftpfreqdist.data"/>
  </target>
 
  <target name="gnuplot-rlsfreqdist">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="rlsfreqdist/gnuplot-rlsfreqdist-instructions.xsl" 
+   <xslt style="gnuplot-freqdist-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/rlsfreqdist.gnuplot"/>
-   <xslt style="rlsfreqdist/gnuplot-rlsfreqdist-data.xsl" 
+   <xslt style="gnuplot-freqdist-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/rlsfreqdist.data"/>
  </target>
 
  <target name="gnuplot-gramfreqdist">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="gramfreqdist/gnuplot-freqdist-instructions.xsl" 
+   <xslt style="gnuplot-freqdist-instructions.xsl" 
          in="${in.xml}"
          out="${user.dir}/gramfreqdist.gnuplot"/>
-   <xslt style="gramfreqdist/gnuplot-freqdist-data.xsl" 
+   <xslt style="gnuplot-freqdist-data.xsl" 
          in="${in.xml}"
          out="${user.dir}/gramfreqdist.data"/>
  </target>

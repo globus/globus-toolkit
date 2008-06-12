@@ -91,9 +91,6 @@ public class DomainReport {
             boolean domainCached = domainReport.downloadCurrent(dbr);
 
             if ((ipCached && domainCached)) {
-                System.err.println("Skipping query for range "
-                        + dateFormat.format(startTime) + " to "
-                        + dateFormat.format(ts.getTime()) + " because of cached histogram");
             } else {
                 ResultSet rs = dbr.retrieve(
                         "SELECT ip_address, COUNT(*) " +

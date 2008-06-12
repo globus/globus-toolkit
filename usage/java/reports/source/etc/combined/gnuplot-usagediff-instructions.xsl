@@ -5,11 +5,18 @@
 >
 
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
+<xsl:variable name="report" select="//histogram/output"/>
+<xsl:variable name="report-component" select="
+        substring-before(substring-after($report, '-'), '-')"/>
 
 <xsl:template match="/"> 
 <xsl:text>set terminal png size 1024,768
-set output "gramfreqdisthistogram.png"
-set title "GRAM4 Container Busyness (Number of packets per day averaged across container reporting period > 1 month) (</xsl:text><xsl:value-of select="combined-gramfreqdist-report/start-date"/><xsl:text> to </xsl:text><xsl:value-of select="combined-gramfreqdist-report/end-date"/><xsl:text>)"
+set output "</xsl:text>
+<xsl:value-of select="$report-component"/>
+<xsl:text>histogram.png"
+set title "</xsl:text>
+<xsl:value-of select="*/histogram/title"/>
+<xsl:text>"
 
 my_width=0.2
 
@@ -23,16 +30,19 @@ set bmargin 7
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
- <xsl:for-each select="combined-gramfreqdist-report/slot">
+ <xsl:for-each select="//slots/item">
+      <xsl:sort select="substring-before(name, ' ')" data-type="number"/>
       <xsl:text>&quot;</xsl:text>
-      <xsl:value-of select="bucketStr"/>
+      <xsl:value-of select="name"/>
       <xsl:text>&quot; </xsl:text><xsl:number value="position()"/>
       <xsl:if test="not(position() = last())"><xsl:text>, </xsl:text></xsl:if>
  </xsl:for-each>
  <xsl:text>)</xsl:text>
 
 <xsl:text>
-plot 'gramfreqdist.data' using 1:2 title "# of containers" with boxes fs pattern 1
+plot '</xsl:text>
+<xsl:value-of select="$report-component"/>
+<xsl:text>.data' using 1:2 title "# of containers" with boxes fs pattern 1
 </xsl:text>
 
 </xsl:template>

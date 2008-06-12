@@ -224,7 +224,7 @@ public class HistogramParser {
         for (int i = 0; i < entries.length; i++) {
             ResultSet rs;
             String dateString = sqlDateFormat.format(entries[i].getStartDate());
-            String durationString = ts.getStepMultiplier() + stepDuration;
+            String durationString = ts.getStepMultiplier() + " " + stepDuration;
             long id = -1;
 
             if (entries[i].cached) {
@@ -272,7 +272,7 @@ public class HistogramParser {
     public boolean downloadCurrent(DatabaseRetriever dbr) throws Exception {
         ResultSet rs;
         String dateString = sqlDateFormat.format(entries[index].getStartDate());
-        String durationString = ts.getStepMultiplier() + stepDuration;
+        String durationString = ts.getStepMultiplier() + " " + stepDuration;
         long id;
 
         String idQuery = "SELECT id "
@@ -290,8 +290,6 @@ public class HistogramParser {
             id = rs.getLong(1);
         }
         rs.close();
-
-        System.err.println("id query\n" + idQuery + "\nyields " + id);
 
         if (id == -1) {
             return false;

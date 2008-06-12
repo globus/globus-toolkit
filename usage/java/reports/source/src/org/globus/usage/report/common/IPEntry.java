@@ -64,7 +64,7 @@ public class IPEntry {
                 return IPEntry.NULL_IP;
             }
 
-            if (hostname == null) {
+            if (hostname == null || hostname.equals("")) {
                 hostname = ia.getHostName();
             }
         } catch (Exception e) {

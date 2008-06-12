@@ -24,6 +24,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Calendar;
 
+import org.globus.usage.report.common.HistogramParser;
+import org.globus.usage.report.common.TimeStep;
+
 public class FreqDist {
     public static void main(String[] args) throws Exception {
         String USAGE = "Usage: FreqDist [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
@@ -102,6 +105,13 @@ public class FreqDist {
             
         String startDateStr = dateFormat.format(sDate);
         String endDateStr = dateFormat.format(endDate);
+        TimeStep ts = new TimeStep(sDate, step, 1, n);
+        HistogramParser histogram = new HistogramParser(
+            "Service load (packets per day averaged across services reporting > 1 month)" , reportName,
+            "count" ,ts);
+
+        int slots[] = new int[] { 0, 1, 11, 101, 1001, 10001, 100001 };
+
         String query = "SELECT bin.min_rate, bin.max_rate, COUNT(*) "+
                        "FROM ("+
                        "    SELECT " +
@@ -120,10 +130,10 @@ public class FreqDist {
                        "        AND " +
                        "            DATE(send_time) < '" + endDateStr + "' "+
                        "        GROUP BY " + hostColumn + ") AS summary "+
-                       "    WHERE summary.days > 28) AS c "+
+                       "    WHERE summary.days >= 30) AS c "+
                        "INNER JOIN "+
                        "( "+
-                       "    SELECT 0 AS min_rate, 1 AS max_rate "+
+                       "    SELECT 0 AS min_rate, 0.99 AS max_rate "+
                        "    UNION ALL "+
                        "    SELECT 1 AS min_rate, 10 AS max_rate "+
                        "    UNION ALL "+
@@ -141,42 +151,61 @@ public class FreqDist {
                        "AND "+
                        "    (((bin.max_rate IS NOT NULL) "+
                        "        AND " +
-                       "        bin.max_rate > c.ppd) " +
+                       "        bin.max_rate >= c.ppd) " +
                        "    OR " +
                        "        bin.max_rate IS NULL) "+
                        "GROUP BY bin.min_rate, bin.max_rate "+
                        "ORDER BY bin.min_rate;";
 
+        System.err.println(query);
+        ResultSet rs = null;
+
+        histogram.nextEntry();
+
+        for (i = 0; i < slots.length; i++) {
+            String name;
+
+            if (i == 0) {
+                name = slots[i] + " - " + slots[i+1];
+            } else if (i == slots.length - 1) {
+                name = slots[i] + " +";
+            } else {
+                name = slots[i] + " - " + (slots[i+1]-1);
+            }
+
+            histogram.addData(name, 0);
+        }
+
+        if (! histogram.downloadCurrent(dbr)) {
+            rs = dbr.retrieve(query);
+
+            while (rs.next())
+            {
+                int min_rate = rs.getInt(1);
+                int max_rate = rs.getInt(2);
+                long count = rs.getLong(3);
+                String name;
+
+                if (max_rate == 0 && min_rate != 0) {
+                    name = min_rate + " +";
+                } else if (max_rate == 0) {
+                    name = min_rate + " - 1";
+                } else {
+                    name = min_rate + " - " + max_rate;
+                }
+
+                histogram.addData(name, count);
+            }
+            rs.close();
+        }
+        histogram.upload(dbr);
+
+        dbr.close();
+
         System.out.println("<" + reportName + ">");
         System.out.println("  <start-date>" + startDateStr + "</start-date>");
         System.out.println("  <end-date>" + endDateStr + "</end-date>");
-
-        ResultSet rs = null;
-
-        rs = dbr.retrieve(query);
-
-        while (rs.next())
-        {
-            int min_rate = rs.getInt(1);
-            int max_rate = rs.getInt(2);
-            long count = rs.getLong(3);
-            String name;
-
-            if (max_rate == 0) {
-                name = "> " + min_rate;
-            } else {
-                name = min_rate + " to " + max_rate;
-            }
-
-            System.out.println("  <slot>");
-            System.out.println("   <bucket>" + min_rate + "</bucket>");
-            System.out.println("   <bucketStr>" + name + "</bucketStr>");
-            System.out.println("   <count>" + count + "</count>");
-            System.out.println("  </slot>");
-        }
-        rs.close();
-
-        dbr.close();
+        histogram.output(System.out);
         System.out.println("</" + reportName + ">");
     }
 }

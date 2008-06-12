@@ -9,7 +9,9 @@
 <xsl:template match="/"> 
 <xsl:text>set terminal png size 1024,768
 set output "rlsfreqdisthistogram.png"
-set title "RLS Container Busyness (Number of packets per day averaged across container reporting period > 1 month) (</xsl:text><xsl:value-of select="combined-rlsfreqdist-report/start-date"/><xsl:text> to </xsl:text><xsl:value-of select="combined-rlsfreqdist-report/end-date"/><xsl:text>)"
+set title "</xsl:text>
+<xsl:value-of select="//histogram/title"/>
+<xsl:text> (</xsl:text><xsl:value-of select="//start-date"/><xsl:text> to </xsl:text><xsl:value-of select="//end-date"/><xsl:text>)"
 
 my_width=0.2
 
@@ -23,9 +25,10 @@ set bmargin 7
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
- <xsl:for-each select="combined-rlsfreqdist-report/slot">
+ <xsl:for-each select="//slots/item">
+      <xsl:sort select="substring-before(name, ' ')" data-type="number"/>
       <xsl:text>&quot;</xsl:text>
-      <xsl:value-of select="bucketStr"/>
+      <xsl:value-of select="name"/>
       <xsl:text>&quot; </xsl:text><xsl:number value="position()"/>
       <xsl:if test="not(position() = last())"><xsl:text>, </xsl:text></xsl:if>
  </xsl:for-each>
