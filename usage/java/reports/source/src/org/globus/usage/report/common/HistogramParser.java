@@ -50,7 +50,7 @@ public class HistogramParser {
     private Entry[] entries; // indexed by step number
     private int index;
     private long totalData;
-    private TimeStep ts;
+    protected TimeStep ts;
     private SimpleDateFormat dateFormat;
     private String stepDuration;
 
@@ -75,6 +75,10 @@ public class HistogramParser {
 
     public void nextEntry() {
         entries[++index] = new Entry(ts.getTime(), ts.stepTime());
+    }
+
+    protected void nextEntry(Entry e) {
+        entries[++index] = e;
     }
 
     public void addData(String item) {
