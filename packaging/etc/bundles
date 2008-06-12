@@ -183,6 +183,7 @@ BUNDLE globus-data-management-server
         globus_usage
         globus_gridftp_server
     globus_gridftp_sshftp_setup
+        globus_xioperf
 
 BUNDLE globus-data-management-sdk
 	globus_core
@@ -536,7 +537,6 @@ BUNDLE globus-gridftp
         gaa_util
         gaa_plugin
         gaa_simple
-        globus_xioperf
         globus_xio_popen_driver
         globus_xio_token_bucket_driver
         globus_gaa_authz_callout_setup
