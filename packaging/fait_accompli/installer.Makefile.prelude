@@ -18,7 +18,7 @@ THR=@thr@
 
 # Final info target
 done:
-	echo "Your build completed successfully.  Please run ${MAKE} install."
+	@echo "Your build completed successfully.  Please run ${MAKE} install."
 
 # Cleanup targets
 clean:
