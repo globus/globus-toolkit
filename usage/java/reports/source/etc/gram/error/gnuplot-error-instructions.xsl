@@ -9,7 +9,9 @@
 <xsl:template match="/">
 <xsl:text>set terminal png size 1024,768
 set output "error.png"
-set title "Percentage of Jobs With Error or Fault Codes"
+set title "</xsl:text>
+<xsl:value-of select="/report/histogram[output='percentfailedhistogram']/title"/>
+<xsl:text>"
 
 my_width=0.3
 
@@ -28,7 +30,7 @@ set y2label "% of jobs with gt2 error code"
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
- <xsl:for-each select="report/entry">
+ <xsl:for-each select="report/histogram[output='percentfailedhistogram']/entry">
       <xsl:text>&quot;</xsl:text>
       <xsl:value-of select="start-date"/>
       <xsl:text>&quot; </xsl:text><xsl:number value="position()"/>

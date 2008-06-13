@@ -6,13 +6,13 @@
 	<xsl:for-each select="job-type-report/histogram/entry">
 		<xsl:number value="position()"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select=".//name[text() = 'single']/following-sibling::single-value"/>
+		<xsl:value-of select=".//*[name = 'single']/single-value"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select=".//name[text() = 'multiple']/following-sibling::single-value"/>
+		<xsl:value-of select=".//*[name = 'multiple']/single-value"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select=".//name[text() = 'condor']/following-sibling::single-value"/>
+		<xsl:value-of select=".//*[name = 'condor']/single-value"/>
 		<xsl:text> </xsl:text>
-		<xsl:value-of select=".//name[text() = 'mpi']/following-sibling::single-value"/>
+		<xsl:value-of select=".//*[name = 'mpi']/single-value"/>
 		<xsl:text>
 </xsl:text>
 </xsl:for-each>

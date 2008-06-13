@@ -11,14 +11,15 @@
 <xsl:if test="output='gt2histogram'">
 <xsl:for-each select="entry">
 <tr bgcolor="#9acd32">
-	<th><xsl:value-of select="start-date"/> - <xsl:value-of select="end-date"/></th>
+	<th colspan="2"><xsl:value-of select="start-date"/> - <xsl:value-of select="end-date"/></th>
 </tr>
 
 <xsl:for-each select="item">
 	<xsl:sort select="single-value" data-type="number" order="descending"/>
 	<xsl:if test="not(single-value='0')">
 	<tr>
-		<td> Code: <xsl:value-of select="name"/> - <xsl:value-of select="single-value"/></td>
+		<td>Code: <xsl:value-of select="name"/></td>
+                <td><xsl:value-of select="single-value"/></td>
 	</tr>
 	</xsl:if>
 </xsl:for-each>

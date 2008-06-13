@@ -9,7 +9,9 @@
 <xsl:template match="/">
 <xsl:text>set terminal png size 1024,768
 set output "features.png"
-set title "Percentage of Jobs Using Featrues"
+set title "</xsl:text>
+<xsl:value-of select="features-report/histogram/title"/>
+<xsl:text>"
 
 my_width=0.15
 
@@ -26,7 +28,7 @@ set key below
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
- <xsl:for-each select="features-report/entry">
+ <xsl:for-each select="features-report/histogram/entry">
       <xsl:text>&quot;</xsl:text>
       <xsl:value-of select="start-date"/>
       <xsl:text>&quot; </xsl:text><xsl:number value="position()"/>

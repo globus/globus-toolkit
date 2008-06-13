@@ -16,12 +16,11 @@
 package org.globus.usage.report.gram;
 
 import org.globus.usage.report.common.DatabaseRetriever;
+import org.globus.usage.report.common.MultiPercentageHistogramParser;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
@@ -66,108 +65,75 @@ public class FeaturesReport {
 
         String inputDate = args[args.length - 1];
 
-        DecimalFormat f = (DecimalFormat) NumberFormat.getInstance(Locale.US);
-        f.setMaximumFractionDigits(3);
-
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
-        System.out.println("<features-report>");
-
-        int totalJobs;
-        int JCEused;
-        int FSIused;
-        int FSOused;
-        int FCUused;
-        int CUHused;
-
+        MultiPercentageHistogramParser histogram = 
+                new MultiPercentageHistogramParser(
+                    "Percentage of GRAM4 Jobs Using Features",
+                    "jobfeatureshistogram", "Job Features", ts);
+            
         DatabaseRetriever dbr = new DatabaseRetriever();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         while (ts.next()) {
-            totalJobs = 0;
-            JCEused = 0;
-            FSIused = 0;
-            FSOused = 0;
-            FCUused = 0;
-            CUHused = 0;
+            String startTime = dateFormat.format(ts.getTime());
+            String endTime = dateFormat.format(ts.stepTime());
+            histogram.nextEntry();
+            
+            if (! histogram.downloadCurrent(dbr)) {
+                ResultSet rs = dbr.retrieve(
+                        "SELECT " +
+                        "    SUM ( "+
+                        "        CASE " +
+                        "            WHEN job_credential_endpoint_used " +
+                        "                THEN 1 " +
+                        "            ELSE 0 " +
+                        "        END), "+
+                        "    SUM ( "+
+                        "        CASE " +
+                        "            WHEN file_stage_in_used " +
+                        "                THEN 1 " +
+                        "            ELSE 0 " +
+                        "        END), "+
+                        "    SUM ( "+
+                        "        CASE " +
+                        "            WHEN file_stage_out_used " +
+                        "                THEN 1 " +
+                        "            ELSE 0 " +
+                        "        END), "+
+                        "    SUM ( "+
+                        "        CASE " +
+                        "            WHEN file_clean_up_used " +
+                        "                THEN 1 " +
+                        "            ELSE 0 " +
+                        "        END), "+
+                        "    SUM ( "+
+                        "        CASE " +
+                        "            WHEN clean_up_hold_used " +
+                        "                THEN 1 " +
+                        "            ELSE 0 " +
+                        "        END), " +
+                        "     COUNT(*) " +
+                        "FROM gram_packets " +
+                        "    WHERE "+
+                        "        DATE(send_time) >= '" + startTime + "' " +
+                        "    AND "+
+                        "        DATE(send_time) < '" + endTime + "';");
 
-            String startDate = ts.getFormattedTime();
-            Date startingTime = ts.getTime();
-
-            ResultSet rs = dbr.retrieve(
-                    "SELECT " +
-                    "    SUM ( "+
-                    "        CASE " +
-                    "            WHEN job_credential_endpoint_used " +
-                    "                THEN 1 " +
-                    "            ELSE 0 " +
-                    "        END), "+
-                    "    SUM ( "+
-                    "        CASE " +
-                    "            WHEN file_stage_in_used " +
-                    "                THEN 1 " +
-                    "            ELSE 0 " +
-                    "        END), "+
-                    "    SUM ( "+
-                    "        CASE " +
-                    "            WHEN file_stage_out_used " +
-                    "                THEN 1 " +
-                    "            ELSE 0 " +
-                    "        END), "+
-                    "    SUM ( "+
-                    "        CASE " +
-                    "            WHEN file_clean_up_used " +
-                    "                THEN 1 " +
-                    "            ELSE 0 " +
-                    "        END), "+
-                    "    SUM ( "+
-                    "        CASE " +
-                    "            WHEN clean_up_hold_used " +
-                    "                THEN 1 " +
-                    "            ELSE 0 " +
-                    "        END), " +
-                    "     COUNT(1) " +
-                    "FROM gram_packets " +
-                    "    WHERE "+
-                    "        DATE(send_time) >= '" + dateFormat.format(startingTime) + "' " +
-                    "    AND "+
-                    "        DATE(send_time) < '" + dateFormat.format(ts.stepTime()) + "';");
-
-            rs.next();
-            JCEused = rs.getInt(1);
-            FSIused = rs.getInt(2);
-            FSOused = rs.getInt(3);
-            FCUused = rs.getInt(4);
-            CUHused = rs.getInt(5);
-            totalJobs = rs.getInt(6);
-            rs.close();
-
-            System.out.println(" <entry>");
-            System.out.println("\t<start-date>" + startDate + "</start-date>");
-            System.out.println("\t<end-date>" + ts.getFormattedTime()
-                    + "</end-date>");
-
-            System.out.println("\t<total-jobs>" + totalJobs + "</total-jobs>");
-            System.out.println("\t<job-endpoint-used>"
-                    + f.format(100.0 * JCEused / totalJobs)
-                    + "</job-endpoint-used>");
-            System.out.println("\t<file-stage-in-used>"
-                    + f.format(100.0 * FSIused / totalJobs)
-                    + "</file-stage-in-used>");
-            System.out.println("\t<file-stage-out-used>"
-                    + f.format(100.0 * FSOused / totalJobs)
-                    + "</file-stage-out-used>");
-            System.out.println("\t<file-clean-up-used>"
-                    + f.format(100.0 * FCUused / totalJobs)
-                    + "</file-clean-up-used>");
-            System.out.println("\t<clean-up-hold-used>"
-                    + f.format(100.0 * CUHused / totalJobs)
-                    + "</clean-up-hold-used>");
-
-            System.out.println(" </entry>");
-
+                rs.next();
+                histogram.addData("job-endpoint-used", (double) rs.getInt(1));
+                histogram.addData("file-stage-in-used", (double) rs.getInt(2));
+                histogram.addData("file-stage-out-used", (double) rs.getInt(3));
+                histogram.addData("file-clean-up-used", (double) rs.getInt(4));
+                histogram.addData("clean-up-hold-used", (double) rs.getInt(5));
+                histogram.setTotal(rs.getInt(6));
+                rs.close();
+            }
         }
+        histogram.upload(dbr);
         dbr.close();
+        System.out.println("<features-report>");
+        histogram.output(System.out);
         System.out.println("</features-report>");
     }
 }

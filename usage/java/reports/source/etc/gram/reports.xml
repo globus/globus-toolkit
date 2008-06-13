@@ -10,6 +10,12 @@
 			out="${user.dir}/scheduler.data"/>
 	</target>
 	
+        <target name="index-scheduler">
+		<fail message="Must specify in.xml" unless="in.xml"/>
+		<xslt style="scheduler/scheduler-index.xsl" in="${in.xml}"
+			out="${user.dir}/schedulers.html"/>
+        </target>
+
 	<target name="gnuplot-features">
 		<fail message="Must specify in.xml" unless="in.xml"/>
 		<xslt style="features/gnuplot-features-instructions.xsl" in="${in.xml}"

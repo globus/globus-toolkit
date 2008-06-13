@@ -53,10 +53,11 @@ public class IPEntry {
                 if (IPTable.isPrivateAddress(ia)) {
                     return new IPEntry("Private");
                 } else if (addressBytes.length == 4) {
-                    if (addressBytes[0] == 128 && addressBytes[1] == 9) {
+                    if (addressBytes[0] == (byte) 128 &&
+                        addressBytes[1] == (byte) 9) {
                         return new IPEntry("ISI");
-                    } else if (addressBytes[0] == 140 &&
-                               addressBytes[1] == 221) {
+                    } else if (addressBytes[0] == (byte) 140 &&
+                               addressBytes[1] == (byte) 221) {
                         return new IPEntry("MCS");
                     }
                 }

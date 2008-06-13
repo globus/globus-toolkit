@@ -17,6 +17,7 @@ package org.globus.usage.report.gram;
 
 import org.globus.usage.report.common.DatabaseRetriever;
 import org.globus.usage.report.common.HistogramParser;
+import org.globus.usage.report.common.MultiPercentageHistogramParser;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
@@ -80,7 +81,6 @@ public class ErrorReport {
                 "FAULT_CLASS_UNSUPPORTED_FEATURE" };
 
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
-        System.out.println("<report>");
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
@@ -90,6 +90,10 @@ public class ErrorReport {
         HistogramParser faulthist = new HistogramParser(
                 "Breakdown of Fault Classes", "faulthistogram",
                 "Number of Jobs with Fault Class", ts);
+        MultiPercentageHistogramParser percentFaultHist =
+                new MultiPercentageHistogramParser(
+                    "Percentage of Jobs With Error or Fault Codes",
+                    "percentfailedhistogram", "Percentage Failed", ts);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -100,53 +104,55 @@ public class ErrorReport {
 
             gt2hist.nextEntry();
             faulthist.nextEntry();
+            percentFaultHist.nextEntry();
 
             int totalJobs = 0;
             int gt2Jobs = 0;
             int faultJobs = 0;
 
-            ResultSet rs = dbr.retrieve(
-                    "SELECT gt2_error_code, fault_class, COUNT(*) "+
-                    "    FROM gram_packets "+
-                    "    WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' "+
-                    "        AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
-                    "    GROUP BY gt2_error_code, fault_class ;");
-            while (rs.next()) {
-                int gt2_error_code = rs.getInt(1);
-                int fault_class = rs.getInt(2);
-                int jobs = rs.getInt(3);
+            boolean gt2histCached = gt2hist.downloadCurrent(dbr);
+            boolean faulthistCached = faulthist.downloadCurrent(dbr);
+            boolean percentFailedCached = percentFaultHist.downloadCurrent(dbr);
 
-                totalJobs += jobs;
-                if (gt2_error_code != 0) {
-                    gt2Jobs += jobs;
-                    gt2hist.addData(Integer.toString(gt2_error_code), jobs);
+            if (! (gt2histCached && faulthistCached && percentFailedCached)) {
+                ResultSet rs = dbr.retrieve(
+                        "SELECT gt2_error_code, fault_class, COUNT(*) "+
+                        "    FROM gram_packets "+
+                        "    WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' "+
+                        "        AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
+                        "    GROUP BY gt2_error_code, fault_class ;");
+                while (rs.next()) {
+                    int gt2_error_code = rs.getInt(1);
+                    int fault_class = rs.getInt(2);
+                    int jobs = rs.getInt(3);
+
+                    totalJobs += jobs;
+                    if ((!gt2histCached) && gt2_error_code != 0) {
+                        gt2hist.addData(Integer.toString(gt2_error_code), jobs);
+                    }
+                    if ((!percentFailedCached) && gt2_error_code != 0) {
+                        percentFaultHist.addData("GT2 Error Code", jobs);
+                    }
+                    if ((!faulthistCached) && fault_class != 0) {
+                        faulthist.addData(faultNames[fault_class], jobs);
+                    }
+                    if ((!percentFailedCached) && fault_class != 0) {
+                        percentFaultHist.addData("Fault Class", jobs);
+                    }
                 }
-                if (fault_class != 0) {
-                    faultJobs += jobs;
-                    faulthist.addData(faultNames[fault_class], jobs);
-                }
+                rs.close();
+                percentFaultHist.setTotal(totalJobs);
             }
-            rs.close();
-
-            System.out.println(" <entry>");
-            System.out.println("\t<start-date>" + startDate + "</start-date>");
-            System.out.println("\t<end-date>" + ts.getFormattedTime()
-                    + "</end-date>");
-            System.out.println("\t<total-jobs>" + totalJobs + "</total-jobs>");
-
-            System.out.println("\t<jobs-with-error-code>"
-                    + f.format(100.0 * gt2Jobs / totalJobs)
-                    + "</jobs-with-error-code>");
-
-            System.out.println("\t<jobs-with-fault>"
-                    + f.format(100.0 * faultJobs / totalJobs)
-                    + "</jobs-with-fault>");
-
-            System.out.println(" </entry>");
         }
+        gt2hist.upload(dbr);
+        faulthist.upload(dbr);
+        percentFaultHist.upload(dbr);
         dbr.close();
+
+        System.out.println("<report>");
         gt2hist.output(System.out);
         faulthist.output(System.out);
+        percentFaultHist.output(System.out);
         System.out.println("</report>");
     }
 }

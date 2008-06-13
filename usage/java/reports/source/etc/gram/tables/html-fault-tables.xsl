@@ -9,13 +9,13 @@
 	<xsl:if test="output='faulthistogram'">
 	<xsl:for-each select="entry">
        <tr bgcolor="#9acd32">
-        <th><xsl:value-of select="start-date"/> - <xsl:value-of select="end-date"/></th>
+        <th colspan="2"><xsl:value-of select="start-date"/> - <xsl:value-of select="end-date"/></th>
 </tr>
 <xsl:for-each select="item">
 	<xsl:sort select="single-value" order="descending" data-type="number" />
 	<xsl:if test="not(single-value='0')">
         <tr>
-            <td><xsl:value-of select="name"/> - <xsl:value-of select="single-value"/></td>
+            <td><xsl:value-of select="name"/></td><td><xsl:value-of select="single-value"/></td>
           </tr>
 	</xsl:if>
 </xsl:for-each>

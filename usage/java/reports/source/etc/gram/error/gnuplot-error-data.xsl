@@ -3,12 +3,12 @@
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
 
 <xsl:template match="/">
-  <xsl:for-each select="report/entry">
+  <xsl:for-each select="report/histogram[output='percentfailedhistogram']/entry">
       <xsl:number value="position()"/>
       <xsl:text> </xsl:text>
-      <xsl:value-of select="jobs-with-error-code"/>
+      <xsl:value-of select="item[name='GT2 Error Code']/single-value"/>
       <xsl:text> </xsl:text>
-      <xsl:value-of select="jobs-with-fault"/>
+      <xsl:value-of select="item[name='Fault Class']/single-value"/>
       <xsl:text> </xsl:text>
 <xsl:text>
 </xsl:text>

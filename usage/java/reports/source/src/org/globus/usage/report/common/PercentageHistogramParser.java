@@ -47,20 +47,16 @@ public class PercentageHistogramParser extends HistogramParser {
     }
 
     public static class PercentageEntry extends Entry {
-        private double total;
-
         public PercentageEntry(Date start, Date end) {
             super(start, end);
-            total = 0.0;
-        }
-
-        public void addData(String keyName, double data) {
-            super.addData(keyName, data);
-            total += data;
         }
 
         public double getData(String keyName) {
             return 100.0 * super.getData(keyName) / total;
+        }
+
+        public void setTotal(double t) {
+            total = t;
         }
     }
 }

@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -43,6 +44,7 @@ public class HistogramParser {
     static {
         valueFormat = (DecimalFormat) NumberFormat.getInstance(Locale.US);
         valueFormat.setMaximumFractionDigits(3);
+        valueFormat.setGroupingUsed(false);
         dayFormat = new SimpleDateFormat("MMM d,''yy");
         monthFormat = new SimpleDateFormat("MMM, ''yy");
         sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -156,7 +158,7 @@ public class HistogramParser {
                        + formatDate(entries[i].getEndDate())
                        + "</end-date>");
 
-            double remaining = totalData;
+            double remaining = entries[i].getTotal();
             ListIterator li = itemEntries.listIterator();
 
             if (otherCount > 0) {
@@ -164,7 +166,7 @@ public class HistogramParser {
                 io.println("\t<item>");
                 io.println("\t\t<name> other </name>");
 
-                while (otherCount-- > 0) {
+                for (int j = 0; j <  otherCount; j++) {
                     ItemEntry ie = (ItemEntry) li.next();
 
                     io.println("\t\t<sub-item>");
@@ -193,8 +195,7 @@ public class HistogramParser {
                 io.println("\t\t<single-value>"
                         + valueFormat.format(value) + "</single-value>");
 
-                io.println("\t\t<value>" + valueFormat.format(remaining)
-                        + "</value>");
+                io.println("\t\t<value>" + remaining + "</value>");
                 io.println("\t</item>");
 
                 remaining -= value;
@@ -237,62 +238,11 @@ public class HistogramParser {
             io.println("\t</item>");
         }
     }
-    
-    public void upload(DatabaseRetriever dbr) throws Exception {
-        for (int i = 0; i < entries.length; i++) {
-            ResultSet rs;
-            String dateString = sqlDateFormat.format(entries[i].getStartDate());
-            String durationString = ts.getStepMultiplier() + " " + stepDuration;
-            long id = -1;
 
-            if (entries[i].cached) {
-                continue;
-            }
-
-            String insertStatement = "INSERT INTO histogram_metadata " +
-                "(report_name, report_date, duration, title, axis) " +
-                "VALUES('" + output + "', '" + dateString + "', '" +
-                durationString + "', '" + title + "', '" + axisName + "');";
-            String idQuery = "SELECT id "
-                       + "FROM histogram_metadata "
-                       + "WHERE report_name = '" + output + "' "
-                       + "AND report_date = '" + dateString + "' "
-                       + "AND duration = '" + durationString + "' "
-                       + "AND title = '" + title + "' "
-                       + "AND axis = '" + axisName + "' ";
-
-            dbr.update(insertStatement);
-            
-            rs = dbr.retrieve(idQuery);
-
-            while (rs.next()) {
-                id = rs.getLong(1);
-            }
-            rs.close();
-
-            if (id == -1) {
-                throw new Exception("Error determining id");
-            }
-
-            Iterator iter = uniqueItems.keySet().iterator();
-
-            while (iter.hasNext()) {
-                String itemName = (String) iter.next();
-
-                dbr.update("INSERT into histograms(id, item, value) "
-                         + "VALUES(" + id + ", '" + itemName + "', '"
-                         + entries[i].getData(itemName) + "');");
-            }
-        }
-        dbr.commit();
-    }
-
-    public boolean downloadCurrent(DatabaseRetriever dbr) throws Exception {
-        ResultSet rs;
-        String dateString = sqlDateFormat.format(entries[index].getStartDate());
+    protected long getReportId(DatabaseRetriever dbr, Entry e) {
+        long id = -1;
+        String dateString = sqlDateFormat.format(e.getStartDate());
         String durationString = ts.getStepMultiplier() + " " + stepDuration;
-        long id;
-
         String idQuery = "SELECT id "
                    + "FROM histogram_metadata "
                    + "WHERE report_name = '" + output + "' "
@@ -301,13 +251,65 @@ public class HistogramParser {
                    + "AND title = '" + title + "' "
                    + "AND axis = '" + axisName + "' ";
 
-        rs = dbr.retrieve(idQuery);
+        try {
+            ResultSet rs = dbr.retrieve(idQuery);
 
-        id = -1;
-        while (rs.next()) {
-            id = rs.getLong(1);
+            while (rs.next()) {
+                id = rs.getLong(1);
+            }
+            rs.close();
+        } catch (Exception se) {
+            id = -1;
         }
-        rs.close();
+        return id;
+    }
+    
+    protected void upload(DatabaseRetriever dbr, Entry e) throws Exception {
+        ResultSet rs;
+        String dateString = sqlDateFormat.format(e.getStartDate());
+        String durationString = ts.getStepMultiplier() + " " + stepDuration;
+        long id = -1;
+
+        if (e.cached) {
+            return;
+        }
+
+        String insertStatement = "INSERT INTO histogram_metadata " +
+            "(report_name, report_date, duration, title, axis) " +
+            "VALUES('" + output + "', '" + dateString + "', '" +
+            durationString + "', '" + title + "', '" + axisName + "');";
+
+        dbr.update(insertStatement);
+        
+        id = getReportId(dbr, e);
+
+        if (id == -1) {
+            throw new Exception("Error determining id");
+        }
+
+        Iterator iter = uniqueItems.keySet().iterator();
+
+        while (iter.hasNext()) {
+            String itemName = (String) iter.next();
+
+            dbr.update("INSERT into histograms(id, item, value) "
+                     + "VALUES(" + id + ", '" + itemName + "', '"
+                     + e.getRawData(itemName) + "');");
+        }
+    }
+
+    public void upload(DatabaseRetriever dbr) throws Exception {
+        for (int i = 0; i < entries.length; i++) {
+            upload(dbr, entries[i]);
+        }
+        dbr.commit();
+    }
+
+    public boolean downloadCurrent(DatabaseRetriever dbr) throws Exception {
+        ResultSet rs;
+        String dateString = sqlDateFormat.format(entries[index].getStartDate());
+        String durationString = ts.getStepMultiplier() + " " + stepDuration;
+        long id = getReportId(dbr, entries[index]);
 
         if (id == -1) {
             return false;
@@ -320,7 +322,7 @@ public class HistogramParser {
             addData(item, data);
         }
         rs.close();
-        entries[index].cached = true;
+        entries[index].setCached();
 
         return true;
     }
@@ -334,12 +336,14 @@ public class HistogramParser {
         private Date end;
         private HashMap itemMap;
         private boolean cached;
+        protected double total;
 
         public Entry(Date start, Date end) {
             itemMap = new HashMap(5);
             this.start = start;
             this.end = end;
             this.cached = false;
+            this.total = 0;
         }
 
         public Date getStartDate() {
@@ -350,6 +354,14 @@ public class HistogramParser {
             return end;
         }
 
+        public boolean getCached() {
+            return cached;
+        }
+
+        public void setCached() {
+            cached = true;
+        }
+
         public void addData(String keyName, double data) {
             ItemEntry entry = (ItemEntry) itemMap.get(keyName);
             if (entry == null) {
@@ -357,15 +369,24 @@ public class HistogramParser {
                 itemMap.put(keyName, entry);
             }
             entry.add(data);
+            total += data;
         }
 
         public double getData(String keyName) {
+            return getRawData(keyName);
+        }
+
+        public double getRawData(String keyName) {
             ItemEntry entry = (ItemEntry) itemMap.get(keyName);
             if (entry == null) {
                 return 0.0;
             } else {
                 return entry.get();
             }
+        }
+
+        public double getTotal() {
+            return total;
         }
     }
 

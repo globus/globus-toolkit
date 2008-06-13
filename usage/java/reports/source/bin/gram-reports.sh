@@ -112,6 +112,7 @@ scheduler)
         OUTPUT=$PWD/GRAMSchedulerReport.xml
         runReport "gram-scheduler-report" "$@"
         generateReport "gnuplot-scheduler" "scheduler.gnuplot"
+        generateReport "index-scheduler"
         generateHistogramReport
         ;;
 
