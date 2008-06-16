@@ -16,17 +16,16 @@
 package org.globus.usage.report.gram;
 
 import org.globus.usage.report.common.DatabaseRetriever;
+import org.globus.usage.report.common.DomainHistogramParser;
 import org.globus.usage.report.common.HistogramParser;
-import org.globus.usage.report.common.IPEntry;
-import org.globus.usage.report.common.IPTable;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
-
 import java.text.SimpleDateFormat;
-
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Vector;
 
 public class SchedulerReport {
@@ -72,8 +71,6 @@ public class SchedulerReport {
 
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
-        System.out.println("<report>");
-
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date queryStartDate = dateFormat.parse(inputDate);
         Calendar queryCalendar = new java.util.GregorianCalendar();
@@ -84,9 +81,28 @@ public class SchedulerReport {
         ResultSet rs = dbr.retrieve(new String("gram_packets"),
                     new String[] { "DISTINCT LOWER(scheduler_type)" }, 
                     queryStartDate, queryEndDate);
-        Vector schedulerNames = new Vector(10);
+        Vector<String> schedulerNames = new Vector(10);
         while (rs.next()) {
             schedulerNames.add(rs.getString(1));
+        }
+
+        HashMap <String, HistogramParser> ipHistHash =
+            new HashMap<String, HistogramParser>();
+        HashMap <String, DomainHistogramParser> domainHistHash =
+            new HashMap<String, DomainHistogramParser>();
+
+        for (int i = 0; i < schedulerNames.size(); i++) {
+            String scheduler = schedulerNames.get(i);
+            ipHistHash.put(scheduler,
+                new HistogramParser(
+                    "Jobs (" + scheduler + ") per IP address",
+                    scheduler + "iphistogram",
+                    "Jobs by IP Address", ts));
+            domainHistHash.put(scheduler,
+                new DomainHistogramParser(
+                    "Jobs (" + scheduler + ") per Domain",
+                    scheduler + "domainhistogram",
+                    "Jobs by Domain", ts));
         }
 
         HistogramParser jobHist = new HistogramParser(
@@ -95,7 +111,6 @@ public class SchedulerReport {
 
         while (ts.next()) {
             int totalJobs = 0;
-            IPTable iptracker;
 
             String startDate = ts.getFormattedTime();
             Date startTime = ts.getTime();
@@ -104,57 +119,77 @@ public class SchedulerReport {
 
             jobHist.nextEntry();
 
-            rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" }, startTime, ts.getTime());
-
-            rs.next();
-            totalJobs += rs.getInt(1);
-
-            System.out.println(" <entry>");
-            System.out.println("\t<start-date>" + startDate + "</start-date>");
-            System.out.println("\t<end-date>" + ts.getFormattedTime()
-                    + "</end-date>");
-            System.out.println("\t<total-jobs>" + totalJobs + "</total-jobs>");
+            boolean jobHistCached = jobHist.downloadCurrent(dbr);
+            boolean allCached = jobHistCached;
+            HashMap<String, Boolean> histCached =
+                    new HashMap<String, Boolean>();
+            HashMap<String, Boolean> domainHistCached =
+                    new HashMap<String, Boolean>();
 
             for (int i = 0; i < schedulerNames.size(); i++) {
-                String scheduler = ((String) schedulerNames.get(i)).toLowerCase();
-                iptracker = new IPTable();
-                System.out.println("\t<scheduler>");
-                System.out
-                        .println("\t\t<name>" + scheduler + "</name>");
-                System.out.println("\t\t<index>" + (i + 1) + "</index>");
+                String scheduler = schedulerNames.get(i);
+                HistogramParser dh = ipHistHash.get(scheduler);
+                dh.nextEntry();
 
-                rs = dbr.retrieve(new String("gram_packets"),
-                        new String[] { "COUNT(*)" },
-                        new String[] { "LOWER(scheduler_type) = '"
-                                + scheduler + "'" },
-                                startTime, ts.getTime());
-                rs.next();
+                if (dh.downloadCurrent(dbr)) {
+                    histCached.put(scheduler, Boolean.TRUE);
+                } else {
+                    histCached.put(scheduler, Boolean.FALSE);
+                    allCached = false;
+                }
 
-                System.out.println("\t\t<jobs>" + rs.getInt(1) + "</jobs>");
-                jobHist.addData(scheduler, rs.getInt(1));
+                dh = domainHistHash.get(scheduler);
+                dh.nextEntry();
 
-                rs = dbr.retrieve(new String("gram_packets"),
-                        new String[] { "DISTINCT ip_address" },
-                        new String[] { "LOWER(scheduler_type) = '"
-                                + scheduler + "'" }, startTime, ts
-                                .getTime());
+                if (dh.downloadCurrent(dbr)) {
+                    domainHistCached.put(scheduler, Boolean.TRUE);
+                } else {
+                    domainHistCached.put(scheduler, Boolean.FALSE);
+                    allCached = false;
+                }
+            }
+
+            if (! allCached) {
+                rs = dbr.retrieve(
+                        "SELECT LOWER(scheduler_type), ip_address, COUNT(*) " +
+                        "FROM gram_packets " +
+                        "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) +"' " +
+                        "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
+                        "GROUP BY LOWER(scheduler_type), ip_address;");
 
                 while (rs.next()) {
-                    IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                    iptracker.addAddress(rs.getString(1));
-                    iptracker.addDomain(ipEntry.getDomain());
+                    String scheduler = rs.getString(1);
+                    String ipAddress = rs.getString(2);
+                    long count = rs.getLong(3);
+
+                    if (!jobHistCached) {
+                        jobHist.addData(scheduler, count);
+                    }
+                    if (! histCached.get(scheduler).booleanValue()) {
+                        ipHistHash.get(scheduler).addData(ipAddress, count);
+                    }
+                    if (! domainHistCached.get(scheduler).booleanValue()) {
+                        domainHistHash.get(scheduler).addData(ipAddress, count);
+                    }
                 }
-                System.out.println("\t\t<unique-domains>"
-                        + iptracker.getDomains().size() + "</unique-domains>");
-                iptracker.output(System.out, "\t\t");
-                System.out.println("\t</scheduler>");
             }
-            System.out.println("</entry>");
             rs.close();
         }
-        dbr.close();
+        jobHist.upload(dbr);
+        for (int i = 0; i < schedulerNames.size(); i++) {
+            ipHistHash.get(schedulerNames.get(i)).upload(dbr);
+            domainHistHash.get(schedulerNames.get(i)).upload(dbr);
+        }
+
+        System.out.println("<report>");
         jobHist.output(System.out);
+        for (int i = 0; i < schedulerNames.size(); i++) {
+            ipHistHash.get(schedulerNames.get(i)).output(System.out);
+        }
+        for (int i = 0; i < schedulerNames.size(); i++) {
+            domainHistHash.get(schedulerNames.get(i)).output(System.out);
+        }
         System.out.println("</report>");
+        dbr.close();
     }
 }

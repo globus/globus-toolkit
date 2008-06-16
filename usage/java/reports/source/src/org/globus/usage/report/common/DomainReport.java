@@ -70,7 +70,7 @@ public class DomainReport {
 
         System.out.println("<report>");
 
-        HistogramParser ipReport = new HistogramParser(
+        DomainHistogramParser ipReport = new DomainHistogramParser(
                 "Number of Unique IP Addresses by Domain",
                 reportName, "Number of Unique IP Addresses", ts);
 
@@ -90,8 +90,7 @@ public class DomainReport {
                     if (idx > 0) {
                         ip = ip.substring(idx);
                     }
-                    IPEntry ipEntry = IPEntry.getIPEntry(ip);
-                    ipReport.addData(ipEntry.getDomain(), 1);
+                    ipReport.addData(ip);
                 }
                 rs.close();
             }
