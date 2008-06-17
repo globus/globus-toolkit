@@ -6,6 +6,7 @@
 #  - The trunk uses 1
 #  - For speed concerns, new branches should be added to the top of the list
 #
+globus_4_2_branch                   78
 wsrf_final_branch                   77
 bug_3778_branch                     76
 campaign_4411_branch                75
