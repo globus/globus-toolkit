@@ -174,6 +174,7 @@ public class Receiver {
     public void shutDown() {
         log.debug("shutting down receiver.");
         theRecvThread.shutDown();
+        theHandleThread.shutDown();
         try {
             theHandleThread.join();
         } catch (InterruptedException e) {

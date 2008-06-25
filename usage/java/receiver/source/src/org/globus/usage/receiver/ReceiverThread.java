@@ -65,7 +65,10 @@ public class ReceiverThread extends Thread {
 	       packet.  After receiving the packet, put it into a CustomByteBuffer
 	       only as large as the packet data itself, so as to avoid writing
 	       tons of zero bytes into the database. */
-        while(stillGood) {
+        boolean isStillGood = true;
+        
+
+        while(isStillGood) {
 
             packet = new DatagramPacket(buf, buf.length);
 
@@ -93,6 +96,9 @@ public class ReceiverThread extends Thread {
             }
             /*Todo: if the socket is no longer open here, for some reason,
               should we maybe try to open a new socket?*/
+            synchronized (this) {
+                isStillGood = stillGood;
+            }
         }
 
         theRing.close();
@@ -116,7 +122,9 @@ public class ReceiverThread extends Thread {
     }
 
     public void shutDown() {
-        stillGood = false; //lets the loop in run() finish.
+        synchronized (this) {
+            stillGood = false; //lets the loop in run() finish.
+        }
         try {
             socket.close();
         } catch (Exception e) {}

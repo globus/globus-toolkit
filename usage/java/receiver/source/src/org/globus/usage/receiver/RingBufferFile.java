@@ -18,6 +18,7 @@ package org.globus.usage.receiver;
 
 import java.util.LinkedList;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 
 import org.globus.usage.packets.CustomByteBuffer;
@@ -35,13 +36,15 @@ public class RingBufferFile implements RingBuffer {
     private int pageSize;
     private LinkedList pages;
     private File pageDir;
+    private boolean isClosed;
 
     public RingBufferFile(int size, File dir) {
-        checkPageDirectory(dir);
         this.pageDir = dir;
         this.pageSize = size;
         this.pages = new LinkedList();
         this.memoryPage = new RingBufferArray(this.pageSize);
+        checkPageDirectory(dir);
+        isClosed = false;
     }
         
     public RingBufferFile(int size) {
@@ -62,15 +65,39 @@ public class RingBufferFile implements RingBuffer {
             !dir.canWrite()) {
             throw new IllegalArgumentException("Invalid page directory");
         }
+
+        /* Load page names from the page directory into the pages list */
+        String [] old_pages = dir.list(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return (name.endsWith(".dat"));
+            }
+        });
+
+        log.debug("Reading " + old_pages.length + " old pages");
+        for (int i = 0; i < old_pages.length; i++) {
+            File page = new File(dir, old_pages[i]);
+
+            try {
+                RingBufferArray a = RingBufferArray.read(page.getAbsolutePath());
+                queueSize += a.getNumObjects();
+                pages.add(page);
+            } catch (IOException e) {
+                log.error("Unable to read page file " + page, e);
+            }
+        }
     }
 
     public synchronized CustomByteBuffer getNext() {
-        while (this.queuePage == null || !this.queuePage.hasNext()) {
+        while ((!isClosed) &&
+                (this.queuePage == null || !this.queuePage.hasNext())) {
             try {
                 this.queuePage = loadNextPage();
             } catch (InterruptedException e) {
                 return null;
             }
+        }
+        if (isClosed) {
+            return null;
         }
         CustomByteBuffer buf = this.queuePage.getNext();
         this.queueSize--;
@@ -79,8 +106,11 @@ public class RingBufferFile implements RingBuffer {
 
     private synchronized RingBufferArray loadNextPage() 
         throws InterruptedException {
-        while(this.pages.isEmpty()) {
+        while(this.pages.isEmpty() && !isClosed) {
             wait();
+        }
+        if (isClosed) {
+            return null;
         }
         File pageName = (File)this.pages.removeFirst();
         log.debug("Loading buffer page: " + pageName.getAbsolutePath());
@@ -102,23 +132,25 @@ public class RingBufferFile implements RingBuffer {
     }
 
     public synchronized void close() {
-        insert(null);
+        isClosed = true;
         flush();
     }
 
     public synchronized void flush() {
         try {
-            // store current page
-            File pageName = File.createTempFile(
-                                   System.currentTimeMillis() + "-",
-                                   ".dat",
-                                   this.pageDir);
-            log.debug("Writting buffer page: " + pageName.getAbsolutePath());
-            RingBufferArray.write(pageName.getAbsolutePath(), this.memoryPage);
-            
-            // add current page filename to list of pages
-            this.pages.add(pageName);
-            this.queueSize += this.memoryPage.getNumObjects();
+            if (memoryPage.getNumObjects() > 0) {
+                // store current page
+                File pageName = File.createTempFile(
+                                       System.currentTimeMillis() + "-",
+                                       ".dat",
+                                       this.pageDir);
+                log.debug("Writting buffer page: " + pageName.getAbsolutePath());
+                RingBufferArray.write(pageName.getAbsolutePath(), this.memoryPage);
+                
+                // add current page filename to list of pages
+                this.pages.add(pageName);
+                this.queueSize += this.memoryPage.getNumObjects();
+            }
             notify();
         } catch (IOException e) {
             log.error("Failed to flush buffer page", e);

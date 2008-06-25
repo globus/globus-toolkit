@@ -117,8 +117,9 @@ public class HandlerThread extends Thread {
     public void run() {
         short componentCode, versionCode;
         CustomByteBuffer bufFromRing = null;
+        boolean isStillGood = true;
 
-        while (stillGood) {
+        while (isStillGood) {
             try {
                 /*If ring is empty, this call will result in a thread wait
                   and will not return until there's something to read.*/
@@ -145,6 +146,9 @@ public class HandlerThread extends Thread {
                 /*TODO: if this is an I/O exception, 
                   i.e. can't talk to database,
                   maybe restart the connection right here.*/
+            }
+            synchronized (this) {
+                isStillGood = stillGood;
             }
 	}
     }
@@ -195,7 +199,9 @@ public class HandlerThread extends Thread {
     }
 
     public void shutDown() {
-        stillGood = false; //lets the loop in run() finish
+        synchronized (this) {
+            stillGood = false; //lets the loop in run() finish
+        }
     }
 
     String getStatus(boolean doReset) {
