@@ -39,11 +39,15 @@ public class RingBufferFile implements RingBuffer {
     private boolean isClosed;
 
     public RingBufferFile(int size, File dir) {
+        this(size, dir, true);
+    }
+
+    public RingBufferFile(int size, File dir, boolean readOldBuffers) {
         this.pageDir = dir;
         this.pageSize = size;
         this.pages = new LinkedList();
         this.memoryPage = new RingBufferArray(this.pageSize);
-        checkPageDirectory(dir);
+        checkPageDirectory(dir, readOldBuffers);
         isClosed = false;
     }
         
@@ -51,7 +55,7 @@ public class RingBufferFile implements RingBuffer {
         this(size, new File("."));
     }
             
-    private void checkPageDirectory(File dir) {
+    private void checkPageDirectory(File dir, boolean readOldBuffers) {
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
                 throw new IllegalArgumentException(
@@ -73,16 +77,18 @@ public class RingBufferFile implements RingBuffer {
             }
         });
 
-        log.debug("Reading " + old_pages.length + " old pages");
-        for (int i = 0; i < old_pages.length; i++) {
-            File page = new File(dir, old_pages[i]);
+        if (readOldBuffers) {
+            log.debug("Reading " + old_pages.length + " old pages");
+            for (int i = 0; i < old_pages.length; i++) {
+                File page = new File(dir, old_pages[i]);
 
-            try {
-                RingBufferArray a = RingBufferArray.read(page.getAbsolutePath());
-                queueSize += a.getNumObjects();
-                pages.add(page);
-            } catch (IOException e) {
-                log.error("Unable to read page file " + page, e);
+                try {
+                    RingBufferArray a = RingBufferArray.read(page.getAbsolutePath());
+                    queueSize += a.getNumObjects();
+                    pages.add(page);
+                } catch (IOException e) {
+                    log.error("Unable to read page file " + page, e);
+                }
             }
         }
     }
