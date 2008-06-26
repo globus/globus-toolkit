@@ -178,7 +178,6 @@ main(int argc, char *argv[])
         break;
     }
 
-    printf ("\n");
     return_value = 0;
 
  cleanup:
