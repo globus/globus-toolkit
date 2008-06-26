@@ -502,7 +502,7 @@ init_arguments(int argc,
 
 /* grid_proxy_init()
  *
- * Uses the system() call to run grid-proxy-init to create a user proxy
+ * Run grid-proxy-init or voms-proxy-init to create a user proxy
  *
  * returns grid-proxy-init status 0 if OK, -1 on error
  */
@@ -512,48 +512,78 @@ grid_proxy_init(int seconds,
 
     int rc;
     char *command;
-    int cmdlen;
-    int hours;
     char *proxy_mode;
-    char *proxyopt = "";
+    const char *argv[20];
+    char hours[11], bits[11];
+    int argc = 0;
+    pid_t childpid;
 
-    hours = seconds / SECONDS_PER_HOUR;
+    if (voms) {
+        command = "voms-proxy-init";
+        argv[argc++] = command;
+        argv[argc++] = "-voms";
+        argv[argc++] = voms;
+    } else {
+        command = "grid-proxy-init";
+        argv[argc++] = command;
+    }
 
     proxy_mode = getenv("GT_PROXY_MODE");
     if (proxy_mode) {
         if (strcmp(proxy_mode, "old") == 0) {
             if (voms) {
-                proxyopt = " -proxyver=2";
+                argv[argc++] = "-proxyver=2";
             } else {
-                proxyopt = " -old";
+                argv[argc++] = "-old";
             }
         } else if (strcmp(proxy_mode, "rfc") == 0) {
-            proxyopt = " -rfc";
+            argv[argc++] = "-rfc";
         }
     }
     
-    cmdlen = 250;
-    if (cert) cmdlen += strlen(cert);
-    if (key) cmdlen += strlen(key);
-    if (outfile) cmdlen += strlen(outfile);
-    if (voms) cmdlen += strlen(voms);
-    command = (char *)malloc(cmdlen);
+    argv[argc++] = "-verify";
+    argv[argc++] = "-hours";
+    snprintf(hours, sizeof(hours), "%d", seconds / SECONDS_PER_HOUR);
+    argv[argc++] = hours;
+    argv[argc++] = "-bits";
+    snprintf(bits, sizeof(bits), "%d", MYPROXY_DEFAULT_KEYBITS);
+    argv[argc++] = bits;
 
-    snprintf(command, cmdlen, "%s%s -verify -hours %d "
-	    "-bits %d%s%s%s%s%s%s%s%s%s",
-        voms ? "voms-proxy-init -voms " : "grid-proxy-init",
-        voms ? voms : "",
-	    hours, MYPROXY_DEFAULT_KEYBITS,
-	    cert ? " -cert " : "",
-	    cert ? cert : "",
-	    key ? " -key " : "",
-	    key ? key : "",
-	    outfile ? " -out " : "",
-	    outfile ? outfile : "",
-	    read_passwd_from_stdin ? " -pwstdin" : "",
-	    verbose ? " -debug" : "", proxyopt);
-    rc = system(command);
-    free(command);
+    if (cert) {
+        argv[argc++] = "-cert";
+        argv[argc++] = cert;
+    }
+    if (key) {
+        argv[argc++] = "-key";
+        argv[argc++] = key;
+    }
+    if (outfile) {
+        argv[argc++] = "-out";
+        argv[argc++] = outfile;
+    }
+    if (read_passwd_from_stdin) {
+        argv[argc++] = "-pwstdin";
+    }
+    if (verbose) {
+        argv[argc++] = "-debug";
+    }
+    argv[argc++] = NULL;
+
+    if ((childpid = fork()) < 0) {
+        verror_put_string("fork() failed");
+        verror_put_errno(errno);
+        return -1;
+    }
+    if (childpid == 0) {	/* child */
+        execvp(command, (char *const *)argv);
+        fprintf(stderr, "failed to run %s: %s\n", command, strerror(errno));
+        exit(1);
+    }
+    if (waitpid(childpid,&rc,0) == -1) {
+        verror_put_string("wait() failed for proxy-init child");
+        verror_put_errno(errno);
+        return -1;
+    }
 
     return rc;
 }
