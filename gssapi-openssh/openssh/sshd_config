@@ -76,6 +76,7 @@ Protocol 2
 
 # GSSAPI options
 #GSSAPIAuthentication yes
+#GSSAPIDelegateCredentials yes
 #GSSAPICleanupCredentials yes
 #GSSAPIStrictAcceptorCheck yes
 #GSSAPIKeyExchange yes

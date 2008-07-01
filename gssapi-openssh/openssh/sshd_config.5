@@ -365,6 +365,10 @@ Specifies whether user authentication based on GSSAPI is allowed.
 The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIDelegateCredentials
+Specifies whether delegated credentials are stored in the user's environment.
+The default is
+.Dq yes .
 .It Cm GSSAPIKeyExchange
 Specifies whether key exchange based on GSSAPI is allowed. GSSAPI key exchange 
 doesn't rely on ssh keys to verify host identity.

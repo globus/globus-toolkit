@@ -94,7 +94,8 @@ initialize_server_options(ServerOptions *options)
         options->session_hooks_shutdown_cmd = NULL;
 #endif
 	options->kerberos_get_afs_token = -1;
-	options->gss_authentication=-1;
+	options->gss_authentication = -1;
+	options->gss_deleg_creds = -1;
 	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
 	options->gss_strict_acceptor = -1;
@@ -221,6 +222,8 @@ fill_default_server_options(ServerOptions *options)
 		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)
 		options->gss_authentication = 1;
+	if (options->gss_deleg_creds == -1)
+		options->gss_deleg_creds = 1;
 	if (options->gss_keyex == -1)
 		options->gss_keyex = 1;
 	if (options->gss_cleanup_creds == -1)
@@ -353,6 +356,7 @@ typedef enum {
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
 	sGssAuthentication, sGssCleanupCreds,
+    sGssDelegateCreds,
     sGssStrictAcceptor,
 	sGssKeyEx, 
     sGssCredsPath,
@@ -418,6 +422,7 @@ static struct {
 	{ "afstokenpassing", sUnsupported, SSHCFG_GLOBAL },
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_ALL },
+	{ "gssapidelegatecredentials", sGssDelegateCreds, SSHCFG_ALL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
 	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
 	{ "gssapicredentialspath", sGssCredsPath, SSHCFG_GLOBAL },
@@ -427,6 +432,7 @@ static struct {
 #endif
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_ALL },
+	{ "gssapidelegatecredentials", sUnsupported, SSHCFG_ALL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapicredentialspath", sUnsupported, SSHCFG_GLOBAL },
@@ -980,6 +986,10 @@ parse_flag:
 		intptr = &options->gss_authentication;
 		goto parse_flag;
 
+	case sGssDelegateCreds:
+		intptr = &options->gss_deleg_creds;
+		goto parse_flag;
+
 	case sGssKeyEx:
 		intptr = &options->gss_keyex;
 		goto parse_flag;
@@ -1498,6 +1508,7 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 {
 	M_CP_INTOPT(password_authentication);
 	M_CP_INTOPT(gss_authentication);
+	M_CP_INTOPT(gss_deleg_creds);
 	M_CP_INTOPT(rsa_authentication);
 	M_CP_INTOPT(pubkey_authentication);
 	M_CP_INTOPT(kerberos_authentication);
