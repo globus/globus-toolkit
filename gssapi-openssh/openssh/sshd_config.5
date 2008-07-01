@@ -363,7 +363,17 @@ The default is
 .It Cm GSSAPIAuthentication
 Specifies whether user authentication based on GSSAPI is allowed.
 The default is
-.Dq no .
+.Dq yes .
+Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIDelegateCredentials
+Specifies whether delegated credentials are stored in the user's environment.
+The default is
+.Dq yes .
+.It Cm GSSAPIKeyExchange
+Specifies whether key exchange based on GSSAPI is allowed. GSSAPI key exchange 
+doesn't rely on ssh keys to verify host identity.
+The default is
+.Dq yes .
 Note that this option applies to protocol version 2 only.
 .It Cm GSSAPICleanupCredentials
 Specifies whether to automatically destroy the user's credentials cache
@@ -371,6 +381,39 @@ on logout.
 The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIStrictAcceptorCheck
+Determines whether to be strict about the identity of the GSSAPI acceptor 
+a client authenticates against. If
+.Dq yes
+then the client must authenticate against the
+.Pa host
+service on the current hostname. If 
+.Dq no
+then the client may authenticate against any service key stored in the 
+machine's default store. This facility is provided to assist with operation 
+on multi homed machines. 
+The default is
+.Dq yes .
+Note that this option applies only to protocol version 2 GSSAPI connections,
+and setting it to 
+.Dq no
+may only work with recent Kerberos GSSAPI libraries.
+.It Cm GSSAPICredentialsPath
+If specified, the delegated GSSAPI credential is stored in the
+given path, overwriting any existing credentials.  
+Paths can be specified with syntax similar to the AuthorizedKeysFile 
+option (i.e., accepting %h and %u tokens).  
+When using this option,
+setting 'GssapiCleanupCredentials no' is recommended,
+so logging out of one session
+doesn't remove the credentials in use by another session of
+the same user.
+Currently only implemented for the GSI mechanism.
+.It Cm GSIAllowLimitedProxy
+Specifies whether to accept limited proxy credentials for
+authentication.
+The default is
+.Dq no .
 .It Cm HostbasedAuthentication
 Specifies whether rhosts or /etc/hosts.equiv authentication together
 with successful public key client host authentication is allowed
