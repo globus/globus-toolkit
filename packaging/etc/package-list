@@ -254,6 +254,7 @@ globus_java_ws_core_registry                wsrf/java/registry/source	tar
 globus_java_ws_core_deployment              wsrf/java/deployment/source	tar
 globus_java_ws_core_pdp                     wsrf/java/pdp/source	tar
 globus_java_ws_core_usage                   wsrf/java/usage/source	tar
+globus_java_ws_core_jpa			    wsrf/java/wsrf-jpa		tar
 
 globus_c_wsdl_parser                        wsrf/c/parser/wsdl/source gpt
 globus_c_wsrf_cgen                          wsrf/c/parser/cgen/source gpt
