@@ -1181,11 +1181,13 @@ globus_l_ftp_client_restart_plugin_genericify(
     if(d->source_url)
     {
 	globus_libc_free(d->source_url);
+	    d->source_url = NULL;
 	globus_ftp_client_operationattr_destroy(&d->source_attr);
     }
     if(d->dest_url)
     {
 	globus_libc_free(d->dest_url);
+        d->dest_url = NULL;
 	globus_ftp_client_operationattr_destroy(&d->dest_attr);
     }
 
