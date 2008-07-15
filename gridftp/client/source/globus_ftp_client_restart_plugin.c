@@ -108,8 +108,23 @@ typedef struct
     const char *                                checksum_alg;
 
     globus_bool_t                               abort_pending;
+
+    int                                 ticker;
+    globus_callback_handle_t            ticker_handle;
+    globus_bool_t                       ticker_set;
+    globus_bool_t                       xfer_running;
+    globus_bool_t                       ticker_get;
+    globus_ftp_client_handle_t *        ticker_ftp_handle;
+
+    globus_off_t *                      ticker_nbyte_a;
 }
 globus_l_ftp_client_restart_plugin_t;
+
+static
+void
+l_begin_xfer(
+    globus_ftp_client_handle_t *        ftp_handle,
+    globus_l_ftp_client_restart_plugin_t *  d);
 
 static
 globus_ftp_client_plugin_t *
@@ -744,6 +759,9 @@ globus_l_ftp_client_restart_plugin_get(
     d->operation = GLOBUS_FTP_CLIENT_GET;
     d->source_url = globus_libc_strdup(url);
     globus_ftp_client_operationattr_copy(&d->source_attr, attr);
+
+    d->ticker_get = GLOBUS_TRUE;
+    l_begin_xfer(handle, d);
 }
 /* globus_l_ftp_client_restart_plugin_get() */
 
@@ -765,6 +783,8 @@ globus_l_ftp_client_restart_plugin_put(
     d->operation = GLOBUS_FTP_CLIENT_PUT;
     d->dest_url = globus_libc_strdup(url);
     globus_ftp_client_operationattr_copy(&d->dest_attr, attr);
+
+    l_begin_xfer(handle, d);
 }
 /* globus_l_ftp_client_restart_plugin_put() */
 
@@ -790,6 +810,8 @@ globus_l_ftp_client_restart_plugin_third_party_transfer(
     globus_ftp_client_operationattr_copy(&d->source_attr, source_attr);
     d->dest_url = globus_libc_strdup(dest_url);
     globus_ftp_client_operationattr_copy(&d->dest_attr, dest_attr);
+
+    l_begin_xfer(handle, d);
 }
 /* globus_l_ftp_client_restart_plugin_third_party_transfer() */
 
@@ -805,6 +827,214 @@ void globus_l_ftp_client_restart_plugin_abort(
 
     d->abort_pending = GLOBUS_TRUE;
 }
+
+
+
+/* 
+ *  when a transfer ends
+ */
+static
+void
+globus_l_ftp_client_restart_plugin_complete(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle)
+{
+    globus_l_ftp_client_restart_plugin_t *  d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    /* XXX examine for race */
+    d->xfer_running = GLOBUS_FALSE;
+    if(d->ticker_nbyte_a != NULL)
+    {
+        free(d->ticker_nbyte_a);
+        d->ticker_nbyte_a = NULL;
+    }
+}
+
+static
+void
+l_ticker_cb(
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_l_ftp_client_restart_plugin_t *  d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) user_arg;
+
+    /* no reason to do anything here if the transfer isnt running */
+    if(!d->xfer_running || d->abort_pending)
+    {
+        return;
+    }
+
+    /* allow 1 tic to insure resolution */
+    if(d->ticker > 1)
+    {
+        globus_abstime_t                when;
+
+        /* stalled, restart the transfer */
+        GlobusTimeAbstimeGetCurrent(when);
+
+        switch(d->operation)
+        {
+            case GLOBUS_FTP_CLIENT_GET:
+                result = globus_ftp_client_plugin_restart_get(
+                    d->ticker_ftp_handle,
+                    d->source_url,
+                    &d->source_attr,
+                    NULL,
+                    &when);
+                break;
+            case GLOBUS_FTP_CLIENT_PUT:
+                result = globus_ftp_client_plugin_restart_put(
+                    d->ticker_ftp_handle,
+                    d->dest_url,
+                    &d->dest_attr,
+                    NULL,
+                    &when);
+                break;
+            case GLOBUS_FTP_CLIENT_TRANSFER:
+                result = globus_ftp_client_plugin_restart_third_party_transfer(
+                    d->ticker_ftp_handle,
+                    d->source_url,
+                    &d->source_attr,
+                    d->dest_url,
+                    &d->dest_attr,
+                    NULL,
+                    &when);
+                break;
+
+            default:
+                globus_assert(0 && "should never happen--memory corruption");
+        }
+    }
+    d->ticker++;
+
+}
+
+static 
+void
+l_begin_xfer(
+    globus_ftp_client_handle_t *        ftp_handle,
+    globus_l_ftp_client_restart_plugin_t *  d)
+{
+    d->ticker = 0;
+    d->ticker_ftp_handle = ftp_handle;
+    d->xfer_running = GLOBUS_TRUE;
+}
+
+static
+void
+globus_l_ftp_client_restart_plugin_data(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle,
+    globus_object_t *                           error,
+    const globus_byte_t *                       buffer,
+    globus_size_t                               length,
+    globus_off_t                                offset,
+    globus_bool_t                               eof)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    if(!d->xfer_running || !d->ticker_get)
+    {
+        return;
+    }
+
+    d->ticker = 0;
+}
+
+
+static
+void globus_l_ftp_client_restart_plugin_response(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle,
+    const char *                                url,
+    globus_object_t *                           error,
+    const globus_ftp_control_response_t *       ftp_response)
+{
+    globus_off_t                        nbytes;
+    char *                              tmp_ptr;
+    char *                              buffer;
+    int                                 sc;
+    int                                 stripe_ndx;
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    if(!d->xfer_running)
+    {
+        return;
+    }
+
+    if(!error &&
+        ftp_response &&
+        ftp_response->response_buffer &&
+        ftp_response->code == 112)
+    {
+        buffer = (char *) ftp_response->response_buffer;
+        if(d->ticker_nbyte_a == NULL)
+        {
+            int                         num_stripes;
+            /* parse out total stripe count */
+            tmp_ptr = strstr(buffer, "Total Stripe Count:");
+            if(tmp_ptr == NULL)
+            {
+                return;
+            }
+            sc = sscanf(tmp_ptr + sizeof("Total Stripe Count:"),
+                " %d", &num_stripes);
+            if(sc != 1)
+            {
+                return;
+            }
+
+            d->ticker_nbyte_a = (globus_off_t *)
+                globus_calloc(num_stripes, sizeof(globus_off_t));
+        }
+
+        /* parse out Stripe Index */
+        tmp_ptr = strstr(buffer, "Stripe Index:");
+        if(tmp_ptr == NULL)
+        {
+            return;
+        }
+        sc = sscanf(tmp_ptr + sizeof("Stripe Index:"),
+            " %d", &stripe_ndx);
+        if(sc != 1)
+        {
+            return;
+        }
+
+        /* parse out bytes transfered */
+        tmp_ptr = strstr(buffer, "Stripe Bytes Transferred:");
+        if(tmp_ptr == NULL)
+        {
+            return;
+        }
+        sc = sscanf(tmp_ptr + sizeof("Stripe Bytes Transferred:"),
+            " %" GLOBUS_OFF_T_FORMAT, &nbytes);
+        if(sc != 1)
+        {
+            return;
+        }
+        if(nbytes == d->ticker_nbyte_a[stripe_ndx])
+        {
+            return;
+        }
+
+        d->ticker = 0;
+        d->ticker_nbyte_a[stripe_ndx] = nbytes;
+    }
+
+}
+
 
 static
 void
@@ -989,6 +1219,35 @@ globus_l_ftp_client_restart_plugin_fault(
 /* globus_l_ftp_client_restart_plugin_fault() */
 #endif
 
+globus_result_t
+globus_ftp_client_restart_plugin_set_stall_timeout(
+    globus_ftp_client_plugin_t *        plugin,
+    int                                 to_secs)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+    globus_reltime_t                    period;
+    globus_result_t                     result;
+
+    result = globus_ftp_client_plugin_get_plugin_specific(
+        plugin, (void **) &d);
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    /* start a timer */
+    GlobusTimeReltimeSet(period, to_secs, 0);
+    d->ticker_set = GLOBUS_TRUE;
+    globus_callback_register_periodic(
+        &d->ticker_handle,
+        &period,
+        &period,
+        l_ticker_cb,
+        d);
+
+    return GLOBUS_SUCCESS;
+}
+
 /**
  * Initialize an instance of the GridFTP restart plugin
  * @ingroup globus_ftp_client_restart_plugin
@@ -1029,6 +1288,7 @@ globus_ftp_client_restart_plugin_init(
     globus_reltime_t *				interval,
     globus_abstime_t *				deadline)
 {
+    char *                              env_str;
     globus_l_ftp_client_restart_plugin_t *	d;
     globus_result_t				result;
     GlobusFuncName(globus_ftp_client_restart_plugin_init);
@@ -1117,6 +1377,25 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, third_party_transfer);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, fault);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, abort);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, complete);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, data);
+
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin,
+        response);
+
+    env_str = globus_libc_getenv("GUC_STALL_TIMEOUT");
+    if(env_str != NULL)
+    {
+        int                             sc;
+        int                             to_secs;
+
+        sc = sscanf(env_str, "%d", &to_secs);
+        if(sc == 1)
+        {
+            globus_ftp_client_restart_plugin_set_stall_timeout(
+                plugin, to_secs);
+        }
+    }
 
     return GLOBUS_SUCCESS;
 
@@ -1125,6 +1404,15 @@ result_exit:
     return result;
 }
 /* globus_ftp_client_restart_plugin_init() */
+
+/* stalled transfer timer has ended */
+static
+void
+l_ticker_done(
+    void *                              user_arg)
+{
+    globus_free(user_arg);
+}
 
 /**
  * Destroy an instance of the GridFTP restart plugin
@@ -1165,10 +1453,23 @@ globus_ftp_client_restart_plugin_destroy(
 	                                                  (void **) &d);
     if(result != GLOBUS_SUCCESS)
     {
-	return result;
+        return result;
     }
+
     globus_l_ftp_client_restart_plugin_genericify(d);
 
+    if(d->ticker_set)
+    {
+        d->ticker_set = GLOBUS_FALSE;
+        /* XXX where is d freed? if was a previous leak free in l_ticker_done */
+        globus_callback_unregister(
+            d->ticker_handle, l_ticker_done, d, NULL);
+    }
+    else
+    {
+        /* XXX free d here ? */
+        globus_free(d);
+    }
     return globus_ftp_client_plugin_destroy(plugin);
 }
 /* globus_ftp_client_restart_plugin_destroy() */
@@ -1180,18 +1481,19 @@ globus_l_ftp_client_restart_plugin_genericify(
 {
     if(d->source_url)
     {
-	globus_libc_free(d->source_url);
+        globus_libc_free(d->source_url);
 	    d->source_url = NULL;
-	globus_ftp_client_operationattr_destroy(&d->source_attr);
+        globus_ftp_client_operationattr_destroy(&d->source_attr);
     }
     if(d->dest_url)
     {
-	globus_libc_free(d->dest_url);
+        globus_libc_free(d->dest_url);
         d->dest_url = NULL;
-	globus_ftp_client_operationattr_destroy(&d->dest_attr);
+        globus_ftp_client_operationattr_destroy(&d->dest_attr);
     }
 
     d->operation = GLOBUS_FTP_CLIENT_IDLE;
+    d->ticker_get = GLOBUS_FALSE;
     d->abort_pending = GLOBUS_FALSE;
 }
 /* globus_l_ftp_client_restart_plugin_genericify() */

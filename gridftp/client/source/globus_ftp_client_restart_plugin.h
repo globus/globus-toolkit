@@ -76,6 +76,11 @@ globus_result_t
 globus_ftp_client_restart_plugin_destroy(
     globus_ftp_client_plugin_t *		plugin);
 
+globus_result_t
+globus_ftp_client_restart_plugin_set_stall_timeout(
+    globus_ftp_client_plugin_t *        plugin,
+    int                                 to_secs);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H */
