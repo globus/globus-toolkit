@@ -51,7 +51,7 @@ gpt: @gptlocation@/sbin/gpt-postinstall
 	cd gpt && OBJECT_MODE=32 ./build_gpt
 install: postinstall
 postinstall:
-	if [ ! -h ${GLOBUS_LOCATION}/etc/gpt/packages ]; then \
+	if [ ! -L ${GLOBUS_LOCATION}/etc/gpt/packages ]; then \
 	   cd ${GLOBUS_LOCATION}/etc/gpt; \
 	   ln -sf ../globus_packages packages; \
 	fi; \
