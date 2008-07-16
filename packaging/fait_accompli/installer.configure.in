@@ -175,7 +175,7 @@ fi
 AC_PATH_PROG(ANT_PATH, ant)
 if test "x$ANT_PATH" = "x"; then
    AC_MSG_WARN(ant is needed for some parts of the toolkit) 
-   AC_MSG_WARN(If you know you will not need one, this message can be ignored)
+   AC_MSG_WARN([If you know you will not need one, this message can be ignored])
 fi
 
 AC_OUTPUT
