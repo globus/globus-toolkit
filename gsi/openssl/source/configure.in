@@ -45,7 +45,7 @@ if test "$OPENSSL_INCLUDES" = ""; then
     fi
 fi
 AC_MSG_RESULT([using '$OPENSSL_INCLUDES'])
-INCLUDES="${INCLUDES} ${OPENSSL_INCLUDES}"
+CPPFLAGS="${CPPFLAGS} ${OPENSSL_INCLUDES}"
 AC_TRY_COMPILE([#include <openssl/ssl.h>],
                [SSL_library_init();],,
                [AC_MSG_ERROR([Unable to compile with SSL])])
