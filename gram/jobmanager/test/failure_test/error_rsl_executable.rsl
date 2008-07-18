@@ -1,2 +1,2 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EXECUTABLE *)
-&(executable=(/bin/true))
+&(executable=(/bin/sh))

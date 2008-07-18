@@ -1,2 +1,2 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COUNT *)
-&(executable=/bin/true)(count=asdf)
+&(executable=/bin/sh)(count=asdf)

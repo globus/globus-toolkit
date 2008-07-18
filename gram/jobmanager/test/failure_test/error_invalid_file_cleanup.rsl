@@ -1,3 +1,3 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_CLEANUP *)
-&(executable=/bin/true)
+&(executable=/bin/sh)
  (file_cleanup=(/no/such/an (/no/such/invalid /no/such/form)))

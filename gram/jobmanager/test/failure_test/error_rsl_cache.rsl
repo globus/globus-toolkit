@@ -1,4 +1,4 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE *)
 &(gass_cache=two directories)
- (executable=/bin/true)
+ (executable=/bin/sh)
 

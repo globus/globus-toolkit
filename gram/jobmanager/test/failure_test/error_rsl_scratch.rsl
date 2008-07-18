@@ -1,3 +1,3 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH *)
-&(executable=/bin/true)
+&(executable=/bin/sh)
  (scratch_dir=(bogus format))

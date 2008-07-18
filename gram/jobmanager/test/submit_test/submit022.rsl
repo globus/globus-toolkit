@@ -1,2 +1,3 @@
-&(executable=/bin/true)
- (arguments=$(GLOBUS_GATEKEEPER_HOST))
+&(executable=/bin/sh)
+ (arguments=-c 'exit 0')
+ (environment=(MY_GLOBUS_GATEKEEPER_HOST $(GLOBUS_GATEKEEPER_HOST)))

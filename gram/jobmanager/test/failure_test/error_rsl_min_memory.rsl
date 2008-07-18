@@ -1,3 +1,3 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MIN_MEMORY *)
-&(executable=/bin/true)
+&(executable=/bin/sh)
  (min_memory=(1))

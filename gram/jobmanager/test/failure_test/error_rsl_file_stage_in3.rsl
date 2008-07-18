@@ -1,4 +1,4 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN *)
-&(executable=/bin/true)
+&(executable=/bin/sh)
  (file_stage_in = ( ftp://ftp.globus.org /tmp/ftp)
                   (ftp://ftp.globus.org/no/destination/for/stage))

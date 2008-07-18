@@ -1,3 +1,4 @@
-&(executable = /bin/true)
- (arguments = $(SCRATCH_DIRECTORY) )
+&(executable=/bin/sh)
+ (arguments=-c 'exit 0')
+ (environment=(MY_SCRATCH_DIRECTORY $(SCRATCH_DIRECTORY)))
  (scratch_dir = . )

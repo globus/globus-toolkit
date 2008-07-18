@@ -1,3 +1,3 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_STDIN_NOT_FOUND *)
-&(executable=/bin/true)
- (stdin=/no/such/file)
+&(executable=/bin/sh)
+ (stdin=/etc/no/such/file)
