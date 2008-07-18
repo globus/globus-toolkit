@@ -25,6 +25,13 @@
 # can be useful for creating a module that consists of many directories
 # spread out over the entire source repository.
 
+lrma -a \
+	gram/jobmanager/setup\
+	ws-gram/discovery\
+	ws-gram/service/java/setup\
+	ws-gram/job_management\
+	ws-gram/job_monitoring
+
 gp -a \
         archive_compress\
         common\
