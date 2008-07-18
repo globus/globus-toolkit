@@ -148,6 +148,7 @@ static int net_accept(int socket);
 static void net_setup_listener(int backlog, int *port, int *socket);
 static void error_check(int val, char *string);
 static char *timestamp(void);
+static void null_terminate_string(char ** s, size_t len);
 
 static char * genfilename(char * prefix, char * path, char * sufix);
 
@@ -1395,6 +1396,11 @@ static void doit()
                  token_status);
     }
 
+    if (http_message != NULL) 
+    {
+        null_terminate_string(&http_message, http_length);
+    }
+
     for (length=0; length<http_length && http_message[length]!='\n'; length++)
         ;
 
@@ -1476,14 +1482,10 @@ static void doit()
 
     /* find body of message and forward it to the service */
     {
-        char    lastchar;
         char *  end_of_header = "\015\012\015\012";
         int     content_length;
 
-        lastchar = http_message[http_length];
-        http_message[http_length]='\0';
         http_body = strstr(http_message, end_of_header);
-        http_message[http_length]=lastchar;
         
         if (!http_body)
         {
@@ -1540,6 +1542,7 @@ static void doit()
                                      minor_status,
                                      token_status);
                         }
+                        null_terminate_string(&http_message, http_length);
                         http_body = http_message;
                         body_length = http_length;
                     }
@@ -2436,3 +2439,18 @@ get_content_length(char * http_message, char * http_body)
     *http_body = save;
     return content_length;
 } /* get_content_length() */
+
+
+static
+void
+null_terminate_string(char ** s, size_t len)
+{
+
+    *s = realloc(*s, len+1);
+
+    if ((*s) == NULL)
+    {
+        failure(FAILED_SERVER, "Error NULL-terminating string");
+    }
+    (*s)[len] = 0;
+}
