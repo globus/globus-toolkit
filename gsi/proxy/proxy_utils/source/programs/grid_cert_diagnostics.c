@@ -175,6 +175,14 @@ int main(int argc, char * argv[])
                     globus_error_print_friendly(globus_error_peek(result))));
         goto out;
     }
+    result = globus_gsi_callback_set_check_policy_for_self_signed_certs(callback_data, GLOBUS_TRUE);
+    if (result != GLOBUS_SUCCESS)
+    {
+        printf("Internal error: setting check self-signed policy\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
+        goto out;
+    }
 
     if (personal)
     {
@@ -385,6 +393,10 @@ int main(int argc, char * argv[])
     {
         char * ca_cert_file = globus_fifo_dequeue(&cert_list);
         char * ca_subject_name;
+        unsigned long hash;
+        X509_NAME * x509_subject_name;
+        char * signing_policy_filename;
+        char hash_string[16];
 
         printf("Checking CA file %s... ", ca_cert_file);
               
@@ -396,6 +408,26 @@ int main(int argc, char * argv[])
                         globus_error_print_friendly(globus_error_peek(result))));
             continue;
         }
+        printf("ok\nChecking that certificate hash matches filename... ");
+        result = globus_gsi_cred_get_X509_subject_name(
+            handle, &x509_subject_name);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("failed\n%s\n",
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
+            continue;
+        }
+
+        hash = X509_NAME_hash(x509_subject_name);
+        sprintf(hash_string, "%08lx.0", hash);
+
+        if (strstr(ca_cert_file, hash_string) == 0)
+        {
+            printf("failed\n    CA hash '%s' does not match CA filename\n", hash_string); 
+            continue;
+        }
+        printf("ok\nChecking CA certificate name for %s...", hash_string);
         result = globus_gsi_cred_get_subject_name(handle, &ca_subject_name);
         if (result != GLOBUS_SUCCESS)
         {
@@ -405,8 +437,22 @@ int main(int argc, char * argv[])
             continue;
         }
 
-        printf("ok\nVerifying certificate chain for \"%s\"... ",
-               ca_cert_file);
+        printf("ok (%s)\nChecking if signing policy exists for %s... ", ca_subject_name, hash_string);
+        result = GLOBUS_GSI_SYSCONFIG_GET_SIGNING_POLICY_FILENAME(
+                x509_subject_name,
+                cert_dir,
+                &signing_policy_filename);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("failed\n%s\n",
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
+            continue;
+        }
+        free(signing_policy_filename);
+
+        printf("ok\nVerifying certificate chain for %s... ",
+               hash_string);
         result = globus_gsi_cred_verify_cert_chain(
             handle, callback_data);
         if (result != GLOBUS_SUCCESS)
