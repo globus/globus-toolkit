@@ -2867,7 +2867,6 @@ globus_l_xio_tcp_activate(void)
     }
     
     GlobusXIORegisterDriver(tcp);
-    srand(getpid());
     
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
