@@ -204,6 +204,7 @@ typedef struct globus_l_gsi_callback_data_s {
     char *                              cert_dir;
     globus_gsi_extension_callback_t     extension_cb;
     void *                              extension_oids;
+    globus_bool_t                       check_self_signed_policy;
     globus_result_t                     error;
 
 } globus_i_gsi_callback_data_t;

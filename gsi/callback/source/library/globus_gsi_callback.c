@@ -245,12 +245,12 @@ globus_l_gsi_callback_openssl_dup(
 
 /**
  * @name Get callback data index from X509_STORE
- * @ingroup globus_gsi_callback
  */
 /* @{ */
 /**
  * Retrieve or create the index for our callback data structure in the
  * X509_STORE.
+ * @ingroup globus_gsi_callback
  *
  * @param index
  *        Will contain the index upon return
@@ -297,12 +297,12 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
 
 /**
  * @name Get callback data index from SSL structure
- * @ingroup globus_gsi_callback
  */
 /* @{ */
 /**
  * Retrieve or create the index for our callback data structure in the
  * SSL structure.
+ * @ingroup globus_gsi_callback
  *
  * @param index
  *        Will contain the index upon return
@@ -348,10 +348,10 @@ globus_gsi_callback_get_SSL_callback_data_index(
 
 /**
  * @name Certificate verify wrapper
- * @ingroup globus_gsi_callback
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_callback
  * This function wraps the OpenSSL certificate verification callback for the
  * purpose of a replacing the standard issuer check with one that deals with
  * proxy certificates. Should be used with SSL_CTX_set_cert_verify_callback()
@@ -405,10 +405,10 @@ globus_gsi_callback_X509_verify_cert(
 
 /**
  * @name Independent path validation callback.
- * @ingroup globus_gsi_callback
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_callback
  * This function provides a path validation callback for validation outside of
  * a SSL session. It should be used in X509_STORE_set_verify_cb_func().
  *
@@ -482,10 +482,10 @@ int globus_gsi_callback_create_proxy_callback(
 
 /**
  * @name SSL path validation callback.
- * @ingroup globus_gsi_callback
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_callback
  * This function provides a path validation callback for the validation part of
  * establishing a SSL session. It handles proxy certificates, X509 Extensions
  * and CRL checking. It should be used in SSL_CTX_set_verify().
@@ -569,10 +569,10 @@ int globus_gsi_callback_handshake_callback(
 
 /**
  * @name OpenSSL X509_check_issued() wrapper
- * @ingroup globus_gsi_callback
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_callback
  * This function wraps the OpenSSL X509_check_issued() call and catches the
  * error caused by the fact that a proxy certificate issuer may not have to
  * have the correct KeyUsage fields set.
@@ -1246,7 +1246,8 @@ globus_i_gsi_callback_check_signing_policy(
     /* Do not need to check self signed certs against ca_policy_file */
 
     if (X509_NAME_cmp(X509_get_subject_name(x509_context->current_cert),
-                      X509_get_issuer_name(x509_context->current_cert)))
+                      X509_get_issuer_name(x509_context->current_cert)) ||
+        callback_data->check_self_signed_policy)
     {
         result = globus_i_gsi_callback_check_gaa_auth(
             x509_context, callback_data);

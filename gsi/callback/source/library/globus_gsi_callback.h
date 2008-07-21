@@ -272,6 +272,16 @@ globus_gsi_callback_set_error(
     globus_gsi_callback_data_t          callback_data,
     globus_result_t                     error);
 
+globus_result_t
+globus_gsi_callback_get_check_policy_for_self_signed_certs(
+    globus_gsi_callback_data_t          callback_data,
+    globus_bool_t *                     check);
+
+globus_result_t
+globus_gsi_callback_set_check_policy_for_self_signed_certs(
+    globus_gsi_callback_data_t          callback_data,
+    globus_bool_t                       check);
+
 #endif /* DOXYGEN */
 
 EXTERN_C_END
