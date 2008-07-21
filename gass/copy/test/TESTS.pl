@@ -39,6 +39,7 @@ my @tests = qw(
                 guc-simple.pl
                 guc-stack.pl
                 guc-cc.pl
+                guc-fw.pl
                );
 
 foreach (@tests)

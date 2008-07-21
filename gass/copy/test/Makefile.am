@@ -10,6 +10,7 @@ SUBDIRS= \
 # Scripts contains all of the scripts in this directory
 Scripts= \
 	TESTS.pl \
+    guc-fw.pl \
     guc-stack.pl \
     guc-simple.pl \
     guc-pp-cc.pl \
