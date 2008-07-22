@@ -2247,6 +2247,38 @@ error:
     return NULL;
 }
 
+static char *
+guc_l_convert_file_url(
+    char *                              in_url)
+{
+    char *                              tmp_ptr;
+    char                                start_dir[PATH_MAX];
+    char *                              dir_ptr = "";
+
+
+    /* do we already have a url */
+    tmp_ptr = strstr(in_url, ":/");
+    if(tmp_ptr != NULL)
+    {
+        return strdup(in_url);
+    }
+
+    if(in_url[0] != '/')
+    {
+        tmp_ptr = getcwd(start_dir, PATH_MAX);
+        if(tmp_ptr == NULL)
+        {
+            /* just punt if the system call fails */
+            return strdup(in_url);
+        }
+        dir_ptr = start_dir;
+    }
+    tmp_ptr = globus_common_create_string("file://%s/%s",
+        dir_ptr, in_url);
+
+    return tmp_ptr;
+}
+
 static
 int
 globus_l_guc_parse_arguments(
@@ -2749,13 +2781,13 @@ globus_l_guc_parse_arguments(
             return -1;
         }
         else
-        {
-        
+        {   
             ent = (globus_l_guc_src_dst_pair_t *)
                     globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
-            ent->src_url = globus_libc_strdup(argv[1]);
-            ent->dst_url = globus_libc_strdup(argv[2]);
-            
+
+            ent->src_url = guc_l_convert_file_url(argv[1]);
+            ent->dst_url = guc_l_convert_file_url(argv[2]);
+ 
             globus_fifo_enqueue(&guc_info->user_url_list, ent);
         }
         
