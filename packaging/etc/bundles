@@ -332,9 +332,12 @@ BUNDLE globus-rls-server THREADED
         globus_rls_server
         globus_rls_server_setup
         globus_xio
+        globus_replica_common_java
+        globus_replica_naming_core_java
 
 BUNDLE globus-rls-server-test
         globus_rls_test
+        globus_replica_naming_test_unit
 
 BUNDLE gt2-unthreaded
 	gaa_core
@@ -861,6 +864,16 @@ BUNDLE gt4-replicator
         globus_wsrf_replicator_common_java
         globus_wsrf_replicator_common_schema
         globus_wsrf_replicator_service_java
+
+BUNDLE gt4-replication-client
+        globus_replica_common_java
+        globus_replica_naming_core_java
+        globus_replica_replication_core_java
+        globus_replica_replication_client_java
+
+BUNDLE gt4-replication-client-test
+        globus_replica_replication_test_client
+        globus_replica_replication_test_unit
 
 BUNDLE gt4-wsrls
         globus_wsrf_replicalocation_common_schema
