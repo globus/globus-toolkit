@@ -123,6 +123,13 @@ globus_proxy_ssl_test	gsi/proxy/proxy_ssl/test	gpt
 globus_proxy_utils	gsi/proxy/proxy_utils/source	gpt
 globus_proxy_utils_test	gsi/proxy/proxy_utils/test	gpt
 globus_proxy_wrapper	gsi/proxy/proxy_utils/wrapper	gpt
+globus_replica_common_java  replica/common/java/source tar
+globus_replica_naming_core_java replica/naming/core/java/source tar
+globus_replica_naming_test_unit replica/naming/test/unit tar
+globus_replica_replication_core_java replica/replication/core/java/source    tar
+globus_replica_replication_client_java replica/replication/client/java/source    tar
+globus_replica_replication_test_client replica/replication/test/client    tar
+globus_replica_replication_test_unit replica/replication/test/unit    tar
 globus_rls_client	replica/rls/client	gpt
 globus_rls_client_java	replica/rls/client/java/source	tar
 globus_rls_client_jni	replica/rls/client/java	gpt
