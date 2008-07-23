@@ -624,6 +624,11 @@ oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
     }
 
     rc = sscanf(pcontext->buf + pcontext->index, "%s%n", str, &len);
+    if (rc < 1)
+    {
+        end_of_file = TRUE;
+        return 0;
+    }
 
     pcontext->index += len;
 
