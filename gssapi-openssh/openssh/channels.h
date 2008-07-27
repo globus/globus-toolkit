@@ -117,8 +117,10 @@ struct Channel {
 	u_int	local_window_max;
 	u_int	local_consumed;
 	u_int	local_maxpacket;
+	int	dynamic_window;
 	int     extended_usage;
 	int	single_connection;
+	u_int 	tcpwinsz;	
 
 	char   *ctype;		/* type */
 
@@ -148,9 +150,11 @@ struct Channel {
 
 /* default window/packet sizes for tcp/x11-fwd-channel */
 #define CHAN_SES_PACKET_DEFAULT	(32*1024)
-#define CHAN_SES_WINDOW_DEFAULT	(64*CHAN_SES_PACKET_DEFAULT)
+#define CHAN_SES_WINDOW_DEFAULT	(4*CHAN_SES_PACKET_DEFAULT)
+
 #define CHAN_TCP_PACKET_DEFAULT	(32*1024)
-#define CHAN_TCP_WINDOW_DEFAULT	(64*CHAN_TCP_PACKET_DEFAULT)
+#define CHAN_TCP_WINDOW_DEFAULT	(4*CHAN_TCP_PACKET_DEFAULT)
+
 #define CHAN_X11_PACKET_DEFAULT	(16*1024)
 #define CHAN_X11_WINDOW_DEFAULT	(4*CHAN_X11_PACKET_DEFAULT)
 
@@ -223,7 +227,7 @@ void	 channel_input_status_confirm(int, u_int32_t, void *);
 
 void	 channel_prepare_select(fd_set **, fd_set **, int *, u_int*, int);
 void     channel_after_select(fd_set *, fd_set *);
-void     channel_output_poll(void);
+int      channel_output_poll(void);
 
 int      channel_not_very_much_buffered_data(void);
 void     channel_close_all(void);
@@ -239,21 +243,21 @@ int	 channel_add_adm_permitted_opens(char *, int);
 void	 channel_clear_permitted_opens(void);
 void	 channel_clear_adm_permitted_opens(void);
 void 	 channel_print_adm_permitted_opens(void);
-int      channel_input_port_forward_request(int, int);
+int      channel_input_port_forward_request(int, int, int, int);
 Channel	*channel_connect_to(const char *, u_short, char *, char *);
 Channel	*channel_connect_by_listen_address(u_short, char *, char *);
 int	 channel_request_remote_forwarding(const char *, u_short,
 	     const char *, u_short);
 int	 channel_setup_local_fwd_listener(const char *, u_short,
-	     const char *, u_short, int);
+	     const char *, u_short, int, int, int);
 void	 channel_request_rforward_cancel(const char *host, u_short port);
-int	 channel_setup_remote_fwd_listener(const char *, u_short, int);
+int	 channel_setup_remote_fwd_listener(const char *, u_short, int, int, int);
 int	 channel_cancel_rport_listener(const char *, u_short);
 
 /* x11 forwarding */
 
 int	 x11_connect_display(void);
-int	 x11_create_display_inet(int, int, int, u_int *, int **);
+int	 x11_create_display_inet(int, int, int, u_int *, int **, int, int);
 void     x11_input_open(int, u_int32_t, void *);
 void	 x11_request_forwarding_with_spoofing(int, const char *, const char *,
 	     const char *);

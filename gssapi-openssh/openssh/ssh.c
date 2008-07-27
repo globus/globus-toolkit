@@ -506,6 +506,10 @@ main(int ac, char **av)
 			break;
 		case 'T':
 			no_tty_flag = 1;
+			/* ensure that the user doesn't try to backdoor a */
+			/* null cipher switch on an interactive session */
+			/* so explicitly disable it no matter what */
+			options.none_switch=0;
 			break;
 		case 'o':
 			dummy = 1;
@@ -625,6 +629,29 @@ main(int ac, char **av)
 			fatal("Can't open user config file %.100s: "
 			    "%.100s", config, strerror(errno));
 	} else {
+	    /*
+	     * Since the config file parsing code aborts if it sees
+	     * options it doesn't recognize, allow users to put
+	     * options specific to compile-time add-ons in alternate
+	     * config files so their primary config file will
+	     * interoperate SSH versions that don't support those
+	     * options.
+	     */
+#ifdef GSSAPI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gssapi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#ifdef GSI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gsi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#if defined(KRB5)
+		snprintf(buf, sizeof buf, "%.100s/%.100s.krb", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#endif
 		snprintf(buf, sizeof buf, "%.100s/%.100s", pw->pw_dir,
 		    _PATH_SSH_USER_CONFFILE);
 		(void)read_config_file(buf, host, &options, 1);
@@ -644,8 +671,11 @@ main(int ac, char **av)
 
 	seed_rng();
 
-	if (options.user == NULL)
+	if (options.user == NULL) {
 		options.user = xstrdup(pw->pw_name);
+		options.implicit = 1;
+	}
+        else options.implicit = 0;
 
 	/* Get default port if port has not been set. */
 	if (options.port == 0) {
@@ -892,7 +922,8 @@ ssh_init_forwarding(void)
 		    options.local_forwards[i].listen_port,
 		    options.local_forwards[i].connect_host,
 		    options.local_forwards[i].connect_port,
-		    options.gateway_ports);
+		    options.gateway_ports, options.hpn_disabled,
+		    options.hpn_buffer_size);
 	}
 	if (i > 0 && success != i && options.exit_on_forward_failure)
 		fatal("Could not request local forwarding.");
@@ -1147,6 +1178,9 @@ ssh_session2_open(void)
 {
 	Channel *c;
 	int window, packetmax, in, out, err;
+	int sock;
+	int socksize;
+	int socksizelen = sizeof(int);
 
 	if (stdin_null_flag) {
 		in = open(_PATH_DEVNULL, O_RDONLY);
@@ -1167,9 +1201,70 @@ ssh_session2_open(void)
 	if (!isatty(err))
 		set_nonblock(err);
 
-	window = CHAN_SES_WINDOW_DEFAULT;
+	/* we need to check to see if what they want to do about buffer */
+	/* sizes here. In a hpn to nonhpn connection we want to limit */
+	/* the window size to something reasonable in case the far side */
+	/* has the large window bug. In hpn to hpn connection we want to */
+	/* use the max window size but allow the user to override it */
+	/* lastly if they disabled hpn then use the ssh std window size */
+
+	/* so why don't we just do a getsockopt() here and set the */
+	/* ssh window to that? In the case of a autotuning receive */
+	/* window the window would get stuck at the initial buffer */
+	/* size generally less than 96k. Therefore we need to set the */
+	/* maximum ssh window size to the maximum hpn buffer size */
+	/* unless the user has specifically set the tcprcvbufpoll */
+	/* to no. In which case we *can* just set the window to the */
+	/* minimum of the hpn buffer size and tcp receive buffer size */
+	
+	if(options.hpn_disabled)
+	{
+		options.hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
+	}
+	else if (datafellows & SSH_BUG_LARGEWINDOW) 
+	{
+		debug("HPN to Non-HPN Connection");
+		if (options.hpn_buffer_size < 0)
+			options.hpn_buffer_size = 2*1024*1024;
+	} 
+	else 
+	{
+		if (options.hpn_buffer_size < 0)
+			options.hpn_buffer_size = BUFFER_MAX_LEN_HPN;
+
+		/*create a socket but don't connect it */
+		/* we use that the get the rcv socket size */
+		sock = socket(AF_INET, SOCK_STREAM, 0);
+		/* if they are using the tcp_rcv_buf option */
+		/* attempt to set the buffer size to that */
+		if (options.tcp_rcv_buf) 
+			setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&options.tcp_rcv_buf, 
+				   sizeof(options.tcp_rcv_buf));
+		getsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
+			   &socksize, &socksizelen);
+		close(sock);
+		debug("socksize %d", socksize);
+		if (options.tcp_rcv_buf_poll <= 0) 
+		{
+			options.hpn_buffer_size = MIN(socksize,options.hpn_buffer_size);
+			debug ("MIN of TCP RWIN and HPNBufferSize: %d", options.hpn_buffer_size);
+		} 
+		else
+		{
+			if (options.tcp_rcv_buf > 0) 
+				options.hpn_buffer_size = MIN(options.tcp_rcv_buf, options.hpn_buffer_size);
+				debug ("MIN of TCPRcvBuf and HPNBufferSize: %d", options.hpn_buffer_size);
+ 		}
+		
+	}
+
+	debug("Final hpn_buffer_size = %d", options.hpn_buffer_size);
+
+	window = options.hpn_buffer_size;
+
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
+		window = 4*CHAN_SES_PACKET_DEFAULT;
 		window >>= 1;
 		packetmax >>= 1;
 	}
@@ -1178,6 +1273,10 @@ ssh_session2_open(void)
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
 
+	if ((options.tcp_rcv_buf_poll > 0) && (!options.hpn_disabled)) {
+		c->dynamic_window = 1;
+		debug ("Enabled Dynamic Window Scaling\n");
+	}
 	debug3("ssh_session2_open: channel_new: %d", c->self);
 
 	channel_send_open(c->self);
