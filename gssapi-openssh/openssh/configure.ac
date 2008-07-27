@@ -111,6 +111,7 @@ if test "x$gsi_path" != "xno" ; then
 		AC_MSG_ERROR(globus-makefile-header failed)
 	fi
 
+    AC_MSG_RESULT($GLOBUS_LOCATION)
 	AC_DEFINE(HAVE_GSSAPI_H)
 
     CC="$GLOBUS_CC"
@@ -125,9 +126,7 @@ if test "x$gsi_path" != "xno" ; then
 	AC_TRY_LINK(
 		[],
 		[],
-		[
-			AC_MSG_RESULT(yes)
-		],
+		[],
 		[
 			AC_MSG_ERROR(link with Globus libraries failed)
 		]
@@ -228,10 +227,22 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 		     no_attrib_nonnull=1
 		     ;;
 		2.*) no_attrib_nonnull=1 ;;
-		3.*) CFLAGS="$CFLAGS -Wsign-compare" ;;
-		4.*) CFLAGS="$CFLAGS -Wsign-compare -Wno-pointer-sign" ;;
+		3.*) CFLAGS="$CFLAGS -Wsign-compare -Wformat-security" ;;
+		4.*) CFLAGS="$CFLAGS -Wsign-compare -Wno-pointer-sign -Wformat-security" ;;
 		*) ;;
 	esac
+
+	AC_MSG_CHECKING(if $CC accepts -fno-builtin-memset)
+	saved_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -fno-builtin-memset"
+	AC_LINK_IFELSE( [AC_LANG_SOURCE([[
+#include <string.h>
+int main(void){char b[10]; memset(b, 0, sizeof(b));}
+		]])],
+		[ AC_MSG_RESULT(yes) ],
+		[ AC_MSG_RESULT(no)
+		  CFLAGS="$saved_CFLAGS" ]
+)
 
 	# -fstack-protector-all doesn't always work for some GCC versions
 	# and/or platforms, so we test if we can.  If it's not supported
@@ -388,6 +399,7 @@ AC_CHECK_HEADERS( \
 	sys/cdefs.h \
 	sys/dir.h \
 	sys/mman.h \
+	sys/mount.h \
 	sys/ndir.h \
 	sys/poll.h \
 	sys/prctl.h \
@@ -397,6 +409,7 @@ AC_CHECK_HEADERS( \
 	sys/stream.h \
 	sys/stropts.h \
 	sys/strtio.h \
+	sys/statvfs.h \
 	sys/sysmacros.h \
 	sys/time.h \
 	sys/timers.h \
@@ -688,7 +701,6 @@ int main(void) { exit(0); }
 	no_dev_ptmx=1
 	check_for_libcrypt_later=1
 	check_for_openpty_ctty_bug=1
-	AC_DEFINE(DONT_TRY_OTHER_AF, 1, [Workaround more Linux IPv6 quirks])
 	AC_DEFINE(PAM_TTY_KLUDGE, 1,
 		[Work around problematic Linux PAM modules handling of PAM_TTY])
 	AC_DEFINE(LOCKED_PASSWD_PREFIX, "!",
@@ -965,6 +977,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
 	AC_DEFINE(BROKEN_SETREUID)
 	AC_DEFINE(BROKEN_SETREGID)
+	AC_DEFINE(BROKEN_READV_COMPARISON, 1, [Can't do comparisons on readv])
 	;;
 
 *-*-nto-qnx*)
@@ -1171,7 +1184,7 @@ dnl    Checks for libutil functions
 AC_CHECK_HEADERS(libutil.h)
 AC_SEARCH_LIBS(login, util bsd, [AC_DEFINE(HAVE_LOGIN, 1,
 	[Define if your libraries define login()])])
-AC_CHECK_FUNCS(logout updwtmp logwtmp)
+AC_CHECK_FUNCS(fmt_scaled logout updwtmp logwtmp)
 
 AC_FUNC_STRFTIME
 
@@ -1425,6 +1438,8 @@ AC_ARG_WITH(audit,
 dnl    Checks for library functions. Please keep in alphabetical order
 AC_CHECK_FUNCS( \
 	arc4random \
+	arc4random_buf \
+	arc4random_uniform \
 	asprintf \
 	b64_ntop \
 	__b64_ntop \
@@ -1438,6 +1453,7 @@ AC_CHECK_FUNCS( \
 	fchmod \
 	fchown \
 	freeaddrinfo \
+	fstatvfs \
 	futimes \
 	getaddrinfo \
 	getcwd \
@@ -1489,6 +1505,8 @@ AC_CHECK_FUNCS( \
 	sigvec \
 	snprintf \
 	socketpair \
+	statfs \
+	statvfs \
 	strdup \
 	strerror \
 	strlcat \
@@ -2784,6 +2802,18 @@ fi
 TYPE_SOCKLEN_T
 
 AC_CHECK_TYPES(sig_atomic_t,,,[#include <signal.h>])
+AC_CHECK_TYPES([fsblkcnt_t, fsfilcnt_t],,,[
+#include <sys/types.h>
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif
+#ifdef HAVE_SYS_STATFS_H
+#include <sys/statfs.h>
+#endif
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+])
 
 AC_CHECK_TYPES(in_addr_t,,,
 [#include <sys/types.h>
@@ -3145,6 +3175,16 @@ if test "x$ac_cv_have_accrights_in_msghdr" = "xyes" ; then
 		[Define if your system uses access rights style
 		file descriptor passing])
 fi
+
+AC_MSG_CHECKING(if f_fsid has val members)
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/statvfs.h>],
+[struct fsid_t t; t.val[0] = 0;],
+	[ AC_MSG_RESULT(yes)
+	  AC_DEFINE(FSID_HAS_VAL, 1, f_fsid has members) ],
+	[ AC_MSG_RESULT(no) ]
+)
 
 AC_CACHE_CHECK([for msg_control field in struct msghdr],
 		ac_cv_have_control_in_msghdr, [
@@ -3512,12 +3552,12 @@ AC_ARG_WITH(kerberos5,
 			)
 			AC_SEARCH_LIBS(dn_expand, resolv)
 
-			AC_CHECK_LIB(gssapi,gss_init_sec_context,
+			AC_CHECK_LIB(gssapi_krb5, gss_init_sec_context,
 				[ AC_DEFINE(GSSAPI)
-				  K5LIBS="-lgssapi $K5LIBS" ],
-				[ AC_CHECK_LIB(gssapi_krb5,gss_init_sec_context,
+				  K5LIBS="-lgssapi_krb5 $K5LIBS" ],
+				[ AC_CHECK_LIB(gssapi, gss_init_sec_context,
 					[ AC_DEFINE(GSSAPI)
-					  K5LIBS="-lgssapi_krb5 $K5LIBS" ],
+					  K5LIBS="-lgssapi $K5LIBS" ],
 					AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]),
 					$K5LIBS)
 				],
@@ -3641,7 +3681,10 @@ AC_ARG_WITH(xauth,
 	]
 )
 
+# strip causes problems with GSI libraries...
+if test -z "$GLOBUS_LDFLAGS" ; then
 STRIP_OPT=-s
+fi
 AC_ARG_ENABLE(strip,
 	[  --disable-strip         Disable calling strip(1) on install],
 	[
@@ -4265,6 +4308,13 @@ fi
 dnl Adding -Werror to CFLAGS early prevents configure tests from running.
 dnl Add now.
 CFLAGS="$CFLAGS $werror_flags"
+
+if grep "#define BROKEN_GETADDRINFO 1" confdefs.h >/dev/null || \
+    test "x$ac_cv_func_getaddrinfo" != "xyes" ; then
+	AC_SUBST(TEST_SSH_IPV6, no)
+else
+	AC_SUBST(TEST_SSH_IPV6, yes)
+fi
 
 AC_EXEEXT
 AC_CONFIG_FILES([Makefile buildpkg.sh opensshd.init openssh.xml \

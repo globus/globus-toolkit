@@ -77,6 +77,7 @@ struct sockaddr_in6 {
 	u_int16_t	sin6_port;
 	u_int32_t	sin6_flowinfo;
 	struct in6_addr	sin6_addr;
+	u_int32_t	sin6_scope_id;
 };
 #endif /* !HAVE_STRUCT_SOCKADDR_IN6 */
 
@@ -127,6 +128,9 @@ struct sockaddr_in6 {
 #endif
 #ifndef EAI_SYSTEM
 # define EAI_SYSTEM	(INT_MAX - 4)
+#endif
+#ifndef EAI_FAMILY
+# define EAI_FAMILY	(INT_MAX - 5)
 #endif
 
 #ifndef HAVE_STRUCT_ADDRINFO

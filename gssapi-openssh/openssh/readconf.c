@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.165 2008/01/19 23:09:49 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.167 2008/06/26 11:46:31 grunk Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -134,6 +134,7 @@ typedef enum {
 	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
 	oNoneEnabled, oTcpRcvBufPoll, oTcpRcvBuf, oNoneSwitch, oHPNDisabled,
 	oHPNBufferSize,
+	oVisualHostKey,
 	oDeprecated, oUnsupported
 } OpCodes;
 
@@ -240,6 +241,7 @@ static struct {
         { "noneswitch", oNoneSwitch },
 	{ "hpndisabled", oHPNDisabled },
 	{ "hpnbuffersize", oHPNBufferSize },
+	{ "visualhostkey", oVisualHostKey },
 	{ NULL, oBadOption }
 };
 
@@ -972,6 +974,10 @@ parse_int:
 		intptr = &options->permit_local_command;
 		goto parse_flag;
 
+	case oVisualHostKey:
+		intptr = &options->visual_host_key;
+		goto parse_flag;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -1130,6 +1136,7 @@ initialize_options(Options * options)
 	options->hpn_buffer_size = -1;
 	options->tcp_rcv_buf_poll = -1;
 	options->tcp_rcv_buf = -1;
+	options->visual_host_key = -1;
 }
 
 /*
@@ -1291,6 +1298,8 @@ fill_default_options(Options * options)
 		options->tun_remote = SSH_TUNID_ANY;
 	if (options->permit_local_command == -1)
 		options->permit_local_command = 0;
+	if (options->visual_host_key == -1)
+		options->visual_host_key = 0;
 	/* options->local_command should not be set by default */
 	/* options->proxy_command should not be set by default */
 	/* options->user will be set in the main program if appropriate */
