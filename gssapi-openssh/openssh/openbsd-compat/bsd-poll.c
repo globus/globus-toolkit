@@ -23,6 +23,7 @@
 # include <sys/select.h>
 #endif
 
+#include <stdlib.h>
 #include <errno.h>
 #include "bsd-poll.h"
 
