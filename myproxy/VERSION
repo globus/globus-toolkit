@@ -16,6 +16,8 @@ v4.3 XX Xxx 2008
     message from PAM or OpenSSL.
   - fix -m command-line option for myproxy-init and myproxy-logon
   - fix myproxy-init --voms with GT_PROXY_MODE="old"
+  - in myproxy-init, call grid-proxy-init/voms-proxy-init -valid
+    instead of -hours, so VOMS AC lifetime matches proxy lifetime
   - add a default timeout of 120 seconds for myproxy-server child
     processes to service requests before aborting, customizable via
     the myproxy-server.config request_timeout parameter
