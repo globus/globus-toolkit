@@ -513,8 +513,8 @@ grid_proxy_init(int seconds,
     int rc;
     char *command;
     char *proxy_mode;
-    const char *argv[20];
-    char hours[14], bits[11];
+    const char *argv[22];
+    char hours[11], bits[11], vomslife[14];
     int argc = 0;
     pid_t childpid;
 
@@ -542,9 +542,15 @@ grid_proxy_init(int seconds,
     }
     
     argv[argc++] = "-verify";
-    argv[argc++] = "-valid";
-    snprintf(hours, sizeof(hours), "%d:0", seconds / SECONDS_PER_HOUR);
+    argv[argc++] = "-hours";
+    snprintf(hours, sizeof(hours), "%d", seconds / SECONDS_PER_HOUR);
     argv[argc++] = hours;
+    if (voms) {
+        argv[argc++] = "-vomslife";
+        snprintf(vomslife, sizeof(vomslife), "%d:0",
+                 seconds / SECONDS_PER_HOUR);
+        argv[argc++] = vomslife;
+    }
     argv[argc++] = "-bits";
     snprintf(bits, sizeof(bits), "%d", MYPROXY_DEFAULT_KEYBITS);
     argv[argc++] = bits;
