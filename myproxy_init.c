@@ -287,16 +287,16 @@ main(int argc, char *argv[])
     }
 
     if (create_local_proxy) {
-	unsetenv("X509_USER_PROXY"); /* GSI_SOCKET_use_creds() sets it */
-	if (grid_proxy_init(client_request->proxy_lifetime,
-			    proxyfile, proxyfile, x509_user_proxy) != 0) {
-        if (voms) {
-            fprintf(stderr, "voms-proxy-init failed\n");
-        } else {
-            fprintf(stderr, "grid-proxy-init failed\n");
+        unsetenv("X509_USER_PROXY"); /* GSI_SOCKET_use_creds() sets it */
+        if (voms) {                  /* no need to get another VOMS AC */
+            free(voms);
+            voms = NULL;
         }
-	    goto cleanup;
-	}
+        if (grid_proxy_init(client_request->proxy_lifetime,
+                            proxyfile, proxyfile, x509_user_proxy) != 0) {
+            fprintf(stderr, "grid-proxy-init failed\n");
+            goto cleanup;
+        }
     }
 
     /* Delete proxy file */

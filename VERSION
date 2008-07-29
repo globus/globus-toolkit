@@ -18,6 +18,9 @@ v4.3 XX Xxx 2008
   - fix myproxy-init --voms with GT_PROXY_MODE="old"
   - in myproxy-init --voms, use voms-proxy-init -vomslife so VOMS AC
     lifetime matches proxy lifetime
+  - if myproxy-init --local_proxy and --voms options are used
+    together, only call voms-proxy-init once, and use that proxy to
+    create the local proxy (via grid-proxy-init)
   - add a default timeout of 120 seconds for myproxy-server child
     processes to service requests before aborting, customizable via
     the myproxy-server.config request_timeout parameter
