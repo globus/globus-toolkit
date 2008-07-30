@@ -1058,7 +1058,7 @@ server_request_session(void)
 	c = channel_new("session", SSH_CHANNEL_LARVAL,
 	    -1, -1, -1, /*window size*/0, CHAN_SES_PACKET_DEFAULT,
 	    0, "server-session", 1);
-	if ((options.tcp_rcv_buf_poll > 0) && (!options.hpn_disabled))
+	if ((options.tcp_rcv_buf_poll) && (!options.hpn_disabled))
 		c->dynamic_window = 1;
 	if (session_open(the_authctxt, c->self) != 1) {
 		debug("session open failed, free channel %d", c->self);
@@ -1156,8 +1156,7 @@ server_input_global_request(int type, u_int32_t seq, void *ctxt)
 		} else {
 			/* Start listening on the port */
 			success = channel_setup_remote_fwd_listener(
-			    listen_address, listen_port, options.gateway_ports, 
-           		    options.hpn_disabled, options.hpn_buffer_size);
+			    listen_address, listen_port, options.gateway_ports);
 		}
 		xfree(listen_address);
 	} else if (strcmp(rtype, "cancel-tcpip-forward") == 0) {

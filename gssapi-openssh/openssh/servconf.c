@@ -136,15 +136,16 @@ initialize_server_options(ServerOptions *options)
 	options->num_permitted_opens = -1;
 	options->adm_forced_command = NULL;
 	options->chroot_directory = NULL;
-        options->none_enabled = -1;
-        options->tcp_rcv_buf_poll = -1;
-        options->hpn_disabled = -1;
-        options->hpn_buffer_size = -1;
+	options->none_enabled = -1;
+	options->tcp_rcv_buf_poll = -1;
+	options->hpn_disabled = -1;
+	options->hpn_buffer_size = -1;
 }
 
 void
 fill_default_server_options(ServerOptions *options)
 {
+	/* needed for hpn socket tests */
 	int sock;
 	int socksize;
 	int socksizelen = sizeof(int);
@@ -307,10 +308,10 @@ fill_default_server_options(ServerOptions *options)
 	} else {
 		/* we have to do this incase the user sets both values in a contradictory */
 		/* manner. hpn_disabled overrrides hpn_buffer_size*/
- 		if (options->hpn_disabled <= 0) {
-  			if (options->hpn_buffer_size == 0)
-  				options->hpn_buffer_size = 1;
-  			/* limit the maximum buffer to 64MB */
+		if (options->hpn_disabled <= 0) {
+			if (options->hpn_buffer_size == 0)
+				options->hpn_buffer_size = 1;
+			/* limit the maximum buffer to 64MB */
 			if (options->hpn_buffer_size > 64*1024) {
 				options->hpn_buffer_size = 64*1024*1024;
 			} else {
@@ -371,9 +372,8 @@ typedef enum {
 	sGsiAllowLimitedProxy,
     sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand, sChrootDirectory,
-	sNoneEnabled, sTcpRcvBufPoll, 
-        sHPNDisabled, sHPNBufferSize,
 	sUsePrivilegeSeparation, sAllowAgentForwarding,
+	sNoneEnabled, sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -506,10 +506,10 @@ static struct {
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
 	{ "chrootdirectory", sChrootDirectory, SSHCFG_ALL },
-        { "noneenabled", sNoneEnabled },
-        { "hpndisabled", sHPNDisabled },
-        { "hpnbuffersize", sHPNBufferSize },
-        { "tcprcvbufpoll", sTcpRcvBufPoll },
+	{ "noneenabled", sNoneEnabled },
+	{ "hpndisabled", sHPNDisabled },
+	{ "hpnbuffersize", sHPNBufferSize },
+	{ "tcprcvbufpoll", sTcpRcvBufPoll },
 	{ NULL, sBadOption, 0 }
 };
 

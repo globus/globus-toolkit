@@ -1499,7 +1499,7 @@ packet_write_poll(void)
 		if (len == -1) {
 			if (errno == EINTR || errno == EAGAIN ||
 			    errno == EWOULDBLOCK)
-				return;
+				return (0);
 			fatal("Write failed: %.100s", strerror(errno));
 		}
 		if (len == 0)
@@ -1519,9 +1519,9 @@ int
 packet_write_wait(void)
 {
 	fd_set *setp;
-	u_int bytes_sent = 0;
 	int ret, ms_remain;
 	struct timeval start, timeout, *timeoutp = NULL;
+	u_int bytes_sent = 0;
 
 	setp = (fd_set *)xcalloc(howmany(connection_out + 1, NFDBITS),
 	    sizeof(fd_mask));

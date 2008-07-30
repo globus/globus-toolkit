@@ -169,7 +169,13 @@ static void port_open_helper(Channel *c, char *rtype);
 static int connect_next(struct channel_connect *);
 static void channel_connect_ctx_free(struct channel_connect *);
 
+
+static int hpn_disabled = 0;
+static int hpn_buffer_size = 2 * 1024 * 1024;
+
 /* -- channel core */
+
+
 
 Channel *
 channel_by_id(int id)
@@ -2442,10 +2448,18 @@ channel_set_af(int af)
 	IPv4or6 = af;
 }
 
+
+void 
+channel_set_hpn(int external_hpn_disabled, int external_hpn_buffer_size)
+{
+      	hpn_disabled = external_hpn_disabled;
+	hpn_buffer_size = external_hpn_buffer_size;
+	debug("HPN Disabled: %d, HPN Buffer Size: %d", hpn_disabled, hpn_buffer_size);
+}
+
 static int
 channel_setup_fwd_listener(int type, const char *listen_addr, u_short listen_port,
-    const char *host_to_connect, u_short port_to_connect, int gateway_ports, 
-    int hpn_disabled, int hpn_buffer_size)
+    const char *host_to_connect, u_short port_to_connect, int gateway_ports)
 {
 	Channel *c;
 	int sock, r, success = 0, wildcard = 0, is_client;
@@ -2604,22 +2618,20 @@ channel_cancel_rport_listener(const char *host, u_short port)
 /* protocol local port fwd, used by ssh (and sshd in v1) */
 int
 channel_setup_local_fwd_listener(const char *listen_host, u_short listen_port,
-    const char *host_to_connect, u_short port_to_connect, int gateway_ports, 
-    int hpn_disabled, int hpn_buffer_size)
+    const char *host_to_connect, u_short port_to_connect, int gateway_ports)
 {
 	return channel_setup_fwd_listener(SSH_CHANNEL_PORT_LISTENER,
 	    listen_host, listen_port, host_to_connect, port_to_connect,
-	    gateway_ports, hpn_disabled, hpn_buffer_size);
+	    gateway_ports);
 }
 
 /* protocol v2 remote port fwd, used by sshd */
 int
 channel_setup_remote_fwd_listener(const char *listen_address,
-    u_short listen_port, int gateway_ports, int hpn_disabled, int hpn_buffer_size)
+    u_short listen_port, int gateway_ports)
 {
 	return channel_setup_fwd_listener(SSH_CHANNEL_RPORT_LISTENER,
-	    listen_address, listen_port, NULL, 0, gateway_ports, 
-	    hpn_disabled, hpn_buffer_size);
+	    listen_address, listen_port, NULL, 0, gateway_ports);
 }
 
 /*
@@ -2734,8 +2746,7 @@ channel_request_rforward_cancel(const char *host, u_short port)
  * message if there was an error).
  */
 int
-channel_input_port_forward_request(int is_root, int gateway_ports,
-				   int hpn_disabled, int hpn_buffer_size)
+channel_input_port_forward_request(int is_root, int gateway_ports)
 {
 	u_short port, host_port;
 	int success = 0;
@@ -2761,7 +2772,7 @@ channel_input_port_forward_request(int is_root, int gateway_ports,
 
 	/* Initiate forwarding */
 	success = channel_setup_local_fwd_listener(NULL, port, hostname,
-	    host_port, gateway_ports, hpn_disabled, hpn_buffer_size);
+	    host_port, gateway_ports);
 
 	/* Free the argument string. */
 	xfree(hostname);
@@ -3017,8 +3028,7 @@ channel_send_window_changes(void)
  */
 int
 x11_create_display_inet(int x11_display_offset, int x11_use_localhost,
-    int single_connection, u_int *display_numberp, int **chanids, 
-    int hpn_disabled, int hpn_buffer_size)
+    int single_connection, u_int *display_numberp, int **chanids)
 {
 	Channel *nc = NULL;
 	int display_number, sock;

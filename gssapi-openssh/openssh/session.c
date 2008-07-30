@@ -396,8 +396,7 @@ do_authenticated1(Authctxt *authctxt)
 			}
 			debug("Received TCP/IP port forwarding request.");
 			if (channel_input_port_forward_request(s->pw->pw_uid == 0,
-			      options.gateway_ports, options.hpn_disabled,
-                              options.hpn_buffer_size) < 0) {
+			      options.gateway_ports) < 0) {
 				debug("Port forwarding failed.");
 				break;
 			}
@@ -2512,10 +2511,16 @@ session_set_fds(Session *s, int fdin, int fdout, int fderr, int is_tty)
 	 */
 	if (s->chanid == -1)
 		fatal("no channel for session %d", s->self);
+	if (options.hpn_disabled)
 	channel_set_fds(s->chanid,
 	    fdout, fdin, fderr,
 	    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
 	    1, is_tty, CHAN_SES_WINDOW_DEFAULT);
+	else 
+		channel_set_fds(s->chanid,
+		    fdout, fdin, fderr,
+	            fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
+		    1, is_tty, options.hpn_buffer_size);
 }
 
 /*
@@ -2861,8 +2866,7 @@ session_setup_x11fwd(Session *s)
 	}
 	if (x11_create_display_inet(options.x11_display_offset,
 	    options.x11_use_localhost, s->single_connection,
-	    &s->display_number, &s->x11_chanids, 
-	    options.hpn_disabled, options.hpn_buffer_size) == -1) {
+	    &s->display_number, &s->x11_chanids) == -1) {
 		debug("x11_create_display_inet failed.");
 		return 0;
 	}

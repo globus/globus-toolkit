@@ -229,6 +229,9 @@ ssh_create_socket(int privileged, struct addrinfo *ai)
 	if (options.tcp_rcv_buf > 0)
 		ssh_set_socket_recvbuf(sock);
 
+	if (options.tcp_rcv_buf > 0)
+		ssh_set_socket_recvbuf(sock);
+	
 	/* Bind the socket to an alternative local IP address */
 	if (options.bind_address == NULL)
 		return sock;
