@@ -127,6 +127,8 @@ struct Kex {
 	void	(*kex[KEX_MAX])(Kex *);
 };
 
+void kex_prop2buf(Buffer *, char *proposal[PROPOSAL_MAX]);
+
 Kex	*kex_setup(char *[PROPOSAL_MAX]);
 void	 kex_finish(Kex *);
 
