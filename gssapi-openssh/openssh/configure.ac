@@ -1127,7 +1127,6 @@ int main(void){struct dirent d;exit(sizeof(d.d_name)<=sizeof(char));}
 	]
 )
 
-<<<<<<< configure.ac
 # Check whether the user wants GSSAPI mechglue support
 AC_ARG_WITH(mechglue,
 	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
