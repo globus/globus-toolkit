@@ -41,6 +41,9 @@
 #ifdef KRB5
 #include <krb5.h>
 #endif
+#ifdef AFS_KRB5
+#include <krbafs.h>
+#endif
 
 typedef struct Authctxt Authctxt;
 typedef struct Authmethod Authmethod;
@@ -53,6 +56,7 @@ struct Authctxt {
 	int		 valid;		/* user exists and is allowed to login */
 	int		 attempt;
 	int		 failures;
+	int		 server_caused_failure; 
 	int		 force_pwchange;
 	char		*user;		/* username sent by the client */
 	char		*service;
@@ -68,6 +72,9 @@ struct Authctxt {
 	krb5_principal	 krb5_user;
 	char		*krb5_ticket_file;
 	char		*krb5_ccname;
+#endif
+#ifdef SESSION_HOOKS
+        char            *session_env_file;
 #endif
 	Buffer		*loginmsg;
 	void		*methoddata;
@@ -144,6 +151,7 @@ void	auth_log(Authctxt *, int, char *, char *);
 void	userauth_finish(Authctxt *, int, char *);
 void	userauth_send_banner(const char *);
 int	auth_root_allowed(char *);
+char *expand_authorized_keys(const char *filename, struct passwd *pw);
 
 char	*auth2_read_banner(void);
 
