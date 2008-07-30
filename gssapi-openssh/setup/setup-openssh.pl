@@ -1075,7 +1075,7 @@ sub action
 
     if (($result or $?) and $command !~ m!patch!)
     {
-        exitDie("ERROR: Unable to execute command: $!\n");
+        exitDie("ERROR: Unable to execute $command: $!\n");
     }
 }
 
