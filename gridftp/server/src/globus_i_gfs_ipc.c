@@ -566,6 +566,10 @@ globus_l_gfs_ipc_request_destroy(
                 globus_assert(0 && "possible memory corruption");
                 break;
         }
+        if(request->reply->msg != NULL)
+        {
+            globus_free(request->reply->msg);
+        }
         globus_free(request->reply);
     }
     /* if there was an info structure clean it up */
@@ -1657,7 +1661,7 @@ globus_gfs_ipc_reply_session(
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->code);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->result);
-            if(reply->msg == NULL && reply->result != GLOBUS_SUCCESS)
+            if(reply->result != GLOBUS_SUCCESS)
             {
                 tmp_msg = globus_error_print_friendly(
                     globus_error_peek(reply->result));
@@ -3667,8 +3671,8 @@ error:
         reply->type = request->type;
         reply->id = request->id;
         reply->code = 500;
-        reply->msg = "IPC failed while attempting to perform request";
-        reply->result = GlobusGFSErrorData("IPC failed while attempting to perform request");
+        reply->msg = globus_libc_strdup("IPC failed while attempting to perform request");
+        reply->result = GlobusGFSErrorData(reply->msg);
     }
     request->reply = reply;
 
@@ -4052,8 +4056,6 @@ globus_l_gfs_ipc_reply_read_body_cb(
     }
     globus_mutex_unlock(&ipc->mutex);
 
-    globus_free(buffer);
-
     /* now that everything is set call the iface funcs */
     if(process)
     {
@@ -4129,6 +4131,8 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 break;
         }
     }
+
+    globus_free(buffer);
 
     /* relock and post read */
     globus_mutex_lock(&ipc->mutex);
@@ -4713,7 +4717,7 @@ globus_gfs_ipc_reply_finished(
                 buffer, ipc->buffer_size, ptr, reply->type);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->code);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->result);
-            if(reply->msg == NULL && reply->result != GLOBUS_SUCCESS)
+            if(reply->result != GLOBUS_SUCCESS)
             {
                 tmp_msg = globus_error_print_friendly(
                     globus_error_peek(reply->result));
@@ -5254,8 +5258,8 @@ error:
     reply->type = request->type;
     reply->id = request->id;
     reply->code = 500;
-    reply->msg = "IPC failed while attempting to perform request";
-    reply->result = GlobusGFSErrorData("IPC failed while attempting to perform request");
+    reply->msg = globus_libc_strdup("IPC failed while attempting to perform request");
+    reply->result = GlobusGFSErrorData(reply->msg);
     request->reply = reply;
 
     globus_l_gfs_ipc_finished_reply_kickout(request);

@@ -119,19 +119,62 @@ typedef enum globus_gfs_command_type_e
  *  globus_gfs_event_type_t
  * 
  * Event types.
+ * 
+ * [Request] types are passed as parameters to the DSI's 
+ * globus_gfs_storage_trev_t func.  Supported events must be specified
+ * in the event_mask of globus_gridftp_server_begin_transfer().
+ * 
+ * [Reply] types are passed back via globus_gridftp_server_operation_event()
+ * with any associated data.  globus_gridftp_server_begin_transfer() is a 
+ * convience wrapper which accomplishes the same as 
+ * globus_gridftp_server_operation_event() with an event type of a
+ * GLOBUS_GFS_EVENT_TRANSFER_BEGIN.
+ * 
+ * In a multi-node configuration, generally request types must be passed on
+ * to all nodes (multiplexed), and reply types must be counted and passed
+ * back as one event (demultiplexed).  Some events can be passed back multiple
+ * times as noted.
+ * 
  */
 typedef enum globus_gfs_event_type_e
 {
+    /** [Reply] Data will start to transfer.  Only ONE of these events may
+     *  be passed back per globus_gfs_operation_t. */
     GLOBUS_GFS_EVENT_TRANSFER_BEGIN = 0x0001,
-    GLOBUS_GFS_EVENT_TRANSFER_ABORT = 0x0002,
-    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE = 0x0004,
-    GLOBUS_GFS_EVENT_DISCONNECTED = 0x0008,
-    GLOBUS_GFS_EVENT_BYTES_RECVD = 0x0010,
-    GLOBUS_GFS_EVENT_RANGES_RECVD = 0x0020,
-    GLOBUS_GFS_EVENT_TRANSFER_CONNECTED = 0x0040,
-    GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT = 0x0100,
-    GLOBUS_GFS_EVENT_FINAL_EOF_COUNT = 0x0200,
     
+    /** [Request] abort of a transfer that is between BEGIN and COMPLETE. */
+    GLOBUS_GFS_EVENT_TRANSFER_ABORT = 0x0002,
+    
+    /** [Request] Requesting side is completely done with transfer and any 
+     *  related references have been destroyed. */
+    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE = 0x0004,
+    
+    /** [Reply] Data connection has been disconnected.  Only ONE of these 
+     *  events may be passed forward per globus_gfs_operation_t. */
+    GLOBUS_GFS_EVENT_DISCONNECTED = 0x0008,
+    
+    /** [Request] Ask for a 'bytes recieved' transfer update. 
+     *  [Reply]   Report bytes recieved since last update.  This event may be 
+     *  passed back multiple times per globus_gfs_operation_t. */
+    GLOBUS_GFS_EVENT_BYTES_RECVD = 0x0010,
+    
+    /** [Request] Ask for a 'ranges recieved' transfer update. 
+     *  [Reply]   Report ranges recieved since last update.  This event may be 
+     *  passed back multiple times per globus_gfs_operation_t. */
+    GLOBUS_GFS_EVENT_RANGES_RECVD = 0x0020,
+    
+    /** [Reply]  Data connection to be used for this transfer is 
+     *  (or already has been) established.  Only ONE of these events may 
+     *  be back forward per globus_gfs_operation_t. */
+    GLOBUS_GFS_EVENT_TRANSFER_CONNECTED = 0x0040,
+    
+    /** unused */
+    GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT = 0x0100,
+    
+    /** unused */
+    GLOBUS_GFS_EVENT_FINAL_EOF_COUNT = 0x0200,
+
+    /** bitmask catchall */
     GLOBUS_GFS_EVENT_ALL = 0xFFFF
 } globus_gfs_event_type_t;
 
@@ -278,7 +321,8 @@ typedef struct globus_gfs_finished_info_s
     int                                 id;
     /** result code for success or failure of the op */
     int                                 code;
-    /** additional message, usually for failure */
+    /** additional message to be appended to the control channel
+     ** response or sent over the ipc when result is success.  */
     char *                              msg;
     /** result_t */
     globus_result_t                     result;

@@ -183,6 +183,9 @@ typedef struct globus_l_gfs_data_operation_s
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;
     const char *                        list_type;
+    
+    char *                              user_msg;
+    int                                 user_code;
 
     globus_off_t                        bytes_transferred;
     globus_off_t                        max_offset;
@@ -1980,6 +1983,10 @@ globus_l_gfs_data_operation_destroy(
     if(op->cksm_response)
     {
         globus_free(op->cksm_response);
+    }
+    if(op->user_msg)
+    {
+        globus_free(op->user_msg);
     }
     if(op->remote_ip)
     {
@@ -5025,8 +5032,20 @@ globus_l_gfs_data_end_transfer_kickout(
         (op->node_ndx == 0 && op->eof_ready)));
 
 
-    /* DO NETLOGGER STUFF */
-    reply.msg = globus_l_gfs_data_get_nl_msg(op);
+    /* DO NETLOGGER STUFF 
+     * XXX unless user has a message -- will only be a problem if a DSI
+     * is sending messages to the control channel, in which case they 
+     * just aren't compatible with the netlogger bottleneck reporting
+     */
+    if(op->user_msg == NULL)
+    {
+        reply.msg = globus_l_gfs_data_get_nl_msg(op);
+    }
+    else
+    {
+        reply.msg = op->user_msg;
+    }
+    reply.code = op->user_code;
 
     /* tell the control side the finished was called */
     if(op->callback != NULL)
@@ -6752,7 +6771,13 @@ globus_gridftp_server_operation_finished(
 
     finished_info->id = op->id;
     finished_info->result = result;
-
+    
+    if(finished_info->msg != NULL)
+    {
+        op->user_msg = globus_libc_strdup(finished_info->msg);
+    }
+    op->user_code = finished_info->code;
+    
     switch(finished_info->type)
     {
         case GLOBUS_GFS_OP_RECV:
