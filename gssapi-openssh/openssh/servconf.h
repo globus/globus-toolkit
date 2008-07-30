@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.82 2008/02/13 22:38:17 djm Exp $ */
+/* $OpenBSD: servconf.h,v 1.85 2008/06/10 04:50:25 dtucker Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -35,6 +35,7 @@
 #define	PERMIT_YES		3
 
 #define DEFAULT_AUTH_FAIL_MAX	6	/* Default for MaxAuthTries */
+#define DEFAULT_SESSIONS_MAX	10	/* Default for MaxSessions */
 
 /* Magic name for internal sftp-server */
 #define INTERNAL_SFTP_NAME	"internal-sftp"
@@ -95,6 +96,7 @@ typedef struct {
 	int     kerberos_get_afs_token;		/* If true, try to get AFS token if
 						 * authenticated with Kerberos. */
 	int     gss_authentication;	/* If true, permit GSSAPI authentication */
+	int     gss_deleg_creds;	/* If true, store delegated GSSAPI credentials*/
 	int 	gss_keyex;		/* If true, permit GSSAPI key exchange */
 	int     gss_cleanup_creds;	/* If true, destroy cred cache on logout */
 	int 	gss_strict_acceptor;	/* If true, restrict the GSSAPI acceptor name */
@@ -110,6 +112,7 @@ typedef struct {
 	int     use_login;	/* If true, login(1) is used */
 	int     compression;	/* If true, compression is allowed */
 	int	allow_tcp_forwarding;
+	int	allow_agent_forwarding;
 	u_int num_allow_users;
 	char   *allow_users[MAX_ALLOW_USERS];
 	u_int num_deny_users;
@@ -131,6 +134,7 @@ typedef struct {
 	int	max_startups_rate;
 	int	max_startups;
 	int	max_authtries;
+	int	max_sessions;
 	char   *banner;			/* SSH-2 banner message */
 	int	use_dns;
 	int	client_alive_interval;	/*
@@ -171,5 +175,6 @@ void	 parse_server_config(ServerOptions *, const char *, Buffer *,
 void	 parse_server_match_config(ServerOptions *, const char *, const char *,
 	     const char *);
 void	 copy_set_server_options(ServerOptions *, ServerOptions *, int);
+void	 dump_config(ServerOptions *);
 
 #endif				/* SERVCONF_H */

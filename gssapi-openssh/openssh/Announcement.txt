@@ -1,15 +1,19 @@
 GSI-OpenSSH 4.3, based on OpenSSH 5.0p1, is now available from:
 
-  <http://grid.ncsa.uiuc.edu/ssh/download.html>
+http://grid.ncsa.uiuc.edu/ssh/download.html
+
+This release addresses Globus Security Advisory 2008-01:
+
+http://www.globus.org/mail_archive/security-announce/2008/04/msg00000.html
 
 For installation instructions, please see:
 
-  <http://grid.ncsa.uiuc.edu/ssh/install.html>
+http://grid.ncsa.uiuc.edu/ssh/install.html
 
 We appreciate your feedback and help in testing this version.
 Please use Bugzilla to report GSI-OpenSSH bugs:
 
-  <http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH>
+http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
 
 GSI-OpenSSH 4.3 Major changes
 
@@ -20,13 +24,13 @@ GSI-OpenSSH 4.3 Major changes
       * Updated to HPN13v1.
 
 SHA1 checksums:
-ee8da0e8cc78208c862fef2bd44cbb31527801bc  gsi_openssh-4.3-src.tar.gz
-4dde0fa76c7b5feb2592d8d06450b5b50917c6fb  gsi_openssh_bundle-4.3-src.tar.gz
+6a43e4a1f7594ee684ba88c408c5d337b338ed86  gsi_openssh-4.3-src.tar.gz
+7e750984699c289b0964128153cdc634f0fd1204  gsi_openssh_bundle-4.3-src.tar.gz
 e782f0b44c7101069ad470d9a4273d9332bac9f4  gsi_openssh_compat-4.3-src.tar.gz
 5baa6c2fcca85bbbe8d4bd601d6855f01dbeff4b  gsi_openssh_setup-4.3-src.tar.gz
 
 MD5 checksums:
-d337df4c751f933d3ed68e384b794858  gsi_openssh-4.3-src.tar.gz
-193069214af510391cf628f5a5537b5c  gsi_openssh_bundle-4.3-src.tar.gz
+24686ed1d46ce2e52e4c018556b4b164  gsi_openssh-4.3-src.tar.gz
+4755f11dbb95804efd01c7f12eebdc5b  gsi_openssh_bundle-4.3-src.tar.gz
 ddc5caca804c5583f1a7ef12350ee2dd  gsi_openssh_compat-4.3-src.tar.gz
 1c5140f63f86e8fd38e7c2e2da55bb11  gsi_openssh_setup-4.3-src.tar.gz

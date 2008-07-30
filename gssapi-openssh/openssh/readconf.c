@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.165 2008/01/19 23:09:49 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.167 2008/06/26 11:46:31 grunk Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -132,6 +132,7 @@ typedef enum {
 	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
 	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
 	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
+	oVisualHostKey,
 	oNoneEnabled, oTcpRcvBufPoll, oTcpRcvBuf, oNoneSwitch, oHPNDisabled,
 	oHPNBufferSize,
 	oDeprecated, oUnsupported
@@ -238,6 +239,13 @@ static struct {
         { "tcprcvbufpoll", oTcpRcvBufPoll },
         { "tcprcvbuf", oTcpRcvBuf },
         { "noneswitch", oNoneSwitch },
+	{ "hpndisabled", oHPNDisabled },
+	{ "hpnbuffersize", oHPNBufferSize },
+	{ "visualhostkey", oVisualHostKey },
+	{ "noneenabled", oNoneEnabled },
+	{ "tcprcvbufpoll", oTcpRcvBufPoll },
+	{ "tcprcvbuf", oTcpRcvBuf },
+	{ "noneswitch", oNoneSwitch },
 	{ "hpndisabled", oHPNDisabled },
 	{ "hpnbuffersize", oHPNBufferSize },
 	{ NULL, oBadOption }
@@ -972,6 +980,10 @@ parse_int:
 		intptr = &options->permit_local_command;
 		goto parse_flag;
 
+	case oVisualHostKey:
+		intptr = &options->visual_host_key;
+		goto parse_flag;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -1124,6 +1136,13 @@ initialize_options(Options * options)
 	options->tun_remote = -1;
 	options->local_command = NULL;
 	options->permit_local_command = -1;
+	options->none_switch = -1;
+	options->none_enabled = -1;
+	options->hpn_disabled = -1;
+	options->hpn_buffer_size = -1;
+	options->tcp_rcv_buf_poll = -1;
+	options->tcp_rcv_buf = -1;
+	options->visual_host_key = -1;
 	options->none_switch = -1;
 	options->none_enabled = -1;
 	options->hpn_disabled = -1;
@@ -1291,6 +1310,8 @@ fill_default_options(Options * options)
 		options->tun_remote = SSH_TUNID_ANY;
 	if (options->permit_local_command == -1)
 		options->permit_local_command = 0;
+	if (options->visual_host_key == -1)
+		options->visual_host_key = 0;
 	/* options->local_command should not be set by default */
 	/* options->proxy_command should not be set by default */
 	/* options->user will be set in the main program if appropriate */
