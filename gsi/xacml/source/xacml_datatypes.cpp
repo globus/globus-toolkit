@@ -66,8 +66,8 @@ const char *saml_status_code_strings[] =
 extern "C"
 const char *xacml_status_code_strings[] = 
 {
-    "urn:oasis:names:tc:xacml:1.0:status:missing-attribute",
     "urn:oasis:names:tc:xacml:1.0:status:ok",
-    "urn:oasis:names:tc:xacml:1.0:status:processing-error",
-    "urn:oasis:names:tc:xacml:1.0:status:syntax-error"
+    "urn:oasis:names:tc:xacml:1.0:status:missing-attribute",
+    "urn:oasis:names:tc:xacml:1.0:status:syntax-error",
+    "urn:oasis:names:tc:xacml:1.0:status:processing-error"
 };

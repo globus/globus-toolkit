@@ -305,6 +305,8 @@ parse_xacml_query(
 int
 prepare_response(
     xacml_response_t                    response,
+    struct XACMLsamlp__XACMLAuthzDecisionQueryType *
+                                        XACMLsamlp__XACMLAuthzDecisionQuery,
     struct samlp__ResponseType *        samlp__Response)
 {
     std::ostringstream                  os;
@@ -322,6 +324,8 @@ prepare_response(
     os << "ID-" << rand();
 
     samlp__Response->ID = os.str();;
+
+    samlp__Response->InResponseTo = new std::string(XACMLsamlp__XACMLAuthzDecisionQuery->ID);
 
     samlp__Response->Version = "2.0";
 
@@ -833,14 +837,13 @@ __XACMLService__Authorize(
     {
         return SOAP_SVR_FAULT;
     }
-
     rc = server->handler(server->handler_arg, request, response);
     if (rc != 0)
     {
         return SOAP_SVR_FAULT;
     }
 
-    rc = xacml::prepare_response(response, samlp__Response);
+    rc = xacml::prepare_response(response, XACMLsamlp__XACMLAuthzDecisionQuery, samlp__Response);
     if (rc != 0)
     {
         return SOAP_SVR_FAULT;

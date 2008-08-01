@@ -18,6 +18,7 @@
 #include "soapH.h"
 
 #include <iostream>
+#include <sstream>
 #include <dlfcn.h>
 
 /**
@@ -134,8 +135,45 @@ xacml_i_send(
     size_t                              size)
 {
     xacml_request_t                     request = (xacml_request_t) soap->user;
+    std::string                         t(data, size);
+    std::ostringstream                  s, namespace_prefixes;
+    std::string::size_type              p, q;
+    long                                content_length = 0;
 
-    if (request->send_func(request->io_arg, data, size)
+    /* All namespaces */
+    for (int i = 0 ; namespaces[i].ns; i++)
+    {
+        namespace_prefixes << "xmlns:" << namespaces[i].id
+                           << "=\"" << namespaces[i].ns << "\" ";
+    }
+
+    /* Find the Content-Length HTTP header */
+    p = t.find("Content-Length: ");
+    s << t.substr(0, p+16);
+
+    content_length = atol(t.substr(p+16, t.find("\r\n")).c_str());
+    content_length += namespace_prefixes.str().length();
+
+    p = t.find("\r\n", p+16);
+    s << content_length;
+    q = p;
+
+    /* Find first element after body */
+    p = t.find("<SOAP-ENV:Body");
+    p = t.find("<", p);
+    p = t.find(" ", p);
+
+    /* Copy all data up to our new namespaces */
+    s << t.substr(q, p+1-q);
+
+    /* Add namespace prefixes */
+    s << namespace_prefixes.str();
+
+    /* Add rest of message */
+    s << t.substr(p+1);
+
+    /* Pass string to send function */
+    if (request->send_func(request->io_arg, s.str().c_str(), s.str().length())
             != XACML_RESULT_SUCCESS)
     {
         return SOAP_EOF;
