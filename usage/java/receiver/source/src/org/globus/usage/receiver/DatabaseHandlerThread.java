@@ -17,6 +17,8 @@
 package org.globus.usage.receiver;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Properties;
@@ -40,6 +42,22 @@ import org.apache.commons.dbcp.DriverManagerConnectionFactory;
 
 
 public class DatabaseHandlerThread extends HandlerThread {
+    private static final String defaultHandlers =
+            "org.globus.usage.receiver.handlers.CCorePacketHandler " +
+            "org.globus.usage.receiver.handlers.CCorePacketHandlerV2 " +
+            "org.globus.usage.receiver.handlers.GRAMPacketHandler " +
+            "org.globus.usage.receiver.handlers.GridFTPPacketHandler " +
+            "org.globus.usage.receiver.handlers.JavaCorePacketHandler " +
+            "org.globus.usage.receiver.handlers.JavaCorePacketHandlerV2 " +
+            "org.globus.usage.receiver.handlers.JavaCorePacketHandlerV3 " +
+            "org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler " +
+            "org.globus.usage.receiver.handlers.RFTPacketHandler " +
+            "org.globus.usage.receiver.handlers.RLSPacketHandler " +
+            "org.globus.usage.receiver.handlers.OGSADAIPacketHandler " +
+            "org.globus.usage.receiver.handlers.DRSPacketHandler " +
+            "org.globus.usage.receiver.handlers.MPIGPacketHandler";
+    private static final String RING_BUFFER_SIZE_STRING = "1024";
+    private static final int RING_BUFFER_SIZE = 1024;
     public static final String dbPoolName = "jdbc:apache:commons:dbcp:usagestats";
     private static final String POOL_NAME = "usagestats";
     private static Log log = LogFactory.getLog(DatabaseHandlerThread.class);
@@ -104,5 +122,93 @@ public class DatabaseHandlerThread extends HandlerThread {
 	} catch(Exception e) {
 	    log.warn(e.getMessage());
 	}
+    }
+
+    static public void main(String args[]) {
+        String databaseURL;
+        Properties props = new Properties();
+        InputStream propsIn;
+        String USAGE = "USAGE: globus-ringbuffer-uploader [-help]";
+        DatabaseHandlerThread theHandleThread = null;
+        RingBufferFile theRing;
+
+        String file = "/etc/globus_usage_receiver/receiver.properties";
+        propsIn = Receiver.class.getResourceAsStream(file);
+        if (propsIn == null) {
+            System.err.println("Can't open properties file: " + file);
+            System.exit(1);
+        }
+
+        try {
+            props.load(propsIn);
+            
+            databaseURL = props.getProperty("database-url");
+
+            for (int i = 0; i < args.length; i++) {
+                if ((args[i].compareToIgnoreCase("-help") == 0) ||
+                    (args[i].compareToIgnoreCase("-h") == 0) ||
+                    (args[i].compareToIgnoreCase("--help") == 0)) {
+                    System.out.println(USAGE);
+                    System.exit(0);
+                } else {
+                    System.err.println("Unknown parameter " + args[i]);
+                    System.err.println(USAGE);
+                    System.exit(1);
+                }
+            }
+
+            if (props.getProperty("handlers") == null) {
+                props.setProperty("handlers", defaultHandlers);
+            }
+
+            int ringBufferSize;
+            
+            try
+            {
+                ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size",
+                                                  RING_BUFFER_SIZE_STRING));
+
+                if (ringBufferSize <= 0)
+                {
+                    ringBufferSize = RING_BUFFER_SIZE;
+                }
+            }
+            catch(Exception e)
+            {
+                ringBufferSize = RING_BUFFER_SIZE;
+            }
+            
+            theRing = new RingBufferFile(ringBufferSize);
+
+            if (props.getProperty("database-url") != null)
+            {
+                props.setProperty("database-pool", DatabaseHandlerThread.dbPoolName);
+                theHandleThread = new DatabaseHandlerThread(theRing, props);
+            }
+            else
+            {
+                System.err.println("No database-url in properties file");
+                System.exit(1);
+            }
+            theHandleThread.start();
+
+            while (! theRing.isEmpty()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    ;
+                }
+            }
+            theRing.close();
+
+            theHandleThread.shutDown();
+        }
+        catch (IOException e) {
+            log.fatal("An IOException occurred when trying to create Receiver:" +e.getMessage());
+        }
+        catch (Exception e) {
+            log.fatal("An exception occurred: " + e.getMessage(), e);
+        }
+
     }
 }

@@ -135,7 +135,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	ps.setShort(2, gmp.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(gmp.getTimestamp()));
 	ps.setByte(4, gmp.getIPVersion());
-        ps.setString(5, Util.getAddressAsString(gmp.getHostIP()));
+        ps.setString(5, gmp.getHostIP().getHostName());
 	ps.setString(6, gmp.getGridFTPVersion());
 	ps.setByte(7, gmp.isStorOperation() ? gmp.STOR_CODE : gmp.RETR_CODE);
 	if (gmp.getStartTime() == null)
