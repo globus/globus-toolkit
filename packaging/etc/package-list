@@ -1,4 +1,16 @@
 # (Package name) (Package subdir) (Build type, if not default) (pnb) (tag)
+
+# The package_name -> CVS subdir helps make-packages.pl check out a
+# subdir based on GPT package names in dependencies.
+
+# The build_type specifies how the package should be bootstrapped:
+#  gpt -> run "bootstrap"
+#  tar -> just tar it up
+#  pnb -> untar a tarfile then patch it
+#  make_gpt_dist -> run make_gpt_dist (for gsiopenssh)
+
+# The tag is for packages that use a different branch structure
+
 gaa_core	gsi/gaa/gaa_core/source	gpt
 gaa_debug	gsi/gaa/gaa_debug/source	gpt
 gaa_gss_generic	gsi/gaa_callbacks/gaa_gss_generic/source	gpt

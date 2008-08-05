@@ -1,3 +1,7 @@
+# Bundles are used by make-packages to provide Makefile targets for
+# collections of packages.  They are also useful for collecting things
+# that have runtime (but not compile time) dependencies on each other
+
 BUNDLE globus-resource-management-server
 	globus_core
 	globus_common
