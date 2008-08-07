@@ -56,7 +56,9 @@ my @package_build_list;
 
 # For each package, keep track of that package's dependencies.
 # $package_dep_hash{$pkg1}{$pkg2} == 1 if pkg1 depends on pkg2
+# $package_runtime_hash{$pkg1}{$pkg2} == 1 if pkg1 runtime depends on pkg2
 my %package_dep_hash;
+my %package_runtime_hash;
 
 # Track package versions.  $package_version_hash{$pkg} = version(pkg1)
 my %package_version_hash;
@@ -449,12 +451,24 @@ sub create_makefile_installer
          print INS "${packname}-only: gpt\n";
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
 
-         print INS "$packname: gpt";
+         print INS "$packname: gpt ${packname}-runtime ${packname}-compile\n";
+         print INS "${packname}-runtime: ";
+         foreach my $deppack ( @package_build_list )
+         {
+              if ( $package_runtime_hash{$pack}{$deppack} )
+              {
+                   print INS " $deppack" unless ( $pack eq $deppack );
+                   print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
+              }
+         }
+         print INS "\n";
+
+         print INS "${packname}-compile: ";
          foreach my $deppack ( @package_build_list )
          {
               if ( $package_dep_hash{$pack}{$deppack} )
               {
-                   print INS " $deppack" unless ( $pack eq $deppack );
+                   print INS " ${deppack}-compile" unless ( $pack eq $deppack );
                    print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
               }
          }
@@ -478,12 +492,23 @@ sub create_makefile_installer
 
          print INS "${packname}-only-thr: gpt\n";
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
-         print INS "${packname}-thr: gpt";
+         print INS "${packname}-thr: gpt ${packname}-thr-compile ${packname}-thr-runtime\n";
+         print INS "${packname}-thr-runtime: ";
+         foreach my $deppack ( @package_build_list )
+         {
+              if ( $package_runtime_hash{$pack}{$deppack} )
+              {
+                   print INS " $deppack" unless ( $pack eq $deppack );
+              }    
+         }    
+         print INS "\n";
+
+         print INS "${packname}-thr-compile: ";
          foreach my $deppack ( @package_build_list )
          {
               if ( $package_dep_hash{$pack}{$deppack} )
               {
-                   print INS " ${deppack}-thr" unless ( $pack eq $deppack );
+                   print INS " ${deppack}-thr-compile" unless ( $pack eq $deppack );
               }
          }
          print INS "\n";
@@ -1312,6 +1337,14 @@ sub topol_sort
     my @deptypes = (keys %{$pkg->{'Source_Dependencies'}->{'deptype-list'}});
     for my $deptype (@deptypes)
     {
+        if ( ( $deptype eq "pgm_runtime" ) or ($deptype eq "Setup") )
+        {
+            for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
+            {
+               $package_runtime_hash{$node}{$dep} = 1;
+            }
+        }
+
         next unless ( ($deptype eq "compile") or ($deptype eq "pgm_link")
                        or ($deptype eq "lib_link") );
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})

@@ -62,7 +62,9 @@ gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
 
 # Openssl redirector to globus_system_openssl or globus_openssl_backup
 globus_openssl: @globus_openssl@
+globus_openssl-compile: @globus_openssl@-compile
 globus_openssl-thr: @globus_openssl@-thr
+globus_openssl-thr-compile: @globus_openssl@-thr-compile
 globus_openssl-only: @globus_openssl@-only
 globus_openssl-only-thr: @globus_openssl@-only-thr
 globus_binary_openssl:
