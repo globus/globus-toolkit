@@ -75,4 +75,7 @@ public class PacketDumperHandler implements PacketHandler {
  
     public void handlePacket(UsageMonitorPacket pack) {
     }
+
+    public void shutDown() {
+    }
 }

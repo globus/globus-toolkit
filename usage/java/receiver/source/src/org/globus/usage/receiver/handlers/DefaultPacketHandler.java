@@ -101,12 +101,12 @@ public class DefaultPacketHandler implements PacketHandler {
     public void handlePacket(UsageMonitorPacket pack) {
         PreparedStatement stmt = null;
 
-	this.packetCount++;
+        this.packetCount++;
 
         try {
-            if (poolName != null)
-            {
-                con = DriverManager.getConnection(poolName);
+            connect();
+
+            if (con != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("Will write this packet to database table "
                               + table + ": ");
@@ -117,7 +117,7 @@ public class DefaultPacketHandler implements PacketHandler {
                 stmt.executeUpdate();
             } else {
                 this.lostCount++;
-                log.error("No database pool defined.");
+                log.error("No connection to database.");
                 log.error(pack.toString());
                 log.error("Packet contents:");
                 log.error(getPacketContentsBinary(pack));
@@ -135,11 +135,30 @@ public class DefaultPacketHandler implements PacketHandler {
                     stmt.close();
                 } catch (SQLException e) {}
             }
-            if (con != null) {
-                try {
-                    con.close();
-                    con = null;
-                } catch (SQLException e) {}
+
+            disconnect();
+        }
+    }
+
+    public void connect() throws SQLException {
+        if (poolName != null)
+        {
+            if (con == null) {
+                con = DriverManager.getConnection(poolName);
+            }
+        }
+        else
+        {
+            con = null;
+        }
+    }
+
+    public void disconnect() {
+        if (con != null) {
+            try {
+                con.close();
+                con = null;
+            } catch (SQLException e) {
             }
         }
     }
@@ -152,6 +171,10 @@ public class DefaultPacketHandler implements PacketHandler {
             output.append(", ");
 	}
         return output.toString();
+    }
+
+    public void shutDown() {
+        return;
     }
 
     /*If you want to write a handler that writes packets into a database,

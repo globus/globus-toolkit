@@ -32,4 +32,6 @@ public interface PacketHandler {
     public void resetCounts();
     /* Get status string related to handler-specific processing */
     public String getStatus();
+
+    public void shutDown();
 }

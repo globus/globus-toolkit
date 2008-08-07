@@ -40,6 +40,12 @@
                 <Simple_Version Major="0"/>
             </Version>
         </Dependency>
+
+        <Dependency Name="globus_database_common" Package="pgm">
+            <Version>
+                <Simple_Version Major="0"/>
+            </Version>
+        </Dependency>
                 
     </Source_Dependencies>
 

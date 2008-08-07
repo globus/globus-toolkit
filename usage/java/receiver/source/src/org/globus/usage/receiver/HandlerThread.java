@@ -151,6 +151,11 @@ public class HandlerThread extends Thread {
                 isStillGood = stillGood;
             }
 	}
+        try {
+            shutdownHandlers();
+        } catch (Exception e) {
+            log.error(e);
+        }
     }
 
     /*Use component code and version code in packet to decide
@@ -190,6 +195,25 @@ public class HandlerThread extends Thread {
                 }
             } else if (!hasBeenHandled) {
                 throw new Exception("Unhandled packet");
+            }
+        }
+        /*If multiple handlers return true for doCodesMatch, each
+          handler will be triggered, each with its own separate copy of
+          the packet.  theDefaultHandler will be called only if no other
+          handlers trigger.*/        
+    }
+
+    private void shutdownHandlers()
+    throws Exception {
+        PacketHandler handler;
+        ListIterator it;
+        
+        /*This next bit is synchronized to make sure a handler can't
+              be registered while we're walking the list...*/
+        synchronized(handlerList) {
+            for (it = handlerList.listIterator(); it.hasNext(); ) {
+                handler = (PacketHandler)it.next();
+                handler.shutDown();
             }
         }
         /*If multiple handlers return true for doCodesMatch, each
