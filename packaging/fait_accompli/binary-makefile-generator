@@ -10,10 +10,11 @@ open FH, "<$ARGV[0]";
 
 while (<FH>)
 {
-   # The -only: and -only-thr: targets only make sense for source.
+   # A bunch of the source rules only make sense for source.
    # Skip 'em.  The undef setting on package will also keep us
    # from printing out a line if they're followed by a gpt-build command.
-   if (/-only:/ || /-thr:/) { $package = undef; next;}
+   if (/-only:/ || /-thr:/ || /-thr-runtime:/ ||
+       /-thr-compile:/) { $package = undef; next;}
 
    # When we hit a source package line (like foo_pkg: gpt globus_core)
    # or globus-data-bundle: package1 package2
@@ -23,6 +24,9 @@ while (<FH>)
       $deps = $2;
       # There are no binary -thr packages
       $deps =~ s/([a-zA-Z_\-0-9]+)-thr/\1/g;
+      # -compile doesn't mean anything in binaries
+      if ( $package =~ /compile/ )
+          { $deps =~ s/([a-zA-Z_\-0-9]+)-compile/\1/g; }
       # There's no binary version of globus_core, leave it out;
       $deps =~ s/globus_core//;
       print "${package}: ${deps}\n";
@@ -30,6 +34,7 @@ while (<FH>)
    {
       if ( $package )
       {
+         $package =~ s/-compile//;
          print "\ttar -C \${GLOBUS_LOCATION} -xzf binary-trees/${package}-*/*.tar.gz\n";
       }
       $package = undef;
