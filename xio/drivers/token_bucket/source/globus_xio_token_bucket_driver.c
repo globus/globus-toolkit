@@ -247,7 +247,6 @@ globus_l_xio_token_bucket_op_cb(
         if(op_handle->done)
         {
             globus_fifo_dequeue(&op_handle->q);
-            globus_free(data->iov);
             globus_free(data->current_iov);
             globus_free(data);
         }
