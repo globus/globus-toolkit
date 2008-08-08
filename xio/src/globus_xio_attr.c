@@ -1198,6 +1198,26 @@ globus_xio_string_cntl_tb_kmgint(
     {
         *out_i = (globus_off_t)i * 1024 * 1024 * 1024;
     }
+    else if(strchr(arg, 'g') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024 * 1024;
+	*out_i = *out_i / 8;
+    }
+    else if(strchr(arg, 'm') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024;
+	*out_i = *out_i / 8;
+    }
+    else if(strchr(arg, 'k') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024;
+	*out_i = *out_i / 8;
+    }
+    else if(strchr(arg, 'b') != NULL)
+    {
+        *out_i = (globus_off_t)i;
+	*out_i = *out_i / 8;
+    }
     else
     {
         *out_i = (globus_off_t)i;
