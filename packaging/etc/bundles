@@ -545,7 +545,7 @@ BUNDLE globus-gridftp
         gaa_plugin
         gaa_simple
         globus_xio_popen_driver
-        globus_xio_token_bucket_driver
+        globus_xio_rate_driver
         globus_gaa_authz_callout_setup
         gaa_gss_generic
         globus_authz_callout_error

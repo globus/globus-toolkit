@@ -103,6 +103,7 @@ globus_gss_assist_test	gsi/gss_assist/test	gpt
 globus_hostname2contacts	gram/globus-hostname2contacts	gpt
 globus_io	io/compat	gpt
 globus_io_test	io/test	gpt
+globus_xio_rate_driver	xio/drivers/rate/source	gpt
 globus_xio_token_bucket_driver	xio/drivers/token_bucket/source	gpt
 globus_xio_popen_driver	xio/drivers/popen/source	gpt
 globus_xio_gsi_driver	xio/drivers/gsi	gpt
