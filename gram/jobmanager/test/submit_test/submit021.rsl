@@ -1,3 +1,0 @@
-&(executable=/bin/sh)
- (arguments=-c 'exit 0')
- (environment=(MY_GLOBUS_HOST_OSVERSION $(GLOBUS_HOST_OSVERSION)))
