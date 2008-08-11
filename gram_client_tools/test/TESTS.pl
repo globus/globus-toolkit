@@ -18,6 +18,8 @@
 use strict;
 use Cwd;
 
+my $exitCode = 0;
+
 my @tests = qw(
                globus-gram-client-tools-check-for-commands.pl
                globus-gram-client-tools-local-test.pl
@@ -33,5 +35,8 @@ if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 256)
 
 foreach (@tests)
 {
-    system("./$_");
+    $exitCode += system("./$_");
 }
+
+
+exit (0 != $exitCode);

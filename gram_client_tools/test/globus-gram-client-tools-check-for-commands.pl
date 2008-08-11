@@ -9,15 +9,15 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 use strict;
 use Globus::Testing::Utilities;
 
-check_for_commands();
-
+exit (0 != check_for_commands());
 
 # ------------------------------------------------------------------------
 # Check for commands
 # ------------------------------------------------------------------------
 sub check_for_commands 
 {
-    my $rc;
+    my $rc = 0;
+    my $rcx = 0;
     my $output;
     my $u = new Globus::Testing::Utilities(); 
     $u->announce("Checking for commands");
@@ -48,14 +48,16 @@ sub check_for_commands
     
     foreach my $command (@commands) 
     {
-        ($rc, $output) = $u->command("which $command");
+        ($rcx, $output) = $u->command("which $command");
         if (-x "$output") 
         {
             $u->report("SUCCESS");
         }
         else 
         {
+            $rc = 1;
             $u->report("FAILURE");
         }
     }
+    return $rc;
 }   
