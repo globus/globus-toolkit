@@ -217,7 +217,8 @@ globus_gram_job_manager_state_file_read(
     globus_gram_jobmanager_request_t *	request)
 {
     FILE *				fp;
-    char				buffer[8192];
+    char *                              buffer = NULL;
+    size_t                              file_len;
     struct stat				statbuf;
     int					rc;
     int					i;
@@ -231,6 +232,12 @@ globus_gram_job_manager_state_file_read(
     if (stat(request->job_state_file, &statbuf) != 0)
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+    }
+    file_len = (size_t) statbuf.st_size;
+    buffer = malloc(file_len+1);
+    if (buffer == NULL)
+    {
+        goto error_exit;
     }
 
     /* Try to obtain a lock on the state lock file */
@@ -262,7 +269,7 @@ globus_gram_job_manager_state_file_read(
 		fp = fopen( request->job_state_file, "r" );
 		if(fp)
 		{
-		    fgets( buffer, sizeof(buffer), fp );
+		    fgets( buffer, file_len, fp );
 		    buffer[strlen(buffer)-1] = '\0';
 		    request->old_job_contact = globus_libc_strdup(buffer);
 		    fclose(fp);
@@ -278,6 +285,8 @@ globus_gram_job_manager_state_file_read(
 	    /* unlink here? */
 	    close( request->job_state_lock_fd );
 
+            free(buffer);
+
 	    return rc;
 	}
     }
@@ -287,29 +296,30 @@ globus_gram_job_manager_state_file_read(
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
-    if(fgets( buffer, sizeof(buffer), fp )  == NULL)
+
+    if(fgets( buffer, file_len, fp )  == NULL)
     {
         goto error_exit;
     }
     /* job contact string */
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     request->restart_state = atoi( buffer );
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     globus_gram_job_manager_request_set_status_time(request,
 		atoi( buffer ), statbuf.st_mtime);
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     request->failure_code = atoi( buffer );
 
-    if(fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if(fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
@@ -318,19 +328,19 @@ globus_gram_job_manager_state_file_read(
     {
 	request->job_id = globus_libc_strdup( buffer );
     }
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     buffer[strlen(buffer)-1] = '\0';
     request->rsl_spec = globus_libc_strdup( buffer );
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     buffer[strlen(buffer)-1] = '\0';
     request->cache_tag = globus_libc_strdup( buffer );
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
@@ -342,14 +352,14 @@ globus_gram_job_manager_state_file_read(
 	 * don't print the jobmanager_type to the state file, hence
 	 * the check above.
 	 */
-	if(fgets( buffer, sizeof(buffer), fp ) == NULL)
+	if(fgets( buffer, file_len, fp ) == NULL)
         {
             goto error_exit;
         }
 	buffer[strlen(buffer)-1] = '\0';
     }
     request->two_phase_commit = atoi(buffer);
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
@@ -366,7 +376,7 @@ globus_gram_job_manager_state_file_read(
 		"SCRATCH_DIRECTORY",
 		request->scratchdir);
     }
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
@@ -374,14 +384,14 @@ globus_gram_job_manager_state_file_read(
     sscanf(buffer, "%lu", &tmp_timestamp);
     request->seg_last_timestamp = (time_t) tmp_timestamp;
 
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
     request->creation_time = (time_t) tmp_timestamp;
-    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
@@ -402,9 +412,15 @@ globus_gram_job_manager_state_file_read(
 
     fclose(fp);
 
+    free(buffer);
+
     return GLOBUS_SUCCESS;
 error_exit:
     fclose(fp);
+    if (buffer != NULL)
+    {
+        free(buffer);
+    }
     return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
 }
 

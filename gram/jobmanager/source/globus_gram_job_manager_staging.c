@@ -328,14 +328,33 @@ globus_gram_job_manager_staging_read_state(
     globus_gram_jobmanager_request_t *	request,
     FILE *				fp)
 {
-    char				buffer[8192];
+    char *                              buffer;
+    size_t                              buffer_len;
+    long                                offset;
     int					i;
     int					tmp_list_size;
     globus_gram_job_manager_staging_info_t *
 					info;
 
+
+    offset = ftell(fp);
+    if (fseek(fp, 0, SEEK_END) < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
+
+    buffer_len = ftell(fp) - offset;
+
+    if (fseek(fp, offset, SEEK_SET) < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
+
+    buffer = malloc(buffer_len+1);
+
     if (fscanf(fp, "%[^\n]%*c", buffer) < 1)
     {
+        free(buffer);
         return GLOBUS_FAILURE;
     }
     tmp_list_size = atoi(buffer);
@@ -350,12 +369,14 @@ globus_gram_job_manager_staging_read_state(
 
 	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
         {
+            free(buffer);
             return GLOBUS_FAILURE;
         }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
 	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
         {
+            free(buffer);
             return GLOBUS_FAILURE;
         }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
@@ -373,6 +394,7 @@ globus_gram_job_manager_staging_read_state(
     }
     if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
     {
+        free(buffer);
         return GLOBUS_FAILURE;
     }
     tmp_list_size = atoi(buffer);
@@ -386,12 +408,14 @@ globus_gram_job_manager_staging_read_state(
 
 	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
         {
+            free(buffer);
             return GLOBUS_FAILURE;
         }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
 	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
         {
+            free(buffer);
             return GLOBUS_FAILURE;
         }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
@@ -409,6 +433,7 @@ globus_gram_job_manager_staging_read_state(
     }
     if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
     {
+        free(buffer);
         return GLOBUS_FAILURE;
     }
     tmp_list_size = atoi(buffer);
@@ -422,12 +447,14 @@ globus_gram_job_manager_staging_read_state(
 
 	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
         {
+            free(buffer);
             return GLOBUS_FAILURE;
         }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
 	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
         {
+            free(buffer);
             return GLOBUS_FAILURE;
         }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
@@ -443,6 +470,7 @@ globus_gram_job_manager_staging_read_state(
 
         globus_list_insert(&request->stage_out_todo, info);
     }
+    free(buffer);
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_staging_read_state() */
