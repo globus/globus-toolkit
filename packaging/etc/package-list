@@ -223,10 +223,6 @@ globus_scheduler_provider_setup_pbs	ws-gram/discovery/providers/setup/pbs gpt
 globus_scheduler_provider_setup_fork	ws-gram/discovery/providers/setup/fork gpt
 globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
 globus_scheduler_provider_setup_condor	ws-gram/discovery/providers/setup/condor gpt
-#GRAM custom authorization, including XACML pieces
-globus_wsrf_gram_authz_java                       ws-gram/authz/java/source	tar
-     
-
 globus_wsrf_mds_index                       ws-mds/index/source	tar
 globus_wsrf_mds_index_schema                ws-mds/index/schema	tar
 globus_wsrf_mds_index_test                  ws-mds/index/test	tar
@@ -262,12 +258,6 @@ globus_java_authz_saml_schema               authorization/java/saml/schema	tar
 globus_java_authz_saml_source               authorization/java/saml/source	tar
 globus_java_authz_saml_test                 authorization/java/saml/test	tar
 globus_java_authz_saml_samples              authorization/java/saml/samples	tar
-
-#XACML Libraries
-globus_java_authz_xacml_schema               authorization/common/xacml/schema	tar
-globus_java_authz_xacml_source               authorization/java/xacml/source	tar
-globus_java_authz_xacml_test                 authorization/java/xacml/test	tar
-globus_java_authz_xacml_samples              authorization/java/xacml/samples	tar
 
 #Java WSRF Core
 globus_java_ws_core_common                  wsrf/java/common/source	tar
