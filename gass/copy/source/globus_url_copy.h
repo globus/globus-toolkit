@@ -60,8 +60,10 @@ typedef struct globus_guc_info_s
     globus_bool_t                       gridftp2;
     globus_bool_t                       udt;
     globus_bool_t                       allo;
-    char *                              net_stack_str;
-    char *                              disk_stack_str;
+    char *                              src_net_stack_str;
+    char *                              src_disk_stack_str;
+    char *                              dst_net_stack_str;
+    char *                              dst_disk_stack_str;
     char *                              src_authz_assert;
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;

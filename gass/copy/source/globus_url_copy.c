@@ -115,11 +115,11 @@ typedef struct
     int                                 restart_interval;
     int                                 restart_timeout;
     globus_size_t                       stripe_bs;
-    globus_bool_t			striped;
-    globus_bool_t			rfc1738;
-    globus_bool_t			create_dest;
-    globus_off_t			partial_offset;
-    globus_off_t			partial_length;
+    globus_bool_t			            striped;
+    globus_bool_t			            rfc1738;
+    globus_bool_t			            create_dest;
+    globus_off_t			            partial_offset;
+    globus_off_t			            partial_length;
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       udt;
     globus_bool_t                       nl_bottleneck;
@@ -130,8 +130,10 @@ typedef struct
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
     globus_bool_t                       pipeline;
-    char *                              net_stack_str;
-    char *                              disk_stack_str;
+    char *                              src_net_stack_str;
+    char *                              src_disk_stack_str;
+    char *                              dst_net_stack_str;
+    char *                              dst_disk_stack_str;
     char *                              src_authz_assert;
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
@@ -439,6 +441,20 @@ const char * long_usage =
 "  -nl-bottleneck | -nlb\n"
 "      Use NetLogger to estimate speeds of disk and network read/write\n"
 "      system calls, and attempt to determine the bottleneck component\n"
+"   -dcstack | -data-channel-stack\n"
+"      Set the XIO driver stack for the network on both the source and\n"
+"      and the destination.  Both must be gridftp servers\n"
+"   -fsstack | -file-system-stack\n"
+"      Set the XIO driver stack for the disk on both the source and\n"
+"      and the destination.  Both must be gridftp servers\n"
+"   -src-dcstack | -source-data-channel-stack\n"
+"      Set the XIO driver stack for the network on the source GridFTP server.\n"
+"   -src-fsstack | -source-file-system-stack\n"
+"      Set the XIO driver stack for the disk on the source GridFTP server.\n"
+"   -dst-dcstack | -dest-data-channel-stack\n"
+"      Set the XIO driver stack for the network on the destination GridFTP server.\n"
+"   -dst-fsstack | -dest-file-system-stack\n"
+"      Set the XIO driver stack for the disk on the destination GridFTP server.\n"
 "\n";
 
 /***********
@@ -536,6 +552,10 @@ enum
     arg_nl_interval,
     arg_net_stack_str,
     arg_disk_stack_str,
+    arg_src_net_stack_str,
+    arg_src_disk_stack_str,
+    arg_dst_net_stack_str,
+    arg_dst_disk_stack_str,
     arg_authz_assert,
     arg_src_authz_assert,
     arg_dst_authz_assert,
@@ -637,6 +657,10 @@ oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NU
 oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
 oneargdef(arg_net_stack_str, "-dcstack", "-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_disk_stack_str, "-fsstack", "-file-system-stack", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_src_net_stack_str, "-src-dcstack", "-source-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_src_disk_stack_str, "-src-fsstack", "-source-file-system-stack", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_dst_net_stack_str, "-dst-dcstack", "-dest-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_dst_disk_stack_str, "-dst-fsstack", "-dest-file-system-stack", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_authz_assert, "-aa", "-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_src_authz_assert, "-saa", "-src-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dst_authz_assert, "-daa", "-dst-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
@@ -694,6 +718,10 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_gridftp2);         	\
     setupopt(arg_net_stack_str);        \
     setupopt(arg_disk_stack_str);        \
+    setupopt(arg_src_net_stack_str);        \
+    setupopt(arg_src_disk_stack_str);        \
+    setupopt(arg_dst_net_stack_str);        \
+    setupopt(arg_dst_disk_stack_str);        \
     setupopt(arg_authz_assert);         \
     setupopt(arg_src_authz_assert);     \
     setupopt(arg_dst_authz_assert);     \
@@ -856,8 +884,10 @@ globus_l_guc_ext(
     ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
     ext_info.ipv6 = guc_info->ipv6;
     ext_info.gridftp2 = guc_info->gridftp2;
-    ext_info.net_stack_str = guc_info->net_stack_str;
-    ext_info.disk_stack_str = guc_info->disk_stack_str;
+    ext_info.src_net_stack_str = guc_info->src_net_stack_str;
+    ext_info.src_disk_stack_str = guc_info->src_disk_stack_str;
+    ext_info.dst_net_stack_str = guc_info->dst_net_stack_str;
+    ext_info.dst_disk_stack_str = guc_info->dst_disk_stack_str;
     ext_info.src_authz_assert = guc_info->src_authz_assert;
     ext_info.dst_authz_assert = guc_info->dst_authz_assert;
     ext_info.cache_src_authz_assert = guc_info->cache_src_authz_assert;
@@ -1416,13 +1446,21 @@ globus_l_guc_info_destroy(
     {
         globus_free(guc_info->dest_subject);
     }
-    if(guc_info->net_stack_str)
+    if(guc_info->src_net_stack_str)
     {
-        globus_free(guc_info->net_stack_str);
+        globus_free(guc_info->src_net_stack_str);
     }
-    if(guc_info->disk_stack_str)
+    if(guc_info->src_disk_stack_str)
     {
-        globus_free(guc_info->disk_stack_str);
+        globus_free(guc_info->src_disk_stack_str);
+    }
+    if(guc_info->dst_net_stack_str)
+    {
+        globus_free(guc_info->dst_net_stack_str);
+    }
+    if(guc_info->dst_disk_stack_str)
+    {
+        globus_free(guc_info->dst_disk_stack_str);
     }
 
     /* destroy the list */
@@ -2337,8 +2375,10 @@ globus_l_guc_parse_arguments(
     guc_info->src_module_name = GLOBUS_NULL;
     guc_info->dst_module_args = GLOBUS_NULL;
     guc_info->src_module_args = GLOBUS_NULL;
-    guc_info->net_stack_str = GLOBUS_NULL;
-    guc_info->disk_stack_str = GLOBUS_NULL;
+    guc_info->src_net_stack_str = GLOBUS_NULL;
+    guc_info->src_disk_stack_str = GLOBUS_NULL;
+    guc_info->dst_net_stack_str = GLOBUS_NULL;
+    guc_info->dst_disk_stack_str = GLOBUS_NULL;
     guc_info->src_authz_assert = GLOBUS_NULL;
     guc_info->dst_authz_assert = GLOBUS_NULL;
     guc_info->cache_src_authz_assert = GLOBUS_FALSE;
@@ -2584,11 +2624,33 @@ globus_l_guc_parse_arguments(
 	case arg_gridftp2:
 	    guc_info->gridftp2 = GLOBUS_TRUE;
 	    break;
+        case arg_src_net_stack_str:
+            guc_info->src_net_stack_str = 
+                globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_src_disk_stack_str:
+            guc_info->src_disk_stack_str = 
+                globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_dst_net_stack_str:
+            guc_info->dst_net_stack_str = 
+                globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_dst_disk_stack_str:
+            guc_info->dst_disk_stack_str = 
+                globus_libc_strdup(instance->values[0]);
+            break;
         case arg_net_stack_str:
-            guc_info->net_stack_str = globus_libc_strdup(instance->values[0]);
+            guc_info->src_net_stack_str = 
+                globus_libc_strdup(instance->values[0]);
+            guc_info->dst_net_stack_str = 
+                globus_libc_strdup(instance->values[0]);
             break;
         case arg_disk_stack_str:
-            guc_info->disk_stack_str = globus_libc_strdup(instance->values[0]);
+            guc_info->src_disk_stack_str = 
+                globus_libc_strdup(instance->values[0]);
+            guc_info->dst_disk_stack_str = 
+                globus_libc_strdup(instance->values[0]);
             break;
         case arg_authz_assert:
             result = globus_l_guc_file_to_string(
@@ -2822,7 +2884,9 @@ globus_l_guc_parse_arguments(
 
     if(guc_info->udt)
     {
-        guc_info->net_stack_str = globus_libc_strdup("udt");
+        /* need to verify nothing else was set */
+        guc_info->src_net_stack_str = globus_libc_strdup("udt");
+        guc_info->dst_net_stack_str = globus_libc_strdup("udt");
     }
 
     if(guc_info->nl_bottleneck)
@@ -2880,31 +2944,57 @@ globus_l_guc_parse_arguments(
             "netlogger:uuid=%s;mask=255;io_type=disk;interval=%d;level=%d",
             uuid.text, guc_info->nl_interval, guc_info->nl_level);
 
-        if(guc_info->net_stack_str != NULL)
+        if(guc_info->src_net_stack_str != NULL)
         {
             net_stack_str = globus_common_create_string(
-                "%s,%s", guc_info->net_stack_str, net_netlog_str);
-            globus_free(guc_info->net_stack_str);
+                "%s,%s", guc_info->src_net_stack_str, net_netlog_str);
+            globus_free(guc_info->src_net_stack_str);
 
-            guc_info->net_stack_str = net_stack_str;
+            guc_info->src_net_stack_str = net_stack_str;
         }
         else
         {
-            guc_info->net_stack_str = globus_common_create_string(
+            guc_info->src_net_stack_str = globus_common_create_string(
+                "tcp,%s", net_netlog_str);
+        }
+        if(guc_info->dst_net_stack_str != NULL)
+        {
+            net_stack_str = globus_common_create_string(
+                "%s,%s", guc_info->dst_net_stack_str, net_netlog_str);
+            globus_free(guc_info->dst_net_stack_str);
+
+            guc_info->dst_net_stack_str = net_stack_str;
+        }
+        else
+        {
+            guc_info->dst_net_stack_str = globus_common_create_string(
                 "tcp,%s", net_netlog_str);
         }
 
-        if(guc_info->disk_stack_str != NULL)
+        if(guc_info->dst_disk_stack_str != NULL)
         {
             disk_stack_str = globus_common_create_string(
-                "%s,%s", guc_info->disk_stack_str, disk_netlog_str);
-            globus_free(guc_info->net_stack_str);
+                "%s,%s", guc_info->src_disk_stack_str, disk_netlog_str);
+            globus_free(guc_info->src_disk_stack_str);
 
-            guc_info->disk_stack_str = disk_stack_str;
+            guc_info->src_disk_stack_str = disk_stack_str;
         }
         else
         {
-            guc_info->disk_stack_str = globus_common_create_string(
+            guc_info->src_disk_stack_str = globus_common_create_string(
+                "file,%s", disk_netlog_str);
+        }
+        if(guc_info->dst_disk_stack_str != NULL)
+        {
+            disk_stack_str = globus_common_create_string(
+                "%s,%s", guc_info->dst_disk_stack_str, disk_netlog_str);
+            globus_free(guc_info->dst_disk_stack_str);
+
+            guc_info->dst_disk_stack_str = disk_stack_str;
+        }
+        else
+        {
+            guc_info->dst_disk_stack_str = globus_common_create_string(
                 "file,%s", disk_netlog_str);
         }
 
@@ -3635,6 +3725,8 @@ globus_l_guc_gass_attr_init(
     char *                              authz_assert;
     char *                              disk_str = NULL;
     globus_bool_t                       cache_authz_assert;
+    char *                              tmp_net_str = NULL;
+    char *                              tmp_disk_str = NULL;
 
     if(src)
     {                  
@@ -3777,19 +3869,29 @@ globus_l_guc_gass_attr_init(
                 GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
         }
 
-        if(guc_info->net_stack_str)
+        if(src)
+        {
+            tmp_net_str = guc_info->src_net_stack_str;
+            tmp_disk_str = guc_info->src_disk_stack_str;
+        }
+        else
+        {
+            tmp_net_str = guc_info->dst_net_stack_str;
+            tmp_disk_str = guc_info->dst_disk_stack_str;
+        }
+        if(tmp_net_str)
         {
             char *  tmp_stack;
 
             tmp_stack = globus_common_create_string(
-                "%s%s", gsi_stack, guc_info->net_stack_str);
+                "%s%s", gsi_stack, tmp_net_str);
             globus_ftp_client_operationattr_set_net_stack(
                 ftp_attr,
                 tmp_stack);
             free(tmp_stack);
         }
 
-        disk_str = globus_libc_strdup(guc_info->disk_stack_str);
+        disk_str = globus_libc_strdup(tmp_disk_str);
         /* if we need to take on the multicast string */
         if(g_l_mc_fs_str != NULL && !src)
         {
