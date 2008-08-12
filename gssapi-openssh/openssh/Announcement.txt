@@ -1,10 +1,6 @@
-GSI-OpenSSH 4.3, based on OpenSSH 5.0p1, is now available from:
+GSI-OpenSSH 4.4, based on OpenSSH 5.1p1, is now available from:
 
 http://grid.ncsa.uiuc.edu/ssh/download.html
-
-This release addresses Globus Security Advisory 2008-01:
-
-http://www.globus.org/mail_archive/security-announce/2008/04/msg00000.html
 
 For installation instructions, please see:
 
@@ -15,22 +11,31 @@ Please use Bugzilla to report GSI-OpenSSH bugs:
 
 http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
 
-GSI-OpenSSH 4.3 Major changes
+GSI-OpenSSH 4.4 Major changes
 
    New features
 
-      * Updated to OpenSSH 5.0p1.
+      * Updated to OpenSSH 5.1p1.
 
-      * Updated to HPN13v1.
+      * Updated to HPN13v5.
+
+      * Added server-side GSSAPIDelegateCredentials option:
+        http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=376
+
+   Bugs fixed
+
+      * Server fails to close connection with
+        UsePrivilegeSeparation=yes:
+        http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6236
 
 SHA1 checksums:
-6a43e4a1f7594ee684ba88c408c5d337b338ed86  gsi_openssh-4.3-src.tar.gz
-7e750984699c289b0964128153cdc634f0fd1204  gsi_openssh_bundle-4.3-src.tar.gz
-e782f0b44c7101069ad470d9a4273d9332bac9f4  gsi_openssh_compat-4.3-src.tar.gz
-5baa6c2fcca85bbbe8d4bd601d6855f01dbeff4b  gsi_openssh_setup-4.3-src.tar.gz
+68426dceac594efb0dc39b01b6959aac04551e76  gsi_openssh-4.4-src.tar.gz
+1a359782caf0ddbd18e9f2d54c3104db375b6715  gsi_openssh_bundle-4.4-src.tar.gz
+8b5a88fd2be8b95a2dd0c4083d401bb1165aa163  gsi_openssh_compat-4.4-src.tar.gz
+3185170f9cf44da828855839b0062849c2cd6061  gsi_openssh_setup-4.4-src.tar.gz
 
 MD5 checksums:
-24686ed1d46ce2e52e4c018556b4b164  gsi_openssh-4.3-src.tar.gz
-4755f11dbb95804efd01c7f12eebdc5b  gsi_openssh_bundle-4.3-src.tar.gz
-ddc5caca804c5583f1a7ef12350ee2dd  gsi_openssh_compat-4.3-src.tar.gz
-1c5140f63f86e8fd38e7c2e2da55bb11  gsi_openssh_setup-4.3-src.tar.gz
+78f4f979cf9fd61910a2b474c800bc1a  gsi_openssh-4.4-src.tar.gz
+785e678a792197f28ccfaf6a7446aca1  gsi_openssh_bundle-4.4-src.tar.gz
+2d715cce7f6d358af78e211a38b4f442  gsi_openssh_compat-4.4-src.tar.gz
+6552b964f33a445016e13672b8501036  gsi_openssh_setup-4.4-src.tar.gz
