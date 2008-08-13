@@ -4,7 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = \
 	pkgdata
 
-Scripts = test_pci.pl
+Scripts = TESTS.pl test_pci.pl
 
 Data = \
 	test_pci.norm1.stdout \

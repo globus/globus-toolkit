@@ -27,8 +27,6 @@ sub basic_func
    my $test_index = shift;
    my $options = shift;
 
-   print "$test_prog $options 1> $test_prog.log1.stdout\n\n";
-
    my $rc1 = system("./$test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout") / 256;
    my $rc2 = system("./$test_prog -in $test_prog.norm$test_index.der -out $test_prog.log$test_index.der 1> $test_prog.log2.stdout") / 256;
 
@@ -37,11 +35,6 @@ sub basic_func
       $errors .= "Test exited with $rc. ";
    }
 
-   if(-r 'core')
-   {
-      $errors .= "\n# Core file generated.";
-   }
-   
    $rc1 = system("$diff $test_prog.log$test_index.der $test_prog.norm$test_index.der") / 256;
    
    if($rc1 != 0)
