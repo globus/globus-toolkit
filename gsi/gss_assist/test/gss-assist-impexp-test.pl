@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test;
-use Cwd qw(cwd);
+use Globus::Testing::Utilities;
 
 my @tests;
 my @todo;
@@ -12,8 +12,7 @@ my @todo;
 my $server_prog = './gss-assist-impexp-accept';
 my $client_prog = './gss-assist-impexp-init';
 
-$ENV{X509_CERT_DIR} = cwd();
-$ENV{X509_USER_PROXY} = "testcred.pem";
+Globus::Testing::Utilities::testcred_setup() || die "Unable to set up test credentials";
 
 sub basic_func
 {
@@ -24,22 +23,13 @@ sub basic_func
     my $server_pid;
     my $client_pid;
     my $port;
-    
-   unlink('core');
 
-   if($sec_env == 0)
-   {
-       $ENV{X509_CERT_DIR} = cwd();
-       $ENV{X509_USER_PROXY} = "testcred.pem";
-   }
-   elsif($sec_env == 1)
+   if($sec_env == 1)
    {
        $ENV{X509_CERT_DIR} = "";
-       $ENV{X509_USER_PROXY} = "testcred.pem";       
    }
    elsif($sec_env == 2)
    {
-       $ENV{X509_CERT_DIR} = cwd();
        $ENV{X509_USER_PROXY} = "";       
    }
 
@@ -87,11 +77,6 @@ sub basic_func
    
    close(CLIENT);
    close(SERVER);
-
-   if(-r 'core')
-   {
-      ok("Core file generated.", 'ok');
-   }
 
    if($errors eq "" || $expect_failure)
    {

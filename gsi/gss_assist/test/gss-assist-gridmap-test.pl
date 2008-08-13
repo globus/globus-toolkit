@@ -2,7 +2,6 @@
 
 use strict;
 use Test;
-use Cwd;
 
 my @tests;
 my @todo;
@@ -15,18 +14,11 @@ sub basic_func
 {
     my ($errors,$rc) = ("",0);
     
-   unlink('core');
-
    $rc = system("$test_prog") / 256;
 
    if($rc != 0)
    {
       $errors .= "Test exited with $rc. ";
-   }
-
-   if(-r 'core')
-   {
-      ok("Core file generated.", 'ok');
    }
 
    if($errors eq "")

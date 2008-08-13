@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test;
-use Cwd qw(cwd);
+use Globus::Testing::Utilities;
 
 my @tests;
 my @todo;
@@ -12,8 +12,7 @@ my @todo;
 my $server_prog = './gss-assist-auth-accept';
 my $client_prog = './gss-assist-auth-init';
 
-$ENV{X509_CERT_DIR} = cwd();
-$ENV{X509_USER_PROXY} = "testcred.pem";
+Globus::Testing::Utilities::testcred_setup() || die "Unable to set up test certs";
 
 sub basic_func
 {
@@ -27,19 +26,12 @@ sub basic_func
     
    unlink('core');
 
-   if($sec_env == 0)
-   {
-       $ENV{X509_CERT_DIR} = cwd();
-       $ENV{X509_USER_PROXY} = "testcred.pem";
-   }
-   elsif($sec_env == 1)
+   if($sec_env == 1)
    {
        $ENV{X509_CERT_DIR} = "";
-       $ENV{X509_USER_PROXY} = "testcred.pem";       
    }
    elsif($sec_env == 2)
    {
-       $ENV{X509_CERT_DIR} = cwd();
        $ENV{X509_USER_PROXY} = "";       
    }
 

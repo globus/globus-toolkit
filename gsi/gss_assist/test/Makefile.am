@@ -13,16 +13,11 @@ Sources = \
 
 Scripts = \
 	TESTS.pl \
-	gss-assist-run-tests.pl \
 	gss-assist-impexp-test.pl \
 	gss-assist-auth-test.pl \
 	gss-assist-gridmap-test.pl
 
-Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
-	testcred.pem \
-	grid-mapfile
+Data = grid-mapfile
 
 INCLUDES = $(GPT_INCLUDES)
 
