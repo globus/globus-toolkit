@@ -72,11 +72,6 @@ globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt
 globus_gram_myjob	gram/myjob/source	gpt
 globus_gram_protocol	gram/protocol/source	gpt
 globus_gram_protocol_test	gram/protocol/test	gpt
-globus_gram_reporter	gram/reporter/source	gpt
-globus_gram_reporter_setup_fork	gram/reporter/setup/fork	gpt
-globus_gram_reporter_setup_pbs	gram/reporter/setup/pbs	gpt
-globus_gram_reporter_setup_lsf	gram/reporter/setup/lsf	gpt
-globus_gram_reporter_setup_condor	gram/reporter/setup/condor	gpt
 globus_xio_gridftp_multicast	gridftp/server/multi/source	gpt
 globus_xio_gridftp_driver	gridftp/gridftp_driver/source	gpt
 globus_wuftpd_gridftp_server	gridftp/gsi-wuftpd/source	gpt
