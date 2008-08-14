@@ -81,7 +81,12 @@ source-trees/autotools/bin/autoconf fait_accompli/binary.configure.in > tmp/conf
 chmod +x tmp/configure
 
 echo Adding GPT source to binary installer
-tar -C tmp -xzf gpt-*.tar.gz
+if [ -f gpt-*.tar.gz ]; then
+   tar -C tmp -xzf gpt-*.tar.gz
+else
+   cp -Rp gpt tmp
+fi
+
 
 echo Adding README/INSTALL
 sed -e "s/@version@/$VERSION/g" fait_accompli/binary.INSTALL > tmp/INSTALL
