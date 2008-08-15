@@ -60,6 +60,16 @@ my $openssl_exec    = '';
 
 chdir $setupdir;
 
+if (! -d "${globusdir}/bin" )
+{
+    mkdir "${globusdir}/bin", 0777;
+}
+
+if (-l "${globusdir}/bin/openssl")
+{
+    unlink "${globusdir}/bin/openssl";
+}
+
 if ($openssl ne '')
 {
     if (-f $openssl && -x $openssl)
@@ -82,15 +92,6 @@ if (! -x $openssl_exec)
 {
     print STDERR "Unable to find openssl\n";
     exit 1;
-}
-
-if (! -d "${globusdir}/bin" )
-{
-    mkdir "${globusdir}/bin", 0777;
-}
-if (-l "${globusdir}/bin/openssl")
-{
-    unlink "${globusdir}/bin/openssl";
 }
 
 if (! -r "${globusdir}/bin/openssl")
