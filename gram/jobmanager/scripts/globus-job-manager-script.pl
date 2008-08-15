@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Replace this with your command filtering programing of choice.
+# A return value of '0' indicates that the command will be allowed, and
+# any other return value indicates that the command will be denied.
+#$FILTER_COMMAND = '/usr/local/bin/commsh --check-user';
+
 BEGIN
 {
     use POSIX qw(getcwd);
@@ -103,8 +108,20 @@ $manager = new $manager_class($job_description) or
 
 # If we are submitting a job, we may need to update things like
 # executable & stdin to look in the cache.
+# We may also need to run the command through a filter script.
 if($command eq 'submit')
 {
+    if(defined $FILTER_COMMAND)
+    {
+        local $commandName = join(" ", $job_description->executable,
+                                       $job_description->arguments);
+        local @filterArgs = split(/\s+/, $FILTER_COMMAND);
+        local $rVal = (system(@filterArgs, $commandName)) >> 8;
+        if($rVal != 0)  # The filter command returned an error, so deny.
+        {
+            &fail(Globus::GRAM::Error::AUTHORIZATION_DENIED_EXECUTABLE);
+        }
+    }
     $manager->rewrite_urls();
 }
 $result = $manager->$command();
