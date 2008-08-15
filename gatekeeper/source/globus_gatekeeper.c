@@ -54,6 +54,7 @@ CVS Information:
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <syslog.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -205,9 +206,15 @@ static char     tmpbuf[1024];
 #define notice2(i,a,b) {sprintf(tmpbuf, a,b); notice(i,tmpbuf);}
 #define notice3(i,a,b,c) {sprintf(tmpbuf, a,b,c); notice(i,tmpbuf);}
 #define notice4(i,a,b,c,d) {sprintf(tmpbuf, a,b,c,d); notice(i,tmpbuf);}
+#define notice5(i,a,b,c,d,e) {sprintf(tmpbuf, a,b,c,d,e); notice(i,tmpbuf);}
 #define failure2(t,a,b) {sprintf(tmpbuf, a,b); failure(t,tmpbuf);}
 #define failure3(t,a,b,c) {sprintf(tmpbuf, a,b,c); failure(t,tmpbuf);}
 #define failure4(t,a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(t,tmpbuf);}
+
+#define FORK_AND_EXIT	1
+#define FORK_AND_WAIT	2
+#define DONT_FORK	3
+static int	launch_method = FORK_AND_EXIT;
 
 extern int      errno;
 
@@ -216,6 +223,10 @@ static int      listener_fd = -1;
 
 static FILE *   usrlog_fp;
 static char *   logfile = LOGFILE;
+static char *   acctfile;
+static volatile int	logrotate;
+static pid_t    gatekeeper_pid;
+static unsigned reqnr;
 static char     test_dat_file[1024];
 static int      gatekeeper_test;
 static int      gatekeeper_uid;
@@ -355,12 +366,113 @@ reaper(int s)
     int status;
 #   endif
 
+    if (launch_method == DONT_FORK) return;
+
 #   ifdef HAS_WAIT3
     while ((pid = wait3(&status, WNOHANG, NULL)) > 0) ;
 #   else
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) ;
 #   endif
 } /* reaper() */
+
+/******************************************************************************
+Function:       rotatelog()
+Description:    Handle a SIGUSR1: set a flag indicating the logfile should be
+                                  rotated by the main loop.
+Parameters:
+Returns:
+******************************************************************************/
+static void
+rotatelog(int s)
+{
+    logrotate = 1;
+}
+
+/******************************************************************************
+Function:       new_acct_file()
+Description:    Rotate old and open new job accounting file.
+Parameters:
+Returns:
+******************************************************************************/
+static void
+new_acct_file(void)
+{
+    static int acct_fd = -1;
+
+    if (acct_fd >= 0)
+    {
+	if (strcmp(acctfile, logfile) != 0)
+	{
+	    static int seqnr;
+            char *acctpath = genfilename(gatekeeperhome, acctfile, NULL);
+	    char *oldpath = malloc(strlen(acctpath) + 64);
+	    time_t clock = time((time_t *) 0);
+	    struct tm *tmp = localtime(&clock);
+	    int ret;
+
+	    sprintf(oldpath, "%s.%04d%02d%02d%02d%02d%02d.%d", acctpath,
+		tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday,
+		tmp->tm_hour, tmp->tm_min, tmp->tm_sec, seqnr++);
+
+	    if ((ret = rename(acctpath, oldpath)) != 0)
+	    {
+		notice4(LOG_ERR, "ERROR: cannot rename %s to %s: %s",
+		    acctpath, oldpath, strerror(errno));
+	    }
+	    else
+	    {
+		notice2(0, "renamed accounting file %s", oldpath);
+	    }
+
+	    free(acctpath);
+	    free(oldpath);
+
+	    if (ret) {
+		return;
+	    }
+	}
+
+	close(acct_fd);
+	acct_fd = -1;
+    }
+
+    if (!acctfile)
+    {
+	acctfile = logfile;
+    }
+
+    if (acctfile && *acctfile)
+    {
+	const char *acct_fd_var = "GATEKEEPER_ACCT_FD";
+	char *acctpath = genfilename(gatekeeperhome, acctfile, NULL);
+
+	acct_fd = open(acctpath, O_WRONLY | O_APPEND | O_CREAT, 0644);
+
+	if (acct_fd < 0)
+	{
+	    notice3(LOG_ERR, "ERROR: cannot open accounting file '%s': %s",
+		acctpath, strerror(errno));
+
+	    unsetenv(acct_fd_var);
+	}
+	else
+	{
+	    /*
+	     * Now inform JM via environment.
+	     */
+
+	    char buf[32];
+
+	    sprintf(buf, "%d", acct_fd);
+
+	    setenv(acct_fd_var, buf, 1);
+
+	    notice4(0, "%s=%s (%s)", acct_fd_var, buf, acctpath);
+	}
+
+	free(acctpath);
+    }
+}
 
 /******************************************************************************
 Function:       genfilename()
@@ -455,6 +567,8 @@ main(int xargc,
     {
         exit (1);
     }
+
+    gatekeeper_pid = getpid();
 
     gatekeeper_uid = getuid();
     if (gatekeeper_uid == 0)
@@ -620,6 +734,12 @@ main(int xargc,
             logfile =  argv[i+1];
             i++;
         }
+        else if ((strcmp(argv[i], "-acctfile") == 0)
+                 && (i + 1 < argc))
+        {
+            acctfile = argv[i+1];
+            i++;
+        }
         else if ((strcmp(argv[i], "-home") == 0)
                  && (i + 1 < argc))
         {
@@ -759,6 +879,33 @@ main(int xargc,
                 run_from_inetd = 0;
             }
         }
+	else if ((strcmp(argv[i], "-launch_method") == 0)
+		 && (i + 1 < argc))
+	{
+	    if(!run_from_inetd)
+	    {
+		fprintf(stderr, "Gatekeeper running as daemon, "
+			"ignoring -launch_method!\n");
+	    }
+	    else if (strcmp(argv[i + 1], "fork_and_exit") == 0)
+	    {
+		launch_method = FORK_AND_EXIT;
+	    }
+	    else if (strcmp(argv[i + 1], "fork_and_wait") == 0)
+	    {
+		launch_method = FORK_AND_WAIT;
+	    }
+	    else if (strcmp(argv[i + 1], "dont_fork") == 0)
+	    {
+		launch_method = DONT_FORK;
+	    }
+	    else
+	    {
+		fprintf(stderr, "Bad -launch_method argument %s\n",
+			argv[i + 1]);
+	    }
+	    i++;
+	}
         else
         {
 
@@ -766,7 +913,8 @@ main(int xargc,
             fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n ",
                     argv[0], 
                     "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port] ",
-                    "[-home path] [-l[ogfile] logfile] [-e path] ",
+                    "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path] ",
+                    "[-launch_method fork_and_exit|fork_and_wait|dont_fork] "
                     "[-grid_services file] ",
                     "[-globusid globusid] [-gridmap file] [-globuspwd file]",
                     "[-x509_cert_dir path] [-x509_cert_file file]",
@@ -897,14 +1045,24 @@ main(int xargc,
             act.sa_flags = 0;
             sigaction(SIGTERM, &act, NULL);
         }
+	act.sa_handler = rotatelog;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGUSR1);
+	act.sa_flags = 0;
+	sigaction(SIGUSR1, &act, NULL);
     }
 
     if (run_from_inetd)
     {
         logging_phase2();
         dup2(2,1); /* point stdout at log as well */
-        setbuf(stdout,NULL);
     }
+
+    /*
+     * Always make stdout unbuffered: otherwise the fclose(stdout)
+     * in doit() will flush any buffered output again and again!
+     */
+    setbuf(stdout,NULL);
 
     /* Get the GSS credential for the accepter
      * If not run_from_inetd we can prompt here.
@@ -999,6 +1157,7 @@ main(int xargc,
         free(globusid);
     }
 
+    new_acct_file();
 
     if (run_from_inetd)
     {
@@ -1016,10 +1175,12 @@ main(int xargc,
             if (fork())
                 exit(0);
 
+	    gatekeeper_pid = getpid();
+
             if (!logging_usrlog)
             {
                 (void) close(2); /* close stderr as well */
-                (void) open ("/dev/null",0);
+		(void) open("/dev/null",O_WRONLY);
             }
 
             (void) close(0);
@@ -1076,6 +1237,7 @@ main(int xargc,
         while (1)
         {
             connection_fd = net_accept(listener_fd);
+	    reqnr++;
 
             pid = fork();
 
@@ -1144,7 +1306,7 @@ Returns:
 static void doit()
 {
     int                                 p1[2];
-    int                                 pid;
+    int                                 pid = 0;
     int                                 n;
     int                                 i;
     int                                 service_uid;
@@ -1438,6 +1600,30 @@ static void doit()
         free(tmpbuf);
     }
 
+    /*
+     * Cook up a unique ID such that we can link the GSI info logged by
+     * the Gatekeeper to the batch system info logged by the Job Manager.
+     */
+    {
+	time_t       clock;
+	struct tm  * tmp;
+	const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
+	char         gatekeeper_jm_id[64];
+
+	time(&clock);
+	tmp = localtime(&clock);
+
+	sprintf(gatekeeper_jm_id, "%04d-%02d-%02d.%02d:%02d:%02d.%010u.%010u",
+	    tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday,
+	    tmp->tm_hour, tmp->tm_min, tmp->tm_sec,
+	    gatekeeper_pid & 0xFFFFFFFF, reqnr & 0xFFFFFFFF);
+
+	setenv(gk_jm_id_var, gatekeeper_jm_id, 1);
+	setenv("GATEKEEPER_PEER", peernum, 1);
+
+	notice5(0, "%s %s for %s on %s", gk_jm_id_var, gatekeeper_jm_id,
+	    client_name, peernum);
+    }
 
     /*
      * now that we know the desired service, do authorization
@@ -1875,7 +2061,8 @@ static void doit()
     close_on_exec_read_fd = p1[0];
     close_on_exec_write_fd = p1[1];
 
-    if (fcntl(close_on_exec_write_fd, F_SETFD, 1) != 0)
+    if (fcntl(close_on_exec_write_fd, F_SETFD, 1) != 0 ||
+	fcntl(close_on_exec_read_fd, F_SETFD, 1) != 0)
     {
         failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", strerror(errno));
     }
@@ -2020,13 +2207,21 @@ static void doit()
 
     chdir(pw->pw_dir);
 
-    pid = fork();
-    if (pid < 0)
+    if ( launch_method != DONT_FORK )
     {
-        failure2(FAILED_SERVER, "fork failed: %s", strerror(errno));
+	pid = fork();
+	if (pid < 0)
+	{
+	    failure2(FAILED_SERVER, "fork failed: %s", strerror(errno));
+	}
     }
 
-    if (pid == 0)
+    if (launch_method == DONT_FORK)
+    {
+	notice2(0, "Starting child %d", pid);
+    }
+
+    if (pid == 0 || launch_method == DONT_FORK)
     {
         close(close_on_exec_read_fd);
         
@@ -2064,7 +2259,10 @@ static void doit()
         {
             sprintf(tmpbuf, "Exec failed: %s\n", strerror(errno));
             write(close_on_exec_write_fd, tmpbuf, strlen(tmpbuf));
-            exit(0);
+	    if (launch_method != DONT_FORK)
+	    {
+		exit(0);
+	    }
         }
     }
 
@@ -2092,7 +2290,34 @@ static void doit()
     }
     close(close_on_exec_read_fd);
 
-    notice2(0, "Child %d started", pid);
+    if (launch_method != DONT_FORK)
+    {
+	notice2(0, "Child %d started", pid);
+    }
+
+    if (launch_method == FORK_AND_WAIT)
+    {
+	/* wait until child is reaped */
+	int dead_pid;
+#       ifdef HAS_WAIT_UNION_WAIT
+	union wait status;
+#       else
+	int status;
+#       endif
+
+	do
+	{
+#           ifdef HAS_WAIT3
+	    dead_pid = wait3(&status, 0, NULL);
+#           else
+	    dead_pid = waitpid(-1, &status, 0);
+#           endif
+	    if (dead_pid < 0 && errno != EINTR)
+	    {
+		break;
+	    }
+	} while (dead_pid != pid);
+    }
 
     ok_to_send_errmsg = 0;
 } /* doit() */  
@@ -2113,18 +2338,92 @@ net_accept(int skt)
 
     fromlen = sizeof(from);
     gotit = 0;
+
     while (!gotit)
     {
-        skt2 = accept(skt, (struct sockaddr *) &from, &fromlen);
-        if (skt2 == -1)
-        {
-            if (errno == EINTR)
-                continue;
-            else
-                error_check(skt2, "net_accept accept");
-        }
-        else
-            gotit = 1;
+	fd_set         fdset;
+	struct timeval timeout;
+	int            n;
+
+	FD_ZERO(&fdset);
+	FD_SET(skt, &fdset);
+	timeout.tv_sec = 60;
+	timeout.tv_usec = 0;
+
+	n = select(skt + 1, &fdset, (fd_set *) 0, &fdset, &timeout);
+
+	if (n < 0 && errno != EINTR)
+	{
+	    error_check(n, "net_accept select");
+	}
+	else if (n > 0)
+	{
+            long flags;
+
+	    skt2 = accept(skt, (struct sockaddr *) &from, &fromlen);
+
+	    if (skt2 == -1)
+	    {
+		if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK)
+		{
+		    error_check(skt2, "net_accept accept");
+		}
+	    }
+	    else
+		gotit = 1;
+            flags = fcntl(skt2, F_GETFL, 0);
+            flags &= ~O_NONBLOCK;
+            fcntl(skt2, F_SETFL, flags);
+	}
+
+	if (logrotate)
+	{
+	    time_t clock = time((time_t *) 0);
+	    struct tm *tmp = localtime(&clock);
+	    char buf[128];
+
+	    sprintf(buf, "logfile rotating at %04d-%02d-%02d %02d:%02d:%02d",
+		tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday,
+		tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
+
+	    notice2(LOG_INFO, "%s", buf);
+
+	    if (logging_usrlog)
+	    {
+		static int seqnr;
+		char *logpath = genfilename(gatekeeperhome, logfile, NULL);
+		char *oldpath = malloc(strlen(logpath) + 64);
+
+		sprintf(oldpath, "%s.%04d%02d%02d%02d%02d%02d.%d", logpath,
+		    tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday,
+		    tmp->tm_hour, tmp->tm_min, tmp->tm_sec, seqnr++);
+
+		if (rename(logpath, oldpath) != 0)
+		{
+		    notice4(LOG_ERR, "ERROR: cannot rename %s to %s: %s",
+			logpath, oldpath, strerror(errno));
+		}
+		else if (logging_startup() != 0)
+		{
+		    failure(FAILED_SERVER, "Logging restart failure");
+		}
+		else
+		{
+		    logging_phase2();
+		    fclose(stdout);
+		    (void) dup2(2, 1); /* point stdout to stderr */
+		    *stdout = *fdopen(1, "w");
+		    notice2(LOG_INFO, "Continuing from %s", oldpath);
+		}
+
+		free(logpath);
+		free(oldpath);
+	    }
+
+	    new_acct_file();
+
+	    logrotate = 0;
+	}
     }
 
     return(skt2);
@@ -2144,10 +2443,15 @@ net_setup_listener(int backlog,
 {
     netlen_t        sinlen;
     struct sockaddr_in sin;
+	long flags;
     int one=1;
 
     *skt = socket(AF_INET, SOCK_STREAM, 0);
     error_check(*skt,"net_setup_anon_listener socket");
+
+	flags = fcntl(*skt, F_GETFL, 0);
+	flags |= O_NONBLOCK;
+	fcntl(*skt, F_SETFL, flags);
 
     error_check(setsockopt(*skt, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)),
                 "net_setup_anon_listener setsockopt");
@@ -2187,13 +2491,16 @@ logging_startup(void)
     }
     else
     {
-        /*
-         * By default open syslogfile.
-         * All messages will have GRAM gatekeeper and include the PID.
-         * The messages will be treated like any other system daemon.
-         */
-        logging_syslog = 1;
-        openlog("GRAM gatekeeper", LOG_PID, LOG_DAEMON);
+	if (!logging_syslog)
+	{
+	    /*
+	     * By default open syslogfile if it is not open already.
+	     * All messages will have GRAM gatekeeper and include the PID.
+	     * The messages will be treated like any other system daemon.
+	     */
+	    logging_syslog = 1;
+	    openlog("GRAM gatekeeper", LOG_PID, LOG_DAEMON);
+	}
 
         if (strlen(logfile) > 0) 
         {
@@ -2202,7 +2509,20 @@ logging_startup(void)
              * Open the user specified logfile
              */
                         
+	    if (logging_usrlog)
+	    {
+		/* close previous logfile, if any */
+
+		if (usrlog_fp)
+		{
+		    fclose(usrlog_fp);
+		}
+
+		logging_usrlog = 0;
+	    }
+
             logfilename = genfilename(gatekeeperhome, logfile, NULL);
+
             if ((usrlog_fp = fopen(logfilename, "a")) == NULL)
             {
                 fprintf(stderr, "Cannot open logfile %s: %s\n",
@@ -2211,6 +2531,7 @@ logging_startup(void)
 
                 return(1);
             }
+
             free(logfilename);
             logging_usrlog = 1;
         }
@@ -2229,25 +2550,37 @@ logging_phase2(void)
 {
 
     if (logging_usrlog) 
-{
-    /*
-     * set stderr to the log file, to catch all fprintf(stderr,...
-     * and catch some from gram_k5, and job_manager
-     * But if testing gatekeeper, write to stderr instead. 
-     */
+    {
+	/*
+	 * set stderr to the log file, to catch all fprintf(stderr,...
+	 * and catch some from gram_k5, and job_manager
+	 * But if testing gatekeeper, write to stderr instead. 
+	 */
 
-    if (!gatekeeper_test) {
-        (void) fflush(usrlog_fp);
-        (void) dup2(fileno(usrlog_fp),2);
-        (void) fclose(usrlog_fp);
+	if (!gatekeeper_test && usrlog_fp) {
+	    int tmpfd = dup(fileno(usrlog_fp));	/* save copy of logfile fd */
+
+	    fflush(stderr);
+
+	    if (usrlog_fp != stderr)
+	    {
+		fclose(usrlog_fp);	/* this may still close fd 2! */
+	    }
+
+	    fclose(stderr);
+
+	    dup2(tmpfd, 2);		/* reconnect fd 2 to logfile */
+	    close(tmpfd);
+
+	    *stderr = *fdopen(2, "w");	/* reinitialize stderr */
+	}
+	usrlog_fp = stderr;
+
+	/*
+	 * Set output to non-buffered mode
+	 */
+	setbuf(stderr, NULL);
     }
-    usrlog_fp = stderr;
-
-    /*
-     * Set output to non-buffered mode
-     */
-    setbuf(stderr, NULL);
-}
     return(0);
 } /* logging_phase2() */
 
