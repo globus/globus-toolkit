@@ -135,6 +135,14 @@ sub submit
     my $multi_output = 0;
     my $failure_text = '';
 
+    # Reject jobs that want streaming, if so configured
+    if ( $description->streamingrequested() &&
+	 $description->streamingdisabled() ) {
+
+	$self->log("Streaming is not allowed.");
+	return Globus::GRAM::Error::OPENING_STDOUT;
+    }
+
     if($description->jobtype() eq 'single' ||
        $description->jobtype() eq 'multiple')
     {
@@ -303,6 +311,9 @@ sub submit
 	print SCRIPT_FILE "$rank\n";
     }
 
+    if ($ENV{X509_USER_PROXY} ne "") {
+        print SCRIPT_FILE "X509UserProxy = $ENV{X509_USER_PROXY}\n";
+    }
     print SCRIPT_FILE "Environment = $environment_string\n";
     print SCRIPT_FILE "Arguments = $argument_string\n";
     print SCRIPT_FILE "InitialDir = " . $description->directory() . "\n";
