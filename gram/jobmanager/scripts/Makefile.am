@@ -4,7 +4,6 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = pkgdata
 
 libexec_SCRIPTS = \
-	globus-job-manager-mds-provider \
 	globus-job-manager-service      \
 	globus-job-manager-script.pl
 

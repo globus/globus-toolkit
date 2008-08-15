@@ -175,7 +175,7 @@ sub create_services_file
     print $service_file "stderr_log,local_cred - ".
                     "${libexecdir}/globus-job-manager globus-job-manager ".
 		    "-conf ${job_manager_conf} -type ${manager_type} ".
-		    "-rdn ${servicename} -machine-type unknown ".
+		    "-machine-type unknown ".
 		    "-publish-jobs $extra_config\n";
 
     $service_file->close();
