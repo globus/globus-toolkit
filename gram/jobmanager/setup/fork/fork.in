@@ -93,6 +93,7 @@ sub submit
     my $fork_starter = "$ENV{GLOBUS_LOCATION}/libexec/globus-fork-starter";
     my $fork_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-fork.conf";
     my $log_path = '/dev/null';
+    my $is_grid_monitor = 0;
 
     if (-r $fork_conf)
     {
@@ -204,6 +205,30 @@ sub submit
                 $description->directory()
                 . '/'
                 . $description->executable());
+    }
+
+    # Check if this is the Condor-G grid monitor
+    my $exec = $description->executable();
+    my $file_out = `/usr/bin/file $exec`;
+    if ( $file_out =~ /script/ || $file_out =~ /text/ ||
+	 $file_out =~ m|/usr/bin/env| ) {
+	open( EXEC, "<$exec" ) or
+	    return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+	while( <EXEC> ) {
+	    if ( /Sends results from the grid_manager_monitor_agent back to a/ ) {
+		$is_grid_monitor = 1;
+	    }
+	}
+	close( EXEC );
+    }
+
+    # Reject jobs that want streaming, if so configured, but not for
+    # grid monitor jobs
+    if ( $description->streamingrequested() &&
+	 $description->streamingdisabled() && !$is_grid_monitor ) {
+
+	$self->log("Streaming is not allowed.");
+	return Globus::GRAM::Error::OPENING_STDOUT;
     }
 
     @arguments = $description->arguments();
