@@ -1742,6 +1742,7 @@ globus_l_gram_job_manager_output_destination_open(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_GASS:
+	request->streaming_requested = GLOBUS_TRUE;
 	rc = globus_gass_transfer_register_append(
 		&destination->handle.gass,
 		GLOBUS_NULL,
@@ -1769,6 +1770,7 @@ globus_l_gram_job_manager_output_destination_open(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FTP:
+	request->streaming_requested = GLOBUS_TRUE;
 	globus_ftp_client_operationattr_init(&attr);
 	globus_ftp_client_operationattr_set_append(
 		&attr,

@@ -835,11 +835,4 @@ in any of the methods you've implemented.
   - setup-globus-job-manager-xxx.pl
   - globus_gram_job_manager_xxx.dox
   - adding a validation file.
-
-- Reporter module Setup Package
-  - find-xxx-reporter-tools
-  - globus-script-xxx-queue.in
-  - setup-globus-gram-reporter-xxx
-  - setup-globus-gram-reporter-xxx.pl
-
 */

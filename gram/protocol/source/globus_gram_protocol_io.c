@@ -1179,17 +1179,10 @@ globus_l_gram_protocol_connect_callback(
 			     GLOBUS_NULL);
     }
     
-    /* rc only set on connection error.  It is an error to close a handle on
-     * a failed connect
-     */
-    if(rc == 0)
-    {
-        result = globus_io_register_close(
-	    handle,
-	    globus_l_gram_protocol_connection_close_callback,
-	    callback_arg);
-    
-    }
+    result = globus_io_register_close(
+	handle,
+	globus_l_gram_protocol_connection_close_callback,
+	callback_arg);
     
     if(result != GLOBUS_SUCCESS)
     {

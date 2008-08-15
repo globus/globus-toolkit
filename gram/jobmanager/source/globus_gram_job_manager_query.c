@@ -65,7 +65,8 @@ static
 int
 globus_l_gram_job_manager_unregister(
     globus_gram_jobmanager_request_t *	request,
-    const char *			url);
+    const char *			url,
+    globus_gram_protocol_handle_t	handle);
 
 static
 int
@@ -317,7 +318,7 @@ globus_gram_job_manager_query_callback(
     }
     else if (strcmp(query,"unregister")==0)
     {
-	rc = globus_l_gram_job_manager_unregister(request, rest);
+	rc = globus_l_gram_job_manager_unregister(request, rest, handle);
     }
     else if (strcmp(query,"renew")==0)
     {
@@ -606,7 +607,9 @@ static
 int
 globus_l_gram_job_manager_unregister(
     globus_gram_jobmanager_request_t *	request,
-    const char *			url)
+    const char *			url,
+    globus_gram_protocol_handle_t	handle)
+
 {
     int rc;
 
@@ -621,6 +624,21 @@ globus_l_gram_job_manager_unregister(
     else
     {
 	rc = globus_gram_job_manager_contact_remove(request, url);
+
+        /* Incase we unregister the last callback and we're waiting
+         * for TWO_PHASE_END commit, fake the COMMIT_END signal
+         */
+
+        if (!request->client_contacts &&
+             request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
+        {
+            globus_bool_t reply=GLOBUS_TRUE;
+            char buf[32];
+
+            snprintf(buf,sizeof(buf),"%d",GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END);
+            globus_l_gram_job_manager_signal(request,buf,handle,&reply);
+            globus_assert(reply == GLOBUS_TRUE);
+        }
     }
     return rc;
 }
@@ -1132,9 +1150,7 @@ globus_bool_t
 globus_l_gram_job_manager_query_valid(
     globus_gram_jobmanager_request_t *	request)
 {
-    switch(
-	    (request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_START)
-	    ? request->restart_state : request->jobmanager_state)
+    switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:

@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 /* Module Specific Types */
 typedef void (*globus_gram_job_manager_script_callback_t)(
@@ -299,6 +301,39 @@ globus_l_gram_job_manager_script_read(
 		"JMI: while return_buf = %s = %s\n",
 		script_variable, script_value);
 
+	/*
+	 * We need to log the batch job ID to the accounting file.
+	 */
+
+	if(strcmp(script_variable, "GRAM_SCRIPT_JOB_ID") == 0)
+	{
+	    const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
+	    const char * gk_jm_id  = globus_libc_getenv(gk_jm_id_var);
+	    const char * gk_peer   = globus_libc_getenv("GATEKEEPER_PEER");
+	    const char * globus_id = globus_libc_getenv("GLOBUS_ID");
+	    uid_t uid = getuid();
+	    gid_t gid = getgid();
+	    const struct passwd *pw = getpwuid(uid);
+	    const char *user = pw && pw->pw_name && *pw->pw_name ?
+	                       pw->pw_name : "unknown";
+
+	    globus_gram_job_manager_request_acct(
+		request, "%s %s for %s on %s\n", gk_jm_id_var,
+		gk_jm_id  ? gk_jm_id  : "none",
+		globus_id ? globus_id : "unknown",
+		gk_peer   ? gk_peer   : "unknown");
+
+	    globus_gram_job_manager_request_acct(
+		request, "%s %s mapped to %s (%u, %u)\n", gk_jm_id_var,
+		gk_jm_id  ? gk_jm_id  : "none",
+		user, uid, gid);
+
+	    globus_gram_job_manager_request_acct(
+		request, "%s %s has %s %s manager type %s\n", gk_jm_id_var,
+		gk_jm_id  ? gk_jm_id  : "none",
+		script_variable, script_value, request->jobmanager_type);
+	}
+
 	nbytes -= (p + 1 - ((char *)&script_context->return_buf[0]));
 	if(nbytes > 0)
 	{
@@ -554,9 +589,12 @@ int
 globus_gram_job_manager_script_poll_fast(
     globus_gram_jobmanager_request_t *    request)
 {
+    int i;
     char * grid_monitor_output = 0;
+    char * grid_monitor_files[3] = { NULL, NULL, NULL };
                 /* Path is $GLOBUS_LOCATION/GRID_MONITOR_LOCATION$UID */
-    char * GRID_MONITOR_LOCATION = "/tmp/grid_manager_monitor_agent_log.";
+    const char * GRID_MONITOR_LOCATION_1 = "/tmp/grid_manager_monitor_agent_log.";
+    const char * GRID_MONITOR_LOCATION_2 = "/tmp/gram_job_state/grid_manager_monitor_agent_log.";
     const char * WHITESPACE = " \t";
     uid_t this_uid = geteuid();
     struct stat stat_results;
@@ -581,48 +619,76 @@ globus_gram_job_manager_script_poll_fast(
         goto FAST_POLL_EXIT_FAILURE;
     }
 
-    grid_monitor_output = globus_libc_malloc(
+    /* The grid monitor's job status file can be in one of two places.
+     * We want to check both.
+     */
+    grid_monitor_files[0] = globus_libc_malloc(
         strlen(request->globus_location) +
-        strlen(GRID_MONITOR_LOCATION) + 10);
-    if( ! grid_monitor_output)
+        strlen(GRID_MONITOR_LOCATION_1) + 10);
+    if( ! grid_monitor_files[0])
         goto FAST_POLL_EXIT_FAILURE;
 
-    sprintf(grid_monitor_output, "%s%s%d",
+    sprintf(grid_monitor_files[0], "%s%s%d",
         request->globus_location,
-        GRID_MONITOR_LOCATION,
+        GRID_MONITOR_LOCATION_1,
         (int)this_uid);
 
-    grid_monitor_file = fopen(grid_monitor_output, "r");
-
-    if( ! grid_monitor_file )
-    {
-    /* No monitor file?  That's acceptable, silently fail */
+    grid_monitor_files[1] = globus_libc_malloc(
+        strlen(request->globus_location) +
+        strlen(GRID_MONITOR_LOCATION_2) + 10);
+    if( ! grid_monitor_files[1])
         goto FAST_POLL_EXIT_FAILURE;
+
+    sprintf(grid_monitor_files[1], "%s%s%d",
+        request->globus_location,
+        GRID_MONITOR_LOCATION_2,
+        (int)this_uid);
+
+    for ( i = 0; grid_monitor_files[i]; i++ ) {
+	grid_monitor_output = grid_monitor_files[i];
+
+	grid_monitor_file = fopen(grid_monitor_output, "r");
+
+	if( ! grid_monitor_file )
+	{
+	    /* No monitor file?  That's acceptable, silently fail */
+	    continue;
+	}
+
+	rc = stat(grid_monitor_output, &stat_results);
+	if( rc != 0 ) {
+	    fclose(grid_monitor_file);
+	    grid_monitor_file = NULL;
+	    continue;
+	}
+
+	if(stat_results.st_uid != this_uid ||
+	   !S_ISREG(stat_results.st_mode)
+	   /* TODO: test for world writable (bad)?  Is such a test logical on AFS? */
+	   )
+	{
+	    globus_gram_job_manager_request_log(request,
+		"JMI: poll_fast: Monitoring file %s looks untrustworthy.\n",
+		grid_monitor_output);
+	    fclose(grid_monitor_file);
+	    grid_monitor_file = NULL;
+	    continue;
+	}
+
+	if( (stat_results.st_mtime + MAX_MONITOR_FILE_AGE) < time(NULL) )
+	{
+	    globus_gram_job_manager_request_log(request,
+		"JMI: poll_fast: Monitoring file %s looks out of date.\n",
+		grid_monitor_output);
+	    fclose(grid_monitor_file);
+	    grid_monitor_file = NULL;
+	    continue;
+	}
+
+	break;
     }
-
-    rc = stat(grid_monitor_output, &stat_results);
-
-
-    if( rc != 0 )
-        goto FAST_POLL_EXIT_FAILURE;
-
-    if(stat_results.st_uid != this_uid ||
-        !S_ISREG(stat_results.st_mode)
-    /* TODO: test for world writable (bad)?  Is such a test logical on AFS? */
-    )
-    {
-        globus_gram_job_manager_request_log(request,
-            "JMI: poll_fast: Monitoring file looks untrustworthy.  "
-            "Reverting to normal polling\n");
-        goto FAST_POLL_EXIT_FAILURE;
-    }
-
-    if( (stat_results.st_mtime + MAX_MONITOR_FILE_AGE) < time(NULL) )
-    {
-        globus_gram_job_manager_request_log(request,
-            "JMI: poll_fast: Monitoring file looks out of date.  "
-            "Reverting to normal polling\n");
-        goto FAST_POLL_EXIT_FAILURE;
+    if ( grid_monitor_file == NULL ) {
+	goto FAST_POLL_EXIT_FAILURE;
     }
 
     /* If we got this far, we've decided we trust the file */
@@ -769,8 +835,9 @@ FAST_POLL_EXIT_FAILURE:
 FAST_POLL_EXIT:
     if(grid_monitor_file) 
         fclose(grid_monitor_file);
-    if( grid_monitor_output )
-        globus_libc_free(grid_monitor_output);
+    for ( i = 0; grid_monitor_files[i]; i++ ) {
+        globus_libc_free(grid_monitor_files[i]);
+    }
     if( job_contact_match )
         globus_libc_free(job_contact_match);
 
@@ -1782,6 +1849,29 @@ globus_l_gram_job_manager_default_done(
 	    request->job_id = globus_libc_strdup(value);
 	}
     }
+    else if(strcmp(variable, "GRAM_SCRIPT_JOB_ACCT_INFO") == 0)
+    {
+        if(value != NULL && strlen(value) > 0)
+        {
+            const char *gk_jm_id_var = "GATEKEEPER_JM_ID";
+            const char *gk_jm_id = globus_libc_getenv(gk_jm_id_var);
+	    const char *v = value;
+	    char *buf = globus_libc_malloc(strlen(value) + 1);
+	    char *b = buf;
+	    char c;
+
+	    while ((*b++ = ((c = *v++) != '\\') ? c :
+		           ((c = *v++) != 'n' ) ? c : '\n'))
+	    {
+	    }
+
+            globus_gram_job_manager_request_acct(
+		request, "%s %s summary:\n%s\nJMA -- end of summary\n", gk_jm_id_var,
+		gk_jm_id ? gk_jm_id : "none", buf);
+
+	    globus_libc_free(buf);
+        }
+    }
     else if(strcmp(variable, "GRAM_SCRIPT_SCRATCH_DIR") == 0)
     {
 	request->scratchdir = globus_libc_strdup(value);
@@ -1806,10 +1896,13 @@ globus_l_gram_job_manager_default_done(
     }
     else if(strcmp(variable, "GRAM_SCRIPT_STAGED_OUT") == 0)
     {
-	globus_l_gram_job_manager_script_staged_done(
-		request,
-		GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
-		value);
+	if(request->jobmanager_state == starting_jobmanager_state)
+	{
+    	    globus_l_gram_job_manager_script_staged_done(
+		    request,
+		    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
+		    value);
+	}
     }
     else if(strcmp(variable, "GRAM_SCRIPT_REMOTE_IO_FILE") == 0)
     {
@@ -2181,6 +2274,11 @@ globus_l_gram_job_manager_script_write_description(
 		",\n    'jobdir' => [ '%s' ]",
 		request->job_dir);
     }
+
+    fprintf(fp, ",\n    'streamingdisabled' => [ %d ]",
+	    request->streaming_disabled );
+    fprintf(fp, ",\n    'streamingrequested' => [ %d ]",
+	    request->streaming_requested );
 
     globus_l_gram_job_manager_print_staging_list(
 	    request,

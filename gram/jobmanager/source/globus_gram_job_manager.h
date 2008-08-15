@@ -316,12 +316,6 @@ typedef struct
      */ 
     char *				condor_os;
 
-    /**
-     * Relative distinguished name
-     *
-     * Nickname of the job manager in the MDS.
-     */
-    char *				rdn;
 
     /**
      * Dry Run
@@ -394,6 +388,20 @@ typedef struct
     globus_gass_cache_t			cache_handle;
     char *				cache_tag;
 
+    /**
+     * Streaming
+     *
+     * streaming_disabled is set from the config option -disable-streaming.
+     * The default is false.
+     * streaming_requested is set to true if there's at least one remote
+     * destination for stdout or stderr. Otherwise, it's false.
+     * Both values get passed to the batch system shell script to decide
+     * whether to allow the job. This lets admins disable streaming for
+     * most jobs, but allow it for certain ones (e.g. the grid monitor).
+     */
+    globus_bool_t			streaming_disabled;
+    globus_bool_t			streaming_requested;
+
     globus_rsl_t *                      stdout_position_hack;
     globus_rsl_t *                      stderr_position_hack;
 
@@ -431,16 +439,13 @@ typedef struct
     globus_bool_t			unsent_status_change;
     globus_callback_handle_t		poll_timer;
     globus_callback_handle_t		proxy_expiration_timer;
-    globus_callback_handle_t		reporting_file_cleanup_timer;
     char *				url_base;
     char *				job_contact;
     char *				job_contact_path;
     char *				old_job_contact;
     gss_ctx_id_t			response_context;
     globus_fifo_t			pending_queries;
-    globus_bool_t			publish_jobs;
-    char *				job_reporting_dir;
-    char *				job_reporting_file;
+    globus_bool_t                       publish_jobs;
     char *                              job_history_dir;
     char *                              job_history_file;
     int					job_history_status;
@@ -484,26 +489,11 @@ globus_gram_job_manager_request_log(
     const char *			format,
     ...);
 
-/* globus_gram_job_manager_reporting_file.c */
 int
-globus_gram_job_manager_reporting_file_set(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_reporting_file_create(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_reporting_file_remove(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_reporting_file_start_cleaner(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_reporting_file_stop_cleaner(
-    globus_gram_jobmanager_request_t *	request);
+globus_gram_job_manager_request_acct(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			format,
+    ...);
 
 int
 globus_gram_job_manager_history_file_set(

@@ -28,18 +28,8 @@ named Perl module in the
 <code>$GLOBUS_LOCATION/lib/perl/Globus/GRAM/JobManager/</code> directory
 is needed.
 
-@par -job-reporting-dir PATH
-Set the path to the directory to store job status files.
-
 @par -history PATH
 Set the path to the directory to store job history files.
-
-@par -publish-jobs
-Publish job status files in the -job-reporting-dir path. The GRAM reporter
-will publish files jobs status files in that directory in the MDS.
-
-@par -publish-users
-This option is only used by the GRAM reporter.
 
 @par -cache-location PATH
 Set the path for the GASS cache. This path must be unique for each user.
@@ -81,9 +71,6 @@ GLOBUS_GATEKEEPER_PORT RSL substitution.
 Set the GSI subject name of the gatekeeper. This will be made available in the
 GLOBUS_GATEKEEPER_SUBJECT RSL substitution.
 
-@par -rdn RDN
-LDAP relative distinguished name used for reporting jobs into the MDS.
-
 @par -globus-org-dn DN
 LDAP distinguished for the organization which manages this GRAM resource.
 
@@ -114,8 +101,7 @@ also be made available in the GLOBUS_TCP_PORT_RANGE environment variable and
 RSL substitution.
 
 @par -machine-type
-Type of machine which is managed by this job manager. This is used by the
-GRAM reporter only.
+Type of machine which is managed by this job manager. This is not used.
 
 @par -state-file-dir PATH
 Set the path to store job manager state files (used for restarting a job

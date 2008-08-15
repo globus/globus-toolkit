@@ -65,6 +65,14 @@ sub submit
 
     $self->log("Entering pbs submit");
 
+    # Reject jobs that want streaming, if so configured
+    if ( $description->streamingrequested() &&
+	 $description->streamingdisabled() ) {
+
+	$self->log("Streaming is not allowed.");
+	return Globus::GRAM::Error::OPENING_STDOUT;
+    }
+
     # check jobtype
     if(defined($description->jobtype()))
     {
@@ -351,7 +359,7 @@ EOF
     {
         $description->add('executable', './' . $description->executable());
     }
-    if($description->jobtype() eq 'multiple' && !$cluster)
+    if($description->jobtype() eq 'multiple' && (($description->count()==1) || !$cluster))
     {
         my $process_count;
         if ($description->totalprocesses() > 0)

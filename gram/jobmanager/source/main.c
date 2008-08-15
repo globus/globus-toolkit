@@ -241,23 +241,10 @@ main(
         {
             request->jobmanager_type = globus_libc_strdup(argv[++i]);
         }
-	else if((strcmp(argv[i], "-job-reporting-dir") == 0)
-		&& (i + 1 < argc))
-	{
-	    request->job_reporting_dir = globus_libc_strdup(argv[++i]);
-	}
         else if((strcmp(argv[i], "-history") == 0)
                 && (i + 1 < argc))
         {
             request->job_history_dir = globus_libc_strdup(argv[++i]);
-        }
-        else if (strcmp(argv[i], "-publish-jobs") == 0)
-        {
-            request->publish_jobs = GLOBUS_TRUE;
-        }
-        else if (strcmp(argv[i], "-publish-users") == 0)
-        {
-            /* NOP */ ;
         }
 	else if (strcmp(argv[i], "-cache-location") == 0)
 	{
@@ -304,11 +291,6 @@ main(
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "GLOBUS_GATEKEEPER_SUBJECT",
                                 (void *) globus_libc_strdup(argv[++i]));
-        }
-        else if ((strcmp(argv[i], "-rdn") == 0)
-                 && (i + 1 < argc))
-        {
-            request->rdn = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-dn") == 0)
                  && (i + 1 < argc))
@@ -407,6 +389,10 @@ main(
             }
             i++;
         }
+        else if (strcmp(argv[i], "-disable-streaming") == 0)
+        {
+            request->streaming_disabled = GLOBUS_TRUE;
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -415,7 +401,6 @@ main(
                     "\n"
                     "Required Arguments:\n"
                     "\t-type jobmanager type, i.e. fork, lsf ...\n"
-                    "\t-rdn relative distinguished name\n"
                     "\t-globus-org-dn organization's domain name\n"
                     "\t-globus-host-dn host domain name\n"
                     "\t-globus-host-manufacturer manufacturer\n"
@@ -432,14 +417,11 @@ main(
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-history job-history-directory\n" 
-                    "\t-publish-jobs\n"
-                    "\t-publish-users\n"
                     "\t-save-logfile [ always | on_error ]\n"
 		    "\t-scratch-dir-base scratch-directory\n"
 		    "\t-state-file-dir state-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
 		    "\t-x509-cert-dir DIRECTORY\n"
-		    "\t-job-reporting-dir DIRECTORY\n"
 		    "\t-cache-location PATH\n"
 		    "\t-k\n"
 		    "\t-globus-org-dn DN\n"
@@ -557,6 +539,16 @@ duct_control_failed:
 	fprintf(stderr, "deactivation failed with rc=%d\n",
 		rc);
 	exit(1);
+    }
+
+    {
+	const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
+	const char * gk_jm_id = globus_libc_getenv(gk_jm_id_var);
+
+	globus_gram_job_manager_request_acct(
+		request,
+		"%s %s JM exiting\n",
+		gk_jm_id_var, gk_jm_id ? gk_jm_id : "none");
     }
 
     globus_gram_job_manager_request_log(

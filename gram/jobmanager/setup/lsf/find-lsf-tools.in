@@ -91,6 +91,11 @@ if test "$BHIST" = "no"; then
     AC_MSG_ERROR([Cannot locate bhist])
 fi
 
+AC_PATH_PROG(BACCT, bacct, no)
+if test "$BACCT" = "no"; then
+    AC_MSG_ERROR([Cannot locate bacct])
+fi
+
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 libexecdir=${prefix}/libexec

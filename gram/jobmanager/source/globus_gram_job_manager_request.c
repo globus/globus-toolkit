@@ -34,6 +34,7 @@
 #include "globus_gram_job_manager.h"
 
 #include <string.h>
+#include <syslog.h>
 
 /**
  * Allocate and initialize a request.
@@ -98,6 +99,8 @@ globus_gram_job_manager_request_init(
     globus_cond_init(&r->cond, GLOBUS_NULL);
     r->extra_envvars = GLOBUS_NULL;
     r->response_context = GSS_C_NO_CONTEXT;
+    r->streaming_disabled = GLOBUS_FALSE;
+    r->streaming_requested = GLOBUS_FALSE;
     r->disable_duct = GLOBUS_FALSE;
 
     r->seg_module = NULL;
@@ -346,3 +349,133 @@ globus_gram_job_manager_request_log(
     return rc;
 }
 /* globus_gram_job_manager_request_log() */
+
+/**
+ * Write data to the job manager accounting file.
+ * Also use syslog() to allow for easy central collection.
+ *
+ * This function writes data to the passed file descriptor, if any,
+ * using a printf format string.
+ * Data is prefixed with a timestamp when written.
+ *
+ * @param format
+ *        Printf-style format string to be written.
+ * @param ...
+ *        Parameters substituted into the format string, if needed.
+ *
+ * @return This function returns the value returned by write().
+ */
+int
+globus_gram_job_manager_request_acct(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			format,
+    ... )
+{
+    static const char *jm_syslog_id  = "gridinfo";
+    static int         jm_syslog_fac = LOG_DAEMON;
+    static int         jm_syslog_lvl = LOG_NOTICE;
+    static int         jm_syslog_init;
+    struct tm *curr_tm;
+    time_t curr_time;
+    va_list ap;
+    int rc = -1;
+    int fd;
+    const char * gk_acct_fd_var = "GATEKEEPER_ACCT_FD";
+    const char * gk_acct_fd;
+    int n;
+    int t;
+    char buf[1024 * 128];
+
+    time( &curr_time );
+    curr_tm = localtime( &curr_time );
+
+    n = t = sprintf( buf, "JMA %04d/%02d/%02d %02d:%02d:%02d ",
+		     curr_tm->tm_year + 1900,
+		     curr_tm->tm_mon + 1, curr_tm->tm_mday,
+		     curr_tm->tm_hour, curr_tm->tm_min,
+		     curr_tm->tm_sec );
+
+    va_start( ap, format );
+
+    /*
+     * FIXME: we should use vsnprintf() here...
+     */
+
+    n += vsprintf( buf + t, format, ap );
+
+    if (!jm_syslog_init) {
+	const char *s;
+
+	if ((s = globus_libc_getenv( "JOBMANAGER_SYSLOG_ID"  )) != 0) {
+	    jm_syslog_id = *s ? s : 0;
+	}
+
+	if ((s = globus_libc_getenv( "JOBMANAGER_SYSLOG_FAC" )) != 0) {
+	    if (sscanf( s, "%u", &jm_syslog_fac ) != 1) {
+		jm_syslog_id = 0;
+	    }
+	}
+
+	if ((s = globus_libc_getenv( "JOBMANAGER_SYSLOG_LVL" )) != 0) {
+	    if (sscanf( s, "%u", &jm_syslog_lvl ) != 1) {
+		jm_syslog_id = 0;
+	    }
+	}
+
+	if (jm_syslog_id) {
+	    openlog( jm_syslog_id, LOG_PID, jm_syslog_fac );
+	}
+
+	jm_syslog_init = 1;
+    }
+
+    if (jm_syslog_id)
+    {
+	char *p, *q = buf;
+
+	while ((p = q) < buf + n) {
+	    char c;
+
+	    while ((c = *q) != 0 && c != '\n') {
+		q++;
+	    }
+
+	    *q = 0;
+
+	    syslog( jm_syslog_lvl, "%s", p );
+
+	    *q++ = c;
+	}
+    }
+
+    if (!(gk_acct_fd = globus_libc_getenv( gk_acct_fd_var )))
+    {
+	return -1;
+    }
+
+    if (sscanf( gk_acct_fd, "%d", &fd ) != 1)
+    {
+	globus_gram_job_manager_request_log( request,
+	    "ERROR: %s has bad value: '%s'\n", gk_acct_fd_var, gk_acct_fd );
+	return -1;
+    }
+
+    if (fcntl( fd, F_SETFD, FD_CLOEXEC ) < 0)
+    {
+	globus_gram_job_manager_request_log( request,
+	    "ERROR: cannot set FD_CLOEXEC on %s '%s': %s\n",
+	    gk_acct_fd_var, gk_acct_fd, strerror( errno ) );
+    }
+
+    if ((rc = write( fd, buf, n )) != n)
+    {
+	globus_gram_job_manager_request_log( request,
+	    "ERROR: only wrote %d bytes to %s '%s': %s\n%s\n",
+	    rc, gk_acct_fd_var, gk_acct_fd, strerror( errno ), buf + t );
+
+	rc = -1;
+    }
+
+    return rc;
+}
+/* globus_gram_job_manager_request_acct() */

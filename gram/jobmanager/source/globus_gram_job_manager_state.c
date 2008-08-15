@@ -65,6 +65,11 @@ globus_l_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *	request);
 
 static
+int
+globus_l_gram_job_manager_add_cache_info(
+    globus_gram_jobmanager_request_t *	request);
+
+static
 void
 globus_l_gram_job_manager_state_log_rsl(
     globus_gram_jobmanager_request_t *	request,
@@ -244,18 +249,6 @@ globus_gram_job_manager_state_machine(
 	        GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
 	    break;
 	}
-	if(!request->rdn)
-	{
-	    globus_gram_job_manager_request_log( request,
-            "JM: -rdn parameter required\n");
-
-	    request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
-	    globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-	    request->jobmanager_state =
-	        GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
-	    break;
-	}
 	if(strcasecmp(request->jobmanager_type, "condor") == 0)
 	{
 	    if(request->condor_arch == NULL)
@@ -363,10 +356,6 @@ globus_gram_job_manager_state_machine(
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "GLOBUS_ID",
                                 (void *) request->globus_id);
-        if (request->rdn)
-            globus_symboltable_insert(&request->symbol_table,
-                                (void *) "GLOBUS_GRAM_RDN",
-                                (void *) request->rdn);
         if (request->condor_os)
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "GLOBUS_CONDOR_OS",
@@ -593,7 +582,6 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_TRUE);
 	}
 
-	globus_gram_job_manager_reporting_file_set(request);
         globus_gram_job_manager_history_file_set(request);
 
 	globus_libc_setenv("GLOBUS_GRAM_JOB_CONTACT",
@@ -698,8 +686,6 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 
-	    /* is this still necessary? */
-	    globus_gram_job_manager_reporting_file_set(request);
 	    /* globus_gram_job_manager_history_file_set(request); */
 	    globus_gram_job_manager_state_file_set(request);
 
@@ -991,8 +977,6 @@ globus_gram_job_manager_state_machine(
                 GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
             break;
         }
-
-	globus_gram_job_manager_reporting_file_start_cleaner(request);
 
 	if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
 		!request->scratchdir)
@@ -1591,8 +1575,11 @@ globus_gram_job_manager_state_machine(
             globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
             request->unsent_status_change = GLOBUS_TRUE;
 	}
+    else
+    {
+       globus_l_gram_job_manager_add_cache_info(request);
+    }
         request->queued_time = time(NULL);
-	globus_gram_job_manager_reporting_file_create(request);
         globus_gram_job_manager_history_file_create(request);
 	request->job_history_status = request->status;
 
@@ -1618,7 +1605,6 @@ globus_gram_job_manager_state_machine(
 	if(request->unsent_status_change && request->save_state)
 	{
 	    globus_gram_job_manager_state_file_write(request);
-	    globus_gram_job_manager_reporting_file_create(request);
 	}
 
 	/* The request->job_history_status is used to save the last job status
@@ -2146,10 +2132,10 @@ globus_gram_job_manager_state_machine(
 
 	    event_registered = GLOBUS_TRUE;
 	}
-	else if(request->two_phase_commit == 0)
-	{
-	    /* Nothing to do here if we are not doing the two-phase
-	     * commit protocol
+        else if(request->two_phase_commit == 0 || !request->client_contacts)
+        {
+            /* Nothing to do here if we are not doing the two-phase
+             * commit protocol or if we have no client callbacks
 	     */
             if(request->jobmanager_state ==
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
@@ -2169,8 +2155,6 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
             globus_l_gram_job_manager_cancel_queries(request);
 	    globus_cond_signal(&request->cond);
-	    globus_gram_job_manager_reporting_file_stop_cleaner(request);
-            globus_gram_job_manager_reporting_file_remove(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 	else
@@ -2352,8 +2336,6 @@ globus_gram_job_manager_state_machine(
 	{
             globus_l_gram_job_manager_cancel_queries(request);
 	    globus_cond_signal(&request->cond);
-	    globus_gram_job_manager_reporting_file_stop_cleaner(request);
-            globus_gram_job_manager_reporting_file_remove(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 
@@ -2395,8 +2377,6 @@ globus_gram_job_manager_state_machine(
 
         globus_l_gram_job_manager_cancel_queries(request);
 	globus_cond_signal(&request->cond);
-	globus_gram_job_manager_reporting_file_stop_cleaner(request);
-        globus_gram_job_manager_reporting_file_remove(request);
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -2414,8 +2394,6 @@ globus_gram_job_manager_state_machine(
 	}
         globus_l_gram_job_manager_cancel_queries(request);
 	globus_cond_signal(&request->cond);
-	globus_gram_job_manager_reporting_file_stop_cleaner(request);
-        globus_gram_job_manager_reporting_file_remove(request);
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -2431,8 +2409,6 @@ globus_gram_job_manager_state_machine(
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
 	globus_l_gram_job_manager_reply(request);
 	globus_cond_signal(&request->cond);
-	globus_gram_job_manager_reporting_file_stop_cleaner(request);
-        globus_gram_job_manager_reporting_file_remove(request);
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
@@ -2499,11 +2475,6 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 
-	/*
-	 * To do a two-phase commit, we need to send an error
-	 * message (WAITING_FOR_COMMIT) in the initial reply; otherwise,
-	 * we just return the current status code.
-         */
 	if(request->unsent_status_change)
 	{
             if(request->job_history_status != request->status)
@@ -2516,7 +2487,13 @@ globus_gram_job_manager_state_machine(
 	    request->unsent_status_change = GLOBUS_FALSE;
 	}
 
-	if(request->two_phase_commit != 0)
+	/*
+	 * If there are no client callbacks then skip the two phase end
+         * commit delay, since there is nobody listening to the state
+         * changes to send the commit.
+         */
+
+	if(request->two_phase_commit != 0 && request->client_contacts)
 	{
 	    GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
 
@@ -3086,3 +3063,75 @@ free_tmp_str_exit:
     return rc;
 }
 /* globus_l_gram_job_manager_validate_username() */
+
+static
+int
+globus_l_gram_job_manager_add_cache_info(
+    globus_gram_jobmanager_request_t *	request)
+{
+    char                                hostname[MAXHOSTNAMELEN];
+    char *                              out_file;
+    char *                              fname;
+    unsigned long                       timestamp;
+    FILE *				file;
+    char *				gk_id;
+    int					rc;
+ 
+    globus_libc_gethostname(hostname, sizeof(hostname));
+
+    out_file = globus_libc_malloc(
+                strlen("x-gass-cache://%s/%s/cache-info") +
+                strlen(hostname) +
+                strlen(request->uniq_id)); +
+
+    sprintf(out_file,
+                "x-gass-cache://%s/%s/cache-info",
+                hostname,
+                request->uniq_id);
+
+    rc = globus_gass_cache_add(
+                request->cache_handle,
+                out_file,
+                request->cache_tag,
+                GLOBUS_TRUE,
+                &timestamp,
+                &fname);   
+    if(rc != GLOBUS_GASS_CACHE_ADD_NEW &&
+       rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "Adding cache-info to gass cache failed, "
+                "globus_gram_cache_add() returned %d\n", rc);
+        return 1;
+    }
+
+    file = fopen(fname,"w");
+    if (file != NULL)
+    {
+        gk_id = globus_l_gram_job_manager_getenv("GATEKEEPER_JM_ID","-");
+        fprintf(file,"%s\n%s\n%s\n%s\n",request->uniq_id,request->job_id,
+                                        request->jobmanager_type,gk_id);
+        globus_libc_free(gk_id);
+        fclose(file);
+        time((time_t *)&timestamp);
+        globus_gass_cache_add_done(
+                request->cache_handle,
+                out_file,   
+                request->cache_tag,
+                timestamp);
+    }
+    else
+    {
+        globus_gass_cache_delete(
+                request->cache_handle,
+                out_file,
+                request->cache_tag,
+                timestamp,
+                GLOBUS_TRUE);
+    }
+
+    globus_libc_free(out_file);
+    return 0;
+}
+/*globus_l_gram_job_manager_add_cache_info()*/

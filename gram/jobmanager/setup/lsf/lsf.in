@@ -53,6 +53,14 @@ sub submit
 
     $self->log('Entering lsf submit');
 
+    # Reject jobs that want streaming, if so configured
+    if ( $description->streamingrequested() &&
+	 $description->streamingdisabled() ) {
+
+	$self->log("Streaming is not allowed.");
+	return Globus::GRAM::Error::OPENING_STDOUT;
+    }
+
     # check jobtype
     if(defined($description->jobtype()))
     {
@@ -367,7 +375,7 @@ sub poll
     # PSUSP         Suspended while pending         SUSPENDED
     # SSUSP         Suspended by system             SUSPENDED
     # DONE          Completed sucessfully           DONE
-    # EXIT          Completed unsuccessfully        FAILED
+    # EXIT          Completed unsuccessfully        DONE (But command return non-zero exit code)
     # UNKWN         Unknown state                   *ignore*
     # ZOMBI         Unknown state                   FAILED
 
@@ -438,7 +446,8 @@ sub poll
         }
         elsif(/EXIT/)
         {
-            return Globus::GRAM::Error::JOB_EXIT_CODE_NON_ZERO();
+            $state = Globus::GRAM::JobState::DONE;
+#            return Globus::GRAM::Error::JOB_EXIT_CODE_NON_ZERO();
         }
         elsif(/UNKWN/)
         {
@@ -463,7 +472,27 @@ sub poll
         }
     }
 
-    return {JOB_STATE => $state};
+    my @acct_info;
+    if ($state == Globus::GRAM::JobState::DONE ||
+        $state == Globus::GRAM::JobState::FAILED)
+    {
+       if (defined open(BACCT,$bhist." -l ".$job_id." 2>&1 |"))
+       {
+          while(<BACCT>)
+          {
+             chomp(my $line=$_);
+             $line =~ s|\\|\\\\|g;
+             push(@acct_info,$line);
+          }
+          close(BACCT);
+       }
+    }
+
+# NB Accounting information uses literal '\n' to indicate newlines
+
+    return {    JOB_ACCT_INFO => join('\n',@acct_info),
+                JOB_STATE     => $state
+           }; 
 }
 
 sub cancel

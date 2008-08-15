@@ -63,7 +63,7 @@ Syntax: globus-personal-gatekeeper [options]
     -debug
     Displays extra output
 
-    -start [-jmtype <type>] [-auditdir <dir>] [-port <port>] [-log=always|never|on_error] [-seg]
+    -start [-jmtype <type>] [-auditdir <dir>] [-port <port>] [-log=always|never|on_error] [-seg] [-acctfile file]
     Starts a new gatekeeper, mapping default service to a
     jobmanager. By default, the jobmanager is configured with
     jmtype=fork. The option -port can be used to restrict the
@@ -71,8 +71,9 @@ Syntax: globus-personal-gatekeeper [options]
     system choose a port. The -log switch causes the job manager
     to choose when log files will be created in the user's home directory.
     If -seg is used, then the Scheduler Event Generator will be used to 
-    poll job state. The --auditdir switch tells the jobmanager where
-    to store the audit-records
+    poll job state. The -auditdir switch tells the jobmanager where
+    to store the audit-records. The -acctfile switch tells the gatekeeper
+    where to log accounting records.
 
     -list
     Scans for active personal gatekeepers. If found, an
@@ -319,6 +320,10 @@ while [ -n "$1" ]; do
                 auditdir="$2"
                 shift
                 ;;
+        -acctfile)
+                acctfile="$2"
+                shift;
+                ;;
         *)
 		startargs="$startargs $1"
 		;;
@@ -401,6 +406,11 @@ if [ -n "$port" ]; then
     echo "-port $port" >> ${scratch}/gatekeeper.conf
 fi
 
+if [ ! -z "${acctfile}" ]; then
+    echo "-acctfile $acctfile" >> ${scratch}/gatekeeper.conf
+fi
+
+
 host_info=`${sbindir}/config.guess`
 host_cputype=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $1}'`
 host_manufacturer=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $2}'`
@@ -410,7 +420,6 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION}
 -type ${jmtype}
--rdn jobmanager 
 -globus-gatekeeper-subject "${subject}"
 -globus-host-cputype ${host_cputype}
 -globus-host-manufacturer ${host_manufacturer}
