@@ -2083,6 +2083,9 @@ globus_i_gsi_gssapi_init_ssl_context(
     X509 *                              client_cert = NULL;
     EVP_PKEY *                          client_key = NULL;
     STACK_OF(X509) *                    client_cert_chain = NULL;
+#if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
+    STACK_OF(SSL_COMP) *                comp_methods;
+#endif
     globus_result_t                     local_result;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_cred_id_desc *                  cred_handle;
@@ -2113,6 +2116,19 @@ globus_i_gsi_gssapi_init_ssl_context(
      * list of ciphers.
      */
     SSL_library_init();
+
+#if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
+    /*
+     * post-0.9.8 versions of OpenSSL include data compression. unfortunately,
+     * there isn't a way to export a session's compression info, so
+     * re-importing a context fails
+     */
+    comp_methods = SSL_COMP_get_compression_methods();
+    if (comp_methods != 0)
+    {
+        sk_SSL_COMP_zero(comp_methods);
+    }
+#endif
     cred_handle->ssl_context = SSL_CTX_new(SSLv23_method());
     if(cred_handle->ssl_context == NULL)
     {
