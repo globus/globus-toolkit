@@ -1,0 +1,13 @@
+
+
+#ifndef DATE
+#   define DATE "@DATE@"
+#endif
+
+#ifndef CFLAGS
+#   define CFLAGS "@CC@ @CFLAGS@"
+#endif
+
+#ifndef PLATFORM
+#   define PLATFORM "@host@"
+#endif

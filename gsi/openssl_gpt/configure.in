@@ -1,0 +1,129 @@
+dnl
+
+
+AC_REVISION($Revision$)
+
+AC_INIT(Makefile.am)
+
+OPENSSL_INIT
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+AM_CONFIG_HEADER(crypto/opensslconf.h:crypto/opensslconf.h.in)
+
+dnl static linking hack
+
+if test $GPT_LINKTYPE = "static"; then
+    AC_ENABLE_SHARED([no])
+else
+    AC_ENABLE_SHARED([yes])
+fi
+
+AM_PROG_LIBTOOL
+
+dnl config header goes here
+
+# Decide if we should use assembly code
+
+LAC_ASM
+
+# Figure out the defines
+
+LAC_CRYPTO
+
+# Figure out the compiler flags
+
+LAC_COMPILER
+
+# On solaris openssl needs the socket and nsl library
+
+CHECK_NEED_LSOCKET
+CHECK_NEED_LNSL
+
+# Need to determine if we need -ldl or -ldld
+# maybe should be replaced with the libtool dl library
+CHECK_NEED_LDL
+
+# Disable ciphers/hashes/devices/engines we do not use
+CHECK_MINIMAL_SSL
+
+GPT_SET_LIBS([[$EXTERNAL_LIBS]])	
+
+
+GLOBUS_FINALIZE
+
+
+AC_OUTPUT(
+    Makefile
+    include/Makefile
+    include/openssl/Makefile
+    util/Makefile
+    tools/Makefile
+    tools/c_rehash
+    apps/CA.pl
+    apps/der_chop
+    apps/Makefile
+    test/Makefile
+    certs/Makefile
+    certs/expired/Makefile
+    aclocal/Makefile
+    pkgdata/Makefile
+    pkgdata/pkg_data_src.gpt
+    ssl/Makefile
+    crypto/Makefile
+    crypto/buildinf.h
+    crypto/md2/Makefile
+    crypto/md4/Makefile
+    crypto/md5/Makefile
+    crypto/md5/asm/Makefile
+    crypto/sha/Makefile
+    crypto/sha/asm/Makefile
+    crypto/mdc2/Makefile
+    crypto/hmac/Makefile
+    crypto/ripemd/Makefile
+    crypto/ripemd/asm/Makefile
+    crypto/des/Makefile
+    crypto/des/asm/Makefile
+    crypto/rc2/Makefile
+    crypto/rc4/Makefile
+    crypto/rc4/asm/Makefile
+    crypto/rc5/Makefile
+    crypto/rc5/asm/Makefile
+    crypto/idea/Makefile
+    crypto/bf/Makefile
+    crypto/bf/asm/Makefile
+    crypto/cast/Makefile
+    crypto/cast/asm/Makefile
+    crypto/bn/Makefile
+    crypto/bn/asm/Makefile
+    crypto/rsa/Makefile
+    crypto/dsa/Makefile
+    crypto/dh/Makefile
+    crypto/dso/Makefile
+    crypto/buffer/Makefile
+    crypto/bio/Makefile
+    crypto/stack/Makefile
+    crypto/lhash/Makefile
+    crypto/rand/Makefile
+    crypto/err/Makefile
+    crypto/objects/Makefile
+    crypto/evp/Makefile
+    crypto/asn1/Makefile
+    crypto/pem/Makefile
+    crypto/x509/Makefile
+    crypto/x509v3/Makefile
+    crypto/conf/Makefile
+    crypto/txt_db/Makefile
+    crypto/pkcs7/Makefile
+    crypto/pkcs12/Makefile
+    crypto/comp/Makefile
+    crypto/perlasm/Makefile
+    crypto/aes/Makefile
+    crypto/ec/Makefile
+    crypto/engine/Makefile
+    crypto/engine/vendor_defns/Makefile
+    crypto/krb5/Makefile
+    crypto/ocsp/Makefile
+    crypto/ui/Makefile
+)

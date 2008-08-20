@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title> UDT Reference</title>
+<link rel="stylesheet" href="udtdoc.css" type="text/css" />
+</head>
+
+<body>
+<h3><font color="#000080">Frequent Asked Questions </font></h3>
+<p>1. <a href="#1">What is UDT?</a><br>
+2. <a href="#2">Who developed UDT?</a><br>
+3. <a href="#3">Why do I need UDT?</a><br>
+4. <a href="#4">My application uses UDT, can I run it over a traditional low bandwidth network, or even on the public Internet?</a><br>
+5. <a href="#5">Why can't I reach the expected high throughput with Gigabit NIC?</a><br>
+6. <a href="#6">Can you give me some hints in tuning the performance?</a><br>
+7. <a href="#7">I use UDT for file transfer, but it seems significantly slower than memory-memory transfer. Why?</a><br>
+8. <a href="#8">When I run the example applications, it prompts for missing library error. What happens?</a><br>
+9. <a href="#9">Does UDT care about the byte order conversion between different platforms?</a><br>
+10. <a href="#10">Why can't the UDT connection be set up? Why listen or connect call fails?</a><br>
+11. <a href="#11">Is the UDT connection secure?</a><br>
+12. <a href="#12">Why does my application often have packet loss even though the throughput is much lower than the available bandwidth?</a><br>
+13. <a href="#13">Is UDT TCP friendly?</a><br>
+14. <a href="#14">What copyright and license issues shall I be aware of when using UDT?</a><br>
+15. <a href="#15">Is UDT only suitable for bulk data?</a><br>
+16. <a href="#16">What's the relationship between UDT and SABUL?</a><br>
+17. <a href="#17">Where can I find help regarding to the use of UDT library?</a><br>
+18. <a href="#18">What background knowledge is necessary in order to use UDT?</a></p>
+
+<hr />
+
+<p><strong><a name="1" id="1"></a>1. What is UDT?</strong></p>
+<p>UDT stands for UDP-based Data Transfer. It can refer to both the UDT protocol and its implementation (the UDT library). Basically, UDT is built on top of UDP by adding reliability control and congestion control.</p>
+<p><strong><a name="2" id="2"></a>2. Who developed UDT?</strong></p>
+<p>UDT is a research product of the National Center for Data Mining (NCDM) at the University of Illinois at Chicago. The project was supported in part by US National Science Foundation, US Department of Energy, and US Army. </p>
+<p><strong><a name="3" id="3"></a>3. Why and when do I need UDT?</strong></p>
+<p>The original (and major) purpose of UDT is to provide a high performance transfer interface to distributed data intensive applications over a wide area network, where TCP seldom works well for efficiency and fairness reasons. It can also be used in other situation where TCP is not suitable (e.g., multimedia streaming, firewall punching, partial reliability, etc.)</p>
+<p>There is no explicit standard to determine when to use UDT or when not to. Generally speaking, if you are not satisfied with TCP's performance or functionality, UDT is probably what you need, especially in high speed networks where a small number of bulk sources share the abundant bandwidth.</p>
+<p><strong><a name="4" id="4"></a>4. My application uses UDT, can I run it over a traditional low bandwidth network, or even on the public Internet?</strong></p>
+<p>Yes, you can do it. But please be aware that your application may use a large amount of bandwidth and may be regarded as attack or improper use of network by ISPs and firewalls. In addition, UDT's impact on the Internet is not comprehensively tested yet.</p>
+<p><strong><a name="5" id="5"></a>5. Why can't I reach the announced high throughput with my Gigabit NIC?</strong></p>
+<p>There are many factors that can affect the throughput, especially for Gigabit NICs.</p>
+<p>First of all, you need to test it using some other benchmark tools like IPerf. They will give you the highest performance for the current configuration. If UDT has similar performance, then it is all right, and you need to tune your network settings.</p>
+<p>If UDT's performance is much lower than the performance obtained from the benchmark, try to modify the UDT options.</p>
+<p>Finally, your applications affect the transfer speed. Any data intensive applications can cost substantial CPU time in computing and memory replication, which will affect UDT's performance. Try to test the throughput with the example applications in the UDT SDK.</p>
+<p><strong> <a name="6" id="6"></a>6. Can you give me some hints in tuning the performance?</strong></p>
+<p>Please read the Configuration section of the UDT Tutorial for the answer. The default UDT parameter are set for high speed networks. If your network bandwidth is siginicantly slower (&lt;&lt; 1Gb/s), you may set smaller buffer sizes. </p>
+<p><strong><a name="7" id="7"></a>7. I use UDT for file transfer, but it seems significantly slower than memory-memory transfer. Why?</strong></p>
+<p>Performance of file transfer is often limited by the bottleneck speed of disk IO. Besides, disk IO is often bursting and cause difficulties for the congestion control of transport protocols. UDT has been thoroughly tested for the disk-disk transfer scenario. Try to use some benchmark software to test your disk performance.</p>
+<p><strong> <a name="8" id="8"></a>8. When I run the example applications, it prompts for missing library error. What happens?</strong></p>
+<p>You forget to set the system environment of library path. On Linux/BSD/UNIX, use &quot;export&quot; or &quot;setenv&quot; to configure the LD_LIBRARY_PATH environment variable so that it contains the directory having the libudt.so file. On Windows, copy udt.dll file to the same directory containing you UDT applications (this usually also works for Linux/BSD/UNIX by copying libudt.so to the current working directory).</p>
+<p><strong><a name="9" id="9"></a>9. Does UDT care about the byte order conversion between different platforms?</strong></p>
+<p>No, the application should care about the conversion itself. However, UDT does work between different platforms even with different byte orders.</p>
+<p><strong><a name="10" id="10"></a>10. Why the UDT connection cannot be set up? Why does the listen or connect call fail?</strong></p>
+<p>The most likely reason is that one of the machines is behind a firewall. You can change the firewall settings if you have the privilege or do something in the UDT program to bypass the firewall. Note that UDT has same semantics as TCP and generates UDP traffic in both directions. UDT3 also provides rendezvous connection setup in order to punch firewalls.</p>
+<p>Another reason is that at least one of the server or client sides has multiple addresses, and UDT is bound to an address different from what you use in the application. To solve the problem, explicitly set the IP address in bind call.</p>
+<p>There can be other reasons, such as domain name lookup failure. Try to use an explicit IP address if possible.</p>
+<p><strong><a name="11" id="11"></a>11. Is UDT connection secure?</strong></p>
+<p>No. If you need a secure connection, you should add other mechanisms on the top of UDT in your application.</p>
+<p><strong><a name="12" id="12"></a>12. Why does my application often have packet loss even the throughput is much lower than the available bandwidth?</strong></p>
+<p>Packet loss can be caused by a busy receiver. For example, if there is large block memory copy, arriving packets will be dropped because the CPU does not have enough time to process them. Try to avoid large block copy during data receiving and try to use blocking receiving to alleviate the problem.</p>
+<p><strong><a name="13" id="13"></a>13. Is UDT TCP friendly?</strong></p>
+<p>TCP friendliness is an obscure concept. Please refer to UDT technical reports for detailed information on the competition between UDT flows and TCP flows.
+<p><strong><a name="14" id="14"></a>14. What copyright and license issues shall I be aware of when using UDT?</strong></p>
+<p>UDT version 4 is released under BSD license. You may find a copy of the license within the UDT release. Previous UDT versions were released under Lesser GPL (LGPL). </p>
+<p><strong><a name="15" id="15"></a>15. Is UDT only suitable for bulk data?</strong></p>
+<p>No, UDT can transfer a data buffer from one single byte to multiple tera-bytes, as long as your system can provide enough resources. However, UDT is indeed optimized for bulk data, and it may not have any better performance for message signaling applications.</p>
+<p><strong><a name="16" id="16"></a>16. What's the relationship between UDT and SABUL?</strong></p>
+<p>UDT is the successor of SABUL. It removes the TCP connection from SABUL and enhances the congestion/flow control.</p>
+<p><strong><a name="17" id="17"></a>17. Where can I find help regarding to the use of UDT library?</strong></p>
+<p>If you cannot find answers in this documentation, please go to the UDT home at sourceforge.net and post your questions. In order to help more users easily find answers about UDT usage and help increase the activity of this project, please post all general questions to the <a href="http://sourceforge.net/forum/forum.php?forum_id=393037" target="_blank">souceforge forum</a> or send them to the <a href="http://sourceforge.net/mail/?group_id=115059" target="_blank">sourceforge mailing list</a>. The forum and the mailing list are monitored by the UDT developers and your questions will be replied as soon as possible.</p>
+<p><strong><a name="18" id="18"></a>18. What background knowledge is necessary in order to use UDT?</strong></p>
+<p>Knowledge on socket programming and C++ is necessary. Knowledge on TCP is a plus.</p>
+<p>&nbsp;</p>
+</body>
+</html>
