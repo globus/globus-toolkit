@@ -1393,9 +1393,9 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            (_CLS("Error checking certificate with subject %s"
-             "against signing policy file %s"),
-             subject_name == NULL ? "NULL" : subject_name,
+            (_CLS("No policy definitions for CA \"%s\" "
+             "in signing policy file %s"),
+             issuer_name == NULL ? "NULL" : issuer_name,
              ca_policy_file_path == NULL ? "NULL" : ca_policy_file_path));
         x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
         
@@ -1453,20 +1453,16 @@ globus_i_gsi_callback_check_gaa_auth(
     
 #endif /* #ifndef NO_OLDGAA_API */
     
-    OPENSSL_free(subject_name);
-    subject_name = NULL;
-    OPENSSL_free(issuer_name);
-    issuer_name = NULL;
-    
     if (policy_result != 0)
     {
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            (_CLS("CA policy violation: %s"), 
-             error_string ? error_string : "<no reason given>"));
+            (_CLS("The subject of the certificate \"%s\" "
+             "does not match the signing policies defined in %s"),
+             subject_name == NULL ? "NULL" : subject_name,
+             ca_policy_file_path == NULL ? "NULL" : ca_policy_file_path));
         x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
-        goto exit;
     }
 
  exit:
