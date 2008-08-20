@@ -1558,7 +1558,7 @@ sub package_source_bootstrap()
     } elsif ( $custom eq "pnb" ){
        patch_package($package);
     } elsif ( $custom eq "tar" ) {
-       log_system("ln -s pkgdata/pkg_data_src.gpt pkgdata/pkg_data_src.gpt.in", "$pkglog/$package");
+       log_system("ln -s pkg_data_src.gpt pkgdata/pkg_data_src.gpt.in", "$pkglog/$package");
        log_system("ln -s pkgdata/filelist filelist", "$pkglog/$package");
     } elsif ( $custom eq "make_gpt_dist" ) {
        log_system("make -f Makefile.in distprep", "$pkglog/$package");
