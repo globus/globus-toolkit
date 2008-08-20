@@ -1,6 +1,7 @@
 #include "globus_common.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_credential.h"
+#include "globus_gss_assist.h"
 #include "openssl/bn.h"
 
 char *
@@ -39,9 +40,11 @@ int main(int argc, char * argv[])
     int                                 rc;
     globus_module_descriptor_t *        failed_module;
     globus_result_t                     result;
+    char                                *globus_location = NULL;
     char                                *cert_dir = NULL;
     char                                *cert = NULL;
     char                                *key = NULL;
+    char                                *gridmap = NULL;
     char                                *p;
     char                                *subject_name;
     char                                *home;
@@ -52,6 +55,7 @@ int main(int argc, char * argv[])
     globus_fifo_t                       cert_list = NULL;
     globus_gsi_callback_data_t          callback_data;
     globus_bool_t                       personal = GLOBUS_FALSE;
+    char *                              local_user = NULL;
     int                                 ch;
     globus_module_descriptor_t *        modules[] =
     {
@@ -100,6 +104,13 @@ int main(int argc, char * argv[])
 
     printf("Checking Environment Variables\n"
            "==============================\n");
+
+    printf("Checking if HOME is set... ");
+    home = getenv("HOME");
+    printf("%s\n", home ? home : "no");
+    printf("Checking if GLOBUS_LOCATION is set... ");
+    globus_location = getenv("GLOBUS_LOCATION");
+    printf("%s\n", globus_location ? globus_location : "no");
     printf("Checking if X509_CERT_DIR is set... ");
     cert_dir = getenv("X509_CERT_DIR");
     printf("%s\n", cert_dir ? cert_dir : "no");
@@ -112,6 +123,10 @@ int main(int argc, char * argv[])
     printf("Checking if X509_USER_PROXY is set... ");
     key = getenv("X509_USER_PROXY");
     printf("%s\n", key ? key : "no");
+    printf("Checking if GRIDMAP is set... ");
+    gridmap = getenv("GRIDMAP");
+    printf("%s\n", gridmap ? gridmap : "no");
+
 
     printf("\nChecking Security Directories\n"
            "=======================\n");
@@ -158,6 +173,33 @@ int main(int argc, char * argv[])
                indent_string(
                     globus_error_print_friendly(globus_error_peek(result))));
     }
+
+    printf("Checking for default gridmap location... ");
+    result = GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap);
+    if (result != GLOBUS_SUCCESS)
+    {
+        printf("failed\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
+    }
+    else
+    {
+        printf("%s\n", gridmap);
+    }
+
+    printf("Checking if default gridmap exists... ");
+    result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(gridmap);
+    if (result != GLOBUS_SUCCESS)
+    {
+        printf("failed\n%s\n",
+                indent_string(
+                    globus_error_print_friendly(globus_error_peek(result))));
+    }
+    else
+    {
+        printf("yes\n");
+    }
+
 
     result = globus_gsi_callback_data_init(&callback_data);
     if (result != GLOBUS_SUCCESS)
@@ -370,6 +412,22 @@ int main(int argc, char * argv[])
         {
             printf("ok\n");
         }
+
+        printf("Checking if subject is in gridmap... ");
+        rc = globus_gss_assist_gridmap(subject_name, &local_user);
+        if (rc != 0)
+        {
+            printf("error parsing gridmap %s\n", gridmap);
+        }
+        else if (local_user != NULL)
+        {
+            printf("%s\n", local_user);
+        }
+        else
+        {
+            printf("no\n");
+        }
+
     }
     rc = globus_fifo_init(&cert_list);
     if (rc != GLOBUS_SUCCESS)
