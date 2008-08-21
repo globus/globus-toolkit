@@ -339,7 +339,7 @@ globus_rendezvous_test                      ws-gram/client/c/rendezvous/test gpt
 
 globus_database_common                      database/java/common/source	tar
 globus_database_psqlodbc                    database/c/psqlodbc	tar
-globus_database_iodbc                       database/c/iodbc pnb libiodbc-3.51.2.tar.gz
+globus_database_iodbc                       database/c/iodbc pnb libiodbc-3.52.6.tar.gz
 globus_database_sqlite                      database/c/sqlite pnb sqlite-3.3.17.tar.gz
 globus_database_sqliteodbc                  database/c/sqliteodbc pnb sqliteodbc-0.74.tar.gz
 
