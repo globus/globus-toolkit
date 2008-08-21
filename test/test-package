@@ -29,6 +29,13 @@ globus_test/testcred-setup.sh
 GLOBUS_OPTIONS="-Dorg.globus.wsrf.container.persistence.dir=$GLOBUS_LOCATION/test -Djava.net.preferIPv4Stack=true"
 export GLOBUS_OPTIONS
 
+# GRAM depends on us to set this to avoid using the normal startup
+# directory of a user's home as defined in /etc/passwd.  That directory
+# does not exist in the Metronome build pool.  $HOME has already been
+# set to $GL/ by the build scrips.
+GRAM4_TESTING_USER_HOME=$HOME
+export GRAM4_TESTING_USER_HOME
+
 if [ ${TEST} = "myproxy_test" ]; then
    $GLOBUS_LOCATION/sbin/myproxy-test -startserver
    exit $?
