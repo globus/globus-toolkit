@@ -896,3 +896,11 @@ BUNDLE gridshib_bundle
 	gridshib_core
 	gridshib_echo
 	gridshib_tests
+
+BUNDLE globus-java-xacml-authz
+        globus_java_authz_xacml_schema
+	globus_java_authz_xacml_source
+	globus_java_authz_xacml_test
+	globus_java_authz_xacml_samples
+	
+
