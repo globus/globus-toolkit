@@ -41,10 +41,18 @@ if [ ${TEST} = "myproxy_test" ]; then
    exit $?
 fi
 
+# These things are supposed to go under test/, but the ant
+# build system for java packages makes it easier to put
+# them under share/ instead, so I check both places, but
+# prefer the test/ subdir.
 cd $GLOBUS_LOCATION/test/${TEST}
 if [ $? -ne 0 ]; then
-   echo Channot change to $GLOBUS_LOCATION/test/${TEST}
-   exit 1
+   if [ -f $GLOBUS_LOCATION/share/${TEST}/TESTS.pl ]; then
+      cd $GLOBUS_LOCATION/share/${TEST}
+   else
+      echo Channot change to $GLOBUS_LOCATION/test/${TEST}
+      exit 1
+   fi
 fi
 
 echo Copying in test security descriptor
