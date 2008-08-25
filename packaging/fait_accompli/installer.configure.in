@@ -74,6 +74,18 @@ if test "x$AIX" = "xyes"; then
 fi
 AC_SUBST(aixargs,$aixargs)
 
+xacml=""
+AC_ARG_ENABLE(xacml, AC_HELP_STRING([--enable-xacml],\
+   [Enable the build of experimental xacml tools.  Default is disabled.]),\
+   [if test $enableval = "yes"; then xacml="globus-java-xacml-authz"; fi], [])
+AC_SUBST(xacml, $xacml)
+
+gramxacml=""
+AC_ARG_ENABLE(gramxacml, AC_HELP_STRING([--enable-gramxacml],\
+   [Enable the build of experimental gram xacml tools.  Default is disabled.]),\
+   [if test $enableval = "yes"; then xacml="globus_wsrf_gram_authz_java"; fi], [])
+AC_SUBST(gramxacml, $gramxacml)
+
 gridshib=""
 AC_ARG_ENABLE(gridshib, AC_HELP_STRING([--enable-gridshib],\
    [Enable the build of gridshib.  Default is disabled.]),\
