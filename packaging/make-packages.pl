@@ -499,6 +499,9 @@ sub create_makefile_installer
               if ( $package_runtime_hash{$pack}{$deppack} )
               {
                    print INS " $deppack" unless ( $pack eq $deppack );
+                   # globus_replication_client_test has a runtime dep on
+                   # globus_rls_server, which must be built threaded only
+                   if ( $deppack eq "globus_rls_server" ) { print "-thr"; }
               }    
          }    
          print INS "\n";
