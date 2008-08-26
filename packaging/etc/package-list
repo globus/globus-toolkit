@@ -175,12 +175,13 @@ globus_wsrf_rendezvous_service_java         ws-rendezvous/service/java/source	ta
 globus_wsrf_gram_service_java               ws-gram/service/java/source 	tar
 globus_wsrf_gram_service_java_usage         ws-gram/service/java/usage	tar
 
-globus_wsrf_gram_service_java_setup_common  ws-gram/service/java/setup/common gpt
-globus_wsrf_gram_service_java_setup_fork    ws-gram/service/java/setup/fork gpt
-globus_wsrf_gram_service_java_setup_multi   ws-gram/service/java/setup/multi gpt
-globus_wsrf_gram_service_java_setup_pbs     ws-gram/service/java/setup/pbs gpt
-globus_wsrf_gram_service_java_setup_lsf     ws-gram/service/java/setup/lsf gpt
-globus_wsrf_gram_service_java_setup_condor  ws-gram/service/java/setup/condor gpt
+globus_wsrf_gram_service_java_setup_common  ws-gram/service/java/setup/common tar
+globus_wsrf_gram_service_java_setup_database ws-gram/service/java/setup/database tar
+globus_wsrf_gram_service_java_setup_fork    ws-gram/service/java/setup/fork tar
+globus_wsrf_gram_service_java_setup_multi   ws-gram/service/java/setup/multi tar
+globus_wsrf_gram_service_java_setup_pbs     ws-gram/service/java/setup/pbs tar
+globus_wsrf_gram_service_java_setup_lsf     ws-gram/service/java/setup/lsf tar
+globus_wsrf_gram_service_java_setup_condor  ws-gram/service/java/setup/condor tar
 globus_wsrf_gram_utils_java                 ws-gram/utils/java/source	tar
 
 globus_wsrf_gram_common_java                ws-gram/common/java/source	tar

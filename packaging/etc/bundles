@@ -742,6 +742,7 @@ BUNDLE gt4-gram
         globus_wsrf_gram_service_java_usage
         globus_wsrf_gram_service_java
         globus_wsrf_gram_service_java_setup_common
+        globus_wsrf_gram_service_java_setup_database
         globus_wsrf_gram_service_java_setup_fork
         globus_wsrf_gram_service_java_setup_multi
         globus_wsrf_mds_usefulrp
@@ -770,6 +771,7 @@ BUNDLE gt4-gram-no-c
         globus_wsrf_gram_service_java_usage
         globus_wsrf_gram_service_java
         globus_wsrf_gram_service_java_setup_common
+        globus_wsrf_gram_service_java_setup_database
         globus_wsrf_gram_service_java_setup_fork
         globus_wsrf_gram_service_java_setup_multi
         globus_wsrf_gram_utils_java
