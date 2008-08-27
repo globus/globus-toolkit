@@ -459,6 +459,7 @@ sub create_makefile_installer
               {
                    print INS " $deppack" unless ( $pack eq $deppack );
                    print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
+                   if ( $deppack eq "globus_rls_server" ) { print INS "-thr"; }
               }
          }
          print INS "\n";
