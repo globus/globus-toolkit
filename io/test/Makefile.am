@@ -14,12 +14,6 @@ Scripts = \
         globus-io-tcp-test.pl \
         run-io-tests.pl
 
-Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
-	testcred.pem
-
-
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
 #
@@ -36,8 +30,6 @@ INCLUDES = $(GPT_INCLUDES)
 # libexec is $prefix/libexec
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
-
-test_DATA = $(Data) 
 
 test_PROGRAMS = \
 	globus_io_tcp_test \
@@ -68,7 +60,7 @@ globus_io_authorization_test_SOURCES = globus_io_authorization_test.c
 globus_io_authorization_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_io_authorization_test_LDADD = $(GPT_PGM_LINKS)
 
-EXTRA_DIST = $(Scripts) $(Data)
+EXTRA_DIST = $(Scripts) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

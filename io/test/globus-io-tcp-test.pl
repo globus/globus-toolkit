@@ -32,11 +32,6 @@ my @todo;
 my $server_prog = './globus_io_tcp_test_server';
 my $client_prog = './globus_io_tcp_test_client';
 
-$ENV{X509_CERT_DIR} = getcwd();
-$ENV{X509_USER_CERT} = "testcred.pem";
-$ENV{X509_USER_KEY} = "testcred.pem";
-$ENV{X509_USER_PROXY} = "testcred.pem";
-
 my $identity = `grid-proxy-info -identity`;
 
 chomp($identity);
@@ -52,27 +47,43 @@ sub basic_func
    my $server_pid;
    my $client_pid;
    my $port;
-
+   my $saved_cert_dir;
+   my $saved_user_cert;
+   my $saved_user_key;
+   my $saved_user_proxy;
    unlink('core');
+
+   if(defined($ENV{X509_CERT_DIR}))
+   {
+       $saved_cert_dir = $ENV{X509_CERT_DIR};
+   }
+   if(defined($ENV{X509_USER_CERT}))
+   {
+       $saved_user_cert = $ENV{X509_USER_CERT};
+   }
+   if(defined($ENV{X509_USER_KEY}))
+   {
+       $saved_user_key = $ENV{X509_USER_KEY};
+   }
+   if(defined($ENV{X509_USER_PROXY}))
+   {
+       $saved_user_proxy = $ENV{X509_USER_PROXY};
+   }
 
    if($sec_env == 0)
    {
-       $ENV{X509_CERT_DIR} = getcwd();
-       $ENV{X509_USER_CERT} = "testcred.pem";
-       $ENV{X509_USER_KEY} = "testcred.pem";
+#      use existing (good) gsi env
    }
    elsif($sec_env == 1)
    {
+#      break gsi env
        $ENV{X509_CERT_DIR} = "";
-       $ENV{X509_USER_KEY} = "testcred.pem";       
-       $ENV{X509_USER_CERT} = "testcred.pem";       
    }
    elsif($sec_env == 2)
    {
-       $ENV{X509_CERT_DIR} = getcwd();
+#      break gsi env
        $ENV{X509_USER_CERT} = "";       
        $ENV{X509_USER_KEY} = "";       
-       $ENV{X509_USER_PROXY} = "";       
    }
    
    my $command = "$server_prog $server_args |";
@@ -82,7 +93,7 @@ sub basic_func
    if($server_pid == -1)
    {
        $errors .= "Unable to start server";
-       return;
+       goto end;
    }
 
    $port = <SERVER>;
@@ -96,7 +107,7 @@ sub basic_func
    if($client_pid == -1)
    {
        $errors .= "Unable to start client";
-       return;
+       goto end;
    }
    
    waitpid($client_pid,0);
@@ -137,6 +148,41 @@ sub basic_func
    else
    {
        ok($errors, 'success');
+   }
+
+end:
+
+   if(defined($saved_cert_dir)) 
+   {
+       $ENV{X509_CERT_DIR} = $saved_cert_dir;
+   }
+   elsif(defined($ENV{X509_CERT_DIR}))
+   {
+       delete $ENV{X509_CERT_DIR};
+   }
+   if(defined($saved_user_cert)) 
+   {
+       $ENV{X509_USER_CERT} = $saved_user_cert;
+   }
+   elsif(defined($ENV{X509_USER_CERT}))
+   {
+       delete $ENV{X509_USER_CERT};
+   }
+   if(defined($saved_user_key)) 
+   {
+       $ENV{X509_USER_KEY} = $saved_user_key;
+   }
+   elsif(defined($ENV{X509_USER_KEY}))
+   {
+       delete $ENV{X509_USER_KEY};
+   }
+   if(defined($saved_user_proxy)) 
+   {
+       $ENV{X509_USER_PROXY} = $saved_user_proxy;
+   }
+   elsif(defined($ENV{X509_USER_PROXY}))
+   {
+       delete $ENV{X509_USER_PROXY};
    }
 }
 

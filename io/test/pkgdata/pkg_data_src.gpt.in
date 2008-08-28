@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_io_test" Format_Version="0.02">
 
-    <Aging_Version Major="2" Minor="4" Age="0"/>
+    <Aging_Version Major="2" Minor="5" Age="0"/>
     <Description>IO Test</Description>
     <Functional_Group >Communication</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

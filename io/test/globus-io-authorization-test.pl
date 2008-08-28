@@ -66,11 +66,6 @@ sub basic_func
    }
 }
 
-$ENV{X509_CERT_DIR} = getcwd();
-$ENV{X509_USER_PROXY} = "testcred.pem";
-$ENV{X509_USER_CERT} = "testcred.pem";
-$ENV{X509_USER_KEY} = "testcred.pem";
-
 my $identity = `grid-proxy-info -identity`;
 chomp($identity);
 
