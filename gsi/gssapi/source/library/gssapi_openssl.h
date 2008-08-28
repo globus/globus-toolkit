@@ -127,7 +127,15 @@
 typedef struct gss_name_desc_struct {
     /* gss_buffer_desc  name_buffer ; */
     gss_OID                             name_oid;
+
     X509_NAME *                         x509n;
+    char *                              x509n_oneline;
+    GENERAL_NAMES *                     subjectAltNames;
+    char *                              user_name;
+    char *                              service_name;
+    char *                              host_name;
+    char *                              ip_address;
+    char *                              ip_name;
 } gss_name_desc;
 
 typedef struct gss_cred_id_desc_struct {
@@ -163,6 +171,15 @@ const gss_OID_desc * const              gss_mech_globus_gssapi_openssl;
 
 extern
 const gss_OID_desc * const              gss_proxycertinfo_extension;
+
+extern
+gss_OID_desc *                          gss_nt_host_ip;
+
+extern
+gss_OID_desc *                          gss_nt_x509;
+
+#define GLOBUS_GSS_C_NT_HOST_IP         gss_nt_host_ip
+#define GLOBUS_GSS_C_NT_X509            gss_nt_x509
 
 extern
 globus_thread_once_t                    once_control;

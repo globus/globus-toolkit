@@ -829,6 +829,57 @@ globus_gsi_cert_utils_get_base_name(
 }
 /* @} */
 
+/**
+ * Get the end-entity certificate associated with a certificate chain
+ * @ingroup globus_gsi_cert_utils
+ *
+ * @param cert_chain
+ *    Certificate chain to inspect.
+ * @param eec
+ *    Pointer to be set to the EEC value from within the cert chain. Must
+ *    freed by the caller.
+ */
+globus_result_t
+globus_gsi_cert_utils_get_eec(
+    STACK_OF(X509) *                    cert_chain,
+    X509 **                             eec)
+{
+    int                                 i;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    static char *                       _function_name_ =
+        "globus_gsi_cert_utils_get_base_name";
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+
+    *eec = NULL;
+    for(i = 0;i < sk_X509_num(cert_chain);i++)
+    {
+        result = globus_gsi_cert_utils_get_cert_type(
+            sk_X509_value(cert_chain, i),
+            &cert_type);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CERT_UTILS_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CERT_UTILS_ERROR_DETERMINING_CERT_TYPE);
+            goto exit;
+        }
+
+        if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC)
+        {
+            *eec = sk_X509_value(cert_chain, i);
+            break;
+        }
+    }
+    
+
+ exit:
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
+}
+/* globus_gsi_cert_utils_get_eec() */
+
 
 static char *
 globus_l_gsi_cert_utils_normalize_dn(

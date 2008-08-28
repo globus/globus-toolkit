@@ -137,6 +137,9 @@ ${short_usage}
                          the -host option and implies that the generated 
                          key will not be password protected (ie implies -nopw).
     -host <FQDN>       : Create certificate for a host named <FQDN>
+    -dns <FQDN>,...    : Create certificate with the dNSName extension
+    -ip <IP-ADDRESS>,...
+                       : Create certificate with the iPAddress extension
     -dir <dir_name>    : Changes the directory the private key and certificate 
                          request will be placed in. By default user 
                          certificates are placed in $HOME/.globus, host 
@@ -240,7 +243,7 @@ abort_cleanup ()
 {
     ${GLOBUS_SH_RM-rm} -f ${CERT_FILE} ${KEY_FILE} \
                           ${REQUEST_FILE} ${RAND_TEMP} \
-                          ${REQ_HEAD} ${REQ_INPUT} ${REQ_OUTPUT}
+                          ${REQ_HEAD} ${REQ_INPUT} ${REQ_OUTPUT} ${REQ_CONF}
 }
 
 
@@ -292,6 +295,14 @@ read_command_line ()
                 fi
                 NO_DES="-nodes"
                 shift ; shift
+                ;;
+            -dns)
+                DNS_NAME_EXTENSIONS="$2"
+                shift; shift;
+                ;;
+            -ip)
+                IP_ADDRESS_EXTENSIONS="$2"
+                shift; shift;
                 ;;
             -service)
                 SERVICE="$2"
@@ -420,6 +431,41 @@ create_input_file ()
     echo ${_common_name}
 }
 
+
+create_subjectAltName()
+{
+    _dns_extensions=""
+    _ip_extensions=""
+
+    if [ -n "$DNS_NAME_EXTENSIONS" ]; then
+        _dns_extensions="`echo \"$DNS_NAME_EXTENSIONS\" | sed -e 's/^/DNS:/' -e 's/,/,DNS:/g'`"
+    fi
+    if [ -n "$IP_ADDRESS_EXTENSIONS" ]; then
+        _ip_extensions="`echo \"$IP_ADDRESS_EXTENSIONS\" | sed -e 's/^/IP:/' -e 's/,/,IP:/g'`"
+    fi
+
+    if [ -n "$_dns_extensions" -a -n "$_ip_extensions" ]; then
+        echo "subjectAltName=$_dns_extensions,$_ip_extensions"
+    elif [ -n "$_dns_extensions" ]; then
+        echo "subjectAltName=$_dns_extensions"
+    else
+        echo "subjectAltName=$_ip_extensions"
+    fi
+}
+
+create_conf_file ()
+{
+    _config_file="$1"
+
+    # Add $DNS_NAME_EXTENSIONS and $IP_ADDRESS_EXTENSIONS to the v3_req section
+    while read line; do
+        echo "$line"
+
+        if echo "$line" | ${GLOBUS_SH_GREP-grep} '\[ v3_req \]' > /dev/null 2>&1 ; then
+            create_subjectAltName
+        fi
+    done < $_config_file
+}
 
 ###########################################################
 # create_request_header
@@ -640,8 +686,11 @@ create_certs () {
 
     if test "${SERVICE}" = "user" ; then
         used_config="${SSL_USER_CONFIG}"
-    else
+    elif [ -z "$DNS_NAME_EXTENSIONS" -a -z "$IP_ADDRESS_EXTENSIONS" ]; then
         used_config="${SSL_HOST_CONFIG}"
+    else
+        used_config="${REQ_CONF}"
+        create_conf_file "${SSL_HOST_CONFIG}" > "${REQ_CONF}"
     fi
 
     if test ! -z "${INTERACTIVE}" ; then
@@ -694,7 +743,7 @@ create_certs () {
 
     # Finalize the Request file.
     ${GLOBUS_SH_CAT-cat} ${REQ_HEAD} ${REQ_OUTPUT} >${REQUEST_FILE}
-    ${GLOBUS_SH_RM-rm} -f ${REQ_HEAD} ${REQ_OUTPUT}
+    ${GLOBUS_SH_RM-rm} -f ${REQ_HEAD} ${REQ_OUTPUT} ${REQ_CONF}
 }
 
 ###########################################################
@@ -818,6 +867,7 @@ REQ_HEAD=${TARGET_DIR}/$PROGRAM_NAME.$$.head
 REQ_INPUT=${TARGET_DIR}/$PROGRAM_NAME.$$.input
 REQ_OUTPUT=${TARGET_DIR}/$PROGRAM_NAME.$$.output
 RAND_TEMP=${TARGET_DIR}/$PROGRAM_NAME.$$.random
+REQ_CONF="${TARGET_DIR}/$PROGRAM_NAME.$$.conf"
 
 # Source the security.conf file
 . ${security_conf}

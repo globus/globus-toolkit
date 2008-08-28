@@ -68,6 +68,30 @@ GSS_CALLCONV gss_release_name(
     {
         X509_NAME_free((*name)->x509n);
     }
+    if ((*name)->x509n_oneline)
+    {
+        OPENSSL_free((*name)->x509n_oneline);
+    }
+    if ((*name)->subjectAltNames)
+    {
+        sk_GENERAL_NAME_free((*name)->subjectAltNames);
+    }
+    if ((*name)->user_name)
+    {
+        free((*name)->user_name);
+    }
+    if ((*name)->service_name)
+    {
+        free((*name)->service_name);
+    }
+    if ((*name)->host_name)
+    {
+        free((*name)->host_name);
+    }
+    if ((*name)->ip_address)
+    {
+        free((*name)->ip_address);
+    }
 
     free(*name);
     *name = GSS_C_NO_NAME;

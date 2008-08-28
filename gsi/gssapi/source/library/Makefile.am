@@ -16,6 +16,7 @@ Sources = \
 	init_sec_context.c \
 	inquire_cred.c \
 	inquire_context.c \
+        inquire_names_for_mech.c \
 	oid_functions.c \
 	release_cred.c \
 	release_name.c \

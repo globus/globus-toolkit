@@ -66,57 +66,94 @@ gss_display_name(
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
-    if (!(input_name) ||
-        (!(input_name->x509n) &&
-         !g_OID_equal(input_name->name_oid,
-                      GSS_C_NT_ANONYMOUS)) ||
-        !(output_name)) {
+    if (!(input_name) || !(output_name))
+    {
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, 
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Bad argument"));
+        goto exit;
+    }
+
+    if(g_OID_equal(input_name->name_oid, GSS_C_NT_ANONYMOUS))
+    {
+        output_name->value = globus_libc_strdup(GSS_I_ANON_NAME);
+        output_name->length = strlen(GSS_I_ANON_NAME);
+    }
+    else if (g_OID_equal(input_name->name_oid, GSS_C_NO_OID))
+    {
+        output_name->value = globus_libc_strdup(input_name->user_name);
+        output_name->length = strlen(output_name->value);
+    }
+    else if (g_OID_equal(input_name->name_oid, GSS_C_NT_HOSTBASED_SERVICE))
+    {
+        if (input_name->service_name)
+        {
+            output_name->value = globus_common_create_string(
+                    "/CN=%s/%s",
+                    input_name->service_name,
+                    input_name->host_name);
+        }
+        else
+        {
+            output_name->value = globus_libc_strdup(input_name->host_name);
+        }
+        output_name->length = strlen(output_name->value);
+    }
+    else if (g_OID_equal(input_name->name_oid, GLOBUS_GSS_C_NT_HOST_IP))
+    {
+        output_name->value = globus_common_create_string(
+                "%s/%s",
+                input_name->host_name,
+                input_name->ip_address);
+        output_name->length = strlen(output_name->value);
+    }
+    else if (g_OID_equal(input_name->name_oid, GLOBUS_GSS_C_NT_X509))
+    {
+        /* For X.509 names, we only put SubjectName in the displayed name */
+        if (input_name->x509n != NULL)
+        {
+            output_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
+            output_name->length = strlen(output_name->value);
+        }
+        else if (input_name->subjectAltNames)
+        {
+            int                         name_length;
+            GENERAL_NAME *              name;
+            char *                      dns;
+            int                         i;
+
+            name_length = sk_GENERAL_NAME_num(input_name->subjectAltNames);
+            for (i = 0; i < name_length; i++)
+            {
+                name = sk_GENERAL_NAME_value(input_name->subjectAltNames, i);
+
+                if (name->type == GEN_DNS)
+                {
+                    dns = ASN1_STRING_data(name->d.dNSName);
+                    output_name->value = globus_common_create_string("/CN=%s", dns);
+                    output_name->length = strlen(output_name->value);
+                    break;
+                }
+            }
+        }
+        if (output_name->value == NULL)
+        {
+            major_status = GSS_S_BAD_NAME;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status, 
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
+                ("X.509 Name contains no SubjectName and no dNSName."));
+        }
+    }
+    else
+    {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
-            (NULL));
-        goto exit;
-    }
-
-    if(!g_OID_equal(input_name->name_oid, GSS_C_NT_ANONYMOUS))
-    {
-#ifdef WIN32
-        /* On Windows allocating memory with X509_NAME_oneline() and freeing
-           it with free() causes an Assertion */
-        char *value = NULL;
-        size_t length = 0;
-        value = X509_NAME_oneline(input_name->x509n, NULL, 0);
-        if(value)
-        {
-            length = strlen((char *) value)+1;
-            output_name->value = malloc(length);
-            if(output_name->value)
-            {
-                memcpy(output_name->value,value,length);
-                output_name->length = length;
-                X509_free(value);
-            }
-            else
-            {
-                output_name->value = (void *) strdup(GSS_I_ANON_NAME);
-                output_name->length = strlen(GSS_I_ANON_NAME);
-            }
-        }
-        else
-        {
-            output_name->value = (void *) strdup(GSS_I_ANON_NAME);
-            output_name->length = strlen(GSS_I_ANON_NAME);
-        }
-#else
-        output_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
-        output_name->length = strlen((char *) output_name->value);
-#endif
-    }
-    else
-    {
-        output_name->value = (void *) strdup(GSS_I_ANON_NAME);
-        output_name->length = strlen(GSS_I_ANON_NAME);
+            ("Bad Name"));
     }
   
     if(output_name_type)
