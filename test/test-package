@@ -49,6 +49,7 @@ cd $GLOBUS_LOCATION/test/${TEST}
 if [ $? -ne 0 ]; then
    if [ -f $GLOBUS_LOCATION/share/${TEST}/TESTS.pl ]; then
       cd $GLOBUS_LOCATION/share/${TEST}
+      chmod +x TESTS.pl
    else
       echo Channot change to $GLOBUS_LOCATION/test/${TEST}
       exit 1
