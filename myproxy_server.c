@@ -269,6 +269,7 @@ main(int argc, char *argv[])
 		continue; 
 	     } else {
 		myproxy_log_perror("Error in accept()");
+        continue;
 	     }
 	  }
 	  if (!debug) {
