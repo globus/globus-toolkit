@@ -80,6 +80,12 @@ Specifies the maximum lifetime of credentials retrieved from the
 .BR myproxy-server (8)
 using the stored credential.  Default: 12 hours
 .TP
+.BI -p " CA-password"
+Specifies the password for the CA's private key using the format
+documented in the PASS PHRASE ARGUMENTS
+section of 
+.BR openssl (1).
+.TP
 .B -n
 Disables passphrase authentication for the stored credential.
 If specified, the command will not prompt for a passphrase, 

@@ -35,6 +35,9 @@ v4.3 XX Xxx 2008
   - add reconfig method to etc.init.d.myproxy
   - make myproxy-admin-adduser less verbose by only showing the output
     of grid-cert-request on errors
+  - added myproxy-admin-adduser -p option for specifying the CA
+    private key password using openssl format (see the PASS PHRASE
+    ARGUMENTS section in the openssl(1) man page)
 
 v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init
