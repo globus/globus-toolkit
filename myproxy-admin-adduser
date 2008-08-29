@@ -36,7 +36,7 @@ $cmdname = basename($0);
 
 require "getopts.pl";
 
-if (!&Getopts('huc:s:l:t:aAxXr:R:ndk:K:Z:E:') || $opt_h || $opt_u) {
+if (!&Getopts('huc:p:s:l:t:aAxXr:R:ndk:K:Z:E:') || $opt_h || $opt_u) {
     print STDERR <<"EOF";
 Syntax: $0 [-c cn] [-l username] ...
         $0 [-usage|-help]
@@ -47,6 +47,9 @@ Syntax: $0 [-c cn] [-l username] ...
        -s <directory>    Credential storage directory
        -l <username>     Credential username
        -t <hours>        Max. lifetime of delegated proxies
+       -p <CA password>  Set CA private key password using
+                         openssl format (see the PASS PHRASE ARGUMENTS
+                         section in the openssl(1) man page)
        -a                Allow credentials to be retrieved with
                          just username/passphrase
        -A                Allow credentials to be renewed by
@@ -90,6 +93,9 @@ push(@args, "-nopassphrase") if ($opt_n);
 #grid-ca-sign
 
 @args = ("grid-ca-sign", "-in", $reqfile, "-out", $certfile, "-force");
+if ($opt_p) {
+  push(@args, "-passin"); push(@args, $opt_p);
+}
 
 if (system(@args)) {
     print STDERR "grid-ca-sign failed.\n";
