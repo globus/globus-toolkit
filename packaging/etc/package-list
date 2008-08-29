@@ -111,7 +111,7 @@ globus_xio	xio/src	gpt
 globus_xio_test	xio/test	gpt
 globus_xioperf	xio/xioperf/source	gpt
 globus_ldapmodules	mds/openldap/ldapmodules	gpt
-globus_libtool mds/libtool pnb libtool-1.5.8.tar.gz
+globus_libtool mds/libtool pnb libtool-1.5.26.tar.gz
 globus_libtool_fake mds/libtool-fake	gpt
 globus_mds_back_giis	mds/openldap/giis-ldapmodules	gpt
 globus_mds_common	mds/common/source	gpt
