@@ -55,6 +55,7 @@ typedef void Sigfunc(int);
 Sigfunc *my_signal(int signo, Sigfunc *func);
 void sig_exit(int signo);
 void sig_chld(int signo);
+void sig_hup(int signo);
 void sig_ign(int signo);
 
 /* Function declarations */
@@ -100,7 +101,8 @@ static void my_failure(const char *failure_message);
 
 static char *timestamp(void);
 
-static int become_daemon(myproxy_server_context_t *server_context);
+static int become_daemon_step1(void);
+static int become_daemon_step2(void);
 
 static void write_pidfile(const char path[]);
 
@@ -148,6 +150,7 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
                      myproxy_response_t     *response);
 
 static int debug = 0;
+static int readconfig = 1;      /* do we need to read config file? */
 
 int
 main(int argc, char *argv[]) 
@@ -180,6 +183,28 @@ main(int argc, char *argv[])
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
         exit(1);
+    }
+
+    /* 
+     * Test to see if we're run out of inetd 
+     * If so, then stdin will be connected to a socket,
+     * so getpeername() will succeed.
+     * If we're not run out of inetd, do the proper daemon setup
+     * by calling become_daemon_step1(), but save the daemon fork()
+     * in become_daemon_step2() until after some sanity checks.
+     */
+    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) {
+        server_context->run_as_daemon = 1;
+        if (!debug) {
+            if (become_daemon_step1() < 0) {
+                fprintf(stderr, "Error starting daemon.  Exiting.\n");
+                exit(1);
+            }
+        }
+    } else { 
+        server_context->run_as_daemon = 0;
+        close(1);
+        (void) open("/dev/null",O_WRONLY);
     }
 
     /* Initialize Logging */
@@ -222,29 +247,6 @@ main(int argc, char *argv[])
         }
     }
 
-    /* 
-     * Test to see if we're run out of inetd 
-     * If so, then stdin will be connected to a socket,
-     * so getpeername() will succeed.
-     * If we're not run out of inetd, do the proper daemon setup
-     * by calling become_daemon().
-     * However, we do this after the sanity checks above,
-     * to better catch errors on startup.
-     */
-    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) {
-        server_context->run_as_daemon = 1;
-        if (!debug) {
-            if (become_daemon(server_context) < 0) {
-                fprintf(stderr, "Error starting daemon.  Exiting.\n");
-                exit(1);
-            }
-        }
-    } else { 
-        server_context->run_as_daemon = 0;
-        close(1);
-        (void) open("/dev/null",O_WRONLY);
-    }
-
     if (!server_context->run_as_daemon) {
        myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
        socket_attrs->socket_fd = fileno(stdin);
@@ -253,19 +255,26 @@ main(int argc, char *argv[])
        } 
     } else {    
        /* Run as a daemon */
+        if (!debug) {
+            if (become_daemon_step2() < 0) {
+                my_failure("Error forking daemon.  Exiting.\n");
+            }
+        }
        listenfd = myproxy_init_server(socket_attrs);
        if (server_context->pidfile) write_pidfile(server_context->pidfile);
 
        /* Set up signal handling to deal with zombie processes left over  */
        my_signal(SIGCHLD, sig_chld);
 
+       /* Re-read configuration file on SIGHUP */
+       my_signal(SIGHUP, sig_hup);
+
        /* Set up concurrent server */
        while (1) {
 	  socket_attrs->socket_fd = accept(listenfd,
 					   (struct sockaddr *) &client_addr,
 					   &client_addr_len);
-	  myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
-      if (handle_config(server_context) < 0) {
+     if (handle_config(server_context) < 0) {
           myproxy_log_verror();
           my_failure("error in handle_config()");
       }
@@ -277,6 +286,7 @@ main(int argc, char *argv[])
         continue;
 	     }
 	  }
+	  myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
 	  if (!debug) {
 	     childpid = fork();
 	     
@@ -316,42 +326,11 @@ main(int argc, char *argv[])
 int
 handle_config(myproxy_server_context_t *server_context)
 {
-    static time_t last_update = 0;
-
-    if (last_update) {          /* not the first time */
-        struct stat s;
-        if (!server_context->config_file) {
-            verror_put_string("config_file is null!");
+    if (readconfig) {
+        if (myproxy_server_config_read(server_context) == -1) {
             return -1;
         }
-        if (stat(server_context->config_file, &s) < 0) {
-            verror_put_string("stat(%s) failed", server_context->config_file);
-            verror_put_errno(errno);
-            return -1;
-        }
-        if (s.st_mtime == last_update) {
-            return 0;           /* no updates */
-        }
-        myproxy_log("%s modified. re-reading.", server_context->config_file);
-        last_update = s.st_mtime;
-    }
-
-    if (myproxy_server_config_read(server_context) == -1) {
-        return -1;
-    }
-
-    if (!last_update) {
-        struct stat s;
-        if (!server_context->config_file) {
-            verror_put_string("config_file is null!");
-            return -1;
-        }
-        if (stat(server_context->config_file, &s) < 0) {
-            verror_put_string("stat(%s) failed", server_context->config_file);
-            verror_put_errno(errno);
-            return -1;
-        }
-        last_update = s.st_mtime;
+        readconfig = 0;         /* reset the flag now that we've read it */
     }
 
     /* Check to see if config file had syslog_ident specified. */
@@ -1220,6 +1199,10 @@ sig_chld(int signo) {
     return;
 } 
 
+void sig_hup(int signo) {
+    readconfig = 1;             /* set the flag */
+}
+
 void sig_exit(int signo) {
     exit(0);
 }
@@ -1248,15 +1231,48 @@ timestamp(void)
     return (char *)asctime(tmp);
 }
 
+/* Do these steps right at the start. */
 static int
-become_daemon(myproxy_server_context_t *context)
+become_daemon_step1()
 {
-    pid_t childpid;
     int fd = 0;
     int fdlimit;
     
     /* Steps taken from UNIX Programming FAQ */
     
+    /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
+    chdir("/");
+
+    /* 5. `umask(0)' so that we have complete control over the permissions of 
+          anything we write
+    */
+    umask(0);
+
+    /* 6. Close all file descriptors */
+    fdlimit = sysconf(_SC_OPEN_MAX);
+    while (fd < fdlimit)
+      close(fd++);
+
+    /* 7.Establish new open descriptors for stdin, stdout and stderr */    
+    (void)open("/dev/null", O_RDWR);
+    dup(0); 
+    dup(0);
+#ifdef TIOCNOTTY
+    fd = open("/dev/tty", O_RDWR);
+    if (fd >= 0) {
+      ioctl(fd, TIOCNOTTY, 0);
+      (void)close(fd);
+    } 
+#endif /* TIOCNOTTY */
+    return 0;
+}
+
+/* Save fork() until after we've done some sanity checks. */
+static int
+become_daemon_step2()
+{
+    pid_t childpid;
+
     /* 1. Fork off a child so the new process is not a process group leader */
     childpid = fork();
     switch (childpid) {
@@ -1290,33 +1306,7 @@ become_daemon(myproxy_server_context_t *context)
     default:            /* exit the original process */
 	_exit(0);
     }
-	
-   
-    
-    /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
-    chdir("/");
 
-    /* 5. `umask(0)' so that we have complete control over the permissions of 
-          anything we write
-    */
-    umask(0);
-
-    /* 6. Close all file descriptors */
-    fdlimit = sysconf(_SC_OPEN_MAX);
-    while (fd < fdlimit)
-      close(fd++);
-
-    /* 7.Establish new open descriptors for stdin, stdout and stderr */    
-    (void)open("/dev/null", O_RDWR);
-    dup(0); 
-    dup(0);
-#ifdef TIOCNOTTY
-    fd = open("/dev/tty", O_RDWR);
-    if (fd >= 0) {
-      ioctl(fd, TIOCNOTTY, 0);
-      (void)close(fd);
-    } 
-#endif /* TIOCNOTTY */
     return 0;
 }
 
