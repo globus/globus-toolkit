@@ -23,7 +23,8 @@ Scripts= \
 	gssapi-context-test.pl \
 	gssapi-expimp-test.pl \
 	gssapi-acquire-test.pl \
-	gssapi-inquire-sec-ctx-by-oid-test.pl
+	gssapi-inquire-sec-ctx-by-oid-test.pl \
+        release-name-test.pl
 
 Data= \
         compare_name_test.txt \
@@ -62,7 +63,8 @@ test_PROGRAMS= \
 	gssapi-inquire-sec-ctx-by-oid-test \
 	gssapi-acquire-test \
 	gssapi-module-test \
-        inquire-names-for-mech-test
+        inquire-names-for-mech-test \
+        release-name-test
 
 LDFLAGS = $(GPT_LDFLAGS)
 LDADD = $(GPT_PGM_LINKS)
@@ -112,6 +114,9 @@ compare_name_test_SOURCES = compare_name_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 inquire_names_for_mech_test_SOURCES = inquire_names_for_mech_test.c \
+                                gssapi_test_utils.c \
+                                gssapi_test_utils.h
+release_name_test_SOURCES = release_name_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 

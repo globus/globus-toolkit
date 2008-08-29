@@ -111,6 +111,8 @@ import_names()
         {
             gss_l_host_ip_support = GLOBUS_TRUE;
         }
+
+        major_status = gss_release_oid_set(&minor_status, &name_types);
     }
 
     for (i = test_cases; !globus_list_empty(i); i = globus_list_rest(i))
@@ -198,6 +200,8 @@ import_names()
                             globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
                             exit(-1);
                         }
+                        X509_free(cert);
+                        globus_gsi_cred_handle_destroy(handle);
                     }
                     break;
             }
@@ -303,6 +307,8 @@ import_names()
                             globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
                             exit(-1);
                         }
+                        X509_free(cert);
+                        globus_gsi_cred_handle_destroy(handle);
                     }
                     break;
             }
@@ -445,7 +451,59 @@ globus_l_gss_read_test_cases(char * filename)
                               (strcmp(expectation, "GLOBUS_FALSE") == 0));
             }
             globus_list_insert(&test_cases, test_case);
+            free(line);
         }
+    }
+    free(buffer);
+}
+
+static
+void
+globus_l_gss_free_test_cases()
+{
+    compare_name_test_case_t            *test_case, *tmp_case;
+    gss_name_t                          name1, name2;
+    globus_list_t *                     tmp;
+    OM_uint32                           minor_status;
+
+    while (!globus_list_empty(test_cases))
+    {
+        test_case = globus_list_first(test_cases);
+        name1 = test_case->name1;
+        name2 = test_case->name2;
+
+        for (tmp = test_cases;
+             !globus_list_empty(tmp);
+             tmp = globus_list_rest(tmp))
+        {
+            tmp_case = globus_list_first(tmp);
+
+            if (name1 == tmp_case->name1 ||
+                name2 == tmp_case->name1)
+            {
+                tmp_case->name1 = NULL;
+            }
+            if (name1 == tmp_case->name2 ||
+                name2 == tmp_case->name2)
+            {
+                tmp_case->name2 = NULL;
+            }
+        }
+        gss_release_name(&minor_status, &name1);
+        if (name1 != name2)
+        {
+            gss_release_name(&minor_status, &name2);
+        }
+        if (test_case->name_token1)
+        {
+            free(test_case->name_token1);
+        }
+        if (test_case->name_token2)
+        {
+            free(test_case->name_token2);
+        }
+        free(test_case);
+        globus_list_remove(&test_cases, test_cases);
     }
 }
 
@@ -551,6 +609,7 @@ int main(int argc, char * argv[])
         }
         fflush(stdout);
     }
+    globus_l_gss_free_test_cases();
 
     return failed;
 }

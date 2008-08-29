@@ -20,6 +20,8 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             gssapi-delegation-compat-test.pl
             gssapi-acquire-test.pl
             gssapi-context-test.pl gssapi-expimp-test.pl gssapi-inquire-sec-ctx-by-oid-test.pl
+            gssapi-import-name.pl
+            release-name-test.pl
            );
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");

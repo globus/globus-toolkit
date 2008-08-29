@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include <strings.h>
 
 int
-import_bad_params(void)
+release_bad_params(void)
 {
     char *                              subject;
     gss_name_t                          gss_name;
@@ -38,57 +38,46 @@ import_bad_params(void)
     name_tok.length = strlen(subject) + 1;
     name_type = GSS_C_NT_HOSTBASED_SERVICE;
     
-    major_status = gss_import_name(NULL,
+    major_status = gss_import_name(&minor_status,
                                    &name_tok,
                                    name_type,
                                    &gss_name);
-    if(!GSS_ERROR(major_status))
+    if(major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
 
         return 1;
     }
 
-    major_status = gss_import_name(&minor_status,
-                                   NULL,
-                                   name_type,
-                                   &gss_name);
-    if(!GSS_ERROR(major_status))
+    major_status = gss_release_name(NULL, &gss_name);
+    if(major_status != GSS_S_FAILURE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
 
         return 2;
     }
 
-    major_status = gss_import_name(&minor_status,
-                                   &name_tok,
-                                   NULL,
-                                   &gss_name);
-    if(!GSS_ERROR(major_status))
+    major_status = gss_release_name(&minor_status, NULL);
+    if(major_status != GSS_S_FAILURE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
 
         return 3;
     }
 
-    major_status = gss_import_name(&minor_status,
-                                   &name_tok,
-                                   name_type,
-                                   NULL);
-
-    if(!GSS_ERROR(major_status))
+    major_status = gss_release_name(&minor_status, &gss_name);
+    if(major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
 
         return 4;
     }
-
     return 0;
 }
 /* import_bad_params() */
 
 int
-import_username(void)
+release_username(void)
 {
     char *                              subject;
     gss_name_t                          gss_name;
@@ -115,11 +104,7 @@ import_username(void)
         return 1;
     }
 
-    major_status = gss_display_name(&minor_status,
-                                    gss_name,
-                                    &name_tok,
-                                    NULL);
-    
+    major_status = gss_release_name(&minor_status, &gss_name);
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
@@ -127,20 +112,11 @@ import_username(void)
         return 2;
     }
 
-    if (strcasecmp(name_tok.value, subject) != 0)
-    {
-        fprintf(stderr,
-            "Expected subject name \"%s\" got \"%s\"\n",
-            subject,
-            (char *) name_tok.value);
-        return 1;
-    }
-
     return 0;
 }
 
 int
-import_anonymous(void)
+release_anonymous(void)
 {
     gss_name_t                          gss_name;
     gss_buffer_desc                     name_tok;
@@ -165,11 +141,7 @@ import_anonymous(void)
         return 1;
     }
 
-    major_status = gss_display_name(&minor_status,
-                                    gss_name,
-                                    &name_tok,
-                                    NULL);
-    
+    major_status = gss_release_name(&minor_status, &gss_name);
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
@@ -177,20 +149,11 @@ import_anonymous(void)
         return 2;
     }
 
-    if (strcasecmp(name_tok.value, "<anonymous>") != 0)
-    {
-        fprintf(stderr,
-            "Expected subject name \"%s\" got \"%s\"\n",
-            "<anonymous>",
-            (char *) name_tok.value);
-        return 1;
-    }
-
     return 0;
 }
 
 int
-import_hostbase_service(void)
+release_hostbase_service(void)
 {
     char *                              subject;
     gss_name_t                          gss_name;
@@ -216,12 +179,7 @@ import_hostbase_service(void)
 
         return 1;
     }
-
-    major_status = gss_display_name(&minor_status,
-                                    gss_name,
-                                    &name_tok,
-                                    NULL);
-    
+    major_status = gss_release_name(&minor_status, &gss_name);
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
@@ -229,20 +187,12 @@ import_hostbase_service(void)
         return 2;
     }
 
-    if (strcasecmp(name_tok.value, "/CN=service/cvs.globus.org") != 0)
-    {
-        fprintf(stderr,
-            "Expected subject name \"/CN=service/cvs.globus.org\" got \"%s\"\n",
-            (char *) name_tok.value);
-        return 1;
-    }
-
     return 0;
 }
 /* import_hostbase_service() */
 
 int
-import_host_ip(void)
+release_host_ip(void)
 {
     char *                              subject;
     gss_name_t                          gss_name;
@@ -269,11 +219,7 @@ import_host_ip(void)
         return 1;
     }
 
-    major_status = gss_display_name(&minor_status,
-                                    gss_name,
-                                    &name_tok,
-                                    NULL);
-    
+    major_status = gss_release_name(&minor_status, &gss_name);
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
@@ -281,20 +227,11 @@ import_host_ip(void)
         return 2;
     }
 
-    if (strcasecmp(name_tok.value, subject) != 0)
-    {
-        fprintf(stderr,
-            "Expected subject name \"%s\" got \"%s\"\n",
-            subject,
-            (char *) name_tok.value);
-        return 1;
-    }
-
     return 0;
 }
 
 int
-import_x509(void)
+release_x509(void)
 {
     char *                              subject;
     globus_gsi_cred_handle_t            cred_handle;
@@ -385,6 +322,13 @@ import_x509(void)
                 (char *) name_tok.value);
             return 1;
         }
+        major_status = gss_release_name(&minor_status, &gss_name);
+        if(major_status != GSS_S_COMPLETE)
+        {
+            globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+            return 2;
+        }
     }
 
     return 0;
@@ -402,12 +346,12 @@ int main()
 
     test_case                           tests[] =
     {
-        import_bad_params,
-        import_username,
-        import_anonymous,
-        import_hostbase_service,
-        import_host_ip,
-        import_x509
+        release_bad_params,
+        release_username,
+        release_anonymous,
+        release_hostbase_service,
+        release_host_ip,
+        release_x509
     };
 
     rc = globus_module_activate_array(modules, &failed_module);
