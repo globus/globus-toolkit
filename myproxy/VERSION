@@ -33,6 +33,8 @@ v4.3 XX Xxx 2008
     changes (i.e., undo change in v4.2); instead, re-read on SIGHUP
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=5627)
   - add reconfig method to etc.init.d.myproxy
+  - make myproxy-admin-adduser less verbose by only showing the output
+    of grid-cert-request on errors
 
 v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init

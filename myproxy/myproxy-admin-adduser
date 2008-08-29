@@ -8,6 +8,7 @@
 
 use File::Temp qw(tempdir);
 use File::Basename;
+use IPC::Open3;
 
 # check for program dependencies
 
@@ -80,15 +81,11 @@ $certfile = "${tmp_dir_name}/${prefix}cert.pem";
 $reqfile = "${tmp_dir_name}/${prefix}cert_request.pem";
 $keyfile = "${tmp_dir_name}/${prefix}key.pem";
 
-@args = ("grid-cert-request", "-cn", $opt_c, "-prefix", $prefix, "-dir",
-	 $tmp_dir_name,  "-force");
-push(@args, "-nopassphrase") if ($opt_n);
 
-if (system(@args)) {
-    print STDERR "grid-cert-request failed.\n";
-    &cleanup();
-    exit 1;
-}
+@args = ("grid-cert-request", "-cn", $opt_c, "-prefix", $prefix, "-dir",
+         $tmp_dir_name,  "-force");
+push(@args, "-nopassphrase") if ($opt_n);
+&runcmd(@args);
 
 #grid-ca-sign
 
@@ -176,4 +173,19 @@ sub wipefile {
 	print WIPEFILE "\0";
     }
     close(WIPEFILE);
+}
+
+sub runcmd {
+  @args = @_;
+  $pid = open3(*Writer, *Reader, '', @args);
+  close(Writer);
+  @output = <Reader>;
+  $output = join('', @output);
+  close(Reader);
+  waitpid($pid, 0);
+  if ($?) {
+    print STDERR $args[0], " failed:\n";
+    print STDERR $output;
+    exit 1;
+  }
 }
