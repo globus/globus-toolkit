@@ -286,7 +286,6 @@ main(int argc, char *argv[])
         continue;
 	     }
 	  }
-	  myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
 	  if (!debug) {
 	     childpid = fork();
 	     
@@ -301,6 +300,7 @@ main(int argc, char *argv[])
 	     }
 	     
 	     /* child process */
+         myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
 	     close(0);
 	     close(1);
 	     if (!debug) {
