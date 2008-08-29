@@ -182,24 +182,6 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* 
-     * Test to see if we're run out of inetd 
-     * If so, then stdin will be connected to a socket,
-     * so getpeername() will succeed.
-     */
-    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) {
-       server_context->run_as_daemon = 1;
-       if (!debug) {
-	  if (become_daemon(server_context) < 0) {
-	     fprintf(stderr, "Error starting daemon.  Exiting.\n");
-	     exit(1);
-	  }
-       }
-    } else { 
-       server_context->run_as_daemon = 0;
-       close(1);
-       (void) open("/dev/null",O_WRONLY);
-    }
     /* Initialize Logging */
     if (debug) {
 	myproxy_debug_set_level(1);
@@ -238,6 +220,29 @@ main(int argc, char *argv[])
             myproxy_log_verror();
             my_failure("Could not initialise OpenSSL engine.");
         }
+    }
+
+    /* 
+     * Test to see if we're run out of inetd 
+     * If so, then stdin will be connected to a socket,
+     * so getpeername() will succeed.
+     * If we're not run out of inetd, do the proper daemon setup
+     * by calling become_daemon().
+     * However, we do this after the sanity checks above,
+     * to better catch errors on startup.
+     */
+    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) {
+        server_context->run_as_daemon = 1;
+        if (!debug) {
+            if (become_daemon(server_context) < 0) {
+                fprintf(stderr, "Error starting daemon.  Exiting.\n");
+                exit(1);
+            }
+        }
+    } else { 
+        server_context->run_as_daemon = 0;
+        close(1);
+        (void) open("/dev/null",O_WRONLY);
     }
 
     if (!server_context->run_as_daemon) {
