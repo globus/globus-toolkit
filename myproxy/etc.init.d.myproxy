@@ -65,6 +65,14 @@ do_stop()
     echo "done."
 }
 
+do_reconfig()
+{
+    echo -n "Reconfiguring the MyProxy server... "
+    pid=`cat $PID_FILE`
+    kill -HUP $pid
+    echo "done."
+}
+
 case "$1" in
     start)
         if [ ! -f $PID_FILE ]; then
@@ -85,6 +93,14 @@ case "$1" in
     stop)
         if [ -f $PID_FILE ] ; then
             do_stop
+        else
+            echo "The server's pid file does not exist!  Are you sure the server is running?"
+        fi
+        ;;
+
+    reconfig)
+        if [ -f $PID_FILE ] ; then
+            do_reconfig
         else
             echo "The server's pid file does not exist!  Are you sure the server is running?"
         fi
