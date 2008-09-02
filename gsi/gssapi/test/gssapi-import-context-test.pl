@@ -9,11 +9,16 @@ my $test_prog = 'gssapi-import-context-test';
 Globus::Testing::Utilities::testcred_setup
     || die "Unable to set up test credentials\n";
 
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-gssapi_import_context_test.log";
+}
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
    
-    $rc = system("./$test_prog");
+    $rc = system("$valgrind ./$test_prog");
 
     if ($rc != 0)
     {

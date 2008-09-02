@@ -451,8 +451,8 @@ globus_l_gss_read_test_cases(char * filename)
                               (strcmp(expectation, "GLOBUS_FALSE") == 0));
             }
             globus_list_insert(&test_cases, test_case);
-            free(line);
         }
+        free(line);
     }
     free(buffer);
 }

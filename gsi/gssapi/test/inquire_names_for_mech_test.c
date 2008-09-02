@@ -38,7 +38,6 @@ bad_param_test(void)
         &minor_status,
         NULL,
         &name_types);
-
     if (major_status != GSS_S_FAILURE)
     {
         globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);

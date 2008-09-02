@@ -12,12 +12,17 @@ my @todo;
 Globus::Testing::Utilities::testcred_setup
     || die "Unable to set up test credentials\n";
 
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-gssapi_delegation_test.log";
+}
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
    
 
-    $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+    $rc = system("$valgrind ./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
 
     if($rc != 0)
     {

@@ -135,6 +135,8 @@ import_username(void)
             (char *) name_tok.value);
         return 1;
     }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
 
     return 0;
 }
@@ -185,6 +187,8 @@ import_anonymous(void)
             (char *) name_tok.value);
         return 1;
     }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
 
     return 0;
 }
@@ -236,6 +240,8 @@ import_hostbase_service(void)
             (char *) name_tok.value);
         return 1;
     }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
 
     return 0;
 }
@@ -289,6 +295,8 @@ import_host_ip(void)
             (char *) name_tok.value);
         return 1;
     }
+    gss_release_buffer(&minor_status, &name_tok);
+    gss_release_name(&minor_status, &gss_name);
 
     return 0;
 }
@@ -314,16 +322,16 @@ import_x509(void)
         "star.example.org.pem"              /* Wildcard dNSName */
     };
 
-    result = globus_gsi_cred_handle_init(&cred_handle, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        globus_gsi_gssapi_test_print_result(stderr, result);
-
-        return 2;
-    }
-
     for (i = 0; i < SIZEOF_ARRAY(test_certs); i++)
     {
+        result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+
+            return 2;
+        }
+
         result = globus_gsi_cred_read_cert(cred_handle, test_certs[i]);
         if (result != GLOBUS_SUCCESS)
         {
@@ -385,6 +393,11 @@ import_x509(void)
                 (char *) name_tok.value);
             return 1;
         }
+        gss_release_buffer(&minor_status, &name_tok);
+        X509_free(x509);
+        free(subject);
+        gss_release_name(&minor_status, &gss_name);
+        globus_gsi_cred_handle_destroy(cred_handle);
     }
 
     return 0;

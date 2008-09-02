@@ -1,4 +1,9 @@
 #!/usr/bin/env perl
 
-system("./gssapi-import-name");
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-gssapi_import_name.log";
+}
+system("$valgrind ./gssapi-import-name");
 exit(0);

@@ -305,7 +305,7 @@ release_x509(void)
         {
             globus_gsi_gssapi_test_print_result(stderr, result);
 
-            return 2;
+            return 8;
         }
     }
 

@@ -13,11 +13,16 @@ my @todo;
 Globus::Testing::Utilities::testcred_setup
     || die "Unable to set up test credentials\n";
 
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-inquire_sec_ctx_by_oid_test.log";
+}
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
    
-    $rc = system("./$test_prog >/dev/null 2>&1") / 256;
+    $rc = system("$valgrind ./$test_prog >/dev/null 2>&1") / 256;
 
     if($rc != 0)
     {
