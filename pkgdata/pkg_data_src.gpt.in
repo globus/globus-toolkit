@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="myproxy" Format_Version="0.02">
 <Aging_Version Major="4" Minor="3" Age="0"/>
-<VersionLabel>NCSA MyProxy v4.3 XX Xxx 2008</VersionLabel>
+<VersionLabel>NCSA MyProxy v4.4 XX Xxx 2008</VersionLabel>
 <Description>
 MyProxy Online Credential Repository
 </Description>
