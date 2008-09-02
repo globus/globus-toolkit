@@ -387,20 +387,6 @@ GSS_CALLCONV gss_compare_name(
         globus_assert_string(0, "Unsupported gss_name_t comparison\n");
     }
 
-    if(name1->x509n == NULL && name2->x509n == NULL &&
-       g_OID_equal(name1->name_oid,GSS_C_NT_ANONYMOUS) &&
-       g_OID_equal(name2->name_oid,GSS_C_NT_ANONYMOUS))
-    {
-        *name_equal = GSS_NAMES_EQUAL;
-        goto exit;
-    }
-        
-    if (name1->x509n == NULL || name2->x509n == NULL)
-    {
-        *name_equal = GSS_NAMES_NOT_EQUAL;
-        goto exit;
-    }
-
  exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
         2, (globus_i_gsi_gssapi_debug_fstream, "Compared %d \n", *name_equal));

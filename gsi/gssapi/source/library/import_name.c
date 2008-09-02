@@ -384,6 +384,8 @@ GSS_CALLCONV gss_import_name(
         /* Extract SubjectName if present */
         if ((n = X509_get_subject_name(x509_input)) != NULL)
         {
+            X509_NAME_free(output_name->x509n);
+
             output_name->x509n = X509_NAME_dup(n);
             if (output_name->x509n == NULL)
             {
@@ -433,6 +435,7 @@ GSS_CALLCONV gss_import_name(
 
             output_name->subjectAltNames =
                     sk_GENERAL_NAME_dup(subject_alt_name);
+            sk_GENERAL_NAME_free(subject_alt_name);
             if (output_name->subjectAltNames == NULL)
             {
                 GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
