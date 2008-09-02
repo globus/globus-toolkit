@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_PROXY_TIMEOUT *)
-&(executable=/bin/sh)
- (proxy_timeout = /dev/null)
