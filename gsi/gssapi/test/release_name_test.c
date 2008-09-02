@@ -233,7 +233,6 @@ release_host_ip(void)
 int
 release_x509(void)
 {
-    char *                              subject;
     globus_gsi_cred_handle_t            cred_handle;
     globus_result_t                     result;
     X509 *                              x509;
@@ -251,16 +250,16 @@ release_x509(void)
         "star.example.org.pem"              /* Wildcard dNSName */
     };
 
-    result = globus_gsi_cred_handle_init(&cred_handle, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        globus_gsi_gssapi_test_print_result(stderr, result);
-
-        return 2;
-    }
-
     for (i = 0; i < SIZEOF_ARRAY(test_certs); i++)
     {
+        result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+
+            return 2;
+        }
+
         result = globus_gsi_cred_read_cert(cred_handle, test_certs[i]);
         if (result != GLOBUS_SUCCESS)
         {
@@ -274,14 +273,6 @@ release_x509(void)
             globus_gsi_gssapi_test_print_result(stderr, result);
 
             return 4;
-        }
-
-        result = globus_gsi_cred_get_subject_name(cred_handle, &subject);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gsi_gssapi_test_print_result(stderr, result);
-
-            return 5;
         }
 
         name_tok.value = x509;
@@ -301,31 +292,18 @@ release_x509(void)
             return 6;
         }
 
-        major_status = gss_display_name(&minor_status,
-                                        gss_name,
-                                        &name_tok,
-                                        NULL);
-        
-        if(major_status != GSS_S_COMPLETE)
-        {
-            globus_gsi_gssapi_test_print_error(
-                    stderr, major_status, minor_status);
-
-            return 7;
-        }
-
-        if (strcasecmp(name_tok.value, subject) != 0)
-        {
-            fprintf(stderr,
-                "Expected subject name \"%s\" got \"%s\"\n",
-                subject,
-                (char *) name_tok.value);
-            return 1;
-        }
         major_status = gss_release_name(&minor_status, &gss_name);
         if(major_status != GSS_S_COMPLETE)
         {
             globus_gsi_gssapi_test_print_error(stderr, major_status, minor_status);
+
+            return 2;
+        }
+        X509_free(x509);
+        result = globus_gsi_cred_handle_destroy(cred_handle);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
 
             return 2;
         }

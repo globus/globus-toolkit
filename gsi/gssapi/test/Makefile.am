@@ -17,6 +17,7 @@ Scripts= \
 	gssapi-anonymous-test.pl \
 	gssapi-delegation-test.pl \
         gssapi-import-context-test.pl \
+        gssapi-import-name.pl
 	gssapi-limited-delegation-test.pl \
 	gssapi-delegation-compat-test.pl \
 	gssapi-thread-test.pl \

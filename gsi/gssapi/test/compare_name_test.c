@@ -134,7 +134,7 @@ import_names()
                     break;
                 case GSS_L_NO_OID:
                     buffer.value = test_case->name_token1;
-                    buffer.length - strlen(buffer.value);
+                    buffer.length = strlen(buffer.value);
 
                     major_status = gss_import_name(&minor_status, &buffer, GSS_C_NO_OID, &test_case->name1);
                     if (major_status != GSS_S_COMPLETE)
@@ -146,7 +146,7 @@ import_names()
                     break;
                 case GSS_L_HOSTBASED_SERVICE:
                     buffer.value = test_case->name_token1;
-                    buffer.length - strlen(buffer.value);
+                    buffer.length = strlen(buffer.value);
 
                     major_status = gss_import_name(&minor_status, &buffer, GSS_C_NT_HOSTBASED_SERVICE, &test_case->name1);
                     if (major_status != GSS_S_COMPLETE)
@@ -160,7 +160,7 @@ import_names()
                     if (gss_l_host_ip_support)
                     {
                         buffer.value = test_case->name_token1;
-                        buffer.length - strlen(buffer.value);
+                        buffer.length = strlen(buffer.value);
 
                         major_status = gss_import_name(&minor_status, &buffer, GLOBUS_GSS_C_NT_HOST_IP, &test_case->name1);
                         if (major_status != GSS_S_COMPLETE)
