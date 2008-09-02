@@ -103,6 +103,10 @@ GSS_CALLCONV gss_release_name(
     {
         free((*name)->ip_address);
     }
+    if ((*name)->ip_name)
+    {
+        free((*name)->ip_name);
+    }
 
     free(*name);
     *name = GSS_C_NO_NAME;

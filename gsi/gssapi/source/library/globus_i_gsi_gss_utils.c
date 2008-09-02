@@ -307,14 +307,6 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_peer_cred;
     }
 
-    if((context->peer_cred_handle->globusid = 
-        calloc(1, sizeof(gss_name_desc))) == NULL)
-    {
-        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-        major_status = GSS_S_FAILURE;
-        goto free_peer_cred_handle;
-    }
-
     /* initialize the proxy_handle */
     local_result = globus_gsi_proxy_handle_init(&context->proxy_handle, NULL);
     if(local_result != GLOBUS_SUCCESS)
@@ -323,7 +315,7 @@ globus_i_gsi_gss_create_and_fill_context(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
         major_status = GSS_S_FAILURE;
-        goto free_globusid;
+        goto free_peer_cred_handle;
     }
 
     /* initialize the callback data */
@@ -641,13 +633,6 @@ globus_i_gsi_gss_create_and_fill_context(
     if(context->proxy_handle)
     {
         globus_gsi_proxy_handle_destroy(context->proxy_handle);
-    }
-
- free_globusid:
-
-    if(context->peer_cred_handle->globusid)
-    {
-        globus_libc_free(context->peer_cred_handle->globusid);
     }
 
  free_peer_cred_handle:
