@@ -8,17 +8,18 @@ The instructions below are current as of the date of release.
 
 Required software
     * JDK 1.5.0+
-    * Ant 1.5+ 
+    * Ant 1.6.2+ 
+    * openssl 0.9.7+
     * C compiler. If gcc, avoid version 3.2.  3.2.1 and 2.95.x are okay.
     * C++ compiler. Pick whichever version matches your C compiler.
     * GNU tar
     * GNU make
     * GNU sed
     * zlib 1.1.4+
+    * sudo (Required for GRAM) 
 
 Optional software:
-    * sudo (Required for GRAM) 
-    * Tomcat (Required for WebMDS)
+    * Tomcat (Required for WebMDS at runtime)
 
 Overview:
 ========

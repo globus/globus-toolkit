@@ -1,16 +1,15 @@
 Required software
-    * JDK 1.4.2+
-    * Ant 1.5+ (do not use the ant in Fedora Core 2)
+    * JDK 1.5+
+    * Ant 1.6.2+ 
+    * openssl 0.9.7+
     * C compiler. If gcc, avoid version 3.2.  3.2.1 and 2.95.x are okay.
     * GNU tar
     * GNU make
     * GNU sed
     * zlib 1.1.4+
-    * JDBC compliant database. For instance, postgres 7.1+
 
 Optional software:
-    * IODBC (Required for RLS.  For instance, version 3.0.5)
-    * Tomcat (Required for WebMDS)
+    * Tomcat (Required for WebMDS at runtime)
 
 Overview:
 ========
