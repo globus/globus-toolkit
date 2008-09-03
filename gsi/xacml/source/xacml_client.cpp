@@ -306,15 +306,18 @@ parse_xacml_response(
         xacml_response_set_issuer(response, resp->saml__Issuer->__item.c_str());
     }
 
-    for (int i = 0; i < SAML_STATUS_UnsupportedBinding+1; i++)
+    if (resp->samlp__Status != NULL)
     {
-        if (resp->samlp__Status->samlp__StatusCode->Value ==
-                    saml_status_code_strings[i])
+        for (int i = 0; i < SAML_STATUS_UnsupportedBinding+1; i++)
         {
-            xacml_response_set_saml_status_code(
-                    response,
-                    (saml_status_code_t) i);
-            break;
+            if (resp->samlp__Status->samlp__StatusCode->Value ==
+                        saml_status_code_strings[i])
+            {
+                xacml_response_set_saml_status_code(
+                        response,
+                        (saml_status_code_t) i);
+                break;
+            }
         }
     }
 

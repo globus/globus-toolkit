@@ -1,5 +1,5 @@
 --- xacml_auth_service.gsoap.orig	2008-03-06 16:25:55.000000000 -0500
-+++ xacml_auth_service.gsoap	2008-03-06 16:28:45.000000000 -0500
++++ xacml_auth_service-patched.gsoap	2008-03-06 16:28:45.000000000 -0500
 @@ -2293,7 +2293,7 @@
  };
  

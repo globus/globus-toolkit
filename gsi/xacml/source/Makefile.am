@@ -5,6 +5,7 @@ EXTRA_DIST=typemap.dat abstract-inheritance.diff Doxyfile doxygen.head doxygen.f
 
 SCHEMA=schema/xacml_authz_service.wsdl
 GSOAP_FILE = xacml_auth_service.gsoap 
+GSOAP_FILE_PATCHED = xacml_auth_service-patched.gsoap
 GSOAP_SOURCE_FILES= soapStub.h \
                     soapH.h \
                     soapC.cpp \
@@ -54,10 +55,12 @@ xacml_client_LDADD = $(LDADD) libxacml.la -lgsoap++ -lpthread -ldl
 $(GSOAP_FILE): $(SCHEMA) typemap.dat
 	$(WSDL2H) -a -x -f $(SCHEMA) -o $@
 
-$(GSOAP_SOURCE_FILES): $(GSOAP_FILE)
-	patch -p0 < abstract-inheritance.diff
-	$(SOAPCPP2) -1 -w -x $(GSOAP_FILE) || true
+$(GSOAP_SOURCE_FILES): $(GSOAP_FILE_PATCHED)
+	$(SOAPCPP2) -1 -w -x $(GSOAP_FILE_PATCHED) || true
 
+$(GSOAP_FILE_PATCHED): $(GSOAP_FILE)
+	cp $(GSOAP_FILE) $(GSOAP_FILE_PATCHED)
+	patch -p0 < abstract-inheritance.diff
 
 BUILT_SOURCES=$(nodist_libxacml_la_SOURCES)
 
