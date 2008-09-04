@@ -322,7 +322,7 @@ globus_l_xio_handle_pre_close(
     if(op == NULL)
     {
         res = GlobusXIOErrorMemory("operation");
-        goto err;
+        goto err_param;
     }
     
     /*
@@ -460,6 +460,7 @@ globus_l_xio_handle_pre_close(
         /* so destroy handle can't be true (will be removed in next call) */
     op->ref = 0;
     globus_i_xio_op_destroy(op, &destroy_handle);
+err_param:
 
     GlobusXIODebugInternalExitWithError();
     return res;
@@ -3447,6 +3448,8 @@ globus_xio_writev(
     globus_size_t *                     nbytes,
     globus_xio_data_descriptor_t        data_desc)
 {
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       destroy_handle = GLOBUS_FALSE;
     globus_i_xio_op_t *                 op;
     globus_result_t                     res;
     globus_i_xio_handle_t *             handle;
@@ -3490,6 +3493,7 @@ globus_xio_writev(
             res = GlobusXIOErrorMemory("operation");
             goto param_error;
         }
+        destroy_op = GLOBUS_TRUE;
         ref = 1;
         op->ref = 0;
     }
@@ -3553,6 +3557,10 @@ globus_xio_writev(
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
+    if(destroy_op)
+    {
+        globus_i_xio_op_destroy(op, &destroy_handle);
+    }
 
   param_error:
     GlobusXIODebugExitWithError();

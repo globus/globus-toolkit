@@ -725,7 +725,6 @@ globus_xio_driver_pass_write(
             if(op->ref == 0)
             {
                 globus_i_xio_op_destroy(op, &destroy_handle);
-                globus_assert(!destroy_handle);
             }
 
             if(res != GLOBUS_SUCCESS)
@@ -743,6 +742,11 @@ globus_xio_driver_pass_write(
         globus_i_xio_driver_start_close(my_context->close_op,
                 GLOBUS_FALSE);
     }
+    else if(destroy_handle)
+    {
+
+    }
+
     GlobusXIODebugInternalExit();
 
     return res;

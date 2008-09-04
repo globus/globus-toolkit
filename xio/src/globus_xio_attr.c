@@ -664,7 +664,7 @@ globus_xio_data_descriptor_init(
     if(data_desc == NULL)
     {
         res = GlobusXIOErrorParameter("data_desc");
-        goto err;
+        goto err_parm;
     }
     if(handle == NULL)
     {
@@ -707,8 +707,8 @@ globus_xio_data_descriptor_init(
     return GLOBUS_SUCCESS;
 
   err:
-
     *data_desc = NULL;
+  err_parm:
     GlobusXIODebugExitWithError();
     return res;
 }

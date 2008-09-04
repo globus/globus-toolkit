@@ -174,6 +174,11 @@ globus_l_xio_server_handle_create(
     
     GlobusXIODebugInternalEnter();
     
+    if(handle == NULL)
+    {
+        res = GlobusXIOErrorParameter("handle");
+        goto error_context;
+    }
     /* allocate and initialize context */
     context = globus_i_xio_context_create(server->stack_size);
     if(context == NULL)
@@ -185,7 +190,7 @@ globus_l_xio_server_handle_create(
     /* allocate and intialize the handle structure */
     ihandle = (globus_i_xio_handle_t *)
         globus_calloc(1, sizeof(globus_i_xio_handle_t));
-    if(handle == NULL)
+    if(ihandle == NULL)
     {
         res = GlobusXIOErrorMemory("ihandle");
         goto error_handle;
@@ -880,17 +885,17 @@ globus_xio_server_create(
     if(server == NULL)
     {
         res = GlobusXIOErrorParameter("server");
-        goto err;
+        goto err_parm;
     }
     if(stack == NULL)
     {
         res = GlobusXIOErrorParameter("stack");
-        goto err;
+        goto err_parm;
     }
     if(globus_list_empty(stack->driver_stack))
     {
         res = GlobusXIOErrorParameter("stack is empty");
-        goto err;
+        goto err_parm;
     }
     
     /* take what the user stack has at the time of registration */
@@ -994,6 +999,7 @@ globus_xio_server_create(
         globus_free(xio_server);
     }
     *server = NULL;
+err_parm:
 
     GlobusXIODebugExitWithError();
     return res;
