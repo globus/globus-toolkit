@@ -142,6 +142,10 @@ xioperf_l_print_summary(
     int                                 mins;
     globus_reltime_t                    elps_time;
     long                                usecs;
+    char *                              tmps;
+    char *                              tmps2;
+    char *                              tmps3;
+    char *                              tmps4;
 
     GlobusTimeAbstimeGetCurrent(info->end_time);
     GlobusTimeAbstimeDiff(elps_time, info->end_time, info->start_time);
@@ -152,29 +156,38 @@ xioperf_l_print_summary(
 
     if(info->quiet)
     {
+        tmps = xioperf_outformat_bytes(info->format, info->bytes_recv, 0);
+        tmps2 = xioperf_outformat_bw(info->format, secs, info->bytes_recv, 0);
+        tmps3=xioperf_outformat_bytes(info->format, info->bytes_sent, 0);
+        tmps4=xioperf_outformat_bw(info->format, secs, info->bytes_sent, 0);
         printf("%02d:%02.4f %s %s %s %s\n",
-            mins, secs-(mins*60),
-            xioperf_outformat_bytes(info->format, info->bytes_recv, 0),
-            xioperf_outformat_bw(info->format, secs, info->bytes_recv, 0),
-            xioperf_outformat_bytes(info->format, info->bytes_sent, 0),
-            xioperf_outformat_bw(info->format, secs, info->bytes_sent, 0));
+            mins, secs-(mins*60), tmps, tmps2, tmps3, tmps4);
+        free(tmps);
+        free(tmps2);
+        free(tmps3);
+        free(tmps4);
     }
     else
     {
+
         printf("\tTime:         %02d:%02.4f\n", mins, secs-(mins*60));
         if(info->writer)
         {
-            printf("\tBytes sent:   %s\n",
-                xioperf_outformat_bytes(info->format, info->bytes_sent, 1));
-            printf("\tWrite BW:     %s\n",
-                xioperf_outformat_bw(info->format, secs, info->bytes_sent, 1));
+            tmps = xioperf_outformat_bytes(info->format, info->bytes_sent, 1);
+            printf("\tBytes sent:   %s\n", tmps);
+            free(tmps);
+            tmps=xioperf_outformat_bw(info->format, secs, info->bytes_sent, 1);
+            printf("\tWrite BW:     %s\n", tmps);
+            free(tmps);
         }
         if(info->reader)
         {
-            printf("\tBytes recv:   %s\n",
-                xioperf_outformat_bytes(info->format, info->bytes_recv, 1));
-            printf("\tRead BW:      %s\n",
-                xioperf_outformat_bw(info->format, secs, info->bytes_recv, 1));
+            tmps = xioperf_outformat_bytes(info->format, info->bytes_recv, 1);
+            printf("\tBytes recv:   %s\n", tmps);
+            free(tmps);
+            tmps=xioperf_outformat_bw(info->format, secs, info->bytes_recv, 1);
+            printf("\tRead BW:      %s\n", tmps);
+            free(tmps);
         }
     }
 }
