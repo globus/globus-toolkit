@@ -144,6 +144,7 @@ globus_i_xio_http_copy_blob(
             iov->iov_base = globus_libc_malloc(GLOBUS_XIO_HTTP_CHUNK_SIZE);
             if (iov->iov_base == NULL)
             {
+                globus_free(iov);
                 return GlobusXIOErrorMemory("iovec.iov_base");
             }
             iov->iov_len = 0;

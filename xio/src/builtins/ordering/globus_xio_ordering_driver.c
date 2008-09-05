@@ -355,6 +355,7 @@ globus_l_xio_ordering_handle_create(
     handle = (globus_l_xio_ordering_handle_t *)globus_malloc(handle_size);
     if (handle == GLOBUS_NULL)
     {
+        result = GlobusXIOErrorMemory("handle");
         goto error_handle;
     }
     memset(handle, 0, handle_size);

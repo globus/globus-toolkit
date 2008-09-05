@@ -120,6 +120,10 @@ xioperf_outformat_bytes(
     }
 
     str = globus_common_create_string("%-10.2lf       ", val);
+    if(str == NULL)
+    {
+        return NULL;
+    }
     tmp_ptr = strchr(str, ' ');
     if(with_type)
     {
@@ -217,6 +221,7 @@ xioperf_l_parse_opts(
     int                                 argc,
     char **                             argv)
 {
+    char *                              tmps;
     globus_size_t                       nbytes;
     globus_result_t                     res;
     globus_options_handle_t             opt_h;
@@ -347,8 +352,9 @@ xioperf_l_parse_opts(
 
     return info;
 error_result:
-    fprintf(globus_l_xioperf_err_fptr, "%s\n",
-        globus_error_print_friendly(globus_error_get(res)));
+    tmps = globus_error_print_friendly(globus_error_get(res));
+    fprintf(globus_l_xioperf_err_fptr, "%s\n", tmps);
+    free(tmps);
 error:
     return NULL;
 }
@@ -462,7 +468,6 @@ xioperf_read_cb(
     return;
 error:
     globus_free(buffer);
-    globus_error_print_friendly(info->err);
     info->read_done = GLOBUS_TRUE;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);

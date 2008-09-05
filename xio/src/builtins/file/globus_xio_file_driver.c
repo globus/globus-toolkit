@@ -204,7 +204,7 @@ globus_l_xio_file_string_cntl_mode(
     u = mode_i / 100;
     mode_i -= u * 100;
     g = mode_i / 10;
-    u = mode_i % 10;
+    o = mode_i % 10;
 
     if(u & 1)
     {

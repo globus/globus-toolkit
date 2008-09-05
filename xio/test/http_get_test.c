@@ -539,6 +539,7 @@ globus_l_xio_test_read_buffer(
     if (buffer == NULL)
     {
         result = GlobusXIOErrorMemory("buffer");
+        return result;
     }
     while ((left > 0) || (result == GLOBUS_SUCCESS))
     {

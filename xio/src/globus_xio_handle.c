@@ -3083,6 +3083,8 @@ globus_xio_read(
     globus_i_xio_handle_t *             handle;
     int                                 ref = 0;
     globus_i_xio_blocking_t *           info;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       destroy_handle = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_read);
 
     GlobusXIODebugEnter();
@@ -3118,6 +3120,7 @@ globus_xio_read(
         GlobusXIOOperationCreate(op, handle->context);
         if(op == NULL)
         {
+            destroy_op = GLOBUS_TRUE;
             res = GlobusXIOErrorMemory("operation");
             goto param_error;
         }
@@ -3186,6 +3189,10 @@ globus_xio_read(
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
+    if(destroy_op)
+    {
+       globus_i_xio_op_destroy(op, &destroy_handle);
+    }
 
   param_error:
     GlobusXIODebugExitWithError();
@@ -3206,6 +3213,8 @@ globus_xio_readv(
     globus_i_xio_handle_t *             handle;
     int                                 ref = 0;
     globus_i_xio_blocking_t *           info;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       destroy_handle = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_readv);
 
     GlobusXIODebugEnter();
@@ -3241,6 +3250,7 @@ globus_xio_readv(
         GlobusXIOOperationCreate(op, handle->context);
         if(op == NULL)
         {
+            destroy_op = GLOBUS_TRUE;
             res = GlobusXIOErrorMemory("operation");
             goto param_error;
         }
@@ -3307,6 +3317,10 @@ globus_xio_readv(
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
+    if(destroy_op)
+    {
+        globus_i_xio_op_destroy(op, &destroy_handle);
+    }
 
   param_error:
     GlobusXIODebugExitWithError();
@@ -3330,6 +3344,8 @@ globus_xio_write(
     globus_i_xio_handle_t *             handle;
     int                                 ref = 0;
     globus_i_xio_blocking_t *           info;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       destroy_handle = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_write);
 
     GlobusXIODebugEnter();
@@ -3365,6 +3381,7 @@ globus_xio_write(
         GlobusXIOOperationCreate(op, handle->context);
         if(op == NULL)
         {
+            destroy_op = GLOBUS_TRUE;
             res = GlobusXIOErrorMemory("operation");
             goto param_error;
         }
@@ -3433,6 +3450,10 @@ globus_xio_write(
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
+    if(destroy_op)
+    {
+        globus_i_xio_op_destroy(op, &destroy_handle);
+    }
 
   param_error:
     GlobusXIODebugExitWithError();
@@ -3490,10 +3511,10 @@ globus_xio_writev(
         GlobusXIOOperationCreate(op, handle->context);
         if(op == NULL)
         {
+            destroy_op = GLOBUS_TRUE;
             res = GlobusXIOErrorMemory("operation");
             goto param_error;
         }
-        destroy_op = GLOBUS_TRUE;
         ref = 1;
         op->ref = 0;
     }
