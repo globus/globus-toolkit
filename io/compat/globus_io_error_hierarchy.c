@@ -251,6 +251,8 @@ globus_i_io_error_string_func ( globus_object_t * error )
             tmp = globus_malloc(strlen(string) + strlen(name) + 1);
 
             sprintf(tmp, string, name);
+
+            return tmp;
         }
 
         string = _IOSL("a name could not be used");
