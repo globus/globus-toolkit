@@ -17,7 +17,11 @@ Globus::Testing::Utilities::testcred_setup
 my $valgrind = "";
 if (exists $ENV{VALGRIND})
 {
-    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-gssapi_delegation_compat.log";
+    $valgrind = "valgrind --log-file=VALGRIND-gssapi_delegation_compat.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
 }
 
 sub basic_func

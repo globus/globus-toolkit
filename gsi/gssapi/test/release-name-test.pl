@@ -3,7 +3,11 @@
 my $valgrind = "";
 if (exists $ENV{VALGRIND})
 {
-    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-release_name_test.log";
+    $valgrind = "valgrind --log-file=VALGRIND-release_name_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
 }
 system("$valgrind ./release-name-test");
 exit(0);

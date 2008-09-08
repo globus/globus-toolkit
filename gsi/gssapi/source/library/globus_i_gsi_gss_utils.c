@@ -132,8 +132,9 @@ globus_i_gsi_gss_copy_name_to_name(
 
     if (input->subjectAltNames != NULL)
     {
-        output_name->subjectAltNames =
-                sk_GENERAL_NAME_dup(input->subjectAltNames);
+        output_name->subjectAltNames = ASN1_item_dup(
+                ASN1_ITEM_rptr(GENERAL_NAMES),
+                input->subjectAltNames);
         if (output_name->subjectAltNames == NULL)
         {
             GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
@@ -1129,21 +1130,6 @@ globus_i_gsi_gss_retrieve_peer(
             goto exit;
         }
         
-        X509_free(sk_X509_shift(peer_cert_chain));
-        
-        local_result = globus_gsi_cred_set_cert_chain(
-            context_handle->peer_cred_handle->cred_handle, 
-            peer_cert_chain);
-
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-
         local_result = globus_gsi_cert_utils_get_eec(
             peer_cert_chain,
             &eec);
@@ -1164,6 +1150,21 @@ globus_i_gsi_gss_retrieve_peer(
                 &peer_buffer,
                 GLOBUS_GSS_C_NT_X509,
                 &context_handle->peer_cred_handle->globusid);
+
+        X509_free(sk_X509_shift(peer_cert_chain));
+        
+        local_result = globus_gsi_cred_set_cert_chain(
+            context_handle->peer_cred_handle->cred_handle, 
+            peer_cert_chain);
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
             
         /* debug statement */
         { 

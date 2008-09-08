@@ -16,7 +16,11 @@ Globus::Testing::Utilities::testcred_setup
 my $valgrind = "";
 if (exists $ENV{VALGRIND})
 {
-    $valgrind = "valgrind --leak-check=full --log-file=VALGRIND-inquire_sec_ctx_by_oid_test.log";
+    $valgrind = "valgrind --log-file=VALGRIND-inquire_sec_ctx_by_oid_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
 }
 sub basic_func
 {
