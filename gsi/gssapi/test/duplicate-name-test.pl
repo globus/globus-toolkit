@@ -3,7 +3,7 @@
 my $valgrind = "";
 if (exists $ENV{VALGRIND})
 {
-    $valgrind = "valgrind --log-file=VALGRIND-gssapi_import_name.log";
+    $valgrind = "valgrind --log-file=VALGRIND-duplicate_name_test.log";
     if (exists $ENV{VALGRIND_OPTIONS})
     {
         $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};

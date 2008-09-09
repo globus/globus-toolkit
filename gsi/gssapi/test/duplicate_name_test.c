@@ -385,7 +385,6 @@ duplicate_host_ip_test(void)
 int
 duplicate_x509_test(void)
 {
-    char *                              subject;
     globus_gsi_cred_handle_t            cred_handle;
     globus_result_t                     result;
     X509 *                              x509;
@@ -405,16 +404,16 @@ duplicate_x509_test(void)
         "star.example.org.pem"              /* Wildcard dNSName */
     };
 
-    result = globus_gsi_cred_handle_init(&cred_handle, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        globus_gsi_gssapi_test_print_result(stderr, result);
-
-        return 2;
-    }
-
     for (i = 0; i < SIZEOF_ARRAY(test_certs); i++)
     {
+        result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+
+            return 2;
+        }
+
         result = globus_gsi_cred_read_cert(cred_handle, test_certs[i]);
         if (result != GLOBUS_SUCCESS)
         {
@@ -428,14 +427,6 @@ duplicate_x509_test(void)
             globus_gsi_gssapi_test_print_result(stderr, result);
 
             return 4;
-        }
-
-        result = globus_gsi_cred_get_subject_name(cred_handle, &subject);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gsi_gssapi_test_print_result(stderr, result);
-
-            return 5;
         }
 
         name_tok.value = x509;
@@ -454,6 +445,7 @@ duplicate_x509_test(void)
 
             return 6;
         }
+        X509_free(x509);
 
         major_status = gss_duplicate_name(&minor_status, gss_name, &name_copy);
         if(major_status != GSS_S_COMPLETE)
@@ -497,6 +489,14 @@ duplicate_x509_test(void)
                     stderr, major_status, minor_status);
 
             return 11;
+        }
+
+        result = globus_gsi_cred_handle_destroy(cred_handle);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_gsi_gssapi_test_print_result(stderr, result);
+
+            return 2;
         }
     }
 
