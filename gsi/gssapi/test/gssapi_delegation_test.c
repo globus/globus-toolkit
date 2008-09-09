@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,25 +33,20 @@ int main()
     OM_uint32                           min_stat;
     OM_uint32                           ret_flags;
     OM_uint32                           time_rec;
+    OM_uint32                           local_min_stat;
     gss_buffer_desc                     send_tok;
     gss_buffer_desc                     recv_tok;
     gss_buffer_desc *                   token_ptr;
-    gss_buffer_desc                     oid_buffer;
-    gss_buffer_set_desc                 oid_buffers;
-    gss_buffer_set_t                    inquire_buffers;
     gss_OID                             mech_type;
-    gss_OID_set_desc                    oid_set;
     gss_name_t                          target_name;
     gss_ctx_id_t                        init_context;
     gss_ctx_id_t                        accept_context;
-    gss_ctx_id_desc *                   init_context_handle;
     gss_ctx_id_t                        del_init_context;
     gss_ctx_id_t                        del_accept_context;
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
     char *                              error_str;
-    char *                              buf; 
 
     /* Initialize variables */
     
@@ -156,7 +151,9 @@ int main()
                                                &ret_flags,
                                                /* ignore time_rec */
                                                NULL, 
-                                               GSS_C_NO_CREDENTIAL);
+                                               NULL);
+
+        gss_release_buffer(&local_min_stat, &send_tok);
 
         if(accept_maj_stat != GSS_S_COMPLETE &&
            accept_maj_stat != GSS_S_CONTINUE_NEEDED)
@@ -190,6 +187,7 @@ int main()
                                              NULL);
         
         
+        gss_release_buffer(&local_min_stat, &recv_tok);
         if(init_maj_stat != GSS_S_COMPLETE &&
            init_maj_stat != GSS_S_CONTINUE_NEEDED)
         {
@@ -334,7 +332,8 @@ int main()
         if (result != GLOBUS_SUCCESS)
         {
             printf("\nLINE %d ERROR: \%s\n\n",
-                        globus_error_print_friendly(globus_error_peek(result)));
+                   __LINE__,
+                   globus_error_print_friendly(globus_error_peek(result)));
             exit(1);
         }
 
@@ -350,7 +349,8 @@ int main()
         if (result != GLOBUS_SUCCESS)
         {
             printf("\nLINE %d ERROR: \%s\n\n",
-                        globus_error_print_friendly(globus_error_peek(result)));
+                   __LINE__,
+                   globus_error_print_friendly(globus_error_peek(result)));
             exit(1);
         }
         if (type != GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY)
@@ -364,6 +364,7 @@ int main()
         printf("%s:%d: Successfully got expected RFC proxy type\n",
                __FILE__,
                __LINE__);
+        globus_gsi_cred_handle_destroy(cred_handle);
     }
 
     
@@ -376,6 +377,19 @@ int main()
                                &time_rec);
 
 
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             init_maj_stat,
+                                             min_stat,
+                                             0);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
+        exit(1);
+    }
+
+    maj_stat = gss_release_buffer(&min_stat, &send_tok);
     if(maj_stat != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status_str(&error_str,
@@ -436,7 +450,7 @@ int main()
                                                &ret_flags,
                                                /* ignore time_rec */
                                                NULL, 
-                                               GSS_C_NO_CREDENTIAL);
+                                               NULL);
 
         if(accept_maj_stat != GSS_S_COMPLETE &&
            accept_maj_stat != GSS_S_CONTINUE_NEEDED)
@@ -485,6 +499,8 @@ int main()
     }
 
     /* got sec context based on delegated cred now */
+    maj_stat = gss_release_name(&min_stat, &target_name);
+    maj_stat = gss_release_cred(&min_stat, &cred_handle);
 
     printf("%s:%d: Successfully established security context with delegated credential\n",
            __FILE__,
@@ -568,7 +584,6 @@ void globus_print_error(
     globus_result_t                     error_result)
 {
     globus_object_t *                   error_obj = NULL;
-    globus_object_t *                   base_error_obj = NULL;
     char *                              error_string = NULL;
     
     error_obj = globus_error_get(error_result);

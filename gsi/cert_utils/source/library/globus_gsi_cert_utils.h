@@ -148,6 +148,11 @@ globus_gsi_cert_utils_get_base_name(
     STACK_OF(X509) *                    cert_chain);
 
 globus_result_t
+globus_gsi_cert_utils_get_eec(
+    STACK_OF(X509) *                    cert_chain,
+    X509 **                             eec);
+
+globus_result_t
 globus_gsi_cert_utils_get_cert_type(
     X509 *                              cert,
     globus_gsi_cert_utils_cert_type_t * type);

@@ -225,6 +225,7 @@ typedef struct
     globus_bool_t                       eof;
     int                                 connection_id;
     globus_xio_driver_handle_t          xio_driver_handle;
+    char *                              host_name;
 } globus_l_handle_t;
 
 /*

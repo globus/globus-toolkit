@@ -67,3 +67,29 @@ globus_gsi_gssapi_test_dump_cert_chain(
     char *                              filename,
     gss_ctx_id_t                        context);
 
+void
+globus_gsi_gssapi_test_print_error(
+    FILE *                              stream,
+    OM_uint32                           major_status,
+    OM_uint32                           minor_status);
+
+void
+globus_gsi_gssapi_test_print_result(
+    FILE *                              stream,
+    globus_result_t                     result);
+
+
+typedef int (*test_case)(void);
+
+#define SIZEOF_ARRAY(a) (sizeof(a) / sizeof(a[0]))
+
+/* Stolen from oid_functions.c */
+extern const gss_OID_desc * const globus_i_gss_mech_globus_gssapi_openssl;
+extern const gss_OID_desc * const globus_i_gss_proxycertinfo_extension;
+extern const gss_OID_desc * const globus_i_gss_ext_x509_cert_chain_oid;
+extern gss_OID_desc * globus_i_gss_nt_host_ip;
+extern gss_OID_desc * globus_i_gss_nt_x509;
+
+
+#define GLOBUS_GSS_C_NT_HOST_IP globus_i_gss_nt_host_ip
+#define GLOBUS_GSS_C_NT_X509 globus_i_gss_nt_x509

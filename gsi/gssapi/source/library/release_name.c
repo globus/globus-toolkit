@@ -59,14 +59,53 @@ GSS_CALLCONV gss_release_name(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    if (name == NULL || *name == NULL || *name == GSS_C_NO_NAME)
+    if (name == NULL || minor_status == NULL || 
+        *name == NULL || *name == GSS_C_NO_NAME)
     {
+        major_status = GSS_S_FAILURE;
+
+        if (minor_status != NULL)
+        {
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    (_GGSL("Invalid parameter")));
+        }
+
         goto exit;
     } 
     
     if ((*name)->x509n)
     {
         X509_NAME_free((*name)->x509n);
+    }
+    if ((*name)->x509n_oneline)
+    {
+        OPENSSL_free((*name)->x509n_oneline);
+    }
+    if ((*name)->subjectAltNames)
+    {
+        sk_GENERAL_NAME_pop_free((*name)->subjectAltNames, GENERAL_NAME_free);
+    }
+    if ((*name)->user_name)
+    {
+        free((*name)->user_name);
+    }
+    if ((*name)->service_name)
+    {
+        free((*name)->service_name);
+    }
+    if ((*name)->host_name)
+    {
+        free((*name)->host_name);
+    }
+    if ((*name)->ip_address)
+    {
+        free((*name)->ip_address);
+    }
+    if ((*name)->ip_name)
+    {
+        free((*name)->ip_name);
     }
 
     free(*name);

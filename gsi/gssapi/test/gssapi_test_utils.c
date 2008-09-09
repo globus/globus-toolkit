@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,37 @@
 #include "gssapi_test_utils.h"
 #include "openssl/x509.h"
 #include "openssl/x509v3.h"
+#include "globus_error_gssapi.h"
+
 #ifdef WIN32
 #define ssize_t long
 #endif
 
+
+static const gss_OID_desc globus_l_gss_mech_oid_globus_gssapi_openssl =
+        {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
+
+const gss_OID_desc * const globus_i_gss_mech_globus_gssapi_openssl =
+                &globus_l_gss_mech_oid_globus_gssapi_openssl;
+
+static const gss_OID_desc globus_l_gss_proxycertinfo_extension_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x06"};
+const gss_OID_desc * const globus_i_gss_proxycertinfo_extension =
+                &globus_l_gss_proxycertinfo_extension_oid;
+
+static const gss_OID_desc globus_l_gss_ext_x509_cert_chain_oid_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"};
+const gss_OID_desc * const globus_i_gss_ext_x509_cert_chain_oid =
+                &globus_l_gss_ext_x509_cert_chain_oid_desc;
+
+
+static gss_OID_desc globus_l_gss_nt_host_ip_oid =
+    { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
+gss_OID_desc * globus_i_gss_nt_host_ip = &globus_l_gss_nt_host_ip_oid;
+
+static gss_OID_desc globus_l_gss_nt_x509_oid =
+    { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03" };
+gss_OID_desc * globus_i_gss_nt_x509 = &globus_l_gss_nt_x509_oid;
 
 
 static int
@@ -134,7 +161,7 @@ globus_gsi_gssapi_test_cleanup(
                                           context_handle,
                                           GSS_C_NO_BUFFER);
     
-    if (delegated_cred != GSS_C_NO_CREDENTIAL)
+    if (delegated_cred != NULL)
     {
         major_status = gss_release_cred(&minor_status,
                                         delegated_cred);
@@ -627,7 +654,7 @@ accept_sec_context(
     do
     {
         token_status = get_token(client_fd,
-                                 &input_token.value,
+                                 (unsigned char **) &input_token.value,
                                  &input_token.length);
         if(token_status != 0)
         {
@@ -684,7 +711,7 @@ accept_sec_context(
 
         if (GSS_ERROR(major_status))
         {
-            if (context != GSS_C_NO_CONTEXT)
+            if (context != NULL)
             {
 		globus_libc_printf("Failed to establish security context (accept).");
 		globus_gss_assist_display_status_str(&error_str,
@@ -830,7 +857,7 @@ init_sec_context(
 	if(major_status & GSS_S_CONTINUE_NEEDED)
 	{
 	    token_status = get_token(client_fd,
-				     &input_token.value,
+				     (unsigned char **) &input_token.value,
 				     &input_token.length);
 	    if(token_status != 0)
 	    {
@@ -853,3 +880,43 @@ init_sec_context(
     return major_status;
 }
 
+void
+globus_gsi_gssapi_test_print_error(
+    FILE *                              stream,
+    OM_uint32                           major_status,
+    OM_uint32                           minor_status)
+{
+    globus_object_t *                   err;
+    char *                              msg;
+
+    err = globus_error_construct_gssapi_error(
+        GLOBUS_GSI_GSSAPI_MODULE,
+        NULL,
+        major_status,
+        minor_status);
+
+    msg = globus_error_print_friendly(err);
+
+    fprintf(stream, "%s", msg);
+
+    free(msg);
+    globus_object_free(err);
+}
+/* globus_gsi_gssapi_test_print_error() */
+
+void
+globus_gsi_gssapi_test_print_result(
+    FILE *                              stream,
+    globus_result_t                     result)
+{
+    globus_object_t *                   err;
+    char *                              msg;
+
+    err = globus_error_peek(result);
+
+    msg = globus_error_print_friendly(err);
+
+    fprintf(stream, "%s", msg);
+
+    free(msg);
+}

@@ -338,11 +338,13 @@ OM_uint32 GSS_CALLCONV gss_test_oid_set_member
  ) { return GSS_S_FAILURE ; }
 */
 
+/*
 OM_uint32 GSS_CALLCONV gss_inquire_names_for_mech
 (OM_uint32 *              minor_status ,
  const gss_OID            mechanism ,
  gss_OID_set *             name_types 
  ) { return GSS_S_FAILURE ; }
+*/
 
 OM_uint32 GSS_CALLCONV gss_inquire_mechs_for_name
 (OM_uint32 *              minor_status ,

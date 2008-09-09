@@ -354,9 +354,18 @@ globus_i_gsi_gssapi_error_join_chains_result(
     globus_result_t                     outter_error,
     globus_result_t                     inner_error);
 
-
 unsigned char *
 globus_i_gsi_gssapi_get_hostname(
     const gss_name_desc *               name);
+
+typedef enum
+{
+    GSS_I_COMPATIBILITY_HYBRID,
+    GSS_I_COMPATIBILITY_STRICT_GT2,
+    GSS_I_COMPATIBILITY_STRICT_RFC2818
+}
+gss_i_name_compatibility_mode_t;
+
+extern gss_i_name_compatibility_mode_t  gss_i_name_compatibility_mode;
 
 #endif /* GLOBUS_I_GSI_GSS_UTILS_H */

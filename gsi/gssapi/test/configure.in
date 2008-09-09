@@ -24,7 +24,6 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT([
 	Makefile
-        run-gssapi-tests.pl
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 

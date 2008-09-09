@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gssapi_gsi_test" Format_Version="0.02">
 
-    <Aging_Version Major="1" Minor="0" Age="1"/>
+    <Aging_Version Major="1" Minor="1" Age="1"/>
     <Description >GSSAPI library tests</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -33,12 +33,17 @@
             </Dependency>        
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
-                    <Simple_Version Major="4"/>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
                     <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="gssapi_error">
+                <Version>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -61,12 +66,17 @@
             </Dependency>        
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
-                    <Simple_Version Major="4"/>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
                     <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="gssapi_error">
+                <Version>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies> 

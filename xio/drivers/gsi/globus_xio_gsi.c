@@ -21,8 +21,17 @@
 /* 32 MB */
 #define MAX_TOKEN_LENGTH 2<<24
 
-/* default attributes */
+static gss_OID_desc gss_l_openssl_mech_oid =
+        {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
+static gss_OID_desc * gss_l_openssl_mech = &gss_l_openssl_mech_oid;
 
+static gss_OID_desc gss_nt_host_ip_oid =
+    { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
+static gss_OID_desc * GLOBUS_GSS_C_NT_HOST_IP = &gss_nt_host_ip_oid;
+
+static globus_bool_t globus_l_xio_gsi_host_ip_supported;
+
+/* default attributes */
 static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
 {
     GSS_C_NO_CREDENTIAL,
@@ -704,6 +713,10 @@ globus_l_xio_gsi_handle_destroy(
     if(handle->result_obj)
     {
         globus_object_free(handle->result_obj);
+    }
+    if (handle->host_name)
+    {
+        free(handle->host_name);
     }
 
     free(handle);
@@ -1693,13 +1706,12 @@ globus_l_xio_gsi_open(
     GlobusXIOName(globus_l_xio_gsi_open);
     GlobusXIOGSIDebugEnter();
     
-    handle = malloc(sizeof(globus_l_handle_t));
+    handle = calloc(1, sizeof(globus_l_handle_t));
     if(!handle)
     {
         result = GlobusXIOErrorMemory("handle");
         goto error;
     }
-    memset(handle, 0, sizeof(globus_l_handle_t));
     
     if(driver_attr)
     {
@@ -1765,6 +1777,17 @@ globus_l_xio_gsi_open(
     }
     
     handle->xio_driver_handle = globus_xio_operation_get_driver_handle(op);
+    if (contact_info->host)
+    {
+        handle->host_name = globus_libc_strdup(contact_info->host);
+        if (handle->host_name == NULL)
+        {
+            globus_l_xio_gsi_handle_destroy(handle);
+            result = GlobusXIOErrorMemory("handle->host_name");
+            goto error;
+        }
+    }
+
     result = globus_xio_driver_pass_open(
         op, contact_info, globus_l_xio_gsi_open_cb, handle);
 
@@ -3849,6 +3872,9 @@ int
 globus_l_xio_gsi_activate(void)
 {
     int                                 rc;
+    OM_uint32                           major_status, minor_status;
+    gss_OID_set                         name_types;
+    int                                 present;
 
     GlobusXIOName(globus_l_xio_gsi_activate);
     GlobusDebugInit(GLOBUS_XIO_GSI, TRACE INTERNAL_TRACE);
@@ -3868,6 +3894,27 @@ globus_l_xio_gsi_activate(void)
         GlobusDebugDestroy(GLOBUS_XIO_GSI);
         return rc;
     }    
+    major_status = gss_inquire_names_for_mech(
+            &minor_status,
+            gss_l_openssl_mech ,
+            &name_types);
+
+    globus_l_xio_gsi_host_ip_supported = GLOBUS_FALSE;
+    if (major_status == GSS_S_COMPLETE)
+    {
+        major_status = gss_test_oid_set_member(
+                &minor_status, 
+                GLOBUS_GSS_C_NT_HOST_IP,
+                name_types,
+                &present);
+
+        if (major_status == GSS_S_COMPLETE && present)
+        {
+            globus_l_xio_gsi_host_ip_supported = GLOBUS_TRUE;
+        }
+        gss_release_oid_set(&minor_status, &name_types);
+    }
+
     GlobusXIORegisterDriver(gsi);
     globus_mutex_init(&connection_mutex,NULL);
     GlobusXIOGSIDebugExit();
@@ -3905,6 +3952,7 @@ globus_l_xio_gsi_setup_target_name(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     char *                              contact_string;
+    gss_buffer_desc                     name_buffer;
     globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_l_xio_gsi_setup_target_name);
     GlobusXIOGSIDebugInternalEnter();
@@ -3940,16 +3988,50 @@ globus_l_xio_gsi_setup_target_name(
                              &handle->attr->target_name);
             handle->attr->target_name = GSS_C_NO_NAME;
         }
-        
-        result = globus_gss_assist_authorization_host_name(
-            contact_info.host,
-            &handle->attr->target_name);
-        globus_xio_contact_destroy(&contact_info);
-        if(result != GLOBUS_SUCCESS)
+
+        if (globus_l_xio_gsi_host_ip_supported)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_gss_assist_authorization_host_name", result); 
-            goto error;
+            name_buffer.value = globus_common_create_string("%s/%s",
+                    handle->host_name, contact_info.host);
+            if (name_buffer.value == NULL)
+            {
+                result = GlobusXIOErrorMemory("name");
+                globus_xio_contact_destroy(&contact_info);
+                goto error;
+            }
+            name_buffer.length = strlen(name_buffer.value);
+
+            major_status = gss_import_name(
+                &minor_status,
+                &name_buffer,
+                GLOBUS_GSS_C_NT_HOST_IP,
+                &handle->attr->target_name);
+            globus_xio_contact_destroy(&contact_info);
+            free(name_buffer.value);
+            if(major_status != GLOBUS_SUCCESS)
+            {
+                result = globus_error_put(
+                        globus_error_construct_gssapi_error(
+                        GLOBUS_GSI_GSSAPI_MODULE,
+                        NULL,
+                        major_status,
+                        minor_status));
+
+                goto error;
+            }
+        }
+        else
+        {
+            result = globus_gss_assist_authorization_host_name(
+                contact_info.host,
+                &handle->attr->target_name);
+            globus_xio_contact_destroy(&contact_info);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_gss_assist_authorization_host_name", result); 
+                goto error;
+            }
         }
         break;
       case GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION:

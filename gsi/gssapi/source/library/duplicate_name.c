@@ -60,6 +60,13 @@ GSS_CALLCONV gss_duplicate_name(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    if (minor_status == NULL)
+    {
+        return GSS_S_FAILURE;
+    }
+
+    *minor_status = GLOBUS_SUCCESS;
+
     if(src_name == GSS_C_NO_NAME)
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(

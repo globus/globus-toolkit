@@ -13,11 +13,20 @@ my @todo;
 Globus::Testing::Utilities::testcred_setup
     || die "Unable to set up test credentials\n";
 
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-gssapi_context_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
    
-    $rc = system("./$test_prog >/dev/null 2>&1") / 256;
+    $rc = system("$valgrind ./$test_prog >/dev/null 2>&1") / 256;
 
     if($rc != 0)
     {

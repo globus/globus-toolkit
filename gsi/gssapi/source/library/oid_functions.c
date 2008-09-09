@@ -106,6 +106,14 @@ const gss_OID_desc * const gss_ext_x509_cert_chain_oid =
                 &gss_ext_x509_cert_chain_oid_desc;
 
 
+static gss_OID_desc gss_nt_host_ip_oid =
+    { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
+gss_OID_desc * gss_nt_host_ip = &gss_nt_host_ip_oid;
+
+static gss_OID_desc gss_nt_x509_oid =
+    { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03" };
+gss_OID_desc * gss_nt_x509 = &gss_nt_x509_oid;
+
 /**
  * @name Add OID Set Member
  * @ingroup globus_gsi_gssapi

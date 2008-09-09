@@ -131,6 +131,35 @@ globus_l_gsi_gssapi_activate(void)
         globus_i_gsi_gssapi_force_tls = 0;
     }
 
+    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");
+    if(tmp_string != NULL)
+    {
+        if (strcmp(tmp_string, "STRICT_GT2") == 0)
+        {
+            gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_STRICT_GT2;
+        }
+        else if (strcmp(tmp_string, "STRICT_RFC2818") == 0)
+        {
+            gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_STRICT_RFC2818;
+        }
+        else if (strcmp(tmp_string, "HYBRID") == 0)
+        {
+            gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_HYBRID;
+        }
+        else
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+                1,
+                (_GGSL("Unknown GLOBUS_GSSAPI_NAME_COMPATIBILITY value: %s\n"),
+                        tmp_string));
+            gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_HYBRID;
+        }
+    }
+    else
+    {
+        gss_i_name_compatibility_mode = GSS_I_COMPATIBILITY_HYBRID;
+    }
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     globus_module_activate(GLOBUS_COMMON_MODULE);

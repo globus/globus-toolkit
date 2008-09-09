@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gsi_cert_utils" Format_Version="0.01">
 
-    <Aging_Version Major="4" Minor="1" Age="4"/>
+    <Aging_Version Major="5" Minor="0" Age="5"/>
     <Description> Globus GSI Cert Utils Library</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
