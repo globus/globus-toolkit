@@ -735,7 +735,7 @@ main(
         if (!quiet)
         {
             char *                          subject = NULL;
-            result = globus_gsi_cred_get_subject_name(cred_handle, &subject);
+            result = globus_gsi_cred_get_identity_name(cred_handle, &subject);
             if(result != GLOBUS_SUCCESS)
             {
                 globus_i_gsi_proxy_utils_print_error(
@@ -770,7 +770,7 @@ main(
         if (!quiet)
         {
             char *                          subject = NULL;
-            result = globus_gsi_cred_get_subject_name(cred_handle, &subject);
+            result = globus_gsi_cred_get_identity_name(cred_handle, &subject);
             if(result != GLOBUS_SUCCESS)
             {
                 globus_i_gsi_proxy_utils_print_error(
