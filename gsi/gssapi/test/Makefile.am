@@ -13,6 +13,7 @@ Scripts= \
         compare-name-test.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
+        duplicate-name-test.pl \
         inquire-names-for-mech-test.pl \
 	gssapi-anonymous-test.pl \
 	gssapi-delegation-test.pl \
@@ -52,6 +53,7 @@ EXTRA_DIST = $(Scripts) $(Data)
 
 test_PROGRAMS= \
         compare-name-test \
+        duplicate-name-test \
 	gssapi-anonymous-test \
 	gssapi-delegation-test \
         gssapi-import-context-test \
@@ -118,6 +120,9 @@ inquire_names_for_mech_test_SOURCES = inquire_names_for_mech_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 release_name_test_SOURCES = release_name_test.c \
+                                gssapi_test_utils.c \
+                                gssapi_test_utils.h
+duplicate_name_test_SOURCES = duplicate_name_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 

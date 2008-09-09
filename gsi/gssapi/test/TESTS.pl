@@ -14,6 +14,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             compare-name-test.pl
             compare-name-test-rfc2818.pl
             compare-name-test-gt2.pl
+            duplicate-name-test.pl
             inquire-names-for-mech-test.pl
             gssapi-delegation-test.pl
             gssapi-limited-delegation-test.pl
