@@ -96,11 +96,19 @@ main(
     if(argc < 2)
     {
         hostname = globus_malloc(1024);
+        if (hostname == NULL)
+        {
+            goto error_exit;
+        }
         globus_libc_gethostname(hostname, 1024);
     }
     else if(argc == 2 && *argv[1] != '-')
     {
         hostname = globus_libc_strdup(argv[1]);
+        if (hostname == NULL)
+        {
+            goto error_exit;
+        }
     }
     else
     {
@@ -127,6 +135,7 @@ main(
     }    
     
     globus_free(hostname);
+    hostname = NULL;
 
     list_p = list;
     while(!globus_list_empty(list_p))
@@ -165,6 +174,9 @@ main(
     return 0;
 
 error_exit:
-    globus_free(hostname);
+    if (hostname != NULL)
+    {
+        globus_free(hostname);
+    }
     return 1;
 }
