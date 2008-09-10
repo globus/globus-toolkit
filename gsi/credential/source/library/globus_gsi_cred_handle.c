@@ -1263,7 +1263,7 @@ globus_gsi_cred_get_policies(
     char *                              final_policy_string = NULL;
     int                                 policy_string_length = 0;
     PROXYPOLICY *                       policy;
-    PROXYCERTINFO *                     pci;
+    PROXYCERTINFO *                     pci = NULL;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_cred_get_policies";
