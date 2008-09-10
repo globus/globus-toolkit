@@ -170,7 +170,7 @@ globus_gsi_callback_data_copy(
     globus_gsi_callback_data_t *   dest)
 {
     int                                 index;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_callback_data_copy";
 
