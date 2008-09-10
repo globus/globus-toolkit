@@ -78,17 +78,17 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         "gss_inquire_cred_by_oid";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-    cred = (gss_cred_id_desc *) cred_handle;
-
-    /* parameter checking goes here */
-
     if(minor_status == NULL)
     {
         major_status = GSS_S_FAILURE;
         goto exit;
     }
     
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+    cred = (gss_cred_id_desc *) cred_handle;
+
+    /* parameter checking goes here */
+
     if(cred_handle == GSS_C_NO_CREDENTIAL)
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(

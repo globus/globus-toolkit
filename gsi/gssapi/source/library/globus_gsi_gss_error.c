@@ -189,7 +189,9 @@ globus_i_gsi_gssapi_error_chain_result(
             function_name,
             line_number, 
             "%s%s%s",
-            _GGSL(globus_l_gsi_gssapi_error_strings[error_type]),
+            (error_type < 0 || error_type >= GLOBUS_GSI_GSSAPI_ERROR_LAST)
+                ? _GGSL("Unknown error")
+                : _GGSL(globus_l_gsi_gssapi_error_strings[error_type]),
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
         

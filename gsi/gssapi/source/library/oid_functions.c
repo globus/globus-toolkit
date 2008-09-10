@@ -144,7 +144,7 @@ GSS_CALLCONV gss_add_oid_set_member(
 {
     int                                 new_count;
     gss_OID                             new_elements;
-    gss_OID_set                         set;
+    gss_OID_set                         set = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ = 
         "gss_add_oid_set_member";
@@ -172,7 +172,7 @@ GSS_CALLCONV gss_add_oid_set_member(
     {
         GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto free_set_exit;
     }
         
     if (set->count > 0)
@@ -184,8 +184,7 @@ GSS_CALLCONV gss_add_oid_set_member(
     /* And append new oid */
     memcpy(&new_elements[set->count], member_oid, sizeof(gss_OID_desc));
         
- exit:
-
+free_set_exit:
     if (set->elements)
     {
         free(set->elements);
@@ -194,6 +193,7 @@ GSS_CALLCONV gss_add_oid_set_member(
     set->count = new_count;
     set->elements = new_elements;
 
+ exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

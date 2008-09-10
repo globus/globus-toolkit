@@ -35,6 +35,7 @@
 
 #define GLOBUS_GSI_GSSAPI_ERROR_RESULT(_MIN_RESULT_, _MIN_, \
                                        _ERRSTR_) \
+    if (_MIN_RESULT_ != NULL) \
     { \
          char *                         tmpstr = \
              globus_common_create_string _ERRSTR_; \

@@ -253,7 +253,7 @@ GSS_CALLCONV gss_import_sec_context(
             {
                 major_status = GSS_S_NO_CONTEXT;
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                    minor_status, major_status,
+                    minor_status, GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED,
                     (_GGSL("Couldn't read DER encoded peer cert from BIO")));
                 sk_X509_pop_free(cert_chain, X509_free);        
                 goto exit;

@@ -102,7 +102,7 @@ GSS_CALLCONV gss_inquire_context(
 		GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
 		    minor_status, local_minor_status,
 		    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
-		goto exit;
+		goto unlock_exit;
 	    }
 	}
 	else
@@ -125,7 +125,7 @@ GSS_CALLCONV gss_inquire_context(
 		GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
 		    minor_status, local_minor_status,
 		    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
-		goto exit;
+		goto unlock_exit;
 	    }
 	}
 	else
@@ -148,7 +148,7 @@ GSS_CALLCONV gss_inquire_context(
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
-            goto exit;
+            goto unlock_exit;
         }
 
         current_time = time(NULL);
@@ -197,9 +197,10 @@ GSS_CALLCONV gss_inquire_context(
         }
     }
 
- exit:
 
+unlock_exit:
     globus_mutex_unlock(&context->mutex);    
+exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

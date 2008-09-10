@@ -70,7 +70,7 @@ GSS_CALLCONV gss_create_empty_buffer_set(
     OM_uint32 *                         minor_status,
     gss_buffer_set_t *                  buffer_set)
 {
-    OM_uint32                           major_status;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ =
         "gss_create_empty_buffer_set";
 

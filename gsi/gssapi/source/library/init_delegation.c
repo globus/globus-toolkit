@@ -61,7 +61,7 @@ static char *rcsid = "$Id$";
  *        GSS_C_NO_OID. 
  * @param extension_oids
  *        A set of extension oids corresponding to buffers in the
- *        extension_buffers paramter below. The extensions specified
+ *        extension_buffers parameter below. The extensions specified
  *        will be added to the delegated credential. May be
  *        GSS_C_NO_BUFFER_SET. 
  * @param extension_buffers
@@ -373,6 +373,8 @@ GSS_CALLCONV gss_init_delegation(
                 if(g_OID_equal((gss_OID) &extension_oids->elements[index],
                                gss_proxycertinfo_extension))
                 {
+                    pci = extension_buffers->elements[index].value;
+
                     local_result =
                         globus_gsi_proxy_handle_set_proxy_cert_info(
                             context->proxy_handle,

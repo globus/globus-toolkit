@@ -97,7 +97,7 @@ GSS_CALLCONV gss_import_name(
     gss_name_t *                        output_name_P)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    globus_result_t                     local_result;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
     gss_name_desc *                     output_name = NULL;
     int                                 length, i;
     char *                              name_buffer = NULL;

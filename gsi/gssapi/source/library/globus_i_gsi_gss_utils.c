@@ -2399,33 +2399,44 @@ globus_i_gsi_gss_get_context_goodtill(
         "globus_i_gsi_gss_get_context_goodtill";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    local_result = globus_gsi_cred_get_goodtill(
-        ((gss_ctx_id_desc *)context)->cred_handle->cred_handle,
-        &local_cred_goodtill);
-    if(local_result != GLOBUS_SUCCESS)
+    *goodtill = 0;
+    if (((gss_ctx_id_desc *)context)->cred_handle)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
+        local_result = globus_gsi_cred_get_goodtill(
+            ((gss_ctx_id_desc *)context)->cred_handle->cred_handle,
+            &local_cred_goodtill);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+        if (local_cred_goodtill > *goodtill)
+        {
+            *goodtill = local_cred_goodtill;
+        }
     }
 
-    local_result = globus_gsi_cred_get_goodtill(
-        ((gss_ctx_id_desc *)context)->peer_cred_handle->cred_handle,
-        &peer_cred_goodtill);
-    if(local_result != GLOBUS_SUCCESS)
+    if (((gss_ctx_id_desc *)context)->peer_cred_handle)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
+        local_result = globus_gsi_cred_get_goodtill(
+            context->peer_cred_handle->cred_handle,
+            &peer_cred_goodtill);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+        if (peer_cred_goodtill > *goodtill)
+        {
+            *goodtill = peer_cred_goodtill;
+        }
     }
-    
-    *goodtill = 
-        (local_cred_goodtill > peer_cred_goodtill) ? peer_cred_goodtill 
-                                                   : local_cred_goodtill;
 
  exit:
 

@@ -54,7 +54,7 @@ GSS_CALLCONV gss_duplicate_name(
     const gss_name_t                    src_name,
     gss_name_t *                        dest_name)
 {
-    OM_uint32                           major_status;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ = 
         "gss_duplicate_name";
 
