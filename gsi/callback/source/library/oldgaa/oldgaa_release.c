@@ -684,28 +684,35 @@ oldgaa_error_code
 oldgaa_release_answer(uint32         *minor_status,
                    oldgaa_answer_ptr *answer)
 {
-  oldgaa_answer_ptr  *cred = answer;
-  uint32           inv_minor_status = 0, inv_major_status = 0;
+    oldgaa_answer_ptr  *                cred = answer;
+    uint32                              inv_minor_status = 0;
+    uint32                              inv_major_status = 0;
 
 
 #ifdef DEBUG
-fprintf(stderr, "\noldgaa_release_answer:\n");
+    fprintf(stderr, "\noldgaa_release_answer:\n");
 #endif /* DEBUG */
 
-	if (*cred == NULL || *cred == OLDGAA_NO_ANSWER) 
-	return OLDGAA_SUCCESS;
+    if (*cred == NULL || *cred == OLDGAA_NO_ANSWER) 
+    {
+        return OLDGAA_SUCCESS;
+    }
 
-	/* ignore errors to allow for incomplete context handles */
+   if ((*cred)->rights!= NULL) 
+   {
+       /* ignore errors to allow for incomplete context handles */
+       inv_major_status =
+            oldgaa_release_rights(&inv_minor_status, &((*cred)->rights));
+   }
+   
+    if ((*cred)->valid_time != NULL)
+    {
+        free((*cred)->valid_time);
+    }
 
-       if ((*cred)->rights!= NULL) 
-       inv_major_status = oldgaa_release_rights(&inv_minor_status,
-			                     &((*cred)->rights));
-       
-    if ((*cred)->valid_time != NULL) free((*cred)->valid_time);
     free(*cred);
 
-  return OLDGAA_SUCCESS;
-
+    return OLDGAA_SUCCESS;
 } /* oldgaa_rlease_answer */
 
 
@@ -724,31 +731,33 @@ oldgaa_error_code
 oldgaa_release_sec_attrb(uint32             *minor_status,
                       oldgaa_sec_attrb_ptr   *attributes)
 {
-
-oldgaa_sec_attrb_ptr  *cred = attributes;
-uint32              inv_minor_status = 0, inv_major_status = 0;
+    oldgaa_sec_attrb_ptr  *             cred = attributes;
+    uint32                              inv_minor_status = 0; 
+    uint32                              inv_major_status = 0;
 
 #ifdef DEBUG
-fprintf(stderr, "\noldgaa_release_sec_attrb:\n");
+    fprintf(stderr, "\noldgaa_release_sec_attrb:\n");
 #endif /* DEBUG */
 
-	if (*cred == NULL || *cred == OLDGAA_NO_SEC_ATTRB) 
-	return OLDGAA_SUCCESS;
+    if (*cred == NULL || *cred == OLDGAA_NO_SEC_ATTRB) 
+    {
+        return OLDGAA_SUCCESS;
+    }
 
-	/* ignore errors to allow for incomplete context handles */
+    if ((*cred)->next != NULL) 
+    {
+        /* ignore errors to allow for incomplete context handles */
+        inv_major_status =
+            oldgaa_release_sec_attrb(&inv_minor_status, &((*cred)->next));
+    }
 
-       if ((*cred)->next != NULL) 
-       inv_major_status = oldgaa_release_sec_attrb(&inv_minor_status,
-			      &((*cred)->next));
-    
-	if ((*cred)->type      != NULL) free((*cred)->type);
-	if ((*cred)->authority != NULL) free((*cred)->authority);
-	if ((*cred)->value     != NULL) free((*cred)->value);
+    if ((*cred)->type      != NULL) free((*cred)->type);
+    if ((*cred)->authority != NULL) free((*cred)->authority);
+    if ((*cred)->value     != NULL) free((*cred)->value);
 
     free(*cred);
 
-  return OLDGAA_SUCCESS;
-
+    return OLDGAA_SUCCESS;
 } 
 
 /**********************************************************************/

@@ -1375,6 +1375,12 @@ globus_i_gsi_callback_check_gaa_auth(
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
             (_CLS("Could not get policy info: "
              "Minor status=%d"), minor_status));
+        oldgaa_globus_cleanup(&oldgaa_sc,
+                              &rights,
+                              options,
+                              &detailed_answer,  
+                              policy_db,
+                              NULL);
         x509_context->error =  X509_V_ERR_APPLICATION_VERIFICATION;
         globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;

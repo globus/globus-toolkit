@@ -1,12 +1,12 @@
 /*
  * Copyright 1999-2006 University of Chicago
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ Description:
 #include <stdlib.h>	/* For malloc() */
 #include <string.h> 	/* strerror() and other string functions */
 
-#include "globus_oldgaa.h" 
+#include "globus_oldgaa.h"
 #include "oldgaa_utils.h"
 #include "globus_oldgaa_utils.h"
 #include "oldgaa_policy_evaluator.h"
@@ -44,13 +44,13 @@ Description:
 
 
 /**********************************************************************
-             Helpers Static Function Declarations         
+             Helpers Static Function Declarations
  **********************************************************************/
 
 
 static
 oldgaa_error_code
-evaluate_condition(oldgaa_sec_context_ptr sc, 
+evaluate_condition(oldgaa_sec_context_ptr sc,
                    oldgaa_conditions_ptr  condition,
                    oldgaa_options_ptr     options);
 
@@ -102,66 +102,68 @@ Parameters:
         minor_status, mechanism-specific error code.
 	ptr, pointer to principal.
         policy, pointer to policy.
-      
+
 Returns:
 	Pointer to a oldgaa_policy structure if successful
 
 **********************************************************************/
 
 
-oldgaa_policy_ptr    
-oldgaa_find_matching_entry(uint32             *minor_status, 
-                        oldgaa_principals_ptr  ptr, 
-                        oldgaa_policy_ptr      policy)          
+oldgaa_policy_ptr
+oldgaa_find_matching_entry(uint32             *minor_status,
+                        oldgaa_principals_ptr  ptr,
+                        oldgaa_policy_ptr      policy)
 {
-  oldgaa_policy_ptr entry = policy;
+    oldgaa_policy_ptr entry = policy;
 
-  /* Check arguments */
-  if (!ptr)
-  {
-    errno = ERRNO_INVALID_ARGUMENT;
-    *minor_status = -1;
-  } 
+    /* Check arguments */
+    if (!ptr)
+    {
+        errno = ERRNO_INVALID_ARGUMENT;
+        *minor_status = -1;
 
-  while(entry)
- { 
-  if(oldgaa_strings_match(entry->type, OLDGAA_ANYBODY)) return entry;
- 
- /* do exact match */
- if(oldgaa_compare_principals(ptr, entry))  return entry;
+        goto exit;
+    }
+
+    while(entry)
+    {
+        if(oldgaa_strings_match(entry->type, OLDGAA_ANYBODY)) return entry;
+
+        /* do exact match */
+        if(oldgaa_compare_principals(ptr, entry))  return entry;
 
 #ifdef PRINCIPALS_REGEX_MATCH
-{
-  char    **subject_regexes = NULL; /* NULL terminated list of regexes */
-  int i;
+        {
+            char    **subject_regexes = NULL; /* NULL terminated regex list */
+            int i;
 
 #ifdef DEBUG
-fprintf(stderr, "%s %s\n", ptr->value, entry->value);
+            fprintf(stderr, "%s %s\n", ptr->value, entry->value);
 #endif /* DEBUG */
 
-   subject_regexes = oldgaa_parse_regex(entry->value);
+            subject_regexes = oldgaa_parse_regex(entry->value);
 
-   if(subject_regexes) 
-     {        
-        if(oldgaa_check_reg_expr(ptr->value, subject_regexes))  
-          {
-          for (i=0; subject_regexes[i] != NULL; i++)
-            free(subject_regexes[i]);
-          free(subject_regexes);
-          return entry;
-		  }
-        for (i=0; subject_regexes[i] != NULL; i++)
-          free(subject_regexes[i]);
-        free(subject_regexes);
-     } 
-}  
+            if(subject_regexes)
+            {
+                if(oldgaa_check_reg_expr(ptr->value, subject_regexes))
+                {
+                    for (i=0; subject_regexes[i] != NULL; i++)
+                        free(subject_regexes[i]);
+                    free(subject_regexes);
+                    return entry;
+                }
+                for (i=0; subject_regexes[i] != NULL; i++)
+                    free(subject_regexes[i]);
+                free(subject_regexes);
+            }
+        }
 #endif /* #ifdef PRINCIPALS_REGEX_MATCH  */
-   
- entry = entry->next;
- }
 
- return NULL;
+        entry = entry->next;
+    }
 
+    exit:
+    return NULL;
 }
 
 /**********************************************************************
@@ -199,17 +201,17 @@ fprintf(stderr, "\noldgaa_check_access_rights:\n");
 
  if (!oldgaa_compare_rights(requested_rights, rights))
  return OLDGAA_NO; /* now we have just one type of rights: CA:sign */
- 
+
 #ifdef DEBUG
 fprintf(stderr, "right is granted\n");
 #endif /* DEBUG */
-  
-  detailed_answer->rights = rights; 
+
+  detailed_answer->rights = rights;
   rights->reference_count++;
-  
+
    if(rights->cond_bindings) /* operation is allowed and there are
                                           some conditions */
-  
+
    {
 #ifdef DEBUG
 fprintf(stderr, "there are some conditions\n");
@@ -227,7 +229,7 @@ fprintf(stderr, "there are some conditions\n");
   if(was_no)    return OLDGAA_NO;
   if(was_maybe) return OLDGAA_MAYBE;
 
-  return OLDGAA_YES;  /* operation is allowed and either there are NO any 
+  return OLDGAA_YES;  /* operation is allowed and either there are NO any
                      or all conditions are met */
 }
 
@@ -277,13 +279,13 @@ fprintf(stderr, "\noldgaa_get_authorized_principals:\n");
     minor_status = -1;
     return OLDGAA_FAILURE;
   }
- 
-  
+
+
    while(entry)
-  {    
+  {
     if(oldgaa_strings_match(entry->type, OLDGAA_ANYBODY) &&
        oldgaa_compare_rights(entry->rights, rights)) was_anybody = 1;
-     
+
 
    if(oldgaa_strings_match(entry->type,      principal->type)   &&
       oldgaa_strings_match(entry->authority, principal->authority))
@@ -298,16 +300,16 @@ fprintf(stderr, "\noldgaa_get_authorized_principals:\n");
        if(*attributes == NULL) { *attributes = attrb; }
 
          oldgaa_add_attribute(attributes, attrb);
-         number_of_entries++;      
+         number_of_entries++;
        }
-    else 
+    else
       {
      if(oldgaa_strings_match(entry->rights->type,      NEGATIVE_RIGHTS)   &&
         oldgaa_strings_match(entry->rights->authority, rights->authority) &&
         oldgaa_strings_match(entry->rights->value,     rights->value) ) was_neg_rights = 1;
      }
 
-     
+
   }
 
    entry = entry->next;
@@ -324,13 +326,13 @@ fprintf(stderr, "\noldgaa_get_authorized_principals:\n");
          if (*attributes == NULL) *attributes = attrb;
          else oldgaa_add_attribute(attributes, attrb);
        }
-           
-return  oldgaa_status;        
+
+return  oldgaa_status;
 }
 
 /**********************************************************************
 
-Function: oldgaa_evaluate_conditions() 
+Function: oldgaa_evaluate_conditions()
 
 Description:
 	Walks throug condition list and evaluates each condition.
@@ -345,15 +347,15 @@ Returns:
 
 **********************************************************************/
 
-oldgaa_error_code 
-oldgaa_evaluate_conditions(oldgaa_sec_context_ptr    sc, 
+oldgaa_error_code
+oldgaa_evaluate_conditions(oldgaa_sec_context_ptr    sc,
                            oldgaa_cond_bindings_ptr  conditions,
                            oldgaa_options_ptr        options)
-{  
+{
    oldgaa_error_code         oldgaa_status = OLDGAA_NO;
    oldgaa_cond_bindings_ptr  cond       = conditions;
-   int                    was_no     = FALSE, was_maybe = FALSE; 
- 
+   int                    was_no     = FALSE, was_maybe = FALSE;
+
 #ifdef DEBUG
 fprintf(stderr, "\noldgaa_evaluate_conditions:\n");
 #endif /* DEBUG */
@@ -361,7 +363,7 @@ fprintf(stderr, "\noldgaa_evaluate_conditions:\n");
  while(cond)/* walk throug condition list */
    {
      oldgaa_status = OLDGAA_MAYBE;
-   
+
      oldgaa_status =  evaluate_condition(sc, cond->condition, options);
 
      if(oldgaa_status == OLDGAA_NO)    was_no    = TRUE;
@@ -373,14 +375,14 @@ fprintf(stderr, "\noldgaa_evaluate_conditions:\n");
  if(was_no)    return OLDGAA_NO;
   if(was_maybe) return OLDGAA_MAYBE;
 
-  return OLDGAA_YES; 
+  return OLDGAA_YES;
 
 }
 
 
 
 oldgaa_error_code
-oldgaa_evaluate_day_cond(oldgaa_conditions_ptr condition, 
+oldgaa_evaluate_day_cond(oldgaa_conditions_ptr condition,
                   oldgaa_options_ptr    options)
 
 {
@@ -393,12 +395,12 @@ oldgaa_evaluate_day_cond(oldgaa_conditions_ptr condition,
 
    strcpy(cond, condition->value);
 
-     /* get current day */ 
+     /* get current day */
      current_day = get_day();
-     day = oldgaa_strcopy(current_day, day); 
+     day = oldgaa_strcopy(current_day, day);
      free(current_day);
-    
-     /* get first day delimiter */     
+
+     /* get first day delimiter */
      str1 = oldgaa_strcopy(get_value(&j, cond, '-'), str1);
 
      /* get second day delimiter */
@@ -407,18 +409,18 @@ oldgaa_evaluate_day_cond(oldgaa_conditions_ptr condition,
      free(value);
 
      retval = check_day(str1, str2, day);
- 
+
      if(retval == -1) return OLDGAA_MAYBE; /* unsupported day format */
 
      if(retval == 1) oldgaa_status = OLDGAA_YES;
-   
-   return oldgaa_status; 
+
+   return oldgaa_status;
 
 }
 
 /**********************************************************************
 
-Function: oldgaa_evaluate_regex_cond() 
+Function: oldgaa_evaluate_regex_cond()
 
 Description:
 	Walks throug condition list and evaluates each condition.
@@ -434,7 +436,7 @@ Returns:
 **********************************************************************/
 
 oldgaa_error_code
-oldgaa_evaluate_regex_cond(oldgaa_conditions_ptr condition, 
+oldgaa_evaluate_regex_cond(oldgaa_conditions_ptr condition,
                         oldgaa_options_ptr    options)
 {
   char          **subject_regexes = NULL; /* NULL terminated list of regexes */
@@ -448,14 +450,14 @@ fprintf(stderr, "oldgaa_evaluate_rege_cond:\n");
    subject_regexes = oldgaa_parse_regex(condition->value);
 
    if(!subject_regexes) return OLDGAA_FAILURE;
-           
-     if(oldgaa_check_reg_expr(options->value, subject_regexes))  
+
+     if(oldgaa_check_reg_expr(options->value, subject_regexes))
       oldgaa_status = OLDGAA_YES;
 
      for (i=0; subject_regexes[i] != NULL; i++)
        free(subject_regexes[i]);
      free(subject_regexes);
-   
+
 return oldgaa_status;
 
 }
@@ -463,7 +465,7 @@ return oldgaa_status;
 /*****************************************************************************/
 
 oldgaa_error_code
-oldgaa_evaluate_time_cond(oldgaa_conditions_ptr condition, 
+oldgaa_evaluate_time_cond(oldgaa_conditions_ptr condition,
                        oldgaa_options_ptr    options)
 
 {
@@ -475,34 +477,34 @@ oldgaa_evaluate_time_cond(oldgaa_conditions_ptr condition,
    strcpy(cond, condition->value);
 
   if(oldgaa_strings_match(condition->authority, HOUR_SCALE_24))
-   {  
+   {
      char *hr_str;
      char *min_str;
      char *sec_str;
      char *value;
 
-     /* current hour    */ 
+     /* current hour    */
      hr_str = get_hr_24();
      hr  = atoi(hr_str);
      free(hr_str);
 
-     /* current minutes */  
+     /* current minutes */
      min_str = get_minutes();
      min = atoi(min_str);
      free(min_str);
 
-     /* current seconds */ 
+     /* current seconds */
      sec_str = get_seconds();
      sec = atoi(sec_str);
      free(sec_str);
 
-     /* get hours from condition value */    
+     /* get hours from condition value */
      value = get_value(&j, cond, ':');
      cond_hr = atoi(value);
      free(value);
 
      if (hr < cond_hr) return OLDGAA_NO;
-    
+
      /* get minutes from condition value */
      value = get_value(&j, cond, ':');
      cond_min = atoi(value);
@@ -513,7 +515,7 @@ oldgaa_evaluate_time_cond(oldgaa_conditions_ptr condition,
      cond_sec = atoi(value);
      free(value);
 
-  
+
     if (cond_hr == hr) /* if hours are equal, check minutes */
     {
       if (min < cond_min) return OLDGAA_NO;
@@ -571,29 +573,29 @@ oldgaa_evaluate_time_cond(oldgaa_conditions_ptr condition,
 
 oldgaa_error_code
 oldgaa_evaluate_sech_mech_cond(oldgaa_principals_ptr  principal,
-                        oldgaa_conditions_ptr  condition, 
+                        oldgaa_conditions_ptr  condition,
                         oldgaa_options_ptr     options)
 
-{ 
+{
    oldgaa_error_code oldgaa_status = OLDGAA_NO;
 
    if (oldgaa_strings_match(condition->value, principal->authority))
    oldgaa_status = OLDGAA_YES;
-         
-   return oldgaa_status; 
+
+   return oldgaa_status;
 
 }
 
 
 
 /**********************************************************************
-             Helpers Static Functions         
+             Helpers Static Functions
  **********************************************************************/
 
 
 /**********************************************************************
 
-Function: evaluate_condition() 
+Function: evaluate_condition()
 
 Description:
 	Invokes apropriate evaluation function for each condition.
@@ -610,27 +612,27 @@ Returns:
 
 static
 oldgaa_error_code
-evaluate_condition(oldgaa_sec_context_ptr sc, 
+evaluate_condition(oldgaa_sec_context_ptr sc,
                    oldgaa_conditions_ptr  condition,
                    oldgaa_options_ptr     options)
-{  
+{
   oldgaa_error_code oldgaa_status = OLDGAA_MAYBE;
- 
+
 #ifdef DEBUG
-fprintf(stderr, "evaluate_condition: %s %s %s\n", 
+fprintf(stderr, "evaluate_condition: %s %s %s\n",
         condition->type,
         condition->authority,
         condition->value);
 #endif /* DEBUG */
- 
 
-  if(!strcmp(condition->type,      COND_SUBJECTS) && 
-     !strcmp(condition->authority, AUTH_GLOBUS))    
+
+  if(!strcmp(condition->type,      COND_SUBJECTS) &&
+     !strcmp(condition->authority, AUTH_GLOBUS))
      oldgaa_status = oldgaa_evaluate_regex_cond(condition, options);
 
-  if(!strcmp(condition->type,      COND_BANNED_SUBJECTS) && 
+  if(!strcmp(condition->type,      COND_BANNED_SUBJECTS) &&
      !strcmp(condition->authority, AUTH_GLOBUS))
-    {    
+    {
      oldgaa_status = oldgaa_evaluate_regex_cond(condition, options);
      if(oldgaa_status == OLDGAA_YES) oldgaa_status = OLDGAA_NO;
     }
@@ -652,14 +654,14 @@ fprintf(stderr, "evaluate_condition: %s %s %s\n",
 #endif
 
    /* check if condition evaluation function for upcall was passed in the security context */
-  if(sc->condition_evaluation) 
+  if(sc->condition_evaluation)
     sc->condition_evaluation(sc, options, condition, &oldgaa_status);
 
   if(oldgaa_status != OLDGAA_MAYBE)
   condition->status |= COND_FLG_EVALUATED; /* evaluated */
 
   if(oldgaa_status == OLDGAA_YES)
-  condition->status |= COND_FLG_MET;       /* met */ 
+  condition->status |= COND_FLG_MET;       /* met */
 
 return oldgaa_status;
 
@@ -678,13 +680,13 @@ get_day()
   if (!str)
       out_of_memory();
 
-  time(&tt); 
-  t = localtime(&tt); 
+  time(&tt);
+  t = localtime(&tt);
   strftime(str,STRING_LENGTH,"%A",t);
 
-  return str; 
+  return str;
 }
- 
+
 
 /*****************************************************************************/
 static
@@ -699,12 +701,12 @@ get_hr_24()
   if (!str)
       out_of_memory();
 
-  time(&tt); 
-  t = localtime(&tt); 
+  time(&tt);
+  t = localtime(&tt);
   strftime(str,STRING_LENGTH,"%H",t);
 
-  return str; 
-} 
+  return str;
+}
 /*****************************************************************************/
 /* commented out by SLANG - not currently used */
 /*  static */
@@ -740,12 +742,12 @@ get_minutes()
       out_of_memory();
 
 
-  time(&tt); 
-  t = localtime(&tt); 
+  time(&tt);
+  t = localtime(&tt);
   strftime(str,STRING_LENGTH,"%M",t);
 
-  return str; 
-} 
+  return str;
+}
 /*****************************************************************************/
 static
 char *
@@ -759,12 +761,12 @@ get_seconds()
   if (!str)
       out_of_memory();
 
-  time(&tt); 
-  t = localtime(&tt); 
+  time(&tt);
+  t = localtime(&tt);
   strftime(str,STRING_LENGTH,"%S",t);
 
-  return str; 
-} 
+  return str;
+}
 
 /*****************************************************************************/
 /* commented out by SLANG - not currently used */
@@ -790,29 +792,29 @@ get_seconds()
 static
 int
 day_to_val(char *str)
-{ 
- 
+{
+
  if (oldgaa_regex_matches_string(str, "Su") ||
      oldgaa_regex_matches_string(str, "su")) return 1;
 
- if (oldgaa_regex_matches_string(str, "Mo") || 
+ if (oldgaa_regex_matches_string(str, "Mo") ||
      oldgaa_regex_matches_string(str, "mo")) return 2;
 
  if (oldgaa_regex_matches_string(str, "Tu") ||
      oldgaa_regex_matches_string(str, "tu")) return 3;
-  
+
  if (oldgaa_regex_matches_string(str, "We") ||
      oldgaa_regex_matches_string(str, "we")) return 4;
-        
+
  if (oldgaa_regex_matches_string(str, "Th") ||
      oldgaa_regex_matches_string(str, "th")) return 5;
-       
+
  if (oldgaa_regex_matches_string(str, "Fr") ||
      oldgaa_regex_matches_string(str, "fr")) return 6;
-     
+
  if (oldgaa_regex_matches_string(str, "Sa") ||
      oldgaa_regex_matches_string(str, "sa")) return 7;
-                     
+
  return 0;
 }
 
@@ -836,11 +838,11 @@ check_day(char *str1, char *str2, char *day)
     ((val1 < val2) && (val > val1) && (val < val2)) ||
     ((val1 > val2) && val2 && ((val > val1) || (val < val2)))
    ) return 1;
- 
+
  return 0;
 
-} 
- 
+}
+
 
 /*****************************************************************************/
 
@@ -855,17 +857,17 @@ get_value(int *jj, const char *cond, const char delimiter)
   if(!str) out_of_memory();
 
   for(i=0; j <= length; i++)
-	{ 
+	{
           str[i] = cond[j];
-          j++; 
-          if((cond[j] == delimiter)) { j++; /* omit delimiter */ break; }   
+          j++;
+          if((cond[j] == delimiter)) { j++; /* omit delimiter */ break; }
 	}
 
  str[i+1] = NUL; /* terminate the string */
  *jj = j;
  return str;
-  } 
-           
+  }
+
 /*****************************************************************************/
 
 
