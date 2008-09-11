@@ -1322,6 +1322,13 @@ globus_gsi_cred_get_policies(
         {
             policy_string = PROXYPOLICY_get_policy(policy, 
                                                         &policy_string_length);
+            if (policy_string == NULL)
+            {
+                GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN);
+                goto exit;
+            }
         }
 
         if((final_policy_string = malloc(policy_string_length + 1)) == NULL)
@@ -1375,6 +1382,10 @@ globus_gsi_cred_get_policies(
     if(final_policy_string != NULL)
     {
         free(final_policy_string);
+    }
+    if (policy_string != NULL)
+    {
+        free(policy_string);
     }
 
     if(*policies != NULL)
@@ -1701,6 +1712,14 @@ globus_gsi_cred_verify_cert_chain(
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
     cert_store = X509_STORE_new();
+    if (cert_store == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+        goto exit;
+    }
+
     X509_STORE_set_verify_cb_func(cert_store, 
                                   globus_gsi_callback_create_proxy_callback);
     X509_STORE_set_depth(cert_store, GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);

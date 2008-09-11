@@ -2204,6 +2204,13 @@ globus_l_gsi_cred_get_service(
     if(strcmp("host",cn))
     {
         *service = strdup(cn);
+        if (*service == NULL)
+        {
+            GLOBUS_GSI_CRED_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
+                (_GCRSL("Error copying service name.\n")));
+        }
     }
     else
     {
