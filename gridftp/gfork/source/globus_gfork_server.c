@@ -14,6 +14,7 @@ char *                                  gfork_l_keep_envs[] =
     "X509_USER_PROXY",
     "GRIDMAP",
     "GLOBUS_HOSTNAME",
+    "GLOBUS_LOCATION",
     "GLOBUS_TCP_PORT_RANGE",
     "X509_USER_CERT",
     "X509_USER_KEY",
