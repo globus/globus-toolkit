@@ -1,0 +1,52 @@
+dnl
+
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+AC_CONFIG_AUX_DIR(.)
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+AC_MSG_CHECKING([if compiler supports -Wno-unused])
+echo "int main(void) { return 0; }" > conftest.c
+if test "X`$CC -Wno-unused -c conftest.c 2>&1`" = "X" ; then
+    AC_MSG_RESULT(yes)
+    CFLAGS="$CFLAGS -Wno-unused"
+else
+    AC_MSG_RESULT(no)
+fi
+
+LAC_DOXYGEN("../ ./", "*.dox")
+
+GLOBUS_INSTALLDIR=$GLOBUS_LOCATION
+AC_SUBST(GLOBUS_INSTALLDIR)
+    
+GLOBUS_FINALIZE
+
+PACKAGENAME="gridftp_server_advertiser_service"
+AC_SUBST(PACKAGENAME)
+
+INCLUDEPATH=""
+AC_SUBST(INCLUDEPATH)
+
+
+if test "$GPT_IGNORE_DEPS" = ""; then
+    INCLUDE_MAKEFILE_SOURCES="include \$(top_builddir)/Makefile.sources"
+fi
+AC_SUBST(INCLUDE_MAKEFILE_SOURCES)
+
+
+AC_OUTPUT(
+	Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+        doxygen/Makefile
+        doxygen/Doxyfile
+        doxygen/Doxyfile-internal
+       GridFTPAdvertiseService/Makefile
+
+)
