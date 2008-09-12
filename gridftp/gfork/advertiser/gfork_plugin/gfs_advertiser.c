@@ -182,8 +182,6 @@ gridftpA_l_fe_get_cb(
 
     gridftp_advertise_frontendInfoType_init(&fe);
 
-    fe->contactString = globus_libc_strdup("contactString");
-    fe->banner = globus_libc_strdup("banner");
     fe->maxConnections = 0;
 
     globus_mutex_lock(&g_mutex);
