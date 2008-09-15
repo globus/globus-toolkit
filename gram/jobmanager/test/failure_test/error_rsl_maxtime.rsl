@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MAXTIME *)
-&(executable=/bin/sh)
- (maxtime=(1))
