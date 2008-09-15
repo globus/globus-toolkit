@@ -4471,11 +4471,11 @@ globus_gsi_sysconfig_get_home_dir_unix(
     }
 
     temp_home_dir = malloc(strlen(pwd_result->pw_dir) + 1);
-    strncpy(temp_home_dir, pwd_result->pw_dir, 
-            strlen(pwd_result->pw_dir) + 1);
-
     if(temp_home_dir)
     {
+        strncpy(temp_home_dir, pwd_result->pw_dir, 
+                strlen(pwd_result->pw_dir) + 1);
+
         result = GLOBUS_GSI_SYSCONFIG_DIR_EXISTS(temp_home_dir);
         if(result != GLOBUS_SUCCESS)
         {
