@@ -218,7 +218,7 @@ globus_gsi_proxy_create_req(
     X509_NAME *                         req_name = NULL;
     X509_NAME_ENTRY *                   req_name_entry = NULL;
     RSA *                               rsa_key = NULL;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 pci_NID = NID_undef;
 
     static char *                       _function_name_ =
@@ -1044,7 +1044,7 @@ globus_l_gsi_proxy_sign_key(
     EVP_PKEY *                          public_key,
     X509 **                             signed_cert)
 {
-    char *                              common_name;
+    char *                              common_name = NULL;
     int                                 pci_NID = NID_undef;
     int                                 pci_DER_length;
     unsigned char *                     pci_DER = NULL;
@@ -1178,6 +1178,12 @@ globus_l_gsi_proxy_sign_key(
         if(handle->common_name)
         {
             common_name = strdup(handle->common_name);
+            if(!common_name)
+            {
+                result =
+                    GLOBUS_GSI_PROXY_MALLOC_ERROR(strlen(handle->common_name));
+                goto done;
+            }
         }
         else
         { 
@@ -1620,7 +1626,7 @@ globus_l_gsi_proxy_sign_key(
             ASN1_INTEGER_free(serial_number);
         }
 
-        if(!handle->common_name && common_name)
+        if(common_name)
         {
             free(common_name);
         }
@@ -2261,7 +2267,7 @@ globus_l_gsi_proxy_determine_type(
     globus_gsi_cert_utils_cert_type_t * out_proxy_type)
 {
     globus_gsi_cert_utils_cert_type_t   issuer_cert_type = 0;
-    globus_gsi_cert_utils_cert_type_t   requested_cert_type;
+    globus_gsi_cert_utils_cert_type_t   requested_cert_type = 0;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_l_gsi_proxy_determine_type";

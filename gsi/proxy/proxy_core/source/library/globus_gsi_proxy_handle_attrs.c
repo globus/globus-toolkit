@@ -601,7 +601,7 @@ globus_gsi_proxy_handle_attrs_copy(
         GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
-        goto error_exit;
+        goto destroy_b_exit;
     }
 
     (*b)->key_bits = a->key_bits;
@@ -613,14 +613,20 @@ globus_gsi_proxy_handle_attrs_copy(
     result = GLOBUS_SUCCESS;
     goto exit;
 
- error_exit:
 
+destroy_b_exit:
     if(*b)
     {
         globus_gsi_proxy_handle_attrs_destroy(*b);
     }
 
- exit:
+error_exit:
+    if (b)
+    {
+        *b = NULL;
+    }
+
+exit:
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;

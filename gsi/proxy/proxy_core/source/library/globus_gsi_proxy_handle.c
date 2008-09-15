@@ -70,7 +70,6 @@ globus_gsi_proxy_handle_init(
 {
     globus_gsi_proxy_handle_t           handle_i;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    int                                 len;
     static char *                       _function_name_ =
         "globus_gsi_proxy_handle_init";
 
@@ -86,17 +85,14 @@ globus_gsi_proxy_handle_init(
         goto exit;
     }
 
-    len = sizeof(globus_i_gsi_proxy_handle_t);
-    *handle = (globus_gsi_proxy_handle_t) 
-        malloc(len);
+    *handle = calloc(1, sizeof(globus_i_gsi_proxy_handle_t));
 
     if(*handle == NULL)
     {
-        result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(len);
+        result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(
+                sizeof(globus_i_gsi_proxy_handle_t));
         goto exit;
     }
-
-    memset(*handle, (int) NULL, len);
 
     handle_i = *handle; 
 
@@ -156,6 +152,7 @@ globus_gsi_proxy_handle_init(
     if(handle_i)
     {
         globus_gsi_proxy_handle_destroy(handle_i);
+        *handle = NULL;
     }
 
  exit:
@@ -1760,7 +1757,7 @@ globus_gsi_proxy_handle_set_common_name(
         if(!handle->common_name)
         {
             result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(
-                strlen(handle->common_name));
+                strlen(common_name));
             goto exit;
         }
     } 
