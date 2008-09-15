@@ -14,6 +14,18 @@ my $client_prog = './gss-assist-auth-init';
 
 Globus::Testing::Utilities::testcred_setup() || die "Unable to set up test certs";
 
+my ($valgrind_client, $valgrind_server) = ('', '');
+if (exists $ENV{VALGRIND})
+{
+    $valgrind_client = "valgrind --log-file=VALGRIND-gss_assist_auth_test-client.log";
+    $valgrind_server = "valgrind --log-file=VALGRIND-gss_assist_auth_test-server.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind_client .= ' ' . $ENV{VALGRIND_OPTIONS};
+        $valgrind_server .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
+
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
@@ -24,8 +36,6 @@ sub basic_func
     my $client_pid;
     my $port;
     
-   unlink('core');
-
    if($sec_env == 1)
    {
        $ENV{X509_CERT_DIR} = "";
@@ -35,7 +45,7 @@ sub basic_func
        $ENV{X509_USER_PROXY} = "";       
    }
 
-   $server_pid = open(SERVER, "$server_prog |");
+   $server_pid = open(SERVER, "$valgrind_server $server_prog |");
 
    if($server_pid == -1)
    {
@@ -47,7 +57,7 @@ sub basic_func
    chomp($port);
    $port =~ s/Socket has port \#//;
 
-   $client_pid = open(CLIENT, "$client_prog localhost $port|");
+   $client_pid = open(CLIENT, "$valgrind_client $client_prog localhost $port|");
 
    if($client_pid == -1)
    {
@@ -79,11 +89,6 @@ sub basic_func
    
    close(CLIENT);
    close(SERVER);
-
-   if(-r 'core')
-   {
-      ok("Core file generated.", 'ok');
-   }
 
    if($errors eq "" || $expect_failure)
    {

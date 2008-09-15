@@ -8,13 +8,23 @@ my @todo;
 
 my $test_prog = './gss-assist-gridmap';
 
+my ($valgrind) = ('');
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-gss_assist_gridmap_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
+
 $ENV{GRIDMAP} = "grid-mapfile";
 
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
     
-   $rc = system("$test_prog") / 256;
+   $rc = system("$valgrind $test_prog") / 256;
 
    if($rc != 0)
    {

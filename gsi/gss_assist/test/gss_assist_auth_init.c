@@ -42,6 +42,8 @@ int main(int argc, char * argv[])
     struct hostent *                    hostname;
     char *                              verbose_env = NULL;
 
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+
     verbose_env = getenv("GSS_ASSIST_VERBOSE_TEST");
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -271,6 +273,7 @@ int main(int argc, char * argv[])
         perror("closing stream socket");
         exit(1);
     }
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     
     exit(0);
 }
