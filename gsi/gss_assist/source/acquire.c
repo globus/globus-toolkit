@@ -121,7 +121,7 @@ globus_gss_assist_acquire_cred_ext(
     gss_buffer_desc                     tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
     gss_buffer_t                        tmp_buffer      = &tmp_buffer_desc;
     char *                              cp, * qp;
-    int                                 i, j;
+    int                                 i = -1, j;
     static char *                       _function_name_ =
         "globus_gss_assist_acquire_cred_ext";
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;    
@@ -158,9 +158,9 @@ globus_gss_assist_acquire_cred_ext(
 
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(3,
             (globus_i_gsi_gss_assist_debug_fstream, 
-             _GASL("Imported name %s type:%p:i%d\n"), 
+             _GASL("Imported name %s type:%p:%s\n"), 
              (char *) tmp_buffer->value, 
-             desired_name_type, i));
+             desired_name_type, i != -1 ? oid_names[i] : "GSS_C_NO_OID"));
     }
 
     major_status = gss_acquire_cred(minor_status,

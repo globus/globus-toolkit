@@ -618,11 +618,6 @@ globus_i_gss_assist_gridmap_find_dn(
 	free(gridmap_filename);
     }
 
-    if (gmap_stream)
-    {
-        fclose(gmap_stream);
-    }
-
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return result;
 } 
@@ -1034,11 +1029,6 @@ globus_i_gss_assist_gridmap_parse_line(
 	free(userids);
     }
 
-    if (gline_tmp)
-    {
-        free(gline_tmp);
-    }
-
  exit:
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
@@ -1407,11 +1397,6 @@ globus_gss_assist_lookup_all_globusid(
     if(gridmap_filename != NULL)
     {
         free(gridmap_filename);
-    }
-
-    if(gmap_stream)
-    {
-        fclose(gmap_stream);
     }
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
