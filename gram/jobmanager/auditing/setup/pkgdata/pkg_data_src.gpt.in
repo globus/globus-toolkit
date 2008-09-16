@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_auditing_setup_scripts" >
 
-  <Aging_Version Age="0" Major="0" Minor="3" />
+  <Aging_Version Age="0" Major="0" Minor="4" />
   <Description >Pre-WS GRAM Auditing Setup</Description>
   <Functional_Group >Pre-WS GRAM</Functional_Group>
   <Version_Stability Release="Alpha" />
