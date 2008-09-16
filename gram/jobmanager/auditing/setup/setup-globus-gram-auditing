@@ -5,51 +5,44 @@ use IO::File;
 
 my $gpath = $ENV{GPT_LOCATION};
 
-if (!defined($gpath))
-{
+if (!defined($gpath)) {
     $gpath = $ENV{GLOBUS_LOCATION};
 }
 
-if (!defined($gpath))
-{
+if (!defined($gpath)) {
     die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
 }
 
 @INC = (@INC, "$gpath/lib/perl");
-
 require Grid::GPT::Setup;
 
-my $metadata =
-    new Grid::GPT::Setup(package_name => "globus_gram_job_manager_auditing_setup_scripts");
-
-my $globusdir	= $ENV{GLOBUS_LOCATION};
-my $setupdir	= "$globusdir/setup/globus";
-my $sysconfdir	= "$globusdir/etc";
-my $help	= 0;
-my $auditing_dir = '';   
-my $url         = 'jdbc:postgresql://localhost/auditDatabase';
-my $driverclass = 'org.postgresql.Driver';
-my $default_user = (getpwuid($<))[0];  
-my $username    = $default_user;
-my $password    = 'audit';
+my $help = 0;
+my $metadata = new Grid::GPT::Setup(package_name => "globus_gram_job_manager_auditing_setup_scripts");
+my $globusdir = "$ENV{GLOBUS_LOCATION}";
+my $setupdir = "$globusdir/setup/globus";
+my $sysconfdir = "$globusdir/etc";
+my $url = "jdbc:derby:directory:$globusdir/var/gram/auditDatabase";
+my $driverclass = 'org.apache.derby.jdbc.EmbeddedDriver';  
+my $username = 'globus';
+my $password = 'GrAmAuDiT';
+my $version = '1';
 my $config_file = "$sysconfdir/globus-job-manager-audit.conf";
 
-GetOptions('url|u=s' => \$url,
-           'driverclass|d=s' => \$driverclass,
-           'username|n=s' => \$username,
-           'password|p=s' => \$password,
-           'help|h' => \$help);
+GetOptions(
+  'url|u=s' => \$url,
+  'driverclass|d=s' => \$driverclass,
+  'username|n=s' => \$username,
+  'password|p=s' => \$password,
+  'version|v=s' => \$version,
+  'help|h' => \$help);
 
 &usage if($help);
-
 &write_config();
-
 $metadata->finish();
 
 sub write_config
 {
     local(*F);
-
     open(F, ">$config_file") || die "Unable to create $config_file\n";
     chmod(0700, $config_file) || die "Unable to set $config_file permissions\n";
 
@@ -58,6 +51,7 @@ DRIVERCLASS:$driverclass
 USERNAME:$username
 PASSWORD:$password
 URL:$url
+AUDITVERSION:$version
 EOF
     close(F);
 }
@@ -67,14 +61,16 @@ sub usage
     print <<EOF;
 Usage: $0 [OPTIONS]...
 Options:
-    -h | --help               Display this help message and exit.
-    -d | --driverclass DRIVER-CLASS
-                              Use DRIVER-CLASS as the Java database driver
-                              [default: org.postgresql.Driver]
-    -n | --username USERNAME  Use USERNAME as the Database username.
-                              [default: $default_user]
-    -p | --password PASSWORD  Use PASSWORD as the Database password [default: audit].
-    -u | --url DATABASE-URL   Use DATABASE-URL as the contact for the audit database.
-                              [default: jdbc:postgresql://localhost/auditDatabase]
+    -h | --help                      Display this help message and exit.
+    -d | --driverclass DRIVER-CLASS  Java database driver class
+                                     [default: $driverclass]
+    -n | --username USERNAME         username used in connection to the database
+                                     [default: $user].
+    -p | --password PASSWORD         password used in connection to the database
+                                     [default: $password].
+    -u | --url DATABASE-URL          Use DATABASE-URL as the contact for the audit database.
+                                     [default: $url]
+    -v | --version VERSION           Audit version
+                                     [default: $version].
 EOF
 }

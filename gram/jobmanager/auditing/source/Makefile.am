@@ -6,7 +6,7 @@ SUBDIRS= pkgdata
 # Where targets are installed
 libexec_SCRIPTS = globus-gram-audit
 
-pkgdata_DATA = log4j.properties
+pkgdata_DATA = 
 pkgdocdir = $(GLOBUS_LOCATION)/share/doc/$(PACKAGE)
 
 pkgdoc_DATA = globus-gram-audit.html

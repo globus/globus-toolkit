@@ -1,28 +1,25 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS = pkgdata
+SUBDIRS = pkgdata records jobs perl_modules
 
 pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 Scripts = \
-	TESTS.pl \
-	globus-gram-job-manager-run-auditing-test.pl
-
-Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
-	testcred.pem \
-	Readme.txt
-
+    TESTS.pl \
+    globus-gram-job-manager-auditing-job-submission-test.pl \
+    globus-gram-job-manager-auditing-upload-success-test.pl \
+    globus-gram-job-manager-auditing-upload-failure-test.pl
+    
 pkgtest_SCRIPTS = $(Scripts)
 
-pkgtest_DATA=$(Data)
+pkgtest_DATA=
 
 EXTRA_DIST = \
-	TESTS.pl \
-	globus-gram-job-manager-run-auditing-test.pl \
-	$(Data)
+    TESTS.pl \
+    globus-gram-job-manager-auditing-job-submission-test.pl \
+    globus-gram-job-manager-auditing-upload-success-test.pl \
+    globus-gram-job-manager-auditing-upload-failure-test.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_auditing">
 
-    <Aging_Version Age="0" Major="0" Minor="4"/>
+    <Aging_Version Age="0" Major="0" Minor="5"/>
     <Description>GRAM Jobmanager Auditing</Description>
     <Functional_Group>Pre-WS GRAM</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -14,7 +14,7 @@
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_wsrf_gram_utils_java" Package="pgm">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

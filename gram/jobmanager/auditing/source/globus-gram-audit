@@ -13,107 +13,115 @@ B<globus-job-manager-service>
 Upload audit records to a database. Reads $GLOBUS_LOCATION/etc/globus-job-manager.conf
 to determine the audit directory and then uploads all files in that directory that
 contain valid audit records to the database configured by the 
-globus_gram_job_manager_auditing_setup_scripts package. If the upload completes successfully,
-the audit files will be removed. 
-
+globus_gram_job_manager_auditing_setup_scripts package. If the upload completes
+successfully, the audit files will be removed.
+Script arguments:
+  --check:
+     if set the Uploader will check whether the insertion of
+     a record was successful. This is mostly for testing purposes.
+  --delete:
+     if set the Uploader will delete the audit record right after
+     inserting it. This is for testing purposes.
+  --audit-directory <dir>
+     if a directory is specified then audit records will be looked up in this
+     directory, instead of looking in the directory specified in the job manager
+     configuration. This is used in tests.
+     
 =cut
 
+use Getopt::Long;
 use strict;
 
-local(*APPEND_IN);
+my $rc = 0;
+my $check = 0;
+my $delete = 0;
+my $audit_directory = "";
 
-my $audit_dir = &get_audit_dir();
-my $datadir = "$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager_auditing";
+# Check for environment variable $GLOBUS_LOCATION
+if (! -d $ENV{GLOBUS_LOCATION}) {
+    print "Error: GLOBUS_LOCATION not defined as environment variable.";
+    exit(1);
+}
+
+GetOptions(
+  'check' => \$check,
+  'delete' => \$delete,
+  'audit-directory=s' => \$audit_directory);
+
+# If the audit record directory wasn't passed as command-line argument,
+# read it from job manager configuration file
+if ($audit_directory eq '') {
+    $audit_directory = get_audit_directory();
+    if ($audit_directory eq '') {
+        print "No -audit-directory specified in job-manager.conf. " .
+            "Nothing to do\n";
+        exit(0 == 1);
+    }
+}
+
 my $audit_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-job-manager-audit.conf";
 my $argument_string = "-c $audit_conf";
 
-if (! exists $ENV{GLOBUS_OPTIONS})
-{
-    $ENV{GLOBUS_OPTIONS} = "";
+if ($check)  {
+    $argument_string = $argument_string . " --check";
 }
-$ENV{GLOBUS_OPTIONS} .= " -Dlog4j.configuration=file://$datadir/log4j.properties";
-
-if ($audit_dir eq '')
-{
-    print "No -audit-directory in job-manager.conf. Nothing to do\n";
-    exit(0);
+if ($delete) {
+    $argument_string = $argument_string . " --delete";
 }
 
-# Check if "--check" was added as commandline argument.
-# This will cause the AuditDatabaseAppender to check the database
-# connection and that the record with the given job_grid_id was inserted 
-# into the database successfully
-my $count = scalar(@ARGV);
-for(my $i=0; $i<$count; $i++)
-{
-  if ($ARGV[$i] eq "--check") 
-  {
-    $argument_string = $argument_string . " $ARGV[$i]";
-  }
-} 
-
-my $pid = open(APPEND_IN, "|$ENV{GLOBUS_LOCATION}/libexec/globus-gram-append-audit-records $argument_string");
-select APPEND_IN; $|=1;
+my $pid = open(UPLOAD_IN, "|$ENV{GLOBUS_LOCATION}/libexec/globus-gram-append-audit-records $argument_string");
+select UPLOAD_IN; $|=1;
 select STDOUT;
-my @cleanup_list = ();
 
-foreach (glob("$audit_dir/*.gramaudit"))
-{
+# Loop over all audit record files in the audit directory.
+foreach (glob("$audit_directory/*.gramaudit")) {
+
     local (*F);
     my $record_file = $_;
     my $owner = (stat($record_file))[4];
     my $record;
     my @record_entries;
 
-    open(F, "<$record_file") || next;
-
-    chomp($record = <F>);
-    @record_entries = split(/"[^"]"/, $record);
-    close(F);
-
-    push(@cleanup_list, $record_file);
-
-    # don't process entries where the owner != the job user
-    if ($record_entries[3] ne (getpwuid($owner))[0])
-    {
+    # read the record file and confirm that the owner of the file
+    # is the local user id in the audit record 
+    if (open(F, "<$record_file")) {
+        chomp($record = <F>);
+        @record_entries = split(/"[^"]"/, $record);
+        close(F);
+        # don't process entries where the owner != the job user
+        if ($record_entries[3] ne (getpwuid($owner))[0]) {
+            print STDERR "Skipping record-file $record_file: " .
+                "record owner is different from local user id in audit record\n";
+            $rc = 1;
+            next;
+        }
+    } else {
+        print STDERR "Skipping record-file $record_file: " .
+            "Unable to open for reading\n";
         next;
     }
-    print APPEND_IN "$record\n" || die "Unable to write record to appender\n";
+    print UPLOAD_IN "$record_file\n" ||
+        die "Unable to write record-file to appender\n";
 }
 
-close(APPEND_IN);
-
-# 0 or 1 as return value expected:
-# 0=success, 1=failure in the AuditDatabaseAppender class
-my $success = $?;
-
-if ($success == 0)
-{
-    unlink(@cleanup_list);
-}
-
-exit $success >> 8;
+close(UPLOAD_IN);
+$rc += $?;
+exit (0 != $rc);
 
 
+# Get the audit directory from the job manager configuration file
+sub get_audit_directory {
 
-
-sub get_audit_dir
-{
-    local(*F);
     my $jmconf = "$ENV{GLOBUS_LOCATION}/etc/globus-job-manager.conf";
-    my $audit_dir = '';
-
+    my $audit_directory = '';
+    local(*F);
     open(F, "<$jmconf");
-
-    while(<F>)
-    {
-        if (m/-audit-directory\s+(\S+)\s+/)
-        {
-            $audit_dir = $1;
+    while(<F>) {
+        if (m/-audit-directory\s+(\S+)\s+/) {
+            $audit_directory = $1;
             last;
         }
     }
     close(F);
-
-    return $audit_dir;
+    return $audit_directory;
 }

@@ -18,4 +18,7 @@ AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
+	jobs/Makefile
+	records/Makefile
+	perl_modules/Makefile
 )
