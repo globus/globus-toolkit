@@ -83,7 +83,7 @@ AC_SUBST(xacml, $xacml)
 gramxacml=""
 AC_ARG_ENABLE(gramxacml, AC_HELP_STRING([--enable-gramxacml],\
    [Enable the build of experimental gram xacml tools.  Default is disabled.]),\
-   [if test $enableval = "yes"; then xacml="globus_wsrf_gram_authz_java"; fi], [])
+   [if test $enableval = "yes"; then gramxacml="globus_wsrf_gram_authz_java"; fi], [])
 AC_SUBST(gramxacml, $gramxacml)
 
 gridshib=""
