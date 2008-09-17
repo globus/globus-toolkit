@@ -911,15 +911,17 @@ gfork_l_server_accepted(
             &kid_handle->write_xio_handle, kid_handle->write_fd);
         if(result != GLOBUS_SUCCESS)
         {
-            gfork_log(1, "write handle make failed %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+            char * tmp_s=globus_error_print_friendly(globus_error_get(result));
+            gfork_log(1, "write handle make failed %s\n", tmp_s);
+            free(tmp_s);
         }
         result = gfork_i_make_xio_handle(
             &kid_handle->read_xio_handle, kid_handle->read_fd);
         if(result != GLOBUS_SUCCESS)
         {
-            gfork_log(1, "read handle make failed %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+            char * tmp_s=globus_error_print_friendly(globus_error_get(result));
+            gfork_log(1, "read handle make failed %s\n", tmp_s);
+            free(tmp_s);
         }
         globus_hashtable_insert(
             &gfork_l_pid_table,
@@ -1061,9 +1063,12 @@ gfork_init_server()
         res = gfork_l_spawn_master(ms_ent);
         if(res != GLOBUS_SUCCESS)
         {
+            char * tmp_s;
+
+            tmp_s = globus_error_print_friendly(globus_error_get(res));
             gfork_log(0, "Could not start master program: %s: %s\n",
-                ms_ent->master,
-                globus_error_print_friendly(globus_error_get(res)));
+                ms_ent->master, tmp_s);
+            free(tmp_s);
         }
     }
 
@@ -1246,6 +1251,10 @@ gfork_l_read_body_cb(
             memcpy(msg2, msg, sizeof(gfork_i_msg_t));
 
             globus_hashtable_to_list(&gfork_l_master_pid_table, &list);
+            if(globus_list_empty(list))
+            {
+                globus_free(msg2);
+            }
             for(list = list;
                 !globus_list_empty(list);
                 list = globus_list_rest(list))

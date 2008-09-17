@@ -43,6 +43,10 @@ gfork_l_child_read_close_cb(
 
     handle = (gfork_i_lib_handle_t *) user_arg;
 
+    if(handle->master)
+    {
+        return;
+    }
     handle->close_cb(handle, handle->user_arg, getpid());
 
     globus_mutex_destroy(&handle->mutex);

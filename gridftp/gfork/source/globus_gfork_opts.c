@@ -21,6 +21,7 @@ globus_i_opts_to_handle(
     int                                 i;
     globus_list_t *                     list;
     globus_xio_driver_t                 driver;
+    GForkFuncName(globus_i_opts_to_handle);
 
     memset(handle, '\0', sizeof(gfork_i_handle_t));
 
@@ -47,6 +48,7 @@ globus_i_opts_to_handle(
     else
     {
         /* XXX create error object */
+        result = GForkErrorStr("no program specified before server arguments");
         goto error_no_server;
     }
     if(opts->master != NULL)
