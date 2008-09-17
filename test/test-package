@@ -15,11 +15,11 @@ fi
 
 cd $GLOBUS_LOCATION/test
 
-# Setup the grid-mapfile and such
-globus_test/testcred-setup.sh
-
 # Setup the ordinary client environment
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
+
+# Setup the grid-mapfile and such
+globus_test/testcred-setup.sh
 
 # Setup the test credentials/CA/gridmap environment
 . $GLOBUS_LOCATION/test/globus_test/testcred-env.sh
