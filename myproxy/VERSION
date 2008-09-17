@@ -8,6 +8,8 @@ v4.4 XX Xxx 2008
   - in myproxy-server, log info for the received client request before
     the authorization check, so we have the request info for
     troubleshooting purposes even if the request is denied.
+  - fix problem with OpenSSL engine (for HSM support) being shutdown
+    on child process failures
 
 v4.3 2 Sep 2008
   - improve MyProxy CA error message on incorrect passphrase.
