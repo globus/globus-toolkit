@@ -41,6 +41,9 @@ v4.3 2 Sep 2008
   - added myproxy-admin-adduser -p option for specifying the CA
     private key password using openssl format (see the PASS PHRASE
     ARGUMENTS section in the openssl(1) man page)
+  - associate "Connection from xxx.xxx.xxx.xxx" syslog message with
+    child pid so it matches up with other syslog messages for that
+    client
 
 v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init
