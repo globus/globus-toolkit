@@ -98,8 +98,6 @@ int accept_credmap( char * userdn, char * username,
 
     int retval = 0;      /* Assume success */
 
-    myproxy_debug("accept_credmap()");
-
     /* Check to see if the accepted_credentials_mapapp value has been 
      * specified in the config file.  Also do a sanity check and verify
      * that the mapapp is still executable. */
