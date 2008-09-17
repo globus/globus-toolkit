@@ -99,6 +99,8 @@ static void failure(const char *failure_message);
 
 static void my_failure(const char *failure_message);
 
+static void my_failure_chld(const char *failure_message);
+
 static char *timestamp(void);
 
 static int become_daemon_step1(void);
@@ -315,7 +317,7 @@ main(int argc, char *argv[])
 	  }
 	  my_signal(SIGCHLD, SIG_DFL);
 	  if (handle_client(socket_attrs, server_context) < 0) {
-	     my_failure("error in handle_client()");
+	     my_failure_chld("error in handle_client()");
 	  } 
 	  _exit(0);
        }
@@ -948,16 +950,16 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 						&response_buffer);
     
     if (responselen < 0) {
-        my_failure("error in myproxy_serialize_response()");
+        my_failure_chld("error in myproxy_serialize_response()");
     }
 
     if (myproxy_send(attrs, response_buffer, responselen) < 0) {
-        my_failure("error in myproxy_send()\n");
+        my_failure_chld("error in myproxy_send()\n");
     } 
 
     myproxy_log("Exiting: %s", error);
     
-    exit(1);
+    if(debug) exit(1); else _exit(1);
 }
 
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
@@ -974,7 +976,7 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
     responselen = myproxy_serialize_response_ex(response, &server_buffer);
     
     if (responselen < 0) {
-        my_failure("error in myproxy_serialize_response()");
+        my_failure_chld("error in myproxy_serialize_response()");
     }
 
     /* Log response */
@@ -987,7 +989,7 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
 
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
 	myproxy_log_verror();
-        my_failure("error in myproxy_send()\n");
+        my_failure_chld("error in myproxy_send()\n");
     } 
     free(response->version);
     response->version = NULL;
@@ -1245,6 +1247,13 @@ my_failure(const char *failure_message) {
     myproxy_log("Failure: %s", failure_message);       
     exit(1);
 } 
+
+static void
+my_failure_chld(const char *failure_message) {
+    myproxy_log("Failure: %s", failure_message);
+    if(debug) exit(1); else _exit(1);
+}
+
 
 static char *
 timestamp(void)
