@@ -5,7 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.4 XX Xxx 2008
-  - ...
+  - in myproxy-server, log info for the received client request before
+    the authorization check, so we have the request info for
+    troubleshooting purposes even if the request is denied.
 
 v4.3 2 Sep 2008
   - improve MyProxy CA error message on incorrect passphrase.
