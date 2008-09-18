@@ -293,6 +293,7 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
     globus_xio_iovec_t *                read_iov;
     globus_xio_iovec_t *                write_iov;
     int                                 write_iov_count;
+    globus_size_t                       orig_write_len;
 
     globus_byte_t *                     write_buffer;
     globus_bool_t                       write_posted;
@@ -2508,7 +2509,7 @@ globus_l_xio_gssapi_ftp_write_cb(
         handle->write_posted = GLOBUS_FALSE;
     }
     globus_mutex_unlock(&handle->mutex);
-    globus_xio_driver_finished_write(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, handle->orig_write_len);
 
     GlobusXIOGssapiftpDebugExit();
 }
@@ -2533,7 +2534,7 @@ globus_l_xio_gssapi_ftp_user_server_write_cb(
     }
     globus_mutex_unlock(&handle->mutex);
 
-    globus_xio_driver_finished_write(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, handle->orig_write_len);
 }
 
 static globus_result_t
@@ -2578,6 +2579,7 @@ globus_l_xio_gssapi_ftp_write(
         handle->write_buffer = globus_malloc(length + 1);
         GlobusXIOUtilIovSerialize(handle->write_buffer, iovec, iovec_count);
         handle->write_buffer[length] = '\0';
+        handle->orig_write_len = length;
 
         /* for now insist that they use it correctly */
         if(handle->write_buffer[length-1] != '\n' ||

@@ -1183,7 +1183,7 @@ globus_l_ftp_control_end_of_reply(
 
                     if(total_length+unwrapped_token.length >= copy_len)
                     {
-                        copy_len *= 2;
+                        copy_len = (total_length+unwrapped_token.length) * 4; 
                         out_buf = globus_realloc(out_buf, copy_len);
                     }
 
