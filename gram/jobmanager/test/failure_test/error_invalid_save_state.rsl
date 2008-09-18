@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SAVE_STATE *)
-&(executable=/bin/sh)
- (save_state=bogus)
