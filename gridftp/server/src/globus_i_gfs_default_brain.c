@@ -166,6 +166,18 @@ globus_l_brain_log_socket(
 
 static
 void
+globus_l_gfs_gfork_error_cb(
+    gfork_child_handle_t                handle,
+    void *                              user_arg,
+    globus_result_t                     result)
+{
+    globus_gfs_log_message(GLOBUS_GFS_LOG_WARN, "GFork closed.");
+}
+
+
+
+static
+void
 globus_l_gfs_gfork_close_cb(
     gfork_child_handle_t                handle,
     void *                              user_arg,
@@ -557,6 +569,7 @@ globus_l_gfs_default_brain_init(
             NULL,
             globus_l_gfs_gfork_close_cb,
             globus_l_gfs_gfork_incoming_cb,
+            globus_l_gfs_gfork_error_cb,
             NULL);
         if(result != GLOBUS_SUCCESS)
         {

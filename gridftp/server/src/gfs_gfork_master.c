@@ -82,6 +82,7 @@ static globus_xio_driver_t              g_tcp_driver;
 static globus_xio_driver_t              g_gsi_driver;
 static FILE *                           g_log_fptr;
 static gfork_child_handle_t             g_handle;
+static globus_bool_t                    g_gfork_alive = GLOBUS_FALSE;
 static int                              g_connection_count = 0;
 static int                              g_connection_count_max_observed = 0;
 static globus_hashtable_t               g_gfork_be_table;
@@ -136,6 +137,17 @@ typedef struct gfs_l_gfork_master_entry_s
 
 
 static
+void 
+gfs_l_gfork_write_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_free(user_arg);
+}
+
+
+static
 void
 gfs_l_gfork_log(
     globus_result_t                     result,
@@ -180,6 +192,7 @@ gfs_l_gfork_timeout(
         ent_buf->timeout_count--;
         if(ent_buf->timeout_count < 0)
         {
+            buffer = ent_buf->buffer;
             gfs_l_gfork_log(
                 GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
                 &buffer[GF_DYN_CS_NDX]);
@@ -205,13 +218,11 @@ gfs_l_gfork_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_free(buffer);
-
     globus_xio_register_close(
         handle,
         NULL,
-        NULL,
-        NULL);
+        gfs_l_gfork_write_close_cb,
+        buffer);
 }
 
 static
@@ -287,9 +298,8 @@ gfs_l_gfork_read_remove_dynbe(
         globus_xio_register_close(
             handle,
             NULL,
-            NULL,
-            NULL);
-        globus_free(buffer);
+            gfs_l_gfork_write_close_cb,
+            buffer);
     }
     return GLOBUS_SUCCESS;
 
@@ -335,7 +345,7 @@ gfs_l_gfork_read_cb(
                 break;
 
             default:
-                result = GFSGforkError("unkown registration command", 0);
+                result = GFSGforkError("unknown registration command", 0);
                 gfs_l_gfork_log(
                     result, 2, "Registration command not found\n");
                 break;
@@ -368,8 +378,8 @@ error_version:
         globus_xio_register_close(
             handle,
             NULL,
-            NULL,
-            NULL);
+            gfs_l_gfork_write_close_cb,
+            buffer);
         globus_free(buffer);
         gfs_l_gfork_log(result, 3, "Write NACK failed.\n");
     }
@@ -417,6 +427,15 @@ gfs_l_gfork_read_dynbe(
     char *                              table_key;
     GFSGForkFuncName(gfs_l_gfork_read_dynbe);
 
+    if(!g_gfork_alive)
+    {
+        result = GFSGforkError("GFork is no longer alive", 0);
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 1,
+            "GFork is no longer a live in gfs_l_gfork_read_dynbe\n");
+
+        return result;
+    }
         /* we are only ok if the string ends in a \0 */
     done = GLOBUS_FALSE;
     ok = GLOBUS_TRUE;
@@ -470,7 +489,7 @@ gfs_l_gfork_read_dynbe(
         ent_buf->table_key = strdup(table_key);
         globus_hashtable_insert(
             &g_gfork_be_table,
-            table_key,
+            ent_buf->table_key,
             ent_buf);
         globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
     }
@@ -504,9 +523,10 @@ gfs_l_gfork_read_dynbe(
         globus_xio_register_close(
             handle,
             NULL,
-            NULL,
-            NULL);
+            gfs_l_gfork_write_close_cb,
+            buffer);
         globus_free(buffer);
+        goto error_cs;   
     }
     iov[0].iov_base = malloc(GF_DYN_PACKET_LEN);
     memcpy(iov[0].iov_base, buffer, GF_DYN_PACKET_LEN);
@@ -631,6 +651,7 @@ gfs_l_gfork_dn_ok(
             tmp_str = globus_common_create_string(
                 "%s not found in file", peer_buf.value);
             result = GFSGforkError(tmp_str, 0);
+            free(tmp_str);
             goto error_no_match;
         }
     }
@@ -704,8 +725,8 @@ error_not_allowed:
         globus_xio_register_close(
             handle,
             NULL,
-            NULL,
-            NULL);
+            gfs_l_gfork_write_close_cb,
+            buffer);
         globus_free(buffer);
         gfs_l_gfork_log(result, 3, "Write NACK failed.\n");
     }
@@ -812,7 +833,6 @@ gfs_l_gfork_listen()
     return GLOBUS_SUCCESS;
 
 error_accept:
-    globus_free(contact_string);
 error_server:
 error_server_create:
 
@@ -1254,6 +1274,22 @@ gfs_l_gfork_fire_delayed()
     }
 }
 
+static
+void
+gfs_l_gfork_error_cb(
+    gfork_child_handle_t                handle,
+    void *                              user_arg,
+    globus_result_t                     result)
+{
+    globus_mutex_lock(&g_mutex);
+    {
+        g_gfork_alive = GLOBUS_FALSE;
+        g_done = GLOBUS_TRUE;
+        globus_cond_signal(&g_cond);
+    }
+    globus_mutex_unlock(&g_mutex);
+}
+
 /* connection cloesd */
 static
 void
@@ -1652,10 +1688,12 @@ main(
 {
     globus_result_t                     result;
     int                                 rc;
+    GFSGForkFuncName(main);
 
     rc = globus_module_activate(GLOBUS_GFORK_CHILD_MODULE);
     if(rc != 0)
     {
+        result = GFSGforkError("Failed to activate gfork", 0);
         goto error_activate;
     }
 
@@ -1708,7 +1746,9 @@ main(
             gfs_l_gfork_open_cb,
             gfs_l_gfork_closed_cb,
             gfs_l_gfork_incoming_cb,
+            gfs_l_gfork_error_cb,
             NULL);
+        g_gfork_alive = GLOBUS_TRUE;
         if(result != GLOBUS_SUCCESS)
         {
             goto error_start;
@@ -1932,6 +1972,7 @@ gfs_l_gfork_opts_log(
     int *                               out_parms_used)
 {
     globus_result_t                     result;
+    GFSGForkFuncName(gfs_l_gfork_opts_log);
 
     if(strcmp(opt[0], "-") == 0)
     {
@@ -1942,6 +1983,8 @@ gfs_l_gfork_opts_log(
         g_log_fptr = fopen(opt[0], "w");
         if(g_log_fptr == NULL)
         {
+            result = GFSGforkError("unable to open log file",
+                GFS_GFORK_ERROR_PARAMETER);
             goto error_open;
         }
     }

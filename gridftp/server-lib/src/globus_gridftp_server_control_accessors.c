@@ -25,7 +25,7 @@ globus_bool_t
 globus_gridftp_server_control_authenticated(
     globus_gridftp_server_control_t         server)
 {
-    globus_bool_t                           rc;
+    globus_bool_t                           rc = GLOBUS_TRUE;
     globus_i_gsc_server_handle_t *          i_server;
     GlobusGridFTPServerName(globus_gridftp_server_control_authenticated);
 

@@ -116,8 +116,8 @@ typedef struct gfork_i_msg_s
 typedef enum gfork_i_state_e
 {
     GFORK_STATE_NONE = 0,
-    GFORK_STATE_OPENING,
     GFORK_STATE_OPEN,
+    GFORK_STATE_OPENING,
     GFORK_STATE_OPENING_AND_CLOSING,
     GFORK_STATE_CLOSING,
     GFORK_STATE_CLOSED,
@@ -199,12 +199,14 @@ typedef struct gfork_i_lib_handle_s
     globus_gfork_incoming_cb_t          incoming_cb;
     globus_gfork_open_func_t            open_cb;
     globus_gfork_closed_func_t          close_cb;
+    globus_gfork_error_func_t           error_cb;
     globus_bool_t                       master;
     void *                              user_arg;
     globus_mutex_t                      mutex;
     gfork_i_state_t                     state;
     globus_fifo_t                       write_q;
     globus_bool_t                       writing;
+    globus_object_t *                    error_obj;
 } gfork_i_lib_handle_t;
 
 typedef struct gfork_i_master_program_ent_s

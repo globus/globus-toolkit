@@ -49,6 +49,13 @@ typedef void
     pid_t                               from_pid);
 
 typedef void
+(*globus_gfork_error_func_t)(
+    gfork_child_handle_t                handle,
+    void *                              user_arg,
+    globus_result_t                     result);
+
+
+typedef void
 (*globus_gfork_incoming_cb_t)(
     gfork_child_handle_t                handle,
     void *                              user_arg,
@@ -68,6 +75,7 @@ globus_gfork_child_worker_start(
     const char *                        in_env_suffix,
     globus_gfork_closed_func_t          close_cb,
     globus_gfork_incoming_cb_t          incoming_cb,
+    globus_gfork_error_func_t           error_cb,
     void *                              user_arg);
 
 globus_result_t
@@ -77,6 +85,7 @@ globus_gfork_child_master_start(
     globus_gfork_open_func_t            open_cb,
     globus_gfork_closed_func_t          close_cb,
     globus_gfork_incoming_cb_t          incoming_cb,
+    globus_gfork_error_func_t           error_cb,
     void *                              user_arg);
 
 globus_result_t

@@ -863,6 +863,7 @@ l_ticker_cb(
 
     d = (globus_l_ftp_client_restart_plugin_t *) user_arg;
 
+    globus_assert(d->ticker_set);
     /* no reason to do anything here if the transfer isnt running */
     if(!d->xfer_running || d->abort_pending)
     {
@@ -920,6 +921,10 @@ l_begin_xfer(
     globus_ftp_client_handle_t *        ftp_handle,
     globus_l_ftp_client_restart_plugin_t *  d)
 {
+    if(!d->ticker_set)
+    {
+        return;
+    }
     d->ticker = 0;
     d->ticker_ftp_handle = ftp_handle;
     d->xfer_running = GLOBUS_TRUE;

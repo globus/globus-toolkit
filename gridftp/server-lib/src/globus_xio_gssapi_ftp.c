@@ -67,7 +67,7 @@
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Operation is outstanding"))
+            "Not enough memory"))
 
 #define GlobusXIOGssapiFTPGSIAuthFailure(maj, min)                          \
     globus_error_put(                                                       \
@@ -1030,6 +1030,7 @@ globus_l_xio_gssapi_ftp_unwrap(
 
     if(buf == NULL)
     {
+        res = GlobusXIOGssapiFTPAllocError();
         goto err;
     }
     len = in_length;
@@ -2004,7 +2005,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     char **                             cmd_a = NULL;
     globus_bool_t                       finish = GLOBUS_FALSE;
-    globus_byte_t *                     in_buffer;
+    globus_byte_t *                     in_buffer = NULL;
     GlobusXIOName(globus_l_xio_gssapi_ftp_preauth_client_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();

@@ -2391,6 +2391,11 @@ globus_l_gsc_intermediate_reply(
         server_handle, message, GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY);
 
     tmp_ptr = globus_libc_strdup(message);
+    if(tmp_ptr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("Small malloc failed");
+        goto error_mem;
+    }
     len = strlen(tmp_ptr);
     res = globus_xio_register_write(
             server_handle->xio_handle,
@@ -2411,10 +2416,8 @@ globus_l_gsc_intermediate_reply(
     return GLOBUS_SUCCESS;
 
   err:
-    if(tmp_ptr != NULL)
-    {
-        globus_free(tmp_ptr);
-    }
+    globus_free(tmp_ptr);
+error_mem:
     GlobusGridFTPServerDebugInternalExitWithError();
     return res;
 }
@@ -4204,6 +4207,7 @@ globus_i_gsc_authenticate(
         op->password = globus_libc_strdup(pass);
     }
 
+    type = GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE;
     if(op->server_handle->security_type & GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
         /* if this fails the values are just left null */
@@ -4220,10 +4224,6 @@ globus_i_gsc_authenticate(
         {
             type = GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI;
             op->server_handle->dcau = 'A';
-        }
-        else
-        {
-            type = GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE;
         }
     }
     /* call out to user */

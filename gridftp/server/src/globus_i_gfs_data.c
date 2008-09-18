@@ -753,7 +753,6 @@ globus_l_gfs_getgrgid(
     return grent_copy;
 }
 
-static
 struct passwd *
 globus_l_gfs_getpwuid(
     uid_t                               uid)

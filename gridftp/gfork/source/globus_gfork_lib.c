@@ -39,15 +39,13 @@ gfork_l_child_read_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    gfork_i_lib_handle_t *            handle;
+    gfork_i_lib_handle_t *              handle;
+    globus_result_t                     user_res;
 
     handle = (gfork_i_lib_handle_t *) user_arg;
 
-    if(handle->master)
-    {
-        return;
-    }
-    handle->close_cb(handle, handle->user_arg, getpid());
+    user_res = globus_error_put(handle->error_obj);
+    handle->error_cb(handle, handle->user_arg, user_res);
 
     globus_mutex_destroy(&handle->mutex);
     globus_free(handle);
@@ -77,7 +75,8 @@ gfork_l_child_write_close_cb(
 static
 void
 gfork_l_child_error(
-    gfork_i_lib_handle_t *            handle)
+    gfork_i_lib_handle_t *              handle,
+    globus_result_t                     in_result)
 {
     globus_result_t                     result;
 
@@ -88,6 +87,7 @@ gfork_l_child_error(
             break;
 
         case GFORK_STATE_OPEN:
+            handle->error_obj = globus_error_get(in_result);
             result = globus_xio_register_close(
                 handle->write_xio, NULL,
                 gfork_l_child_write_close_cb, handle);
@@ -154,7 +154,7 @@ error_incoming:
     free(buffer);
     globus_mutex_lock(&handle->mutex);
     {
-        gfork_l_child_error(handle);
+        gfork_l_child_error(handle, result);
     }
     globus_mutex_unlock(&handle->mutex);
 }
@@ -277,7 +277,7 @@ gfork_l_child_read_header_cb(
 error_post:
 error_incoming:
 
-    gfork_l_child_error(handle);
+    gfork_l_child_error(handle, result);
     globus_mutex_unlock(&handle->mutex);
 }
 
@@ -289,6 +289,7 @@ globus_l_gfork_child_start(
     globus_gfork_open_func_t            open_cb,
     globus_gfork_closed_func_t          close_cb,
     globus_gfork_incoming_cb_t          incoming_cb,
+    globus_gfork_error_func_t           error_cb,
     void *                              user_arg,
     globus_bool_t                       master)
 {
@@ -305,6 +306,7 @@ globus_l_gfork_child_start(
     handle->state = GFORK_STATE_OPEN;
     handle->open_cb = open_cb;
     handle->close_cb = close_cb;
+    handle->error_cb = error_cb;
     handle->incoming_cb = incoming_cb;
     handle->user_arg = user_arg;
     handle->master = master;
@@ -369,7 +371,7 @@ globus_l_gfork_child_start(
     return GLOBUS_SUCCESS;
 
 error_post:
-    gfork_l_child_error(handle);
+    gfork_l_child_error(handle, result);
     globus_mutex_unlock(&handle->mutex);
 error_write_convert:
     globus_xio_close(handle->read_xio, NULL);
@@ -389,6 +391,7 @@ globus_gfork_child_worker_start(
     const char *                        in_env_suffix,
     globus_gfork_closed_func_t          close_cb,
     globus_gfork_incoming_cb_t          incoming_cb,
+    globus_gfork_error_func_t           error_cb,
     void *                              user_arg)
 {
     return globus_l_gfork_child_start(
@@ -397,6 +400,7 @@ globus_gfork_child_worker_start(
         NULL,
         close_cb,
         incoming_cb,
+        error_cb,
         user_arg,
         GLOBUS_FALSE);
 }
@@ -408,6 +412,7 @@ globus_gfork_child_master_start(
     globus_gfork_open_func_t            open_cb,
     globus_gfork_closed_func_t          close_cb,
     globus_gfork_incoming_cb_t          incoming_cb,
+    globus_gfork_error_func_t           error_cb,
     void *                              user_arg)
 {   
     return globus_l_gfork_child_start(
@@ -416,6 +421,7 @@ globus_gfork_child_master_start(
         open_cb,
         close_cb,
         incoming_cb,
+        error_cb,
         user_arg,
         GLOBUS_TRUE);
 }
@@ -429,7 +435,7 @@ globus_gfork_child_stop(
     handle = (gfork_i_lib_handle_t *) in_handle;
     globus_mutex_lock(&handle->mutex);
     {
-        gfork_l_child_error(handle);
+        gfork_l_child_error(handle, GLOBUS_SUCCESS);
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -592,7 +598,12 @@ globus_l_gfork_send(
     globus_size_t                       nbytes;
     gfork_i_msg_t *                     msg;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    GForkFuncName(globus_l_gfork_send);
 
+    if(handle->state != GFORK_STATE_OPEN)
+    {
+        return GForkErrorStr("Invalid state.  Is the handle already closed?");
+    }
     msg = (gfork_i_msg_t *) globus_calloc(1, sizeof(gfork_i_msg_t));
 
     msg->header.from_pid = getpid();
