@@ -52,7 +52,7 @@ test1()
 
     if(rc)
     {
-	goto disable_module;
+	goto out;
     }
 
     globus_mutex_init(&monitor.mutex ,GLOBUS_NULL);
@@ -121,9 +121,9 @@ destroy_callback_contact:
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-disable_module:
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 
+out:
     return rc;
 }
 
@@ -142,7 +142,7 @@ test2()
 
     if(rc)
     {
-	goto disable_module;
+	goto out;
     }
 
     globus_mutex_init(&monitor.mutex ,GLOBUS_NULL);
@@ -198,7 +198,7 @@ test2()
 		"Failed submitting job request because %s.\n",
 		globus_gram_client_error_string(rc));
 
-	goto destroy_callback_contact1;
+	goto destroy_callback_contact2;
     }
     
     rc = globus_gram_client_job_callback_register(
@@ -215,7 +215,7 @@ test2()
 		"Error registering callback contact because %s.\n",
 		globus_gram_client_error_string(rc));
 
-	goto destroy_callback_contact2;
+	goto destroy_job_contact;
     }
     rc = globus_gram_client_job_callback_register(
 	    job_contact,
@@ -231,7 +231,7 @@ test2()
 		"Error registering callback contact because %s.\n",
 		globus_gram_client_error_string(rc));
 
-	goto destroy_callback_contact2;
+	goto destroy_job_contact;
     }
 
     while(monitor.done_count < 3)
@@ -241,6 +241,8 @@ test2()
 
     rc = monitor.errorcode;
 
+destroy_job_contact:
+    globus_libc_free(job_contact);
 destroy_callback_contact2:
     globus_gram_client_callback_disallow(callback_contact[2]);
     globus_free(callback_contact[2]);
@@ -250,14 +252,13 @@ destroy_callback_contact1:
 destroy_callback_contact0:
     globus_gram_client_callback_disallow(callback_contact[0]);
     globus_free(callback_contact[0]);
-    globus_libc_free(job_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-disable_module:
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 
+out:
     return rc;
 }
 
@@ -279,7 +280,7 @@ test3()
 
     if(rc)
     {
-	goto disable_module;
+	goto out;
     }
 
     globus_mutex_init(&monitor.mutex ,GLOBUS_NULL);
@@ -347,20 +348,20 @@ test3()
 	rc = 0;
     }
 
+    globus_libc_free(job_contact);
 destroy_bad_callback_contact:
     globus_gram_client_callback_disallow(bad_callback_contact);
     globus_libc_free(bad_callback_contact);
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);
-    globus_libc_free(job_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-disable_module:
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 
+out:
     return rc;
 }
 

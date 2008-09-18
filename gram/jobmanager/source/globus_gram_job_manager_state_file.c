@@ -237,7 +237,7 @@ globus_gram_job_manager_state_file_read(
     buffer = malloc(file_len+1);
     if (buffer == NULL)
     {
-        goto error_exit;
+        goto exit;
     }
 
     /* Try to obtain a lock on the state lock file */
@@ -255,7 +255,9 @@ globus_gram_job_manager_state_file_read(
 			"JM: Failed to open state lock file '%s', errno=%d\n",
 			request->job_state_lock_file, errno);
 
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
+
+            goto free_buffer_exit;
 	}
 
 	rc = globus_l_gram_job_manager_state_file_lock(
@@ -417,10 +419,12 @@ globus_gram_job_manager_state_file_read(
     return GLOBUS_SUCCESS;
 error_exit:
     fclose(fp);
+free_buffer_exit:
     if (buffer != NULL)
     {
         free(buffer);
     }
+exit:
     return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
 }
 

@@ -25,6 +25,7 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $testno=1;
 
 sub two_phase_test
 {
@@ -33,8 +34,18 @@ sub two_phase_test
     my $cache_cmd;
     my ($contact, $mode, $save_state, $timeout) = @_;
     my $tag;
+    my $valgrind = "";
+
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_two_phase_commit_test" . $testno++ . ".log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
     my $fh = new IO::File(
-            "$test_exec \"$contact\" $mode $save_state $timeout 2>/dev/null|");
+            "$valgrind $test_exec \"$contact\" $mode $save_state $timeout |");
 
     $tag = join('', <$fh>);
     $fh->close();

@@ -2419,6 +2419,10 @@ globus_gram_client_job_request_attr_failed:
         globus_libc_free(dn);
 
 globus_gram_client_job_request_parse_failed:
+    if (username)
+    {
+        free(username);
+    }
     return rc;
 }
 /* globus_l_gram_client_job_request() */
@@ -2575,7 +2579,7 @@ globus_l_gram_client_callback(
 {
     globus_l_gram_client_callback_info_t *
 					info;
-    char *				url;
+    char *				url = NULL;
     int					job_status;
     int					failure_code;
     int					rc;
@@ -2589,6 +2593,8 @@ globus_l_gram_client_callback(
     {
         job_status   = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
         failure_code = rc;
+
+        goto error_out;
     }
     else
     {
@@ -2616,6 +2622,7 @@ globus_l_gram_client_callback(
         }
     }
 
+error_out:
     rc = globus_gram_protocol_reply(handle,
 	                            200,
 				    GLOBUS_NULL,

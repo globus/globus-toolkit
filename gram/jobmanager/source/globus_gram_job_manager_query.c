@@ -742,7 +742,7 @@ globus_l_gram_job_manager_signal(
     globus_bool_t			active;
 
     *reply = GLOBUS_TRUE;
-    if(sscanf(args, "%d", &signal) != 1)
+    if(args == NULL || sscanf(args, "%d", &signal) != 1)
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
     }
@@ -770,10 +770,6 @@ globus_l_gram_job_manager_signal(
 	if(after_signal)
 	{
 	    query->signal_arg = globus_libc_strdup(after_signal);
-	}
-	else
-	{
-	    query->signal_arg = NULL;
 	}
 
 	if(!globus_l_gram_job_manager_query_valid(request))
@@ -926,6 +922,7 @@ globus_l_gram_job_manager_signal(
                     request,
                     "JM: ***** STDIO_SIZE request. "
                     "BOGUS REQUEST OBJECT!\n");
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
 	    }
 	    else 
 	    {
@@ -950,7 +947,7 @@ globus_l_gram_job_manager_signal(
                             ? "" : " error querying local value",
                     (err_size == local_size_stderr)?"ok":"ERROR");
 	    }
-	    if(out_size >= 0)
+	    if(rc == GLOBUS_SUCCESS && out_size >= 0)
 	    {
 		rc = globus_gram_job_manager_output_check_size(
 			request,

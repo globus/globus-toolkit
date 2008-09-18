@@ -19,23 +19,26 @@ if (!defined($gpath))
 
 my @tests;
 my @todo;
+my $valgrind = "";
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_activate_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub activate_test
 {
     my ($errors,$rc) = ("",0);
     my ($output);
 
-    unlink('core');
-
-    system("$test_exec >/dev/null 2>/dev/null");
+    system("$valgrind $test_exec >/dev/null");
     $rc = $?>> 8;
     if($rc != 0)
     {
         $errors .= "Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
     }
 
     if($errors eq "")

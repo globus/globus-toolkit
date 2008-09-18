@@ -308,7 +308,7 @@ test5()
     {
 	fprintf(stderr, "Failed unpacking status reply because %s.\n",
 		globus_gram_protocol_error_string(rc));
-	goto error_exit;
+	goto free_msg_exit;
     }
     if(status[0] != status[1] ||
        failure_code[0] != failure_code[1] ||
@@ -317,6 +317,7 @@ test5()
 	fprintf(stderr, "Unpacking status request reply returned junk!\n");
 	rc = 1;
     }
+free_msg_exit:
     globus_libc_free(msg);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
@@ -372,7 +373,7 @@ test6()
     {
 	fprintf(stderr, "Failed unpacking status update because %s.\n",
 		globus_gram_protocol_error_string(rc));
-	goto error_exit;
+	goto free_msg_exit;
     }
     if(strcmp(job_contact[0], job_contact[1]) != 0 ||
        status[0] != status[1] ||
@@ -381,8 +382,9 @@ test6()
 	fprintf(stderr, "Unpacking status update returned junk!\n");
 	rc = 1;
     }
-    globus_libc_free(msg);
     globus_libc_free(job_contact[1]);
+free_msg_exit:
+    globus_libc_free(msg);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;

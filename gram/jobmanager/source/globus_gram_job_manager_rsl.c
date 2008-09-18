@@ -41,7 +41,7 @@ int
 globus_l_gram_job_manager_setup_duct(
     globus_gram_jobmanager_request_t *	request,
     int					count,
-    char *				myjob);
+    globus_bool_t                       myjob_collective);
 
 #endif
 
@@ -496,7 +496,7 @@ globus_gram_job_manager_rsl_request_fill(
 {
     int					x;
     char **				tmp_param;
-    char *				gram_myjob;
+    globus_bool_t                       gram_myjob_collective = GLOBUS_TRUE;
     char *				ptr;
     int					i;
     int					count;
@@ -591,6 +591,10 @@ globus_gram_job_manager_rsl_request_fill(
             count = x;
         }
     }
+    else
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COUNT;
+    }
     globus_libc_free(tmp_param);
     tmp_param = GLOBUS_NULL;
 
@@ -607,7 +611,10 @@ globus_gram_job_manager_rsl_request_fill(
 
     if (tmp_param[0])
     {
-        gram_myjob = globus_libc_strdup(tmp_param[0]);
+        if(strcmp(tmp_param[0], "collective") != 0)
+        {
+            gram_myjob_collective = GLOBUS_FALSE;
+        }
     }
     globus_libc_free(tmp_param);
     tmp_param = GLOBUS_NULL;
@@ -762,10 +769,9 @@ globus_gram_job_manager_rsl_request_fill(
      */
     if (!request->disable_duct)
     {
-        rc = globus_l_gram_job_manager_setup_duct(request, count, gram_myjob);
+        rc = globus_l_gram_job_manager_setup_duct(
+                request, count, gram_myjob_collective);
     }
-
-    globus_libc_free(gram_myjob);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -911,6 +917,7 @@ globus_gram_job_manager_rsl_parse_value(
     char *				format = "x = %s\n";
     globus_rsl_t *			rsl;
     globus_rsl_value_t *		values;
+    int                                 rc = GLOBUS_SUCCESS;
 
     globus_gram_job_manager_request_log(
 	    request,
@@ -918,17 +925,47 @@ globus_gram_job_manager_rsl_parse_value(
 	    value_string);
 
     rsl_spec = globus_libc_malloc(strlen(format) + strlen(value_string) + 1);
+
+    if (rsl_spec == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto out;
+    }
     sprintf(rsl_spec, format, value_string);
     rsl = globus_rsl_parse(rsl_spec);
+    if (rsl == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_rsl_spec_out;
+    }
 
     values = globus_list_first(
 	    globus_rsl_value_sequence_get_value_list(
 		globus_rsl_relation_get_value_sequence(rsl)));
+    if (values == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_rsl_out;
+    }
     *rsl_value = globus_rsl_value_copy_recursive(values);
+    if (*rsl_value == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_rsl_out;
+    }
+
+free_rsl_out:
     globus_rsl_free_recursive(rsl);
+
+free_rsl_spec_out:
     globus_libc_free(rsl_spec);
 
-    return GLOBUS_SUCCESS;
+out:
+    return rc;
 }
 /* globus_gram_job_manager_rsl_parse_value() */
 
@@ -939,7 +976,7 @@ globus_gram_job_manager_rsl_evaluate_value(
     char **				value_string)
 {
     globus_rsl_value_t *		copy;
-    int					rc;
+    int					rc = GLOBUS_SUCCESS;
 
     *value_string = NULL;
 
@@ -948,12 +985,24 @@ globus_gram_job_manager_rsl_evaluate_value(
 	    "JM: Evaluating RSL Value");
 
     copy = globus_rsl_value_copy_recursive(value);
+    if (copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto out;
+    }
 
     if(globus_rsl_value_is_literal(copy))
     {
 	*value_string =
 	    globus_libc_strdup(globus_rsl_value_literal_get_string(copy));
-	rc = GLOBUS_SUCCESS;
+
+        if (*value_string == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto free_copy_out;
+        }
     }
     else
     {
@@ -964,8 +1013,10 @@ globus_gram_job_manager_rsl_evaluate_value(
 		0);
     }
 
+free_copy_out:
     globus_rsl_value_free_recursive(copy);
 
+out:
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: Evaluated RSL Value to %s",
@@ -1025,9 +1076,8 @@ parse_failed:
  *        The request which is being processed.
  * @param count
  *        The value o fthe job RSL's count relation.
- * @param myjob
- *        The value of the job RSL's GramMyJob relation.
- *
+ * @param myjob_collective
+ *        GLOBUS_TRUE if myjob=collective [default], GLOBUS_FALSE otherwise.
  *
  * @retval GLOBUS_SUCCESS
  *         The duct control handle was successfully created and
@@ -1040,7 +1090,7 @@ int
 globus_l_gram_job_manager_setup_duct(
     globus_gram_jobmanager_request_t *	request,
     int					count,
-    char *				myjob)
+    globus_bool_t                       myjob_collective)
 {
     globus_duct_control_t *		duct;
     int					rc;
@@ -1063,7 +1113,7 @@ globus_l_gram_job_manager_setup_duct(
     }
     duct = globus_libc_malloc(sizeof(globus_duct_control_t));
 
-    if(strcmp(myjob, "collective") != 0)
+    if(!myjob_collective)
     {
 	count = 1;
     }

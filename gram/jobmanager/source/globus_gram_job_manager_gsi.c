@@ -447,22 +447,23 @@ globus_gram_job_manager_gsi_relocate_proxy(
     outfp = NULL;
 
     globus_libc_setenv("X509_USER_PROXY",
-                       globus_libc_strdup(cred_file),
+                       cred_file,
                        1);
+    cred_file = NULL;
 
-fchown_cred_file_failed:
 cred_fwrite_failed:
+fchown_cred_file_failed:
     if(outfp)
     {
 	fclose(outfp);
 	outfp = NULL;
     }
+fopen_cred_file_failed:
     if(cred_file)
     {
 	globus_libc_free(cred_file);
 	cred_file = NULL;
     }
-fopen_cred_file_failed:
 cred_file_malloc_failed:
 fread_new_proxy_failed:
     if(infp != NULL)

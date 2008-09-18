@@ -23,6 +23,16 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $valgrind = "";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_stdio_size_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub size_test
 {
@@ -31,8 +41,8 @@ sub size_test
     my $cmdline;
     my $errors='';
 
-    $cmdline = "$test_exec '$contact' ";
-    system("$cmdline >/dev/null 2>/dev/null");
+    $cmdline = "$valgrind $test_exec '$contact' ";
+    system("$cmdline >/dev/null");
     $rc = $?>> 8;
     if($rc != 0)
     {

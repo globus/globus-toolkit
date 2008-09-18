@@ -358,13 +358,13 @@ test3()
 	rc = 0;
     }
 
+    globus_libc_free(job_contact);
 destroy_bad_callback_contact:
     globus_gram_client_callback_disallow(bad_callback_contact);
     globus_libc_free(bad_callback_contact);
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);
-    globus_libc_free(job_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);

@@ -24,18 +24,23 @@ sub test
     my ($errors,$rc) = ("",0);
     my ($arg) = shift;
     my $output;
+    my $valgrind = '';
 
-    unlink('core');
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_protocol_allow_attach_test-$arg.log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
 
-    chomp($output = `$test_exec $arg`);
+
+    chomp($output = `$valgrind $test_exec $arg`);
     $rc = $?>> 8;
     if($rc != 0)
     {
         $output .= "Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $output .= "\n# Core file generated.";
     }
 
     ok($output, 'ok');

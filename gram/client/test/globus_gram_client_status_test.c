@@ -118,7 +118,9 @@ int main(int argc, char *argv[])
 		    globus_gram_client_error_string(rc));
 	}
 	if(rc != GLOBUS_SUCCESS &&
-           rc != GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED)
+           rc != GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
+           rc != GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER &&
+           rc != GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED)
 	{
 	    goto destroy_callback_contact;
 	}

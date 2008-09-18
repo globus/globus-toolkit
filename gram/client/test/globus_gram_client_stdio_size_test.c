@@ -47,7 +47,7 @@ globus_l_state_callback(void * callback_arg, char * job_contact, int state,
 
 int main(int argc, char *argv[])
 {
-    int rc;
+    int rc = 1;
     monitor_t monitor;
 
     if (argc < 2)

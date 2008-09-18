@@ -323,6 +323,11 @@ globus_gram_job_manager_request_log(
     va_list ap;
     int rc;
 
+    if (!request)
+    {
+        return -1;
+    }
+
     if ( request->jobmanager_log_fp == GLOBUS_NULL ) {
 	return -1;
     }

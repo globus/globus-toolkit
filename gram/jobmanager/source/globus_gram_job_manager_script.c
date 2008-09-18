@@ -882,6 +882,9 @@ globus_gram_job_manager_script_poll(
     int 				script_arg_fd;
     char                                template[]="/tmp/gram_pollXXXXXX";
 
+    if (!request)
+        return(GLOBUS_FAILURE);
+
     /* Keep the state file's timestamp up to date so that
      * anything scrubbing the state files of old and dead
      * processes leaves it alone
@@ -896,9 +899,6 @@ globus_gram_job_manager_script_poll(
      * processes leaves it alone */
     if(request->job_state_file)
         utime(request->job_state_file, NULL);
-
-    if (!request)
-        return(GLOBUS_FAILURE);
 
     rc = globus_l_gram_request_validate(request);
 
@@ -2377,15 +2377,15 @@ globus_l_gram_request_validate(
             "JMI: job manager type is not specified, cannot continue.\n");
         return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_MANAGER_TYPE;
     }
-    if(globus_location(&location) != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-    }
     if(request->rsl == NULL)
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
 
+    if(globus_location(&location) != GLOBUS_SUCCESS)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+    }
    /*
     * test that the scheduler script files exist and
     * that the user has permission to execute then.

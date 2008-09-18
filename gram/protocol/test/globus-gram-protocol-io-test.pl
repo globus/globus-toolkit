@@ -23,18 +23,22 @@ sub test
 {
     my ($errors,$rc) = ("",0);
     my ($args, $expected_rc) = @_;
+    my $valgrind = '';
 
-    unlink('core');
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_protocol_io_test-$args.log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
 
-    system("$test_exec $args >/dev/null 2>/dev/null");
+    system("$valgrind $test_exec $args >/dev/null 2>/dev/null");
     $rc = $?>> 8;
     if($rc != $expected_rc)
     {
         $errors .= "Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
     }
 
     if($errors eq "")

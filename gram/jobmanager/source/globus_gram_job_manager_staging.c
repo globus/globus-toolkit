@@ -52,6 +52,16 @@ void
 globus_l_gram_job_manager_staging_free_all(
     globus_gram_jobmanager_request_t *	request);
 
+static
+int
+globus_l_gram_staging_list_read_state(
+    globus_gram_jobmanager_request_t *	request,
+    FILE *                              fp,
+    char *                              buffer,
+    globus_gram_job_manager_staging_type_t
+                                        staging_type,
+    globus_list_t **                    staging_list);
+
 int
 globus_gram_job_manager_staging_create_list(
     globus_gram_jobmanager_request_t *	request)
@@ -328,150 +338,71 @@ globus_gram_job_manager_staging_read_state(
     globus_gram_jobmanager_request_t *	request,
     FILE *				fp)
 {
+    int                                 rc = GLOBUS_SUCCESS;
     char *                              buffer;
     size_t                              buffer_len;
     long                                offset;
-    int					i;
-    int					tmp_list_size;
-    globus_gram_job_manager_staging_info_t *
-					info;
-
 
     offset = ftell(fp);
     if (fseek(fp, 0, SEEK_END) < 0)
     {
-        return GLOBUS_FAILURE;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+        goto out;
     }
 
     buffer_len = ftell(fp) - offset;
 
     if (fseek(fp, offset, SEEK_SET) < 0)
     {
-        return GLOBUS_FAILURE;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+        goto out;
     }
 
     buffer = malloc(buffer_len+1);
-
-    if (fscanf(fp, "%[^\n]%*c", buffer) < 1)
+    if (buffer == NULL)
     {
-        free(buffer);
-        return GLOBUS_FAILURE;
-    }
-    tmp_list_size = atoi(buffer);
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-    for(i = 0; i < tmp_list_size; i++)
+        goto out;
+    }
+
+    rc = globus_l_gram_staging_list_read_state(
+        request,
+        fp,
+        buffer,
+        GLOBUS_GRAM_JOB_MANAGER_STAGE_IN,
+        &request->stage_in_todo);
+
+    if (rc != GLOBUS_SUCCESS)
     {
-	info = globus_libc_calloc(
-		1,
-		sizeof(globus_gram_job_manager_staging_info_t));
-
-        info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN;
-
-	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-        {
-            free(buffer);
-            return GLOBUS_FAILURE;
-        }
-	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
-
-	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-        {
-            free(buffer);
-            return GLOBUS_FAILURE;
-        }
-	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
-
-	globus_gram_job_manager_rsl_evaluate_value(
-		request,
-		info->from,
-		&info->evaled_from);
-	globus_gram_job_manager_rsl_evaluate_value(
-		request,
-		info->to,
-		&info->evaled_to);
-
-        globus_list_insert(&request->stage_in_todo, info);
+        goto free_buffer_out;
     }
-    if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+
+    rc = globus_l_gram_staging_list_read_state(
+        request,
+        fp,
+        buffer,
+        GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED,
+        &request->stage_in_shared_todo);
+
+    if (rc != GLOBUS_SUCCESS)
     {
-        free(buffer);
-        return GLOBUS_FAILURE;
+        goto free_buffer_out;
     }
-    tmp_list_size = atoi(buffer);
 
-    for(i = 0; i < tmp_list_size; i++)
-    {
-	info = globus_libc_calloc(
-		1,
-		sizeof(globus_gram_job_manager_staging_info_t));
-        info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED;
+    rc = globus_l_gram_staging_list_read_state(
+        request,
+        fp,
+        buffer,
+        GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
+        &request->stage_out_todo);
 
-	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-        {
-            free(buffer);
-            return GLOBUS_FAILURE;
-        }
-	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
-
-	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-        {
-            free(buffer);
-            return GLOBUS_FAILURE;
-        }
-	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
-
-	globus_gram_job_manager_rsl_evaluate_value(
-		request,
-		info->from,
-		&info->evaled_from);
-	globus_gram_job_manager_rsl_evaluate_value(
-		request,
-		info->to,
-		&info->evaled_to);
-
-        globus_list_insert(&request->stage_in_shared_todo, info);
-    }
-    if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-    {
-        free(buffer);
-        return GLOBUS_FAILURE;
-    }
-    tmp_list_size = atoi(buffer);
-
-    for(i = 0; i < tmp_list_size; i++)
-    {
-	info = globus_libc_calloc(
-		1,
-		sizeof(globus_gram_job_manager_staging_info_t));
-	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
-
-	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-        {
-            free(buffer);
-            return GLOBUS_FAILURE;
-        }
-	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
-
-	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
-        {
-            free(buffer);
-            return GLOBUS_FAILURE;
-        }
-	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
-
-	globus_gram_job_manager_rsl_evaluate_value(
-		request,
-		info->from,
-		&info->evaled_from);
-	globus_gram_job_manager_rsl_evaluate_value(
-		request,
-		info->to,
-		&info->evaled_to);
-
-        globus_list_insert(&request->stage_out_todo, info);
-    }
+free_buffer_out:
     free(buffer);
-    return GLOBUS_SUCCESS;
+out:
+    return rc;
 }
 /* globus_gram_job_manager_staging_read_state() */
 
@@ -661,3 +592,126 @@ globus_l_gram_job_manager_staging_free_all(
     }
 }
 /* globus_l_gram_job_manager_staging_free_all() */
+
+/**
+ * Read a list of staging pairs from the state file
+ *
+ * @param request
+ *     Job request associated with the state file (used for
+ *     RSL evaluation)
+ * @param fp
+ *     State file opened for reading
+ * @param buffer
+ *     Buffer containing the state file data
+ * @param staging_type
+ *     Type of staging list to read
+ * @param staging_list
+ *     List to insert the staging work into.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE
+ *     Error reading state file
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ */
+static
+int
+globus_l_gram_staging_list_read_state(
+    globus_gram_jobmanager_request_t *	request,
+    FILE *                              fp,
+    char *                              buffer,
+    globus_gram_job_manager_staging_type_t
+                                        staging_type,
+    globus_list_t **                    staging_list)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    int                                 i, tmp_list_size;
+    globus_gram_job_manager_staging_info_t *
+                                        info;
+
+    if (fscanf(fp, "%[^\n]%*c", buffer) < 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+        goto out;
+    }
+    tmp_list_size = atoi(buffer);
+
+    for(i = 0; i < tmp_list_size; i++)
+    {
+	info = globus_libc_calloc(
+		1,
+		sizeof(globus_gram_job_manager_staging_info_t));
+        if (info == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto out;
+        }
+
+        info->type = staging_type;
+
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto free_info_out;
+        }
+	rc = globus_gram_job_manager_rsl_parse_value(
+                request, buffer, &info->from);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto free_info_out;
+        }
+
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto free_info_from_out;
+        }
+	rc = globus_gram_job_manager_rsl_parse_value(
+                request, buffer, &info->to);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto free_info_from_out;
+        }
+
+	rc = globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->from,
+		&info->evaled_from);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto free_info_to_out;
+        }
+
+	rc = globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->to,
+		&info->evaled_to);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto free_info_evaled_from_out;
+        }
+
+        globus_list_insert(staging_list, info);
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+free_info_evaled_from_out:
+        free(info->evaled_from);
+free_info_to_out:
+        free(info->to);
+free_info_from_out:
+        free(info->from);
+free_info_out:
+        free(info);
+    }
+out:
+    return rc;
+}
+/* globus_l_gram_staging_list_read_state() */

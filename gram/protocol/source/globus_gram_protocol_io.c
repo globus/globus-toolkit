@@ -2624,11 +2624,17 @@ globus_l_gram_protocol_setup_connect_attr(
     char *                                 identity)
 {
     globus_result_t                        res;
-    globus_io_secure_authorization_data_t  auth_data;
+    int                                    rc = GLOBUS_SUCCESS;
+    globus_io_secure_authorization_data_t  auth_data = NULL;
 
     /* acquire mutex */
-    if ( (res = globus_io_tcpattr_init(attr))
-	 || (res = globus_io_secure_authorization_data_initialize(
+    if ((res = globus_io_tcpattr_init(attr)) != GLOBUS_SUCCESS)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+        goto out;
+    }
+
+    if ( (res = globus_io_secure_authorization_data_initialize(
 	                &auth_data))
 	 || (res = globus_io_secure_authorization_data_set_identity(
 	                &auth_data,
@@ -2645,14 +2651,18 @@ globus_l_gram_protocol_setup_connect_attr(
 	                attr,
 			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
     {
-	globus_object_t *  err = globus_error_get(res);
-	globus_object_free(err);
-	/* release mutex */
-	return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+        globus_io_tcpattr_destroy(attr);
+
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
     }
 
-    /* release mutex */
-    return GLOBUS_SUCCESS;
+    if (auth_data)
+    {
+        globus_io_secure_authorization_data_destroy(&auth_data);
+    }
+
+out:
+    return rc;
 }
 
 

@@ -23,8 +23,18 @@ my @todo;
 sub testit
 {
     my ($rc, $status);
+    my $arg = $_[0];
+    my $valgrind = "";
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_contact_test.log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
 
-    chomp($status = `$test_exec $_[0] 2>/dev/null`);
+    chomp($status = `$valgrind $test_exec $arg`);
     $rc = $?;
     if($rc != 0)
     {

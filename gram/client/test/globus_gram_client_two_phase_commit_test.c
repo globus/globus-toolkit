@@ -68,7 +68,7 @@ globus_l_get_mode(monitor_t * monitor, char * arg)
 
 int main(int argc, char *argv[])
 {
-    int rc;
+    int rc = 1;
     monitor_t monitor;
     char * rsl;
 

@@ -370,7 +370,7 @@ globus_l_gram_job_manager_read_validation_file(
     char *				token_start;
     char *				token_end;
     char *				attribute;
-    char *				value;
+    char *				value = NULL;
     globus_list_t *			node;
     globus_gram_job_manager_validation_record_t *
 					old_record = NULL;
@@ -451,7 +451,7 @@ globus_l_gram_job_manager_read_validation_file(
 	if(attribute == NULL)
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-	    goto error_exit;
+	    goto close_exit;
 	}
 	memcpy(attribute, token_start, token_end - token_start);
 	attribute[token_end-token_start] = '\0';
@@ -479,7 +479,7 @@ globus_l_gram_job_manager_read_validation_file(
 	    {
 		rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
-		goto error_exit;
+		goto free_attribute_exit;
 	    }
 	    for(i = 0, j = 0; token_start + i < token_end; i++)
 	    {
@@ -514,7 +514,7 @@ globus_l_gram_job_manager_read_validation_file(
 		{
 		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
-		    goto error_exit;
+		    goto free_attribute_exit;
 		}
 		memcpy(value, token_start, token_end - token_start);
 		value[token_end - token_start] = '\0';
@@ -533,17 +533,19 @@ globus_l_gram_job_manager_read_validation_file(
 	    {
 		rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
-		goto error_exit;
+		goto free_value_exit;
 	    }
 	}
 	/* Compare token names against known attributes */
 	if(strcasecmp(attribute, "attribute") == 0)
 	{
 	    tmp->attribute = value;
+            value = NULL;
 	}
 	else if(strcasecmp(attribute, "description") == 0)
 	{
 	    tmp->description = value;
+            value = NULL;
 	}
 	else if(strcasecmp(attribute, "requiredwhen") == 0)
 	{
@@ -605,10 +607,12 @@ globus_l_gram_job_manager_read_validation_file(
 	else if(strcasecmp(attribute, "default") == 0)
 	{
 	    tmp->default_value = value;
+            value = NULL;
 	}
 	else if(strcasecmp(attribute, "values") == 0)
 	{
 	    tmp->enumerated_values = value;
+            value = NULL;
 	}
 	else if(strcasecmp(attribute, "publish") == 0)
 	{
@@ -738,6 +742,16 @@ globus_l_gram_job_manager_read_validation_file(
 	}
     }
 
+free_value_exit:
+    if (value)
+    {
+        free(value);
+    }
+free_attribute_exit:
+    if (attribute)
+    {
+        free(attribute);
+    }
 close_exit:
     fclose(fp);
 error_exit:

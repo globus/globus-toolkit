@@ -23,6 +23,16 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $valgrind = "";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_register_status_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub status_test
 {
@@ -30,17 +40,11 @@ sub status_test
     my ($output);
     my ($contact, $result) = @_;
 
-    unlink('core');
-
-    system("$test_exec '$contact' >/dev/null 2>/dev/null");
+    system("$valgrind $test_exec '$contact' >/dev/null");
     $rc = $?>> 8;
     if($rc != $result)
     {
         $errors .= "Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
     }
 
     if($errors eq "")

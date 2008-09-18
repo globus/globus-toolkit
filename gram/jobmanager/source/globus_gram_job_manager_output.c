@@ -1164,6 +1164,7 @@ globus_gram_job_manager_output_read_state(
 {
     globus_l_gram_job_manager_output_destination_t *
 					destination;
+    int                                 rc = GLOBUS_SUCCESS;
     int					count;
     int					i;
     char 				buffer[4096];
@@ -1173,28 +1174,49 @@ globus_gram_job_manager_output_read_state(
 
     if(fscanf(fp, "%d\n", &count) < 1)
     {
-        return GLOBUS_FAILURE;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+        goto out;
     }
 
     for(i = 0; i < count; i++)
     {
-	destination = globus_libc_malloc(
-		sizeof(globus_l_gram_job_manager_output_destination_t));
+	destination = malloc(
+                sizeof(globus_l_gram_job_manager_output_destination_t));
+        if (destination == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto out;
+        }
 
 	if (fgets(buffer, bufsize, fp) == NULL)
         {
-            return GLOBUS_FAILURE;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+            goto free_destination_out;
         }
 	destination->request = request;
 	destination->url = globus_libc_strdup(buffer); 
 
+        if (destination->url == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto free_destination_out;
+        }
+
 	if (fgets(buffer, bufsize, fp) == NULL)
         {
-            return GLOBUS_FAILURE;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+            goto free_destination_url_out;
         }
 	if(strlen(buffer) != 0)
 	{
 	    destination->tag = globus_libc_strdup(buffer);
+
+            if (destination->tag == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                goto free_destination_url_out;
+            }
 	}
 	else
 	{
@@ -1202,7 +1224,9 @@ globus_gram_job_manager_output_read_state(
 	}
 	if (fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position) < 1)
         {
-            return GLOBUS_FAILURE;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto free_destination_tag_out;
         }
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW;
 	destination->which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT;
@@ -1214,14 +1238,22 @@ globus_gram_job_manager_output_read_state(
 	globus_list_insert(&request->output->stdout_destinations, destination);
     }
 
+
     if(fscanf(fp, "%d\n", &count) < 1)
     {
-        return GLOBUS_FAILURE;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+        goto out;
     }
     for(i = 0; i < count; i++)
     {
 	destination = globus_libc_malloc(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
+        if (destination == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto out;
+        }
 
 	if (fgets(buffer, bufsize, fp) == NULL)
         {
@@ -1229,14 +1261,27 @@ globus_gram_job_manager_output_read_state(
         }
 	destination->request = request;
 	destination->url = globus_libc_strdup(buffer); 
+        if (destination->url == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto free_destination_out;
+        }
 
 	if (fgets(buffer, bufsize, fp) == NULL)
         {
-            return GLOBUS_FAILURE;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto free_destination_url_out;
         }
 	if(strlen(buffer) != 0)
 	{
 	    destination->tag = globus_libc_strdup(buffer);
+
+            if (destination->tag == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto free_destination_url_out;
+            }
 	}
 	else
 	{
@@ -1244,14 +1289,30 @@ globus_gram_job_manager_output_read_state(
 	}
 	if(fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position) < 1)
         {
-            return GLOBUS_FAILURE;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+            goto free_destination_tag_out;
         }
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW;
 	destination->which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR;
 
 	globus_list_insert(&request->output->stderr_destinations, destination);
     }
-    return GLOBUS_SUCCESS;
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+free_destination_tag_out:
+        if (destination->tag)
+        {
+            free(destination->tag);
+        }
+free_destination_url_out:
+        free(destination->url);
+free_destination_out:
+        free(destination);
+    }
+
+out:
+    return rc;
 }
 /* globus_gram_job_manager_output_read_state() */
 

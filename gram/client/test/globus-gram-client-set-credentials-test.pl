@@ -23,6 +23,16 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $valgrind = "";
+
+if (exists $ENV{VALGRIND})
+{
+    $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_set_credentials_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
+    {
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+    }
+}
 
 sub set_credentials_test
 {
@@ -30,9 +40,7 @@ sub set_credentials_test
     my ($output);
     my ($contact, $result) = @_;
 
-    unlink('core');
-
-    system("$test_exec '$contact' >/dev/null 2>/dev/null");
+    system("$valgrind $test_exec '$contact' >/dev/null");
     $rc = $?;
     if(($rc>>8) != $result)
     {

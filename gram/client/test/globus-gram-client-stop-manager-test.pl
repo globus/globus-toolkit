@@ -23,14 +23,25 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $testno=1;
 
 sub status_test
 {
     my ($errors,$rc) = ("",0);
     my ($output);
     my ($contact, $arg, $result) = @_;
+    my $valgrind = "";
 
-    system("$test_exec '$contact' $arg >/dev/null 2>/dev/null");
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_stop_manager_test_" . $testno++ . ".log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
+
+    system("$valgrind $test_exec '$contact' $arg >/dev/null");
     $rc = $?>> 8;
     if($rc != $result)
     {

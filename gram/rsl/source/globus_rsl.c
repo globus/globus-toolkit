@@ -450,7 +450,7 @@ globus_rsl_value_copy_recursive(globus_rsl_value_t * globus_rsl_value_ptr)
 
             if (literal_ptr == NULL)
             {
-                globus_rsl_value_make_literal(NULL);
+                return globus_rsl_value_make_literal(NULL);
             }
             else
             {
@@ -1294,7 +1294,6 @@ globus_rsl_param_get_values(
 {
     globus_rsl_t * tmp_rsl_ptr;
     globus_list_t * tmp_rsl_list;
-    globus_list_t * tmp_value_list;
     globus_list_t * values;
 
     if (globus_rsl_is_boolean(ast_node))

@@ -21,26 +21,30 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $testno=1;
 
 sub register_callback_test
 {
     my ($errors,$rc) = ("",0);
     my ($output);
     my ($contact, $test, $result) = @_;
+    my $valgrind = "";
 
-    unlink('core');
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_register_callback_test_" . $testno++ . ".log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
 
-    system("$test_exec '$contact' $test >/dev/null 2>/dev/null");
+    system("$valgrind $test_exec '$contact' $test >/dev/null");
     $rc = $?>> 8;
     if($rc != $result)
     {
         $errors .= "Test exited with $rc. ";
     }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
     if($errors eq "")
     {
         ok('success', 'success');

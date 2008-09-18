@@ -109,7 +109,7 @@ globus_gram_job_manager_auditing_file_write(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
 
-        goto free_filename_out;
+        goto close_filename_out;
     }
 
     /* job_grid_id */

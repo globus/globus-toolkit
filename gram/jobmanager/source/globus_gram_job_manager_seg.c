@@ -50,7 +50,7 @@ globus_l_gram_seg_event_callback(
 {
     globus_gram_jobmanager_request_t *  request = user_arg;
     globus_bool_t                       event_registered;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_scheduler_event_t *          new_event;
 
     if (event->event_type == GLOBUS_SCHEDULER_EVENT_RAW)

@@ -23,6 +23,7 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
+my $testno = 1;
 
 sub register_test
 {
@@ -30,6 +31,16 @@ sub register_test
     my $rc;
     my $cmdline;
     my $errors='';
+    my $valgrind = "";
+
+    if (exists $ENV{VALGRIND})
+    {
+        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_register_ping_test_" . $testno++ . ".log";
+        if (exists $ENV{VALGRIND_OPTIONS})
+        {
+            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+        }
+    }
 
     if($contact ne '')
     {
@@ -40,7 +51,7 @@ sub register_test
             $cmdline .= "'$credential'";
         }
 
-        system("$cmdline >/dev/null 2>/dev/null");
+        system("$valgrind $cmdline >/dev/null");
         $rc = $?>> 8;
         if($rc != $result)
         {
