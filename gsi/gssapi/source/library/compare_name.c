@@ -47,7 +47,7 @@ typedef enum
     GSS_I_COMPARE_NT_X509,
     GSS_I_COMPARE_NT_NO_OID,
     GSS_I_COMPARE_NT_HOSTBASED_SERVICE,
-    GSS_I_COMPARE_NT_HOST_IP,
+    GSS_I_COMPARE_NT_HOST_IP
 }
 gss_l_compare_type_t;
 
@@ -164,6 +164,15 @@ gss_l_compare_hostnames_with_wildcards(
     gss_l_wildcard_type_t               wildcards2,
     int *                               name_equal);
 
+static
+char *
+gss_l_strsep(char **stringp, const char * delim);
+
+static
+int
+gss_l_get_oid_type(
+    gss_OID                             oid);
+
 /**
  * @name Compare Name
  * @ingroup globus_gsi_gssapi
@@ -189,7 +198,6 @@ GSS_CALLCONV gss_compare_name(
     const gss_name_t                    name2_P,
     int *                               name_equal)
 {
-    int                                 i, j;
     OM_uint32                           major_status;
     static char *                       _function_name_ =
         "gss_compare_name";
@@ -197,15 +205,6 @@ GSS_CALLCONV gss_compare_name(
     int                                 type2 = -1;
     gss_name_t                          name1 = name1_P, name2 = name2_P;
     /* Order must match gss_l_compare_type_t */
-    gss_OID                             oid_types[] = 
-    {
-        GSS_C_NT_ANONYMOUS,
-        GLOBUS_GSS_C_NT_X509,
-        GSS_C_NO_OID,
-        GSS_C_NT_HOSTBASED_SERVICE,
-        GLOBUS_GSS_C_NT_HOST_IP
-    };
-
     /* Activate module the first time this is called if it hasn't happened yet
      */
     globus_thread_once(
@@ -257,19 +256,9 @@ GSS_CALLCONV gss_compare_name(
 
     /* Convert name types from gss_OID to integer for easier comparisons below
      */
-    for (i = 0, j = 0; i < sizeof(oid_types)/sizeof(gss_OID) && j < 2; i++)
-    {
-        if (g_OID_equal(name1->name_oid, oid_types[i]))
-        {
-            type1 = i;
-            j++;
-        }
-        if (g_OID_equal(name2->name_oid, oid_types[i]))
-        {
-            type2 = i;
-            j++;
-        }
-    }
+
+    type1 = gss_l_get_oid_type(name1->name_oid);
+    type2 = gss_l_get_oid_type(name2->name_oid);
 
     if (type1 == -1 || type2 == -1)
     {
@@ -1040,7 +1029,7 @@ gss_l_compare_hostnames_with_wildcards(
     }
     host_cpy2[i] = 0;
 
-    /* current token separator (modified by strsep below) */
+    /* current token separator (modified by gss_l_strsep below) */
     run1 = host_cpy1;
     run2 = host_cpy2;
 
@@ -1080,9 +1069,9 @@ gss_l_compare_hostnames_with_wildcards(
             break;
     }
 
-    for (tok1 = strsep(&run1, "."), tok2 = strsep(&run2, ".");
+    for (tok1 = gss_l_strsep(&run1, "."), tok2 = gss_l_strsep(&run2, ".");
          tok1 != NULL && tok2 != NULL;
-         tok1 = strsep(&run1, "."), tok2 = strsep(&run2, "."))
+         tok1 = gss_l_strsep(&run1, "."), tok2 = gss_l_strsep(&run2, "."))
     {
         /* Match non-wildcard bits */
         while (*tok1 && *tok2 && *tok1 == *tok2)
@@ -1160,3 +1149,65 @@ out:
     return major_status;
 }
 /* gss_l_compare_hostnames_with_wildcards() */
+
+static
+char *
+gss_l_strsep(char **stringp, const char * delim)
+{
+    char * input = *stringp;
+    size_t span;
+
+    if (input == NULL)
+    {
+        return NULL;
+    }
+    span = strcspn(input, delim);
+    if (input[span] == '\0')
+    {
+        *stringp = NULL;
+    }
+    else
+    {
+        input[span] = 0;
+        *stringp = input + span + 1;
+    }
+
+    return input;
+}
+
+/* Convert oid struct to integer
+ *
+ * @param oid
+ *     OID to convert to a gss_l_compare_type_t (or -1 if the 
+ *     name type is not supported.
+ */
+static
+int
+gss_l_get_oid_type(
+    gss_OID                             oid)
+{
+    if (g_OID_equal(oid, GSS_C_NT_ANONYMOUS))
+    {
+        return GSS_I_COMPARE_NT_ANONYMOUS;
+    }
+    else if (g_OID_equal(oid, GLOBUS_GSS_C_NT_X509))
+    {
+        return GSS_I_COMPARE_NT_X509;
+    }
+    else if (g_OID_equal(oid, GSS_C_NO_OID))
+    {
+        return GSS_I_COMPARE_NT_NO_OID;
+    }
+    else if (g_OID_equal(oid, GSS_C_NT_HOSTBASED_SERVICE))
+    {
+        return GSS_I_COMPARE_NT_HOSTBASED_SERVICE;
+    }
+    else if (g_OID_equal(oid, GLOBUS_GSS_C_NT_HOST_IP))
+    {
+        return GSS_I_COMPARE_NT_HOST_IP;
+    }
+    else
+    {
+        return -1;
+    }
+}
