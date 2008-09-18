@@ -245,7 +245,8 @@ globus_l_xio_popen_attr_cntl(
             break;
 
         case GLOBUS_XIO_POPEN_SET_PREEXEC_FUNC:
-            attr->fork_cb = (globus_xio_popen_preexec_func_t *) cb;
+            cb = va_arg(ap, globus_xio_popen_preexec_func_t);
+            attr->fork_cb = (globus_xio_popen_preexec_func_t) cb;
             break;
 
         default:
