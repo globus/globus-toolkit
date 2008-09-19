@@ -1481,7 +1481,7 @@ globus_l_ftp_control_auth_read_cb(
     gss_buffer_desc                           send_tok=GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                           subject_buf=GSS_C_EMPTY_BUFFER;
     gss_OID                                   mech_type;
-    char *                                    reply;
+    char *                                    reply = NULL;
     char *                                    encoded_reply;
 
     c_handle=(globus_ftp_control_handle_t *) arg;

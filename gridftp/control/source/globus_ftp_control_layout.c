@@ -42,7 +42,7 @@ globus_ftp_control_layout_blocked_verify(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
                      _FCSL("layout string not in proper format.")));
-        goto exit;
+        goto error_exit;
     }
 
     name = (char *)globus_malloc(strlen(layout_str));
@@ -95,6 +95,8 @@ globus_ftp_control_layout_blocked_verify(
   exit:
 
     globus_free(name);
+
+error_exit:
 
     return res;
 }

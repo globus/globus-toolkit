@@ -769,19 +769,21 @@ globus_i_ftp_control_unload_xio_drivers(
     {
         driver_ent = (globus_i_ftp_control_stack_entry_t *)
             globus_list_first(driver_list);
-        
-        if(strcmp(driver_ent->driver_name, "tcp") != 0 && 
-            strcmp(driver_ent->driver_name, "gsi") != 0)
+       
+         
+        if(driver_ent->driver_name)
         {
+            if(strcmp(driver_ent->driver_name, "tcp") != 0 && 
+                strcmp(driver_ent->driver_name, "gsi") != 0)
+            {
     /*        globus_xio_driver_unload(driver_ent->driver); */
+            }
+            globus_free(driver_ent->driver_name);
         }
+
         if(driver_ent->opts)
         {
             globus_free(driver_ent->opts);
-        }
-        if(driver_ent->driver_name)
-        {
-            globus_free(driver_ent->driver_name);
         }
         globus_free(driver_ent);
         
@@ -1081,6 +1083,16 @@ globus_ftp_control_data_connect_read(
                           callback,
                           user_arg);
         }
+        else
+        {
+            err = globus_error_construct_string(
+                           GLOBUS_FTP_CONTROL_MODULE,
+                           GLOBUS_NULL,
+                           _FCSL("[%s]:%s(): invalid mode, possible memory corruption"),
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
+            result = globus_error_put(err);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -1260,6 +1272,16 @@ globus_ftp_control_data_connect_write(
                          dc_handle,
                          callback,
                          user_arg);
+        }
+        else
+        {
+            err = globus_error_construct_string(
+                   GLOBUS_FTP_CONTROL_MODULE,
+                   GLOBUS_NULL,
+                   _FCSL("[%s]:%s(): Invalid mode, possible memory corruption"),
+                   GLOBUS_FTP_CONTROL_MODULE->module_name,
+                   my_name);
+            result = globus_error_put(err);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
@@ -2870,11 +2892,11 @@ globus_ftp_control_local_pasv(
                     }
                     result = globus_libc_contact_string_to_ints(
                         cs, address->host, &address->hostlen, NULL);
+                    globus_free(cs);
                     if(result != GLOBUS_SUCCESS)
                     {
                         return result;
                     }
-                    globus_free(cs);
                 }
            }
     
@@ -4162,7 +4184,7 @@ globus_ftp_control_data_write(
     void *					callback_arg)
 {
     globus_i_ftp_dc_handle_t *                  dc_handle;
-    globus_result_t                             result;
+    globus_result_t                             result = GLOBUS_SUCCESS;
     globus_object_t *                           err;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     static char *                               myname=
@@ -4669,6 +4691,17 @@ globus_ftp_control_data_read_all(
                     }
                 }
             }
+        }
+        else
+        {
+            err = globus_error_construct_string(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                    _FCSL("[%s]:%s() : Invalid mode.  Shouldn't happen."),
+                    GLOBUS_FTP_CONTROL_MODULE->module_name,
+                    myname);
+            res = globus_error_put(err);
+
         }
         globus_l_ftp_data_stripe_poll(dc_handle);
     }
@@ -7721,6 +7754,7 @@ globus_l_ftp_control_data_register_connect(
     }
     else
     {
+        globus_free(callback_info);
         err = globus_error_construct_string(
                   GLOBUS_FTP_CONTROL_MODULE,
                   GLOBUS_NULL,
@@ -10091,6 +10125,7 @@ globus_l_ftp_eb_send_eof_callback(
         tmp_ent = globus_handle_table_lookup(
                       &transfer_handle->handle_table,
                       eof_ent->callback_table_handle);
+        globus_assert(tmp_ent != NULL);
 
         if(!globus_handle_table_decrement_reference(
                &transfer_handle->handle_table,

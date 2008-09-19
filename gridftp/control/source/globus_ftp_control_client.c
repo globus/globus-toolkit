@@ -2364,6 +2364,7 @@ globus_ftp_control_abort(
     return GLOBUS_SUCCESS;
 
 return_error:
+    globus_fifo_destroy(&abort_queue);
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_ftp_control_abort() exiting with error\n"));
         
