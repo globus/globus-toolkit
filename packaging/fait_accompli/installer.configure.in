@@ -164,7 +164,7 @@ AC_SUBST(gsiopensshargs, $gsiopensshargs)
 netlogger=""
 AC_ARG_ENABLE(netlogger, AC_HELP_STRING([--enable-netlogger],\
    [Build netlogger libraries.  Default is disabled.]),
-   [if test $enableval = "yes"; then netlogger="globus_xio_netlogger_driver"; fi], [])
+   [if test $enableval = "yes"; then netlogger="globus_xio_netlogger_driver globus_xio_netlogger_driver-thr"; fi], [])
 AC_SUBST(netlogger, $netlogger)
 
 # java
