@@ -74,4 +74,7 @@ globus_binary_openssl:
 netlogger_c: gpt globus_core globus_common
 	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees/netlogger-c-4.0.2 ${FLAVOR}
 
+netlogger_c-thr: gpt globus_core-thr globus_common-thr
+	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees-thr/netlogger-c-4.0.2 ${FLAVOR}${THR}
+
 # Bundle dependencies, expressed in packages.
