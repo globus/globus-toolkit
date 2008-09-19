@@ -2340,6 +2340,11 @@ globus_l_gsc_final_reply(
     globus_assert(globus_fifo_empty(&server_handle->reply_q));
 
     tmp_ptr = globus_libc_strdup(message);
+    if(tmp_ptr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("Small malloc failed");
+        goto error_alloc;
+    }
     len = strlen(tmp_ptr);
     
     globus_i_gsc_log(
@@ -2363,10 +2368,8 @@ globus_l_gsc_final_reply(
     return GLOBUS_SUCCESS;
 
   err:
-    if(tmp_ptr != NULL)
-    {
-        globus_free(tmp_ptr);
-    }
+    globus_free(tmp_ptr);
+error_alloc:
     GlobusGridFTPServerDebugInternalExitWithError();
     return res;
 }
@@ -2756,10 +2759,6 @@ globus_gridftp_server_control_start(
 
     res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
         GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
     if(res != GLOBUS_SUCCESS)
     {
         goto err;
@@ -4137,9 +4136,11 @@ globus_i_gsc_resource_query(
 
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
     if(path == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("path");
     }
 
     op->type = GLOBUS_L_GSC_OP_TYPE_RESOURCE;
@@ -4417,7 +4418,7 @@ globus_i_gsc_list(
     void *                              user_arg)
 {
     globus_bool_t                       free_fact = GLOBUS_FALSE;
-    char *                              fact_str;
+    char *                              fact_str = NULL;
     globus_gridftp_server_control_list_cb_t user_cb;
     GlobusGridFTPServerName(globus_i_gsc_list);
 
@@ -4501,6 +4502,10 @@ globus_i_gsc_list(
     }
     else
     {
+        if(free_fact)
+        {
+            globus_free(fact_str);
+        }
         return GlobusGridFTPServerControlErrorSyntax();
     }
     if(free_fact)

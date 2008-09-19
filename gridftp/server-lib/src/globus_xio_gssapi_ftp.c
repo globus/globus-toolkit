@@ -2605,7 +2605,7 @@ globus_l_xio_gssapi_ftp_write(
             if(res != GLOBUS_SUCCESS)
             {
                 globus_mutex_unlock(&handle->mutex);
-                goto err;
+                goto error_free_vec;
             }
 
             cb = globus_l_xio_gssapi_ftp_write_cb;
@@ -2679,7 +2679,7 @@ globus_l_xio_gssapi_ftp_write(
         if(res != GLOBUS_SUCCESS)
         {
             globus_mutex_unlock(&handle->mutex);
-            goto err;
+            goto error_free_vec;
         }
         handle->write_posted = GLOBUS_TRUE;
     }
@@ -2687,6 +2687,9 @@ globus_l_xio_gssapi_ftp_write(
 
     GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+error_free_vec:
+    globus_free(l_iov);
 
   err:
     GlobusXIOGssapiftpDebugExitWithError();
@@ -2760,7 +2763,7 @@ globus_l_xio_gssapi_ftp_client_read_cb(
                         &send_buffer);
                 if(res != GLOBUS_SUCCESS)
                 {
-                    goto err;
+                    goto err_unwrap;
                 }
                 tmp_i = strlen(send_buffer);
                 out_length += tmp_i;
@@ -2785,6 +2788,9 @@ globus_l_xio_gssapi_ftp_client_read_cb(
     globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, out_length);
 
     return;
+
+err_unwrap:
+    globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
 
  err:
     if(in_buffer != NULL)

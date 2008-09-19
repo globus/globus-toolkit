@@ -519,6 +519,7 @@ globus_l_gsc_cmd_lang(
 	{
            msg = globus_common_create_string(
             _FSMSL("501 '%s' unrecognized language.\r\n"), full_command);
+            free(lang);
 	}
     }
     if(msg == NULL)
