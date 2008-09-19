@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gridftp_server_control" >
 
-    <Aging_Version Age="0" Major="0" Minor="34" />
+    <Aging_Version Age="0" Major="0" Minor="35" />
   <Description >Globus GridFTP Server Library</Description>
   <Functional_Group >GridFTP</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
