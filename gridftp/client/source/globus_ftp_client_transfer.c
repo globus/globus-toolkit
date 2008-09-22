@@ -4547,6 +4547,7 @@ globus_ftp_client_abort(
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_ftp_client_abort() entering\n"));
     
+    handle = *u_handle;
     if(u_handle == GLOBUS_NULL)
     {
 	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
@@ -4561,7 +4562,6 @@ globus_ftp_client_abort(
 	goto error;
     }
 
-    handle = *u_handle;
     globus_i_ftp_client_handle_lock(handle);
     
     globus_i_ftp_client_debug_states(2, handle);
@@ -4720,6 +4720,7 @@ globus_ftp_client_abort(
 
 	    if(result != GLOBUS_SUCCESS)
 	    {
+            err = globus_error_get(result);
 		goto unlock_error;
 	    }
 	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;

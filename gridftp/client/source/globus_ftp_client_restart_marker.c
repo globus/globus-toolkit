@@ -637,6 +637,7 @@ globus_ftp_client_restart_marker_to_string(
     return GLOBUS_SUCCESS;
 
   buf_err:
+	globus_fifo_destroy(tmp);
     globus_libc_free(buf);
   error_exit:
     return globus_error_put(err);

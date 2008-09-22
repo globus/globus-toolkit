@@ -103,6 +103,9 @@ do { \
 } while (0)
 
 #define globus_i_ftp_client_debug_states(level, handle)                     \
+  do {                                                                      \
+  if(handle != NULL)                                                        \
+  {                                                                         \
     globus_i_ftp_client_debug_printf(level, (stderr,                        \
         "   handle state = %s\n"                                            \
         "   source state = %s\n"                                            \
@@ -113,7 +116,13 @@ do { \
             : "NULL",                                                       \
         handle->dest                                                        \
             ? globus_i_ftp_target_state_to_string(handle->dest->state)      \
-            : "NULL"))
+            : "NULL"));                                                     \
+   }                                                                        \
+   else                                                                     \
+   {                                                                        \
+    globus_i_ftp_client_debug_printf(level, (stderr, "handle is null\n"));  \
+   }                                                                        \
+} while(0)
             
 #else
 #define globus_i_ftp_client_debug_printf(level, message)

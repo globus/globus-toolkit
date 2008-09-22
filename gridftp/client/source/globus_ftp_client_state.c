@@ -6189,6 +6189,10 @@ globus_l_ftp_client_pp_src_add(
 
 result_fault:
 
+    globus_free(url_ent->source_url);
+    globus_free(url_ent->dest_url);
+    globus_free(url_ent);
+
     return result;
 }
 
@@ -6266,6 +6270,9 @@ globus_l_ftp_client_pp_dst_add(
 
 result_fault:
 
+    globus_free(url_ent->source_url);
+    globus_free(url_ent->dest_url);
+    globus_free(url_ent);
     return result;
 }
 
