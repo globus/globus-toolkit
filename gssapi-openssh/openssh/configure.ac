@@ -122,21 +122,10 @@ if test "x$gsi_path" != "xno" ; then
     LD="$GLOBUS_LD"
 	LDFLAGS="$LDFLAGS $GLOBUS_LDFLAGS"
 
-	# test that we got the libraries OK
-	AC_TRY_LINK(
-		[],
-		[],
-		[],
-		[
-			AC_MSG_ERROR(link with Globus libraries failed)
-		]
-	)
-    AC_CHECK_FUNCS(globus_gss_assist_map_and_authorize)
 	INSTALL_GSISSH="yes"
 else
 	INSTALL_GSISSH=""
 fi
-AC_SUBST(INSTALL_GSISSH)
 # End Globus/GSI section
 
 AC_PROG_CC
@@ -3460,7 +3449,18 @@ if test "x$gsi_path" != "xno" ; then
 	if test ! -z "$blibpath" ; then
 		blibpath="$blibpath:${gsi_path}/lib"
 	fi
+	# test that we got the libraries OK
+	AC_TRY_LINK(
+		[],
+		[],
+		[],
+		[
+			AC_MSG_ERROR(link with Globus libraries failed)
+		]
+	)
+    AC_CHECK_FUNCS(globus_gss_assist_map_and_authorize)
 fi
+AC_SUBST(INSTALL_GSISSH)
 
 # Check whether the user wants GSSAPI mechglue support
 AC_ARG_WITH(mechglue,
