@@ -208,7 +208,6 @@ globus_scheduler_event_generator_lsf_setup  ws-gram/job_monitoring/lsf/c/setup g
 globus_scheduler_event_generator_lsf_test   ws-gram/job_monitoring/lsf/c/test gpt
 globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/source	tar
 globus_wsrf_gram_service_java_test_scalability ws-gram/service/java/test/scalability	tar
-globus_wsrf_gram_service_java_test_stability ws-gram/service/java/test/stability	tar
 globus_wsrf_gram_service_java_test_throughput ws-gram/service/java/test/throughput	tar
 globus_wsrf_gram_service_java_test_unit     ws-gram/service/java/test/unit	tar
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
