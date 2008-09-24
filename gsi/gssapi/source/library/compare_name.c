@@ -297,8 +297,8 @@ GSS_CALLCONV gss_compare_name(
     if (type1 == GSS_I_COMPARE_NT_ANONYMOUS ||
         type2 == GSS_I_COMPARE_NT_ANONYMOUS)
     {
-        if (gss_i_name_compatibility_mode == GSS_I_COMPATIBILITY_STRICT_GT2 &&
-            type1 == type2)
+        if (gss_i_name_compatibility_mode != GSS_I_COMPATIBILITY_STRICT_RFC2818
+            && type1 == type2)
         {
             *name_equal = GSS_NAMES_EQUAL;
         }

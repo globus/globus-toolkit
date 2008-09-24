@@ -1570,7 +1570,7 @@ globus_i_gsi_gss_create_cred(
     
     *output_cred_handle = NULL;
 
-    newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc));
+    newcred = (gss_cred_id_desc*) calloc(1, sizeof(gss_cred_id_desc));
 
     if (newcred == NULL)
     {
