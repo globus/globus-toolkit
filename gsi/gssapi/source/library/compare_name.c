@@ -1194,7 +1194,8 @@ gss_l_get_oid_type(
     {
         return GSS_I_COMPARE_NT_X509;
     }
-    else if (g_OID_equal(oid, GSS_C_NO_OID))
+    else if (g_OID_equal(oid, GSS_C_NO_OID) || 
+             g_OID_equal(oid, GSS_C_NT_USER_NAME))
     {
         return GSS_I_COMPARE_NT_NO_OID;
     }

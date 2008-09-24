@@ -81,7 +81,8 @@ gss_display_name(
         output_name->value = globus_libc_strdup(GSS_I_ANON_NAME);
         output_name->length = strlen(GSS_I_ANON_NAME);
     }
-    else if (g_OID_equal(input_name->name_oid, GSS_C_NO_OID))
+    else if (g_OID_equal(input_name->name_oid, GSS_C_NO_OID) ||
+             g_OID_equal(input_name->name_oid, GSS_C_NT_USER_NAME))
     {
         output_name->value = globus_libc_strdup(input_name->user_name);
         output_name->length = strlen(output_name->value);

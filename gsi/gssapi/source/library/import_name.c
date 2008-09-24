@@ -55,7 +55,8 @@ gss_l_resolve_ip(
  * - GSS_C_NT_EXPORT_NAME (input_name_buffer contains a string with the
  * X509_oneline representation of a name)
  * like "/X=Y/Z=A...")
- * - GSS_C_NO_OID (input_name_buffer contains an X.500 name formatted
+ * - GSS_C_NO_OID or GSS_C_NT_USER_NAME (input_name_buffer contains an X.500
+ *   name formatted
  * like "/X=Y/Z=A...")
  * - GLOBUS_GSS_C_NT_HOST_IP (input_name_buffer contains a string
  * "FQDN/ip-address" which will match names with the FQDN or the IP address)
@@ -264,7 +265,8 @@ GSS_CALLCONV gss_import_name(
         output_name->host_name =
                 (char *) globus_i_gsi_gssapi_get_hostname(output_name);
     }
-    else if (g_OID_equal(GSS_C_NO_OID, input_name_type))
+    else if (g_OID_equal(GSS_C_NO_OID, input_name_type) ||
+             g_OID_equal(GSS_C_NT_USER_NAME, input_name_type))
     {
         output_name->user_name = globus_libc_strdup(input_name_buffer->value);
         if (output_name->user_name == NULL)
