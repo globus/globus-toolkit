@@ -116,6 +116,7 @@ fi
 
 for f in $TARFILES; do
    tar -C $INSTALLER/source-trees -xzf fait_accompli/$f
+   tar -C $INSTALLER/source-trees-thr -xzf fait_accompli/$f
 done
 
 echo Done creating installer.
