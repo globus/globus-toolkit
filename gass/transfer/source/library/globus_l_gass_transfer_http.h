@@ -648,7 +648,7 @@ globus_l_gass_transfer_http_close(
     globus_gass_transfer_http_request_proto_t *		proto);
 
 static
-void
+globus_result_t
 globus_l_gass_transfer_http_register_close(
     globus_gass_transfer_http_request_proto_t *		proto);
 
