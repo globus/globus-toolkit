@@ -1484,7 +1484,6 @@ globus_l_xio_ordering_cntl(
         case GLOBUS_XIO_SEEK:
         case GLOBUS_XIO_ORDERING_SET_OFFSET:
         {
-            fprintf(stderr, "HELLO\n");
 	    if (handle->state == GLOBUS_XIO_ORDERING_READY)
 	    {
 		globus_off_t 		offset;
