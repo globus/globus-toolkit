@@ -1481,8 +1481,10 @@ globus_l_xio_ordering_cntl(
     globus_mutex_lock(&handle->mutex);
     switch(cmd)
     {
+        case GLOBUS_XIO_SEEK:
         case GLOBUS_XIO_ORDERING_SET_OFFSET:
         {
+            fprintf(stderr, "HELLO\n");
 	    if (handle->state == GLOBUS_XIO_ORDERING_READY)
 	    {
 		globus_off_t 		offset;
