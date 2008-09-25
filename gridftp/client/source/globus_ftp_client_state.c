@@ -872,7 +872,7 @@ redo:
                 {
                     target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
         
-                    goto notify_fault;
+                    goto result_fault;
                 }
                 result = globus_i_ftp_control_create_stack(
                     target->control_handle, target->net_stack_list, &stack);
@@ -880,7 +880,7 @@ redo:
                 {
                     target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
         
-                    goto notify_fault;
+                    goto result_fault;
                 }
             
                 result = globus_i_ftp_control_data_set_stack(
@@ -889,7 +889,7 @@ redo:
                 {
                     target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
         
-                    goto notify_fault;
+                    goto result_fault;
                 }
                 globus_xio_stack_destroy(stack);
             }      
