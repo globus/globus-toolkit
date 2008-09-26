@@ -960,7 +960,6 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
                                oldgaa_principals_ptr    *added_principal)
 {
     char                                *str, *type;
-    int                                 first = TRUE;
     uint32                              minor_status; 
     oldgaa_principals_ptr               principal = NULL;
     oldgaa_error_code                   error_code = OLDGAA_SUCCESS;
@@ -1075,9 +1074,20 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
             *policy = principal;
         }
 
-        if(first == TRUE) { *start = principal;  first = FALSE; } 
-
         *added_principal = oldgaa_add_principal(policy, principal); /* add new principal to the list */
+
+        if(*start == NULL) { *start = *added_principal;  }
+
+        /* If the principal is already in the list, we get the previous entry
+         * returned from the above. We'll discard this copy of the principal
+         */
+        if (*added_principal != principal)
+        {
+            oldgaa_release_principals(&minor_status, &principal);
+        }
+        /* In either case, the principal is now pointed to by either the 
+         * *start list or has been freed, so we don't need it any more
+         */
         principal = NULL;
 
         if (oldgaa_globus_help_read_string(pcontext, str,
