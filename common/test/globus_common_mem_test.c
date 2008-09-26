@@ -17,6 +17,8 @@
 #include "globus_common.h"
 #include "globus_thread_common.h"
 
+#ifndef BUILD_DEBUG
+
 static globus_memory_t                   mem;
 
 #define MEM_INIT_SIZE      15
@@ -104,3 +106,18 @@ void dump(globus_byte_t * buf, int size)
     }
     printf("\n");
 }
+
+#else /* BUILD_DEBUG */
+
+int main(int argc, char * argv[])
+{
+    printf("printing %d bytes\n\n", 120);
+    printf("    ....+....1....+....2....+....3....+....4\n");
+    printf("    abc.....abc.....abc.....abc.....abc.....\n");
+    printf("    abc.....abc.....abc.....abc.....abc.....\n");
+    printf("    abc.....abc.....abc.....abc.....abc.....\n");
+    printf("    \n");
+    return 0;
+}
+
+#endif

@@ -112,12 +112,7 @@ push(@tests, "basic_func();");
 plan tests => scalar(@tests), todo => \@todo;
 
 # And run them all.
-if ( -d <*dbg> )
+foreach (@tests)
 {
-   print "ok # Skipping mem test - debug flavor installed\n";
-} else {
-   foreach (@tests)
-   {
-      eval "&$_";
-   }
+   eval "&$_";
 }
