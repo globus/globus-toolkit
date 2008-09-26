@@ -5207,6 +5207,9 @@ globus_l_gfs_data_end_read_kickout(
             &event_reply);
     }
 
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+
     recv_info = op->info_struct;
     object.name = recv_info->pathname;
     object.size = op->bytes_transferred;
@@ -5224,8 +5227,6 @@ globus_l_gfs_data_end_read_kickout(
         globus_l_gfs_authorize_cb(&object, action, NULL, res);
     }
 
-    globus_mutex_lock(&op->session_handle->mutex);
-    {
         switch(op->data_handle->state)
         {
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
@@ -5626,13 +5627,6 @@ globus_l_gfs_data_trev_kickout(
                 globus_assert(0 && "invalid state, not possible");
                 break;
         }
-    }
-    globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
-
-    if(globus_i_gfs_config_bool("sync_writes"))
-    {
-        sync();
-    }
 
     recv_info = bounce_info->op->info_struct;
     object.name = recv_info->pathname;
@@ -5649,6 +5643,14 @@ globus_l_gfs_data_trev_kickout(
     if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
         globus_l_gfs_authorize_cb(&object, action, NULL, res);
+    }
+
+    }
+    globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
+
+    if(globus_i_gfs_config_bool("sync_writes"))
+    {
+        sync();
     }
 
 

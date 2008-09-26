@@ -891,6 +891,14 @@ globus_l_gsc_terminate(
 
     server_handle->terminating = GLOBUS_TRUE;
 
+    /* set cwd so caller can detect that we are finished in case we are
+     * unable to deliver the done_cb */
+    if(server_handle->cwd != NULL)
+    {
+        globus_free(server_handle->cwd);
+    }
+    server_handle->cwd = globus_libc_strdup("##safetoexitnow##");
+
     dh_to_abort = GLOBUS_FALSE;
     if(server_handle->data_object)
     {

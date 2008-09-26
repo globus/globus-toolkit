@@ -88,10 +88,12 @@ globus_l_gfs_bad_signal_handler(
     GlobusGFSName(globus_l_gfs_bad_signal_handler);
     GlobusGFSDebugEnter();
 
+    /*
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_ERR, 
         _GSSL("an unexpected signal occured: %d\n"), 
         signum);
+    */    
     if(!globus_l_gfs_exit)
     {
         signal(signum, SIG_DFL);

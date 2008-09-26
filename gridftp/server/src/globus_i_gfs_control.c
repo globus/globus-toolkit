@@ -66,6 +66,7 @@ typedef struct globus_l_gfs_auth_info_s
 static globus_bool_t                    globus_l_gfs_control_active = GLOBUS_FALSE;
 static globus_list_t *                  globus_l_gfs_server_handle_list;
 static globus_mutex_t                   globus_l_gfs_control_mutex;
+static globus_bool_t                    globus_l_gfs_control_got_done_cb = GLOBUS_FALSE;
 
 char *
 globus_i_gsc_string_to_959(
@@ -449,17 +450,19 @@ globus_l_gfs_done_cb(
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
-    globus_gridftp_server_control_destroy(instance->server_handle);
-
     globus_mutex_lock(&globus_l_gfs_control_mutex);
     {
+        globus_l_gfs_control_got_done_cb = GLOBUS_TRUE;
+        
         globus_list_remove(&globus_l_gfs_server_handle_list,
             globus_list_search(globus_l_gfs_server_handle_list, instance));
     }
     globus_mutex_unlock(&globus_l_gfs_control_mutex);
 
+    globus_gridftp_server_control_destroy(instance->server_handle);
+
     instance->close_error = 
-        (result == GLOBUS_SUCCESS ? NULL :globus_error_get(result));
+        (result == GLOBUS_SUCCESS ? NULL : globus_error_get(result));
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -2386,6 +2389,65 @@ globus_i_gfs_control_end_421(
 }
 
 
+
+static
+void
+globus_l_gfs_control_watchdog_exit(
+    void *                              arg)
+{
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO, "Terminating hung process.\n");
+
+    exit(1);
+}
+
+
+static
+void
+globus_l_gfs_control_watchdog_check(
+    void *                              arg)
+{
+    globus_bool_t                       can_kill = GLOBUS_FALSE;
+    char *                              str = NULL;
+    globus_result_t                     res;
+
+    globus_mutex_lock(&globus_l_gfs_control_mutex);
+    {
+        if(globus_l_gfs_control_got_done_cb)
+        {
+            can_kill = GLOBUS_TRUE;
+        }
+        else
+        {
+            res = globus_gridftp_server_control_get_cwd(
+                (globus_gridftp_server_control_t) arg, &str);
+            if(res == GLOBUS_SUCCESS && str != NULL)
+            {
+                if(strcmp(str, "##safetoexitnow##") == 0)
+                {
+                    can_kill = GLOBUS_TRUE;
+                }
+                globus_free(str);
+            }
+        }
+    }
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
+    
+    if(can_kill)
+    {
+        globus_reltime_t                    timer;
+        
+        GlobusTimeReltimeSet(timer, 120, 0);
+        globus_callback_register_oneshot(
+            NULL,
+            &timer,
+            globus_l_gfs_control_watchdog_exit,
+            NULL);
+    }
+
+}
+
+
 globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
@@ -2639,6 +2701,18 @@ globus_i_gfs_control_start(
         globus_list_insert(&globus_l_gfs_server_handle_list, instance);
     }
     globus_mutex_unlock(&globus_l_gfs_control_mutex);
+
+    if(globus_i_gfs_config_bool("inetd"))
+    {
+        globus_reltime_t                timer;
+        GlobusTimeReltimeSet(timer, 600, 0);
+        globus_callback_register_periodic(
+            NULL,
+            &timer,
+            &timer,
+            globus_l_gfs_control_watchdog_check,
+            (void *) instance->server_handle);
+    }
 
     globus_gridftp_server_control_attr_destroy(attr);
 
