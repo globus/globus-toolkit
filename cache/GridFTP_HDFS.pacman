@@ -12,6 +12,7 @@ package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-Data-Server');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-SDK');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:PRIMA');
 package('http://t2.unl.edu/store/cache:Hadoop');
+path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
 {
   platform('linux-rhel-4');
   {
@@ -20,6 +21,7 @@ package('http://t2.unl.edu/store/cache:Hadoop');
     envIsSet('VDT_PRETEND_32')
   };
   {
+    path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL4-i686.tar.gz')
     OR 
     fail('Pacman download of Hadoop failed.')
@@ -28,6 +30,7 @@ package('http://t2.unl.edu/store/cache:Hadoop');
   platform('linux-rhel-4');
   processor('x86_64');
   {
+    path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL4-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
@@ -40,6 +43,7 @@ package('http://t2.unl.edu/store/cache:Hadoop');
     envIsSet('VDT_PRETEND_32')
   };
   {
+    path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL5-i686.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
@@ -48,6 +52,7 @@ package('http://t2.unl.edu/store/cache:Hadoop');
   platform('linux-rhel-5');
   processor('x86_64');
   {
+    path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL5-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
