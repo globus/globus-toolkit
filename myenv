@@ -1,0 +1,17 @@
+#!/bin/sh
+
+export HADOOP_HOME=/home/brian/software/hadoop-0.18.1
+export PATH=$PATH:$HADOOP_HOME/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/build/libhdfs
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/brian/software/dsi_bones
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/osg/osg-100/jdk1.5/jre/lib/amd64/server
+export CLASSPATH=/home/brian/software/hadoop-0.18.1/lib/commons-logging-1.0.4.jar:/home/brian/software/hadoop-0.18.1/hadoop-0.18.1-core.jar:/home/brian/software/hadoop-0.18.1/lib/commons-logging-api-1.0.4.jar:/opt/osg/osg-100/tomcat/v55/webapps/ce-monitor/WEB-INF/lib/log4j-1.2.8.jar
+
+alias hls="hadoop fs -ls"
+alias hrm="hadoop fs -rm"
+alias hput="hadoop fs -put"
+alias hget="hadoop fs -get"
+alias hdu="hadoop fs -du"
+alias hmkdir="hadoop fs -mkdir"
+alias hstat="hadoop fs -stat"
+
