@@ -198,6 +198,7 @@ globus_l_gfs_file_partition_path(
     GlobusGFSName(globus_l_gfs_file_partition_path);
 
     strncpy(buf, pathname, MAXPATHLEN);
+
     buf[MAXPATHLEN - 1] = '\0';
 
     filepart = strrchr(buf, '/');
@@ -265,7 +266,10 @@ globus_l_gfs_hdfs_stat(
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     GlobusGFSName(globus_l_gfs_hdfs_stat);
     PathName=stat_info->pathname;
-    
+    if (strncmp(PathName, "/mnt/hadoop", 11)) {
+        PathName += 11;
+    }
+ 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
     hdfsFileInfo * fileInfo = NULL;
@@ -645,6 +649,9 @@ globus_l_gfs_hdfs_recv(
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
     hdfs_handle->pathname = transfer_info->pathname;
+    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)) {
+        hdfs_handle->pathname += 11;
+    }
 
     hdfs_handle->op = op;
     hdfs_handle->outstanding = 0;
@@ -848,6 +855,10 @@ globus_l_gfs_hdfs_send(
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
     hdfs_handle->pathname = transfer_info->pathname;
+
+    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)) {
+        hdfs_handle->pathname += 11;
+    }
 
     hdfs_handle->op = op;
     hdfs_handle->outstanding = 0;
