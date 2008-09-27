@@ -1,9 +1,9 @@
 pacmanVersionGE('3.20');
-{
-  shellOutputGE('rpm -q xinetd', 'xinetd-2')
-  OR
-  fail('GridFTP HDFS requires xinetd system package to be installed.')
-};
+#{
+#  shellOutputGE('rpm -q xinetd', 'xinetd-2')
+#  OR
+#  fail('GridFTP HDFS requires xinetd system package to be installed.')
+#};
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
 description('GridFTP_HDFS 0.0.1');
 url('http://t2.unl.edu');
@@ -22,15 +22,17 @@ package('http://t2.unl.edu/store/cache:Hadoop');
   {
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL4-i686.tar.gz')
     OR 
-    fail('Pacman download of Hadoop failed.');
+    fail('Pacman download of Hadoop failed.')
   }
+  OR
   platform('linux-rhel-4');
   processor('x86_64');
   {
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL4-x86_64.tar.gz')
     OR
-    fail('Pacman download of Hadoop failed.');
+    fail('Pacman download of Hadoop failed.')
   }
+  OR
   platform('linux-rhel-5');
   {
     processor('i686')
@@ -40,14 +42,15 @@ package('http://t2.unl.edu/store/cache:Hadoop');
   {
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL5-i686.tar.gz')
     OR
-    fail('Pacman download of Hadoop failed.');
+    fail('Pacman download of Hadoop failed.')
   }
+  OR
   platform('linux-rhel-5');
   processor('x86_64');
   {
     download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL5-x86_64.tar.gz')
     OR
-    fail('Pacman download of Hadoop failed.');
+    fail('Pacman download of Hadoop failed.')
   }
 };
 shell('vdt-begin-install GridFTP_HDFS');
@@ -63,5 +66,3 @@ shell('vdt-version --add GridFTP_HDFS');
 shell('vdt-end-install');
 uninstallShell('vdt/sbin/vdt-uninstall GridFTP_HDFS');
 uninstallShell('vdt/bin/vdt-version -remove GridFTP_HDFS');
-OR
-fail('Pacman install failed.');

@@ -1,6 +1,8 @@
 #!/bin/sh
 
-cp gsiftp-hdfs /etc/xinetd.d/
-echo "gsiftphdfs  5000/tcp" >> /etc/services
-/etc/init.d/xinetd restart
+echo "http://t2.unl.edu/store/cache" > trusted.caches
+echo "http://vdt.cs.wisc.edu/vdt_1101_cache" >> trusted.caches
+export VDTSETUP_AGREE_TO_LICENSES=y
+export VDTSETUP_INSTALL_CERTS=l
+export VDTSETUP_CA_CERT_UPDATER=n
 
