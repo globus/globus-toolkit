@@ -5,7 +5,7 @@ export PATH=$PATH:$HADOOP_HOME/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/build/libhdfs
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/brian/projects/gridftp_hdfs
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/osg/osg-100/jdk1.5/jre/lib/amd64/server
-export CLASSPATH=$HADOOP_HOME/lib/commons-logging-1.0.4.jar:$HADOOP_HOME/hadoop-0.18.1-core.jar:$HADOOP_HOME/lib/commons-logging-api-1.0.4.jar:$HADOOP_HOME/lib/log4j-1.2.15.jar
+export CLASSPATH=/home/brian/software/hadoop-0.18.1/hadoop-0.18.1-core.jar:$HADOOP_HOME/lib/commons-logging-1.0.4.jar:$HADOOP_HOME/hadoop-0.18.1-core.jar:$HADOOP_HOME/lib/commons-logging-api-1.0.4.jar:$HADOOP_HOME/lib/log4j-1.2.15.jar
 
 alias hls="hadoop fs -ls"
 alias hrm="hadoop fs -rm"

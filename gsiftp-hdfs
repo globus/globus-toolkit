@@ -1,0 +1,11 @@
+service gsiftphdfs
+{
+    socket_type = stream
+    protocol    = tcp
+    wait        = no
+    user        = root
+    instances   = UNLIMITED
+    cps         = 400 10
+    server      = VDT_LOCATION/gridftp_hdfs/inetd_starter.sh
+    disable     = no
+}

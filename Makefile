@@ -5,7 +5,7 @@ include makefile_header
 DSI_CFLAGS=$(GLOBUS_CFLAGS)  -ggdb
 
 # add needed includes here
-DSI_INCLUDES=$(GLOBUS_INCLUDES) -I/home/brian/software/hadoop-0.18.1/src/c++/libhdfs
+DSI_INCLUDES=$(GLOBUS_INCLUDES) -I/home/brian/software/hadoop-0.18.1/src/c++/libhdfs -I/opt/osg/osg-100/jdk1.5/include -I/opt/osg/osg-100/jdk1.5/include/linux
 
 # added needed ldflags here
 DSI_LDFLAGS=$(GLOBUS_LDFLAGS) -fPIC -L/home/brian/software/hadoop-0.18.1/build/libhdfs
