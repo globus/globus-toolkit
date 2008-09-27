@@ -266,6 +266,10 @@ globus_l_gfs_hdfs_stat(
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     GlobusGFSName(globus_l_gfs_hdfs_stat);
     PathName=stat_info->pathname;
+    while (PathName[0] == '/' && PathName[1] == '/')
+    {
+        PathName++;
+    }
     if (strncmp(PathName, "/mnt/hadoop", 11)) {
         PathName += 11;
     }
@@ -649,10 +653,13 @@ globus_l_gfs_hdfs_recv(
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
     hdfs_handle->pathname = transfer_info->pathname;
-    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)) {
+    while (hdfs_handle->pathname[0] == '/' && hdfs_handle->pathname[1] == '/')
+    {
+        hdfs_handle->pathname++;
+    }
+    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11) == 0) {
         hdfs_handle->pathname += 11;
     }
-
     hdfs_handle->op = op;
     hdfs_handle->outstanding = 0;
     hdfs_handle->done = GLOBUS_FALSE;
@@ -855,7 +862,10 @@ globus_l_gfs_hdfs_send(
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
     hdfs_handle->pathname = transfer_info->pathname;
-
+    while (hdfs_handle->pathname[0] == '/' && hdfs_handle->pathname[1] == '/')
+    {
+        hdfs_handle->pathname++;
+    }
     if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)) {
         hdfs_handle->pathname += 11;
     }
