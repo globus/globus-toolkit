@@ -387,7 +387,7 @@ globus_l_gfs_hdfs_command(
     void *                              user_arg)
 {
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
-     printf("Globus HDFS command.\n");
+     //printf("Globus HDFS command.\n");
     GlobusGFSName(globus_l_gfs_hdfs_command);
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
@@ -457,6 +457,9 @@ globus_l_gfs_hdfs_dump_buffers(
             }
         }
     }
+    //if (hdfs_handle->buffer_count > 10) {
+    //    printf("Waiting on buffer %d\n", hdfs_handle->offset);
+    //}
     return rc;
 }
 
@@ -466,6 +469,9 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
     globus_result_t rc = GLOBUS_SUCCESS;
     int i, cnt = hdfs_handle->buffer_count;
     short wrote_something = 0;
+    //if (hdfs_handle->buffer_count > 10) {
+    //    printf("Got buffer %d\n", offset);
+    //}
     for (i = 0; i<cnt; i++) {
         if (hdfs_handle->used[i] == 0) {
             //printf("Stored some bytes in buffer %d; offset %d.\n", i, offset);
@@ -479,7 +485,9 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
     }
     if (wrote_something == 0) {
         hdfs_handle->buffer_count += 1;
-        if (hdfs_handle->buffer_count == 100) {
+        //printf("Initializing buffer number %d.\n", hdfs_handle->buffer_count);
+        //printf("Current offset %d, waiting on offset %d, size %d.\n", offset, hdfs_handle->offset, nbytes);
+        if (hdfs_handle->buffer_count == 500) {
             rc = GlobusGFSErrorGeneric("store_buffer() failed.");
         } else {
             hdfs_handle->nbytes = globus_realloc(hdfs_handle->nbytes, hdfs_handle->buffer_count*sizeof(globus_size_t));
@@ -524,6 +532,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     rc = GLOBUS_SUCCESS;
     if (result != GLOBUS_SUCCESS)
     {
+        //printf("call back fail.\n");
         rc = GlobusGFSErrorGeneric("call back fail");
         hdfs_handle->done = GLOBUS_TRUE;
     }
@@ -536,9 +545,13 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     {
         rc = globus_l_gfs_hdfs_store_buffer(hdfs_handle, buffer, offset, nbytes);
         if (rc != GLOBUS_SUCCESS) {
+            //printf("Store failed.\n");
             hdfs_handle->done = GLOBUS_TRUE;
         } else {
             rc = globus_l_gfs_hdfs_dump_buffers(hdfs_handle);
+            if (rc != GLOBUS_SUCCESS) {
+                //printf("Dump buffer failed.\n");
+            }
             globus_gridftp_server_update_bytes_written(op, offset, nbytes);
         }
         if (nbytes != local_io_block_size)
@@ -580,6 +593,8 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         local_io_count = 0;
         local_io_block_size = 0;
 
+        globus_gridftp_server_finished_transfer(op, rc);
+    } else if (rc != GLOBUS_SUCCESS) {  // Done is set, but we have outstanding I/O = failed somewhere.
         globus_gridftp_server_finished_transfer(op, rc);
     }
     globus_mutex_unlock(&hdfs_handle->mutex);
