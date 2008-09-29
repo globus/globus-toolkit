@@ -31,7 +31,8 @@ Sources= \
 	globus_common_handle_table_test.c \
 	globus_common_libcsetenv_test.c \
 	globus_common_list_test.c \
-        globus_common_uuid_test.c 
+        globus_common_uuid_test.c \
+        globus_common_largefile_test.c
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -59,6 +60,7 @@ Scripts= \
 	globus-common-libcsetenv-test.pl \
 	globus-common-list-test.pl \
         globus-common-uuid-test.pl \
+        globus-common-largefile-test.pl \
 	run-common-tests.pl
 
 Data= \
@@ -137,7 +139,8 @@ test_PROGRAMS= \
 	globus_common_strptime_test \
 	globus_common_handle_table_test \
 	globus_common_libcsetenv_test \
-        globus_common_uuid_test
+        globus_common_uuid_test \
+        globus_common_largefile_test
 
 globus_common_log_test_SOURCES = globus_common_log_test.c
 globus_common_log_test_LDFLAGS = $(GPT_LDFLAGS)
@@ -418,6 +421,11 @@ globus_common_libcsetenv_test_LDADD = $(GPT_PGM_LINKS)
 globus_common_uuid_test_SOURCES = globus_common_uuid_test.c
 globus_common_uuid_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_common_uuid_test_LDADD = $(GPT_PGM_LINKS)
+
+globus_common_largefile_test_SOURCES = globus_common_largefile_test.c
+globus_common_largefile_test_LDFLAGS = $(GPT_LDFLAGS)
+globus_common_largefile_test_LDADD = $(GPT_PGM_LINKS)
+
 
 
 

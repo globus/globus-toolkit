@@ -36,6 +36,7 @@ use vars qw(@tests);
 	     globus-common-libcsetenv-test.pl
 	     globus-common-list-test.pl
              globus-common-uuid-test.pl
+             globus-common-largefile-test.pl
 	     );
 
 runtests(@tests);
