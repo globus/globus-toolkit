@@ -130,6 +130,8 @@ typedef struct
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
     globus_bool_t                       pipeline;
+    char *                              src_pipe_str;
+    char *                              dst_pipe_str;
     char *                              src_net_stack_str;
     char *                              src_disk_stack_str;
     char *                              dst_net_stack_str;
@@ -441,6 +443,15 @@ const char * long_usage =
 "  -nl-bottleneck | -nlb\n"
 "      Use NetLogger to estimate speeds of disk and network read/write\n"
 "      system calls, and attempt to determine the bottleneck component\n"
+"   -src-pipe | -SP <command line>\n"
+"      Set the source end of a remote transfer to use piped in input\n"
+"      with the given command line.  do not use with -fsstack\n"
+"   -dst-pipe | -DP <command line>\n"
+"      Set the destination end of a remote transfer to write data to then"
+"      standard input of the program run via the given command line.  Do\n"
+"      not use with -fsstack\n"
+"   -pipe <command line>\n"
+"      sets both -src-pipe and -dst-pipe to the same thing\n"
 "   -dcstack | -data-channel-stack\n"
 "      Set the XIO driver stack for the network on both the source and\n"
 "      and the destination.  Both must be gridftp servers\n"
@@ -449,7 +460,7 @@ const char * long_usage =
 "      and the destination.  Both must be gridftp servers\n"
 "   -src-dcstack | -source-data-channel-stack\n"
 "      Set the XIO driver stack for the network on the source GridFTP server.\n"
-"   -src-fsstack | -source-file-system-stack\n"
+"   -src-fsstack | -source-file-system-stack.\n"
 "      Set the XIO driver stack for the disk on the source GridFTP server.\n"
 "   -dst-dcstack | -dest-data-channel-stack\n"
 "      Set the XIO driver stack for the network on the destination GridFTP server.\n"
@@ -550,6 +561,9 @@ enum
     arg_udt,
     arg_nl_bottleneck,
     arg_nl_interval,
+    arg_src_pipe_str,
+    arg_dst_pipe_str,
+    arg_pipe_str,
     arg_net_stack_str,
     arg_disk_stack_str,
     arg_src_net_stack_str,
@@ -655,6 +669,9 @@ oneargdef(arg_rst_interval, "-rst-interval", "-restart-interval", test_integer, 
 oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
+oneargdef(arg_src_pipe_str, "-SP", "-src-pipe", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_dst_pipe_str, "-DP", "-dst-pipe", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_pipe_str, "-P", "-pipe", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_net_stack_str, "-dcstack", "-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_disk_stack_str, "-fsstack", "-file-system-stack", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_src_net_stack_str, "-src-dcstack", "-source-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
@@ -716,6 +733,9 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_nl_interval);        \
     setupopt(arg_ipv6);         	\
     setupopt(arg_gridftp2);         	\
+    setupopt(arg_src_pipe_str);        \
+    setupopt(arg_dst_pipe_str);        \
+    setupopt(arg_pipe_str);        \
     setupopt(arg_net_stack_str);        \
     setupopt(arg_disk_stack_str);        \
     setupopt(arg_src_net_stack_str);        \
@@ -2318,6 +2338,66 @@ guc_l_convert_file_url(
 }
 
 static
+char *
+guc_l_pipe_to_stack_str(
+    char *                              in_str)
+{
+    globus_list_t *                     list;
+    globus_list_t *                     r_list = NULL;
+    char *                              pipe_str;
+    char *                              del_choices = "#$^*!|%&()'{}";
+    char *                              del;
+    char *                              word;
+    char *                              tmp_s;
+    globus_bool_t                       found;
+
+    del = del_choices;
+    found = GLOBUS_FALSE;
+    while(!found)
+    {
+        if(strchr(in_str, *del) == NULL)
+        {
+            found = GLOBUS_TRUE;
+        }
+        else
+        {
+            del++;
+            if(del == '\0')
+            {
+                fprintf(stderr, "The pipe string most contain at least one of the following characters: %s", del_choices);
+                return NULL;
+            }
+        }
+    }
+    list = globus_list_from_string(in_str, ' ', " \t\r\n");
+
+    /* need to reverse the list */
+    while(!globus_list_empty(list))
+    {
+        word = (char *) globus_list_remove(&list, list);
+        if(*word != '\0')
+        {
+            globus_list_insert(&r_list, word);
+        }
+    }
+
+    if(globus_list_size(r_list) <= 0)
+    {
+        return NULL;
+    }
+
+    pipe_str = globus_common_create_string("popen:argv=");
+    while(!globus_list_empty(r_list))
+    {
+        word = (char *) globus_list_remove(&r_list, r_list);
+        tmp_s = globus_common_create_string("%s%c%s", pipe_str, *del, word);
+        free(pipe_str);
+        pipe_str = tmp_s;
+    }
+    return pipe_str;
+}
+
+static
 int
 globus_l_guc_parse_arguments(
     int                                             argc,
@@ -2624,6 +2704,22 @@ globus_l_guc_parse_arguments(
 	case arg_gridftp2:
 	    guc_info->gridftp2 = GLOBUS_TRUE;
 	    break;
+
+        case arg_src_pipe_str:
+            guc_info->src_pipe_str =
+                guc_l_pipe_to_stack_str(instance->values[0]);
+            break;
+        case arg_dst_pipe_str:
+            guc_info->dst_pipe_str =
+                guc_l_pipe_to_stack_str(instance->values[0]);
+            break;
+        case arg_pipe_str:
+            guc_info->dst_pipe_str =
+                guc_l_pipe_to_stack_str(instance->values[0]);
+            guc_info->src_pipe_str =
+                guc_l_pipe_to_stack_str(instance->values[0]);
+            break;
+
         case arg_src_net_stack_str:
             guc_info->src_net_stack_str = 
                 globus_libc_strdup(instance->values[0]);
@@ -2753,6 +2849,35 @@ globus_l_guc_parse_arguments(
 
     globus_args_option_instance_list_free(&options_found);
 
+    if(guc_info->src_pipe_str != NULL)
+    {
+        if(guc_info->src_disk_stack_str)
+        {
+            tmp_str = globus_common_create_string("%s,%s", 
+                guc_info->src_pipe_str, guc_info->src_disk_stack_str);
+            free(guc_info->src_disk_stack_str);
+            guc_info->src_disk_stack_str = tmp_str;
+        }
+        else
+        {
+            guc_info->src_disk_stack_str = strdup(guc_info->src_pipe_str);
+        }
+    }
+    if(guc_info->dst_pipe_str != NULL)
+    {
+        if(guc_info->dst_disk_stack_str)
+        {
+            tmp_str = globus_common_create_string("%s,%s", 
+                guc_info->dst_pipe_str, guc_info->dst_disk_stack_str);
+            free(guc_info->dst_disk_stack_str);
+            guc_info->dst_disk_stack_str = tmp_str;
+        }
+        else
+        {
+            guc_info->dst_disk_stack_str = globus_common_create_string(
+                "%s,ordering", guc_info->dst_pipe_str);
+        }
+    }
     /* if we are doing multicast allow no dest option by adding the first 
         url in the file */
     if(guc_info->mc_file != NULL)
