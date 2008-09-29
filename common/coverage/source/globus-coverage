@@ -113,7 +113,7 @@ sub create_package_file {
         }
 
         &create_file_page($package_info, $fileinfo);
-        &create_source_page($fileinfo);
+        &create_source_page($package_info, $fileinfo);
         push(@{$template_summary}, 
             {
                 file => $filename,
@@ -135,6 +135,7 @@ sub create_package_file {
     foreach (@{$template_summary})
     {
         $_->{parity} = $classidx++ % 2;
+        $_->{package} = $package_info->name();
     }
     $template->param(BUNDLE => $bundle->name());
     $template->param(PACKAGE => $package_info->name());
@@ -159,7 +160,8 @@ sub create_file_page {
     my $classidx = 0;
     my $template_summary = [];
     my $lines;
-    my $output_file = "$output_dir/summary-".$fileinfo->name().".html";
+    my $output_file = "$output_dir/summary-".$pkginfo->name() . "-" .
+                      $fileinfo->name().".html";
 
     $lines = $fileinfo->lines();
     if ($lines == 0) {
@@ -210,13 +212,15 @@ sub create_file_page {
 }
 
 sub create_source_page {
+    my $pkginfo = shift;
     my $fileinfo = shift;
     my $template = HTML::Template->new(filename => "$datadir/source.template");
     my $classidx = 0;
     my @classstrs = ("", "class=\"odd\"");
     my $template_lines = [];
     my $lines;
-    my $output_file = "$output_dir/source-".$fileinfo->name().".html";
+    my $output_file = "$output_dir/source-".$pkginfo->name() . "-" .
+                        $fileinfo->name().".html";
 
     $lines = $fileinfo->lines();
 

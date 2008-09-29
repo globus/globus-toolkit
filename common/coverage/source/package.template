@@ -51,7 +51,7 @@
 
         <TMPL_LOOP NAME=SUMMARY>
           <tr <TMPL_UNLESS NAME=PARITY>class="odd"</TMPL_UNLESS>>
-              <td><a href="summary-<TMPL_VAR NAME=FILE>.html"><TMPL_VAR NAME=FILE></a></td>
+              <td><a href="summary-<TMPL_VAR NAME=PACKAGE>-<TMPL_VAR NAME=FILE>.html"><TMPL_VAR NAME=FILE></a></td>
               <td><TMPL_VAR NAME=BRANCH_PERCENTAGE>%</td>
               <td><TMPL_VAR NAME=FUNC_PERCENTAGE>%</td>
               <td><TMPL_VAR NAME=STATEMENT_PERCENTAGE>%</td>
