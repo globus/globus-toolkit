@@ -1,4 +1,4 @@
-#serial 4
+#serial 5
 
 dnl By default, many hosts won't let programs access large files;
 dnl one must use special compiler options to get large-file access to work.
@@ -56,6 +56,9 @@ AC_DEFUN([AC_SYS_LARGEFILE],
      [  --disable-largefile     omit support for large files])
    if test "$enable_largefile" != no; then
      AC_CHECK_TOOL(GETCONF, getconf)
+       if test "`($GETCONF _POSIX_V6_ILP32_OFFBIG) 2>/dev/null`" = "1"; then
+         GETCONF="$GETCONF -v POSIX_V6_ILP32_OFFBIG"
+       fi
      AC_SYS_LARGEFILE_FLAGS(CFLAGS)
      AC_SYS_LARGEFILE_FLAGS(LDFLAGS)
      AC_SYS_LARGEFILE_FLAGS(LIBS)
@@ -82,6 +85,10 @@ dnl	 AC_SYS_LARGEFILE_SPACE_APPEND(CFLAGS, "$ac_flag") ;;
 	# HP-UX 10.20 and later
 	hpux10.[2-9][0-9]* | hpux1[1-9]* | hpux[2-9][0-9]*)
 	  ac_cv_sys_file_offset_bits=64 ;;
+	*linux*)
+	  if test "X$ac_cv_sys_largefile_CFLAGS" = "X"; then
+	    ac_cv_sys_file_offset_bits=64
+	  fi ;;
 	esac])
      AC_SYS_LARGEFILE_MACRO_VALUE(_LARGEFILE_SOURCE,
        ac_cv_sys_largefile_source,
@@ -90,6 +97,10 @@ dnl	 AC_SYS_LARGEFILE_SPACE_APPEND(CFLAGS, "$ac_flag") ;;
 	# HP-UX 10.20 and later
 	hpux10.[2-9][0-9]* | hpux1[1-9]* | hpux[2-9][0-9]*)
 	  ac_cv_sys_largefile_source=1 ;;
+	*linux*)
+	  if test "X$ac_cv_sys_largefile_CFLAGS" = "X"; then
+	    ac_cv_sys_largefile_source=1
+	  fi ;;
 	esac])
      AC_SYS_LARGEFILE_MACRO_VALUE(_LARGE_FILES,
        ac_cv_sys_large_files,
