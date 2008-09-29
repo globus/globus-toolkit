@@ -383,11 +383,15 @@ globus_i_gfs_log_open()
     {
         log_mod = &globus_logging_stdio_ng_module;
         globus_l_gfs_log_events = GLOBUS_TRUE;
+        log_mask |= GLOBUS_GFS_LOG_INFO | 
+            GLOBUS_GFS_LOG_WARN | GLOBUS_GFS_LOG_ERR;
     }
     else if(strcmp(module, "syslog_ng") == 0)
     {
         log_mod = &globus_logging_syslog_ng_module;
         globus_l_gfs_log_events = GLOBUS_TRUE;
+        log_mask |= GLOBUS_GFS_LOG_INFO | 
+            GLOBUS_GFS_LOG_WARN | GLOBUS_GFS_LOG_ERR;
     }
     else
     {
