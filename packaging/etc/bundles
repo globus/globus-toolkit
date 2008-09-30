@@ -258,6 +258,7 @@ BUNDLE	prews-test
 	globus_common_test
 	globus_ftp_client_test
 	globus_gass_copy_test
+	globus_gridftp_server_test
 	globus_gram_client_test
 	globus_gram_client_tools_test
 	globus_gram_job_manager_test
