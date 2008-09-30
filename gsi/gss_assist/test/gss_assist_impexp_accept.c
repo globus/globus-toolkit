@@ -76,11 +76,11 @@ int main(int argc, char * argv[])
         perror("getting socket name");
         exit(1);
     }
+    /* Start accepting connection */
+    listen(sock, 1);
 
     fprintf(stdout, "Socket has port #%d\n", ntohs(sockaddr.sin_port));
 
-    /* Start accepting connection */
-    listen(sock, 1);
     connect_sock = accept(sock, 0, 0);
     if(connect_sock == -1) 
     {
