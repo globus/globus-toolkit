@@ -192,7 +192,7 @@ timeout_main(
     int                                     secs;
     int                                     usecs;
     globus_reltime_t                        delay;
-    int                                     div = 3;
+    int                                     div = 5;
 
     globus_l_closed = GLOBUS_FALSE;
     globus_l_timeout = GLOBUS_TRUE;

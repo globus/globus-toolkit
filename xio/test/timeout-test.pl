@@ -49,7 +49,7 @@ push(@timeout_position, "D");
 push(@timeout_position, "C");
 
 my @timeout_vals;
-push(@timeout_vals, "300000");
+push(@timeout_vals, "500000");
 push(@timeout_vals, "600000");
 push(@timeout_vals, "900000");
 
