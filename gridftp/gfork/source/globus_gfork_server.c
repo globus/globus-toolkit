@@ -101,20 +101,20 @@ gfork_kid_set_keeper_envs(
             gfork_l_keep_envs[i]);
         if(val_s != NULL)
         {
-            globus_libc_setenv(gfork_l_keep_envs[i], val_s, 1);
+            setenv(gfork_l_keep_envs[i], val_s, 1);
         }
     }
 
     /* set extra envs */
     sprintf(tmp_str, "%d", read_fd);
-    globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
+    setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
     sprintf(tmp_str, "%d", write_fd);
-    globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
+    setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
 
-    globus_libc_setenv(GFORK_CHILD_CS_ENV, g_contact_string, 1);
+    setenv(GFORK_CHILD_CS_ENV, g_contact_string, 1);
 
     sprintf(tmp_str, "%d", gfork_l_options.instances);
-    globus_libc_setenv(GFORK_CHILD_INSTANCE_ENV, tmp_str, 1);
+    setenv(GFORK_CHILD_INSTANCE_ENV, tmp_str, 1);
 }
 
 static
@@ -448,7 +448,7 @@ gfork_l_list_to_array(
     int                                 i = 0;
     char **                             argv;
 
-    argv = (char **) globus_calloc(
+    argv = (char **) calloc(
         globus_list_size(list) + 1, sizeof(char *));
     i = 0;
     for(list = list;
@@ -469,6 +469,8 @@ gfork_l_spawn_master(
     gfork_i_master_program_ent_t *      ms_ent)
 {
     char **                             argv;
+    char **                             child_env;
+    globus_list_t *                     child_list;
     pid_t                               pid;
     int                                 infds[2];
     int                                 outfds[2];
@@ -502,6 +504,12 @@ gfork_l_spawn_master(
         goto error_outpipe;
     }
 
+    /* gotta do all globus things before the fork */
+    child_env = gfork_l_list_to_array(ms_ent->master_env);
+    child_list = globus_list_copy(ms_ent->master_arg_list);
+    globus_list_insert(&child_list, ms_ent->master);
+    argv = gfork_l_list_to_array(child_list);
+
     pid = fork();
     if(pid == 0)
     {
@@ -513,9 +521,7 @@ gfork_l_spawn_master(
         read_fd = outfds[0];
         write_fd = infds[1];
 
-        environ = gfork_l_list_to_array(ms_ent->master_env);
-        globus_list_insert(&ms_ent->master_arg_list, ms_ent->master);
-        argv = gfork_l_list_to_array(ms_ent->master_arg_list);
+        environ = child_env;
 
         nice(ms_ent->master_nice);
 
@@ -523,8 +529,8 @@ gfork_l_spawn_master(
         /* set up the state pipe and envs */
 
         gfork_log(2, "Master Child FDs %s %s\n",
-            globus_libc_getenv(GFORK_CHILD_READ_ENV),
-            globus_libc_getenv(GFORK_CHILD_WRITE_ENV));
+            getenv(GFORK_CHILD_READ_ENV),
+            getenv(GFORK_CHILD_WRITE_ENV));
 
         gfork_log(2, "running master program: %s\n", argv[0]);
         rc = execv(argv[0], argv);
@@ -535,6 +541,11 @@ gfork_l_spawn_master(
     }
     else if(pid > 0)
     {
+        /* clean up argv and child_list and child_env*/
+        globus_list_free(child_list);
+        free(child_env);
+        free(argv);
+
         master_child_handle = (gfork_i_child_handle_t *)
             globus_calloc(1, sizeof(gfork_i_child_handle_t));
 
