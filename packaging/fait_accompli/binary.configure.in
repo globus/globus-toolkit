@@ -72,5 +72,11 @@ if test "x$ANT_PATH" = "x"; then
    AC_MSG_WARN([If you know you will not need one, this message can be ignored])
 fi
 
+# XML::Parser
+perl -MXML::Parser -e 1 > /dev/null 2>&1
+if test $? -ne 0; then
+   AC_MSG_WARN([XML::Parser not found, but is required for GRAM])
+fi
+
 AC_OUTPUT
 
