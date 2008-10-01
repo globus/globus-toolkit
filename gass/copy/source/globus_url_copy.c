@@ -1801,6 +1801,16 @@ globus_l_guc_transfer(
             url_pair.src_url = src_url;
             url_pair.dst_url = dst_url;
             
+            result = globus_gass_copy_mkdir(
+                &handle->gass_copy_handle,
+                dst_url,
+                &handle->dest_gass_copy_attr);
+                
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GLOBUS_SUCCESS;
+            }
+
             result = globus_l_guc_expand_single_url(
                  &url_pair,
                  guc_info,
@@ -1823,16 +1833,7 @@ globus_l_guc_transfer(
                 }
             }
             
-            result = globus_gass_copy_mkdir(
-                &handle->gass_copy_handle,
-                dst_url,
-                &handle->dest_gass_copy_attr);
-                
-            if(result != GLOBUS_SUCCESS)
-            {
-                result = GLOBUS_SUCCESS;
-            }
-            globus_l_url_copy_monitor_callback(
+           globus_l_url_copy_monitor_callback(
                 transfer_info, &handle->gass_copy_handle, NULL);
         }
         else
