@@ -48,6 +48,9 @@ typedef struct globus_l_gfs_hdfs_handle_s
     int                                 buffer_count;
     int                                 outstanding;
     globus_mutex_t                      mutex;
+    int                                 port;
+    char *                              host;
+    int                                 replicas;
 } globus_l_gfs_hdfs_handle_t;
 
 char err_msg[256];
@@ -60,7 +63,9 @@ static int local_io_count = 0;
  *  This function is called when a new session is initialized, ie a user 
  *  connectes to the server.  This hook gives the dsi an oppertunity to
  *  set internal state that will be threaded through to all other
- *  function calls associated with this session.  And an oppertunity to
+ *  function calls associated with this session. int                                 port;
+    char *                              host;
+    int                                 replicas; And an oppertunity to
  *  reject the user.
  *
  *  finished_info.info.session.session_arg should be set to an DSI
@@ -80,6 +85,8 @@ globus_l_gfs_hdfs_start(
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     globus_gfs_finished_info_t          finished_info;
     GlobusGFSName(globus_l_gfs_hdfs_start);
+    int replicas;
+    int port;
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *)
         globus_malloc(sizeof(globus_l_gfs_hdfs_handle_t));
@@ -91,9 +98,30 @@ globus_l_gfs_hdfs_start(
     finished_info.info.session.username = session_info->username;
     finished_info.info.session.home_dir = "/";
 
+    // Pull configuration from environment.
+    hdfs_handle->replicas = 3;
+    hdfs_handle->host = "node001";
+    hdfs_handle->port = 9000;
+    char * replicas_char = getenv("VDT_GRIDFTP_HDFS_REPLICAS");
+    char * namenode = getenv("VDT_GRIDFTP_HDFS_NAMENODE");
+    char * port_char = getenv("VDT_GRIDFTP_HDFS_PORT");
+    if (replicas_char != NULL) {
+        replicas = atoi(replicas_char);
+        if ((replicas > 1) && (replicas < 20))
+            hdfs_handle->replicas = replicas;
+    }
+    if (namenode != NULL)
+        hdfs_handle->host = namenode;
+    if (port_char != NULL) {
+        port = atoi(port_char);
+        if ((port >= 1) && (port <= 65535))
+            hdfs_handle->port = port;
+    }
+
+    printf("Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n", hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
-    hdfs_handle->fs = hdfsConnect("node001", 9000);
+    hdfs_handle->fs = hdfsConnect(hdfs_handle->host, hdfs_handle->port);
     if (!hdfs_handle->fs) {
         finished_info.result = GLOBUS_FAILURE;
         globus_gridftp_server_operation_finished(
@@ -264,15 +292,18 @@ globus_l_gfs_hdfs_stat(
     char                                symlink_target[MAXPATHLEN];
     char *                              PathName;
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+    printf("Stat operation.\n");
     GlobusGFSName(globus_l_gfs_hdfs_stat);
     PathName=stat_info->pathname;
     while (PathName[0] == '/' && PathName[1] == '/')
     {
         PathName++;
     }
-    if (strncmp(PathName, "/mnt/hadoop", 11)) {
+    if (strncmp(PathName, "/mnt/hadoop", 11)==0) {
         PathName += 11;
     }
+
+    printf("Going to do stat on file %s.\n", PathName);
  
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
@@ -662,7 +693,7 @@ globus_l_gfs_hdfs_recv(
     globus_l_gfs_hdfs_handle_t *        hdfs_handle;
     globus_result_t                     rc; 
 
-    //printf("hdfs recv.\n");
+    printf("hdfs recv.\n");
     GlobusGFSName(globus_l_gfs_hdfs_recv);
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
@@ -675,6 +706,7 @@ globus_l_gfs_hdfs_recv(
     if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11) == 0) {
         hdfs_handle->pathname += 11;
     }
+    printf("We are going to open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->op = op;
     hdfs_handle->outstanding = 0;
     hdfs_handle->done = GLOBUS_FALSE;
@@ -691,17 +723,18 @@ globus_l_gfs_hdfs_recv(
     }
 
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
+    printf("Open file %s.\n", hdfs_handle->pathname);
     if (hdfsExists(hdfs_handle->fs, hdfs_handle->pathname) == 0)
     {
         //printf("Opened the hdfs handle O_WRONLY.\n");
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
-            O_WRONLY, 0, 1, 0);
+            O_WRONLY, 0, hdfs_handle->replicas, 0);
     }
     else
     {
         //printf("Opened the hdfs handle O_CREAT.\n");
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
-                                 O_WRONLY, 0, 1, 0);
+                                 O_WRONLY, 0, hdfs_handle->replicas, 0);
     }
     if (!hdfs_handle->fd)
     {
@@ -881,7 +914,7 @@ globus_l_gfs_hdfs_send(
     {
         hdfs_handle->pathname++;
     }
-    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)) {
+    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)==0) {
         hdfs_handle->pathname += 11;
     }
 
@@ -897,6 +930,7 @@ globus_l_gfs_hdfs_send(
 
 
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
+    printf("Open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname, O_RDONLY, 0, 1, 0);
     if (hdfs_handle->fd == NULL)
     {
