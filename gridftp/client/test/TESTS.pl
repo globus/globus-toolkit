@@ -31,11 +31,14 @@ for(my $i = 0; $i < $count; $i++)
     {
         exit $rc;
     }
-
-    $rc = system('./globus-ftp-client-many-server.pl');
-    if($rc != 0)
+    
+    if(defined($ENV{GLOBUS_TEST_EXTENDED}))
     {
-        exit $rc;
+        $rc = system('./globus-ftp-client-many-server.pl');
+        if($rc != 0)
+        {
+            exit $rc;
+        }
     }
     $ENV{FTP_TEST_NO_GSI} = 1;
 }

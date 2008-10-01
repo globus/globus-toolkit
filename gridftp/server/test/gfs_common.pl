@@ -59,22 +59,22 @@ sub gfs_next_test()
         print "Using basic server config\n";
         ($pid,$cs) = gfs_setup_server_basic();
     }
-    elsif($test_ndx == 2)
+    elsif($test_ndx == 2 && defined($ENV{GLOBUS_TEST_EXTENDED}))
     {
         print "Using single gfork server config\n";
         ($pid,$cs) = gfs_setup_server_fe();
     }
-    elsif($test_ndx == 3)
+    elsif($test_ndx == 3 && defined($ENV{GLOBUS_TEST_EXTENDED}))
     {
         print "Using gfork split server config\n";
         ($pid,$cs) = gfs_setup_server_split(1);
     }
-    elsif($test_ndx == 4)
+    elsif($test_ndx == 4 && defined($ENV{GLOBUS_TEST_EXTENDED}))
     {
         print "Using gfork split server 2 stripes\n";
         ($pid,$cs) = gfs_setup_server_split(2);
     }
-    elsif($test_ndx == 5)
+    elsif($test_ndx == 5 && defined($ENV{GLOBUS_TEST_EXTENDED}))
     {
         print "Using gfork split server 3 stripes\n";
         ($pid,$cs) = gfs_setup_server_split(3);
