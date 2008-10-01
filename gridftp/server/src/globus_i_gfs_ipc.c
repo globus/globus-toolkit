@@ -1635,6 +1635,7 @@ globus_gfs_ipc_reply_session(
 
             case GLOBUS_GFS_IPC_STATE_ERROR_WAIT:
                 error_state = GLOBUS_GFS_IPC_STATE_ERROR;
+                res = GlobusGFSErrorMemory("GLOBUS_GFS_IPC_STATE_ERROR_WAIT: invalid state");
                 goto error;
                 break;
 
@@ -2124,7 +2125,7 @@ globus_gfs_ipc_handle_create(
         &ipc->xio_handle, globus_i_gfs_ipc_xio_stack);
     if(result != GLOBUS_SUCCESS)
     {
-        goto attr_error;
+        goto ipc_error;
     }
 
     globus_mutex_lock(&globus_l_ipc_mutex);
@@ -2148,6 +2149,7 @@ globus_gfs_ipc_handle_create(
 
 handle_error:
     globus_mutex_unlock(&globus_l_ipc_mutex);
+ipc_error:
     globus_l_gfs_ipc_handle_destroy(ipc);
 attr_error:
     globus_xio_attr_destroy(xio_attr);
@@ -2695,7 +2697,6 @@ globus_l_gfs_ipc_requestor_start_close(
         ipc_handle);
     if(res != GLOBUS_SUCCESS)
     {
-        globus_free(buffer);
         res = globus_xio_register_close(
             ipc_handle->xio_handle,
             NULL,
@@ -2709,6 +2710,7 @@ globus_l_gfs_ipc_requestor_start_close(
                 res);
             goto error_xio;
         }
+        globus_free(buffer);
     }
     return GLOBUS_SUCCESS;
 error_xio:
@@ -4119,6 +4121,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 ipc->iface->transfer_event_func(
                     ipc, ipc->reply_arg, event_info);
                 globus_l_gfs_ipc_request_destroy(request);
+                request = NULL;
 
                 if(event_info->eof_count)
                 {
@@ -4132,7 +4135,6 @@ globus_l_gfs_ipc_reply_read_body_cb(
         }
     }
 
-    globus_free(buffer);
 
     /* relock and post read */
     globus_mutex_lock(&ipc->mutex);
@@ -4195,13 +4197,18 @@ globus_l_gfs_ipc_reply_read_body_cb(
     }
     globus_mutex_unlock(&ipc->mutex);
 
+    globus_free(buffer);
+
     GlobusGFSDebugExit();
     return;
 
 mem_error:
     globus_free(new_buf);
 err:
-    globus_l_gfs_ipc_request_destroy(request);
+    if(request != NULL)
+    {
+        globus_l_gfs_ipc_request_destroy(request);
+    }
     ipc->state = error_state;
     ipc->cached_res = result;
     if(error_state == GLOBUS_GFS_IPC_STATE_ERROR)
@@ -4671,6 +4678,8 @@ globus_gfs_ipc_reply_finished(
 
             case GLOBUS_GFS_IPC_STATE_ERROR_WAIT:
                 error_state = GLOBUS_GFS_IPC_STATE_ERROR;
+                res = GlobusGFSErrorMemory(
+                    "GLOBUS_GFS_IPC_STATE_ERROR_WAIT: invalid state");
                 goto error;
                 break;
 

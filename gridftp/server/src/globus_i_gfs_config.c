@@ -628,6 +628,7 @@ globus_l_gfs_config_load_config_env()
     int                                 rc;
     int                                 i;
     globus_l_gfs_config_option_t *      option;
+    globus_bool_t                       opt_is_new = GLOBUS_FALSE;
     globus_off_t                        tmp_off;
     GlobusGFSName(globus_l_gfs_config_load_config_env);
     GlobusGFSDebugEnter();
@@ -657,6 +658,7 @@ globus_l_gfs_config_load_config_env()
         {
             option = (globus_l_gfs_config_option_t *)
                 globus_malloc(sizeof(globus_l_gfs_config_option_t));
+            opt_is_new = GLOBUS_TRUE;
             memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
         }
         switch(option->type)
@@ -668,6 +670,10 @@ globus_l_gfs_config_load_config_env()
             rc = globus_args_bytestr_to_num(value, &tmp_off);
             if(rc != 0)
             {
+                if(opt_is_new)
+                {
+                    free(option);
+                }
                 fprintf(stderr, "Invalid value for %s\n", 
                     option_list[i].option_name);
                 return -1;
@@ -710,6 +716,7 @@ globus_l_gfs_config_load_commandline(
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
+    globus_bool_t                       opt_is_new = GLOBUS_FALSE;
     globus_off_t                        tmp_off;
     GlobusGFSName(globus_l_gfs_config_load_commandline);
     GlobusGFSDebugEnter();
@@ -768,6 +775,7 @@ globus_l_gfs_config_load_commandline(
                     &option_table, option_list[i].option_name);   
             if(!option)
             {
+                opt_is_new = GLOBUS_TRUE;
                 option = (globus_l_gfs_config_option_t *)
                     globus_malloc(sizeof(globus_l_gfs_config_option_t));
                 memcpy(
@@ -785,12 +793,20 @@ globus_l_gfs_config_load_commandline(
               case GLOBUS_L_GFS_CONFIG_INT:
                 if(++arg_num >= argc)
                 {
+                    if(opt_is_new)
+                    {
+                        free(option);
+                    }
                     fprintf(stderr, "Option %s is missing a value\n", argp);
                     return -1;
                 }
                 rc = globus_args_bytestr_to_num(argv[arg_num], &tmp_off);
                 if(rc != 0)
                 {
+                    if(opt_is_new)
+                    {
+                        free(option);
+                    }
                     fprintf(stderr, "Invalid value for %s\n", argp);
                     return -1;
                 }                  
@@ -800,6 +816,10 @@ globus_l_gfs_config_load_commandline(
               case GLOBUS_L_GFS_CONFIG_STRING:
                 if(++arg_num >= argc)
                 {
+                    if(opt_is_new)
+                    {
+                        free(option);
+                    }
                     fprintf(stderr, "Option %s is missing a value\n", argp);
                     return -1;
                 }
@@ -823,6 +843,10 @@ globus_l_gfs_config_load_commandline(
         
         if(!found)
         {
+            if(opt_is_new)
+            {
+                free(option);
+            }
             fprintf(stderr, 
                 "Unknown option on command line: %s\n", argv[arg_num]);
             return -1;
@@ -2651,6 +2675,7 @@ globus_gfs_config_add_cb(
             globus_hashtable_lookup(&option_table, (void *) option_name);
         if(option == NULL)
         {
+            rc = -1;
             goto error;
         }
         cb_ent = (globus_i_gfs_config_option_cb_ent_t *)
