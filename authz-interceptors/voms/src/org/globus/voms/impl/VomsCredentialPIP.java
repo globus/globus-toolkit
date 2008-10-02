@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.HashMap;
 
+import org.globus.gsi.CertUtil;
+
 // FIXME: need to validate without certificate chain validation, nothing in API
 // allows for that.
 public class VomsCredentialPIP implements VomsConstants {
@@ -181,6 +183,7 @@ public class VomsCredentialPIP implements VomsConstants {
 
                     if (!parameterSet) {
                         issuerDN = attrib.getIssuer();
+                        issuerDN = CertUtil.toGlobusID(issuerDN, false);
                         VO = attrib.getVO();
                         hostport = attrib.getHostPort();
                         ACCerts certs = attrib.getCertList();
@@ -190,6 +193,7 @@ public class VomsCredentialPIP implements VomsConstants {
                             lastCert = (X509Certificate) certsIter.next();
                         }
                         issuerCADN = lastCert.getIssuerDN().getName();
+                        issuerCADN = CertUtil.toGlobusID(issuerCADN);
                         parameterSet = true;
                     }
                     

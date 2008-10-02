@@ -44,8 +44,6 @@ import java.util.Vector;
 
 import java.security.cert.X509Certificate;
 
-import org.globus.gsi.CertUtil;
-
 /**
  * VOMS PIP that complies with Authz Interop XACML Profile.
  *
@@ -150,7 +148,6 @@ public class AuthzProfilePIP extends PIP {
         // 2. VOMS issuer DN
         String issuerDN = vomsInformation.getIssuerDN();
         if (issuerDN != null) {
-            issuerDN = CertUtil.toGlobusID(issuerDN);
             AttributeIdentifier vomsIssuerIden = null;
             try {
                 vomsIssuerIden =
@@ -171,7 +168,6 @@ public class AuthzProfilePIP extends PIP {
         // 3. VOMS issuer CA
         String issuerCA = vomsInformation.getIssuerCADN();
         if (issuerCA != null) {
-            issuerCA = CertUtil.toGlobusID(issuerCA);
             AttributeIdentifier vomsIssuerCAIden = null;
             try {
                 vomsIssuerCAIden =
