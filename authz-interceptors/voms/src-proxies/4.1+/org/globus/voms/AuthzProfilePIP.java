@@ -44,6 +44,8 @@ import java.util.Vector;
 
 import java.security.cert.X509Certificate;
 
+import org.globus.gsi.CertUtil;
+
 /**
  * VOMS PIP that complies with Authz Interop XACML Profile.
  *
@@ -116,10 +118,14 @@ public class AuthzProfilePIP extends PIP {
         String hostPort = vomsInformation.getHostport();
         logger.debug("Host/Port is " + hostPort);
         Vector attributes = vomsInformation.getAttrs();
-        Iterator attrIter = attributes.iterator();
-        while (attrIter.hasNext()) {
-            logger.debug("attribtue is (role vector " +
-                         attrIter.next());
+        if (logger.isDebugEnabled()) {
+            if (attributes != null) {
+                Iterator attrIter = attributes.iterator();
+                while (attrIter.hasNext()) {
+                    logger.debug("attribtue is (role vector " +
+                                 attrIter.next());
+                }
+            }
         }
 
         // Need to contruct relevant attribtues and add.
@@ -144,6 +150,7 @@ public class AuthzProfilePIP extends PIP {
         // 2. VOMS issuer DN
         String issuerDN = vomsInformation.getIssuerDN();
         if (issuerDN != null) {
+            issuerDN = CertUtil.toGlobusID(issuerDN);
             AttributeIdentifier vomsIssuerIden = null;
             try {
                 vomsIssuerIden =
@@ -164,6 +171,7 @@ public class AuthzProfilePIP extends PIP {
         // 3. VOMS issuer CA
         String issuerCA = vomsInformation.getIssuerCADN();
         if (issuerCA != null) {
+            issuerCA = CertUtil.toGlobusID(issuerCA);
             AttributeIdentifier vomsIssuerCAIden = null;
             try {
                 vomsIssuerCAIden =
@@ -227,7 +235,7 @@ public class AuthzProfilePIP extends PIP {
         try {
             hostIden = 
                 new AttributeIdentifier(new URI(AuthzProfileConstants.
-                                                VOMS_PRIMARY_FQAN), 
+                                                VOMS_DNS_PORT), 
                                         new URI(STRING_DATATYPE), false);
         } catch (URISyntaxException e) {
             throw new AttributeException(e);
