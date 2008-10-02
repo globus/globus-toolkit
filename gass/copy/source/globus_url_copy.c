@@ -2315,11 +2315,11 @@ guc_l_convert_file_url(
     char *                              dir_ptr = "";
 
 
-    /* do we already have a url */
+    /* do we already have a url or - */
     tmp_ptr = strstr(in_url, ":/");
-    if(tmp_ptr != NULL)
+    if(tmp_ptr != NULL || strcmp(in_url, "-") == 0)
     {
-        return strdup(in_url);
+        return globus_libc_strdup(in_url);
     }
 
     if(in_url[0] != '/')
