@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define GFORK_WAIT_FOR_KILL         5
+#define GFORK_WAIT_FOR_KILL         2
 
 extern char **environ;
 
@@ -33,7 +33,6 @@ static gfork_i_handle_t                 gfork_l_handle;
 static char *                           g_contact_string;
 
 static globus_hashtable_t               gfork_l_keepenvs;
-static globus_reltime_t                 gfork_l_sigchild_fake;
 
 static int                              gfork_l_connection_count = 0;
 static globus_bool_t                    gfork_l_accepting;
@@ -84,15 +83,28 @@ gfork_gather_envs()
     }
 }
 
+
+
 static
-void
+globus_list_t *
 gfork_kid_set_keeper_envs(
+    globus_list_t *                     in_list,
     int                                 read_fd,
     int                                 write_fd)
 {
     int                                 i;
     char *                              val_s;
-    char                                tmp_str[64];
+    char *                              kv_pair;
+    globus_list_t *                     new_list = NULL;
+    globus_list_t *                     list;
+
+    for(list = in_list; !globus_list_empty(list); list = globus_list_rest(list))
+    {
+        char * val_s = (char *) globus_list_first(list);
+
+        globus_list_insert(&new_list, globus_libc_strdup(val_s));
+    }
+    
 
     for(i = 0; gfork_l_keep_envs[i] != NULL; i++)
     {
@@ -101,20 +113,27 @@ gfork_kid_set_keeper_envs(
             gfork_l_keep_envs[i]);
         if(val_s != NULL)
         {
-            setenv(gfork_l_keep_envs[i], val_s, 1);
+            kv_pair = globus_common_create_string("%s=%s",
+                gfork_l_keep_envs[i], val_s);
+            globus_list_insert(&new_list, kv_pair);
         }
     }
 
     /* set extra envs */
-    sprintf(tmp_str, "%d", read_fd);
-    setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
-    sprintf(tmp_str, "%d", write_fd);
-    setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
+    kv_pair = globus_common_create_string("%s=%d", 
+        GFORK_CHILD_READ_ENV, read_fd);
+    globus_list_insert(&new_list, kv_pair);
+    kv_pair = globus_common_create_string("%s=%d", 
+        GFORK_CHILD_WRITE_ENV, write_fd);
+    globus_list_insert(&new_list, kv_pair);
+    kv_pair = globus_common_create_string("%s=%s", 
+        GFORK_CHILD_CS_ENV, g_contact_string);
+    globus_list_insert(&new_list, kv_pair);
+    kv_pair = globus_common_create_string("%s=%d", 
+        GFORK_CHILD_INSTANCE_ENV, gfork_l_options.instances);
+    globus_list_insert(&new_list, kv_pair);
 
-    setenv(GFORK_CHILD_CS_ENV, g_contact_string, 1);
-
-    sprintf(tmp_str, "%d", gfork_l_options.instances);
-    setenv(GFORK_CHILD_INSTANCE_ENV, tmp_str, 1);
+    return new_list;
 }
 
 static
@@ -145,7 +164,8 @@ gfork_new_child(
     gfork_i_handle_t *                  gfork_handle,
     globus_xio_system_socket_t          socket_handle,
     int                                 read_fd,
-    int                                 write_fd);
+    int                                 write_fd,
+    globus_list_t *                     list);
 
 static
 void
@@ -480,6 +500,7 @@ gfork_l_spawn_master(
     gfork_i_options_t *                 gfork_h;
     globus_result_t                     result;
     gfork_i_msg_t *                     msg;
+    globus_list_t *                     child_env_list;
     gfork_i_child_handle_t *            master_child_handle = NULL;
     GForkFuncName(gfork_l_spawn_master);
 
@@ -505,7 +526,10 @@ gfork_l_spawn_master(
     }
 
     /* gotta do all globus things before the fork */
-    child_env = gfork_l_list_to_array(ms_ent->master_env);
+    child_env_list = gfork_kid_set_keeper_envs(
+        ms_ent->master_env, outfds[0], infds[1]);
+
+    child_env = gfork_l_list_to_array(child_env_list);
     child_list = globus_list_copy(ms_ent->master_arg_list);
     globus_list_insert(&child_list, ms_ent->master);
     argv = gfork_l_list_to_array(child_list);
@@ -525,9 +549,6 @@ gfork_l_spawn_master(
 
         nice(ms_ent->master_nice);
 
-        gfork_kid_set_keeper_envs(read_fd, write_fd);
-        /* set up the state pipe and envs */
-
         gfork_log(2, "Master Child FDs %s %s\n",
             getenv(GFORK_CHILD_READ_ENV),
             getenv(GFORK_CHILD_WRITE_ENV));
@@ -542,6 +563,7 @@ gfork_l_spawn_master(
     else if(pid > 0)
     {
         /* clean up argv and child_list and child_env*/
+        globus_list_destroy_all(child_env_list, globus_libc_free);
         globus_list_free(child_list);
         free(child_env);
         free(argv);
@@ -679,7 +701,6 @@ gfork_l_sigchld(
     int                                 child_pid;
     int                                 child_status;
     int                                 child_rc;
-    globus_result_t                     res;
     globus_bool_t                       dead;
 
     gfork_log(2, "Sigint child\n");
@@ -708,29 +729,6 @@ gfork_l_sigchld(
                 gfork_log(2, "Child %d completed\n", child_pid);
             }
         }
-
-#       ifdef BUILD_LITE
-        {
-            res = globus_callback_register_signal_handler(
-                SIGCHLD,
-                GLOBUS_FALSE,
-                gfork_l_sigchld,
-                user_arg);
-        }
-#       else
-        {
-            globus_reltime_t            delay;
-
-            GlobusTimeReltimeSet(delay, 5, 0);
-            
-            res = globus_callback_register_oneshot(
-                &delay,
-                &gfork_l_sigchild_fake,
-                gfork_l_sigchld,
-                user_arg);
-        }
-#       endif
-        globus_assert(res == GLOBUS_SUCCESS);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 }
@@ -828,6 +826,7 @@ gfork_l_server_accepted(
     globus_xio_system_socket_t          socket_handle;
     gfork_i_child_handle_t *            kid_handle;
     globus_list_t *                     list;
+    globus_list_t *                     child_list;
     GForkFuncName(gfork_l_server_accept_cb);
 
     globus_hashtable_to_list(&gfork_l_master_pid_table, &list);
@@ -854,6 +853,8 @@ gfork_l_server_accepted(
         goto error_getsocket;
     }
 
+    child_list = gfork_kid_set_keeper_envs(
+        gfork_l_options.env_list, outfds[0], infds[1]);
     pid = fork();
     if(pid < 0)
     {
@@ -881,7 +882,8 @@ gfork_l_server_accepted(
             write_fd = -1;
         }
 
-        gfork_new_child(&gfork_l_handle, socket_handle, read_fd, write_fd);
+        gfork_new_child(
+            &gfork_l_handle, socket_handle, read_fd, write_fd, child_list);
 
         /* hsould not return from this, if we do it is an error */
         goto error_fork;
@@ -1110,7 +1112,8 @@ gfork_new_child(
     gfork_i_handle_t *                  gfork_handle,
     globus_xio_system_socket_t          socket_handle,
     int                                 read_fd,
-    int                                 write_fd)
+    int                                 write_fd,
+    globus_list_t *                     list)
 {
     globus_result_t                     res;
     int                                 rc = 1;
@@ -1118,9 +1121,9 @@ gfork_new_child(
 
     gfork_log(1, "starting child %s\n", gfork_handle->server_argv[0]);
 
-    environ = gfork_l_list_to_array(gfork_l_options.env_list);
     /* set up the state pipe and envs */
-    gfork_kid_set_keeper_envs(read_fd, write_fd);
+/*    new_list = gfork_kid_set_keeper_envs(list, read_fd, write_fd);
+ */   environ = gfork_l_list_to_array(list);
 
     /* dup the incoming socket */
     rc = dup2(socket_handle, STDIN_FILENO);
@@ -1570,31 +1573,39 @@ main(
         goto error_opts;
     }
 
-    GlobusTimeReltimeSet(gfork_l_sigchild_fake, 1, 0);
     globus_mutex_lock(&gfork_l_mutex);
     {
-        /* crappy linux thread work around */
-#       ifdef BUILD_LITE
-        {
-            result = globus_callback_register_signal_handler(
-                SIGCHLD,
-                GLOBUS_FALSE,
-                gfork_l_sigchld,
-                &gfork_l_options);
-        }
-#       else
-        {
-            globus_reltime_t            delay;
 
-            GlobusTimeReltimeSet(delay, 5, 0);
-
-            result = globus_callback_register_oneshot(
-                &delay,
-                &gfork_l_sigchild_fake,
-                gfork_l_sigchld,
-                &gfork_l_options);
+        result = globus_callback_register_signal_handler(
+            SIGCHLD,
+            GLOBUS_FALSE,
+            gfork_l_sigchld,
+            &gfork_l_options);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gfork_log(1, "Failed to register signal handler\n");
+            goto error_signal;
         }
-#       endif
+
+#ifndef BUILD_LITE
+/* when threaded add a periodic callback to simulate the SIGCHLD signal, since 
+ * many versions of LinuxThreads don't seem to pass that to right thread */
+    {
+        globus_reltime_t                delay;
+        
+        GlobusTimeReltimeSet(delay, 10, 0);
+        result = globus_callback_register_periodic(
+            NULL,
+            &delay,
+            &delay,
+            gfork_l_sigchld,
+            &gfork_l_options);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_signal;
+        }
+    }
+#endif
 
         result = globus_callback_register_signal_handler(
             SIGINT,
