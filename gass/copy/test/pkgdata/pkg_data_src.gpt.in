@@ -29,23 +29,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_gram_client_tools" Package="pgm">
-                <Version>
-                    <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>            
-
-            <Dependency Name="globus_gram_client_tools_test" Package="pgm">
-                <Version>
-                    <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>            
-
-            <Dependency Name="globus_gridftp_server" Package="pgm">
-                <Version>
-                    <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
             <Dependency Name="globus_gridftp_server_test" Package="pgm">
                 <Version>
                     <Simple_Version Major="2"/>
