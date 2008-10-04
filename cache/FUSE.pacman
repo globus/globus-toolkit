@@ -1,0 +1,31 @@
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
+description('FUSE 2.7.4');
+download('http://superb-east.dl.sourceforge.net/sourceforge/fuse/fuse-2.7.4.tar.gz');
+{
+shellOutputGE('rpm -q kernel-devel', 'kernel-devel-2.6')
+OR
+envIsSet('VDT_HAS_KERNEL_SOURCES')
+};
+{
+shellOutputEQ('if [ "X`rpm -q kernel-devel`" == "Xkernel-devel-`uname -r`" ]; then echo OK; fi', 'OK');
+OR
+envIsSet('VDT_HAS_KERNEL_SOURCES')
+};
+url('http://fuse.sourceforge.net');
+shell('vdt-begin-install FUSE');
+shell('vdt-untar fuse-*.tar.gz');
+cd('fuse-2.7.4');
+mkdir('fuse');
+shellOutputGE('rpm -q kernel-devel', 'kernel-devel-2.6')
+#shell('./configure --with-kernel=/usr/src/kernels/2.6* --prefix=$VDT_LOCATION/fuse')
+shell('./configure --prefix=$VDT_LOCATION/fuse')
+shell('make');
+shell('make install');
+cd();
+shell('rm -rf fuse-2.7.4');
+path("$VDT_LOCATION/fuse/bin");
+path("$VDT_LOCATION/fuse/lib", "LD_LIBRARY_PATH", "no-check");
+shell('vdt-version --add FUSE');
+shell('vdt-end-install');
+uninstallShell('vdt/sbin/vdt-uninstall FUSE');
+uninstallShell('vdt/bin/vdt-version -remove FUSE');

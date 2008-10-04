@@ -5,10 +5,10 @@ include makefile_header
 DSI_CFLAGS=$(GLOBUS_CFLAGS)  -ggdb
 
 # add needed includes here
-DSI_INCLUDES=$(GLOBUS_INCLUDES) -I/opt/osg/osg-100/hadoop/src/c++/libhdfs -I/opt/osg/osg-100/jdk1.5/include -I/opt/osg/osg-100/jdk1.5/include/linux
+DSI_INCLUDES=$(GLOBUS_INCLUDES) -IMAGIC_VDT_LOCATION/hadoop/src/c++/libhdfs -IMAGIC_VDT_LOCATION/jdk1.5/include -IMAGIC_VDT_LOCATION/jdk1.5/include/linux
 
 # added needed ldflags here
-DSI_LDFLAGS=$(GLOBUS_LDFLAGS) -fPIC -L/opt/osg/osg-100/hadoop/build/libhdfs
+DSI_LDFLAGS=$(GLOBUS_LDFLAGS) -fPIC -LMAGIC_VDT_LOCATION/hadoop/build/libhdfs
 
 # add needed libraries here
 DSI_LIBS=-lhdfs

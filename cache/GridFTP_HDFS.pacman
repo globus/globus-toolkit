@@ -10,7 +10,11 @@ url('http://t2.unl.edu');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Licenses');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-Data-Server');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-SDK');
-package('http://vdt.cs.wisc.edu/vdt_1101_cache:PRIMA');
+{
+  envIsSet("VDT_NO_PRIMA")
+  OR
+  package('http://vdt.cs.wisc.edu/vdt_1101_cache:PRIMA')
+};
 package('http://t2.unl.edu/store/cache:Hadoop');
 path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
 {
@@ -59,14 +63,9 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   }
 };
 shell('vdt-begin-install GridFTP_HDFS');
-insertLine('gsiftphdfs 5000/tcp', '/etc/services');
+#insertLine('gsiftphdfs 5000/tcp', '/etc/services');
 shell('vdt-untar gridftp_hdfs-*.tar.gz');
-copy('gridftp_hdfs/gsiftp-hdfs', '/etc/xinetd.d/');
-shell('sed -i "s|VDT_LOCATION|$VDT_LOCATION|" /etc/xinetd.d/gsiftp-hdfs')
-shell('sed -i "s|VDT_LOCATION|$VDT_LOCATION|" $VDT_LOCATION/gridftp_hdfs/starter.sh')
-shell('sed -i "s|VDT_LOCATION|$VDT_LOCATION|" $VDT_LOCATION/gridftp_hdfs/inetd_starter.sh')
-shell('/etc/init.d/xinetd restart');
-setup('source $VDT_LOCATION/gridftp_hdfs/hdfs_alias.SHELL');
+shell('vdt-register-service --name gsiftp-hdfs --type inetd --enable --port 5000 --protocol tcp --inetd-command /opt/osg/osg-100/gridftp_hdfs/inetd_starter.sh')
 shell('vdt-version --add GridFTP_HDFS');
 shell('vdt-end-install');
 uninstallShell('vdt/sbin/vdt-uninstall GridFTP_HDFS');

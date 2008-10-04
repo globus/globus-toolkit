@@ -6,6 +6,6 @@ service gsiftphdfs
     user        = root
     instances   = UNLIMITED
     cps         = 400 10
-    server      = VDT_LOCATION/gridftp_hdfs/inetd_starter.sh
+    server      = MAGIC_VDT_LOCATION/gridftp_hdfs/inetd_starter.sh
     disable     = no
 }

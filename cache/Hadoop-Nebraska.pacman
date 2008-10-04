@@ -1,0 +1,6 @@
+description('Hadoop Configuration for Nebraska 0.0.1');
+version('0.0.1');
+package('http://t2.unl.edu/store/cache:Hadoop-Grid');
+setenv('VDT_GRIDFTP_HDFS_REPLICAS', '2');
+setenv('VDT_GRIDFTP_HDFS_NAMENODE', 'node001');
+setenv('VDT_GRIDFTP_HDFS_PORT', '9000');

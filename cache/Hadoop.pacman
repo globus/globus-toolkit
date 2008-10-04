@@ -11,7 +11,9 @@ path("$HADOOP_HOME/hadoop-0.18.1-core.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/lib/commons-logging-1.0.4.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/lib/commons-logging-api-1.0.4.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/lib/log4j-1.2.15.jar", 'CLASSPATH', 'no-check');
+path("$HADOOP_HOME/src/contrib/fuse-dfs/src", "PATH", "no-check");
 path("$VDT_LOCATION/hadoop/build/libhdfs", 'LD_LIBRARY_PATH', 'no-check');
+path("$VDT_LOCATION/jdk1.5/jre/lib/amd64/server", "LD_LIBRARY_PATH", "no-check");
 {
   platform('linux-rhel-4');
   {
