@@ -22,7 +22,7 @@ LDADD=-L$(GSOAP_DIR)/lib
 
 lib_LTLIBRARIES = libxacml.la
 
-include_HEADERS = xacml_client.h xacml_server.h xacml.h xacml_datatypes.h
+include_HEADERS = xacml_client.h xacml_server.h xacml.h xacml_datatypes.h xacml_authz_interop_profile.h
 
 bin_PROGRAMS = xacml-client xacml-server
 
