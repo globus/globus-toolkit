@@ -18,6 +18,7 @@
 #define XACML_H
 
 #include "xacml_datatypes.h"
+#include "xacml_authz_interop_profile.h"
 
 #include <time.h>
 

@@ -140,7 +140,8 @@ int main(int argc, char *argv[])
             request,
             local_user_name_handler,
             NULL,
-            "urn:globus:local-user-name:obj");
+            xacml_interop_profile_obligation_strings[
+                XACML_INTEROP_OBLIGATION_USERNAME]);
 
     xacml_request_add_obligation_handler(
             request,

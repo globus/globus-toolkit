@@ -16,6 +16,7 @@
 
 #include "xacml_i.h"
 #include "xacml_client.h"
+#include "xacml_authz_interop_profile.h"
 #include "soapStub.h"
 
 #include <cassert>
@@ -189,8 +190,9 @@ create_xacml_request(
 
         xacml::attribute a;
 
-        a.attribute_id = "supportedObligations";
-        a.data_type = XACML_DATATYPE_ANY_URI;
+        a.attribute_id = xacml_interop_profile_environment_attr_strings[
+                XACML_INTEROP_ENV_PEP_OBLIG_SUPPORTED];
+        a.data_type = XACML_DATATYPE_STRING;
         a.value = i->first;
 
         env->XACMLcontext__Attribute.push_back(
@@ -650,7 +652,6 @@ out:
         if (query->XACMLcontext__Request)
         {
             xacml::destroy_xacml_request(query->XACMLcontext__Request);
-            query->XACMLcontext__Request;
             delete query->XACMLcontext__Request;
         }
         delete query;

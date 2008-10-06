@@ -27,6 +27,8 @@ include_HEADERS = xacml_client.h xacml_server.h xacml.h xacml_datatypes.h
 bin_PROGRAMS = xacml-client xacml-server
 
 libxacml_la_SOURCES = \
+        xacml_authz_interop_profile.h \
+        xacml_authz_interop_profile.cpp \
         xacml_ns.cpp \
         xacml_client.cpp \
         xacml_datatypes.cpp \

@@ -69,12 +69,16 @@ xacml_authorize(
         {
             xacml_obligation_t          obligation;
 
-            xacml_obligation_init(&obligation, "urn:globus:local-user-name:obj",
-                                  XACML_EFFECT_Permit);
-            xacml_obligation_add_attribute(obligation,
-                                           XACML_SUBJECT_ATTRIBUTE_SUBJECT_ID,
-                                           XACML_DATATYPE_STRING,
-                                           userid);
+            xacml_obligation_init(&obligation,
+                    xacml_interop_profile_obligation_strings[
+                            XACML_INTEROP_OBLIGATION_USERNAME],
+                    XACML_EFFECT_Permit);
+            xacml_obligation_add_attribute(
+                    obligation,
+                    xacml_interop_profile_obligation_attr_strings[
+                        XACML_INTEROP_OBLIGATION_ATTR_USERNAME],
+                    XACML_DATATYPE_STRING,
+                    userid);
 
             xacml_response_set_saml_status_code(response, SAML_STATUS_Success);
             xacml_response_set_xacml_status_code(response, XACML_STATUS_ok);
