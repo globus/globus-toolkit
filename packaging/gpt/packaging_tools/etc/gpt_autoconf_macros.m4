@@ -27,7 +27,7 @@ AC_DEFUN([GPT_INIT], [
 	GPT_LINKTYPE="shared"
 	# We have to figure out if we're linking only static before build_config
 	AC_ARG_ENABLE(static-only,
-	[ --enable-static-only     Don't do any dynamic linking],
+        AC_HELP_STRING([--enable-static-only], [Don't do any dynamic linking]),
 
 	[
 	case $enableval in
