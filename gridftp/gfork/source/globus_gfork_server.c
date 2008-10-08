@@ -1578,7 +1578,7 @@ main(
 
         result = globus_callback_register_signal_handler(
             SIGCHLD,
-            GLOBUS_FALSE,
+            GLOBUS_TRUE,
             gfork_l_sigchld,
             &gfork_l_options);
         if(result != GLOBUS_SUCCESS)
