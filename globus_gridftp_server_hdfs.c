@@ -310,7 +310,7 @@ globus_l_gfs_hdfs_stat(
     hdfsFileInfo * fileInfo = NULL;
 
     /* lstat is the same as stat when not operating on a link */
-    if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, PathName)) != NULL);
+    if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, PathName)) == NULL)
     {
         result = GlobusGFSErrorSystemError("stat", errno);
         goto error_stat1;
