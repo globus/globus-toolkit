@@ -168,6 +168,11 @@ parse_xacml_query(
             request,
             query->saml__Issuer->__item.c_str());
 
+    if (query->ReturnContext)
+    {
+        xacml_request_set_return_context(request, true);
+    }
+
     for (std::vector<class XACMLcontext__SubjectType * >::iterator i =
                 req->XACMLcontext__Subject.begin();
         i != req->XACMLcontext__Subject.end();
@@ -446,6 +451,13 @@ prepare_response(
             }
         }
     }
+
+    if (response->request != NULL)
+    {
+        xacml_decision->XACMLcontext__Request =
+            xacml::create_xacml_request(response->request);
+    }
+
     return SOAP_OK;
 }
 } // namespace xacml
@@ -841,6 +853,16 @@ __XACMLService__Authorize(
     if (rc != 0)
     {
         return SOAP_SVR_FAULT;
+    }
+
+    if (response->request == NULL && request->return_context)
+    {
+        /* Client requested the service return a context in the reply to
+         * indicate what attribtues were used by the service to reach the 
+         * decision. Fake this with the entire input context if the service
+         * implementation doesn't provide one.
+         */
+        xacml_response_set_request_context(response, request);
     }
 
     rc = xacml::prepare_response(response, XACMLsamlp__XACMLAuthzDecisionQuery, samlp__Response);

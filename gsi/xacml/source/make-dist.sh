@@ -3,6 +3,7 @@
 version=''
 
 while [ "$version" = "" ]; do
+    printf "Enter version: "
     read version
 done
 

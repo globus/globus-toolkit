@@ -55,6 +55,7 @@ xacml_request_init(
     *request = new xacml_request_s;
     (*request)->endpoint = "";
     (*request)->subject = "";
+    (*request)->return_context = false;
     (*request)->io_module = NULL;
     (*request)->io_arg = NULL;
     (*request)->connect_func = NULL;
@@ -896,3 +897,35 @@ xacml_request_get_subject(
     return XACML_RESULT_SUCCESS;
 }
 /* xacml_request_get_subject() */
+
+xacml_result_t
+xacml_request_set_return_context(
+    const xacml_request_t               request,
+    int                                 return_context)
+{
+    if (request == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+
+    request->return_context = return_context;
+
+    return XACML_RESULT_SUCCESS;
+}
+/* xacml_request_set_return_context() */
+
+xacml_result_t
+xacml_request_get_return_context(
+    const xacml_request_t               request,
+    int *                               return_context)
+{
+    if (request == NULL || return_context == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+
+    *return_context = request->return_context;
+
+    return XACML_RESULT_SUCCESS;
+}
+/* xacml_request_get_return_context() */

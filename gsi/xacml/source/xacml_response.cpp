@@ -54,6 +54,7 @@ xacml_response_init(
     (*response)->saml_status_code = SAML_STATUS_Success;
     (*response)->decision = XACML_DECISION_Permit;
     (*response)->xacml_status_code = XACML_STATUS_ok;
+    (*response)->request = NULL;
 
     return XACML_RESULT_SUCCESS;
 }
@@ -522,3 +523,39 @@ xacml_response_get_obligation(
     return XACML_RESULT_SUCCESS;
 }
 /* xacml_response_get_obligation() */
+
+xacml_result_t
+xacml_response_set_request_context(
+    xacml_response_t                    response,
+    xacml_request_t                     request)
+{
+    xacml_result_t                      result;
+
+    if (response == NULL || request == NULL)
+    {
+        result = XACML_RESULT_INVALID_PARAMETER;
+
+        goto out;
+    }
+
+    if (response->request != NULL)
+    {
+        xacml_request_destroy(response->request);
+    }
+
+    result = xacml_request_init(&response->request);
+    if (result != XACML_RESULT_SUCCESS)
+    {
+        goto out;
+    }
+
+    response->request->subjects = request->subjects;
+    response->request->resource_attributes = request->resource_attributes;
+    response->request->action_attributes = request->action_attributes;
+    response->request->environment_attributes = request->environment_attributes;
+    response->request->subject = request->subject;
+
+out:
+    return result;
+}
+/* xacml_response_set_request_context() */

@@ -19,6 +19,7 @@
 
 #ifndef DONT_DOCUMENT_INTERNAL
 #include "xacml.h"
+#include "soapStub.h"
 
 #include <pthread.h>
 
@@ -60,6 +61,10 @@ namespace xacml
     };
 
     typedef std::map<obligation_id, obligation_handler_info> obligation_handlers;
+
+    XACMLcontext__RequestType *
+    create_xacml_request(xacml_request_t request);
+
 }
 
 struct xacml_resource_attribute_s
@@ -76,6 +81,7 @@ struct xacml_request_s
     xacml::subject_type                 subject;
     std::string                         endpoint;
     xacml::obligation_handlers          obligation_handlers;
+    bool                                return_context;
 
     void                               *io_module;
     xacml_io_accept_t                   accept_func;
@@ -96,6 +102,7 @@ struct xacml_response_s
     xacml_decision_t                    decision;
     xacml_status_code_t                 xacml_status_code;
     xacml::obligations                  obligations;
+    xacml_request_t                     request;
 };
 
 typedef enum

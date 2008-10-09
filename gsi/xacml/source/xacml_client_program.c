@@ -89,6 +89,8 @@ int main(int argc, char *argv[])
                         &xacml_io_example_descriptor);
             break;
         case 'h':
+        case 'r':
+            xacml_request_set_return_context(request, 1);
         case '?':
         default:
             printf("Usage %s [-e endpoint] [-m IO-MODULE-NAME] [-i]\n",

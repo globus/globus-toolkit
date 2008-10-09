@@ -94,6 +94,16 @@ xacml_request_get_subject_attribute(
     const char **                       value);
 
 xacml_result_t
+xacml_request_set_return_context(
+    const xacml_request_t               request,
+    int                                 return_context);
+
+xacml_result_t
+xacml_request_get_return_context(
+    const xacml_request_t               request,
+    int *                               return_context);
+
+xacml_result_t
 xacml_resource_attribute_init(
     xacml_resource_attribute_t *        attribute);
 
@@ -307,6 +317,11 @@ xacml_response_get_obligation(
     const xacml_response_t              response,
     size_t                              num,
     xacml_obligation_t *                obligation);
+
+xacml_result_t
+xacml_response_set_request_context(
+    xacml_response_t                    response,
+    xacml_request_t                     request);
 
 #ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_END
