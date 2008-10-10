@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=4.2.0 
+VERSION=`cat fait_accompli/version`
 
 if [ x$1 = "x" ]; then
    echo Please supply a GLOBUS_LOCATION as the first argument

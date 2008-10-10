@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=TRUNK
+VERSION=`cat fait_accompli/version`
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
