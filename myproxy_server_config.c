@@ -641,6 +641,18 @@ check_config(myproxy_server_context_t *context)
 	myproxy_debug("authorized_key_retrievers not set.");
 	myproxy_debug("server will not allow clients to retrieve keys.");
     }
+    if (context->trusted_retriever_dns &&
+        !strcmp(context->trusted_retriever_dns[0], "*")) {
+        if (!context->default_trusted_retriever_dns) {
+            verror_put_string("unsafe policy: trusted_retrievers is * but default_trusted_retrievers is not set.");
+            verror_put_string("please consult myproxy-server.config(5) man page.");
+            rval = -1;
+        } else if (!strcmp(context->default_trusted_retriever_dns[0], "*")) {
+            verror_put_string("unsafe policy: trusted_retrievers and default_trusted_retrievers are both *.");
+            verror_put_string("please consult myproxy-server.config(5) man page.");
+            rval = -1;
+        }
+    }
     if (context->passphrase_policy_pgm) {
 	if (access(context->passphrase_policy_pgm, X_OK) < 0) {
 	    verror_put_string("passphrase_policy_pgm %s not executable",

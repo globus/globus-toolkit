@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2008-04-30" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2008-10-10" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -177,6 +177,14 @@ and
 do not need to perform additional authentication,
 unless the credentials are protected by a passphrase,
 in which case the passphrase is still required.
+Note: The
+.BR myproxy-server (8)
+will fail on startup or reconfig with an "unsafe policy" error if a policy of
+.BI trusted_retrievers " \*(lq*\*(rq"
+is specified without also specifying a restrictive
+.B default_trusted_retrievers
+policy, to avoid an unsafe policy that would release credentials to 
+all clients without additional authentication.
 .TP
 .BI default_trusted_retrievers " \*(lqDN regex\*(rq"
 If a user doesn't set a trusted retrieval policy with the credential
@@ -662,12 +670,18 @@ default_renewers           "none"
 authorized_key_retrievers  "*"
 .PP
 default_key_retrievers     "none"
+.PP
+trusted_retrievers         "*"
+.PP
+default_trusted_retrievers "none"
 .PD
 .PP
 The following enables CA functionality using an existing Globus Simple
 CA configuration.
 .PP
 .PD 0
+authorized_retrievers "*"
+.PP
 pam  "sufficient"
 .PP
 sasl "sufficient"

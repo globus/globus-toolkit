@@ -5,6 +5,11 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.4 XX Xxx 2008
+  - in myproxy-server, fail on startup or reconfig with an "unsafe
+    policy" error if a policy of trusted_retrievers "*" is specified
+    without also specifying a restrictive default_trusted_retrievers
+    policy, to avoid an unsafe policy that could release credentials
+    to any client without additional authentication.
   - in myproxy-server, log info for the received client request before
     the authorization check, so we have the request info for
     troubleshooting purposes even if the request is denied.
