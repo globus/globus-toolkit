@@ -4,20 +4,19 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = \
 	pkgdata
 
-Sources = \
-	gss_assist_auth_init.c \
-	gss_assist_auth_accept.c \
-	gss_assist_impexp_init.c \
-	gss_assist_impexp_accept.c \
-	gss_assist_gridmap.c
-
 Scripts = \
 	TESTS.pl \
 	gss-assist-impexp-test.pl \
 	gss-assist-auth-test.pl \
-	gss-assist-gridmap-test.pl
+	gss-assist-gridmap-test.pl \
+        gridmap-test.pl
 
-Data = grid-mapfile
+Data = grid-mapfile \
+       gridmap.empty \
+       gridmap.multiple-dns \
+       gridmap.multiple_lines \
+       gridmap.no-local-uid \
+       gridmap.no-local-uid2
 
 INCLUDES = $(GPT_INCLUDES)
 
@@ -30,37 +29,18 @@ test_PROGRAMS = \
 	gss-assist-auth-accept \
 	gss-assist-impexp-init \
 	gss-assist-impexp-accept \
-	gss-assist-gridmap
+	gss-assist-gridmap \
+        gridmap-test
+
+LDFLAGS = $(GPT_LDFLAGS)
+LDADD = $(GPT_PGM_LINKS)
 
 gss_assist_auth_init_SOURCES = gss_assist_auth_init.c
-
-gss_assist_auth_init_LDFLAGS = $(GPT_LDFLAGS)
-
-gss_assist_auth_init_LDADD = $(GPT_PGM_LINKS)
-
 gss_assist_auth_accept_SOURCES = gss_assist_auth_accept.c
-
-gss_assist_auth_accept_LDFLAGS = $(GPT_LDFLAGS)
-
-gss_assist_auth_accept_LDADD = $(GPT_PGM_LINKS)
-
 gss_assist_impexp_init_SOURCES = gss_assist_impexp_init.c
-
-gss_assist_impexp_init_LDFLAGS = $(GPT_LDFLAGS)
-
-gss_assist_impexp_init_LDADD = $(GPT_PGM_LINKS)
-
 gss_assist_impexp_accept_SOURCES = gss_assist_impexp_accept.c
-
-gss_assist_impexp_accept_LDFLAGS = $(GPT_LDFLAGS)
-
-gss_assist_impexp_accept_LDADD = $(GPT_PGM_LINKS)
-
 gss_assist_gridmap_SOURCES = gss_assist_gridmap.c
-
-gss_assist_gridmap_LDFLAGS = $(GPT_LDFLAGS)
-
-gss_assist_gridmap_LDADD = $(GPT_PGM_LINKS)
+gridmap_test_SOURCES = gridmap_test.c
 
 EXTRA_DIST = $(Scripts) $(Data)
 

@@ -724,7 +724,7 @@ globus_i_gss_assist_gridmap_find_local_user(
 	}
 
         for(useridp = gline_tmp->user_ids; 
-            *useridp != NULL && !found; 
+            useridp != NULL && *useridp != NULL && !found; 
             useridp++)
         {
             if(strcmp(local_user, *useridp) == 0)
@@ -1311,6 +1311,7 @@ globus_gss_assist_lookup_all_globusid(
     int *                                       dn_count)
 {
     char                                        line[1024];
+    int                                         i;
     int                                         max_ndx = 512;
     int                                         ndx = 0;
     char **                                     l_dns;
@@ -1369,18 +1370,21 @@ globus_gss_assist_lookup_all_globusid(
 
         if(res == GLOBUS_SUCCESS &&
            gline != NULL &&
-           gline->user_ids != NULL &&
-           gline->user_ids[0] != NULL)
+           gline->user_ids != NULL)
         {
-            if(strcmp(gline->user_ids[0], username) == 0)
+            for (i = 0; gline->user_ids[i] != NULL; i++)
             {
-                l_dns[ndx] = strdup(gline->dn);
-                ndx++;
-                if(ndx >= max_ndx)
+                if(strcmp(gline->user_ids[i], username) == 0)
                 {
-                    max_ndx *= 2;
-                    l_dns = (char **)globus_libc_realloc(l_dns,
-                                         sizeof(char *) * max_ndx);
+                    l_dns[ndx] = strdup(gline->dn);
+                    ndx++;
+                    if(ndx >= max_ndx)
+                    {
+                        max_ndx *= 2;
+                        l_dns = (char **)globus_libc_realloc(l_dns,
+                                             sizeof(char *) * max_ndx);
+                    }
+                    break;
                 }
             }
         }
