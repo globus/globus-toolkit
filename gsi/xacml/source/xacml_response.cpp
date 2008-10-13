@@ -524,6 +524,21 @@ xacml_response_get_obligation(
 }
 /* xacml_response_get_obligation() */
 
+/**
+ * Set the value of the request attributes used to reach a decision
+ * @ingroup xacml_response
+ *
+ * @param response
+ *     XACML response to update.
+ * @param request
+ *     Request containing the set of attributes that where used by the
+ *     policy implementation to reach the decision.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ */
 xacml_result_t
 xacml_response_set_request_context(
     xacml_response_t                    response,

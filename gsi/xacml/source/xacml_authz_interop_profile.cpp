@@ -72,7 +72,7 @@ extern "C" const char *xacml_interop_profile_resource_type_enum_strings[] =
 
 extern "C" const char *xacml_interop_profile_environment_attr_strings[] =
 {
-    XACML_AUTHZ_INTEROP_PILOT_JOB_PREFIX "pep-oblig-supported",
+    XACML_AUTHZ_INTEROP_ENV_PREFIX "pep-oblig-supported",
     XACML_AUTHZ_INTEROP_PILOT_JOB_PREFIX "subject-x509_-id",
     XACML_AUTHZ_INTEROP_PILOT_JOB_PREFIX "subject-condor-canonical-name-id",
     XACML_AUTHZ_INTEROP_PILOT_JOB_PREFIX "subject-x509-issuer",
