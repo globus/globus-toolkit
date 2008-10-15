@@ -77,8 +77,10 @@ cd ../
 echo Generating configure/Makefile.in for binary installer
 fait_accompli/binary-makefile-generator $SOURCE_MAKEFILE > tmp/Makefile.in
 
-source-trees/autotools/bin/autoconf fait_accompli/binary.configure.in > tmp/configure
+sed -e "s/@version@/$VERSION/g" fait_accompli/binary.configure.in > foobar
+source-trees/autotools/bin/autoconf foobar > tmp/configure
 chmod +x tmp/configure
+rm foobar
 
 echo Adding GPT source to binary installer
 if [ -f gpt-*.tar.gz ]; then
