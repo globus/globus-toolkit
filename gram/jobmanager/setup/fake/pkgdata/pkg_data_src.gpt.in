@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_setup_fake">
+
+  <Aging_Version Age="0" Major="0" Minor="0"/>
+  <Description>Fake job manager Perl module</Description>
+  <Functional_Group>WS-GRAM</Functional_Group>
+  <Version_Stability Release="Alpha" />
+
+  <src_pkg >
+    <With_Flavors build="no" />
+    <Source_Dependencies Type="pgm_runtime" >
+       <Dependency Name="globus_gram_job_manager" Package="pgm">
+           <Version>
+               <Simple_Version Major="5"/>
+           </Version>
+       </Dependency>
+       <Dependency Name="globus_wsrf_gram_job_manager_fake_lrm" Package="pgm">
+           <Version>
+               <Simple_Version Major="0"/>
+           </Version>
+       </Dependency>
+    </Source_Dependencies>
+
+    <Build_Instructions>
+        <Build_Step>cp fake.pm INSTALLDIR_GPTMACRO/lib/perl/Globus/GRAM/JobManager/</Build_Step>
+    </Build_Instructions>
+    
+    <Setup Name="globus_wsrf_gram_job_manager_fake_perl">
+      <Aging_Version Age="0" Major="0" Minor="0" />
+    </Setup>
+  </src_pkg>
+
+</gpt_package_metadata>
