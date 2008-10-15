@@ -20,16 +20,16 @@
 # Change the pass phrase on a user's private key
 #
 
-if test -z "${GLOBUS_LOCATION}"; then
-    echo ""
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
-    echo "running this script"
-    echo ""
+if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer; then
+    . ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
+elif test -f ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer; then
+    . ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
+else
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before" 1>&2
+    echo "running this script" 1>&2
     exit 1
 fi
-
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
+globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
 
@@ -69,12 +69,16 @@ EOF
 globus_source $libexecdir/globus-args-parser-header $@
 
 # SSL related need
-PATH="${GLOBUS_LOCATION}/bin:${PATH}"
-SSLEAY=${GLOBUS_LOCATION}/bin/ssleay
-if [ -r ${GLOBUS_LOCATION}/bin/openssl ]; then
-    SSLEAY="${GLOBUS_LOCATION}/bin/openssl"
+if test -n "${GLOBUS_LOCATION}" -a -x ${bindir}/openssl; then
+    SSLEAY=${bindir}/openssl;
+else
+    SSLEAY="openssl"
 fi
 
+if ! ${SSLEAY} version > /dev/null 2> /dev/null; then
+    echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
+    exit 1
+fi
 
 # DEFault Generated Files
 DEF_GLOBUS_DIR="${HOME}/.globus"

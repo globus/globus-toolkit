@@ -39,16 +39,16 @@ printDirections ()
 
 
 
-if test -z "${GLOBUS_LOCATION}"; then
-    echo ""
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
-    echo "running this script"
-    echo ""
+if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer; then
+    . ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
+elif test -f ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer; then
+    . ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
+else
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before" 1>&2
+    echo "running this script" 1>&2
     exit 1
 fi
-
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
+globus_source ${libexecdir}/globus-sh-tools.sh
 
 if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
     if [ -r "${GRID_SECURITY_DIR}/globus-user-ssl.conf" ] && 
@@ -57,10 +57,13 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
         if test ! -z "${X509_CERT_DIR}" ; then
             trusted_certs_dir="${X509_CERT_DIR}"
         elif test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" \
-            = "X`echo ${GLOBUS_LOCATION}|sed 's/\/$//'`" ; then
-            trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
-        else
+            = "X`echo ${GLOBUS_LOCATION:-/usr}|sed 's/\/$//'`" ; then
+            trusted_certs_dir="${GLOBUS_LOCATION:-/usr}/share/certificates"
+        elif test -d "${secconfdir}/certificates"; then
             trusted_certs_dir="${secconfdir}/certificates"
+        else
+            echo "ERROR: Cannot determine trusted certificate directory. Please set X509_CERT_DIR" 1>&2
+            exit 1
         fi
     fi
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
@@ -77,7 +80,7 @@ elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
     if test ! -z "${X509_CERT_DIR}" ; then
         trusted_certs_dir="${X509_CERT_DIR}"
     else
-        trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+        trusted_certs_dir="${GLOBUS_LOCATION:-/usr}/share/certificates"
     fi
 fi
 
@@ -189,9 +192,9 @@ set_non_default_ca()
         for cert in ${trusted_certs_dir}/*.0; do
             if test -r "${cert}" ; then
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
+                TEMP_SUBJECT=`${SSL_EXEC} x509 -in ${cert} -noout -subject`
                 eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
-                eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
+                eval "CA_HASH${index}=`${SSL_EXEC} x509 -in ${cert} -noout -hash`"
                 eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
                 index=`expr $index + 1`
             fi
@@ -218,7 +221,7 @@ set_non_default_ca()
             echo 
             exit 1
         fi
-        TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
+        TEMP_SUBJECT=`${SSL_EXEC} x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
         eval "CA_SUBJECT=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
     fi
 
@@ -813,8 +816,17 @@ emit_directions () {
 
 
 #SSL related variables
-PATH=${GLOBUS_LOCATION}/bin:${PATH}
-SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
+if test -n "${GLOBUS_LOCATION}" -a -x ${bindir}/openssl; then
+    SSL_EXEC=${bindir}/openssl
+else
+    SSL_EXEC="openssl"
+fi
+
+if ! ${SSL_EXEC} version > /dev/null 2> /dev/null; then
+    echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
+    exit 1
+fi
+
 SSL_CONFIG="${secconfdir}/globus-user-ssl.conf"
 SSL_USER_CONFIG="${secconfdir}/globus-user-ssl.conf"
 SSL_HOST_CONFIG="${secconfdir}/globus-host-ssl.conf"

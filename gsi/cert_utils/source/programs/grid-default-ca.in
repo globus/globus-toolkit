@@ -92,7 +92,7 @@ show_default() {
 
     for x in "$@"; do
         if test -f "${x}/$DEFAULTCAHASH.0"; then
-            DEFAULT_SUBJECT=`openssl x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
+            DEFAULT_SUBJECT=`${SSL_EXEC} x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
             echo
             echo "The default CA is: $DEFAULT_SUBJECT"
             echo "         Location: ${x}/$DEFAULTCAHASH.0"
@@ -120,7 +120,7 @@ ca_list() {
         for cert in ${cert_hashes}; do
             if test -r "${cert}" ; then 
                 eval "CA${index}=${cert}"
-                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
+                TEMP_SUBJECT=`${SSL_EXEC} x509 -in ${cert} -noout -subject`
                 eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
                 TEMP_HASH=`echo ${cert} | ${GLOBUS_SH_SED-sed} -e  "s|.*/\([^/]*\)\.0|\1|"`
                 eval "CA_HASH${index}=$TEMP_HASH"
@@ -236,15 +236,16 @@ EOF
 ############################################################
 # main code section
 ############################################################
-if test -z "${GLOBUS_LOCATION}"; then
-    echo 
-    echo "ERROR: Please set the GLOBUS_LOCATION to the Globus"
-    echo "installation directory before running this script."
-    echo
+
+if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer; then
+    . ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
+elif test -f ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer; then
+    . ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
+else
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before" 1>&2
+    echo "running this script" 1>&2
     exit 1
 fi
-
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
@@ -261,6 +262,17 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 short_usage="$PROGRAM_NAME [-help] [ options ...]"
 
 . $libexecdir/globus-args-parser-header
+
+if test -n "${GLOBUS_LOCATION}" -a -x ${bindir}/openssl; then
+    SSL_EXEC=${bindir}/openssl
+else
+    SSL_EXEC="openssl"
+fi
+
+if ! ${SSL_EXEC} version > /dev/null 2> /dev/null; then
+    echo "Unable to locate openssl binary in $bindir or PATH" 1>&2
+    exit 1
+fi
 
 readCommandLine "$@"
 
@@ -280,8 +292,8 @@ fi
 if test -d "/etc/grid-security/certificates/." ; then
     set -- "$@" "/etc/grid-security/certificates" 
 fi
-if test -d "${GLOBUS_LOCATION}/share/certificates/."; then
-    set -- "$@" "${GLOBUS_LOCATION}/share/certificates"
+if test -d "${GLOBUS_LOCATION:-/usr}/share/certificates/."; then
+    set -- "$@" "${GLOBUS_LOCATION:-/usr}/share/certificates"
 fi
 
 found_ca=0
@@ -325,7 +337,7 @@ else
         echo 
         exit 1
     fi
-    TMP_SUBJECT=`openssl x509 -in ${CA_CERT} -noout -subject`
+    TMP_SUBJECT=`${SSL_EXEC} x509 -in ${CA_CERT} -noout -subject`
     CA_SUBJECT=`echo ${TMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
 fi
 
@@ -344,7 +356,7 @@ echo
 echo "setting the default CA to: ${CA_SUBJECT}"
 echo
 
-NEW_DEFAULT_CA_HASH=`openssl x509 -in ${CA_CERT} -noout -hash`
+NEW_DEFAULT_CA_HASH=`${SSL_EXEC} x509 -in ${CA_CERT} -noout -hash`
 
 GRID_SECURITY_FILE=${CA_CERT_DIR}/grid-security.conf.${NEW_DEFAULT_CA_HASH}
 CA_SSL_HOST_CONFIG_FILE=${CA_CERT_DIR}/globus-host-ssl.conf.${NEW_DEFAULT_CA_HASH}
