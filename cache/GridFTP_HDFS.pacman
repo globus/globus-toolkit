@@ -1,11 +1,12 @@
 pacmanVersionGE('3.20');
+version('0.0.2');
 #{
 #  shellOutputGE('rpm -q xinetd', 'xinetd-2')
 #  OR
 #  fail('GridFTP HDFS requires xinetd system package to be installed.')
 #};
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
-description('GridFTP_HDFS 0.0.1');
+description('GridFTP_HDFS 0.0.2');
 url('http://t2.unl.edu');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Licenses');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-Data-Server');

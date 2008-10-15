@@ -118,6 +118,34 @@ globus_l_gfs_hdfs_start(
             hdfs_handle->port = port;
     }
 
+    // Stall stall stall!
+    int fd = open("/proc/loadavg", O_RDONLY);
+    int bufsize = 256, nbytes=-1;
+    char buf[bufsize];
+    char * buf_ptr;
+    char * token;
+    double load;
+    int ctr = 0;
+    while (fd >= 0) {
+        if (ctr == 120)
+            break;
+        ctr += 1;
+        nbytes = read(fd, buf, bufsize);
+        if (nbytes < 0)
+            break;
+        buf[nbytes-1] = '\0';
+        buf_ptr = buf;
+        token = strsep(&buf_ptr, " ");
+        load = strtod(token, NULL);
+        if ((load >= 10) && (load < 1000)) {
+            sleep(5);
+        } else {
+            break;
+        }
+        close(fd);
+        fd = open("/proc/loadavg", O_RDONLY);
+    }
+
     printf("Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n", hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
