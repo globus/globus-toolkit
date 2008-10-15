@@ -21,8 +21,7 @@ INCLUDES = -I.. @GPT_INCLUDES@ -I$(top_srcdir)/library/oldgaa
 
 libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@ -lglobus_oldgaa_$(GLOBUS_FLAVOR_NAME)
-
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@ -L./oldgaa/
+libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = ./oldgaa/libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la  @GPT_LIB_LINKS@
+libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 include $(top_srcdir)/globus_automake_post
