@@ -220,7 +220,15 @@ globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
 globus_scheduler_provider_setup_condor	ws-gram/discovery/providers/setup/condor gpt
 #GRAM custom authorization, including XACML pieces
 globus_wsrf_gram_authz_java                       ws-gram/authz/java/source	tar
-     
+
+# GRAM Fake LRM
+globus_gram_job_manager_setup_fake    gram/jobmanager/setup/fake      gpt
+globus_wsrf_gram_service_java_setup_fake    ws-gram/service/java/setup/fake tar
+globus_scheduler_event_generator_fake    ws-gram/job_monitoring/fake/c/source gpt
+globus_scheduler_event_generator_fake_setup    ws-gram/job_monitoring/fake/c/setup gpt
+globus_scheduler_event_generator_fake_test    ws-gram/job_monitoring/fakek/c/test gpt
+globus_wsrf_gram_job_manager_fake_lrm    ws-gram/job_management/fake/java/source tar
+globus_scheduler_provider_setup_fake    ws-gram/discovery/providers/setup/fake gpt
 
 globus_wsrf_mds_index                       ws-mds/index/source	tar
 globus_wsrf_mds_index_schema                ws-mds/index/schema	tar
