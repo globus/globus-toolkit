@@ -44,7 +44,7 @@ static char *rcsid = "$Id$";
  * 
  * @param minor_status
  * @param context_handle
- * @param conf_req_flags
+ * @param conf_req_flag
  * @param qop_req
  * @param req_output_size
  * @param max_input_size

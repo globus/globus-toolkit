@@ -265,7 +265,6 @@ typedef struct gss_channel_bindings_struct
  * @deprecated We now accept proxies signed by limited proxies if
  * they are limited or independent.
  */
-/* @{ */
 #define GSS_C_GLOBUS_ACCEPT_PROXY_SIGNED_BY_LIMITED_PROXY_FLAG 32768
 /* @} */
  

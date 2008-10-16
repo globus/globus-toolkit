@@ -62,7 +62,7 @@ static char *rcsid = "$Id$";
  * @param name
  * @param lifetime
  * @param cred_usage
- * @param machanisms
+ * @param mechanisms
  *
  * @return
  */
