@@ -49,7 +49,7 @@ extern gss_OID gss_nt_service_name;
  *        globus error object ID that can be passed to globus_error_get
  *        to get the error object.  The error object needs to be freed
  *        with globus_object_free.
- * @param initiator_cred_handle
+ * @param cred_handle
  *        the cred handle obtained by acquire_cred.
  * @param context_handle
  *        pointer to returned context. 
@@ -72,9 +72,9 @@ extern gss_OID gss_nt_service_name;
  * @param gss_assist_get_context
  *        first argument passed to the 
  *        gss_assist_get_token function
- * @param gss_assist_set_token
+ * @param gss_assist_send_token
  *        function pointer for setting the token
- * @param gss_assist_set_context
+ * @param gss_assist_send_context
  *        first argument passed to the 
  *        gss_assist_set_token function pointer
  *
@@ -306,7 +306,7 @@ globus_gss_assist_init_sec_context(
  *        can be obtained via globus_error_get and should be destroyed
  *        with globus_object_free when no longer needed.  If no error
  *        occurred, the minor status is equal to GLOBUS_SUCCESS.
- * @param initiator_cred_handle
+ * @param cred_handle
  *        the cred handle obtained by acquire_cred.
  * @param context_handle
  *        pointer to returned context. 

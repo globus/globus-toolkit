@@ -43,9 +43,11 @@
  *        GSSAPI return code, @see gss_unwrap
  * @param context_handle
  *        the context 
- * @param conf_req_flag
- * @param qop_req
- * @param input_message_buffer
+ * @param data
+ *        pointer to be set to the unwrapped application data. This must be
+ *        freed by the caller.
+ * @param length
+ *        pointer to be set to the length of the @a data byte array.
  * @param token_status
  *        assist routine get/send token status 
  * @param gss_assist_get_token

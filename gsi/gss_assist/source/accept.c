@@ -45,13 +45,11 @@
  * and token processing, using the supplied get_token and
  * send_token routines. 
  *
- * @param token_status
- *        assist routine get/send token status
  * @param minor_status
  *        gssapi return code
  * @param context_handle
  *        pointer to returned context. 
- * @param initiator_cred_handle
+ * @param cred_handle
  *        the cred handle obtained by acquire_cred.
  * @param src_name_char
  *        Pointer to char string repersentation of the
@@ -68,9 +66,16 @@
  *        (Follwing are particular to this assist routine)
  * @param token_status
  *        assist routine get/send token status
+ * @param delegated_cred_handle
+ *        pointer to be set to the credential delegated by the client if
+ *        delegation occurs during the security handshake
+ * @param gss_assist_get_token
  *        a get token routine 
+ * @param gss_assist_get_context
  *        first arg for the get token routine 
+ * @param gss_assist_send_token
  *        a send token routine 
+ * @param gss_assist_send_context
  *        first arg for the send token routine
  * @return
  *        GSS_S_COMPLETE on sucess
@@ -276,13 +281,11 @@ globus_gss_assist_accept_sec_context(
  * itself it passes in and out the read and written buffers and
  * the calling application is responsible for doing the I/O directly.
  *
- * @param token_status
- *        assist routine get/send token status
  * @param minor_status
  *        gssapi return code
  * @param context_handle
  *        pointer to returned context. 
- * @param initiator_cred_handle
+ * @param cred_handle
  *        the cred handle obtained by acquire_cred.
  * @param src_name_char
  *        Pointer to char string repersentation of the
@@ -293,11 +296,9 @@ globus_gss_assist_accept_sec_context(
  *        the connection is established. Maybe NULL if not wanted. 
  *        We will also use this to pass in flags to the globus
  *        version of gssapi_ssleay
- *
  * @param user_to_user_flag
  *        Pointer to flag to be set if
  *        the src_name is the same as our name. 
- *
  * @param input_buffer
  *        pointer to a buffer received from peer.
  * @param input_buffer_len
@@ -308,11 +309,13 @@ globus_gss_assist_accept_sec_context(
  *        non-NULL the contents of this block should be written
  *        to the peer where they will be fed into the
  *        gss_assist_init_sec_context_async() function.
- *
  * @param output_buffer_lenp
  *        pointer to an integer which will be filled
  *        in with the length of the allocated output buffer
  *        pointed to by *output_bufferp.
+ * @param delegated_cred_handle
+ *        pointer to be set to the credential delegated by the client if
+ *        delegation occurs during the security handshake
  *
  * @return
  *        GSS_S_COMPLETE on successful completion when this function does not

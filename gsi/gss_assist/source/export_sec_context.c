@@ -29,14 +29,6 @@
 #include "gssapi.h"
 #include <stdio.h>
 
-/**
- * @anchor globus_gsi_gss_assist
- * @mainpage Globus GSI GSS Assist
- *
- * The GSS Assist code provides convenience functions
- * for using the Globus GSS-API.
- */
-
 /* @name Export Security Context
  * @ingroup globus_gsi_gss_assist
  */

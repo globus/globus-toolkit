@@ -45,7 +45,7 @@
  * @param msg
  *        char * (may not be null terminated) to first string or null
  * @param msglen
- *        length of msgring or null
+ *        length of msg
  * @param post
  *        char * to last string or null
  *
@@ -125,6 +125,8 @@ globus_gss_assist_strcatr(
  *        The major status to display
  * @param minor_status
  *        The minor status to display
+ * @param token_status
+ *        token status to display
  * @return 
  *        0
  */
@@ -175,7 +177,8 @@ globus_gss_assist_display_status(
  *        The major status to display
  * @param minor_status
  *        The minor status to display
- *
+ * @param token_status
+ *        token status to display
  * @return
  *        0
  */

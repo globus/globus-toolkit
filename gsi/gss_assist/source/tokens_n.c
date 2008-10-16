@@ -51,7 +51,8 @@
  *        the globus_io_handle_t to get the token from
  * @param bufp
  *        the buffer to read the token into
- * @param the size of what gets read
+ * @param sizep
+ *        the size of what gets read
  *
  * @return 
  *        0 on success

@@ -39,14 +39,14 @@
  *        GSSAPI return code.  If the call was successful, the minor 
  *        status is equal to GLOBUS_SUCCESS.  Otherwise, it is an
  *        error object ID for which  
- *        @ref globus_error_get and @ref globus_object free
+ *        globus_error_get() and globus_object_free()
  *        can be used to get and destroy it.
  * @param context_handle
  *        the context. 
- * @param conf_req_flag
- * @param qop_req
- * @param input_message_buffer
- *
+ * @param data
+ *        pointer to application data to wrap and send
+ * @param length
+ *        length of the @a data array
  * @param token_status
  *        assist routine get/send token status 
  * @param gss_assist_send_token
@@ -54,6 +54,7 @@
  * @param gss_assist_send_context
  *        first arg for the send_token
  * @param fperr
+ *        file handle to write error message to.
  *
  * @return
  *        GSS_S_COMPLETE on sucess
