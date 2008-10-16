@@ -77,7 +77,7 @@ public class JobTypeReport {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         while (ts.next()) {
-            int type_count[] = new int[5];
+            int type_count[] = new int[6];
             int totalJobs = 0;
 
             String startDate = ts.getFormattedTime();
@@ -92,8 +92,15 @@ public class JobTypeReport {
 
             while (rs.next()) {
                 int type = rs.getInt(1);
-                type_count[type] = rs.getInt(2);
-                totalJobs += type_count[type];
+                int perTypeJobs = rs.getInt(2);
+
+                if (type < 0 || type > 4)
+                {
+                    type = 5;
+                }
+
+                type_count[type] = perTypeJobs;
+                totalJobs += perTypeJobs;
             }
             rs.close();
 
@@ -116,6 +123,8 @@ public class JobTypeReport {
                     + "</condor-jobs>");
             System.out.println("\t\t<MPI-jobs>"
                     + f.format(100.0 * type_count[3] / totalJobs) + "</MPI-jobs>");
+            System.out.println("\t\t<other-jobs>"
+                    + f.format(100.0 * type_count[5] / totalJobs) + "</other-jobs>");
             System.out.println("\t</job-types>");
 
             System.out.println(" </entry>");

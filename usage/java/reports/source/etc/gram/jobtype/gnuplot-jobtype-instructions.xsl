@@ -39,7 +39,7 @@ set key below
  <xsl:text>)</xsl:text>
 
 <xsl:text>
-plot 'jobtype.data' using 1:3 axis x1y1 title "Multiple-left axis" with boxes fs pattern 1,'jobtype.data' using ($1+my_width+.1):2 title "Single-right axis" with boxes fs pattern 2,'jobtype.data' using ($1+2*my_width+.1):4 axis x1y2 title "Condor-right axis" with boxes fs pattern 3,'jobtype.data' using ($1+3*my_width+.1):5 axis x1y2  title "MPI-right axis" with boxes fs pattern 4
+plot 'jobtype.data' using 1:3 axis x1y1 title "Multiple-left axis" with boxes fs pattern 1,'jobtype.data' using ($1+my_width+.1):2 title "Single-right axis" with boxes fs pattern 2,'jobtype.data' using ($1+2*my_width+.1):4 axis x1y2 title "Condor-right axis" with boxes fs pattern 3,'jobtype.data' using ($1+3*my_width+.1):5 axis x1y2  title "MPI-right axis" with boxes fs pattern 4, 'jobtype.data' using ($1+4*my_width+.1):6 axis x1y2  title "other-right axis" with boxes fs pattern 4
 </xsl:text>
 
 </xsl:template>
