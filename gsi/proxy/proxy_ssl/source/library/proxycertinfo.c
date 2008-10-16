@@ -432,15 +432,15 @@ int i2d_PROXYCERTINFO(
  */
 /* @{ */
 /**
- * @ingroup
+ * @ingroup proxycertinfo
  *
  * Convert from a DER encoded ASN.1 string of a PROXYCERTINFO
  * to its internal structure
  *
  * @param cert_info the resulting PROXYCERTINFO in internal form
- * @param buffer the DER encoded ASN.1 string containing
+ * @param pp the DER encoded ASN.1 string containing
  * the PROXYCERTINFO 
- * @param the length of the buffer
+ * @param length the length of the buffer
  *
  * @return the resultingin PROXYCERTINFO in internal form
  */                                             
@@ -535,15 +535,15 @@ int i2d_PROXYCERTINFO_OLD(
  */
 /* @{ */
 /**
- * @ingroup
+ * @ingroup proxycertinfo
  *
  * Convert from a DER encoded ASN.1 string of a old PROXYCERTINFO
  * to its internal structure
  *
  * @param cert_info the resulting old PROXYCERTINFO in internal form
- * @param buffer the DER encoded ASN.1 string containing
+ * @param pp the DER encoded ASN.1 string containing
  * the old PROXYCERTINFO 
- * @param the length of the buffer
+ * @param length the length of the buffer
  *
  * @return the resulting old  PROXYCERTINFO in internal form
  */                                             

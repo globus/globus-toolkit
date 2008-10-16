@@ -31,9 +31,7 @@
  * and ultimately gets written to a DER encoded string.
  *
  * @see Further Information about proxy policies
- * is available in the Internet Draft Document:
- * 
- * draft-ietf-pkix-proxy-01.txt
+ * is available in the <a href="http://www.ietf.org/rfc/rfc3820.txt">X.509 Proxy Certificate Profile</a> document.
  */
 
 #ifndef EXTERN_C_BEGIN
