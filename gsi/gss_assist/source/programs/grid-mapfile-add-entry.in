@@ -233,7 +233,7 @@ $ECHO_DRYRUN "Verifying that Local Name(s)=($ln) are legitimate local accounts."
 
 if test -x ${sbindir}/globus-is-local-user; then
     globus_is_local_user=${sbindir}/globus-is-local-user
-elif test -x ${libexecdir}/globus-is-local-user
+elif test -x ${libexecdir}/globus-is-local-user; then
     globus_is_local_user=${libexecdir}/globus-is-local-user
 else
     echo "ERROR: Unable to find globus-is-local-user" 1>&2
