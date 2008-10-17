@@ -21,6 +21,11 @@ cd $GLOBUS_LOCATION/test
 # Setup the grid-mapfile and such
 globus_test/testcred-setup.sh
 
+if [ $? -ne 0 ]; then
+   echo Failed to setup testcred environment, aborting test.
+   exit 2
+fi
+
 # Setup the test credentials/CA/gridmap environment
 . $GLOBUS_LOCATION/test/globus_test/testcred-env.sh
 

@@ -16,8 +16,7 @@ if [ $? -ne 0 ]; then
 fi
 
 rm -f $GRIDMAP  >/dev/null 2>&1;
-grid-mapfile-add-entry -dn "${SUBJECT}" -ln `whoami` -f ${GRIDMAP} \
-       >/dev/null 2>&1
+grid-mapfile-add-entry -dn "${SUBJECT}" -ln `whoami` -f ${GRIDMAP} 
 if [ $? -ne 0 ]; then
    echo Unable to add identity \"${SUBJECT}\" to gridmap ${GRIDMAP}
    exit 2
