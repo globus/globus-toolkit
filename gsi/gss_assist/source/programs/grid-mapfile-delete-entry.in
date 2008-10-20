@@ -339,8 +339,11 @@ while read line || test ! -z "${line}" ; do
 done < $GRID_MAP_FILE_COPY
 
 # Exit if Dry Run option was requested"
-
-deleted_entries=`cat $DELETED_ENTRIES`
+if [ -f "$DELETED_ENTRIES" ]; then
+    deleted_entries=`cat $DELETED_ENTRIES`
+else
+    deleted_entries=0
+fi
 
 if [ "$ECHO_DRYRUN" = "echo" ] ; then
     if [ "$deleted_entries" -ne  0 ] ; then
