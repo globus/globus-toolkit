@@ -11,6 +11,6 @@ grid_proxy_destroy_SOURCES = grid_proxy_destroy.c
 grid_proxy_info_SOURCES = grid_proxy_info.c
 
 LDADD = $(GPT_PGM_LINKS)
-LDFLAGS = $(GPT_LDFLAGS)
+LDFLAGS += $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post

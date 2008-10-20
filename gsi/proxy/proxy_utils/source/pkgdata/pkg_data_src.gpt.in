@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_proxy_utils" Format_Version="0.02">
 
-    <Aging_Version Major="3" Minor="3" Age="3"/>
+    <Aging_Version Major="3" Minor="4" Age="3"/>
     <Description> Globus GSI Proxy Utility Programs</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
