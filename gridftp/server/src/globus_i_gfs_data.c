@@ -891,74 +891,75 @@ globus_l_gfs_authorize_cb(
     GlobusGFSName(globus_l_gfs_authorize_cb);
     GlobusGFSDebugEnter();
 
-    if(result == GLOBUS_SUCCESS)
+    if(user_arg != NULL)
     {
-        if(user_arg)
+        if(result == GLOBUS_SUCCESS)
         {
             globus_l_gfs_blocking_dispatch_kickout(user_arg);
         }
-    }
-    else
-    {
-        globus_gfs_finished_info_t      finished_info;
-        globus_l_gfs_data_operation_t * op;
-
-        op = (globus_l_gfs_data_operation_t *) user_arg;
-        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
-
-        result = GlobusGFSErrorWrapFailed(
-            "authorization", result);
-        finished_info.result = result;
-
-        if(op->callback == NULL)
-        {
-            globus_gfs_ipc_reply_finished(
-                op->ipc_handle, &finished_info);
-        }
         else
         {
-            op->callback(
-                &finished_info,
-                op->user_arg);
-        }
-        globus_mutex_lock(&op->session_handle->mutex);
-        {
-            if(op->data_handle != NULL)
+            globus_gfs_finished_info_t      finished_info;
+            globus_l_gfs_data_operation_t * op;
+    
+            op = (globus_l_gfs_data_operation_t *) user_arg;
+            memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    
+            result = GlobusGFSErrorWrapFailed(
+                "authorization", result);
+            finished_info.result = result;
+    
+            if(op->callback == NULL)
             {
-                switch(op->data_handle->state)
-                {
-                    case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-                        op->data_handle->state =
-                            GLOBUS_L_GFS_DATA_HANDLE_VALID;
-                        break;
-
-                    case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
-                        break;
-
-                    case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
-                    case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
-                        if(!op->data_handle->is_mine)
-                        {
-                            remote_data_arg = op->data_handle->remote_data_arg;
-                        }
-                        break;
-
-                    case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
-                    case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
-                    case GLOBUS_L_GFS_DATA_HANDLE_VALID:
-                    default:
-                        globus_assert(0 && "possible memory corruption");
-                        break;
-                }
+                globus_gfs_ipc_reply_finished(
+                    op->ipc_handle, &finished_info);
             }
-            GFSDataOpDec(op, destroy_op, destroy_session);
+            else
+            {
+                op->callback(
+                    &finished_info,
+                    op->user_arg);
+            }
+            globus_mutex_lock(&op->session_handle->mutex);
+            {
+                if(op->data_handle != NULL)
+                {
+                    switch(op->data_handle->state)
+                    {
+                        case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                            op->data_handle->state =
+                                GLOBUS_L_GFS_DATA_HANDLE_VALID;
+                            break;
+    
+                        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                            break;
+    
+                        case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+                        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+                            if(!op->data_handle->is_mine)
+                            {
+                                remote_data_arg = 
+                                    op->data_handle->remote_data_arg;
+                            }
+                            break;
+    
+                        case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
+                        case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
+                        case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+                        default:
+                            globus_assert(0 && "possible memory corruption");
+                            break;
+                    }
+                }
+                GFSDataOpDec(op, destroy_op, destroy_session);
+            }
+            globus_mutex_unlock(&op->session_handle->mutex);
+            globus_assert(destroy_op);
+    
+            globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
+    
+            globus_l_gfs_data_operation_destroy(op);
         }
-        globus_mutex_unlock(&op->session_handle->mutex);
-        globus_assert(destroy_op);
-
-        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
-
-        globus_l_gfs_data_operation_destroy(op);
     }
 
     GlobusGFSDebugExit();
