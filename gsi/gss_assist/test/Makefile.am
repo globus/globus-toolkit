@@ -9,7 +9,8 @@ Scripts = \
 	gss-assist-impexp-test.pl \
 	gss-assist-auth-test.pl \
 	gss-assist-gridmap-test.pl \
-        gridmap-test.pl
+        gridmap-test.pl \
+        gridmap-tools-test.pl
 
 Data = grid-mapfile \
        gridmap.empty \
@@ -30,9 +31,10 @@ test_PROGRAMS = \
 	gss-assist-impexp-init \
 	gss-assist-impexp-accept \
 	gss-assist-gridmap \
-        gridmap-test
+        gridmap-test \
+        gridmap-userok
 
-LDFLAGS = $(GPT_LDFLAGS)
+LDFLAGS += $(GPT_LDFLAGS)
 LDADD = $(GPT_PGM_LINKS)
 
 gss_assist_auth_init_SOURCES = gss_assist_auth_init.c
@@ -41,6 +43,7 @@ gss_assist_impexp_init_SOURCES = gss_assist_impexp_init.c
 gss_assist_impexp_accept_SOURCES = gss_assist_impexp_accept.c
 gss_assist_gridmap_SOURCES = gss_assist_gridmap.c
 gridmap_test_SOURCES = gridmap_test.c
+gridmap_userok_SOURCES = gridmap_userok.c
 
 EXTRA_DIST = $(Scripts) $(Data)
 

@@ -11,6 +11,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             gss-assist-auth-test.pl
             gss-assist-gridmap-test.pl
             gridmap-test.pl
+            gridmap-tools-test.pl
             );
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
