@@ -51,6 +51,11 @@ Sources_OPENSSL_INTERNALS = \
 flavorinclude_HEADERS = \
 	gssapi.h
 
+if USE_SYMBOL_LABELS
+LABELFLAGS = -Wl,--version-script,gssapi.sym
+else
+LABELFLAGS =
+endif
 
 #AM_CFLAGS = -DDEBUG
 
@@ -61,6 +66,9 @@ INCLUDES = -I.. $(GPT_INCLUDES)
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) \
+	$(LABELFLAGS)
+
+EXTRA_DIST = gssapi.sym
 
 include $(top_srcdir)/globus_automake_post
