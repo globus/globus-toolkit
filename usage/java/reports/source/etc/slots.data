@@ -1,8 +1,0 @@
-Byte
-0,100 kb, 1 mb, 5 mb, 10 mb, 100 mb, 500 mb, 1 gb, 10 gb
-Bandwidth
-0, 500 kb/s, 1 mb/s, 2 mb/s, 10 mb/s, 50 mb/s, 100 mb/s
-Block
-0, 10 kb, 100 kb, 1 mb, 2 mb, 5 mb, 10 mb
-Buffer
-0, 10 kb, 100 kb, 1 mb, 2 mb, 5 mb, 10 mb
