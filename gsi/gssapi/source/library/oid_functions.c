@@ -287,6 +287,21 @@ GSS_CALLCONV gss_indicate_mechs(
         "gss_indicate_mechs";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    if (minor_status == NULL || mech_set == NULL)
+    {
+        major_status = GSS_S_FAILURE;
+
+        if (minor_status != NULL)
+        {
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    (_GGSL("Invalid parameter")));
+        }
+
+        goto exit;
+    }
+
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     
     major_status = gss_create_empty_oid_set(&local_minor_status, 

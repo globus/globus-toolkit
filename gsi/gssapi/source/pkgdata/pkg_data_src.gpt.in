@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gssapi_gsi" Format_Version="0.02">
 
-    <Aging_Version Major="6" Minor="8" Age="2"/>
+    <Aging_Version Major="6" Minor="9" Age="2"/>
     <Description >GSSAPI library</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
