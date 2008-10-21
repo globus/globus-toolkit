@@ -179,6 +179,16 @@ if ( $flavor =~ /64/ ) {
     $enable_64bit = "--enable-64bit";
 }
 
+# globus_common and globus_java_ws_core want 
+# GLOBUS_VERSION set when built to set globus-version
+# and the Version RP respectively
+if ( $install )
+{
+    my $gt_ver = `cat $top_dir/fait_accompli/version`;
+    chomp($gt_ver);
+    $ENV{'GLOBUS_VERSION'} = $gt_ver;
+}
+
 
 # main ()
 
