@@ -26,6 +26,7 @@ Scripts= \
 	gssapi-expimp-test.pl \
 	gssapi-acquire-test.pl \
 	gssapi-inquire-sec-ctx-by-oid-test.pl \
+        indicate-mechs-test.pl \
         release-name-test.pl
 
 Data= \
@@ -66,10 +67,11 @@ test_PROGRAMS= \
 	gssapi-inquire-sec-ctx-by-oid-test \
 	gssapi-acquire-test \
 	gssapi-module-test \
+        indicate-mechs-test \
         inquire-names-for-mech-test \
         release-name-test
 
-LDFLAGS = $(GPT_LDFLAGS)
+LDFLAGS += $(GPT_LDFLAGS)
 LDADD = $(GPT_PGM_LINKS)
 
 gssapi_anonymous_test_SOURCES = gssapi_anonymous_test.c
@@ -123,6 +125,10 @@ release_name_test_SOURCES = release_name_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 duplicate_name_test_SOURCES = duplicate_name_test.c \
+                                gssapi_test_utils.c \
+                                gssapi_test_utils.h
+
+indicate_mechs_test_SOURCES = indicate_mechs_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 
