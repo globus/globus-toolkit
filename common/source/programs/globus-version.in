@@ -32,19 +32,8 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 # Grab the version info set by the installer
 #
 
-GLOBUS_VERSION="@GLOBUS_VERSION@"
-if test x"$GLOBUS_VERSION" = "x" ; then
-    GLOBUS_VERSION="$DIRT_TIMESTAMP-$DIRT_BRANCH_ID"
-fi
-
 GLOBUS_VERSIONNAME="@GLOBUS_VERSIONNAME@"
-if test x"$GLOBUS_VERSIONNAME" = "x" ; then
-    GLOBUS_VERSIONNAME="Globus Toolkit"
-fi
-
-
-GLOBUS_FULL_VERSION="$GLOBUS_VERSIONNAME $GLOBUS_VERSION"
-
+GLOBUS_VERSION="@GLOBUS_VERSION@"
 
 usage()
 {
@@ -73,19 +62,15 @@ EOF
 case "$1" in
     -h|-help|-usage|--help)
         usage
-        exit 0
         ;;
     -dirt)
         echo "$DIRT_TIMESTAMP-$DIRT_BRANCH_ID"
-        exit 0
         ;;
     -full)
-        echo $GLOBUS_FULL_VERSION
-        exit 0
+        echo "$GLOBUS_VERSIONNAME $GLOBUS_VERSION"
         ;;
     *)
         echo $GLOBUS_VERSION
-        exit 0
         ;;
 esac
 

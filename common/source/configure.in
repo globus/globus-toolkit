@@ -26,8 +26,23 @@ GPT_SET_LIBS(["$EXTERNAL_LIBS"])
 
 AC_SUBST(GLOBUS_THREADS)
 
-AC_SUBST(GLOBUS_VERSION)
+if test "X$GLOBUS_VERSION" = "X"; then
+    if test -x ${GLOBUS_LOCATION}/bin/globus-version; then
+        GLOBUS_VERSION="`${GLOBUS_LOCATION}/bin/globus-version`"
+        if test X"$GLOBUS_VERSIONNAME" = "X" ; then
+            GLOBUS_VERSION_FULL="`${GLOBUS_LOCATION}/bin/globus-version -full`"
+            GLOBUS_VERSIONNAME="`echo $GLOBUS_VERSION_FULL | sed "s/ $GLOBUS_VERSION//"`"
+        fi
+    else
+        GLOBUS_VERSION="$DIRT_TIMESTAMP-$DIRT_BRANCH_ID"
+    fi
+fi
 
+if test X"$GLOBUS_VERSIONNAME" = "X" ; then
+    GLOBUS_VERSIONNAME="Globus Toolkit"
+fi
+
+AC_SUBST(GLOBUS_VERSION)
 AC_SUBST(GLOBUS_VERSIONNAME)
 
 if test "$GLOBUS_THREADS" = "none" ; then
