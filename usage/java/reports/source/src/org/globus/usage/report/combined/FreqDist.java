@@ -105,7 +105,7 @@ public class FreqDist {
         String query = "SELECT bin.min_rate, bin.max_rate, COUNT(*) "+
                        "FROM ("+
                        "    SELECT " +
-                       "        summary.ip_address, " +
+                       "        summary." + hostColumn + ", " +
                        "        TRUNC(summary.count / summary.days) as ppd " +
                        "    FROM ("+
                        "        SELECT " +
