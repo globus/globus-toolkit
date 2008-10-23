@@ -86,13 +86,14 @@ public class HostReport {
 
             ResultSet rs = dbr
                     .retrieve("gftp_packets",
-                            new String[] { "DISTINCT(SUBSTRING(hostname, 1, POSITION('/' in hostname)-1))" }, startD, ts.getTime());
+                            new String[] { "DISTINCT(hostname)" }, startD, ts.getTime());
 
             while (rs.next()) {
                 String hostname = rs.getString(1);
                 int dotIndex;
 
-                if ((dotIndex = hostname.lastIndexOf(".")) != -1) {
+                if (hostname != null &&
+                        ((dotIndex = hostname.lastIndexOf(".")) != -1)) {
                     hostHist.addData(hostname.substring(dotIndex), 1);
                 } else {
                     hostHist.addData("unknown", 1);
@@ -100,15 +101,22 @@ public class HostReport {
             }
             rs.close();
 
-            rs = dbr
-                    .retrieve("gftp_packets",
-                            new String[] { "DISTINCT(SUBSTRING(hostname, POSITION('/' in hostname)+1))" }, startD, ts.getTime());
+            rs = dbr.retrieve("SELECT ip_address, hostname FROM gftp_packets "+
+                              "WHERE DATE(send_time) >= '" + startD + "' " +
+                              "AND   DATE(send_time) < '" + ts.getTime() + "' " +
+                              "GROUP BY ip_address, hostname");
                     
             while (rs.next()) {
-                String ip = rs.getString(1);
-                IPEntry ipentry = IPEntry.getIPEntry(ip);
+                String hostname = rs.getString(1);
+                String ip = rs.getString(2);
+                int dotIndex;
 
-                ipHist.addData(ipentry.getDomain(), 1);
+                if (hostname != null &&
+                    ((dotIndex = hostname.lastIndexOf(".")) != -1)) {
+                    ipHist.addData(hostname.substring(dotIndex), 1);
+                } else {
+                    ipHist.addData("unresolved", 1);
+                }
             }
             rs.close();
         }
