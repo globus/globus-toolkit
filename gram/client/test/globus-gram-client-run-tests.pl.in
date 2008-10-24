@@ -15,6 +15,8 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
 my $test_result=1;
 my $kill_gatekeeper=0;
+my $personal_gatekeeper = $Globus::Core::Paths::bindir
+                        . "/globus-personal-gatekeeper";
 
 @tests = qw(
     globus-gram-client-activate-test.pl
@@ -50,17 +52,15 @@ if(exists($ENV{CONTACT_STRING}))
 }
 else
 {
-    my $personal_gatekeeper = $Globus::Core::Paths::bindir
-                            . "/globus-personal-gatekeeper";
 
-    system("$personal_gatekeeper -killall >/dev/null 2>&1");
-    system("$personal_gatekeeper -start -log never >/dev/null 2>&1");
-    chomp($contact = `$personal_gatekeeper -list`);
+    $contact = `$personal_gatekeeper -start -log never`;
     if($? != 0)
     {
 	print "Could not start gatekeeper\n";
 	exit 1;
     }
+    chomp($contact);
+    $contact =~ s/^GRAM contact: //;
     $ENV{CONTACT_STRING} = $contact;
     $kill_gatekeeper = 1;
 }
@@ -80,7 +80,8 @@ else
 sub END {
     if($kill_gatekeeper)
     {
-	system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+        open(STDOUT, ">/dev/null");
+	system {$personal_gatekeeper} ($personal_gatekeeper, '-kill', $contact);
     }
     exit $test_result;
 }

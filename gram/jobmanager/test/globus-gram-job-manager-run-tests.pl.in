@@ -11,6 +11,8 @@ use Globus::Core::Paths;
 
 my $test_result = 1;
 my $kill_gatekeeper = 0;
+my $personal_gatekeeper = $Globus::Core::Paths::bindir
+                        . "/globus-personal-gatekeeper";
 $|=1;
 
 my $contact;
@@ -46,16 +48,14 @@ if(exists($ENV{CONTACT_STRING}))
 }
 else
 {
-    my $personal_gatekeeper = $Globus::Core::Paths::bindir
-                            . "/globus-personal-gatekeeper";
-    system("$personal_gatekeeper -killall >/dev/null 2>/dev/null");
-    system("$personal_gatekeeper -start $startargs >/dev/null 2>/dev/null");
-    chomp($contact = `$personal_gatekeeper -list`);
+    $contact = `$personal_gatekeeper -start $startargs`;
     if($? != 0)
     {
 	print "Could not start gatekeeper\n";
 	exit 1;
     }
+    chomp($contact);
+    $contact =~ s/^GRAM contact:\s*//;
     $ENV{CONTACT_STRING} = $contact;
     $kill_gatekeeper = 1;
 }
@@ -75,7 +75,8 @@ else
 sub END {
     if($kill_gatekeeper)
     {
-	system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+        open(STDOUT, '>/dev/null'); 
+        system { $personal_gatekeeper } ($personal_gatekeeper, '-kill', $contact);
     }
     exit $test_result;
 }

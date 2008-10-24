@@ -8,6 +8,7 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 
 use strict;
 use Globus::Testing::Utilities;
+use Globus::Core::Paths;
 use POSIX;
 use IO::File;
 
@@ -23,31 +24,21 @@ sub test_gram_local
     $u->announce("Testing GRAM locally");
 
     my $gatekeeper_url;
-    my $gk_pid;
-    my $gk_fd;
     my $job_id;
     my $output;
     my $rc = 0;
     my $rcx = 0;
     my $year = (localtime)[5] + 1900;
     my $tmpfile = POSIX::tmpnam();
+    my $personal_gatekeeper = $Globus::Core::Paths::bindir
+            . '/globus-personal-gatekeeper';
     my $arg_file;
 
-    # cleanup
-
-    $u->command("globus-personal-gatekeeper -killall");
-#    $u->command("rm -rf \${HOME}/.globus/.gass_cache");
-
     # start new personal gatekeeper
-
-    ($gk_pid, $gk_fd) = 
-        $u->command_blocking("globus-personal-gatekeeper -start");
-
-    sleep(5);
+    $gatekeeper_url = `$personal_gatekeeper -start`;
+    chomp $gatekeeper_url;
+    $gatekeeper_url =~ s/GRAM contact: //;
     
-    ($rcx, $gatekeeper_url) = $u->command("globus-personal-gatekeeper -list");
-    $rc += check("", "", $rcx);
-
     ($rcx, $output) = $u->command("globusrun -a -r \"$gatekeeper_url\"");
     $rc += check($output, "GRAM Authentication test successful",$rcx);
 
@@ -216,11 +207,9 @@ sub test_gram_local
     }
  
     # Cleanup
-    $u->command("globus-personal-gatekeeper -killall");
-    waitpid($gk_pid,0);
-    close($gk_fd);
+    system {$personal_gatekeeper}
+        ($personal_gatekeeper, '-kill', $gatekeeper_url);
 
- #   $u->command("rm -rf \${HOME}/.globus/.gass_cache");
     return $rc;
 }
 
