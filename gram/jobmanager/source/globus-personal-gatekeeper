@@ -459,7 +459,7 @@ if [ $x -ne 0 ]; then
     exit 1
 fi
 
-eval "(${sbindir}/globus-gatekeeper -c ${scratch}/gatekeeper.conf) &"
+${sbindir}/globus-gatekeeper -c ${scratch}/gatekeeper.conf < /dev/null > /dev/null 2>/dev/null  &
 x=$?
 pid=$!
 if [ $x -ne 0 ]; then
@@ -491,7 +491,7 @@ else
 -globus-gatekeeper-host $host
 -globus-gatekeeper-port $port
 EOF
-
+    echo "$contact" | ${GLOBUS_SH_SED-sed} -e 's/^.*GRAM contact:/GRAM contact:/'
 fi
 
 
