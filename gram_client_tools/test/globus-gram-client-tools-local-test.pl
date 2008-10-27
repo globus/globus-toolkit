@@ -218,7 +218,9 @@ sub check
     my $stringToCheck = shift;
     my $expectedString = shift;
     my $rcx = shift;
-    if ($stringToCheck =~ /$expectedString/ && $rcx == 0)
+    if (($stringToCheck =~ /$expectedString/ ||
+            $stringToCheck eq $expectedString)
+        && $rcx == 0)
     {
         $u->report("SUCCESS")
     }
