@@ -2149,14 +2149,6 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
-    /*
-     * post-0.9.8 versions of the SSL library seem to move part of the 
-     * cipher setup code into SSL_library_init(). Without this call, the
-     * SSL_CTX_new routine comaplains at not being able to initialize the 
-     * list of ciphers.
-     */
-    SSL_library_init();
-
 #if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
     /*
      * post-0.9.8 versions of OpenSSL include data compression. unfortunately,

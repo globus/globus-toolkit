@@ -75,6 +75,7 @@ globus_l_openssl_activate(void)
     X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
     X509V3_EXT_METHOD *                 pci_old_x509v3_ext_meth = NULL;
     
+    SSL_library_init();
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     mutex_pool = malloc(CRYPTO_num_locks() * sizeof(globus_mutex_t));
