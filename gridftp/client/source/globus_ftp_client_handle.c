@@ -1193,6 +1193,10 @@ globus_l_ftp_client_target_delete(
     {
         globus_libc_free(target->authz_assert);
     }
+    if(target->clientinfo_argstr)
+    {
+        globus_libc_free(target->clientinfo_argstr);
+    }
     if(target->features)
     {
         globus_i_ftp_client_features_destroy(target->features);

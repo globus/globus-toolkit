@@ -1450,14 +1450,6 @@ void
 globus_l_guc_info_destroy(
     globus_l_guc_info_t *                    guc_info)
 {
-/*
-    find out how to do this safely
-
-    if(guc_info->source_ftp_attr != GLOBUS_NULL)
-        globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
-    if(guc_info->dest_ftp_attr != GLOBUS_NULL)
-        globus_ftp_client_operationattr_destroy(&guc_info->dest_ftp_attr);
-*/
     if(guc_info->source_subject)
     {
         globus_free(guc_info->source_subject);
@@ -1657,6 +1649,7 @@ globus_l_guc_transfer(
      *  we must setup attrs for every gass url.  if url is not
      *  gass handled the function will just return
      */
+
     if(source_io_handle == NULL)
     {
         globus_l_guc_gass_attr_init(
@@ -1879,10 +1872,18 @@ globus_l_guc_transfer(
     {
         globus_free(dst_url_base);
     }
-/*
-    globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
-    globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
-*/
+    
+    if(handle->source_ftp_attr)
+    {
+        globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
+        handle->source_ftp_attr = NULL;
+    }
+    if(handle->dest_ftp_attr)
+    {
+        globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
+        handle->dest_ftp_attr = NULL;
+    }
+
     return result;  
     
 error_transfer:
@@ -3214,6 +3215,7 @@ globus_l_guc_expand_urls(
         }
         globus_ftp_client_operationattr_destroy(
             &handle->source_ftp_attr);
+        handle->source_ftp_attr = NULL;
 
         if(!globus_fifo_empty(&guc_info->expanded_url_list))
         {
@@ -3296,6 +3298,8 @@ globus_l_guc_expand_urls(
                     }
                     globus_ftp_client_operationattr_destroy(
                         &handle->dest_ftp_attr);
+                    handle->dest_ftp_attr = NULL;
+
                     
                     first_attempt = GLOBUS_FALSE;
                     globus_free(dst_mkurl);
@@ -3356,6 +3360,8 @@ globus_l_guc_expand_urls(
 
 error_expand:
     globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
+    handle->source_ftp_attr = NULL;
+
 error_transfer:            
     globus_hashtable_destroy_all(&guc_info->recurse_hash,
         globus_l_guc_hashtable_element_free);
@@ -3589,6 +3595,8 @@ globus_l_guc_init_gass_copy_handle(
     globus_abstime_t                                timeout;
     globus_abstime_t *                              timeout_p = GLOBUS_NULL;
     globus_gass_copy_handleattr_t                   gass_copy_handleattr;
+    char *                                          ver_str;
+
 
     globus_gass_copy_handleattr_init(&gass_copy_handleattr);
 
@@ -3599,6 +3607,21 @@ globus_l_guc_init_gass_copy_handle(
             globus_error_print_friendly(globus_error_peek(result)));
 
         return -1;
+    }
+    
+    ver_str = globus_common_create_string(
+        "%d.%d (%s, %d-%d) [%s]",
+        local_version.major,
+        local_version.minor,
+        build_flavor,
+        local_version.timestamp,
+        local_version.branch_id,
+        toolkit_id);
+    globus_ftp_client_handleattr_set_clientinfo(
+        &ftp_handleattr, "globus-url-copy", ver_str, NULL);
+    if(ver_str)
+    {
+        globus_free(ver_str);
     }
 
     globus_ftp_client_handleattr_set_cache_all(&ftp_handleattr, GLOBUS_TRUE);

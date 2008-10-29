@@ -17,6 +17,14 @@ dnl set up doxygen to look in our source directory for examples
 LAC_DOXYGEN_EXAMPLE_DIR("../")
 LAC_DOXYGEN("../", "*.dox")
 
+AC_MSG_CHECKING(Toolkit version)
+GLOBUS_TOOLKIT_ID=unknown
+if test -x ${GLOBUS_LOCATION}/bin/globus-version ; then
+    GLOBUS_TOOLKIT_ID="`${GLOBUS_LOCATION}/bin/globus-version -full`"
+fi
+AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
+AC_SUBST(GLOBUS_TOOLKIT_ID)
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(

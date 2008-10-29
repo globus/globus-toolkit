@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_copy">
 
-    <Aging_Version Age="2" Major="4" Minor="14"/>
+    <Aging_Version Age="2" Major="4" Minor="15"/>
     <Description>Globus Gass Copy</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -23,7 +23,7 @@
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
@@ -51,7 +51,7 @@
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">

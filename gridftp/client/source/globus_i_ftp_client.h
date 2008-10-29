@@ -24,6 +24,9 @@
  * $Date$
  */
 
+#ifndef GLOBUS_L_INCLUDE_FTP_CLIENT_H
+#define GLOBUS_L_INCLUDE_FTP_CLIENT_H
+
 #include "globus_common.h"
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
@@ -32,8 +35,7 @@
 
 #define SSH_EXEC_SCRIPT "gridftp-ssh"
 
-#ifndef GLOBUS_L_INCLUDE_FTP_CLIENT_H
-#define GLOBUS_L_INCLUDE_FTP_CLIENT_H
+#define GLOBUS_L_FTP_CLIENT_CLIENTINFO_APPNAME "libglobus_ftp_client"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -165,6 +167,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     char *                                      net_stack_str;
     char *                                      disk_stack_str;
     char *                                      module_alg_str;
+    char *                                      clientinfo_argstr;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -246,6 +249,11 @@ typedef struct globus_i_ftp_client_handleattr_t
     globus_bool_t                               nl_ftp;
     globus_bool_t                               nl_io;
     globus_netlogger_handle_t *                 nl_handle;
+    
+    /* client info */
+    char *                                      clientinfo_app_name;
+    char *                                      clientinfo_app_ver;
+    char *                                      clientinfo_other;
 }
 globus_i_ftp_client_handleattr_t;
 
@@ -313,6 +321,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SITE_HELP,
     GLOBUS_FTP_CLIENT_TARGET_FEAT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_CLIENTINFO,
+    GLOBUS_FTP_CLIENT_TARGET_CLIENTINFO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TYPE,
     GLOBUS_FTP_CLIENT_TARGET_TYPE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE,
@@ -707,6 +717,8 @@ typedef struct globus_i_ftp_client_target_s
     globus_bool_t                               dst_command_sent;
     
     globus_list_t *                             net_stack_list;
+    
+    char *                                      clientinfo_argstr;
 } globus_i_ftp_client_target_t;
 
 /**

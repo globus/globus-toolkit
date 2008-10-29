@@ -550,6 +550,20 @@ globus_ftp_client_handleattr_set_netlogger(
     globus_netlogger_handle_t *	                nl_handle);
 
 globus_result_t
+globus_ftp_client_handleattr_set_clientinfo(
+    globus_ftp_client_handleattr_t *    attr,
+    const char *                        app_name,
+    const char *                        app_version,
+    const char *                        other);
+
+globus_result_t
+globus_ftp_client_handleattr_get_clientinfo(
+    globus_ftp_client_handleattr_t *    attr,
+    char **                             app_name,
+    char **                             app_version,
+    char **                             other);
+
+globus_result_t
 globus_ftp_client_handleattr_set_netlogger_ftp_io(
     globus_ftp_client_handleattr_t *            attr,
     globus_netlogger_handle_t *                 nl_handle,
@@ -1143,6 +1157,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_CKSM,
     GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
     GLOBUS_FTP_CLIENT_FEATURE_AUTHZ_ASSERT,
+    GLOBUS_FTP_CLIENT_FEATURE_CLIENTINFO,
     GLOBUS_FTP_CLIENT_FEATURE_SITE_SETNETSTACK,
     GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV,
     GLOBUS_FTP_CLIENT_FEATURE_GETPUT,

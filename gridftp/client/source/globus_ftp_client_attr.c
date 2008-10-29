@@ -26,6 +26,7 @@
 
 #include "globus_i_ftp_client.h"
 #include "globus_error_string.h"
+#include "version.h"
 
 #include <string.h>
 
@@ -74,6 +75,18 @@ globus_ftp_client_handleattr_init(
     i_attr->pipeline_arg = GLOBUS_NULL;
     i_attr->pipeline_done = GLOBUS_FALSE;
     i_attr->gridftp2 = GLOBUS_FALSE;
+    i_attr->clientinfo_app_name = 
+        globus_libc_strdup(GLOBUS_L_FTP_CLIENT_CLIENTINFO_APPNAME);
+    i_attr->clientinfo_app_ver = 
+        globus_common_create_string(
+            "%d.%d (%s, %d-%d) [%s]",
+            local_version.major,
+            local_version.minor,
+            build_flavor,
+            local_version.timestamp,
+            local_version.branch_id,
+            toolkit_id);
+    i_attr->clientinfo_other = GLOBUS_NULL;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -129,6 +142,18 @@ globus_i_ftp_client_handleattr_destroy(
 
     globus_i_ftp_client_cache_destroy(&i_attr->url_cache);
 
+    if(i_attr->clientinfo_app_name)
+    {
+        globus_free(i_attr->clientinfo_app_name);
+    }
+    if(i_attr->clientinfo_app_ver)
+    {
+        globus_free(i_attr->clientinfo_app_ver);
+    }
+    if(i_attr->clientinfo_other)
+    {
+        globus_free(i_attr->clientinfo_other);
+    }
     while(! globus_list_empty(i_attr->plugins))
     {
 	plugin = globus_list_first(i_attr->plugins);
@@ -347,6 +372,122 @@ globus_ftp_client_handleattr_get_rfc1738_url(
 /* globus_ftp_client_handleattr_get_rfc1738_url() */
 /*@}*/
 
+/**
+ * @name Client Info
+ */
+/*@{*/
+/**
+ * Set/Get client info reported to server.
+ * @ingroup globus_ftp_client_handleattr
+ *
+ *
+ * @param attr
+ *        Attribute to modify
+ * @param app_name
+ *        Name of client application.
+ * @param app_version
+ *        Client application specific version string.
+ * @param other
+ *        Additional client info to be reported to the server.  This may
+ *        be used to pass custom info to a custom server module.
+ *        The format of the string must be:
+ *        key1="value1";key2="value2";[keyn="valuen";]
+ *
+ * Any parameter may be NULL.  By default, generic library info will be 
+ * reported to the server -- set all NULL to disable this.                               
+ */
+globus_result_t
+globus_ftp_client_handleattr_set_clientinfo(
+    globus_ftp_client_handleattr_t *    attr,
+    const char *                        app_name,
+    const char *                        app_version,
+    const char *                        other)
+{
+    globus_object_t *                           err = GLOBUS_SUCCESS;
+    globus_i_ftp_client_handleattr_t *          i_attr;
+    GlobusFuncName(globus_ftp_client_handleattr_set_clientinfo);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+        goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
+
+    if(i_attr->clientinfo_app_name)
+    {
+        globus_free(i_attr->clientinfo_app_name);
+        i_attr->clientinfo_app_name = NULL;
+    }
+    if(i_attr->clientinfo_app_ver)
+    {
+        globus_free(i_attr->clientinfo_app_ver);
+        i_attr->clientinfo_app_ver = NULL;
+    }
+    if(i_attr->clientinfo_other)
+    {
+        globus_free(i_attr->clientinfo_other);
+        i_attr->clientinfo_other = NULL;
+    }
+    if(app_name)
+    {            
+        i_attr->clientinfo_app_name = globus_libc_strdup(app_name);
+    }
+    if(app_version)
+    {
+        i_attr->clientinfo_app_ver = globus_libc_strdup(app_version);
+    }
+    if(other)
+    {
+        i_attr->clientinfo_other = globus_libc_strdup(other);
+    }
+
+    return GLOBUS_SUCCESS;
+
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_set_clientinfo() */
+
+globus_result_t
+globus_ftp_client_handleattr_get_clientinfo(
+    globus_ftp_client_handleattr_t *    attr,
+    char **                             app_name,
+    char **                             app_version,
+    char **                             other)
+{
+    const globus_i_ftp_client_handleattr_t *    i_attr;
+    globus_object_t *                           err = GLOBUS_SUCCESS;
+    GlobusFuncName(globus_ftp_client_handleattr_get_clientinfo);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+        goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_handleattr_t **) attr;
+
+    if(app_name && i_attr->clientinfo_app_name)
+    {
+        (*app_name) = globus_libc_strdup(i_attr->clientinfo_app_name);
+    }
+    if(app_version && i_attr->clientinfo_app_ver)
+    {
+        (*app_version) = globus_libc_strdup(i_attr->clientinfo_app_ver);
+    }
+    if(other && i_attr->clientinfo_other)
+    {
+        (*other) = globus_libc_strdup(i_attr->clientinfo_other);
+    }
+
+    return GLOBUS_SUCCESS;
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_get_clientinfo() */
+/*@}*/
 
 /**
  * @name GridFTP2 support
@@ -965,6 +1106,11 @@ globus_ftp_client_operationattr_destroy(
     {
         globus_libc_free(i_attr->disk_stack_str);
         i_attr->disk_stack_str = NULL;
+    }
+    if(i_attr->clientinfo_argstr)
+    {
+        globus_free(i_attr->clientinfo_argstr);
+        i_attr->clientinfo_argstr = NULL;
     }
     if(i_attr->authz_assert)
     {
@@ -3437,6 +3583,9 @@ globus_i_ftp_client_handleattr_copy(
     dest->pipeline_arg = src->pipeline_arg;
     dest->pipeline_done = src->pipeline_done;
     dest->gridftp2 = src->gridftp2;
+    dest->clientinfo_app_name = globus_libc_strdup(src->clientinfo_app_name);
+    dest->clientinfo_app_ver = globus_libc_strdup(src->clientinfo_app_ver);
+    dest->clientinfo_other = globus_libc_strdup(src->clientinfo_other);
     tmp = src->url_cache;
 
     while(!globus_list_empty(tmp))
