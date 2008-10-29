@@ -94,6 +94,27 @@ find_default_credential()
     fi
 }
 
+certificate_format()
+{
+    testfile="$1"
+    _format=''
+
+    if test "$testfile" = ""; then
+        :
+    elif echo "$certfile" | grep '\.p12$' > /dev/null 2>&1 ; then
+        _format=pkcs12
+    elif echo "$certfile" | grep '\.pem$' > /dev/null 2>&1 ; then
+        _format=x509
+    elif grep -- '-----BEGIN' "$testfile" > /dev/null 2>&1 ; then
+        _format="x509"
+    else
+        :
+    fi
+
+    echo $_format
+}
+
+
 globus_source $libexecdir/globus-args-parser-header $@
 
 
@@ -157,15 +178,9 @@ while [ "X$1" != "X" ]; do
     shift
 done
 
-if test "$certfile" = ""; then
+cert_format=`certificate_format "$certfile"`
+if test "$cert_format" = ""; then
     echo "Error: Cannot locate certificate" 1>&2
-    exit 1;
-elif echo "$certfile" | grep '\.p12' > /dev/null 2>&1 ; then
-    cert_format=pkcs12
-elif echo "$certfile" | grep '\.pem' > /dev/null 2>&1 ; then
-    cert_format=x509
-else
-    echo "Error: certificate file \"$certfile\" is not .pem or .p12" 1>&2
     exit 1;
 fi
 
