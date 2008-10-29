@@ -39,6 +39,11 @@
 static int globus_l_gsi_credential_activate(void);
 static int globus_l_gsi_credential_deactivate(void);
 
+static
+globus_result_t
+globus_l_credential_sort_cert_list(
+    STACK_OF(X509) *                    certs);
+
 int                                     globus_i_gsi_cred_debug_level = 0;
 FILE *                                  globus_i_gsi_cred_debug_fstream = NULL;
 
@@ -895,9 +900,17 @@ globus_gsi_cred_read_proxy_bio(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio)
 {
-    int                                 i = 0;
     globus_result_t                     result;
+    STACK_OF(X509) *                    certs = NULL;
     X509 *                              tmp_cert = NULL;
+    char *                              name = NULL;
+    char *                              header = NULL;
+    unsigned char *                     data = NULL;
+    unsigned char *                     save_data = NULL;
+    long                                len;
+    EVP_CIPHER_INFO                     cipher;
+
+    certs = sk_X509_new_null();
 
     static char *                       _function_name_ =
         "globus_gsi_cred_read_proxy_bio";
@@ -922,98 +935,147 @@ globus_gsi_cred_read_proxy_bio(
         goto exit;
     }
 
-    /* read in the certificate of the handle */
-    
+    /* Clear aspects of the handle related to the proxy info */
     if(handle->cert != NULL)
     {
         X509_free(handle->cert);
         handle->cert = NULL;
     }
-    
-    if(!PEM_read_bio_X509(bio, & handle->cert, NULL, NULL))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Couldn't read X509 proxy cert from bio")));
-        goto exit;
-    }
-
-    /* read in the private key of the handle */
-
     if(handle->key != NULL)
     {
         EVP_PKEY_free(handle->key);
         handle->key = NULL;
     }
-
-    handle->key = PEM_read_bio_PrivateKey(
-        bio, 
-        NULL, 
-        (int (*) ()) globus_i_gsi_cred_password_callback_no_prompt, 
-        NULL);
-    if(!handle->key)
-    {
-        if(ERR_GET_REASON(ERR_peek_error()) == PEM_R_BAD_PASSWORD_READ)
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_KEY_IS_PASS_PROTECTED,
-                (_GCRSL("The proxy certificate's private key "
-                 "is password protected.\n")));
-            goto exit;
-        }
-        
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Couldn't read proxy's private key from bio")));
-        goto exit;
-    }
-    
-    /* read in the certificate chain of the handle */
-
     if(handle->cert_chain != NULL)
     {
         sk_X509_pop_free(handle->cert_chain, X509_free);
         handle->cert_chain = NULL;
     }
 
-    if((handle->cert_chain = sk_X509_new_null()) == NULL)
+    /* Read all the cert and key PEM data from the proxy BIO */
+    while ((!BIO_eof(bio)) && PEM_read_bio(bio, &name, &header, &data, &len))
+    {
+        save_data = data;
+
+        if (strcmp(name, PEM_STRING_X509) == 0 ||
+            strcmp(name, PEM_STRING_X509_OLD) == 0)
+        {
+            tmp_cert = NULL;
+            tmp_cert = d2i_X509(&tmp_cert, &data, len);
+            if (tmp_cert == NULL)
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't read certificate from bio")));
+
+                goto exit;
+            }
+            sk_X509_push(certs, tmp_cert);
+        }
+        else if (strcmp(name, PEM_STRING_RSA) == 0 ||
+                 strcmp(name, PEM_STRING_DSA) == 0)
+        {
+            int keytype = -1;
+
+            if (!PEM_get_EVP_CIPHER_INFO(header, &cipher))
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't read certificate from bio")));
+
+                goto exit;
+            }
+            if (!PEM_do_header(&cipher, data, &len, (int (*) ()) globus_i_gsi_cred_password_callback_no_prompt, NULL))
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't read certificate from bio")));
+
+                goto exit;
+            }
+
+            if (strcmp(name, PEM_STRING_RSA) == 0)
+            {
+                keytype = EVP_PKEY_RSA;
+            }
+            else if (strcmp(name, PEM_STRING_DSA) == 0)
+            {
+                keytype = EVP_PKEY_DSA;
+            }
+            else
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't read key from bio")));
+
+                goto exit;
+            }
+
+            handle->key = d2i_PrivateKey(keytype, &handle->key, &data, len);
+            if (handle->key == NULL)
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't read certificate from bio")));
+
+                goto exit;
+            }
+        }
+        else
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                (_GCRSL("Unhandled PEM sequence: %s"), name));
+            goto exit;
+        }
+        if (save_data)
+        {
+            OPENSSL_free(save_data);
+            save_data = NULL;
+        }
+        if (header)
+        {
+            OPENSSL_free(header);
+            header = NULL;
+        }
+        if (name)
+        {
+            OPENSSL_free(name);
+            name = NULL;
+        }
+    }
+    save_data = NULL;
+
+    if (handle->key == NULL || sk_X509_num(certs) == 0)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Can't initialize cert chain")));
+            (_GCRSL("Couldn't read PEM from bio")));
         goto exit;
     }
 
-    while(!BIO_eof(bio))
+    /* sort the certs in the X509 stack so that the nth cert is
+     * signed by (n+1)th in the stack
+     */
+    if ((result = globus_l_credential_sort_cert_list(certs)) != GLOBUS_SUCCESS)
     {
-        tmp_cert = NULL;
-        if(!PEM_read_bio_X509(bio, &tmp_cert, NULL, NULL))
-        {
-            /* appears to continue reading after EOF and
-             * so an error occurs here
-             */
-            ERR_clear_error();
-            break;
-        }
-        
-        if(!sk_X509_insert(handle->cert_chain, tmp_cert, i))
-        {
-            X509_free(tmp_cert);
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                (_GCRSL("Error adding certificate to proxy's cert chain")));
-            goto exit;
-        }
-        ++i;
+        goto exit;
     }
 
-    result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
+    /* The head of the stack is now the outermost proxy */
+    handle->cert = sk_X509_shift(certs);
 
+    /* The rest is the signature chain for it */
+    handle->cert_chain = certs;
+
+    result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -1025,6 +1087,21 @@ globus_gsi_cred_read_proxy_bio(
     result = GLOBUS_SUCCESS;
 
  exit:
+    ERR_clear_error();
+    if (save_data)
+    {
+        OPENSSL_free(save_data);
+    }
+    if (header)
+    {
+        OPENSSL_free(header);
+        header = NULL;
+    }
+    if (name)
+    {
+        OPENSSL_free(name);
+        name = NULL;
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
@@ -2240,5 +2317,59 @@ globus_l_gsi_cred_get_service(
     return result;
 }
 
+static
+globus_result_t
+globus_l_credential_sort_cert_list(
+    STACK_OF(X509) *                    certs)
+{
+    X509 *                              tmp_cert = NULL;
+    X509 *                              tmp_signer = NULL;
+    X509_NAME *                         candidate_issuer;
+    X509_NAME *                         signer_subject;
+    STACK_OF(X509) *                    ordered_certs;
+    int                                 i, j, issuer_idx;
 
+    ordered_certs = sk_X509_new_null();
+
+    /* Iterate through the certificate stack, checking to see if we've already
+     * seen its signer. If so, we put the new cert into the ordered_stack before
+     * the signer. Otherwise, we stick it on the end of the stack
+     */
+    for (i = 0; i < sk_X509_num(certs); i++)
+    {
+        tmp_cert = sk_X509_value(certs, i);
+        candidate_issuer = X509_get_issuer_name(tmp_cert);
+
+        for (j = 0, issuer_idx = -1; j < sk_X509_num(ordered_certs); j++)
+        {
+            tmp_signer = sk_X509_value(ordered_certs, j);
+            signer_subject = X509_get_subject_name(tmp_signer);
+
+            if (X509_NAME_cmp(candidate_issuer, signer_subject) == 0)
+            {
+                issuer_idx = j;
+                break;
+            }
+        }
+
+        if (issuer_idx == -1)
+        {
+            sk_X509_push(ordered_certs, tmp_cert);
+        }
+        else
+        {
+            sk_X509_insert(ordered_certs, tmp_cert, issuer_idx);
+        }
+    }
+    sk_X509_zero(certs);
+
+    for (i = 0; i < sk_X509_num(ordered_certs); i++)
+    {
+        tmp_cert = sk_X509_value(ordered_certs, i);
+        sk_X509_push(certs, tmp_cert);
+    }
+    sk_X509_free(ordered_certs);
+
+    return GLOBUS_SUCCESS;
+}
 #endif
