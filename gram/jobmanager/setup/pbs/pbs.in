@@ -61,7 +61,7 @@ sub submit
     my $email_when = '';
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my %library_vars;
-
+    my $library_path;
 
     $self->log("Entering pbs submit");
 
@@ -292,7 +292,7 @@ EOF
         }
         if(exists($library_vars{$tuple->[0]}))
         {
-            $tuple->[1] .= ":$library_string";
+            $tuple->[1] .= $tuple->[1];
             $library_vars{$tuple->[0]} = 1;
         }
 
@@ -311,14 +311,18 @@ EOF
         $rsh_env .= $tuple->[0] . '="' . $tuple->[1] . "\";\n"
                  .  'export ' . $tuple->[0] . ";\n";
     }
-    foreach (keys %library_vars)
+    $library_path = join(':', $description->library_path());
+
+    if ($library_path ne '')
     {
-        if($library_vars{$_} == 0)
+        foreach (keys %library_vars)
         {
-            my $library_path = $description->library_path();
-            push(@new_env, $_ . '=' . $library_path);
-            $rsh_env .= "$_=$library_path;\n"
-                      . "export $_;\n";
+            if($library_vars{$_} == 0)
+            {
+                push(@new_env, $_ . '=' . $library_path);
+                $rsh_env .= "$_=$library_path;\n"
+                          . "export $_;\n";
+            }
         }
     }
 
