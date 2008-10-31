@@ -505,11 +505,12 @@ globus_l_gfs_hdfs_dump_buffers(
             if (hdfs_handle->used[i] == 1 && offsets[i] == hdfs_handle->offset) {
                 //printf("Flushing %d bytes at offset %d from buffer %d.\n", nbytes[i], hdfs_handle->offset, i);
                 bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, hdfs_handle->buffer+i*hdfs_handle->block_size, nbytes[i]*sizeof(globus_byte_t));
-                wrote_something = 1;
+                if (bytes_written > 0)
+                    wrote_something = 1;
                 if (bytes_written != nbytes[i]) {
                     rc = GlobusGFSErrorGeneric("write() fail");
                     hdfs_handle->done = GLOBUS_TRUE;
-                    break;
+                    return rc;
                 }
                 hdfs_handle->used[i] = 0;
                 hdfs_handle->offset += bytes_written;
@@ -609,6 +610,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         } else {
             rc = globus_l_gfs_hdfs_dump_buffers(hdfs_handle);
             if (rc != GLOBUS_SUCCESS) {
+                hdfs_handle->done = GLOBUS_TRUE;
                 //printf("Dump buffer failed.\n");
             }
             globus_gridftp_server_update_bytes_written(op, offset, nbytes);
@@ -636,7 +638,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     {
         globus_l_gfs_hdfs_write_to_storage(hdfs_handle);
     }
-    else if (hdfs_handle->outstanding == 0) 
+    else if (hdfs_handle->outstanding == 0 && rc == GLOBUS_SUCCESS) 
     {
         globus_free(hdfs_handle->buffer);
         globus_free(hdfs_handle->used);
@@ -654,7 +656,8 @@ globus_l_gfs_hdfs_write_to_storage_cb(
 
         globus_gridftp_server_finished_transfer(op, rc);
     } else if (rc != GLOBUS_SUCCESS) {  // Done is set, but we have outstanding I/O = failed somewhere.
-        globus_gridftp_server_finished_transfer(op, rc);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
+        //globus_gridftp_server_finished_transfer(op, rc);
     }
     globus_mutex_unlock(&hdfs_handle->mutex);
 }
