@@ -95,6 +95,309 @@ static int parse_add_creds (char *response_str, char ***pstrs, int *num_creds)
 	return 0;
 }
 		
+/**
+ * Return the timeout for a socket connection.  This function checks
+ * the environment varialbe "MYPROXY_SOCKET_TIMEOUT" and returns that
+ * value if it is non-negative.  Otherwise, it returns a default 
+ * timeout value of 10 seconds.
+ *
+ * @return The timeout for a socket connection in seconds.  Default is 10.
+ */
+static int get_socket_timeout(void) {
+
+    int retval = 10;
+    char *timeoutStr = NULL;
+    int timeout;
+
+    if (getenv("MYPROXY_SOCKET_TIMEOUT")) {
+        timeoutStr = getenv("MYPROXY_SOCKET_TIMEOUT");
+        timeout = atoi(timeoutStr);
+        if (timeout >= 0) {
+            retval = timeout;
+        }
+    }
+    return(retval);
+}
+
+/**
+ * Check to see if a socket should be bound to a particular port in
+ * a given range.  This function checks the environment variables
+ * "MYPROXY_TCP_PORT_RANGE" and "GLOBUS_TCP_PORT_RANGE".  If either
+ * is set, then we attempt to "bind" the passed-in socket to a port
+ * in that range.  If no port range has been set, or the bind is 
+ * successful, return 1.  Otherwise return 0.  Note that the passed-in
+ * socket is not freed here upon failure.  You should do that yourself.
+ *
+ * @param sockfd The previously created socket we want to try to bind
+ *               to a port in a given range.
+ * @return 1 if bind of socket to a port is successful or if no port
+ *         range environment variable was specified.  0 otherwise.
+ */
+static int check_port_range(int sockfd) {
+
+    int retval = 1;   /* Assume success; 0 is failure */
+    char *port_range;
+    unsigned short port=0, min_port=0, max_port=0;
+    char *c;
+    struct sockaddr_in sin;
+
+    if ((port_range = getenv("MYPROXY_TCP_PORT_RANGE")) ||
+        (port_range = getenv("GLOBUS_TCP_PORT_RANGE"))) {
+
+        /* Replace comma in port range with space */
+        c = strchr(port_range,',');
+        if (c) {
+            *c = ' ';
+        }
+
+        if (sscanf(port_range, "%hu %hu", &min_port, &max_port) == 2) {
+            port = min_port;
+            memset(&sin, 0, sizeof(sin));
+            sin.sin_family = AF_INET;
+            sin.sin_addr.s_addr = INADDR_ANY;
+            sin.sin_port = htons(port);
+            while (bind(sockfd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+                if (errno != EADDRINUSE) {
+                    verror_put_errno(errno);
+                    verror_put_string("Error in bind()");
+                    retval = 0;  /* bind failed */
+                    break;
+                } else if (port >= max_port) {
+                    verror_put_string(
+                        "No available ports in range %hu-%hu.",
+                        min_port, max_port);
+                    retval = 0; /* no available port */
+                    break;
+                }
+                
+                sin.sin_port = htons(++port);
+            }
+            if (retval == 1) {
+                myproxy_debug("Socket bound to port %hu.\n", port);
+            }
+        } else {
+            verror_put_errno(errno);
+            verror_put_string("Error parsing port range (%s)", port_range);
+            retval = 0;
+        }
+    }
+    return(retval);
+}
+
+/**
+ * Returns a socket file descriptor for a newly created socket and
+ * attempts to bind that socket to a specific port if the appropriate
+ * environment variable is set.  This function first attemts to create
+ * a new socket.  It then calls check_port_range() to see if we should
+ * bind the socket to a port in a given range.  If everything is okay,
+ * the new socket file descriptor is returned.  Otherwise -1 is returned.
+ *
+ * @return A newly created socket file descriptor, or -1 if error.
+ */
+static int get_socket(void) {
+
+    int retsock = -1;  /* Assume error */
+    
+    retsock = socket(AF_INET, SOCK_STREAM, 0);
+    if (retsock == -1) {
+        verror_put_errno(errno);
+        verror_put_string("get_socket() failed");
+    } else {
+       if (!check_port_range(retsock)) {
+           close(retsock);
+           retsock = -1;
+       }
+    }
+    return(retsock);
+}
+
+/**
+ * Attempt to connect to a given socket with a timeout (defaults to 10
+ * seconds).  This function attemps to duplicate the standard "connect()"
+ * function, however with a timeout for unsuccessful connections (using
+ * "select()").  "get_socket_timeout()" is called to find how long a 
+ * socket connection should wait before timing out.  Upon successful
+ * connection, 0 is returned.  Otherwise -1 is returned.
+ *
+ * @param sockfd A socket file descriptor to connect to.
+ * @param serv_addr a sockaddr struct which has been populated by the
+ *        appropriate values for the connection
+ * @param addrlen The size of the serv_addr struct.
+ * @return 0 if successfully connected. -1 otherwise.
+ */
+static int connect_with_timeout(int sockfd, 
+    const struct sockaddr *serv_addr, socklen_t addrlen) {
+
+    struct timeval tv;
+    int flags, res;
+    fd_set rset, wset;
+    socklen_t slen;
+    int optval;
+
+    tv.tv_sec = get_socket_timeout();
+    tv.tv_usec = 0;
+
+    /* Set socket to be non-blocking */
+    if ((flags = fcntl(sockfd, F_GETFL, NULL)) < 0) {
+        return(flags);
+    }
+    flags |= O_NONBLOCK;
+    if ((res = fcntl(sockfd, F_SETFL, flags)) < 0) {
+        return(res);
+    }
+    
+    /* Try to connect to socket with a timeout */
+    res = connect(sockfd, (struct sockaddr *)serv_addr, addrlen);
+    if (res < 0) { /* Couldn't connect right away, try select() */
+        if (errno == EINPROGRESS) { /* connect in progress, now try select */
+            do {
+                FD_ZERO(&rset);
+                FD_SET(sockfd,&rset);
+                wset = rset;
+                res = select(sockfd+1, &rset, &wset, NULL, &tv);
+                if (res < 0) {
+                    if (errno != EINTR) { /* Error connecting */
+                        return(res);
+                    }
+                } else if (res > 0) { /* Socket selected for write */
+                    slen = sizeof(int);
+                    if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, 
+                                   (void*)(&optval), &slen) < 0) {
+                        return(-1);
+                    }
+                    if (optval) { /* Error in delayed connection */
+                        return(-1);
+                    }
+                    break; /* out of do...while loop - good so far*/
+                } else { /* res == 0 -> timeout in select() */
+                    errno = ETIMEDOUT;
+                    return(-1);
+                }
+            } while (1);
+        } else {
+            return(-1);
+        }
+    }
+
+    /* Made it this far -> success.  Set socket to blocking mode again. */
+    if ((flags = fcntl(sockfd, F_GETFL, NULL)) < 0) {
+        return(flags);
+    }
+    flags &= (~O_NONBLOCK);
+    if ((res = fcntl(sockfd, F_SETFL, flags)) < 0) {
+        return(res);
+    }
+
+    return(0);
+}
+
+/**
+ * Attempt to connect a socket file descriptor to a specific host/port.
+ * This function takes a previously created socket and attempts to connect
+ * it (with a timeout) to a given host:port.  If the host is given as a
+ * FQDN which resolves to multiple IPs, we loop through the IPs until we 
+ * have successfully connected or we cannot find a valid IP to connect to.  
+ *
+ * @param sockfd A socket file descriptor to connect with.
+ * @param host The FQDN of a host to attempt to connect to.
+ * @param port The port to connect to.
+ * @return 1 upon successful connection, 0 otherwise
+ */
+static int connect_socket_to_host(int sockfd, char *host, int port) {
+
+    int retval = 0;    /* Assume failure; 1 is success */
+    struct hostent *host_info;
+    struct sockaddr_in sin;
+    int i;
+    
+    host_info = gethostbyname(host);
+    if (host_info == NULL) {
+        verror_put_string("Unknown host \"%s\"\n", host);
+    } else {
+        memset(&sin, 0, sizeof(sin));
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(port);
+
+        for (i = 0; host_info->h_addr_list[i]; i++) {
+            verror_clear();
+            memcpy(&(sin.sin_addr), host_info->h_addr_list[i],
+                sizeof(sin.sin_addr));
+
+            myproxy_debug("Attempting to connect to %s:%d\n", 
+                inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]), port);
+
+            if (connect_with_timeout(sockfd, 
+                    (struct sockaddr *) &sin, sizeof(sin)) < 0) {
+                verror_put_errno(errno);
+                verror_put_string("Unable to connect to %s:%d\n", 
+                    inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
+                    port);
+            } else { /* Success! */
+                retval = 1;
+                break; /* out of for loop */
+            }
+        } /* End for loop thru host_info->h_addr_list[] */
+    }
+    return(retval);
+}
+
+/**
+ * Loop through a list of MyProxy hosts trying to get a connected
+ * socket.  This function takes in a list of MyProxy hosts and a port,
+ * and returns a connected socket to one of those hosts.  In the process,
+ * the hostlist variable is updated to reflect the single MyProxy host
+ * that was connected to.  This is so future procedures know which host
+ * is being used.  
+ *
+ * @param hostlist A comma-separated list of MyProxy hosts to try to connect to.
+ *        Upon successful connection, this list is overwritten by the single
+ *        host which was actually connected to.
+ * @param port The port to try to connect to.
+ */
+static int get_connected_myproxy_host_socket(char *hostlist, int port) {
+
+    int retsock = -1;     /* Connected socket to be returned */
+    char *pshost = NULL;  /* Copy of hostlist for strtok */
+    char *tok;            /* Result of strtok(pshost) */
+    int connected = 0;    /* Assume failed connection */
+    
+    /* Assume hostlist is a comma separated list of MyProxy hosts.  */
+    /* Try to create a socket connection to each one until success. */
+    pshost = strdup(hostlist);
+    tok = strtok(pshost,",");
+    while (tok != NULL) {
+
+        /* Init the socket and (possibly) bind to a port if this is the */
+        /* first time looping thru MyProxy hostnames or if a previous   */
+        /* connect_with_timeout() failed requiring a new socket.        */
+        if (retsock < 0) {
+            retsock = get_socket();
+            if (retsock < 0) {
+                break; /* Can't even get a socket? Give up and fail */
+            } 
+        } 
+
+        if (connect_socket_to_host(retsock,tok,port)) { /* Success! */
+            connected = 1;
+            break; /* out of while loop */
+        } else { /* Failed. Get new socket and try next host */
+            close(retsock);
+            retsock = -1;
+            verror_put_string("Unable to connect to %s\n", tok);
+        }
+
+        tok = strtok(NULL,",");  /* Try next MyProxy host in the list */
+    }
+
+    if (connected) { /* Rewrite hostlist to actual (single) connected host */
+        strncpy(hostlist,tok,strlen(hostlist));
+        myproxy_debug("Successfully connected to %s:%d\n", hostlist, port);
+    }
+    if (pshost) free(pshost);
+
+    return retsock;
+}
+
 
 		
 static const char *
@@ -164,6 +467,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     STACK_OF(X509) *sk = 0;
     int i;
     char buf[BUFSIZ];
+    int sockfd = -1;;
 
 	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
@@ -188,12 +492,17 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     /* get trust root(s) from the myproxy-server */
     ctx = SSL_CTX_new(SSLv3_client_method());
     SSL_CTX_set_options(ctx, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+
     if (!(sbio = BIO_new_ssl_connect(ctx))) goto error;
+    if ( (sockfd = get_connected_myproxy_host_socket(
+                   attrs->pshost,attrs->psport)) < 0) {
+        goto error;
+    }
     BIO_get_ssl(sbio, &ssl);
-    BIO_set_conn_hostname(sbio, attrs->pshost);
     BIO_set_conn_int_port(sbio, &attrs->psport);
-        
-    if (BIO_do_connect(sbio) <= 0) goto error;
+    BIO_set_conn_hostname(sbio, attrs->pshost);
+    BIO_set_fd(sbio, sockfd, 0);
+
     if (BIO_do_handshake(sbio) <= 0) goto error;
     BIO_write(sbio, "0", 1);    /* GSI deleg flag */
     if (BIO_flush(sbio) <= 0) goto error;
@@ -255,104 +564,31 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 
 int 
 myproxy_init_client(myproxy_socket_attrs_t *attrs) {
-    struct sockaddr_in sin;
-    struct hostent *host_info;
-    char *port_range;
-    int i;
-    
     myproxy_debug("MyProxy %s", myproxy_version(0,0,0));
 
     assert(attrs);
-
-    attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (attrs->socket_fd == -1) {
-	verror_put_errno(errno);
-	verror_put_string("socket() failed");
-        return -1;
-    } 
-
-    host_info = gethostbyname(attrs->pshost); 
-
-    if ((port_range = getenv("MYPROXY_TCP_PORT_RANGE")) ||
-	(port_range = getenv("GLOBUS_TCP_PORT_RANGE"))) {
-	unsigned short port=0, min_port=0, max_port=0;
-	char *c;
-        c = strchr(port_range, ',');
-	if (c) {
-	    *c = ' ';
-	}
-	if (sscanf(port_range, "%hu %hu", &min_port, &max_port) == 2) {
-	    port = min_port;
-	    memset(&sin, 0, sizeof(sin));
-	    sin.sin_family = AF_INET;
-	    sin.sin_addr.s_addr = INADDR_ANY;
-	    sin.sin_port = htons(port);
-	    while (bind(attrs->socket_fd, (struct sockaddr *)&sin,
-			sizeof(sin)) < 0) {
-		if (errno != EADDRINUSE) {
-		    verror_put_errno(errno);
-		    verror_put_string("Error in bind()");
-		    return -1;
-		} else if (port >= max_port) {
-		    verror_put_string("No available ports in range %hu-%hu.",
-				      min_port, max_port);
-		    return -1;
-		}
-		sin.sin_port = htons(++port);
-	    }
-	    myproxy_debug("Socket bound to port %hu.\n", port);
-	} else {
-	    verror_put_errno(errno);
-	    verror_put_string("Error parsing port range (%s)", port_range);
-	    return -1;
-	}
-    }
-
-    if (host_info == NULL)
-    {
-        verror_put_string("Unknown host \"%s\"\n", attrs->pshost);
-        return -1;
-    } 
-
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(attrs->psport);
+    attrs->socket_fd = -1;
     attrs->gsi_socket = NULL;
 
-    for (i=0; host_info->h_addr_list[i]; i++) {
-        memcpy(&(sin.sin_addr), host_info->h_addr_list[i],
-               sizeof(sin.sin_addr));
+    attrs->socket_fd = get_connected_myproxy_host_socket(
+        attrs->pshost,attrs->psport);
 
-        myproxy_debug("Attempting to connect to %s:%d\n", 
-                    inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
-                    attrs->psport);
-
-        if (connect(attrs->socket_fd, (struct sockaddr *) &sin,
-                    sizeof(sin)) < 0) {
-            verror_put_errno(errno);
-            verror_put_string("Unable to connect to %s:%d\n", 
-                    inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
-                    attrs->psport);
-        } else {
+    /* If we got a good socket, allocate a GSI_SOCKET as well */
+    if (attrs->socket_fd >= 0) {
+        attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
+        if (attrs->gsi_socket == NULL) {
+            /* Problem with GSI_SOCKET_new, close the 'normal' socket */
+            verror_put_string("GSI_SOCKET_new()\n");
+            close(attrs->socket_fd);
+            attrs->socket_fd = -1;
+        } else { /* Everything is good! Clear out the error string. */
             verror_clear();
-            attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
-            if (attrs->gsi_socket == NULL) {
-                verror_put_string("GSI_SOCKET_new()\n");
-                return -1;
-            }
-            break;              /* success */
         }
     }
 
-    if (!attrs->gsi_socket) {
-        verror_put_string("Unable to connect to %s\n", attrs->pshost);
-        return -1;
-    }
-
-   return attrs->socket_fd;
+    return attrs->socket_fd;
 }
-    
+
 int 
 myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 			  const char *proxyfile) 
