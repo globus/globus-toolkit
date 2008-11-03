@@ -977,7 +977,6 @@ i
             break;
 
         case GLOBUS_L_GSC_STATE_PROCESSING:
-            GlobusLServerRefDec(server_handle);
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_ABORTING_STOPPING);
 
@@ -1010,6 +1009,7 @@ i
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_READ);
+            GlobusLServerRefDec(server_handle);
             globus_l_gsc_server_ref_check(server_handle);
             break;
 
@@ -1763,9 +1763,8 @@ globus_l_gsc_server_ref_check(
 
     GlobusGridFTPServerDebugInternalEnter();
 
-    globus_assert(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED);
-
     globus_assert(server_handle->ref >= 0);
+    globus_assert(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED);
     if(server_handle->ref == 0)
     {
         GlobusGSCHandleStateChange(
