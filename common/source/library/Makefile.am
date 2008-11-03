@@ -77,6 +77,8 @@ Sources= \
 	globus_time.h \
 	globus_url.c \
 	globus_url.h \
+    globus_states.h \
+    globus_states.c \
 	globus_error_string.c \
 	globus_error_string.h \
 	globus_extension.c \
@@ -101,6 +103,7 @@ flavorinclude_HEADERS = \
 	globus_release.h \
 	globus_module.h \
 	globus_url.h \
+    globus_states.h \
 	globus_list.h \
 	globus_hashtable.h \
 	globus_fifo.h \
