@@ -140,6 +140,10 @@ xacml_i_send(
     std::string::size_type              p, q;
     long                                content_length = 0;
 
+    /* This code works around a bug in the java XACML service which lost the
+     * namespace definitions in the soap envelope and was thus unable to parse
+     * the XACML message body
+     */
     /* All namespaces */
     for (int i = 0 ; namespaces[i].ns; i++)
     {
@@ -149,14 +153,27 @@ xacml_i_send(
 
     /* Find the Content-Length HTTP header */
     p = t.find("Content-Length: ");
-    s << t.substr(0, p+16);
+    if (p == std::string::npos)
+    {
+        /* No content-length header, just send the XML with the modifications
+         * we make here
+         */
+        q = p = 0;
+    }
+    else
+    {
+        /*
+         * Add the new string value to the content length
+         */
+        s << t.substr(0, p+16);
 
-    content_length = atol(t.substr(p+16, t.find("\r\n")).c_str());
-    content_length += namespace_prefixes.str().length();
+        content_length = atol(t.substr(p+16, t.find("\r\n")).c_str());
+        content_length += namespace_prefixes.str().length();
 
-    p = t.find("\r\n", p+16);
-    s << content_length;
-    q = p;
+        p = t.find("\r\n", p+16);
+        s << content_length;
+        q = p;
+    }
 
     /* Find first element after body */
     p = t.find("<SOAP-ENV:Body");
