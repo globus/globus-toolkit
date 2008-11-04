@@ -66,6 +66,10 @@ globus_l_gram_protocol_activate(void)
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
     }
+
+    globus_thread_key_create(&globus_i_gram_protocol_error_7_key, free);
+    globus_thread_key_create(&globus_i_gram_protocol_error_10_key, free);
+
     /*
      * Get the GSSAPI security credential for this process.
      * we save it in static storage, since it is only

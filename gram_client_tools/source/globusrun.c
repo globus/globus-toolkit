@@ -72,6 +72,7 @@ typedef struct globus_i_globusrun_gram_monitor_s
     unsigned long  job_state;
     int            submit_done;
     int            failure_code;
+    char *         failure_message;
     char *         job_contact;
 } globus_i_globusrun_gram_monitor_t;
 
@@ -1349,6 +1350,7 @@ globus_l_globusrun_gramrun(char * request_string,
     monitor.job_state = 0;
     monitor.job_contact = NULL;
     monitor.submit_done = GLOBUS_FALSE;
+    monitor.failure_message = NULL;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
@@ -1449,7 +1451,9 @@ globus_l_globusrun_gramrun(char * request_string,
 	{
 	    globus_libc_fprintf(stderr,
 				"GRAM Job submission failed because %s (error code %d)\n",
-				globus_gram_protocol_error_string(err),
+				monitor.failure_message
+                                    ? monitor.failure_message
+                                    : globus_gram_protocol_error_string(err),
 				err);
 
 	}
@@ -1719,8 +1723,8 @@ globus_l_globusrun_durocrun(char *request_string,
 		{
 		    globus_libc_printf("Dryrun successful\n");
 		}
-		globus_free(subjob_labels);
-	    }
+            }
+            globus_free(subjob_labels);
 	    goto user_exit;
 	}
 	else			/* !dryrun */
@@ -2583,7 +2587,9 @@ globus_l_submit_callback(
     monitor->job_contact = globus_libc_strdup(job_contact);
     if (operation_failure_code != GLOBUS_SUCCESS)
     {
+        char * err = globus_gram_protocol_error_string(operation_failure_code);
         monitor->failure_code = operation_failure_code;
+        monitor->failure_message = globus_libc_strdup(err);
     }
     else if (job_state > monitor->job_state)
     {

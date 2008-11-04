@@ -1133,7 +1133,7 @@ globus_l_gram_protocol_connect_callback(
 	       globus_object_get_type(err),
 	       GLOBUS_IO_ERROR_TYPE_SECURITY_FAILED))
 	{
-	    errstring = globus_object_printable_to_string(err);
+	    errstring = globus_error_print_friendly(err);
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
 	    globus_gram_protocol_error_7_hack_replace_message(errstring);
 	    globus_free(errstring);
@@ -1236,7 +1236,17 @@ globus_l_gram_protocol_write_request_callback(
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_object_t *               err;
+        char *                          errstring;
+
+	err = globus_error_get(result);
+
+        errstring = globus_error_print_friendly(err);
+        globus_gram_protocol_error_10_hack_replace_message(errstring);
+        globus_free(errstring);
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_object_free(err);
+
         goto error_exit;
     }
     /* Allocate reply buffer */
@@ -1433,6 +1443,11 @@ globus_l_gram_protocol_read_reply_callback(
 
 	if(!globus_io_eof(err) || !connection->got_header)
 	{
+            char *                      errstring;
+
+            errstring = globus_error_print_friendly(err);
+            globus_gram_protocol_error_10_hack_replace_message(errstring);
+            globus_free(errstring);
 	    globus_object_free(err);
 
 	    connection->rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
@@ -1445,6 +1460,8 @@ globus_l_gram_protocol_read_reply_callback(
         if(connection->n_read == 0 && ((*buf == '0') || (*buf == 'D')))
 	{
 	    /* Delegation packet?!? */
+            globus_gram_protocol_error_10_hack_replace_message(
+                "server sent unexpected delegation protocol message");
 	    connection->rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
 	    goto callback_exit;
@@ -1812,6 +1829,7 @@ globus_l_gram_protocol_parse_request_header(
     globus_libc_unlock();
     if(rc != 3)
     {
+        globus_gram_protocol_error_10_hack_replace_message("GRAM is unable to parse HTTp message" );
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
 	*payload_length = 0;
@@ -1881,6 +1899,8 @@ globus_l_gram_protocol_parse_reply_header(
     }
     else if(code==400)  /* JM failed to frame reply */
     {
+        globus_gram_protocol_error_10_hack_replace_message("job manager failed to frame reply");
+ 
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
     else if(code==403)

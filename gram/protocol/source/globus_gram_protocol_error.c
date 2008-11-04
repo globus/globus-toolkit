@@ -202,8 +202,16 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 167 */     "the job is not running in the account named by the 'user_name' parameter."
 };
 
+globus_thread_key_t                     globus_i_gram_protocol_error_7_key = 0;
+globus_thread_key_t                     globus_i_gram_protocol_error_10_key = 0;
+
+enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
+
 static char *
 globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
+
+static char * 
+globus_l_gram_protocol_error_10_hack_message = GLOBUS_NULL;
 
 /**
  * Error code translation.
@@ -227,9 +235,26 @@ globus_gram_protocol_error_string(int error_code)
     if (error_code<0 || error_code>=GLOBUS_GRAM_PROTOCOL_ERROR_LAST)
         return("Invalid error code");
 
-    if ((error_code == GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION)
-	&& globus_l_gram_protocol_error_7_hack_message)
-	return globus_l_gram_protocol_error_7_hack_message;
+    if (error_code == GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION)
+    {
+        char * hackmessage = globus_thread_getspecific(
+                globus_i_gram_protocol_error_7_key);
+
+        if (hackmessage != NULL && hackmessage[0] != 0)
+        {
+            return hackmessage;
+        }
+    }
+    if (error_code == GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED)
+    {
+        char * hackmessage = globus_thread_getspecific(
+                globus_i_gram_protocol_error_10_key);
+
+        if (hackmessage != NULL && hackmessage[0] != 0)
+        {
+            return hackmessage;
+        }
+    }
 
     return(globus_l_gram_protocol_error_strings[error_code]);
 } /* globus_gram_protocol_error_string() */
@@ -245,17 +270,78 @@ globus_gram_protocol_error_string(int error_code)
  *
  * @param message
  *        The new message to be associated with error code 7.
+ *
+ * @note
+ *     Since Globus 4.2.2 this function uses thread-specific storage, so that
+ *     the value returned by globus_gram_protocol_error_string() for 
+ *     GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION is that for the last
+ *     authorization error where
+ *     globus_gram_protocol_error_7_hack_replace_message() was called from
+ *     this thread.
  */
 void
 globus_gram_protocol_error_7_hack_replace_message(const char * message)
 {
-    if (globus_l_gram_protocol_error_7_hack_message)
-	globus_libc_free(globus_l_gram_protocol_error_7_hack_message);
+    char * hackmessage = globus_thread_getspecific(
+            globus_i_gram_protocol_error_7_key);
+    size_t len;
 
-    globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
+    if (!hackmessage)
+    {
+        hackmessage = malloc(GLOBUS_L_HACK_MESSAGE_MAX+1);
+        hackmessage[GLOBUS_L_HACK_MESSAGE_MAX] = 0;
+        globus_thread_setspecific(
+            globus_i_gram_protocol_error_7_key, hackmessage);
+    }
+    hackmessage[0] = 0;
 
     if (message)
-	globus_l_gram_protocol_error_7_hack_message = 
-	    globus_libc_strdup(message);
+    {
+        len = strlen(message);
+        strncpy(hackmessage, message, GLOBUS_L_HACK_MESSAGE_MAX);
+    }
 }
 
+
+/**
+ * GSI specific error code hack.
+ * @ingroup globus_gram_protocol_error_messages
+ *
+ * This function creates a custom version of the error message for the error
+ * GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED.  <b>This function should really
+ * only used by the GRAM client library.</b>
+ *
+ * This function uses thread-specific storage, so that
+ * the value returned by globus_gram_protocol_error_string() for 
+ * GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED is that for the last
+ * protocol error where
+ * globus_gram_protocol_error_10_hack_replace_message() was called from
+ * this thread.
+ *
+ * @param message
+ *        The new message to be associated with error code 10.
+ *
+ * @since Globus 4.2.2
+ */
+void
+globus_gram_protocol_error_10_hack_replace_message(const char * message)
+{
+    char * hackmessage = globus_thread_getspecific(
+            globus_i_gram_protocol_error_10_key);
+    size_t len;
+
+    if (!hackmessage)
+    {
+        hackmessage = malloc(GLOBUS_L_HACK_MESSAGE_MAX+1);
+        hackmessage[GLOBUS_L_HACK_MESSAGE_MAX] = 0;
+        globus_thread_setspecific(
+            globus_i_gram_protocol_error_10_key, hackmessage);
+    }
+    hackmessage[0] = 0;
+
+    if (message)
+    {
+        len = strlen(message);
+        strncpy(hackmessage, message, GLOBUS_L_HACK_MESSAGE_MAX);
+    }
+}

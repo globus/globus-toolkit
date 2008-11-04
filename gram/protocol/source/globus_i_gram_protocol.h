@@ -143,6 +143,8 @@ extern globus_bool_t 			globus_i_gram_protocol_shutdown_called;
 extern globus_io_attr_t			globus_i_gram_protocol_default_attr;
 extern int				globus_i_gram_protocol_num_connects;
 extern globus_gram_protocol_handle_t	globus_i_gram_protocol_handle;
+extern globus_thread_key_t              globus_i_gram_protocol_error_7_key;
+extern globus_thread_key_t              globus_i_gram_protocol_error_10_key;
 
 EXTERN_C_END
 

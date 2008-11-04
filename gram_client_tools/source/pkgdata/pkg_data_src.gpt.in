@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gram_client_tools" Format_Version="0.02">
 
-    <Aging_Version Major="5" Minor="0" Age="3"/>
+    <Aging_Version Major="6" Minor="0" Age="4"/>
     <Description>Job Management Tools (globusrun)</Description>
     <Functional_Group >ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

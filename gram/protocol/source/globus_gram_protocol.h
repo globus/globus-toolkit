@@ -285,6 +285,8 @@ globus_gram_protocol_error_string(int error_code);
 /* To be used only by the GRAM client API */
 void
 globus_gram_protocol_error_7_hack_replace_message(const char * message);
+void
+globus_gram_protocol_error_10_hack_replace_message(const char * message);
 
 /*
  * RSL Parameters
