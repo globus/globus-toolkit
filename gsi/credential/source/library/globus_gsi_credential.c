@@ -909,13 +909,12 @@ globus_gsi_cred_read_proxy_bio(
     unsigned char *                     save_data = NULL;
     long                                len;
     EVP_CIPHER_INFO                     cipher;
-
-    certs = sk_X509_new_null();
-
     static char *                       _function_name_ =
         "globus_gsi_cred_read_proxy_bio";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    certs = sk_X509_new_null();
 
     if(handle == NULL)
     {
