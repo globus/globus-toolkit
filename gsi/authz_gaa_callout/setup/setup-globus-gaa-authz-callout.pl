@@ -50,6 +50,7 @@ $callout_names{"GLOBUS_GSI_AUTHORIZE_ASYNC"} = "globus_gsi_authz_gaa_authorize_a
 $callout_names{"GLOBUS_GSI_AUTHZ_CANCEL"} = "globus_gsi_authz_gaa_cancel_callout";
 $callout_names{"GLOBUS_GSI_AUTHZ_HANDLE_DESTROY"} = "globus_gsi_authz_gaa_handle_destroy_callout";
 $callout_names{"GLOBUS_GSI_GET_AUTHORIZATION_IDENTITY"} = "globus_gsi_authz_gaa_get_authorization_identity_callout";
+$callout_names{"globus_mapping"} = "globus_gsi_authz_gaa_gridmap_callout";
 
 foreach (@libs)
 {
@@ -93,7 +94,7 @@ if (! defined($opt_skip_gaa))
     {
 	if (! $opt_overwrite_gaa_config)
 	{
-	    die("$target_dir/gsi-authz.conf already exists (use -overwrite_gaa_config to overwrite");
+	    die("$target_dir/gsi-gaa.conf already exists (use -overwrite_gaa_config to overwrite");
 	}
     }
     open(GAA_TEMPLATE, "<$globusdir/setup/globus/gsi-gaa.conf.tmpl");
@@ -116,7 +117,7 @@ if (! defined($opt_force))
 {
     while(<CONF>)
     {
-	foreach $key (keys(%callout_names))
+	foreach $key (sort(keys(%callout_names)))
 	{
 	    if ($_ =~ /^\s*${key}.*/i)
 	    {
@@ -131,7 +132,7 @@ $config = "";
 while (<CONF>)
 {
     $found = 0;
-    foreach $key (keys(%callout_names))
+    foreach $key (sort(keys(%callout_names)))
     {
 	if ($_ =~ /^\s*${key}.*/i)
 	{
@@ -147,7 +148,7 @@ while (<CONF>)
 
 close(CONF);
 
-foreach $key (keys(%callout_names))
+foreach $key (sort(keys(%callout_names)))
 {
     $config .= $key . " " . $lib . " " . $callout_names{$key} . "\n";
 }

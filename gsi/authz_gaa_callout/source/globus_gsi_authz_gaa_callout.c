@@ -22,6 +22,10 @@
 #include "gaa.h"
 #include "gaa_plugin.h"
 #include "gaa_gss_generic.h"
+#include "gssapi.h"
+#include "globus_gss_assist.h"
+#include "globus_gridmap_callout_error.h"
+
 #include <stdlib.h>
 
 #ifdef BUILD_DEBUG
@@ -30,9 +34,14 @@ FILE *   globus_i_gsi_authz_gaa_callout_debug_fstream = 0;
 #endif /* BUILD_DEBUG */
 
 static const gss_OID_desc saml_extension_oid =
-     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x09"}; 
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x0c"}; 
 const gss_OID_desc * const saml_extension = 
                 &saml_extension_oid;
+
+static const gss_OID_desc old_saml_extension_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x09"}; 
+const gss_OID_desc * const old_saml_extension = 
+                &old_saml_extension_oid;
 
 typedef struct authz_gaa_system_state_struct {
     char *gaa_config_file_name;
@@ -172,9 +181,11 @@ static void callback_wrapper(
     
     wrapper_args = (globus_l_gsi_authz_gaa_cb_arg_t *) args;
 
-    wrapper_args->callback(wrapper_args->arg, wrapper_args->handle,
-                           GLOBUS_SUCCESS);
-
+    if(wrapper_args->callback)
+    {
+        wrapper_args->callback(wrapper_args->arg, wrapper_args->handle,
+                               GLOBUS_SUCCESS);
+    }
     free(wrapper_args);
 
     return;
@@ -205,8 +216,10 @@ globus_gsi_authz_gaa_handle_init_callout(
     OM_uint32				minor_status;
     void *				getpolicy_param;
     void *				get_authorization_identity_param;
-    char *				assertion;
+    char *				assertion = NULL;
+    globus_size_t                       assertion_len;
     int					i;
+    globus_bool_t                       der_encoded_assertion = FALSE;
 
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_ENTER;
 
@@ -244,18 +257,27 @@ globus_gsi_authz_gaa_handle_init_callout(
 
     }
 
+    /* check for current extension format first */
     if ((gss_inquire_sec_context_by_oid(&minor_status,
 					context,
 					(gss_OID) saml_extension,
-					&data_set)) != GSS_S_COMPLETE)
+					&data_set)) == GSS_S_COMPLETE)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+        der_encoded_assertion = GLOBUS_TRUE;
+    }
+    /* then check for old format (cas server from gt4.0.7 and lower) */
+    else if ((gss_inquire_sec_context_by_oid(&minor_status,
+                                            context,
+                                            (gss_OID) old_saml_extension,
+                                            &data_set)) != GSS_S_COMPLETE)
+    {        
+        GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
             result,
             GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR,
             ("error checking for authz extension"));	
-	goto end;
+        goto end;
     }
-
+    
     if (data_set->count == 0)
     {
 	(*handle)->no_cred_extension = 1;
@@ -270,10 +292,11 @@ globus_gsi_authz_gaa_handle_init_callout(
 	if (data_set->elements[i].length && data_set->elements[i].value)
 	{
 	    assertion = malloc(data_set->elements[i].length+1);
-	    strncpy(assertion,
+	    memcpy(assertion,
 		    data_set->elements[i].value,
 		    data_set->elements[i].length);
-	    assertion[data_set->elements[i].length] = '\0';
+	    assertion_len = data_set->elements[i].length;
+	    assertion[assertion_len] = '\0';
 	    break;
 	}
     }
@@ -286,7 +309,35 @@ globus_gsi_authz_gaa_handle_init_callout(
             ("authz extension found, but no assertion"));
 	goto end;
     }
+    
+    if(der_encoded_assertion)
+    {
+        unsigned char *                 encoded_assertion = assertion;
+        char *                          decoded_assertion = NULL;
+        ASN1_UTF8STRING *               asn1_str;
 
+        asn1_str = d2i_ASN1_UTF8STRING(
+            NULL, &encoded_assertion, assertion_len);
+        if(asn1_str)
+        {
+            decoded_assertion = malloc(asn1_str->length + 1);
+            memcpy(decoded_assertion, asn1_str->data, asn1_str->length);
+            decoded_assertion[asn1_str->length] = 0;
+
+            ASN1_UTF8STRING_free(asn1_str);
+            globus_free(assertion);
+            assertion = decoded_assertion;
+        }
+        else
+        {
+            GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+                result,
+                GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR,
+                ("improperly encoded assertion found"));
+            goto end;        
+        }
+    }
+    
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF2(
 	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE,
 	"%s: calling gaa_init\n",
@@ -766,10 +817,10 @@ globus_gsi_authz_gaa_handle_destroy_callout(
     {
 	if (handle->auth)
 	    globus_libc_free(handle->auth);
-	if (handle->gaa)
-	    gaa_free_gaa(handle->gaa);
 	if (handle->sc)
 	    gaa_free_sc(handle->sc);
+	if (handle->gaa)
+	    gaa_free_gaa(handle->gaa);
 	free(handle);
     }
 
@@ -872,4 +923,238 @@ globus_gsi_authz_gaa_get_authorization_identity_callout(
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT;
     return (int)result;
 }
+
+typedef enum {
+    GLOBUS_GSI_AUTHZ_GAA_HANDLE_INIT,
+    GLOBUS_GSI_AUTHZ_GAA_GET_AUTHORIZATION_IDENTITY,
+    GLOBUS_GSI_AUTHZ_GAA_HANDLE_DESTROY
+} globus_gsi_authz_func_t;
+
+
+static
+globus_result_t
+globus_gsi_authz_gaa_call_func(
+    globus_gsi_authz_func_t             func,
+    ...)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    va_list                             ap;
+
+    va_start(ap, func);
+
+    switch(func)
+    {
+        case GLOBUS_GSI_AUTHZ_GAA_HANDLE_INIT:
+            res = globus_gsi_authz_gaa_handle_init_callout(ap);
+            break;
+            
+        case GLOBUS_GSI_AUTHZ_GAA_GET_AUTHORIZATION_IDENTITY:
+            res = globus_gsi_authz_gaa_get_authorization_identity_callout(ap);
+            break;
+        
+        case GLOBUS_GSI_AUTHZ_GAA_HANDLE_DESTROY:
+            res = globus_gsi_authz_gaa_handle_destroy_callout(ap);
+            break;
+        
+        default:
+            break;
+    }            
+    
+    va_end(ap);
+
+    return res;
+}   
+
+
+globus_result_t
+globus_gsi_authz_gaa_gridmap_callout(
+    va_list                             ap)
+{
+    gss_ctx_id_t                        context;
+    char *                              service;
+    char *                              desired_identity;
+    char *                              identity_buffer;
+    char *                              local_identity;
+    char *                              subject = NULL;
+    unsigned int                        buffer_length;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    gss_name_t                          peer;
+    gss_buffer_desc                     peer_name_buffer;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    int                                 rc;
+    int                                 initiator;
+    globus_gsi_authz_handle_t           handle;
+    authz_gaa_system_state_t 	        tmp_state = NULL;
+
+    
+    context = va_arg(ap, gss_ctx_id_t);
+    service = va_arg(ap, char *);
+    desired_identity = va_arg(ap, char *);
+    identity_buffer = va_arg(ap, char *);
+    buffer_length = va_arg(ap, unsigned int);
+    
+ 
+    if((tmp_state = globus_libc_calloc(
+        1, sizeof(struct globus_i_gsi_authz_handle_s))) == 0)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
+	goto error;
+    }
+ 
+    result = GLOBUS_GSI_SYSCONFIG_GET_GAA_CONF_FILENAME(
+        &(tmp_state->gaa_config_file_name));
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_gsi_authz_gaa_call_func(
+        GLOBUS_GSI_AUTHZ_GAA_HANDLE_INIT, 
+        &handle, 
+        service, 
+        context, 
+        NULL, 
+        NULL, 
+        tmp_state);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GRIDMAP_CALLOUT_ERROR(
+            result,
+            GLOBUS_GRIDMAP_CALLOUT_LOOKUP_FAILED,
+            ("Could not initialize the GAA handle.\n"));
+        goto error;
+    }
+    
+    result = globus_gsi_authz_gaa_call_func(
+        GLOBUS_GSI_AUTHZ_GAA_GET_AUTHORIZATION_IDENTITY, 
+        handle, 
+        &subject, 
+        NULL, 
+        NULL, 
+        tmp_state);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GRIDMAP_CALLOUT_ERROR(
+            result,
+            GLOBUS_GRIDMAP_CALLOUT_LOOKUP_FAILED,
+            ("Could not initialize get the GAA identity.\n"));
+        goto error;
+    }
+
+    result = globus_gsi_authz_gaa_call_func(
+        GLOBUS_GSI_AUTHZ_GAA_HANDLE_DESTROY, 
+        handle, 
+        NULL, 
+        NULL, 
+        tmp_state);
+
+    globus_free(tmp_state);
+    
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    rc = globus_module_activate(GLOBUS_GRIDMAP_CALLOUT_ERROR_MODULE);
+
+    if(subject == NULL)
+    {
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           &initiator,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            goto error;
+        }
+    
+        major_status = gss_inquire_context(&minor_status,
+                                           context,
+                                           initiator ? GLOBUS_NULL : &peer,
+                                           initiator ? &peer : GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL,
+                                           GLOBUS_NULL);
+    
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            goto error;
+        }
+        
+        major_status = gss_display_name(&minor_status,
+                                        peer,
+                                        &peer_name_buffer,
+                                        GLOBUS_NULL);
+        
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GRIDMAP_CALLOUT_GSS_ERROR(result, major_status, minor_status);
+            gss_release_name(&minor_status, &peer);
+            goto error;
+        }
+        
+
+        subject = globus_libc_strdup(peer_name_buffer.value);
+        gss_release_buffer(&minor_status, &peer_name_buffer);
+        gss_release_name(&minor_status, &peer);
+
+    }
+    
+    if(desired_identity == NULL)
+    {
+        rc = globus_gss_assist_gridmap(subject, &local_identity);
+        if(rc != 0)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_LOOKUP_FAILED,
+                ("Could not map %s\n", subject));
+            goto error;
+        }
+
+        if(strlen(local_identity) + 1 > buffer_length)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_BUFFER_TOO_SMALL,
+                ("Local identity length: %d Buffer length: %d\n",
+                 strlen(local_identity), buffer_length));
+        }
+        else
+        {
+            strcpy(identity_buffer, local_identity);
+        }
+        free(local_identity);           
+    }
+    else
+    {
+        rc = globus_gss_assist_userok(subject, desired_identity);
+        if(rc != 0)
+        {
+            GLOBUS_GRIDMAP_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRIDMAP_CALLOUT_LOOKUP_FAILED,
+                ("Could not map %s to %s\n",
+                 subject, desired_identity));
+        }
+    }
+
+
+ error:
+
+    globus_module_deactivate(GLOBUS_GRIDMAP_CALLOUT_ERROR_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    
+    return result;
+}
+
 

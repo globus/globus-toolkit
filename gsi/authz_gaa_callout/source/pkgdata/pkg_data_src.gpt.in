@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_authz_gaa_callout" >
-    <Aging_Version Age="0" Major="0" Minor="3" />
+    <Aging_Version Age="0" Major="0" Minor="4" />
     <Description >Globus authz callouts that invoke GAA</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental"
@@ -44,6 +44,24 @@
                     <Simple_Version Major="1" />
                 </Version>
             </Dependency>
+
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>        
+
+            <Dependency Name="globus_gss_assist">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>        
+
+            <Dependency Name="globus_gridmap_callout_error">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>        
         </Source_Dependencies>
         <Source_Dependencies Type="lib_link" >
             <Dependency Name="globus_authz" >
@@ -81,6 +99,23 @@
                     <Simple_Version Major="1" />
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>        
+
+            <Dependency Name="globus_gss_assist">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>        
+
+            <Dependency Name="globus_gridmap_callout_error">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>        
         </Source_Dependencies>
         <Build_Environment >
             <cflags >@GPT_PKG_CFLAGS@</cflags>
