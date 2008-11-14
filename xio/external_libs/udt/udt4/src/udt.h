@@ -52,7 +52,8 @@ written by
 #include <fstream>
 #include <set>
 #include <string>
-
+#include <cstring>
+#include <cstdlib>
 
 ////////////////////////////////////////////////////////////////////////////////
 
