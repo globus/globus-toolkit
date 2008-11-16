@@ -808,7 +808,6 @@ BUNDLE gt4-gram-lsf
 BUNDLE gt4-gram-test
         globus_wsrf_gram_scheduler_test
         globus_wsrf_gram_service_java_test_unit
-        globus_wsrf_gram_service_java_test_throughput
         globus_scheduler_event_generator_test
         globus_scheduler_event_generator_fork_test
         globus_gridmap_and_execute_test
@@ -820,7 +819,6 @@ BUNDLE gt4-gram-test
 BUNDLE gt4-gram-test-no-c
         globus_wsrf_gram_scheduler_test
         globus_wsrf_gram_service_java_test_unit
-        globus_wsrf_gram_service_java_test_throughput
         globus_scheduler_event_generator_test
         globus_scheduler_event_generator_fork_test
         globus_scheduler_event_generator_pbs_test
