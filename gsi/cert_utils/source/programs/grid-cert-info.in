@@ -132,7 +132,7 @@ fi
 
 # DEFault Generated Files
 cert_format=x509
-
+openssl_options=""
 toprint=""
 
 # set default location of certificate (may be overridden by --file)
@@ -171,6 +171,9 @@ while [ "X$1" != "X" ]; do
     -enddate|-ed)
 	toprint="$toprint -enddate"
 	;;
+    -rfc2253)
+        openssl_options='-nameopt rfc2253'
+        ;;
     *)
 	globus_args_unrecognized_option "$1"
 	;;
@@ -196,9 +199,9 @@ fi
 if [ "$cert_format" = pkcs12 ]; then
     echo "Credentials are in pkcs12 format, OpenSSL will prompt for p12 password"
     cert_data="`${SSL_EXEC} pkcs12 -nokeys -clcerts -nomacver -in ${certfile}`"
-    command_stub="${SSL_EXEC} x509 -noout "
+    command_stub="${SSL_EXEC} x509 -noout $openssl_options"
 else
-    command_stub="${SSL_EXEC} x509 -noout -in ${certfile}"
+    command_stub="${SSL_EXEC} x509 -noout -in ${certfile} $openssl_options"
 fi
 
 
@@ -206,7 +209,7 @@ fi
 if [ "$cert_format" = pkcs12 ]; then
     subject=`echo "$cert_data" | eval ${command_stub} -subject`
 else
-    subject=`eval ${command_stub} -subject` 
+    subject=`eval ${command_stub} -subject`
 fi
 
 if test $? -ne 0 ; then
