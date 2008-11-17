@@ -1526,6 +1526,71 @@ globus_gsi_cred_get_policy_languages(
 /* @} */
 
 /**
+ * @name Get Cred Cert X509 Issuer Name object
+ */
+/* @{ */
+/**
+ * @ingroup globus_gsi_cred_handle
+ * Get the credential handle's certificate issuer name
+ *
+ * @param handle
+ *        The credential handle containing the certificate
+ *        to get the issuer name of
+ * @param issuer_name
+ *        The issuer name as an X509_NAME object.  This should be freed
+ *        using X509_NAME_free when the user is finished with it
+ * @return 
+ *        GLOBUS_SUCCESS if no error, a error object id otherwise
+ */
+globus_result_t globus_gsi_cred_get_X509_issuer_name(
+    globus_gsi_cred_handle_t            handle,
+    X509_NAME **                        issuer_name)
+{
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_issuer_name";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            (_GCRSL("NULL cred handle passed to function: %s"), _function_name_));
+        goto error_exit;
+    }
+
+    if(issuer_name == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            (_GCRSL("NULL issuer name parameter passed to function: %s"), 
+             _function_name_));
+        goto error_exit;
+    }
+
+    if((*issuer_name = 
+        X509_NAME_dup(X509_get_issuer_name(handle->cert))) == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT,
+            (_GCRSL("Couldn't get issuer name of credential's cert")));
+        goto error_exit;
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
+/**
  * @name Get Issuer Name
  */
 /* @{ */

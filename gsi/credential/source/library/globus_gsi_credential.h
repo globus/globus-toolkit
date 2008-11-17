@@ -248,6 +248,10 @@ globus_result_t globus_gsi_cred_get_path_lengths(
     globus_gsi_cred_handle_t            handle,
     STACK_OF(ASN1_INTEGER) *            integer);
 
+globus_result_t globus_gsi_cred_get_X509_issuer_name(
+    globus_gsi_cred_handle_t            handle,
+    X509_NAME **                        issuer_name);
+
 globus_result_t globus_gsi_cred_get_issuer_name(
     globus_gsi_cred_handle_t            handle,
     char **                             issuer_name);
