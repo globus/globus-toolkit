@@ -42,32 +42,33 @@ int                                     debug = 0;
 #define SHORT_USAGE_FORMAT \
 "\nSyntax: %s [-help][-f proxyfile][-subject][...][-e [-h H][-b B]]\n"
 
-static char *  LONG_USAGE = \
-"\n" \
-"    Options\n" \
-"    -help, -usage             Displays usage\n" \
-"    -version                  Displays version\n" \
-"    -debug                    Displays debugging output\n" \
-"    -file <proxyfile>  (-f)   Non-standard location of proxy\n" \
-"    [printoptions]            Prints information about proxy\n" \
-"    -exists [options]  (-e)   Returns 0 if valid proxy exists, 1 otherwise\n"\
-"\n" \
-"    [printoptions]\n" \
-"        -subject       (-s)   Distinguished name (DN) of subject\n" \
-"        -issuer        (-i)   DN of issuer (certificate signer)\n" \
-"        -identity             DN of the identity represented by the proxy\n" \
-"        -type                 Type of proxy (full or limited)\n" \
-"        -timeleft             Time (in seconds) until proxy expires\n" \
-"        -strength             Key size (in bits)\n" \
-"        -all                  All above options in a human readable format\n"\
-"        -text                 All of the certificate\n"\
+static char *  LONG_USAGE = 
+"\n" 
+"    Options\n" 
+"    -help, -usage             Displays usage\n" 
+"    -version                  Displays version\n" 
+"    -debug                    Displays debugging output\n" 
+"    -file <proxyfile>  (-f)   Non-standard location of proxy\n" 
+"    [printoptions]            Prints information about proxy\n" 
+"    -exists [options]  (-e)   Returns 0 if valid proxy exists, 1 otherwise\n"
+"\n" 
+"    [printoptions]\n" 
+"        -subject       (-s)   Distinguished name (DN) of subject\n" 
+"        -issuer        (-i)   DN of issuer (certificate signer)\n" 
+"        -identity             DN of the identity represented by the proxy\n" 
+"        -type                 Type of proxy (full or limited)\n" 
+"        -timeleft             Time (in seconds) until proxy expires\n" 
+"        -strength             Key size (in bits)\n" 
+"        -all                  All above options in a human readable format\n"
+"        -text                 All of the certificate\n"
 "        -path                 Pathname of proxy file\n"
-"\n" \
-"    [options to -exists]      (if none are given, H = B = 0 are assumed)\n" \
-"        -valid H:M     (-v)   time requirement for proxy to be valid\n" \
-"        -hours H       (-h)   time requirement for proxy to be valid\n" \
+"        -rfc2253              Print X.509 names in RFC-2253 form\n"
+"\n" 
+"    [options to -exists]      (if none are given, H = B = 0 are assumed)\n" 
+"        -valid H:M     (-v)   time requirement for proxy to be valid\n" 
+"        -hours H       (-h)   time requirement for proxy to be valid\n" 
 "                              (deprecated, use -valid instead)\n"
-"        -bits  B       (-b)   strength requirement for proxy to be valid\n" \
+"        -bits  B       (-b)   strength requirement for proxy to be valid\n" 
 "\n";
 
 
@@ -157,6 +158,7 @@ main(
     char *                              identity;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     char *                              cert_type_name;
+    globus_bool_t                       subject_format_rfc_2253 = GLOBUS_FALSE;
     time_t                              lifetime;
     globus_gsi_cred_handle_t            proxy_cred = NULL;
     X509 *                              proxy_cert = NULL;
@@ -315,6 +317,10 @@ main(
         {
             continue;
         }
+        else if (strcmp(argp, "-rfc2253") == 0)
+        {
+            subject_format_rfc_2253 = GLOBUS_TRUE;
+        }
         else if ((strcmp(argp, "-debug") == 0))
         {
             debug = 1;
@@ -383,37 +389,126 @@ main(
        strength, validity, type */
 
     /* subject */
-    result = globus_gsi_cred_get_subject_name(proxy_cred, &subject);
-    if(result != GLOBUS_SUCCESS)
+    if (subject_format_rfc_2253)
     {
-        globus_libc_fprintf(
-            stderr,
-            "\nERROR: Couldn't get a valid subject "
-            "name from the proxy credential.\n");
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        X509_NAME *                     x509_subject = NULL;
+        BIO *                           mem = BIO_new(BIO_s_mem());
+        int                             rc;
+        size_t                          len;
+
+        result = globus_gsi_cred_get_X509_subject_name(
+                proxy_cred,
+                &x509_subject);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Couldn't get a valid subject "
+                "name from the proxy credential.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        rc = X509_NAME_print_ex(mem, x509_subject, 0, XN_FLAG_RFC2253);
+        len = BIO_ctrl_pending(mem);
+        subject = malloc(len+1);
+        subject[len] = 0;
+        BIO_read(mem, subject, len);
+        BIO_free(mem);
+        X509_NAME_free(x509_subject);
+    }
+    else
+    {
+        result = globus_gsi_cred_get_subject_name(proxy_cred, &subject);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Couldn't get a valid subject "
+                "name from the proxy credential.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
     }
 
     /* issuer */
-
-    result = globus_gsi_cred_get_issuer_name(proxy_cred, &issuer);
-    if(result != GLOBUS_SUCCESS)
+    if (subject_format_rfc_2253)
     {
-        globus_libc_fprintf(
-            stderr,
-            "\nERROR: Couldn't get a valid issuer "
-            "name from the proxy credential.\n");
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        X509_NAME *                     x509_issuer = NULL;
+        BIO *                           mem = BIO_new(BIO_s_mem());
+        int                             rc;
+        size_t                          len;
+
+        result = globus_gsi_cred_get_X509_issuer_name(
+                proxy_cred,
+                &x509_issuer);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Couldn't get a valid issuer "
+                "name from the proxy credential.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        rc = X509_NAME_print_ex(mem, x509_issuer, 0, XN_FLAG_RFC2253);
+        len = BIO_ctrl_pending(mem);
+        issuer = malloc(len+1);
+        issuer[len] = 0;
+        BIO_read(mem, issuer, len);
+        BIO_free(mem);
+        X509_NAME_free(x509_issuer);
     }
-    /* issuer */
-
-    result = globus_gsi_cred_get_identity_name(proxy_cred, &identity);
-    if(result != GLOBUS_SUCCESS)
+    else
     {
-        globus_libc_fprintf(
-            stderr,
-            "\nERROR: Couldn't get a valid identity "
-            "name from the proxy credential.\n");
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        result = globus_gsi_cred_get_issuer_name(proxy_cred, &issuer);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Couldn't get a valid issuer "
+                "name from the proxy credential.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+    }
+
+    /* identity */
+    if (subject_format_rfc_2253)
+    {
+        X509_NAME *                     x509_identity = NULL;
+        BIO *                           mem = BIO_new(BIO_s_mem());
+        int                             rc;
+        size_t                          len;
+
+        result = globus_gsi_cred_get_X509_identity_name(
+                proxy_cred,
+                &x509_identity);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Couldn't get a valid identity "
+                "name from the proxy credential.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        rc = X509_NAME_print_ex(mem, x509_identity, 0, XN_FLAG_RFC2253);
+        len = BIO_ctrl_pending(mem);
+        identity = malloc(len+1);
+        identity[len] = 0;
+        BIO_read(mem, identity, len);
+        BIO_free(mem);
+        X509_NAME_free(x509_identity);
+    }
+    else
+    {
+        result = globus_gsi_cred_get_identity_name(proxy_cred, &identity);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Couldn't get a valid identity "
+                "name from the proxy credential.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
     }
     
     /* validity: set time_diff to time to expiration (in seconds) */
