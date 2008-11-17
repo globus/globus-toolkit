@@ -67,6 +67,8 @@ ${short_usage}
       -help, -usage                Display usage
       -version                     Display version
       -file certfile     |-f       Use 'certfile' at non-default location
+      -rfc2253                     Print X.509 names in RFC-2253 form
+
 
     Options determining what to print from certificate
 
