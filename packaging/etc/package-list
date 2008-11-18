@@ -398,11 +398,12 @@ myproxy		myproxy	gpt	null	HEAD
 gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null GPT-branch
 gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null HEAD
 
-gridshib_common	gridshib/gt/common/java/source tar null HEAD
 gridshib_schema gridshib/gt/common/schema tar null HEAD
-gridshib_echo gridshib/gt/echoservice/java tar null HEAD
-gridshib_core gridshib/gt/interceptors/java/source tar null HEAD
-gridshib_tests gridshib/gt/service/java/test tar null HEAD
+gridshib_common	gridshib/gt/common/java/source tar null HEAD
+gridshib_saml   gridshib/gt/samltools/java/source tar null HEAD
+gridshib_core   gridshib/gt/interceptors/java/source tar null HEAD
+gridshib_echo   gridshib/gt/echoservice/java tar null HEAD
+gridshib_tests  gridshib/gt/service/java/test tar null HEAD
 
 gridway	gridway	tar	null	gw_5_4_branch
 globus_wsrf_bp_schemas wsrf/c/core/tests/ogsa-bp/schema gpt
