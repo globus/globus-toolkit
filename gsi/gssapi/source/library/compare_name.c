@@ -609,6 +609,19 @@ gss_l_compare_x509_to_hostbased_service(
             {
                 ns1 = (char *) ASN1_STRING_data(gn1->d.dNSName);
 
+                /* In strict RFC mode, we're going to require the service
+                 * portion of the hostbased service name to be "host" (the
+                 * default).
+                 */
+                if (gss_i_name_compatibility_mode == GSS_I_COMPATIBILITY_STRICT_RFC2818)
+                {
+                    if (strcasecmp(name2->service_name, "host") != 0)
+                    {
+                        *name_equal = GSS_NAMES_NOT_EQUAL;
+
+                        return major_status;
+                    }
+                }
                 major_status = gss_l_compare_hostnames_with_wildcards(
                         minor_status,
                         ns1, GSS_I_WILDCARD_RFC2818,
@@ -626,6 +639,19 @@ gss_l_compare_x509_to_hostbased_service(
     if (gss_i_name_compatibility_mode != GSS_I_COMPATIBILITY_STRICT_RFC2818 ||
         dns_alt_name_found == GLOBUS_FALSE)
     {
+        /* In strict RFC mode, we're going to require the service
+         * portion of the hostbased service name to be "host" (the
+         * default).
+         */
+        if (gss_i_name_compatibility_mode == GSS_I_COMPATIBILITY_STRICT_RFC2818)
+        {
+            if (strcasecmp(name1->service_name, name2->service_name) != 0)
+            {
+                *name_equal = GSS_NAMES_NOT_EQUAL;
+
+                return major_status;
+            }
+        }
         if (name1->host_name != NULL && name2->host_name)
         {
             ns1 = name1->host_name;
@@ -803,6 +829,33 @@ gss_l_compare_default_to_hostbased_service(
     ns1 = name1->host_name;
     ns2 = name2->host_name;
 
+    if (gss_i_name_compatibility_mode == GSS_I_COMPATIBILITY_STRICT_RFC2818)
+    {
+        /* In strict RFC mode, we're going to require the service
+         * portion of the hostbased service name to match that of the
+         * subject name (defaulting to host if the subject doesn't contain
+         * a service).
+         */
+        if (name1->service_name && name2->service_name)
+        {
+            if (strcasecmp(name1->service_name, name2->service_name) != 0)
+            {
+                *name_equal = GSS_NAMES_NOT_EQUAL;
+
+                return major_status;
+            }
+        }
+        else
+        {
+            if (strcasecmp(name2->service_name, "host") != 0)
+            {
+                *name_equal = GSS_NAMES_NOT_EQUAL;
+
+                return major_status;
+            }
+        }
+    }
+
     major_status = gss_l_compare_hostnames_with_wildcards(
             minor_status,
             ns1, GSS_I_WILDCARD_GT2,
@@ -869,6 +922,16 @@ gss_l_compare_hostbased_service_to_hostbased_service(
     ns1 = name1->host_name;
     ns2 = name2->host_name;
 
+    /* In strict mode, we compare service names, for backward compatibility, 
+     * we ignore them.
+     */
+    if (gss_i_name_compatibility_mode == GSS_I_COMPATIBILITY_STRICT_RFC2818 &&
+        (strcasecmp(name1->service_name, name2->service_name) != 0))
+    {
+            *name_equal = GSS_NAMES_NOT_EQUAL;
+            return major_status;
+    }
+
     major_status = gss_l_compare_hostnames_with_wildcards(
             minor_status,
             ns1, GSS_I_WILDCARD_GT2,
@@ -894,6 +957,14 @@ gss_l_compare_hostbased_service_to_host_ip(
 
     ns1 = name1->host_name;
     ns2 = name2->host_name;
+
+    if (gss_i_name_compatibility_mode == GSS_I_COMPATIBILITY_STRICT_RFC2818 &&
+        strcasecmp(name1->service_name, "host") != 0)
+    {
+        *name_equal = GSS_NAMES_NOT_EQUAL;
+
+        return major_status;
+    }
 
     major_status = gss_l_compare_hostnames_with_wildcards(
             minor_status,

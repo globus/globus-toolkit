@@ -176,6 +176,7 @@ GSS_CALLCONV gss_import_name(
         {
             output_name->host_name = name_buffer;
             name_buffer = NULL;
+            output_name->service_name = globus_libc_strdup("host");
         }
         name_buffer = globus_common_create_string(
                 "/CN=%s%s%s",
@@ -262,8 +263,14 @@ GSS_CALLCONV gss_import_name(
         }
         output_name->x509n_oneline =
                 X509_NAME_oneline(output_name->x509n, NULL, 0);
-        output_name->host_name =
-                (char *) globus_i_gsi_gssapi_get_hostname(output_name);
+
+        major_status = globus_i_gsi_gssapi_get_hostname(
+                minor_status,
+                output_name);
+        if (GSS_ERROR(major_status))
+        {
+            goto release_name_out;
+        }
     }
     else if (g_OID_equal(GSS_C_NO_OID, input_name_type) ||
              g_OID_equal(GSS_C_NT_USER_NAME, input_name_type))
@@ -298,13 +305,10 @@ GSS_CALLCONV gss_import_name(
 
             goto release_name_out;
         }
-        output_name->host_name = 
-                (char *) globus_i_gsi_gssapi_get_hostname(output_name);
-        if (output_name->host_name == NULL)
+        major_status = globus_i_gsi_gssapi_get_hostname(
+                minor_status, output_name);
+        if (GSS_ERROR(major_status))
         {
-            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-            major_status = GSS_S_FAILURE;
-
             goto release_name_out;
         }
     }
@@ -405,13 +409,10 @@ GSS_CALLCONV gss_import_name(
 
                 goto release_name_out;
             }
-            output_name->host_name =
-                    (char *) globus_i_gsi_gssapi_get_hostname(output_name);
-            if (output_name->host_name == NULL)
+            major_status = globus_i_gsi_gssapi_get_hostname(
+                    minor_status, output_name);
+            if (GSS_ERROR(major_status))
             {
-                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-                major_status = GSS_S_FAILURE;
-
                 goto release_name_out;
             }
         }

@@ -2503,16 +2503,22 @@ int globus_i_gsi_gss_verify_extensions_callback(
 }
 /* @} */
 
-unsigned char *
+OM_uint32
 globus_i_gsi_gssapi_get_hostname(
-    const gss_name_desc *               name)
+    OM_uint32 *                         minor_status,
+    gss_name_desc *                     name)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     int                                 common_name_NID;
     int                                 index;
     unsigned int                        length;
     unsigned char *                     data;
-    unsigned char *                     result = NULL;
+    unsigned char *                     p;
     X509_NAME_ENTRY *                   name_entry = NULL;
+    static const char * _function_name_ = "globus_i_gsi_gssapi_get_hostname";
+
+    name->service_name = name->host_name = NULL;
+    *minor_status = GLOBUS_SUCCESS;
 
     common_name_NID = OBJ_txt2nid("CN");
     for (index = 0; index < X509_NAME_entry_count(name->x509n); index++)
@@ -2522,36 +2528,82 @@ globus_i_gsi_gssapi_get_hostname(
         {
             length = name_entry->value->length;
             data = name_entry->value->data;
-            if ( length > 5 && !strncasecmp((char *) data, "host/", 5))
+
+            p = memchr(data, '/', length);
+
+            if (p)
             {
-                length -= 5;
-                data += 5;
+                name->service_name = malloc(p-data+1);
+                if (name->service_name == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+
+                    goto out;
+                }
+                strncpy(name->service_name, data, p-data);
+                name->service_name[p-data] = 0;
+
+                name->host_name = malloc(length - (p-data));
+                if (name->host_name == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+
+                    goto free_service_name_out;
+                }
+                strncpy(name->host_name, p+1, length - (p+1-data));
+                name->host_name[length - (p+1-data)] = 0;
             }
-            else if ( length > 4 && 
-                      !strncasecmp((char *) data, "ftp/", 4))
+            else
             {
-                length -= 4;
-                data += 4;
+                if (gss_i_name_compatibility_mode ==
+                    GSS_I_COMPATIBILITY_STRICT_RFC2818)
+                {
+                    name->service_name = globus_libc_strdup("host");
+                    if (name->service_name == NULL)
+                    {
+                        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                        major_status = GSS_S_FAILURE;
+
+                        goto out;
+                    }
+                }
+
+                name->host_name = malloc(length + 1);
+                if (name->host_name == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+
+                    goto free_service_name_out;
+                }
+
+                strncpy(name->host_name, data, length);
+                name->host_name[length] = 0;
             }
             break;
         }
-        name_entry = NULL;
     }
 
-    if(name_entry)
-    { 
-        result = malloc(length + 1);
-        
-        if(result == NULL)
+    if (name->host_name == NULL)
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
+                ("No common name in subject"));
+        major_status = GSS_S_FAILURE;
+
+free_service_name_out:
+        if (name->service_name)
         {
-            return result;
+            free(name->service_name);
+            name->service_name = NULL;
         }
-        
-        memcpy(result, data, length);
-        result[length] = '\0';
     }
     
-    return result;
+out:
+    return major_status;
 }
 
 

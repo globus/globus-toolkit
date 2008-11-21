@@ -355,9 +355,11 @@ globus_i_gsi_gssapi_error_join_chains_result(
     globus_result_t                     outter_error,
     globus_result_t                     inner_error);
 
-unsigned char *
+OM_uint32
 globus_i_gsi_gssapi_get_hostname(
-    const gss_name_desc *               name);
+    OM_uint32 *                         minor_status,
+    gss_name_desc *                     name);
+
 
 typedef enum
 {
