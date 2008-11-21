@@ -894,6 +894,7 @@ BUNDLE gsi_openssh_bundle
 BUNDLE gridshib_bundle
 	gridshib_common
 	gridshib_schema
+	gridshib_saml
 	gridshib_core
 	gridshib_echo
 	gridshib_tests
