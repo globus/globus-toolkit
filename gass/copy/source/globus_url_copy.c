@@ -398,6 +398,8 @@ const char * long_usage =
 "       If set to >0, Blocked mode will be used, with this as the blocksize.\n"
 "  -ipv6\n"
 "       use ipv6 when available (EXPERIMENTAL)\n"
+"  -udt\n"
+"       Use UDT, a reliable udp based transport protocol, for data transfers\n" 
 "  -g2 | -gridftp2\n"
 "       use GridFTP v2 protocol enhancements when possible\n"
 "  -dp | -delayed-pasv\n"
