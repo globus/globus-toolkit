@@ -61,24 +61,16 @@
 
       <Build_Step>
         GSICFG="--prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-strip"
-
         if test "STATIC_LINK_GPTMACRO" = "yes"; then 
           GSICFG="$GSICFG --with-globus-static"
         fi
+        GLOBUS_FLAVOR_NAME=FLAVOR_GPTMACRO
+        export GLOBUS_FLAVOR_NAME
+        CONFIGENV_GPTMACRO ./configure $GSI_OPENSSH_ARGS GSI_OPENSSH_GPTMACRO $GSICFG</Build_Step>
 
-	GLOBUS_FLAVOR_NAME=FLAVOR_GPTMACRO
-	export GLOBUS_FLAVOR_NAME
+      <Build_Step>MAKE_GPTMACRO gpt-all</Build_Step>
 
-        CONFIGENV_GPTMACRO ./configure $GSI_OPENSSH_ARGS GSI_OPENSSH_GPTMACRO $GSICFG
-      </Build_Step>
-
-      <Build_Step>
-        MAKE_GPTMACRO gpt-all
-      </Build_Step>
-
-      <Build_Step>
-        MAKE_GPTMACRO gpt-install
-      </Build_Step>
+      <Build_Step>MAKE_GPTMACRO gpt-install</Build_Step>
 
     </Build_Instructions>
 
