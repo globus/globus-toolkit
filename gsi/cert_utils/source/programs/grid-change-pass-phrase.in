@@ -80,15 +80,41 @@ if ! ${SSLEAY} version > /dev/null 2> /dev/null; then
     exit 1
 fi
 
-# DEFault Generated Files
-DEF_GLOBUS_DIR="${HOME}/.globus"
-DEF_KEY_FILE="${DEF_GLOBUS_DIR}/userkey.pem"
+# See http://www-unix.globus.org/toolkit/docs/4.0/admin/docbook/ch05.html#prewsaa-env-credentials
+find_default_key()
+{
+    if [ -n "$X509_USER_KEY" ]; then
+        echo "$X509_USER_KEY"
+    elif [ -r "${HOME}/.globus/userkey.pem" ]; then
+        echo "${HOME}/.globus/userkey.pem"
+    elif [ -r "${HOME}/.globus/usercred.p12" ]; then
+        echo "${HOME}/.globus/usercred.p12"
+    else
+        echo ""
+    fi
+}
 
-if [ -n "$X509_USER_KEY" ]; then
-   private_key=${X509_USER_KEY}
-else
-   private_key=${DEF_KEY_FILE}
-fi
+key_format()
+{
+    testfile="$1"
+    _format=''
+
+    if test "$testfile" = ""; then
+        :
+    elif echo "$testfile" | grep '\.p12$' > /dev/null 2>&1 ; then
+        _format=pkcs12
+    elif echo "$testfile" | grep '\.pem$' > /dev/null 2>&1 ; then
+        _format=x509
+    elif grep -- '-----BEGIN' "$testfile" > /dev/null 2>&1 ; then
+        _format="x509"
+    else
+        :
+    fi
+
+    echo $_format
+}
+
+private_key=""
 
 if [ -n "$1" ]; then
     case "$1" in
@@ -104,10 +130,33 @@ if [ -n "$1" ]; then
     esac
 fi
 
-${GLOBUS_SH_RM-rm} -f ${private_key}.new
-${SSLEAY} rsa -des3 -in ${private_key} -out ${private_key}.new
-if test $? -eq 0 ; then
-    ${GLOBUS_SH_CHMOD-chmod} 0400 ${private_key}.new
+if [ "$private_key" = "" ]; then
+    private_key=`find_default_key`
+fi
+
+if [ "$private_key" = "" ]; then
+    echo "Unable to determine private key location. Use -file KEYFILE option"
+    exit 1
+fi
+
+keyform="`key_format \"$private_key\"`"
+
+if [ "$keyform" = "" ]; then
+    echo "Unable to determine format of private key \"$private_key\"."
+    exit 1
+fi
+
+umask 077
+if [ "$keyform" = pkcs12 ]; then
+    ${GLOBUS_SH_RM-rm} -f ${private_key}.new
+    "${SSLEAY}" pkcs12 -in "${private_key}" -nodes | \
+        ${SSLEAY} pkcs12 -export -out ${private_key}.new
+else
+    ${GLOBUS_SH_RM-rm} -f ${private_key}.new
+    ${SSLEAY} rsa -des3 -in ${private_key} -out ${private_key}.new
+fi
+
+if [ $? -eq 0 ]; then
     ${GLOBUS_SH_RM-rm} -f ${private_key}.old
     ${GLOBUS_SH_CP-cp} -p ${private_key} ${private_key}.old
     ${GLOBUS_SH_MV-mv} -f ${private_key}.new ${private_key}
@@ -115,4 +164,3 @@ else
     echo "Failed to change passphrase" >&2
     exit 1
 fi
-
