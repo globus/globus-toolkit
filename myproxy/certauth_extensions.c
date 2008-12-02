@@ -213,84 +213,6 @@ external_callout( X509_REQ                 *request,
 
 }
 
-static int 
-tokenize_to_x509_name( char * dn, X509_NAME * name ) {
-
-  int return_value = 0;
-
-  char * tmp;
-
-  char * tok;
-  char * tmpTok = NULL;
-  char * subtok;
-  char * toksplit;
-
-  int i;
-
-  myproxy_debug( "tokenizing: %s", dn );
-
-  tmp = strdup(dn);
-
-  tok = strtok( tmp, "/" );
-
-  while ( tok != NULL ) {
-
-    subtok = strchr( tok, '=' );
-    if (subtok == NULL) {
-      verror_put_string("Error adding '%s' to x509 name", tok);
-      verror_put_string("Invalid field name");
-      ssl_error_to_verror();
-      return_value = 1;
-      goto end;
-    }
-
-    toksplit = subtok;
-
-    subtok++;
-    *toksplit = '\0';
-
-    /* if short prefixes are being used, they need to be capped before
-       feeding to the add entry function. tok must be strdup()ed because
-       messing with the strtok() buffer is bad. */
-
-    tmpTok = strdup( tok );
-
-    if ( strlen( tmpTok ) < 3 ) {
-      i = 0;
-      while( i < strlen( tmpTok ) ) {
-	tmpTok[i] = toupper( tmpTok[i] );
-	i = i + 1;
-      }
-    }
-
-    myproxy_debug( "adding: %s = %s", tmpTok, subtok );
-
-    if (!X509_NAME_add_entry_by_txt( name, tmpTok, MBSTRING_ASC, 
-				     (unsigned char *) subtok, -1, -1, 0 )) {
-      verror_put_string("Error adding %s = %s to x509 name", tmpTok, subtok );
-      verror_put_string("Invalid field name");
-      ssl_error_to_verror();
-      return_value = 1;
-      goto end;
-    }
-
-    subtok = NULL;
-    toksplit = NULL;
-
-    free( tmpTok );
-    tmpTok = NULL;
-
-    tok = strtok( NULL, "/" );
-  }
-
- end:
-
-  free(tmp);
-
-  return return_value;
-
-}
-
 /* Use fcntl() for POSIX file locking. Lock is released when file is closed. */
 static int
 lock_file(int fd)
@@ -540,6 +462,8 @@ generate_certificate( X509_REQ                 *request,
   FILE * inkey = NULL;
   FILE * issuer_cert_file = NULL;
 
+  globus_result_t globus_result;
+
   myproxy_debug("Generating certificate internally.");
 
   cert = X509_new();
@@ -565,9 +489,11 @@ generate_certificate( X509_REQ                 *request,
 
   subject = X509_get_subject_name(cert);
 
-  if( tokenize_to_x509_name( userdn, subject ) ) {
-    verror_put_string("tokenize_to_x509_name() failed");
-    goto error;
+  globus_result =
+      globus_gsi_cert_utils_get_x509_name(userdn, strlen(userdn), subject);
+  if (globus_result != GLOBUS_SUCCESS) {
+      verror_put_string("globus_gsi_cert_utils_get_x509_name() failed");
+      goto error;
   }
 
   /* issuer info */
