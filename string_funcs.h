@@ -174,5 +174,16 @@ void
 unsetenv(const char *var);
 #endif
 
+/*
+ * add_entry()
+ *
+ * Add a entry to an array of string, allocating as needed.
+ */
+char **
+add_entry(char **entries, const char *entry);
+
+void
+free_array_list(char ***listp);
+
 
 #endif /* _STRING_FUNCS_H */

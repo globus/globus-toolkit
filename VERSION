@@ -17,6 +17,8 @@ v4.4 XX Xxx 2008
     on child process failures
   - fix bug when issuing certificates with subject containing "//"
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6488)
+  - add support for multiple --voms options to myproxy-init/logon
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6436)
 
 v4.3 2 Sep 2008
   - improve MyProxy CA error message on incorrect passphrase.
