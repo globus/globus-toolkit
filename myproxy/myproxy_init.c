@@ -93,7 +93,7 @@ static char version[] =
 
 static char *certfile               = NULL;	/* certificate file name */
 static char *keyfile                = NULL;	/* key file name */
-static char *voms                   = NULL;
+static char **voms                  = NULL;
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
@@ -289,7 +289,7 @@ main(int argc, char *argv[])
     if (create_local_proxy) {
         unsetenv("X509_USER_PROXY"); /* GSI_SOCKET_use_creds() sets it */
         if (voms) {                  /* no need to get another VOMS AC */
-            free(voms);
+            free_array_list(&voms);
             voms = NULL;
         }
         if (grid_proxy_init(client_request->proxy_lifetime,
@@ -472,7 +472,7 @@ init_arguments(int argc,
 	    create_local_proxy = 1;
 	    break;
 	case 'm':
-	    voms = strdup(optarg);
+        voms = add_entry(voms, optarg);
 	    break;
 
         default:  
@@ -510,10 +510,10 @@ int
 grid_proxy_init(int seconds,
 		const char *cert, const char *key, const char *outfile) {
 
-    int rc;
+    int i, rc;
     char *command;
     char *proxy_mode;
-    const char *argv[22];
+    const char *argv[40];
     char hours[11], bits[11], vomslife[14];
     int argc = 0;
     pid_t childpid;
@@ -521,8 +521,10 @@ grid_proxy_init(int seconds,
     if (voms) {
         command = "voms-proxy-init";
         argv[argc++] = command;
-        argv[argc++] = "-voms";
-        argv[argc++] = voms;
+        for (i=0; voms[i] && i < 10; i++) {
+            argv[argc++] = "-voms";
+            argv[argc++] = voms[i];
+        }
     } else {
         command = "grid-proxy-init";
         argv[argc++] = command;

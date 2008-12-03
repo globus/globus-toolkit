@@ -72,6 +72,9 @@ init_arguments(int argc, char *argv[],
 	       myproxy_socket_attrs_t *attrs,
 	       myproxy_request_t *request); 
 
+int
+voms_proxy_init();
+
 /*
  * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
  * setlinebuf().
@@ -85,7 +88,7 @@ static int read_passwd_from_stdin = 0;
 static int use_empty_passwd = 0;
 static int quiet = 0;
 static int no_credentials = 0;
-static char *voms = NULL;
+static char **voms = NULL;
 
 int
 main(int argc, char *argv[]) 
@@ -235,42 +238,7 @@ main(int argc, char *argv[])
 
     if (outputfile) {
         if (voms) {
-            int cmdlen, hours, minutes, cred_lifetime;
-            char *command;
-            time_t cred_expiration;
-
-            if (ssl_get_times(outputfile, NULL, &cred_expiration) == 0) {
-                cred_lifetime = cred_expiration-time(0);
-                if (cred_lifetime <= 0) {
-                    fprintf(stderr, "Error: Credential expired!\n");
-                    goto cleanup;
-                }
-            }
-
-            hours = (int)(cred_lifetime/(60*60));
-            minutes = (int)(cred_lifetime/60)%60;
-            if (minutes) {
-                minutes--;
-            } else {
-                hours--;
-                minutes = 59;
-            }
-
-            cmdlen = 100;
-            cmdlen += strlen(voms);
-            cmdlen += strlen(outputfile)*3;
-            command = (char *)malloc(cmdlen);
-
-            snprintf(command, cmdlen, "voms-proxy-init -valid %d:%d "
-                     "-voms %s -cert %s -key %s -out %s -bits %d",
-                     hours, minutes,
-                     voms, outputfile, outputfile, outputfile,
-                     MYPROXY_DEFAULT_KEYBITS);
-            if (system(command) != 0) {
-                fprintf(stderr, "voms-proxy-init failed. command was:\n%s\n",
-                        command);
-            }
-            free(command);
+            voms_proxy_init();  /* should an error be fatal? */
         }
 
         if (!quiet)
@@ -307,6 +275,7 @@ main(int argc, char *argv[])
  cleanup:
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
+    if (voms) free_array_list(&voms);
     return return_value;
 }
 
@@ -380,7 +349,7 @@ init_arguments(int argc,
             myproxy_debug("Requesting trusted certificates.\n");
 	    break;
         case 'm':
-            voms = strdup(optarg);
+            voms = add_entry(voms, optarg);
             break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
@@ -403,4 +372,72 @@ init_arguments(int argc,
     }
 
     return;
+}
+
+int
+voms_proxy_init()
+{
+    int i, hours, minutes, cred_lifetime, rc;
+    time_t cred_expiration;
+    const char *argv[40];
+    char hourstr[11], bits[11], vomslife[14];
+    int argc = 0;
+    pid_t childpid;
+    const char *command = "voms-proxy-init";
+
+    if (ssl_get_times(outputfile, NULL, &cred_expiration) == 0) {
+        cred_lifetime = cred_expiration-time(0);
+        if (cred_lifetime <= 0) {
+            fprintf(stderr, "Error: Credential expired!\n");
+            return -1;
+        }
+    }
+
+    hours = (int)(cred_lifetime/(60*60));
+    minutes = (int)(cred_lifetime/60)%60;
+    if (minutes) {
+        minutes--;
+    } else {
+        hours--;
+        minutes = 59;
+    }
+
+    argv[argc++] = command;
+    argv[argc++] = "-hours";
+    snprintf(hourstr, sizeof(hourstr), "%d", hours);
+    argv[argc++] = hourstr;
+    argv[argc++] = "-vomslife";
+    snprintf(vomslife, sizeof(vomslife), "%d:%d", hours, minutes);
+    argv[argc++] = vomslife;
+    for (i=0; voms[i] && i < 10; i++) {
+        argv[argc++] = "-voms";
+        argv[argc++] = voms[i];
+    }
+    argv[argc++] = "-cert";
+    argv[argc++] = outputfile;
+    argv[argc++] = "-key";
+    argv[argc++] = outputfile;
+    argv[argc++] = "-out";
+    argv[argc++] = outputfile;
+    argv[argc++] = "-bits";
+    snprintf(bits, sizeof(bits), "%d", MYPROXY_DEFAULT_KEYBITS);
+    argv[argc++] = bits;
+
+    if ((childpid = fork()) < 0) {
+        verror_put_string("fork() failed");
+        verror_put_errno(errno);
+        return -1;
+    }
+    if (childpid == 0) {	/* child */
+        execvp(command, (char *const *)argv);
+        fprintf(stderr, "failed to run %s: %s\n", command, strerror(errno));
+        exit(1);
+    }
+    if (waitpid(childpid,&rc,0) == -1) {
+        verror_put_string("wait() failed for voms-proxy-init child");
+        verror_put_errno(errno);
+        return -1;
+    }
+
+    return rc;
 }

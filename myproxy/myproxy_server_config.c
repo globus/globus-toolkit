@@ -28,49 +28,6 @@
  *
  */
 
-/*
- * add_entry()
- *
- * Add a entry to an array of string, allocating as needed.
- */
-static char **
-add_entry(char **entries,
-	  const char *entry)
-{
-    int current_length = 0;
-    char **new_entries;
-    char *my_entry;
-    int new_size;
-    
-    assert(entry != NULL);
-    
-    my_entry = strdup(entry);
-    
-    if (my_entry == NULL) {
-	return NULL;
-    }
-    
-    if (entries != NULL) {
-	while (entries[current_length] != NULL) {
-	    current_length++;
-	}
-    }
-
-    /* Add enough for new pointer and NULL */
-    new_size = sizeof(char *) * (current_length + 2);
-
-    new_entries = realloc(entries, new_size);
-    
-    if (new_entries == NULL) {
-	return NULL;
-    }
-    
-    new_entries[current_length] = my_entry;
-    new_entries[current_length + 1] = NULL;
-    
-    return new_entries;
-}
-
 static void
 free_ptr(char **p)
 {
@@ -78,20 +35,6 @@ free_ptr(char **p)
     if (!*p) return;
     free(*p);
     *p = NULL;
-}
-
-static void
-free_array_list(char ***listp)
-{
-    char **list;
-    int i;
-
-    if (!listp) return;
-    list = *listp;
-    if (!list) return;
-    for (i=0; list[i]; i++) { free(list[i]); }
-    free(list);
-    *listp = NULL;
 }
 
 /*
