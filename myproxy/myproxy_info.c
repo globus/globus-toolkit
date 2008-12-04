@@ -23,6 +23,7 @@ static char usage[] = \
 "    -d | --dn_as_username      Use the proxy certificate subject\n"
 "                               (DN) as the default username,\n"
 "                               instead of the LOGNAME env. var.\n"
+"    -k | --credname <name>     Specifies credential name.\n"
 "\n";
 
 struct option long_options[] =
@@ -35,10 +36,11 @@ struct option long_options[] =
     {"verbose",          no_argument, NULL, 'v'},
     {"version",          no_argument, NULL, 'V'},
     {"dn_as_username",   no_argument, NULL, 'd'},
+    {"credname",   required_argument, NULL, 'k'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:vVd";
+static char short_options[] = "hus:p:l:vVdk:";
 
 static char version[] =
 "myproxy-info version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -223,6 +225,9 @@ init_arguments(int argc,
             printf(version);
             exit(0);
             break;
+	case 'k':	/*credential name*/
+	    request->credname = strdup (optarg);
+	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
 	    dn_as_username = 1;

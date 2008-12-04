@@ -1137,7 +1137,8 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
 
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    if (myproxy_creds_retrieve_all(creds) < 0) {
+    if ((creds->credname && myproxy_creds_retrieve(creds) < 0) ||
+        (!creds->credname && myproxy_creds_retrieve_all(creds) < 0)) {
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
        response->error_string = strdup(verror_get_string());
