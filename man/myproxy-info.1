@@ -1,4 +1,4 @@
-.TH myproxy-info 1 "2005-12-2" "NCSA" "MyProxy"
+.TH myproxy-info 1 "2008-12-4" "NCSA" "MyProxy"
 .SH NAME
 myproxy-info \- display information about MyProxy credentials
 .SH SYNOPSIS
@@ -58,6 +58,11 @@ Use the certificate subject (DN) as the default username, instead
 of the 
 .B LOGNAME 
 environment variable.
+.TP
+.BI -k " name, "  --credname " name"
+Specifies name of the credential to query.
+If not specified, the command displays all credentials associated with
+the MyProxy username.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH ENVIRONMENT
