@@ -459,7 +459,7 @@ myproxy_check_version_ex(int major, int minor, int micro) {
 int
 myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 {
-    char *cert_dir = NULL;
+    char *cert_dir = NULL, *tmp_cert_dir = NULL;
     int return_value = -1;
     BIO *sbio = 0;
     SSL_CTX *ctx = 0;
@@ -479,13 +479,20 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     /* Make writable only by user */
     umask(S_IWGRP|S_IWOTH);
 
-    /* create our new trusted certificates directory */
-    if (myproxy_check_trusted_certs_dir() != 0) {
-        goto error;
-    }
-
+    /* create temporary directory for atomic bootstrap */
     cert_dir = get_trusted_certs_path();
     if (!cert_dir) {
+        goto error;
+    }
+    tmp_cert_dir = strdup(cert_dir);
+    if (tmp_cert_dir[strlen(tmp_cert_dir)-1] == '/') {
+        tmp_cert_dir[strlen(tmp_cert_dir)-1] = '\0';
+    }
+    snprintf(buf, BUFSIZ, ".%d/", getpid());
+    if (my_append(&tmp_cert_dir, buf, NULL) == -1) {
+        goto error;
+    }
+    if (make_path(tmp_cert_dir) == -1) {
         goto error;
     }
 
@@ -516,7 +523,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 
         x = sk_X509_value(sk,i);
         hash = X509_subject_name_hash(x);
-        snprintf(path, MAXPATHLEN, "%s%08lx.0", cert_dir, hash);
+        snprintf(path, MAXPATHLEN, "%s%08lx.0", tmp_cert_dir, hash);
         certbio = BIO_new_file(path, "w");
         if (!certbio) {
             verror_put_string("failed to open %s", path);
@@ -526,7 +533,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         BIO_free(certbio);
         myproxy_debug("wrote trusted certificate to %s", path);
         snprintf(path, MAXPATHLEN, "%s%08lx.signing_policy",
-                 cert_dir, hash);
+                 tmp_cert_dir, hash);
         policybio = BIO_new_file(path, "w");
         if (!policybio) {
             verror_put_string("failed to open %s", path);
@@ -536,13 +543,16 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         BIO_printf(policybio, "access_id_CA X509 '%s'\npos_rights globus CA:sign\ncond_subjects globus \"*\"\n", buf);
         BIO_free(policybio);
         myproxy_debug("wrote trusted certificate policy to %s", path);
-        snprintf(path, MAXPATHLEN, "%s%08lx.r0", cert_dir, hash);
-        if (unlink(path) == 0) {
-            myproxy_debug("unlinked %s", path);
-        } else if (errno != ENOENT) {
-            myproxy_log("failed to unlink %s: %s", path, strerror(errno));
-        }
     }
+
+    /* success. commit the bootstrapped directory. */
+    if (rename(tmp_cert_dir, cert_dir) < 0) {
+        verror_put_errno(errno);
+        verror_put_string("Unable to rename %s to %s\n",
+                          tmp_cert_dir, cert_dir);
+        goto error;
+    }
+    myproxy_debug("renamed %s to %s", tmp_cert_dir, cert_dir);
 
     return_value = 0;
 
@@ -558,6 +568,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         if (cert_dir) rmdir(cert_dir);
     }
     if (cert_dir) free(cert_dir);
+    if (tmp_cert_dir) free(tmp_cert_dir);
 
     return return_value;
 }

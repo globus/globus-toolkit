@@ -702,7 +702,6 @@ myproxy_check_trusted_certs_dir()
         switch(errno)
         {
           case ENOENT:
-          case ENOTDIR:
             myproxy_debug("%s does not exist. Creating.\n", path);
             if (make_path(path) == -1)
             {
