@@ -351,18 +351,31 @@ line_parse_callback(void *context_arg,
         }
     }
 
-#if defined(HAVE_OCSP)
     /* OCSP stuff */
     else if (strcmp(directive, "ocsp_policy") == 0) {
+#if defined(HAVE_OCSP)
         myproxy_ocsp_set_policy(tokens[1]);
+#else
+        verror_put_string("OCSP is configured in myproxy-server.config but the myproxy-server is linked with OpenSSL without OCSP support.");
+        goto error;
+#endif
     }
     else if (strcmp(directive, "ocsp_responder_url") == 0) {
+#if defined(HAVE_OCSP)
         myproxy_ocsp_set_responder(tokens[1]);
+#else
+        verror_put_string("OCSP is configured in myproxy-server.config but the myproxy-server is linked with OpenSSL without OCSP support.");
+        goto error;
+#endif
     }
     else if (strcmp(directive, "ocsp_responder_cert") == 0) {
+#if defined(HAVE_OCSP)
         myproxy_ocsp_set_responder_cert(tokens[1]);
-    }
+#else
+        verror_put_string("OCSP is configured in myproxy-server.config but the myproxy-server is linked with OpenSSL without OCSP support.");
+        goto error;
 #endif
+    }
 
     /* added by Terry Fleury for enhanced logging */
     else if (strcmp(directive, "syslog_ident") == 0) {
@@ -614,12 +627,25 @@ check_config(myproxy_server_context_t *context)
     if (context->pam_policy &&
 	(!strcmp(context->pam_policy, "required") ||
 	 (strcmp(context->pam_policy, "sufficient")))) {
+#if defined(HAVE_LIBPAM)
 	myproxy_log("PAM enabled, policy %s", context->pam_policy);
+    if (geteuid()) {
+        myproxy_log("warning: PAM is enabled in myproxy-server.config but the myproxy-server is running as non-root. Some PAM modules won't work as non-root.");
+    }
+#else
+    verror_put_string("PAM is configured in myproxy-server.config but the myproxy-server is not linked with PAM libraries.");
+    rval = -1;
+#endif
     }
     if (context->sasl_policy &&
 	(!strcmp(context->sasl_policy, "required") ||
 	 (strcmp(context->sasl_policy, "sufficient")))) {
+#if defined(HAVE_LIBSASL2)
 	myproxy_log("SASL enabled, policy %s", context->sasl_policy);
+#else
+    verror_put_string("SASL is configured in myproxy-server.config but the myproxy-server is not linked with SASL libraries.");
+    rval = -1;
+#endif
     }
     if (context->certificate_issuer_program) {
 	if (access(context->certificate_issuer_program, X_OK) < 0) {
