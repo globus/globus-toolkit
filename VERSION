@@ -26,6 +26,8 @@ v4.4 XX Xxx 2008
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6561)
   - for myproxy-logon -T, bootstrap the trusted certificates directory
     atomically (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6432)
+  - for myproxy-logon --voms, request the correct proxy type from
+    voms-proxy-init
 
 v4.3 2 Sep 2008
   - improve MyProxy CA error message on incorrect passphrase.
