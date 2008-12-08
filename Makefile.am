@@ -185,20 +185,20 @@ pkgdata_DATA = README INSTALL myproxy-server.config \
                LICENSE LICENSE.sasl LICENSE.netbsd \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
-               myproxy.cron \
+               myproxy.cron myproxy-crl.cron \
                etc.init.d.myproxy etc.init.d.myproxy.nonroot \
                etc.xinetd.myproxy myproxy-passphrase-policy \
-               myproxy-certificate-mapapp \
+               myproxy-certificate-mapapp myproxy-revoke \
                myproxy-accepted-credentials-mapapp
 
 EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
                VERSION PROTOCOL \
                myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
-               myproxy.cron \
+               myproxy.cron myproxy-crl.cron \
                etc.init.d.myproxy etc.init.d.myproxy.nonroot \
                etc.xinetd.myproxy myproxy-passphrase-policy \
-               myproxy-certificate-mapapp \
+               myproxy-certificate-mapapp myproxy-revoke \
                myproxy-accepted-credentials-mapapp
 
 myproxy-admin-addservice: myproxy-admin-adduser

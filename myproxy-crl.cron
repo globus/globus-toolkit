@@ -1,0 +1,21 @@
+#!/bin/sh
+
+CRLDAYS=14
+SIMPLECADIR="/home/globus/.globus/simpleCA"
+PASS="/home/globus/.globus/.simplecapass"
+CONF="$SIMPLECADIR/grid-ca-ssl.conf"
+CACERT="$SIMPLECADIR/cacert.pem"
+INDEX="$SIMPLECADIR/index.txt"
+HASH=`openssl x509 -noout -hash -in $CACERT`
+PEMCRL="$SIMPLECADIR/$HASH.r0"
+DERCRL="$SIMPLECADIR/$HASH.crl"
+
+if [ ! -e $INDEX ] ; then
+   touch $INDEX
+fi
+
+openssl ca -gencrl -config $CONF -passin file:$PASS \
+  -crldays $CRLDAYS -out $PEMCRL.$$ &&
+mv $PEMCRL.$$ $PEMCRL &&
+openssl crl -outform DER -in $PEMCRL -out $DERCRL.$$ &&
+mv $DERCRL.$$ $DERCRL
