@@ -238,7 +238,10 @@ main(int argc, char *argv[])
 
     if (outputfile) {
         if (voms) {
-            voms_proxy_init();  /* should an error be fatal? */
+            if (voms_proxy_init() < 0) { /* should an error be fatal? */
+                fprintf(stderr, "Warning: Failed to add VOMS attributes.\n");
+                verror_print_error(stderr);
+            }
         }
 
         if (!quiet)
@@ -384,11 +387,15 @@ voms_proxy_init()
     int argc = 0;
     pid_t childpid;
     const char *command = "voms-proxy-init";
+    X509 *cert = NULL;
+    FILE *cert_file = NULL;
+    globus_result_t	local_result;
+    globus_gsi_cert_utils_cert_type_t cert_type;
 
     if (ssl_get_times(outputfile, NULL, &cred_expiration) == 0) {
         cred_lifetime = cred_expiration-time(0);
         if (cred_lifetime <= 0) {
-            fprintf(stderr, "Error: Credential expired!\n");
+            verror_put_string("Error: Credential expired!");
             return -1;
         }
     }
@@ -400,6 +407,29 @@ voms_proxy_init()
     } else {
         hours--;
         minutes = 59;
+    }
+
+    /* what type of proxy certificate do we have? */
+    cert_file = fopen(outputfile, "r");
+    if (cert_file == NULL) {
+        verror_put_string("Failure opening file \"%s\"", outputfile);
+        verror_put_errno(errno);
+        return -1;
+    }
+    cert = PEM_read_X509(cert_file, NULL, NULL, NULL);
+    fclose(cert_file);
+    cert_file = NULL;
+    if (cert == NULL) {
+        verror_put_string("PEM_read_X509(%s) failed.", outputfile);
+        return -1;
+    }
+    local_result = globus_gsi_cert_utils_get_cert_type(cert,
+                                                       &cert_type);
+    X509_free(cert);
+    cert = NULL;
+    if (local_result != GLOBUS_SUCCESS) {
+        verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+        return -1;
     }
 
     argv[argc++] = command;
@@ -422,6 +452,17 @@ voms_proxy_init()
     argv[argc++] = "-bits";
     snprintf(bits, sizeof(bits), "%d", MYPROXY_DEFAULT_KEYBITS);
     argv[argc++] = bits;
+    argv[argc++] = "-noregen";
+	if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)) {
+        argv[argc++] = "-proxyver=3";
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
+	} else if (GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type)) {
+        argv[argc++] = "-proxyver=4";
+#endif
+	} else if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) {
+        argv[argc++] = "-proxyver=2";
+    }
+    argv[argc++] = NULL;
 
     if ((childpid = fork()) < 0) {
         verror_put_string("fork() failed");
