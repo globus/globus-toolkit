@@ -22,6 +22,8 @@
 
 #define MYPROXY_DEFAULT_TIMEOUT        120
 
+#define MYPROXY_DEFAULT_CLOCK_SKEW     300     /* 5 minutes */
+
 /* myproxy client protocol information */
 /* beware no string below may be a suffix of another */
 #define MYPROXY_VERSION_STRING      "VERSION="
