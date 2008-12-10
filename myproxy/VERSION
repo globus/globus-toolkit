@@ -30,6 +30,8 @@ v4.4 XX Xxx 2008
     voms-proxy-init
   - added example myproxy-revoke and myproxy-crl.cron scripts for
     revoking certificates issued by the MyProxy CA and generating CRLs
+  - added max_cred_lifetime option in myproxy-server.config to limit
+    the lifetime of credentials stored in the repository
 
 v4.3 2 Sep 2008
   - improve MyProxy CA error message on incorrect passphrase.

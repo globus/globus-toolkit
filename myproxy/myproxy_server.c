@@ -85,8 +85,9 @@ void get_proxy(myproxy_socket_attrs_t *server_attrs,
 	       int max_proxy_lifetime);
 
 void put_proxy(myproxy_socket_attrs_t *server_attrs, 
-	      myproxy_creds_t *creds, 
-	      myproxy_response_t *response);
+               myproxy_creds_t *creds, 
+               myproxy_response_t *response,
+               int max_cred_lifetime);
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
@@ -149,7 +150,15 @@ void get_credentials(myproxy_socket_attrs_t *attrs,
 /* Accept end-entity credentials from client */
 void put_credentials(myproxy_socket_attrs_t *attrs,
                      myproxy_creds_t        *creds,
-                     myproxy_response_t     *response);
+                     myproxy_response_t     *response,
+                     int                     max_cred_lifetime);
+
+/* Helper function for put_proxy() and put_credentials() */
+void check_and_store_credentials(const char              path[],
+                                 myproxy_creds_t        *creds,
+                                 myproxy_response_t     *response,
+                                 int                     max_cred_lifetime);
+
 
 static int debug = 0;
 static int readconfig = 1;      /* do we need to read config file? */
@@ -693,8 +702,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
 	/* Store the credentials in the repository and
 	   set final server_response */
-        put_proxy(attrs, client_creds, server_response);
-        break;
+    put_proxy(attrs, client_creds, server_response,
+              context->max_cred_lifetime);
+    break;
 
     case MYPROXY_INFO_PROXY:
         info_proxy(client_creds, server_response);
@@ -729,7 +739,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
  
           /* Store the credentials in the repository and
              set final server_response */
-          put_credentials(attrs, client_creds, server_response);
+          put_credentials(attrs, client_creds, server_response,
+                          context->max_cred_lifetime);
           break;
 
     default:
@@ -1063,44 +1074,33 @@ void get_credentials(myproxy_socket_attrs_t *attrs,
 
 /* Accept delegated credentials from client */
 void put_proxy(myproxy_socket_attrs_t *attrs, 
-	       myproxy_creds_t *creds, 
-	       myproxy_response_t *response) 
+               myproxy_creds_t *creds, 
+               myproxy_response_t *response,
+               int max_cred_lifetime) 
 {
-    char delegfile[64];
+    char delegfile[64] = { 0 };
 
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile),
 				  creds->passphrase) < 0) {
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
         response->error_string = strdup("Failed to accept credentials.\n"); 
-	return;
+        return;
     }
 
     myproxy_debug("  Accepted delegation: %s", delegfile);
  
-    creds->location = strdup(delegfile);
-
-    if (myproxy_creds_store(creds) < 0) {
-	myproxy_log_verror();
-        response->response_type = MYPROXY_ERROR_RESPONSE; 
-        response->error_string = strdup("Unable to store credentials.\n"); 
-    } else {
-	response->response_type = MYPROXY_OK_RESPONSE;
-    }
-
-    /* Clean up temporary delegation */
-    if (ssl_proxy_file_destroy(delegfile) != SSL_SUCCESS) {
-	myproxy_log_perror("Removal of temporary credentials file %s failed",
-			   delegfile);
-    }
+    return check_and_store_credentials(delegfile, creds,
+                                       response, max_cred_lifetime);
 }
 
 /* Accept end-entity credentials from client */
 void put_credentials(myproxy_socket_attrs_t *attrs,
                      myproxy_creds_t        *creds,
-                     myproxy_response_t     *response)
+                     myproxy_response_t     *response,
+                     int                     max_cred_lifetime)
 {
-    char delegfile[64];
+    char delegfile[64] = { 0 };
 
     if (myproxy_accept_credentials(attrs,
                                    delegfile,
@@ -1114,27 +1114,68 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
 
     myproxy_debug("  Accepted credentials: %s", delegfile);
 
-    creds->location = strdup(delegfile);
-
-    if (myproxy_creds_store(creds) < 0)
-    {
-      myproxy_log_verror();
-      response->response_type = MYPROXY_ERROR_RESPONSE;
-      response->error_string = strdup("Unable to store credentials.\n");
-    }
-    else
-    {
-      response->response_type = MYPROXY_OK_RESPONSE;
-    }
-
-    /* Clean up temporary delegation */
-    if (ssl_proxy_file_destroy(delegfile) != SSL_SUCCESS)
-    {
-      myproxy_log_perror("Removal of temporary credentials file %s failed",
-                         delegfile);
-    }
+    return check_and_store_credentials(delegfile, creds,
+                                       response, max_cred_lifetime);
 }
 
+void check_and_store_credentials(const char              path[],
+                                 myproxy_creds_t        *creds,
+                                 myproxy_response_t     *response,
+                                 int                     max_cred_lifetime)
+{
+    time_t cred_expiration = 0;
+    int cred_lifetime = 0;
+
+    if (ssl_verify_cred(path) < 0) {
+      myproxy_log_verror();
+      response->response_type = MYPROXY_ERROR_RESPONSE;
+      response->error_string = strdup("Credentials are not valid.\n");
+      goto cleanup;
+    }
+
+    if (max_cred_lifetime) {
+        ssl_get_times(path, NULL, &cred_expiration);
+        if (cred_expiration == 0) {
+            myproxy_log_verror();
+            response->response_type = MYPROXY_ERROR_RESPONSE;
+            response->error_string =
+                strdup("Unable to get expiration time from credentials.\n");
+            goto cleanup;
+        }
+        cred_lifetime = cred_expiration-time(0);
+        if (cred_lifetime <= 0) {
+            response->response_type = MYPROXY_ERROR_RESPONSE;
+            response->error_string =
+                strdup("Credential expired!\n");
+            goto cleanup;
+        }
+                            /* up to 1hr clock skew*/
+        if (cred_lifetime > max_cred_lifetime + 3599) {
+            char errstr[200];
+            response->response_type = MYPROXY_ERROR_RESPONSE;
+            snprintf(errstr, 200, "Credential lifetime (%d hours) exceeds maximum allowed by server (%d hours).\n", cred_lifetime/60/60, max_cred_lifetime/60/60);
+            response->error_string = strdup(errstr);
+            goto cleanup;
+        }
+    }
+
+    creds->location = strdup(path);
+
+    if (myproxy_creds_store(creds) < 0) {
+	myproxy_log_verror();
+        response->response_type = MYPROXY_ERROR_RESPONSE; 
+        response->error_string = strdup("Unable to store credentials.\n"); 
+    } else {
+        response->response_type = MYPROXY_OK_RESPONSE;
+    }
+
+cleanup:
+    /* Clean up temporary delegation */
+    if (path[0] && ssl_proxy_file_destroy(path) != SSL_SUCCESS) {
+        myproxy_log_perror("Removal of temporary credentials file %s failed",
+                           path);
+    }
+}
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     if ((creds->credname && myproxy_creds_retrieve(creds) < 0) ||

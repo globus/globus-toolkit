@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2008-10-10" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2008-12-10" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -241,10 +241,18 @@ Defaults to
 .IR /etc/grid-security/certificates .
 .TP
 .BI max_proxy_lifetime " hours"
-This line specifies a server-wide maximum lifetime for retrieved proxy
-credentials.  By default, no server-wide maximum is enforced.
+This line specifies a server-wide maximum lifetime for
+retrieved proxy credentials.
+By default, no server-wide maximum is enforced.
 However, if this option is specified, the server will limit the
 lifetime of any retrieved proxy credentials to the value given.
+.TP
+.BI max_cred_lifetime " hours"
+This line specifies a server-wide maximum lifetime for
+stored credentials.
+By default, no server-wide maximum is enforced.
+However, if this option is specified, the server will limit the
+lifetime of any stored credentials to the value given.
 .TP
 .BI ignore_globus_limited_proxy_flag " boolean"
 By default, MyProxy will respect the policy of "limited" proxy
