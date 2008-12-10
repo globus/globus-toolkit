@@ -540,7 +540,8 @@ generate_certificate( X509_REQ                 *request,
 
   myproxy_debug("cert lifetime: %d", not_after );
 
-  X509_gmtime_adj(X509_get_notBefore(cert), -5*60); /* allow 5m clock skew */
+  /* allow 5m clock skew */
+  X509_gmtime_adj(X509_get_notBefore(cert), -(MYPROXY_DEFAULT_CLOCK_SKEW));
   X509_gmtime_adj(X509_get_notAfter(cert), (long)not_after);
   
   X509_set_pubkey(cert, pkey);

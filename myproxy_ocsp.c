@@ -68,7 +68,7 @@ static STACK_OF(X509) *responder_cert = NULL;
 static char      *policy      = NULL;
 static X509      *sign_cert   = NULL;
 static EVP_PKEY  *sign_key    = NULL;
-static long      skew         = 300;
+static long      skew         = MYPROXY_DEFAULT_CLOCK_SKEW;
 static long      maxage       = -1;
 static int       usenonce     = 0;
 
