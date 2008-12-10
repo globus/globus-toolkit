@@ -402,4 +402,15 @@ int ssl_get_times(const char *proxyfile, time_t *not_before, time_t *not_after);
  */
 void ssl_error_to_verror();
 
+/*
+ * ssl_verify_cred()
+ *
+ * Check the validity of the credentials at the given path:
+ *   - check Not Before and Not After fields against current time
+ *   - check signature by trusted CA
+ *   - check revocation status (CRL, OCSP)
+ * Returns 0 on success, -1 on error (setting verror).
+ */
+int ssl_verify_cred(const char path[]);
+
 #endif /* _SSL_UTILS_H */

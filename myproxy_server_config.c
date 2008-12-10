@@ -58,6 +58,7 @@ clear_server_context(myproxy_server_context_t *context)
     free_array_list(&context->default_trusted_retriever_dns);
     free_ptr(&context->passphrase_policy_pgm);
     context->max_proxy_lifetime = 0;
+    context->max_cred_lifetime = 0;
     context->limited_proxy = 0;
     free_ptr(&context->cert_dir);
     free_ptr(&context->pam_policy);
@@ -218,6 +219,9 @@ line_parse_callback(void *context_arg,
     }
     else if (strcmp(directive, "max_proxy_lifetime") == 0) {
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
+    }
+    else if (strcmp(directive, "max_cred_lifetime") == 0) {
+	context->max_cred_lifetime = 60*60*atoi(tokens[1]);
     }
     else if (strcmp(directive, "ignore_globus_limited_proxy_flag") == 0) {
         if ((strcasecmp(tokens[1], "true")) ||
@@ -623,6 +627,10 @@ check_config(myproxy_server_context_t *context)
     if (context->max_proxy_lifetime) {
 	myproxy_log("max_proxy_lifetime: %d seconds",
 		    context->max_proxy_lifetime);
+    }
+    if (context->max_cred_lifetime) {
+	myproxy_log("max_cred_lifetime: %d seconds",
+		    context->max_cred_lifetime);
     }
     if (context->pam_policy &&
 	(!strcmp(context->pam_policy, "required") ||

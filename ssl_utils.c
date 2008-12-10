@@ -1600,8 +1600,9 @@ ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
     return_value = SSL_SUCCESS;
 
     /* keep minimum lifetime at 5min for clock skew issues */
-    if (restrictions->lifetime > 0 && restrictions->lifetime < 300) {
-	restrictions->lifetime = 300;
+    if (restrictions->lifetime > 0 &&
+        restrictions->lifetime < MYPROXY_DEFAULT_CLOCK_SKEW) {
+        restrictions->lifetime = MYPROXY_DEFAULT_CLOCK_SKEW;
     }
     
   error:
@@ -2032,4 +2033,20 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
    ERR_clear_error();		/* clear EOF error */
 
    return 0;
+}
+
+int
+ssl_verify_cred(const char path[])
+{
+    SSL_CREDENTIALS *ssl_creds = NULL;
+
+    /* Do the certificates check out with OpenSSL? */
+	if ((ssl_creds = ssl_credentials_new()) == NULL ||
+        ssl_certificate_load_from_file(ssl_creds, path) != SSL_SUCCESS ||
+        ssl_verify_gsi_chain(ssl_creds) != SSL_SUCCESS) {
+        ssl_credentials_destroy(ssl_creds);
+        return -1;
+    }
+    ssl_credentials_destroy(ssl_creds);
+    return 0;
 }

@@ -1773,7 +1773,6 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
     char *data_path = NULL;
     char *lock_path = NULL;
     int return_code = -1;
-    SSL_CREDENTIALS *ssl_creds = NULL;
 
     if (!creds || !creds->username) {
         verror_put_errno(EINVAL);
@@ -1786,9 +1785,7 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
     }
 
     /* Do the certificates check out with OpenSSL? */
-	if ((ssl_creds = ssl_credentials_new()) == NULL ||
-        ssl_certificate_load_from_file(ssl_creds, creds_path) != SSL_SUCCESS ||
-        ssl_verify_gsi_chain(ssl_creds) != SSL_SUCCESS) {
+    if (ssl_verify_cred(creds_path) < 0) {
         goto error;
     }
 
@@ -1796,7 +1793,6 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
     return_code = 0;
 
   error:
-    ssl_credentials_destroy(ssl_creds);
     if (creds_path) free(creds_path);
     if (data_path) free(data_path);
     if (lock_path) free(lock_path);

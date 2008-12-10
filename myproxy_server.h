@@ -28,6 +28,7 @@ typedef struct
   char **authorized_key_retrievers_dns; /* List of DNs that can retrieve keys */
   char **default_key_retrievers_dns;    /* List of DNs that can retrieve keys */
   int max_proxy_lifetime;	    /* Max life (in seconds) of retrieved creds */
+  int max_cred_lifetime;	    /* Max life (in seconds) of stored creds */
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */
   char *pam_id;                     /* Application name we present to PAM */
