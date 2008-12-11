@@ -1090,8 +1090,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 
     myproxy_debug("  Accepted delegation: %s", delegfile);
  
-    return check_and_store_credentials(delegfile, creds,
-                                       response, max_cred_lifetime);
+    check_and_store_credentials(delegfile, creds, response, max_cred_lifetime);
 }
 
 /* Accept end-entity credentials from client */
@@ -1114,8 +1113,7 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
 
     myproxy_debug("  Accepted credentials: %s", delegfile);
 
-    return check_and_store_credentials(delegfile, creds,
-                                       response, max_cred_lifetime);
+    check_and_store_credentials(delegfile, creds, response, max_cred_lifetime);
 }
 
 void check_and_store_credentials(const char              path[],
