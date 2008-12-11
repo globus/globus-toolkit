@@ -328,7 +328,6 @@ static int connect_socket_to_host(int sockfd, char *host, int port) {
 
             if (connect_with_timeout(sockfd, 
                     (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-                verror_put_errno(errno);
                 verror_put_string("Unable to connect to %s:%d\n", 
                     inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
                     port);
