@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.4 XX Xxx 2008
+  - allow $MYPROXY_SERVER and -s command-line options to be a
+    comma-separated list of hostnames to try to connect to
   - in myproxy-server, fail on startup or reconfig with an "unsafe
     policy" error if a policy of trusted_retrievers "*" is specified
     without also specifying a restrictive default_trusted_retrievers
