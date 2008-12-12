@@ -1,4 +1,4 @@
-.TH myproxy-destroy 1 "2005-12-2" "NCSA" "MyProxy"
+.TH myproxy-destroy 1 "2008-12-12" "Globus" "MyProxy"
 .SH NAME
 myproxy-destroy \- remove a credential from the repository
 .SH SYNOPSIS
@@ -33,8 +33,9 @@ Enables verbose debugging output to the terminal.
 Displays version information and exits.
 .TP
 .BI -s " hostname, " --pshost " hostname"
-Specifies the hostname of the myproxy-server.  This option is required
-if the
+Specifies the hostname(s) of the myproxy-server(s).  
+Multiple hostnames may be specified in a comma-separated list.
+This option is required if the
 .B MYPROXY_SERVER
 environment variable is not defined.  If specified, this option
 overrides the
@@ -69,7 +70,7 @@ Specifies name of the credential to be destroyed.
 .SH ENVIRONMENT
 .TP
 .B MYPROXY_SERVER
-Specifies the hostname where the
+Specifies the hostname(s) where the
 .BR myproxy-server (8)
 is running.  This environment variable can be used in place of the 
 .B -s
@@ -109,6 +110,7 @@ Bill Baker,
 Jim Basney,
 Shiva Shankar Chetan,
 Patrick Duda,
+Terry Fleury,
 Jarek Gawor,
 Monte Goode,
 Daniel Kouril,
