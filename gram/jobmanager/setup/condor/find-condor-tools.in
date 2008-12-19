@@ -36,6 +36,21 @@ AC_ARG_WITH(condor-arch,
 	     fi],
 	    [CONDOR_ARCH=no])
 
+AC_ARG_WITH(check-vanilla-files,
+            [ --with-check-vanilla-files],
+	    [CONDOR_CHECK_VANILLA_FILES=$withval],
+	    [CONDOR_CHECK_VANILLA_FILES=no])
+
+AC_ARG_WITH(mpi-script,
+            [ --with-mpi-script=PATH-TO-MPI-SCRIPT],
+	    [if test "$withval" != yes; then
+	         CONDOR_MPI_SCRIPT=$withval
+	     else
+	         CONDOR_MPI_SCRIPT=no
+	     fi],
+	    [CONDOR_MPI_SCRIPT=no])
+
+
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 libexecdir=${prefix}/libexec
@@ -114,6 +129,8 @@ fi
 AC_SUBST(CONDOR_CONFIG)
 AC_SUBST(CONDOR_OS)
 AC_SUBST(CONDOR_ARCH)
+AC_SUBST(CONDOR_CHECK_VANILLA_FILES)
+AC_SUBST(CONDOR_MPI_SCRIPT)
 
 AC_OUTPUT(
     condor.pm:condor.in

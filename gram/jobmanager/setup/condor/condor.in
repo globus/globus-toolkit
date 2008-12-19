@@ -38,6 +38,9 @@ BEGIN
     $condor_submit 	= '@CONDOR_SUBMIT@';
     $condor_rm	 	= '@CONDOR_RM@';
     $condor_config      = '@CONDOR_CONFIG@';
+    $condor_check_vanilla_files
+                        = '@CONDOR_CHECK_VANILLA_FILES@';
+    $condor_mpi_script  = '@CONDOR_MPI_SCRIPT@';
 
     if ($condor_config ne '')
     {
@@ -128,7 +131,6 @@ sub submit
     my $rank = '';
     my @arguments;
     my $argument_string;
-    my %library_vars;
     my @response_text;
     my @submit_attrs;
     my $submit_attrs_string;
@@ -157,6 +159,10 @@ sub submit
     {
 	$universe = 'standard'
     }
+    elsif($description->jobtype() eq 'mpi' && $condor_mpi_script ne 'no')
+    {
+        $universe = 'parallel';
+    }
     else
     {
 	return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED();
@@ -183,7 +189,7 @@ sub submit
 
     # In the standard universe, we can validate stdin and directory
     # because they will sent to the execution host  by condor transparently.
-    if($universe eq 'standard')
+    if($universe eq 'standard' || $condor_check_vanilla_files eq 'yes')
     {
 	if(! -d $description->directory())
 	{
@@ -203,29 +209,16 @@ sub submit
 	}
     }
 
-    $library_vars{LD_LIBRARY_PATH} = 0;
-    if($^O eq 'irix')
-    {
-	$library_vars{LD_LIBRARYN32_PATH} = 0;
-	$library_vars{LD_LIBRARY64_PATH} = 0;
-    }
     @environment = $description->environment();
-    foreach $tuple (@environment)
-    {
-	if(!ref($tuple) || scalar(@$tuple) != 2)
-	{
-	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
-	}
-    }
-    foreach (keys %library_vars)
-    {
-        my $library_path = join(':', $description->library_path());
 
-	if($library_vars{$_} == 0)
-	{
-	    push(@environment, [$_, $library_path]);
-	}
+    foreach my $tuple ($description->environment())
+    {
+        if(!ref($tuple) || scalar(@$tuple) != 2)
+        {
+            return Globus::GRAM::Error::RSL_ENVIRONMENT();
+        }
     }
+
     $environment_string = join(';',
                                map {$_->[0] . "=" . $_->[1]} @environment);
 
@@ -237,15 +230,32 @@ sub submit
 	    return Globus::GRAM::Error::RSL_ARGUMENTS();
 	}
     }
+    if ($description->directory() =~ m|^[^/]|)
+    {
+        my $home = (getpwuid($<))[7];
+
+        $description->add('directory', "$home/".$description->directory());
+    }
+    if ($description->executable() =~ m|^[^/]|)
+    {
+        $description->add('executable',
+                $description->directory() . '/' . $description->executable());
+    }
+    if ($universe eq 'parallel')
+    {
+        unshift(@arguments, $description->executable);
+        $description->add('executable', $condor_mpi_script);
+    }
     if($#arguments >= 0)
     {
-	$argument_string = join(' ',
+	$argument_string = '"' . join(' ',
 				map
 				{
-				    $_ =~ s/"/\\\"/g; #"
-				    $_;
+				    $_ =~ s/'/''/g;
+				    $_ =~ s/"/""/g;
+				    $_ = "'$_'";
 				}
-				@arguments);
+				@arguments) . '"';
     }
     else
     {
@@ -283,18 +293,6 @@ sub submit
     print SCRIPT_FILE "#\n# description file for condor submission\n#\n";
     print SCRIPT_FILE "Universe = $universe\n";
     print SCRIPT_FILE "Notification = Never\n";
-    if ($description->directory() =~ m|^[^/]|)
-    {
-        my $home = (getpwuid($<))[7];
-
-        $description->add('directory', "$home/".$description->directory());
-    }
-    if ($description->executable() =~ m|^[^/]|)
-    {
-        $description->add('executable',
-                $description->directory() . '/' . $description->executable());
-    }
-
     print SCRIPT_FILE "Executable = " . $description->executable . "\n";
 
     $requirements  = "OpSys == \"" . $description->condor_os() . "\" ";
@@ -384,17 +382,27 @@ sub submit
         }
     }
 
-    for (my $i = 0; $i < $description->count(); $i++) {
-        if ($multi_output) {
-            print SCRIPT_FILE "Output = " .
-                    $self->{STDIO_MERGER}->add_file('out') . "\n";
-            print SCRIPT_FILE "Error = " .
-                    $self->{STDIO_MERGER}->add_file('err') . "\n";
-        } else {
-            print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
-            print SCRIPT_FILE "Error = " . $description->stderr() . "\n";
+    if ($universe eq 'parallel')
+    {
+        print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
+        print SCRIPT_FILE "Output = " . $description->stderr() . "\n";
+        print SCRIPT_FILE "machine_count = " . $description->count() . "\n";
+        print SCRIPT_FILE "queue\n";
+    }
+    else
+    {
+        for (my $i = 0; $i < $description->count(); $i++) {
+            if ($multi_output) {
+                print SCRIPT_FILE "Output = " .
+                        $self->{STDIO_MERGER}->add_file('out') . "\n";
+                print SCRIPT_FILE "Error = " .
+                        $self->{STDIO_MERGER}->add_file('err') . "\n";
+            } else {
+                print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
+                print SCRIPT_FILE "Error = " . $description->stderr() . "\n";
+            }
+            print SCRIPT_FILE "queue 1\n";
         }
-        print SCRIPT_FILE "queue 1\n";
     }
 
     close(SCRIPT_FILE);

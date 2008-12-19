@@ -48,8 +48,6 @@ sub submit
     my $job_id;
     my @arguments;
     my $email_when = '';
-    my $library_path;
-    my @library_vars;
 
     $self->log('Entering lsf submit');
 
@@ -222,27 +220,6 @@ EOF
 	}
 	print JOB $tuple->[0], '="', $tuple->[1],
 		'"; export ', $tuple->[0], "\n";
-    }
-
-    $library_path = join(':', $description->library_path());
-    @library_vars = ('LD_LIBRARY_PATH');
-
-    if($Config{osname} eq 'irix')
-    {
-	push(@library_vars, 'LD_LIBRARYN32_PATH', 'LD_LIBRARY64_PATH');
-    }
-
-    foreach (@library_vars)
-    {
-	print JOB <<"EOF";
-
-	if test 'X\${$_}' != 'X'; then
-	    $_="\${LD_LIBRARY_PATH}:$library_path"
-	else
-	    $_="$library_path"
-	fi
-	export $_
-EOF
     }
 
     print JOB "\n#Change to directory requested by user\n";

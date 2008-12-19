@@ -88,7 +88,6 @@ sub submit
     my $pipe;
     my @cmdline;
     my @environment;
-    my @library_path;
     my @arguments;
     my $fork_starter = "$ENV{GLOBUS_LOCATION}/libexec/globus-fork-starter";
     my $fork_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-fork.conf";
@@ -129,23 +128,6 @@ sub submit
             return Globus::GRAM::Error::RSL_ENVIRONMENT();
         }
         $CHILD_ENV{$tuple->[0]} = $tuple->[1];
-    }
-
-    @library_path = $description->library_path();
-
-    foreach (@library_path)
-    {
-        if(ref($_))
-        {
-            $self->log("Invalid library_path value");
-            return Globus::GRAM::Error::RSL_ENVIRONMENT();
-        }
-        $self->append_path(\%CHILD_ENV, 'LD_LIBRARY_PATH', $_);
-        if($Config::Config{osname} eq 'irix')
-        {
-            $self->append_path(\%CHILD_ENV, 'LD_LIBRARYN32_PATH', $_);
-            $self->append_path(\%CHILD_ENV, 'LD_LIBRARY64_PATH', $_);
-        }
     }
 
     if(ref($description->count()) ||

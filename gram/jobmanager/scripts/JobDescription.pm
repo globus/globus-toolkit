@@ -7,8 +7,6 @@
 #     $Revision$
 #     $Author$
 
-use Globus::GRAM::Error;
-
 =head1 NAME
 
 Globus::GRAM::JobDescription - GRAM Job Description
@@ -69,6 +67,10 @@ which corresponds to the rsl fragment
          (GLOBUS_GRAM_JOB_CONTACT 'https://globus.org:1234/2345/4332')
      )
 
+When the library_path RSL attribute is specified, this object modifies
+the environment RSL attribute value to append its value to any system specific
+variables.
+
 =cut
 
 sub new
@@ -122,6 +124,8 @@ sub new
             }
         }
     }      
+
+    $self->fix_library_path_environment();
 
     return $self;
 }
@@ -349,6 +353,71 @@ sub AUTOLOAD
 	return undef;
     }
 }
+
+# Internal method to merge the library_path RSL attribute and any values in the
+# environment RSL attribute which explicitly name system library path variables.
+# The result will be modifications to the environment RSL attribute value
+# with the library_path values appended to any existing system-specific library
+# path settings in the original RSL. For example
+# if we found 
+# &(environment = (LD_LIBRARY_PATH foo))
+#  (library_path = bar)
+# in the RSL, and LD_LIBRARY_PATH was one of the system-specific library paths
+# for this OS, we'll modify the RSL to be
+# &(environment = (LD_LIBRARY_PATH foo:bar))
+#  (library_path = bar)
+# 
+# The $library_map values are mostly based on
+# http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html
+# and also LD_LIBRARY_PATH for some popular BSDs
+sub fix_library_path_environment
+{
+    my $self = shift;
+    my @environment = $self->environment();
+    my $library_map = {
+        'linux' => [ 'LD_LIBRARY_PATH'],
+        'hpux' => [ 'SHLIB_PATH', 'LD_LIBRARY_PATH' ],
+        'solaris' => [ 'LD_LIBRARY_PATH', 'LD_LIBRARY_PATH_64' ],
+        'aix' => [ 'LIBPATH' ],
+        'irix' => [ 'LD_LIBRARY_PATH', 'LD_LIBRARYN32_PATH', 'LD_LIBRARY64_PATH' ],
+        'darwin' => [ 'DYLD_LIBRARY_PATH' ],
+        'freebsd' => [ 'LD_LIBRARY_PATH' ],
+        'openbsd' => [ 'LD_LIBRARY_PATH' ]
+    };
+    my $library_path = join(':', $self->library_path());
+
+    # Only bother doing anything if the library_path RSL attribute is 
+    # present, and we know something about how the OS finds dynamic libraries
+    # $^O is The name of the operating system under which this copy of Perl
+    # was built
+    if ($library_path ne '' && exists($library_map->{$^O})) {
+        foreach my $var (@{$library_map->{$^O}}) {
+            # environment is an list of [ $name, $value ] pairs. This pulls
+            # out the value that matches the current OS-specific envvar name
+            my @libref = grep { $_->[0] eq $var } @environment;
+
+            if (exists $libref[0])
+            {
+                # user specified both environment=($var ...) and
+                # library_path=$library_path so we'll append $library_path
+                # to the corresponding environment variable definition
+                $libref[0]->[1] .= ":$library_path";
+            }
+            else
+            {
+                # user didn't specify both library_path and
+                # environment=($var $library_path), so we just add it to the
+                # environment
+                push(@environment, [$var, $library_path]);
+            }
+        }
+        # @environment is a list of references so modifications above will
+        # modify the RSL; however, if we add new references (the else case
+        # above), they won't be in the list in this object. 
+        $self->add('environment', \@environment);
+    }
+}
+
 1;
 
 __END__

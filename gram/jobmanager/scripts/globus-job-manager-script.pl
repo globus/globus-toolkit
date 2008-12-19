@@ -116,10 +116,13 @@ if($command eq 'submit')
         local $commandName = join(" ", $job_description->executable,
                                        $job_description->arguments);
         local @filterArgs = split(/\s+/, $FILTER_COMMAND);
-        local $rVal = (system(@filterArgs, $commandName)) >> 8;
-        if($rVal != 0)  # The filter command returned an error, so deny.
+        if(-x $filterArgs[0])  # Make sure program is executable
         {
-            &fail(Globus::GRAM::Error::AUTHORIZATION_DENIED_EXECUTABLE);
+            local $rVal = (system(@filterArgs, $commandName)) >> 8;
+            if($rVal != 0)  # The filter command returned an error, so deny.
+            {
+                &fail(Globus::GRAM::Error::AUTHORIZATION_DENIED_EXECUTABLE);
+            }
         }
     }
     $manager->rewrite_urls();

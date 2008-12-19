@@ -60,8 +60,6 @@ sub submit
     my @arguments;
     my $email_when = '';
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my %library_vars;
-    my $library_path;
 
     $self->log("Entering pbs submit");
 
@@ -277,23 +275,11 @@ EOF
 
     $rsh_env = '';
 
-    $library_vars{LD_LIBRARY_PATH} = 0;
-    if($^O eq 'irix')
-    {
-        $library_vars{LD_LIBRARYN32_PATH} = 0;
-        $library_vars{LD_LIBRARY64_PATH} = 0;
-    }
-
     foreach my $tuple ($description->environment())
     {
         if(!ref($tuple) || scalar(@$tuple) != 2)
         {
             return Globus::GRAM::Error::RSL_ENVIRONMENT();
-        }
-        if(exists($library_vars{$tuple->[0]}))
-        {
-            $tuple->[1] .= $tuple->[1];
-            $library_vars{$tuple->[0]} = 1;
         }
 
         push(@new_env, $tuple->[0] . '="' . $tuple->[1] . '"');
@@ -310,20 +296,6 @@ EOF
 
         $rsh_env .= $tuple->[0] . '="' . $tuple->[1] . "\";\n"
                  .  'export ' . $tuple->[0] . ";\n";
-    }
-    $library_path = join(':', $description->library_path());
-
-    if ($library_path ne '')
-    {
-        foreach (keys %library_vars)
-        {
-            if($library_vars{$_} == 0)
-            {
-                push(@new_env, $_ . '=' . $library_path);
-                $rsh_env .= "$_=$library_path;\n"
-                          . "export $_;\n";
-            }
-        }
     }
 
     print JOB "$rsh_env";
@@ -605,6 +577,14 @@ sub poll
         elsif(/R|E/)
         {
             $state = Globus::GRAM::JobState::ACTIVE;
+        }
+        elsif(/C/)
+        {
+            $state = Globus::GRAM::JobState::DONE;
+            $self->nfssync( $description->stdout() )
+                if $description->stdout() ne '';
+            $self->nfssync( $description->stderr() )
+                if $description->stderr() ne '';
         }
         else
         {

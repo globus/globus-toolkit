@@ -49,14 +49,18 @@ my $name		= 'jobmanager-condor';
 my $manager_type	= 'condor';
 my $condor_os		= '';
 my $condor_arch		= '';
+my $vanilla_check       = 0;
 my $c_opts		= '';
+my $mpi_script          = '';
 my $help                = 0;
 my $cmd;
 
 GetOptions('service-name|s=s' => \$name,
 	   'help|h' => \$help,
 	   'condor-os=s' => \$condor_os,
-	   'condor-arch=s' => \$condor_arch);
+	   'condor-arch=s' => \$condor_arch,
+           'vanilla-check' => \$vanilla_check,
+           'mpi-script=s' => \$mpi_script);
 
 &usage if $help;
 
@@ -78,6 +82,14 @@ if($condor_os ne '')
 if($condor_arch ne '')
 {
     $c_opts .= " --with-condor-arch=$condor_arch";
+}
+if ($vanilla_check)
+{
+    $c_opts .= " --with-check-vanilla-files";
+}
+if ($mpi_script ne '')
+{
+    $c_opts .= " --with-mpi-script=$mpi_script";
 }
 
 print `./find-condor-tools $c_opts --cache-file=/dev/null`;
@@ -120,6 +132,8 @@ sub usage
           "Options:  [-service-name|-s service_name]\n".
 	  "          [-condor-os=CONDOR OS]\n".
 	  "          [-condor-arch=CONDOR ARCH]\n".
+	  "          [-vanilla-check]\n".
+	  "          [-mpi-script]\n".
 	  "          [-help]\n";
     exit 1;
 }
