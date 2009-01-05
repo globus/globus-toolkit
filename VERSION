@@ -1,10 +1,10 @@
-This is MyProxy v4.4 XX Xxx 2008.
+This is MyProxy v4.4 12 Dec 2008.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v4.4 XX Xxx 2008
+v4.4 12 Dec 2008
   - allow $MYPROXY_SERVER and -s command-line options to be a
     comma-separated list of hostnames to try to connect to
   - in myproxy-server, fail on startup or reconfig with an "unsafe
