@@ -432,6 +432,11 @@ voms_proxy_init()
         return -1;
     }
 
+    /* Setup the environment for voms-proxy-init. */
+    unsetenv("X509_USER_CERT");
+    unsetenv("X509_USER_KEY");
+    setenv("X509_USER_PROXY", outputfile, 1);
+
     argv[argc++] = command;
     argv[argc++] = "-hours";
     snprintf(hourstr, sizeof(hourstr), "%d", hours);
