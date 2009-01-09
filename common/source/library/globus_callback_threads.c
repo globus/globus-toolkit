@@ -735,6 +735,7 @@ globus_l_callback_register(
     globus_l_callback_info_t *          callback_info;
     globus_l_callback_space_t *         i_space;
     int                                 initial_refs;
+    globus_bool_t                       do_signal = GLOBUS_FALSE;
 
     if(!callback_func)
     {
@@ -899,10 +900,15 @@ globus_l_callback_register(
         
         if(i_space->idle_count > 0)
         {
-            globus_cond_signal(&i_space->cond);
+            do_signal = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&i_space->lock);
+    
+    if(do_signal)
+    {
+        globus_cond_signal(&i_space->cond);
+    }
     
     return GLOBUS_SUCCESS;
 }
