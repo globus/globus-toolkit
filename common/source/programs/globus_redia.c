@@ -14,6 +14,8 @@ redia_l_opts_unknown(
     int                                 argc,
     char **                             argv)
 {
+    return GLOBUS_SUCCESS;
+/*
     return globus_error_put(globus_error_construct_error(
         NULL,
         NULL,
@@ -23,6 +25,7 @@ redia_l_opts_unknown(
         __LINE__,
         "Unknown parameter: %s",
         unknown_arg));
+*/
 }
 
 static
@@ -34,7 +37,10 @@ redia_l_opts_help(
     void *                              arg,
     int *                               out_parms_used)
 {
+    fprintf(stdout, "globus-redia [options] <library name> <symbol name>\n");
+    fprintf(stdout, "options:\n");
     globus_options_help(opts_handle);
+
     exit(0);
 }
 
@@ -76,7 +82,7 @@ redia_l_opts_edge_label(
     void *                              arg,
     int *                               out_parms_used)
 {
-    g_edge_label = opt[1];
+    g_edge_label = opt[0];
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
@@ -90,7 +96,7 @@ redia_l_opts_txt_file(
     void *                              arg,
     int *                               out_parms_used)
 {
-    g_txt_file = opt[1];
+    g_txt_file = opt[0];
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
@@ -104,7 +110,7 @@ redia_l_opts_outfile(
     void *                              arg,
     int *                               out_parms_used)
 {
-    g_outfile = opt[1];
+    g_outfile = opt[0];
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
@@ -129,7 +135,8 @@ globus_options_entry_t                   redia_l_opts_table[] =
         1, redia_l_opts_txt_file},
     {"help", "?", NULL, "",
         "print usage information",
-        0, redia_l_opts_help}
+        0, redia_l_opts_help},
+    {NULL}
 };
 
 
@@ -150,7 +157,7 @@ main(int argc, char ** argv)
         &opt_h, redia_l_opts_unknown, NULL);
 
     globus_options_add_table(opt_h, redia_l_opts_table, NULL);
-    result = globus_options_command_line_process(opt_h, argc-2, argv);
+    result = globus_options_command_line_process(opt_h, argc, argv);
     if(result != GLOBUS_SUCCESS)
     {
         exit(1);
@@ -166,17 +173,17 @@ main(int argc, char ** argv)
         exit(1);
     }
 
-    dlo_h = dlopen(lib_name, RTLD_NOW);
+    dlo_h = dlopen(lib_name, RTLD_LAZY);
     if(dlo_h == NULL)
     {
-        fprintf(stderr, "Failed to dlopen %s\n", lib_name);
+        fprintf(stderr, "Failed to dlopen %s\n%s\n", lib_name, dlerror());
         exit(1);
     }
 
     sym_handle = dlsym(dlo_h, symbol_name);
     if(sym_handle == NULL)
     {
-        fprintf(stderr, "Failed to dlsym %s\n", symbol_name);
+        fprintf(stderr, "Failed to dlsym %s\n%s\n", symbol_name, dlerror());
         exit(1);
     }
 

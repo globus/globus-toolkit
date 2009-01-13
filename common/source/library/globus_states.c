@@ -46,8 +46,6 @@ typedef enum
     GLOBUS_STATE_ERROR_INVALID_TRANSITION
 } globus_xio_error_type_t;
 
-
-
 typedef struct globus_state_entry_s
 {
     int                                 next_state;
@@ -155,6 +153,46 @@ globus_state_add_transition_real(
     handle->map[state][event] = ent;
 
     return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_state_handle_event_now(
+    globus_state_handle_t               in_handle,
+    int                                 state,
+    int                                 event,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_i_state_handle_t *           handle;
+    globus_state_entry_t *              ent;
+    GlobusStateName(globus_state_transition);
+
+    handle = (globus_i_state_handle_t *) in_handle;
+
+    if(handle == NULL)
+    {
+        return GlobusStateErrorParameter("handle");
+    }
+    if(handle->state_count <= state)
+    {
+        return GlobusStateErrorParameter("state");
+    }
+    if(handle->event_count <= event)
+    {
+        return GlobusStateErrorParameter("event");
+    }
+    ent = (globus_state_entry_t *) handle->map[state][event];
+
+    if(ent == NULL)
+    {
+        return GlobusStateErrorTrans(
+            handle->state_names[state],
+            handle->event_names[event]);
+    }
+
+    result = ent->cb(ent->next_state, user_arg);
+
+    return result;
 }
 
 
@@ -375,7 +413,7 @@ globus_state_make_graph(
             while(!globus_list_empty(list))   
             {
                 char * tmp_str = (char *) globus_list_remove(&list, list);
-                fprintf(fptr, "%d\t%s\n", i, tmp_str);
+                fprintf(fptr, "%d\t%s\n", i+1, tmp_str);
             }
         }
 
