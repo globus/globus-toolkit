@@ -1,11 +1,12 @@
 pacmanVersionGE('3.20');
-version('0.0.1');
+version('0.0.2');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
-description('Hadoop-Config 0.0.1');
+description('Hadoop-Config 0.0.2');
 url('http://t2.unl.edu');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Licenses');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Service-Management');
 package('http://t2.unl.edu/store/cache:Hadoop');
-package('http://t2.unl.edu/store/cache:FUSE');
+#package('http://t2.unl.edu/store/cache:FUSE');
 path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
 {
   platform('linux-rhel-4');
@@ -16,7 +17,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   };
   {
     path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.1-RHEL4-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.2.tar.gz')
     OR 
     fail('Pacman download of Hadoop failed.')
   }
@@ -25,7 +26,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   processor('x86_64');
   {
     path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.1-RHEL4-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.2.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -38,7 +39,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   };
   {
     path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.1-RHEL5-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.2.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -47,7 +48,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   processor('x86_64');
   {
     path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.1-RHEL5-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop_config-0.0.2.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -55,6 +56,10 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
 shell('vdt-begin-install Hadoop-Config');
 shell('vdt-untar hadoop_config-*.tar.gz');
 setup('source $VDT_LOCATION/hadoop_config/hdfs_alias.SHELL');
+shell('vdt-register-service --name hadoop_fuse --type init --disable --init-script $VDT_LOCATION/hadoop_config/hadoop_fuse');
+shell('vdt-register-service --name hadoop_datanode --type init --disable --init-script $VDT_LOCATION/hadoop_config/hadoop_datanode');
+shell('vdt-register-service --name hadoop_namenode --type init --disable --init-script $VDT_LOCATION/hadoop_config/hadoop_namenode');
+shell('vdt-register-service --name hadoop_checkpointnode --type init --disable --init-script $VDT_LOCATION/hadoop_config/hadoop_checkpointnode');
 shell('vdt-version --add Hadoop-Config');
 shell('vdt-end-install');
 uninstallShell('vdt/sbin/vdt-uninstall Hadoop-Config');

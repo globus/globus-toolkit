@@ -1,20 +1,24 @@
 pacmanVersionGE('3.20');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
-description('Hadoop 0.18.1');
-version('0.18.1-2');
+description('Hadoop 0.19.0');
+version('0.19.0-2');
 url('http://hadoop.apache.org/core/');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Licenses');
-package('http://vdt.cs.wisc.edu/vdt_1101_cache:JDK-1.5');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:JDK-1.6');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Ant');
+shell('mv jdk1.5 jdk1.5.orig');
+shell('ln -s jdk1.6 jdk1.5');
 path("$VDT_LOCATION/hadoop/bin", 'PATH', 'no-check');
 setenv('HADOOP_HOME', '$VDT_LOCATION/hadoop');
-path("$HADOOP_HOME/hadoop-0.18.1-core.jar", 'CLASSPATH', 'no-check');
+path("$HADOOP_HOME/hadoop-0.19.0-core.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/lib/commons-logging-1.0.4.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/lib/commons-logging-api-1.0.4.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/lib/log4j-1.2.15.jar", 'CLASSPATH', 'no-check');
 path("$HADOOP_HOME/src/contrib/fuse-dfs/src", "PATH", "no-check");
 path("$VDT_LOCATION/hadoop/build/libhdfs", 'LD_LIBRARY_PATH', 'no-check');
 path("$VDT_LOCATION/jdk1.5/jre/lib/amd64/server", "LD_LIBRARY_PATH", "no-check");
+setenv("PERMS", "1");
+setenv("FUSE_HOME", "$VDT_LOCATION/fuse");
 {
   platform('linux-rhel-4');
   {
@@ -23,7 +27,7 @@ path("$VDT_LOCATION/jdk1.5/jre/lib/amd64/server", "LD_LIBRARY_PATH", "no-check")
     envIsSet('VDT_PRETEND_32')
   };
   {
-    download('http://t2.unl.edu/store/cache/hadoop-0.18.1-RHEL4-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop-0.19.0-RHEL4-i686.tar.gz')
     OR 
     fail('Pacman download of Hadoop failed.')
   }
@@ -31,7 +35,7 @@ path("$VDT_LOCATION/jdk1.5/jre/lib/amd64/server", "LD_LIBRARY_PATH", "no-check")
   platform('linux-rhel-4');
   processor('x86_64');
   {
-    download('http://t2.unl.edu/store/cache/hadoop-0.18.1-RHEL4-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop-0.19.0-RHEL4-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -43,7 +47,7 @@ path("$VDT_LOCATION/jdk1.5/jre/lib/amd64/server", "LD_LIBRARY_PATH", "no-check")
     envIsSet('VDT_PRETEND_32')
   };
   {
-    download('http://t2.unl.edu/store/cache/hadoop-0.18.1-RHEL5-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop-0.19.0-RHEL5-i686.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -51,13 +55,13 @@ path("$VDT_LOCATION/jdk1.5/jre/lib/amd64/server", "LD_LIBRARY_PATH", "no-check")
   platform('linux-rhel-5');
   processor('x86_64');
   {
-    download('http://t2.unl.edu/store/cache/hadoop-0.18.1-RHEL5-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/hadoop-0.19.0-RHEL5-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
 };
 shell('vdt-begin-install Hadoop');
-shell('vdt-untar hadoop-0.18.1-*.tar.gz');
+shell('vdt-untar hadoop-0.19.0-*.tar.gz');
 shell('vdt-version --add HADOOP');
 shell('vdt-end-install');
 uninstallShell('vdt/sbin/vdt-uninstall Hadoop');

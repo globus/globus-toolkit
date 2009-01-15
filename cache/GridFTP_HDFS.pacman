@@ -27,7 +27,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   };
   {
     path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL4-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL4-i686.tar.gz')
     OR 
     fail('Pacman download of Hadoop failed.')
   }
@@ -36,7 +36,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   processor('x86_64');
   {
     path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL4-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL4-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -49,7 +49,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   };
   {
     path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL5-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL5-i686.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -58,7 +58,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   processor('x86_64');
   {
     path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.1-RHEL5-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL5-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -66,7 +66,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
 shell('vdt-begin-install GridFTP_HDFS');
 #insertLine('gsiftphdfs 5000/tcp', '/etc/services');
 shell('vdt-untar gridftp_hdfs-*.tar.gz');
-shell('vdt-register-service --name gsiftp-hdfs --type inetd --enable --port 5000 --protocol tcp --inetd-command /opt/osg/osg-100/gridftp_hdfs/inetd_starter.sh')
+shell('vdt-register-service --name gridftp-hdfs --type inetd --disable --port 5000 --protocol tcp --inetd-command $VDT_LOCATION/gridftp_hdfs/inetd_starter.sh')
 shell('vdt-version --add GridFTP_HDFS');
 shell('vdt-end-install');
 uninstallShell('vdt/sbin/vdt-uninstall GridFTP_HDFS');

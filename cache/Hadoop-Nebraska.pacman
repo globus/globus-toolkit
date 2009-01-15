@@ -1,6 +1,71 @@
 description('Hadoop Configuration for Nebraska 0.0.1');
 version('0.0.1');
-package('http://t2.unl.edu/store/cache:Hadoop-Grid');
+setenv('VDT_HDFS_FUSE_MOUNT', '/mnt/hadoop');
+setenv('VDT_HAS_KERNEL_SOURCES', '1');
+shell('mkdir -p $VDT_HDFS_FUSE_MOUNT');
+setenv('VDTSETUP_AGREE_TO_LICENSES', 'y');
+setenv('VDTSETUP_INSTALL_CERTS', 'l');
+setenv('VDTSETUP_CA_CERT_UPDATER', 'y');
+setenv('VDTSETUP_ENABLE_ROTATE', 'y');
+setenv('VDTSETUP_ENABLE_GRIDFTP', 'n');
+setenv('VDTSETUP_EDG_CRL_UPDATE', 'y');
 setenv('VDT_GRIDFTP_HDFS_REPLICAS', '2');
-setenv('VDT_GRIDFTP_HDFS_NAMENODE', 'node001');
+setenv('VDT_GRIDFTP_HDFS_NAMENODE', 'hadoop-name');
 setenv('VDT_GRIDFTP_HDFS_PORT', '9000');
+package('http://t2.unl.edu/store/cache:Hadoop');
+package('http://t2.unl.edu/store/cache:Hadoop-Config');
+{
+  shellOutputGE('hostname', 'node');
+  {
+    shell('vdt-control --enable hadoop_fuse');
+    shell('vdt-control --enable hadoop_datanode');
+    package('http://t2.unl.edu/store/cache:FUSE')
+    OR
+    fail('Pacman install failed.')
+  }
+  OR
+  shellOutputGE('hostname', 'dcache');
+  {
+    shell('vdt-control --enable gridftp_hdfs');
+    package('http://t2.unl.edu/store/cache:GridFTP_HDFS')
+    OR
+    fail('Pacman install failed.')
+  }
+  OR
+  shellOutputGE('hostname', 'red');
+  {
+    shell('vdt-control --enable hadoop_fuse');
+    shell('vdt-control --enable gridftp_hdfs');
+    package('http://t2.unl.edu/store/cache:GridFTP_HDFS');
+    package('http://t2.unl.edu/store/cache:FUSE')
+    OR
+    fail('Pacman install failed.')
+  }
+};
+# Special nodes
+{
+  shellOutputEQ('hostname', 'hadoop-name');
+  {
+    shell('vdt-control --enable hadoop_namenode')
+    OR
+    fail('Pacman install failed.')
+  }
+  OR
+  shellOutputEQ('hostname', 'node120');
+  {
+    shell('vdt-control --enable hadoop_datanode');
+    shell('vdt-control --enable hadoop_checkpointnode')
+    OR
+    fail('Pacman install failed.')
+  }
+  OR
+  shellOutputEQ('hostname', 'dcache07');
+  {
+    shell('vdt-control --enable hadoop_fuse');
+    package('http://t2.unl.edu/store/cache:FUSE')
+    OR
+    fail('Pacman install failed.');
+  }
+  OR
+  shell('echo "OK"');
+};
