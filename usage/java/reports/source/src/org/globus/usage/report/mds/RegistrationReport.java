@@ -21,6 +21,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class RegistrationReport {
@@ -71,6 +73,8 @@ public class RegistrationReport {
                 "Average Number of Current Registrations to MDS Service",
                 "mdscurrentregistrationhistogram", "Number of Registrations", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             int numRegistrations = 0;
             int totalLifetimeRegCount = 0;
@@ -86,13 +90,16 @@ public class RegistrationReport {
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();
 
-            ResultSet rs = dbr.retrieve("mds_packets", new String[] {
-                    "lifetime_reg_count", "current_reg_count" },
-                    startD, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT " +
+                    "  COUNT(*), SUM(lifetime_reg_count), SUM(current_reg_count) " +
+                    "FROM mds_packets " +
+                    "WHERE DATE(send_time) >= '" + dateFormat.format(startD) + "' AND " +
+                    "      DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "'");
             while (rs.next()) {
-                numRegistrations++;
-                totalLifetimeRegCount += rs.getInt(1);
-                totalCurrentRegCount += rs.getInt(2);
+                numRegistrations = rs.getInt(1);
+                totalLifetimeRegCount = rs.getInt(2);
+                totalCurrentRegCount = rs.getInt(3);
             }
 
             lifetimeRegistrationHist.addData("Lifetime Registrations made ",

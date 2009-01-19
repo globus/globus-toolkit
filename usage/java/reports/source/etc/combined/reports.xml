@@ -18,10 +18,10 @@
 
  <target name="gnuplot-gftpfreqdist">
    <fail message="Must specify in.xml" unless="in.xml"/>
-   <xslt style="gftpfreqdist/gnuplot-freqdist-instructions.xsl" 
+   <xslt style="gftpfreqdist/gnuplot-gftpfreqdist-instructions.xsl"
          in="${in.xml}"
          out="${user.dir}/gftpfreqdist.gnuplot"/>
-   <xslt style="gftpfreqdist/gnuplot-freqdist-data.xsl" 
+   <xslt style="gftpfreqdist/gnuplot-gftpfreqdist-data.xsl"
          in="${in.xml}"
          out="${user.dir}/gftpfreqdist.data"/>
  </target>

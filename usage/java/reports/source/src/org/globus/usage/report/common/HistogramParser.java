@@ -89,13 +89,24 @@ public class HistogramParser {
         totalData += data;
     }
 
+    public double getData(String item) {
+        ItemEntry entry = (ItemEntry) uniqueItems.get(item);
+        if (entry == null) {
+            return 0.0;
+        }
+        else
+        {
+            return entry.get();
+        }
+    }
+
     public void addRangedData(double value) {
         this.slots.addValue(value, 1);
     }
 
-    public void addRangedData(double value, int valueToAdd) {
+    public void addRangedData(double value, long valueToAdd) {
         this.slots.addValue(value, valueToAdd);
-        this.addData(slots.whichSlot(value), valueToAdd);
+        this.addData(slots.whichSlotString(value), valueToAdd);
     }
 
     public void output(PrintStream io) {
@@ -213,6 +224,18 @@ public class HistogramParser {
         io.println("</histogram>");
     }
 
+    public int getNumSlots() {
+        return slots.getNumSlots();
+    }
+
+    public long getSlotThreshold(int which) {
+        return slots.getSlotThreshold(which);
+    }
+        
+    public String getSlotName(int which) {
+        return slots.getSlotName(which);
+    }
+
     public static class Entry {
         private String startDate;
 
@@ -259,6 +282,7 @@ public class HistogramParser {
                 return entry.get();
             }
         }
+
     }
 
     public static class ItemEntry {

@@ -103,6 +103,21 @@ public class DatabaseRetriever {
         return this.stmt.executeQuery(query);
     }
 
+    public int update(String query) throws Exception {
+        // make sure to close previous statement
+        closeStatement();
+        
+        this.stmt = this.con.createStatement();
+        
+        try {
+            this.stmt.setFetchSize(1000);
+        } catch (Exception e) {
+            System.err.println("WARN: setFetchSize() not supported");
+        }
+        
+        return this.stmt.executeUpdate(query);
+    }
+
     public String createQuery(String packetType,
                               String[] columns,
                               String[] conditions,
@@ -121,8 +136,8 @@ public class DatabaseRetriever {
             query = query + conditions[n] + " and ";
         }
 
-        query = query + "send_time >= '" + startDateString
-                + "' and send_time < '" + endDateString + "'";
+        query = query + "date(send_time) >= '" + startDateString
+                + "' and date(send_time) < '" + endDateString + "'";
 
         return query;
     }

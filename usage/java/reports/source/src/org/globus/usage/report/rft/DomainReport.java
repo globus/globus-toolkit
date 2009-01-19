@@ -22,6 +22,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Date;
@@ -77,6 +79,7 @@ public class DomainReport {
                 "Total RFT Resources Created Shown by Domain",
                 "rftdomainhistogram", "Number of Resources Created", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         while (ts.next()) {
             HashMap iptracker = new HashMap();
 
@@ -87,19 +90,18 @@ public class DomainReport {
             ipReport.nextEntry(startDate, ts.getFormattedTime());
             domainReport.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("rft_packets",
-                    new String[] { "ip_address" }, startTime, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT ip_address, COUNT(*) " +
+                    "FROM rft_packets " +
+                    "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
+                    "  AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
+                    "GROUP BY ip_address;");
 
             while (rs.next()) {
-                IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                iptracker.put(rs.getString(1), "");
-                domainReport.addData(ipEntry.getDomain(), 1);
-            }
-
-            Iterator ipIterator = iptracker.keySet().iterator();
-            while (ipIterator.hasNext()) {
-                IPEntry ipEntry = IPEntry
-                        .getIPEntry((String) ipIterator.next());
+                String ip = rs.getString(1);
+                int count = rs.getInt(2);
+                IPEntry ipEntry = IPEntry.getIPEntry(ip);
+                domainReport.addData(ipEntry.getDomain(), count);
                 ipReport.addData(ipEntry.getDomain(), 1);
             }
             rs.close();

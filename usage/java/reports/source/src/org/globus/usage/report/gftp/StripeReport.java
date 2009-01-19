@@ -21,6 +21,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class StripeReport {
@@ -62,6 +64,7 @@ public class StripeReport {
         String inputDate = args[args.length - 1];
 
         TimeStep ts = new TimeStep(stepStr, n, inputDate);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         HistogramParser streamHist = new HistogramParser(
                 "Number of Packets shown by Streams Used",
@@ -83,13 +86,32 @@ public class StripeReport {
             streamHist.nextEntry(startTime, ts.getFormattedTime());
             stripeHist.nextEntry(startTime, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("gftp_packets", new String[] {
-                    "num_streams", "num_stripes" }, startDate, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT num_streams, COUNT(*) "+
+                    "FROM gftp_packets "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
+                    "GROUP BY num_streams;");
             while (rs.next()) {
-                streamHist.addData(rs.getString(1), 1);
-                stripeHist.addData(rs.getString(2), 1);
+                String num_streams = rs.getString(1);
+                int count = rs.getInt(2);
+
+                streamHist.addData(num_streams, count);
             }
             rs.close();
+
+            rs = dbr.retrieve(
+                    "SELECT num_stripes, COUNT(*) "+
+                    "FROM gftp_packets "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "AND   date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' "+
+                    "GROUP BY num_stripes;");
+            while (rs.next()) {
+                String num_stripes = rs.getString(1);
+                int count = rs.getInt(2);
+
+                stripeHist.addData(num_stripes, count);
+            }
         }
         dbr.close();
         System.out.println("<report>");

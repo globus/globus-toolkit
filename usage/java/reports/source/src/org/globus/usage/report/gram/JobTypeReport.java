@@ -20,8 +20,9 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import java.util.Locale;
 
@@ -73,38 +74,37 @@ public class JobTypeReport {
 
         System.out.println("<job-type-report>");
 
-        int totalJobs;
-        int singleJobs;
-        int MPIJobs;
-        int condorJobs;
-        int multipleJobs;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         while (ts.next()) {
-            totalJobs = 0;
-            singleJobs = 0;
-            MPIJobs = 0;
-            condorJobs = 0;
-            multipleJobs = 0;
+            int type_count[] = new int[6];
+            int totalJobs = 0;
 
             String startDate = ts.getFormattedTime();
 
-            ResultSet rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "job_type" }, ts.getTime(), ts.stepTime());
+            ResultSet rs = dbr.retrieve(
+                    "    SELECT job_type, COUNT(*) "+
+                    "    FROM gram_packets " +
+                    "        WHERE " +
+                    "            send_time >= '" + dateFormat.format(ts.getTime()) + "' " +
+                    "        AND send_time < '" + dateFormat.format(ts.stepTime()) + "' " +
+                    "    GROUP BY job_type;");
 
             while (rs.next()) {
-                totalJobs++;
                 int type = rs.getInt(1);
-                if (type == 0 || type == 2) {
-                    multipleJobs++;
-                } else if (type == 1) {
-                    singleJobs++;
-                } else if (type == 3) {
-                    MPIJobs++;
-                } else if (type == 4) {
-                    condorJobs++;
+                int perTypeJobs = rs.getInt(2);
+
+                if (type < 0 || type > 4)
+                {
+                    type = 5;
                 }
+
+                type_count[type] = perTypeJobs;
+                totalJobs += perTypeJobs;
             }
             rs.close();
+
+            type_count[2] += type_count[0];
 
             System.out.println(" <entry>");
             System.out.println("\t<start-date>" + startDate + "</start-date>");
@@ -113,16 +113,18 @@ public class JobTypeReport {
 
             System.out.println("\t<job-types>");
             System.out.println("\t\t<single-jobs>"
-                    + f.format(100.0 * singleJobs / totalJobs)
+                    + f.format(100.0 * type_count[1] / totalJobs)
                     + "</single-jobs>");
             System.out.println("\t\t<multiple-jobs>"
-                    + f.format(100.0 * multipleJobs / totalJobs)
+                    + f.format(100.0 * type_count[2] / totalJobs)
                     + "</multiple-jobs>");
             System.out.println("\t\t<condor-jobs>"
-                    + f.format(100.0 * condorJobs / totalJobs)
+                    + f.format(100.0 * type_count[4] / totalJobs)
                     + "</condor-jobs>");
             System.out.println("\t\t<MPI-jobs>"
-                    + f.format(100.0 * MPIJobs / totalJobs) + "</MPI-jobs>");
+                    + f.format(100.0 * type_count[3] / totalJobs) + "</MPI-jobs>");
+            System.out.println("\t\t<other-jobs>"
+                    + f.format(100.0 * type_count[5] / totalJobs) + "</other-jobs>");
             System.out.println("\t</job-types>");
 
             System.out.println(" </entry>");

@@ -21,6 +21,7 @@ import org.globus.usage.report.common.IPEntry;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -77,9 +78,9 @@ public class DomainReport {
                 "Total MDS Resources Created Shown by Domain",
                 "mdsdomainhistogram", "Number of Resources Created", n);
 
-        while (ts.next()) {
-            HashMap iptracker = new HashMap();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
+        while (ts.next()) {
             String startDate = ts.getFormattedTime();
             Date startTime = ts.getTime();
             ts.stepTime();
@@ -87,22 +88,20 @@ public class DomainReport {
             ipReport.nextEntry(startDate, ts.getFormattedTime());
             domainReport.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("mds_packets",
-                    new String[] { "ip_address" }, startTime, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT ip_address, COUNT(*) " +
+                    "FROM mds_packets " +
+                    "WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' " +
+                    "AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' " +
+                    "GROUP BY ip_address;");
 
             while (rs.next()) {
-                IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                iptracker.put(rs.getString(1), "");
-                domainReport.addData(ipEntry.getDomain(), 1);
-            }
-
-            Iterator ipIterator = iptracker.keySet().iterator();
-            while (ipIterator.hasNext()) {
-                IPEntry ipEntry = IPEntry
-                        .getIPEntry((String) ipIterator.next());
+                String ip_address = rs.getString(1);
+                int count = rs.getInt(2);
+                IPEntry ipEntry = IPEntry.getIPEntry(ip_address);
+                domainReport.addData(ipEntry.getDomain(), count);
                 ipReport.addData(ipEntry.getDomain(), 1);
             }
-            rs.close();
         }
         dbr.close();
         ipReport.output(System.out);

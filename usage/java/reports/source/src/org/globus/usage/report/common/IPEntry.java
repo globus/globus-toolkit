@@ -36,14 +36,20 @@ public class IPEntry {
     }
     
     public static IPEntry getIPEntry(String ip, boolean groupCommon) {
-        String hostname = null;
-        if (ip.startsWith("/")) {
-            ip = ip.substring(1, ip.length());
+        String hostname = "";
+        int i = ip.indexOf("/");
+        if (i != -1)
+        {
+            hostname = ip.substring(0,i);
+            ip = ip.substring(i+1);
         }
-        try {
-            hostname = InetAddress.getByName(ip).getHostName();
-        } catch (Exception e) {
-            return IPEntry.NULL_IP;
+        if (hostname.equals(""))
+        {
+            try {
+                hostname = InetAddress.getByName(ip).getHostName();
+            } catch (Exception e) {
+                return IPEntry.NULL_IP;
+            }
         }
 
         if (groupCommon) {

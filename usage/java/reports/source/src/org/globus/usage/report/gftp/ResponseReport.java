@@ -21,6 +21,8 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
+import java.text.SimpleDateFormat;
+
 import java.util.Date;
 
 public class ResponseReport {
@@ -79,6 +81,8 @@ public class ResponseReport {
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             String startTime = ts.getFormattedTime();
             Date startDate = ts.getTime();
@@ -88,22 +92,60 @@ public class ResponseReport {
             transferHist.nextEntry(startTime, ts.getFormattedTime());
             responseHist.nextEntry(startTime, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("gftp_packets", new String[] {
-                    "gftp_version", "stor_or_retr", "ftp_return_code" },
-                    startDate, ts.getTime());
+            ResultSet rs;
+            
+            rs = dbr.retrieve(
+                    "SELECT stor_or_retr, COUNT(*) " +
+                    "FROM gftp_packets "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
+                    "GROUP BY stor_or_retr;");
+
             while (rs.next()) {
-                versionHist.addData(rs.getString(1).substring(0,
-                        rs.getString(1).indexOf("(")), 1);
+                int type = rs.getInt(1);
+                int count = rs.getInt(2);
 
-                if (rs.getInt(2) == 0) {
-                    transferHist.addData("STOR", 1);
-                } else if (rs.getInt(2) == 1) {
-                    transferHist.addData("RETR", 1);
-                } else if (rs.getInt(2) == 2) {
-                    transferHist.addData("Other", 1);
+                if (type == 0) {
+                    transferHist.addData("STOR", count);
+                } else if (type == 1) {
+                    transferHist.addData("RETR", count);
+                } else if (type == 2) {
+                    transferHist.addData("Other", count);
                 }
+            }
+            rs.close();
 
-                responseHist.addData(rs.getString(3), 1);
+            rs = dbr.retrieve(
+                    "SELECT " +
+                    "     SUBSTRING( "+
+                    "         gftp_version, 1, POSITION( "+
+                    "                              ' (' IN gftp_version) - 1) " +
+                    "     AS version, COUNT(*) "+
+                    "FROM gftp_packets "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
+                    "GROUP BY version;");
+
+            while (rs.next()) {
+                String version = rs.getString(1);
+                int count = rs.getInt(2);
+
+                versionHist.addData(version, count);
+            }
+            rs.close();
+
+            rs = dbr.retrieve(
+                    "SELECT ftp_return_code, COUNT(*) " +
+                    "FROM gftp_packets "+
+                    "WHERE date(send_time) >= '" + dateFormat.format(startDate) + "' " +
+                    "  AND date(send_time) <  '" + dateFormat.format(ts.getTime()) + "' " +
+                    "GROUP BY ftp_return_code;");
+
+            while (rs.next()) {
+                String ftp_return_code = rs.getString(1);
+                int count = rs.getInt(2);
+
+                responseHist.addData(ftp_return_code, count);
             }
             rs.close();
         }

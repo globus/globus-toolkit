@@ -21,8 +21,9 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import java.util.Date;
 import java.util.Locale;
@@ -90,6 +91,8 @@ public class ErrorReport {
                 "Breakdown of Fault Classes", "faulthistogram",
                 "Number of Jobs with Fault Class", n);
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             Date startTime = ts.getTime();
             String startDate = ts.getFormattedTime();
@@ -102,18 +105,25 @@ public class ErrorReport {
             int gt2Jobs = 0;
             int faultJobs = 0;
 
-            ResultSet rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "gt2_error_code", "fault_class" },
-                    startTime, ts.getTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT gt2_error_code, fault_class, COUNT(*) "+
+                    "    FROM gram_packets "+
+                    "    WHERE DATE(send_time) >= '" + dateFormat.format(startTime) + "' "+
+                    "        AND DATE(send_time) < '" + dateFormat.format(ts.getTime()) + "' "+
+                    "    GROUP BY gt2_error_code, fault_class ;");
             while (rs.next()) {
-                totalJobs++;
-                if (rs.getInt(1) != 0) {
-                    gt2Jobs++;
-                    gt2hist.addData(rs.getString(1), 1);
+                int gt2_error_code = rs.getInt(1);
+                int fault_class = rs.getInt(2);
+                int jobs = rs.getInt(3);
+
+                totalJobs += jobs;
+                if (gt2_error_code != 0) {
+                    gt2Jobs += jobs;
+                    gt2hist.addData(Integer.toString(gt2_error_code), jobs);
                 }
-                if (rs.getInt(2) != 0) {
-                    faultJobs++;
-                    faulthist.addData(faultNames[rs.getInt(2)], 1);
+                if (fault_class != 0) {
+                    faultJobs += jobs;
+                    faulthist.addData(faultNames[fault_class], jobs);
                 }
             }
             rs.close();

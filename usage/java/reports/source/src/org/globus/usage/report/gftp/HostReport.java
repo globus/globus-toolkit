@@ -81,38 +81,44 @@ public class HostReport {
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            HashMap iptracker = new HashMap();
-
             hostHist.nextEntry(startS, ts.getFormattedTime());
             ipHist.nextEntry(startS, ts.getFormattedTime());
 
             ResultSet rs = dbr
                     .retrieve("gftp_packets",
-                            new String[] { "Distinct(hostname)" }, startD, ts
-                                    .getTime());
+                            new String[] { "DISTINCT(hostname)" }, startD, ts.getTime());
 
             while (rs.next()) {
                 String hostname = rs.getString(1);
-                String ip = hostname.substring(hostname.indexOf("/") + 1,
-                        hostname.length());
-                hostname = hostname.substring(0, hostname.lastIndexOf("/"));
+                int dotIndex;
 
-                if (hostname.indexOf(".") != -1) {
-                    hostname = hostname.substring(hostname.lastIndexOf("."),
-                            hostname.length());
-                    hostHist.addData(hostname, 1);
+                if (hostname != null &&
+                        ((dotIndex = hostname.lastIndexOf(".")) != -1)) {
+                    hostHist.addData(hostname.substring(dotIndex), 1);
                 } else {
                     hostHist.addData("unknown", 1);
                 }
-                iptracker.put(ip, "");
-            }
-            Iterator keys = iptracker.keySet().iterator();
-            while (keys.hasNext()) {
-                IPEntry ipentry = IPEntry.getIPEntry((String) keys.next());
-                ipHist.addData(ipentry.getDomain(), 1);
             }
             rs.close();
 
+            rs = dbr.retrieve("SELECT ip_address, hostname FROM gftp_packets "+
+                              "WHERE DATE(send_time) >= '" + startD + "' " +
+                              "AND   DATE(send_time) < '" + ts.getTime() + "' " +
+                              "GROUP BY ip_address, hostname");
+                    
+            while (rs.next()) {
+                String hostname = rs.getString(1);
+                String ip = rs.getString(2);
+                int dotIndex;
+
+                if (hostname != null &&
+                    ((dotIndex = hostname.lastIndexOf(".")) != -1)) {
+                    ipHist.addData(hostname.substring(dotIndex), 1);
+                } else {
+                    ipHist.addData("unresolved", 1);
+                }
+            }
+            rs.close();
         }
         dbr.close();
         System.out.println("<report>");

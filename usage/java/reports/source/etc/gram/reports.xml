@@ -8,6 +8,8 @@
 			out="${user.dir}/scheduler.gnuplot"/>
 		<xslt style="scheduler/gnuplot-scheduler-data.xsl" in="${in.xml}"
 			out="${user.dir}/scheduler.data"/>
+                <xslt style="scheduler/schedulers-index.xsl" in="${in.xml}"
+                        out="${user.dir}/schedulers.html"/>
 	</target>
 	
 	<target name="gnuplot-features">

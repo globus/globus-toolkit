@@ -78,20 +78,6 @@ public class ReplicaReport {
                 "Scale of LRCs (between empty and over 1M entries)",
                 "rlslrcscalehistogram", "Number of LRCs", n);
 
-        /*
-        HistogramParser deleteHist = new HistogramParser(
-                "Average Number of Files Deleted by a RFT Resource",
-                "rftdeletehistogram", "Number of Files Deleted", n);
-
-        HistogramParser byteHist = new HistogramParser(
-                "Average Number of Bytes Transfered by a RFT Resource",
-                "rftbytehistogram", "Bytes Transferred", n);
-
-        HistogramParser typeHist = new HistogramParser(
-                "Percent of Requests for Deletion vs. Transfer",
-                "rfttypehistogram", "Percent of total requests", n);
-        */
-
         while (ts.next()) {
             Map lrcs = new java.util.HashMap();
             int numLrcLFNs = 0;

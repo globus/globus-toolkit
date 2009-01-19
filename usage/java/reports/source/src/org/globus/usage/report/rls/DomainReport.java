@@ -84,15 +84,10 @@ public class DomainReport {
             ipReport.nextEntry(startDate, ts.getFormattedTime());
 
             ResultSet rs = dbr.retrieve("rls_packets",
-                    new String[] { "ip_address" }, startTime, ts.getTime());
+                    new String[] { "DISTINCT ip_address" }, startTime, ts.getTime());
 
             while (rs.next()) {
-                ips.add(rs.getString(1));
-            }
-
-            Iterator ipIterator = ips.iterator();
-            while (ipIterator.hasNext()) {
-                String ip = (String) ipIterator.next();
+                String ip = rs.getString(1);
                 int idx = ip.lastIndexOf("/");
                 if (idx > 0) {
                     ip = ip.substring(idx);
@@ -100,6 +95,7 @@ public class DomainReport {
                 IPEntry ipEntry = IPEntry.getIPEntry(ip);
                 ipReport.addData(ipEntry.getDomain(), 1);
             }
+
             rs.close();
         }
         dbr.close();

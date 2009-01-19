@@ -20,8 +20,9 @@ import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
 
-import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import java.util.Date;
 import java.util.Locale;
@@ -80,6 +81,8 @@ public class FeaturesReport {
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
         while (ts.next()) {
             totalJobs = 0;
             JCEused = 0;
@@ -91,46 +94,52 @@ public class FeaturesReport {
             String startDate = ts.getFormattedTime();
             Date startingTime = ts.getTime();
 
-            ResultSet rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" },
-                    new String[] { "job_credential_endpoint_used" },
-                    startingTime, ts.stepTime());
+            ResultSet rs = dbr.retrieve(
+                    "SELECT " +
+                    "    SUM ( "+
+                    "        CASE " +
+                    "            WHEN job_credential_endpoint_used " +
+                    "                THEN 1 " +
+                    "            ELSE 0 " +
+                    "        END), "+
+                    "    SUM ( "+
+                    "        CASE " +
+                    "            WHEN file_stage_in_used " +
+                    "                THEN 1 " +
+                    "            ELSE 0 " +
+                    "        END), "+
+                    "    SUM ( "+
+                    "        CASE " +
+                    "            WHEN file_stage_out_used " +
+                    "                THEN 1 " +
+                    "            ELSE 0 " +
+                    "        END), "+
+                    "    SUM ( "+
+                    "        CASE " +
+                    "            WHEN file_clean_up_used " +
+                    "                THEN 1 " +
+                    "            ELSE 0 " +
+                    "        END), "+
+                    "    SUM ( "+
+                    "        CASE " +
+                    "            WHEN clean_up_hold_used " +
+                    "                THEN 1 " +
+                    "            ELSE 0 " +
+                    "        END), " +
+                    "     COUNT(1) " +
+                    "FROM gram_packets " +
+                    "    WHERE "+
+                    "        DATE(send_time) >= '" + dateFormat.format(startingTime) + "' " +
+                    "    AND "+
+                    "        DATE(send_time) < '" + dateFormat.format(ts.stepTime()) + "';");
+
             rs.next();
             JCEused = rs.getInt(1);
-
-            rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" },
-                    new String[] { "file_stage_in_used" }, startingTime, ts
-                            .getTime());
-            rs.next();
-            FSIused = rs.getInt(1);
-
-            rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" },
-                    new String[] { "file_stage_out_used" }, startingTime, ts
-                            .getTime());
-            rs.next();
-            FSOused = rs.getInt(1);
-
-            rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" },
-                    new String[] { "file_clean_up_used" }, startingTime, ts
-                            .getTime());
-            rs.next();
-            FCUused = rs.getInt(1);
-
-            rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" },
-                    new String[] { "clean_up_hold_used" }, startingTime, ts
-                            .getTime());
-            rs.next();
-            CUHused = rs.getInt(1);
-
-            rs = dbr.retrieve(new String("gram_packets"),
-                    new String[] { "Count(*)" }, startingTime, ts.getTime());
-            rs.next();
-            totalJobs = rs.getInt(1);
-
+            FSIused = rs.getInt(2);
+            FSOused = rs.getInt(3);
+            FCUused = rs.getInt(4);
+            CUHused = rs.getInt(5);
+            totalJobs = rs.getInt(6);
             rs.close();
 
             System.out.println(" <entry>");

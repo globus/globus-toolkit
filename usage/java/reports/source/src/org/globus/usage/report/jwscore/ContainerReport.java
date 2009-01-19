@@ -50,15 +50,15 @@ public class ContainerReport {
             super(false);
         }
         
-        public void addService(String serviceName) {
+        public void addService(String serviceName, int count) {
             if (this.uniqueServices.get(serviceName) == null) {
                 this.uniqueServices.put(serviceName, "");
             }
-            this.services++;
+            this.services += count;
         }
 
-        public void addContainer() {
-            this.containers++;
+        public void addContainer(int count) {
+            this.containers += count;
         }
 
         public void output(PrintStream out, String tab) {
@@ -69,9 +69,10 @@ public class ContainerReport {
         }
     }
 
-    public void compute(String listOfServices,
+    public void compute(String ip,
                         int containerType,
-                        String ip) {
+                        String listOfServices,
+                        int count) {
         // handle the case where all the service names do not fit in the
         // packet
         if (listOfServices.length() >= 1445) {
@@ -90,23 +91,23 @@ public class ContainerReport {
         while(tokens.hasMoreTokens()) {
             String serviceName = tokens.nextToken();
 
-            this.allData.addService(serviceName);
+            this.allData.addService(serviceName, count);
 
             switch (containerType) {
             case 1: 
-                this.standaloneData.addService(serviceName);
+                this.standaloneData.addService(serviceName, count);
                 break;
             case 2: 
-                this.servletData.addService(serviceName);
+                this.servletData.addService(serviceName, count);
                 break;
             default: 
-                this.otherData.addService(serviceName);
+                this.otherData.addService(serviceName, count);
                 break;
             }
         }
 
         // over all data
-        this.allData.addContainer();
+        this.allData.addContainer(count);
         if (!isPrivateAddress) {
             this.allData.addAddress(ip);
         }
@@ -127,7 +128,7 @@ public class ContainerReport {
             break;
         }
         
-        containerData.addContainer();
+        containerData.addContainer(count);
         if (!isPrivateAddress) {
             containerData.addAddress(ip);
         }
@@ -155,7 +156,7 @@ public class ContainerReport {
             System.exit(1);
         }
 
-        String baseQueryStart = "select service_list,container_type,ip_address from ";
+        String baseQueryStart = "select ip_address, container_type, service_list, count(*) from ";
         String table = "java_ws_core_packets";
         String baseQueryEnd = " where event_type = 1 and ";
         int n = 1;
@@ -220,17 +221,17 @@ public class ContainerReport {
 
                 String startDateStr = dateFormat.format(startDate);
                 String endDateStr = dateFormat.format(endDate);
-                String timeFilter = "send_time >= '" + startDateStr + 
-                    "' and send_time < '" + endDateStr + "'";
+                String timeFilter = "DATE(send_time) >= '" + startDateStr + 
+                    "' and DATE(send_time) < '" + endDateStr + "'";
                 
-                String query = baseQueryStart + table + baseQueryEnd + timeFilter;
+                String query = baseQueryStart + table + baseQueryEnd + timeFilter + " GROUP BY ip_address, container_type, service_list";
 
                 ResultSet rs = db.retrieve(query);
                 
                 ContainerReport r = new ContainerReport();
 
                 while (rs.next()) {
-                    r.compute(rs.getString(1), rs.getInt(2), rs.getString(3));
+                    r.compute(rs.getString(1), rs.getInt(2), rs.getString(3), rs.getInt(4));
                 }
 
                 rs.close();       

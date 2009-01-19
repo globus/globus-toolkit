@@ -13,6 +13,8 @@
 		<xsl:value-of select="job-types/condor-jobs"/>
 		<xsl:text> </xsl:text>
 		<xsl:value-of select="job-types/MPI-jobs"/>
+		<xsl:text> </xsl:text>
+		<xsl:value-of select="job-types/other-jobs"/>
 		<xsl:text>
 </xsl:text>
 </xsl:for-each>
