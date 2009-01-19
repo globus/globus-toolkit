@@ -190,7 +190,14 @@ globus_state_handle_event_now(
             handle->event_names[event]);
     }
 
-    result = ent->cb(ent->next_state, user_arg);
+    if(ent->cb)
+    {
+        result = ent->cb(ent->next_state, user_arg);
+    }
+    else
+    {
+        result = GLOBUS_SUCCESS;
+    }
 
     return result;
 }
