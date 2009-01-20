@@ -302,6 +302,8 @@ globus_gass_transfer_register_listen(
  * @param request
  *        A pointer to a new request handle. This request handle will
  *        be initialized when the callback function is invoked.
+ * @param attr
+ *        Request attributes.
  * @param listener
  *        The listener handle to register for the new request.
  * @param callback

@@ -151,7 +151,7 @@ globus_gass_transfer_proto_receive_complete(
  * has decided that a new request can be accepted on this particular listener.
  * It must only be called after the GASS Transfer Library has called the
  * @link globus_gass_transfer_listener_proto_t::listen listen function @endlink
- * in a @link #globus_gass_transfer_listener_proto_t protocol module-specific
+ * in a #globus_gass_transfer_listener_proto_t protocol module-specific
  * listener structure.
  *
  * @param listener

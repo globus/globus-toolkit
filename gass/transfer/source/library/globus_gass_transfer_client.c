@@ -533,11 +533,6 @@ globus_gass_transfer_register_append(
  *        The length of the data to append to the url, if known. If this
  *        parameter is set to @a GLOBUS_GASS_LENGTH_UNKNOWN, then the append
  *        may fail if the protocol does not support arbitrarily-length files.
- * @param callback
- *        Function to call once the URL has been accepted, referred, or
- *        denied by the server.
- * @param user_arg
- *        User-supplied argument to the callback function.
  *
  * @retval GLOBUS_SUCCESS
  *         The put was successfully initiated.

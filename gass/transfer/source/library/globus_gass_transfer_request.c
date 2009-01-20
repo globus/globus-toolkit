@@ -627,9 +627,9 @@ globus_gass_transfer_request_set_subject(
  *
  * @param request
  *        The request to destroy.
- * @param GLOBUS_SUCCESS
+ * @retval GLOBUS_SUCCESS
  *        The request handle reference was successfully destroyed.
- * @param GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *        Either an invalid request handle or one which is actively being
  *        used was passed to this function as the @a request parameter.
  */
