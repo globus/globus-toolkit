@@ -63,7 +63,7 @@ namespace xacml
     typedef std::map<obligation_id, obligation_handler_info> obligation_handlers;
 
     XACMLcontext__RequestType *
-    create_xacml_request(xacml_request_t request);
+    create_xacml_request(struct soap *, xacml_request_t request);
 
 }
 

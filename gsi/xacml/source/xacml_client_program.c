@@ -172,6 +172,8 @@ int main(int argc, char *argv[])
     xacml_response_get_xacml_decision(response, &decision);
 
     printf("Server said: %s:%d\n", saml_status_code_strings[code], decision);
+    xacml_request_destroy(request);
+    xacml_response_destroy(response);
 
     return 0;
 }

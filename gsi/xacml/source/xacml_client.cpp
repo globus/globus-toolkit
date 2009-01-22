@@ -18,6 +18,7 @@
 #include "xacml_client.h"
 #include "xacml_authz_interop_profile.h"
 #include "soapStub.h"
+#include "soapH.h"
 
 #include <cassert>
 #include <ctime>
@@ -29,23 +30,25 @@ namespace xacml
 {
 XACMLcontext__AttributeType *
 xacml_create_attribute(
+    struct soap *                       soap,
     const attribute &                   attribute,
     const std::string &                 issuer = "")
 {
-    XACMLcontext__AttributeType *       attr = new XACMLcontext__AttributeType();
-    XACMLcontext__AttributeValueType *  val = new XACMLcontext__AttributeValueType();
+    XACMLcontext__AttributeType *       attr = soap_new_XACMLcontext__AttributeType(soap, -1);
+    XACMLcontext__AttributeValueType *  val = soap_new_XACMLcontext__AttributeValueType(soap, -1);
 
     attr->AttributeId = attribute.attribute_id;
     attr->DataType = attribute.data_type;
 
     if (issuer != "")
     {
-        attr->Issuer = new std::string(issuer);
+        attr->Issuer = soap_new_std__string(soap, -1);
+        attr->Issuer->assign(issuer);
     }
 
-    val = new XACMLcontext__AttributeValueType();
+    val = soap_new_XACMLcontext__AttributeValueType(soap, -1);
 
-    val->__mixed = new char[attribute.value.length()+1];
+    val->__mixed = (char *) soap_malloc(soap, attribute.value.length()+1);
     std::strcpy(val->__mixed, attribute.value.c_str());
 
     attr->XACMLcontext__AttributeValue.push_back(val);
@@ -55,7 +58,7 @@ xacml_create_attribute(
 /* xacml_create_attribute() */
 
 XACMLcontext__AttributeType *
-xacml_create_current_date_time_attribute(void)
+xacml_create_current_date_time_attribute(struct soap *soap)
 {
     time_t                              now = time(NULL);
     std::ostringstream                  os;
@@ -79,20 +82,21 @@ xacml_create_current_date_time_attribute(void)
     current_dateTime.data_type = XACML_DATATYPE_DATE_TIME;
     current_dateTime.value = os.str();
 
-    return xacml_create_attribute(current_dateTime);
+    return xacml_create_attribute(soap, current_dateTime);
 }
 
 XACMLcontext__RequestType *
 create_xacml_request(
+    struct soap *                       soap,
     xacml_request_t                     request)
 {
-    XACMLcontext__RequestType *         req = new XACMLcontext__RequestType();
+    XACMLcontext__RequestType *         req = soap_new_XACMLcontext__RequestType(soap, -1);
 
     for (subject::iterator i = request->subjects.begin();
          i != request->subjects.end();
          i++)
     {
-        XACMLcontext__SubjectType *     subject = new XACMLcontext__SubjectType();
+        XACMLcontext__SubjectType *     subject = soap_new_XACMLcontext__SubjectType(soap, -1);
 
         subject->SubjectCategory = i->first;
 
@@ -105,7 +109,7 @@ create_xacml_request(
                  k++)
             {
                 subject->XACMLcontext__Attribute.push_back(
-                        xacml_create_attribute(*k, j->first));
+                        xacml_create_attribute(soap, *k, j->first));
             }
         }
         req->XACMLcontext__Subject.push_back(subject);
@@ -116,7 +120,7 @@ create_xacml_request(
          i++)
     {
         XACMLcontext__ResourceType *    resource =
-                new XACMLcontext__ResourceType();
+                soap_new_XACMLcontext__ResourceType(soap, -1);
 
         for (attribute_set::iterator j = i->attributes.begin();
              j != i->attributes.end();
@@ -127,14 +131,14 @@ create_xacml_request(
                  k++)
             {
                 resource->XACMLcontext__Attribute.push_back(
-                        xacml_create_attribute(*k, j->first));
+                        xacml_create_attribute(soap, *k, j->first));
             }
         }
 
         req->XACMLcontext__Resource.push_back(resource);
     }
 
-    XACMLcontext__ActionType *          action = new XACMLcontext__ActionType();
+    XACMLcontext__ActionType *          action = soap_new_XACMLcontext__ActionType(soap, -1);
     req->XACMLcontext__Action = action;
 
     for (attribute_set::iterator i = request->action_attributes.begin();
@@ -146,11 +150,11 @@ create_xacml_request(
              j++)
         {
             action->XACMLcontext__Attribute.push_back(
-                    xacml_create_attribute(*j, i->first));
+                    xacml_create_attribute(soap, *j, i->first));
         }
     }
     bool env_set = false;
-    XACMLcontext__EnvironmentType * env = new XACMLcontext__EnvironmentType();
+    XACMLcontext__EnvironmentType * env = soap_new_XACMLcontext__EnvironmentType(soap, -1);
     req->XACMLcontext__Environment = env;
     for (attribute_set::iterator i = request->environment_attributes.begin();
          i != request->environment_attributes.end();
@@ -167,13 +171,13 @@ create_xacml_request(
                 env_set = true;
             }
             env->XACMLcontext__Attribute.push_back(
-                    xacml_create_attribute(*j, i->first));
+                    xacml_create_attribute(soap, *j, i->first));
         }
     }
     if (!env_set)
     {
         env->XACMLcontext__Attribute.push_back(
-                xacml_create_current_date_time_attribute());
+                xacml_create_current_date_time_attribute(soap));
     }
 
     // Add Environment attribute indicating what obligations we understand
@@ -196,107 +200,12 @@ create_xacml_request(
         a.value = i->first;
 
         env->XACMLcontext__Attribute.push_back(
-                xacml_create_attribute(a));
+                xacml_create_attribute(soap, a));
     }
 
     return req;
 }
 /* create_xacml_request() */
-
-void
-destroy_xacml_request(
-    XACMLcontext__RequestType *         r)
-{
-    for (std::vector<class XACMLcontext__SubjectType * >::iterator i =
-                r->XACMLcontext__Subject.begin();
-         i != r->XACMLcontext__Subject.end();
-         i++)
-    {
-        for (std::vector<class XACMLcontext__AttributeType * >::iterator j =
-                    (*i)->XACMLcontext__Attribute.begin();
-             j != (*i)->XACMLcontext__Attribute.end();
-             j++)
-        {
-            while (! (*j)->XACMLcontext__AttributeValue.empty())
-            {
-                XACMLcontext__AttributeValueType * v;
-
-                v = (*j)->XACMLcontext__AttributeValue.back();
-                (*j)->XACMLcontext__AttributeValue.pop_back();
-
-                delete v;
-            }
-            if ((*j)->Issuer)
-            {
-                delete (*j)->Issuer;
-            }
-        }
-    }
-
-    for (std::vector<class XACMLcontext__ResourceType * >::iterator i =
-                r->XACMLcontext__Resource.begin();
-         i != r->XACMLcontext__Resource.end();
-         i++)
-    {
-    }
-
-    if (r->XACMLcontext__Action)
-    {
-        while (! r->XACMLcontext__Action->XACMLcontext__Attribute.empty())
-        {
-            XACMLcontext__AttributeType * v;
-
-            v = r->XACMLcontext__Action->XACMLcontext__Attribute.back();
-            r->XACMLcontext__Action->XACMLcontext__Attribute.pop_back();
-
-            while (! v->XACMLcontext__AttributeValue.empty())
-            {
-                XACMLcontext__AttributeValueType * av;
-
-                av = v->XACMLcontext__AttributeValue.back();
-                v->XACMLcontext__AttributeValue.pop_back();
-
-                delete av;
-            }
-
-            if (v->Issuer)
-            {
-                delete v->Issuer;
-            }
-            delete v;
-        }
-        delete r->XACMLcontext__Action;
-    }
-
-    if (r->XACMLcontext__Environment)
-    {
-        while (! r->XACMLcontext__Environment->XACMLcontext__Attribute.empty())
-        {
-            XACMLcontext__AttributeType * v;
-
-            v = r->XACMLcontext__Environment->XACMLcontext__Attribute.back();
-            r->XACMLcontext__Environment->XACMLcontext__Attribute.pop_back();
-
-            while (! v->XACMLcontext__AttributeValue.empty())
-            {
-                XACMLcontext__AttributeValueType * av;
-
-                av = v->XACMLcontext__AttributeValue.back();
-                v->XACMLcontext__AttributeValue.pop_back();
-
-                delete av;
-            }
-
-            if (v->Issuer)
-            {
-                delete v->Issuer;
-            }
-            delete v;
-        }
-        delete r->XACMLcontext__Environment;
-    }
-}
-/* destroy_xacml_request() */
 
 int
 parse_xacml_response(
@@ -539,7 +448,9 @@ xacml_query(
         return XACML_RESULT_INVALID_PARAMETER;
     }
 
-    query = new XACMLsamlp__XACMLAuthzDecisionQueryType;
+    soap_init(&soap);
+
+    query = soap_new_XACMLsamlp__XACMLAuthzDecisionQueryType(&soap, -1);
 
     ostr << "ID-" << rand();
     query->ID = ostr.str();
@@ -548,14 +459,13 @@ xacml_query(
     query->InputContextOnly = false;
     query->ReturnContext = true;
 
-    query->saml__Issuer = new saml__NameIDType();
+    query->saml__Issuer = soap_new_saml__NameIDType(&soap, -1);
     query->saml__Issuer->Format =
-            new std::string(SAML_NAME_ID_FORMAT_X509_SUBJECT_NAME);
+            soap_new_std__string(&soap, -1);
+    query->saml__Issuer->Format->assign(SAML_NAME_ID_FORMAT_X509_SUBJECT_NAME);
     query->saml__Issuer->__item = request->subject;
 
-    query->XACMLcontext__Request = xacml::create_xacml_request(request);
-
-    soap_init(&soap);
+    query->XACMLcontext__Request = xacml::create_xacml_request(&soap, request);
 
     if (request->connect_func != NULL)
     {
@@ -627,35 +537,6 @@ xacml_query(
     }
 
 out:
-    if (query)
-    {
-        if (query->saml__Issuer)
-        {
-            if (query->saml__Issuer->Format)
-            {
-                delete query->saml__Issuer->Format;
-            }
-            delete query->saml__Issuer;
-        }
-        if (query->dsig__Signature)
-        {
-            delete query->dsig__Signature;
-        }
-        if (query->Destination)
-        {
-            delete query->Destination;
-        }
-        if (query->Consent)
-        {
-            delete query->Consent;
-        }
-        if (query->XACMLcontext__Request)
-        {
-            xacml::destroy_xacml_request(query->XACMLcontext__Request);
-            delete query->XACMLcontext__Request;
-        }
-        delete query;
-    }
     return rc;
 }
 /* xacml_query() */

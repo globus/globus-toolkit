@@ -309,6 +309,7 @@ parse_xacml_query(
 
 int
 prepare_response(
+    struct soap *                       soap,
     xacml_response_t                    response,
     struct XACMLsamlp__XACMLAuthzDecisionQueryType *
                                         XACMLsamlp__XACMLAuthzDecisionQuery,
@@ -316,13 +317,13 @@ prepare_response(
 {
     std::ostringstream                  os;
 
-    samlp__Response->saml__Issuer = new saml__NameIDType();
-    samlp__Response->saml__Issuer->Format =
-            new std::string("urn:oasis:names:tc:SAML:2.0:nameid-format:entity");
+    samlp__Response->saml__Issuer = soap_new_saml__NameIDType(soap, -1);
+    samlp__Response->saml__Issuer->Format = soap_new_std__string(soap, -1);
+    samlp__Response->saml__Issuer->Format->assign("urn:oasis:names:tc:SAML:2.0:nameid-format:entity");
     samlp__Response->saml__Issuer->__item = "XACMLService";
 
-    samlp__Response->samlp__Status = new samlp__StatusType();
-    samlp__Response->samlp__Status->samlp__StatusCode = new samlp__StatusCodeType();
+    samlp__Response->samlp__Status = soap_new_samlp__StatusType(soap, -1);
+    samlp__Response->samlp__Status->samlp__StatusCode = soap_new_samlp__StatusCodeType(soap, -1);
     samlp__Response->samlp__Status->samlp__StatusCode->Value =
             saml_status_code_strings[response->saml_status_code];
 
@@ -330,7 +331,8 @@ prepare_response(
 
     samlp__Response->ID = os.str();;
 
-    samlp__Response->InResponseTo = new std::string(XACMLsamlp__XACMLAuthzDecisionQuery->ID);
+    samlp__Response->InResponseTo = soap_new_std__string(soap, -1);
+    samlp__Response->InResponseTo->assign(XACMLsamlp__XACMLAuthzDecisionQuery->ID);
 
     samlp__Response->Version = "2.0";
 
@@ -338,21 +340,21 @@ prepare_response(
             response->issue_instant ? response->issue_instant : time(NULL);
 
     samlp__Response->__size_33 = 1;
-    samlp__Response->__union_33 = new __samlp__union_33();
-    
-    samlp__Response->__union_33->__union_33 =
+    samlp__Response->__union_33 = soap_new___samlp__union_33(soap, 1);
+    samlp__Response->__union_33[0].__union_33 =
             SOAP_UNION__samlp__union_33_saml__Assertion;
-    samlp__Response->__union_33->union_33.saml__Assertion =
-            new saml__AssertionType();
+    samlp__Response->__union_33[0].union_33.saml__Assertion =
+            soap_new_saml__AssertionType(soap, -1);
 
-    samlp__Response->__union_33->union_33.saml__Assertion->IssueInstant =
+    samlp__Response->__union_33[0].union_33.saml__Assertion->IssueInstant =
             time(NULL);
 
-    samlp__Response->__union_33->union_33.saml__Assertion->saml__Issuer =
-            new saml__NameIDType();
-    samlp__Response->__union_33->union_33.saml__Assertion->saml__Issuer->Format
+    samlp__Response->__union_33[0].union_33.saml__Assertion->saml__Issuer =
+            soap_new_saml__NameIDType(soap, -1);
+    samlp__Response->__union_33[0].union_33.saml__Assertion->saml__Issuer->Format
             =
-            new std::string("urn:oasis:names:tc:SAML:2.0:nameid-format:entity");
+            soap_new_std__string(soap, -1);
+    samlp__Response->__union_33[0].union_33.saml__Assertion->saml__Issuer->Format->assign("urn:oasis:names:tc:SAML:2.0:nameid-format:entity");
 
     const char * issuer;
 
@@ -362,7 +364,7 @@ prepare_response(
         return SOAP_SVR_FAULT;
     }
     samlp__Response->__union_33->union_33.saml__Assertion->__item = 
-            new char[strlen(issuer)+1];
+            (char *) soap_malloc(soap, strlen(issuer)+1);
     strcpy(samlp__Response->__union_33->union_33.saml__Assertion->__item,
            issuer);
 
@@ -370,21 +372,21 @@ prepare_response(
             samlp__Response->__union_33->union_33.saml__Assertion;
 
     response_assertion->__size_1 = 1;
-    response_assertion->__union_1 = new __saml__union_1();
+    response_assertion->__union_1 = soap_new___saml__union_1(soap, 1);
 
     response_assertion->__union_1->__union_1 =
             SOAP_UNION__saml__union_1_saml__Statement;
     response_assertion->__union_1->union_1.saml__Statement =
-            new XACMLassertion__XACMLAuthzDecisionStatementType();
+            soap_new_XACMLassertion__XACMLAuthzDecisionStatementType(soap, -1);
 
     XACMLassertion__XACMLAuthzDecisionStatementType * xacml_decision =
             dynamic_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>
                 (response_assertion->__union_1->union_1.saml__Statement);
 
     xacml_decision->XACMLcontext__Response =
-            new XACMLcontext__ResponseType();
+            soap_new_XACMLcontext__ResponseType(soap, -1);
 
-    XACMLcontext__ResultType * result = new XACMLcontext__ResultType();
+    XACMLcontext__ResultType * result = soap_new_XACMLcontext__ResultType(soap, -1);
     xacml_decision->XACMLcontext__Response->XACMLcontext__Result.push_back(result);
 
     switch (response->decision)
@@ -400,10 +402,10 @@ prepare_response(
             return SOAP_SVR_FAULT;
     }
 
-    result->XACMLcontext__Status = new XACMLcontext__StatusType();
+    result->XACMLcontext__Status = soap_new_XACMLcontext__StatusType(soap, -1);
 
     result->XACMLcontext__Status->XACMLcontext__StatusCode = 
-            new XACMLcontext__StatusCodeType();
+            soap_new_XACMLcontext__StatusCodeType(soap, -1);
 
     result->XACMLcontext__Status->XACMLcontext__StatusCode->Value =
             xacml_status_code_strings[response->xacml_status_code];
@@ -411,13 +413,14 @@ prepare_response(
     if (response->obligations.size() != 0)
     {
         result->XACMLpolicy__Obligations =
-                new XACMLpolicy__ObligationsType();
+                soap_new_XACMLpolicy__ObligationsType(soap, -1);
 
         for (xacml::obligations::iterator i = response->obligations.begin();
              i != response->obligations.end();
              i++)
         {
-            XACMLpolicy__ObligationType * obligation = new XACMLpolicy__ObligationType();
+            XACMLpolicy__ObligationType * obligation =
+                    soap_new_XACMLpolicy__ObligationType(soap, -1);
 
             result->XACMLpolicy__Obligations->
                     XACMLpolicy__Obligation.push_back(obligation);
@@ -441,12 +444,12 @@ prepare_response(
                  j++)
             {
                 XACMLpolicy__AttributeAssignmentType * attr =
-                    new XACMLpolicy__AttributeAssignmentType();
+                    soap_new_XACMLpolicy__AttributeAssignmentType(soap, -1);
                 obligation->XACMLpolicy__AttributeAssignment.push_back(attr);
 
                 attr->DataType = j->data_type;
                 attr->AttributeId = j->attribute_id;
-                attr->__mixed = new char[j->value.length()+1];
+                attr->__mixed = (char *) soap_malloc(soap, j->value.length()+1);
                 std::strcpy(attr->__mixed, j->value.c_str());
             }
         }
@@ -455,7 +458,7 @@ prepare_response(
     if (response->request != NULL)
     {
         xacml_decision->XACMLcontext__Request =
-            xacml::create_xacml_request(response->request);
+            xacml::create_xacml_request(soap, response->request);
     }
 
     return SOAP_OK;
@@ -865,7 +868,7 @@ __XACMLService__Authorize(
         xacml_response_set_request_context(response, request);
     }
 
-    rc = xacml::prepare_response(response, XACMLsamlp__XACMLAuthzDecisionQuery, samlp__Response);
+    rc = xacml::prepare_response(soap, response, XACMLsamlp__XACMLAuthzDecisionQuery, samlp__Response);
     if (rc != 0)
     {
         return SOAP_SVR_FAULT;

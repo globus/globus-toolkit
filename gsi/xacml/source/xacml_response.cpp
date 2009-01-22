@@ -78,6 +78,10 @@ void
 xacml_response_destroy(
     xacml_response_t                    response)
 {
+    if (response->request != NULL)
+    {
+        xacml_request_destroy(response->request);
+    }
     delete response;
 }
 /* xacml_response_destroy() */
