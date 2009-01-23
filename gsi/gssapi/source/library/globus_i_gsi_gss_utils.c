@@ -2467,7 +2467,7 @@ int globus_i_gsi_gss_verify_extensions_callback(
     
     local_result = globus_gsi_callback_get_extension_oids(
         callback_data,
-        (void **) &extension_oids);
+        (void **) (void *) &extension_oids);
 
     if(local_result != GLOBUS_SUCCESS)
     {
