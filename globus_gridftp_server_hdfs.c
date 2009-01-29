@@ -175,7 +175,8 @@ globus_l_gfs_hdfs_destroy(
 {
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-    hdfsDisconnect(hdfs_handle->fs);
+    if (hdfs_handle->fs)
+        hdfsDisconnect(hdfs_handle->fs);
     globus_free(hdfs_handle);
 }
 
@@ -961,7 +962,7 @@ globus_l_gfs_hdfs_send(
 
 
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
-    printf("Open file %s.\n", hdfs_handle->pathname);
+    //printf("Open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname, O_RDONLY, 0, 1, 0);
     if (hdfs_handle->fd == NULL)
     {
