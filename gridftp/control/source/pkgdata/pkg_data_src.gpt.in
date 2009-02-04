@@ -4,7 +4,7 @@
 <gpt_package_metadata Format_Version="0.02" Name="globus_ftp_control" >
 
   <Aging_Version Age="1" Major="2" Minor="10" />
-  <Description >GridFTP Client Library</Description>
+  <Description >GridFTP Control Library</Description>
   <Functional_Group >FileAccess</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
 
