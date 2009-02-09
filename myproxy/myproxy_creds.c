@@ -107,6 +107,9 @@ check_storage_directory()
     struct stat statbuf = {0}; /* initialize with 0s */
     int return_code = -1;
     char *gl_storage_dir = NULL;
+    struct safe_id_range_list trusted_uids, trusted_gids;
+	struct passwd *pw = NULL;
+    int trust_type;
 
     if (storage_dir == NULL) { /* Choose a default storage directory */
 	char *GL;
@@ -185,7 +188,6 @@ check_storage_directory()
     /* Make sure it's owned by me */
     if (statbuf.st_uid != geteuid())
     {
-	struct passwd *pw;
 	pw = getpwuid(geteuid());
 	if (pw) {
 	    verror_put_string("%s not owned by %s", storage_dir, pw->pw_name);
@@ -204,6 +206,36 @@ check_storage_directory()
         goto error;
     }
     
+    /* check permissions on full path; make these WARNINGs for now */
+    errno = 0;
+    safe_init_id_range_list(&trusted_uids);
+    safe_init_id_range_list(&trusted_gids);
+    safe_add_id_to_list(&trusted_uids, geteuid());
+	pw = getpwuid(geteuid());
+    trust_type = safe_is_path_trusted_r(storage_dir,
+                                        &trusted_uids, &trusted_gids);
+    safe_destroy_id_range_list(&trusted_uids);
+    safe_destroy_id_range_list(&trusted_gids);
+    switch (trust_type) {
+    case SAFE_PATH_TRUSTED_CONFIDENTIAL: /* accessible/modifyable only by us */
+        break;
+    case SAFE_PATH_TRUSTED:
+    case SAFE_PATH_TRUSTED_STICKY_DIR:
+        myproxy_log("WARNING: safe_is_path_trusted_r: permissions on %s do not provide confidentiality", storage_dir);
+        break;
+    case SAFE_PATH_UNTRUSTED:
+        if (geteuid() == 0) {
+            myproxy_log("WARNING: safe_is_path_trusted_r: %s can be modified by users/groups other than uid=0/gid=0", storage_dir, pw->pw_name);
+        } else {
+            myproxy_log("WARNING: safe_is_path_trusted_r: %s can be modified by users/groups other than %s and uid=0/gid=0", storage_dir, pw->pw_name);
+        }
+        break;
+    case SAFE_PATH_ERROR:
+    default:
+        myproxy_log("WARNING: safe_is_path_trusted_r: unable to check permissions on %s: %s", storage_dir, strerror(errno));
+        break;
+    }
+
     /* Success */
     return_code = 0;
     

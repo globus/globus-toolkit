@@ -57,6 +57,8 @@ typedef int socklen_t;
 #include "certauth_resolveuser.h"
 #include "gsi_socket.h"
 #include "port_getopt.h"
+#include "safe_id_range_list.h"
+#include "safe_is_path_trusted.h"
 #include "ssl_utils.h"
 #include "string_funcs.h"
 #include "vparse.h"
