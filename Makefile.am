@@ -51,6 +51,10 @@ LibSources= \
 	plugin_common.h \
 	port_getopt.h \
 	pubcookie.h \
+	safe_id_range_list.c \
+	safe_id_range_list.h \
+	safe_is_path_trusted.c \
+	safe_is_path_trusted.h \
 	ssl_utils.c \
 	ssl_utils.h \
 	string_funcs.c \
