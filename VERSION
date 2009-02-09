@@ -6,6 +6,10 @@ Version History
 ---------------
 v4.5 XX Xxx 2009
   - fix myproxy-logon --voms interaction with --out option
+  - implement stricter checks on myproxy-server storage directory
+    security using Safefile's safe_is_path_trusted_r()
+    (http://pages.cs.wisc.edu/~kupsch/safefile/); for now, these
+    checks result in WARNING messages rather than errors
 
 v4.4 12 Dec 2008
   - allow $MYPROXY_SERVER and -s command-line options to be a
