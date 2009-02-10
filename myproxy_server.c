@@ -26,6 +26,7 @@ static char usage[] = \
 "       -l | --listen  <hostname>   Specifies hostname/ip to listen to\n"\
 "       -p | --port    <portnumber> Specifies the port to run on\n"\
 "       -P | --pidfile <path>       Specifies a file to write the pid to\n"\
+"       -z | --portfile <path>      Specifies a file to write the port to\n"\
 "       -s | --storage <directory>  Specifies the credential storage directory\n"\
 "\n";
 
@@ -36,6 +37,7 @@ struct option long_options[] =
     {"listen",     required_argument, NULL, 'l'},
     {"port",       required_argument, NULL, 'p'},
     {"pidfile",    required_argument, NULL, 'P'},
+    {"portfile",   required_argument, NULL, 'z'},
     {"config",     required_argument, NULL, 'c'},       
     {"storage",    required_argument, NULL, 's'},       
     {"usage",            no_argument, NULL, 'u'},
@@ -44,7 +46,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "dhc:l:p:P:s:vVuD:";
+static char short_options[] = "dhc:l:p:P:z:s:vVuD:";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -108,6 +110,8 @@ static int become_daemon_step1(void);
 static int become_daemon_step2(void);
 
 static void write_pidfile(const char path[]);
+
+static void write_pfile(const char path[], long val);
 
 static int myproxy_check_policy(myproxy_server_context_t *context,
       				myproxy_socket_attrs_t *attrs,
@@ -273,6 +277,9 @@ main(int argc, char *argv[])
         }
        listenfd = myproxy_init_server(socket_attrs);
        if (server_context->pidfile) write_pidfile(server_context->pidfile);
+       if (server_context->portfile) {
+           write_pfile(server_context->portfile, socket_attrs->psport);
+       }
 
        /* Set up signal handling to deal with zombie processes left over  */
        my_signal(SIGCHLD, sig_chld);
@@ -819,6 +826,9 @@ init_arguments(int argc, char *argv[],
         case 'P': 	/* pidfile */
             context->pidfile = strdup(optarg);
             break;
+        case 'z': 	/* portfile */
+            context->portfile = strdup(optarg);
+            break;
         case 'h': 	/* print help and exit */
             printf(usage);
             exit(0);
@@ -873,6 +883,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     int on = 1;
     int listen_sock;
     struct sockaddr_in sin;
+    socklen_t socklen;
     struct linger lin = {0,0};
     GSI_SOCKET *tmp_gsi_sock;
     struct hostent *hp;
@@ -934,11 +945,20 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	    failure("Error in listen()");
     }
 
+    if (attrs->psport == 0) {
+        memset(&sin, 0, sizeof(sin));
+        socklen = sizeof(sin);
+        if (getsockname(listen_sock, (struct sockaddr *) &sin, &socklen) < 0) {
+            failure("Error in getsockname()");
+        }
+        attrs->psport = ntohs(sin.sin_port);
+    }
+
     /* Got this far? Then log success! */
     myproxy_log("Starting myproxy-server on %s:%d...",
                 ((attrs->pshost == NULL) ? "localhost" : attrs->pshost),
                 attrs->psport);
-                
+
     return listen_sock;
 }
 
@@ -1388,15 +1408,21 @@ become_daemon_step2()
 static void
 write_pidfile(const char path[])
 {
+    write_pfile(path, (long) getpid());
+}
+
+static void
+write_pfile(const char path[], long val)
+{
     FILE *f = NULL;
 
     f = fopen(path, "wb");
     if (f == NULL) {
-	myproxy_log("Couldn't create pid file \"%s\": %s",
-		    path, strerror(errno));
+        myproxy_log("Couldn't create \"%s\": %s",
+                    path, strerror(errno));
     } else {
-	fprintf(f, "%ld\n", (long) getpid());
-	fclose(f);
+        fprintf(f, "%ld\n", val);
+        fclose(f);
     }
 }
 

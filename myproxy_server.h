@@ -17,6 +17,7 @@ typedef struct
   int run_as_daemon;                /* Run as a daemon? */
   char *config_file;                /* configuration file */
   char *pidfile;		    /* pid file */
+  char *portfile;		    /* port file */
   char *passphrase_policy_pgm;      /* external program for password check */
   char **accepted_credential_dns;   /* List of creds that can be stored */
   char **authorized_retriever_dns;  /* List of DNs we'll delegate to */

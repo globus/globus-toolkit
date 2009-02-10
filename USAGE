@@ -147,3 +147,4 @@ desperate attempt to maintain some consistency.
 -y | --keyfile         <filename> Key file name
 -y | --keyfile        <filename>  Key file name
 -y | --keyfile        <filename>  Key file name
+-z | --portfile <path>        Specifies a file to write the server port to
