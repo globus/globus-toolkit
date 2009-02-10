@@ -55,8 +55,11 @@
 #   2. CoG get of myproxy-init stored credential.
 #   3. (pending) Store a credential (CoG myproxy put).
 
+use File::Temp qw(tempdir);
 use IPC::Open3;
 use Socket;
+
+$tmpdir = tempdir(CLEANUP => 1);
 
 #
 # handle cmdline options
@@ -90,7 +93,7 @@ while (($arg = shift @ARGV)) {
     $valgrind .= " --tool=addrcheck";
 #	$valgrind .= " --leak-check=full";
 #	$valgrind .= " --suppressions=$ENV{HOME}/.valgrind.supp";
-	$valgrind .= " --log-file=/tmp/valgrind.log.$$";
+	$valgrind .= " --log-file=$tmpdir/valgrind.log.$$";
 #	$valgrind .= " --undef-value-errors=no";
 #	$valgrind .= " --gen-suppressions=all";
 	$valgrind .= " --num-callers=50 -q ";
@@ -185,14 +188,13 @@ umask(0077);
 #
 if ($startserver) {
     $ENV{'MYPROXY_SERVER'} = "localhost";
-    $ENV{'MYPROXY_SERVER_PORT'} = openport(49152 + ($< % 16384));
     $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
     chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
     die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
-    $serverdir = "/tmp/myproxy-test.serverdir.$$";
+    $serverdir = "$tmpdir/myproxy-test.serverdir.$$";
     mkdir($serverdir, 0700) ||
 	die "failed to create $serverdir, stopped";
-    $serverconf = "/tmp/myproxy-test.serverconf.$$";
+    $serverconf = "$tmpdir/myproxy-test.serverconf.$$";
     open(CONF, ">$serverconf") ||
 	 die "failed to open $serverconf, stopped";
     print CONF "accepted_credentials  \"*\"\n";
@@ -207,23 +209,36 @@ if ($startserver) {
     print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
     print CONF "accepted_credentials_mapapp $bintrue\n" if (-x $bintrue);
     close(CONF);
-    $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
+    $SERVERPIDFILE = "$tmpdir/myproxy-test.serverpid.$$";
+    $SERVERPORTFILE = "$tmpdir/myproxy-test.serverport.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
-    $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $SERVERPIDFILE";
+    $servercmd .= " -p 0 -P $SERVERPIDFILE -z $SERVERPORTFILE";
     $servercmd = $valgrind . $servercmd if (defined($valgrind));
     &debug("running '$servercmd'");
     system($servercmd);
     sleep(1);			# give server a chance to startup
     sleep(4) if (defined($valgrind)); # valgrind slows things down
     if (open SERVERPIDFILE) {
-	$serverpid = <SERVERPIDFILE>;
-	close SERVERPIDFILE;
+      $serverpid = <SERVERPIDFILE>;
+      close SERVERPIDFILE;
     }
     if (!defined($serverpid) || $serverpid eq "") {
-	print STDERR "failed to start myproxy-server:\n";
-	system("$servercmd -d");	# show output on terminal
-	&docleanup();
-	exit 1;
+      print STDERR "failed to start myproxy-server:\n";
+      system("$servercmd -d");	# show output on terminal
+      &docleanup();
+      exit 1;
+    }
+    if (open SERVERPORTFILE) {
+      chomp($serverport = <SERVERPORTFILE>);
+      close SERVERPORTFILE;
+    }
+    if (!defined($serverport) || $serverport eq "") {
+      print STDERR "myproxy-server didn't write portfile!\n";
+      &docleanup();
+      exit 1;
+    } else {
+      $ENV{'MYPROXY_SERVER_PORT'} = $serverport;
+      print STDERR "server listening on port ", $serverport, "\n" if ($verbose);
     }
 }
 
@@ -264,12 +279,12 @@ if ($exitstatus == 0 && $output =~ /username/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 3 (retrieve stored credential): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -278,12 +293,12 @@ if ($exitstatus == 0) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o - -v -S > /tmp/myproxy-test.$$",
+    &runtest("myproxy-logon -t 1 -o - -v -S > $tmpdir/myproxy-test.$$",
 	     $passphrase . "\n");
 print "MyProxy Test 3- (retrieve stored credential to stdout): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -297,7 +312,7 @@ if ($exitstatus == 0) {
 print "MyProxy Test 3N (authenticate w/o retrieving credential): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -307,12 +322,12 @@ if ($exitstatus == 0) {
 
 $ENV{'X509_CERT_DIR'} = $trustrootdir;
 ($exitstatus, $output) =
-  &runtest("myproxy-logon -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
+  &runtest("myproxy-logon -T -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
            $passphrase . "\n");
 print "MyProxy Test 3T (retrieve stored credential w/ trustroots): ";
 if ($exitstatus == 0) {
   ($exitstatus, $output) =
-    &verifyproxy("/tmp/myproxy-test.$$");
+    &verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
   ($exitstatus, $output) =
@@ -332,12 +347,12 @@ if (defined($origtrustrootdir)) {
 if (defined($serverconf)) {
 system("touch $serverconf") && die "failed to touch $serverconf, stopped";
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 3R1 (retrieve stored credential after server reconfig): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -346,12 +361,12 @@ if ($exitstatus == 0) {
 }
 system("touch $serverconf") && die "failed to touch $serverconf, stopped";
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 3R2 (retrieve stored credential after server reconfig): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -360,12 +375,12 @@ if ($exitstatus == 0) {
 }
 system("touch $serverconf") && die "failed to touch $serverconf, stopped";
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 3R3 (retrieve stored credential after server reconfig): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -375,7 +390,7 @@ if ($exitstatus == 0) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 4 (verify passphrase checking on retrieve): ";
 if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
@@ -412,7 +427,7 @@ if ($exitstatus == 0 && $output =~ /Pass phrase changed/) {
 print "MyProxy Test 6 (verify new passphrase): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -421,7 +436,7 @@ if ($exitstatus == 0) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $old_passphrase . "\n");
 print "MyProxy Test 7 (verify old passphrase fails): ";
 if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
@@ -431,7 +446,7 @@ if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+    &runtest("myproxy-logon -a \$X509_USER_PROXY -t 1 -o $tmpdir/myproxy-test.$$ -v", undef);
 print "MyProxy Test 8 (verify default renewal policy): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -473,16 +488,16 @@ if ($exitstatus == 0) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -k 'mine' -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 12 (verify retrieval policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -k 'nobody' -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -521,16 +536,16 @@ if ($exitstatus == 0 && $output =~ /username/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
+    &runtest("myproxy-logon -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$ -v -d",
 	     undef);
 print "MyProxy Test 15 (verify renewal policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
+	&runtest("myproxy-logon -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$ -v -d",
 		 undef);
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -551,9 +566,9 @@ if ($exitstatus == 0) {
 print "MyProxy Test 16 (verify lifetime of retrieved credentials): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -o $tmpdir/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
-    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    $timeleft = `$grid_proxy_info -file $tmpdir/myproxy-test.$$ -timeleft`;
     if (defined($timeleft) &&
 	$timeleft > 60*60*2+300 || $timeleft < 60*60*2-300) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
@@ -563,13 +578,13 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
-    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    $timeleft = `$grid_proxy_info -file $tmpdir/myproxy-test.$$ -timeleft`;
     if ($timeleft > 60*61 || $timeleft < 60*59) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
 	    "It should be " . (60*60) . ".\n";
@@ -578,7 +593,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -598,7 +613,7 @@ if ($exitstatus == 0) {
 # For myproxy-store, we need an encrypted key to store.
 # So, let's encrypt our proxy key.
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
-$testkey = "/tmp/myproxy-test.$$.key";
+$testkey = "$tmpdir/myproxy-test.$$.key";
 &runtest("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out $testkey",
 	 $passphrase . "\n");
 chmod(0600, $testkey);
@@ -637,12 +652,12 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 19
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 19 (create proxy from stored credential): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -655,29 +670,29 @@ if ($exitstatus == 0) {
 #
 
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -c /tmp/myproxy-test.cert.$$.pem -y /tmp/myproxy-test.key.$$.pem -v -S",
+    &runtest("myproxy-retrieve -c $tmpdir/myproxy-test.cert.$$.pem -y $tmpdir/myproxy-test.key.$$.pem -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 20 (retrieve stored credential): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifycert("/tmp/myproxy-test.cert.$$.pem", "/tmp/myproxy-test.key.$$.pem");
+	&verifycert("$tmpdir/myproxy-test.cert.$$.pem", "$tmpdir/myproxy-test.key.$$.pem");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test.cert.$$.pem" );
-unlink( "/tmp/myproxy-test.key.$$.pem" );
+unlink( "$tmpdir/myproxy-test.cert.$$.pem" );
+unlink( "$tmpdir/myproxy-test.key.$$.pem" );
 
 $ENV{'X509_CERT_DIR'} = $trustrootdir;
 ($exitstatus, $output) =
-  &runtest("myproxy-retrieve -T -c /tmp/myproxy-test.cert.$$.pem -y /tmp/myproxy-test.key.$$.pem -v -S",
+  &runtest("myproxy-retrieve -T -c $tmpdir/myproxy-test.cert.$$.pem -y $tmpdir/myproxy-test.key.$$.pem -v -S",
            $passphrase . "\n");
 print "MyProxy Test 20T (retrieve stored credential w/ trustroots): ";
 if ($exitstatus == 0) {
   ($exitstatus, $output) =
-    &verifycert("/tmp/myproxy-test.cert.$$.pem", "/tmp/myproxy-test.key.$$.pem");
+    &verifycert("$tmpdir/myproxy-test.cert.$$.pem", "$tmpdir/myproxy-test.key.$$.pem");
 }
 if ($exitstatus == 0) {
   ($exitstatus, $output) =
@@ -688,8 +703,8 @@ if ($exitstatus == 0) {
 } else {
   print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test.cert.$$.pem" );
-unlink( "/tmp/myproxy-test.key.$$.pem" );
+unlink( "$tmpdir/myproxy-test.cert.$$.pem" );
+unlink( "$tmpdir/myproxy-test.key.$$.pem" );
 if (defined($origtrustrootdir)) {
   $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
 } else {
@@ -700,7 +715,7 @@ if (defined($origtrustrootdir)) {
 # Test 21
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 21 (verify passphrase checking on myproxy-logon): ";
 if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
@@ -713,7 +728,7 @@ if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
 # Test 22
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -c /tmp/myproxy-test-cert.$$.pem -y /tmp/myproxy-test-key.$$.pem -v -S",
+    &runtest("myproxy-retrieve -c $tmpdir/myproxy-test-cert.$$.pem -y $tmpdir/myproxy-test-key.$$.pem -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 22 (verify passphrase checking on myproxy-retrieve): ";
 if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
@@ -721,14 +736,14 @@ if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test.cert.$$.pem" );
-unlink( "/tmp/myproxy-test.key.$$.pem" );
+unlink( "$tmpdir/myproxy-test.cert.$$.pem" );
+unlink( "$tmpdir/myproxy-test.key.$$.pem" );
 
 #
 # Test 23
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+    &runtest("myproxy-logon -a \$X509_USER_PROXY -t 1 -o $tmpdir/myproxy-test.$$ -v", undef);
 print "MyProxy Test 23 (verify myproxy-logon default renewal policy): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -740,15 +755,15 @@ if ($exitstatus != 0) {
 # Test 24
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -a \$X509_USER_PROXY  -c /tmp/myproxy-test-cert.$$.pem -y /tmp/myproxy-test-key.$$.pem -v", undef);
+    &runtest("myproxy-retrieve -a \$X509_USER_PROXY  -c $tmpdir/myproxy-test-cert.$$.pem -y $tmpdir/myproxy-test-key.$$.pem -v", undef);
 print "MyProxy Test 24 (verify myproxy-retrieve default renewal policy): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test-cert.$$.pem" );
-unlink( "/tmp/myproxy-test-key.$$.pem" );
+unlink( "$tmpdir/myproxy-test-cert.$$.pem" );
+unlink( "$tmpdir/myproxy-test-key.$$.pem" );
 
 #
 # Test 25
@@ -796,17 +811,17 @@ if ($exitstatus == 0) {
 # Test 28
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -k 'mine' -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 28 (verify myproxy-logon retrieval policies): ";
 
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -k 'nobody' -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
 
     if ($exitstatus != 0) {
@@ -824,16 +839,16 @@ if ($exitstatus == 0) {
 # Test 29
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$.pem -y /tmp/myproxy-test.key.12.1.$$.pem -v -S",
+    &runtest("myproxy-retrieve -k 'mine' -c $tmpdir/myproxy-test.cert.12.1.$$.pem -y $tmpdir/myproxy-test.key.12.1.$$.pem -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 29 (verify myproxy-retrieve retrieval policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifycert("/tmp/myproxy-test.cert.12.1.$$.pem", "/tmp/myproxy-test.key.12.1.$$.pem");
+	&verifycert("$tmpdir/myproxy-test.cert.12.1.$$.pem", "$tmpdir/myproxy-test.key.12.1.$$.pem");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$.pem -y /tmp/myproxy-test.key.12.2.$$.pem -v -S",
+	&runtest("myproxy-retrieve -k 'nobody' -c $tmpdir/myproxy-test.cert.12.2.$$.pem -y $tmpdir/myproxy-test.key.12.2.$$.pem -v -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -847,7 +862,7 @@ if ($exitstatus == 0) {
 }
 &runtest("myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
-`rm -f /tmp/myproxy-test.*.12.*.$$.pem`;
+`rm -f $tmpdir/myproxy-test.*.12.*.$$.pem`;
 
 #
 # Test 30
@@ -881,16 +896,16 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 32
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+    &runtest("myproxy-logon -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$ -v -d -S",
 	     $passphrase . "\n");
 print "MyProxy Test 32 (verify renewal policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+	&runtest("myproxy-logon -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$ -v -d -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -914,9 +929,9 @@ if ($exitstatus == 0) {
 print "MyProxy Test 33 (verify lifetime of retrieved credentials): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -o $tmpdir/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
-    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    $timeleft = `$grid_proxy_info -file $tmpdir/myproxy-test.$$ -timeleft`;
     if (defined($timeleft) &&
 	$timeleft > 60*60*2+300 || $timeleft < 60*60*2-300) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
@@ -926,13 +941,13 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
-    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    $timeleft = `$grid_proxy_info -file $tmpdir/myproxy-test.$$ -timeleft`;
     if ($timeleft > 60*61 || $timeleft < 60*59) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
 	    "It should be " . (60*60) . ".\n";
@@ -941,7 +956,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -982,16 +997,16 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 36
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$.pem -y /tmp/myproxy-test.key.12.1.$$.pem -v -S",
+    &runtest("myproxy-retrieve -k 'mine' -c $tmpdir/myproxy-test.cert.12.1.$$.pem -y $tmpdir/myproxy-test.key.12.1.$$.pem -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 36 (verify myproxy-retrieve key retrieval policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifycert("/tmp/myproxy-test.cert.12.1.$$.pem", "/tmp/myproxy-test.key.12.1.$$.pem");
+	&verifycert("$tmpdir/myproxy-test.cert.12.1.$$.pem", "$tmpdir/myproxy-test.key.12.1.$$.pem");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$.pem -y /tmp/myproxy-test.key.12.2.$$.pem -v -S",
+	&runtest("myproxy-retrieve -k 'nobody' -c $tmpdir/myproxy-test.cert.12.2.$$.pem -y $tmpdir/myproxy-test.key.12.2.$$.pem -v -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1006,8 +1021,8 @@ if ($exitstatus == 0) {
 end_of_store_tests:
 &runtest("myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
-`rm -f /tmp/myproxy-test.*.12.*.$$.pem`;
-unlink("/tmp/myproxy-test.$$.key.pem");
+`rm -f $tmpdir/myproxy-test.*.12.*.$$.pem`;
+unlink("$tmpdir/myproxy-test.$$.key.pem");
 
 #
 # Test 37
@@ -1031,16 +1046,16 @@ if ($exitstatus == 0) {
 # Test 38
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -d -n",
+    &runtest("myproxy-logon -k 'mine' -t 1 -o $tmpdir/myproxy-test.$$ -v -d -n",
 	     undef);
 print "MyProxy Test 38 (verify retrievable_by_cert policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifyproxy("/tmp/myproxy-test.$$");
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-logon -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -d -n",
+	&runtest("myproxy-logon -k 'nobody' -t 1 -o $tmpdir/myproxy-test.$$ -v -d -n",
 		 undef);
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1065,18 +1080,18 @@ if ($exitstatus == 0) {
 rename("\$X509_USER_PROXY", "\$X509_USER_PROXY.orig");
 rename("\$X509_USER_PROXY.limited", "\$X509_USER_PROXY");
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 39 (verify limited proxy retrieves a limited proxy): ";
 if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus != 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
     goto cleanup_limited;
 }
-if (!`$grid_proxy_info -file /tmp/myproxy-test.$$ -type` =~ /limited/) {
+if (!`$grid_proxy_info -file $tmpdir/myproxy-test.$$ -type` =~ /limited/) {
     print "FAILED\nRetrieved proxy is not limited.\n"; $FAILURES++; 
 }
 print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1086,17 +1101,17 @@ print "SUCCEEDED\n"; $SUCCESSES++;
 # Test 40
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -a \$X509_USER_PROXY -k renew -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+    &runtest("myproxy-logon -a \$X509_USER_PROXY -k renew -t 1 -o $tmpdir/myproxy-test.$$ -v", undef);
 print "MyProxy Test 40 (verify renewed limited proxy is still limited): ";
 if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus != 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
     goto cleanup_limited;
 }
-if (!`$grid_proxy_info -file /tmp/myproxy-test.$$ -type` =~ /limited/) {
+if (!`$grid_proxy_info -file $tmpdir/myproxy-test.$$ -type` =~ /limited/) {
     print "FAILED\nRetrieved proxy is not limited.\n"; $FAILURES++; 
 }
 print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1126,8 +1141,8 @@ print "MyProxy Tests Complete: ", $SUCCESSES, " tests passed, ";
 print $FAILURES, " tests failed\n";
 
 if (defined($valgrind)) {
-    `cat /tmp/valgrind.log.$$* > valgrind.log.$$`;
-    `rm -f /tmp/valgrind.log.$$*`;
+    `cat $tmpdir/valgrind.log.$$* > valgrind.log.$$`;
+    `rm -f $tmpdir/valgrind.log.$$*`;
     if (-s "valgrind.log.$$") {
 	print "Valgrind errors in valgrind.log.$$.\n";
 	$FAILURES++;
@@ -1147,8 +1162,8 @@ sub runtest {
     local($command, $input) = @_;
 
     $command = $valgrind . $command if (defined($valgrind));
-    print STDERR "running: ", $command, "\n" if ($verbose);
-    $pid = open3(*Writer, *Reader, '', "exec $command") ||
+    print STDERR "running: ", $command, "\n" if ($verbose); 
+   $pid = open3(*Writer, *Reader, '', "exec $command") ||
 	die "failed to run $command";
     print Writer $input if (defined($input));
     close(Writer);
@@ -1185,12 +1200,12 @@ sub docogtests {
 		 $passphrase . "\n");
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy anonget -o /tmp/myproxy-test.$$",
+	    &runtest("$cogmyproxy anonget -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
     }
     print "MyProxy CoG Test 1 (anonget of myproxy-init credential): ";
     if ($exitstatus == 0) {
@@ -1201,12 +1216,12 @@ sub docogtests {
 
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy get -o /tmp/myproxy-test.$$",
+	    &runtest("$cogmyproxy get -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
     }
     print "MyProxy CoG Test 2 (get of myproxy-init credential): ";
     if ($exitstatus == 0) {
@@ -1231,12 +1246,12 @@ sub docogtests {
 
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy anonget -o /tmp/myproxy-test.$$",
+	    &runtest("$cogmyproxy anonget -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
     }
     print "MyProxy CoG Test 4 (anonget of CoG stored credential): ";
     if ($exitstatus == 0) {
@@ -1247,12 +1262,12 @@ sub docogtests {
 
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy get -o /tmp/myproxy-test.$$",
+	    &runtest("$cogmyproxy get -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
+	    &verifyproxy("$tmpdir/myproxy-test.$$");
     }
     print "MyProxy CoG Test 5 (get of CoG stored credential): ";
     if ($exitstatus == 0) {
@@ -1290,11 +1305,11 @@ sub docogtests {
     }
 
     ($exitstatus, $output) =
-      &runtest("$cogmyproxy get -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$", undef);
+      &runtest("$cogmyproxy get -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$", undef);
     print "MyProxy CoG Test 9 (renew credential): ";
     if ($exitstatus == 0) {
       ($exitstatus, $output) =
-        &verifyproxy("/tmp/myproxy-test.$$");
+        &verifyproxy("$tmpdir/myproxy-test.$$");
     }
     if ($exitstatus == 0) {
       print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1338,16 +1353,16 @@ sub verifyproxy {
     } elsif ($proxytype =~ /RFC 3820 compliant/) {
       $typeopt = "-rfc";
     }
-    $output = `$grid_proxy_init $typeopt -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
+    $output = `$grid_proxy_init $typeopt -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ 2>&1`;
     if ($? != 0) {
 	$output = "failed to verify proxy\n" . $output;
-	unlink("/tmp/tmpproxy.$$");
+	unlink("$tmpdir/tmpproxy.$$");
 	return (1, $output);
     }
 
     # remove the new proxy we created for validation
     # NOTE: this does not affect the user's original proxy in any way
-    unlink("/tmp/tmpproxy.$$");
+    unlink("$tmpdir/tmpproxy.$$");
 
     return (0, "");
 }
@@ -1379,16 +1394,16 @@ sub verifycert {
     } else {
       # shrug
     }
-    local($output) = &runtest("$grid_proxy_init $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$ -pwstdin", $passphrase);
+    local($output) = &runtest("$grid_proxy_init $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ -pwstdin", $passphrase);
     if ($? != 0) {
 	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
-	unlink("/tmp/tmpproxy.$$");
+	unlink("$tmpdir/tmpproxy.$$");
 	return (1, $output);
     }
 
     # remove the new proxy we created for validation
     # NOTE: this does not affect the user's original proxy in any way
-    unlink("/tmp/tmpproxy.$$");
+    unlink("$tmpdir/tmpproxy.$$");
 
     return (0, "");
 }
@@ -1420,7 +1435,7 @@ sub verifytrustroots {
 }
 
 sub opensslsanitycheck {
-  $testkey = "/tmp/myproxy-test.$$.key";
+  $testkey = "$tmpdir/myproxy-test.$$.key";
   $cmd = "openssl rsa -des3 -passout stdin -in $ENV{'X509_USER_KEY'} -out $testkey";
   ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
   if ($exitstatus) {
@@ -1441,7 +1456,7 @@ sub debug {
 }
 
 sub docleanup {
-    unlink("/tmp/myproxy-test.$$");
+    unlink("$tmpdir/myproxy-test.$$");
     kill('TERM', $serverpid) if (defined($serverpid));
     unlink($SERVERPIDFILE) if (defined($SERVERPIDFILE));
     unlink($serverconf) if (defined($serverconf));
@@ -1469,14 +1484,14 @@ sub dogpiperftest {
 	$i = $perfiters;
 	while ($i--) {
 	    ($exitstatus, $output) =
-		&runtest("grid-proxy-init -hours 1 -out /tmp/myproxy-test.$$", undef);
+		&runtest("grid-proxy-init -hours 1 -out $tmpdir/myproxy-test.$$", undef);
 	    if ($exitstatus != 0) {
 		print "$$: grid-proxy-init FAILED with $i iters to go.\n";
 		print STDERR $output;
 		exit($exitstatus>>8);
 	    }
 	}
-	unlink("/tmp/myproxy-test.$$");
+	unlink("$tmpdir/myproxy-test.$$");
 	&debug("$$ is done.");
 	exit 0;
     }
@@ -1547,7 +1562,7 @@ sub dogetdelegperftest {
 	$i = $perfiters;
 	while ($i--) {
 	    ($exitstatus, $output) =
-		&runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+		&runtest("myproxy-logon -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
 			 $passphrase . "\n");
 	    if ($exitstatus != 0) {
 		print "$$: myproxy-logon FAILED with $i iters to go.\n";
@@ -1555,7 +1570,7 @@ sub dogetdelegperftest {
 		exit($exitstatus>>8);
 	    }
 	}
-	unlink("/tmp/myproxy-test.$$");
+	unlink("$tmpdir/myproxy-test.$$");
 	&debug("$$ is done.");
 	exit 0;
     }
