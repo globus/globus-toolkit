@@ -173,6 +173,17 @@ $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 $ENV{'LOGNAME'} = $ENV{'USER'} if (!defined($ENV{'LOGNAME'}));
 $ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 
+#
+# make an independent proxy for a separate identity
+# (skip this for now. some problem with GT 4.2.1 and independent proxies.
+#  would like to use this for testing with allow_self_authorization false.)
+#
+# $iproxyloc = "$tmpdir/iproxy.pem";
+# system("$grid_proxy_init -out $iproxyloc -independent -hours 0");
+# chomp($iproxysubject = `$grid_proxy_info -file $iproxyloc -identity`);
+# die "grid-proxy-info -file $iproxyloc -identity failed, stopped"
+#     if (!defined($cert_subject) || $cert_subject eq "");
+
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 $trustrootdir = "$ENV{HOME}/.globus/certificates.test.$$";
@@ -208,6 +219,7 @@ if ($startserver) {
     print CONF "default_trusted_retrievers \"none\"\n";
     print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
     print CONF "accepted_credentials_mapapp $bintrue\n" if (-x $bintrue);
+    print CONF "allow_self_authorization true\n"; # temporary workaround
     close(CONF);
     $SERVERPIDFILE = "$tmpdir/myproxy-test.serverpid.$$";
     $SERVERPORTFILE = "$tmpdir/myproxy-test.serverport.$$";

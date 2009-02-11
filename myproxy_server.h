@@ -64,6 +64,7 @@ typedef struct
   char *syslog_ident;               /* Identity for logging to syslog */
   int limited_proxy;                /* Should we delegate a limited proxy? */
   int request_timeout;              /* Timeout for child processes */
+  int allow_self_authz;             /* Allow client subject to match cert? */
 } myproxy_server_context_t;
 
 typedef struct myproxy_server_peer_t {

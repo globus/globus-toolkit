@@ -5,11 +5,19 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.5 XX Xxx 2009
+  - in myproxy-server, disallow release of a credential based only on
+    authentication with a client credential of the same subject (i.e.,
+    self-renewal) unless "allow_self_authorization true" is specified
+    in myproxy-server.config
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6630)
   - fix myproxy-logon --voms interaction with --out option
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6612)
   - implement stricter checks on myproxy-server storage directory
     security using Safefile's safe_is_path_trusted_r()
     (http://pages.cs.wisc.edu/~kupsch/safefile/); for now, these
     checks result in WARNING messages rather than errors
+  - added myproxy-server --portfile option, useful when binding to a
+    random available port via myproxy-server --port 0
 
 v4.4 12 Dec 2008
   - allow $MYPROXY_SERVER and -s command-line options to be a

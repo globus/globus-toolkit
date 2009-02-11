@@ -232,6 +232,15 @@ line_parse_callback(void *context_arg,
             context->limited_proxy = -1;
         }
     }
+    else if (strcmp(directive, "allow_self_authorization") == 0) {
+        if ((strcasecmp(tokens[1], "true")) ||
+            (strcasecmp(tokens[1], "enabled")) ||
+            (strcasecmp(tokens[1], "yes")) ||
+            (strcasecmp(tokens[1], "on")) ||
+            (strcmp(tokens[1], "1"))) {
+            context->allow_self_authz = 1;
+        }
+    }
     else if (strcmp(directive, "cert_dir") == 0) {
 	context->cert_dir = strdup(tokens[1]);
     }
@@ -600,6 +609,9 @@ check_config(myproxy_server_context_t *context)
     if (!context->authorized_key_retrievers_dns) {
 	myproxy_debug("authorized_key_retrievers not set.");
 	myproxy_debug("server will not allow clients to retrieve keys.");
+    }
+    if (context->allow_self_authz) {
+        myproxy_debug("allow_self_authorization is enabled");
     }
     if (context->trusted_retriever_dns &&
         !strcmp(context->trusted_retriever_dns[0], "*")) {

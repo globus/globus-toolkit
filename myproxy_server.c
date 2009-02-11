@@ -1485,6 +1485,31 @@ no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
     respond_with_error_and_die(attrs, verror_get_string());
 }
 
+static int
+check_self_authz(myproxy_server_context_t *context,
+                 myproxy_creds_t *creds,
+                 myproxy_server_peer_t *client)
+{
+    char *cred_subject = NULL;
+    int rval = 1;               /* default allow */
+
+    if (context->allow_self_authz == 0) {
+        if (ssl_get_base_subject_file(creds->location, &cred_subject)) {
+            verror_put_string("internal error: ssl_get_base_subject_file() failed");
+            return -1;          /* error */
+        }
+        if (strcasecmp(client->name, cred_subject) == 0) {
+            rval = 0;           /* not allowed */
+        }
+    }
+
+    if (cred_subject)
+        free(cred_subject);
+
+    return rval;
+}
+                 
+
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
  * RETRIEVE:
@@ -1499,8 +1524,13 @@ no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
  * RETRIEVE and GET with certificate (credential renewal):
  *   Client DN must match server-wide authorized_renewers policy.
  *   Client DN must match credential-specific authorized_renewers policy.
+ *   If !allow_self_authz, client DN must not match credential DN.
  *   DN in second X.509 authentication must match owner of credentials.
  *   Private key can not be encrypted in this case.
+ * RETRIEVE and GET from trusted_retrievers:
+ *   Client DN must match server-wide trusted_retrievers policy.
+ *   Client DN must match credential-specific trusted_retrievers policy.
+ *   If !allow_self_authz, client DN must not match credential DN.
  * PUT, STORE, and DESTROY:
  *   If accepted_credentials_mapfile or accepted_credentials_mapapp, 
  *   client_name / client_request->username map entry must be present/valid.
@@ -1579,8 +1609,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 			creds.trusted_retrievers,
 			(const char **)context->default_trusted_retriever_dns);
        if (authorization_ok == 1) {
-	  trusted_retriever = 1;
-          myproxy_log("trusted retrievers policy matched");
+           if (check_self_authz(context, &creds, client) == 1) {
+               trusted_retriever = 1;
+               myproxy_log("trusted retrievers policy matched");
+           } else {
+               myproxy_log("self-authz not allowed for trusted retriever");
+           }
        }
 			
        allowed_to_retrieve =
@@ -1651,6 +1685,11 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
            goto end;		/* authentication failed */
        } else if (authorization_ok == 0) {
            authorization_ok = allowed_to_retrieve;
+       } else if (authorization_ok == 1) { /* renewal */
+           if (check_self_authz(context, &creds, client) != 1) {
+               authorization_ok = -1;
+               verror_put_string("self-authz not allowed for renewer");
+           }
        }
 
        if (authorization_ok != 1) {
