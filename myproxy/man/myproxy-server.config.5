@@ -97,7 +97,11 @@ Each of these lines allows the server administrator to set
 server-wide policies for authorized renewers. If the client DN
 does not match the given limited regex the client is not
 allowed to renew the credentials previously stored by a
-client.  In addition to the server-wide policy, myproxy also
+client.  
+See
+.B allow_self_authorization
+below for a further restriction on this policy.
+In addition to the server-wide policy, myproxy also
 provides support for per-credential policy. The user can
 specify the regex DN of the allowed renewers of the credential
 on upload (using
@@ -185,6 +189,9 @@ is specified without also specifying a restrictive
 .B default_trusted_retrievers
 policy, to avoid an unsafe policy that would release credentials to 
 all clients without additional authentication.
+See also
+.B allow_self_authorization
+below for a further restriction on this policy.
 .TP
 .BI default_trusted_retrievers " \*(lqDN regex\*(rq"
 If a user doesn't set a trusted retrieval policy with the credential
@@ -260,8 +267,17 @@ certificates as follows.  If a client authenticates with a limited
 proxy, the client should only be able to obtain another limited
 proxy, not a full proxy or end entity certificate.  Thus, the
 MyProxy CA will not accept limited proxies for authentication.
-However, if this option is set, MyProxy will treat limited proxy
+However, if this option is set to true, MyProxy will treat limited proxy
 certificates as if they were full proxy certificates.
+.TP
+.BI allow_self_authorization " boolean"
+By default, MyProxy will disallow 
+.B trusted_retrievers
+and
+.B authorized_renewers
+whose DN matches the identity of the stored credential,
+so a proxy by itself can not be refreshed or renewed.
+However, if this option is set to true, this restriction is lifted.
 .TP
 .BI syslog_ident " name"
 You can optionally specify the string to be prepended to every message
