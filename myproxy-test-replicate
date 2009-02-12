@@ -171,6 +171,7 @@ print CONF "authorized_renewers   \"*\"\n";
 print CONF "default_renewers      \"none\"\n";
 print CONF "authorized_key_retrievers \"*\"\n";
 print CONF "default_key_retrievers    \"*\"\n";
+print CONF "allow_self_authorization true\n"; # temporary workaround
 close(CONF);
 
 $sl1dir = "$tmpdir/myproxy-test.serverdir.sl1.$$";
@@ -181,7 +182,7 @@ chmod(0700, $sl1dir) ||
 $sl1pidfile = "$tmpdir/myproxy-test.serverpid.sl1.$$";
 $sl1portfile = "$tmpdir/myproxy-test.serverport.sl1.$$";
 $servercmd = "$myproxy_server -s $sl1dir -c $slconf";
-$servercmd .= " -p 0 $s1port -P $sl1pidfile -z $sl1portfile";
+$servercmd .= " -p 0 -P $sl1pidfile -z $sl1portfile";
 &debug("running '$servercmd'");
 `$servercmd`;
 sleep(1);			# give server a chance to startup
@@ -277,6 +278,7 @@ print CONF "authorized_renewers   \"*\"\n";
 print CONF "default_renewers      \"none\"\n";
 print CONF "authorized_key_retrievers \"*\"\n";
 print CONF "default_key_retrievers    \"*\"\n";
+print CONF "allow_self_authorization true\n"; # temporary workaround
 print CONF "slave_servers localhost:$s1port;localhost:$s2port;localhost:$s3port";
 close(CONF);
 
