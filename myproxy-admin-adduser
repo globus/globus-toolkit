@@ -29,6 +29,11 @@ if (!(-x $mpalc)) {
     print STDERR "Is MyProxy installed in $ENV{GLOBUS_LOCATION}?\n";
     exit 1;
 }
+chomp($grid_cert_info = `which grid-cert-info 2>/dev/null`);
+if (!(-x $grid_cert_info)) {
+    print STDERR "Error: grid-cert-info not found.\n";
+    exit 1;
+}
 
 $cmdname = basename($0);
 
@@ -156,6 +161,10 @@ if (system(@args)) {
     &cleanup();
     exit 1;
 }
+
+print "Certificate subject is:\n";
+@args = ("grid-cert-info", "-subject", "-file", $certfile);
+system(@args);
 
 &cleanup();
 exit 0;
