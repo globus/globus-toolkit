@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.6 XX Xxx 2009
+  - include certificate subject in myproxy-admin-adduser output
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6324)
 
 v4.5 12 Feb 2009
   - in myproxy-server, disallow release of a credential based only on
@@ -20,6 +22,7 @@ v4.5 12 Feb 2009
     checks result in WARNING messages rather than errors
   - added myproxy-server --portfile option, useful when binding to a
     random available port via myproxy-server --port 0
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6623)
 
 v4.4 12 Dec 2008
   - allow $MYPROXY_SERVER and -s command-line options to be a
