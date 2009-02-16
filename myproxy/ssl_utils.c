@@ -109,6 +109,7 @@ globus_error_to_verror(globus_result_t result)
     error = globus_error_get(result);
     if (!error) return;
     desc = globus_error_print_chain(error);
+    globus_object_free(error);
     if (!desc) return;
     verror_put_string("%s", desc);
     free(desc);
