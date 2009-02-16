@@ -493,6 +493,7 @@ generate_certificate( X509_REQ                 *request,
       globus_gsi_cert_utils_get_x509_name(userdn, strlen(userdn), subject);
   if (globus_result != GLOBUS_SUCCESS) {
       verror_put_string("globus_gsi_cert_utils_get_x509_name() failed");
+      globus_error_to_verror(globus_result);
       goto error;
   }
 
