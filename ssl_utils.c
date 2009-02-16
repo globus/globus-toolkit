@@ -96,6 +96,24 @@ ssl_error_to_verror()
 }
 
 /*
+ * globus_error_to_verror()
+ *
+ * Transfer an error description out of the Globus error handler to verror.
+ */
+void
+globus_error_to_verror(globus_result_t result)
+{
+    globus_object_t *error;
+    char *desc;
+
+    error = globus_error_get(result);
+    if (!error) return;
+    desc = globus_error_print_chain(error);
+    if (!desc) return;
+    verror_put_string("%s", desc);
+}
+
+/*
  * bio_from_buffer()
  *
  * Given a buffer of length buffer_len, return a memory bio with the
@@ -1201,6 +1219,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     GT_PROXY_MODE = getenv("GT_PROXY_MODE");
@@ -1219,6 +1238,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     }
 	if (local_result != GLOBUS_SUCCESS) {
 	    verror_put_string("globus_gsi_proxy_handle_set_type() failed");
+        globus_error_to_verror(local_result);
 	    goto error;
 	}
     bio = BIO_new(BIO_s_mem());
@@ -1229,6 +1249,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     local_result = globus_gsi_proxy_create_req((*new_creds)->proxy_req, bio);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_create_req() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR) {
@@ -1299,6 +1320,7 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
 						  &cred_handle, bio);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_assemble_cred() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
 
@@ -1310,18 +1332,21 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
 					    &creds->certificate);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_get_cert() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     local_result = globus_gsi_cred_get_key(cred_handle,
 					   &creds->private_key);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_get_key() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     local_result = globus_gsi_cred_get_cert_chain(cred_handle,
 						  &creds->certificate_chain);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_get_cert_chain() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     globus_gsi_cred_handle_destroy(cred_handle);
@@ -1369,22 +1394,26 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     local_result = globus_gsi_cred_handle_init(&cred_handle, NULL);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_handle_init() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     local_result = globus_gsi_cred_set_cert(cred_handle, creds->certificate);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_set_cert() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     local_result = globus_gsi_cred_set_key(cred_handle, creds->private_key);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_set_key() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     local_result = globus_gsi_cred_set_cert_chain(cred_handle,
 						  creds->certificate_chain);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cred_set_cert_chain() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
 
@@ -1393,6 +1422,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
 
@@ -1401,6 +1431,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 						       &cert_type);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
 
@@ -1417,6 +1448,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     local_result = globus_gsi_proxy_inquire_req(proxy_handle, bio);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_inquire_req() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
     BIO_free(bio);
@@ -1428,6 +1460,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 							cert_type);
 	if (local_result != GLOBUS_SUCCESS) {
 	    verror_put_string("globus_gsi_proxy_handle_set_type() failed");
+        globus_error_to_verror(local_result);
 	    goto error;
 	}
     }
@@ -1476,6 +1509,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     local_result = globus_gsi_proxy_sign_req(proxy_handle, cred_handle, bio);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_sign_req() failed");
+    globus_error_to_verror(local_result);
 	goto error;
     }
 

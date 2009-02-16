@@ -403,6 +403,13 @@ int ssl_get_times(const char *proxyfile, time_t *not_before, time_t *not_after);
 void ssl_error_to_verror();
 
 /*
+ * globus_error_to_verror()
+ *
+ * Transfer an error description out of the Globus error handler to verror.
+ */
+void globus_error_to_verror(globus_result_t result);
+
+/*
  * ssl_verify_cred()
  *
  * Check the validity of the credentials at the given path:

@@ -429,6 +429,7 @@ voms_proxy_init()
     cert = NULL;
     if (local_result != GLOBUS_SUCCESS) {
         verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+        globus_error_to_verror(local_result);
         return -1;
     }
 
