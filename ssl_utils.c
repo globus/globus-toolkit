@@ -111,6 +111,7 @@ globus_error_to_verror(globus_result_t result)
     desc = globus_error_print_chain(error);
     if (!desc) return;
     verror_put_string("%s", desc);
+    free(desc);
 }
 
 /*
