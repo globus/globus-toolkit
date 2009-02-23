@@ -39,6 +39,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     globus_off_t                        block_length;
     globus_off_t                        offset;
     globus_bool_t                       done;
+    globus_result_t                     done_status; // The status of the finished transfer.
     globus_gfs_operation_t              op;
     globus_byte_t *                     buffer;
     globus_off_t *                      offsets; // The offset of each buffer.
@@ -512,10 +513,11 @@ globus_l_gfs_hdfs_trev(
     GlobusGFSName(globus_l_gfs_hdfs_trev);
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-    printf("Recieved a transfer event.\n");
+    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Recieved a transfer event.\n");
+
     switch (event_info->type) {
         case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-            printf("Got an abort request to the HDFS client.\n");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got an abort request to the HDFS client.\n");
             break;
         default:
             printf("Got some other transfer event.\n");
@@ -586,6 +588,10 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
     //if (hdfs_handle->buffer_count > 10) {
     //    printf("Got buffer %d\n", offset);
     //}
+    if (hdfs_handle == NULL) {
+        rc = GlobusGFSErrorGeneric("Storing buffer for un-allocated transfer");
+        return rc;
+    }
     for (i = 0; i<cnt; i++) {
         if (hdfs_handle->used[i] == 0) {
             sprintf(err_msg, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
@@ -635,7 +641,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
         if (hdfs_handle->buffer_count == hdfs_handle->max_buffer_count) {
             sprintf(err_msg, "Allocated all %i memory buffers; aborting transfer.", hdfs_handle->max_buffer_count);
             rc = GlobusGFSErrorGeneric(err_msg);
-            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.\n");
         } else {
             // Increase the size of all our buffers which track memory usage
             hdfs_handle->nbytes = globus_realloc(hdfs_handle->nbytes, hdfs_handle->buffer_count*sizeof(globus_size_t));
@@ -676,9 +682,12 @@ globus_l_gfs_hdfs_write_to_storage_cb(
                                                                                                                                            
     GlobusGFSName(globus_l_gfs_hdfs_write_to_storage_cb);
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-
     globus_mutex_lock(&hdfs_handle->mutex);
     rc = GLOBUS_SUCCESS;
+    if (hdfs_handle->done && hdfs_handle->done_status != GLOBUS_SUCCESS) {
+        globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
+        return;
+    }
     if (result != GLOBUS_SUCCESS)
     {
         //printf("call back fail.\n");
@@ -689,7 +698,6 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     {
         hdfs_handle->done = GLOBUS_TRUE;
     }
-
     if (nbytes > 0)
     {
         // First, see if we can dump this block immediately.
@@ -770,7 +778,14 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         // Don't close the file because the other transfers will want to finish up.
         sprintf(err_msg, "We failed to finish the transfer, but there are %i outstanding writes left over.\n", hdfs_handle->outstanding);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
-        globus_gridftp_server_finished_transfer(op, rc);
+        hdfs_handle->done_status = rc;
+        if (hdfs_handle->fs != NULL && hdfs_handle->fd != NULL) {
+            hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd);
+            hdfs_handle->fd = NULL;
+         }
+        //globus_gridftp_server_finished_transfer(op, rc);
+    } else {
+        //printf("Unknown case!\n");
     }
     globus_mutex_unlock(&hdfs_handle->mutex);
 }
@@ -858,6 +873,7 @@ globus_l_gfs_hdfs_recv(
     hdfs_handle->op = op;
     hdfs_handle->outstanding = 0;
     hdfs_handle->done = GLOBUS_FALSE;
+    hdfs_handle->done_status = GLOBUS_SUCCESS;
     globus_gridftp_server_get_block_size(op, &hdfs_handle->block_size); 
 
     globus_gridftp_server_get_write_range(hdfs_handle->op,
