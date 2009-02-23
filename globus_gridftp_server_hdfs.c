@@ -153,7 +153,7 @@ globus_l_gfs_hdfs_start(
         load = strtod(token, NULL);
         sprintf(err_msg, "Detected system load %.2f.\n", load);
         globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
-        if ((load >= 50) && (load < 1000)) {
+        if ((load >= 8) && (load < 1000)) {
             sprintf(err_msg, "Preventing gridftp transfer startup due to system load of %.2f.\n", load);
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,err_msg);
             sleep(5);
