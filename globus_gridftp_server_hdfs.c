@@ -629,7 +629,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
     if (wrote_something == 0) {
         hdfs_handle->buffer_count += 1;
         sprintf(err_msg, "Initializing buffer number %d.\n", hdfs_handle->buffer_count);
-        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
         //printf("Current offset %d, waiting on offset %d, size %d.\n", offset, hdfs_handle->offset, nbytes);
         // Refuse to allocate more than the max.
         if (hdfs_handle->buffer_count == hdfs_handle->max_buffer_count) {
