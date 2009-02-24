@@ -1,0 +1,5 @@
+method = ftp
+ftp_root = http://
+ftp_target = www.globus.org/globus_4_0_branch/nightly.tar.gz
+ftp_args = -O gt-4.0-branch-nightly.tar.gz
+untar = false
