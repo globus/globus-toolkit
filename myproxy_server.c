@@ -892,7 +892,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	failure("malloc() failed in GSI_SOCKET_new()");
     }
     if (GSI_SOCKET_check_creds(tmp_gsi_sock) == GSI_SOCKET_ERROR) {
-	char error_string[1024];
+        char error_string[1024] = { 0 };
 	GSI_SOCKET_get_error_string(tmp_gsi_sock, error_string,
 				    sizeof(error_string));
 	myproxy_log("Problem with server credentials.\n%s\n",
