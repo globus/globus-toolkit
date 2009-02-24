@@ -2131,6 +2131,7 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
 {
     int responselen;
     char *response_buffer = NULL;
+    int rval;
 
     /* Receive a response from the server */
     responselen = myproxy_recv_ex(attrs, &response_buffer);
@@ -2143,14 +2144,21 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
 	return(-1);
     }
 
+    rval = myproxy_handle_response(response_buffer, responselen, response);
+	free(response_buffer);
+    return rval;
+}
+
+int
+myproxy_handle_response(const char *response_buffer,
+                        int responselen,
+                        myproxy_response_t *response)
+{
     /* Make a response object from the response buffer */
     if (myproxy_deserialize_response(response, response_buffer,
 				     responselen) < 0) {
-	free(response_buffer);
 	return(-1);
     }
-    free(response_buffer);
-    response_buffer = NULL;
 
     /* Check version */
     if (strcmp(response->version, MYPROXY_VERSION) != 0) {
@@ -2161,8 +2169,8 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
     /* Check response */
     switch(response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from myproxy-server (%s):\n%s",
-			      attrs->pshost, response->error_string);
+            verror_put_string("ERROR from myproxy-server:\n%s",
+			      response->error_string);
 	    return(-1);
             break;
         case MYPROXY_OK_RESPONSE:
