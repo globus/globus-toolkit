@@ -54,6 +54,10 @@ dnl Check for vsnprintf()
 dnl
 AC_CHECK_FUNCS(vsnprintf)
 dnl
+dnl Check for va_copy()
+dnl
+AC_CHECK_FUNCS(va_copy)
+dnl
 dnl Check for setenv()
 dnl
 AC_CHECK_FUNCS(setenv)
