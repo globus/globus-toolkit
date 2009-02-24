@@ -44,7 +44,7 @@ else
 fi
 for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     echo ==================================================
-    echo Installing Globus Toolkit ($installer)...
+    echo Installing Globus Toolkit \($installer\)...
     tar xfz $installer
     cd gt*-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
