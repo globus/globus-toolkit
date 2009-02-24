@@ -1,4 +1,4 @@
 method = ftp
 ftp_root = http://
-ftp_target = http://www.globus.org/ftppub/gt4/4.2.0/installers/src/gt4.2.0-all-source-installer.tar.gz
+ftp_target = www.globus.org/ftppub/gt4/4.2.0/installers/src/gt4.2.0-all-source-installer.tar.gz
 untar = false
