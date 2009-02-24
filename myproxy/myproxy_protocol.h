@@ -294,6 +294,17 @@ int myproxy_recv_response(myproxy_socket_attrs_t *attrs,
 			  myproxy_response_t *response); 
 
 /*
+ * myproxy_handle_response()
+ *
+ * Helper function that combines 
+ * myproxy_deserialize_response() with some error checking.
+ *
+ */
+int myproxy_handle_response(const char *response_buffer,
+                            int responselen,
+                            myproxy_response_t *response); 
+
+/*
  * myproxy_recv_response_ex()
  *
  * Helper function that combines myproxy_recv(),

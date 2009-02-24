@@ -1315,6 +1315,20 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	goto error;
     }
 
+    /* HACK: We may get an error message rather than a certreq... */
+    if (strncmp((const char *)input_buffer, "VERSION",
+                strlen("VERSION")) == 0) {
+        myproxy_response_t *response;
+        response = malloc(sizeof(*response));
+        memset(response, 0, sizeof(*response));
+        myproxy_handle_response((const char *)input_buffer, 
+                                input_buffer_length,
+                                response);
+        myproxy_free(NULL, NULL, response);
+        self->error_string = strdup("server-side error: check server logs");
+        goto error;
+    }
+
     /*
      * Set up the restrictions on the proxy
      */
@@ -1440,6 +1454,20 @@ GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
 			      &input_buffer_len) == GSI_SOCKET_ERROR)
     {
 	goto error;
+    }
+
+    /* HACK: We may get just an error message rather than a cert... */
+    if (strncmp((const char *)input_buffer, "VERSION",
+                strlen("VERSION")) == 0) {
+        myproxy_response_t *response;
+        response = malloc(sizeof(*response));
+        memset(response, 0, sizeof(*response));
+        myproxy_handle_response((const char *)input_buffer, 
+                                input_buffer_len,
+                                response);
+        myproxy_free(NULL, NULL, response);
+        self->error_string = strdup("server-side error: check server logs");
+        goto error;
     }
 
     /* MAJOR HACK:
