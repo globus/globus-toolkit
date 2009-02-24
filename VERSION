@@ -7,6 +7,8 @@ Version History
 v4.6 XX Xxx 2009
   - include certificate subject in myproxy-admin-adduser output
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6324)
+  - handle error response message from myproxy-server during delegation
+    (http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=359)
 
 v4.5 12 Feb 2009
   - in myproxy-server, disallow release of a credential based only on
