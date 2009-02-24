@@ -130,14 +130,16 @@ my_vsnprintf(const char				*format,
 	return NULL;
     }
 
-#ifdef HAVE_VSNPRINTF
+#if defined(HAVE_VSNPRINTF) && defined(HAVE_VA_COPY)
 
     while (1)
     {
 	char *new_buffer;
-
+    va_list aq;
+    va_copy(aq, ap);
 	string_len = vsnprintf(buffer, buffer_len,
-			       format, ap);
+			       format, aq);
+    va_end(aq);
 	
 	/*
 	 * Was buffer big enough? On gnu libc boxes we get -1 if it wasn't

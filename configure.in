@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.57 $)
+AC_REVISION($Revision: 1.58 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -53,6 +53,10 @@ dnl
 dnl Check for vsnprintf()
 dnl
 AC_CHECK_FUNCS(vsnprintf)
+dnl
+dnl Check for va_copy()
+dnl
+AC_CHECK_FUNCS(va_copy)
 dnl
 dnl Check for setenv()
 dnl
