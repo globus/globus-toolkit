@@ -42,48 +42,10 @@ if test -d /prereq/valgrind-2.4.0/bin; then
 else
     echo valgrind not found.
 fi
-echo ==================================================
-echo Installing Globus Toolkit...
-tar xfz gt*-all-source-installer.tar.gz
-cd gt*-installer
-./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
-make gsi-myproxy install
-. $GLOBUS_LOCATION/etc/globus-user-env.sh
-echo ==================================================
-echo Environment variables:
-env
-echo ==================================================
-flavor=`gpt-query -name=myproxy | perl -n -e 'if (/myproxy-(.*)-pgm/){print "$1\n";}'|head -1`
-echo GPT flavor is $flavor.  Installing globus_core.
-gpt-build -nosrc $flavor
-echo ==================================================
-echo Installing autotools...
-cd ../autotools
-./install-autotools $GLOBUS_LOCATION
-echo ==================================================
-echo Building MyProxy...
-cd ../myproxy
-./bootstrap
-./configure --with-flavor=$flavor
-make dist
-gpt-uninstall myproxy
-gpt-build -verbose myproxy-*.tar.gz $flavor
-echo ==================================================
-echo Testing MyProxy...
-MY_X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
-mkdir $MY_X509_CERT_DIR
-cp nmi/*.0 nmi/*.signing_policy $MY_X509_CERT_DIR
-chmod 0600 nmi/userkey.pem
-grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
-myproxy-test -startserver $valgrind
-myproxy-test-replicate
-cd ..
-rm -rf gt*-installer
-if test -f nightly.tar.gz; then
+for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     echo ==================================================
-    echo Installing GT CVS Trunk...
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
-    tar xfz nightly.tar.gz
+    echo Installing Globus Toolkit ($installer)...
+    tar xfz $installer
     cd gt*-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make gsi-myproxy install
@@ -115,5 +77,8 @@ if test -f nightly.tar.gz; then
     grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
     myproxy-test -startserver $valgrind
     myproxy-test-replicate
-fi
+    cd ..
+    rm -rf gt*-installer
+    rm -rf $GLOBUS_LOCATION
+done
 ) 2>&1 # we want stdout & stderr mixed in the output file
