@@ -457,7 +457,10 @@ globus_gsi_proxy_create_req(
         GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END PROXYCERTINFO  ******\n");
     }
     
-    if (!X509_REQ_sign(handle->req, handle->proxy_key, EVP_md5()))
+    if (!X509_REQ_sign(handle->req, handle->proxy_key,
+            handle->attrs->signing_algorithm
+            ? handle->attrs->signing_algorithm
+            : EVP_sha1()))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1053,6 +1056,7 @@ globus_l_gsi_proxy_sign_key(
     X509 *                              issuer_cert = NULL;
     X509_EXTENSION *                    pci_ext = NULL;
     X509_EXTENSION *                    extension;
+    const EVP_MD *                      issuer_digest;
     int                                 position;
     EVP_PKEY *                          issuer_pkey = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -1163,7 +1167,7 @@ globus_l_gsi_proxy_sign_key(
     
     if(pci_NID != NID_undef)
     {
-        EVP_MD *                        sha1 = EVP_sha1();
+        const EVP_MD *                  sha1 = EVP_sha1();
         unsigned char                   md[SHA_DIGEST_LENGTH];
         long                            sub_hash;
         unsigned int                    len;
@@ -1543,18 +1547,32 @@ globus_l_gsi_proxy_sign_key(
     /* right now if MD5 isn't requested as the signing algorithm,
      * we throw an error
      */
-    if(EVP_MD_type(handle->attrs->signing_algorithm) != NID_md5)
+    issuer_digest = EVP_get_digestbynid(
+            OBJ_obj2nid(issuer_cert->sig_alg->algorithm));
+    if (issuer_digest == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            (_PCSL("The signing algorithm: %s is not currently allowed."
-             "\nUse MD5 to sign certificate requests"),
-             OBJ_nid2sn(EVP_MD_type(handle->attrs->signing_algorithm))));
+            (_PCSL("The signing algorithm used by the ceritificate cannot "
+            " be used to sign a proxy.")));
+        goto done;
+    }
+    if (handle->attrs->signing_algorithm != NULL && 
+        EVP_MD_type(handle->attrs->signing_algorithm) !=
+        EVP_MD_type(issuer_digest))
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("The signing algorithm: %s does not match "
+            "issuer certificate algorithm %s."),
+             OBJ_nid2sn(EVP_MD_type(handle->attrs->signing_algorithm)),
+             OBJ_nid2sn(EVP_MD_type(issuer_digest))));
         goto done;
     }
     
-    if(!X509_sign(*signed_cert, issuer_pkey, handle->attrs->signing_algorithm))
+    if(!X509_sign(*signed_cert, issuer_pkey, issuer_digest))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1672,6 +1690,39 @@ globus_gsi_proxy_create_signed(
         "globus_gsi_proxy_create_signed";
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    result = globus_gsi_cred_get_cert(issuer, &issuer_cert);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
+        goto exit;
+    }
+
+    if (handle->attrs->signing_algorithm == NULL)
+    {
+        const EVP_MD *                  issuer_digest;
+
+        issuer_digest = EVP_get_digestbynid(
+                OBJ_obj2nid(issuer_cert->sig_alg->algorithm));
+        if (issuer_digest == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_BIO,
+                (_PCSL("Certificate's signing algorithm not supported by "
+                "OpenSSL")));
+            goto exit;
+        }
+        result = globus_gsi_proxy_handle_attrs_set_signing_algorithm(
+                handle->attrs,
+                issuer_digest);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto exit;
+        }
+    }
+
     rw_mem_bio = BIO_new(BIO_s_mem());
     if(!rw_mem_bio)
     {
@@ -1770,15 +1821,6 @@ globus_gsi_proxy_create_signed(
     }
 
     result = globus_gsi_proxy_sign_req(inquire_handle, issuer, rw_mem_bio);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
-        goto exit;
-    }
-
-    result = globus_gsi_cred_get_cert(issuer, &issuer_cert);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(

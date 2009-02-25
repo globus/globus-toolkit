@@ -29,7 +29,7 @@
 
 #define DEFAULT_KEY_BITS                512
 #define DEFAULT_PUB_EXPONENT            RSA_F4  /* 65537 */
-#define DEFAULT_SIGNING_ALGORITHM       EVP_md5()
+#define DEFAULT_SIGNING_ALGORITHM       NULL
 #define DEFAULT_CLOCK_SKEW              (5*60)    /* actually in seconds */
 
 #define GLOBUS_GSI_PROXY_HANDLE_ATTRS_MALLOC_ERROR \
