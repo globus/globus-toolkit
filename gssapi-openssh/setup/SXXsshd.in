@@ -22,6 +22,7 @@ export GLOBUS_LOCATION
 . ${libexecdir}/globus-sh-tools.sh
 
 PID_FILE=${localstatedir}/sshd.pid
+SSHD=${sbindir}/sshd
 
 #
 # SSHD arguments can be added here within the following
@@ -35,18 +36,28 @@ do_start()
     if [ ! -d $localstatedir ]; then
         mkdir -p $localstatedir
     fi
-    echo -n "Starting up GSI-OpenSSH sshd server... "
-    ${sbindir}/sshd $SSHD_ARGS > /dev/null 2>&1 &
+    printf "%s" "Starting up GSI-OpenSSH sshd server... "
+    if [ ! -e $SSHD ]; then
+        echo "failed"
+        echo "$SSHD does not exist."
+        exit 1;
+    fi
+    if [ ! -x $SSHD ]; then
+        echo "failed"
+        echo "$SSHD is not executable."
+        exit 1;
+    fi
+    $SSHD $SSHD_ARGS > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo "done."
     else
-        echo "failed to start GSI-OpenSSH sshd server!"
+        echo "failed to start $SSHD!"
     fi
 }
 
 do_stop()
 {
-    echo -n "Stopping the GSI-OpenSSH sshd server... "
+    printf "%s" "Stopping the GSI-OpenSSH sshd server... "
     pid=`cat $PID_FILE`
     kill -TERM $pid
     sleep 2
