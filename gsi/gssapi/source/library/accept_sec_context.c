@@ -79,6 +79,8 @@ GSS_CALLCONV gss_accept_sec_context(
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 readlen;
+    X509 *                              peer_cert;
+    const EVP_MD *                      peer_digest;
 
     static char *                       _function_name_ =
         "gss_accept_sec_context";
@@ -383,6 +385,34 @@ GSS_CALLCONV gss_accept_sec_context(
                     major_status = GSS_S_FAILURE;
                     break;
                 }
+
+                local_result = globus_gsi_cred_get_cert(
+                            context->peer_cred_handle->cred_handle,
+                            &peer_cert);
+                if (local_result != GLOBUS_SUCCESS)
+                {
+                    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                    major_status = GSS_S_FAILURE;
+                    break;
+                }
+                peer_digest = EVP_get_digestbynid(
+                        OBJ_obj2nid(peer_cert->sig_alg->algorithm));
+
+                local_result = globus_gsi_proxy_handle_attrs_set_signing_algorithm(
+                        proxy_handle_attrs, (EVP_MD *) peer_digest);
+                if (local_result != GLOBUS_SUCCESS)
+                {
+                    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                    major_status = GSS_S_FAILURE;
+                    break;
+                }
+
                 if(context->proxy_handle)
                 {
                     globus_gsi_proxy_handle_destroy(context->proxy_handle);
