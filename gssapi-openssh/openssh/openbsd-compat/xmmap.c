@@ -71,7 +71,8 @@ xmmap(size_t size)
 			fatal("mkstemp(\"%s\"): %s",
 			    MM_SWAP_TEMPLATE, strerror(errno));
 		unlink(tmpname);
-		ftruncate(tmpfd, size);
+		if (ftruncate(tmpfd, size) != 0)
+			fatal("%s: ftruncate: %s", __func__, strerror(errno));
 		address = mmap(NULL, size, PROT_WRITE|PROT_READ, MAP_SHARED,
 		    tmpfd, (off_t)0);
 		close(tmpfd);

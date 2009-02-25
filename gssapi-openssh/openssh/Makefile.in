@@ -77,7 +77,7 @@ LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o bufbn.o buffer.o \
 	kexgex.o kexdhc.o kexgexc.o scard.o msg.o progressmeter.o dns.o \
 	pathnames.o \
 	kexgssc.o \
-	entropy.o scard-opensc.o gss-genr.o umac.o
+	entropy.o scard-opensc.o gss-genr.o umac.o jpake.o schnorr.o
 
 SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
 	sshconnect.o sshconnect1.o sshconnect2.o mux.o
@@ -87,7 +87,7 @@ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
 	auth.o auth1.o auth2.o auth-options.o session.o \
 	auth-chall.o auth2-chall.o groupaccess.o \
 	auth-skey.o auth-bsdauth.o auth2-hostbased.o auth2-kbdint.o \
-	auth2-none.o auth2-passwd.o auth2-pubkey.o \
+	auth2-none.o auth2-passwd.o auth2-pubkey.o auth2-jpake.o \
 	monitor_mm.o monitor.o monitor_wrap.o kexdhs.o kexgexs.o \
 	auth-krb5.o \
 	auth2-gss.o gss-serv.o gss-serv-krb5.o \

@@ -127,7 +127,7 @@ int main(void){char b[10]; memset(b, 0, sizeof(b));}
 
 	# -fstack-protector-all doesn't always work for some GCC versions
 	# and/or platforms, so we test if we can.  If it's not supported
-	# on a give platform gcc will emit a warning so we use -Werror.
+	# on a given platform gcc will emit a warning so we use -Werror.
 	if test "x$use_stack_protector" = "x1"; then
 	    for t in -fstack-protector-all -fstack-protector; do
 		AC_MSG_CHECKING(if $CC supports $t)
@@ -137,8 +137,8 @@ int main(void){char b[10]; memset(b, 0, sizeof(b));}
 		LDFLAGS="$LDFLAGS $t -Werror"
 		AC_LINK_IFELSE(
 			[AC_LANG_SOURCE([
-#include <stdlib.h>
-int main(void){return 0;}
+#include <stdio.h>
+int main(void){char x[[256]]; snprintf(x, sizeof(x), "XXX"); return 0;}
 			 ])],
 		    [ AC_MSG_RESULT(yes)
 		      CFLAGS="$saved_CFLAGS $t"
@@ -146,8 +146,8 @@ int main(void){return 0;}
 		      AC_MSG_CHECKING(if $t works)
 		      AC_RUN_IFELSE(
 			[AC_LANG_SOURCE([
-#include <stdlib.h>
-int main(void){exit(0);}
+#include <stdio.h>
+int main(void){char x[[256]]; snprintf(x, sizeof(x), "XXX"); return 0;}
 			])],
 			[ AC_MSG_RESULT(yes)
 			  break ],
@@ -470,6 +470,8 @@ int main(void) { exit(0); }
 	AC_CHECK_DECL(AU_IPv4, [], 
 	    AC_DEFINE(AU_IPv4, 0, [System only supports IPv4 audit records])
 	    [#include <bsm/audit.h>]
+	AC_DEFINE(LASTLOG_WRITE_PUTUTXLINE, 1,
+	    [Define if pututxline updates lastlog too])
 	)
 	AC_MSG_CHECKING(if we have the Security Authorization Session API)
 	AC_TRY_COMPILE([#include <Security/AuthSession.h>],
@@ -577,6 +579,14 @@ int main(void) { exit(0); }
 	AC_DEFINE(BROKEN_UPDWTMPX, 1, [updwtmpx is broken (if present)])
 	AC_DEFINE(WITH_ABBREV_NO_TTY)
 	AC_DEFINE(LOCKED_PASSWD_STRING, "*LK*")
+	;;
+*-*-k*bsd*-gnu | *-*-kopensolaris*-gnu)
+	check_for_libcrypt_later=1
+	AC_DEFINE(PAM_TTY_KLUDGE)
+	AC_DEFINE(LOCKED_PASSWD_PREFIX, "!")
+	AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)
+	AC_DEFINE(_PATH_BTMP, "/var/log/btmp", [log for bad login attempts])
+	AC_DEFINE(USE_BTMP, 1, [Use btmp to log bad logins])
 	;;
 *-*-linux*)
 	no_dev_ptmx=1
@@ -745,7 +755,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	;;
 # UnixWare 7.x, OpenUNIX 8
 *-*-sysv5*)
-	check_for_libcrypt_later=1
 	AC_DEFINE(UNIXWARE_LONG_PASSWORDS, 1, [Support passwords > 8 chars])
 	AC_DEFINE(USE_PIPES)
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
@@ -758,8 +767,14 @@ mips-sony-bsd|mips-sony-newsos4)
 		AC_DEFINE(BROKEN_LIBIAF, 1,
 			[ia_uinfo routines not supported by OS yet])
 		AC_DEFINE(BROKEN_UPDWTMPX)
+		AC_CHECK_LIB(prot, getluid,[ LIBS="$LIBS -lprot"
+			AC_CHECK_FUNCS(getluid setluid,,,-lprot)
+			AC_DEFINE(HAVE_SECUREWARE)
+			AC_DEFINE(DISABLE_SHADOW)
+			],,)
 		;;
 	*)	AC_DEFINE(LOCKED_PASSWD_STRING, "*LK*")
+		check_for_libcrypt_later=1
 		;;
 	esac
 	;;
@@ -1697,6 +1712,8 @@ AC_CHECK_FUNCS(utmpname)
 dnl    Checks for utmpx functions
 AC_CHECK_FUNCS(endutxent getutxent getutxid getutxline pututxline )
 AC_CHECK_FUNCS(setutxent utmpxname)
+dnl    Checks for lastlog functions
+AC_CHECK_FUNCS(getlastlogxbyname)
 
 AC_CHECK_FUNC(daemon,
 	[AC_DEFINE(HAVE_DAEMON, 1, [Define if your libraries define daemon()])],
@@ -3050,6 +3067,15 @@ AC_CACHE_CHECK([for struct in6_addr], ac_cv_have_struct_in6_addr, [
 if test "x$ac_cv_have_struct_in6_addr" = "xyes" ; then
 	AC_DEFINE(HAVE_STRUCT_IN6_ADDR, 1,
 		[define if you have struct in6_addr data type])
+
+dnl Now check for sin6_scope_id
+	AC_CHECK_MEMBERS([struct sockaddr_in6.sin6_scope_id],,,
+		[
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <netinet/in.h>
+		])
 fi
 
 AC_CACHE_CHECK([for struct addrinfo], ac_cv_have_struct_addrinfo, [
