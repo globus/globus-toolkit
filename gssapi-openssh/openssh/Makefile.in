@@ -43,7 +43,7 @@ CC=@CC@
 LD=@LD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=-I. -I$(srcdir) @CPPFLAGS@ $(PATHS) @DEFS@
-LIBS=@LIBS@
+LIBS=@LIBS@ -lpthread
 SSHDLIBS=@SSHDLIBS@
 LIBEDIT=@LIBEDIT@
 AR=@AR@
@@ -59,18 +59,20 @@ EXEEXT=@EXEEXT@
 
 INSTALL_SSH_PRNG_CMDS=@INSTALL_SSH_PRNG_CMDS@
 INSTALL_SSH_RAND_HELPER=@INSTALL_SSH_RAND_HELPER@
+INSTALL_GSISSH=@INSTALL_GSISSH@
 
 TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keyscan${EXEEXT} ssh-keysign${EXEEXT} ssh-agent$(EXEEXT) scp$(EXEEXT) ssh-rand-helper${EXEEXT} sftp-server$(EXEEXT) sftp$(EXEEXT)
 
 LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o bufbn.o buffer.o \
 	canohost.o channels.o cipher.o cipher-acss.o cipher-aes.o \
-	cipher-bf1.o cipher-ctr.o cipher-3des1.o cleanup.o \
+	cipher-bf1.o cipher-ctr.o cipher-ctr-mt.o cipher-3des1.o cleanup.o \
 	compat.o compress.o crc32.o deattack.o fatal.o hostfile.o \
 	log.o match.o md-sha256.o moduli.o nchan.o packet.o \
 	readpass.o rsa.o ttymodes.o xmalloc.o addrmatch.o \
 	atomicio.o key.o dispatch.o kex.o mac.o uidswap.o uuencode.o misc.o \
 	monitor_fdpass.o rijndael.o ssh-dss.o ssh-rsa.o dh.o kexdh.o \
 	kexgex.o kexdhc.o kexgexc.o scard.o msg.o progressmeter.o dns.o \
+	kexgssc.o \
 	entropy.o scard-opensc.o gss-genr.o umac.o jpake.o schnorr.o
 
 SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
@@ -85,6 +87,8 @@ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
 	monitor_mm.o monitor.o monitor_wrap.o kexdhs.o kexgexs.o \
 	auth-krb5.o \
 	auth2-gss.o gss-serv.o gss-serv-krb5.o \
+	kexgsss.o \
+	gss-serv-gsi.o \
 	loginrec.o auth-pam.o auth-shadow.o auth-sia.o md5crypt.o \
 	audit.o audit-bsm.o platform.o sftp-server.o sftp-common.o
 
@@ -285,6 +289,20 @@ install-files: scard-install
 	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
+	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
+		rm -f $(DESTDIR)$(bindir)/gsissh; \
+		ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/gsissh; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
+		ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
+		rm -f $(DESTDIR)$(bindir)/gsiscp; \
+		ln -s ./scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+		ln -s ./scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+		rm -f $(DESTDIR)$(bindir)/gsisftp; \
+		ln -s ./sftp$(EXEEXT) $(DESTDIR)$(bindir)/gsisftp; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
+		ln -s ./sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
+	fi
 
 install-sysconf:
 	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
@@ -356,6 +374,11 @@ uninstallall:	uninstall
 
 uninstall:
 	-rm -f $(DESTDIR)$(bindir)/slogin
+	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
+		rm -f $(DESTDIR)$(bindir)/gsiscp; \
+		rm -f $(DESTDIR)$(bindir)/gsissh; \
+		rm -f $(DESTDIR)$(bindir)/gsisftp; \
+	fi
 	-rm -f $(DESTDIR)$(bindir)/ssh$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/scp$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/ssh-add$(EXEEXT)
@@ -369,6 +392,11 @@ uninstall:
 	-rm -f $(DESTDIR)$(RAND_HELPER)$(EXEEXT)
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
+	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
+	fi
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
