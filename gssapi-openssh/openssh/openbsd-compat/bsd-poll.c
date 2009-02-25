@@ -46,11 +46,12 @@ poll(struct pollfd *fds, nfds_t nfds, int timeout)
 	struct timeval tv, *tvp = NULL;
 
 	for (i = 0; i < nfds; i++) {
+		fd = fds[i].fd;
 		if (fd >= FD_SETSIZE) {
 			errno = EINVAL;
 			return -1;
 		}
-		maxfd = MAX(maxfd, fds[i].fd);
+		maxfd = MAX(maxfd, fd);
 	}
 
 	nmemb = howmany(maxfd + 1 , NFDBITS);
