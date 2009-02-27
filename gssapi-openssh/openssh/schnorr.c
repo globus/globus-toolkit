@@ -91,7 +91,7 @@ schnorr_hash(const BIGNUM *p, const BIGNUM *q, const BIGNUM *g,
 
 	SCHNORR_DEBUG_BUF((buffer_ptr(&b), buffer_len(&b),
 	    "%s: hashblob", __func__));
-	if (hash_buffer(buffer_ptr(&b), buffer_len(&b), EVP_sha256(),
+	if (hash_buffer(buffer_ptr(&b), (const EVP_MD *)buffer_len(&b), EVP_sha256(),
 	    &digest, &digest_len) != 0) {
 		error("%s: hash_buffer", __func__);
 		goto out;
