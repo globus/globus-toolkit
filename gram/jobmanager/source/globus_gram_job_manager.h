@@ -96,7 +96,8 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH
+    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_MULTIPLE_JOBS_POLL
 }
 globus_gram_jobmanager_state_t;
 
@@ -174,7 +175,7 @@ globus_gram_job_manager_query_t;
 /**
  * Job Manager Request
  */
-typedef struct
+typedef struct globus_gram_jobmanager_request_s
 {
     /**
      * Job State
@@ -455,6 +456,9 @@ typedef struct
     char *                              job_dir;
     globus_bool_t                       disable_duct;
     char *                              auditing_dir;
+    globus_list_t *                     restart_jms;
+    struct globus_gram_jobmanager_request_s *
+                                        parent_jm;
 }
 globus_gram_jobmanager_request_t;
 
@@ -462,6 +466,11 @@ globus_gram_jobmanager_request_t;
 int
 globus_gram_job_manager_request_init(
     globus_gram_jobmanager_request_t **	request);
+
+int
+globus_gram_job_manager_request_copy(
+    globus_gram_jobmanager_request_t ** copy,
+    globus_gram_jobmanager_request_t *  original);
 
 int 
 globus_gram_job_manager_request_destroy(
@@ -543,6 +552,11 @@ globus_gram_job_manager_contact_remove(
 int
 globus_gram_job_manager_contact_list_free(
     globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_contact_list_copy(
+    globus_gram_jobmanager_request_t *  copy,
+    globus_gram_jobmanager_request_t *  orig);
 
 void
 globus_gram_job_manager_contact_state_callback(
@@ -781,6 +795,10 @@ globus_gram_job_manager_state_file_read(
 int
 globus_gram_job_manager_state_file_write(
     globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_state_file_find_all(
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_state_file_register_update(

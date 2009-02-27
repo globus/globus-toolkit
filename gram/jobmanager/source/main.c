@@ -54,6 +54,8 @@
 #include "globus_ftp_client.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
+#include <sys/resource.h>
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 
@@ -88,6 +90,8 @@ main(
     long                                sleeptime;
     int	                                debugging_without_client = 0;
     globus_reltime_t			delay;
+    struct rusage                       ru;
+    double                              loadavg[3];
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -490,7 +494,9 @@ main(
 
     while(request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_DONE &&
 	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE && 
-	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE)
+	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE &&
+          (request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_MULTIPLE_JOBS_POLL ||
+          request->restart_jms != NULL))
     {
 	globus_cond_wait(&request->cond, &request->mutex);
     }
@@ -550,6 +556,20 @@ duct_control_failed:
 		"%s %s JM exiting\n",
 		gk_jm_id_var, gk_jm_id ? gk_jm_id : "none");
     }
+
+    getrusage(RUSAGE_SELF, &ru);
+    globus_gram_job_manager_request_log(
+	    request,
+	    "JM: RUSAGE: ru_maxrss: %ld ru_ixrss: %ld ru_idrss: %ld ru_isrss: %ld\n",
+            ru.ru_maxrss, ru.ru_ixrss, ru.ru_idrss, ru.ru_isrss);
+
+
+    getloadavg(loadavg, 3);
+
+    globus_gram_job_manager_request_log(
+	    request,
+	    "JM: Load Average: %f %f %f\n",
+            loadavg[0], loadavg[1], loadavg[2]);
 
     globus_gram_job_manager_request_log(
 	    request,

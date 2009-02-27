@@ -81,6 +81,9 @@ static
 globus_io_secure_delegation_mode_t  globus_l_delegation_mode =
         GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY;
 
+static globus_bool_t
+globus_l_allow_all_callbacks = GLOBUS_FALSE;
+
 /*****************************************************************************
                           Module specific prototypes
 *****************************************************************************/
@@ -382,7 +385,7 @@ enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_l, arg_b,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
 	     arg_mdshost, arg_mdsport, arg_mdsbasedn, arg_mdstimeout,
-	     arg_F, arg_full_proxy,
+             arg_F, arg_A, arg_full_proxy,
 	     arg_num = arg_full_proxy };
 
 #define listname(x) x##_aliases
@@ -415,6 +418,7 @@ flagdef(arg_p, "-p", "-parse");
 flagdef(arg_d, "-d", "-dryrun");
 flagdef(arg_a, "-a", "-authenticate-only");
 flagdef(arg_F, "-F", "-fast-batch");
+flagdef(arg_A, "-A", "-allow-callbacks-for-multiple-jobs");
 flagdef(arg_full_proxy, "-D", "-full-proxy");
 
 static int arg_f_mode = O_RDONLY;
@@ -443,6 +447,7 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
 	setupopt(arg_status); setupopt(arg_mdshost); setupopt(arg_mdsport); \
 	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout); setupopt(arg_F); \
+        setupopt(arg_A); \
 	setupopt(arg_full_proxy);
 
     static globus_bool_t globus_l_globusrun_ctrlc = GLOBUS_FALSE;
@@ -664,6 +669,10 @@ static int arg_f_mode = O_RDONLY;
 	case arg_mdstimeout:
 	    globus_libc_setenv("GRID_INFO_TIMEOUT", instance->values[0], 1);
 	    break;
+
+        case arg_A:
+            globus_l_allow_all_callbacks = GLOBUS_TRUE;
+            break;
 
 	default:
 	    globusrun_l_args_error_fmt("parse panic, arg id = %d",
@@ -1211,8 +1220,9 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 
     globus_mutex_lock(&monitor->mutex);
 
-    if(monitor->job_contact != NULL &&
-            (strcmp(monitor->job_contact, job_contact) != 0))
+    if((!globus_l_allow_all_callbacks) &&
+        monitor->job_contact != NULL &&
+        strcmp(monitor->job_contact, job_contact) != 0)
     {
         globus_mutex_unlock(&monitor->mutex);
         return;
@@ -1251,15 +1261,23 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 	{
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED\n");
 	}
-        monitor->done = GLOBUS_TRUE;
-	monitor->failure_code = errorcode;
+        if(monitor->job_contact != NULL &&
+            strcmp(monitor->job_contact, job_contact) != 0)
+        {
+            monitor->done = GLOBUS_TRUE;
+            monitor->failure_code = errorcode;
+        }
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
 	if(monitor->verbose)
 	{
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE\n");
 	}
-        monitor->done = GLOBUS_TRUE;
+        if(monitor->job_contact != NULL &&
+            strcmp(monitor->job_contact, job_contact) != 0)
+        {
+            monitor->done = GLOBUS_TRUE;
+        }
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
 	if(monitor->verbose)

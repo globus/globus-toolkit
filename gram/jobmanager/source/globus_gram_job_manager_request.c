@@ -176,6 +176,81 @@ globus_gram_job_manager_request_destroy(
 /* globus_gram_job_manager_request_destroy() */
 
 /**
+ * Copy memory related to a request.
+ *
+ * This function creates a duplicate of a job request with copies of all data
+ * from the the initial request. 
+ *
+ * @param copy
+ *        New copy of the job request.
+ * @param original
+ *        Original job request.
+ *
+ * @return GLOBUS_SUCCESS
+ */
+int 
+globus_gram_job_manager_request_copy(
+    globus_gram_jobmanager_request_t ** copy,
+    globus_gram_jobmanager_request_t *  original)
+{
+    int rc;
+    globus_gram_jobmanager_request_t *  cp;
+
+    rc = globus_gram_job_manager_request_init(copy);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto out;
+    }
+    cp = *copy;
+
+    if (original->job_id)
+        cp->job_id = globus_libc_strdup(original->job_id);
+    if (original->jobmanager_type)
+        cp->jobmanager_type = globus_libc_strdup(original->jobmanager_type);
+    if (original->jobmanager_logfile)
+        cp->jobmanager_logfile =
+            globus_libc_strdup(original->jobmanager_logfile);
+    if (original->local_stdout)
+        cp->local_stdout = globus_libc_strdup(original->local_stdout);
+    if (original->local_stderr)
+        cp->local_stderr = globus_libc_strdup(original->local_stderr);
+    if (original->cache_tag)
+	cp->cache_tag = globus_libc_strdup(original->cache_tag);
+    if (original->url_base)
+	cp->url_base = globus_libc_strdup(original->url_base);
+    if (original->job_contact)
+	cp->job_contact = globus_libc_strdup(original->job_contact);
+    if (original->job_contact_path)
+	cp->job_contact_path = globus_libc_strdup(original->job_contact_path);
+    if (original->old_job_contact)
+	cp->old_job_contact = globus_libc_strdup(original->old_job_contact);
+    if (original->job_state_file_dir)
+	cp->job_state_file_dir =
+                globus_libc_strdup(original->job_state_file_dir);
+    if (original->job_state_file)
+	cp->job_state_file = globus_libc_strdup(original->job_state_file);
+    if (original->job_state_lock_file)
+	cp->job_state_lock_file =
+                globus_libc_strdup(original->job_state_lock_file);
+    if (original->extra_envvars)
+        cp->extra_envvars = globus_libc_strdup(original->extra_envvars);
+    if (original->rsl_spec)
+        cp->rsl_spec = globus_libc_strdup(original->rsl_spec);
+    globus_symboltable_init(&cp->symbol_table,
+                            globus_hashtable_string_hash,
+                            globus_hashtable_string_keyeq);
+    globus_symboltable_create_scope(&cp->symbol_table);
+
+
+    cp->parent_jm = original;
+    cp->jobmanager_log_fp = original->jobmanager_log_fp;
+out:
+    return rc;
+}
+/* globus_gram_job_manager_request_copy() */
+
+/**
  * Change the status associated with a job request
  *
  * Changes the status associated with a job request.
@@ -262,7 +337,10 @@ globus_gram_job_manager_request_open_logfile(
                 request->home,
                 (unsigned long) getpid());
 
-        request->jobmanager_log_fp = fopen(request->jobmanager_logfile, "a");
+        if (!request->jobmanager_log_fp)
+        {
+            request->jobmanager_log_fp = fopen(request->jobmanager_logfile, "a");
+        }
 	
 	if(request->jobmanager_log_fp == NULL)
         {
@@ -338,10 +416,11 @@ globus_gram_job_manager_request_log(
     globus_libc_lock();
 
     fprintf( request->jobmanager_log_fp,
-	     "%d/%d %02d:%02d:%02d ",
+	     "%d/%d %02d:%02d:%02d %p ",
 	     curr_tm->tm_mon + 1, curr_tm->tm_mday,
 	     curr_tm->tm_hour, curr_tm->tm_min,
-	     curr_tm->tm_sec );
+	     curr_tm->tm_sec,
+             request);
 
     va_start(ap, format);
 

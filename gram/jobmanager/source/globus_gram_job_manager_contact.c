@@ -157,6 +157,40 @@ globus_gram_job_manager_contact_list_free(
 }
 /* globus_gram_job_manager_contact_list_free() */
 
+int
+globus_gram_job_manager_contact_list_copy(
+    globus_gram_jobmanager_request_t *	copy,
+    globus_gram_jobmanager_request_t *	orig)
+{
+    globus_gram_job_manager_contact_t * client_contact_node;
+    globus_gram_job_manager_contact_t * client_contact_node_copy;
+    globus_list_t *                     tmp = orig->client_contacts;
+
+    while(!globus_list_empty(tmp))
+    {
+        client_contact_node = globus_list_first(tmp);
+        tmp = globus_list_rest(tmp);
+        client_contact_node_copy = malloc(
+                sizeof(globus_gram_job_manager_contact_t));
+        client_contact_node_copy->contact = 
+            globus_libc_strdup(client_contact_node->contact);
+
+        client_contact_node_copy->job_state_mask = 
+                client_contact_node->job_state_mask;
+        client_contact_node_copy->failed_count = 0;
+
+        globus_gram_job_manager_request_log(
+                copy,
+                "JM: copying %s to client callback list.\n",
+                client_contact_node_copy->contact);
+
+        globus_list_insert(&copy->client_contacts, client_contact_node_copy);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_gram_job_manager_contact_list_free() */
+
 void
 globus_gram_job_manager_contact_state_callback(
     globus_gram_jobmanager_request_t *	request)

@@ -472,3 +472,97 @@ globus_l_gram_job_manager_state_file_lock(
     return rc;
 }
 /* globus_l_gram_job_manager_state_file_lock() */
+
+int
+globus_gram_job_manager_state_file_find_all(
+    globus_gram_jobmanager_request_t *	request)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    char                                buffer[1024];
+    char *                              pattern;
+    char                                my_host[MAXHOSTNAMELEN];
+    DIR *                               dp;
+    struct dirent *                     de;
+    long                                id[2];
+    globus_gram_jobmanager_request_t *  new_request;
+
+    globus_gram_job_manager_request_log(request,
+            "JM: Creating restart requests for all saved jobs\n");
+
+    globus_libc_gethostname(my_host, sizeof(my_host));
+
+    dp = opendir(request->job_state_file_dir);
+    if (dp == NULL)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    pattern = globus_common_create_string("job.%s.%%ld.%%ld%%n",
+            my_host);
+
+	sprintf(buffer, "%s/job.%s.%s", request->job_state_file_dir, my_host,
+		request->uniq_id);
+    if (pattern == NULL)
+    {
+        closedir(dp);
+        return GLOBUS_SUCCESS;
+    }
+
+    while ((de = readdir(dp)) != NULL)
+    {
+        int n;
+        int p;
+
+        globus_gram_job_manager_request_log(request,
+                "JM: Checking for file %s\n",
+                de->d_name);
+
+        if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+        {
+            globus_gram_job_manager_request_log(request,
+                    "JM: Skipping %s: ./.. check\n", de->d_name);
+
+            continue;
+        }
+
+        p = sscanf(de->d_name, pattern, &id[0], &id[1], &n);
+
+        if (p < 2)
+        {
+            globus_gram_job_manager_request_log(request,
+                    "JM: Skipping %s: scanf failure\n", de->d_name);
+            continue;
+        }
+
+        globus_gram_job_manager_request_log(request,
+                "JM: .lock check: %s\n", de->d_name + n);
+        if (strcmp(de->d_name + n, ".lock") == 0)
+        {
+            globus_gram_job_manager_request_log(request,
+                    "JM: Skipping %s: .lock check\n", de->d_name);
+            continue;
+        }
+
+        rc = globus_gram_job_manager_request_copy(&new_request, request);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            break;
+        }
+        new_request->jm_restart = globus_common_create_string(
+                "https://%s:0/%ld/%ld",
+                my_host, id[0], id[1]);
+        globus_gram_job_manager_request_log(request,
+                "JM: Created fake restart url: %s\n",
+                new_request->jm_restart);
+        globus_list_insert(&request->restart_jms, new_request);
+    }
+    closedir(dp);
+    free(pattern);
+
+    globus_gram_job_manager_request_log(request,
+            "JM: Will try to process %d jobs\n", 
+            (int) globus_list_size(request->restart_jms));
+
+    return rc;
+}
+/* globus_gram_job_manager_state_file_find_all() */

@@ -37,6 +37,11 @@ globus_gram_job_manager_import_sec_context(
     OM_uint32				minor_status;
     int					token_status;
 
+    if (request->parent_jm)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
     major_status = globus_gss_assist_import_sec_context(
     	&minor_status,
 	&request->response_context,

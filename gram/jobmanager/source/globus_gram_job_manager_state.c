@@ -85,6 +85,11 @@ int
 globus_l_gram_job_manager_validate_username(
     globus_gram_jobmanager_request_t *	request);
 
+static
+void
+globus_l_gram_finish(
+    globus_gram_jobmanager_request_t *  request);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -286,49 +291,60 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
-	if(!request->rsl_spec)
-	{
-	    rc = globus_gram_job_manager_import_sec_context(request);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		request->failure_code = rc;
-	        globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-		request->jobmanager_state =
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
-		break;
-	    }
-	}
 
-	rc = globus_l_gram_job_manager_read_request(
-		request);
+        if(!request->rsl_spec)
+        {
+            rc = globus_gram_job_manager_import_sec_context(request);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                request->failure_code = rc;
+                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
+                break;
+            }
+        }
 
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->failure_code = rc;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
-	}
+        rc = globus_l_gram_job_manager_read_request(
+                request);
 
-	rc = globus_gram_protocol_allow_attach(
-		&request->url_base,
-		globus_gram_job_manager_query_callback,
-		request);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            request->failure_code = rc;
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+            break;
+        }
 
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->failure_code = rc;
-	    request->jobmanager_state =
-	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
-	}
+        if (request->parent_jm)
+        {
+            globus_mutex_lock(&request->parent_jm->mutex);
+            request->url_base = globus_libc_strdup(
+                    request->parent_jm->url_base);
+            globus_mutex_unlock(&request->parent_jm->mutex);
+        }
+        else
+        {
+            rc = globus_gram_protocol_allow_attach(
+                    &request->url_base,
+                    globus_gram_job_manager_query_callback,
+                    request);
 
-	globus_gram_job_manager_request_log(
-		request,
-		"Pre-parsed RSL string: %s\n",
-		request->rsl_spec);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                request->failure_code = rc;
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                break;
+            }
+        }
 
-	request->rsl = globus_rsl_parse(request->rsl_spec);
+        globus_gram_job_manager_request_log(
+                request,
+                "Pre-parsed RSL string: %s\n",
+                request->rsl_spec);
+
+        request->rsl = globus_rsl_parse(request->rsl_spec);
 
 	if(!request->rsl)
 	{
@@ -401,10 +417,13 @@ globus_gram_job_manager_state_machine(
 		    "Job Request is a Job Restart\n");
 
 	    /* Need to do this before unique id is set */
-	    rc = globus_gram_job_manager_rsl_eval_one_attribute(
-		    request,
-		    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
-		    &request->jm_restart);
+            if (!request->jm_restart)
+            {
+                rc = globus_gram_job_manager_rsl_eval_one_attribute(
+                        request,
+                        GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
+                        &request->jm_restart);
+            }
 
 	    if(rc != GLOBUS_SUCCESS)
 	    {
@@ -421,6 +440,53 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
 	    }
+            else if (strcmp(request->jm_restart, "*") == 0)
+            {
+                globus_list_t * tmplist;
+                /* Special multi-restart token */
+                rc = globus_gram_job_manager_state_file_find_all(request);
+
+                if(rc != GLOBUS_SUCCESS)
+                {
+                    request->failure_code = rc;
+                    request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                    break;
+                }
+
+                tmplist = request->restart_jms;
+
+                if (!tmplist)
+                {
+                    /* Bogus */
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+                    request->failure_code = rc;
+                    request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                    break;
+                }
+
+                while (!globus_list_empty(tmplist))
+                {
+                    globus_gram_jobmanager_request_t *  tmpreq;
+
+                    tmpreq = globus_list_first(tmplist);
+                    tmplist = globus_list_rest(tmplist);
+
+                    GlobusTimeReltimeSet(delay_time, 0, 0);
+
+                    globus_callback_register_oneshot(
+                            NULL,
+                            &delay_time,
+                            globus_gram_job_manager_state_machine_callback,
+                            tmpreq);
+                }
+                request->jobmanager_state = 
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_MULTIPLE_JOBS_POLL;
+                rc = globus_l_gram_job_manager_reply(request);
+                event_registered = GLOBUS_TRUE;
+                break;
+            }
 	    globus_gram_job_manager_request_log(
 		    request,
 		    "Will try to restart job %s\n",
@@ -2154,7 +2220,9 @@ globus_gram_job_manager_state_machine(
 	    request->jobmanager_state = 
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
             globus_l_gram_job_manager_cancel_queries(request);
-	    globus_cond_signal(&request->cond);
+
+            globus_l_gram_finish(request);
+
 	    event_registered = GLOBUS_TRUE;
 	}
 	else
@@ -2335,7 +2403,8 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE)
 	{
             globus_l_gram_job_manager_cancel_queries(request);
-	    globus_cond_signal(&request->cond);
+
+            globus_l_gram_finish(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 
@@ -2376,7 +2445,9 @@ globus_gram_job_manager_state_machine(
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 
         globus_l_gram_job_manager_cancel_queries(request);
-	globus_cond_signal(&request->cond);
+
+        globus_l_gram_finish(request);
+
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -2393,14 +2464,18 @@ globus_gram_job_manager_state_machine(
 	    }
 	}
         globus_l_gram_job_manager_cancel_queries(request);
-	globus_cond_signal(&request->cond);
+
+        globus_l_gram_finish(request);
+
 	event_registered = GLOBUS_TRUE;
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
         globus_l_gram_job_manager_cancel_queries(request);
-	globus_cond_signal(&request->cond);
+
+        globus_l_gram_finish(request);
+
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -2408,7 +2483,9 @@ globus_gram_job_manager_state_machine(
 	request->two_phase_commit = 0;
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
 	globus_l_gram_job_manager_reply(request);
-	globus_cond_signal(&request->cond);
+
+        globus_l_gram_finish(request);
+
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
@@ -2528,6 +2605,11 @@ globus_l_gram_job_manager_reply(
     OM_uint32				minor_status;
     int					token_status;
 
+    if (request->parent_jm != NULL)
+    {
+        /* Don't send replies to the caller if we are a multirestart job */
+        return GLOBUS_SUCCESS;
+    }
 
     failure_code = request->failure_code;
 
@@ -2659,6 +2741,15 @@ globus_l_gram_job_manager_read_request(
     int					job_state_mask;
     char *				client_contact_str;
 
+    if (request->parent_jm)
+    {
+        globus_mutex_lock(&request->parent_jm->mutex);
+        rc = globus_gram_job_manager_contact_list_copy(
+                request, request->parent_jm);
+        globus_mutex_unlock(&request->parent_jm->mutex);
+        return rc;
+    }
+
     if(request->rsl_spec)
     {
 	return GLOBUS_SUCCESS;
@@ -2733,33 +2824,28 @@ globus_l_gram_job_manager_set_unique_id(
 	my_time = (unsigned long) time(NULL);
     }
 
-    request->uniq_id = globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
-    rc = sprintf(request->uniq_id, "%lu.%lu", my_pid, my_time);
-    /* If this assertion isn't true, then we've corrupted memory anyway */
-    globus_assert(rc < GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+    request->uniq_id = globus_common_create_string(
+            "%lu.%lu", my_pid, my_time);
+    globus_gram_job_manager_request_log(request,
+                          "JM: set unique id to %s\n",
+                          request->uniq_id);
 
-    request->job_contact =
-	globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
-
-    rc = sprintf(request->job_contact,
+    request->job_contact = globus_common_create_string(
 	         "%s%lu/%lu/",
 		 request->url_base,
 		 my_pid,
 		 my_time);
+    globus_gram_job_manager_request_log(request,
+                          "JM: set job_contact to %s\n",
+                          request->job_contact);
 
-    /* If this assertion isn't true, then we've corrupted memory anyway */
-    globus_assert(rc < GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
-
-    request->job_contact_path =
-	globus_libc_malloc(strlen(request->job_contact)+1);
-
-    rc = sprintf(request->job_contact_path,
+    request->job_contact_path = globus_common_create_string(
 	         "/%lu/%lu/",
 	         my_pid,
 	         my_time);
-
-    /* If this assertion isn't true, then we've corrupted memory anyway */
-    globus_assert(rc < GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+    globus_gram_job_manager_request_log(request,
+                          "JM: set job_contact path to %s\n",
+                          request->job_contact_path);
 
     return GLOBUS_SUCCESS;
 }
@@ -3135,3 +3221,33 @@ globus_l_gram_job_manager_add_cache_info(
     return 0;
 }
 /*globus_l_gram_job_manager_add_cache_info()*/
+
+static
+void
+globus_l_gram_finish(
+    globus_gram_jobmanager_request_t *  request)
+{
+    globus_list_t * node;
+
+    if (request->parent_jm)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "Job Manager Done processing for now, signalling parent\n");
+        globus_mutex_lock(&request->parent_jm->mutex);
+        node = globus_list_search(
+                request->parent_jm->restart_jms,
+                request);
+
+        globus_list_remove(&request->parent_jm->restart_jms, node);
+        globus_cond_signal(&request->parent_jm->cond);
+        globus_mutex_unlock(&request->parent_jm->mutex);
+    }
+    else
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "Job Manager Done processing for now, signalling main\n");
+        globus_cond_signal(&request->cond);
+    }
+}
