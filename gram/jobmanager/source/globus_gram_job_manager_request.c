@@ -237,6 +237,8 @@ globus_gram_job_manager_request_copy(
         cp->extra_envvars = globus_libc_strdup(original->extra_envvars);
     if (original->rsl_spec)
         cp->rsl_spec = globus_libc_strdup(original->rsl_spec);
+    if (original->seg_module)
+	cp->seg_module = globus_libc_strdup(original->seg_module);
     globus_symboltable_init(&cp->symbol_table,
                             globus_hashtable_string_hash,
                             globus_hashtable_string_keyeq);
@@ -427,6 +429,7 @@ globus_gram_job_manager_request_log(
     rc = vfprintf( request->jobmanager_log_fp,
 	           format,
 		   ap);
+    fflush(request->jobmanager_log_fp);
 
     globus_libc_unlock();
 
