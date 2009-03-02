@@ -239,6 +239,7 @@ globus_gram_job_manager_request_copy(
         cp->rsl_spec = globus_libc_strdup(original->rsl_spec);
     if (original->seg_module)
 	cp->seg_module = globus_libc_strdup(original->seg_module);
+    cp->disable_duct = original->disable_duct;
     globus_symboltable_init(&cp->symbol_table,
                             globus_hashtable_string_hash,
                             globus_hashtable_string_keyeq);

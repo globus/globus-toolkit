@@ -106,10 +106,6 @@ globus_l_gram_seg_event_callback(
             tmp = globus_list_first(l);
             l = globus_list_rest(l);
 
-            if (tmp->job_state_file)
-            {
-                utime(tmp->job_state_file, NULL);
-            }
             if (strcmp(tmp->job_id, event->job_id) == 0)
             {
                 globus_gram_job_manager_request_log(
