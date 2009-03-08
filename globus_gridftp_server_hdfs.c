@@ -52,6 +52,8 @@ typedef struct globus_l_gfs_hdfs_handle_s
     globus_mutex_t                      mutex;
     int                                 port;
     char *                              host;
+    char *                              mount_point;
+    int                                 mount_point_len;
     int                                 replicas;
 } globus_l_gfs_hdfs_handle_t;
 
@@ -105,10 +107,12 @@ globus_l_gfs_hdfs_start(
     // Pull configuration from environment.
     hdfs_handle->replicas = 3;
     hdfs_handle->host = "hadoop-name";
+    hdfs_handle->mount_point = "/mnt/hadoop";
     hdfs_handle->port = 9000;
     char * replicas_char = getenv("VDT_GRIDFTP_HDFS_REPLICAS");
     char * namenode = getenv("VDT_GRIDFTP_HDFS_NAMENODE");
     char * port_char = getenv("VDT_GRIDFTP_HDFS_PORT");
+    char * mount_point_char = getenv("VDT_GRIDFTP_HDFS_MOUNT_POINT");
 
     // Determine the maximum number of buffers; default to 200.
     char * max_buffer_char = getenv("VDT_GRIDFTP_BUFFER_COUNT");
@@ -118,6 +122,11 @@ globus_l_gfs_hdfs_start(
             max_buffer_count = 200;
     }
     hdfs_handle->max_buffer_count = max_buffer_count;
+
+    if (mount_point_char != NULL) {
+        hdfs_handle->mount_point = mount_point_char;
+    }
+    hdfs_handle->mount_point_len = strlen(hdfs_handle->mount_point);
 
     if (replicas_char != NULL) {
         replicas = atoi(replicas_char);
@@ -342,19 +351,20 @@ globus_l_gfs_hdfs_stat(
     char *                              PathName;
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     GlobusGFSName(globus_l_gfs_hdfs_stat);
+
+    hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
     PathName=stat_info->pathname;
     while (PathName[0] == '/' && PathName[1] == '/')
     {
         PathName++;
     }
-    if (strncmp(PathName, "/mnt/hadoop", 11)==0) {
-        PathName += 11;
+    if (strncmp(PathName, hdfs_handle->mount_point, hdfs_handle->mount_point_len)==0) {
+        PathName += hdfs_handle->mount_point_len;
     }
 
     sprintf(err_msg, "Going to do stat on file %s.\n", PathName);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
  
-    hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
     hdfsFileInfo * fileInfo = NULL;
 
@@ -865,8 +875,8 @@ globus_l_gfs_hdfs_recv(
     {
         hdfs_handle->pathname++;
     }
-    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11) == 0) {
-        hdfs_handle->pathname += 11;
+    if (strncmp(hdfs_handle->pathname, hdfs_handle->mount_point, hdfs_handle->mount_point_len) == 0) {
+        hdfs_handle->pathname += hdfs_handle->mount_point_len;
     }
     sprintf(err_msg, "We are going to open file %s.\n", hdfs_handle->pathname);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
@@ -1090,8 +1100,8 @@ globus_l_gfs_hdfs_send(
     {
         hdfs_handle->pathname++;
     }
-    if (strncmp(hdfs_handle->pathname, "/mnt/hadoop", 11)==0) {
-        hdfs_handle->pathname += 11;
+    if (strncmp(hdfs_handle->pathname, hdfs_handle->mount_point, hdfs_handle->mount_point_len)==0) {
+        hdfs_handle->pathname += hdfs_handle->mount_point_len;
     }
 
     hdfs_handle->op = op;
