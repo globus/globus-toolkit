@@ -104,7 +104,7 @@ globus_l_gfs_hdfs_start(
 
     // Pull configuration from environment.
     hdfs_handle->replicas = 3;
-    hdfs_handle->host = "node001";
+    hdfs_handle->host = "hadoop-name";
     hdfs_handle->port = 9000;
     char * replicas_char = getenv("VDT_GRIDFTP_HDFS_REPLICAS");
     char * namenode = getenv("VDT_GRIDFTP_HDFS_NAMENODE");
