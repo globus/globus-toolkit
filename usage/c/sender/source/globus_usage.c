@@ -207,6 +207,7 @@ globus_usage_stats_handle_init(
     int                                 count;
     char                                hostname[255];
     int                                 rc = 0;
+    int                                 i;
 
     new_handle = globus_calloc(1, sizeof(globus_i_usage_stats_handle_t));
     if(!new_handle)
@@ -278,8 +279,10 @@ globus_usage_stats_handle_init(
         new_handle->data_length += 12;
     }
 
-    memcpy(new_handle->data + new_handle->data_length, host, count);
-    new_handle->data_length += count;
+    for (i = 0; i < count; i++)
+    {
+        new_handle->data[new_handle->data_length++] = (unsigned char) host[i];
+    }
 
     /* timestamp will go here */
     new_handle->data_length += 4;
