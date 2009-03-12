@@ -221,6 +221,7 @@ v3.5 14 Mar 2006
 v3.4 19 Dec 2005
   - added myproxy-test -valgrind option for detecting memory errors
   - fixed memory errors found with myproxy-test -valgrind
+  - fixed handling of lifetime=0 requests in myproxy-server
 
 v3.3 2 Dec 2005
   - API changes: new trusted_retrievers member for
