@@ -91,6 +91,7 @@ globus_l_gfs_hdfs_start(
     GlobusGFSName(globus_l_gfs_hdfs_start);
 
     int max_buffer_count = 200;
+    int load_limit = 20;
     int replicas;
     int port;
 
@@ -113,6 +114,7 @@ globus_l_gfs_hdfs_start(
     char * namenode = getenv("VDT_GRIDFTP_HDFS_NAMENODE");
     char * port_char = getenv("VDT_GRIDFTP_HDFS_PORT");
     char * mount_point_char = getenv("VDT_GRIDFTP_HDFS_MOUNT_POINT");
+    char * load_limit_char = getenv("VDT_GRIDFTP_LOAD_LIMIT");
 
     // Determine the maximum number of buffers; default to 200.
     char * max_buffer_char = getenv("VDT_GRIDFTP_BUFFER_COUNT");
@@ -122,6 +124,12 @@ globus_l_gfs_hdfs_start(
             max_buffer_count = 200;
     }
     hdfs_handle->max_buffer_count = max_buffer_count;
+
+    if (load_limit != NULL) {
+        load_limit = atoi(max_buffer_char);
+        if (load_limit < 1)
+            load_limit = 20;
+    }
 
     if (mount_point_char != NULL) {
         hdfs_handle->mount_point = mount_point_char;
@@ -163,7 +171,7 @@ globus_l_gfs_hdfs_start(
         load = strtod(token, NULL);
         sprintf(err_msg, "Detected system load %.2f.\n", load);
         globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
-        if ((load >= 8) && (load < 1000)) {
+        if ((load >= load_limit) && (load < 1000)) {
             sprintf(err_msg, "Preventing gridftp transfer startup due to system load of %.2f.\n", load);
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,err_msg);
             sleep(5);
