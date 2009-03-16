@@ -1,0 +1,13 @@
+version('0.1.8-pre1-cmp')
+setenv('FMWS_VERSION', '0.1.8-pre1-cmp')
+description('FileMover 2.0-dev');
+url('https://twiki.cern.ch/twiki/bin/view/CMS/FileMover');
+package('http://t2.unl.edu/store/cache:CmsFsDeps');
+alreadyInstalled('FUSE');
+package('http://t2.unl.edu/store/cache:FileMoverBootstrap');
+softLink('$VDT_LOCATION/$SCRAM_ARCH/cms/fmws/$FMWS_VERSION/lib/python2.4/site-packages/FMWS.conf', '$VDT_LOCATION/FMWS.conf')
+setup('source $VDT_LOCATION/$SCRAM_ARCH/cms/fmws/$FMWS_VERSION/etc/profile.d/init.sh')
+path('$VDT_LOCATION/$SCRAM_ARCH/cms/fmws/$FMWS_VERSION/etc/init.d')
+setenv('X509_USER_PROXY', '$VDT_LOCATION/proxy')
+setup('source /afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.sh 2>&1 1>& /dev/null < /dev/null')
+package('http://t2.unl.edu/store/cache:CmsFs-FUSE');

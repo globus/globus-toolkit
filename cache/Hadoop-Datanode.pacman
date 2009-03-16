@@ -1,0 +1,5 @@
+description('Hadoop Install of a Datanode 0.0.1');
+version('0.0.1');
+package('http://t2.unl.edu/store/cache:Hadoop');
+package('http://t2.unl.edu/store/cache:Hadoop-Config');
+shell('vdt-control --enable hadoop_datanode');

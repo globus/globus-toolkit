@@ -1,0 +1,11 @@
+pacmanVersionGE('3.20');
+description('Hadoop packaging of BeStMan')
+version('0.0.3')
+package('http://vdt.cs.wisc.edu/vdt_11098_cache:Bestman')
+package('http://t2.unl.edu/store/cache:Hadoop')
+cd('bestman/lib')
+download('http://t2.unl.edu/store/cache/UNLGangliaBestman.jar')
+cd()
+cd('bestman/setup')
+shell('./configure --enable-gums=yes --enable-gateway-mode --with-https-port=8443 --with-cacert-path=$VDT_LOCATION/globus/TRUSTED_CA --with-gums-url=https://$VDT_GUMS_HOST:8443/gums/services/GUMSAuthorizationServicePort --with-plugin-path=$VDT_LOCATION/bestman/lib')
+cd()

@@ -1,0 +1,14 @@
+version('0.1.8-pre1-cmp')
+setenv('FMWS_VERSION', '0.1.8-pre1-cmp')
+description('FileMoverBootstrap 0.1.8-pre1-cmp');
+url('https://twiki.cern.ch/twiki/bin/view/CMS/FileMover');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
+download('http://cmsrep.cern.ch/cmssw/cms/bootstrap.sh');
+shell('chmod +x ./bootstrap.sh');
+setenv('SCRAM_ARCH', 'slc4_amd64_gcc345');
+shell('./bootstrap.sh -repository comp.valya -arch $SCRAM_ARCH -path $VDT_LOCATION setup')
+setup('source $VDT_LOCATION/cmsset_default.sh');
+setup('source $SCRAM_ARCH/external/apt/0.5.15lorg3.2-cmp/etc/profile.d/init.sh');
+shell('source $SCRAM_ARCH/external/apt/0.5.15lorg3.2-cmp/etc/profile.d/init.sh && apt-get update');
+shell('source $SCRAM_ARCH/external/apt/0.5.15lorg3.2-cmp/etc/profile.d/init.sh && apt-get -y install cms+fmws+$FMWS_VERSION');
+setenv('FMWSHOME', '$VDT_LOCATION');

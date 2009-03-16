@@ -1,0 +1,17 @@
+pacmanVersionGE('3.20');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
+description('FUSE-Python 0.2');
+version('0.2');
+url('http://fuse-python.sf.net');
+package('FUSE');
+download('http://superb-east.dl.sourceforge.net/sourceforge/fuse/fuse-python-0.2.tar.gz');
+shell('vdt-begin-install FUSE-python');
+shell('vdt-untar fuse-python-*.tar.gz');
+cd('fuse-python-0.2');
+shell('python setup.py install --prefix=$VDT_LOCATION/fuse-python');
+shell('vdt-version --add FUSE-python');
+shell('vdt-end-install');
+path("$VDT_LOCATION/fuse-python/lib64/python2.4/site-packages", "PYTHONPATH", "no-check");
+path("$VDT_LOCATION/fuse-python/lib/python2.4/site-packages", "PYTHONPATH", "no-check");
+uninstallShell('vdt/sbin/vdt-uninstall fuse-python');
+uninstallShell('vdt/bin/vdt-version -remove fuse-python');

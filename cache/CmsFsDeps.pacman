@@ -1,0 +1,13 @@
+pacmanVersionGE('3.20');
+version('0.0.1');
+setenv('VDTSETUP_AGREE_TO_LICENSES', 'y');
+setenv('VDTSETUP_INSTALL_CERTS', 'n');
+setenv('VDTSETUP_CA_CERT_UPDATER', 'n');
+setenv('VDTSETUP_ENABLE_ROTATE', 'y');
+setenv('VDTSETUP_EDG_CRL_UPDATE', 'n');
+#alreadyInstalled('FUSE')
+package('http://t2.unl.edu/store/cache:CmsFs-FUSE');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
+description('CmsFs Dependencies 0.0.1');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:PyGlobus');
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:LCG-Utils');

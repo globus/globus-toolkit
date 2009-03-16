@@ -1,12 +1,12 @@
 pacmanVersionGE('3.20');
-version('0.0.2');
+version('0.0.5');
 #{
 #  shellOutputGE('rpm -q xinetd', 'xinetd-2')
 #  OR
 #  fail('GridFTP HDFS requires xinetd system package to be installed.')
 #};
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:VDT-Common');
-description('GridFTP_HDFS 0.0.2');
+description('GridFTP_HDFS 0.0.5');
 url('http://t2.unl.edu');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Licenses');
 package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-Data-Server');
@@ -14,9 +14,16 @@ package('http://vdt.cs.wisc.edu/vdt_1101_cache:Globus-Base-SDK');
 {
   envIsSet("VDT_NO_PRIMA")
   OR
-  package('http://vdt.cs.wisc.edu/vdt_1101_cache:PRIMA')
+  {
+    package('http://vdt.cs.wisc.edu/vdt_1101_cache:PRIMA');
+    package('http://vdt.cs.wisc.edu/vdt_1101_cache:GUMS-Client');
+    package('http://vdt.cs.wisc.edu/vdt_1101_cache:OSG-VO-Map');
+  }
 };
+package('http://vdt.cs.wisc.edu/vdt_1101_cache:Gratia-GridFTP-Transfer-Probe');
 package('http://t2.unl.edu/store/cache:Hadoop');
+mkdirPersistent('$VDT_LOCATION/monitoring');
+textFile('$VDT_LOCATION/monitoring/osg-attributes.conf', ['# Generated empty']);
 path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
 {
   platform('linux-rhel-4');
@@ -27,7 +34,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   };
   {
     path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL4-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.5-RHEL4-i686.tar.gz')
     OR 
     fail('Pacman download of Hadoop failed.')
   }
@@ -36,7 +43,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   processor('x86_64');
   {
     path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL4-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.5-RHEL4-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -49,7 +56,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   };
   {
     path("$JAVA_HOME/jre/lib/i386/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL5-i686.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.5-RHEL5-i686.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -58,7 +65,7 @@ path("$VDT_LOCATION/gridftp_hdfs", "LD_LIBRARY_PATH", "no-check");
   processor('x86_64');
   {
     path("$JAVA_HOME/jre/lib/amd64/server", "LD_LIBRARY_PATH");
-    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.2-RHEL5-x86_64.tar.gz')
+    download('http://t2.unl.edu/store/cache/gridftp_hdfs-0.0.5-RHEL5-x86_64.tar.gz')
     OR
     fail('Pacman download of Hadoop failed.')
   }
@@ -69,5 +76,6 @@ shell('vdt-untar gridftp_hdfs-*.tar.gz');
 shell('vdt-register-service --name gridftp-hdfs --type inetd --disable --port 5000 --protocol tcp --inetd-command $VDT_LOCATION/gridftp_hdfs/inetd_starter.sh')
 shell('vdt-version --add GridFTP_HDFS');
 shell('vdt-end-install');
+shell('vdt-control --enable vdt-rotate-logs');
 uninstallShell('vdt/sbin/vdt-uninstall GridFTP_HDFS');
 uninstallShell('vdt/bin/vdt-version -remove GridFTP_HDFS');
