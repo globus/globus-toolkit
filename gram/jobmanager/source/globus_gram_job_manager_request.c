@@ -101,7 +101,6 @@ globus_gram_job_manager_request_init(
     r->response_context = GSS_C_NO_CONTEXT;
     r->streaming_disabled = GLOBUS_FALSE;
     r->streaming_requested = GLOBUS_FALSE;
-    r->disable_duct = GLOBUS_FALSE;
 
     r->seg_module = NULL;
     r->seg_started = GLOBUS_FALSE;

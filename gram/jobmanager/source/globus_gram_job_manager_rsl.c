@@ -20,7 +20,6 @@
  */
 #include "globus_gram_job_manager.h"
 #include "globus_rsl_assist.h"
-#include "globus_duct_control.h"
 
 #include <string.h>
 
@@ -35,13 +34,6 @@ int
 globus_l_gram_job_manager_rsl_match(
     void *				datum,
     void *				arg);
-
-static
-int
-globus_l_gram_job_manager_setup_duct(
-    globus_gram_jobmanager_request_t *	request,
-    int					count,
-    globus_bool_t                       myjob_collective);
 
 #endif
 
@@ -762,22 +754,6 @@ globus_gram_job_manager_rsl_request_fill(
 	goto error_exit;
     }
 
-    /* Initialize a duct control handle and add appropriate environment
-     * variables to the job execution environment.
-     *
-     * (Depends on myjob and count parameters)
-     */
-    if (!request->disable_duct)
-    {
-        rc = globus_l_gram_job_manager_setup_duct(
-                request, count, gram_myjob_collective);
-    }
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-	goto error_exit;
-    }
-
     return(GLOBUS_SUCCESS);
 
 error_exit:
@@ -1064,92 +1040,6 @@ parse_failed:
     return rc;
 }
 /* globus_gram_job_manager_rsl_eval_string() */
-
-/**
- * Create duct control handler.
- *
- * This function creates a duct_control structure to handle coordinating
- * intra-job communication. The duct contact string is added to the 
- * job's environment RSL relation.
- *
- * @param request
- *        The request which is being processed.
- * @param count
- *        The value o fthe job RSL's count relation.
- * @param myjob_collective
- *        GLOBUS_TRUE if myjob=collective [default], GLOBUS_FALSE otherwise.
- *
- * @retval GLOBUS_SUCCESS
- *         The duct control handle was successfully created and
- *         the contact added to the environment for the job.
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_DUCT_LSP_FAILED
- *         The duct control handle was not successfully created.
- */
-static
-int
-globus_l_gram_job_manager_setup_duct(
-    globus_gram_jobmanager_request_t *	request,
-    int					count,
-    globus_bool_t                       myjob_collective)
-{
-    globus_duct_control_t *		duct;
-    int					rc;
-    char *				newval;
-
-    if (globus_libc_getenv("GLOBUS_NEXUS_NO_GSI") != NULL)
-    {
-        rc = globus_gram_job_manager_rsl_env_add(
-            request->rsl,
-            "GLOBUS_NEXUS_NO_GSI",
-            "1");
-
-        if(rc != GLOBUS_SUCCESS)
-        {
-            globus_gram_job_manager_request_log( request,
-                           "JM: duct_control_init_failed: %d\n",
-                           rc);
-            return GLOBUS_GRAM_PROTOCOL_ERROR_DUCT_INIT_FAILED;
-        }
-    }
-    duct = globus_libc_malloc(sizeof(globus_duct_control_t));
-
-    if(!myjob_collective)
-    {
-	count = 1;
-    }
-    rc = globus_duct_control_init(duct,
-				  count,
-				  GLOBUS_NULL,
-				  GLOBUS_NULL);
-    if(rc != GLOBUS_SUCCESS)
-    {
-	globus_gram_job_manager_request_log( request,
-		       "JM: duct_control_init_failed: %d\n",
-		       rc);
-	return GLOBUS_GRAM_PROTOCOL_ERROR_DUCT_INIT_FAILED;
-    }
-
-    rc = globus_duct_control_contact_url(duct,
-					 &newval);
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-	globus_gram_job_manager_request_log( request,
-		       "JM: duct_control_contact_url failed: %d\n",
-		       rc);
-
-	return(GLOBUS_GRAM_PROTOCOL_ERROR_DUCT_LSP_FAILED);
-    }
-    rc = globus_gram_job_manager_rsl_env_add(
-	    request->rsl,
-	    "GLOBUS_GRAM_MYJOB_CONTACT",
-	    newval);
-
-    globus_libc_free(newval);
-
-    return rc;
-}
-/* globus_l_gram_job_manager_setup_duct()*/
 
 static
 int

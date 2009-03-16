@@ -453,7 +453,6 @@ typedef struct
     globus_bool_t			relocated_proxy;
     int					proxy_timeout;
     char *                              job_dir;
-    globus_bool_t                       disable_duct;
     char *                              auditing_dir;
 }
 globus_gram_jobmanager_request_t;

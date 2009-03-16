@@ -85,18 +85,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_duct_control">
-                <Version>
-                    <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_nexus">
-                <Version>
-                    <Simple_Version Major="6"/>
-                </Version>
-            </Dependency>
-
             <Dependency Name="globus_gram_job_manager_callout_error">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -174,18 +162,6 @@
             <Dependency Name="globus_rsl_assist">
                 <Version>
                     <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_duct_control">
-                <Version>
-                    <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_nexus">
-                <Version>
-                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
 

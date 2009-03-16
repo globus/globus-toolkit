@@ -1575,10 +1575,10 @@ globus_gram_job_manager_state_machine(
             globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
             request->unsent_status_change = GLOBUS_TRUE;
 	}
-    else
-    {
-       globus_l_gram_job_manager_add_cache_info(request);
-    }
+        else
+        {
+           globus_l_gram_job_manager_add_cache_info(request);
+        }
         request->queued_time = time(NULL);
         globus_gram_job_manager_history_file_create(request);
 	request->job_history_status = request->status;

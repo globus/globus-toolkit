@@ -778,48 +778,51 @@ globus_gram_job_manager_output_get_cache_name(
         }
     }
 
-    out_file = globus_libc_malloc(strlen(request->job_dir) + strlen(type) + 2);
+    out_file = globus_common_create_string("%s/%s", request->job_dir, type);
 
     if (out_file == NULL)
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
-    sprintf(out_file,
-		"%s/%s",
-		request->job_dir,
-                type);
 
     *output_name = out_file;
     return 0;
 }
 /* globus_gram_job_manager_output_get_cache_name() */ 
 
+/**
+ * Create job directory
+ * The job directory is used internally by the Job Manager to store various
+ * pieces of job-specific data: stdout, stderr, proxy, and job scripts.
+ */
 extern
 int
 globus_gram_job_manager_output_make_job_dir(
     globus_gram_jobmanager_request_t *	request)
 {
     char				hostname[MAXHOSTNAMELEN];
-    const char *                        dir_format = "%s/.globus/job/%s/%s";
     char *				out_file;
     char *                              tmp;
     int                                 rc;
     struct stat                         statbuf;
 
-    globus_libc_gethostname(hostname, sizeof(hostname));
+    rc = globus_libc_gethostname(hostname, sizeof(hostname));
+    if (rc != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        goto out;
+    }
 
-    out_file = globus_libc_malloc(
-                strlen(dir_format) +
+    out_file = globus_common_create_string(
+                "%s/.globus/job/%s/%s",
                 strlen(request->home) +
 		strlen(hostname) +
-		strlen(request->uniq_id) + 2);
-
-    sprintf(out_file,
-		dir_format,
-                request->home,
-		hostname,
-		request->uniq_id);
-
+		strlen(request->uniq_id));
+    if (out_file == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        goto out;
+    }
 
     if ((rc = stat(out_file, &statbuf)) < 0)
     {
@@ -860,6 +863,7 @@ globus_gram_job_manager_output_make_job_dir(
     return 0;
 error_exit:
     globus_libc_free(out_file);
+out:
     return rc;
 }
 /* globus_gram_job_manager_output_make_job_dir() */

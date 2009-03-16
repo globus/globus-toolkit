@@ -46,8 +46,6 @@
 #include "globus_gram_job_manager.h"
 #include "globus_gram_protocol.h"
 #include "globus_rsl.h"
-#include "globus_nexus.h"
-#include "globus_duct_control.h"
 #include "globus_gass_cache.h"
 #include "globus_io.h"
 #include "globus_gass_transfer.h"
@@ -371,24 +369,6 @@ main(
         {
             request->globus_version = argv[++i];
         }
-        else if (strcmp(argv[i], "-duct") == 0
-                && (i + 1 < argc))
-        {
-            if (strcmp(argv[i+1], "disable") == 0)
-            {
-                request->disable_duct = GLOBUS_TRUE;
-            }
-            else if (strcmp(argv[i+1], "without-gsi") == 0)
-            {
-                globus_libc_setenv("GLOBUS_NEXUS_NO_GSI", "1", 1);
-            }
-            else
-            {
-                fprintf(stderr, "Warning: Ignoring unknown argument %s %s\n\n",
-                        argv[i], argv[i+1]);
-            }
-            i++;
-        }
         else if (strcmp(argv[i], "-disable-streaming") == 0)
         {
             request->streaming_disabled = GLOBUS_TRUE;
@@ -427,7 +407,6 @@ main(
 		    "\t-globus-org-dn DN\n"
 		    "\t-machine-type TYPE\n"
                     "\t-extra-envvars VAR1,VAR2,...\n"
-                    "\t-duct [ disable | without-gsi ]\n"
                     "\t-seg-module SEG-MODULE\n"
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
@@ -446,27 +425,6 @@ main(
             fprintf(stderr, "Warning: Ignoring unknown argument %s\n\n",
                     argv[i]);
         }
-    }
-
-    if (request->disable_duct == GLOBUS_FALSE)
-    {
-        rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr, "%s activation failed with rc=%d\n",
-                    GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
-            goto duct_control_failed;
-        }
-        rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr, "nexus module activation failed with rc=%d\n", rc);
-            goto nexus_failed;
-        }
-
-        globus_nexus_enable_fault_tolerance(
-            globus_l_jobmanager_fault_callback,
-            GLOBUS_NULL);
     }
 
     /* Subject name only used for auditing */
@@ -507,8 +465,6 @@ main(
         }
     }
 
-nexus_failed:
-duct_control_failed:
     /*
      * If we ran without a client, display final state and error if applicable
      */
@@ -650,34 +606,6 @@ globus_l_gram_tokenize(char * command, char ** args, int * n)
   return(0);
 
 } /* globus_l_gram_tokenize() */
-
-/******************************************************************************
-Function: globus_l_jobmanager_fault_callback()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static
-int
-globus_l_jobmanager_fault_callback(
-    void *				user_arg,
-    int					fault_code)
-{
-    /*
-    if(graml_log_fp)
-    {
-	globus_gram_job_manager_request_log(
-	    graml_log_fp,
-	    "jobmanager received nexus fault code %d\n",
-	    fault_code);
-    }
-    */
-
-    return 0;
-} /* globus_l_jobmanager_fault_callback() */
 
 static
 int
