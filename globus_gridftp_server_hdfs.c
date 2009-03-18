@@ -126,7 +126,7 @@ globus_l_gfs_hdfs_start(
     hdfs_handle->max_buffer_count = max_buffer_count;
 
     if (load_limit_char != NULL) {
-        load_limit = atoi(max_buffer_char);
+        load_limit = atoi(load_limit_char);
         if (load_limit < 1)
             load_limit = 20;
     }
