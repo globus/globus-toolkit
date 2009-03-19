@@ -262,8 +262,7 @@ int
 globus_gram_job_manager_output_init(
     globus_gram_jobmanager_request_t *	request)
 {
-    request->output = globus_libc_malloc(
-	    sizeof(globus_l_gram_job_manager_output_info_t));
+    request->output = malloc(sizeof(globus_l_gram_job_manager_output_info_t));
 
     if(!request->output)
     {
@@ -341,12 +340,12 @@ globus_gram_job_manager_output_set_urls(
 	{
 	    destination = globus_list_remove(destinations, *destinations);
 
-	    globus_libc_free(destination->url);
+	    free(destination->url);
 	    if(destination->tag)
 	    {
-		globus_libc_free(destination->tag);
+		free(destination->tag);
 	    }
-	    globus_libc_free(destination);
+	    free(destination);
 	}
     }
 
@@ -525,9 +524,9 @@ globus_gram_job_manager_output_open(
 error_exit:
 
 failed_err_cache_name_exit:
-    globus_libc_free(err_cache_name);
+    free(err_cache_name);
 failed_out_cache_name_exit:
-    globus_libc_free(out_cache_name);
+    free(out_cache_name);
 
     if(request->output->stderr_fd != -1 ||
        request->output->stdout_fd != -1)
@@ -768,16 +767,6 @@ globus_gram_job_manager_output_get_cache_name(
     char *                              out_file;
     int                                 rc;
 
-    if (request->job_dir == NULL)
-    {
-        rc = globus_gram_job_manager_output_make_job_dir(request);
-
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-
     out_file = globus_common_create_string("%s/%s", request->job_dir, type);
 
     if (out_file == NULL)
@@ -800,24 +789,16 @@ int
 globus_gram_job_manager_output_make_job_dir(
     globus_gram_jobmanager_request_t *	request)
 {
-    char				hostname[MAXHOSTNAMELEN];
     char *				out_file;
     char *                              tmp;
     int                                 rc;
     struct stat                         statbuf;
 
-    rc = globus_libc_gethostname(hostname, sizeof(hostname));
-    if (rc != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        goto out;
-    }
-
     out_file = globus_common_create_string(
                 "%s/.globus/job/%s/%s",
-                strlen(request->home) +
-		strlen(hostname) +
-		strlen(request->uniq_id));
+                request->config->home,
+		request->config->hostname,
+		request->uniq_id);
     if (out_file == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
@@ -862,7 +843,7 @@ globus_gram_job_manager_output_make_job_dir(
     request->job_dir = out_file;
     return 0;
 error_exit:
-    globus_libc_free(out_file);
+    free(out_file);
 out:
     return rc;
 }
@@ -994,10 +975,8 @@ globus_l_gram_job_manager_output_poll(
     request = user_arg;
 
     globus_mutex_lock(&request->mutex);
-    request->in_handler = GLOBUS_TRUE;
     globus_l_gram_job_manager_output_poll_locked(request);
 
-    request->in_handler = GLOBUS_FALSE;
     globus_mutex_unlock(&request->mutex);
 }
 /* globus_gram_job_manager_output_poll() */
@@ -1251,7 +1230,7 @@ globus_gram_job_manager_output_read_state(
     }
     for(i = 0; i < count; i++)
     {
-	destination = globus_libc_malloc(
+	destination = malloc(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
         if (destination == NULL)
         {
@@ -1409,7 +1388,7 @@ globus_l_gram_job_manager_output_insert_urls(
 	    tag = GLOBUS_NULL;
 	}
 
-	destination = globus_libc_malloc(
+	destination = malloc(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
 	destination->request = request;
 	destination->tag = tag ? globus_libc_strdup(tag) : NULL;
@@ -1585,8 +1564,7 @@ globus_l_gram_job_manager_output_destination_flush(
 	{
 	    if(buffer == NULL)
 	    {
-		buffer = globus_libc_malloc(
-                    GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE);
+		buffer = malloc(GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE);
 	    }
 
 	    do
@@ -1679,7 +1657,7 @@ globus_l_gram_job_manager_output_destination_flush(
 
     if(buffer != NULL)
     {
-	globus_libc_free(buffer);
+	free(buffer);
     }
 
     switch(destination->state)
@@ -1802,7 +1780,7 @@ globus_l_gram_job_manager_output_destination_open(
 	}
 	if(local_filename)
 	{
-	    globus_libc_free(local_filename);
+	    free(local_filename);
 	}
 	break;
 
@@ -1942,7 +1920,7 @@ globus_l_gram_job_manager_output_destination_close(
       case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_GASS:
 	rc = globus_gass_transfer_send_bytes(
 		destination->handle.gass,
-		globus_libc_malloc(1),
+		malloc(1),
 		0,
 		GLOBUS_TRUE,
 		globus_l_gram_job_manager_output_gass_close_callback,
@@ -1971,7 +1949,7 @@ globus_l_gram_job_manager_output_destination_close(
       case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FTP:
 	result = globus_ftp_client_register_write(
 		&destination->handle.ftp,
-		globus_libc_malloc(1),
+		malloc(1),
 		0,
 		0,
 		GLOBUS_TRUE,
@@ -2156,11 +2134,11 @@ globus_l_gram_job_manager_output_file_write_callback(
     if(result)
     {
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
-	globus_libc_free(buf);
+	free(buf);
     }
     else if(eof)
     {
-	globus_libc_free(buf);
+	free(buf);
     }
     else
     {
@@ -2195,7 +2173,7 @@ globus_l_gram_job_manager_output_gass_write_callback(
     destination->possible_write_count++;
     if(last_data)
     {
-	globus_libc_free(bytes);
+	free(bytes);
     }
     else
     {
@@ -2234,7 +2212,7 @@ globus_l_gram_job_manager_output_ftp_write_callback(
 
     if(eof)
     {
-	globus_libc_free(buffer);
+	free(buffer);
     }
     else
     {
@@ -2378,11 +2356,11 @@ globus_l_gram_job_manager_output_close_done(
 
     if(destination->url)
     {
-	globus_libc_free(destination->url);
+	free(destination->url);
     }
     if(destination->tag)
     {
-	globus_libc_free(destination->tag);
+	free(destination->tag);
     }
     if(destination->which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT)
     {
@@ -2408,7 +2386,7 @@ globus_l_gram_job_manager_output_close_done(
 			       node);
 	}
     }
-    globus_libc_free(destination);
+    free(destination);
 
     if(request->output->close_flag)
     {
@@ -2513,24 +2491,24 @@ globus_l_gram_job_manager_output_get_type(
                     &values);
             if (rc == GLOBUS_SUCCESS)
             {
-                destination->url = globus_libc_malloc(strlen(filename) +
-                        strlen(values[0]) + 2);
+                destination->url = globus_common_create_string(
+                        "%s/%s", values[0], filename);
                 if (destination->url == NULL)
                 {
                     goto free_values_exit;
                 }
-                sprintf(destination->url, "%s/%s", values[0], filename);
-                globus_libc_free(values);
+                free(values);
             }
             else
             {
-                destination->url = globus_libc_malloc(strlen(request->home) +
-                        strlen(filename) + 2);
+                destination->url = globus_common_create_string(
+                        "%s/%s",
+                        request->config->home,
+                        filename);
                 if (destination->url == NULL)
                 {
                     goto error_exit;
                 }
-                sprintf(destination->url, "%s/%s", request->home, filename);
             }
         }
     }
@@ -2539,7 +2517,7 @@ globus_l_gram_job_manager_output_get_type(
 free_values_exit:
     if (values != NULL)
     {
-        globus_libc_free(values);
+        free(values);
     }
 free_url_exit:
     if (destroy_url)

@@ -50,8 +50,11 @@ globus_gram_job_manager_auditing_file_write(
     struct tm *                         tmp;
     char *                              name;
     int                                 rc;
+    const char *                        auditing_dir;
+    
+    auditing_dir = request->config->auditing_dir;
 
-    if (request->auditing_dir == NULL)
+    if (auditing_dir == NULL)
     {
         rc = GLOBUS_SUCCESS;
 
@@ -78,7 +81,7 @@ globus_gram_job_manager_auditing_file_write(
 
     filename = globus_common_create_string(
             "%s/%04d%02d%02dT%02d:%02d:%02d-%s-%s.gramaudit",
-            request->auditing_dir,
+            auditing_dir,
             tmp->tm_year + 1900,
             tmp->tm_mon + 1,
             tmp->tm_mday,
@@ -127,7 +130,10 @@ globus_gram_job_manager_auditing_file_write(
     }
 
     /* subject name */
-    rc = globus_l_gram_audit_write_string(auditing_file, request->subject, ",");
+    rc = globus_l_gram_audit_write_string(
+            auditing_file,
+            request->config->subject,
+            ",");
     if (rc != 0)
     {
         goto close_filename_out;
@@ -182,14 +188,20 @@ globus_gram_job_manager_auditing_file_write(
         goto close_filename_out;
     }
     /* globus_toolkit_version */
-    rc = globus_l_gram_audit_write_string(auditing_file, request->globus_version, ",");
+    rc = globus_l_gram_audit_write_string(
+            auditing_file,
+            request->config->globus_version,
+            ",");
     if (rc != 0)
     {
         goto close_filename_out;
     }
 
     /* resource_manager_type */
-    rc = globus_l_gram_audit_write_string(auditing_file, request->jobmanager_type, ",");
+    rc = globus_l_gram_audit_write_string(
+            auditing_file,
+            request->config->jobmanager_type,
+            ",");
     if (rc != 0)
     {
         goto close_filename_out;
@@ -331,7 +343,9 @@ globus_l_gram_audit_write_timestamp(
     char *                              tmp;
     struct tm                           tmv;
     struct tm *                         tm_p;
+#ifndef BUILD_LITE
     char tbuf[26];
+#endif
 
     if (when == 0)
     {

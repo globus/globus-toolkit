@@ -426,7 +426,6 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -globus-host-osname ${host_osname}
 -globus-host-osversion ${host_osversion}
 -save-logfile ${log}
--machine-type unknown
 -state-file-dir ${statefiledir}
 ${startargs}
 EOF

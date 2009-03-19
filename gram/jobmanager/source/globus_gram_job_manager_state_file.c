@@ -36,21 +36,20 @@ globus_gram_job_manager_state_file_set(
     globus_gram_jobmanager_request_t *	request)
 {
     char				buffer[1024];
-    char 				my_host[MAXHOSTNAMELEN];
 
-    globus_libc_gethostname(my_host, sizeof(my_host));
-
-    if(request->job_state_file_dir == GLOBUS_NULL)
+    if(request->config->job_state_file_dir == GLOBUS_NULL)
     {
 	sprintf(buffer, "%s/tmp/gram_job_state/%s.%s.%s",
-		request->globus_location,
-		request->logname ? request->logname : "globus",
-		my_host,
+		request->config->globus_location,
+		request->config->logname ? request->config->logname : "globus",
+		request->config->hostname,
 		request->uniq_id);
     }
     else
     {
-	sprintf(buffer, "%s/job.%s.%s", request->job_state_file_dir, my_host,
+	sprintf(buffer, "%s/job.%s.%s",
+                request->config->job_state_file_dir,
+                request->config->hostname,
 		request->uniq_id);
     }
 
@@ -158,7 +157,7 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
-    rc = fprintf(fp, "%s\n", request->jobmanager_type);
+    rc = fprintf(fp, "%s\n", request->config->jobmanager_type);
     if (rc < 0)
     {
         goto error_exit;
@@ -173,7 +172,8 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
-    rc = fprintf(fp, "%lu\n", (unsigned long) request->seg_last_timestamp);
+    rc = fprintf(fp, "%lu\n",
+                 (unsigned long) request->manager->seg_last_timestamp);
     if (rc < 0)
     {
         goto error_exit;
@@ -223,6 +223,8 @@ globus_gram_job_manager_state_file_read(
     int					rc;
     int					i;
     unsigned long                       tmp_timestamp;
+
+    request->old_job_contact = NULL;
 
     globus_gram_job_manager_request_log(
 	    request,
@@ -384,7 +386,7 @@ globus_gram_job_manager_state_file_read(
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
-    request->seg_last_timestamp = (time_t) tmp_timestamp;
+    request->manager->seg_last_timestamp = (time_t) tmp_timestamp;
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
@@ -434,21 +436,6 @@ globus_l_gram_job_manager_state_file_lock(
     int					fd)
 {
     int rc;
-#if 0
-    while( (rc = flock( fd, LOCK_EX | LOCK_NB )) < 0 )
-    {
-	if ( errno == EWOULDBLOCK )
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-	    break;
-	}
-	else if ( errno != EINTR )
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE
-	    break;
-	}
-    }
-#else
     struct flock fl;
     fl.l_type = F_WRLCK;
     fl.l_whence = SEEK_SET;
@@ -468,7 +455,6 @@ globus_l_gram_job_manager_state_file_lock(
 	    break;
 	}
     }
-#endif
     return rc;
 }
 /* globus_l_gram_job_manager_state_file_lock() */

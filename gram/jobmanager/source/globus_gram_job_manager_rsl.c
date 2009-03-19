@@ -85,6 +85,34 @@ globus_gram_job_manager_rsl_merge(
 }
 /* globus_l_gram_job_manager_rsl_merge() */
 
+/**
+ * Check to see if an RSL attribute exists in the given RSL.
+ *
+ * @param rsl
+ *     RSL parse tree to search
+ * @param attribute
+ *     Attribute name to search for.
+ *
+ * @retval GLOBUS_TRUE
+ *     Attribute exists in the RSL.
+ * @retval GLOBUS_FALSE
+ *     Attribute does not exist in the RSL.
+ */
+globus_bool_t
+globus_gram_job_manager_rsl_attribute_exists(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute)
+{
+    globus_list_t *			attributes;
+
+    attributes = globus_rsl_boolean_get_operand_list(rsl);
+
+    return globus_list_search_pred(
+            attributes,
+            globus_l_gram_job_manager_rsl_match,
+            (void *) attribute) ? GLOBUS_TRUE : GLOBUS_FALSE;
+}
+
 globus_bool_t
 globus_gram_job_manager_rsl_need_stage_in(
     globus_gram_jobmanager_request_t *	request)
@@ -215,20 +243,9 @@ globus_bool_t
 globus_gram_job_manager_rsl_need_restart(
     globus_gram_jobmanager_request_t *	request)
 {
-    globus_list_t *			attributes;
-
-    attributes = globus_rsl_boolean_get_operand_list(request->rsl);
-
-    if(globus_list_search_pred(attributes,
-		               globus_l_gram_job_manager_rsl_match,
-			       GLOBUS_GRAM_PROTOCOL_RESTART_PARAM))
-    {
-	return GLOBUS_TRUE;
-    }
-    else
-    {
-	return GLOBUS_FALSE;
-    }
+    return globus_gram_job_manager_rsl_attribute_exists(
+            request->rsl, 
+            GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 }
 /* globus_gram_job_manager_rsl_need_restart() */
 

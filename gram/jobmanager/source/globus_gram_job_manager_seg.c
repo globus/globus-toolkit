@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2008 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
 #include "globus_scheduler_event_generator.h"
@@ -5,7 +21,6 @@
 
 #include <sys/types.h>
 #include <utime.h>
-
 
 globus_result_t
 globus_l_gram_seg_event_callback(
@@ -22,12 +37,12 @@ globus_gram_job_manager_init_seg(
             globus_l_gram_seg_event_callback,
             request);
     globus_scheduler_event_generator_set_timestamp(
-            request->seg_last_timestamp);
-    globus_libc_setenv("JOB_MANAGER_SEG_SCHEDULER", request->seg_module, 1);
+            request->manager->seg_last_timestamp);
+    setenv("JOB_MANAGER_SEG_SCHEDULER", request->config->seg_module, 1);
     globus_scheduler_event_generator_load_module(
             "job_manager");
 
-    request->seg_started = GLOBUS_TRUE;
+    request->manager->seg_started = GLOBUS_TRUE;
 
     return GLOBUS_SUCCESS;
 }
@@ -35,7 +50,7 @@ globus_gram_job_manager_init_seg(
 
 globus_result_t
 globus_gram_job_manager_shutdown_seg(
-    globus_gram_jobmanager_request_t *  request)
+    const char *                        seg_modele)
 {
     globus_module_deactivate(GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE);
 
@@ -75,7 +90,7 @@ globus_l_gram_seg_event_callback(
 
         if (result == GLOBUS_SUCCESS)
         {
-            globus_fifo_enqueue(&request->seg_event_queue, new_event);
+            globus_fifo_enqueue(&request->manager->seg_event_queue, new_event);
         }
         else
         {
@@ -106,7 +121,7 @@ globus_gram_job_manager_seg_handle_event(
 {
     globus_scheduler_event_t *          event;
 
-    event = globus_fifo_dequeue(&request->seg_event_queue);
+    event = globus_fifo_dequeue(&request->manager->seg_event_queue);
 
     if (globus_i_gram_job_manager_script_valid_state_change(
         request, event->event_type))

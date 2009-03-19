@@ -232,9 +232,11 @@ globus_gram_job_manager_query_callback(
             goto unpack_failed;
         }
         
+        /* TODO: FIXME */
         result = globus_callout_call_type(authz_handle,
                                           GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
-                                          request->response_context,
+                                          /*request->response_context,*/
+                                          NULL,
                                           context,
                                           request->uniq_id,
                                           request->rsl,
@@ -350,7 +352,7 @@ unpack_failed:
 
     if(query)
     {
-	globus_libc_free(query);
+	free(query);
     }
 
     return;
@@ -379,9 +381,9 @@ globus_gram_job_manager_query_reply(
 					      : request->failure_code);
     if(query->signal_arg)
     {
-	globus_libc_free(query->signal_arg);
+	free(query->signal_arg);
     }
-    globus_libc_free(query);
+    free(query);
 }
 /* globus_gram_job_manager_query_reply() */
 
@@ -419,7 +421,7 @@ globus_l_gram_job_manager_query_reply(
     {
 	code = 400;
 
-	globus_libc_free(reply);
+	free(reply);
 	reply = GLOBUS_NULL;
 	replysize = 0;
     }
@@ -427,8 +429,7 @@ globus_l_gram_job_manager_query_reply(
 		  "JM : sending reply:\n");
     for (i=0; i<replysize; i++)
     {
-	globus_libc_fprintf(request->jobmanager_log_fp,
-			    "%c", reply[i]);
+	fprintf(request->manager->jobmanager_log_fp, "%c", reply[i]);
     }
     globus_gram_job_manager_request_log(request,
 			  "-------------------\n");
@@ -440,7 +441,7 @@ globus_l_gram_job_manager_query_reply(
 
     if(reply)
     {
-	globus_libc_free(reply);
+	free(reply);
     }
 }
 /* globus_l_gram_job_manager_query_reply() */
@@ -520,7 +521,7 @@ globus_l_gram_job_manager_cancel(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
-          query = globus_libc_calloc(
+          query = calloc(
                   1,
                   sizeof(globus_gram_job_manager_query_t));
   
@@ -582,7 +583,7 @@ globus_l_gram_job_manager_register(
     char *				url = NULL;
     int					mask;
 
-    url = globus_libc_malloc(strlen(args));
+    url = malloc(strlen(args));
 
     if (globus_l_gram_job_manager_is_done(request))
     {
@@ -597,7 +598,7 @@ globus_l_gram_job_manager_register(
 	rc = globus_gram_job_manager_contact_add(request, url, mask);
 
     }
-    globus_libc_free(url);
+    free(url);
 
     return rc;
 }
@@ -664,7 +665,7 @@ globus_l_gram_job_manager_renew(
        goto error_exit;
     }
 
-    query = globus_libc_calloc(1, sizeof(globus_gram_job_manager_query_t));
+    query = calloc(1, sizeof(globus_gram_job_manager_query_t));
 
     if(query == NULL)
     {
@@ -762,7 +763,7 @@ globus_l_gram_job_manager_signal(
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	    break;
 	}
-	query = globus_libc_calloc(1, sizeof(globus_gram_job_manager_query_t));
+	query = calloc(1, sizeof(globus_gram_job_manager_query_t));
 
 	query->type = GLOBUS_GRAM_JOB_MANAGER_SIGNAL;
 	query->handle = handle;
@@ -776,9 +777,9 @@ globus_l_gram_job_manager_signal(
 	{
 	    if(query->signal_arg)
 	    {
-		globus_libc_free(query->signal_arg);
+		free(query->signal_arg);
 	    }
-	    globus_libc_free(query);
+	    free(query);
 
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
 	    break;

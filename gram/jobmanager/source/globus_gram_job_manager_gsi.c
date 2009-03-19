@@ -31,7 +31,8 @@ globus_l_gram_job_manager_gsi_register_proxy_timeout(
 
 int
 globus_gram_job_manager_import_sec_context(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_job_manager_t *         manager,
+    gss_ctx_id_t *                      response_contextp)
 {
     OM_uint32				major_status;
     OM_uint32				minor_status;
@@ -39,19 +40,19 @@ globus_gram_job_manager_import_sec_context(
 
     major_status = globus_gss_assist_import_sec_context(
     	&minor_status,
-	&request->response_context,
+	response_contextp,
 	&token_status,
 	-1,
-	request->jobmanager_log_fp);
+	manager->jobmanager_log_fp);
 
     if(major_status != GSS_S_COMPLETE)
     {
-	globus_gram_job_manager_request_log(request,
-	                      "JM: Failed to load security context\n");
+	globus_gram_job_manager_log(
+                manager,
+                "JM: Failed to load security context\n");
 	return GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     }
-    globus_gram_job_manager_request_log(request,
-			  "JM: Security context imported\n");
+    globus_gram_job_manager_log(manager, "JM: Security context imported\n");
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_import_sec_context() */
@@ -154,18 +155,27 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
 /**
  * Look up subject name from the process's credential.
  *
- * @param request
+ * @param subject_namep
+ *     Pointer to set to a copy of the subject name. The caller is responsible
+ *     for freeing this string.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed.
  */
 int
 globus_gram_job_manager_gsi_get_subject(
-    globus_gram_jobmanager_request_t *	request,
-    char **                             subject_name)
+    char **                             subject_namep)
 {
     OM_uint32				major_status;
     OM_uint32				minor_status;
-    int					rc;
+    int					rc = GLOBUS_SUCCESS;
     gss_name_t                          name;
     gss_buffer_desc                     export_name;
+    char *                              subject_name = NULL;
 
     export_name.value = NULL;
     export_name.length = 0;
@@ -179,8 +189,8 @@ globus_gram_job_manager_gsi_get_subject(
             NULL);
     if (major_status != GSS_S_COMPLETE)
     {
-        rc = GLOBUS_FAILURE;
-        goto out;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+        goto failed_inquire_cred;
     }
 
     major_status = gss_display_name(
@@ -190,18 +200,29 @@ globus_gram_job_manager_gsi_get_subject(
             GSS_C_NO_OID);
     if (major_status != GSS_S_COMPLETE)
     {
-        rc = GLOBUS_FAILURE;
-        goto release_name_out;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto failed_display_name;
     }
-release_name_out:
+
+    subject_name = globus_libc_strdup(export_name.value);
+    if (subject_name == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto failed_subject_name_copy;
+    }
+
+failed_subject_name_copy:
+    gss_release_buffer(&minor_status, &export_name);
+failed_display_name:
     major_status = gss_release_name(
             &minor_status, 
             &name);
-out:
-    *subject_name = export_name.value;
+failed_inquire_cred:
+    *subject_namep = subject_name;
     return rc;
 }
 /* globus_gram_job_manager_gsi_get_subject() */
+
 /**
  * Reset the function to be called before proxy expires based on the
  * time left in a newly delegated credential.

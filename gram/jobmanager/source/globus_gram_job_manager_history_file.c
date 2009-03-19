@@ -18,46 +18,64 @@
 
 #include <string.h>
 
+/**
+ * Determine the name of the job history file for this job request
+ *
+ * @param request
+ *     Job to create file name for. The request's @a job_history_file member
+ *     is modified by this function.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ */
 int
 globus_gram_job_manager_history_file_set(
     globus_gram_jobmanager_request_t *  request)
 {
-    char                           my_host[MAXHOSTNAMELEN];
+    int                                 rc = GLOBUS_SUCCESS;
 
-    globus_libc_gethostname(my_host, sizeof(my_host));
-
-    if(request->job_history_file)
+    if (! request->config->job_history_dir)
     {
-        globus_libc_free(request->job_history_file);
-        request->job_history_file = NULL;
+        goto no_history;
     }
 
-    if(request->job_history_dir)
+    request->job_history_file = globus_common_create_string(
+             "%s/history.%s-%s_%s",
+             request->config->job_history_dir,
+             request->config->hostname,
+             request->config->jobmanager_type,
+             request->uniq_id );
+    
+    if (request->job_history_file == NULL)
     {
-        request->job_history_file = globus_libc_malloc(
-                strlen(request->job_history_dir) +
-                strlen(my_host) +
-                strlen(request->jobmanager_type) +
-                strlen(request->uniq_id) + 12);
-  
-        sprintf( request->job_history_file,
-                 "%s/history.%s-%s_%s",
-                 request->job_history_dir,
-                 my_host,
-                 request->jobmanager_type,
-                 request->uniq_id );
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto history_file_malloc_failed;
     }
-    return GLOBUS_SUCCESS;
+
+history_file_malloc_failed:
+no_history:
+    return rc;
 }
 /* globus_gram_job_manager_history_file_set() */
 
+/**
+ * Create job or update the job history file
+ *
+ * @param request
+ *     Job to create or update the job history file for. If the file exists,
+ *     information about the new job state is appended to it. Otherwise, 
+ *     the file is created and information about the RSL, job contact, and
+ *     client identity are recorded along with the new job state data.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ */
 int
 globus_gram_job_manager_history_file_create(
     globus_gram_jobmanager_request_t *  request)
 {
     FILE *                              history_fp;
     char *                              status_str;
-    struct stat                         statbuf;
     unsigned long                       timestamp;
 
     globus_gram_job_manager_request_log(
@@ -66,7 +84,7 @@ globus_gram_job_manager_history_file_create(
 
     timestamp = time(0);
 
-    if(!request->job_history_dir)
+    if(!request->config->job_history_dir)
     {
         return GLOBUS_SUCCESS;
     }
@@ -80,10 +98,10 @@ globus_gram_job_manager_history_file_create(
         status_str = "ACTIVE     ";
         break;
       case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
-	if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
-		status_str = "JOBMANAGER_STOP";
-	else
-        	status_str = "FAILED     ";
+        if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
+            status_str = "JOBMANAGER_STOP";
+        else
+            status_str = "FAILED     ";
         break;
       case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
         status_str = "DONE       ";
@@ -105,7 +123,7 @@ globus_gram_job_manager_history_file_create(
         break;
     }
 
-    if(stat(request->job_history_file, &statbuf) == 0)
+    if(access(request->job_history_file, F_OK) == 0)
     {
         /* the file exists, so just append a line which has the
          * job status and timestamp
@@ -136,11 +154,11 @@ globus_gram_job_manager_history_file_create(
         fprintf(history_fp, "%s\n%s\n%s\n%s\t%10ld\n",
                 request->rsl_spec,
                 request->job_contact,
-                request->globus_id,
+                request->config->subject,
                 status_str,timestamp);
     }
     fclose(history_fp);
 
     return GLOBUS_SUCCESS;
 }
-
+/* globus_gram_job_manager_history_file_create() */

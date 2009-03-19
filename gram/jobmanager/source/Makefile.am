@@ -17,6 +17,8 @@ validation_DATA = globus-gram-job-manager.rvf
 # Mapping of source files to libraries and executables
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_job_manager.h \
+        globus_gram_job_manager_config.c \
+        globus_gram_job_manager.c \
 	globus_gram_job_manager_validation.h \
 	globus_gram_job_manager_auditing.c \
 	globus_gram_job_manager_contact.c \

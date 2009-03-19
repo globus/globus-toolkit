@@ -71,14 +71,6 @@ GLOBUS_GATEKEEPER_PORT RSL substitution.
 Set the GSI subject name of the gatekeeper. This will be made available in the
 GLOBUS_GATEKEEPER_SUBJECT RSL substitution.
 
-@par -globus-org-dn DN
-LDAP distinguished for the organization which manages this GRAM resource.
-
-
-@par -globus-host-dn DN
-LDAP distinguished name used for the host on which the job manager is
-running.
-
 @par -globus-host-manufacturer MANUFACTURER
 Set the manufacturer name of the host machine. This will be made available in
 the GLOBUS_HOST_MANUFACTURER RSL substitution.
@@ -99,9 +91,6 @@ available in the GLOBUS_HOST_OSVERSION RSL substitution.
 Set the range of TCP port numbers which the job manager will use. This will
 also be made available in the GLOBUS_TCP_PORT_RANGE environment variable and
 RSL substitution.
-
-@par -machine-type
-Type of machine which is managed by this job manager. This is not used.
 
 @par -state-file-dir PATH
 Set the path to store job manager state files (used for restarting a job

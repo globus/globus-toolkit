@@ -172,10 +172,195 @@ typedef struct
 globus_gram_job_manager_query_t;
 
 /**
+ * Command-line configuration for a LRM instance. All of these items are
+ * read from command-line or startup environment and do not change while
+ * the job manager is running.
+ */
+typedef struct
+{
+    /*
+     * -------------------------------------------------------------------
+     * Values derived from command-line options and configuration file
+     * -------------------------------------------------------------------
+     */
+    /**
+     * Flag denoting the disposition of the log file once the job manager
+     * completes monitoring this job.
+     */
+    globus_gram_job_manager_logfile_flag_t
+					logfile_flag;
+    /** True if we are using kerberos for security instead of X.509
+     * certificates.
+     */
+    globus_bool_t			kerberos;
+    /**
+     * Path to globus installation.
+     */
+    char *				globus_location;
+    /**
+     * GLOBUS_LOCATION which can be used on the target execution nodes.
+     */
+    char *				target_globus_location;
+    /**
+     * Job Manager Type
+     *
+     * Identifies the scheduler which will be used to process this job
+     * request. Possible values are fork, loadleveler, lsf, easymcs, pbs,
+     * and others.
+     */ 
+    char *				jobmanager_type;
+    /**
+     * Directory to store job state history information
+     */
+    char *                              job_history_dir;
+    /**
+     * Default cache path (may contain RSL substitutions)
+     */
+    char *				cache_location;
+    /**
+     * Scratch directory root
+     *
+     * If the client requests a scratch directory with a relative path,
+     * this base directory is prepended to it. It defaults to $(HOME),
+     * but can be overridden on the job manager command line or configuration
+     * file.
+     */
+    char *				scratch_dir_base;
+    /**
+     * Condor Architecture
+     *
+     * Used only when type=condor.  Must match one of the archetecture values
+     * as defined by condor
+     */
+    char *				condor_arch;
+    /**
+     * Condor Operating System
+     *
+     * Used only when type=condor.  Must match one of the opsys values as
+     * defined by condor
+     */ 
+    char *				condor_os;
+    /** gatekeeper host RSL substitution */
+    char *                              globus_gatekeeper_host;
+    /** gatekeeper port RSL substitution */
+    char *                              globus_gatekeeper_port;
+    /** gatekeeper subject RSL substitution */
+    char *                              globus_gatekeeper_subject;
+    /** host manufacturer RSL substitution */
+    char *                              globus_host_manufacturer;
+    /** host cputype RSL substitution */
+    char *                              globus_host_cputype;
+    /** host OS name RSL substitution */
+    char *                              globus_host_osname;
+    /** host OS version RSL substitution */
+    char *                              globus_host_osversion;
+    /**
+     * Firewall-friendly range of TCP ports that will be used for network
+     * traffic.
+     */
+    char *				tcp_port_range;
+    /** Directory to store job_state files */
+    char *				job_state_file_dir;
+    /**
+     * Site-wide trusted certificate path.
+     */
+    char *                              x509_cert_dir;
+    /**
+     * Extra site-wide environment variables to add to the job environment.
+     */
+    char *                              extra_envvars;
+    /**
+     * SEG module to use instead of polling.
+     */
+    char *                              seg_module;
+    /**
+     * Path to job auditing directory.
+     */
+    char *                              auditing_dir;
+    /** Globus Toolkit version */
+    char *                              globus_version;
+    /**
+     * Streaming
+     *
+     * streaming_disabled is set from the config option -disable-streaming.
+     * The default is false.
+     * This is passed to the batch system script to decide whether to allow the
+     * job. This lets admins disable streaming for most jobs, but allow it for
+     * certain ones (e.g. the grid monitor).
+     */
+    globus_bool_t			streaming_disabled;
+
+    /*
+     * -------------------------------------------------------------------
+     * Values derived from job manager environment
+     * -------------------------------------------------------------------
+     */
+    /** GSI Subject name */
+    char *                              subject;
+    /** User home directory */
+    char *				home;
+    /** Username */
+    char *				logname;
+    /** GRAM host */
+    char *                              hostname;
+}
+globus_gram_job_manager_config_t;
+
+/**
+ * Runtime state for a LRM instance. All of these items are
+ * computed from the configuration state above and may change during the
+ * lifetime of the job manager.
+ */
+typedef struct
+{
+    /** Link to the static job manager configuration */
+    globus_gram_job_manager_config_t *  config;
+    /**
+     * set to GLOBUS_TRUE when the seg monitoring has begun
+     */
+    globus_bool_t                       seg_started;
+
+    /**
+     * Timestamp of the last SEG event we've completely processed. Initially
+     * set to the time of the job submission.
+     */
+    time_t                              seg_last_timestamp;
+    /**
+     * Queue of pending SEG events
+     */
+    globus_fifo_t                       seg_event_queue;
+    /**
+     * Log File Name
+     *
+     * A path to a file to append logging information to.
+     */
+    char *				jobmanager_logfile;
+    /**
+     * Log File Pointer
+     *
+     * A stdio FILE pointer used for logging. NULL if no logging is requested.
+     */
+    FILE *				jobmanager_log_fp;
+    /**
+     * Scheduler-specific set of validation records
+     */
+    globus_list_t *			validation_records;
+    /**
+     * GRAM job manager listener
+     */
+    char *				url_base;
+}
+globus_gram_job_manager_t;
+
+/**
  * Job Manager Request
  */
 typedef struct
 {
+    /** Link to LRM-specific configuration */
+    globus_gram_job_manager_config_t *  config;
+    /** Link to LRM-specific runtime state */
+    globus_gram_job_manager_t *         manager;
     /**
      * Job State
      *
@@ -214,108 +399,11 @@ typedef struct
     char *				job_id;
 
     /**
-     * Unique job identifier
-     *
-     * Unique id for this job that will be consistent
-     * across jobmanager restarts/recoveries.
-     */
-    char *				uniq_id;
-
-    /**
      * Poll Frequency
      *
      * How often should a check of the job status and output files be done.
      */
     unsigned int			poll_frequency;
-
-    /**
-     * SEG module to use for polling (optional)
-     */
-    char *                              seg_module;
-
-    /**
-     * set to GLOBUS_TRUE when the seg monitoring has begun
-     */
-    globus_bool_t                       seg_started;
-
-    /**
-     * Timestamp of the last SEG event we've completely processed. Initially
-     * set to the time of the job submission.
-     */
-    time_t                              seg_last_timestamp;
-    /**
-     * Queue of pending SEG events
-     */
-    globus_fifo_t                       seg_event_queue;
-
-    /**
-     * Job Manager Type
-     *
-     * Identifies the scheduler which will be used to process this job
-     * request. Possible values are fork, loadleveler, lsf, easymcs, pbs,
-     * and others.
-     */ 
-    char *				jobmanager_type;
-    char *				tcp_port_range;
-    char *				globus_location;
-    /**
-     * GLOBUS_LOCATION which can be used on the target execution nodes.
-     */
-    char *				target_globus_location;
-
-    /**
-     * Log File Name
-     *
-     * A path to a file to append logging information to.
-     */
-    char *				jobmanager_logfile;
-
-    /**
-     * Log File Pointer
-     *
-     * A stdio FILE pointer used for logging. NULL if no logging is requested.
-     */
-    FILE *				jobmanager_log_fp;
-
-    /**
-     * Flag denoting the disposition of the log file once the job manager
-     * completes monitoring this job.
-     */
-    globus_gram_job_manager_logfile_flag_t
-					logfile_flag;
-
-     /**
-      * Standard Output File Name
-      *
-      * Absolute path to a file to be used as standard output for the
-      * executable.
-      */
-    char *				local_stdout;
-
-    /**
-     * Standard Error File Name
-     *
-     * Absolute path to a file to be used as standard error for the
-     * executable.
-     */
-    char *				local_stderr;
-
-    /**
-     * Condor Architecture
-     *
-     * Used only when type=condor.  Must match one of the archetecture values
-     * as defined by condor
-     */
-    char *				condor_arch;
-
-    /**
-     * Condor Operating System
-     *
-     * Used only when type=condor.  Must match one of the opsys values as
-     * defined by condor
-     */ 
-    char *				condor_os;
-
 
     /**
      * Dry Run
@@ -335,6 +423,11 @@ typedef struct
      * The value is how many seconds to wait before timing out.
      */
     int					two_phase_commit;
+
+    /**
+     * Value to extend the two-phase commit wait time by if a commit extend
+     * signal arrives.
+     */
     int					commit_extend;
 
     /**
@@ -344,24 +437,6 @@ typedef struct
      * at a later time after a failure or signal.
      */
     globus_bool_t			save_state;
-
-    /**
-     * Previous Job Manager Contact 
-     *
-     * If we're restarting from a terminated Job Manager, this will specify
-     * the old job contact so we can locate the Job Manager state file.
-     */
-    char *				jm_restart;
-
-    /**
-     * Scratch directory root.
-     *
-     * If the client requests a scratch directory with a relative path,
-     * this bsae directory is prepended to it. It defaults to $(HOME),
-     * but can be overridden on the job manager command line or configuration
-     * file.
-     */
-    char *				scratch_dir_base;
 
     /**
      * Job scratch directory.
@@ -381,88 +456,147 @@ typedef struct
     time_t                              creation_time;
     /** Time when job manager gets jobid from scheduler */
     time_t                              queued_time;
-    /** Globus Toolkit version */
-    char *                              globus_version;
-    /** GSI Subject name */
-    char *                              subject;
-    globus_gass_cache_t			cache_handle;
+    /** Job-specific GASS cache tag. */
     char *				cache_tag;
-
+    /** Pointer to the stdout_position=... RSL relation */
+    globus_rsl_t *                      stdout_position_hack;
+    /** Pointer to the stderr_position=... RSL relation */
+    globus_rsl_t *                      stderr_position_hack;
+    /** RSL substitution symbol table */
+    globus_symboltable_t		symbol_table;
+    /** RSL document */
+    char *				rsl_spec;
+    /** Parsed RSL values */
+    globus_rsl_t *			rsl;
     /**
-     * Streaming
+     * Previous Job Manager Contact 
      *
-     * streaming_disabled is set from the config option -disable-streaming.
-     * The default is false.
+     * If we're restarting from a terminated Job Manager, this will specify
+     * the old job contact so we can locate the Job Manager state file.
+     */
+    char *				jm_restart;
+    /**
+     * Unique job identifier
+     *
+     * Unique id for this job that will be consistent
+     * across jobmanager restarts/recoveries.
+     */
+    char *				uniq_id;
+    /** Job contact string */
+    char *				job_contact;
+    /** Unique job contact suffix */
+    char *				job_contact_path;
+    /** remote_io_url value */
+    char *				remote_io_url;
+    /** file to write remote_io_url to */
+    char *				remote_io_url_file;
+    /** Job-specific proxy file */
+    char *				x509_user_proxy;
+    /** Job-specific persistence file */
+    char *				job_state_file;
+    /** Job-specific persistence lock file */
+    char *				job_state_lock_file;
+    /** Job-specific persistence lock descriptor */
+    int					job_state_lock_fd;
+    /** Thread safety */
+    globus_mutex_t			mutex;
+    /** Thread safety */
+    globus_cond_t			cond;
+    /** Clients registered for job state changes */
+    globus_list_t *			client_contacts;
+    /** List of file_stage_in values which haven't yet been processed */
+    globus_list_t *			stage_in_todo;
+    /** List of file_stage_in_shared values which haven't yet been processed */
+    globus_list_t *			stage_in_shared_todo;
+    /** List of file_stage_out values which haven't yet been processed */
+    globus_list_t *			stage_out_todo;
+    /** Current state machine state */
+    globus_gram_jobmanager_state_t	jobmanager_state;
+    /** State to resume from in the case of a restart */
+    globus_gram_jobmanager_state_t	restart_state;
+    /**
+     * True if a job state change hasn't been sent to the callbacks registered
+     * with it
+     */
+    globus_bool_t			unsent_status_change;
+    /** Timer tracking until the next job poll */
+    globus_callback_handle_t		poll_timer;
+    /** Timer tracking until the proxy expiration callback causes the job
+     * manager to stop.
+     */
+    globus_callback_handle_t		proxy_expiration_timer;
+    /**
+     * Queue of job-specific operations (signals, cancel, etc) sent via the job
+     * interface.
+     */
+    globus_fifo_t			pending_queries;
+    /**
+     * Flag to main() to decide whether the X509_USER_PROXY passed from the
+     * gatekeeper environment needs to be removed
+     */
+    globus_bool_t			relocated_proxy;
+    /**
+     * Minimum proxy lifetime (in seconds) to allow. Once it is noticed that
+     * the proxy will expire before that time, the job manager will go into the
+     * STOP state.
+     */
+    int					proxy_timeout;
+    /** Directory for temporary job-specific files. */
+    char *                              job_dir;
+    /**
      * streaming_requested is set to true if there's at least one remote
      * destination for stdout or stderr. Otherwise, it's false.
-     * Both values get passed to the batch system shell script to decide
-     * whether to allow the job. This lets admins disable streaming for
-     * most jobs, but allow it for certain ones (e.g. the grid monitor).
      */
-    globus_bool_t			streaming_disabled;
     globus_bool_t			streaming_requested;
-
-    globus_rsl_t *                      stdout_position_hack;
-    globus_rsl_t *                      stderr_position_hack;
-
-    globus_symboltable_t		symbol_table;
-    char *				rsl_spec;
-    globus_rsl_t *			rsl;
-
-    char *				remote_io_url;
-    char *				remote_io_url_file;
-
-    globus_bool_t			kerberos;
-    char *				x509_user_proxy;
-    char *                              x509_cert_dir;
-    char *                              extra_envvars;
-
-    char *				home;
-    char *				logname;
-    char *				globus_id;
-
-    char *				job_state_file_dir;
-    char *				job_state_file;
-    char *				job_state_lock_file;
-    int					job_state_lock_fd;
-
-    globus_mutex_t			mutex;
-    globus_cond_t			cond;
-    globus_bool_t			in_handler;
-    globus_list_t *			client_contacts;
-    globus_list_t *			validation_records;
-    globus_list_t *			stage_in_todo;
-    globus_list_t *			stage_in_shared_todo;
-    globus_list_t *			stage_out_todo;
-    globus_gram_jobmanager_state_t	jobmanager_state;
-    globus_gram_jobmanager_state_t	restart_state;
-    globus_bool_t			unsent_status_change;
-    globus_callback_handle_t		poll_timer;
-    globus_callback_handle_t		proxy_expiration_timer;
-    char *				url_base;
-    char *				job_contact;
-    char *				job_contact_path;
-    char *				old_job_contact;
-    gss_ctx_id_t			response_context;
-    globus_fifo_t			pending_queries;
-    globus_bool_t                       publish_jobs;
-    char *                              job_history_dir;
-    char *                              job_history_file;
-    int					job_history_status;
+    /** Job-specific scratch directory after RSL evaluation */
+    char *                              scratch_dir_base;
+    /** Job-specific cache path after RSL evaluation */
     char *				cache_location;
-    globus_bool_t			relocated_proxy;
-    int					proxy_timeout;
-    char *                              job_dir;
-    char *                              auditing_dir;
+    /** Handle to add/remove files from the GASS cache */
+    globus_gass_cache_t			cache_handle;
+    /** Path to job history file */
+    char *                              job_history_file;
+    /** Last job state stored in the job history file */
+    int					job_history_status;
+     /**
+      * Standard Output File Name
+      *
+      * Absolute path to a file to be used as standard output for the
+      * executable.
+      */
+    char *				local_stdout;
+
+    /**
+     * Standard Error File Name
+     *
+     * Absolute path to a file to be used as standard error for the
+     * executable.
+     */
+    char *				local_stderr;
+    /** Security context used to submit job */
+    gss_ctx_id_t                        response_context;
+    /** Job Contact of this job when being handled by another process */
+    char *                              old_job_contact;
 }
 globus_gram_jobmanager_request_t;
+
+/* globus_gram_job_manager_config.c */
+int
+globus_gram_job_manager_config_init(
+    globus_gram_job_manager_config_t *  config,
+    int 				argc,
+    char **				argv,
+    char **                             rsl);
 
 /* globus_gram_job_manager_request.c */
 int
 globus_gram_job_manager_request_init(
-    globus_gram_jobmanager_request_t **	request);
+    globus_gram_jobmanager_request_t **	request,
+    globus_gram_job_manager_t *         manager,
+    char *                              rsl,
+    gss_ctx_id_t                        response_ctx);
 
-int 
+void
 globus_gram_job_manager_request_destroy(
     globus_gram_jobmanager_request_t *	request);
 
@@ -477,11 +611,6 @@ globus_gram_job_manager_request_set_status_time(
     globus_gram_protocol_job_state_t	status,
 	time_t valid_time);
 
-void
-globus_gram_job_manager_request_open_logfile(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_logfile_flag_t
-    					logfile_flag);
 int
 globus_gram_job_manager_request_log(
     globus_gram_jobmanager_request_t *	request,
@@ -493,6 +622,10 @@ globus_gram_job_manager_request_acct(
     globus_gram_jobmanager_request_t *	request,
     const char *			format,
     ...);
+
+int
+globus_gram_job_manager_symbol_table_populate(
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_history_file_set(
@@ -519,7 +652,12 @@ globus_gram_job_manager_validation_when_t;
 extern
 int
 globus_gram_job_manager_validation_init(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_job_manager_t *         config);
+
+extern
+int
+globus_gram_job_manager_validation_destroy(
+    globus_list_t *                     validation_records);
 
 extern
 int
@@ -551,6 +689,11 @@ globus_gram_job_manager_contact_state_callback(
 extern
 int
 globus_gram_job_manager_output_init(
+    globus_gram_jobmanager_request_t *	request);
+
+extern
+int
+globus_gram_job_manager_output_destroy(
     globus_gram_jobmanager_request_t *	request);
 
 int
@@ -614,10 +757,18 @@ globus_bool_t
 globus_gram_job_manager_state_machine(
     globus_gram_jobmanager_request_t *	request);
 
+int
+globus_gram_job_manager_read_request(
+    globus_gram_job_manager_t *         manager,
+    char **                             rsl,
+    char **                             client_contact,
+    int *                               job_state_mask);
+
 /* globus_gram_job_manager_gsi.c */
 int
 globus_gram_job_manager_import_sec_context(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_job_manager_t *         manager,
+    gss_ctx_id_t *                      response_contextp);
 
 globus_bool_t
 globus_gram_job_manager_gsi_used(
@@ -629,7 +780,6 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
 
 int
 globus_gram_job_manager_gsi_get_subject(
-    globus_gram_jobmanager_request_t *  request,
     char **                             subject_name);
 
 int
@@ -696,6 +846,11 @@ globus_rsl_t *
 globus_gram_job_manager_rsl_merge(
     globus_rsl_t *			base_rsl,
     globus_rsl_t *			override_rsl);
+
+globus_bool_t
+globus_gram_job_manager_rsl_attribute_exists(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute);
 
 globus_bool_t
 globus_gram_job_manager_rsl_need_stage_in(
@@ -844,6 +999,10 @@ globus_result_t
 globus_gram_job_manager_init_seg(
     globus_gram_jobmanager_request_t *  request);
 
+globus_result_t
+globus_gram_job_manager_shutdown_seg(
+    const char *                        seg_module);
+
 void
 globus_gram_job_manager_seg_handle_event(
     globus_gram_jobmanager_request_t *  request);
@@ -852,6 +1011,29 @@ globus_gram_job_manager_seg_handle_event(
 int
 globus_gram_job_manager_auditing_file_write(
     globus_gram_jobmanager_request_t *  request);
+
+/* globus_gram_job_manager.c */
+int
+globus_gram_job_manager_init(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_config_t *  config);
+
+void
+globus_gram_job_manager_destroy(
+    globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_job_manager_read_rsl(
+    globus_gram_job_manager_t *         manager,
+    char **                             rsl,
+    char **                             contact,
+    int *                               job_state_mask);
+
+int
+globus_gram_job_manager_log(
+    globus_gram_job_manager_t *         manager,
+    const char *                        format,
+    ...);
 
 EXTERN_C_END
 

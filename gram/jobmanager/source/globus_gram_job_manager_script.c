@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <pwd.h>
+#include <utime.h>
 
 /* Module Specific Types */
 typedef void (*globus_gram_job_manager_script_callback_t)(
@@ -138,27 +138,16 @@ globus_l_gram_job_manager_script_run(
     globus_gram_job_manager_script_context_t *
 					script_context;
     globus_result_t			result;
-    char *				script_template;
     char *				pipe_cmd;
 
-    script_template =
-	"%s/libexec/globus-job-manager-script.pl -m %s -f %s -c %s";
-
-    pipe_cmd = globus_libc_malloc(strlen(script_template) +
-	                          strlen(request->globus_location) +
-				  strlen(request->jobmanager_type) +
-				  strlen(script_arg_file) +
-				  strlen(script_cmd) +
-				  1);
-
-    sprintf(pipe_cmd,
-	    script_template,
-	    request->globus_location,
-	    request->jobmanager_type,
+    pipe_cmd = globus_common_create_string(
+            "%s/libexec/globus-job-manager-script.pl -m %s -f %s -c %s",
+	    request->config->globus_location,
+	    request->config->jobmanager_type,
 	    script_arg_file,
 	    script_cmd);
 
-    script_context = globus_libc_malloc(
+    script_context = malloc(
 	    sizeof(globus_gram_job_manager_script_context_t));
 
     script_context->return_buf[0] = '\0';
@@ -204,7 +193,7 @@ globus_l_gram_job_manager_script_run(
 	    globus_l_gram_job_manager_script_read,
 	    script_context);
 
-    globus_libc_free(pipe_cmd);
+    free(pipe_cmd);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -217,8 +206,8 @@ posix_convert_failed:
     pclose(script_context->pipe);
 popen_failed:
 
-    globus_libc_free(pipe_cmd);
-    globus_libc_free(script_context);
+    free(pipe_cmd);
+    free(script_context);
 
     return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
 }
@@ -313,9 +302,7 @@ globus_l_gram_job_manager_script_read(
 	    const char * globus_id = globus_libc_getenv("GLOBUS_ID");
 	    uid_t uid = getuid();
 	    gid_t gid = getgid();
-	    const struct passwd *pw = getpwuid(uid);
-	    const char *user = pw && pw->pw_name && *pw->pw_name ?
-	                       pw->pw_name : "unknown";
+	    const char *user = request->config->logname;
 
 	    globus_gram_job_manager_request_acct(
 		request, "%s %s for %s on %s\n", gk_jm_id_var,
@@ -331,7 +318,8 @@ globus_l_gram_job_manager_script_read(
 	    globus_gram_job_manager_request_acct(
 		request, "%s %s has %s %s manager type %s\n", gk_jm_id_var,
 		gk_jm_id  ? gk_jm_id  : "none",
-		script_variable, script_value, request->jobmanager_type);
+		script_variable, script_value,
+                request->config->jobmanager_type);
 	}
 
 	nbytes -= (p + 1 - ((char *)&script_context->return_buf[0]));
@@ -381,7 +369,7 @@ globus_l_gram_job_manager_script_read(
 	    NULL,
 	    NULL);
 
-    globus_libc_free(script_context);
+    free(script_context);
 }
 /* globus_l_gram_job_manager_script_read() */
 
@@ -608,8 +596,12 @@ globus_gram_job_manager_script_poll_fast(
     const int DEBUG_FAST_POLL = 0; /* Set to 1 for extra log info */
     char * job_contact_match = 0;
 
-    if( ! request || ! request->globus_location || ! request->job_contact)
+    if( ! request ||
+        ! request->config->globus_location ||
+        !request->job_contact)
+    {
         goto FAST_POLL_EXIT_FAILURE;
+    }
 
     if(this_uid > 999999)
     {
@@ -622,29 +614,28 @@ globus_gram_job_manager_script_poll_fast(
     /* The grid monitor's job status file can be in one of two places.
      * We want to check both.
      */
-    grid_monitor_files[0] = globus_libc_malloc(
-        strlen(request->globus_location) +
-        strlen(GRID_MONITOR_LOCATION_1) + 10);
+    grid_monitor_files[0] = globus_common_create_string(
+            "%s%s%d",
+            request->config->globus_location,
+            GRID_MONITOR_LOCATION_1,
+            (int)this_uid);
     if( ! grid_monitor_files[0])
+    {
         goto FAST_POLL_EXIT_FAILURE;
+    }
 
-    sprintf(grid_monitor_files[0], "%s%s%d",
-        request->globus_location,
-        GRID_MONITOR_LOCATION_1,
-        (int)this_uid);
-
-    grid_monitor_files[1] = globus_libc_malloc(
-        strlen(request->globus_location) +
-        strlen(GRID_MONITOR_LOCATION_2) + 10);
+    grid_monitor_files[1] = globus_common_create_string(
+            "%s%s%d",
+            request->config->globus_location,
+            GRID_MONITOR_LOCATION_2,
+            (int)this_uid);
     if( ! grid_monitor_files[1])
+    {
         goto FAST_POLL_EXIT_FAILURE;
+    }
 
-    sprintf(grid_monitor_files[1], "%s%s%d",
-        request->globus_location,
-        GRID_MONITOR_LOCATION_2,
-        (int)this_uid);
-
-    for ( i = 0; grid_monitor_files[i]; i++ ) {
+    for ( i = 0; grid_monitor_files[i]; i++ )
+    {
 	grid_monitor_output = grid_monitor_files[i];
 
 	grid_monitor_file = fopen(grid_monitor_output, "r");
@@ -728,7 +719,7 @@ globus_gram_job_manager_script_poll_fast(
         goto FAST_POLL_EXIT;
     }
 
-    job_contact_match = globus_libc_malloc(strlen(request->job_contact) + 1);
+    job_contact_match = malloc(strlen(request->job_contact) + 1);
     strcpy(job_contact_match, request->job_contact);
     job_contact_strip_port(job_contact_match);
 
@@ -836,10 +827,10 @@ FAST_POLL_EXIT:
     if(grid_monitor_file) 
         fclose(grid_monitor_file);
     for ( i = 0; grid_monitor_files[i]; i++ ) {
-        globus_libc_free(grid_monitor_files[i]);
+        free(grid_monitor_files[i]);
     }
     if( job_contact_match )
-        globus_libc_free(job_contact_match);
+        free(job_contact_match);
 
     globus_gram_job_manager_request_log(request,
         "JMI: poll_fast: returning %d = %s\n", return_val,
@@ -1190,7 +1181,7 @@ globus_gram_job_manager_script_make_scratchdir(
     globus_l_gram_job_manager_script_write_description(
 	    script_arg_fp,
 	    request,
-	    "scratchdirbase", 's', request->scratch_dir_base,
+	    "scratchdirbase", 's', request->config->scratch_dir_base,
 	    "scratchdir", 's', scratch_dir,
 	    NULL);
 
@@ -1269,7 +1260,7 @@ globus_gram_job_manager_script_rm_scratchdir(
 	    "$description = { scratchdirectory => ['%s'] };\n",
 	    scratch_dir);
 
-    globus_libc_free(scratch_dir);
+    free(scratch_dir);
 
     fclose(script_arg_fp);
 
@@ -1856,7 +1847,7 @@ globus_l_gram_job_manager_default_done(
             const char *gk_jm_id_var = "GATEKEEPER_JM_ID";
             const char *gk_jm_id = globus_libc_getenv(gk_jm_id_var);
 	    const char *v = value;
-	    char *buf = globus_libc_malloc(strlen(value) + 1);
+	    char *buf = malloc(strlen(value) + 1);
 	    char *b = buf;
 	    char c;
 
@@ -1869,7 +1860,7 @@ globus_l_gram_job_manager_default_done(
 		request, "%s %s summary:\n%s\nJMA -- end of summary\n", gk_jm_id_var,
 		gk_jm_id ? gk_jm_id : "none", buf);
 
-	    globus_libc_free(buf);
+	    free(buf);
         }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_SCRATCH_DIR") == 0)
@@ -2219,7 +2210,7 @@ globus_l_gram_job_manager_script_write_description(
 			string_value);
 
 		fprintf(fp, ",\n    '%s' => [ '%s' ]", attribute, prepared);
-		globus_libc_free(prepared);
+		free(prepared);
 	    }
 	    break;
 
@@ -2232,11 +2223,11 @@ globus_l_gram_job_manager_script_write_description(
     }
     va_end(ap);
 
-    if(request->jobmanager_logfile)
+    if(request->manager->jobmanager_logfile)
     {
 	fprintf(fp,
 		",\n    'logfile' => [ '%s' ]",
-		request->jobmanager_logfile);
+		request->manager->jobmanager_logfile);
     }
     if(request->uniq_id)
     {
@@ -2256,17 +2247,17 @@ globus_l_gram_job_manager_script_write_description(
 		",\n    'cachetag' => [ '%s' ]",
 		request->cache_tag);
     }
-    if(request->condor_os)
+    if(request->config->condor_os)
     {
 	fprintf(fp,
 		",\n    'condoros' => [ '%s' ]",
-		request->condor_os);
+		request->config->condor_os);
     }
-    if(request->condor_arch)
+    if(request->config->condor_arch)
     {
 	fprintf(fp,
 		",\n    'condorarch' => [ '%s' ]",
-		request->condor_arch);
+		request->config->condor_arch);
     }
     if (request->job_dir)
     {
@@ -2276,7 +2267,7 @@ globus_l_gram_job_manager_script_write_description(
     }
 
     fprintf(fp, ",\n    'streamingdisabled' => [ %d ]",
-	    request->streaming_disabled );
+	    request->config->streaming_disabled);
     fprintf(fp, ",\n    'streamingrequested' => [ %d ]",
 	    request->streaming_requested );
 
@@ -2317,7 +2308,7 @@ globus_l_gram_job_manager_script_prepare_param(
     {
 	return NULL;
     }
-    new_param = globus_libc_malloc(strlen(param)*2+1);
+    new_param = malloc(strlen(param)*2+1);
 
     for (i = 0, j = 0; param[i] != '\0'; i++)
     {
@@ -2371,7 +2362,7 @@ globus_l_gram_request_validate(
     char *				location;
     int					rc = GLOBUS_SUCCESS;
 
-    if (! request->jobmanager_type)
+    if (! request->config->jobmanager_type)
     {
 	globus_gram_job_manager_request_log(request,
             "JMI: job manager type is not specified, cannot continue.\n");
@@ -2392,12 +2383,12 @@ globus_l_gram_request_validate(
     */
     globus_gram_job_manager_request_log(request,
 	"JMI: testing job manager scripts for type %s exist and "
-	"permissions are ok.\n", request->jobmanager_type);
+	"permissions are ok.\n", request->config->jobmanager_type);
 
    /*---------------- job manager script -----------------*/
    sprintf(script_path,
 	   "%s/libexec/globus-job-manager-script.pl",
-	   request->globus_location);
+	   request->config->globus_location);
 
     if (stat(script_path, &statbuf) != 0)
     {
@@ -2428,7 +2419,7 @@ globus_l_gram_request_validate(
     */
     sprintf(script_path, "%s/lib/perl/Globus/GRAM/JobManager/%s.pm",
 			location,
-			request->jobmanager_type);
+			request->config->jobmanager_type);
 
     if(stat(script_path, &statbuf) != 0)
     {
@@ -2445,10 +2436,10 @@ globus_l_gram_request_validate(
     globus_gram_job_manager_request_log(
 	    request,
 	    "JMI: completed script validation: job manager type is %s.\n",
-	    request->jobmanager_type);
+	    request->config->jobmanager_type);
 
 free_location_exit:
-    globus_libc_free(location);
+    free(location);
     return rc;
 }
 /* globus_l_gram_request_validate() */
@@ -2503,8 +2494,8 @@ globus_l_gram_job_manager_print_staging_list(
 		to,
 		globus_list_empty(tmp_list) ? "\n" : ",\n");
 
-	globus_libc_free(from);
-	globus_libc_free(to);
+	free(from);
+	free(to);
     }
     fprintf(fp, " ]");
     return;
@@ -2522,8 +2513,8 @@ globus_l_gram_job_manager_script_staged_done(
     char *				from;
     char *				to;
 
-    from = globus_libc_malloc(strlen(value)+1);
-    to = globus_libc_malloc(strlen(value)+1);
+    from = malloc(strlen(value)+1);
+    to = malloc(strlen(value)+1);
     sscanf(value, "%s %s", from, to);
 
     globus_gram_job_manager_staging_remove(
@@ -2540,8 +2531,8 @@ globus_l_gram_job_manager_script_staged_done(
 		request);
     }
 
-    globus_libc_free(from);
-    globus_libc_free(to);
+    free(from);
+    free(to);
 }
 /* globus_l_gram_job_manager_script_staged_done() */
 
