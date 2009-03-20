@@ -97,12 +97,7 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: gram_my_job
-Description: "This specifies how the gram myjob interface will behave in the 
-              started processes. Possible values are independent (Even if the
-	      count > 1, only start 1 process or thread), or collective
-	      (gram_myjob_count() will return count for each of the processes.
-	      gram_myjob_rank() will return a unique value between 0 and
-	      count-1 for each of the processes.)"
+Description: "Obsolete and ignored."
 Values: collective independent
 Default: collective
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

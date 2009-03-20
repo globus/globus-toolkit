@@ -86,10 +86,22 @@ globus_gram_job_manager_init(
         goto validation_init_failed;
     }
 
+    rc = globus_hashtable_init(
+            &manager->request_hash,
+            13,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto request_hashtable_init_failed;
+    }
+
     rc = globus_gram_protocol_allow_attach(
             &manager->url_base,
             globus_gram_job_manager_query_callback,
-            config);
+            manager);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -99,6 +111,8 @@ globus_gram_job_manager_init(
     if (rc != GLOBUS_SUCCESS)
     {
 allow_attach_failed:
+        globus_hashtable_destroy(&manager->request_hash);
+request_hashtable_init_failed:
         globus_gram_job_manager_validation_destroy(
                 manager->validation_records);
         manager->validation_records = NULL;

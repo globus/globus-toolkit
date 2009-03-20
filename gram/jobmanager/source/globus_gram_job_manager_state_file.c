@@ -21,7 +21,7 @@
 static
 int
 globus_l_gram_job_manager_state_file_lock(
-    int					fd);
+    int                                 fd);
 
 /**
  * Compute the name of the state file to use for this job request.
@@ -29,74 +29,111 @@ globus_l_gram_job_manager_state_file_lock(
  * Sets the value of the @a job_state_file member of the request structure.
  *
  * @param request
- *        The request to modify.
+ *     The request to create the state file for.
+ * @param state_file
+ *     Pointer to set to the state file string. The caller is responsible for
+ *     freeing this.
+ * @param state_lock_file
+ *     Pointer to set to the state file lockfile string. The caller is
+ *     responsible for freeing this.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed.
  */
-void
+int
 globus_gram_job_manager_state_file_set(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request,
+    char **                             state_file,
+    char **                             state_lock_file)
 {
-    char				buffer[1024];
+    int                                 rc = GLOBUS_SUCCESS;
 
     if(request->config->job_state_file_dir == GLOBUS_NULL)
     {
-	sprintf(buffer, "%s/tmp/gram_job_state/%s.%s.%s",
-		request->config->globus_location,
-		request->config->logname ? request->config->logname : "globus",
-		request->config->hostname,
-		request->uniq_id);
+        *state_file = globus_common_create_string(
+                "%s/tmp/gram_job_state/%s.%s.%s",
+                request->config->globus_location,
+                request->config->logname ? request->config->logname : "globus",
+                request->config->hostname,
+                request->uniq_id);
     }
     else
     {
-	sprintf(buffer, "%s/job.%s.%s",
+        *state_file = globus_common_create_string(
+                "%s/job.%s.%s",
                 request->config->job_state_file_dir,
                 request->config->hostname,
-		request->uniq_id);
+                request->uniq_id);
     }
 
-    request->job_state_file = (char *) globus_libc_strdup (buffer);
+    if (*state_file == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-    sprintf(buffer, "%s.lock", request->job_state_file);
-    request->job_state_lock_file = (char *) globus_libc_strdup( buffer );
+        goto create_state_file_failed;
+    }
+
+    *state_lock_file = globus_common_create_string(
+            "%s.lock",
+            *state_file);
+
+    if (*state_lock_file == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto create_state_lock_file_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+create_state_lock_file_failed:
+        free(*state_file);
+        *state_file = NULL;
+    }
+create_state_file_failed:
+    return rc;
 }
 /* globus_gram_job_manager_state_file_set() */
 
 int
 globus_gram_job_manager_state_file_write(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    int					rc = GLOBUS_SUCCESS;
-    FILE *				fp;
-    char				tmp_file[1024];
+    int                                 rc = GLOBUS_SUCCESS;
+    FILE *                              fp;
+    char                                tmp_file[1024];
 
     if ( request->job_state_lock_file != NULL &&
-	 request->job_state_lock_fd < 0 )
+         request->job_state_lock_fd < 0 )
     {
-	globus_gram_job_manager_request_log(request,
-				"JM: Creating and locking state lock file\n");
+        globus_gram_job_manager_request_log(request,
+                                "JM: Creating and locking state lock file\n");
 
-	request->job_state_lock_fd = open( request->job_state_lock_file,
-					   O_RDWR | O_CREAT,
-					   S_IRUSR | S_IWUSR );
-	if ( request->job_state_lock_fd < 0 )
-	{
-	    globus_gram_job_manager_request_log(request,
-			"JM: Failed to open state lock file '%s', errno=%d\n",
-			request->job_state_lock_file, errno);
+        request->job_state_lock_fd = open( request->job_state_lock_file,
+                                           O_RDWR | O_CREAT,
+                                           S_IRUSR | S_IWUSR );
+        if ( request->job_state_lock_fd < 0 )
+        {
+            globus_gram_job_manager_request_log(request,
+                        "JM: Failed to open state lock file '%s', errno=%d\n",
+                        request->job_state_lock_file, errno);
 
-	    return GLOBUS_FAILURE;
-	}
+            return GLOBUS_FAILURE;
+        }
 
-	rc = globus_l_gram_job_manager_state_file_lock(
-						request->job_state_lock_fd );
-	if ( rc != GLOBUS_SUCCESS )
-	{
-	    globus_gram_job_manager_request_log(request,
-			"JM: Failed to lock state lock file '%s', errno=%d\n",
-			request->job_state_lock_file, errno);
-	    /* unlink here? */
-	    close( request->job_state_lock_fd );
-	    return GLOBUS_FAILURE;
-	}
+        rc = globus_l_gram_job_manager_state_file_lock(
+                                                request->job_state_lock_fd );
+        if ( rc != GLOBUS_SUCCESS )
+        {
+            globus_gram_job_manager_request_log(request,
+                        "JM: Failed to lock state lock file '%s', errno=%d\n",
+                        request->job_state_lock_file, errno);
+            /* unlink here? */
+            close( request->job_state_lock_fd );
+            return GLOBUS_FAILURE;
+        }
     }
 
     /*
@@ -113,13 +150,13 @@ globus_gram_job_manager_state_file_write(
     fp = fopen( tmp_file, "w" );
     if ( fp == NULL )
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JM: Failed to open state file %s, errno=%d\n",
-		tmp_file,
-		errno);
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Failed to open state file %s, errno=%d\n",
+                tmp_file,
+                errno);
 
-	return GLOBUS_FAILURE;
+        return GLOBUS_FAILURE;
     }
 
     rc = fprintf(fp, "%s\n", request->job_contact ? request->job_contact : " ");
@@ -197,10 +234,10 @@ globus_gram_job_manager_state_file_write(
     rc = rename( tmp_file, request->job_state_file );
     if (rc != 0)
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JM: Failed to rename state file\n");
-	rc = GLOBUS_FAILURE;
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Failed to rename state file\n");
+        rc = GLOBUS_FAILURE;
     }
 
     return GLOBUS_SUCCESS;
@@ -214,26 +251,26 @@ error_exit:
 
 int
 globus_gram_job_manager_state_file_read(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    FILE *				fp;
+    FILE *                              fp;
     char *                              buffer = NULL;
     size_t                              file_len;
-    struct stat				statbuf;
-    int					rc;
-    int					i;
+    struct stat                         statbuf;
+    int                                 rc;
+    int                                 i;
     unsigned long                       tmp_timestamp;
 
     request->old_job_contact = NULL;
 
     globus_gram_job_manager_request_log(
-	    request,
-	    "JM: Attempting to read state file %s\n",
-	    request->job_state_file);
+            request,
+            "JM: Attempting to read state file %s\n",
+            request->job_state_file);
 
     if (stat(request->job_state_file, &statbuf) != 0)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
     file_len = (size_t) statbuf.st_size;
     buffer = malloc(file_len+1);
@@ -244,61 +281,61 @@ globus_gram_job_manager_state_file_read(
 
     /* Try to obtain a lock on the state lock file */
     if ( request->job_state_lock_file != NULL &&
-	 request->job_state_lock_fd < 0 )
+         request->job_state_lock_fd < 0 )
     {
-	globus_gram_job_manager_request_log(request,
-				"JM: Locking state lock file\n");
+        globus_gram_job_manager_request_log(request,
+                                "JM: Locking state lock file\n");
 
-	request->job_state_lock_fd = open( request->job_state_lock_file,
-					   O_RDWR );
-	if ( request->job_state_lock_fd < 0 )
-	{
-	    globus_gram_job_manager_request_log(request,
-			"JM: Failed to open state lock file '%s', errno=%d\n",
-			request->job_state_lock_file, errno);
+        request->job_state_lock_fd = open( request->job_state_lock_file,
+                                           O_RDWR );
+        if ( request->job_state_lock_fd < 0 )
+        {
+            globus_gram_job_manager_request_log(request,
+                        "JM: Failed to open state lock file '%s', errno=%d\n",
+                        request->job_state_lock_file, errno);
 
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
 
             goto free_buffer_exit;
-	}
+        }
 
-	rc = globus_l_gram_job_manager_state_file_lock(
-						request->job_state_lock_fd );
-	if ( rc != GLOBUS_SUCCESS )
-	{
-	    if ( rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE )
-	    {
-		globus_gram_job_manager_request_log(request,
-			"JM: State lock file is locked, old jm is still alive\n");
-		fp = fopen( request->job_state_file, "r" );
-		if(fp)
-		{
-		    fgets( buffer, file_len, fp );
-		    buffer[strlen(buffer)-1] = '\0';
-		    request->old_job_contact = globus_libc_strdup(buffer);
-		    fclose(fp);
-		}
-	    }
-	    else
-	    {
-		globus_gram_job_manager_request_log(request,
-			"JM: Failed to lock state lock file '%s', errno=%d\n",
-			request->job_state_lock_file, errno);
-	    }
+        rc = globus_l_gram_job_manager_state_file_lock(
+                                                request->job_state_lock_fd );
+        if ( rc != GLOBUS_SUCCESS )
+        {
+            if ( rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE )
+            {
+                globus_gram_job_manager_request_log(request,
+                        "JM: State lock file is locked, old jm is still alive\n");
+                fp = fopen( request->job_state_file, "r" );
+                if(fp)
+                {
+                    fgets( buffer, file_len, fp );
+                    buffer[strlen(buffer)-1] = '\0';
+                    request->old_job_contact = globus_libc_strdup(buffer);
+                    fclose(fp);
+                }
+            }
+            else
+            {
+                globus_gram_job_manager_request_log(request,
+                        "JM: Failed to lock state lock file '%s', errno=%d\n",
+                        request->job_state_lock_file, errno);
+            }
 
-	    /* unlink here? */
-	    close( request->job_state_lock_fd );
+            /* unlink here? */
+            close( request->job_state_lock_fd );
 
             free(buffer);
 
-	    return rc;
-	}
+            return rc;
+        }
     }
 
     fp = fopen( request->job_state_file, "r" );
     if(!fp)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
 
     if(fgets( buffer, file_len, fp )  == NULL)
@@ -316,7 +353,7 @@ globus_gram_job_manager_state_file_read(
         goto error_exit;
     }
     globus_gram_job_manager_request_set_status_time(request,
-		atoi( buffer ), statbuf.st_mtime);
+                atoi( buffer ), statbuf.st_mtime);
     if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
@@ -330,7 +367,7 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-	request->job_id = globus_libc_strdup( buffer );
+        request->job_id = globus_libc_strdup( buffer );
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
@@ -351,16 +388,16 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     if((sscanf(buffer,"%d",&i)) < 1)
     {
-	/* The last line we grabbed was the jobmanager_type. Now we
-	 * need to grab the two_phase_commit number. Older jobmanagers
-	 * don't print the jobmanager_type to the state file, hence
-	 * the check above.
-	 */
-	if(fgets( buffer, file_len, fp ) == NULL)
+        /* The last line we grabbed was the jobmanager_type. Now we
+         * need to grab the two_phase_commit number. Older jobmanagers
+         * don't print the jobmanager_type to the state file, hence
+         * the check above.
+         */
+        if(fgets( buffer, file_len, fp ) == NULL)
         {
             goto error_exit;
         }
-	buffer[strlen(buffer)-1] = '\0';
+        buffer[strlen(buffer)-1] = '\0';
     }
     request->two_phase_commit = atoi(buffer);
     if (fgets( buffer, file_len, fp ) == NULL)
@@ -370,15 +407,15 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-	/*
-	 * Need to set the RSL substitution before reading the staging
-	 * state---otherwise we may get an RSL evaluation error
-	 */
-	request->scratchdir = globus_libc_strdup(buffer);
-	globus_symboltable_insert(
-		&request->symbol_table,
-		"SCRATCH_DIRECTORY",
-		request->scratchdir);
+        /*
+         * Need to set the RSL substitution before reading the staging
+         * state---otherwise we may get an RSL evaluation error
+         */
+        request->scratchdir = globus_libc_strdup(buffer);
+        globus_symboltable_insert(
+                &request->symbol_table,
+                "SCRATCH_DIRECTORY",
+                request->scratchdir);
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
@@ -433,7 +470,7 @@ exit:
 static
 int
 globus_l_gram_job_manager_state_file_lock(
-    int					fd)
+    int                                 fd)
 {
     int rc;
     struct flock fl;
@@ -444,16 +481,16 @@ globus_l_gram_job_manager_state_file_lock(
 
     while( (rc = fcntl( fd, F_SETLK, &fl )) < 0 )
     {
-	if ( errno == EACCES || errno == EAGAIN )
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-	    break;
-	}
-	else if ( errno != EINTR )
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
-	    break;
-	}
+        if ( errno == EACCES || errno == EAGAIN )
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+            break;
+        }
+        else if ( errno != EINTR )
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
+            break;
+        }
     }
     return rc;
 }

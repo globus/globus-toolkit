@@ -27,11 +27,8 @@
  */
 #include "globus_gram_job_manager.h"
 #include "globus_rsl_assist.h"
-#include "globus_callout.h"
-#include "globus_callout_constants.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_system_config_constants.h"
-#include "globus_gram_jobmanager_callout_error.h"
 
 #include <string.h>
 
@@ -139,14 +136,9 @@ globus_gram_job_manager_state_machine(
     int                                 save_status;
     int                                 save_jobmanager_state;
     char *                              tmp_str;
-    globus_result_t                     result;
     globus_rsl_t *                      original_rsl;
-    globus_rsl_t *                      restart_rsl;
     globus_gram_job_manager_query_t *   query;
     globus_bool_t                       first_poll = GLOBUS_FALSE;
-    globus_callout_handle_t             authz_handle;
-    char *                              filename;
-    globus_object_t *                   error;
     globus_gram_jobmanager_state_t      next_state;
 
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "entering");
@@ -154,329 +146,19 @@ globus_gram_job_manager_state_machine(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-        if(request->jm_restart)
-        {
-            rc = globus_rsl_eval(request->rsl, &request->symbol_table);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                request->failure_code =
-                    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-
-            rc = globus_gram_job_manager_validate_rsl(
-                    request,
-                    GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-            /*
-             * Eval after validating, as validation may insert
-             * RSL substitions when processing default values of
-             * RSL attributes
-             */
-            rc = globus_rsl_eval(request->rsl, &request->symbol_table);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                request->failure_code =
-                    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-
-            /* Free the restart RSL spec. Make room for the job
-             * request RSL which we'll read from the state file
-             */
-            globus_libc_free(request->rsl_spec);
-            request->rsl_spec = NULL;
-
-            /* Remove the restart parameter from the RSL spec. */
-            globus_gram_job_manager_rsl_remove_attribute(
-                    request,
-                    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
-
-            /* globus_gram_job_manager_history_file_set(request); */
-            globus_gram_job_manager_state_file_set(request);
-
-            /* Attempt to read the job state file */
-            rc = globus_gram_job_manager_state_file_read(request);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                /* Short circuit to done when job manager is still alive */
-                if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
-                {
-                    globus_gram_job_manager_request_set_status(
-                            request,
-                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                    request->failure_code = rc;
-                    rc = globus_l_gram_job_manager_reply(request);
-                    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_DONE;
-                }
-                else
-                {
-                    globus_gram_job_manager_request_set_status(
-                            request,
-                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                    request->failure_code = rc;
-                    request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                }
-                break;
-            }
-
-            rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-
-            globus_gram_job_manager_request_log(
-                request,
-                "Pre-parsed Original RSL string: %s\n",
-                request->rsl_spec);
-
-            original_rsl = globus_rsl_parse(request->rsl_spec);
-            if(!original_rsl)
-            {
-                request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-            tmp_str = globus_rsl_unparse(original_rsl);
-
-            if(tmp_str)
-            {
-                globus_gram_job_manager_request_log(
-                        request,
-                        "<<<<<original Job RSL\n%s\n"
-                        ">>>>>original Job RSL\n",
-                        tmp_str);
-                globus_libc_free(tmp_str);
-                tmp_str = NULL;
-            }
-            restart_rsl = request->rsl;
-
-            request->rsl = original_rsl;
-            rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-
-            /* Remove the two-phase commit from the original RSL; if the
-             * new client wants it, they can put it in their RSL
-             */
-            globus_gram_job_manager_rsl_remove_attribute(
-                        request,
-                        GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
-
-            /*
-             * Remove stdout_position and stderr_position before merging.
-             * They aren't valid for job submission RSLs, but are for
-             * restart RSLs. They will be reinserted after validation.
-             */
-            request->stdout_position_hack =
-                globus_gram_job_manager_rsl_extract_relation(
-                    restart_rsl,
-                    GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
-
-            request->stderr_position_hack = 
-                globus_gram_job_manager_rsl_extract_relation(
-                    restart_rsl,
-                    GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
-
-            request->rsl = globus_gram_job_manager_rsl_merge(
-                        original_rsl,
-                        restart_rsl);
-
-            if(request->rsl == NULL)
-            {
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-        }
-
-        /* call authz callout here */
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
-            
-        result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            error = globus_error_get(result);
-            
-            if(globus_error_match(
-                   error,
-                   GLOBUS_GSI_SYSCONFIG_MODULE,
-                   GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
-               == GLOBUS_TRUE)
-            {
-                globus_object_free(error);
-            }
-            else
-            {
-                globus_object_free(error);
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-        }
-        else
-        {
-            
-            result = globus_callout_handle_init(&authz_handle);
-            
-            if(result != GLOBUS_SUCCESS)
-            {
-                free(filename);
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;                
-            }
-            
-            result = globus_callout_read_config(authz_handle, filename);
-
-            free(filename);
-            
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_callout_handle_destroy(authz_handle);
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;                
-            }
-            
-            result = globus_callout_call_type(authz_handle,
-                                              GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
-                                              request->response_context,
-                                              request->response_context,
-                                              request->uniq_id,
-                                              request->rsl,
-                                              "start");
-            globus_callout_handle_destroy(authz_handle);
-            
-            if(result != GLOBUS_SUCCESS)
-            {
-                error = globus_error_get(result);
-                
-                if(globus_error_match(
-                       error,
-                       GLOBUS_CALLOUT_MODULE,
-                       GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
-                   == GLOBUS_TRUE)
-                {
-                    globus_object_free(error);
-                }
-                else
-                { 
-                    if(globus_error_match(
-                           error,
-                           GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
-                           GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED)
-                       == GLOBUS_TRUE)
-                    {
-                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
-                    }
-                    else if(globus_error_match(
-                                error,
-                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
-                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_INVALID_JOB)
-                            == GLOBUS_TRUE)
-                    {
-                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_JOB_ID;
-                    }
-                    else if(globus_error_match(
-                                error,
-                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
-                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_BAD_EXECUTABLE)
-                            == GLOBUS_TRUE)
-                    {
-                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_EXECUTABLE;
-                    }
-
-                    /* rc already contains default error */
-
-                    globus_object_free(error);
-                    request->failure_code = rc;
-                    request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                    break;
-                }
-            }
-        }
-
-        /* GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR used to be here */
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR;
-
-        /* Add job manager-generated environment strings. This
-         * must be done after a RESTART rsl is validated
-         */
-        if(request->cache_location)
-        {
-            globus_gram_job_manager_rsl_env_add(
+        rc = globus_gram_job_manager_call_authz_callout(
+                request->response_context,
+                request->response_context,
+                request->uniq_id,
                 request->rsl,
-                "GLOBUS_GASS_CACHE_DEFAULT",
-                request->cache_location);
-        }
-        if(request->config->logname)
-        {
-            globus_gram_job_manager_rsl_env_add(
-                request->rsl,
-                "LOGNAME",
-                request->config->logname);
-        }
-        globus_gram_job_manager_rsl_env_add(
-            request->rsl,
-            "HOME",
-            request->config->home);
+                "start");
 
-        if (request->config->extra_envvars)
+        if (rc != GLOBUS_SUCCESS)
         {
-            char *  p = request->config->extra_envvars;
-            while (p && *p)
-            {
-                char * val = GLOBUS_NULL;
-                char * q   = strchr(p,',');
-                if (q) *q = '\0';
-                if (*p && (val = globus_libc_getenv(p)))
-                {
-                    globus_gram_job_manager_request_log(
-                        request,
-                        "Appending extra env.var %s=%s\n",
-                        p,
-                        val);
-                    globus_gram_job_manager_rsl_env_add(
-                        request->rsl,
-                        p,
-                        val);
-                }
-                p = (q) ? q+1 : GLOBUS_NULL;
-            }
+            request->failure_code = rc;
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+            break;
         }
 
         rc = globus_l_gram_job_manager_validate_username(
@@ -489,142 +171,6 @@ globus_gram_job_manager_state_machine(
             break;
         }
 
-        if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
-                !request->scratchdir)
-        {
-            globus_gram_job_manager_request_log(
-                    request,
-                    "Evaluating scratch directory RSL\n");
-            rc = globus_gram_job_manager_rsl_eval_one_attribute(
-                    request,
-                    GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
-                    &tmp_str);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_request_log(
-                        request,
-                        "Evaluation of scratch directory RSL failed\n");
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-            else if(tmp_str == GLOBUS_NULL)
-            {
-                globus_gram_job_manager_request_log(
-                        request,
-                        "Evaluation of scratch directory RSL didn't "
-                        "yield string\n");
-                /* scratch_dir did not evaluate to a string */
-                request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                break;
-            }
-            globus_gram_job_manager_request_log(
-                    request,
-                    "Scratch Directory RSL -> %s\n",
-                    tmp_str);
-
-            rc = globus_gram_job_manager_script_make_scratchdir(
-                    request,
-                    tmp_str);
-
-            globus_libc_free(tmp_str);
-
-            if(rc != GLOBUS_SUCCESS)
-            {
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            }
-            else
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
-        if(request->scratchdir)
-        {
-            globus_gram_job_manager_request_log(
-                    request,
-                    "Adding scratch dir to symbol table and env: %s\n",
-                    request->scratchdir);
-
-            globus_symboltable_insert(
-                &request->symbol_table,
-                "SCRATCH_DIRECTORY",
-                request->scratchdir);
-            globus_gram_job_manager_rsl_env_add(
-                request->rsl,
-                "SCRATCH_DIRECTORY",
-                request->scratchdir);
-        }
-        else if(globus_gram_job_manager_rsl_need_scratchdir(request))
-        {
-            globus_gram_job_manager_request_log(
-                    request,
-                    "Failed to create scratch dir\n");
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-            if(request->failure_code == GLOBUS_SUCCESS)
-            {
-                request->failure_code =
-                    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
-            }
-            break;
-        }
-
-        rc = globus_rsl_eval(request->rsl, &request->symbol_table);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code =
-                GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            break;
-        }
-        rc = globus_gram_job_manager_validate_rsl(
-                request,
-                GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code = rc;
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            break;
-        }
-        /*
-         * Insert stdout_position and stderr_position back to rsl if they were
-         * present in restart RSL
-         */
-        if(request->stdout_position_hack != NULL)
-        {
-            globus_gram_job_manager_rsl_add_relation(
-                request->rsl,
-                request->stdout_position_hack);
-            request->stdout_position_hack = NULL;
-        }
-        if(request->stderr_position_hack != NULL)
-        {
-            globus_gram_job_manager_rsl_add_relation(
-                request->rsl,
-                request->stderr_position_hack);
-            request->stderr_position_hack = NULL;
-        }
-
-        rc = globus_rsl_eval(request->rsl, &request->symbol_table);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code =
-                GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            break;
-        }
         if(!request->jm_restart)
         {
             request->cache_tag = globus_libc_strdup(request->job_contact);
@@ -862,7 +408,23 @@ globus_gram_job_manager_state_machine(
             {
                 if ( request->job_state_file == NULL )
                 {
-                    globus_gram_job_manager_state_file_set(request);
+                    rc = globus_gram_job_manager_state_file_set(
+                            request,
+                            &request->job_state_file,
+                            &request->job_state_lock_file);
+                    if (rc != GLOBUS_SUCCESS)
+                    {
+                        request->jobmanager_state = 
+                            GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                        globus_gram_job_manager_request_set_status(
+                                request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+                        request->failure_code =
+                            GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE;
+                        globus_gram_job_manager_request_log(
+                                request,
+                                "JM: error determining the state file\n");
+                        break;
+                    }
                 }
 
                 rc = globus_gram_job_manager_state_file_write(request);

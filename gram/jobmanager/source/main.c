@@ -165,6 +165,15 @@ main(
             "ERROR: globus_jobmanager_request_init() failed.\n");
         exit(1);
     }
+    rc = globus_hashtable_insert(
+            &manager.request_hash,
+            request->job_contact_path,
+            request);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "ERROR: hashtable insert failed\n");
+        exit(1);
+    }
 
     if (contact != NULL)
     {

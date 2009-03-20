@@ -21,9 +21,6 @@ The path to the job manager's delegated credential. (GSI only).
 @par GLOBUS_GRAM_JOB_CONTACT
 The job manager's contact string for this job.
 
-@par GLOBUS_GRAM_MYJOB_CONTACT
-The GRAM MyJob contact string for intrajob communication.
-
 @par GLOBUS_LOCATION
 The path to the Globus installation on the job manager host.
 

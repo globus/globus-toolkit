@@ -291,7 +291,12 @@ globus_gram_job_manager_validate_rsl(
     rc = globus_l_gram_job_manager_insert_default_rsl(
             request,
             when);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto insert_default_rsl_failed;
+    }
 
+insert_default_rsl_failed:
 rsl_check_failed:
     return rc;
 }
@@ -512,6 +517,7 @@ globus_l_gram_job_manager_read_validation_file(
         {
             tmp->attribute = value;
             value = NULL;
+            globus_rsl_assist_string_canonicalize(tmp->attribute);
         }
         else if(strcasecmp(attribute, "description") == 0)
         {
@@ -770,32 +776,7 @@ globus_l_gram_job_manager_validation_string_match(
     const char *                        str1,
     const char *                        str2)
 {
-    while(str1 && *str1 && str2 && *str2)
-    {
-        if(*str1 == '_')
-        {
-            str1++;
-        }
-        else if(*str2 == '_')
-        {
-            str2++;
-        }
-        else if(tolower(*str1) == tolower(*str2))
-        {
-            str1++;
-            str2++;
-        }
-        else
-        {
-            return GLOBUS_FALSE;
-        }
-    }
-    if(str1 && str2 && (*str1 || *str2))
-    {
-        return GLOBUS_FALSE;
-    }
-
-    return GLOBUS_TRUE;
+    return (strcmp(str1, str2) == 0);
 }
 /* globus_l_gram_job_manager_validation_string_match() */
 

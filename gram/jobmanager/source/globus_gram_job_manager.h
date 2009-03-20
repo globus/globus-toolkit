@@ -341,14 +341,12 @@ typedef struct
      * A stdio FILE pointer used for logging. NULL if no logging is requested.
      */
     FILE *				jobmanager_log_fp;
-    /**
-     * Scheduler-specific set of validation records
-     */
+    /** Scheduler-specific set of validation records */
     globus_list_t *			validation_records;
-    /**
-     * GRAM job manager listener
-     */
+    /** GRAM job manager listener contact string */
     char *				url_base;
+    /** Hashtable mapping request->job_contact_path to request */
+    globus_hashtable_t                  request_hash;
 }
 globus_gram_job_manager_t;
 
@@ -438,13 +436,6 @@ typedef struct
      */
     globus_bool_t			save_state;
 
-    /**
-     * Job scratch directory.
-     *
-     * Scratch subdirectory created for this job. It will be removed
-     * when the job completes. This is a subdirectory of scratch_dir_base.
-     */
-    char *				scratchdir;
 
     /**
      * Information about the destinations for the job's stdout and
@@ -458,16 +449,12 @@ typedef struct
     time_t                              queued_time;
     /** Job-specific GASS cache tag. */
     char *				cache_tag;
-    /** Pointer to the stdout_position=... RSL relation */
-    globus_rsl_t *                      stdout_position_hack;
-    /** Pointer to the stderr_position=... RSL relation */
-    globus_rsl_t *                      stderr_position_hack;
     /** RSL substitution symbol table */
     globus_symboltable_t		symbol_table;
-    /** RSL document */
-    char *				rsl_spec;
     /** Parsed RSL values */
     globus_rsl_t *			rsl;
+    /** Canonical RSL document */
+    char *				rsl_spec;
     /**
      * Previous Job Manager Contact 
      *
@@ -486,16 +473,25 @@ typedef struct
     char *				job_contact;
     /** Unique job contact suffix */
     char *				job_contact_path;
+    /** Job-specific persistence file */
+    char *				job_state_file;
+    /** Job-specific persistence lock file */
+    char *				job_state_lock_file;
+    /** Job-specific scratch directory after RSL evaluation */
+    char *                              scratch_dir_base;
+    /**
+     * Job scratch directory.
+     *
+     * Scratch subdirectory created for this job. It will be removed
+     * when the job completes. This is a subdirectory of scratch_dir_base.
+     */
+    char *				scratchdir;
     /** remote_io_url value */
     char *				remote_io_url;
     /** file to write remote_io_url to */
     char *				remote_io_url_file;
     /** Job-specific proxy file */
     char *				x509_user_proxy;
-    /** Job-specific persistence file */
-    char *				job_state_file;
-    /** Job-specific persistence lock file */
-    char *				job_state_lock_file;
     /** Job-specific persistence lock descriptor */
     int					job_state_lock_fd;
     /** Thread safety */
@@ -548,8 +544,6 @@ typedef struct
      * destination for stdout or stderr. Otherwise, it's false.
      */
     globus_bool_t			streaming_requested;
-    /** Job-specific scratch directory after RSL evaluation */
-    char *                              scratch_dir_base;
     /** Job-specific cache path after RSL evaluation */
     char *				cache_location;
     /** Handle to add/remove files from the GASS cache */
@@ -797,6 +791,14 @@ globus_gram_job_manager_gsi_relocate_proxy(
     globus_gram_jobmanager_request_t *  request,
     const char *                        new_proxy);
 
+int
+globus_gram_job_manager_call_authz_callout(
+    gss_ctx_id_t                        request_context,
+    gss_ctx_id_t                        authz_context,
+    const char *                        uniq_id,
+    const globus_rsl_t *                rsl,
+    const char *                        auth_type);
+
 /* globus_gram_job_manager_query.c */
 void
 globus_gram_job_manager_query_callback(
@@ -874,9 +876,9 @@ globus_gram_job_manager_rsl_need_restart(
 
 int
 globus_gram_job_manager_rsl_env_add(
-    globus_rsl_t *			ast_node,
-    char *				var,
-    char *				value);
+    globus_rsl_t *                      ast_node,
+    const char *                        var,
+    const char *                        value);
 
 int
 globus_gram_job_manager_rsl_request_fill(
@@ -898,7 +900,7 @@ globus_gram_job_manager_rsl_extract_relation(
     globus_rsl_t *	                rsl,
     char *				attribute);
 
-void
+int
 globus_gram_job_manager_rsl_add_relation(
     globus_rsl_t *	                rsl,
     globus_rsl_t *	                relation);
@@ -926,9 +928,12 @@ globus_gram_job_manager_rsl_eval_string(
     char **                             value_string);
 
 /* globus_gram_job_manager_state_file.c */
-void
+int
 globus_gram_job_manager_state_file_set(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request,
+    char **                             state_file,
+    char **                             state_lock_file);
+
 int
 globus_gram_job_manager_state_file_read(
     globus_gram_jobmanager_request_t *	request);

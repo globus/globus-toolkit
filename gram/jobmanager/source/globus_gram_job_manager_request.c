@@ -35,6 +35,7 @@
 
 #include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 
 static
 int
@@ -58,6 +59,7 @@ static
 int
 globus_l_gram_generate_id(
     globus_gram_jobmanager_request_t *  request,
+    char **                             jm_restart,
     unsigned long *                     ulong1p,
     unsigned long *                     ulong2p);
 
@@ -67,6 +69,40 @@ globus_l_gram_init_cache(
     globus_gram_jobmanager_request_t *  request,
     char **                             cache_locationp,
     globus_gass_cache_t  *              cache_handlep);
+
+static
+int
+globus_l_gram_restart(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t **                     stdout_position_hack,
+    globus_rsl_t **                     stderr_position_hack);
+
+static
+int
+globus_l_gram_populate_environment(
+    globus_gram_jobmanager_request_t *  request);
+
+static
+int
+globus_l_gram_add_environment(
+    globus_rsl_t *                      rsl,
+    const char *                        variable,
+    const char *                        value);
+
+static
+int
+globus_l_gram_init_scratchdir(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        scratch_dir_base,
+    char **                             scratchdir);
+
+static
+int
+globus_l_gram_validate_rsl(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      stdout_position_hack,
+    globus_rsl_t *                      stderr_position_hack);
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
@@ -93,11 +129,15 @@ globus_gram_job_manager_request_init(
     globus_gram_jobmanager_request_t *  r;
     unsigned long                       ulong1, ulong2;
     int                                 rc;
+    globus_rsl_t *                      stdout_position_hack = NULL;
+    globus_rsl_t *                      stderr_position_hack = NULL;
 
     /*** creating request structure ***/
     r = malloc(sizeof(globus_gram_jobmanager_request_t));
 
-    /* Order matches that of struct declaration in globus_gram_job_manager.h */
+    /* Order more-or-less matches that of struct declaration in
+     * globus_gram_job_manager.h
+     */
     r->config = manager->config;
     r->manager = manager;
 
@@ -113,13 +153,11 @@ globus_gram_job_manager_request_init(
     r->two_phase_commit = 0;
     r->commit_extend = 0;
     r->save_state = GLOBUS_TRUE;
-    r->scratchdir = GLOBUS_NULL;
+    r->scratchdir = NULL;
     globus_gram_job_manager_output_init(r);
     r->creation_time = time(NULL);
     r->queued_time = time(NULL);
-    r->cache_tag = GLOBUS_NULL;
-    r->stdout_position_hack = GLOBUS_NULL;
-    r->stderr_position_hack = GLOBUS_NULL;
+    r->cache_tag = NULL;
     rc = globus_symboltable_init(
             &r->symbol_table,
             globus_hashtable_string_hash,
@@ -141,20 +179,13 @@ globus_gram_job_manager_request_init(
     {
         goto symboltable_populate_failed;
     }
-    r->rsl_spec = globus_libc_strdup(rsl);
-    if (r->rsl_spec == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto rsl_spec_dup_failed;
-    }
 
     globus_gram_job_manager_request_log(
             r,
             "Pre-parsed RSL string: %s\n",
-            r->rsl_spec);
+            rsl);
     
-    r->rsl = globus_rsl_parse(r->rsl_spec);
+    r->rsl = globus_rsl_parse(rsl);
     if (r->rsl == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
@@ -170,6 +201,13 @@ globus_gram_job_manager_request_init(
 
         goto rsl_canonicalize_failed;
     }
+    r->rsl_spec = globus_rsl_unparse(r->rsl);
+    if (r->rsl_spec == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto rsl_unparse_failed;
+    }
 
     globus_l_gram_log_rsl(r, "Job Request RSL (canonical)");
     
@@ -184,6 +222,7 @@ globus_gram_job_manager_request_init(
      */
     rc = globus_l_gram_generate_id(
             r,
+            &r->jm_restart,
             &ulong1,
             &ulong2);
 
@@ -239,13 +278,79 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto failed_set_job_contact_path;
     }
-    
+
+    rc = globus_gram_job_manager_state_file_set(
+        r,
+        &r->job_state_file,
+        &r->job_state_lock_file);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_state_file_set;
+    }
+    r->job_state_lock_fd = -1;
+
+    if (r->jm_restart)
+    {
+        rc = globus_l_gram_restart(
+                r,
+                &stdout_position_hack,
+                &stderr_position_hack);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_restart;
+        }
+    }
+
+    rc = globus_gram_job_manager_rsl_eval_string(
+            r,
+            r->config->scratch_dir_base,
+            &r->scratch_dir_base);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto failed_eval_scratch_dir_base;
+    }
+
+    rc = globus_l_gram_init_scratchdir(
+            r,
+            r->rsl,
+            r->scratch_dir_base,
+            &r->scratchdir);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto init_scratchdir_failed;
+    }
+
+    rc = globus_l_gram_init_cache(
+            r,
+            &r->cache_location,
+            &r->cache_handle);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto init_cache_failed;
+    }
+
+    rc = globus_l_gram_populate_environment(r);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_populate_environment;
+    }
+
+    /* At this point, all of the RSL substitutions have been populated,
+     * including those based on runtime values, so we can validate the RSL
+     */
+    rc = globus_l_gram_validate_rsl(
+            r,
+            stdout_position_hack,
+            stderr_position_hack);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto validate_rsl_failed;;
+    }
+
     r->remote_io_url = NULL;
     r->remote_io_url_file = NULL;
     r->x509_user_proxy = NULL;
-    r->job_state_file = NULL;
-    r->job_state_lock_file = NULL;
-    r->job_state_lock_fd = -1;
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -283,24 +388,6 @@ globus_gram_job_manager_request_init(
 
     }
     r->streaming_requested = GLOBUS_FALSE;
-
-    rc = globus_gram_job_manager_rsl_eval_string(
-            r,
-            r->config->scratch_dir_base,
-            &r->scratch_dir_base);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_eval_scratch_dir_base;
-    }
-
-    rc = globus_l_gram_init_cache(
-            r,
-            &r->cache_location,
-            &r->cache_handle);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto init_cache_failed;
-    }
 
     rc = globus_gram_job_manager_history_file_set(r);
     if (rc != GLOBUS_SUCCESS)
@@ -392,12 +479,6 @@ history_file_set_failed:
         {
             free(r->cache_location);
         }
-init_cache_failed:
-        if (r->scratch_dir_base)
-        {
-            free(r->scratch_dir_base);
-        }
-failed_eval_scratch_dir_base:
     /* TODO: Remove job dir */
 failed_make_job_dir:
 pending_queries_init_failed:
@@ -405,6 +486,25 @@ pending_queries_init_failed:
 cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
+validate_rsl_failed:
+failed_populate_environment:
+init_cache_failed:
+        if (r->scratchdir)
+        {
+            rmdir(r->scratchdir);
+            free(r->scratchdir);
+            r->scratchdir = NULL;
+        }
+init_scratchdir_failed:
+        if (r->scratch_dir_base)
+        {
+            free(r->scratch_dir_base);
+        }
+failed_eval_scratch_dir_base:
+failed_restart:
+        free(r->job_state_lock_file);
+        free(r->job_state_file);
+failed_state_file_set:
         free(r->job_contact_path);
 failed_set_job_contact_path:
 failed_setenv_job_contact:
@@ -414,11 +514,11 @@ failed_set_job_contact:
         free(r->uniq_id);
 failed_set_uniq_id:
 add_substitutions_to_symbol_table_failed:
+        free(r->rsl_spec);
+rsl_unparse_failed:
 rsl_canonicalize_failed:
         globus_rsl_free_recursive(r->rsl);
 rsl_parse_failed:
-        free(r->rsl_spec);
-rsl_spec_dup_failed:
 symboltable_populate_failed:
 symboltable_create_scope_failed:
         globus_symboltable_destroy(&r->symbol_table);
@@ -636,7 +736,7 @@ globus_gram_job_manager_request_log(
         return -1;
     }
 
-    if ( request->manager->jobmanager_log_fp == GLOBUS_NULL )
+    if ( request->manager->jobmanager_log_fp == NULL )
     {
         return -1;
     }
@@ -952,6 +1052,7 @@ static
 int
 globus_l_gram_generate_id(
     globus_gram_jobmanager_request_t *  request,
+    char **                             jm_restart,
     unsigned long *                     ulong1p,
     unsigned long *                     ulong2p)
 {
@@ -967,7 +1068,7 @@ globus_l_gram_generate_id(
         rc = globus_gram_job_manager_rsl_eval_one_attribute(
                 request,
                 GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
-                &request->jm_restart);
+                jm_restart);
 
         if (rc != GLOBUS_SUCCESS)
         {
@@ -994,6 +1095,7 @@ globus_l_gram_generate_id(
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_RESTART;
             goto failed_jm_restart_scan;
         }
+        rc = GLOBUS_SUCCESS;
     }
     else
     {
@@ -1068,7 +1170,7 @@ globus_l_gram_init_cache(
         }
 
         /* cache location in rsl, but not a literal after eval */
-        if ((*cache_locationp) == GLOBUS_NULL)
+        if ((*cache_locationp) == NULL)
         {
             globus_gram_job_manager_request_log(
                     request,
@@ -1152,5 +1254,494 @@ failed_cache_eval:
     return rc;
 }
 /* globus_l_gram_init_cache() */
+
+static
+int
+globus_l_gram_restart(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t **                     stdout_position_hack,
+    globus_rsl_t **                     stderr_position_hack)
+{
+    int                                 rc;
+    globus_rsl_t *                      restart_rsl;
+    globus_rsl_t *                      original_rsl;
+
+    rc = globus_rsl_eval(request->rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        request->failure_code =
+            GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto rsl_eval_failed;
+    }
+
+    rc = globus_gram_job_manager_validate_rsl(
+            request,
+            GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto rsl_validate_failed;
+    }
+    /*
+     * Eval after validating, as validation may insert
+     * RSL substitions when processing default values of
+     * RSL attributes
+     */
+    rc = globus_rsl_eval(request->rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto post_validate_eval_failed;
+    }
+
+    /* Free the restart RSL spec. Make room for the job
+     * request RSL which we'll read from the state file
+     */
+    free(request->rsl_spec);
+    request->rsl_spec = NULL;
+
+    /* Remove the restart parameter from the RSL spec. */
+    globus_gram_job_manager_rsl_remove_attribute(
+            request,
+            GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
+
+    /* Read the job state file. This has all sorts of side-effects on
+     * the request structure
+     */
+    rc = globus_gram_job_manager_state_file_read(request);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto state_file_read_failed;
+    }
+
+    globus_gram_job_manager_request_log(
+        request,
+        "Pre-parsed Original RSL string: %s\n",
+        request->rsl_spec);
+
+    original_rsl = globus_rsl_parse(request->rsl_spec);
+    if (!original_rsl)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto parse_original_rsl_failed;
+    }
+
+    restart_rsl = request->rsl;
+
+    request->rsl = original_rsl;
+
+    /* Remove the two-phase commit from the original RSL; if the
+     * new client wants it, they can put it in their RSL
+     */
+    globus_gram_job_manager_rsl_remove_attribute(
+                request,
+                GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
+
+    /*
+     * Remove stdout_position and stderr_position before merging.
+     * They aren't valid for job submission RSLs, but are for
+     * restart RSLs. They will be reinserted after validation.
+     */
+    *stdout_position_hack =
+        globus_gram_job_manager_rsl_extract_relation(
+            restart_rsl,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
+
+    *stderr_position_hack = 
+        globus_gram_job_manager_rsl_extract_relation(
+            restart_rsl,
+            GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
+
+    request->rsl = globus_gram_job_manager_rsl_merge(
+                original_rsl,
+                restart_rsl);
+
+    if(request->rsl == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+parse_original_rsl_failed:
+state_file_read_failed:
+post_validate_eval_failed:
+rsl_validate_failed:
+rsl_eval_failed:
+    return rc;
+}
+/* globus_l_gram_restart() */
+
+/**
+ * Add default environment variables to the job environment
+ *
+ * Adds GLOBUS_GASS_CACHE_DEFAULT, LOGNAME, HOME, and anything that
+ * is defined from the -extra-envar command-line option.
+ * 
+ * @param request
+ *     Request to modify
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+ *     Malloc failed.
+ */
+static
+int
+globus_l_gram_populate_environment(
+    globus_gram_jobmanager_request_t *  request)
+{
+    int                                 rc;
+
+    rc = globus_l_gram_add_environment(
+            request->rsl,
+            "GLOBUS_GASS_CACHE_DEFAULT",
+            request->cache_location);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_cache_default_failed;
+    }
+
+    rc = globus_l_gram_add_environment(
+            request->rsl,
+            "LOGNAME",
+            request->config->logname);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_logname_failed;
+    }
+
+    rc = globus_l_gram_add_environment(
+            request->rsl,
+            "HOME",
+            request->config->home);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_home_failed;
+    }
+
+    if (request->config->extra_envvars)
+    {
+        char *  p = request->config->extra_envvars;
+        while (p && *p)
+        {
+            char * val = NULL;
+            char * q   = strchr(p,',');
+            if (q) *q = '\0';
+            if (*p && (val = getenv(p)))
+            {
+                globus_gram_job_manager_request_log(
+                        request,
+                        "Appending extra env.var %s=%s\n",
+                        p,
+                        val);
+                rc = globus_l_gram_add_environment(
+                        request->rsl,
+                        p,
+                        val);
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    goto add_extra_envvar_failed;
+                }
+            }
+            p = (q) ? q+1 : NULL;
+        }
+    }
+
+add_extra_envvar_failed:
+add_home_failed:
+add_logname_failed:
+add_cache_default_failed:
+    return rc;
+}
+/* globus_l_gram_populate_environment() */
+
+/**
+ * Add an environment variable to the job environment
+ * 
+ * @param rsl
+ *     RSL to modify
+ * @param variable
+ *     Environment variable name
+ * @param value
+ *     Environment variable value. If NULL, this variable is ignored.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+ *     Malloc failed.
+ */
+static
+int
+globus_l_gram_add_environment(
+    globus_rsl_t *                      rsl,
+    const char *                        variable,
+    const char *                        value)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    if (value != NULL)
+    {
+        rc = globus_gram_job_manager_rsl_env_add(
+                rsl,
+                variable,
+                value);
+        if (rc != 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        }
+    }
+    return rc;
+}
+/* globus_l_gram_add_environment() */
+
+/**
+ * Initialize the scratchdir member of the job request if needed
+ *
+ * As a side effect, the path named by scratchdir will be created and
+ * variable SCRATCH_DIRECTORY will be added to both the symbol table and
+ * the job environment.
+ *
+ * @param request
+ *     Request to act on.
+ * @param rsl
+ *     RSL to check for "scratchdir" attribute
+ * @param scratch_dir_base
+ *     Job-specific scratch_dir_base
+ * @param scratchdir
+ *     Pointer to set to the new scratchdir
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH
+ *     Invalid scratchdir RSL attribute
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH
+ *     Invalid scratchdir path
+ */
+static
+int
+globus_l_gram_init_scratchdir(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        scratch_dir_base,
+    char **                             scratchdir)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    char *                              dir;
+    char *                              template;
+
+    /* In the case of a restart, this might have already been done */
+    if (request->jm_restart && request->scratchdir != NULL)
+    {
+        return rc;
+    }
+    if (! globus_gram_job_manager_rsl_attribute_exists(
+            rsl,
+            GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM))
+    {
+        *scratchdir = NULL;
+        return rc;
+    }
+
+    globus_gram_job_manager_request_log(
+            request,
+            "Evaluating scratch directory RSL\n");
+
+    rc = globus_gram_job_manager_rsl_eval_one_attribute(
+            request,
+            GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
+            &dir);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "Evaluation of scratch directory RSL failed\n");
+        goto eval_scratchdir_failed;
+    }
+    else if (dir == NULL)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "Evaluation of scratch directory RSL didn't "
+                "yield string\n");
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
+        goto eval_scratchdir_failed;
+    }
+    globus_gram_job_manager_request_log(
+            request,
+            "Scratch Directory RSL -> %s\n",
+            dir);
+
+    if (dir[0] == '/')
+    {
+        template = globus_common_create_string(
+                "%s/gram_scratch_XXXXXX",
+                dir);
+    }
+    else 
+    {
+        template = globus_common_create_string(
+                "%s/%s/gram_scratch_XXXXXX",
+                scratch_dir_base,
+                dir);
+    }
+
+    if (template == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto template_malloc_failed;
+    }
+
+    *scratchdir = mkdtemp(template);
+    if (*scratchdir == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
+        goto mkdtemp_failed;
+    }
+
+    rc = globus_symboltable_insert(
+            &request->symbol_table,
+            "SCRATCH_DIRECTORY",
+            *scratchdir);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto insert_symbol_failed;
+    }
+
+    rc = globus_l_gram_add_environment(
+            request->rsl,
+            "SCRATCH_DIRECTORY",
+            *scratchdir);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_environment_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+add_environment_failed:
+        globus_symboltable_remove(
+                &request->symbol_table,
+                "SCRATCH_DIRECTORY");
+insert_symbol_failed:
+        rmdir(*scratchdir);
+mkdtemp_failed:
+        free(*scratchdir);
+        *scratchdir = NULL;
+    }
+template_malloc_failed:
+    /* Always free this intermediate value */
+    free(dir);
+eval_scratchdir_failed:
+    return rc;
+}
+/* globus_l_gram_init_scratchdir() */
+
+/**
+ * Evaluate and validate the job RSL
+ * 
+ * As a side-effect, if stdout_position_hack or stderr_position_hack are
+ * non-NULL, they will be either moved into the request's job RSL or
+ * freed.
+ *
+ * @param request
+ *     Job request to validate
+ * @param stdout_position_hack
+ *     Replacement for stdout position if the job is a restart job
+ * @param stderr_position_hack
+ *     Replacement for stderr position if the job is a restart job
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED
+ *     RSL evaluation failed.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
+ *     Invalid RSL.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PARAMETER_NOT_SUPPORTED
+ *     RSL attribute not supported.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SUBMIT_ATTRIBUTE
+ *     Invalid submit RSL attribute.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_RESTART_ATTRIBUTE;
+ *     Invalid restart RSL attribute.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDIO_UPDATE_ATTRIBUTE;
+ *     Invalid stdio_update RSL attribute.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+ *     Malloc failed.
+ */
+static
+int
+globus_l_gram_validate_rsl(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      stdout_position_hack,
+    globus_rsl_t *                      stderr_position_hack)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+
+    rc = globus_rsl_eval(request->rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto rsl_eval_failed;
+    }
+    rc = globus_gram_job_manager_validate_rsl(
+            request,
+            GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto validate_rsl_failed;
+    }
+    /*
+     * Insert stdout_position and stderr_position back to rsl if they were
+     * present in restart RSL
+     */
+    if (stdout_position_hack != NULL)
+    {
+        rc = globus_gram_job_manager_rsl_add_relation(
+            request->rsl,
+            stdout_position_hack);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto add_stdout_position_failed;
+        }
+        stdout_position_hack = NULL;
+    }
+    if (stderr_position_hack != NULL)
+    {
+        rc = globus_gram_job_manager_rsl_add_relation(
+            request->rsl,
+            stderr_position_hack);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto add_stderr_position_failed;
+        }
+        stderr_position_hack = NULL;
+    }
+
+    rc = globus_rsl_eval(request->rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto rsl_eval_failed2;
+    }
+
+rsl_eval_failed2:
+add_stderr_position_failed:
+add_stdout_position_failed:
+validate_rsl_failed:
+rsl_eval_failed:
+    if (stdout_position_hack)
+    {
+        globus_rsl_free_recursive(stdout_position_hack);
+    }
+    if (stderr_position_hack)
+    {
+        globus_rsl_free_recursive(stderr_position_hack);
+    }
+    return rc;
+}
+/* globus_l_gram_validate_rsl() */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
