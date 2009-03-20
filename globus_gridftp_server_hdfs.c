@@ -911,6 +911,18 @@ globus_l_gfs_hdfs_recv(
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
     if (hdfsExists(hdfs_handle->fs, hdfs_handle->pathname) == 0)
     {
+        hdfsFileInfo *fileInfo;
+        if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, hdfs_handle->pathname)) == NULL)
+        {
+            rc = GlobusGFSErrorGeneric("File exists in HDFS, but failed to perform `stat` on it.");
+            globus_gridftp_server_finished_transfer(op, rc);
+            return;
+        }
+        if (fileInfo->mKind == kObjectKindDirectory) {
+            rc = GlobusGFSErrorGeneric("Destination path is a directory; cannot overwrite.")
+            globus_gridftp_server_finished_transfer(op, rc);
+            return;
+        }
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
             O_WRONLY, 0, hdfs_handle->replicas, 0);
     }
