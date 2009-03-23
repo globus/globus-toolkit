@@ -26,6 +26,7 @@ myproxy-admin-query
 myproxy-change-pass-phrase
 myproxy-destroy
 myproxy-get-delegation
+myproxy-get-trustroots
 myproxy-info
 myproxy-init
 myproxy-logon
