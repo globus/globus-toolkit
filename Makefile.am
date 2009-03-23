@@ -104,6 +104,7 @@ bin_PROGRAMS= \
         myproxy-store \
 	myproxy-destroy \
         myproxy-retrieve \
+	myproxy-get-trustroots \
 	myproxy-get-delegation \
 	myproxy-logon \
 	myproxy-change-pass-phrase
@@ -148,6 +149,12 @@ myproxy_server_SOURCES = myproxy_server.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_server_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+
+myproxy_get_trustroots_SOURCES = myproxy_get_trustroots.c
+
+myproxy_get_trustroots_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_get_trustroots_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 myproxy_get_delegation_SOURCES = myproxy_get_delegation.c
 

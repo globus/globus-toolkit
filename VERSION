@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.6 XX Xxx 2009
+  - add myproxy-get-trustroots command to download trusted CA
+    certificates without client-side authentication
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=5899)
   - include certificate subject in myproxy-admin-adduser output
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6324)
   - handle error response message from myproxy-server during delegation

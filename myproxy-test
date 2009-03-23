@@ -1133,6 +1133,28 @@ cleanup_limited:
 &runtest("myproxy-destroy -v -k renew", undef);
 rename("\$X509_USER_PROXY.orig", "\$X509_USER_PROXY");
 
+#
+# Test 41
+#
+$ENV{'X509_CERT_DIR'} = $trustrootdir;
+($exitstatus, $output) =
+  &runtest("myproxy-get-trustroots -v", undef);
+print "MyProxy Test 41 (retrieve trustroots w/o authentication): ";
+if ($exitstatus == 0) {
+  ($exitstatus, $output) =
+    &verifytrustroots();
+}
+if ($exitstatus == 0) {
+  print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+  print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+if (defined($origtrustrootdir)) {
+  $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
+} else {
+  delete $ENV{'X509_CERT_DIR'};
+}
+
 
 #
 # COG tests
