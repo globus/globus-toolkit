@@ -92,6 +92,9 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->accepted_credentials_mapapp);
     context->check_multiple_credentials = 0;
     free_ptr(&context->syslog_ident);
+    free_ptr(&myproxy_sasl_mech);
+    free_ptr(&myproxy_sasl_serverFQDN);
+    free_ptr(&myproxy_sasl_user_realm);
 }
 
 /*
@@ -253,6 +256,17 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "sasl") == 0) {
 	context->sasl_policy = strdup(tokens[1]);
     }
+#if defined(HAVE_LIBSASL2)
+    else if (strcmp(directive, "sasl_mech") == 0) {
+	myproxy_sasl_mech = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "sasl_serverFQDN") == 0) {
+	myproxy_sasl_serverFQDN = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "sasl_user_realm") == 0) {
+	myproxy_sasl_user_realm = strdup(tokens[1]);
+    }
+#endif
 
     /* these were added to support the online CA functionality */
     else if (strcmp(directive, "certificate_issuer_program") == 0) {
