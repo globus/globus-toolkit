@@ -346,6 +346,17 @@ other authentication methods may be used instead.
 .BR disabled " (default)"
 SASL authentication isn't used.
 .RE
+.TP
+.BI sasl_mech " mechanism"
+Forces the use of a single SASL mechanism, overriding the SASL
+configuration file. (Typically not required.)
+.TP
+.BI sasl_serverFQDN " hostname"
+Configures the SASL server fully-qualified domain name for
+multi-homed servers. (Typically not required.)
+.TP
+.BI sasl_user_realm " realm"
+Configures the SASL user realm. (Typically not required.)
 .PP
 The MyProxy server can also be configured to act as a Certificate
 Authority (CA) to issue credentials to clients.  The following

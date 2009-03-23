@@ -15,6 +15,12 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
 
 extern int myproxy_sasl_authenticated; /* set to 1 after success */
 
+extern char *myproxy_sasl_mech; /* force a SASL mechanism */
+
+/* for sasl_server_new(3) */
+extern char *myproxy_sasl_serverFQDN;
+extern char *myproxy_sasl_user_realm;
+
 #endif
 
 #endif

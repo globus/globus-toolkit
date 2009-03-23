@@ -3,6 +3,9 @@
 #include "myproxy_common.h"	/* all needed headers included here */
 
 int myproxy_sasl_authenticated = 0;
+char *myproxy_sasl_mech = NULL;
+char *myproxy_sasl_serverFQDN = NULL;
+char *myproxy_sasl_user_realm = NULL;
 
 static sasl_conn_t *conn = NULL;
 
@@ -150,10 +153,12 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    const char *data;
    sasl_security_properties_t secprops;
    int result;
+   int rval = -1;
 
-   char *mech = NULL, /* can force mechanism here if needed */
-       *iplocal = NULL, *ipremote = NULL, *service = "myproxy",
-       *serverFQDN = NULL, *user_realm = NULL;
+   char *iplocal = NULL, *ipremote = NULL;
+   char *service = "myproxy";
+
+   char *userandrealm = NULL;
 
    myproxy_debug("Server: begin SASL negotiation...");
    myproxy_sasl_authenticated = 0;
@@ -173,8 +178,8 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    atexit(&sasl_done);
 
    result = sasl_server_new(service,
-                           serverFQDN,
-                           user_realm,
+                           myproxy_sasl_serverFQDN,
+                           myproxy_sasl_user_realm,
                            iplocal,
                            ipremote,
                            NULL,
@@ -196,9 +201,9 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        return -1;
    }
 
-   if (mech) {
-       myproxy_debug("Forcing use of SASL mechanism %s", mech);
-       data = mech;
+   if (myproxy_sasl_mech) {
+       myproxy_debug("Forcing use of SASL mechanism %s", myproxy_sasl_mech);
+       data = myproxy_sasl_mech;
        if (! data) {
            myproxy_log("Duplicate string for SASL negotiation failed");
            return -1;
@@ -233,7 +238,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    myproxy_debug("Waiting for client mechanism...");
    len = recv_response_sasl_data(attrs, client_buffer);
 
-   if (mech && strcasecmp(mech, client_buffer)) {
+   if (myproxy_sasl_mech && strcasecmp(myproxy_sasl_mech, client_buffer)) {
        myproxy_log(
 		 "Client chose something other than the mandatory mechanism.");
        return -1;
@@ -288,27 +293,43 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        return -1;
    }
 
-   if (strcmp((char *)data, client_request->username) != 0) {
+   if (myproxy_sasl_user_realm) {
+       size_t len;
+       len = strlen(client_request->username)+
+           strlen(myproxy_sasl_user_realm)+2;
+       userandrealm = malloc(len);
+       snprintf(userandrealm, len, "%s@%s",
+                client_request->username, myproxy_sasl_user_realm);
+   } else {
+       userandrealm = strdup(client_request->username);
+   }
+
+   if (strcmp((char *)data, userandrealm) != 0) {
        myproxy_log("Authentication failure: SASL username (%s) and "
 		   "request username (%s) differ.\n", (char *)data,
-		   client_request->username);
-       return -1;
+		   userandrealm);
+       goto error;
    }
 
    if (sasl_getprop(conn, SASL_AUTHUSER, (const void **)&data) != SASL_OK) {
        myproxy_log("Error: SASL username is NULL.");
-       return -1;
+       goto error;
    }
 
-   if (strcmp((char *)data, client_request->username) != 0) {
+   if (strcmp((char *)data, userandrealm) != 0) {
        myproxy_log("Authentication failure: SASL authuser (%s) and "
 		   "request username (%s) differ.\n", (char *)data,
-		   client_request->username);
-       return -1;
+		   userandrealm);
+       goto error;
    }
 
    myproxy_sasl_authenticated = 1; /* for later sanity checks */
-   return 0;
+   rval = 0;
+
+ error:
+   if (userandrealm) free(userandrealm);
+
+   return rval;
 }
 
 #endif /* defined(HAVE_LIBSASL2) */
