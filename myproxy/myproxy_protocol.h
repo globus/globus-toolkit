@@ -15,7 +15,8 @@ typedef enum
     MYPROXY_DESTROY_PROXY,
     MYPROXY_CHANGE_CRED_PASSPHRASE,
     MYPROXY_STORE_CERT,
-    MYPROXY_RETRIEVE_CERT
+    MYPROXY_RETRIEVE_CERT,
+    MYPROXY_GET_TRUSTROOTS
 } myproxy_proto_request_type_t;
 
 /* server response codes */

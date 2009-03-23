@@ -2530,6 +2530,10 @@ encode_command(const myproxy_proto_request_type_t	command_value)
         string = "6";
         break;
 
+      case MYPROXY_GET_TRUSTROOTS:
+        string = "7";
+        break;
+
       default:
 	/* Should never get here */
 	string = NULL;
