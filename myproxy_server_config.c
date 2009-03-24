@@ -92,9 +92,11 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->accepted_credentials_mapapp);
     context->check_multiple_credentials = 0;
     free_ptr(&context->syslog_ident);
+#if defined(HAVE_LIBSASL2)
     free_ptr(&myproxy_sasl_mech);
     free_ptr(&myproxy_sasl_serverFQDN);
     free_ptr(&myproxy_sasl_user_realm);
+#endif
 }
 
 /*
