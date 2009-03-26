@@ -161,6 +161,12 @@ GSS_CALLCONV gss_import_sec_context(
      * We know we are using SSLv3, and which ciphers
      * are available. We could get this from the 
      * imported session. 
+     * 
+     * BUG: the exported context does not contain the credential used
+     * to create the context. I added the GSS_C_ANON_FLAG here so that the
+     * import won't fail when the context is sent to an entity without a
+     * credential. The gss_inquire_context() function won't do what you'd
+     * expect on an imported context.
      */
 
     major_status =
@@ -168,7 +174,7 @@ GSS_CALLCONV gss_import_sec_context(
                                                  &context,
                                                  GSS_C_NO_CREDENTIAL,
                                                  cred_usage,
-                                                 0);
+                                                 GSS_C_ANON_FLAG);
 
     if (GSS_ERROR(major_status))
     {
