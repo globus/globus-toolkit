@@ -595,7 +595,7 @@ globus_l_gfs_hdfs_dump_buffers(
                 if (bytes_written > 0)
                     wrote_something = 1;
                 if (bytes_written != nbytes[i]) {
-                    rc = GlobusGFSErrorGeneric("Write into HDFS failed.");
+                    rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
                     hdfs_handle->done = GLOBUS_TRUE;
                     return rc;
                 }
