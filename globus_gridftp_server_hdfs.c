@@ -673,7 +673,13 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
         //printf("Current offset %d, waiting on offset %d, size %d.\n", offset, hdfs_handle->offset, nbytes);
         // Refuse to allocate more than the max.
         if (hdfs_handle->buffer_count == hdfs_handle->max_buffer_count) {
-            sprintf(err_msg, "Allocated all %i memory buffers; aborting transfer.", hdfs_handle->max_buffer_count);
+            char * hostname = globus_malloc(sizeof(char)*256);
+            memset(hostname, '\0', sizeof(char)*256);
+            if (gethostname(hostname, 255) != 0) {
+                sprintf(hostname, "UNKNOWN");
+            }
+            sprintf(err_msg, "Allocated all %i memory buffers on server %s; aborting transfer.", hdfs_handle->max_buffer_count, hostname);
+            globus_free(hostname);
             rc = GlobusGFSErrorGeneric(err_msg);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.\n");
         } else {
