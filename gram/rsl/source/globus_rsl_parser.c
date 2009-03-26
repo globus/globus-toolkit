@@ -1,19 +1,3 @@
-/*
- * Copyright 1999-2006 University of Chicago
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 
 /*  A Bison parser, made from globus_rsl_parser.y
  by  GNU Bison version 1.25
@@ -43,8 +27,24 @@
 #define	RSL_RPAREN	270
 #define	RSL_VARIABLE_START	271
 
-#include "globus_common.h"
 
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "globus_common.h"
 #include <stdio.h>
 #include <memory.h>
 #include <string.h>
@@ -52,9 +52,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-
-
 #include "globus_rsl.h"
+
+extern globus_mutex_t globus_i_rsl_mutex;
 
 typedef struct globus_parse_state_s
 {
@@ -158,9 +158,9 @@ static const short yyrhs[] = {    18,
 
 #if YYDEBUG != 0
 static const short yyrline[] = { 0,
-    76,    80,    86,    93,    95,    96,   100,   106,   114,   123,
-   125,   126,   127,   128,   129,   132,   140,   146,   154,   159,
-   163,   169,   174,   178,   186
+    91,    95,   101,   108,   110,   111,   115,   121,   129,   138,
+   140,   141,   142,   143,   144,   147,   155,   161,   169,   174,
+   178,   184,   189,   193,   201
 };
 #endif
 
@@ -1062,52 +1062,42 @@ yywrap()
 
 globus_rsl_t *globus_rsl_parse(char *buf)
 {
-    if (buf)
+    globus_rsl_t *                      rsl = NULL;
+
+    if (!buf)
     {
-        if (parse_state.error_structure)
-        {
-            parse_state.error_structure->code = 0;
-        }
-        parse_state.myinput = buf;
-        parse_state.myinputptr = buf;
-        parse_state.myinputlim = buf + strlen(buf);
+        goto null_buf;
+    }
 
-        /* George clever kludge to make yyparse() */
-        /* work more than once ... otherwise yyparse always */
-        /* rejects string (even valid strings) on calls after the first */
-        /* yy_init = 1;  */
-        if (yyin)
-            yyrestart(yyin);
+    globus_mutex_lock(&globus_i_rsl_mutex);
+    if (parse_state.error_structure)
+    {
+        parse_state.error_structure->code = 0;
+    }
+    parse_state.myinput = buf;
+    parse_state.myinputptr = buf;
+    parse_state.myinputlim = buf + strlen(buf);
 
-        yyparse();
+    /* George clever kludge to make yyparse() */
+    /* work more than once ... otherwise yyparse always */
+    /* rejects string (even valid strings) on calls after the first */
+    if (yyin)
+        yyrestart(yyin);
 
-/*
- *       if (parse_state.error_structure && 
- *           parse_state.error_structure->code != 0)
- *
- *      {
- *          printf("code=%d, line=%d, pos=%d, message=%s\n",
- *                 parse_state.error_structure->code,
- *                 parse_state.error_structure->line,
- *                 parse_state.error_structure->position,
- *                 parse_state.error_structure->message);
- *      }
- */
+    yyparse();
 
-        if (globus_parse_error_flag)
-        {
-            return (globus_rsl_t *) NULL;
-        }
-        else
-        {
-            return parse_state.rsl_spec;
-        }
+    if (globus_parse_error_flag)
+    {
+        goto parse_error;
     }
     else
     {
-        return (globus_rsl_t *) NULL;
+        rsl = parse_state.rsl_spec;
     }
-
+parse_error:
+    globus_mutex_unlock(&globus_i_rsl_mutex);
+null_buf:
+    return rsl;
 } /* globus_rsl_parse() */
 
 /*

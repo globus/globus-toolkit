@@ -36,6 +36,7 @@ static int
 globus_i_rsl_unparse_string_literal_to_fifo (const char    * string,
                                              globus_fifo_t * bufferp);
 
+globus_mutex_t globus_i_rsl_mutex;
 
 /***************************************************************************
  *
@@ -76,6 +77,7 @@ globus_l_rsl_activate(void)
     {
 	return GLOBUS_FAILURE;
     }
+    globus_mutex_init(&globus_i_rsl_mutex, NULL);
 
     return GLOBUS_SUCCESS;
 }
@@ -85,6 +87,7 @@ globus_l_rsl_deactivate(void)
 {
     int  rc = GLOBUS_SUCCESS;
 
+    globus_mutex_destroy(&globus_i_rsl_mutex);
     if( globus_module_deactivate(GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS )
     {
 	rc = GLOBUS_FAILURE;
