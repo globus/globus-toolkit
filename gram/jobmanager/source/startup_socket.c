@@ -50,6 +50,12 @@ globus_l_gram_startup_socket_callback(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg);
 
+static
+int
+globus_l_gram_mkdir(
+    globus_gram_job_manager_t *         manager,
+    char *                              path);
+
 globus_xio_driver_t                     globus_i_gram_job_manager_file_driver;
 globus_xio_stack_t                      globus_i_gram_job_manager_file_stack;
 #endif
@@ -79,6 +85,7 @@ globus_gram_job_manager_startup_socket_init(
 {
     static unsigned char                byte[1];
     int                                 sock = -1;
+    char                                dir_prefix[PATH_MAX];
     char                                sockpath[PATH_MAX];
     char                                lockpath[PATH_MAX];
     int                                 rc = 0;
@@ -97,16 +104,24 @@ globus_gram_job_manager_startup_socket_init(
 
         return GLOBUS_SUCCESS;
     }
-    sprintf(sockpath,
-            "%s/.globus/job/%s/%s.sock",
+    sprintf(dir_prefix,
+            "%s/.globus/job/%s",
             manager->config->home,
-            manager->config->hostname,
+            manager->config->hostname);
+    rc = globus_l_gram_mkdir(manager, dir_prefix);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto mkdir_failed;
+    }
+
+    sprintf(sockpath,
+            "%s/%s.sock",
+            dir_prefix,
             manager->config->jobmanager_type);
 
     sprintf(lockpath,
-            "%s/.globus/job/%s/%s.lock",
-            manager->config->home,
-            manager->config->hostname,
+            "%s/%s.lock",
+            dir_prefix,
             manager->config->jobmanager_type);
 
     /* Create and lock lockfile */
@@ -126,9 +141,9 @@ globus_gram_job_manager_startup_socket_init(
     }
 
     /* create and bind socket */
+    memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = PF_LOCAL;
     strncpy(addr.sun_path, sockpath, sizeof(addr.sun_path)-1);
-    addr.sun_len = sizeof(addr);
 
     sock = socket(PF_LOCAL, SOCK_DGRAM, 0);
     if (sock < 0)
@@ -205,6 +220,7 @@ lock_failed:
         close(lockfd);
         lockfd = -1;
 lockfd_open_failed:
+mkdir_failed:
         ;
     }
 
@@ -244,9 +260,9 @@ globus_gram_job_manager_starter_send(
             manager->config->jobmanager_type);
 
     /* create socket */
+    memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = PF_LOCAL;
     strncpy(addr.sun_path, sockpath, sizeof(addr.sun_path)-1);
-    addr.sun_len = sizeof(addr);
     sock = socket(PF_LOCAL, SOCK_DGRAM, 0);
     if (sock < 0)
     {
@@ -588,3 +604,57 @@ attr_init_failed:
     return result;
 }
 /* globus_l_gram_create_handle() */
+
+static
+int
+globus_l_gram_mkdir(
+    globus_gram_job_manager_t *         manager,
+    char *                              path)
+{
+    char *                              tmp;
+    int                                 rc;
+    struct stat                         statbuf;
+
+    if ((rc = stat(path, &statbuf)) < 0)
+    {
+        tmp = path;
+
+        while (tmp != NULL)
+        {
+            tmp = strchr(tmp+1, '/');
+            if (tmp != path)
+            {
+                if (tmp != NULL)
+                {
+                    *tmp = '\0';
+                }
+                if ((rc = stat(path, &statbuf)) < 0)
+                {
+                    mkdir(path, S_IRWXU);
+                }
+                if ((rc = stat(path, &statbuf)) < 0)
+                {
+                    globus_gram_job_manager_log(
+                        manager,
+                        "JMI: Unable to create part of directory path: %s\n",
+                        path);
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+
+                    goto error_exit;
+                }
+                if (tmp != NULL)
+                {
+                    *tmp = '/';
+                }
+            }
+        }
+    }
+    rc = GLOBUS_SUCCESS;
+error_exit:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+    }
+    return rc;
+}
+/* globus_l_gram_mkdir() */
