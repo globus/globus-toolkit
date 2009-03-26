@@ -1178,7 +1178,44 @@ globus_l_gfs_hdfs_send(
 
 
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
-    //printf("Open file %s.\n", hdfs_handle->pathname);
+
+    if (hdfsExists(hdfs_handle->fs, hdfs_handle->pathname) == 0)
+    {
+        hdfsFileInfo *fileInfo;
+        int hasStat = 1;
+
+        if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, hdfs_handle->pathname)) == NULL)
+            hasStat = 0;
+printf("File exists.\n");
+
+        if (hasStat && fileInfo->mKind == kObjectKindDirectory) {
+            char * hostname = globus_malloc(sizeof(char)*256);
+            memset(hostname, '\0', sizeof(char)*256);
+            if (gethostname(hostname, 255) != 0) {
+                sprintf(hostname, "UNKNOWN");
+            }
+            sprintf(err_msg, "Error for user %s accessing gridftp server %s.  The file you are trying to"
+                " read, %s, is a directory.", hdfs_handle->username, hostname, hdfs_handle->pathname);
+            rc = GlobusGFSErrorGeneric(err_msg);
+            globus_free(hostname);
+            globus_gridftp_server_finished_transfer(op, rc);
+            return;
+        }
+    } else {
+        char * hostname = globus_malloc(sizeof(char)*256);
+        memset(hostname, '\0', sizeof(char)*256);
+        if (gethostname(hostname, 255) != 0) {
+            sprintf(hostname, "UNKNOWN");
+        }
+        sprintf(err_msg, "Error for user %s accessing gridftp server %s.  The file you are trying to "
+                "read, %s, does not exist.", hdfs_handle->username, hostname, hdfs_handle->pathname);
+        rc = GlobusGFSErrorGeneric(err_msg);
+        globus_free(hostname);
+        globus_gridftp_server_finished_transfer(op, rc);
+        return;
+    }
+
+
     hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname, O_RDONLY, 0, 1, 0);
     if (!hdfs_handle->fd)
     {
