@@ -13,6 +13,7 @@
 
 #include <grp.h>
 #include <pwd.h>
+#include <unistd.h>
 #include <hdfs.h>
 
 static const int default_id = 00;
@@ -55,6 +56,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char *                              mount_point;
     int                                 mount_point_len;
     int                                 replicas;
+    char *                              username;
 } globus_l_gfs_hdfs_handle_t;
 
 char err_msg[256];
@@ -104,6 +106,18 @@ globus_l_gfs_hdfs_start(
     finished_info.info.session.session_arg = hdfs_handle;
     finished_info.info.session.username = session_info->username;
     finished_info.info.session.home_dir = "/";
+
+    // Copy the username from the session_info to the HDFS handle.
+    size_t strlength = strlen(session_info->username)+1;
+    strlength = strlength < 256 ? strlength  : 256;
+    hdfs_handle->username = globus_malloc(sizeof(char)*strlength);
+    if (hdfs_handle->username == NULL) {
+        finished_info.result = GLOBUS_FAILURE;
+        globus_gridftp_server_operation_finished(
+            op, GLOBUS_FAILURE, &finished_info);
+        return;
+    }
+    strncpy(hdfs_handle->username, session_info->username, strlength);
 
     // Pull configuration from environment.
     hdfs_handle->replicas = 3;
@@ -214,6 +228,8 @@ globus_l_gfs_hdfs_destroy(
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close off HDFS connection.\n");
     if (hdfs_handle->fs)
         hdfsDisconnect(hdfs_handle->fs);
+    if (hdfs_handle->username)
+        globus_free(hdfs_handle->username);
     globus_free(hdfs_handle);
 }
 
@@ -919,7 +935,7 @@ globus_l_gfs_hdfs_recv(
             return;
         }
         if (fileInfo->mKind == kObjectKindDirectory) {
-            rc = GlobusGFSErrorGeneric("Destination path is a directory; cannot overwrite.")
+            rc = GlobusGFSErrorGeneric("Destination path is a directory; cannot overwrite.");
             globus_gridftp_server_finished_transfer(op, rc);
             return;
         }
@@ -933,8 +949,28 @@ globus_l_gfs_hdfs_recv(
     }
     if (!hdfs_handle->fd)
     {
-        rc = GlobusGFSErrorGeneric("Failed to open file in HDFS.");
+        char * hostname = globus_malloc(sizeof(char)*256);
+        memset(hostname, '\0', sizeof(char)*256);
+        if (gethostname(hostname, 255) != 0) {
+            sprintf(hostname, "UNKNOWN");
+        }
+        if (errno == EINTERNAL) {
+            sprintf(err_msg, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
+                "on server %s; could be a misconfiguration or bad installation at the site",
+                hdfs_handle->pathname, hdfs_handle->username, hostname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
+        } else if (errno == EACCES) {
+            sprintf(err_msg, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
+                " to open the HDFS file %s", hostname,
+                hdfs_handle->username, hdfs_handle->pathname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
+        } else {
+            sprintf(err_msg, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
+                hdfs_handle->pathname, hdfs_handle->username, hostname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
+        }
         globus_gridftp_server_finished_transfer(op, rc);
+        globus_free(hostname);
         return;
     }
 
@@ -1138,10 +1174,31 @@ globus_l_gfs_hdfs_send(
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
     //printf("Open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname, O_RDONLY, 0, 1, 0);
-    if (hdfs_handle->fd == NULL)
+    if (!hdfs_handle->fd)
     {
-        rc = GlobusGFSErrorGeneric("open() fail");
+        char * hostname = globus_malloc(sizeof(char)*256);
+        memset(hostname, '\0', sizeof(char)*256);
+        if (gethostname(hostname, 255) != 0) {
+            sprintf(hostname, "UNKNOWN");
+        }
+        if (errno == EINTERNAL) {
+            sprintf(err_msg, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
+                "on server %s; could be a misconfiguration or bad installation at the site",
+                hdfs_handle->pathname, hdfs_handle->username, hostname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
+        } else if (errno == EACCES) {
+            sprintf(err_msg, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
+                " to open the HDFS file %s", hostname,
+                hdfs_handle->username, hdfs_handle->pathname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
+        } else {
+            sprintf(err_msg, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
+                hdfs_handle->pathname, hdfs_handle->username, hostname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
+        }
         globus_gridftp_server_finished_transfer(op, rc);
+        globus_free(hostname);
+        return;
     }
 
     if (! strcmp(hdfs_handle->pathname,"/dev/zero"))
