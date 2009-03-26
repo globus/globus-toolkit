@@ -1197,6 +1197,10 @@ globus_l_gfs_hdfs_send(
                 " to open the HDFS file %s", hostname,
                 hdfs_handle->username, hdfs_handle->pathname);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
+        } else if (errno = ENOENT) {
+            sprintf(err_msg, "Failure for user %s on server %s; the requested file %s does not exist", hdfs_handle->username,
+                hostname, hdfs_handle->pathname);
+            rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else {
             sprintf(err_msg, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
