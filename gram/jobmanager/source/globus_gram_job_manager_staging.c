@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,6 @@
 
 #include <string.h>
 
-#endif
-
 static
 int
 globus_l_gram_job_manager_staging_add_pair(
@@ -61,6 +59,7 @@ globus_l_gram_staging_list_read_state(
     globus_gram_job_manager_staging_type_t
                                         staging_type,
     globus_list_t **                    staging_list);
+#endif
 
 int
 globus_gram_job_manager_staging_create_list(

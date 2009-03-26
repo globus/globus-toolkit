@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@
 #include "globus_gram_job_manager.h"
 #include "globus_gram_job_manager_validation.h"
 #include "globus_rsl.h"
+#include "globus_rsl_assist.h"
 
 #include <stdio.h>
 #include <string.h>

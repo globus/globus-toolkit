@@ -113,4 +113,7 @@ using the globus-gram-audit command.
 
 @para -globus-toolkit-version VERSION-STRING
 Use the string VERSION-STRING as the toolkit version in audit records.
+
+@para -single
+Use the single job manager per user/jobmanager type feature 
 */

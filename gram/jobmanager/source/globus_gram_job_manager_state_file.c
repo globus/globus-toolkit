@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,6 @@
 
 #include <string.h>
 
-static
-int
-globus_l_gram_job_manager_state_file_lock(
-    int                                 fd);
 
 /**
  * Compute the name of the state file to use for this job request.
@@ -123,8 +119,7 @@ globus_gram_job_manager_state_file_write(
             return GLOBUS_FAILURE;
         }
 
-        rc = globus_l_gram_job_manager_state_file_lock(
-                                                request->job_state_lock_fd );
+        rc = globus_gram_job_manager_file_lock(request->job_state_lock_fd);
         if ( rc != GLOBUS_SUCCESS )
         {
             globus_gram_job_manager_request_log(request,
@@ -299,8 +294,7 @@ globus_gram_job_manager_state_file_read(
             goto free_buffer_exit;
         }
 
-        rc = globus_l_gram_job_manager_state_file_lock(
-                                                request->job_state_lock_fd );
+        rc = globus_gram_job_manager_file_lock(request->job_state_lock_fd);
         if ( rc != GLOBUS_SUCCESS )
         {
             if ( rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE )
@@ -467,9 +461,8 @@ exit:
     return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
 }
 
-static
 int
-globus_l_gram_job_manager_state_file_lock(
+globus_gram_job_manager_file_lock(
     int                                 fd)
 {
     int rc;
@@ -494,4 +487,4 @@ globus_l_gram_job_manager_state_file_lock(
     }
     return rc;
 }
-/* globus_l_gram_job_manager_state_file_lock() */
+/* globus_gram_job_manager_file_lock() */

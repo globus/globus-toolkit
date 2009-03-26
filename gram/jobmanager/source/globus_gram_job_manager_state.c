@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,6 @@ globus_l_gram_job_manager_set_restart_state(
 
 static
 int
-globus_l_gram_job_manager_reply(
-    globus_gram_jobmanager_request_t *  request);
-
-static
-int
 globus_l_gram_job_manager_add_cache_info(
     globus_gram_jobmanager_request_t *  request);
 
@@ -57,7 +52,7 @@ globus_l_gram_job_manager_cancel_queries(
 
 static
 int
-globus_l_gram_job_manager_validate_username(
+globus_l_gram_remote_io_url_update(
     globus_gram_jobmanager_request_t *  request);
 
 #ifdef BUILD_DEBUG
@@ -115,10 +110,18 @@ globus_gram_job_manager_state_machine_callback(
     
     do
     {
-        event_registered = globus_gram_job_manager_state_machine(request);
+        event_registered = globus_gram_job_manager_state_machine(
+                request);
     }
     while(!event_registered);
-    globus_mutex_unlock(&request->mutex);
+
+    /* HACK: state machine returns 2 instead of GLOBUS_TRUE to notify that job
+     * was removed from the manager's request hash 
+     */
+    if (event_registered != 2)
+    {
+        globus_mutex_unlock(&request->mutex);
+    }
 }
 /* globus_gram_job_manager_state_machine_callback() */
 
@@ -135,7 +138,6 @@ globus_gram_job_manager_state_machine(
     int                                 rc = 0;
     int                                 save_status;
     int                                 save_jobmanager_state;
-    char *                              tmp_str;
     globus_rsl_t *                      original_rsl;
     globus_gram_job_manager_query_t *   query;
     globus_bool_t                       first_poll = GLOBUS_FALSE;
@@ -146,141 +148,10 @@ globus_gram_job_manager_state_machine(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-        rc = globus_gram_job_manager_call_authz_callout(
-                request->response_context,
-                request->response_context,
-                request->uniq_id,
-                request->rsl,
-                "start");
 
-        if (rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code = rc;
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            break;
-        }
+        /* Open output destinations */
+        rc = globus_gram_job_manager_output_open(request);
 
-        rc = globus_l_gram_job_manager_validate_username(
-                request);
-        if (rc != 0)
-        {
-            request->failure_code = rc;
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            break;
-        }
-
-        if(!request->jm_restart)
-        {
-            request->cache_tag = globus_libc_strdup(request->job_contact);
-        }
-
-        rc = globus_gram_job_manager_rsl_request_fill(request);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code = rc;
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            break;
-        }
-        
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE;
-
-        if(request->remote_io_url)
-        {
-            rc = globus_gram_job_manager_script_remote_io_file_create(request);
-
-            if(rc == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-            else
-            {
-                request->failure_code = rc;
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            }
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
-        if(request->remote_io_url != NULL &&
-           request->remote_io_url_file == NULL)
-        {
-            request->jobmanager_state = 
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-            if(request->failure_code == GLOBUS_SUCCESS)
-            {
-                request->failure_code = 
-                    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
-            }
-            break;
-        }
-        /*
-         * Append some values from the configuration file to the
-         * job's environment
-         */
-        if(request->config->x509_cert_dir != NULL)
-        {
-            globus_gram_job_manager_rsl_env_add(
-                request->rsl,
-                "X509_CERT_DIR",
-                request->config->x509_cert_dir);
-        }
-
-        if(request->job_contact)
-        {
-            globus_gram_job_manager_rsl_env_add(
-                request->rsl,
-                "GLOBUS_GRAM_JOB_CONTACT",
-                request->job_contact);
-        }
-
-        globus_gram_job_manager_rsl_env_add(
-            request->rsl,
-            "GLOBUS_LOCATION",
-            request->config->target_globus_location);
-
-        if(request->config->tcp_port_range)
-        {
-            globus_gram_job_manager_rsl_env_add(
-                request->rsl,
-                "GLOBUS_TCP_PORT_RANGE",
-                request->config->tcp_port_range);
-        }
-        if(request->remote_io_url_file)
-        {
-            globus_gram_job_manager_rsl_env_add(
-                request->rsl,
-                "GLOBUS_REMOTE_IO_URL",
-                request->remote_io_url_file);
-        }
-
-        /* Determine local cache file names */
-        request->local_stdout =
-            globus_gram_job_manager_output_local_name(
-                request,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
-        request->local_stderr =
-            globus_gram_job_manager_output_local_name(
-                request,
-                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
-
-        if (request->local_stdout == GLOBUS_NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDOUT_FILENAME_FAILED;
-        }
-        else if (request->local_stderr == GLOBUS_NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDERR_FILENAME_FAILED;
-        }
-        else
-        {
-            /* Open output destinations */
-            rc = globus_gram_job_manager_output_open(request);
-        }
         if(rc == GLOBUS_SUCCESS)
         {
             request->jobmanager_state =
@@ -290,161 +161,13 @@ globus_gram_job_manager_state_machine(
         else
         {
             request->jobmanager_state = 
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
             globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
             request->failure_code = rc;
         }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE;
-
-        tmp_str = globus_libc_getenv("X509_USER_PROXY");
-
-        /* Try to relocate proxy if we aren't using kerberos or we
-         * weren't started with -rsl option
-         */
-        if((!request->config->kerberos) &&
-            globus_gram_job_manager_gsi_used(request) &&
-            (request->response_context != GSS_C_NO_CONTEXT))
-        {
-            globus_gram_job_manager_request_log(
-                    request,
-                    "JM: GSSAPI type is GSI.. relocating proxy\n");
-
-            rc = globus_gram_job_manager_gsi_relocate_proxy(
-                    request,
-                    globus_libc_strdup(tmp_str));
- 
-            if(rc != GLOBUS_SUCCESS)
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                request->failure_code = rc;
-                break;
-            }
- 
-            request->relocated_proxy = GLOBUS_TRUE;
-
-            rc = globus_gram_job_manager_script_proxy_relocate(request);
-
-            if(rc == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-            else
-            {
-                request->jobmanager_state = 
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                request->failure_code = rc;
-            }
-        }
-        else if(request->response_context == GSS_C_NO_CONTEXT)
-        {
-            /* pretend we relocated the proxy, so that it won't be
-             * deleted in the -rsl startup case
-             */
-            request->relocated_proxy = GLOBUS_TRUE;
-        }
-        break;
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
-        if((!request->config->kerberos) &&
-            globus_gram_job_manager_gsi_used(request))
-        {
-            if((!request->x509_user_proxy) &&
-                    request->response_context != GSS_C_NO_CONTEXT)
-            {
-                /* failed to relocated proxy for job */
-                request->jobmanager_state = 
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                if(request->failure_code == GLOBUS_SUCCESS)
-                {
-                    request->failure_code =
-                        GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_REPLY;
-                }
-                break;
-            }
-
-            request->relocated_proxy = GLOBUS_TRUE;
-
-            if(request->x509_user_proxy)
-            {
-                /*
-                 * The proxy timeout callback is registered to happen
-                 * shortly (5 minutes) before the job manager's proxy will
-                 * expire. We do this to save state and exit the job manager
-                 * so another can be restarted in it's place.
-                 */
-                globus_gram_job_manager_request_log(request,
-                                      "JM: Relocated Proxy to %s\n",
-                                      request->x509_user_proxy);
-                globus_libc_setenv("X509_USER_PROXY",
-                                   request->x509_user_proxy,
-                                   GLOBUS_TRUE);
-
-                globus_gram_job_manager_rsl_env_add(
-                    request->rsl,
-                    "X509_USER_PROXY",
-                    request->x509_user_proxy);
-                rc = globus_gram_job_manager_gsi_register_proxy_timeout(
-                        request);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    request->jobmanager_state = 
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-                    globus_gram_job_manager_request_log( request,
-                                   "JM: error setting proxy timeout--"
-                                   "proxy too short-lived\n");
-                    break;
-                }
-            }
-        }
-
-        if(request->save_state && !request->jm_restart)
-        {
-            if (rc == GLOBUS_SUCCESS && request->save_state == GLOBUS_TRUE)
-            {
-                if ( request->job_state_file == NULL )
-                {
-                    rc = globus_gram_job_manager_state_file_set(
-                            request,
-                            &request->job_state_file,
-                            &request->job_state_lock_file);
-                    if (rc != GLOBUS_SUCCESS)
-                    {
-                        request->jobmanager_state = 
-                            GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                        globus_gram_job_manager_request_set_status(
-                                request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                        request->failure_code =
-                            GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE;
-                        globus_gram_job_manager_request_log(
-                                request,
-                                "JM: error determining the state file\n");
-                        break;
-                    }
-                }
-
-                rc = globus_gram_job_manager_state_file_write(request);
-
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    request->jobmanager_state = 
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-                    globus_gram_job_manager_request_set_status(
-                            request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                    request->failure_code =
-                        GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE;
-                    globus_gram_job_manager_request_log(
-                            request,
-                            "JM: error writing the state file\n");
-                    break;
-                }
-            }
-        }
-
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
 
         /*
@@ -457,8 +180,6 @@ globus_gram_job_manager_state_machine(
          */
         if(!request->dry_run)
         {
-            rc = globus_l_gram_job_manager_reply(request);
-
             if(request->two_phase_commit != 0 && rc == GLOBUS_SUCCESS)
             {
                 GlobusTimeReltimeSet(delay_time,
@@ -578,7 +299,6 @@ globus_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
 
-            globus_l_gram_job_manager_reply(request);
             break;
         }
         else if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
@@ -618,7 +338,6 @@ globus_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
 
-            globus_l_gram_job_manager_reply(request);
             break;
         }
         else if(request->job_id == NULL)
@@ -1050,25 +769,13 @@ globus_gram_job_manager_state_machine(
             }
 
             rc = globus_gram_job_manager_gsi_update_proxy_timeout(
-                    request,
-                    query->delegated_credential);
-
+                    request->manager,
+                    query->delegated_credential,
+                    request->config->proxy_timeout,
+                    &request->manager->proxy_expiration_timer);
             if(rc != GLOBUS_SUCCESS)
             {
                 break;
-            }
-
-            /* Update the proxy on the job execution hosts, if applicable.
-             * Perhaps signal the job that a new proxy is available.
-             */
-            rc = globus_gram_job_manager_script_proxy_update(
-                    request,
-                    query);
-            if(rc == GLOBUS_SUCCESS)
-            {
-                query->failure_code = rc;
-
-                event_registered = GLOBUS_TRUE;
             }
         }
         else
@@ -1081,12 +788,7 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
         request->jobmanager_state =
             GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN;
-        rc = globus_gram_job_manager_rsl_request_fill(request);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            query->failure_code = rc;
-            break;
-        }
+        /* TODO update RSL */
         rc = globus_gram_job_manager_output_open(request);
         if(rc == GLOBUS_SUCCESS)
         {
@@ -1103,19 +805,12 @@ globus_gram_job_manager_state_machine(
             GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
         if(request->remote_io_url)
         {
-            query->failure_code =
-                globus_gram_job_manager_script_remote_io_file_create(request);
-
-            if (query->failure_code == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
+            query->failure_code = globus_l_gram_remote_io_url_update(request);
         }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
         if(request->unsent_status_change && request->save_state)
         {
             globus_gram_job_manager_state_file_write(request);
@@ -1125,12 +820,6 @@ globus_gram_job_manager_state_machine(
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT;
-        }
-        else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT;
         }
         else
         {
@@ -1212,8 +901,15 @@ globus_gram_job_manager_state_machine(
             request->jobmanager_state = 
                 GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
             globus_l_gram_job_manager_cancel_queries(request);
-            globus_cond_signal(&request->cond);
-            event_registered = GLOBUS_TRUE;
+
+            globus_mutex_unlock(&request->mutex);
+
+            rc = globus_gram_job_manager_remove_reference(
+                    request->manager,
+                    request->job_contact_path);
+            assert(rc == GLOBUS_SUCCESS);
+
+            event_registered = 2;
         }
         else
         {
@@ -1224,18 +920,11 @@ globus_gram_job_manager_state_machine(
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP:
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP;
-        }
-        else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP;
         }
         else
         {
@@ -1255,19 +944,14 @@ globus_gram_job_manager_state_machine(
                 request->failure_code = rc;
                 globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 
-                if(request->jobmanager_state !=
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP)
-                {
-                    request->jobmanager_state =
+                request->jobmanager_state =
                         GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
-                }
             }
         }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP:
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP)
         {
@@ -1279,14 +963,14 @@ globus_gram_job_manager_state_machine(
             else
             {
                 request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP;
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
             }
         }
         else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP)
+                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP)
         {
             request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP;
+                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
         }
         else
         {
@@ -1294,44 +978,15 @@ globus_gram_job_manager_state_machine(
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
         }
 
-        if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
-           request->scratchdir)
-        {
-            rc = globus_gram_job_manager_script_rm_scratchdir(request);
-
-            if(rc == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-            else
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-                request->failure_code = rc;
-
-                if(request->jobmanager_state !=
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP)
-                {
-                    request->jobmanager_state = 
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
-                }
-            }
-        }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP;
-        }
-        else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP;
         }
         else
         {
@@ -1359,18 +1014,11 @@ globus_gram_job_manager_state_machine(
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_DONE;
-        }
-        else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE;
         }
         else
         {
@@ -1389,13 +1037,15 @@ globus_gram_job_manager_state_machine(
                 remove(request->job_state_lock_file);
             }
         }
-        if(request->jobmanager_state != 
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE)
-        {
-            globus_l_gram_job_manager_cancel_queries(request);
-            globus_cond_signal(&request->cond);
-            event_registered = GLOBUS_TRUE;
-        }
+        globus_l_gram_job_manager_cancel_queries(request);
+
+        globus_mutex_unlock(&request->mutex);
+        rc = globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path);
+        assert(rc == GLOBUS_SUCCESS);
+
+        event_registered = 2;
 
         break;
 
@@ -1434,8 +1084,14 @@ globus_gram_job_manager_state_machine(
             GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 
         globus_l_gram_job_manager_cancel_queries(request);
-        globus_cond_signal(&request->cond);
-        event_registered = GLOBUS_TRUE;
+        globus_mutex_unlock(&request->mutex);
+
+        rc = globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path);
+        assert(rc == GLOBUS_SUCCESS);
+
+        event_registered = 2;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
@@ -1451,26 +1107,49 @@ globus_gram_job_manager_state_machine(
             }
         }
         globus_l_gram_job_manager_cancel_queries(request);
-        globus_cond_signal(&request->cond);
-        event_registered = GLOBUS_TRUE;
+        /* Write auditing file if job is DONE or FAILED */
+        if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
+            request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
+        {
+            if (globus_gram_job_manager_auditing_file_write(request) != GLOBUS_SUCCESS)
+            {
+                globus_gram_job_manager_request_log(
+                        request,
+                        "JM: Error writing audit record\n");
+            }
+        }
+        globus_mutex_unlock(&request->mutex);
+
+        rc = globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path);
+        assert(rc == GLOBUS_SUCCESS);
+
+        event_registered = 2;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
         globus_l_gram_job_manager_cancel_queries(request);
-        globus_cond_signal(&request->cond);
-        event_registered = GLOBUS_TRUE;
-        break;
 
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
-        request->two_phase_commit = 0;
-        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
-        globus_l_gram_job_manager_reply(request);
-        globus_cond_signal(&request->cond);
+        if (globus_gram_job_manager_auditing_file_write(request)
+                != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: Error writing audit record\n");
+        }
+        globus_mutex_unlock(&request->mutex);
+
+        rc = globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path);
+        assert(rc == GLOBUS_SUCCESS);
+
+        event_registered = 2;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
-
         if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED && request->failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED)
         {
             request->jobmanager_state =
@@ -1509,7 +1188,6 @@ globus_gram_job_manager_state_machine(
         }
       /* FALLSTHROUGH */
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT:
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT)
         {
@@ -1523,14 +1201,6 @@ globus_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
             globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-        }
-        else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT)
-        {
-            request->jobmanager_state = 
-                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP;
-            globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-            break;
         }
 
         if(request->unsent_status_change)
@@ -1570,10 +1240,16 @@ globus_gram_job_manager_state_machine(
 }
 /* globus_gram_job_manager_state_machine() */
 
-static
+/**
+ * Send the response to the initial job request to the GRAM client
+ *
+ * @param request
+ *     Job request
+ */
 int
-globus_l_gram_job_manager_reply(
-    globus_gram_jobmanager_request_t *  request)
+globus_gram_job_manager_reply(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              response_fp)
 {
     int                                 failure_code;
     int                                 rc;
@@ -1585,7 +1261,6 @@ globus_l_gram_job_manager_reply(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     int                                 token_status;
-
 
     failure_code = request->failure_code;
 
@@ -1650,27 +1325,21 @@ globus_l_gram_job_manager_reply(
                     sendsize,
                     &token_status,
                     globus_gss_assist_token_send_fd,
-                    stdout,
+                    response_fp,
                     request->manager->jobmanager_log_fp);
+            fflush(response_fp);
         }
         else
         {
             printf("Job Manager Response: %s\n", sendbuf);
             major_status = 0;
         }
-        /*
-         * close the connection (both stdin and stdout are connected to the
-         * socket
-         */
-        close(0);
-        close(1);
 
         /*
          * Reopen stdin and stdout to /dev/null---the job submit code
          * expects to be able to close them
          */
-        open("/dev/null", O_RDONLY);
-        open("/dev/null", O_WRONLY);
+        freopen("/dev/null", "r+", response_fp);
 
         globus_libc_free(sendbuf);
 
@@ -1700,30 +1369,23 @@ globus_l_gram_job_manager_reply(
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "exiting");
     return rc;
 }
-/* globus_l_gram_job_manager_reply() */
+/* globus_gram_job_manager_reply() */
 
 int
 globus_gram_job_manager_read_request(
     globus_gram_job_manager_t *         manager,
+    int                                 fd,
     char **                             rsl,
     char **                             client_contact,
     int *                               job_state_mask)
 {
     int                                 rc;
-    char *                              args_fd_str;
-    int                                 args_fd;
     globus_size_t                       jrbuf_size;
     globus_byte_t                       buffer[
                                             GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
 
-    args_fd_str = getenv("GRID_SECURITY_HTTP_BODY_FD");
-
-    if ((!args_fd_str) || ((args_fd = atoi(args_fd_str)) == 0))
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
-    }
-    jrbuf_size = (globus_size_t) lseek(args_fd, 0, SEEK_END);
-    (void) lseek(args_fd, 0, SEEK_SET);
+    jrbuf_size = (globus_size_t) lseek(fd, 0, SEEK_END);
+    (void) lseek(fd, 0, SEEK_SET);
     if (jrbuf_size > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
     {
         globus_gram_job_manager_log(
@@ -1731,14 +1393,14 @@ globus_gram_job_manager_read_request(
                 "JM: RSL file too big\n");
         return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
-    if (read(args_fd, buffer, jrbuf_size) != jrbuf_size)
+    if (read(fd, buffer, jrbuf_size) != jrbuf_size)
     {
         globus_gram_job_manager_log(
                 manager,
                 "JM: Error reading the RSL file\n");
         return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
-    close(args_fd);
+    close(fd);
 
     rc = globus_gram_protocol_unpack_job_request(
             buffer,
@@ -1799,7 +1461,6 @@ globus_l_gram_job_manager_set_restart_state(
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
         changed = GLOBUS_TRUE;
         break;
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
         globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
         request->unsent_status_change = GLOBUS_TRUE;
@@ -1828,8 +1489,6 @@ globus_l_gram_job_manager_state_string(
     switch(state)
     {
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_START)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN)
@@ -1837,7 +1496,6 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
@@ -1846,13 +1504,6 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_DONE)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)
@@ -1917,9 +1568,8 @@ globus_l_gram_job_manager_cancel_queries(
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_USER_NAME
  *     This process is not running as the desired user.
  */
-static
 int
-globus_l_gram_job_manager_validate_username(
+globus_gram_job_manager_validate_username(
     globus_gram_jobmanager_request_t *  request)
 {
     char *                              tmp_str = NULL;
@@ -1962,7 +1612,7 @@ globus_l_gram_job_manager_validate_username(
                 tmp_str,
                 &pwd,
                 buffer,
-                sizeof(1024),
+                1024,
                 &pwd_result);
 
         if (rc != 0 || pwd_result == NULL)
@@ -2006,7 +1656,7 @@ free_tmp_str_exit:
 
     return rc;
 }
-/* globus_l_gram_job_manager_validate_username() */
+/* globus_gram_job_manager_validate_username() */
 
 static
 int
@@ -2073,4 +1723,41 @@ globus_l_gram_job_manager_add_cache_info(
     globus_libc_free(out_file);
     return 0;
 }
-/*globus_l_gram_job_manager_add_cache_info()*/
+/* globus_l_gram_job_manager_add_cache_info() */
+
+static
+int
+globus_l_gram_remote_io_url_update(
+    globus_gram_jobmanager_request_t *  request)
+{
+    FILE *                              fp;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    fp = fopen(request->remote_io_url_file, "w");
+    if (fp == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_REMOTE_IO_URL;
+
+        goto fopen_failed;
+    }
+    rc = fprintf(fp, "%s\n", request->remote_io_url);
+    if (rc < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_REMOTE_IO_URL;
+
+        goto fprintf_failed;
+
+    }
+fprintf_failed:
+    rc = fclose(fp);
+    if (rc == EOF)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_REMOTE_IO_URL;
+        goto fclose_failed;
+    }
+
+fclose_failed:
+fopen_failed:
+    return rc;
+}
+/* globus_l_gram_remote_io_url_update() */

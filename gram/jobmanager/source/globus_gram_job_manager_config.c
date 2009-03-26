@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,6 +266,10 @@ globus_gram_job_manager_config_init(
         {
             config->streaming_disabled = GLOBUS_TRUE;
         }
+        else if (strcmp(argv[i], "-single") == 0)
+        {
+            config->single = GLOBUS_TRUE;
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -418,6 +422,123 @@ out:
     return rc;
 }
 /* globus_gram_job_manager_config_init() */
+
+/**
+ * Free all memory allocated when the globus_gram_job_manager_config_init() was called.
+ *
+ * @param config
+ *     Configuration structure destroy.
+ */
+void
+globus_gram_job_manager_config_destroy(
+    globus_gram_job_manager_config_t *  config)
+{
+    if (config->globus_location)
+    {
+        free(config->globus_location);
+    }
+    if (config->target_globus_location)
+    {
+        free(config->target_globus_location);
+    }
+    if (config->jobmanager_type)
+    {
+        free(config->jobmanager_type);
+    }
+    if (config->job_history_dir)
+    {
+        free(config->job_history_dir);
+    }
+    if (config->cache_location)
+    {
+        free(config->cache_location);
+    }
+    if (config->scratch_dir_base)
+    {
+        free(config->scratch_dir_base);
+    }
+    if (config->condor_arch)
+    {
+        free(config->condor_arch);
+    }
+    if (config->condor_os)
+    {
+        free(config->condor_os);
+    }
+    if (config->globus_gatekeeper_host)
+    {
+        free(config->globus_gatekeeper_host);
+    }
+    if (config->globus_gatekeeper_port)
+    {
+        free(config->globus_gatekeeper_port);
+    }
+    if (config->globus_gatekeeper_subject)
+    {
+        free(config->globus_gatekeeper_subject);
+    }
+    if (config->globus_host_manufacturer)
+    {
+        free(config->globus_host_manufacturer);
+    }
+    if (config->globus_host_cputype)
+    {
+        free(config->globus_host_cputype);
+    }
+    if (config->globus_host_osname)
+    {
+        free(config->globus_host_osname);
+    }
+    if (config->globus_host_osversion)
+    {
+        free(config->globus_host_osversion);
+    }
+    if (config->tcp_port_range)
+    {
+        free(config->tcp_port_range);
+    }
+    if (config->job_state_file_dir)
+    {
+        free(config->job_state_file_dir);
+    }
+    if (config->x509_cert_dir)
+    {
+        free(config->x509_cert_dir);
+    }
+    if (config->extra_envvars)
+    {
+        free(config->extra_envvars);
+    }
+    if (config->seg_module)
+    {
+        free(config->seg_module);
+    }
+    if (config->auditing_dir)
+    {
+        free(config->auditing_dir);
+    }
+    if (config->globus_version)
+    {
+        free(config->globus_version);
+    }
+    if (config->subject)
+    {
+        free(config->subject);
+    }
+    if (config->home)
+    {
+        free(config->home);
+    }
+    if (config->logname)
+    {
+        free(config->logname);
+    }
+    if (config->hostname)
+    {
+        free(config->hostname);
+    }
+}
+/* globus_gram_job_manager_config_destroy() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**

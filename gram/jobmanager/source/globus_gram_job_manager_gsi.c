@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,15 @@ globus_l_gram_job_manager_proxy_expiration(
 static
 int
 globus_l_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *  request,
-    gss_cred_id_t                       cred);
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle);
 
 int
 globus_gram_job_manager_import_sec_context(
     globus_gram_job_manager_t *         manager,
+    int                                 context_fd,
     gss_ctx_id_t *                      response_contextp)
 {
     OM_uint32                           major_status;
@@ -47,7 +50,7 @@ globus_gram_job_manager_import_sec_context(
         &minor_status,
         response_contextp,
         &token_status,
-        -1,
+        context_fd,
         manager->jobmanager_log_fp);
 
     if(major_status != GSS_S_COMPLETE)
@@ -123,38 +126,40 @@ globus_gram_job_manager_gsi_used(
 /* globus_l_gram_job_manager_gsi_used() */
 
 /**
- * Register function to be called before proxy expires
+ * Register timeout to occur when the job manager's proxy is set to expire
  *
- * @param request
+ * @param manager
+ *     Job manager state (for logging)
+ * @param cred
+ *     Job manager credential
+ * @param timeout
+ *     Time (in seconds) to stop the manager if no credential is available.
+ * @param callback_handle
+ *     Pointer to be set to the handle to the expiration callback.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
+ *     User proxy expired
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources for callback
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found
  */
 int
 globus_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *  request)
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle)
 {
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
-    gss_cred_id_t                       cred;
-    int                                 rc;
+    *callback_handle = GLOBUS_NULL_HANDLE;
 
-    /*
-     * According to RFC 2743, this shouldn't be necessary, but GSI
-     * doesn't support inquire_cred with the default credential
-     */
-    major_status = globus_gss_assist_acquire_cred(
-            &minor_status,
-            GSS_C_BOTH,
-            &cred);
-
-    if(major_status != GSS_S_COMPLETE)
-    {
-        globus_gram_job_manager_request_log(request,
-                      "JM: problem reading user proxy\n");
-        return GLOBUS_SUCCESS; /*?*/
-    }
-    rc = globus_l_gram_job_manager_gsi_register_proxy_timeout(request, cred);
-    gss_release_cred(&minor_status, &cred);
-
-    return rc;
+    return globus_l_gram_job_manager_gsi_register_proxy_timeout(
+            manager,
+            cred,
+            timeout,
+            callback_handle);
 }
 /* globus_gram_job_manager_gsi_register_proxy_timeout() */
 
@@ -230,45 +235,82 @@ failed_inquire_cred:
 /* globus_gram_job_manager_gsi_get_subject() */
 
 /**
- * Reset the function to be called before proxy expires based on the
- * time left in a newly delegated credential.
+ * Modify timeout to occur when the job manager's proxy is set to expire based on a new credential
  *
- * @param request
+ * @param manager
+ *     Job manager state (for logging)
  * @param cred
+ *     Job manager credential
+ * @param timeout
+ *     Time (in seconds) to stop the manager if no credential is available.
+ * @param callback_handle
+ *     Pointer to the expiration callback handle. If this points to 
+ *     GLOBUS_NULL_HANDLE, then a new callback will be created and this will
+ *     be modified to point to it. Otherwise, the callback handle will be
+ *     modified.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
+ *     User proxy expired
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources for callback
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found
  */
 int
 globus_gram_job_manager_gsi_update_proxy_timeout(
-    globus_gram_jobmanager_request_t *  request,
-    gss_cred_id_t                       cred)
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle)
 {
-    globus_bool_t                       active;
-    globus_result_t                     result;
+    return globus_l_gram_job_manager_gsi_register_proxy_timeout(
+            manager,
+            cred,
+            timeout,
+            callback_handle);
 
-    result = globus_callback_unregister(
-            request->proxy_expiration_timer,
-            NULL,
-            NULL,
-            &active);
-
-    if(result != GLOBUS_SUCCESS || active)
-    {
-        return GLOBUS_FAILURE;
-    }
-
-    return globus_l_gram_job_manager_gsi_register_proxy_timeout(request, cred);
 }
 /* globus_gram_job_manager_gsi_update_proxy_timeout() */
 
+/**
+ * Register timeout to occur when the job manager's proxy is set to expire
+ *
+ * @param manager
+ *     Job manager state (for logging)
+ * @param cred
+ *     Job manager credential
+ * @param timeout
+ *     Time (in seconds) to stop the manager if no credential is available.
+ * @param callback_handle
+ *     Pointer to the expiration callback handle. If this points to 
+ *     GLOBUS_NULL_HANDLE, then a new callback will be created and this will
+ *     be modified to point to it. Otherwise, the callback handle will be
+ *     modified.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
+ *     User proxy expired
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources for callback
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found
+ */
 static
 int
 globus_l_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *  request,
-    gss_cred_id_t                       cred)
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle)
 {
     int                                 rc = GLOBUS_SUCCESS;
     OM_uint32                           lifetime;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
+    globus_result_t                     result;
     globus_reltime_t                    delay_time;
 
     major_status = gss_inquire_cred(
@@ -281,35 +323,54 @@ globus_l_gram_job_manager_gsi_register_proxy_timeout(
 
     if(major_status == GSS_S_COMPLETE)
     {
-        if ((int) lifetime - request->proxy_timeout <= 0)
+        if (((int) lifetime - timeout) <= 0)
         {
-            globus_gram_job_manager_request_set_status(request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-            request->failure_code =
-                GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-            rc = GLOBUS_FAILURE;
-            globus_gram_job_manager_request_log(
-                    request,
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+            globus_gram_job_manager_log(
+                    manager,
                     "JM: user proxy lifetime is less than minimum "
                     "(%d seconds)\n",
-                    request->proxy_timeout);
+                    timeout);
+            goto proxy_expired;
         }
         else
         {
             /* set timer */
-            GlobusTimeReltimeSet(delay_time, lifetime - request->proxy_timeout, 0);
-            globus_callback_register_oneshot(
-                    &request->proxy_expiration_timer,
-                    &delay_time,
-                    globus_l_gram_job_manager_proxy_expiration,
-                    request);
+            GlobusTimeReltimeSet(
+                    delay_time,
+                    lifetime - timeout,
+                    0);
+
+            if (*callback_handle == GLOBUS_NULL_HANDLE)
+            {
+                result = globus_callback_register_oneshot(
+                        callback_handle,
+                        &delay_time,
+                        globus_l_gram_job_manager_proxy_expiration,
+                        manager);
+            }
+            else
+            {
+                result = globus_callback_adjust_oneshot(
+                        *callback_handle,
+                        &delay_time);
+            }
+            if (result != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+                goto oneshot_failed;
+            }
         }
     }
     else
     {
-        globus_gram_job_manager_request_log(request,
-                      "JM: problem reading user proxy\n");
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+        goto inquire_failed;
     }
+
+inquire_failed:
+proxy_expired:
+oneshot_failed:
     return rc;
 }
 /* globus_l_gram_job_manager_gsi_register_proxy_timeout() */
@@ -531,10 +592,7 @@ globus_l_gram_job_manager_proxy_expiration(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
           /* Proxy expiration callback isn't registered until the
            * proxy has been relocated, so this should NEVER happen.
            */
@@ -549,6 +607,9 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
@@ -645,13 +706,6 @@ globus_l_gram_job_manager_proxy_expiration(
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:

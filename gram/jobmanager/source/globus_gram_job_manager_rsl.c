@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,6 @@
 #include "globus_rsl_assist.h"
 
 #include <string.h>
-
-enum
-{
-    GRAM_JOB_MANAGER_COMMIT_TIMEOUT=60
-};
 
 /* Module Specific Prototypes */
 static
@@ -512,226 +507,6 @@ globus_gram_job_manager_rsl_env_add(
 /* globus_gram_job_manager_rsl_env_add() */
 
 /**
- * Fill request structure from RSL tree.
- *
- * In this function, we look through the job request RSL to find attributes
- * which we need to process in the job manager program (not in the scripts).
- */
-int
-globus_gram_job_manager_rsl_request_fill(
-    globus_gram_jobmanager_request_t *  request)
-{
-    int                                 x;
-    char **                             tmp_param;
-    char *                              ptr;
-    int                                 i;
-    int                                 rc;
-    char *                              removable_params[] = {
-        GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-        GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM,
-        GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
-        GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM,
-        NULL };
-
-    if (request->rsl == NULL)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_NULL_SPECIFICATION_TREE;
-    }
-
-    /* Process stdout */
-    rc = globus_gram_job_manager_output_set_urls(
-            request,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-            globus_rsl_param_get_values(
-                request->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM),
-            globus_rsl_param_get_values(
-                request->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM));
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
-    /* Process stderr */
-    rc = globus_gram_job_manager_output_set_urls(
-            request,
-            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
-            globus_rsl_param_get_values(
-                request->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM),
-            globus_rsl_param_get_values(
-                request->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM));
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
-    /*
-     * Remove stdout and stderr from RSL---it's stored in the request
-     * structure for easier modification when stdio_update or restart happens,
-     * and as we send data to the various stdout destinations.
-     */
-    for(i = 0; removable_params[i] != NULL; i++)
-    {
-        globus_gram_job_manager_rsl_remove_attribute(request,
-                                                     removable_params[i]);
-    }
-
-    /**********************************
-     *  GET DRY_RUN PARAM
-     */
-    if (globus_rsl_param_get(request->rsl,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_PROTOCOL_DRY_RUN_PARAM,
-                             &tmp_param) != 0)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_DRYRUN;
-    }
-
-    if (tmp_param[0])
-    {
-        if (strncmp(tmp_param[0], "yes", 3) == 0)
-        {
-            request->dry_run = GLOBUS_TRUE;
-        }
-        else
-        {
-            request->dry_run = GLOBUS_FALSE;
-        }
-
-    }
-    globus_libc_free(tmp_param);
-    tmp_param = GLOBUS_NULL;
-
-    /**********************************
-     *  GET SAVE_STATE PARAM
-     */
-    if (globus_rsl_param_get(request->rsl,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_PROTOCOL_SAVE_STATE_PARAM,
-                             &tmp_param) != 0)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SAVE_STATE;
-    }
-
-    if (tmp_param[0])
-    {
-        if (strncmp(tmp_param[0], "yes", 3) == 0)
-            request->save_state = GLOBUS_TRUE;
-        else
-            request->save_state = GLOBUS_FALSE;
-
-    }
-    globus_libc_free(tmp_param);
-    tmp_param = GLOBUS_NULL;
-
-    /**********************************
-     *  GET TWO_PHASE_COMMIT PARAM
-     */
-    if (globus_rsl_param_get(request->rsl,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM,
-                             &tmp_param) != 0)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_TWO_PHASE_COMMIT;
-    }
-
-    if (tmp_param[0])
-    {
-        if (strncmp(tmp_param[0], "yes", 3) == 0)
-        {
-            request->two_phase_commit = GRAM_JOB_MANAGER_COMMIT_TIMEOUT;
-        }
-        else
-        {
-            x = (int) strtol(tmp_param[0], &ptr, 10);
-
-            if (strlen(ptr) > 0 || x < 0)
-            {
-                return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_TWO_PHASE_COMMIT;
-            }
-            else
-            {
-                request->two_phase_commit = x;
-            }
-        }
-    }
-    globus_libc_free(tmp_param);
-    tmp_param = GLOBUS_NULL;
-
-    globus_gram_job_manager_rsl_remove_attribute(
-            request,
-            GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
-
-    /**********************************
-     *  GET REMOTE IO URL PARAM
-     */
-    if (globus_rsl_param_get(request->rsl,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
-                             &tmp_param) != 0)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
-    }
-
-    if (tmp_param[0])
-    {
-        /* In a STDIO_UPDATE signal, this can be replaced */
-        if (request->remote_io_url)
-        {
-            globus_libc_free(request->remote_io_url);
-        }
-        request->remote_io_url = globus_libc_strdup(tmp_param[0]);
-    }
-    globus_libc_free(tmp_param);
-    tmp_param = GLOBUS_NULL;
-
-    /**********************************
-     *  GET PROXY_TIMEOUT PARAM
-     */
-    if (globus_rsl_param_get(request->rsl,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_PROTOCOL_PROXY_TIMEOUT_PARAM,
-                             &tmp_param) != 0)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_PROXY_TIMEOUT;
-    }
-
-    if (tmp_param[0])
-    {
-        x = atoi(tmp_param[0]);
-
-        if (x < 1)
-        {
-            return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_PROXY_TIMEOUT;
-        }
-        else
-        {
-            request->proxy_timeout = x;
-        }
-    }
-    globus_libc_free(tmp_param);
-    tmp_param = GLOBUS_NULL;
-
-    /* Check for files to stage in */
-    rc = globus_gram_job_manager_staging_create_list(request);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-
-    return(GLOBUS_SUCCESS);
-
-error_exit:
-    return rc;
-}
-/* globus_gram_job_manager_rsl_request_fill() */
-
-/**
  * Remove an RSL attribute from and RSL tree.
  *
  * @param request
@@ -1011,6 +786,7 @@ parse_failed:
 }
 /* globus_gram_job_manager_rsl_eval_string() */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 int
 globus_l_gram_job_manager_rsl_match(
@@ -1031,4 +807,159 @@ globus_l_gram_job_manager_rsl_match(
     return (strcmp(test, attribute)==0);
 }
 /* globus_l_gram_job_manager_rsl_match() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
+/**
+ * Search the RSL tree for an attribute and return its single value
+ *
+ * @param rsl
+ *     RSL tree to search
+ * @param attribute
+ *     Attribute name to search for
+ * @param value_ptr
+ *     Pointer to set to the value of this attribute. Must not be freed
+ *     by the caller. Will be set to NULL if the attribute is not present or
+ *     does not have a literal string value.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE;
+ *     Attribute not found.
+ */
+int
+globus_gram_job_manager_rsl_attribute_get_string_value(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    const char **                       value_ptr)
+{
+    globus_list_t *                     attributes;
+    globus_list_t *                     node;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    attributes = globus_rsl_boolean_get_operand_list(rsl);
+
+    node = globus_list_search_pred(
+            attributes,
+            globus_l_gram_job_manager_rsl_match,
+            (void *) attribute);
+    if (node == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE;
+
+        goto search_failed;
+    }
+    *value_ptr = globus_rsl_value_literal_get_string(
+            globus_rsl_relation_get_single_value(
+                    globus_list_first(node)));
+
+search_failed:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        *value_ptr = NULL;
+    }
+    return rc;
+}
+/* globus_gram_job_manager_rsl_attribute_get_string_value() */
+
+/**
+ * Search the RSL tree for an attribute and return its boolean value
+ *
+ * @param rsl
+ *     RSL tree to search
+ * @param attribute
+ *     Attribute name to search for
+ * @param value_ptr
+ *     Pointer to set to the value of this attribute. 
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE;
+ *     Attribute not found.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
+ *     Value is non-literal or has a non-boolean value.
+ */
+int
+globus_gram_job_manager_rsl_attribute_get_boolean_value(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    globus_bool_t *                     value_ptr)
+{
+    const char *                        s;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+            rsl,
+            attribute,
+            &s);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto get_literal_failed;
+    }
+    if (s && strcmp(s, "yes") == 0)
+    {
+        *value_ptr = GLOBUS_TRUE;
+    }
+    else if (s && strcmp(s, "no") == 0)
+    {
+        *value_ptr = GLOBUS_FALSE;
+    }
+    else
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+get_literal_failed:
+        *value_ptr = GLOBUS_FALSE;
+    }
+
+    return rc;
+}
+/* globus_gram_job_manager_rsl_attribute_get_boolean_value() */
+
+/**
+ * Search the RSL tree for an attribute and return its integer value
+ *
+ * @param rsl
+ *     RSL tree to search
+ * @param attribute
+ *     Attribute name to search for
+ * @param value_ptr
+ *     Pointer to set to the value of this attribute. 
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE;
+ *     Attribute not found.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
+ *     Value is non-literal or has a non-int value.
+ */
+int
+globus_gram_job_manager_rsl_attribute_get_int_value(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    int *                               value_ptr)
+{
+    const char *                        s;
+    char *                              end;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+            rsl,
+            attribute,
+            &s);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto get_literal_failed;
+    }
+
+    errno = 0;
+    *value_ptr = strtol(s, &end, 10);
+    if (errno != 0 && strlen(end) != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+get_literal_failed:
+        *value_ptr = 0;
+    }
+
+    return rc;
+}
+/* globus_gram_job_manager_rsl_attribute_get_boolean_value() */

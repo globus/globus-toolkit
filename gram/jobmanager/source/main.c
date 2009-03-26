@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,26 +49,27 @@ globus_l_gram_job_manager_activate(void);
 
 int
 main(
-    int 				argc,
-    char **				argv)
+    int                                 argc,
+    char **                             argv)
 {
-    int					rc;
+    int                                 rc;
     globus_gram_job_manager_config_t    config;
     globus_gram_job_manager_t           manager;
-    globus_gram_jobmanager_request_t *  request;
+    globus_gram_jobmanager_request_t *  request = NULL;
     char *                              sleeptime_str;
     long                                sleeptime;
     globus_bool_t                       debugging_without_client = GLOBUS_FALSE;
-    globus_reltime_t			delay;
+    globus_bool_t                       located_active_jm = GLOBUS_FALSE;
     char *                              rsl;
-    char *                              contact = NULL;
-    int                                 job_state_mask = 0;
-    gss_ctx_id_t                        context = GSS_C_NO_CONTEXT;
+    int                                 http_body_fd;
+    int                                 context_fd;
+    gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
+    OM_uint32                           major_status, minor_status;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
-	sleeptime = atoi(sleeptime_str);
-	sleep(sleeptime);
+        sleeptime = atoi(sleeptime_str);
+        sleep(sleeptime);
     }
     /*
      * Stdin and stdout point at socket to client
@@ -120,176 +121,244 @@ main(
         exit(1);
     }
 
+    /*
+     * Get the delegated credential (or the default credential if we are
+     * run without a client. Don't care about errors in the latter case.
+     */
+    major_status = globus_gss_assist_acquire_cred(
+            &minor_status,
+            GSS_C_BOTH,
+            &cred);
+    if ((!debugging_without_client) && GSS_ERROR(major_status))
+    {
+        globus_gss_assist_display_status(
+                stderr,
+                "Error acquiring security credential\n",
+                major_status,
+                minor_status,
+                0);
+        exit(1);
+    }
+
+    /*
+     * Remove delegated proxy from disk.
+     */
+    if ((!debugging_without_client) && getenv("X509_USER_PROXY") != NULL)
+    {
+        remove(getenv("X509_USER_PROXY"));
+    }
+
     /* Set up LRM-specific state based on our configuration. This will create
      * the job contact listener, start the SEG if needed, and open the log
      * file if needed.
      */
-    rc = globus_gram_job_manager_init(&manager, &config);
+    rc = globus_gram_job_manager_init(&manager, cred, &config);
     if(rc != GLOBUS_SUCCESS)
     {
         exit(1);
     }
 
     /*
-     * Attempt to import security context and read HTTP input to get RSL value
-     * and contact.
+     * Pull out file descriptor numbers for security context and job request
+     * from the environment (set by the gatekeeper)
      */
-    if (rsl == NULL)
+    if (!debugging_without_client)
     {
-        rc = globus_gram_job_manager_import_sec_context(
-            &manager,
-            &context);
-        if (rc != GLOBUS_SUCCESS)
+        char * fd_env = getenv("GRID_SECURITY_HTTP_BODY_FD");
+
+        rc = sscanf(fd_env ? fd_env : "-1", "%d", &http_body_fd);
+        if (rc != 1 || http_body_fd < 0)
         {
-            fprintf(stderr, "Error importing security context\n");
+            fprintf(stderr, "Error locating http body fd\n");
             exit(1);
         }
 
-        rc = globus_gram_job_manager_read_request(
-                &manager,
-                &rsl,
-                &contact,
-                &job_state_mask);
-        if (rc != GLOBUS_SUCCESS)
+        fd_env = getenv("GRID_SECURITY_CONTEXT_FD");
+        rc = sscanf(fd_env ? fd_env : "-1", "%d", &context_fd);
+        if (rc != 1 || context_fd < 0)
         {
-            /* TODO: Send response */
-            fprintf(stderr, "Error reading request\n");
+            fprintf(stderr, "Error locating security context fd\n");
             exit(1);
         }
     }
 
-    if (globus_gram_job_manager_request_init(&request, &manager, rsl, context)
-            != GLOBUS_SUCCESS)
+
+    /* Redirect stdin from /dev/null, we'll handle stdout after the reply is
+     * sent
+     */
+    freopen("/dev/null", "r", stdin);
+
+    /* Here we'll either become the active job manager to process all
+     * jobs for this user/host/lrm combination, or we'll hand off the
+     * file descriptors containing the info to the active job manager
+     */
+    while (!located_active_jm)
     {
-        fprintf(stderr,
-            "ERROR: globus_jobmanager_request_init() failed.\n");
-        exit(1);
-    }
-    rc = globus_hashtable_insert(
-            &manager.request_hash,
-            request->job_contact_path,
-            request);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "ERROR: hashtable insert failed\n");
-        exit(1);
-    }
-
-    if (contact != NULL)
-    {
-        rc = globus_gram_job_manager_contact_add(
-                request,
-                contact,
-                job_state_mask);
-        /* TODO: send failure */
-        assert(rc == GLOBUS_SUCCESS);
-    }
-
-    globus_mutex_lock(&request->mutex);
-
-    GlobusTimeReltimeSet(delay, 0, 0);
-
-    globus_callback_register_oneshot(
-	    NULL,
-	    &delay,
-	    globus_gram_job_manager_state_machine_callback,
-	    request);
-
-    while(request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_DONE &&
-	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE && 
-	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE)
-    {
-	globus_cond_wait(&request->cond, &request->mutex);
-    }
-
-    /* Write auditing file if job is DONE or FAILED */
-    if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
-	request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
-    {
-        if (globus_gram_job_manager_auditing_file_write(request) != GLOBUS_SUCCESS)
+        if (! debugging_without_client)
         {
-            globus_gram_job_manager_request_log(
+            /* We'll try to get the lock file associated with being the
+             * active job manager here. If we get the OLD_JM_ALIVE error
+             * somebody else has it
+             */
+            rc = globus_gram_job_manager_startup_socket_init(
+                    &manager,
+                    &manager.active_job_manager_handle,
+                    &manager.socket_fd,
+                    &manager.locket_fd);
+            if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+            {
+                rc = GLOBUS_SUCCESS;
+            }
+            else if (rc != GLOBUS_SUCCESS)
+            {
+                continue;
+            }
+        }
+
+        if (manager.socket_fd != -1 || debugging_without_client)
+        {
+            gss_ctx_id_t                context;
+            char *                      client_contact;
+            int                         job_state_mask;
+
+            /* We are the active job manager or a debug job manager or don't
+             * care about the distinction
+             */
+            located_active_jm = GLOBUS_TRUE;
+
+            if (!debugging_without_client)
+            {
+                /* Normal operation: started by a job request */
+                rc = globus_gram_job_manager_request_load(
+                        &manager,
+                        http_body_fd,
+                        context_fd,
+                        cred,
+                        &request,
+                        &context,
+                        &client_contact,
+                        &job_state_mask);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    fprintf(stderr, "Error loading request\n");
+                    exit(1);
+                }
+                close(http_body_fd);
+                close(context_fd);
+                http_body_fd = -1;
+                context_fd = -1;
+            }
+            else
+            {
+                /* Debug operation: -rsl command-line option */
+                context = GSS_C_NO_CONTEXT;
+
+                rc = globus_gram_job_manager_request_init(
+                    &request,
+                    &manager,
+                    rsl,
+                    GSS_C_NO_CREDENTIAL,
+                    GSS_C_NO_CONTEXT);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    fprintf(stderr, "Error initializing request\n");
+                    exit(1);
+                }
+            }
+            /*
+             * Kick off the job state machine and send the response
+             */
+            rc = globus_gram_job_manager_request_start(
+                    &manager,
                     request,
-                    "JM: Error writing audit record\n");
+                    stdout,
+                    client_contact,
+                    job_state_mask);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                /* start frees reference to the job request */
+                request = NULL;
+            }
+        }
+        else
+        {
+            /* Defer to the active job manager by sending the file descriptors
+             * to it
+             */
+            rc = globus_gram_job_manager_starter_send(
+                    &manager,
+                    http_body_fd,
+                    context_fd,
+                    fileno(stdout),
+                    cred);
+            if (rc == GLOBUS_SUCCESS)
+            {
+                located_active_jm = GLOBUS_TRUE;
+                close(http_body_fd);
+                close(context_fd);
+            }
+        }
+        if (rc == GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_log(
+                    &manager,
+                    "Successfully handed descriptors to active job manager\n");
         }
     }
+
+    /* For the active job manager, this will block until all jobs have
+     * terminated. For any other job manager, the hashtable is empty so this
+     * falls right through
+     */
+    globus_mutex_lock(&manager.mutex);
+    while (! globus_hashtable_empty(&manager.request_hash))
+    {
+        globus_cond_wait(&manager.cond, &manager.mutex);
+    }
+    globus_mutex_unlock(&manager.mutex);
+
 
     /*
      * If we ran without a client, display final state and error if applicable
      */
     if(debugging_without_client)
     {
-	fprintf(stderr,
-		"Final Job Status: %d%s%s%s\n",
-		request->status,
-		(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-		? " (failed because " : "",
-		(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-		    ? globus_gram_protocol_error_string(request->failure_code)
-		    : "",
-		(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-		    ? ")" : "");
+        fprintf(stderr,
+                "Final Job Status: %d%s%s%s\n",
+                request->status,
+                (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+                ? " (failed because " : "",
+                (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+                    ? globus_gram_protocol_error_string(request->failure_code)
+                    : "",
+                (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+                    ? ")" : "");
     }
-    else if((!request->relocated_proxy) &&
-	    globus_gram_job_manager_gsi_used(request) &&
-	    request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_DONE &&
-            (!debugging_without_client) &&
-	    globus_libc_getenv("X509_USER_PROXY"))
-    {
-	remove(globus_libc_getenv("X509_USER_PROXY"));
-    }
-    globus_mutex_unlock(&request->mutex);
     rc = globus_module_deactivate_all();
     if (rc != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "deactivation failed with rc=%d\n",
-		rc);
-	exit(1);
+        fprintf(stderr, "deactivation failed with rc=%d\n",
+                rc);
+        exit(1);
     }
 
+/*
     {
-	const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
-	const char * gk_jm_id = globus_libc_getenv(gk_jm_id_var);
+        const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
+        const char * gk_jm_id = globus_libc_getenv(gk_jm_id_var);
 
-	globus_gram_job_manager_request_acct(
-		request,
-		"%s %s JM exiting\n",
-		gk_jm_id_var, gk_jm_id ? gk_jm_id : "none");
+        globus_gram_job_manager_request_acct(
+                request,
+                "%s %s JM exiting\n",
+                gk_jm_id_var, gk_jm_id ? gk_jm_id : "none");
     }
+*/
 
-    globus_gram_job_manager_request_log(
-	    request,
-	    "JM: exiting globus_gram_job_manager.\n");
+    globus_gram_job_manager_log(
+            &manager,
+            "JM: exiting globus_gram_job_manager.\n");
 
-    switch(request->config->logfile_flag)
-    {
-      case GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS:
-	  break;
-      case GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR:
-	if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE
-	   && !request->dry_run)
-	{
-	    break;
-	}
-	/* FALLSTHROUGH */
-      case GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE:
-	if (strcmp(manager.jobmanager_logfile, "/dev/null") != 0)
-	{
-	    /*
-	     * Check to see if the jm log file exists.  If so, then
-	     * delete it.
-	     */
-	    if (access(manager.jobmanager_logfile, F_OK) == 0)
-	    {
-		if (remove(manager.jobmanager_logfile) != 0)
-		{
-		    fprintf(stderr,
-			    "failed to remove job manager log file = %s\n",
-			    manager.jobmanager_logfile);
-		}
-	    }
-	}
-    }
+    globus_gram_job_manager_config_destroy(&config);
 
     return(0);
 }
@@ -311,7 +380,8 @@ static
 int
 globus_l_gram_job_manager_activate(void)
 {
-    int rc;
+    int                                 rc;
+    globus_result_t                     result;
     globus_module_descriptor_t *        modules[] =
     {
         GLOBUS_COMMON_MODULE,
@@ -319,6 +389,7 @@ globus_l_gram_job_manager_activate(void)
         GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
         GLOBUS_GSI_GSS_ASSIST_MODULE,
         GLOBUS_GSI_SYSCONFIG_MODULE,
+        GLOBUS_XIO_MODULE,
         GLOBUS_IO_MODULE,
         GLOBUS_GRAM_PROTOCOL_MODULE,
         GLOBUS_GASS_CACHE_MODULE,
@@ -334,9 +405,45 @@ globus_l_gram_job_manager_activate(void)
     {
         fprintf(stderr, "Error (%d) activating %s\n", 
                 rc, failed_module->module_name);
+        goto activate_failed;
+    }
+    result = globus_xio_stack_init(&globus_i_gram_job_manager_file_stack, NULL);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_FAILURE;
+        goto stack_init_failed;
     }
 
+    result = globus_xio_driver_load(
+            "file",
+            &globus_i_gram_job_manager_file_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_FAILURE;
+        goto driver_load_failed;
+    }
+
+    result = globus_xio_stack_push_driver(
+            globus_i_gram_job_manager_file_stack,
+            globus_i_gram_job_manager_file_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_FAILURE;
+        goto driver_push_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+driver_push_failed:
+        globus_xio_driver_unload(globus_i_gram_job_manager_file_driver);
+driver_load_failed:
+        globus_xio_stack_destroy(globus_i_gram_job_manager_file_stack);
+stack_init_failed:
+activate_failed:
+        ;
+    }
     return rc;
 }
 /* globus_l_gram_job_manager_activate() */
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,7 @@ globus_l_gram_job_manager_script_run(
     globus_gram_job_manager_script_context_t *
 					script_context;
     globus_result_t			result;
+    int                                 rc;
     char *				pipe_cmd;
 
     pipe_cmd = globus_common_create_string(
@@ -149,6 +150,12 @@ globus_l_gram_job_manager_script_run(
 
     script_context = malloc(
 	    sizeof(globus_gram_job_manager_script_context_t));
+
+    rc = globus_gram_job_manager_add_reference(
+            request->manager,
+            request->job_contact_path,
+            NULL);
+    globus_assert(rc == GLOBUS_SUCCESS);
 
     script_context->return_buf[0] = '\0';
     script_context->callback = callback;
@@ -232,6 +239,7 @@ globus_l_gram_job_manager_script_read(
     globus_bool_t			eof = GLOBUS_FALSE;
     char *				p;
     int					failure_code = 0;
+    int                                 rc;
 
     if(result)
     {
@@ -360,6 +368,11 @@ globus_l_gram_job_manager_script_read(
     pclose(script_context->pipe);
     remove(script_context->script_arg_file);
     free(script_context->script_arg_file);
+    rc = globus_gram_job_manager_remove_reference(
+            request->manager,
+            request->job_contact_path);
+
+    globus_assert(rc == GLOBUS_SUCCESS);
 
     script_context->callback(
 	    script_context->callback_arg,
@@ -1139,156 +1152,6 @@ globus_gram_job_manager_script_signal(
 /* globus_gram_job_manager_script_signal() */
 
 int 
-globus_gram_job_manager_script_make_scratchdir(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			scratch_dir)
-{
-    char *				script_cmd = "make_scratchdir";
-    int					rc;
-    FILE *				script_arg_fp;
-    int 				script_arg_fd;
-    char                                template[]="/tmp/gram_make_scratchdirXXXXXX";
-
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    rc = globus_l_gram_request_validate(request);
-
-    if (rc != GLOBUS_SUCCESS)
-        return rc;
-
-    if ((script_arg_fd = mkstemp(template)) < 0)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-
-    if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        close(script_arg_fd);
-        remove(template);
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-
-    globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    "scratchdirbase", 's', request->config->scratch_dir_base,
-	    "scratchdir", 's', scratch_dir,
-	    NULL);
-
-    fclose(script_arg_fp);
-
-    globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_script_make_scratchdir()\n" );
-
-    rc = globus_l_gram_job_manager_script_run(
-                request,
-                script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        remove(template);
-        return rc;
-    }
-
-    globus_gram_job_manager_request_log(request,
-            "JMI: returning with success\n" );
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_gram_job_manager_script_make_scratchdir() */
-
-int 
-globus_gram_job_manager_script_rm_scratchdir(
-    globus_gram_jobmanager_request_t *	request)
-{
-    char *				script_cmd = "remove_scratchdir";
-    int					rc;
-    FILE *				script_arg_fp;
-    char *				scratch_dir;
-    int				        script_arg_fd;
-    char                                template[]="/tmp/gram_rm_scratchdirXXXXXX";
-
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    rc = globus_l_gram_request_validate(request);
-
-    if (rc != GLOBUS_SUCCESS)
-        return rc;
-
-    if (!request->scratchdir)
-	return(GLOBUS_FAILURE);
-
-    if ((script_arg_fd = mkstemp(template)) < 0)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-    if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        close(script_arg_fd);
-        remove(template);
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-
-    scratch_dir = globus_l_gram_job_manager_script_prepare_param(
-	    request->scratchdir);
-
-    fprintf(script_arg_fp,
-	    "$description = { scratchdirectory => ['%s'] };\n",
-	    scratch_dir);
-
-    free(scratch_dir);
-
-    fclose(script_arg_fp);
-
-    globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_rm_scratchdir()\n" );
-
-    rc = globus_l_gram_job_manager_script_run(
-                request,
-                script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", rc);
-        remove(template);
-
-        return rc;
-    }
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_gram_job_manager_script_rm_scratchdir() */
-
-int 
 globus_gram_job_manager_script_stage_in(
     globus_gram_jobmanager_request_t *	request)
 {
@@ -1564,212 +1427,6 @@ globus_gram_job_manager_script_cache_cleanup(
 }
 /* globus_gram_job_manager_script_cache_cleanup() */
 
-int 
-globus_gram_job_manager_script_remote_io_file_create(
-    globus_gram_jobmanager_request_t *	request)
-{
-    char *				script_cmd = "remote_io_file_create";
-    int					rc;
-    FILE *				script_arg_fp;
-    int				        script_arg_fd;
-    char                                template[] = "/tmp/gram_remote_ioXXXXXX";
-
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    rc = globus_l_gram_request_validate(request);
-
-    if (rc != GLOBUS_SUCCESS)
-        return rc;
-
-    if ((script_arg_fd = mkstemp(template)) < 0)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-    if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-        close(script_arg_fd);
-        remove(template);
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-
-    globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
-
-    fclose(script_arg_fp);
-
-    globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_script_remote_io_file_create()\n" );
-
-    rc = globus_l_gram_job_manager_script_run(
-                request,
-                script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", rc);
-        remove(template);
-
-        return rc;
-    }
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_gram_job_manager_script_remote_io_file_create() */
-
-int 
-globus_gram_job_manager_script_proxy_relocate(
-    globus_gram_jobmanager_request_t *	request)
-{
-    char *				script_cmd = "proxy_relocate";
-    int					rc;
-    FILE *				script_arg_fp;
-    int 				script_arg_fd;
-    char  				template[] = "/tmp/gram_proxy_relXXXXXXX";
-
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    rc = globus_l_gram_request_validate(request);
-
-    if (rc != GLOBUS_SUCCESS)
-        return rc;
-
-    if ((script_arg_fd = mkstemp(template)) < 0)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-    if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-        close(script_arg_fd);
-        remove(template);
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-
-    globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
-
-    fclose(script_arg_fp);
-
-    globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_script_proxy_relocate()\n" );
-
-    rc = globus_l_gram_job_manager_script_run(
-                request,
-                script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", rc);
-        remove(template);
-
-        return rc;
-    }
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_gram_job_manager_script_proxy_relocate() */
-
-int 
-globus_gram_job_manager_script_proxy_update(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query)
-{
-    char *				script_cmd = "proxy_update";
-    int					rc;
-    FILE *				script_arg_fp;
-    int				        script_arg_fd;
-    char                                template[]="/tmp/gram_proxy_updateXXXXXX";
-
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    rc = globus_l_gram_request_validate(request);
-
-    if (rc != GLOBUS_SUCCESS)
-        return rc;
-
-
-    if ((script_arg_fd = mkstemp(template)) < 0)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-    if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
-    {
-	globus_gram_job_manager_request_log(request,
-              "JMI: Failed to open gram script argument file. %s\n",
-              template );
-        close(script_arg_fd);
-        remove(template);
-
-        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-
-    globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
-
-    fclose(script_arg_fp);
-
-    globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_script_proxy_update()\n" );
-
-    rc = globus_l_gram_job_manager_script_run(
-                request,
-                script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_query_done,
-		query);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", rc);
-        remove(template);
-
-        return rc;
-    }
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_gram_job_manager_script_proxy_update() */
-
 /**
  * Completion callback for done and poll scripts.
  *
@@ -1867,10 +1524,6 @@ globus_l_gram_job_manager_default_done(
     {
 	request->scratchdir = globus_libc_strdup(value);
     }
-    else if(strcmp(variable, "GRAM_SCRIPT_X509_USER_PROXY") == 0)
-    {
-	request->x509_user_proxy = globus_libc_strdup(value);
-    }
     else if(strcmp(variable, "GRAM_SCRIPT_STAGED_IN") == 0)
     {
 	globus_l_gram_job_manager_script_staged_done(
@@ -1894,10 +1547,6 @@ globus_l_gram_job_manager_default_done(
 		    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
 		    value);
 	}
-    }
-    else if(strcmp(variable, "GRAM_SCRIPT_REMOTE_IO_FILE") == 0)
-    {
-	request->remote_io_url_file = globus_libc_strdup(value);
     }
     else if(strncmp(variable, "GRAM_SCRIPT_GT3", 15) == 0)
     {
