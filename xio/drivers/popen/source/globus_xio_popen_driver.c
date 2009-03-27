@@ -401,7 +401,7 @@ globus_l_xio_popen_child(
     {
         goto error;
     }
-    close(infds[0]);
+    close(infds[1]);
     if(attr->pass_env)
     {
         rc = execv(attr->program_name, attr->argv);
