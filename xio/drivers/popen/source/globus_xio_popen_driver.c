@@ -18,6 +18,8 @@
 #include "globus_xio_popen_driver.h"
 #include "version.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 GlobusDebugDefine(GLOBUS_XIO_POPEN);
 
@@ -103,10 +105,17 @@ typedef struct xio_l_popen_handle_s
     globus_off_t                        file_position;
     pid_t                               pid;
     globus_xio_popen_preexec_func_t     fork_cb;
+    globus_xio_operation_t              close_op;
 } xio_l_popen_handle_t;
 
 #define GlobusXIOPOpenPosition(handle)                                \
     globus_l_xio_popen_update_position(handle, 0, SEEK_CUR)
+
+static
+void
+globus_l_popen_waitpid(
+    xio_l_popen_handle_t *              handle,
+    int                                 opts);
 
 static
 globus_off_t
@@ -195,7 +204,7 @@ globus_l_xio_popen_attr_copy(
         }
         attr->argv[i] = NULL;
     }
-    if(src_attr->env > 0)
+    if(src_attr->env_count > 0)
     {
         attr->env = (char **)globus_calloc(attr->env_count+1, sizeof(char*));
         for(i = 0; i < attr->env_count; i++)
@@ -386,11 +395,13 @@ globus_l_xio_popen_child(
     {
         goto error;
     }
+    close(outfds[0]);
     rc = dup2(infds[1], STDOUT_FILENO);
     if(rc < 0)
     {
         goto error;
     }
+    close(infds[0]);
     if(attr->pass_env)
     {
         rc = execv(attr->program_name, attr->argv);
@@ -508,6 +519,62 @@ error_handle:
     return result;
 }
 
+static
+void
+globus_l_xio_popen_close_oneshot(
+    void *                              arg)
+{
+    xio_l_popen_handle_t *              handle;
+    GlobusXIOName(globus_l_xio_popen_close_oneshot);
+
+    GlobusXIOPOpenDebugEnter();
+    handle = (xio_l_popen_handle_t *) arg;
+
+    globus_l_popen_waitpid(handle, WNOHANG);
+
+    GlobusXIOPOpenDebugExit();
+}
+
+static
+void
+globus_l_popen_waitpid(
+    xio_l_popen_handle_t *              handle,
+    int                                 opts)
+{
+    globus_result_t                     result;
+    int                                 status;
+    int                                 rc;
+    globus_reltime_t                    delay;
+    GlobusXIOName(globus_l_popen_waitpid);
+
+    /* XXX wait pid should be nonblocking
+       we need a way to get the exit status back to the user */
+    rc = waitpid(handle->pid, &status, opts);
+    if(rc > 0)
+    {
+        globus_xio_driver_finished_close(handle->close_op, GLOBUS_SUCCESS);
+        globus_l_xio_popen_handle_destroy(handle);
+    }
+    else if(rc < 0 || opts == 0)
+    {
+        result = GlobusXIOErrorSystemError("waitpid", errno);
+        globus_xio_driver_finished_close(handle->close_op, result);
+        globus_l_xio_popen_handle_destroy(handle);
+    }
+    else
+    {
+        GlobusTimeReltimeSet(delay, 0, 100);
+
+         globus_callback_register_oneshot(
+            NULL,
+            &delay,
+            globus_l_xio_popen_close_oneshot,
+            handle);
+    }
+
+    GlobusXIOPOpenDebugExit();
+}
+
 /*
  *  close a file
  */
@@ -524,16 +591,24 @@ globus_l_xio_popen_close(
     GlobusXIOPOpenDebugEnter();
     
     handle = (xio_l_popen_handle_t *) driver_specific_handle;
-    
+
+    handle->close_op = op;
     globus_xio_system_file_destroy(handle->in_system);
     globus_xio_system_file_destroy(handle->out_system);
-    
+   
+    /* XXX Gotta deal with kill */ 
     globus_xio_system_file_close(handle->infd);
     globus_xio_system_file_close(handle->outfd);
-    
-    globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-    globus_l_xio_popen_handle_destroy(handle);
-    
+
+    if(globus_xio_driver_operation_is_blocking(op))
+    {
+        globus_l_popen_waitpid(handle, 0);
+    }
+    else
+    {
+        globus_l_popen_waitpid(handle, WNOHANG);
+    }
+
     GlobusXIOPOpenDebugExit();
     return GLOBUS_SUCCESS;
 }
