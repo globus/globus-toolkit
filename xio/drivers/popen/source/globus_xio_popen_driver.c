@@ -73,6 +73,8 @@ typedef struct xio_l_popen_attr_s
     char *                              program_name;
     char **                             argv;
     int                                 argc;
+    char **                             env;
+    int                                 env_count;
     globus_xio_popen_preexec_func_t     fork_cb;
 } xio_l_popen_attr_t;
 
@@ -193,6 +195,15 @@ globus_l_xio_popen_attr_copy(
         }
         attr->argv[i] = NULL;
     }
+    if(src_attr->env > 0)
+    {
+        attr->env = (char **)globus_calloc(attr->env_count+1, sizeof(char*));
+        for(i = 0; i < attr->env_count; i++)
+        {
+            attr->env[i] = strdup(src_attr->env[i]);
+        }
+        attr->env[i] = NULL;
+    }
     *dst = attr;
 
     GlobusXIOPOpenDebugExit();
@@ -212,6 +223,7 @@ globus_l_xio_popen_attr_cntl(
 {
     int                                 i;
     char **                             argv;
+    char **                             env;
     xio_l_popen_attr_t *                attr;
     globus_xio_popen_preexec_func_t     cb;
     GlobusXIOName(globus_l_xio_popen_attr_cntl);
@@ -235,6 +247,21 @@ globus_l_xio_popen_attr_cntl(
             attr->argv[i] = NULL;
             attr->program_name = strdup(attr->argv[0]);
             break;
+
+        case GLOBUS_XIO_POPEN_SET_CHILD_ENV:
+            env = va_arg(ap, char **);
+            for(attr->env_count = 0; env[attr->env_count] != NULL;
+                attr->env_count++)
+            {
+            }
+            attr->env = calloc(attr->env_count + 1, sizeof(char *));
+            for(i = 0; i < attr->env_count; i++)
+            {
+                attr->env[i] = strdup(env[i]);
+            }
+            attr->env[i] = NULL;
+            break;
+
 
         case GLOBUS_XIO_POPEN_SET_PASS_ENV:
             attr->pass_env = va_arg(ap, globus_bool_t);
@@ -277,6 +304,14 @@ globus_l_xio_popen_attr_destroy(
             free(attr->argv[i]);
         }
         free(attr->argv);
+    }
+    if(attr->env_count > 0)
+    {
+        for(i = 0; i < attr->env_count; i++)
+        {
+            free(attr->env[i]);
+        }
+        free(attr->env);
     }
     if(attr->program_name != NULL)
     {
@@ -362,7 +397,14 @@ globus_l_xio_popen_child(
     }
     else
     {
-        char *                          env[] = {0};
+        char *                          l_env[] = {0};
+        char **                         env;
+
+        env = l_env;
+        if(attr->env != NULL)
+        {
+            env = attr->env;
+        }
         rc = execve(attr->program_name, attr->argv, env);
     }
 
@@ -415,7 +457,12 @@ globus_l_xio_popen_open(
     }
 
     handle->pid = fork();
-    if(handle->pid == 0)
+    if(handle->pid < 0)
+    {
+        result = GlobusXIOErrorSystemError("fork", errno);
+        goto error_fork;
+    }
+    else if(handle->pid == 0)
     {
         globus_l_xio_popen_child(attr, contact_info, infds, outfds);
     }
@@ -448,6 +495,7 @@ globus_l_xio_popen_open(
     return GLOBUS_SUCCESS;
 
 error_init:
+error_fork:
     close(outfds[0]);
     close(outfds[1]);
 error_out_pipe:
@@ -662,6 +710,8 @@ static globus_xio_string_cntl_table_t popen_l_string_opts_table[] =
     {"pass_env", GLOBUS_XIO_POPEN_SET_PASS_ENV,
         globus_xio_string_cntl_bool},
     {"argv", GLOBUS_XIO_POPEN_SET_PROGRAM,
+        globus_xio_string_cntl_string_list},
+    {"env", GLOBUS_XIO_POPEN_SET_CHILD_ENV,
         globus_xio_string_cntl_string_list},
     {0}
 };
