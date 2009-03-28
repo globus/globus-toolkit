@@ -225,7 +225,7 @@ globus_l_gfs_hdfs_destroy(
 {
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close off HDFS connection.\n");
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Destroying the HDFS connection.\n");
     if (hdfs_handle->fs)
         hdfsDisconnect(hdfs_handle->fs);
     if (hdfs_handle->username)
@@ -725,8 +725,10 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     globus_mutex_lock(&hdfs_handle->mutex);
     rc = GLOBUS_SUCCESS;
     if (hdfs_handle->done && hdfs_handle->done_status != GLOBUS_SUCCESS) {
-        globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
-        return;
+        //globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
+        //return;
+        rc = hdfs_handle->done_status;
+        goto cleanup;
     }
     if (result != GLOBUS_SUCCESS)
     {
@@ -746,7 +748,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
             if (bytes_written != nbytes) {
-                rc = GlobusGFSErrorSystemError("Write into HDFS failed.", errno);
+                rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
                 hdfs_handle->done = GLOBUS_TRUE;
             } else {
                 hdfs_handle->offset += bytes_written;
@@ -790,22 +792,24 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     }
     globus_free(buffer);
 
+    cleanup:
+
     hdfs_handle->outstanding--;
     if (! hdfs_handle->done)
     {
         // Ask for more transfers!
         globus_l_gfs_hdfs_write_to_storage(hdfs_handle);
-    }
-    else if (hdfs_handle->outstanding == 0 && rc == GLOBUS_SUCCESS) 
-    {
+    } else if (hdfs_handle->outstanding == 0) {
         globus_free(hdfs_handle->buffer);
         globus_free(hdfs_handle->used);
         globus_free(hdfs_handle->nbytes);
         globus_free(hdfs_handle->offsets);
-        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS.\n");
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS; zero outstanding blocks.\n");
         if (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1) 
         {
-             rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
+             if (rc == GLOBUS_SUCCESS)
+               rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
+             globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Failed to close file in HDFS.\n");
         }
         sprintf(err_msg,"receive %d blocks of size %d bytes\n",
                         local_io_count,local_io_block_size);
@@ -819,13 +823,6 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         sprintf(err_msg, "We failed to finish the transfer, but there are %i outstanding writes left over.\n", hdfs_handle->outstanding);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
         hdfs_handle->done_status = rc;
-        if (hdfs_handle->fs != NULL && hdfs_handle->fd != NULL) {
-            hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd);
-            hdfs_handle->fd = NULL;
-         }
-        //globus_gridftp_server_finished_transfer(op, rc);
-    } else {
-        //printf("Unknown case!\n");
     }
     globus_mutex_unlock(&hdfs_handle->mutex);
 }
@@ -859,6 +856,7 @@ globus_l_gfs_hdfs_write_to_storage(
         if (rc != GLOBUS_SUCCESS)
         {
             rc = GlobusGFSErrorGeneric("globus_gridftp_server_register_read() fail");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "globus_gridftp_server_register_read() fail\n");
             globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
             return;
         } else {
@@ -1284,7 +1282,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
     NULL, /* list */
     globus_l_gfs_hdfs_send,
     globus_l_gfs_hdfs_recv,
-    globus_l_gfs_hdfs_trev, /* trev */
+    NULL, /*globus_l_gfs_hdfs_trev, /* trev */
     NULL, /* active */
     NULL, /* passive */
     NULL, /* data destroy */
