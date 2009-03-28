@@ -746,7 +746,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
             if (bytes_written != nbytes) {
-                rc = GlobusGFSErrorGeneric("Write into HDFS failed.");
+                rc = GlobusGFSErrorSystemError("Write into HDFS failed.", errno);
                 hdfs_handle->done = GLOBUS_TRUE;
             } else {
                 hdfs_handle->offset += bytes_written;
