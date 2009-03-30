@@ -455,9 +455,8 @@ globus_gram_job_manager_gsi_relocate_proxy(
 {
     struct stat                         statbuf;
     int                                 rc = 0;
-    char *                              cred_file = NULL;
     FILE *                              infp = NULL;
-    FILE *                              outfp = NULL;
+    int                                 fd = -1;
     char *                              cred_data = NULL;
 
     rc = stat(new_proxy, &statbuf);
@@ -498,61 +497,31 @@ globus_gram_job_manager_gsi_relocate_proxy(
     fclose(infp);
     infp = NULL;
 
-    rc = globus_gram_job_manager_output_get_cache_name(
-            request,
-            "x509_up",
-            &cred_file);
-    
-    if(rc != 0)
-    {
-        goto cred_file_malloc_failed;
-    }
-
-    outfp = fopen(cred_file, "w");
-    if(outfp == NULL)
+    fd = open(request->x509_user_proxy, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+    if(fd == -1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
 
-        goto fopen_cred_file_failed;
+        goto job_proxy_open_failed;
     }
-    rc = fchmod(fileno(outfp), 0600);
-    if(rc != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-        goto fchown_cred_file_failed;
-    }
-
-    rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
+    rc = write(fd, cred_data, (size_t) statbuf.st_size);
     if(rc != 1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
 
-        goto cred_fwrite_failed;
+        goto job_proxy_write_failed;
     }
     rc = 0;
-    fclose(outfp);
-    outfp = NULL;
+    close(fd);
+    fd = -1;
 
-    globus_libc_setenv("X509_USER_PROXY",
-                       cred_file,
-                       1);
-    cred_file = NULL;
-
-cred_fwrite_failed:
-fchown_cred_file_failed:
-    if(outfp)
+job_proxy_write_failed:
+    if(fd != -1)
     {
-        fclose(outfp);
-        outfp = NULL;
+        close(fd);
+        fd = -1;
     }
-fopen_cred_file_failed:
-    if(cred_file)
-    {
-        globus_libc_free(cred_file);
-        cred_file = NULL;
-    }
-cred_file_malloc_failed:
+job_proxy_open_failed:
 fread_new_proxy_failed:
     if(infp != NULL)
     {

@@ -221,9 +221,6 @@ globus_gram_job_manager_state_file_write(
         goto error_exit;
     }
 
-    globus_gram_job_manager_output_write_state(request, fp);
-    globus_gram_job_manager_staging_write_state(request,fp);
-
     fclose( fp );
 
     rc = rename( tmp_file, request->job_state_file );
@@ -434,11 +431,6 @@ globus_gram_job_manager_state_file_read(
     sscanf(buffer, "%lu", &tmp_timestamp);
     request->queued_time = (time_t) tmp_timestamp;
 
-    rc = globus_gram_job_manager_output_read_state(request, fp);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
     rc = globus_gram_job_manager_staging_read_state(request,fp);
     if(rc != GLOBUS_SUCCESS)
     {

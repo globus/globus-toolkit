@@ -823,50 +823,8 @@ globus_l_gram_job_manager_signal(
                        "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT,
                        &out_size, &err_size) > 0)
         {
-            if( ! request || !(request->output) ) {
-                globus_gram_job_manager_request_log(
-                    request,
-                    "JM: ***** STDIO_SIZE request. "
-                    "BOGUS REQUEST OBJECT!\n");
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
-            }
-            else 
-            {
-                globus_off_t local_size_stdout = 0;
-                globus_off_t local_size_stderr = 0;
-                int rc_out, rc_err;
-                rc_out = globus_gram_job_manager_output_get_size(request,
-                        "stdout", &local_size_stdout);
-                rc_err = globus_gram_job_manager_output_get_size(request,
-                        "stderr", &local_size_stderr);
-                globus_gram_job_manager_request_log(
-                    request,
-                    "JM: STDIO_SIZE request. "
-                    "stdout: remote %d, local %d%s, %s."
-                    "stderr: remote %d, local %d%s, %s.\n",
-                    (int)(out_size), (int)local_size_stdout,
-                    (rc_out == GLOBUS_SUCCESS)
-                            ? "" : " error querying local value",
-                    (out_size == local_size_stdout)?"ok":"ERROR",
-                    (int)(err_size), (int)local_size_stderr,
-                    (rc_err == GLOBUS_SUCCESS)
-                            ? "" : " error querying local value",
-                    (err_size == local_size_stderr)?"ok":"ERROR");
-            }
-            if(rc == GLOBUS_SUCCESS && out_size >= 0)
-            {
-                rc = globus_gram_job_manager_output_check_size(
-                        request,
-                        GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-                        out_size);
-            }
-            if(rc == GLOBUS_SUCCESS && err_size >= 0)
-            {
-                rc = globus_gram_job_manager_output_check_size(
-                        request,
-                        GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
-                        err_size);
-            }
+            /* Not supported---no streaming */
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
         }
         else
         {

@@ -158,28 +158,7 @@ globus_gram_job_manager_state_machine(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-
-        /* Open output destinations */
-        rc = globus_gram_job_manager_output_open(request);
-
-        if(rc == GLOBUS_SUCCESS)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT;
-            event_registered = GLOBUS_TRUE;
-        }
-        else
-        {
-            request->jobmanager_state = 
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
-            globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-            request->failure_code = rc;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
-
         /*
          * To do a two-phase commit, we need to send an error
          * message (WAITING_FOR_COMMIT) in the initial reply; otherwise,
@@ -548,83 +527,7 @@ globus_gram_job_manager_state_machine(
          */
         query = globus_fifo_peek(&request->pending_queries);
 
-        if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL &&
-           query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE)
-        {
-            globus_gram_job_manager_request_log(
-                request,
-                "Parsing query RSL: %s\n",
-                query->signal_arg);
-
-            query->rsl = globus_rsl_parse(query->signal_arg);
-            if(!query->rsl)
-            {
-                query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state = next_state;
-                break;
-            }
-            rc = globus_rsl_assist_attributes_canonicalize(query->rsl);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state = next_state;
-                break;
-            }
-            original_rsl = request->rsl;
-            request->rsl = query->rsl;
-            rc = globus_gram_job_manager_validate_rsl(
-                    request,
-                    GLOBUS_GRAM_VALIDATE_STDIO_UPDATE);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state = next_state;
-                request->rsl = original_rsl;
-                break;
-            }
-            rc = globus_rsl_eval(request->rsl, &request->symbol_table);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                query->failure_code =
-                    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-                request->jobmanager_state = next_state;
-                request->rsl = original_rsl;
-                break;
-            }
-
-            request->rsl = globus_gram_job_manager_rsl_merge(
-                original_rsl,
-                query->rsl);
-
-            if(request->rsl == GLOBUS_NULL)
-            {
-                request->rsl = original_rsl;
-                query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                request->jobmanager_state = next_state;
-                break;
-            }
-
-            if (next_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE;
-
-                rc = globus_gram_job_manager_output_close(request);
-                if(rc == GLOBUS_SUCCESS)
-                {
-                    event_registered = GLOBUS_TRUE;
-                }
-            }
-            else
-            {
-                /* When STDIO_UPDATE occurs before commit, we don't need
-                 * to open/close any files
-                 */
-                request->jobmanager_state = next_state;
-            }
-            break;
-        }
-        else if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
+        if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
         {
             rc = globus_gram_job_manager_script_signal(
                     request,
@@ -795,30 +698,6 @@ globus_gram_job_manager_state_machine(
         }
         break;
 
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN;
-        /* TODO update RSL */
-        rc = globus_gram_job_manager_output_open(request);
-        if(rc == GLOBUS_SUCCESS)
-        {
-            event_registered = GLOBUS_TRUE;
-        }
-        else
-        {
-            query->failure_code = rc;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
-        if(request->remote_io_url)
-        {
-            query->failure_code = globus_l_gram_remote_io_url_update(request);
-        }
-        break;
-
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
         if(request->unsent_status_change && request->save_state)
@@ -849,25 +728,6 @@ globus_gram_job_manager_state_machine(
             globus_gram_job_manager_query_reply(
                     request,
                     query);
-        }
-
-        rc = globus_gram_job_manager_output_close(request);
-
-        if(rc == GLOBUS_SUCCESS)
-        {
-            event_registered = GLOBUS_TRUE;
-        }
-        else
-        {
-            globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-            request->failure_code = rc;
-
-            if(request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT)
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
-            }
         }
         break;
 
@@ -1059,18 +919,11 @@ globus_gram_job_manager_state_machine(
             request->job_history_status = request->status;
         }
 
-        rc = globus_gram_job_manager_output_close(request);
-        if(rc == GLOBUS_SUCCESS)
-        {
-            event_registered = GLOBUS_TRUE;
-        }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
         /*
          * Send the job manager stopped or proxy expired failure callback.
-         * This callback is delayed until after the close output is completed,
-         * so that clients won't exit before the output is sent.
          */
         globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 

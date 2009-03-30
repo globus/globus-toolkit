@@ -454,13 +454,6 @@ typedef struct
      */
     globus_bool_t                       save_state;
 
-
-    /**
-     * Information about the destinations for the job's stdout and
-     * stderr. Opaque to all modules except globus_gram_job_manager_output.c
-     */
-    struct globus_l_gram_job_manager_output_info_t *
-                                        output;
     /** Time when job manager process is first begun */
     time_t                              creation_time;
     /** Time when job manager gets jobid from scheduler */
@@ -704,69 +697,6 @@ globus_gram_job_manager_contact_list_free(
 
 void
 globus_gram_job_manager_contact_state_callback(
-    globus_gram_jobmanager_request_t *  request);
-
-/* globus_gram_job_manager_output.c */
-extern
-int
-globus_gram_job_manager_output_init(
-    globus_gram_jobmanager_request_t *  request);
-
-extern
-int
-globus_gram_job_manager_output_destroy(
-    globus_gram_jobmanager_request_t *  request);
-
-int
-globus_gram_job_manager_output_set_urls(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        type,
-    globus_list_t *                     url_list,
-    globus_list_t *                     position_list);
-
-int
-globus_gram_job_manager_output_get_cache_name(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        type,
-    char **                             out_name);
-char *
-globus_gram_job_manager_output_local_name(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        type);
-
-int
-globus_gram_job_manager_output_open(
-    globus_gram_jobmanager_request_t *  request);
-
-int
-globus_gram_job_manager_output_close(
-    globus_gram_jobmanager_request_t *  request);
-
-int
-globus_gram_job_manager_output_write_state(
-    globus_gram_jobmanager_request_t *  request,
-    FILE *                              fp);
-
-int
-globus_gram_job_manager_output_read_state(
-    globus_gram_jobmanager_request_t *  request,
-    FILE *                              fp);
-
-int
-globus_gram_job_manager_output_get_size(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        type,
-    globus_off_t *                      size
-    );
-
-int
-globus_gram_job_manager_output_check_size(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        type,
-    globus_off_t                        size);
-
-int
-globus_gram_job_manager_output_make_job_dir(
     globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager_state.c */

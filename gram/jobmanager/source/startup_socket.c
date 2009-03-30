@@ -95,6 +95,7 @@ globus_gram_job_manager_startup_socket_init(
     mode_t                              old_umask;
     int                                 i;
     int                                 rcvbuf;
+    int                                 flags;
     enum { GRAM_RETRIES = 100 };
 
     if (!manager->config->single)
@@ -134,6 +135,21 @@ globus_gram_job_manager_startup_socket_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
         goto lockfd_open_failed;
     }
+    flags = fcntl(lockfd, F_GETFD);
+    if (flags < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        goto fcntl_lockfd_failed;
+    }
+    flags |= FD_CLOEXEC;
+    if (fcntl(lockfd, F_SETFD, flags) < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        goto fcntl_lockfd_failed;
+    }
+
     rc = globus_gram_job_manager_file_lock(lockfd);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -179,6 +195,21 @@ globus_gram_job_manager_startup_socket_init(
         goto bind_failed;
     }
 
+    flags = fcntl(sock, F_GETFD);
+    if (flags < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        goto fcntl_failed;
+    }
+    flags |= FD_CLOEXEC;
+    if (fcntl(sock, F_SETFD, flags) < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        goto fcntl_failed;
+    }
+
     result = globus_l_gram_create_handle(
             sock,
             handle);
@@ -210,6 +241,7 @@ register_read_failed:
         globus_xio_close(*handle, NULL);
         *handle = NULL;
 create_handle_failed:
+fcntl_failed:
 bind_failed:
 setsockopt_failed:
         close(sock);
@@ -217,6 +249,7 @@ setsockopt_failed:
 socket_failed:
         remove(lockpath);
 lock_failed:
+fcntl_lockfd_failed:
         close(lockfd);
         lockfd = -1;
 lockfd_open_failed:
@@ -407,7 +440,7 @@ globus_l_gram_startup_socket_callback(
     FILE *                              response_fp;
     OM_uint32                           major_status, minor_status;
     gss_cred_id_t                       cred;
-    char                                byte[1];
+    char                                byte[1] = { '!' };
     char                                cmsgbuf[sizeof(struct cmsghdr) + 4 * sizeof(int)];
 
     cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;

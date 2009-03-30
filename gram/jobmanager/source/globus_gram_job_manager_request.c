@@ -141,6 +141,12 @@ globus_l_gram_export_cred(
     const char *                        job_directory,
     char **                             proxy_filename);
 
+static
+int
+globus_l_gram_make_job_dir(
+    globus_gram_jobmanager_request_t *  request,
+    char **                             job_directory);
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -216,7 +222,6 @@ globus_gram_job_manager_request_init(
     r->poll_frequency = 30;
     r->commit_extend = 0;
     r->scratchdir = NULL;
-    globus_gram_job_manager_output_init(r);
     r->creation_time = time(NULL);
     r->queued_time = time(NULL);
     r->cache_tag = NULL;
@@ -496,7 +501,7 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
         goto get_remote_io_url_failed;
     }
-    rc = globus_gram_job_manager_output_make_job_dir(r);
+    rc = globus_l_gram_make_job_dir(r, &r->job_dir);
     if (rc != GLOBUS_SUCCESS)
     {
         goto failed_make_job_dir;
@@ -527,6 +532,17 @@ globus_gram_job_manager_request_init(
 
         /* Only error is undefined, but we know it is defined */
         globus_assert(rc == GLOBUS_SUCCESS);
+
+        if (strncmp(tmp, "https://", 8) == 0 ||
+            strncmp(tmp, "http://", 7) == 0 ||
+            strncmp(tmp, "ftp://", 6) == 0 ||
+            strncmp(tmp, "gsiftp://", 9) == 0 ||
+            strncmp(tmp, "x-gass-cache://", 15) == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+
+            goto failed_get_stdout_path;
+        }
 
         r->local_stdout = strdup(tmp);
 
@@ -568,6 +584,17 @@ globus_gram_job_manager_request_init(
 
         /* Only error is undefined, but we know it is defined */
         globus_assert(rc == GLOBUS_SUCCESS);
+
+        if (strncmp(tmp, "https://", 8) == 0 ||
+            strncmp(tmp, "http://", 7) == 0 ||
+            strncmp(tmp, "ftp://", 6) == 0 ||
+            strncmp(tmp, "gsiftp://", 9) == 0 ||
+            strncmp(tmp, "x-gass-cache://", 15) == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
+
+            goto failed_get_stdout_path;
+        }
 
         /* Non-string literal */
         r->local_stderr = strdup(tmp);
@@ -2497,4 +2524,91 @@ no_cred:
     return rc;
 }
 /* globus_l_gram_export_cred() */
+
+/**
+ * Create job directory
+ * 
+ * The job directory is used internally by the Job Manager to store various
+ * pieces of job-specific data: stdout, stderr, proxy, and job scripts.
+ *
+ * @param request
+ *     Request to process
+ * @param job_directory
+ *     Pointer to be set to the new value of the job directory.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED
+ *     Error creating directory.
+ */
+static
+int
+globus_l_gram_make_job_dir(
+    globus_gram_jobmanager_request_t *  request,
+    char **                             job_directory)
+{
+    char *                              out_file = NULL;
+    char *                              tmp;
+    int                                 rc;
+    struct stat                         statbuf;
+
+    out_file = globus_common_create_string(
+                "%s/.globus/job/%s/%s",
+                request->config->home,
+                request->config->hostname,
+                request->uniq_id);
+    if (out_file == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto out;
+    }
+
+    if ((rc = stat(out_file, &statbuf)) < 0)
+    {
+        tmp = out_file;
+
+        while (tmp != NULL)
+        {
+            tmp = strchr(tmp+1, '/');
+            if (tmp != out_file)
+            {
+                if (tmp != NULL)
+                {
+                    *tmp = '\0';
+                }
+                if ((rc = stat(out_file, &statbuf)) < 0)
+                {
+                    mkdir(out_file, S_IRWXU);
+                }
+                if ((rc = stat(out_file, &statbuf)) < 0)
+                {
+                    globus_gram_job_manager_request_log(
+                        request,
+                        "JMI: Unable to create part of job dir path: %s\n",
+                        out_file);
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+
+                    goto error_exit;
+                }
+                if (tmp != NULL)
+                {
+                    *tmp = '/';
+                }
+            }
+        }
+    }
+
+error_exit:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        free(out_file);
+        out_file = NULL;
+    }
+out:
+    *job_directory = out_file;
+    return rc;
+}
+/* globus_l_gram_make_job_dir() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
