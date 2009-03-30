@@ -390,7 +390,7 @@ globus_l_xio_popen_child(
 {
     int                                 rc;
 
-#   if defined(USE_SOCKET_PAIR)
+#   if !defined(USE_SOCKET_PAIR)
     close(outfds[1]);
     close(infds[0]);
 #   endif
