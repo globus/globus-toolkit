@@ -81,7 +81,7 @@ service_thread(void * arg)
     {
         goto out;
     }
-    if (server->fd)
+    if (server->fd != -1)
     {
         close(server->listener);
         server->listener = server->fd;
@@ -513,6 +513,7 @@ xacml_server_init(
     (*server)->io_module = NULL;
     (*server)->accept_func = NULL;
     (*server)->request = NULL;
+    (*server)->fd = -1;
     pthread_mutex_init(&(*server)->lock, NULL);
     pthread_cond_init(&(*server)->cond, NULL);
 
