@@ -45,6 +45,12 @@ static
 int
 globus_l_gram_job_manager_activate(void);
 
+static
+globus_result_t
+globus_l_gram_create_stack(
+    const char *                        driver_name,
+    globus_xio_stack_t *                stack,
+    globus_xio_driver_t *               driver);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -334,6 +340,14 @@ main(
                 (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
                     ? ")" : "");
     }
+
+    globus_gram_job_manager_log(
+            &manager,
+            "JM: exiting globus_gram_job_manager.\n");
+
+    globus_gram_job_manager_destroy(&manager);
+    globus_gram_job_manager_config_destroy(&config);
+
     rc = globus_module_deactivate_all();
     if (rc != GLOBUS_SUCCESS)
     {
@@ -354,11 +368,6 @@ main(
     }
 */
 
-    globus_gram_job_manager_log(
-            &manager,
-            "JM: exiting globus_gram_job_manager.\n");
-
-    globus_gram_job_manager_config_destroy(&config);
 
     return(0);
 }
@@ -407,37 +416,31 @@ globus_l_gram_job_manager_activate(void)
                 rc, failed_module->module_name);
         goto activate_failed;
     }
-    result = globus_xio_stack_init(&globus_i_gram_job_manager_file_stack, NULL);
+    result = globus_l_gram_create_stack(
+            "file",
+            &globus_i_gram_job_manager_file_stack,
+            &globus_i_gram_job_manager_file_driver);
+
     if (result != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_FAILURE;
         goto stack_init_failed;
     }
 
-    result = globus_xio_driver_load(
-            "file",
-            &globus_i_gram_job_manager_file_driver);
+    result = globus_l_gram_create_stack(
+            "popen",
+            &globus_i_gram_job_manager_popen_stack,
+            &globus_i_gram_job_manager_popen_driver);
     if (result != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_FAILURE;
-        goto driver_load_failed;
-    }
-
-    result = globus_xio_stack_push_driver(
-            globus_i_gram_job_manager_file_stack,
-            globus_i_gram_job_manager_file_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_FAILURE;
-        goto driver_push_failed;
+        goto destroy_file_stack;
     }
 
     if (rc != GLOBUS_SUCCESS)
     {
-driver_push_failed:
-        globus_xio_driver_unload(globus_i_gram_job_manager_file_driver);
-driver_load_failed:
+destroy_file_stack:
         globus_xio_stack_destroy(globus_i_gram_job_manager_file_stack);
+        globus_xio_driver_unload(globus_i_gram_job_manager_file_driver);
 stack_init_failed:
 activate_failed:
         ;
@@ -446,4 +449,50 @@ activate_failed:
 }
 /* globus_l_gram_job_manager_activate() */
 
+static
+globus_result_t
+globus_l_gram_create_stack(
+    const char *                        driver_name,
+    globus_xio_stack_t *                stack,
+    globus_xio_driver_t *               driver)
+{
+    globus_result_t                     result;
+
+    result = globus_xio_driver_load(
+            driver_name,
+            driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto driver_load_failed;
+    }
+
+    result = globus_xio_stack_init(stack, NULL);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto stack_init_failed;
+    }
+
+    result = globus_xio_stack_push_driver(
+            *stack,
+            *driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto driver_push_failed;
+    }
+
+    if (result != GLOBUS_SUCCESS)
+    {
+driver_push_failed:
+        globus_xio_stack_destroy(*stack);
+        *stack = NULL;
+stack_init_failed:
+        globus_xio_driver_unload(*driver);
+        *driver = NULL;
+driver_load_failed:
+        ;
+    }
+
+    return result;
+}
+/* globus_l_gram_create_stack() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

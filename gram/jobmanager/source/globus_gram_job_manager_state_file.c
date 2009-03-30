@@ -306,7 +306,7 @@ globus_gram_job_manager_state_file_read(
                 {
                     fgets( buffer, file_len, fp );
                     buffer[strlen(buffer)-1] = '\0';
-                    request->old_job_contact = globus_libc_strdup(buffer);
+                    request->old_job_contact = strdup(buffer);
                     fclose(fp);
                 }
             }
@@ -361,20 +361,20 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-        request->job_id = globus_libc_strdup( buffer );
+        request->job_id = strdup( buffer );
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     buffer[strlen(buffer)-1] = '\0';
-    request->rsl_spec = globus_libc_strdup( buffer );
+    request->rsl_spec = strdup( buffer );
     if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
     }
     buffer[strlen(buffer)-1] = '\0';
-    request->cache_tag = globus_libc_strdup( buffer );
+    request->cache_tag = strdup( buffer );
     if (fgets( buffer, file_len, fp ) == NULL)
     {
         goto error_exit;
@@ -405,7 +405,7 @@ globus_gram_job_manager_state_file_read(
          * Need to set the RSL substitution before reading the staging
          * state---otherwise we may get an RSL evaluation error
          */
-        request->scratchdir = globus_libc_strdup(buffer);
+        request->scratchdir = strdup(buffer);
         globus_symboltable_insert(
                 &request->symbol_table,
                 "SCRATCH_DIRECTORY",

@@ -697,7 +697,7 @@ globus_gram_job_manager_output_local_name(
             return out_file;
         }
     }
-    return globus_libc_strdup("/dev/null");
+    return strdup("/dev/null");
 }
 /* globus_l_gram_job_manager_output_local_name() */
 
@@ -1141,7 +1141,7 @@ globus_gram_job_manager_output_read_state(
             goto free_destination_out;
         }
         destination->request = request;
-        destination->url = globus_libc_strdup(buffer); 
+        destination->url = strdup(buffer); 
 
         if (destination->url == NULL)
         {
@@ -1156,7 +1156,7 @@ globus_gram_job_manager_output_read_state(
         }
         if(strlen(buffer) != 0)
         {
-            destination->tag = globus_libc_strdup(buffer);
+            destination->tag = strdup(buffer);
 
             if (destination->tag == NULL)
             {
@@ -1204,7 +1204,7 @@ globus_gram_job_manager_output_read_state(
             return GLOBUS_FAILURE;
         }
         destination->request = request;
-        destination->url = globus_libc_strdup(buffer); 
+        destination->url = strdup(buffer); 
         if (destination->url == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1218,7 +1218,7 @@ globus_gram_job_manager_output_read_state(
         }
         if(strlen(buffer) != 0)
         {
-            destination->tag = globus_libc_strdup(buffer);
+            destination->tag = strdup(buffer);
 
             if (destination->tag == NULL)
             {
@@ -1361,7 +1361,7 @@ globus_l_gram_job_manager_output_insert_urls(
         destination = malloc(
                 sizeof(globus_l_gram_job_manager_output_destination_t));
         destination->request = request;
-        destination->tag = tag ? globus_libc_strdup(tag) : NULL;
+        destination->tag = tag ? strdup(tag) : NULL;
         destination->position = 0;
         destination->callback_count = 0;
         destination->possible_write_count = 0;
@@ -1966,7 +1966,6 @@ globus_l_gram_job_manager_gass_open_callback(
                                         destination;
     globus_gass_transfer_referral_t     referral;
     int                                 rc;
-    globus_bool_t                       event_registered;
     char *                              new_url;
     globus_gram_job_manager_query_t *
                                         query;
@@ -2041,6 +2040,8 @@ globus_l_gram_job_manager_gass_open_callback(
             GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN) &&
        request->output->pending_opens == 0)
     {
+        globus_reltime_t                delay;
+
         if(request->jobmanager_state ==
             GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT &&
             request->output->open_failure_code != GLOBUS_SUCCESS)
@@ -2057,11 +2058,13 @@ globus_l_gram_job_manager_gass_open_callback(
             query = globus_fifo_peek(&request->pending_queries);
             query->failure_code = request->output->open_failure_code;
         }
-        do
-        {
-            event_registered = globus_gram_job_manager_state_machine(request);
-        }
-        while(!event_registered);
+        GlobusTimeReltimeSet(delay, 0, 0);
+
+        globus_callback_register_oneshot(
+                &request->poll_timer,
+                &delay,
+                globus_gram_job_manager_state_machine_callback,
+                request);
     }
     globus_mutex_unlock(&request->mutex);
 }
@@ -2325,7 +2328,6 @@ globus_l_gram_job_manager_output_close_done(
     globus_l_gram_job_manager_output_destination_t *
                                         destination)
 {
-    globus_bool_t                       event_registered;
     globus_list_t *                     node;
 
     if(destination->url)
@@ -2375,6 +2377,7 @@ globus_l_gram_job_manager_output_close_done(
             globus_list_empty(request->output->stdout_destinations) &&
             globus_list_empty(request->output->stderr_destinations))
         {
+            globus_reltime_t            delay;
             if(request->output->stderr_fd != -1)
             {
                 globus_libc_close(request->output->stderr_fd);
@@ -2385,18 +2388,21 @@ globus_l_gram_job_manager_output_close_done(
                 globus_libc_close(request->output->stdout_fd);
                 request->output->stdout_fd  = -1;
             }
-            globus_callback_unregister(request->output->callback_handle,
-                                       NULL,
-                                       NULL,
-                                       NULL);
+            globus_callback_unregister(
+                    request->output->callback_handle,
+                    NULL,
+                    NULL,
+                    NULL);
             request->output->callback_handle =
                 GLOBUS_HANDLE_TABLE_NO_HANDLE;
-            do
-            {
-                event_registered =
-                    globus_gram_job_manager_state_machine(request);
-            }
-            while(!event_registered);
+
+            GlobusTimeReltimeSet(delay, 0, 0);
+
+            globus_callback_register_oneshot(
+                    &request->poll_timer,
+                    &delay,
+                    globus_gram_job_manager_state_machine_callback,
+                    request);
         }
     }
 }
@@ -2423,23 +2429,23 @@ globus_l_gram_job_manager_output_get_type(
            url.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
         {
             destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FTP;
-            destination->url = globus_libc_strdup(filename);
+            destination->url = strdup(filename);
         }
         else if(url.scheme_type == GLOBUS_URL_SCHEME_HTTP ||
                 url.scheme_type == GLOBUS_URL_SCHEME_HTTPS)
         {
             destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_GASS;
-            destination->url = globus_libc_strdup(filename);
+            destination->url = strdup(filename);
         }
         else if(url.scheme_type == GLOBUS_URL_SCHEME_FILE)
         {
             destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FILE;
-            destination->url = globus_libc_strdup(url.url_path);
+            destination->url = strdup(url.url_path);
         }
         else if(url.scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
         {
             destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_CACHE;
-            destination->url = globus_libc_strdup(filename);
+            destination->url = strdup(filename);
         }
         else
         {
@@ -2453,7 +2459,7 @@ globus_l_gram_job_manager_output_get_type(
 
         if (filename[0] == '/')
         {
-            destination->url = globus_libc_strdup(filename);
+            destination->url = strdup(filename);
         }
         else
         {

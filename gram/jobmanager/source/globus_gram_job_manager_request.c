@@ -67,8 +67,8 @@ int
 globus_l_gram_generate_id(
     globus_gram_jobmanager_request_t *  request,
     char **                             jm_restart,
-    unsigned long *                     ulong1p,
-    unsigned long *                     ulong2p);
+    uint64_t *                          uniq1p,
+    uint64_t *                          uniq2p);
 
 static
 int
@@ -193,7 +193,7 @@ globus_gram_job_manager_request_init(
     gss_ctx_id_t                        response_ctx)
 {
     globus_gram_jobmanager_request_t *  r;
-    unsigned long                       ulong1, ulong2;
+    uint64_t                            uniq1, uniq2;
     int                                 rc;
     const char *                        tmp_string;
     globus_rsl_t *                      stdout_position_hack = NULL;
@@ -285,16 +285,16 @@ globus_gram_job_manager_request_init(
     rc = globus_l_gram_generate_id(
             r,
             &r->jm_restart,
-            &ulong1,
-            &ulong2);
+            &uniq1,
+            &uniq2);
 
     /* Unique ID is used to have a handle to a job that has its state saved
      * and then the job is later restarted
      */
     r->uniq_id = globus_common_create_string(
-            "%lu.%lu",
-            ulong1,
-            ulong2);
+            "%"PRIu64".%"PRIu64,
+            uniq1,
+            uniq2);
     if (r->uniq_id == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -304,10 +304,10 @@ globus_gram_job_manager_request_init(
      * job.
      */
     r->job_contact = globus_common_create_string(
-            "%s%lu/%lu/",
+            "%s%"PRIu64"/%"PRIu64"/",
             r->manager->url_base,
-            ulong1,
-            ulong2);
+            uniq1,
+            uniq2);
 
     if (r->job_contact == NULL)
     {
@@ -332,9 +332,9 @@ globus_gram_job_manager_request_init(
     }
 
     r->job_contact_path = globus_common_create_string(
-            "/%lu/%lu/",
-            ulong1,
-            ulong2);
+            "/%"PRIu64"/%"PRIu64"/",
+            uniq1,
+            uniq2);
     if (r->job_contact_path == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -365,7 +365,7 @@ globus_gram_job_manager_request_init(
     }
     else
     {
-        r->cache_tag = globus_libc_strdup(r->job_contact);
+        r->cache_tag = strdup(r->job_contact);
         if (r->cache_tag == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -482,7 +482,7 @@ globus_gram_job_manager_request_init(
     switch (rc)
     {
     case GLOBUS_SUCCESS:
-        r->remote_io_url = globus_libc_strdup(tmp_string);
+        r->remote_io_url = strdup(tmp_string);
         if (r->remote_io_url == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -514,31 +514,27 @@ globus_gram_job_manager_request_init(
         goto make_remote_io_url_file_failed;
     }
 
-    rc = globus_gram_job_manager_output_set_urls(
-            r,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-            globus_rsl_param_get_values(
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM),
-            globus_rsl_param_get_values(
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM));
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_set_stdout_urls;
-    }
     if (globus_gram_job_manager_rsl_attribute_exists(
             r->rsl,
             GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM))
     {
-        rc = globus_gram_job_manager_output_get_cache_name(
-                r,
+        const char * tmp;
+
+        rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+                r->rsl,
                 GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-                &r->local_stdout);
-        if (rc != GLOBUS_SUCCESS)
+                &tmp);
+
+        /* Only error is undefined, but we know it is defined */
+        globus_assert(rc == GLOBUS_SUCCESS);
+
+        r->local_stdout = strdup(tmp);
+
+        /* Non-string literal */
+        if (r->local_stdout == NULL)
         {
-            goto failed_get_stdout_cache_name;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+            goto failed_get_stdout_path;
         }
         rc = globus_symboltable_insert(
                 &r->symbol_table,
@@ -552,54 +548,33 @@ globus_gram_job_manager_request_init(
     }
     else
     {
-        r->local_stdout = globus_libc_strdup("/dev/null");
+        r->local_stdout = strdup("/dev/null");
         if (r->local_stdout == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
             goto failed_malloc_local_stdout;
         }
     }
-    rc = globus_gram_job_manager_rsl_remove_attribute(
-            r,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_remove_stdout;
-    }
-    rc = globus_gram_job_manager_rsl_remove_attribute(
-            r,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_remove_stdout_position;
-    }
-    
-    rc = globus_gram_job_manager_output_set_urls(
-            r,
-            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
-            globus_rsl_param_get_values(
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM),
-            globus_rsl_param_get_values(
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM));
 
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_set_stderr_urls;
-    }
     if (globus_gram_job_manager_rsl_attribute_exists(
             r->rsl,
             GLOBUS_GRAM_PROTOCOL_STDERR_PARAM))
     {
+        const char * tmp;
+        rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+                r->rsl,
+                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
+                &tmp);
 
-        rc = globus_gram_job_manager_output_get_cache_name(
-                r,
-                "stderr",
-                &r->local_stderr);
-        if (rc != GLOBUS_SUCCESS)
+        /* Only error is undefined, but we know it is defined */
+        globus_assert(rc == GLOBUS_SUCCESS);
+
+        /* Non-string literal */
+        r->local_stderr = strdup(tmp);
+        if (r->local_stderr == NULL)
         {
-            goto failed_get_stderr_cache_name;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
+            goto failed_get_stderr_path;
         }
         rc = globus_symboltable_insert(
                 &r->symbol_table,
@@ -613,26 +588,12 @@ globus_gram_job_manager_request_init(
     }
     else
     {
-        r->local_stderr = globus_libc_strdup("/dev/null");
+        r->local_stderr = strdup("/dev/null");
         if (r->local_stderr == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
             goto failed_malloc_local_stderr;
         }
-    }
-    rc = globus_gram_job_manager_rsl_remove_attribute(
-            r,
-            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_remove_stderr;
-    }
-    rc = globus_gram_job_manager_rsl_remove_attribute(
-            r,
-            GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto failed_remove_stderr_position;
     }
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
@@ -698,23 +659,19 @@ globus_gram_job_manager_request_init(
     if (rc != GLOBUS_SUCCESS)
     {
 failed_insert_cached_stderr_into_symboltable:
-failed_remove_stderr_position:
-failed_remove_stderr:
         if (r->local_stderr)
         {
             free(r->local_stderr);
         }
 failed_malloc_local_stderr:
-failed_get_stderr_cache_name:
+failed_get_stderr_path:
 failed_insert_cached_stdout_into_symboltable:
-failed_remove_stdout_position:
-failed_remove_stdout:
         if (r->local_stdout)
         {
             free(r->local_stdout);
         }
 failed_malloc_local_stdout:
-failed_get_stdout_cache_name:
+failed_get_stdout_path:
         if (r->job_history_file)
         {
             free(r->job_history_file);
@@ -735,8 +692,6 @@ staging_list_create_failed:
 cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
-failed_set_stderr_urls:
-failed_set_stdout_urls:
         if (r->remote_io_url_file)
         {
             remove(r->remote_io_url_file);
@@ -965,6 +920,14 @@ globus_gram_job_manager_request_start(
         {
             goto contact_add_failed;
         }
+    }
+
+    if (request->dry_run)
+    {
+        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
+        rc = globus_gram_job_manager_request_set_status(
+                request,
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
     }
 contact_add_failed:
 username_denied:
@@ -1528,8 +1491,8 @@ int
 globus_l_gram_generate_id(
     globus_gram_jobmanager_request_t *  request,
     char **                             jm_restart,
-    unsigned long *                     ulong1p,
-    unsigned long *                     ulong2p)
+    uint64_t *                          uniq1p,
+    uint64_t *                          uniq2p)
 {
     int                                 rc = GLOBUS_SUCCESS;
 
@@ -1561,9 +1524,9 @@ globus_l_gram_generate_id(
 
         rc = sscanf(
                 request->jm_restart,
-                "https://%*[^:]:%*d/%lu/%lu",
-                ulong1p,
-                ulong2p);
+                "https://%*[^:]:%*d/%"PRIu64"/%"PRIu64,
+                uniq1p,
+                uniq2p);
 
         if (rc < 2)
         {
@@ -1574,9 +1537,18 @@ globus_l_gram_generate_id(
     }
     else
     {
+        globus_uuid_t                   uuid;
+
+        rc = globus_uuid_create(&uuid);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        }
+
         request->jm_restart = NULL;
-        *ulong1p = (unsigned long) getpid();
-        *ulong2p = (unsigned long) time(NULL);
+
+        memcpy(uniq1p, uuid.binary.bytes, 8);
+        memcpy(uniq2p, uuid.binary.bytes, 8);
     }
 
     if (rc != GLOBUS_SUCCESS)
@@ -1690,18 +1662,14 @@ globus_l_gram_init_cache(
     }
     else
     {
-        /* Use GASS-default location for the cache */
-        *cache_locationp = NULL;
-    }
-
-    if (*cache_locationp)
-    {
-        rc = setenv("GLOBUS_GASS_CACHE_DEFAULT", *cache_locationp, 1);
-        if (rc != 0)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-            goto failed_cache_setenv;
-        }
+        /* I'd like to use GASS-default location for the cache for this, 
+         * but we can't rely on being able to set the environment and having
+         * it remain valid if multiple jobs are being processed. Instead, we'll
+         * force it to what the library would do anyway.
+         */
+        *cache_locationp = globus_common_create_string(
+                "%s/.globus/gass_cache",
+                request->config->home);
     }
 
     rc = globus_gass_cache_open(*cache_locationp, cache_handlep);
@@ -1719,7 +1687,6 @@ globus_l_gram_init_cache(
         goto failed_cache_open;
     }
 failed_cache_open:
-failed_cache_setenv:
         if (*cache_locationp)
         {
             free(*cache_locationp);
@@ -2199,8 +2166,6 @@ insert_symbol_failed:
 fatal_mkdir_err:
         free(*scratchdir);
         *scratchdir = NULL;
-no_scratchdir:
-        ;
     }
     /* Always free these intermediate values */
     free(template);
@@ -2406,15 +2371,16 @@ globus_l_gram_remote_io_url_file_create(
     int                                 rc = GLOBUS_SUCCESS;
     FILE *                              fp;
 
-    globus_gram_job_manager_request_log(
-            request,
-            "creating remote_io_url file for %s\n",
-            remote_io_url);
     if (!remote_io_url)
     {
         *remote_io_url_filep = NULL;
         goto out;
     }
+
+    globus_gram_job_manager_request_log(
+            request,
+            "creating remote_io_url file for %s\n",
+            remote_io_url);
 
     *remote_io_url_filep = globus_common_create_string(
                 "%s/remote_io_file",

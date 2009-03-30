@@ -172,10 +172,20 @@ globus_gram_job_manager_init(
     manager->socket_fd = -1;
     manager->locket_fd = -1;
 
+    rc = globus_fifo_init(&manager->script_fifo);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto script_fifo_init_failed;
+    }
+
+    /* Default number of scripts which can be run simultaneously */
+    manager->script_slots_available = 5;
     globus_mutex_unlock(&manager->mutex);
 
     if (rc != GLOBUS_SUCCESS)
     {
+script_fifo_init_failed:
 proxy_timeout_init_failed:
         globus_gram_protocol_callback_disallow(manager->url_base);
         free(manager->url_base);
@@ -263,7 +273,7 @@ globus_l_gram_job_manager_open_logfile(
     if (manager->config->logfile_flag == GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE)
     {
         /* don't write a log file */
-        manager->jobmanager_logfile = globus_libc_strdup("/dev/null");
+        manager->jobmanager_logfile = strdup("/dev/null");
         manager->jobmanager_log_fp = NULL;
     }
     else
@@ -278,17 +288,17 @@ globus_l_gram_job_manager_open_logfile(
 
         manager->jobmanager_log_fp =
                 fopen(manager->jobmanager_logfile, "a");
-	
-	if (manager->jobmanager_log_fp == NULL)
+        
+        if (manager->jobmanager_log_fp == NULL)
         {
             free(manager->jobmanager_logfile);
-            manager->jobmanager_logfile = globus_libc_strdup("/dev/null");
+            manager->jobmanager_logfile = strdup("/dev/null");
         }
     }
 
     if (manager->jobmanager_log_fp == NULL)
     {
-	manager->jobmanager_log_fp =
+        manager->jobmanager_log_fp =
                 fopen(manager->jobmanager_logfile, "a");
     }
 
@@ -296,7 +306,7 @@ globus_l_gram_job_manager_open_logfile(
     {
         int fd;
 
-	setbuf(manager->jobmanager_log_fp, NULL);
+        setbuf(manager->jobmanager_log_fp, NULL);
 
         fd = fileno(manager->jobmanager_log_fp);
 
@@ -428,7 +438,6 @@ globus_gram_job_manager_log(
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
  *     Malloc failed.
  *
- * @note Must not be called with the request mutex locked or deadlock may occur
  */
 int
 globus_gram_job_manager_add_request(
@@ -452,7 +461,7 @@ globus_gram_job_manager_add_request(
         goto ref_malloc_failed;
     }
 
-    ref->key = globus_libc_strdup(key);
+    ref->key = strdup(key);
     if (ref->key == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -510,8 +519,6 @@ ref_malloc_failed:
  *     Success.
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND
  *     Job contact not found.
- *
- * @note Must not be called with the request mutex locked or deadlock may occur
  */
 int
 globus_gram_job_manager_add_reference(
@@ -570,8 +577,6 @@ globus_gram_job_manager_add_reference(
  *     Success.
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND
  *     Job contact not found.
- *
- * @note Must not be called with the request mutex locked or deadlock may occur
  */
 int
 globus_gram_job_manager_remove_reference(

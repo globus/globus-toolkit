@@ -499,7 +499,7 @@ globus_l_gram_job_manager_read_validation_file(
             }
             else
             {
-                value = globus_libc_strdup(token_start);
+                value = strdup(token_start);
                 token_end = token_start + strlen(token_start);
             }
         }

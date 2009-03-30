@@ -269,7 +269,7 @@ globus_l_gram_audit_get_username(
         goto out;
     }
 
-    *username = globus_libc_strdup(pwd.pw_name);
+    *username = strdup(pwd.pw_name);
 
     if (*username == NULL)
     {

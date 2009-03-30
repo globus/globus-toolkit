@@ -592,11 +592,11 @@ globus_l_gram_job_manager_proxy_expiration(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
           /* Proxy expiration callback isn't registered until the
            * proxy has been relocated, so this should NEVER happen.
            */
-          globus_assert(/* premature proxy expiration */0);
+          globus_assert(
+                request->jobmanager_state!=GLOBUS_GRAM_JOB_MANAGER_STATE_START);
           break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:

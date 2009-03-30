@@ -115,10 +115,20 @@ globus_gram_job_manager_state_machine_callback(
     }
     while(!event_registered);
 
-    /* HACK: state machine returns 2 instead of GLOBUS_TRUE to notify that job
-     * was removed from the manager's request hash 
-     */
-    if (event_registered != 2)
+
+    if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE ||
+        request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
+        request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
+    {
+        int rc;
+        globus_mutex_unlock(&request->mutex);
+
+        rc = globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path);
+        assert(rc == GLOBUS_SUCCESS);
+    }
+    else
     {
         globus_mutex_unlock(&request->mutex);
     }
@@ -902,14 +912,7 @@ globus_gram_job_manager_state_machine(
                 GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
             globus_l_gram_job_manager_cancel_queries(request);
 
-            globus_mutex_unlock(&request->mutex);
-
-            rc = globus_gram_job_manager_remove_reference(
-                    request->manager,
-                    request->job_contact_path);
-            assert(rc == GLOBUS_SUCCESS);
-
-            event_registered = 2;
+            event_registered = GLOBUS_TRUE;
         }
         else
         {
@@ -1038,14 +1041,7 @@ globus_gram_job_manager_state_machine(
             }
         }
         globus_l_gram_job_manager_cancel_queries(request);
-
-        globus_mutex_unlock(&request->mutex);
-        rc = globus_gram_job_manager_remove_reference(
-                request->manager,
-                request->job_contact_path);
-        assert(rc == GLOBUS_SUCCESS);
-
-        event_registered = 2;
+        event_registered = GLOBUS_TRUE;
 
         break;
 
@@ -1084,14 +1080,7 @@ globus_gram_job_manager_state_machine(
             GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 
         globus_l_gram_job_manager_cancel_queries(request);
-        globus_mutex_unlock(&request->mutex);
-
-        rc = globus_gram_job_manager_remove_reference(
-                request->manager,
-                request->job_contact_path);
-        assert(rc == GLOBUS_SUCCESS);
-
-        event_registered = 2;
+        event_registered = GLOBUS_TRUE;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
@@ -1118,14 +1107,7 @@ globus_gram_job_manager_state_machine(
                         "JM: Error writing audit record\n");
             }
         }
-        globus_mutex_unlock(&request->mutex);
-
-        rc = globus_gram_job_manager_remove_reference(
-                request->manager,
-                request->job_contact_path);
-        assert(rc == GLOBUS_SUCCESS);
-
-        event_registered = 2;
+        event_registered = GLOBUS_TRUE;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
@@ -1139,14 +1121,7 @@ globus_gram_job_manager_state_machine(
                     request,
                     "JM: Error writing audit record\n");
         }
-        globus_mutex_unlock(&request->mutex);
-
-        rc = globus_gram_job_manager_remove_reference(
-                request->manager,
-                request->job_contact_path);
-        assert(rc == GLOBUS_SUCCESS);
-
-        event_registered = 2;
+        event_registered = GLOBUS_TRUE;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:

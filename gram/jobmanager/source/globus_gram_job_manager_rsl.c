@@ -487,10 +487,10 @@ globus_gram_job_manager_rsl_env_add(
         new_list = NULL;
 
         globus_list_insert(&new_list, (void *)
-            globus_rsl_value_make_literal(globus_libc_strdup(value)));
+            globus_rsl_value_make_literal(strdup(value)));
 
         globus_list_insert(&new_list, (void *)
-            globus_rsl_value_make_literal(globus_libc_strdup(var)));
+            globus_rsl_value_make_literal(strdup(var)));
 
         globus_list_insert(
             globus_rsl_value_sequence_get_list_ref(
@@ -609,7 +609,7 @@ globus_gram_job_manager_rsl_eval_one_attribute(
             {
                 return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
             }
-            *value = globus_libc_strdup(
+            *value = strdup(
                          globus_rsl_value_literal_get_string(
                              globus_rsl_relation_get_single_value(
                                 attribute_rsl)));
@@ -716,7 +716,7 @@ globus_gram_job_manager_rsl_evaluate_value(
     if(globus_rsl_value_is_literal(copy))
     {
         *value_string =
-            globus_libc_strdup(globus_rsl_value_literal_get_string(copy));
+            strdup(globus_rsl_value_literal_get_string(copy));
 
         if (*value_string == NULL)
         {
@@ -823,7 +823,7 @@ globus_l_gram_job_manager_rsl_match(
  *
  * @retval GLOBUS_SUCCESS
  *     Success.
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE;
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE
  *     Attribute not found.
  */
 int

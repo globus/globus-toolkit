@@ -42,30 +42,30 @@
 typedef struct
 {
     /** The name of the RSL attribute this record refers to. */
-    char *				attribute;
+    char *                              attribute;
     /**
      * A textual description of the RSL parameter. This is not
      * used other than for debugging the parser.
      */
-    char *				description;
+    char *                              description;
     /**
      * Default value of the parameter to be inserted in the RSL
      * if the parameter is not present.
      */
-    char *				default_value;
+    char *                              default_value;
     /**
      * String containing an enumeration of legal values for the
      * RSL parameter. For example, for the grammyjob parameter, this
      * would be "collective independent".
      */
-    char *				enumerated_values;
+    char *                              enumerated_values;
 
     /**
      * Bitwise or of values of the
      * globus_i_gram_job_manager_validation_when_t values, indicated
      * when, if ever, this RSL parameter is required.
      */
-    int					required_when;
+    int                                 required_when;
 
     /**
      * Bitwise or of values of the
@@ -73,19 +73,19 @@ typedef struct
      * when, if ever, this RSL parameter's default value should be
      * inserted into the RSL.
      */
-    int					default_when;
+    int                                 default_when;
     /**
      * Bitwise or of values of the
      * globus_i_gram_job_manager_validation_when_t values, indicated
      * when, if ever, this RSL parameter is valid.
      */
-    int					valid_when;
+    int                                 valid_when;
 
     /**
      * Boolean indicating whether this attribute should be published
      * in the MDS. 
      */
-    globus_bool_t			publishable;
+    globus_bool_t                       publishable;
 }
 globus_gram_job_manager_validation_record_t;
 

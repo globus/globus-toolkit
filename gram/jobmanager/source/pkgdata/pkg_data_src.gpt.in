@@ -73,6 +73,18 @@
                 </Version>
             </Dependency>
 
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_xio_popen_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
             <Dependency Name="globus_rsl">
                 <Version>
                     <Simple_Version Major="3"/>
@@ -150,6 +162,18 @@
             <Dependency Name="globus_io">
                 <Version>
                     <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_xio_popen_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 

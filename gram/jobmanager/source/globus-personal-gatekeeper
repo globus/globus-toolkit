@@ -270,6 +270,8 @@ file_prefix="personal-gatekeeper.$host"
 log=never
 seg=0
 startargs=''
+single=''
+valgrind=0
 
 while [ -n "$1" ]; do
     case "$1" in
@@ -309,6 +311,12 @@ while [ -n "$1" ]; do
 		fi
 		shift
 		;;
+        -single)
+                single="$1"
+                ;;
+        -valgrind)
+                valgrind=1
+                ;;
 	-port)
 		port="$2"
 		shift
@@ -389,9 +397,20 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
 
+if [ $valgrind -eq 1 ]; then
+    valgrind=`which valgrind`
+    if [ $? -ne 0 ]; then
+        echo "Error: can't find valgrind" 1>&2
+        exit 1
+    fi
+${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
+stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${libexecdir}/globus-job-manager -conf ${scratch}/jobmanager.conf
+EOF
+else
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
 stderr_log,local_cred - ${libexecdir}/globus-job-manager globus-job-manager -conf ${scratch}/jobmanager.conf
 EOF
+fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
 -gridmap ${scratch}/gridmap
@@ -428,6 +447,7 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -save-logfile ${log}
 -state-file-dir ${statefiledir}
 ${startargs}
+$single
 EOF
 
 

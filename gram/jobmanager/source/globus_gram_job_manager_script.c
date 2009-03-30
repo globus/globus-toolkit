@@ -15,6 +15,7 @@
  */
 
 #include "globus_gram_job_manager.h"
+#include "globus_xio_popen_driver.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,27 +23,28 @@
 #include <sys/types.h>
 #include <utime.h>
 
+globus_xio_driver_t                     globus_i_gram_job_manager_popen_driver;
+globus_xio_stack_t                      globus_i_gram_job_manager_popen_stack;
 /* Module Specific Types */
 typedef void (*globus_gram_job_manager_script_callback_t)(
-    void *				arg,
-    globus_gram_jobmanager_request_t *	request,
-    int					failure_code,
-    int					starting_state,
-    const char *			variable,
-    const char *			value);
+    void *                              arg,
+    globus_gram_jobmanager_request_t *  request,
+    int                                 failure_code,
+    int                                 starting_state,
+    const char *                        variable,
+    const char *                        value);
 
 typedef struct
 {
-    globus_byte_t			return_buf[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    globus_byte_t                       return_buf[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     globus_gram_job_manager_script_callback_t
-					callback;
-    void *				callback_arg;
-    globus_gram_jobmanager_request_t *	request;
-    FILE *				pipe;
-    globus_io_handle_t			pipe_handle;
-    int					starting_jobmanager_state;
-    char *				script_arg_file;
-    globus_gram_protocol_handle_t	protocol_handle;
+                                        callback;
+    void *                              callback_arg;
+    globus_gram_jobmanager_request_t *  request;
+    globus_xio_attr_t                   attr;
+    globus_xio_handle_t                 handle;
+    int                                 starting_jobmanager_state;
+    char *                              script_arg_file;
 }
 globus_gram_job_manager_script_context_t;
 
@@ -50,76 +52,96 @@ globus_gram_job_manager_script_context_t;
 static
 void
 globus_l_gram_job_manager_script_read(
-    void *				user_arg,
-    globus_io_handle_t *		handle,
-    globus_result_t			result,
-    globus_byte_t *			buf,
-    globus_size_t			nbytes);
+    globus_xio_handle_t                 handle, 
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes, 
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
+
+static
+void
+globus_l_gram_pclose_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              arg);
 
 static
 void
 globus_l_gram_job_manager_default_done(
-    void *				arg,
-    globus_gram_jobmanager_request_t *	request,
-    int					failure_code,
-    int					starting_state,
-    const char *			variable,
-    const char *			value);
+    void *                              arg,
+    globus_gram_jobmanager_request_t *  request,
+    int                                 failure_code,
+    int                                 starting_state,
+    const char *                        variable,
+    const char *                        value);
 
 static
 void
 globus_l_gram_job_manager_query_done(
-    void *				arg,
-    globus_gram_jobmanager_request_t *	request,
-    int					failure_code,
-    int					starting_jobmanager_state,
-    const char *			variable,
-    const char *			value);
+    void *                              arg,
+    globus_gram_jobmanager_request_t *  request,
+    int                                 failure_code,
+    int                                 starting_jobmanager_state,
+    const char *                        variable,
+    const char *                        value);
 
 static
 int
 globus_l_gram_request_validate(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 static
 int
 globus_l_gram_job_manager_print_rsl_value(
-    FILE *				fp,
-    globus_rsl_value_t *		globus_rsl_value_ptr);
+    FILE *                              fp,
+    globus_rsl_value_t *                globus_rsl_value_ptr);
 
 static
 int
 globus_l_gram_job_manager_print_rsl(
-    FILE *				fp,
-    globus_rsl_t *			ast_node);
+    FILE *                              fp,
+    globus_rsl_t *                      ast_node);
 
 static
 int
 globus_l_gram_job_manager_script_write_description(
-    FILE *				fp,
-    globus_gram_jobmanager_request_t *	request,
+    FILE *                              fp,
+    globus_gram_jobmanager_request_t *  request,
     ...);
 
 static
 char *
 globus_l_gram_job_manager_script_prepare_param(
-    const char *			param);
+    const char *                        param);
 
 static
 void
 globus_l_gram_job_manager_print_staging_list(
-    globus_gram_jobmanager_request_t *	request,
-    FILE *				fp,
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp,
     globus_gram_job_manager_staging_type_t
-    					type);
+                                        type);
 
 static
 void
 globus_l_gram_job_manager_script_staged_done(
-    globus_gram_jobmanager_request_t *	request,
+    globus_gram_jobmanager_request_t *  request,
     globus_gram_job_manager_staging_type_t
-    					type,
-    const char *			value);
+                                        type,
+    const char *                        value);
+
+static
+int
+globus_l_gram_script_queue(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_script_context_t *
+                                        context);
+static
+void
+globus_l_gram_job_manager_script_done(
+    globus_gram_job_manager_t *         manager);
 
 /**
  * Begin execution of a job manager script
@@ -127,29 +149,91 @@ globus_l_gram_job_manager_script_staged_done(
 static
 int
 globus_l_gram_job_manager_script_run(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			script_cmd,
-    char *				script_arg_file,
-    globus_gram_protocol_handle_t	protocol_handle,
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        script_cmd,
+    char *                              script_arg_file,
     globus_gram_job_manager_script_callback_t
-    					callback,
-    void *				callback_arg)
+                                        callback,
+    void *                              callback_arg)
 {
     globus_gram_job_manager_script_context_t *
-					script_context;
-    globus_result_t			result;
+                                        script_context;
+    globus_result_t                     result;
     int                                 rc;
-    char *				pipe_cmd;
+    char *                              script_path;
+    const char *                        pipe_cmd[8];
+    char *                              env[9];
+    int                                 i;
 
-    pipe_cmd = globus_common_create_string(
-            "%s/libexec/globus-job-manager-script.pl -m %s -f %s -c %s",
-	    request->config->globus_location,
-	    request->config->jobmanager_type,
-	    script_arg_file,
-	    script_cmd);
+    script_path = globus_common_create_string(
+            "%s/libexec/globus-job-manager-script.pl",
+            request->config->globus_location);
+    if (script_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto script_path_malloc_failed;
+    }
+
+    pipe_cmd[0] = script_path;
+    pipe_cmd[1] = "-m";
+    pipe_cmd[2] = request->config->jobmanager_type;
+    pipe_cmd[3] = "-f";
+    pipe_cmd[4] = script_arg_file;
+    pipe_cmd[5] = "-c";
+    pipe_cmd[6] = script_cmd;
+    pipe_cmd[7] = NULL;
+
+    memset(env, 0, sizeof(env));
+    i = 0;
+    env[i++] = globus_common_create_string(
+            "GLOBUS_LOCATION=%s",
+            request->config->globus_location);
+    env[i++] = globus_common_create_string(
+            "GLOBUS_GRAM_JOB_CONTACT=%s",
+            request->job_contact);
+    env[i++] = globus_common_create_string(
+            "X509_USER_PROXY=%s",
+            request->x509_user_proxy);
+    env[i++] = globus_common_create_string(
+            "GLOBUS_SPOOL_DIR=%s",
+            request->config->job_state_file_dir);
+    env[i++] = globus_common_create_string(
+            "HOME=%s",
+            request->config->home);
+    env[i++] = globus_common_create_string(
+            "LOGNAME=%s",
+            request->config->logname);
+    if (request->config->x509_cert_dir)
+    {
+        env[i++] = globus_common_create_string(
+                "X509_CERT_DIR=%s",
+                request->config->x509_cert_dir);
+    }
+    if (request->config->tcp_port_range)
+    {
+        env[i++] = globus_common_create_string(
+                "GLOBUS_TCP_PORT_RANGE=%s",
+                request->config->tcp_port_range);
+    }
+    env[i] = NULL;
+    for (--i; i >= 0; i--)
+    {
+        if (!env[i])
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto env_strings_failed;
+        }
+    }
 
     script_context = malloc(
-	    sizeof(globus_gram_job_manager_script_context_t));
+            sizeof(globus_gram_job_manager_script_context_t));
+    if (script_context == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto script_context_malloc_failed;
+    }
 
     rc = globus_gram_job_manager_add_reference(
             request->manager,
@@ -162,104 +246,125 @@ globus_l_gram_job_manager_script_run(
     script_context->callback_arg = callback_arg;
     script_context->request = request;
     script_context->starting_jobmanager_state = request->jobmanager_state;
-    script_context->script_arg_file = globus_libc_strdup(script_arg_file);
-    script_context->protocol_handle = protocol_handle;
-
-    globus_gram_job_manager_request_log(request,
-                          "JMI: cmd = %s\n", script_cmd);
-
-    script_context->pipe = popen(pipe_cmd, "r");
-
-    if(script_context->pipe == NULL)
+    script_context->script_arg_file = strdup(script_arg_file);
+    if (script_context->script_arg_file == NULL)
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JMI: Cannot popen shell file\n");
-        request->failure_code =
-	    GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-
-	goto popen_failed;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto script_arg_file_malloc_failed;
+    }
+    result = globus_xio_attr_init(&script_context->attr);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto attr_init_failed;
+    }
+    result = globus_xio_attr_cntl(
+            script_context->attr,
+            globus_i_gram_job_manager_popen_driver,
+            GLOBUS_XIO_POPEN_SET_PROGRAM,
+            pipe_cmd);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto attr_cntl_program_failed;
+    }
+    result = globus_xio_attr_cntl(
+            script_context->attr,
+            globus_i_gram_job_manager_popen_driver,
+            GLOBUS_XIO_POPEN_SET_CHILD_ENV,
+            env);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto attr_cntl_env_failed;
     }
 
-    setbuf(script_context->pipe, NULL);
-
-    result = globus_io_file_posix_convert(
-	    fileno(script_context->pipe),
-	    GLOBUS_NULL,
-	    &script_context->pipe_handle);
-    if(result != GLOBUS_SUCCESS)
+    result = globus_xio_handle_create(
+            &script_context->handle,
+            globus_i_gram_job_manager_popen_stack);
+    if (result != GLOBUS_SUCCESS)
     {
-	goto posix_convert_failed;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto handle_create_failed;
     }
 
-    result = globus_io_register_read(
-	    &script_context->pipe_handle,
-	    &script_context->return_buf[0],
-	    sizeof(script_context->return_buf),
-	    1,
-	    globus_l_gram_job_manager_script_read,
-	    script_context);
-
-    free(pipe_cmd);
-
-    if(result != GLOBUS_SUCCESS)
+    rc = globus_l_gram_script_queue(
+            request->manager,
+            script_context);
+    if (rc != GLOBUS_SUCCESS)
     {
-	goto register_read_failed;
+        goto queue_failed;
     }
-    return GLOBUS_SUCCESS;
+    if (rc != GLOBUS_SUCCESS)
+    {
+queue_failed:
+        (void) globus_xio_register_close(
+                script_context->handle,
+                NULL,
+                NULL,
+                NULL);
+handle_create_failed:
+attr_cntl_env_failed:
+attr_cntl_program_failed:
+        (void) globus_xio_attr_destroy(script_context->attr);
+attr_init_failed:
+        free(script_context->script_arg_file);
+script_arg_file_malloc_failed:
+        globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path);
+        free(script_context);
+script_context_malloc_failed:
+env_strings_failed:
+        for (i = 0; i < 9; i++)
+        {
+            if (env[i] != NULL)
+            {
+                free(env[i]);
+            }
+        }
+    }
 
-register_read_failed:
-posix_convert_failed:
-    pclose(script_context->pipe);
-popen_failed:
+    free(script_path);
 
-    free(pipe_cmd);
-    free(script_context);
+script_path_malloc_failed:
 
-    return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+    return rc;
 }
 /* globus_l_gram_job_manager_script_run() */
 
 static
 void
 globus_l_gram_job_manager_script_read(
-    void *				user_arg,
-    globus_io_handle_t *		handle,
-    globus_result_t			result,
-    globus_byte_t *			buf,
-    globus_size_t			nbytes)
+    globus_xio_handle_t                 handle, 
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes, 
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
 {
-    globus_gram_jobmanager_request_t *	request;
+    globus_gram_jobmanager_request_t *  request;
     globus_gram_job_manager_script_context_t *
-					script_context;
-    globus_object_t *			err;
-    char *				script_variable;
-    char *				script_variable_end;
-    unsigned char *			script_value;
-    globus_bool_t			eof = GLOBUS_FALSE;
-    char *				p;
-    int					failure_code = 0;
-    int                                 rc;
+                                        script_context;
+    char *                              script_variable;
+    char *                              script_variable_end;
+    unsigned char *                     script_value;
+    globus_bool_t                       eof = GLOBUS_FALSE;
+    char *                              p;
+    int                                 failure_code = 0;
 
-    if(result)
+    if (result)
     {
-	err = globus_error_get(result);
-	eof = GLOBUS_TRUE;
-
-	if(globus_io_eof(err))
-	{
-	    globus_object_free(err);
-	    err = GLOBUS_NULL;
-	}
-	else
-	{
-	    failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	}
-    }
-    else
-    {
-	err = GLOBUS_NULL;
+        if (globus_xio_error_is_eof(result))
+        {
+            eof = GLOBUS_TRUE;
+        }
+        else
+        {
+            failure_code =
+                GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        }
     }
 
     script_context = user_arg;
@@ -267,122 +372,156 @@ globus_l_gram_job_manager_script_read(
 
     while((p = memchr(script_context->return_buf, '\n', nbytes)) != NULL)
     {
-	*p = '\0';
+        *p = '\0';
 
-	script_variable = (char *) script_context->return_buf;
+        script_variable = (char *) script_context->return_buf;
 
-	while(*script_variable && isspace(*script_variable))
-	{
-	    script_variable++;
-	}
-	script_variable_end = script_variable;
+        while(*script_variable && isspace(*script_variable))
+        {
+            script_variable++;
+        }
+        script_variable_end = script_variable;
 
-	while(*script_variable_end && *script_variable_end != ':')
-	{
-	    script_variable_end++;
-	}
-	*script_variable_end = '\0';
+        while(*script_variable_end && *script_variable_end != ':')
+        {
+            script_variable_end++;
+        }
+        *script_variable_end = '\0';
 
-	script_value = (unsigned char *) script_variable_end+1;
+        script_value = (unsigned char *) script_variable_end+1;
 
-	script_context->callback(
-		script_context->callback_arg,
-		request,
-		failure_code,
-		script_context->starting_jobmanager_state,
-		script_variable,
-		(char *) script_value);
+        script_context->callback(
+                script_context->callback_arg,
+                request,
+                failure_code,
+                script_context->starting_jobmanager_state,
+                script_variable,
+                (char *) script_value);
 
-	globus_gram_job_manager_request_log(
-		request,
-		"JMI: while return_buf = %s = %s\n",
-		script_variable, script_value);
+        globus_gram_job_manager_request_log(
+                request,
+                "JMI: while return_buf = %s = %s\n",
+                script_variable, script_value);
 
-	/*
-	 * We need to log the batch job ID to the accounting file.
-	 */
+        /*
+         * We need to log the batch job ID to the accounting file.
+         */
 
-	if(strcmp(script_variable, "GRAM_SCRIPT_JOB_ID") == 0)
-	{
-	    const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
-	    const char * gk_jm_id  = globus_libc_getenv(gk_jm_id_var);
-	    const char * gk_peer   = globus_libc_getenv("GATEKEEPER_PEER");
-	    const char * globus_id = globus_libc_getenv("GLOBUS_ID");
-	    uid_t uid = getuid();
-	    gid_t gid = getgid();
-	    const char *user = request->config->logname;
+        if(strcmp(script_variable, "GRAM_SCRIPT_JOB_ID") == 0)
+        {
+            const char * gk_jm_id_var = "GATEKEEPER_JM_ID";
+            const char * gk_jm_id  = globus_libc_getenv(gk_jm_id_var);
+            const char * gk_peer   = globus_libc_getenv("GATEKEEPER_PEER");
+            const char * globus_id = globus_libc_getenv("GLOBUS_ID");
+            uid_t uid = getuid();
+            gid_t gid = getgid();
+            const char *user = request->config->logname;
 
-	    globus_gram_job_manager_request_acct(
-		request, "%s %s for %s on %s\n", gk_jm_id_var,
-		gk_jm_id  ? gk_jm_id  : "none",
-		globus_id ? globus_id : "unknown",
-		gk_peer   ? gk_peer   : "unknown");
+            globus_gram_job_manager_request_acct(
+                request, "%s %s for %s on %s\n", gk_jm_id_var,
+                gk_jm_id  ? gk_jm_id  : "none",
+                globus_id ? globus_id : "unknown",
+                gk_peer   ? gk_peer   : "unknown");
 
-	    globus_gram_job_manager_request_acct(
-		request, "%s %s mapped to %s (%u, %u)\n", gk_jm_id_var,
-		gk_jm_id  ? gk_jm_id  : "none",
-		user, uid, gid);
+            globus_gram_job_manager_request_acct(
+                request, "%s %s mapped to %s (%u, %u)\n", gk_jm_id_var,
+                gk_jm_id  ? gk_jm_id  : "none",
+                user, uid, gid);
 
-	    globus_gram_job_manager_request_acct(
-		request, "%s %s has %s %s manager type %s\n", gk_jm_id_var,
-		gk_jm_id  ? gk_jm_id  : "none",
-		script_variable, script_value,
+            globus_gram_job_manager_request_acct(
+                request, "%s %s has %s %s manager type %s\n", gk_jm_id_var,
+                gk_jm_id  ? gk_jm_id  : "none",
+                script_variable, script_value,
                 request->config->jobmanager_type);
-	}
+        }
 
-	nbytes -= (p + 1 - ((char *)&script_context->return_buf[0]));
-	if(nbytes > 0)
-	{
-	    memmove(&script_context->return_buf[0],
-		    p + 1, 
-		    nbytes);
-	}
-	else
-	{
-	    script_context->return_buf[0] = '\0';
-	}
+        nbytes -= (p + 1 - ((char *)&script_context->return_buf[0]));
+        if(nbytes > 0)
+        {
+            memmove(&script_context->return_buf[0],
+                    p + 1, 
+                    nbytes);
+        }
+        else
+        {
+            script_context->return_buf[0] = '\0';
+        }
     }
 
     if(! eof)
     {
-	result = globus_io_register_read(
-		&script_context->pipe_handle,
-		&script_context->return_buf[nbytes],
-		sizeof(script_context->return_buf) - nbytes,
-		1,
-		globus_l_gram_job_manager_script_read,
-		script_context);
+        result = globus_xio_register_read(
+                script_context->handle,
+                &script_context->return_buf[nbytes],
+                sizeof(script_context->return_buf) - nbytes,
+                1,
+                NULL,
+                globus_l_gram_job_manager_script_read,
+                script_context);
 
-	if(result != GLOBUS_SUCCESS)
-	{
-	    failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	}
-	else
-	{
-	    /* New callback registered successfully */
-	    return;
-	}
+        if(result != GLOBUS_SUCCESS)
+        {
+            failure_code =
+                GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        }
+        else
+        {
+            /* New callback registered successfully */
+            return;
+        }
     }
+
+    result = globus_xio_register_close(
+            script_context->handle,
+            NULL,
+            globus_l_gram_pclose_callback,
+            script_context);
     
-    pclose(script_context->pipe);
+    if (result != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_pclose_callback(
+                script_context->handle,
+                result,
+                script_context);
+    }
+}
+
+static
+void
+globus_l_gram_pclose_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              arg)
+{
+    globus_gram_job_manager_script_context_t *
+                                        script_context = arg;
+    globus_gram_jobmanager_request_t *  request;
+    int                                 rc;
+
+
+    request = script_context->request;
+
     remove(script_context->script_arg_file);
     free(script_context->script_arg_file);
+
+    script_context->callback(
+            script_context->callback_arg,
+            request,
+            (result == GLOBUS_SUCCESS)
+                ? GLOBUS_SUCCESS
+                : GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS,
+            script_context->starting_jobmanager_state,
+            NULL,
+            NULL);
+
+    free(script_context);
+
+    globus_l_gram_job_manager_script_done(request->manager);
+
     rc = globus_gram_job_manager_remove_reference(
             request->manager,
             request->job_contact_path);
-
     globus_assert(rc == GLOBUS_SUCCESS);
-
-    script_context->callback(
-	    script_context->callback_arg,
-	    request,
-	    failure_code,
-	    script_context->starting_jobmanager_state,
-	    NULL,
-	    NULL);
-
-    free(script_context);
 }
 /* globus_l_gram_job_manager_script_read() */
 
@@ -454,7 +593,7 @@ globus_gram_job_manager_script_submit(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -467,15 +606,15 @@ globus_gram_job_manager_script_submit(
               template );
         close(script_arg_fd);
         remove(template);
-	return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    "stdout", 's', stdout_filename,
-	    "stderr", 's', stderr_filename,
-	    NULL);
+            script_arg_fp,
+            request,
+            "stdout", 's', stdout_filename,
+            "stderr", 's', stderr_filename,
+            NULL);
 
     fclose(script_arg_fp);
 
@@ -494,10 +633,9 @@ globus_gram_job_manager_script_submit(
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+                template,
+                globus_l_gram_job_manager_default_done,
+                NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -649,50 +787,50 @@ globus_gram_job_manager_script_poll_fast(
 
     for ( i = 0; grid_monitor_files[i]; i++ )
     {
-	grid_monitor_output = grid_monitor_files[i];
+        grid_monitor_output = grid_monitor_files[i];
 
-	grid_monitor_file = fopen(grid_monitor_output, "r");
+        grid_monitor_file = fopen(grid_monitor_output, "r");
 
-	if( ! grid_monitor_file )
-	{
-	    /* No monitor file?  That's acceptable, silently fail */
-	    continue;
-	}
+        if( ! grid_monitor_file )
+        {
+            /* No monitor file?  That's acceptable, silently fail */
+            continue;
+        }
 
-	rc = stat(grid_monitor_output, &stat_results);
-	if( rc != 0 ) {
-	    fclose(grid_monitor_file);
-	    grid_monitor_file = NULL;
-	    continue;
-	}
+        rc = stat(grid_monitor_output, &stat_results);
+        if( rc != 0 ) {
+            fclose(grid_monitor_file);
+            grid_monitor_file = NULL;
+            continue;
+        }
 
-	if(stat_results.st_uid != this_uid ||
-	   !S_ISREG(stat_results.st_mode)
-	   /* TODO: test for world writable (bad)?  Is such a test logical on AFS? */
-	   )
-	{
-	    globus_gram_job_manager_request_log(request,
-		"JMI: poll_fast: Monitoring file %s looks untrustworthy.\n",
-		grid_monitor_output);
-	    fclose(grid_monitor_file);
-	    grid_monitor_file = NULL;
-	    continue;
-	}
+        if(stat_results.st_uid != this_uid ||
+           !S_ISREG(stat_results.st_mode)
+           /* TODO: test for world writable (bad)?  Is such a test logical on AFS? */
+           )
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: Monitoring file %s looks untrustworthy.\n",
+                grid_monitor_output);
+            fclose(grid_monitor_file);
+            grid_monitor_file = NULL;
+            continue;
+        }
 
-	if( (stat_results.st_mtime + MAX_MONITOR_FILE_AGE) < time(NULL) )
-	{
-	    globus_gram_job_manager_request_log(request,
-		"JMI: poll_fast: Monitoring file %s looks out of date.\n",
-		grid_monitor_output);
-	    fclose(grid_monitor_file);
-	    grid_monitor_file = NULL;
-	    continue;
-	}
+        if( (stat_results.st_mtime + MAX_MONITOR_FILE_AGE) < time(NULL) )
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: Monitoring file %s looks out of date.\n",
+                grid_monitor_output);
+            fclose(grid_monitor_file);
+            grid_monitor_file = NULL;
+            continue;
+        }
 
-	break;
+        break;
     }
     if ( grid_monitor_file == NULL ) {
-	goto FAST_POLL_EXIT_FAILURE;
+        goto FAST_POLL_EXIT_FAILURE;
     }
 
     /* If we got this far, we've decided we trust the file */
@@ -876,14 +1014,14 @@ FAST_POLL_EXIT:
  */
 int 
 globus_gram_job_manager_script_poll(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    char *				script_cmd = "poll";
-    int					rc;
-    FILE *				script_arg_fp;
-    char *				stdout_filename = "/dev/null";
-    char *				stderr_filename = "/dev/null";
-    int 				script_arg_fd;
+    char *                              script_cmd = "poll";
+    int                                 rc;
+    FILE *                              script_arg_fp;
+    char *                              stdout_filename = "/dev/null";
+    char *                              stderr_filename = "/dev/null";
+    int                                 script_arg_fd;
     char                                template[]="/tmp/gram_pollXXXXXX";
 
     if (!request)
@@ -927,7 +1065,7 @@ globus_gram_job_manager_script_poll(
           "JMI: local stderr filename = %s.\n", stderr_filename);
 
     globus_gram_job_manager_request_log(request,
-	"JMI: poll: seeking: %s\n", request->job_contact);
+        "JMI: poll: seeking: %s\n", request->job_contact);
     if( globus_gram_job_manager_script_poll_fast(request) == GLOBUS_SUCCESS )
     {
         return(GLOBUS_SUCCESS);
@@ -935,7 +1073,7 @@ globus_gram_job_manager_script_poll(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -956,21 +1094,20 @@ globus_gram_job_manager_script_poll(
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    "stdout", 's', stdout_filename,
-	    "stderr", 's', stderr_filename,
-	    NULL);
+            script_arg_fp,
+            request,
+            "stdout", 's', stdout_filename,
+            "stderr", 's', stderr_filename,
+            NULL);
 
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+                template,
+                globus_l_gram_job_manager_default_done,
+                NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -999,13 +1136,13 @@ globus_gram_job_manager_script_poll(
  */
 int
 globus_gram_job_manager_script_cancel(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query)
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_query_t *   query)
 {
-    FILE *				script_arg_fp;
-    char *				script_cmd = "cancel";
-    int					rc;
-    int 				script_arg_fd;
+    FILE *                              script_arg_fp;
+    char *                              script_cmd = "cancel";
+    int                                 rc;
+    int                                 script_arg_fd;
     char                                template[]="/tmp/gram_cancelXXXXXX";
 
     if (!request)
@@ -1021,7 +1158,7 @@ globus_gram_job_manager_script_cancel(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -1034,23 +1171,22 @@ globus_gram_job_manager_script_cancel(
               template);
         close(script_arg_fd);
         remove(template);
-	return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
+            script_arg_fp,
+            request,
+            NULL);
 
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_query_done,
-		query);
+                template,
+                globus_l_gram_job_manager_query_done,
+                query);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -1078,12 +1214,12 @@ globus_gram_job_manager_script_cancel(
  */
 int
 globus_gram_job_manager_script_signal(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query)
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_query_t *   query)
 {
-    FILE *				signal_arg_fp;
-    char *				script_cmd = "signal";
-    int					rc;
+    FILE *                              signal_arg_fp;
+    char *                              script_cmd = "signal";
+    int                                 rc;
     int                                 script_arg_fd;
     char                                template[]="/tmp/gram_signalXXXXXX";
 
@@ -1100,7 +1236,7 @@ globus_gram_job_manager_script_signal(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -1108,7 +1244,7 @@ globus_gram_job_manager_script_signal(
     }
     if ((signal_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram signal script argument file. %s\n",
               template );
 
@@ -1121,23 +1257,22 @@ globus_gram_job_manager_script_signal(
      * add the signal and signal_arg to the script arg file
      */
     globus_l_gram_job_manager_script_write_description(
-	    signal_arg_fp,
-	    request,
-	    "jobid", 's', request->job_id,
-	    "signal", 'd', query->signal,
-	    "signalarg", 's', query->signal_arg,
-	    NULL);
-	    
+            signal_arg_fp,
+            request,
+            "jobid", 's', request->job_id,
+            "signal", 'd', query->signal,
+            "signalarg", 's', query->signal_arg,
+            NULL);
+            
 
     fclose(signal_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_query_done,
-		query);
+                template,
+                globus_l_gram_job_manager_query_done,
+                query);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -1145,7 +1280,7 @@ globus_gram_job_manager_script_signal(
               "JMI: returning with error: %d\n", rc);
         remove(template);
 
-	return rc;
+        return rc;
     }
     return(GLOBUS_SUCCESS);
 }
@@ -1153,12 +1288,12 @@ globus_gram_job_manager_script_signal(
 
 int 
 globus_gram_job_manager_script_stage_in(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    char *				script_cmd = "stage_in";
-    FILE *				script_arg_fp;
-    int					rc;
-    int  				script_arg_fd;
+    char *                              script_cmd = "stage_in";
+    FILE *                              script_arg_fp;
+    int                                 rc;
+    int                                 script_arg_fd;
     char                                template[]="/tmp/gram_stage_inXXXXXX";
 
     if (!request)
@@ -1174,7 +1309,7 @@ globus_gram_job_manager_script_stage_in(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -1182,7 +1317,7 @@ globus_gram_job_manager_script_stage_in(
     }
     if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
         close(script_arg_fd);
@@ -1192,23 +1327,22 @@ globus_gram_job_manager_script_stage_in(
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
-	    
+            script_arg_fp,
+            request,
+            NULL);
+            
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+                template,
+                globus_l_gram_job_manager_default_done,
+                NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc );
         remove(template);
 
@@ -1216,18 +1350,18 @@ globus_gram_job_manager_script_stage_in(
     }
 
     globus_gram_job_manager_request_log(request,
-	    "JMI: returning with success\n" );
+            "JMI: returning with success\n" );
     return(GLOBUS_SUCCESS);
 }
 /* globus_gram_job_manager_script_stage_in() */
 
 int 
 globus_gram_job_manager_script_stage_out(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    char *				script_cmd = "stage_out";
-    FILE *				script_arg_fp;
-    int					rc;
+    char *                              script_cmd = "stage_out";
+    FILE *                              script_arg_fp;
+    int                                 rc;
     int                                 script_arg_fd;
     char                                template[]="/tmp/gram_stage_outXXXXXX";
 
@@ -1244,7 +1378,7 @@ globus_gram_job_manager_script_stage_out(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -1252,7 +1386,7 @@ globus_gram_job_manager_script_stage_out(
     }
     if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
         close(script_arg_fd);
@@ -1261,23 +1395,22 @@ globus_gram_job_manager_script_stage_out(
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
+            script_arg_fp,
+            request,
+            NULL);
 
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+                template,
+                globus_l_gram_job_manager_default_done,
+                NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc );
         remove(template);
 
@@ -1285,19 +1418,19 @@ globus_gram_job_manager_script_stage_out(
     }
 
     globus_gram_job_manager_request_log(request,
-	    "JMI: returning with success\n" );
+            "JMI: returning with success\n" );
     return(GLOBUS_SUCCESS);
 }
 /* globus_gram_job_manager_script_stage_out() */
 
 int 
 globus_gram_job_manager_script_file_cleanup(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    char *				script_cmd = "file_cleanup";
-    FILE *				script_arg_fp;
-    int					rc;
-    int				        script_arg_fd;
+    char *                              script_cmd = "file_cleanup";
+    FILE *                              script_arg_fp;
+    int                                 rc;
+    int                                 script_arg_fd;
     char                                template[]="/tmp/gram_file_cleanupXXXXXX";
 
     if (!request)
@@ -1313,7 +1446,7 @@ globus_gram_job_manager_script_file_cleanup(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -1321,7 +1454,7 @@ globus_gram_job_manager_script_file_cleanup(
     }
     if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
         close(script_arg_fd);
@@ -1331,23 +1464,22 @@ globus_gram_job_manager_script_file_cleanup(
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
+            script_arg_fp,
+            request,
+            NULL);
 
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+                template,
+                globus_l_gram_job_manager_default_done,
+                NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc );
         remove(template);
 
@@ -1355,19 +1487,19 @@ globus_gram_job_manager_script_file_cleanup(
     }
 
     globus_gram_job_manager_request_log(request,
-	    "JMI: returning with success\n" );
+            "JMI: returning with success\n" );
     return(GLOBUS_SUCCESS);
 }
 /* globus_gram_job_manager_script_file_cleanup() */
 
 int 
 globus_gram_job_manager_script_cache_cleanup(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    char *				script_cmd = "cache_cleanup";
-    int					rc;
-    FILE *				script_arg_fp;
-    int				        script_arg_fd;
+    char *                              script_cmd = "cache_cleanup";
+    int                                 rc;
+    FILE *                              script_arg_fp;
+    int                                 script_arg_fd;
     char                                template[] = "/tmp/gram_cache_cleanupXXXXXX";
 
     if (!request)
@@ -1380,7 +1512,7 @@ globus_gram_job_manager_script_cache_cleanup(
 
     if ((script_arg_fd = mkstemp(template)) < 0)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
 
@@ -1388,7 +1520,7 @@ globus_gram_job_manager_script_cache_cleanup(
     }
     if ((script_arg_fp = fdopen(script_arg_fd, "w")) == NULL)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               template );
         request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
@@ -1400,19 +1532,18 @@ globus_gram_job_manager_script_cache_cleanup(
     }
 
     globus_l_gram_job_manager_script_write_description(
-	    script_arg_fp,
-	    request,
-	    NULL);
+            script_arg_fp,
+            request,
+            NULL);
 
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
                 script_cmd,
-		template,
-		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+                template,
+                globus_l_gram_job_manager_default_done,
+                NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -1436,66 +1567,72 @@ globus_gram_job_manager_script_cache_cleanup(
 static
 void
 globus_l_gram_job_manager_default_done(
-    void *				arg,
-    globus_gram_jobmanager_request_t *	request,
-    int					failure_code,
-    int					starting_jobmanager_state,
-    const char *			variable,
-    const char *			value)
+    void *                              arg,
+    globus_gram_jobmanager_request_t *  request,
+    int                                 failure_code,
+    int                                 starting_jobmanager_state,
+    const char *                        variable,
+    const char *                        value)
 {
-    int					script_status;
+    int                                 script_status;
 
     globus_mutex_lock(&request->mutex);
 
     if(failure_code)
     {
-	request->failure_code = failure_code;
+        request->failure_code = failure_code;
     }
     if(!variable)
     {
-	while(!globus_gram_job_manager_state_machine(request));
+        globus_reltime_t delay;
+        GlobusTimeReltimeSet(delay, 0, 0);
+        globus_callback_register_oneshot(
+            &request->poll_timer,
+            &delay,
+            globus_gram_job_manager_state_machine_callback,
+            request);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_STATE") == 0)
     {
-	script_status = atoi(value);
+        script_status = atoi(value);
 
-	if(script_status < 0)
-	{
-	    request->failure_code = 
-		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	}
-	else if(globus_i_gram_job_manager_script_valid_state_change(
-		    request, script_status))
-	{
+        if(script_status < 0)
+        {
+            request->failure_code = 
+                GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        }
+        else if(globus_i_gram_job_manager_script_valid_state_change(
+                    request, script_status))
+        {
         globus_gram_job_manager_request_set_status(request, script_status);
-	    request->unsent_status_change = GLOBUS_TRUE;
-	}
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_ERROR") == 0)
     {
-	script_status = atoi(value);
+        script_status = atoi(value);
 
-	if(request->jobmanager_state == starting_jobmanager_state)
-	{
-	    globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-	    if(script_status <= 0)
-	    {
-		request->failure_code = 
-		    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	    }
-	    else
-	    {
-		request->failure_code = script_status;
-	    }
-	    request->unsent_status_change = GLOBUS_TRUE;
-	}
+        if(request->jobmanager_state == starting_jobmanager_state)
+        {
+            globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+            if(script_status <= 0)
+            {
+                request->failure_code = 
+                    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+            }
+            else
+            {
+                request->failure_code = script_status;
+            }
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ID") == 0)
     {
         if(value != NULL && strlen(value) > 0)
-	{
-	    request->job_id = globus_libc_strdup(value);
-	}
+        {
+            request->job_id = strdup(value);
+        }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ACCT_INFO") == 0)
     {
@@ -1503,65 +1640,65 @@ globus_l_gram_job_manager_default_done(
         {
             const char *gk_jm_id_var = "GATEKEEPER_JM_ID";
             const char *gk_jm_id = globus_libc_getenv(gk_jm_id_var);
-	    const char *v = value;
-	    char *buf = malloc(strlen(value) + 1);
-	    char *b = buf;
-	    char c;
+            const char *v = value;
+            char *buf = malloc(strlen(value) + 1);
+            char *b = buf;
+            char c;
 
-	    while ((*b++ = ((c = *v++) != '\\') ? c :
-		           ((c = *v++) != 'n' ) ? c : '\n'))
-	    {
-	    }
+            while ((*b++ = ((c = *v++) != '\\') ? c :
+                           ((c = *v++) != 'n' ) ? c : '\n'))
+            {
+            }
 
             globus_gram_job_manager_request_acct(
-		request, "%s %s summary:\n%s\nJMA -- end of summary\n", gk_jm_id_var,
-		gk_jm_id ? gk_jm_id : "none", buf);
+                request, "%s %s summary:\n%s\nJMA -- end of summary\n", gk_jm_id_var,
+                gk_jm_id ? gk_jm_id : "none", buf);
 
-	    free(buf);
+            free(buf);
         }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_SCRATCH_DIR") == 0)
     {
-	request->scratchdir = globus_libc_strdup(value);
+        request->scratchdir = strdup(value);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_STAGED_IN") == 0)
     {
-	globus_l_gram_job_manager_script_staged_done(
-		request,
-		GLOBUS_GRAM_JOB_MANAGER_STAGE_IN,
-		value);
+        globus_l_gram_job_manager_script_staged_done(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_STAGE_IN,
+                value);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_STAGED_IN_SHARED") == 0)
     {
-	globus_l_gram_job_manager_script_staged_done(
-		request,
-		GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED,
-		value);
+        globus_l_gram_job_manager_script_staged_done(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED,
+                value);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_STAGED_OUT") == 0)
     {
-	if(request->jobmanager_state == starting_jobmanager_state)
-	{
-    	    globus_l_gram_job_manager_script_staged_done(
-		    request,
-		    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
-		    value);
-	}
+        if(request->jobmanager_state == starting_jobmanager_state)
+        {
+            globus_l_gram_job_manager_script_staged_done(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
+                    value);
+        }
     }
     else if(strncmp(variable, "GRAM_SCRIPT_GT3", 15) == 0)
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JM: GT3 extended error message: %s:%s\n",
-		variable,
-		value ? value : "");
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: GT3 extended error message: %s:%s\n",
+                variable,
+                value ? value : "");
     }
     else if(request->jobmanager_state == starting_jobmanager_state)
     {
-	globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-	request->failure_code = 
-	    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	request->unsent_status_change = GLOBUS_TRUE;
+        globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+        request->failure_code = 
+            GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        request->unsent_status_change = GLOBUS_TRUE;
     }
 
     globus_mutex_unlock(&request->mutex);
@@ -1574,15 +1711,15 @@ globus_l_gram_job_manager_default_done(
 static
 void
 globus_l_gram_job_manager_query_done(
-    void *				arg,
-    globus_gram_jobmanager_request_t *	request,
-    int					failure_code,
-    int					starting_jobmanager_state,
-    const char *			variable,
-    const char *			value)
+    void *                              arg,
+    globus_gram_jobmanager_request_t *  request,
+    int                                 failure_code,
+    int                                 starting_jobmanager_state,
+    const char *                        variable,
+    const char *                        value)
 {
-    int					script_status;
-    globus_gram_job_manager_query_t *	query;
+    int                                 script_status;
+    globus_gram_job_manager_query_t *   query;
 
     query = arg;
 
@@ -1590,70 +1727,76 @@ globus_l_gram_job_manager_query_done(
 
     if(failure_code)
     {
-	request->failure_code = failure_code;
+        request->failure_code = failure_code;
     }
     if(!variable)
     {
-	while(!globus_gram_job_manager_state_machine(request));
+        globus_reltime_t delay;
+        GlobusTimeReltimeSet(delay, 0, 0);
+        globus_callback_register_oneshot(
+            &request->poll_timer,
+            &delay,
+            globus_gram_job_manager_state_machine_callback,
+            request);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_ERROR") == 0)
     {
-	script_status = atoi(value);
+        script_status = atoi(value);
 
-	if(script_status <= 0)
-	{
-	    query->failure_code = 
-		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	}
-	else
-	{
-	    query->failure_code = script_status;
-	}
+        if(script_status <= 0)
+        {
+            query->failure_code = 
+                GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        }
+        else
+        {
+            query->failure_code = script_status;
+        }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_STATE") == 0)
     {
-	script_status = atoi(value);
+        script_status = atoi(value);
 
-	if(script_status <= 0)
-	{
-	    query->failure_code = 
-		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
-	}
-	else if((query->type == GLOBUS_GRAM_JOB_MANAGER_CANCEL ||
-		query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL) &&
-		(globus_i_gram_job_manager_script_valid_state_change(
-		    request, script_status)))
-	{
-	    request->unsent_status_change = GLOBUS_TRUE;
-	    globus_gram_job_manager_request_set_status(request, script_status);
-	    if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-	    {
-		request->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
-		query->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
-	    }
-	}
-	else if((query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND ||
-		query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME) &&
-	        globus_i_gram_job_manager_script_valid_state_change(
-						 request,
-						 script_status))
-		
-	{
-	    globus_gram_job_manager_request_set_status(request, script_status);
-	    request->unsent_status_change = GLOBUS_TRUE;
-	}
+        if(script_status <= 0)
+        {
+            query->failure_code = 
+                GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        }
+        else if((query->type == GLOBUS_GRAM_JOB_MANAGER_CANCEL ||
+                query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL) &&
+                (globus_i_gram_job_manager_script_valid_state_change(
+                    request, script_status)))
+        {
+            request->unsent_status_change = GLOBUS_TRUE;
+            globus_gram_job_manager_request_set_status(request, script_status);
+            if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+            {
+                request->failure_code =
+                    GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
+                query->failure_code =
+                    GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
+            }
+        }
+        else if((query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND ||
+                query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME) &&
+                globus_i_gram_job_manager_script_valid_state_change(
+                                                 request,
+                                                 script_status))
+                
+        {
+            globus_gram_job_manager_request_set_status(request, script_status);
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
     }
     else
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JM: unexpected response from script: %s:%s\n",
-		variable,
-		value ? value : "");
-	query->failure_code = 
-	    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: unexpected response from script: %s:%s\n",
+                variable,
+                value ? value : "");
+        query->failure_code = 
+            GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
     }
 
     globus_mutex_unlock(&request->mutex);
@@ -1676,44 +1819,44 @@ globus_l_gram_job_manager_query_done(
 static
 int
 globus_l_gram_job_manager_print_rsl_value(
-    FILE *				fp,
-    globus_rsl_value_t *		globus_rsl_value_ptr)
+    FILE *                              fp,
+    globus_rsl_value_t *                globus_rsl_value_ptr)
 {
-    globus_rsl_value_t *		tmp_rsl_value_ptr;
-    globus_list_t *			tmp_rsl_list;
-    char *				tmp;
+    globus_rsl_value_t *                tmp_rsl_value_ptr;
+    globus_list_t *                     tmp_rsl_list;
+    char *                              tmp;
 
     if (globus_rsl_value_ptr==NULL) return(0);
 
     switch (globus_rsl_value_ptr->type)
     {
         case GLOBUS_RSL_VALUE_LITERAL:
-	    tmp = globus_rsl_value_literal_get_string(globus_rsl_value_ptr);
+            tmp = globus_rsl_value_literal_get_string(globus_rsl_value_ptr);
 
-	    fputc('\'', fp);
-	    while(*tmp)
-	    {
-		if(*tmp == '\'' || *tmp == '\\')
-		{
-		    fputc('\\', fp);
-		    fputc(*tmp, fp);
-		}
-		else
-		{
-		    fputc(*tmp, fp);
-		}
-		tmp++;
-	    }
-	    fputc('\'', fp);
+            fputc('\'', fp);
+            while(*tmp)
+            {
+                if(*tmp == '\'' || *tmp == '\\')
+                {
+                    fputc('\\', fp);
+                    fputc(*tmp, fp);
+                }
+                else
+                {
+                    fputc(*tmp, fp);
+                }
+                tmp++;
+            }
+            fputc('\'', fp);
 
             break;
 
         case GLOBUS_RSL_VALUE_SEQUENCE:
 
             tmp_rsl_list = globus_rsl_value_sequence_get_value_list(
-		    globus_rsl_value_ptr);
+                    globus_rsl_value_ptr);
 
-	    fprintf(fp, "[ ");
+            fprintf(fp, "[ ");
 
             while (! globus_list_empty(tmp_rsl_list))
             {
@@ -1722,12 +1865,12 @@ globus_l_gram_job_manager_print_rsl_value(
                 globus_l_gram_job_manager_print_rsl_value(fp,tmp_rsl_value_ptr);
 
                 tmp_rsl_list = globus_list_rest(tmp_rsl_list);
-		if(!globus_list_empty(tmp_rsl_list))
-		{
-		    fprintf(fp, ", ");
-		}
+                if(!globus_list_empty(tmp_rsl_list))
+                {
+                    fprintf(fp, ", ");
+                }
             }
-	    fprintf(fp, "] ");
+            fprintf(fp, "] ");
 
             break;
 
@@ -1735,7 +1878,7 @@ globus_l_gram_job_manager_print_rsl_value(
         case GLOBUS_RSL_VALUE_CONCATENATION:
         default:
             fprintf(fp, "''");
-	    return 1;
+            return 1;
             break;
     }
 
@@ -1759,12 +1902,12 @@ globus_l_gram_job_manager_print_rsl_value(
 static
 int
 globus_l_gram_job_manager_print_rsl(
-    FILE *				fp,
-    globus_rsl_t *			ast_node)
+    FILE *                              fp,
+    globus_rsl_t *                      ast_node)
 {
-    globus_list_t *			tmp_rsl_list;
-    globus_rsl_t *			tmp_rsl_ptr;
-    int					rc;
+    globus_list_t *                     tmp_rsl_list;
+    globus_rsl_t *                      tmp_rsl_ptr;
+    int                                 rc;
 
     if (globus_rsl_is_boolean(ast_node))
     {
@@ -1779,40 +1922,40 @@ globus_l_gram_job_manager_print_rsl(
 
             tmp_rsl_list = globus_list_rest(tmp_rsl_list);
 
-	    if(!globus_list_empty(tmp_rsl_list))
-	    {
-		fprintf(fp, ",\n");
-	    }
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		return rc;
-	    }
+            if(!globus_list_empty(tmp_rsl_list))
+            {
+                fprintf(fp, ",\n");
+            }
+            if(rc != GLOBUS_SUCCESS)
+            {
+                return rc;
+            }
         }
     }
     else
     {
-	/* Skip these, as they will be over-ridden by the todo lists */
-	if((strcmp(globus_rsl_relation_get_attribute(ast_node),
-		    "filestagein") == 0) ||
-	   (strcmp(globus_rsl_relation_get_attribute(ast_node),
-		    "filestageinshared") == 0) ||
-	   (strcmp(globus_rsl_relation_get_attribute(ast_node),
-		    "filestageout") == 0))
-	{
-	    return 0;
-	}
-		  
-	fprintf(fp,
-		"    '%s' => ",
-		globus_rsl_relation_get_attribute(ast_node));
+        /* Skip these, as they will be over-ridden by the todo lists */
+        if((strcmp(globus_rsl_relation_get_attribute(ast_node),
+                    "filestagein") == 0) ||
+           (strcmp(globus_rsl_relation_get_attribute(ast_node),
+                    "filestageinshared") == 0) ||
+           (strcmp(globus_rsl_relation_get_attribute(ast_node),
+                    "filestageout") == 0))
+        {
+            return 0;
+        }
+                  
+        fprintf(fp,
+                "    '%s' => ",
+                globus_rsl_relation_get_attribute(ast_node));
 
         rc = globus_l_gram_job_manager_print_rsl_value(
-		fp,
-		globus_rsl_relation_get_value_sequence(ast_node));
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    return rc;
-	}
+                fp,
+                globus_rsl_relation_get_value_sequence(ast_node));
+        if(rc != GLOBUS_SUCCESS)
+        {
+            return rc;
+        }
     }
     return 0;
 }
@@ -1821,16 +1964,16 @@ globus_l_gram_job_manager_print_rsl(
 static
 int
 globus_l_gram_job_manager_script_write_description(
-    FILE *				fp,
-    globus_gram_jobmanager_request_t *	request,
+    FILE *                              fp,
+    globus_gram_jobmanager_request_t *  request,
     ...)
 {
-    va_list				ap;
-    char *				attribute;
-    char				format;
-    char *				string_value;
-    int					int_value;
-    char *				prepared;
+    va_list                             ap;
+    char *                              attribute;
+    char                                format;
+    char *                              string_value;
+    int                                 int_value;
+    char *                              prepared;
 
     va_start(ap, request);
 
@@ -1841,97 +1984,97 @@ globus_l_gram_job_manager_script_write_description(
     /* Other non-rsl or rsl-override attributes */
     while(1)
     {
-	attribute = va_arg(ap, char *);
+        attribute = va_arg(ap, char *);
 
-	if(!attribute)
-	{
-	    break;
-	}
-	format = (char) va_arg(ap, int);
+        if(!attribute)
+        {
+            break;
+        }
+        format = (char) va_arg(ap, int);
 
-	switch(format)
-	{
-	  case 's':
-	    string_value = va_arg(ap, char *);
-	    if(string_value)
-	    {
-		prepared = globus_l_gram_job_manager_script_prepare_param(
-			string_value);
+        switch(format)
+        {
+          case 's':
+            string_value = va_arg(ap, char *);
+            if(string_value)
+            {
+                prepared = globus_l_gram_job_manager_script_prepare_param(
+                        string_value);
 
-		fprintf(fp, ",\n    '%s' => [ '%s' ]", attribute, prepared);
-		free(prepared);
-	    }
-	    break;
+                fprintf(fp, ",\n    '%s' => [ '%s' ]", attribute, prepared);
+                free(prepared);
+            }
+            break;
 
-	  case 'i':
-	  case 'd':
-	    int_value = va_arg(ap, int);
-	    fprintf(fp, ",\n    '%s' => [ '%d' ]", attribute, int_value);
-	    break;
-	}
+          case 'i':
+          case 'd':
+            int_value = va_arg(ap, int);
+            fprintf(fp, ",\n    '%s' => [ '%d' ]", attribute, int_value);
+            break;
+        }
     }
     va_end(ap);
 
     if(request->manager->jobmanager_logfile)
     {
-	fprintf(fp,
-		",\n    'logfile' => [ '%s' ]",
-		request->manager->jobmanager_logfile);
+        fprintf(fp,
+                ",\n    'logfile' => [ '%s' ]",
+                request->manager->jobmanager_logfile);
     }
     if(request->uniq_id)
     {
-	fprintf(fp,
-		",\n    'uniqid' => [ '%s' ]",
-		request->uniq_id);
+        fprintf(fp,
+                ",\n    'uniqid' => [ '%s' ]",
+                request->uniq_id);
     }
     if(request->job_id)
     {
-	fprintf(fp,
-		",\n    'jobid' => [ '%s' ]",
-		request->job_id);
+        fprintf(fp,
+                ",\n    'jobid' => [ '%s' ]",
+                request->job_id);
     }
     if(request->cache_tag)
     {
-	fprintf(fp,
-		",\n    'cachetag' => [ '%s' ]",
-		request->cache_tag);
+        fprintf(fp,
+                ",\n    'cachetag' => [ '%s' ]",
+                request->cache_tag);
     }
     if(request->config->condor_os)
     {
-	fprintf(fp,
-		",\n    'condoros' => [ '%s' ]",
-		request->config->condor_os);
+        fprintf(fp,
+                ",\n    'condoros' => [ '%s' ]",
+                request->config->condor_os);
     }
     if(request->config->condor_arch)
     {
-	fprintf(fp,
-		",\n    'condorarch' => [ '%s' ]",
-		request->config->condor_arch);
+        fprintf(fp,
+                ",\n    'condorarch' => [ '%s' ]",
+                request->config->condor_arch);
     }
     if (request->job_dir)
     {
-	fprintf(fp,
-		",\n    'jobdir' => [ '%s' ]",
-		request->job_dir);
+        fprintf(fp,
+                ",\n    'jobdir' => [ '%s' ]",
+                request->job_dir);
     }
 
     fprintf(fp, ",\n    'streamingdisabled' => [ %d ]",
-	    request->config->streaming_disabled);
+            request->config->streaming_disabled);
     fprintf(fp, ",\n    'streamingrequested' => [ %d ]",
-	    request->streaming_requested );
+            request->streaming_requested );
 
     globus_l_gram_job_manager_print_staging_list(
-	    request,
-	    fp,
-	    GLOBUS_GRAM_JOB_MANAGER_STAGE_IN);
+            request,
+            fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_IN);
     globus_l_gram_job_manager_print_staging_list(
-	    request,
-	    fp,
-	    GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED);
+            request,
+            fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED);
     globus_l_gram_job_manager_print_staging_list(
-	    request,
-	    fp,
-	    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
+            request,
+            fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
     fprintf(fp, "\n};\n");
 
     return GLOBUS_SUCCESS;
@@ -1947,15 +2090,15 @@ globus_l_gram_job_manager_script_write_description(
 static
 char *
 globus_l_gram_job_manager_script_prepare_param(
-    const char *			param)
+    const char *                        param)
 {
-    int					i;
-    int					j;
-    char *				new_param;
+    int                                 i;
+    int                                 j;
+    char *                              new_param;
 
     if (param == NULL)
     {
-	return NULL;
+        return NULL;
     }
     new_param = malloc(strlen(param)*2+1);
 
@@ -2004,16 +2147,16 @@ globus_l_gram_job_manager_script_prepare_param(
 static
 int
 globus_l_gram_request_validate(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    struct stat				statbuf;
-    char				script_path[512];
-    char *				location;
-    int					rc = GLOBUS_SUCCESS;
+    struct stat                         statbuf;
+    char                                script_path[512];
+    char *                              location;
+    int                                 rc = GLOBUS_SUCCESS;
 
     if (! request->config->jobmanager_type)
     {
-	globus_gram_job_manager_request_log(request,
+        globus_gram_job_manager_request_log(request,
             "JMI: job manager type is not specified, cannot continue.\n");
         return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_MANAGER_TYPE;
     }
@@ -2031,32 +2174,32 @@ globus_l_gram_request_validate(
     * that the user has permission to execute then.
     */
     globus_gram_job_manager_request_log(request,
-	"JMI: testing job manager scripts for type %s exist and "
-	"permissions are ok.\n", request->config->jobmanager_type);
+        "JMI: testing job manager scripts for type %s exist and "
+        "permissions are ok.\n", request->config->jobmanager_type);
 
    /*---------------- job manager script -----------------*/
    sprintf(script_path,
-	   "%s/libexec/globus-job-manager-script.pl",
-	   request->config->globus_location);
+           "%s/libexec/globus-job-manager-script.pl",
+           request->config->globus_location);
 
     if (stat(script_path, &statbuf) != 0)
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JMI: ERROR: script %s was not found.\n",
-		script_path);
-	
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-	
-	goto free_location_exit;
+        globus_gram_job_manager_request_log(
+                request,
+                "JMI: ERROR: script %s was not found.\n",
+                script_path);
+        
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+        
+        goto free_location_exit;
    }
 
    if (!(statbuf.st_mode & 0111))
    {
        globus_gram_job_manager_request_log(
-	       request,
-	       "JMI: ERROR: Not permitted to execute script %s.\n",
-	       script_path);
+               request,
+               "JMI: ERROR: Not permitted to execute script %s.\n",
+               script_path);
 
        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
 
@@ -2067,25 +2210,25 @@ globus_l_gram_request_validate(
     * Verify existence/executableness of scheduler specific script.
     */
     sprintf(script_path, "%s/lib/perl/Globus/GRAM/JobManager/%s.pm",
-			location,
-			request->config->jobmanager_type);
+                        location,
+                        request->config->jobmanager_type);
 
     if(stat(script_path, &statbuf) != 0)
     {
-	globus_gram_job_manager_request_log(
-		request,
-		"JMI: ERROR: script %s was not found.\n",
-		script_path);
-	
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+        globus_gram_job_manager_request_log(
+                request,
+                "JMI: ERROR: script %s was not found.\n",
+                script_path);
+        
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
 
-	goto free_location_exit;
+        goto free_location_exit;
     }
 
     globus_gram_job_manager_request_log(
-	    request,
-	    "JMI: completed script validation: job manager type is %s.\n",
-	    request->config->jobmanager_type);
+            request,
+            "JMI: completed script validation: job manager type is %s.\n",
+            request->config->jobmanager_type);
 
 free_location_exit:
     free(location);
@@ -2096,32 +2239,32 @@ free_location_exit:
 static
 void
 globus_l_gram_job_manager_print_staging_list(
-    globus_gram_jobmanager_request_t *	request,
-    FILE *				fp,
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp,
     globus_gram_job_manager_staging_type_t
-    					type)
+                                        type)
 {
-    globus_list_t *			tmp_list;
-    char *				attribute;
-    char *				from;
-    char *				to;
+    globus_list_t *                     tmp_list;
+    char *                              attribute;
+    char *                              from;
+    char *                              to;
     globus_gram_job_manager_staging_info_t *
-					info;
+                                        info;
 
     switch(type)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN:
-	tmp_list = request->stage_in_todo;
-	attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM;
-	break;
+        tmp_list = request->stage_in_todo;
+        attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM;
+        break;
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED:
-	tmp_list = request->stage_in_shared_todo;
-	attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM;
-	break;
+        tmp_list = request->stage_in_shared_todo;
+        attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM;
+        break;
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
-	tmp_list = request->stage_out_todo;
-	attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM;
-	break;
+        tmp_list = request->stage_out_todo;
+        attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM;
+        break;
     }
     /* Always write the attribute to the script arg file, even if
      * it's empty---if we were restarted during staging, then we
@@ -2131,20 +2274,20 @@ globus_l_gram_job_manager_print_staging_list(
     fprintf(fp, ",\n%s => [", attribute);
     while(!globus_list_empty(tmp_list))
     {
-	info = globus_list_first(tmp_list);
-	tmp_list = globus_list_rest(tmp_list);
-	from = globus_l_gram_job_manager_script_prepare_param(
-		info->evaled_from);
-	to  = globus_l_gram_job_manager_script_prepare_param(
-		info->evaled_to);
+        info = globus_list_first(tmp_list);
+        tmp_list = globus_list_rest(tmp_list);
+        from = globus_l_gram_job_manager_script_prepare_param(
+                info->evaled_from);
+        to  = globus_l_gram_job_manager_script_prepare_param(
+                info->evaled_to);
 
-	fprintf(fp, " ['%s', '%s']%s",
-		from,
-		to,
-		globus_list_empty(tmp_list) ? "\n" : ",\n");
+        fprintf(fp, " ['%s', '%s']%s",
+                from,
+                to,
+                globus_list_empty(tmp_list) ? "\n" : ",\n");
 
-	free(from);
-	free(to);
+        free(from);
+        free(to);
     }
     fprintf(fp, " ]");
     return;
@@ -2154,30 +2297,30 @@ globus_l_gram_job_manager_print_staging_list(
 static
 void
 globus_l_gram_job_manager_script_staged_done(
-    globus_gram_jobmanager_request_t *	request,
+    globus_gram_jobmanager_request_t *  request,
     globus_gram_job_manager_staging_type_t
-    					type,
-    const char *			value)
+                                        type,
+    const char *                        value)
 {
-    char *				from;
-    char *				to;
+    char *                              from;
+    char *                              to;
 
     from = malloc(strlen(value)+1);
     to = malloc(strlen(value)+1);
     sscanf(value, "%s %s", from, to);
 
     globus_gram_job_manager_staging_remove(
-	    request,
-	    type,
-	    from,
-	    to);
+            request,
+            type,
+            from,
+            to);
 
     if(request->save_state &&
             request->jobmanager_state !=
                     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
     {
-	globus_gram_job_manager_state_file_write(
-		request);
+        globus_gram_job_manager_state_file_write(
+                request);
     }
 
     free(from);
@@ -2187,56 +2330,216 @@ globus_l_gram_job_manager_script_staged_done(
 
 globus_bool_t
 globus_i_gram_job_manager_script_valid_state_change(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_protocol_job_state_t	new_state)
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_protocol_job_state_t    new_state)
 {
     switch(request->status)
     {
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
-	  if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING)
-	  {
-	      return GLOBUS_TRUE;
-	  }
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
-	  if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING &&
-	     new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
-	  {
-	      return GLOBUS_TRUE;
-	  }
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED:
-	  if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING &&
-	     new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED)
-	  {
-	      return GLOBUS_TRUE;
-	  }
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
-	  if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED)
-	  {
-	      return GLOBUS_TRUE;
-	  }
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
-	  if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN)
-	  {
-	      return GLOBUS_TRUE;
-	  }
-	  return GLOBUS_FALSE;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
-	  if(new_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
-	     new_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-	  {
-	      return GLOBUS_TRUE;
-	  }
-	  return GLOBUS_FALSE;
-	default:
-	  return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
+          if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING)
+          {
+              return GLOBUS_TRUE;
+          }
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
+          if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING &&
+             new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
+          {
+              return GLOBUS_TRUE;
+          }
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED:
+          if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING &&
+             new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED)
+          {
+              return GLOBUS_TRUE;
+          }
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
+          if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED)
+          {
+              return GLOBUS_TRUE;
+          }
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
+          if(new_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN)
+          {
+              return GLOBUS_TRUE;
+          }
+          return GLOBUS_FALSE;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
+          if(new_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
+             new_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+          {
+              return GLOBUS_TRUE;
+          }
+          return GLOBUS_FALSE;
+        default:
+          return GLOBUS_FALSE;
     }
 }
 /* globus_l_gram_job_manager_script_valid_state_change() */
+
+/**
+ * Queue and perhaps start a job manager script
+ *
+ * If the job manager isn't currently running too many simultaneous scripts, 
+ * start the script described in the @a context parameter. Otherwise, queue
+ * it in the manager's script fifo and it will start when another one finishes.
+ *
+ * @param manager
+ *     Manager state
+ * @param context
+ *     Script context
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT
+ *     Error opening jobmanager script
+ */
+static
+int
+globus_l_gram_script_queue(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_script_context_t *
+                                        context)
+{
+    globus_result_t                     result;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_gram_job_manager_script_context_t *
+                                        head = NULL;
+
+    globus_mutex_lock(&manager->mutex);
+    if (manager->script_slots_available > 0)
+    {
+        globus_assert(globus_fifo_empty(&manager->script_fifo));
+        head = context;
+        manager->script_slots_available--;
+    }
+    else
+    {
+        globus_fifo_enqueue(&manager->script_fifo, context);
+    }
+
+    if (head)
+    {
+        result = globus_xio_open(
+                head->handle,
+                NULL,
+                head->attr);
+        if (result != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+            goto xio_open_failed;
+        }
+
+        result = globus_xio_register_read(
+                head->handle,
+                head->return_buf,
+                sizeof(head->return_buf),
+                1,
+                NULL,
+                globus_l_gram_job_manager_script_read,
+                head);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+            goto register_read_failed;
+        }
+    }
+
+register_read_failed:
+xio_open_failed:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        manager->script_slots_available++;
+    }
+    globus_mutex_unlock(&manager->mutex);
+
+    return rc;
+}
+/* globus_l_gram_script_queue() */
+
+/**
+ * Finished processing a script, start another if one is queued
+ *
+ * @param manager
+ *     Job manager state
+ * 
+ * @return void
+ */
+static
+void
+globus_l_gram_job_manager_script_done(
+    globus_gram_job_manager_t *         manager)
+{
+    globus_result_t                     result;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_gram_job_manager_script_context_t *
+                                        head = NULL;
+
+    globus_mutex_lock(&manager->mutex);
+    if (!globus_fifo_empty(&manager->script_fifo))
+    {
+        head = globus_fifo_dequeue(&manager->script_fifo);
+    }
+    else
+    {
+        manager->script_slots_available++;
+    }
+    globus_mutex_unlock(&manager->mutex);
+
+    if (head)
+    {
+        result = globus_xio_open(
+                head->handle,
+                NULL,
+                head->attr);
+        if (result != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+            goto xio_open_failed;
+        }
+
+        result = globus_xio_register_read(
+                head->handle,
+                head->return_buf,
+                sizeof(head->return_buf),
+                1,
+                NULL,
+                globus_l_gram_job_manager_script_read,
+                head);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+            goto register_read_failed;
+        }
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+register_read_failed:
+xio_open_failed:
+        result = globus_xio_register_close(
+                head->handle,
+                NULL,
+                globus_l_gram_pclose_callback,
+                head);
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_l_gram_pclose_callback(
+                    head->handle,
+                    result,
+                    head);
+        }
+    }
+
+    return;
+}
+/* globus_l_gram_job_manager_script_done() */

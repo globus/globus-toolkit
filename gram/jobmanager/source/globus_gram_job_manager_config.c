@@ -31,9 +31,9 @@
 
 static int
 globus_l_gram_tokenize(
-    char *				command,
-    char **				args,
-    int *				n);
+    char *                              command,
+    char **                             args,
+    int *                               n);
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
@@ -58,12 +58,12 @@ globus_l_gram_tokenize(
 int
 globus_gram_job_manager_config_init(
     globus_gram_job_manager_config_t *  config,
-    int 				argc,
-    char **				argv,
+    int                                 argc,
+    char **                             argv,
     char **                             rsl)
 {
-    int					i;
-    int					rc = 0;
+    int                                 i;
+    int                                 rc = 0;
     char                                hostname[MAXHOSTNAMELEN];
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
@@ -115,7 +115,7 @@ globus_gram_job_manager_config_init(
         globus_l_gram_tokenize(newbuf, &newargv[1], &newargc);
 
         for (i=3; i<argc; i++)
-            newargv[++newargc] = globus_libc_strdup(argv[i]);
+            newargv[++newargc] = strdup(argv[i]);
 
         argv = newargv;
         argc = newargc + 1;
@@ -126,141 +126,141 @@ globus_gram_job_manager_config_init(
      */
     for (i = 1; i < argc; i++)
     {
-	if ((strcmp(argv[i], "-save-logfile") == 0)
+        if ((strcmp(argv[i], "-save-logfile") == 0)
                  && (i + 1 < argc))
         {
             if (strcmp(argv[i+1], "always") == 0)
             {
-		config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS;
+                config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS;
             }
             else if(strcmp(argv[i+1], "on_error") == 0)
             {
-		config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
+                config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
             }
             else if(strcmp(argv[i+1], "on-error") == 0)
             {
-		config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
+                config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
             }
             i++;
         }
-	else if(strcmp(argv[i], "-rsl") == 0)
-	{
-	    if(i + 1 < argc)
-	    {
-                *rsl = globus_libc_strdup(argv[++i]);
-	    }
-	    else
-	    {
-		fprintf(stderr, "-rsl argument requires and rsl\n");
-		exit(1);
-	    }
-	}
+        else if(strcmp(argv[i], "-rsl") == 0)
+        {
+            if(i + 1 < argc)
+            {
+                *rsl = strdup(argv[++i]);
+            }
+            else
+            {
+                fprintf(stderr, "-rsl argument requires and rsl\n");
+                exit(1);
+            }
+        }
         else if (strcmp(argv[i], "-k") == 0)
         {
             config->kerberos = GLOBUS_TRUE;
         }
         else if ((strcmp(argv[i], "-home") == 0) && (i + 1 < argc))
         {
-            config->globus_location = globus_libc_strdup(argv[++i]);
+            config->globus_location = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-target-globus-location") == 0)
                  && (i + 1 < argc))
         {
-            config->target_globus_location = globus_libc_strdup(argv[++i]);
+            config->target_globus_location = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-type") == 0) && (i + 1 < argc))
         {
-            config->jobmanager_type = globus_libc_strdup(argv[++i]);
+            config->jobmanager_type = strdup(argv[++i]);
         }
         else if((strcmp(argv[i], "-history") == 0) && (i + 1 < argc))
         {
-            config->job_history_dir = globus_libc_strdup(argv[++i]);
+            config->job_history_dir = strdup(argv[++i]);
         }
-	else if (strcmp(argv[i], "-cache-location") == 0)
-	{
-	    config->cache_location = globus_libc_strdup(argv[++i]);
-	}
-	else if (strcmp(argv[i], "-scratch-dir-base") == 0)
-	{
-	    config->scratch_dir_base = globus_libc_strdup(argv[++i]);
-	}
+        else if (strcmp(argv[i], "-cache-location") == 0)
+        {
+            config->cache_location = strdup(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-scratch-dir-base") == 0)
+        {
+            config->scratch_dir_base = strdup(argv[++i]);
+        }
         else if ((strcmp(argv[i], "-condor-arch") == 0) && (i + 1 < argc))
         {
-            config->condor_arch = globus_libc_strdup(argv[++i]);
+            config->condor_arch = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-condor-os") == 0) && (i + 1 < argc))
         {
-            config->condor_os = globus_libc_strdup(argv[++i]);
+            config->condor_os = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-host") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_gatekeeper_host = globus_libc_strdup(argv[++i]);
+            config->globus_gatekeeper_host = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-port") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_gatekeeper_port = globus_libc_strdup(argv[++i]);
+            config->globus_gatekeeper_port = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-subject") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_gatekeeper_subject = globus_libc_strdup(argv[++i]);
+            config->globus_gatekeeper_subject = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-manufacturer") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_host_manufacturer = globus_libc_strdup(argv[++i]);
+            config->globus_host_manufacturer = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-cputype") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_host_cputype = globus_libc_strdup(argv[++i]);
+            config->globus_host_cputype = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-osname") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_host_osname = globus_libc_strdup(argv[++i]);
+            config->globus_host_osname = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-osversion") == 0)
                  && (i + 1 < argc))
         {
-            config->globus_host_osversion = globus_libc_strdup(argv[++i]);
+            config->globus_host_osversion = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-tcp-port-range") == 0)
                  && (i + 1 < argc))
         {
-            config->tcp_port_range = globus_libc_strdup(argv[++i]);
+            config->tcp_port_range = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-state-file-dir") == 0)
                  && (i + 1 < argc))
         {
-	    config->job_state_file_dir = globus_libc_strdup(argv[++i]);
+            config->job_state_file_dir = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-x509-cert-dir") == 0)
                  && (i + 1 < argc))
-	{
-	    config->x509_cert_dir = globus_libc_strdup(argv[++i]);
-	}
+        {
+            config->x509_cert_dir = strdup(argv[++i]);
+        }
         else if ((strcmp(argv[i], "-extra-envvars") == 0)
                  && (i + 1 < argc))
         {
-            config->extra_envvars = globus_libc_strdup(argv[++i]);
+            config->extra_envvars = strdup(argv[++i]);
         }
         else if ((strcasecmp(argv[i], "-seg-module" ) == 0)
                  && (i + 1 < argc))
         {
-            config->seg_module = argv[++i];
+            config->seg_module = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-audit-directory") == 0) 
                 && (i+1 < argc))
         {
-            config->auditing_dir = argv[++i];
+            config->auditing_dir = strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-toolkit-version") == 0)
                 && (i+1 < argc))
         {
-            config->globus_version = argv[++i];
+            config->globus_version = strdup(argv[++i]);
         }
         else if (strcmp(argv[i], "-disable-streaming") == 0)
         {
@@ -293,12 +293,12 @@ globus_gram_job_manager_config_init(
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-history job-history-directory\n" 
                     "\t-save-logfile [ always | on_error ]\n"
-		    "\t-scratch-dir-base scratch-directory\n"
-		    "\t-state-file-dir state-directory\n"
+                    "\t-scratch-dir-base scratch-directory\n"
+                    "\t-state-file-dir state-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
-		    "\t-x509-cert-dir DIRECTORY\n"
-		    "\t-cache-location PATH\n"
-		    "\t-k\n"
+                    "\t-x509-cert-dir DIRECTORY\n"
+                    "\t-cache-location PATH\n"
+                    "\t-k\n"
                     "\t-extra-envvars VAR1,VAR2,...\n"
                     "\t-seg-module SEG-MODULE\n"
                     "\t-audit-directory DIRECTORY\n"
@@ -355,7 +355,7 @@ globus_gram_job_manager_config_init(
         goto out;
     }
 
-    config->home = globus_libc_strdup(getenv("HOME"));
+    config->home = strdup(getenv("HOME"));
     if (config->home == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -363,7 +363,7 @@ globus_gram_job_manager_config_init(
         goto out;
     }
 
-    config->logname = globus_libc_strdup(getenv("LOGNAME"));
+    config->logname = strdup(getenv("LOGNAME"));
     if (config->home == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -383,7 +383,7 @@ globus_gram_job_manager_config_init(
     }
     if (config->target_globus_location == NULL)
     {
-        config->target_globus_location = globus_libc_strdup(
+        config->target_globus_location = strdup(
                 config->globus_location);
         if (config->target_globus_location == NULL)
         {
@@ -394,7 +394,7 @@ globus_gram_job_manager_config_init(
     }
     if (config->scratch_dir_base == NULL)
     {
-        config->scratch_dir_base = globus_libc_strdup(
+        config->scratch_dir_base = strdup(
                 config->home);
         if (config->scratch_dir_base == NULL)
         {
@@ -411,7 +411,7 @@ globus_gram_job_manager_config_init(
         goto out;
     }
 
-    config->hostname = globus_libc_strdup(hostname);
+    config->hostname = strdup(hostname);
     if (config->hostname == GLOBUS_NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;

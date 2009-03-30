@@ -335,7 +335,7 @@ globus_l_gram_job_manager_query_reply(
     {
         globus_gram_job_manager_request_log(request,
                       "JM : sending reply:\n");
-        for (i=0; i<replysize; i++)
+        for (i=0; i<replysize && reply[i] != 0; i++)
         {
             fprintf(request->manager->jobmanager_log_fp, "%c", reply[i]);
         }
@@ -371,7 +371,6 @@ globus_l_gram_job_manager_cancel(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
           request->jobmanager_state
                   = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
           globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
@@ -941,7 +940,6 @@ globus_l_gram_job_manager_query_stop_manager(
     switch(state)
     {
         case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
@@ -1048,7 +1046,6 @@ globus_l_gram_job_manager_query_valid(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
