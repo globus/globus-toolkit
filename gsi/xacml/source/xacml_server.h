@@ -58,6 +58,11 @@ xacml_server_set_io_module(
     const char *                        module);
 
 xacml_result_t
+xacml_server_set_fd(
+    xacml_server_t                      server,
+    int                                 fd);
+
+xacml_result_t
 xacml_server_set_io_descriptor(
     xacml_server_t                      server,
     const xacml_io_descriptor_t        *descriptor);

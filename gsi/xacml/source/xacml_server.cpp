@@ -81,6 +81,12 @@ service_thread(void * arg)
     {
         goto out;
     }
+    if (server->fd)
+    {
+        close(server->listener);
+        server->listener = server->fd;
+        soap.master = server->fd;
+    }
     namelen = sizeof(&addr);
     getsockname(server->listener, &addr, &namelen);
     getnameinfo(&addr, namelen, NULL, 0, serv, sizeof(serv), NI_NUMERICSERV);
@@ -785,6 +791,41 @@ xacml_server_set_io_module(
     return rc;
 }
 /* xacml_server_set_io_module() */
+
+/**
+ * Set the socket file descriptor used to accept new connections
+ * @ingroup xacml_io
+ *
+ * @param server
+ *     XACML server handle.
+ * @param fd
+ *     Bound server file descriptor which has had listen() called on it.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ * 
+ * @note
+ *     If an error occurs loading the I/O module, an error message will be
+ *     sent to stderr.
+ * @see xacml_request_set_io_descriptor()
+ */
+xacml_result_t
+xacml_server_set_fd(
+    xacml_server_t                      server,
+    int                                 fd)
+{
+    xacml_result_t                      rc = XACML_RESULT_SUCCESS;
+
+    if (server == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+    server->fd = fd;
+    return rc;
+}
+/* xacml_server_set_fd() */
 
 /**
  * Use an I/O module for a server

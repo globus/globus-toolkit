@@ -132,6 +132,7 @@ struct xacml_server_s
     xacml_io_send_t                     send_func;
     xacml_io_recv_t                     recv_func;
     xacml_io_close_t                    close_func;
+    int                                 fd;
 
     xacml_request_t                     request;
 };

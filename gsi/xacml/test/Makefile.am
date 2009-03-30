@@ -12,7 +12,8 @@ test_PROGRAMS = xacml-request-test \
                 xacml-response-test \
                 xacml-server-test \
                 xacml-client-test \
-                xacml-io-test
+                xacml-io-test \
+                xacml-fd-test
 
 test_SCRIPTS = TESTS.pl \
                xacml-request-test.pl \
@@ -21,6 +22,7 @@ test_SCRIPTS = TESTS.pl \
                xacml-obligation-test.pl \
                xacml-server-test.pl \
                xacml-client-test.pl \
-               xacml-io-test.pl
+               xacml-io-test.pl \
+               xacml-fd-test.pl
 
 EXTRA_DIST = $(test_SCRIPTS)
