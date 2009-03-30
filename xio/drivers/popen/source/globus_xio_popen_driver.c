@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#define USE_SOCKET_PAIR 1
+
 GlobusDebugDefine(GLOBUS_XIO_POPEN);
 
 #define GlobusXIOPOpenDebugPrintf(level, message)                            \
@@ -388,8 +390,10 @@ globus_l_xio_popen_child(
 {
     int                                 rc;
 
+#   if defined(USE_SOCKET_PAIR)
     close(outfds[1]);
     close(infds[0]);
+#   endif
     rc = dup2(outfds[0], STDIN_FILENO);
     if(rc < 0)
     {
@@ -423,6 +427,32 @@ error:
     exit(rc);
 }
 
+static
+globus_result_t
+globus_l_xio_popen_init_child_pipe(
+    int                                 fd,
+    globus_xio_system_file_handle_t *   out_system)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_popen_init_child_pipe);
+
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+
+    result = globus_xio_system_file_init(out_system, fd);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_system_file_init", result);
+        goto error_init;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_init:
+
+    return result;
+}
+
 /*
  *  open a file
  */
@@ -435,6 +465,7 @@ globus_l_xio_popen_open(
     globus_xio_operation_t              op)
 {
     int                                 rc;
+    int                                 s_fds[2];
     int                                 infds[2];
     int                                 outfds[2];
     xio_l_popen_handle_t *              handle;
@@ -454,18 +485,37 @@ globus_l_xio_popen_open(
         goto error_handle;
     }
 
-    rc = pipe(infds);
-    if(rc != 0)
+#   if defined(USE_SOCKET_PAIR)
     {
-        result = GlobusXIOErrorSystemError("pipe", errno);
-        goto error_in_pipe;
+        rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, s_fds);
+        if(rc != 0)
+        {
+            result = GlobusXIOErrorSystemError("socketpair", errno);
+            goto error_in_pipe;
+        }
+
+        /* trick the rest of the code into thinking it is using pipe */
+        outfds[0] = s_fds[0];
+        outfds[1] = s_fds[1];
+        infds[0] = s_fds[0];
+        infds[1] = s_fds[1];
     }
-    rc = pipe(outfds);
-    if(rc != 0)
+#   else
     {
-        result = GlobusXIOErrorSystemError("pipe", errno);
-        goto error_out_pipe;
+        rc = pipe(infds);
+        if(rc != 0)
+        {
+            result = GlobusXIOErrorSystemError("pipe", errno);
+            goto error_in_pipe;
+        }
+        rc = pipe(outfds);
+        if(rc != 0)
+        {
+            result = GlobusXIOErrorSystemError("pipe", errno);
+            goto error_out_pipe;
+        }
     }
+#   endif
 
     handle->pid = fork();
     if(handle->pid < 0)
@@ -477,34 +527,56 @@ globus_l_xio_popen_open(
     {
         globus_l_xio_popen_child(attr, contact_info, infds, outfds);
     }
-    fcntl(outfds[1], F_SETFD, FD_CLOEXEC);
-    fcntl(infds[0], F_SETFD, FD_CLOEXEC);
 
-    handle->infd = infds[0];
-    handle->outfd = outfds[1];
+#   if defined(USE_SOCKET_PAIR)
+    {
+        handle->infd = s_fds[0];
+        handle->outfd = s_fds[0];
+        result = globus_l_xio_popen_init_child_pipe(
+            handle->infd,
+            &handle->in_system);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_init;
+        }
+        handle->out_system = handle->in_system;
+        close(s_fds[1]);
+    }
+#   else
+    {
+        handle->infd = infds[0];
+        handle->outfd = outfds[1];
 
-    result = globus_xio_system_file_init(&handle->out_system, handle->outfd);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_file_init", result);
-        goto error_init;
+        result = globus_l_xio_popen_init_child_pipe(
+            handle->outfd,
+            &handle->out_system);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_init;
+        }
+        result = globus_l_xio_popen_init_child_pipe(
+            handle->infd,
+            &handle->in_system);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_init;
+        }
+        close(outfds[0]);
+        close(infds[1]);
     }
-    result = globus_xio_system_file_init(&handle->in_system, handle->infd);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_file_init", result);
-        goto error_init;
-    }
-    
-    close(outfds[0]);
-    close(infds[1]);
+#   endif
+
     globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     
     GlobusXIOPOpenDebugExit();
     return GLOBUS_SUCCESS;
 
+#   if defined(USE_SOCKET_PAIR)
+error_init:
+error_fork:
+    close(s_fds[0]);
+    close(s_fds[1]);
+#   else
 error_init:
 error_fork:
     close(outfds[0]);
@@ -512,6 +584,7 @@ error_fork:
 error_out_pipe:
     close(infds[0]);
     close(infds[1]);
+#   endif
 error_in_pipe:
     globus_l_xio_popen_handle_destroy(handle);
 error_handle:
@@ -594,11 +667,14 @@ globus_l_xio_popen_close(
 
     handle->close_op = op;
     globus_xio_system_file_destroy(handle->in_system);
-    globus_xio_system_file_destroy(handle->out_system);
    
     /* XXX Gotta deal with kill */ 
     globus_xio_system_file_close(handle->infd);
+
+#if !defined(USE_SOCKET_PAIR)
     globus_xio_system_file_close(handle->outfd);
+    globus_xio_system_file_destroy(handle->out_system);
+#endif
 
     if(globus_xio_driver_operation_is_blocking(op))
     {
