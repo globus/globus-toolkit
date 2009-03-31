@@ -439,6 +439,7 @@ You can either specify
 or 
 .BR certificate_issuer_program .  
 .RS
+.PP
 .PD 0
 .PP
 .B Be sure to follow secure coding practices for this call-out:
@@ -459,6 +460,10 @@ Specifies the path to a directory where new certificates will be archived.
 .BI max_cert_lifetime " hours"
 Specifies the maximum lifetime (in hours) for certificates issued by
 the CA module.  Defaults to 12 hours.
+.TP
+.BI min_keylen " bits"
+Specifies the minimum RSA key length (in bits)
+for certificates issued by the CA module.
 .TP
 .BI certificate_extfile " full-path-to-extension-file"
 Optionally specifies the full path to a file containing an OpenSSL
@@ -529,9 +534,45 @@ instead (see certificate_mapfile above).
 An example is installed in
 .IR $GLOBUS_LOCATION/share/myproxy/myproxy-certificate-mapapp .
 .RS
+.PP
 .PD 0
 .PP
 .B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI certificate_request_checker " full-path-to-callout-program"
+This CA call-out can be used to perform checks on incoming
+certificate requests. It will be passed the certificate request in
+PEM format on stdin. If it returns a nonzero exit status, the CA
+will abort without signing the request.  When returning a nonzero
+exit status, the callout should indicate the problem on stderr.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
+.TP
+.BI certificate_issuer_checker " full-path-to-callout-program"
+This CA call-out can be used to perform checks on issued
+certificates before the certificate is returned to the client.  It
+will be passed the certificate in PEM format on stdin. If it returns
+a nonzero exit status, the CA will abort without returning the
+signed certificate to the client. When returning a nonzero exit
+status, the callout should indicate the problem on stderr.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
 .PP
 - Don't allow input to overflow fixed-size buffers.
 .PP
@@ -638,6 +679,7 @@ call-out should exit with nonzero status indicating error.
 An example is installed in
 .IR $GLOBUS_LOCATION/share/myproxy/myproxy-accepted-credentials-mapapp .
 .RS
+.PP
 .PD 0
 .PP
 .B Be sure to follow secure coding practices for this call-out:

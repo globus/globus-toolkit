@@ -37,6 +37,8 @@ typedef struct
   char *certificate_issuer_program; /* CA callout external program */
   char *certificate_issuer_cert;    /* CA certificate */
   char *certificate_issuer_key;     /* CA signing key */
+  char *certificate_request_checker; /* callout for checking certreqs */
+  char *certificate_issuer_checker; /* callout for checking issued certs */
   char *certificate_openssl_engine_id;   /* Which OpenSSL engine to use */
   char *certificate_openssl_engine_lockfile; /* synchronize engine calls */
   char **certificate_openssl_engine_pre; /* Which 'pre' commands to use */
@@ -48,6 +50,7 @@ typedef struct
   char *certificate_mapfile;        /* CA gridmap file if not the default */
   char *certificate_mapapp;         /* gridmap call-out */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
+  int   min_keylen;                 /* minimum keylength for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
   char *certificate_out_dir;        /* path to certificate directory */
   char *ca_ldap_server;             /* URL to CA ldap user DN server */
