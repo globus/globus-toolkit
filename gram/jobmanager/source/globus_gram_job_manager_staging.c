@@ -209,9 +209,9 @@ globus_gram_job_manager_staging_remove(
 
         globus_rsl_value_free_recursive(item->from);
         globus_rsl_value_free_recursive(item->to);
-        globus_libc_free(item->evaled_from);
-        globus_libc_free(item->evaled_to);
-        globus_libc_free(item);
+        free(item->evaled_from);
+        free(item->evaled_to);
+        free(item);
 
         globus_gram_job_manager_request_log(
             request,
@@ -259,7 +259,7 @@ globus_gram_job_manager_staging_write_state(
 
         tmp_str = globus_rsl_value_unparse(info->from);
         rc = fprintf(fp, "%s\n", tmp_str);
-        globus_libc_free(tmp_str);
+        free(tmp_str);
         if (rc < 0)
         {
             return GLOBUS_FAILURE;
@@ -267,7 +267,7 @@ globus_gram_job_manager_staging_write_state(
 
         tmp_str = globus_rsl_value_unparse(info->to);
         rc = fprintf(fp, "%s\n", tmp_str);
-        globus_libc_free(tmp_str);
+        free(tmp_str);
         if (rc < 0)
         {
             return GLOBUS_FAILURE;
@@ -286,7 +286,7 @@ globus_gram_job_manager_staging_write_state(
 
         tmp_str = globus_rsl_value_unparse(info->from);
         rc = fprintf(fp, "%s\n", tmp_str);
-        globus_libc_free(tmp_str);
+        free(tmp_str);
         if (rc < 0)
         {
             return GLOBUS_FAILURE;
@@ -294,7 +294,7 @@ globus_gram_job_manager_staging_write_state(
 
         tmp_str = globus_rsl_value_unparse(info->to);
         rc = fprintf(fp, "%s\n", tmp_str);
-        globus_libc_free(tmp_str);
+        free(tmp_str);
         if (rc < 0)
         {
             return GLOBUS_FAILURE;
@@ -313,7 +313,7 @@ globus_gram_job_manager_staging_write_state(
 
         tmp_str = globus_rsl_value_unparse(info->from);
         rc = fprintf(fp, "%s\n", tmp_str);
-        globus_libc_free(tmp_str);
+        free(tmp_str);
 
         if (rc < 0)
         {
@@ -322,7 +322,7 @@ globus_gram_job_manager_staging_write_state(
 
         tmp_str = globus_rsl_value_unparse(info->to);
         rc = fprintf(fp, "%s\n", tmp_str);
-        globus_libc_free(tmp_str);
+        free(tmp_str);
         if (rc < 0)
         {
             return GLOBUS_FAILURE;
@@ -417,7 +417,7 @@ globus_l_gram_job_manager_staging_add_pair(
     globus_gram_job_manager_staging_info_t *
                                         info;
 
-    info = globus_libc_calloc(
+    info = calloc(
             1,
             sizeof(globus_gram_job_manager_staging_info_t));
     if(!info)
@@ -512,9 +512,9 @@ globus_l_gram_job_manager_staging_add_pair(
     return GLOBUS_SUCCESS;
 
 eval_to_failed:
-    globus_libc_free(info->evaled_from);
+    free(info->evaled_from);
 eval_from_failed:
-    globus_libc_free(info);
+    free(info);
 info_calloc_failed:
     return rc;
 }
@@ -563,9 +563,9 @@ globus_l_gram_job_manager_staging_free_all(
 
         globus_rsl_value_free_recursive(info->from);
         globus_rsl_value_free_recursive(info->to);
-        globus_libc_free(info->evaled_from);
-        globus_libc_free(info->evaled_to);
-        globus_libc_free(info);
+        free(info->evaled_from);
+        free(info->evaled_to);
+        free(info);
     }
     while(!globus_list_empty(request->stage_in_shared_todo))
     {
@@ -574,9 +574,9 @@ globus_l_gram_job_manager_staging_free_all(
 
         globus_rsl_value_free_recursive(info->from);
         globus_rsl_value_free_recursive(info->to);
-        globus_libc_free(info->evaled_from);
-        globus_libc_free(info->evaled_to);
-        globus_libc_free(info);
+        free(info->evaled_from);
+        free(info->evaled_to);
+        free(info);
     }
     while(!globus_list_empty(request->stage_out_todo))
     {
@@ -585,9 +585,9 @@ globus_l_gram_job_manager_staging_free_all(
 
         globus_rsl_value_free_recursive(info->from);
         globus_rsl_value_free_recursive(info->to);
-        globus_libc_free(info->evaled_from);
-        globus_libc_free(info->evaled_to);
-        globus_libc_free(info);
+        free(info->evaled_from);
+        free(info->evaled_to);
+        free(info);
     }
 }
 /* globus_l_gram_job_manager_staging_free_all() */
@@ -639,7 +639,7 @@ globus_l_gram_staging_list_read_state(
 
     for(i = 0; i < tmp_list_size; i++)
     {
-        info = globus_libc_calloc(
+        info = calloc(
                 1,
                 sizeof(globus_gram_job_manager_staging_info_t));
         if (info == NULL)

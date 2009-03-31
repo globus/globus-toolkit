@@ -36,6 +36,7 @@ globus_gram_job_manager_history_file_set(
 
     if (! request->config->job_history_dir)
     {
+        request->job_history_file = NULL;
         goto no_history;
     }
 

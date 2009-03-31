@@ -181,10 +181,24 @@ globus_gram_job_manager_init(
 
     /* Default number of scripts which can be run simultaneously */
     manager->script_slots_available = 5;
+
+    rc = globus_fifo_init(&manager->state_callback_fifo);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto state_callback_fifo_init_failed;
+    }
+    /* Default number of job state callback notifications that can
+     * occur simultaneously
+     */
+    manager->state_callback_slots = 5;
+
     globus_mutex_unlock(&manager->mutex);
 
     if (rc != GLOBUS_SUCCESS)
     {
+state_callback_fifo_init_failed:
+        globus_fifo_destroy(&manager->script_fifo);
 script_fifo_init_failed:
 proxy_timeout_init_failed:
         globus_gram_protocol_callback_disallow(manager->url_base);

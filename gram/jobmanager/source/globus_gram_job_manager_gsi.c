@@ -215,7 +215,7 @@ globus_gram_job_manager_gsi_get_subject(
         goto failed_display_name;
     }
 
-    subject_name = globus_libc_strdup(export_name.value);
+    subject_name = strdup(export_name.value);
     if (subject_name == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -468,7 +468,7 @@ globus_gram_job_manager_gsi_relocate_proxy(
         goto stat_failed;
     }
 
-    cred_data = globus_libc_malloc(statbuf.st_size);
+    cred_data = malloc(statbuf.st_size);
 
     if(cred_data == NULL)
     {
@@ -525,12 +525,12 @@ job_proxy_open_failed:
 fread_new_proxy_failed:
     if(infp != NULL)
     {
-        globus_libc_free(infp);
+        free(infp);
     }
 fopen_new_proxy_failed:
     if(cred_data)
     {
-        globus_libc_free(cred_data);
+        free(cred_data);
     }
 cred_data_malloc_failed:
 stat_failed:

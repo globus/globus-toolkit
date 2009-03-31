@@ -461,7 +461,7 @@ globus_gram_job_manager_rsl_env_add(
 
         }
         /* Didn't find environment in the RSL: add it! */
-        tmp_rsl_str = globus_libc_malloc(
+        tmp_rsl_str = malloc(
                     strlen("environment = (%s %s)") +
                     strlen(var) +
                     strlen(value));
@@ -469,7 +469,7 @@ globus_gram_job_manager_rsl_env_add(
         sprintf(tmp_rsl_str, "environment = (%s %s)", var, value);
         tmp_rsl_ptr = globus_rsl_parse(tmp_rsl_str);
 
-        globus_libc_free(tmp_rsl_str);
+        free(tmp_rsl_str);
 
         globus_list_insert(
                 globus_rsl_boolean_get_operand_list_ref(ast_node),
@@ -645,7 +645,7 @@ globus_gram_job_manager_rsl_parse_value(
             "JM: Parsing value string %s to rsl_value_t *\n",
             value_string);
 
-    rsl_spec = globus_libc_malloc(strlen(format) + strlen(value_string) + 1);
+    rsl_spec = malloc(strlen(format) + strlen(value_string) + 1);
 
     if (rsl_spec == NULL)
     {
@@ -683,7 +683,7 @@ free_rsl_out:
     globus_rsl_free_recursive(rsl);
 
 free_rsl_spec_out:
-    globus_libc_free(rsl_spec);
+    free(rsl_spec);
 
 out:
     return rc;

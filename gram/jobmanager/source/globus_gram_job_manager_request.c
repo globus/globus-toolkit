@@ -892,23 +892,31 @@ import_context_failed:
  *     Job manager state
  * @param request
  *     Job request to start
+ * @param response_fd
+ *     Descriptor to write the response to
  * @param client_contact
  *     Client to send job state changes to (may be NULL)
  * @param job_state_mask
  *    Job state mask for sending state changes to the client
- * @param reply_fd
  */
 int
 globus_gram_job_manager_request_start(
     globus_gram_job_manager_t *         manager,
     globus_gram_jobmanager_request_t *  request,
-    FILE *                              response_fp,
+    int                                 response_fd,
     const char *                        client_contact,
     int                                 job_state_mask)
 {
     int                                 rc;
     int                                 rc2;
+    int                                 response_code;
+    char *                              job_contact;
 
+    if (request == NULL)
+    {
+        /* Reply to a bad request */
+        goto bad_request;
+    }
     rc = globus_gram_job_manager_add_request(
         manager,
         request->job_contact_path,
@@ -960,10 +968,41 @@ contact_add_failed:
 username_denied:
 authz_denied:
 add_request_failed:
+bad_request:
     /* Reply to request with unsubmitted (and optionally two-phase-commit
      * needed)
      */
-    rc2 = globus_gram_job_manager_reply(request, response_fp);
+    switch (request->failure_code)
+    {
+    case GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE:
+        response_code = request->failure_code;
+        job_contact = request->old_job_contact;
+        break;
+
+    case GLOBUS_SUCCESS:
+        if (request->two_phase_commit)
+        {
+            response_code = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
+        }
+        else
+        {
+            response_code = GLOBUS_SUCCESS;
+        }
+        job_contact = request->job_contact;
+        break;
+
+    default:
+        response_code = request->failure_code;
+        job_contact = NULL;
+        break;
+    }
+
+    rc2 = globus_gram_job_manager_reply(
+            request,
+            response_code,
+            job_contact,
+            response_fd,
+            request->response_context);
     if (rc == GLOBUS_SUCCESS && rc2 == GLOBUS_SUCCESS)
     {
         globus_result_t                 result;
@@ -1103,6 +1142,11 @@ globus_gram_job_manager_request_destroy(
     if (request->job_dir)
     {
         free(request->job_dir);
+    }
+    if (request->response_context != GSS_C_NO_CONTEXT)
+    {
+        OM_uint32 minor_status;
+        gss_delete_sec_context(&minor_status, request->response_context, NULL);
     }
 }
 /* globus_gram_job_manager_request_destroy() */
@@ -1508,7 +1552,7 @@ globus_l_gram_log_rsl(
                 tmp_str,
                 label);
 
-        globus_libc_free(tmp_str);
+        free(tmp_str);
     }
 }
 /* globus_l_gram_log_rsl() */
@@ -1699,6 +1743,7 @@ globus_l_gram_init_cache(
                 request->config->home);
     }
 
+    memset(cache_handlep, 0, sizeof(globus_gass_cache_t));
     rc = globus_gass_cache_open(*cache_locationp, cache_handlep);
     if(rc != GLOBUS_SUCCESS)
     {

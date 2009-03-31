@@ -52,7 +52,6 @@ globus_gram_job_manager_logfile_flag_t;
 typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STATE_START,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN,
@@ -365,6 +364,10 @@ typedef struct
     globus_fifo_t                       script_fifo;
     /** Number of script slots available for running scripts */
     int                                 script_slots_available;
+    /** Fifo of job state callback contexts to run */
+    globus_fifo_t                       state_callback_fifo;
+    /** Number of job state contact slots available */
+    int                                 state_callback_slots;
 }
 globus_gram_job_manager_t;
 
@@ -645,7 +648,7 @@ int
 globus_gram_job_manager_request_start(
     globus_gram_job_manager_t *         manager,
     globus_gram_jobmanager_request_t *  request,
-    FILE *                              response_fp,
+    int                                 response_fd,
     const char *                        client_contact,
     int                                 job_state_mask);
 
@@ -719,7 +722,10 @@ globus_gram_job_manager_read_request(
 int
 globus_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *  request,
-    FILE *                              response_fp);
+    int                                 response_code,
+    const char *                        job_contact,
+    int                                 response_fd,
+    gss_ctx_id_t                        response_context);
 
 int
 globus_gram_job_manager_validate_username(

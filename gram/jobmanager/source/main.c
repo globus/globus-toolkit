@@ -246,8 +246,13 @@ main(
                         &job_state_mask);
                 if (rc != GLOBUS_SUCCESS)
                 {
-                    fprintf(stderr, "Error loading request\n");
-                    exit(1);
+                    rc = globus_gram_job_manager_reply(
+                            NULL,
+                            rc,
+                            NULL,
+                            STDOUT_FILENO,
+                            context);
+                    exit(rc);
                 }
                 close(http_body_fd);
                 close(context_fd);
@@ -277,7 +282,7 @@ main(
             rc = globus_gram_job_manager_request_start(
                     &manager,
                     request,
-                    stdout,
+                    STDOUT_FILENO,
                     client_contact,
                     job_state_mask);
             if (rc != GLOBUS_SUCCESS)
@@ -323,23 +328,6 @@ main(
     }
     globus_mutex_unlock(&manager.mutex);
 
-
-    /*
-     * If we ran without a client, display final state and error if applicable
-     */
-    if(debugging_without_client)
-    {
-        fprintf(stderr,
-                "Final Job Status: %d%s%s%s\n",
-                request->status,
-                (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-                ? " (failed because " : "",
-                (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-                    ? globus_gram_protocol_error_string(request->failure_code)
-                    : "",
-                (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-                    ? ")" : "");
-    }
 
     globus_gram_job_manager_log(
             &manager,

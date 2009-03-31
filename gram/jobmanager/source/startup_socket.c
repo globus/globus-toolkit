@@ -437,7 +437,6 @@ globus_l_gram_startup_socket_callback(
     char *                              contact;
     int                                 job_state_mask;
     globus_gram_jobmanager_request_t *  request;
-    FILE *                              response_fp;
     OM_uint32                           major_status, minor_status;
     gss_cred_id_t                       cred;
     char                                byte[1] = { '!' };
@@ -534,18 +533,11 @@ globus_l_gram_startup_socket_callback(
         goto request_load_failed;
     }
 
-    response_fp = fdopen(response_fd, "r+");
-    if (response_fp == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-        goto response_fp_open_failed;
-    }
-
     /* Start state machine and send response */
     rc = globus_gram_job_manager_request_start(
             manager,
             request,
-            response_fp,
+            response_fd,
             contact,
             job_state_mask);
     if (rc != GLOBUS_SUCCESS)
@@ -554,9 +546,8 @@ globus_l_gram_startup_socket_callback(
         request = NULL;
     }
 
-    fclose(response_fp);
+    close(response_fd);
     response_fd = -1;
-response_fp_open_failed:
 request_load_failed:
 ackfailed:
     gss_release_cred(

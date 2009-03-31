@@ -675,7 +675,7 @@ globus_l_gram_job_manager_signal(
         query->signal = signal;
         if(after_signal)
         {
-            query->signal_arg = globus_libc_strdup(after_signal);
+            query->signal_arg = strdup(after_signal);
         }
 
         if(!globus_l_gram_job_manager_query_valid(request))

@@ -45,6 +45,7 @@ typedef struct
     globus_xio_handle_t                 handle;
     int                                 starting_jobmanager_state;
     char *                              script_arg_file;
+    int reads;
 }
 globus_gram_job_manager_script_context_t;
 
@@ -247,6 +248,7 @@ globus_l_gram_job_manager_script_run(
     script_context->request = request;
     script_context->starting_jobmanager_state = request->jobmanager_state;
     script_context->script_arg_file = strdup(script_arg_file);
+    script_context->reads = 0;
     if (script_context->script_arg_file == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -354,25 +356,44 @@ globus_l_gram_job_manager_script_read(
     char *                              p;
     int                                 failure_code = 0;
 
+    script_context = user_arg;
+    request = script_context->request;
+    script_context->reads++;
+
     if (result)
     {
-        if (globus_xio_error_is_eof(result))
+        eof = GLOBUS_TRUE;
+        if (!globus_xio_error_is_eof(result))
         {
-            eof = GLOBUS_TRUE;
-        }
-        else
-        {
+            char *                      errstr;
+
+            errstr = globus_error_print_friendly(globus_error_peek(result));
+
+            if (errstr)
+            {
+                globus_gram_job_manager_request_log(
+                        request,
+                        "Error reading script response on %d read: %s\n",
+                        script_context->reads,
+                        errstr);
+                free(errstr);
+            }
             failure_code =
                 GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
         }
+        else
+        {
+            result = GLOBUS_SUCCESS;
+        }
     }
-
-    script_context = user_arg;
-    request = script_context->request;
 
     while((p = memchr(script_context->return_buf, '\n', nbytes)) != NULL)
     {
         *p = '\0';
+        globus_gram_job_manager_request_log(
+                request,
+                "Read script response line: %s\n",
+                script_context->return_buf);
 
         script_variable = (char *) script_context->return_buf;
 
@@ -523,7 +544,7 @@ globus_l_gram_pclose_callback(
             request->job_contact_path);
     globus_assert(rc == GLOBUS_SUCCESS);
 }
-/* globus_l_gram_job_manager_script_read() */
+/* globus_l_gram_pclose_callback() */
 
 /**
  * Submit a job request to a local scheduler.

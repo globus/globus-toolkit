@@ -18,13 +18,40 @@
 
 #include <string.h>
 
-typedef struct
+typedef struct globus_gram_job_manager_contact_s
 {
     char *                              contact;
     int                                 job_state_mask;
     int                                 failed_count;
 }
 globus_gram_job_manager_contact_t;
+
+typedef struct globus_gram_job_callback_context_s
+{
+    globus_gram_jobmanager_request_t *  request;
+    globus_list_t *                     contacts;
+    unsigned char *                     message;
+    globus_size_t                       message_length;
+    int                                 active;
+}
+globus_gram_job_callback_context_t;
+
+
+static
+int
+globus_l_gram_callback_queue(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_callback_context_t *context);
+
+static
+void
+globus_l_gram_callback_reply(
+    void  *                             arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     message,
+    globus_size_t                       msgsize,
+    int                                 errorcode,
+    char *                              uri);
 
 /**
  * Add a callback contact to the request's list.
@@ -59,7 +86,7 @@ globus_gram_job_manager_contact_add(
             contact,
             job_state_mask);
 
-    callback = globus_libc_malloc(sizeof(globus_gram_job_manager_contact_t));
+    callback = malloc(sizeof(globus_gram_job_manager_contact_t));
     if(callback == NULL)
     {
         globus_gram_job_manager_request_log(
@@ -96,9 +123,9 @@ globus_gram_job_manager_contact_add(
     return GLOBUS_SUCCESS;
 
 list_insert_failed:
-    globus_libc_free(callback->contact);
+    free(callback->contact);
 strdup_contact_failed:
-    globus_libc_free(callback);
+    free(callback);
 error_exit:
     return GLOBUS_GRAM_PROTOCOL_ERROR_INSERTING_CLIENT_CONTACT;
 }
@@ -124,8 +151,8 @@ globus_gram_job_manager_contact_remove(
         {
             globus_list_remove(&request->client_contacts, tmp_list);
 
-            globus_libc_free(client_contact_node->contact);
-            globus_libc_free(client_contact_node);
+            free(client_contact_node->contact);
+            free(client_contact_node);
             rc = GLOBUS_SUCCESS;
 
             break;
@@ -149,8 +176,8 @@ globus_gram_job_manager_contact_list_free(
                                   &request->client_contacts,
                                   request->client_contacts);
 
-        globus_libc_free (client_contact_node->contact);
-        globus_libc_free (client_contact_node);
+        free (client_contact_node->contact);
+        free (client_contact_node);
     }
 
     return GLOBUS_SUCCESS;
@@ -162,80 +189,297 @@ globus_gram_job_manager_contact_state_callback(
     globus_gram_jobmanager_request_t *  request)
 {
     int                                 rc;
-    globus_byte_t *                     message;
-    globus_size_t                       msgsize;
     globus_list_t *                     tmp_list;
     globus_gram_job_manager_contact_t * client_contact_node;
+    globus_gram_job_callback_context_t *context = NULL;
 
     tmp_list = request->client_contacts;
-    message = GLOBUS_NULL;
 
     globus_gram_job_manager_request_log(
             request,
             "JM: %s empty client callback list.\n",
             (tmp_list) ? ("NOT") : "" );
 
-    if (tmp_list)
+    if (globus_list_empty(tmp_list))
     {
-        rc = globus_gram_protocol_pack_status_update_message(
-            request->job_contact,
-            request->status,
-            request->failure_code,
-            &message,
-            &msgsize);
+        return;
+    }
 
-        if (rc != GLOBUS_SUCCESS)
-        {
-            globus_gram_job_manager_request_log(
-                    request,
-                    "JM: error %d while creating status message\n" );
-            return;
-        }
+    context = malloc(sizeof(globus_gram_job_callback_context_t));
+    if (context == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: error %d while creating status message\n",
+                rc);
+
+        goto context_malloc_failed;
+    }
+
+    rc = globus_gram_job_manager_add_reference(
+            request->manager,
+            request->job_contact_path,
+            &context->request);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_reference_failed;
+    }
+    context->contacts = NULL;
+    context->message = NULL;
+    context->message_length = 0;
+    context->active = 0;
+
+    rc = globus_gram_protocol_pack_status_update_message(
+        request->job_contact,
+        request->status,
+        request->failure_code,
+        &context->message,
+        &context->message_length);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: error %d while creating status message\n",
+                rc);
+        goto pack_message_failed;
     }
 
     while(!globus_list_empty(tmp_list))
     {
         client_contact_node = globus_list_first(tmp_list);
+        tmp_list = globus_list_rest(tmp_list);
 
         if ((request->status & client_contact_node->job_state_mask) &&
             client_contact_node->failed_count < 4)
         {
-            globus_gram_job_manager_request_log(
-                    request,
-                    "JM: sending callback of status %d "
-                    "(failure code %d) to %s.\n",
-                    request->status,
-                    request->failure_code,
-                    client_contact_node->contact);
+            char * contact = strdup(client_contact_node->contact);
 
-            rc = globus_gram_protocol_post(
-                    client_contact_node->contact,
-                    GLOBUS_NULL /* Ignore handle */,
-                    GLOBUS_NULL /* default attr */,
-                    message,
-                    msgsize,
-                    GLOBUS_NULL /* Ignore reply */,
-                    GLOBUS_NULL);
+            if (contact == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                globus_gram_job_manager_request_log(
+                        request,
+                        "JM: error %d while creating status message\n",
+                        rc);
+                continue;
+            }
+
+            rc = globus_list_insert(&context->contacts, contact);
 
             if (rc != GLOBUS_SUCCESS)
             {
-                /* connect failed, most likely */
+                free(contact);
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
                 globus_gram_job_manager_request_log(
                         request,
-                        "JM: callback failed, rc = %d, \"%s\"\n",
-                        rc,
-                        globus_gram_protocol_error_string (rc));
-
-                client_contact_node->failed_count++;
+                        "JM: error %d while creating status message\n",
+                        rc);
+                continue;
             }
         }
-
-        tmp_list = globus_list_rest(tmp_list);
     }
 
-    /* this is safe, as the post() has copied the message to another buffer
-       and framed it with HTTP headers etc. */
-    if (message)
-        globus_libc_free(message);
+    if (globus_list_empty(context->contacts))
+    {
+        /* Nothing to send... free context */
+        rc = GLOBUS_FAILURE;
+        goto nothing_to_send;
+    }
+
+    rc = globus_l_gram_callback_queue(request->manager, context);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto queue_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+queue_failed:
+        tmp_list = context->contacts;
+
+        while (!globus_list_empty(tmp_list))
+        {
+            char * tmp = globus_list_first(tmp_list);
+            tmp_list = globus_list_rest(tmp_list);
+
+            free(tmp);
+        }
+nothing_to_send:
+        free(context->message);
+
+        globus_gram_job_manager_remove_reference(
+               request->manager,
+               request->job_contact_path);
+add_reference_failed:
+pack_message_failed:
+        free(context);
+context_malloc_failed:
+        ;
+    }
 }
 /* globus_gram_job_manager_state_callback() */
+
+static
+int
+globus_l_gram_callback_queue(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_job_callback_context_t *context)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_list_t *                     references = NULL;
+    globus_gram_jobmanager_request_t *  request;
+
+    globus_mutex_lock(&manager->mutex);
+    rc = globus_fifo_enqueue(&manager->state_callback_fifo, context);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_enqueue;
+    }
+
+    rc = GLOBUS_FAILURE;
+
+    while (manager->state_callback_slots > 0 &&
+            !globus_fifo_empty(&manager->state_callback_fifo))
+    {
+        context = globus_fifo_peek(&manager->state_callback_fifo);
+        request = context->request;
+
+        while (manager->state_callback_slots > 0 &&
+               !globus_list_empty(context->contacts))
+        {
+            char * contact;
+            
+            contact = globus_list_remove(&context->contacts, context->contacts);
+
+            rc = globus_gram_protocol_post(
+                    contact,
+                    NULL,
+                    NULL,
+                    context->message,
+                    context->message_length,
+                    globus_l_gram_callback_reply,
+                    context);
+
+            if (rc == GLOBUS_SUCCESS)
+            {
+                manager->state_callback_slots--;
+                context->active++;
+            }
+            free(contact);
+        }
+        if (globus_list_empty(context->contacts))
+        {
+            (void) globus_fifo_dequeue(&manager->state_callback_fifo);
+        }
+        if (context->active == 0 && globus_list_empty(context->contacts))
+        {
+            free(context->message);
+            free(context);
+            globus_list_insert(&references, request->job_contact_path);
+        }
+    }
+
+failed_enqueue:
+    globus_mutex_unlock(&manager->mutex);
+
+    while (!globus_list_empty(references))
+    {
+        char * key = globus_list_remove(&references, references);
+
+        globus_gram_job_manager_remove_reference(
+               manager,
+               key);
+    }
+
+    return rc;
+}
+/* globus_l_gram_callback_queue() */
+
+static
+void
+globus_l_gram_callback_reply(
+    void  *                             arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     message,
+    globus_size_t                       msgsize,
+    int                                 errorcode,
+    char *                              uri)
+{
+    globus_gram_job_callback_context_t *context;
+    globus_gram_jobmanager_request_t *  request;
+    globus_gram_job_manager_t *         manager;
+    globus_list_t *                     references = NULL;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    context = arg;
+    request = context->request;
+    manager = request->manager;
+
+    globus_mutex_lock(&manager->mutex);
+    context->active--;
+    manager->state_callback_slots++;
+
+    if (context->active == 0 && globus_list_empty(context->contacts))
+    {
+        free(context->message);
+        free(context);
+        globus_list_insert(&references, request->job_contact_path);
+    }
+
+    while (manager->state_callback_slots > 0 &&
+           !globus_fifo_empty(&manager->state_callback_fifo))
+    {
+        context = globus_fifo_peek(&manager->state_callback_fifo);
+        request = context->request;
+
+        while (manager->state_callback_slots > 0 &&
+               !globus_list_empty(context->contacts))
+        {
+            char * contact;
+            
+            contact = globus_list_remove(&context->contacts, context->contacts);
+
+            rc = globus_gram_protocol_post(
+                    contact,
+                    NULL,
+                    NULL,
+                    context->message,
+                    context->message_length,
+                    globus_l_gram_callback_reply,
+                    context);
+
+            if (rc == GLOBUS_SUCCESS)
+            {
+                manager->state_callback_slots--;
+                context->active++;
+            }
+            free(contact);
+        }
+        if (globus_list_empty(context->contacts))
+        {
+            (void) globus_fifo_dequeue(&manager->state_callback_fifo);
+        }
+        if (context->active == 0 && globus_list_empty(context->contacts))
+        {
+            free(context->message);
+            free(context);
+            globus_list_insert(&references, request->job_contact_path);
+        }
+    }
+    globus_mutex_unlock(&manager->mutex);
+
+    while (!globus_list_empty(references))
+    {
+        char * key = globus_list_remove(&references, references);
+
+        globus_gram_job_manager_remove_reference(
+               manager,
+               key);
+    }
+}
+/* globus_l_gram_callback_reply() */

@@ -55,6 +55,13 @@ int
 globus_l_gram_remote_io_url_update(
     globus_gram_jobmanager_request_t *  request);
 
+static
+int
+globus_l_gram_gss_send_fd(
+    void *                              arg,
+    void *                              buffer,
+    size_t                              length);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -148,7 +155,6 @@ globus_gram_job_manager_state_machine(
     int                                 rc = 0;
     int                                 save_status;
     int                                 save_jobmanager_state;
-    globus_rsl_t *                      original_rsl;
     globus_gram_job_manager_query_t *   query;
     globus_bool_t                       first_poll = GLOBUS_FALSE;
     globus_gram_jobmanager_state_t      next_state;
@@ -1073,15 +1079,22 @@ globus_gram_job_manager_state_machine(
  *
  * @param request
  *     Job request
+ * @param response_code
+ *     GLOBUS_SUCCESS, or a GRAM protocol failure code.
+ * @param job_contact
+ *     Job contact
+ * @param response_fd
+ *     Descriptor to send response to
  */
 int
 globus_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *  request,
-    FILE *                              response_fp)
+    int                                 response_code,
+    const char *                        job_contact,
+    int                                 response_fd,
+    gss_ctx_id_t                        response_context)
 {
-    int                                 failure_code;
     int                                 rc;
-    char *                              sent_contact;
     globus_byte_t *                     reply = NULL;
     globus_size_t                       replysize;
     globus_byte_t *                     sendbuf;
@@ -1090,30 +1103,10 @@ globus_gram_job_manager_reply(
     OM_uint32                           minor_status;
     int                                 token_status;
 
-    failure_code = request->failure_code;
-
-    if(request->two_phase_commit != 0)
-    {
-        failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
-        sent_contact = request->job_contact;
-    }
-    else if(failure_code == 0)
-    {
-        sent_contact = request->job_contact;
-    }
-    else if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
-    {
-        sent_contact = request->old_job_contact;
-    }
-    else
-    {
-        sent_contact = NULL;
-    }
-
     /* Response to initial job request. */
     rc = globus_gram_protocol_pack_job_request_reply(
-            failure_code,
-            sent_contact,
+            response_code,
+            job_contact,
             &reply,
             &replysize);
 
@@ -1137,25 +1130,24 @@ globus_gram_job_manager_reply(
     }
     if(reply)
     {
-        globus_libc_free(reply);
+        free(reply);
     }
     globus_gram_job_manager_request_log( request,
                    "JM: before sending to client: rc=%d (%s)\n",
                    rc, globus_gram_protocol_error_string(rc));
     if(rc == GLOBUS_SUCCESS)
     {
-        if(request->response_context != GSS_C_NO_CONTEXT)
+        if (response_context != GSS_C_NO_CONTEXT)
         {
             major_status = globus_gss_assist_wrap_send(
                     &minor_status,
-                    request->response_context,
+                    response_context,
                     (void *) sendbuf,
                     sendsize,
                     &token_status,
-                    globus_gss_assist_token_send_fd,
-                    response_fp,
-                    request->manager->jobmanager_log_fp);
-            fflush(response_fp);
+                    globus_l_gram_gss_send_fd,
+                    (void *) response_fd,
+                    request ? request->manager->jobmanager_log_fp : stderr);
         }
         else
         {
@@ -1163,15 +1155,9 @@ globus_gram_job_manager_reply(
             major_status = 0;
         }
 
-        /*
-         * Reopen stdin and stdout to /dev/null---the job submit code
-         * expects to be able to close them
-         */
-        freopen("/dev/null", "r+", response_fp);
+        free(sendbuf);
 
-        globus_libc_free(sendbuf);
-
-        if(major_status != GSS_S_COMPLETE)
+        if (request && major_status != GSS_S_COMPLETE)
         {
             globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
@@ -1189,12 +1175,11 @@ globus_gram_job_manager_reply(
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
     }
 
-    if(rc != GLOBUS_SUCCESS)
+    if (request && rc != GLOBUS_SUCCESS)
     {
         request->failure_code = rc;
     }
 
-    GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "exiting");
     return rc;
 }
 /* globus_gram_job_manager_reply() */
@@ -1273,7 +1258,6 @@ globus_l_gram_job_manager_set_restart_state(
     switch(request->restart_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
@@ -1323,7 +1307,6 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
@@ -1548,7 +1531,7 @@ globus_l_gram_job_manager_add_cache_info(
                 GLOBUS_TRUE);
     }
 
-    globus_libc_free(out_file);
+    free(out_file);
     return 0;
 }
 /* globus_l_gram_job_manager_add_cache_info() */
@@ -1589,3 +1572,86 @@ fopen_failed:
     return rc;
 }
 /* globus_l_gram_remote_io_url_update() */
+
+
+/**
+ * Write a GSSAPI token to a file descriptor
+ *
+ * Unlike the functions in globus_gss_assist, this uses file descriptors, not
+ * FILE * values for @a arg. Writes a 4-byte header for the same conditions
+ * as the function in globus_gss_assist.
+ *
+ * @param arg
+ *     Void * cast of the file descriptor number
+ * @param buffer
+ *     GSSAPI token buffer to send
+ * @param length
+ *     Token length
+ *     
+ */
+static
+int
+globus_l_gram_gss_send_fd(
+    void *                              arg,
+    void *                              buffer,
+    size_t                              length)
+{
+    unsigned char                       lengthbuf[4];
+    unsigned char *                     header = buffer;
+    int                                 fd;
+    int                                 rc;
+    ssize_t                             written = 0;
+    
+    fd = (int) arg;
+
+    lengthbuf[0] = length >> 24;
+    lengthbuf[1] = length >> 16;
+    lengthbuf[2] = length >> 8;
+    lengthbuf[3] = length;
+    
+    if (!(length > 5 && header[0] <= 26 && header[0] >= 20
+          && ((header[1] == 3 && (header[2] == 0 || header[2] == 1))
+          || (header[1] == 2 && header[2] == 0))))
+    {
+        written = 0;
+        do
+        {
+            rc = write((int) fd, lengthbuf + written, (size_t) (4 - written));
+            if (rc < 0)
+            {
+                if (errno == EINTR)
+                {
+                    rc = 0;
+                }
+                else
+                {
+                    return GLOBUS_GSS_ASSIST_TOKEN_EOF;
+                }
+            }
+            written += rc;
+        }
+        while (written < 4);
+    }
+
+    written = 0;
+    do
+    {
+        rc = write((int) fd, header + written, (size_t) (length - written));
+        if (rc < 0)
+        {
+            if (errno == EINTR)
+            {
+                rc = 0;
+            }
+            else
+            {
+                return GLOBUS_GSS_ASSIST_TOKEN_EOF;
+            }
+        }
+        written += rc;
+    }
+    while (written < length);
+
+    return 0;
+}
+/* globus_l_gram_gss_send_fd() */
