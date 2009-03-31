@@ -318,12 +318,13 @@ script_arg_file_malloc_failed:
         free(script_context);
 script_context_malloc_failed:
 env_strings_failed:
-        for (i = 0; i < 9; i++)
+        ;
+    }
+    for (i = 0; i < 9; i++)
+    {
+        if (env[i] != NULL)
         {
-            if (env[i] != NULL)
-            {
-                free(env[i]);
-            }
+            free(env[i]);
         }
     }
 
@@ -535,6 +536,7 @@ globus_l_gram_pclose_callback(
             NULL,
             NULL);
 
+    (void) globus_xio_attr_destroy(script_context->attr);
     free(script_context);
 
     globus_l_gram_job_manager_script_done(request->manager);

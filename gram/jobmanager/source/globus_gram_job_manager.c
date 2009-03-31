@@ -276,9 +276,15 @@ globus_gram_job_manager_destroy(
     }
     globus_fifo_destroy(&manager->seg_event_queue);
 
+    globus_hashtable_destroy(&manager->request_hash);
+
+    globus_fifo_destroy(&manager->state_callback_fifo);
+    globus_fifo_destroy(&manager->script_fifo);
+
     return;
 }
 /* globus_gram_job_manager_destroy() */
+
 static
 void
 globus_l_gram_job_manager_open_logfile(

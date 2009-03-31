@@ -55,18 +55,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_ftp_client">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_gass_transfer">
-                <Version>
-                    <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
-
             <Dependency Name="globus_io">
                 <Version>
                     <Simple_Version Major="3"/>
@@ -144,18 +132,6 @@
             <Dependency Name="globus_callout">
                 <Version>
                     <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_ftp_client">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_gass_transfer">
-                <Version>
-                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 

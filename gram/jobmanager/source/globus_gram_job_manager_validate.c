@@ -233,7 +233,21 @@ int
 globus_gram_job_manager_validation_destroy(
     globus_list_t *                     validation_records)
 {
-    /* TODO: implement validation destroy */
+    globus_list_t *                     tmp;
+    globus_gram_job_manager_validation_record_t *
+                                        record;
+
+    tmp = validation_records;
+
+    while (!globus_list_empty(tmp))
+    {
+        record = globus_list_first(tmp);
+        tmp = globus_list_rest(tmp);
+
+        globus_l_gram_job_manager_validation_record_free(record);
+    }
+    globus_list_free(validation_records);
+
     return GLOBUS_SUCCESS;
 }
 
@@ -921,11 +935,11 @@ globus_l_gram_job_manager_insert_default_rsl(
 {
     globus_gram_job_manager_validation_record_t *
                                         record;
-    globus_list_t **                        attributes;
-    globus_rsl_t *                        new_relation;
-    char *                                new_relation_str;
-    globus_rsl_t *                        rsl = request->rsl;
-    globus_list_t *                        validation_records;
+    globus_list_t **                    attributes;
+    globus_rsl_t *                      new_relation;
+    char *                              new_relation_str;
+    globus_rsl_t *                      rsl = request->rsl;
+    globus_list_t *                     validation_records;
 
     attributes = globus_rsl_boolean_get_operand_list_ref(rsl);
 
@@ -942,12 +956,7 @@ globus_l_gram_job_manager_insert_default_rsl(
                         *attributes,
                         record->attribute))
             {
-                new_relation_str = malloc(
-                        strlen(record->attribute) +
-                        strlen(record->default_value) + 
-                        strlen("%s = %s"));
-
-                sprintf(new_relation_str,
+                new_relation_str = globus_common_create_string(
                         "%s = %s",
                         record->attribute,
                         record->default_value);

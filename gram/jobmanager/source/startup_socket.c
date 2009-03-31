@@ -546,6 +546,8 @@ globus_l_gram_startup_socket_callback(
         request = NULL;
     }
 
+    free(contact);
+
     close(response_fd);
     response_fd = -1;
 request_load_failed:

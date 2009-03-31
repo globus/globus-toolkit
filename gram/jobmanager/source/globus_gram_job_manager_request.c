@@ -28,6 +28,8 @@
 /*
  * Include header files
  */
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
 #include "globus_common.h"
 #include "globus_gram_protocol.h"
 #include "globus_gram_job_manager.h"
@@ -880,6 +882,7 @@ globus_gram_job_manager_request_load(
         goto request_init_failed;
     }
 request_init_failed:
+    free(rsl);
 read_request_failed:
 import_context_failed:
     return rc;
@@ -1143,10 +1146,11 @@ globus_gram_job_manager_request_destroy(
     {
         free(request->job_dir);
     }
+    globus_gass_cache_close(&request->cache_handle);
     if (request->response_context != GSS_C_NO_CONTEXT)
     {
         OM_uint32 minor_status;
-        gss_delete_sec_context(&minor_status, request->response_context, NULL);
+        gss_delete_sec_context(&minor_status, &request->response_context, NULL);
     }
 }
 /* globus_gram_job_manager_request_destroy() */

@@ -1531,6 +1531,7 @@ globus_l_gram_job_manager_add_cache_info(
                 GLOBUS_TRUE);
     }
 
+    free(fname);
     free(out_file);
     return 0;
 }

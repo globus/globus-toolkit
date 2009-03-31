@@ -349,12 +349,6 @@ globus_gram_job_manager_config_init(
     }
 
     /* Now initialize values from our environment */
-    rc = globus_gram_job_manager_gsi_get_subject(&config->subject);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto out;
-    }
-
     config->home = strdup(getenv("HOME"));
     if (config->home == NULL)
     {
@@ -417,6 +411,19 @@ globus_gram_job_manager_config_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto out;
     }
+
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto out;
+    }
+
+    rc = globus_gram_job_manager_gsi_get_subject(&config->subject);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto out;
+    }
+
 
 out:
     return rc;

@@ -37,13 +37,15 @@
 #include "globus_rsl.h"
 #include "globus_gass_cache.h"
 #include "globus_io.h"
-#include "globus_gass_transfer.h"
-#include "globus_ftp_client.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
 static
 int
 globus_l_gram_job_manager_activate(void);
+
+static
+int
+globus_l_gram_deactivate(void);
 
 static
 globus_result_t
@@ -290,6 +292,7 @@ main(
                 /* start frees reference to the job request */
                 request = NULL;
             }
+            free(client_contact);
         }
         else
         {
@@ -335,8 +338,14 @@ main(
 
     globus_gram_job_manager_destroy(&manager);
     globus_gram_job_manager_config_destroy(&config);
+    /*
+    if (cred != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&minor_status, &cred);
+    }
+    */
 
-    rc = globus_module_deactivate_all();
+    rc = globus_l_gram_deactivate();
     if (rc != GLOBUS_SUCCESS)
     {
         fprintf(stderr, "deactivation failed with rc=%d\n",
@@ -383,15 +392,14 @@ globus_l_gram_job_manager_activate(void)
     {
         GLOBUS_COMMON_MODULE,
         GLOBUS_CALLOUT_MODULE,
-        GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
-        GLOBUS_GSI_GSS_ASSIST_MODULE,
         GLOBUS_GSI_SYSCONFIG_MODULE,
+        GLOBUS_GSI_GSSAPI_MODULE,
+        GLOBUS_GSI_GSS_ASSIST_MODULE,
+        GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
         GLOBUS_XIO_MODULE,
         GLOBUS_IO_MODULE,
         GLOBUS_GRAM_PROTOCOL_MODULE,
         GLOBUS_GASS_CACHE_MODULE,
-        GLOBUS_GASS_TRANSFER_MODULE,
-        GLOBUS_FTP_CLIENT_MODULE,
         NULL
     };
     globus_module_descriptor_t *        failed_module = NULL;
@@ -436,6 +444,23 @@ activate_failed:
     return rc;
 }
 /* globus_l_gram_job_manager_activate() */
+
+static
+int
+globus_l_gram_deactivate(void)
+{
+    (void) globus_xio_stack_destroy(
+            globus_i_gram_job_manager_file_stack);
+
+    (void) globus_xio_stack_destroy(
+            globus_i_gram_job_manager_popen_stack);
+
+    globus_xio_driver_unload(globus_i_gram_job_manager_file_driver);
+    globus_xio_driver_unload(globus_i_gram_job_manager_popen_driver);
+
+    return globus_module_deactivate_all();
+}
+/* globus_l_gram_deactivate(void) */
 
 static
 globus_result_t
