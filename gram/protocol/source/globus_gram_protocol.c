@@ -141,6 +141,7 @@ globus_l_gram_protocol_deactivate(void)
 	}
     }
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
+    globus_io_tcpattr_destroy(&globus_i_gram_protocol_default_attr);
     globus_mutex_destroy(&globus_i_gram_protocol_mutex);
 
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
