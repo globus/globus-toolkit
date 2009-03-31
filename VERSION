@@ -5,12 +5,20 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.7 XX Xxx 2009
-  - ...
+  - check certificate requests and issued certificates in the CA:
+    (http://bugzilla.globus.org/globus/show_bug.cgi?id=6648)
+    - add certificate_request_checker and certificate_issuer_checker
+      options in myproxy-server.config for specifying call-outs
+      before and after the MyProxy CA signs certificates;
+    - only accept RSA keys in certificate requests
+    - don't allow RSA exponents < 65537
+    - add min_keylen option in myproxy-server.config for specifying a
+      minimum allowed RSA key length
 
 v4.6 25 Mar 2009
   - add myproxy-get-trustroots command to download trusted CA
     certificates without client-side authentication
-    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=5899)
+    (http://bugzilla.globus.org/globus/show_bug.cgi?id=5899)
   - add sasl_mech, sasl_serverFQDN, and sasl_user_realm
     options to myproxy-server.config
   - include certificate subject in myproxy-admin-adduser output

@@ -67,6 +67,8 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->certificate_issuer_program);
     free_ptr(&context->certificate_issuer_cert);
     free_ptr(&context->certificate_issuer_key);
+    free_ptr(&context->certificate_request_checker);
+    free_ptr(&context->certificate_issuer_checker);
     free_ptr(&context->certificate_issuer_key_passphrase);
     free_ptr(&context->certificate_openssl_engine_id);
     free_ptr(&context->certificate_openssl_engine_lockfile);
@@ -78,6 +80,7 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->certificate_mapfile);
     free_ptr(&context->certificate_mapapp);
     context->max_cert_lifetime = 0;
+    context->min_keylen = 0;
     free_ptr(&context->certificate_serialfile);
     free_ptr(&context->certificate_out_dir);
     free_ptr(&context->ca_ldap_server);
@@ -280,6 +283,12 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "certificate_issuer_key") == 0) {
 	context->certificate_issuer_key = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_request_checker") == 0) {
+	context->certificate_request_checker = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_checker") == 0) {
+	context->certificate_issuer_checker = strdup(tokens[1]);
+    }
     else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0) {
 	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
     }
@@ -326,6 +335,9 @@ line_parse_callback(void *context_arg,
     }
     else if (strcmp(directive, "max_cert_lifetime") == 0) {
 	context->max_cert_lifetime = 60*60*atoi(tokens[1]);
+    }
+    else if (strcmp(directive, "min_keylen") == 0) {
+	context->min_keylen = atoi(tokens[1]);
     }
     else if (strcmp(directive, "certificate_serialfile") == 0) {
 	context->certificate_serialfile = strdup(tokens[1]);
@@ -683,6 +695,11 @@ check_config(myproxy_server_context_t *context)
     rval = -1;
 #endif
     }
+    if (context->certificate_issuer_program && 
+        context->certificate_issuer_cert) {
+        verror_put_string("both certificate_issuer_program and certificate_issuer_cert defined");
+        rval = -1;
+    } 
     if (context->certificate_issuer_program) {
 	if (access(context->certificate_issuer_program, X_OK) < 0) {
 	    verror_put_string("certificate_issuer_program %s not executable",
@@ -762,6 +779,10 @@ check_config(myproxy_server_context_t *context)
 		myproxy_log("max certificate lifetime: %d seconds",
 			    context->max_cert_lifetime);
 	    }
+	    if (context->min_keylen) {
+		myproxy_log("minimum key length: %d bits",
+                    context->min_keylen);
+	    }
 	    if (context->ca_ldap_server) {
 		if (!context->ca_ldap_searchbase) {
 		    verror_put_string("ca_ldap_server requires ca_ldap_searchbase");
@@ -773,6 +794,20 @@ check_config(myproxy_server_context_t *context)
 		}
 	    }
 	}
+	if (context->certificate_request_checker &&
+        access(context->certificate_request_checker, X_OK) < 0) {
+	    verror_put_string("certificate_request_checker %s not executable",
+			      context->certificate_request_checker);
+	    verror_put_errno(errno);
+	    rval = -1;
+    }
+	if (context->certificate_issuer_checker &&
+        access(context->certificate_issuer_checker, X_OK) < 0) {
+	    verror_put_string("certificate_issuer_checker %s not executable",
+			      context->certificate_issuer_checker);
+	    verror_put_errno(errno);
+	    rval = -1;
+    }
     }
     if (context->pubcookie_cert) {
 	if (access(context->pubcookie_cert, R_OK) < 0) {

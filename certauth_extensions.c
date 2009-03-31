@@ -922,6 +922,78 @@ int initialise_openssl_engine(myproxy_server_context_t *server_context) {
 	return 1;
 }
 
+static int
+do_check(const char *callout, const X509_REQ *req, const X509 *cert)
+{
+    pid_t pid;
+    int fds[3];
+    FILE * pipestream = NULL;
+    int status;
+    char buffer[BUF_SIZE];
+
+    if (!callout) return 0;
+
+    myproxy_debug("calling %s", callout);
+
+    if ((pid = myproxy_popen(fds, callout, NULL)) < 0) {
+        return -1; /* myproxy_popen will set verror */
+    }
+
+    /* writing to program */
+    pipestream = fdopen( fds[0], "w" );
+    if ( pipestream == NULL ) {
+        verror_put_string("File stream to stdin pipe creation problem.");
+        return -1;
+    }
+
+    if (req)
+        PEM_write_X509_REQ( pipestream, (X509_REQ *)req );
+    if (cert)
+        PEM_write_X509( pipestream, (X509 *)cert );
+    fflush( pipestream );
+    fclose( pipestream );
+    close(fds[0]);
+
+    /* wait for program to exit */
+
+    if( waitpid(pid, &status, 0) == -1 ) {
+        verror_put_string("waitpid() failed for %s", callout);
+        verror_put_errno(errno);
+        return -1;
+    }
+
+    /* check status and read appropriate content */
+    /* if exit != 0 - read and log message from program stderr */
+    if ( status != 0 ) {
+        verror_put_string("%s returned failure", callout);
+        memset(buffer, '\0', BUF_SIZE);
+        if ( read( fds[2], buffer, BUF_SIZE ) > 0 ) {
+            verror_put_string("%s", buffer);
+        } else {
+            verror_put_string("did not recieve an error string from %s",
+                              callout);
+        }
+        return -1;
+    }
+
+    close(fds[1]);
+    close(fds[2]);
+
+    return 0;
+}
+
+static int
+check_certreq(const char *callout, const X509_REQ *req)
+{
+    return do_check(callout, req, NULL);
+}
+
+static int
+check_newcert(const char *callout, const X509 *cert)
+{
+    return do_check(callout, NULL, cert);
+}
+
 static int 
 handle_certificate(unsigned char            *input_buffer,
 		   size_t                   input_buffer_length,
@@ -938,6 +1010,7 @@ handle_certificate(unsigned char            *input_buffer,
   long          sub_hash;
   unsigned char md[SHA_DIGEST_LENGTH];
   unsigned int  md_len = 0;
+  int           keysize;
 
   BIO      * request_bio  = NULL;
   X509_REQ * req          = NULL;
@@ -981,6 +1054,29 @@ handle_certificate(unsigned char            *input_buffer,
     goto error;
   } 
 
+  if (pkey->type != EVP_PKEY_RSA) {
+      verror_put_string("Public key in certificate request is not of type RSA.");
+      goto error;
+  }
+
+  myproxy_debug("RSA exponent in certificate request is: %d",
+                BN_get_word(pkey->pkey.rsa->e));
+  if (BN_get_word(pkey->pkey.rsa->e) < 65537) {
+      verror_put_string("RSA public key in certificate request has weak exponent (%lu).", BN_get_word(pkey->pkey.rsa->e));
+      verror_put_string("RSA public key exponent must be 65537 or larger.");
+      goto error;
+  }
+
+  keysize = RSA_size(pkey->pkey.rsa)*8;
+  myproxy_debug("RSA key in certificate request is %d bits.", keysize);
+  if (server_context->min_keylen &&
+      keysize < server_context->min_keylen) {
+      verror_put_string("RSA public key in certificate request is too small (%d bits).", keysize);
+      verror_put_string("RSA public key must be at least %d bits.",
+                        server_context->min_keylen);
+      goto error;
+  }
+
   verify = X509_REQ_verify(req, pkey);
 
   if ( verify != 1 ) {
@@ -1000,8 +1096,13 @@ handle_certificate(unsigned char            *input_buffer,
               client_request->proxy_lifetime
              );
 
+  if (check_certreq(server_context->certificate_request_checker, req)) {
+      goto error;
+  }
+
   /* check to see if the configuration is sound, and call the appropriate
-   * cert generation method based on what has been defined
+   * cert generation method based on what has been defined.
+   * these checks are duplicated in check_config().
    */
 
   if ( ( server_context->certificate_issuer_program != NULL ) && 
@@ -1043,6 +1144,10 @@ handle_certificate(unsigned char            *input_buffer,
   if (cert == NULL) {
     verror_put_string("Cert pointer NULL - unknown generation failure!");
     goto error;
+  }
+
+  if (check_newcert(server_context->certificate_issuer_checker, cert)) {
+      goto error;
   }
 
   return_bio = BIO_new(BIO_s_mem());
