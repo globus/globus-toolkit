@@ -89,7 +89,7 @@ ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name)
         (res = globus_gss_assist_map_and_authorize(client->context, "ssh",
                                                    name, lname, 256))) {
         debug("%s", globus_error_print_chain(globus_error_get(res)));
-    } else if (strcmp(name, lname) != 0) {
+    } else if (lname && lname[0] && strcmp(name, lname) != 0) {
         debug("GSI user maps to %s, not %s", lname, name);
     } else {
         authorized = 1;
