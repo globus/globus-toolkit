@@ -273,8 +273,8 @@ GSS_CALLCONV gss_init_sec_context(
                     GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
-                        (_GGSL("The name of the remote host (%s%s%s), and the expected "
-                               "name for the remote host (%s%s%s) do not match. This happens when the name in the host certificate does not match the information obtained from DNS and is often a DNS configuration problem."),
+                        (_GGSL("The expected name for the remote host (%s%s%s) does not match the authenticated "
+                               "name of the remote host (%s%s%s). This happens when the name in the host certificate does not match the information obtained from DNS and is often a DNS configuration problem."),
                          target_name->service_name
                             ? target_name->service_name : "",
                          target_name->service_name
