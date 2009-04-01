@@ -10,6 +10,8 @@ v4.7 XX Xxx 2009
     - add certificate_request_checker and certificate_issuer_checker
       options in myproxy-server.config for specifying call-outs
       before and after the MyProxy CA signs certificates
+    - example myproxy-cert-checker and myproxy-certreq-checker
+      call-outs are installed in $GLOBUS_LOCATION/share/myproxy
     - only accept RSA keys in certificate requests
     - don't allow RSA exponents < 65537
     - add min_keylen option in myproxy-server.config for specifying a
