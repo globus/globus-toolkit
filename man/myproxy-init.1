@@ -180,7 +180,9 @@ argument will be matched against the common name (CN) of the client
 .B -x 
 before this option to match against the full distinguished name (DN)
 (for example: "/C=US/O=National Computational Science Alliance/CN=Jim
-Basney") instead.
+Basney")
+or a regular expression
+(for example: "*/CN=Jim Basney|*/CN=James Basney").
 .TP
 .BI -R " dn, " --renewable_by " dn"
 Allow the specified entity to renew credentials.
@@ -189,7 +191,10 @@ argument will be matched against the common name (CN) of the client
 (for example: "condorg/modi4.ncsa.uiuc.edu").  Specify
 .B -x 
 before this option to match against the full distinguished name (DN)
-(for example: "/C=US/O=National Computational Science Alliance/CN=condorg/modi4.ncsa.uiuc.edu") instead.
+(for example: "/C=US/O=National Computational Science
+Alliance/CN=condorg/modi4.ncsa.uiuc.edu")
+or a regular expression
+(for example: "*/CN=server1.ncsa.uiuc.edu|*/CN=server2.ncsa.uiuc.edu").
 This option implies 
 .B -n
 since passphrase authentication is not used for credential renewal.
@@ -201,7 +206,9 @@ argument will be matched against the common name (CN) of the client
 (for example: "Jim Basney").  Specify
 .B -x 
 before this option to match against the full distinguished name (DN)
-(for example: "/C=US/O=National Computational Science Alliance/CN=Jim Basney") instead.
+(for example: "/C=US/O=National Computational Science Alliance/CN=Jim Basney")
+or a regular expression
+(for example: "*/CN=Jim Basney|*/CN=James Basney").
 This option implies 
 .BR -n .
 .TP
@@ -210,7 +217,8 @@ Specifies that the DN used by options
 .B -r
 and 
 .B -R
-will be matched as a regular expression.
+will be matched as an extended regular expression (see
+.BR re_format (7)).
 .TP
 .B -X, --match_cn_only
 Specifies that the DN used by options 
