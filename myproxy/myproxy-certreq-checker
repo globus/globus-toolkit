@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# example certificate_request_checker script
+
+# pull certreq from stdin to shell variable
+certreq=`openssl req -text`
+
+#debug
+echo "$certreq" > /tmp/certreq.pem
+
+# check for blacklisted Debian keys
+blacklist=`ls /usr/local/openssl-blacklist/blacklist.RSA-*`
+tag=`echo "$certreq" | \
+     openssl req -noout -modulus|sha1sum|cut -d ' ' -f 1|cut -c21-41`
+if [ `cat $blacklist | grep -c $tag` -ne 0 ]; then
+    echo "known weak Debian key in certificate request" 1>&2
+    exit 1
+fi
+
+# check for weak exponents
+exponent=`echo "$certreq" | \
+          openssl req -noout -pubkey | \
+          openssl rsa -pubin -text -noout | \
+          grep Exponent | awk '{print $2}'`
+if [ "$exponent" -lt 65537 ]; then
+    echo "weak exponent ($exponent < 65537) in certificate request" 1>&2
+    exit 1
+fi
+
+# all done
+exit 0

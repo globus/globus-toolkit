@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# example certificate_issuer_checker script
+
+# pull cert from stdin to shell variable
+cert=`openssl x509 -text`
+
+#debug
+echo "$cert" > /tmp/cert.pem
+
+# check for MD5 signatures
+echo "$cert" | grep 'Algorithm: md5' > /dev/null 2>&1
+if [ $? = "0" ]; then
+    echo "MD5 signature detected" 1>&2
+    exit 1
+fi
+
+# all done
+exit 0

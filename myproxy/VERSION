@@ -9,7 +9,7 @@ v4.7 XX Xxx 2009
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6648)
     - add certificate_request_checker and certificate_issuer_checker
       options in myproxy-server.config for specifying call-outs
-      before and after the MyProxy CA signs certificates;
+      before and after the MyProxy CA signs certificates
     - only accept RSA keys in certificate requests
     - don't allow RSA exponents < 65537
     - add min_keylen option in myproxy-server.config for specifying a
