@@ -1078,6 +1078,10 @@ globus_gram_job_manager_request_destroy(
     {
         free(request->jm_restart);
     }
+    if (request->scratch_dir_base)
+    {
+        free(request->scratch_dir_base);
+    }
     if (request->scratchdir)
     {
         globus_l_gram_destroy_scratchdir(request, request->scratchdir);
@@ -1137,7 +1141,7 @@ globus_gram_job_manager_request_destroy(
     {
         free(request->job_contact_path);
     }
-    /* TODO: clean up request->pending_queries */
+    globus_fifo_destroy(&request->pending_queries);
     if (request->job_history_file)
     {
         free(request->job_history_file);
