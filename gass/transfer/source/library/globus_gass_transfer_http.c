@@ -109,7 +109,8 @@ globus_l_gass_transfer_http_activate(void)
     OM_uint32				maj_stat;
     OM_uint32				min_stat;
     gss_name_t 				name;
-    static gss_cred_id_t		globus_l_gass_transfer_http_credential;
+    gss_cred_id_t		        globus_l_gass_transfer_http_credential =
+            GSS_C_NO_CREDENTIAL;
     gss_buffer_desc			name_buffer;
     MYNAME(globus_l_gass_transfer_http_activate);
     
@@ -182,11 +183,21 @@ globus_l_gass_transfer_http_activate(void)
 	
     globus_l_gass_transfer_http_subject_name = name_buffer.value;
 
+    if (globus_l_gass_transfer_http_credential != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &globus_l_gass_transfer_http_credential);
+    }
+
     debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
     
     return GLOBUS_SUCCESS;
 
  error_exit:
+    if (globus_l_gass_transfer_http_credential != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &globus_l_gass_transfer_http_credential);
+    }
+
     debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 
     return GLOBUS_FAILURE;

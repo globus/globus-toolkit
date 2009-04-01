@@ -958,7 +958,7 @@ globus_l_gass_cache_mangle_md5(const char	*string,
 	levels -= 2;
 
 	/* Do the real work. */
-	MD5( string, strlen(string), md5 );
+	MD5( (const unsigned char *) string, strlen(string), md5 );
 
 	/* Convert it to string format */
 	for ( i=0;  i<MD5_DIGEST_LENGTH;  i++ )
@@ -2183,6 +2183,7 @@ globus_l_gass_cache_scandir( const char		*directory,
 		{
 		    globus_l_gass_cache_scandir_free( newlist, count );
                     globus_free(dirname);
+                    globus_free(dir_entry);
 		    closedir( dirptr );
 		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
 		}
@@ -3503,7 +3504,7 @@ globus_l_gass_cache_wait_ready( const cache_names_t	*names,
     char *              cur_statpath;
 
     /* Default to check right away, then we'll wait before further checks */
-    checktime = ( time(NULL) + 0 );
+    cur_time = checktime = ( time(NULL) + 0 );
     
     /* Run til we're done */
     while( 1 )
@@ -4386,6 +4387,7 @@ globus_l_gass_cache_list_all_urls_flat( globus_gass_cache_t    cache_handle,
     if ( rc != GLOBUS_SUCCESS )
     {
 	CACHE_TRACE2( "SCAN: hashtable error, dir = '%s'", search_dir );
+	globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
 	RET_ERROR( rc );
     }
                                 
@@ -4422,6 +4424,8 @@ globus_l_gass_cache_list_all_urls_flat( globus_gass_cache_t    cache_handle,
             if (!elem)
             {
                 CACHE_TRACE( "list_all_files: malloc failed" );
+                globus_hashtable_destroy(&table);
+                globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
                 RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
             }
             elem->mangled = globus_libc_strdup(name);
@@ -4806,7 +4810,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
                 printf("NAMETOOLONG: f_name_length: %d, "
 		       "default_name_length: %d, filename_max: %d\n",
                        f_name_length,
-                       strlen(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME),
+                       (int) strlen(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME),
                        PATH_MAX);
 		LOG_ERROR(0);
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -6068,6 +6072,10 @@ globus_gass_cache_cleanup_tag_all(
 	    GLOBUS_NULL,
 	    &base_local_dir,
 	    GLOBUS_NULL );
+    }
+    else
+    {
+	RET_ERROR( rc );
     }
 
     /* Scan for URLs */

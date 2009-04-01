@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_cache">
 
-    <Aging_Version Age="0" Major="5" Minor="3" />
+    <Aging_Version Age="0" Major="5" Minor="4" />
     <Description>Globus Gass Cache</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
