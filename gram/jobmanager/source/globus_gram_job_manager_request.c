@@ -2515,7 +2515,7 @@ globus_l_gram_export_cred(
 {
     OM_uint32                           major_status, minor_status;
     char *                              filename = NULL;
-    FILE *                              file;
+    int                                 file;
     gss_buffer_desc                     buffer;
     int                                 rc = GLOBUS_SUCCESS;
 
@@ -2545,14 +2545,14 @@ globus_l_gram_export_cred(
         goto malloc_filename_failed;
     }
 
-    file = fopen(filename, "w");
-    if (file == NULL)
+    file = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+    if (file < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
         goto fopen_failed;
     }
 
-    rc = fwrite(buffer.value, 1, buffer.length, file);
+    rc = write(file, buffer.value, buffer.length);
     if (rc < buffer.length)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
@@ -2561,7 +2561,7 @@ globus_l_gram_export_cred(
     rc = GLOBUS_SUCCESS;
 
 fwrite_failed:
-    fclose(file);
+    close(file);
 fopen_failed:
     if (rc != GLOBUS_SUCCESS)
     {
