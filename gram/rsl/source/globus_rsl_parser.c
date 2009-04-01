@@ -27,6 +27,7 @@
 #define	RSL_RPAREN	270
 #define	RSL_VARIABLE_START	271
 
+#line 1 "globus_rsl_parser.y"
 
 /*
  * Copyright 1999-2006 University of Chicago
@@ -81,6 +82,7 @@ yyerror(char *str);
 static int my_yyinput();
 
 
+#line 60 "globus_rsl_parser.y"
 typedef union
 {
   int	               Int;
@@ -231,7 +233,7 @@ static const short yycheck[] = {     3,
 #define YYPURE 1
 
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-
+#line 3 "/Users/bester/tmp/bison-1.25/share/bison.simple"
 
 /* Skeleton output parser for bison,
    Copyright (C) 1984, 1989, 1990 Free Software Foundation, Inc.
@@ -424,7 +426,7 @@ __yy_memcpy (char *to, char *from, int count)
 #endif
 #endif
 
-
+#line 196 "/Users/bester/tmp/bison-1.25/share/bison.simple"
 
 /* The user can define YYPARSE_PARAM as the name of an argument to be passed
    into yyparse.  The argument should have type void *.
@@ -729,118 +731,143 @@ yyreduce:
   switch (yyn) {
 
 case 1:
+#line 92 "globus_rsl_parser.y"
 { parse_state.rsl_spec = yyvsp[0].RSL; ;
     break;}
 case 2:
+#line 97 "globus_rsl_parser.y"
 {
       yyval.RSL = globus_rsl_make_boolean (yyvsp[-1].Int, yyvsp[0].List);
       assert ((yyval.RSL)!=NULL);
     ;
     break;}
 case 3:
+#line 102 "globus_rsl_parser.y"
 { 
       yyval.RSL = yyvsp[0].RSL;
     ;
     break;}
 case 4:
+#line 109 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_MULTIREQ; ;
     break;}
 case 5:
+#line 110 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_AND; ;
     break;}
 case 6:
+#line 111 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_OR; ;
     break;}
 case 7:
+#line 117 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[-2].RSL, yyvsp[0].List);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 8:
+#line 122 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[-1].RSL, NULL);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 9:
+#line 131 "globus_rsl_parser.y"
 {
       yyval.RSL = globus_rsl_make_relation (yyvsp[-1].Int, yyvsp[-2].String, yyvsp[0].RSLval);
       assert ((yyval.RSL)!=NULL);
     ;
     break;}
 case 10:
+#line 139 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_EQ; ;
     break;}
 case 11:
+#line 140 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_NEQ; ;
     break;}
 case 12:
+#line 141 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_GT; ;
     break;}
 case 13:
+#line 142 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_GTEQ; ;
     break;}
 case 14:
+#line 143 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_LT; ;
     break;}
 case 15:
+#line 144 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_LTEQ; ;
     break;}
 case 16:
+#line 149 "globus_rsl_parser.y"
 {
       yyval.RSLval = globus_rsl_value_make_sequence (yyvsp[0].List);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 17:
+#line 157 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[-1].RSL, yyvsp[0].List);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 18:
+#line 162 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[0].RSL, NULL);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 19:
+#line 171 "globus_rsl_parser.y"
 { 
       yyval.RSLval = yyvsp[-1].RSLval;
     ;
     break;}
 case 20:
+#line 174 "globus_rsl_parser.y"
 { yyval.RSLval = yyvsp[0].RSLval; ;
     break;}
 case 21:
+#line 180 "globus_rsl_parser.y"
 {
       yyval.RSLval = globus_rsl_value_make_concatenation (yyvsp[-2].RSLval, yyvsp[0].RSLval);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 22:
+#line 185 "globus_rsl_parser.y"
 { 
       yyval.RSLval = globus_rsl_value_make_literal (yyvsp[0].String);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 23:
+#line 189 "globus_rsl_parser.y"
 { yyval.RSLval = yyvsp[0].RSLval; ;
     break;}
 case 24:
+#line 195 "globus_rsl_parser.y"
 {
       yyval.RSLval = globus_rsl_value_make_variable (yyvsp[-1].RSLval);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 25:
+#line 202 "globus_rsl_parser.y"
 { yyval.String = yyvsp[0].String;
     ;
     break;}
 }
    /* the action file gets copied in in place of this dollarsign */
-
+#line 498 "/Users/bester/tmp/bison-1.25/share/bison.simple"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -1036,6 +1063,7 @@ yyerrhandle:
   yystate = yyn;
   goto yynewstate;
 }
+#line 206 "globus_rsl_parser.y"
 
 
 #include "globus_rsl_parser.lex.c"

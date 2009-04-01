@@ -1213,7 +1213,7 @@ globus_rsl_eval (globus_rsl_t *ast_node,
                     /* globus_list_replace_first returns the replaced 
                      * rsl_value_ptr, so in this case we want to free it up.
                      */
-                    globus_rsl_value_free(
+                    globus_rsl_value_free_recursive(
                         (globus_rsl_value_t *) globus_list_replace_first
                              (tmp_value_list,
                              (void *) globus_rsl_value_make_literal
