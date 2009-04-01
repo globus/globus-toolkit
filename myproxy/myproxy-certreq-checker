@@ -5,9 +5,6 @@
 # pull certreq from stdin to shell variable
 certreq=`openssl req -text`
 
-#debug
-echo "$certreq" > /tmp/certreq.pem
-
 # check for blacklisted Debian keys
 blacklist=`ls /usr/local/openssl-blacklist/blacklist.RSA-*`
 tag=`echo "$certreq" | \
