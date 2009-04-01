@@ -49,6 +49,7 @@
 #include "dispatch.h"
 #include "pathnames.h"
 #include "buffer.h"
+#include "canohost.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
@@ -69,17 +70,26 @@ extern Authmethod method_passwd;
 extern Authmethod method_kbdint;
 extern Authmethod method_hostbased;
 #ifdef GSSAPI
+extern Authmethod method_external;
+extern Authmethod method_gsskeyex;
 extern Authmethod method_gssapi;
+extern Authmethod method_gssapi_compat;
 #endif
 #ifdef JPAKE
 extern Authmethod method_jpake;
 #endif
 
+static int log_flag = 0;
+
+
 Authmethod *authmethods[] = {
 	&method_none,
 	&method_pubkey,
 #ifdef GSSAPI
+	&method_gsskeyex,
+	&method_external,
 	&method_gssapi,
+	&method_gssapi_compat,
 #endif
 #ifdef JPAKE
 	&method_jpake,
@@ -224,17 +234,65 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	user = packet_get_string(NULL);
 	service = packet_get_string(NULL);
 	method = packet_get_string(NULL);
-	debug("userauth-request for user %s service %s method %s", user, service, method);
+
+#ifdef GSSAPI
+	if (user[0] == '\0') {
+	    debug("received empty username for %s", method);
+	    if (strcmp(method, "external-keyx") == 0 ||
+		strcmp(method, "gssapi-keyex") == 0) {
+		char *lname = NULL;
+		PRIVSEP(ssh_gssapi_localname(&lname));
+		if (lname && lname[0] != '\0') {
+		    xfree(user);
+		    user = lname;
+		    debug("set username to %s from gssapi context", user);
+		} else {
+		    debug("failed to set username from gssapi context");
+		    packet_send_debug("failed to set username from gssapi context");
+		}
+	    }
+	}
+#endif
+
+	debug("userauth-request for user %s service %s method %s",
+	      user[0] ? user : "<implicit>", service, method);
+	if (!log_flag) {
+		logit("SSH: Server;Ltype: Authname;Remote: %s-%d;Name: %s", 
+		      get_remote_ipaddr(), get_remote_port(),
+              user[0] ? user : "<implicit>");
+		log_flag = 1;
+	}
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
-	if (authctxt->attempt++ == 0) {
-		/* setup auth context */
+	/* If first time or username changed or empty username,
+	   setup/reset authentication context. */
+	if ((authctxt->attempt++ == 0) ||
+	    (strcmp(user, authctxt->user) != 0) ||
+	    (strcmp(user, "") == 0)) {
+		if (authctxt->user) {
+		    xfree(authctxt->user);
+		    authctxt->user = NULL;
+		}
+		authctxt->valid = 0;
+        authctxt->user = xstrdup(user);
+        if (strcmp(service, "ssh-connection") != 0) {
+            packet_disconnect("Unsupported service %s", service);
+        }
+#ifdef GSSAPI
+		/* If we're going to set the username based on the
+		   GSSAPI context later, then wait until then to
+		   verify it. Just put in placeholders for now. */
+		if ((strcmp(user, "") == 0) &&
+		    ((strcmp(method, "gssapi") == 0) ||
+		     (strcmp(method, "gssapi-with-mic") == 0))) {
+			authctxt->pw = fakepw();
+		} else {
+#endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
-		authctxt->user = xstrdup(user);
-		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
+		if (authctxt->pw) {
 			authctxt->valid = 1;
 			debug2("input_userauth_request: setting up authctxt for %s", user);
 		} else {
@@ -244,20 +302,25 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 			PRIVSEP(audit_event(SSH_INVALID_USER));
 #endif
 		}
+#ifdef GSSAPI
+		} /* endif for setting username based on GSSAPI context */
+#endif
 #ifdef USE_PAM
 		if (options.use_pam)
 			PRIVSEP(start_pam(authctxt));
 #endif
 		setproctitle("%s%s", authctxt->valid ? user : "unknown",
 		    use_privsep ? " [net]" : "");
-		authctxt->service = xstrdup(service);
-		authctxt->style = style ? xstrdup(style) : NULL;
-		if (use_privsep)
-			mm_inform_authserv(service, style);
-		userauth_banner();
-	} else if (strcmp(user, authctxt->user) != 0 ||
-	    strcmp(service, authctxt->service) != 0) {
-		packet_disconnect("Change of username or service not allowed: "
+		if (authctxt->attempt == 1) {
+            authctxt->service = xstrdup(service);
+            authctxt->style = style ? xstrdup(style) : NULL;
+            if (use_privsep)
+                mm_inform_authserv(service, style);
+            userauth_banner();
+		}
+	}
+	if (strcmp(service, authctxt->service) != 0) {
+		packet_disconnect("Change of service not allowed: "
 		    "(%s,%s) -> (%s,%s)",
 		    authctxt->user, authctxt->service, user, service);
 	}
@@ -274,6 +337,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 
 	authctxt->postponed = 0;
+	authctxt->server_caused_failure = 0;
 
 	/* try to authenticate user */
 	m = authmethod_lookup(method);
@@ -344,9 +408,10 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		/* now we can break out */
 		authctxt->success = 1;
 	} else {
-
+		/* Dont count server configuration issues against the client */
 		/* Allow initial try of "none" auth without failure penalty */
-		if (authctxt->attempt > 1 || strcmp(method, "none") != 0)
+		if (!authctxt->server_caused_failure &&
+            (authctxt->attempt > 1 || strcmp(method, "none") != 0))
 			authctxt->failures++;
 		if (authctxt->failures >= options.max_authtries) {
 #ifdef SSH_AUDIT_EVENTS
