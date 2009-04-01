@@ -2545,7 +2545,10 @@ globus_l_gram_export_cred(
         goto malloc_filename_failed;
     }
 
-    file = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+    file = open(
+            filename,
+            O_WRONLY|O_CREAT|O_TRUNC,
+            S_IRUSR|S_IWUSR);
     if (file < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;

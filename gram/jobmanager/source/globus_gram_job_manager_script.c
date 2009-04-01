@@ -300,6 +300,10 @@ globus_l_gram_job_manager_script_run(
     if (rc != GLOBUS_SUCCESS)
     {
 queue_failed:
+        globus_gram_job_manager_request_log(
+                script_context->request,
+                "Queue failed: registering close for handle %p\n",
+                script_context->handle);
         (void) globus_xio_register_close(
                 script_context->handle,
                 NULL,
@@ -374,8 +378,9 @@ globus_l_gram_job_manager_script_read(
             {
                 globus_gram_job_manager_request_log(
                         request,
-                        "Error reading script response on %d read: %s\n",
-                        script_context->reads,
+                        "Error reading script response on handle %p (read #%d): %s\n",
+                        handle,
+                        script_context->reads-1,
                         errstr);
                 free(errstr);
             }
@@ -472,6 +477,10 @@ globus_l_gram_job_manager_script_read(
 
     if(! eof)
     {
+        globus_gram_job_manager_request_log(
+                script_context->request,
+                "Registering read for handle %p\n",
+                script_context->handle);
         result = globus_xio_register_read(
                 script_context->handle,
                 &script_context->return_buf[nbytes],
@@ -483,6 +492,10 @@ globus_l_gram_job_manager_script_read(
 
         if(result != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_request_log(
+                    script_context->request,
+                    "Registering read failed for handle %p\n",
+                    script_context->handle);
             failure_code =
                 GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
         }
@@ -493,6 +506,10 @@ globus_l_gram_job_manager_script_read(
         }
     }
 
+    globus_gram_job_manager_request_log(
+            script_context->request,
+            "Registering close for handle %p\n",
+            script_context->handle);
     result = globus_xio_register_close(
             script_context->handle,
             NULL,
@@ -501,6 +518,10 @@ globus_l_gram_job_manager_script_read(
     
     if (result != GLOBUS_SUCCESS)
     {
+        globus_gram_job_manager_request_log(
+                script_context->request,
+                "register_close failed for handle %p\n",
+                script_context->handle);
         globus_l_gram_pclose_callback(
                 script_context->handle,
                 result,
@@ -525,6 +546,11 @@ globus_l_gram_pclose_callback(
 
     remove(script_context->script_arg_file);
     free(script_context->script_arg_file);
+
+    globus_gram_job_manager_request_log(
+            request,
+            "Close complete for handle %p\n",
+            handle);
 
     script_context->callback(
             script_context->callback_arg,
@@ -2450,16 +2476,28 @@ globus_l_gram_script_queue(
 
     if (head)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JMI: Opening handle %p\n",
+                head->handle);
         result = globus_xio_open(
                 head->handle,
                 NULL,
                 head->attr);
         if (result != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JMI: Open failed on handle %p\n",
+                    head->handle);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
             goto xio_open_failed;
         }
 
+        globus_gram_job_manager_log(
+                manager,
+                "JMI: Registering read on handle %p\n",
+                head->handle);
         result = globus_xio_register_read(
                 head->handle,
                 head->return_buf,
@@ -2471,6 +2509,10 @@ globus_l_gram_script_queue(
 
         if(result != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JMI: register_read failed on handle %p\n",
+                    head->handle);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
             goto register_read_failed;
         }
@@ -2519,16 +2561,28 @@ globus_l_gram_job_manager_script_done(
 
     if (head)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JMI: Opening handle %p\n",
+                head->handle);
         result = globus_xio_open(
                 head->handle,
                 NULL,
                 head->attr);
         if (result != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JMI: Open failed on handle %p\n",
+                    head->handle);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
             goto xio_open_failed;
         }
 
+        globus_gram_job_manager_log(
+                manager,
+                "JMI: Registering read on handle %p\n",
+                head->handle);
         result = globus_xio_register_read(
                 head->handle,
                 head->return_buf,
@@ -2540,6 +2594,10 @@ globus_l_gram_job_manager_script_done(
 
         if(result != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JMI: register_read failed on handle %p\n",
+                    head->handle);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
             goto register_read_failed;
         }
@@ -2549,6 +2607,10 @@ globus_l_gram_job_manager_script_done(
     {
 register_read_failed:
 xio_open_failed:
+        globus_gram_job_manager_request_log(
+                head->request,
+                "Registering close for handle %p\n",
+                head->handle);
         result = globus_xio_register_close(
                 head->handle,
                 NULL,
@@ -2556,6 +2618,10 @@ xio_open_failed:
                 head);
         if (result != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_request_log(
+                    head->request,
+                    "register_close failed for handle %p\n",
+                    head->handle);
             globus_l_gram_pclose_callback(
                     head->handle,
                     result,

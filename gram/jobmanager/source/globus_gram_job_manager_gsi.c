@@ -390,7 +390,7 @@ globus_gram_job_manager_gsi_update_credential(
     OM_uint32                           minor_status;
     gss_buffer_desc                     credential_buffer;
     int                                 rc;
-    char *                              x509_filename;
+    int                                 fd;
 
     rc = globus_gram_protocol_set_credentials(credential);
     if(rc != GLOBUS_SUCCESS)
@@ -407,105 +407,26 @@ globus_gram_job_manager_gsi_update_credential(
     major_status = gss_export_cred(&minor_status,
                                    credential,
                                    GSS_C_NO_OID,
-                                   1, /* export cred to disk */
+                                   0,
                                    &credential_buffer);
     if(GSS_ERROR(major_status))
     {
-        /* Too bad, can't write the proxy to disk */
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
         goto export_failed;
     }
 
-    x509_filename = strstr(credential_buffer.value, "=");
-
-    if(x509_filename == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-        goto strstr_failed;
-    }
-
-    /* skip '=' */
-    x509_filename++;
-    rc = globus_gram_job_manager_gsi_relocate_proxy(request, x509_filename);
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-        remove(x509_filename);
-    }
-
-strstr_failed:
-export_failed:
-    return rc;
-}
-/* globus_gram_job_manager_gsi_update_credential() */
-
-/**
- * Relocates a proxy file into the GASS Cache. Updates the
- * X509_USER_PROXY environment variable to point to the new location
- * of the proxy, and then removes the file located at @a new_proxy.
- * In the case of an error, the @a new_proxy file will not be removed.
- *
- * @param request
- * @param new_proxy
- */
-int
-globus_gram_job_manager_gsi_relocate_proxy(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        new_proxy)
-{
-    struct stat                         statbuf;
-    int                                 rc = 0;
-    FILE *                              infp = NULL;
-    int                                 fd = -1;
-    char *                              cred_data = NULL;
-
-    rc = stat(new_proxy, &statbuf);
-
-    if(rc < 0 || statbuf.st_size <= 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-        goto stat_failed;
-    }
-
-    cred_data = malloc(statbuf.st_size);
-
-    if(cred_data == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto cred_data_malloc_failed;
-    }
-    infp = fopen(new_proxy, "r");
-
-    if(infp == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-        goto fopen_new_proxy_failed;
-    }
-
-    rc = fread(cred_data, (size_t) statbuf.st_size, 1, infp);
-
-    if(rc != 1)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-        goto fread_new_proxy_failed;
-    }
-
-    fclose(infp);
-    infp = NULL;
-
-    fd = open(request->x509_user_proxy, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+    fd = open(
+            request->x509_user_proxy,
+            O_WRONLY|O_CREAT|O_TRUNC,
+            S_IRUSR|S_IWUSR);
     if(fd == -1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
 
         goto job_proxy_open_failed;
     }
-    rc = write(fd, cred_data, (size_t) statbuf.st_size);
-    if(rc != 1)
+    rc = write(fd, credential_buffer.value, (size_t) credential_buffer.length);
+    if(rc < credential_buffer.length)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
 
@@ -522,26 +443,12 @@ job_proxy_write_failed:
         fd = -1;
     }
 job_proxy_open_failed:
-fread_new_proxy_failed:
-    if(infp != NULL)
-    {
-        free(infp);
-    }
-fopen_new_proxy_failed:
-    if(cred_data)
-    {
-        free(cred_data);
-    }
-cred_data_malloc_failed:
-stat_failed:
-    if(rc == GLOBUS_SUCCESS)
-    {
-        remove(new_proxy);
-    }
+    (void) gss_release_buffer(&minor_status, &credential_buffer);
+export_failed:
 
     return rc;
 }
-/* globus_gram_job_manager_gsi_relocate_proxy() */
+/* globus_gram_job_manager_gsi_update_credential() */
 
 static
 void

@@ -1213,7 +1213,6 @@ globus_gram_job_manager_read_request(
                 "JM: Error reading the RSL file\n");
         return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
-    close(fd);
 
     rc = globus_gram_protocol_unpack_job_request(
             buffer,
