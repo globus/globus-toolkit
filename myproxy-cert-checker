@@ -5,9 +5,6 @@
 # pull cert from stdin to shell variable
 cert=`openssl x509 -text`
 
-#debug
-echo "$cert" > /tmp/cert.pem
-
 # check for MD5 signatures
 echo "$cert" | grep 'Algorithm: md5' > /dev/null 2>&1
 if [ $? = "0" ]; then
