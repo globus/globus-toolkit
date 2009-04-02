@@ -1,2 +1,2 @@
 (* GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE *)
-&(restart=bogus)
+&(restart=https://localhost:2119/1/1)
