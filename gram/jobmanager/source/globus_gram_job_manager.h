@@ -873,7 +873,7 @@ globus_gram_job_manager_rsl_remove_attribute(
 globus_rsl_t *
 globus_gram_job_manager_rsl_extract_relation(
     globus_rsl_t *                      rsl,
-    char *                              attribute);
+    const char *                        attribute);
 
 int
 globus_gram_job_manager_rsl_add_relation(
@@ -919,6 +919,20 @@ globus_gram_job_manager_rsl_attribute_get_int_value(
     globus_rsl_t *                      rsl,
     const char *                        attribute,
     int *                               value_ptr);
+
+int
+globus_gram_rsl_add_output(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    const char *                        value);
+
+int
+globus_gram_rsl_add_stage_out(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        source,
+    const char *                        destination);
 
 /* globus_gram_job_manager_state_file.c */
 int

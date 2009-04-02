@@ -530,6 +530,13 @@ globus_l_gram_startup_socket_callback(
             &job_state_mask);
     if (rc != GLOBUS_SUCCESS)
     {
+        rc = globus_gram_job_manager_reply(
+                NULL,
+                rc,
+                NULL,
+                response_fd,
+                context);
+
         goto request_load_failed;
     }
 

@@ -322,7 +322,7 @@ main(
 
     /* For the active job manager, this will block until all jobs have
      * terminated. For any other job manager, the hashtable is empty so this
-     * falls right through
+     * falls right through.
      */
     globus_mutex_lock(&manager.mutex);
     while (! globus_hashtable_empty(&manager.request_hash))

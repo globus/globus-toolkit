@@ -69,7 +69,6 @@ globus_gram_job_manager_staging_create_list(
     int                                 rc;
     globus_rsl_value_t *                from;
     globus_rsl_value_t *                to;
-    globus_rsl_t *                      tmp_rsl;
     globus_list_t *                     list;
     globus_list_t *                     pairs;
     char *                              can_stage_list[] =
@@ -79,17 +78,22 @@ globus_gram_job_manager_staging_create_list(
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM,
         NULL
     };
+    int                                 errors_list[] =
+    {
+        GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN,
+        GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED,
+        GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT,
+        0
+    };
 
     if(request->jm_restart)
     {
         return GLOBUS_SUCCESS;
     }
-    tmp_rsl = globus_rsl_parse(request->rsl_spec);
-    globus_rsl_assist_attributes_canonicalize(tmp_rsl);
 
     for(i = 0; can_stage_list[i] != NULL; i++)
     {
-        list = globus_rsl_param_get_values(tmp_rsl, can_stage_list[i]);
+        list = globus_rsl_param_get_values(request->rsl, can_stage_list[i]);
 
         if(!list)
         {
@@ -104,18 +108,7 @@ globus_gram_job_manager_staging_create_list(
 
             if(globus_list_size(pairs) != 2)
             {
-                switch(i)
-                {
-                  case 0:
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN;
-                    break;
-                  case 1:
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED;
-                    break;
-                  case 2:
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT;
-                    break;
-                }
+                rc = errors_list[i];
                 goto failed_adding_exit;
             }
 
@@ -135,11 +128,9 @@ globus_gram_job_manager_staging_create_list(
             }
         }
     }
-    globus_rsl_free_recursive(tmp_rsl);
 
     return GLOBUS_SUCCESS;
 failed_adding_exit:
-    globus_rsl_free_recursive(tmp_rsl);
     globus_l_gram_job_manager_staging_free_all(request);
     return rc;
 }

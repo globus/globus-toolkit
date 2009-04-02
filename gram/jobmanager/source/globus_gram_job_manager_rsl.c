@@ -247,7 +247,7 @@ globus_gram_job_manager_rsl_need_restart(
 globus_rsl_t *
 globus_gram_job_manager_rsl_extract_relation(
     globus_rsl_t *                      rsl,
-    char *                              attribute)
+    const char *                        attribute)
 {
     globus_list_t **                    operand_ref;
     globus_list_t *                     node;
@@ -259,7 +259,7 @@ globus_gram_job_manager_rsl_extract_relation(
     operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
     node = globus_list_search_pred(*operand_ref,
                                    globus_l_gram_job_manager_rsl_match,
-                                   attribute);
+                                   (void *) attribute);
     if(node)
     {
         globus_rsl_t *                  relation;
@@ -304,6 +304,350 @@ nonboolean:
     return rc;
 }
 /* globus_gram_job_manager_rsl_add_relation() */
+
+/**
+ * Create and insert a stdout or stderr attribute with the specified value.
+ *
+ * This function modifies the @a rsl parameter, adding a new relation of the
+ * form:
+ * @a attribute = ( @a value )
+ * This funtion assumes that the specified attribute is not present in the
+ * RSL when called. Unlike the globus_rsl library, this function copies the
+ * @a attribute and @a value strings as needed to keep it so the RSL can
+ * be freed by calling globus_rsl_free_recursive().
+ * 
+ * @param request
+ *     Job request
+ * @param rsl
+ *     RSL to modify
+ * @param attribute
+ *     Attribute (either stdout or stderr)
+ * @param value
+ *     Local output path
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed
+ */
+int
+globus_gram_rsl_add_output(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    const char *                        value)
+{
+    globus_rsl_t *                      relation;
+    char *                              attr_copy;
+    char *                              value_copy;
+    globus_list_t *                     value_list = NULL;
+    globus_rsl_value_t *                value_literal;
+    globus_rsl_value_t *                value_sequence;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Adding %s = %s to RSL\n",
+            attribute,
+            value);
+
+    attr_copy = strdup(attribute);
+    if (attr_copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto attr_copy_failed;
+    }
+
+    value_copy = strdup(value);
+    if (value_copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto value_copy_failed;
+    }
+
+    value_literal = globus_rsl_value_make_literal(
+            value_copy);
+    if (value_literal == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto make_literal_failed;
+    }
+
+    rc = globus_list_insert(&value_list, value_literal);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto list_insert_failed;
+    }
+
+    value_sequence = globus_rsl_value_make_sequence(value_list);
+    if (value_sequence == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto make_sequence_failed;
+    }
+
+
+    relation = globus_rsl_make_relation(
+            GLOBUS_RSL_EQ,
+            attr_copy,
+            value_sequence);
+
+    if (relation == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto make_relation_failed;
+    }
+
+    rc = globus_gram_job_manager_rsl_add_relation(
+            request->rsl,
+            relation);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_relation_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+add_relation_failed:
+make_relation_failed:
+        globus_rsl_value_free(value_sequence);
+make_sequence_failed:
+        globus_list_free(value_list);
+list_insert_failed:
+        globus_rsl_value_free(value_literal);
+make_literal_failed:
+        free(value_copy);
+value_copy_failed:
+        free(attr_copy);
+attr_copy_failed:
+        ;
+    }
+    return rc;
+}
+/* globus_gram_rsl_add_output() */
+
+/**
+ * Add a stage out value to the RSL
+ *
+ * Creates a new entry in the RSL's filestageout value list for the
+ * given (@a source, @a destination) pair. If the RSL does not contain
+ * filestageout, it is added; otherwise, the new pair is prepended to the
+ * existing list.
+ *
+ * @param request
+ *     Job request 
+ * @param rsl
+ *     RSL to modify
+ * @param source
+ *     Source URL
+ * @param destination
+ *     Destination URL
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed
+ */
+int
+globus_gram_rsl_add_stage_out(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        source,
+    const char *                        destination)
+{
+    globus_list_t **                    operand_ref;
+    globus_list_t *                     node;
+    char *                              attr_copy;
+    char *                              source_copy;
+    char *                              dest_copy;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_rsl_t *                      relation;
+    globus_rsl_value_t *                value_sequence;
+    globus_rsl_value_t *                source_literal;
+    globus_rsl_value_t *                dest_literal;
+    globus_list_t *                     file_stage_out_pair;
+    globus_list_t **                    file_stage_out_pair_end;
+    globus_rsl_value_t *                new_stage_sequence;
+
+
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Adding filestageout (%s %s) to RSL\n",
+            source,
+            destination);
+
+    operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
+    node = globus_list_search_pred(
+            *operand_ref,
+            globus_l_gram_job_manager_rsl_match,
+            (void *) GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM);
+    if (!node)
+    {
+        /* No file_stage_out in RSL, add a new empty one */
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: No existing filestageout, adding it\n");
+
+        attr_copy = strdup(GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM);
+        if (attr_copy == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto attr_copy_failed;
+        }
+
+        value_sequence = globus_rsl_value_make_sequence(NULL);
+        if (value_sequence == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto make_value_sequence_failed;
+        }
+
+        relation = globus_rsl_make_relation(
+                GLOBUS_RSL_EQ,
+                attr_copy,
+                value_sequence);
+        if (relation == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto make_value_relation_failed;
+        }
+
+        rc = globus_list_insert(operand_ref, relation);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto filestageout_insert_failed;
+        }
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+filestageout_insert_failed:
+            globus_rsl_free(relation);
+make_value_relation_failed:
+            globus_rsl_value_free(value_sequence);
+make_value_sequence_failed:
+            free(attr_copy);
+attr_copy_failed:
+            goto bad_relation;
+        }
+    }
+    else
+    {
+        /* Adding new value to existing filestageout */
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Appending to existing filestageout\n");
+        relation = globus_list_first(node);
+    }
+
+    /*
+     * Now we're going to create a value sequence to append to the relation's
+     * value sequence
+     */
+    source_copy = strdup(source);
+    if (source_copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto source_copy_failed;
+    }
+    dest_copy = strdup(destination);
+    if (dest_copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto dest_copy_failed;
+    }
+    source_literal = globus_rsl_value_make_literal(source_copy);
+    if (source_literal == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto source_literal_failed;
+    }
+    dest_literal = globus_rsl_value_make_literal(dest_copy);
+    if (dest_literal == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto dest_literal_failed;
+    }
+
+    file_stage_out_pair = NULL;
+    file_stage_out_pair_end = &file_stage_out_pair;
+
+    rc = globus_list_insert(
+            file_stage_out_pair_end,
+            source_literal);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto add_source_literal_failed;
+    }
+
+    file_stage_out_pair_end = globus_list_rest_ref(*file_stage_out_pair_end);
+
+    rc = globus_list_insert(
+            file_stage_out_pair_end,
+            dest_literal);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto add_dest_literal_failed;
+    }
+
+    new_stage_sequence = globus_rsl_value_make_sequence(file_stage_out_pair);
+    if (new_stage_sequence == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto make_new_stage_sequence_failed;
+
+    }
+
+    rc = globus_list_insert(
+            globus_rsl_value_sequence_get_list_ref(
+                     globus_rsl_relation_get_value_sequence(relation)),
+                     new_stage_sequence);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto insert_new_stage_sequence_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+insert_new_stage_sequence_failed:
+        globus_rsl_value_free(new_stage_sequence);
+make_new_stage_sequence_failed:
+add_dest_literal_failed:
+        globus_list_free(file_stage_out_pair);
+add_source_literal_failed:
+        globus_rsl_value_free(dest_literal);
+dest_literal_failed:
+        globus_rsl_value_free(source_literal);
+source_literal_failed:
+        free(dest_copy);
+dest_copy_failed:
+        free(source_copy);
+    }
+source_copy_failed:
+bad_relation:
+    return rc;
+}
+/* globus_gram_rsl_add_stage_out() */
 
 int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
@@ -574,57 +918,73 @@ globus_gram_job_manager_rsl_eval_one_attribute(
     char *                              attribute,
     char **                             value)
 {
-    globus_list_t *                     operands;
+    globus_list_t *                     attributes;
+    globus_list_t *                     node;
     globus_rsl_t *                      attribute_rsl = GLOBUS_NULL;
-    globus_rsl_t *                      rsl_tree;
-    int                                 rc;
+    char *                              single_value;
+    int                                 rc = GLOBUS_SUCCESS;
 
     *value = GLOBUS_NULL;
 
-    if(globus_rsl_is_boolean_and(request->rsl))
+    attributes = globus_rsl_boolean_get_operand_list(request->rsl);
+    if (attributes == NULL)
     {
-        operands = globus_rsl_boolean_get_operand_list(request->rsl);
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 
-        while(!globus_list_empty(operands))
+        goto bad_operand_list;
+    }
+
+    node = globus_list_search_pred(
+            attributes,
+            globus_l_gram_job_manager_rsl_match,
+            attribute);
+
+    if (!node)
+    {
+        goto no_match;
+    }
+
+    attribute_rsl = globus_list_first(node);
+
+    if (!attribute_rsl)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto no_attribute;
+    }
+
+    rc = globus_rsl_eval(attribute_rsl, &request->symbol_table);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto rsl_eval_failed;
+    }
+
+    single_value = globus_rsl_value_literal_get_string(
+            globus_rsl_relation_get_single_value(
+                    attribute_rsl));
+    if (single_value)
+    {
+        *value = strdup(single_value);
+
+        if (*value == NULL)
         {
-            rsl_tree = globus_list_first(operands);
-
-            if(globus_rsl_is_relation_eq(rsl_tree))
-            {
-                if(globus_rsl_is_relation_attribute_equal(
-                            rsl_tree,
-                            attribute))
-                {
-                    attribute_rsl = rsl_tree;
-                    break;
-                }
-            }
-            operands = globus_list_rest(operands);
-        }
-        if(attribute_rsl)
-        {
-            rc = globus_rsl_eval(attribute_rsl, &request->symbol_table);
-
-            if(rc != GLOBUS_SUCCESS)
-            {
-                return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-            }
-            *value = strdup(
-                         globus_rsl_value_literal_get_string(
-                             globus_rsl_relation_get_single_value(
-                                attribute_rsl)));
-
-            return GLOBUS_SUCCESS;
-        }
-        else
-        {
-            return GLOBUS_SUCCESS;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto value_strdup_failed;
         }
     }
     else
     {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
+
+value_strdup_failed:
+rsl_eval_failed:
+no_attribute:
+no_match:
+bad_operand_list:
+    return rc;
 }
 /* globus_gram_job_manager_eval_one_attribute() */
 
@@ -950,10 +1310,15 @@ globus_gram_job_manager_rsl_attribute_get_int_value(
     {
         goto get_literal_failed;
     }
+    else if (s == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto get_literal_failed;
+    }
 
     errno = 0;
     *value_ptr = strtol(s, &end, 10);
-    if (errno != 0 && strlen(end) != 0)
+    if (errno != 0 || strlen(end) != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 get_literal_failed:
@@ -962,4 +1327,4 @@ get_literal_failed:
 
     return rc;
 }
-/* globus_gram_job_manager_rsl_attribute_get_boolean_value() */
+/* globus_gram_job_manager_rsl_attribute_get_int_value() */
