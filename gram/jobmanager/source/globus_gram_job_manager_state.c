@@ -62,6 +62,11 @@ globus_l_gram_gss_send_fd(
     void *                              buffer,
     size_t                              length);
 
+static
+void
+globus_l_gram_file_cleanup(
+    globus_gram_jobmanager_request_t *  request);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -802,20 +807,7 @@ globus_gram_job_manager_state_machine(
         }
         if(globus_gram_job_manager_rsl_need_file_cleanup(request))
         {
-            rc = globus_gram_job_manager_script_file_cleanup(request);
-
-            if(rc == GLOBUS_SUCCESS)
-            {
-                event_registered = GLOBUS_TRUE;
-            }
-            else
-            {
-                request->failure_code = rc;
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-
-                request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
-            }
+            globus_l_gram_file_cleanup(request);
         }
         break;
 
@@ -862,24 +854,14 @@ globus_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
         }
-        rc = globus_gram_job_manager_script_cache_cleanup(request);
 
-        if(rc == GLOBUS_SUCCESS)
-        {
-            event_registered = GLOBUS_TRUE;
-        }
-        else if(rc != GLOBUS_SUCCESS && request->failure_code == 0)
-        {
-            request->failure_code = rc;
-            globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-
-            if(request->jobmanager_state == 
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP)
-            {
-                request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
-            }
-        }
+        /* Cache cleanup script cleaned gass cache and jobdir */
+        globus_gram_job_manager_destroy_directory(
+                request,
+                request->job_dir);
+        globus_gass_cache_cleanup_tag_all(
+                request->cache_handle,
+                request->cache_tag);
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
@@ -1655,3 +1637,50 @@ globus_l_gram_gss_send_fd(
     return 0;
 }
 /* globus_l_gram_gss_send_fd() */
+
+static
+void
+globus_l_gram_file_cleanup(
+    globus_gram_jobmanager_request_t *  request)
+{
+    globus_rsl_t *                      relation;
+    globus_rsl_value_t *                value_sequence;
+    globus_list_t *                     value_list;
+    globus_rsl_value_t *                value;
+    char *                              path;
+
+    relation = globus_gram_job_manager_rsl_extract_relation(
+            request->rsl,
+            GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM);
+
+    if (!relation)
+    {
+        goto not_found;
+    }
+
+    value_sequence = globus_rsl_relation_get_value_sequence(relation);
+    if (!value_sequence)
+    {
+        goto no_sequence;
+    }
+
+    value_list = globus_rsl_value_sequence_get_value_list(value_sequence);
+    while (!globus_list_empty(value_list))
+    {
+        value = globus_list_remove(&value_list, value_list);
+
+        path = globus_rsl_value_literal_get_string(value);
+
+        if (path)
+        {
+            unlink(path);
+            free(path);
+        }
+    }
+
+no_sequence:
+    globus_rsl_free_recursive(relation);
+not_found:
+    return;
+}
+/* globus_l_gram_file_cleanup() */

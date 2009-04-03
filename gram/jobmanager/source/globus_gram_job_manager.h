@@ -552,20 +552,13 @@ typedef struct
     /** Last job state stored in the job history file */
     int                                 job_history_status;
      /**
-      * Standard Output File Name
-      *
-      * Absolute path to a file to be used as standard output for the
-      * executable.
+      * Value of the GLOBUS_CACHED_STDOUT RSL substitution
       */
-    char *                              local_stdout;
-
-    /**
-     * Standard Error File Name
-     *
-     * Absolute path to a file to be used as standard error for the
-     * executable.
-     */
-    char *                              local_stderr;
+    char *                              cached_stdout;
+     /**
+      * Value of the GLOBUS_CACHED_STDERR RSL substitution
+      */
+    char *                              cached_stderr;
     /** Security context used to submit job */
     gss_ctx_id_t                        response_context;
     /** Job Contact of this job when being handled by another process */
@@ -651,6 +644,12 @@ globus_gram_job_manager_request_start(
     int                                 response_fd,
     const char *                        client_contact,
     int                                 job_state_mask);
+
+void
+globus_gram_job_manager_destroy_directory(
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        directory);
+
 
 /* globus_gram_job_manager_validate.c */
 
@@ -969,9 +968,6 @@ globus_gram_job_manager_script_submit(
 int 
 globus_gram_job_manager_script_poll(
     globus_gram_jobmanager_request_t *  request);
-int 
-globus_gram_job_manager_script_file_cleanup(
-    globus_gram_jobmanager_request_t *  request);
 int
 globus_gram_job_manager_script_signal(
     globus_gram_jobmanager_request_t *  request,
@@ -980,10 +976,6 @@ int
 globus_gram_job_manager_script_cancel(
     globus_gram_jobmanager_request_t *  request,
     globus_gram_job_manager_query_t *   query);
-
-int
-globus_gram_job_manager_script_cache_cleanup(
-    globus_gram_jobmanager_request_t *  request);
 
 globus_bool_t
 globus_i_gram_job_manager_script_valid_state_change(

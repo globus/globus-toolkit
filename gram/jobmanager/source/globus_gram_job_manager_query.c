@@ -823,8 +823,70 @@ globus_l_gram_job_manager_signal(
                        "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT,
                        &out_size, &err_size) > 0)
         {
-            /* Not supported---no streaming */
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+            struct stat st;
+            globus_off_t local_size_stdout = 0;
+            globus_off_t local_size_stderr = 0;
+            const char * local_stdout;
+            const char * local_stderr;
+
+            rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+                request->rsl,
+                GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
+                &local_stdout);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                break;
+            }
+            rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+                request->rsl,
+                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
+                &local_stderr);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                break;
+            }
+            if (!globus_list_empty(request->stage_out_todo))
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING;
+                break;
+            }
+            if (strcmp(local_stdout, request->cached_stdout) == 0)
+            {
+                /* fakestreaming is likely to happen */
+                rc = stat(local_stdout, &st);
+                if (rc < 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                    break;
+                }
+                local_size_stdout = st.st_size;
+            }
+
+            if (strcmp(local_stderr, request->cached_stderr) == 0)
+            {
+                /* fakestreaming is likely to happen */
+                rc = stat(local_stderr, &st);
+                if (rc < 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                    break;
+                }
+                local_size_stderr = st.st_size;
+            }
+            else if (out_size >= 0 && out_size != local_size_stdout)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
+            }
+            else if (err_size >= 0 && err_size != local_size_stderr)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
+            }
+            else
+            {
+                rc = GLOBUS_SUCCESS;
+            }
         }
         else
         {

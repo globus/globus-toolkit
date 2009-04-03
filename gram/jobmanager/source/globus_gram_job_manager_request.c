@@ -28,8 +28,6 @@
 /*
  * Include header files
  */
-#define _POSIX_C_SOURCE 200112L
-#define _XOPEN_SOURCE 600
 #include "globus_common.h"
 #include "globus_gram_protocol.h"
 #include "globus_gram_job_manager.h"
@@ -38,7 +36,6 @@
 #include <string.h>
 #include <syslog.h>
 #include <unistd.h>
-#include <ftw.h>
 
 enum
 {
@@ -105,20 +102,6 @@ globus_l_gram_init_scratchdir(
     globus_rsl_t *                      rsl,
     const char *                        scratch_dir_base,
     char **                             scratchdir);
-
-static
-void
-globus_l_gram_destroy_scratchdir(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        scratchdir);
-
-static
-int
-globus_l_gram_nftw_func(
-    const char *                        pathname,
-    const struct stat *                 stat,
-    int                                 info,
-    struct FTW *                        ftw_struct);
 
 static
 int
@@ -232,6 +215,12 @@ globus_gram_job_manager_request_init(
 
     /*** creating request structure ***/
     r = malloc(sizeof(globus_gram_jobmanager_request_t));
+    if (r == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto request_malloc_failed;
+    }
 
     /* Order more-or-less matches that of struct declaration in
      * globus_gram_job_manager.h
@@ -250,6 +239,7 @@ globus_gram_job_manager_request_init(
     r->creation_time = time(NULL);
     r->queued_time = time(NULL);
     r->cache_tag = NULL;
+
     rc = globus_symboltable_init(
             &r->symbol_table,
             globus_hashtable_string_hash,
@@ -357,14 +347,6 @@ globus_gram_job_manager_request_init(
         goto failed_add_contact_to_symboltable;
     }
 
-    rc = setenv("GLOBUS_GRAM_JOB_CONTACT", r->job_contact, 1);
-    if (rc != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto failed_setenv_job_contact;
-    }
-
     r->job_contact_path = globus_common_create_string(
             "/%"PRIu64"/%"PRIu64"/",
             uniq1,
@@ -374,6 +356,55 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto failed_set_job_contact_path;
     }
+
+    rc = globus_l_gram_make_job_dir(r, &r->job_dir);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_make_job_dir;
+    }
+
+    r->cached_stdout = globus_common_create_string(
+            "%s/%s",
+            r->job_dir,
+            "stdout");
+    if (r->cached_stdout == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto cached_stdout_malloc_failed;
+    }
+    rc = globus_symboltable_insert(
+            &r->symbol_table,
+            "GLOBUS_CACHED_STDOUT",
+            r->cached_stdout);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto cached_stdout_symboltable_failed;
+    }
+    r->cached_stderr = globus_common_create_string(
+            "%s/%s",
+            r->job_dir,
+            "stderr");
+    if (r->cached_stderr == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto cached_stderr_malloc_failed;
+    }
+
+    rc = globus_symboltable_insert(
+            &r->symbol_table,
+            "GLOBUS_CACHED_STDERR",
+            r->cached_stderr);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto cached_stderr_symboltable_failed;
+    }
+
 
     rc = globus_gram_job_manager_state_file_set(
         r,
@@ -446,6 +477,8 @@ globus_gram_job_manager_request_init(
     {
         goto validate_rsl_failed;;
     }
+    stdout_position_hack = NULL;
+    stderr_position_hack = NULL;
     rc = globus_gram_job_manager_rsl_attribute_get_int_value(
             r->rsl,
             GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
@@ -551,13 +584,6 @@ globus_gram_job_manager_request_init(
             goto get_remote_io_url_failed;
         }
     }
-    rc = globus_l_gram_make_job_dir(r, &r->job_dir);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_make_job_dir;
-
-    }
-
     rc = globus_l_gram_remote_io_url_file_create(
             r,
             r->remote_io_url,
@@ -597,38 +623,13 @@ globus_gram_job_manager_request_init(
          */
         globus_assert(rc == GLOBUS_SUCCESS);
 
-        r->local_stdout = strdup(tmp);
-
-        if (r->local_stdout == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
-            goto failed_get_stdout_path;
-        }
-        rc = globus_symboltable_insert(
-                &r->symbol_table,
-                "GLOBUS_CACHED_STDOUT",
-                r->local_stdout);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-            goto failed_insert_cached_stdout_into_symboltable;
-        }
-        tmpfd = open(r->local_stdout, O_CREAT|O_WRONLY|O_APPEND, S_IRWXU);
+        tmpfd = open(tmp, O_CREAT|O_WRONLY|O_APPEND, S_IRUSR|S_IWUSR);
         if (tmpfd < 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
             goto open_stdout_failed;
         }
         close(tmpfd);
-    }
-    else
-    {
-        r->local_stdout = strdup("/dev/null");
-        if (r->local_stdout == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-            goto failed_malloc_local_stdout;
-        }
     }
 
     if (globus_gram_job_manager_rsl_attribute_exists(
@@ -660,23 +661,7 @@ globus_gram_job_manager_request_init(
         globus_assert(rc == GLOBUS_SUCCESS);
 
 
-        r->local_stderr = strdup(tmp);
-
-        if (r->local_stderr == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
-            goto failed_get_stderr_path;
-        }
-        rc = globus_symboltable_insert(
-                &r->symbol_table,
-                "GLOBUS_CACHED_STDERR",
-                r->local_stderr);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-            goto failed_insert_cached_stderr_into_symboltable;
-        }
-        tmpfd = open(r->local_stderr, O_CREAT|O_WRONLY|O_APPEND, S_IRWXU);
+        tmpfd = open(tmp, O_CREAT|O_WRONLY|O_APPEND, S_IRUSR|S_IWUSR);
         if (tmpfd < 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
@@ -684,15 +669,7 @@ globus_gram_job_manager_request_init(
         }
         close(tmpfd);
     }
-    else
-    {
-        r->local_stderr = strdup("/dev/null");
-        if (r->local_stderr == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-            goto failed_malloc_local_stderr;
-        }
-    }
+
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -756,36 +733,18 @@ globus_gram_job_manager_request_init(
 
     if (rc != GLOBUS_SUCCESS)
     {
-open_stderr_failed:
-failed_insert_cached_stderr_into_symboltable:
-        if (r->local_stderr)
-        {
-            free(r->local_stderr);
-        }
-failed_malloc_local_stderr:
-failed_get_stderr_path:
-open_stdout_failed:
-failed_insert_cached_stdout_into_symboltable:
-rewrite_stderr_failed:
-        if (r->local_stdout)
-        {
-            free(r->local_stdout);
-        }
-failed_malloc_local_stdout:
-failed_get_stdout_path:
         if (r->job_history_file)
         {
             free(r->job_history_file);
             r->job_history_file = NULL;
         }
 history_file_set_failed:
-        globus_gass_cache_close(&r->cache_handle);
-        if (r->cache_location)
-        {
-            free(r->cache_location);
-        }
-    /* TODO: Remove job dir */
 failed_populate_environment:
+        if (r->x509_user_proxy)
+        {
+            free(r->x509_user_proxy);
+            r->x509_user_proxy = NULL;
+        }
 failed_export_cred:
 pending_queries_init_failed:
 staging_list_create_failed:
@@ -793,13 +752,15 @@ staging_list_create_failed:
 cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
+open_stderr_failed:
+rewrite_stderr_failed:
+open_stdout_failed:
 rewrite_stdout_failed:
         if (r->remote_io_url_file)
         {
             remove(r->remote_io_url_file);
             free(r->remote_io_url_file);
         }
-failed_make_job_dir:
 make_remote_io_url_file_failed:
         if (r->remote_io_url)
         {
@@ -811,10 +772,12 @@ get_save_state_failed:
 get_dry_run_failed:
 invalid_count:
 validate_rsl_failed:
+        globus_gass_cache_close(&r->cache_handle);
+        free(r->cache_location);
 init_cache_failed:
         if (r->scratchdir)
         {
-            globus_l_gram_destroy_scratchdir(r, r->scratchdir);
+            globus_gram_job_manager_destroy_directory(r, r->scratchdir);
             free(r->scratchdir);
             r->scratchdir = NULL;
         }
@@ -826,13 +789,28 @@ init_scratchdir_failed:
 failed_eval_scratch_dir_base:
         free(r->cache_tag);
 cache_tag_alloc_failed:
+        if (stdout_position_hack)
+        {
+            globus_rsl_free_recursive(stdout_position_hack);
+        }
+        if (stderr_position_hack)
+        {
+            globus_rsl_free_recursive(stderr_position_hack);
+        }
 failed_restart:
         free(r->job_state_lock_file);
         free(r->job_state_file);
 failed_state_file_set:
+cached_stderr_symboltable_failed:
+        free(r->cached_stderr);
+cached_stderr_malloc_failed:
+cached_stdout_symboltable_failed:
+        free(r->cached_stdout);
+cached_stdout_malloc_failed:
+        globus_gram_job_manager_destroy_directory(r, r->job_dir);
+failed_make_job_dir:
         free(r->job_contact_path);
 failed_set_job_contact_path:
-failed_setenv_job_contact:
 failed_add_contact_to_symboltable:
         free(r->job_contact);
 failed_set_job_contact:
@@ -852,6 +830,7 @@ symboltable_init_failed:
         free(r);
         r = NULL;
     }
+request_malloc_failed:
     *request = r;
     return rc;
 }
@@ -1141,13 +1120,13 @@ globus_gram_job_manager_request_destroy(
     {
         free(request->uniq_id);
     }
-    if (request->local_stdout)
+    if (request->cached_stdout)
     {
-        free(request->local_stdout);
+        free(request->cached_stdout);
     }
-    if (request->local_stderr)
+    if (request->cached_stderr)
     {
-        free(request->local_stderr);
+        free(request->cached_stderr);
     }
     if (request->jm_restart)
     {
@@ -1159,7 +1138,9 @@ globus_gram_job_manager_request_destroy(
     }
     if (request->scratchdir)
     {
-        globus_l_gram_destroy_scratchdir(request, request->scratchdir);
+        globus_gram_job_manager_destroy_directory(
+                request,
+                request->scratchdir);
         free(request->scratchdir);
     }
     /* TODO: clean up: request->output? */
@@ -1504,68 +1485,53 @@ globus_l_gram_symbol_table_populate(
     globus_gram_jobmanager_request_t *  request)
 {
     int                                 rc = GLOBUS_SUCCESS;
+    int                                 i;
+    struct { char * symbol; char *value } symbols[] =
+    {
+        { "HOME", request->config->home },
+        { "LOGNAME", request->config->logname },
+        { "GLOBUS_ID", request->config->subject },
+        { "GLOBUS_HOST_MANUFACTURER",request->config->globus_host_manufacturer},
+        { "GLOBUS_HOST_CPUTYPE",request->config->globus_host_cputype},
+        { "GLOBUS_HOST_OSNAME",request->config->globus_host_osname},
+        { "GLOBUS_HOST_OSVERSION",request->config->globus_host_osversion},
+        { "GLOBUS_GATEKEEPER_HOST",request->config->globus_gatekeeper_host},
+        { "GLOBUS_GATEKEEPER_PORT",request->config->globus_gatekeeper_port},
+        { "GLOBUS_GATEKEEPER_SUBJECT",request->config->globus_gatekeeper_subject},
+        { "GLOBUS_LOCATION", request->config->target_globus_location },
+        { "GLOBUS_CONDOR_OS", request->config->condor_os },
+        { "GLOBUS_CONDOR_ARCH", request->config->condor_arch },
+        /* Others are job dependent values inserted after they are computed:
+         * - GLOBUS_GRAM_JOB_CONTACT
+         * - GLOBUS_CACHED_STDOUT
+         * - GLOBUS_CACHED_STDERR
+         * - SCRATCH_DIRECTORY
+         */
+        { NULL, NULL }
+    };
 
-    rc = globus_l_gram_symboltable_add(
-            &request->symbol_table,
-            "HOME",
-            request->config->home);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_insert_home;
-    }
 
-    rc = globus_l_gram_symboltable_add(
-            &request->symbol_table,
-            "LOGNAME",
-            request->config->logname);
+    for (i = 0; symbols[i].symbol != NULL; i++)
+    {
+        rc = globus_l_gram_symboltable_add(
+                &request->symbol_table,
+                symbols[i].symbol,
+                symbols[i].value);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_insert_symbol;
+        }
+    }
     if (rc != GLOBUS_SUCCESS)
     {
-        goto failed_insert_logname;
+failed_insert_symbol:
+        for (--i; i >=0; i--)
+        {
+            globus_symboltable_remove(
+                    &request->symbol_table,
+                    symbols[i].symbol);
+        }
     }
-
-    rc = globus_l_gram_symboltable_add(
-            &request->symbol_table,
-            "GLOBUS_ID",
-            request->config->subject);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_insert_globusid;
-    }
-
-    rc = globus_l_gram_symboltable_add(
-            &request->symbol_table,
-            "GLOBUS_CONDOR_OS",
-            request->config->condor_os);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_insert_condor_os;
-    }
-    rc = globus_l_gram_symboltable_add(
-            &request->symbol_table,
-            "GLOBUS_CONDOR_ARCH",
-            request->config->condor_arch);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_insert_condor_arch;
-    }
-
-    rc = globus_l_gram_symboltable_add(
-            &request->symbol_table,
-            "GLOBUS_LOCATION",
-            request->config->target_globus_location);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_symboltable_remove(&request->symbol_table, "GLOBUS_CONDOR_ARCH");
-failed_insert_condor_arch:
-        globus_symboltable_remove(&request->symbol_table, "GLOBUS_CONDOR_OS");
-failed_insert_condor_os:
-        globus_symboltable_remove(&request->symbol_table, "GLOBUS_ID");
-failed_insert_globusid:
-        globus_symboltable_remove(&request->symbol_table, "LOGNAME");
-failed_insert_logname:
-        globus_symboltable_remove(&request->symbol_table, "HOME");
-    }
-failed_insert_home:
     return rc;
 }
 /* globus_gram_symbol_table_populate() */
@@ -1729,9 +1695,6 @@ failed_jm_restart_eval:
  * Otherwise, if -cache-location was in the configuration, it used. Otherwise,
  * the GASS cache library default is used.
  *
- * As a side-effect, the GLOBUS_GASS_CACHE_DEFAULT environment variable is set
- * when the non-default value is to be used.
- *
  * @param request
  *     Request to use to find which value to use.
  * @param cache_locationp
@@ -1848,13 +1811,13 @@ globus_l_gram_init_cache(
         }
 
         goto failed_cache_open;
-    }
 failed_cache_open:
         if (*cache_locationp)
         {
             free(*cache_locationp);
             *cache_locationp = NULL;
         }
+    }
 failed_cache_eval:
     return rc;
 }
@@ -2349,66 +2312,176 @@ eval_scratchdir_failed:
 /* globus_l_gram_init_scratchdir() */
 
 /**
- * Remove the scratchdir and all of its contents
+ * Remove a directory and all of its contents
  * 
  * @param request
- *     Request related to this scratch directory.
- * @param scratchdir
- *     Scratch directory to remove.
+ *     Request related to this directory.
+ * @param directory
+ *     Directory to remove.
  */
-static
 void
-globus_l_gram_destroy_scratchdir(
+globus_gram_job_manager_destroy_directory(
     globus_gram_jobmanager_request_t *  request,
-    const char *                        scratchdir)
+    const char *                        directory)
 {
     int                                 rc;
+    char *                              path;
+    char *                              new_path;
+    DIR *                               dir;
+    struct dirent                       entry;
+    struct dirent *                     resultp;
+    struct stat                         st;
+    globus_list_t *                     unchecked_dir_list = NULL;
+    globus_list_t *                     dir_list = NULL;
 
-    if (!scratchdir)
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Destroying directory %s\n",
+            directory);
+
+    path = strdup(directory);
+    if (path == NULL)
     {
-        return;
+        goto path_strdup_failed;
+    }
+    rc = globus_list_insert(&unchecked_dir_list, path);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        free(path);
+        goto unchecked_dir_insert_failed;
     }
 
-    rc = nftw(scratchdir, globus_l_gram_nftw_func, 5, FTW_DEPTH|FTW_MOUNT);
-
-    if (rc != 0)
+    while (!globus_list_empty(unchecked_dir_list))
     {
+        /* We walk the directory structure once, removing all non-directory
+         * entries. We store the directories in a list for a second pass.
+         *
+         * Note, we don't do much error handling here. If we fail, we'll leave
+         * a dropping and note it in the log, but there's not much we can do.
+         */
+        path = globus_list_remove(&unchecked_dir_list, unchecked_dir_list);
+        if (path == NULL)
+        {
+            continue;
+        }
+        rc = globus_list_insert(&dir_list, path);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: Error inserting %s into directory list\n",
+                    path);
+            continue;
+        }
+
+        dir = opendir(path);
+        if (dir == NULL)
+        {
+            int save_errno = errno;
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: Error opendir(%s): %d\n",
+                    path,
+                    save_errno);
+            continue;
+        }
+
+        while (readdir_r(dir, &entry, &resultp) == 0 && resultp != NULL)
+        {
+            if (strcmp(entry.d_name, ".") == 0 ||
+                strcmp(entry.d_name, "..") == 0)
+            {
+                continue;
+            }
+            new_path = globus_common_create_string(
+                    "%s/%s",
+                    path,
+                    entry.d_name);
+            if (new_path == NULL)
+            {
+                globus_gram_job_manager_request_log(
+                        request,
+                        "JM: Error create string: %s/%s failed\n",
+                        path,
+                        entry.d_name);
+                continue;
+            }
+            rc = lstat(new_path, &st);
+            if (rc < 0)
+            {
+                int save_errno = errno;
+                globus_gram_job_manager_request_log(
+                        request,
+                        "JM: Error lstat(%s/%s): %d\n",
+                        path,
+                        entry.d_name,
+                        save_errno);
+
+                continue;
+            }
+
+            if (st.st_mode & S_IFDIR)
+            {
+                rc = globus_list_insert(&unchecked_dir_list, new_path);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_request_log(
+                            request,
+                            "JM: Error inserting %s into list\n",
+                            new_path);
+                    free(new_path);
+                    continue;
+                }
+            }
+            else
+            {
+                globus_gram_job_manager_request_log(
+                        request,
+                        "JM: Removing file entry: %s\n",
+                        new_path);
+                rc = unlink(new_path);
+                if (rc < 0)
+                {
+                    int save_errno = errno;
+                    globus_gram_job_manager_request_log(
+                            request,
+                            "JM: Error unlink(%s): %d\n",
+                            new_path,
+                            save_errno);
+                }
+                free(new_path);
+                new_path = NULL;
+            }
+        }
+        closedir(dir);
+    }
+
+    while (!globus_list_empty(dir_list))
+    {
+        /* Second pass removes (should be empty) subdirectories */
+        path = globus_list_remove(&dir_list, dir_list);
+
         globus_gram_job_manager_request_log(
                 request,
-                "Error walking scratchdir tree for removal\n");
-    }
-}
-/* globus_l_gram_destroy_scratchdir() */
-
-static
-int
-globus_l_gram_nftw_func(
-    const char *                        pathname,
-    const struct stat *                 stat,
-    int                                 info,
-    struct FTW *                        ftw_struct)
-{
-    switch (info)
-    {
-    case FTW_F:
-    case FTW_SL:
-    case FTW_SLN:
-        remove(pathname);
-        break;
-    case FTW_D:
-    case FTW_DP:
-        if (strcmp(pathname, ".") != 0 && strcmp(pathname, "..") != 0)
+                "JM: Removing directory %s\n",
+                path);
+        rc = rmdir(path);
+        if (rc < 0)
         {
-            rmdir(pathname);
+            int save_errno = errno;
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: Error removing %s: %d\n",
+                    path,
+                    save_errno);
         }
-        break;
-    case FTW_DNR:
-    case FTW_NS:
-        break;
+        free(path);
     }
-    return 0;
+unchecked_dir_insert_failed:
+path_strdup_failed:
+    return;
 }
-/* globus_l_gram_nftw_func() */
+/* globus_gram_job_manager_destroy_directory() */
 
 /**
  * Evaluate and validate the job RSL
