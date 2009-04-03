@@ -955,8 +955,9 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
 
     if ( globus_rsl_value_is_literal (ast_node) )
     {
-         *string_value = globus_rsl_value_literal_get_string(ast_node);
-         return GLOBUS_SUCCESS;
+        tmp_string_value = globus_rsl_value_literal_get_string(ast_node);
+        *string_value = tmp_string_value ? strdup(tmp_string_value) : NULL;
+        return GLOBUS_SUCCESS;
     }
     else if ( globus_rsl_value_is_sequence (ast_node) )
     {
@@ -991,7 +992,7 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
             /* globus_list_replace_first returns the replaced 
              * rsl_value_ptr, so in this case we want to free it up.
              */
-            globus_rsl_value_free(
+            globus_rsl_value_free_recursive(
                 (globus_rsl_value_t *) globus_list_replace_first
                      (tmp_rsl_value_list,
                      (void *) globus_rsl_value_make_literal(symbol_name)));
@@ -1010,7 +1011,7 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
             /* globus_list_replace_first returns the replaced 
              * rsl_value_ptr, so in this case we want to free it up.
              */
-            globus_rsl_value_free(
+            globus_rsl_value_free_recursive(
                 (globus_rsl_value_t *) globus_list_replace_first
                      (tmp_rsl_value_list,
                      (void *) globus_rsl_value_make_literal(symbol_value)));
@@ -1026,13 +1027,9 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
                         symbol_name, symbol_value);
                 */
 
-                copy_symbol_value = (char *) globus_malloc (sizeof(char *) *
-                                             (strlen(symbol_value) + 1));
-                strcpy(copy_symbol_value, symbol_value);
-
                 globus_symboltable_insert(symbol_table,
                                   (void *) symbol_name,
-                                  (void *) copy_symbol_value);
+                                  (void *) symbol_value);
             }
         }
         else
@@ -1052,7 +1049,7 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
                         /* globus_list_replace_first returns the replaced 
                          * rsl_value_ptr, so in this case we want to free it up.
                          */
-                        globus_rsl_value_free(
+                        globus_rsl_value_free_recursive(
                             (globus_rsl_value_t *) globus_list_replace_first
                                (tmp_rsl_value_list,
                                (void *) globus_rsl_value_make_literal
@@ -1091,7 +1088,7 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
             return(1);
         }
 
-        if ((*string_value = globus_symboltable_lookup(symbol_table,
+        if ((tmp_string_value = globus_symboltable_lookup(symbol_table,
                  (void *) symbol_name)
             )
             == NULL)
@@ -1101,13 +1098,14 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
         }
         else
         {
-            return(GLOBUS_SUCCESS);
+            *string_value = strdup(tmp_string_value);
+            return *string_value ? (GLOBUS_SUCCESS) : 1;
         }
     }
     else if ( globus_rsl_value_is_concatenation (ast_node) )
     {
-         char * left;
-         char * right;
+         char * left = NULL;
+         char * right = NULL;
 
          if ( (globus_rsl_value_eval ( 
                    globus_rsl_value_concatenation_get_left (ast_node),
@@ -1124,6 +1122,14 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
          {
              if ( (left == NULL) || (right == NULL) )
              {
+                 if (left)
+                 {
+                     free(left);
+                 }
+                 if (right)
+                 {
+                     free(right);
+                 }
                  return(1);
              }
 
@@ -1139,10 +1145,23 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
                 globus_rsl_value_concatenation_get_right(ast_node));
              ast_node->value.concatenation.left_value = NULL;
              ast_node->value.concatenation.right_value = NULL;
+             free(left);
+             free(right);
 
              return GLOBUS_SUCCESS;
          }
-         else return(1); /* concatenate-error; */
+         else 
+         {
+             if (left)
+             {
+                 free(left);
+             }
+             if (right)
+             {
+                 free(right);
+             }
+             return(1); /* concatenate-error; */
+         }
     }
     else return(1); /* spec-too-complex-error; */
 }
@@ -1217,7 +1236,7 @@ globus_rsl_eval (globus_rsl_t *ast_node,
                         (globus_rsl_value_t *) globus_list_replace_first
                              (tmp_value_list,
                              (void *) globus_rsl_value_make_literal
-                                  (globus_libc_strdup(string_value))));
+                                  (string_value)));
                 }
             }
             else
