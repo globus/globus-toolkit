@@ -199,7 +199,7 @@ globus_l_gfs_hdfs_start(
     sprintf(err_msg, "Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n", hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
-    hdfs_handle->fs = hdfsConnect(hdfs_handle->host, hdfs_handle->port);
+    hdfs_handle->fs = hdfsConnect("default", 0);
     if (!hdfs_handle->fs) {
         finished_info.result = GLOBUS_FAILURE;
         globus_gridftp_server_operation_finished(
@@ -944,12 +944,12 @@ globus_l_gfs_hdfs_recv(
             return;
         }
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
-            O_WRONLY, 0, hdfs_handle->replicas, 0);
+            O_WRONLY, 0, 0, 0);
     }
     else
     {
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
-                                 O_WRONLY, 0, hdfs_handle->replicas, 0);
+                                 O_WRONLY, 0, 0, 0);
     }
     if (!hdfs_handle->fd)
     {
