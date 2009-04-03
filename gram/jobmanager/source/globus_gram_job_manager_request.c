@@ -293,12 +293,6 @@ globus_gram_job_manager_request_init(
 
     globus_l_gram_log_rsl(r, "Job Request RSL (canonical)");
     
-    rc = globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(r);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto add_substitutions_to_symbol_table_failed;
-    }
-
     /* If this is a restart job, the id will come from the restart RSL
      * value; otherwise, it will be generated from current pid and time
      */
@@ -817,7 +811,6 @@ failed_set_job_contact:
         free(r->uniq_id);
 failed_set_uniq_id:
 failed_generate_id:
-add_substitutions_to_symbol_table_failed:
         free(r->rsl_spec);
 rsl_unparse_failed:
 rsl_canonicalize_failed:
@@ -1144,7 +1137,6 @@ globus_gram_job_manager_request_destroy(
         free(request->scratchdir);
     }
     /* TODO: clean up: request->output? */
-    /* TODO: clean up: request->cache_handle? */
     if (request->cache_tag)
     {
         free(request->cache_tag);
@@ -1205,6 +1197,10 @@ globus_gram_job_manager_request_destroy(
     if (request->job_dir)
     {
         free(request->job_dir);
+    }
+    if (request->cache_location)
+    {
+        free(request->cache_location);
     }
     globus_gass_cache_close(&request->cache_handle);
     if (request->response_context != GSS_C_NO_CONTEXT)
@@ -1486,7 +1482,7 @@ globus_l_gram_symbol_table_populate(
 {
     int                                 rc = GLOBUS_SUCCESS;
     int                                 i;
-    struct { char * symbol; char *value } symbols[] =
+    struct { char * symbol; char *value; } symbols[] =
     {
         { "HOME", request->config->home },
         { "LOGNAME", request->config->logname },
@@ -2923,9 +2919,10 @@ globus_l_gram_rewrite_output_as_staging(
         /* If there is only a single output destination and it is
          * a file:// URL, we'll write to that directly. 
          */
-        destination_url = globus_list_first(destinations);
+        destination_url = globus_list_remove(&destinations, destinations);
 
         rc = globus_url_parse(destination_url, &url);
+        free(destination_url);
         if (rc != GLOBUS_SUCCESS)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -2942,6 +2939,7 @@ globus_l_gram_rewrite_output_as_staging(
         {
             goto single_add_output_failed;
         }
+        globus_url_destroy(&url);
     }
     else
     {
@@ -2977,6 +2975,7 @@ globus_l_gram_rewrite_output_as_staging(
                     request->rsl,
                     path,
                     destination_url);
+            free(destination_url);
             if (rc != GLOBUS_SUCCESS)
             {
                 /* We may end up adding things to file_stage_out here if
@@ -2984,10 +2983,10 @@ globus_l_gram_rewrite_output_as_staging(
                  * worth the effort to track these. We are going to fail
                  * this job anyhow.
                  */
-                free(destination_url);
                 goto multiple_add_stage_out_failed;
             }
         }
+        free(path);
     }
 
     if (rc != GLOBUS_SUCCESS)

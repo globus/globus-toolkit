@@ -880,10 +880,6 @@ globus_gram_job_manager_rsl_add_relation(
     globus_rsl_t *                      relation);
 
 int
-globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
-    globus_gram_jobmanager_request_t *  request);
-
-int
 globus_gram_job_manager_rsl_parse_value(
     globus_gram_jobmanager_request_t *  request,
     char *                              value_string,
