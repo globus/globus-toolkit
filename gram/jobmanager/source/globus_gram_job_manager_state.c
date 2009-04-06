@@ -340,7 +340,7 @@ globus_gram_job_manager_state_machine(
 
             break;
         }
-        else if(request->job_id == NULL)
+        else if(request->job_id_string == NULL)
         {
             /* submission failed to generate a job id */
             if(request->failure_code == GLOBUS_SUCCESS)
@@ -1492,7 +1492,7 @@ globus_l_gram_job_manager_add_cache_info(
         {
             gk_id = "-";
         }
-        fprintf(file,"%s\n%s\n%s\n%s\n",request->uniq_id,request->job_id,
+        fprintf(file,"%s\n%s\n%s\n%s\n",request->uniq_id,request->job_id_string,
                                         request->config->jobmanager_type,gk_id);
         fclose(file);
         time((time_t *)&timestamp);

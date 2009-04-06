@@ -84,7 +84,7 @@ globus_l_gram_seg_event_callback(
         utime(request->job_state_file, NULL);
     }
 
-    if (strcmp(request->job_id, event->job_id) == 0)
+    if (strcmp(request->job_id_string, event->job_id) == 0)
     {
         result = globus_scheduler_event_copy(&new_event, event);
 

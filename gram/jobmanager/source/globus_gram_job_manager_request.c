@@ -221,10 +221,6 @@ globus_gram_job_manager_request_init(
 
         goto request_malloc_failed;
     }
-
-    /* Order more-or-less matches that of struct declaration in
-     * globus_gram_job_manager.h
-     */
     r->config = manager->config;
     r->manager = manager;
 
@@ -232,7 +228,8 @@ globus_gram_job_manager_request_init(
     r->status_update_time = 0;
     r->failure_code = 0;
     /* Won't be set until job has been submitted to the LRM */
-    r->job_id = NULL;
+    r->job_id_string = NULL;
+    r->job_id_list = NULL;
     r->poll_frequency = 30;
     r->commit_extend = 0;
     r->scratchdir = NULL;
@@ -1105,10 +1102,11 @@ globus_gram_job_manager_request_destroy(
         return;
     }
 
-    if (request->job_id)
+    if (request->job_id_string)
     {
-        free(request->job_id);
+        free(request->job_id_string);
     }
+    globus_list_destroy_all(request->job_id_list, free);
     if (request->uniq_id)
     {
         free(request->uniq_id);
@@ -2988,6 +2986,8 @@ globus_l_gram_rewrite_output_as_staging(
         }
         free(path);
     }
+
+    globus_rsl_free_recursive(relation);
 
     if (rc != GLOBUS_SUCCESS)
     {

@@ -87,7 +87,6 @@ globus_gram_job_manager_startup_socket_init(
     int                                 sock = -1;
     char                                dir_prefix[PATH_MAX];
     char                                sockpath[PATH_MAX];
-    char                                lockpath[PATH_MAX];
     int                                 rc = 0;
     globus_result_t                     result;
     struct sockaddr_un                  addr;
@@ -100,9 +99,6 @@ globus_gram_job_manager_startup_socket_init(
 
     if (!manager->config->single)
     {
-        *socket_fd = 0;
-        *lock_fd = 0;
-
         return GLOBUS_SUCCESS;
     }
     sprintf(dir_prefix,
@@ -120,15 +116,19 @@ globus_gram_job_manager_startup_socket_init(
             dir_prefix,
             manager->config->jobmanager_type);
 
-    sprintf(lockpath,
+    manager->lock_path = globus_common_create_string(
             "%s/%s.lock",
             dir_prefix,
             manager->config->jobmanager_type);
+    if (manager->lock_path == NULL)
+    {
+        goto malloc_lock_path_failed;
+    }
 
     /* Create and lock lockfile */
     for (i = 0, lockfd = -1; lockfd < 0 && i < GRAM_RETRIES; i++)
     {
-        lockfd = open(lockpath, O_RDWR|O_CREAT, S_IRWXU);
+        lockfd = open(manager->lock_path, O_RDWR|O_CREAT, S_IRWXU);
     }
     if (lockfd < 0)
     {
@@ -247,12 +247,15 @@ setsockopt_failed:
         close(sock);
         sock = -1;
 socket_failed:
-        remove(lockpath);
+        remove(manager->lock_path);
 lock_failed:
 fcntl_lockfd_failed:
         close(lockfd);
         lockfd = -1;
 lockfd_open_failed:
+        free(manager->lock_path);
+        manager->lock_path = NULL;
+malloc_lock_path_failed:
 mkdir_failed:
         ;
     }
@@ -273,6 +276,7 @@ globus_gram_job_manager_starter_send(
 {
     int                                 sock;
     char                                sockpath[PATH_MAX];
+    char                                byte[1];
     int                                 rc = 0;
     struct sockaddr_un                  addr;
     struct msghdr                       message;
@@ -316,7 +320,7 @@ globus_gram_job_manager_starter_send(
         goto connect_failed;
     }
     /* create acksocks */
-    rc = socketpair(PF_LOCAL, SOCK_DGRAM, 0, acksock);
+    rc = socketpair(PF_LOCAL, SOCK_STREAM, 0, acksock);
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
@@ -377,9 +381,26 @@ globus_gram_job_manager_starter_send(
     close(acksock[0]);
     acksock[0] = -1;
     memset(&message, 0, sizeof(struct msghdr));
+    iov[0].iov_base = &byte;
+    iov[0].iov_len = 1;
     message.msg_iov = iov;
     message.msg_iovlen = 1;
     rc = recvmsg(acksock[1], &message, 0);
+    if (rc < 0 || byte[0] != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+    }
+    else
+    {
+        rc = GLOBUS_SUCCESS;
+    }
+    memset(&message, 0, sizeof(struct msghdr));
+    iov[0].iov_base = &byte;
+    iov[0].iov_len = 1;
+    byte[0]++;
+    message.msg_iov = iov;
+    message.msg_iovlen = 1;
+    rc = sendmsg(acksock[1], &message, 0);
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
@@ -388,7 +409,7 @@ globus_gram_job_manager_starter_send(
     {
         rc = GLOBUS_SUCCESS;
     }
-
+    
 sendmsg_failed:
 cred_too_big:
     gss_release_buffer(
@@ -439,7 +460,7 @@ globus_l_gram_startup_socket_callback(
     globus_gram_jobmanager_request_t *  request;
     OM_uint32                           major_status, minor_status;
     gss_cred_id_t                       cred;
-    char                                byte[1] = { '!' };
+    char                                byte[1] = {0};
     char                                cmsgbuf[sizeof(struct cmsghdr) + 4 * sizeof(int)];
 
     cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
@@ -491,8 +512,32 @@ globus_l_gram_startup_socket_callback(
     {
         goto failed_get_data;
     }
-
     cred_buffer.length = iov[0].iov_len;
+
+    byte[0] = 0;
+    iov[0].iov_base = byte;
+    iov[0].iov_len = sizeof(byte);
+    memset(&message, 0, sizeof(struct msghdr));
+    message.msg_iov = iov;
+    message.msg_iovlen = 1;
+    rc = sendmsg(acksock, &message, 0);
+    if (rc < 0)
+    {
+        goto ackfailed;
+    }
+
+    byte[0] = 0;
+    iov[0].iov_base = byte;
+    iov[0].iov_len = sizeof(byte);
+    memset(&message, 0, sizeof(struct msghdr));
+    message.msg_iov = iov;
+    message.msg_iovlen = 1;
+    rc = recvmsg(acksock, &message, 0);
+    if (rc < 0 || byte[0] != 1)
+    {
+        goto ackfailed;
+    }
+
     major_status = gss_import_cred(
             &minor_status,
             &cred,
@@ -505,17 +550,6 @@ globus_l_gram_startup_socket_callback(
     if (GSS_ERROR(major_status))
     {
         goto failed_import_cred;
-    }
-
-    iov[0].iov_base = byte;
-    iov[0].iov_len = sizeof(byte);
-    memset(&message, 0, sizeof(struct msghdr));
-    message.msg_iov = iov;
-    message.msg_iovlen = 1;
-    rc = sendmsg(acksock, &message, 0);
-    if (rc < 0)
-    {
-        goto ackfailed;
     }
 
     /* Load request data */

@@ -359,7 +359,9 @@ typedef struct
     /** XIO Handle for socket_fd so we can use XIO's select() loop */
     globus_xio_handle_t                 active_job_manager_handle;
     /** Lock file related to the socket_fd */
-    int                                 locket_fd;
+    int                                 lock_fd;
+    /** Lock file path */
+    char *                              lock_path;
     /** Fifo of script contexts ready to run */
     globus_fifo_t                       script_fifo;
     /** Number of script slots available for running scripts */
@@ -410,12 +412,21 @@ typedef struct
     int                                 failure_code;
     
     /**
-     * Job identifier
+     * Job identifier string
      *
-     * Underlying queueing system job id for this job.
+     * String representation of the LRM job id. May be a comma-separated
+     * string of uniquely-pollable ID values. This value is filled in when the
+     * request is submitted.
+     */
+    char *                              job_id_string;
+    
+    /**
+     * Job identifier list
+     *
+     * List of underlying queueing system job id strings for this job.
      * This value is filled in when the request is submitted.
      */
-    char *                              job_id;
+    globus_list_t *                     job_id_list;
 
     /**
      * Poll Frequency

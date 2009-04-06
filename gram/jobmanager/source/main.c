@@ -202,7 +202,7 @@ main(
      */
     while (!located_active_jm)
     {
-        if (! debugging_without_client)
+        if ((! debugging_without_client) || (config.single))
         {
             /* We'll try to get the lock file associated with being the
              * active job manager here. If we get the OLD_JM_ALIVE error
@@ -212,7 +212,7 @@ main(
                     &manager,
                     &manager.active_job_manager_handle,
                     &manager.socket_fd,
-                    &manager.locket_fd);
+                    &manager.lock_fd);
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
             {
                 rc = GLOBUS_SUCCESS;
@@ -223,7 +223,9 @@ main(
             }
         }
 
-        if (manager.socket_fd != -1 || debugging_without_client)
+        if (manager.socket_fd != -1
+                || debugging_without_client
+                || (!config.single))
         {
             gss_ctx_id_t                context;
             char *                      client_contact;

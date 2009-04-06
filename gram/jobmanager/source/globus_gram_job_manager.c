@@ -170,7 +170,8 @@ globus_gram_job_manager_init(
 
     manager->active_job_manager_handle = NULL;
     manager->socket_fd = -1;
-    manager->locket_fd = -1;
+    manager->lock_fd = -1;
+    manager->lock_path = NULL;
 
     rc = globus_fifo_init(&manager->script_fifo);
     if (rc != GLOBUS_SUCCESS)

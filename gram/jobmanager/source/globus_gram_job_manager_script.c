@@ -1267,7 +1267,7 @@ globus_gram_job_manager_script_signal(
     globus_l_gram_job_manager_script_write_description(
             signal_arg_fp,
             request,
-            "jobid", 's', request->job_id,
+            "jobid", 's', request->job_id_string,
             "signal", 'd', query->signal,
             "signalarg", 's', query->signal_arg,
             NULL);
@@ -1502,9 +1502,35 @@ globus_l_gram_job_manager_default_done(
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ID") == 0)
     {
+        char * valuecp;
+        char * tmp;
+        char * last = NULL;
+        int rc;
         if(value != NULL && strlen(value) > 0)
         {
-            request->job_id = strdup(value);
+            request->job_id_string = strdup(value);
+            valuecp = strdup(value);
+
+            for (tmp = strtok_r(valuecp, ",", &last);
+                 tmp != NULL;
+                 tmp = strtok_r(NULL, ",", &last))
+            {
+                char * id = strdup(tmp);
+
+                if (id == NULL)
+                {
+                    request->failure_code =
+                            GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                }
+                rc = globus_list_insert(&request->job_id_list, id);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    free(id);
+                    request->failure_code =
+                            GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                }
+            }
+            free(valuecp);
         }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ACCT_INFO") == 0)
@@ -1900,11 +1926,11 @@ globus_l_gram_job_manager_script_write_description(
                 ",\n    'uniqid' => [ '%s' ]",
                 request->uniq_id);
     }
-    if(request->job_id)
+    if(request->job_id_string)
     {
         fprintf(fp,
                 ",\n    'jobid' => [ '%s' ]",
-                request->job_id);
+                request->job_id_string);
     }
     if(request->cache_tag)
     {
