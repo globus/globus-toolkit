@@ -891,3 +891,24 @@ job_id_strdup_failed:
     return rc;
 }
 /* globus_gram_job_manager_get_job_id_list() */
+
+globus_bool_t
+globus_gram_job_manager_request_exists(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key)
+{
+    globus_bool_t                       result ;
+    globus_mutex_lock(&manager->mutex);
+    if (globus_hashtable_lookup(&manager->request_hash, (void *) key) != NULL)
+    {
+        result = GLOBUS_TRUE;
+    }
+    else
+    {
+        result = GLOBUS_FALSE;
+    }
+    globus_mutex_unlock(&manager->mutex);
+
+    return result;
+}
+/* globus_gram_job_manager_request_exists() */

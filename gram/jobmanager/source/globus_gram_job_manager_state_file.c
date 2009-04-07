@@ -253,6 +253,11 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = globus_gram_job_manager_staging_write_state(request, fp);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
 
     fclose( fp );
 
@@ -285,6 +290,7 @@ globus_gram_job_manager_state_file_read(
     int                                 rc;
     int                                 i;
     unsigned long                       tmp_timestamp;
+    struct stat                         single_lock_stat, job_lock_stat;
 
     request->old_job_contact = NULL;
 
@@ -306,7 +312,37 @@ globus_gram_job_manager_state_file_read(
 
     /* Try to obtain a lock on the state lock file */
     if ( request->job_state_lock_file != NULL &&
-         request->job_state_lock_fd < 0 )
+         request->job_state_lock_fd < 0 &&
+         request->config->single)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Checking if we already have locked state lock file\n");
+
+        rc = fstat(request->manager->lock_fd, &single_lock_stat);
+        if (rc < 0)
+        {
+            goto skip_single_check;
+        }
+        rc = stat(request->job_state_lock_file, &job_lock_stat);
+        if (rc < 0)
+        {
+            goto skip_single_check;
+        }
+
+        if (single_lock_stat.st_dev == job_lock_stat.st_dev &&
+            single_lock_stat.st_ino == job_lock_stat.st_ino)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: Reusing manager-wide lock fd: %d\n",
+                    request->manager->lock_fd);
+            request->job_state_lock_fd = request->manager->lock_fd;
+        }
+    }
+
+skip_single_check:
+    if (request->job_state_lock_file != NULL && request->job_state_lock_fd < 0)
     {
         globus_gram_job_manager_request_log(request,
                                 "JM: Locking state lock file\n");

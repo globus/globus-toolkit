@@ -346,6 +346,16 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto failed_set_job_contact_path;
     }
+    /* Check to make sure we aren't restarting a job we're already monitoring
+     */
+    if (globus_gram_job_manager_request_exists(
+                manager,
+                r->job_contact_path))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+        goto failed_check_exists;
+    }
+
 
     rc = globus_l_gram_make_job_dir(r, &r->job_dir);
     if (rc != GLOBUS_SUCCESS)
@@ -809,6 +819,7 @@ cached_stdout_symboltable_failed:
 cached_stdout_malloc_failed:
         globus_gram_job_manager_destroy_directory(r, r->job_dir);
 failed_make_job_dir:
+failed_check_exists:
         free(r->job_contact_path);
 failed_set_job_contact_path:
 failed_add_contact_to_symboltable:
@@ -1673,7 +1684,7 @@ globus_l_gram_generate_id(
         request->jm_restart = NULL;
 
         memcpy(uniq1p, uuid.binary.bytes, 8);
-        memcpy(uniq2p, uuid.binary.bytes, 8);
+        memcpy(uniq2p, uuid.binary.bytes+8, 8);
     }
 
     if (rc != GLOBUS_SUCCESS)

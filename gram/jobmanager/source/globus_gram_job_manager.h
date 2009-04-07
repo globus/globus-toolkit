@@ -1075,6 +1075,11 @@ globus_gram_job_manager_get_job_id_list(
     globus_gram_job_manager_t *         manager,
     globus_list_t **                    job_id_list);
 
+globus_bool_t
+globus_gram_job_manager_request_exists(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key);
+
 /* startup_socket.c */
 int
 globus_gram_job_manager_startup_socket_init(
