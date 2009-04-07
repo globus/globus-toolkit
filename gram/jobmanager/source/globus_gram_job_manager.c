@@ -47,6 +47,15 @@ typedef struct globus_gram_job_manager_ref_s
 }
 globus_gram_job_manager_ref_t;
 
+typedef struct globus_gram_job_id_ref_s
+{
+    /* Local copy of the unique job id used as the key to the job_id_hash */
+    char *                              job_id;
+    /* Local copy of the request job_contact_path */
+    char *                              job_contact_path;
+}
+globus_gram_job_id_ref_t;
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -102,15 +111,8 @@ globus_gram_job_manager_init(
      */
     globus_mutex_lock(&manager->mutex);
 
-    rc = globus_fifo_init(&manager->seg_event_queue);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto failed_seg_event_queue_init;
-    }
-
     manager->seg_last_timestamp = (time_t) 0;
+    manager->seg_started = GLOBUS_FALSE;
 
     globus_l_gram_job_manager_open_logfile(manager);
 
@@ -130,6 +132,18 @@ globus_gram_job_manager_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto request_hashtable_init_failed;
+    }
+
+    rc = globus_hashtable_init(
+            &manager->job_id_hash,
+            13,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto job_id_hashtable_init_failed;
     }
 
     if (cred != GSS_C_NO_CREDENTIAL)
@@ -206,6 +220,8 @@ proxy_timeout_init_failed:
         free(manager->url_base);
 allow_attach_failed:
 set_credentials_failed:
+        globus_hashtable_destroy(&manager->job_id_hash);
+job_id_hashtable_init_failed:
         globus_hashtable_destroy(&manager->request_hash);
 request_hashtable_init_failed:
         globus_gram_job_manager_validation_destroy(
@@ -223,8 +239,6 @@ validation_init_failed:
             fclose(manager->jobmanager_log_fp);
             manager->jobmanager_log_fp = NULL;
         }
-        globus_fifo_destroy(&manager->seg_event_queue);
-failed_seg_event_queue_init:
         globus_cond_destroy(&manager->mutex);
 cond_init_failed:
         globus_mutex_unlock(&manager->mutex);
@@ -275,8 +289,6 @@ globus_gram_job_manager_destroy(
         fclose(manager->jobmanager_log_fp);
         manager->jobmanager_log_fp = NULL;
     }
-    globus_fifo_destroy(&manager->seg_event_queue);
-
     globus_hashtable_destroy(&manager->request_hash);
 
     globus_fifo_destroy(&manager->state_callback_fifo);
@@ -642,3 +654,240 @@ globus_gram_job_manager_remove_reference(
     return rc;
 }
 /* globus_gram_job_manager_remove_reference() */
+
+/**
+ * Register a mapping between a LRM job ID and job request's unique job_contact_path
+ *
+ * @param manager
+ *     Job manager state
+ * @param job_id
+ *     Job identifier
+ * @param request
+ *     Request to associate with this job id.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed.
+ */
+int
+globus_gram_job_manager_register_job_id(
+    globus_gram_job_manager_t *         manager,
+    char *                              job_id,
+    globus_gram_jobmanager_request_t *  request)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_gram_job_id_ref_t *          ref;
+
+    ref = malloc(sizeof(globus_gram_job_id_ref_t));
+    if (ref == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto ref_malloc_failed;
+    }
+
+    ref->job_id = strdup(job_id);
+    if (ref->job_id == NULL)
+    {
+        goto job_id_strdup_failed;
+    }
+    ref->job_contact_path = strdup(request->job_contact_path);
+    if (ref->job_contact_path == NULL)
+    {
+        goto job_contact_path_strdup_failed;
+    }
+    globus_mutex_lock(&manager->mutex);
+    rc = globus_hashtable_insert(
+            &manager->job_id_hash,
+            ref->job_id,
+            ref);
+    globus_mutex_unlock(&manager->mutex);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto hash_insert_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+hash_insert_failed:
+        free(ref->job_contact_path);
+job_contact_path_strdup_failed:
+        free(ref->job_id);
+job_id_strdup_failed:
+        free(ref);
+ref_malloc_failed:
+        ;
+    }
+    return rc;
+}
+/* globus_gram_job_manager_register_job_id() */
+
+/**
+ * Unregister a mapping between a LRM job ID and job request's unique job_contact_path
+ *
+ * @param manager
+ *     Job manager state
+ * @param job_id
+ *     Job identifier
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed.
+ */
+int
+globus_gram_job_manager_unregister_job_id(
+    globus_gram_job_manager_t *         manager,
+    char *                              job_id)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_gram_job_id_ref_t *          ref;
+
+    if (job_id == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+        goto null_job_id;
+    }
+    globus_mutex_lock(&manager->mutex);
+    ref = globus_hashtable_remove(&manager->job_id_hash, (void *) job_id);
+    if (!ref)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+        goto no_such_job;
+    }
+    free(ref->job_contact_path);
+    free(ref->job_id);
+    free(ref);
+
+no_such_job:
+    globus_mutex_unlock(&manager->mutex);
+null_job_id:
+    return rc;
+}
+/* globus_gram_job_manager_unregister_job_id() */
+
+/**
+ * resolve a local job id to a request, adding a reference to it.
+ *
+ * @param manager
+ *     job manager state
+ * @param jobid
+ *     individual lrm job id string.
+ * @param request
+ *     pointer to be set to the corresponding job request if found in the
+ *     table. may be null if the caller already has a reference and wants to
+ *     add one.
+ *
+ * @retval globus_success
+ *     success.
+ * @retval globus_gram_protocol_error_job_contact_not_found
+ *     job contact not found.
+ */
+int
+globus_gram_job_manager_add_reference_by_jobid(
+    globus_gram_job_manager_t *         manager,
+    const char *                        jobid,
+    globus_gram_jobmanager_request_t ** request)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_gram_job_id_ref_t *          jobref;
+    globus_gram_job_manager_ref_t *     ref;
+
+    globus_gram_job_manager_log(
+            manager,
+            "Resolving job id %s\n",
+            jobid);
+
+    if (request)
+    {
+        *request = NULL;
+    }
+
+    globus_mutex_lock(&manager->mutex);
+    jobref = globus_hashtable_lookup(&manager->job_id_hash, (void *) jobid);
+    if (!jobref)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+        goto no_such_job;
+    }
+    ref = globus_hashtable_lookup(
+            &manager->request_hash,
+            jobref->job_contact_path);
+
+    if (ref)
+    {
+        ref->reference_count++;
+        if (request)
+        {
+            *request = ref->request;
+        }
+        globus_gram_job_manager_log(
+                manager,
+                "Adding reference %s -> %p\n",
+                ref->key,
+                ref->request);
+    }
+    else
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+        globus_gram_job_manager_log(
+                manager,
+                "Adding reference %s -> NOT FOUND\n",
+                jobref->job_contact_path);
+    }
+
+no_such_job:
+    globus_mutex_unlock(&manager->mutex);
+
+    return rc;
+}
+/* globus_gram_job_manager_add_reference_by_jobid() */
+
+int
+globus_gram_job_manager_get_job_id_list(
+    globus_gram_job_manager_t *         manager,
+    globus_list_t **                    job_id_list)
+{
+    char *                              job_id;
+    globus_gram_job_id_ref_t *          ref;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    *job_id_list = NULL;
+
+    globus_mutex_lock(&manager->mutex);
+    for (ref = globus_hashtable_first(&manager->job_id_hash);
+         ref != NULL;
+         ref = globus_hashtable_next(&manager->job_id_hash))
+    {
+        job_id = strdup(ref->job_id);
+
+        if (job_id == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto job_id_strdup_failed;
+        }
+        rc = globus_list_insert(job_id_list, ref->job_id);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto job_id_insert_failed;
+        }
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+job_id_insert_failed:
+        free(job_id);
+job_id_strdup_failed:
+        globus_list_destroy_all(*job_id_list, free);
+        *job_id_list = NULL;
+    }
+    globus_mutex_unlock(&manager->mutex);
+
+    return rc;
+}
+/* globus_gram_job_manager_get_job_id_list() */

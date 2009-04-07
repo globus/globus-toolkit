@@ -1502,35 +1502,9 @@ globus_l_gram_job_manager_default_done(
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ID") == 0)
     {
-        char * valuecp;
-        char * tmp;
-        char * last = NULL;
-        int rc;
         if(value != NULL && strlen(value) > 0)
         {
             request->job_id_string = strdup(value);
-            valuecp = strdup(value);
-
-            for (tmp = strtok_r(valuecp, ",", &last);
-                 tmp != NULL;
-                 tmp = strtok_r(NULL, ",", &last))
-            {
-                char * id = strdup(tmp);
-
-                if (id == NULL)
-                {
-                    request->failure_code =
-                            GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-                }
-                rc = globus_list_insert(&request->job_id_list, id);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    free(id);
-                    request->failure_code =
-                            GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-                }
-            }
-            free(valuecp);
         }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ACCT_INFO") == 0)

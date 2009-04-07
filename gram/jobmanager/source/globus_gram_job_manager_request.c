@@ -229,7 +229,6 @@ globus_gram_job_manager_request_init(
     r->failure_code = 0;
     /* Won't be set until job has been submitted to the LRM */
     r->job_id_string = NULL;
-    r->job_id_list = NULL;
     r->poll_frequency = 30;
     r->commit_extend = 0;
     r->scratchdir = NULL;
@@ -720,10 +719,20 @@ globus_gram_job_manager_request_init(
 
     r->response_context = response_ctx;
 
+    rc = globus_fifo_init(&r->seg_event_queue);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto seg_event_queue_init_failed;
+    }
+
     rc = globus_gram_job_manager_state_file_write(r);
 
     if (rc != GLOBUS_SUCCESS)
     {
+        globus_fifo_destroy(&r->seg_event_queue);
+seg_event_queue_init_failed:
         if (r->job_history_file)
         {
             free(r->job_history_file);
@@ -1106,7 +1115,6 @@ globus_gram_job_manager_request_destroy(
     {
         free(request->job_id_string);
     }
-    globus_list_destroy_all(request->job_id_list, free);
     if (request->uniq_id)
     {
         free(request->uniq_id);
@@ -1175,9 +1183,7 @@ globus_gram_job_manager_request_destroy(
     globus_mutex_destroy(&request->mutex);
     globus_cond_destroy(&request->cond);
     globus_gram_job_manager_contact_list_free(request);
-    /* TODO: clean up request->stage_in_todo */
-    /* TODO: clean up request->stage_in_shared_todo */
-    /* TODO: clean up request->stage_in_out_todo */
+    globus_gram_job_manager_staging_free_all(request);
     globus_assert(request->poll_timer == GLOBUS_NULL_HANDLE);
     if (request->job_contact)
     {
@@ -1206,6 +1212,7 @@ globus_gram_job_manager_request_destroy(
         OM_uint32 minor_status;
         gss_delete_sec_context(&minor_status, &request->response_context, NULL);
     }
+    globus_fifo_destroy(&request->seg_event_queue);
 }
 /* globus_gram_job_manager_request_destroy() */
 

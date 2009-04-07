@@ -46,11 +46,6 @@ globus_l_gram_job_manager_staging_match(
     void *                              arg);
 
 static
-void
-globus_l_gram_job_manager_staging_free_all(
-    globus_gram_jobmanager_request_t *  request);
-
-static
 int
 globus_l_gram_staging_list_read_state(
     globus_gram_jobmanager_request_t *  request,
@@ -131,7 +126,7 @@ globus_gram_job_manager_staging_create_list(
 
     return GLOBUS_SUCCESS;
 failed_adding_exit:
-    globus_l_gram_job_manager_staging_free_all(request);
+    globus_gram_job_manager_staging_free_all(request);
     return rc;
 }
 /* globus_gram_job_manager_staging_create_list() */
@@ -539,9 +534,8 @@ globus_l_gram_job_manager_staging_match(
 }
 /* globus_l_gram_job_manager_staging_match() */
 
-static
 void
-globus_l_gram_job_manager_staging_free_all(
+globus_gram_job_manager_staging_free_all(
     globus_gram_jobmanager_request_t *  request)
 {
     globus_gram_job_manager_staging_info_t *
@@ -581,7 +575,7 @@ globus_l_gram_job_manager_staging_free_all(
         free(info);
     }
 }
-/* globus_l_gram_job_manager_staging_free_all() */
+/* globus_gram_job_manager_staging_free_all() */
 
 /**
  * Read a list of staging pairs from the state file

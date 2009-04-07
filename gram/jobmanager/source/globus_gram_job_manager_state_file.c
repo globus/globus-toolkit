@@ -391,19 +391,7 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-        char * tmp;
-        char * last = NULL;
         request->job_id_string = strdup( buffer );
-
-        for (tmp = strtok_r(buffer, ",", &last);
-             tmp != NULL;
-             tmp = strtok_r(NULL, ",", &last))
-        {
-            char * id = strdup(tmp);
-
-            globus_list_insert(&request->job_id_list, id);
-        }
-
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {

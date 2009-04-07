@@ -309,7 +309,7 @@ globus_gram_job_manager_config_t;
  * computed from the configuration state above and may change during the
  * lifetime of the job manager.
  */
-typedef struct
+typedef struct globus_gram_job_manager_s
 {
     /** Link to the static job manager configuration */
     globus_gram_job_manager_config_t *  config;
@@ -324,9 +324,9 @@ typedef struct
      */
     time_t                              seg_last_timestamp;
     /**
-     * Queue of pending SEG events
+     * Callback handle for fork SEG-like polling
      */
-    globus_fifo_t                       seg_event_queue;
+    globus_callback_handle_t            fork_callback_handle;
     /**
      * Log File Name
      *
@@ -349,6 +349,8 @@ typedef struct
     globus_callback_handle_t            proxy_expiration_timer;
     /** Hashtable mapping request->job_contact_path to request */
     globus_hashtable_t                  request_hash;
+    /** Hashtable mapping job id->job_contact_path */
+    globus_hashtable_t                  job_id_hash;
     /** Lock for thread-safety */
     globus_mutex_t                      mutex;
     /** Condition for noting when all jobs are done */
@@ -420,14 +422,6 @@ typedef struct
      */
     char *                              job_id_string;
     
-    /**
-     * Job identifier list
-     *
-     * List of underlying queueing system job id strings for this job.
-     * This value is filled in when the request is submitted.
-     */
-    globus_list_t *                     job_id_list;
-
     /**
      * Poll Frequency
      *
@@ -574,6 +568,10 @@ typedef struct
     gss_ctx_id_t                        response_context;
     /** Job Contact of this job when being handled by another process */
     char *                              old_job_contact;
+    /**
+     * Queue of pending SEG events
+     */
+    globus_fifo_t                       seg_event_queue;
 }
 globus_gram_jobmanager_request_t;
 
@@ -832,6 +830,10 @@ globus_gram_job_manager_staging_read_state(
     globus_gram_jobmanager_request_t *  request,
     FILE *                              fp);
 
+void
+globus_gram_job_manager_staging_free_all(
+    globus_gram_jobmanager_request_t *  request);
+
 /* globus_gram_job_manager_rsl.c */
 globus_rsl_t *
 globus_gram_job_manager_rsl_merge(
@@ -991,10 +993,11 @@ globus_i_gram_job_manager_script_valid_state_change(
 
 extern globus_xio_driver_t              globus_i_gram_job_manager_popen_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_popen_stack;
+
 /* globus_gram_job_manager_seg.c */
 globus_result_t
 globus_gram_job_manager_init_seg(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_job_manager_t *         request);
 
 globus_result_t
 globus_gram_job_manager_shutdown_seg(
@@ -1049,6 +1052,28 @@ int
 globus_gram_job_manager_remove_reference(
     globus_gram_job_manager_t *         manager,
     const char *                        key);
+
+int
+globus_gram_job_manager_register_job_id(
+    globus_gram_job_manager_t *         manager,
+    char *                              job_id,
+    globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_unregister_job_id(
+    globus_gram_job_manager_t *         manager,
+    char *                              job_id);
+
+int
+globus_gram_job_manager_add_reference_by_jobid(
+    globus_gram_job_manager_t *         manager,
+    const char *                        jobid,
+    globus_gram_jobmanager_request_t ** request);
+
+int
+globus_gram_job_manager_get_job_id_list(
+    globus_gram_job_manager_t *         manager,
+    globus_list_t **                    job_id_list);
 
 /* startup_socket.c */
 int

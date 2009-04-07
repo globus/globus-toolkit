@@ -133,7 +133,15 @@ globus_gram_job_manager_state_machine_callback(
         request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
     {
         int rc;
+        globus_list_t * tmp;
         globus_mutex_unlock(&request->mutex);
+
+        if (request->job_id_string)
+        {
+            (void) globus_gram_job_manager_unregister_job_id(
+                    request->manager,
+                    request->job_id_string);
+        }
 
         rc = globus_gram_job_manager_remove_reference(
                 request->manager,
@@ -353,7 +361,17 @@ globus_gram_job_manager_state_machine(
         }
         else
         {
-           globus_l_gram_job_manager_add_cache_info(request);
+            rc = globus_gram_job_manager_register_job_id(
+                    request->manager,
+                    request->job_id_string,
+                    request);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                request->failure_code = rc;
+                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+                request->unsent_status_change = GLOBUS_TRUE;
+            }
+            globus_l_gram_job_manager_add_cache_info(request);
         }
         request->queued_time = time(NULL);
         globus_gram_job_manager_history_file_create(request);
@@ -371,7 +389,7 @@ globus_gram_job_manager_state_machine(
          * the submit script.
          */
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
-        if (! globus_fifo_empty(&request->manager->seg_event_queue))
+        if (! globus_fifo_empty(&request->seg_event_queue))
         {
             /* A SEG event occurred recently. Let's update our job state
              */
@@ -428,14 +446,15 @@ globus_gram_job_manager_state_machine(
             }
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 
-            if (request->config->seg_module != NULL &&
+            if ((request->config->seg_module != NULL ||
+                 strcmp(request->config->jobmanager_type, "fork") == 0) &&
                 !request->manager->seg_started)
             {
-                /* We want to use the SEG, so we'll start that up. We won't
-                 * have to reregister the callback after each event in this
-                 * case.
+                /* We want to use the SEG or fork fakeseg, so we'll start that
+                 * up. We won't have to reregister the callback after each
+                 * event in this case.
                  */
-                rc = globus_gram_job_manager_init_seg(request);
+                rc = globus_gram_job_manager_init_seg(request->manager);
 
                 if (rc != GLOBUS_SUCCESS)
                 {
@@ -475,7 +494,7 @@ globus_gram_job_manager_state_machine(
                      * Otherwise, we'll set event_registered and the next
                      * query or SEG event will move the state machine.
                      */
-                    if (! globus_fifo_empty(&request->manager->seg_event_queue))
+                    if (! globus_fifo_empty(&request->seg_event_queue))
                     {
 
                         request->jobmanager_state =
@@ -500,7 +519,7 @@ globus_gram_job_manager_state_machine(
         {
             rc = globus_gram_job_manager_script_poll(request);
         }
-        else if (!globus_fifo_empty(&request->manager->seg_event_queue))
+        else if (!globus_fifo_empty(&request->seg_event_queue))
         {
             /* We don't want to set event_registered in this case, because
              * we want to immediately process the event in the queue.
@@ -642,7 +661,7 @@ globus_gram_job_manager_state_machine(
 
         if(globus_fifo_empty(&request->pending_queries) &&
            (request->unsent_status_change ||
-            !globus_fifo_empty(&request->manager->seg_event_queue)))
+            !globus_fifo_empty(&request->seg_event_queue)))
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
