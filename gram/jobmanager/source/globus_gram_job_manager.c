@@ -869,7 +869,7 @@ globus_gram_job_manager_get_job_id_list(
 
             goto job_id_strdup_failed;
         }
-        rc = globus_list_insert(job_id_list, ref->job_id);
+        rc = globus_list_insert(job_id_list, job_id);
         if (rc != GLOBUS_SUCCESS)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;

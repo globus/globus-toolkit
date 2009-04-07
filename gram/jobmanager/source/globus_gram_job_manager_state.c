@@ -133,7 +133,6 @@ globus_gram_job_manager_state_machine_callback(
         request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
     {
         int rc;
-        globus_list_t * tmp;
         globus_mutex_unlock(&request->mutex);
 
         if (request->job_id_string)
