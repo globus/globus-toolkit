@@ -97,14 +97,23 @@ sub test_rsl
     my @all_rsl = <$file>;
     my $error;
     my $value;
+    my @error_list;
+    my $ok=0;
 
     $value = $all_rsl[0];
 
     chomp($value);
 
-    $value =~ s/\(\*\s*(\S*)\s*\*\)/$1/;
-    $value =~ s/GLOBUS_GRAM_PROTOCOL_ERROR_//;
-    $error = eval "Globus::GRAM::Error::$value()";
+    $value =~ s/\(\*//;
+    $value =~ s/\*\)//;
+    $value =~ s/^\s*//;
+    $value =~ s/\s*$//;
+
+    foreach my $s (split(/\s+/, $value))
+    {
+        $s =~ s/GLOBUS_GRAM_PROTOCOL_ERROR_//;
+        push(@error_list, eval "Globus::GRAM::Error::$s()");
+    }
 
     if($verbose)
     {
@@ -119,7 +128,20 @@ sub test_rsl
 
     $rc = $? >> 8;
 
-    ok("$rsl_file:$rc", "$rsl_file:" . $error->value);
+    foreach (@error_list)
+    {
+        if ($_->value == $rc)
+        {
+            ok("$rsl_file:$rc", "$rsl_file:" . $_->value);
+            $ok=1;
+            last;
+        }
+    }
+
+    if (!$ok)
+    {
+        ok("$rsl_file:$rc", "$rsl_file:" . $value);
+    }
 }
 
 foreach(@test_rsls)
