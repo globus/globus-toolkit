@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+
+<gpt_package_metadata Name="globus_user_env" Format_Version="0.02">
+
+  <Aging_Version Major="2" Minor="5" Age="0"/>
+  <Description>User Environment Support</Description>
+  <Functional_Group >Miscellaneous</Functional_Group>
+  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
+
+  <src_pkg>
+    <With_Flavors build="no" />
+  </src_pkg>
+
+</gpt_package_metadata>
+
