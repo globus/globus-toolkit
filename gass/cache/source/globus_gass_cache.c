@@ -6140,6 +6140,7 @@ globus_gass_cache_cleanup_tag_all(
     /* Done */
     globus_l_gass_cache_names_free( &names );
 
+    free(base_local_dir);
     /* Build some file names that we'll use. */
     {
 	char buf[256];
