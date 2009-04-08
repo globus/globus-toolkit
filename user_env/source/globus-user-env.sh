@@ -48,6 +48,9 @@ if [ -n "${GLOBUS_PATH}" ]; then
     if [ -n "${LD_LIBRARY64_PATH}" ]; then
         LD_LIBRARY64_PATH=`echo "${LD_LIBRARY64_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     fi
+    if [ -n "${PERL5LIB}" ]; then
+        PERL5LIB=`echo "${PERL5LIB}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    fi
 fi
 
 PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
@@ -65,6 +68,9 @@ if [ -n "${LD_LIBRARYN32_PATH}" ]; then
 fi
 if [ -n "${LD_LIBRARY64_PATH}" ]; then
     LD_LIBRARY64_PATH=`echo "${LD_LIBRARY64_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+fi
+if [ -n "${PERL5LIB}" ]; then
+    PERL5LIB=`echo "${PERL5LIB}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 fi
 
 
@@ -124,6 +130,15 @@ if [ -n "${LD_LIBRARY64_PATH}" ]; then
     fi
     LD_LIBRARY64_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY64_PATH}"
     export LD_LIBRARY64_PATH
+fi
+
+if [ -n "${PERL5LIB}" ]; then
+    DELIM=""
+    if [ "X${PERL5LIB}" != "X" ]; then
+        DELIM=:
+    fi
+    PERL5LIB="${GLOBUS_LOCATION}/lib/perl${DELIM}${PERL5LIB}"
+    export PERL5LIB
 fi
 
 
