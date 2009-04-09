@@ -36,7 +36,6 @@
 #include "globus_gram_protocol.h"
 #include "globus_rsl.h"
 #include "globus_gass_cache.h"
-#include "globus_io.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
 static
@@ -399,7 +398,6 @@ globus_l_gram_job_manager_activate(void)
         GLOBUS_GSI_GSS_ASSIST_MODULE,
         GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
         GLOBUS_XIO_MODULE,
-        GLOBUS_IO_MODULE,
         GLOBUS_GRAM_PROTOCOL_MODULE,
         GLOBUS_GASS_CACHE_MODULE,
         NULL

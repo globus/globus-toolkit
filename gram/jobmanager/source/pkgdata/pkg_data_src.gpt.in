@@ -55,12 +55,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_io">
-                <Version>
-                    <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>
-
             <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="2"/>
@@ -132,12 +126,6 @@
             <Dependency Name="globus_callout">
                 <Version>
                     <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_io">
-                <Version>
-                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
 
