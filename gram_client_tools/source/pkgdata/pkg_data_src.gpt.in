@@ -21,16 +21,6 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
-            <Dependency Name="globus_nexus">
-                <Version>
-                    <Simple_Version Major="6"/>
-                </Version>
-            </Dependency>
-            <Dependency Name="globus_duroc_control">
-                <Version>
-                    <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
             <Dependency Name="globus_gram_client">
                 <Version>
                     <Simple_Version Major="6"/>
@@ -62,16 +52,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>
-            <Dependency Name="globus_nexus">
-                <Version>
-                    <Simple_Version Major="6"/>
-                </Version>
-            </Dependency>
-            <Dependency Name="globus_duroc_control">
-                <Version>
-                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gram_client">

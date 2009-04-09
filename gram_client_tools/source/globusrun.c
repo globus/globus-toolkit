@@ -47,8 +47,6 @@ CVS Information:
 #   define PATH_MAX MAXPATHLEN
 #endif
 
-#include "globus_nexus.h"
-#include "globus_duroc_control.h"
 #include "globus_gram_client.h"
 #include "globus_gram_protocol.h"
 #include "globus_gass_server_ez.h"
@@ -104,19 +102,6 @@ static int
 globus_l_globusrun_gramrun(char *          request_string,
 			   unsigned long   options,
 			   char *          rm_contact);
-
-/**** Run job using DUROC ****/
-static int
-globus_l_globusrun_durocrun(char *         request_ast,
-			    unsigned long  options,
-			    int            mpirun_version);
-
-static int
-globus_l_globusrun_fault_callback(void *   user_arg,
-				  int      fault_code);
-
-static char **
-globus_l_globusrun_duroc_subjob_labels(char *   request_string);
 
 static
 int
@@ -290,24 +275,6 @@ static char *  long_usage = \
 "           just before the job request would be executed\n"\
 "\n";
 
-#if 0 /* unimplemented */
-
-"    -mdshost   <mds ldap server hostname>\n"\
-"    -mdsport   <mds ldap server port to contact>\n"\
-"    -T | -mdstimeout <timeout in seconds>\n"\
-"    -mdsbasedn <mds ldap server hostname>\n"\
-"           mdshost, mdsport and mdsbasedn let you overwrite the default\n"\
-"           information necessary to contact the MDS ldap server. Used only\n"\
-"           together with the option -list\n"\
-"           Those options can also be set using the environment variable \n"\
-"           GRID_INFO_HOST, GRID_INFO_PORT, GRID_INFO_TIMEOUT and\n"\
-"           GRID_INFO_BASEDN.\n"\
-
-"    -l | -list\n"\
-"           List disconnected globusrun jobs\n"
-
-#endif
-
 #define globusrun_l_args_error(a) \
 { \
     globus_libc_fprintf(stderr, \
@@ -377,11 +344,10 @@ test_integer( char *   value,
 }
 
 
-enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_l, arg_b,
+enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_b,
 	     arg_p, arg_d, arg_a,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
-	     arg_mdshost, arg_mdsport, arg_mdsbasedn, arg_mdstimeout,
 	     arg_F, arg_full_proxy,
 	     arg_num = arg_full_proxy };
 
@@ -409,7 +375,6 @@ flagdef(arg_o, "-o", "-output-enable");
 flagdef(arg_s, "-s", "-server");
 flagdef(arg_w, "-w", "-write-allow");
 flagdef(arg_n, "-n", "-no-interrupt");
-flagdef(arg_l, "-l", "-list");
 flagdef(arg_b, "-b", "-batch");
 flagdef(arg_p, "-p", "-parse");
 flagdef(arg_d, "-d", "-dryrun");
@@ -426,23 +391,18 @@ static int arg_f_mode = O_RDONLY;
     oneargdef(arg_stop_manager, "-stop-manager", NULL, test_job_id, GLOBUS_NULL);
     oneargdef(arg_mpirun, "-mpirun", GLOBUS_NULL, test_integer, GLOBUS_NULL);
     oneargdef(arg_status, "-status", GLOBUS_NULL, test_job_id, GLOBUS_NULL);
-    oneargdef(arg_mdshost, "-mdshost", GLOBUS_NULL, test_hostname, GLOBUS_NULL);
-    oneargdef(arg_mdsport, "-mdsport", GLOBUS_NULL, test_integer, GLOBUS_NULL);
-    oneargdef(arg_mdstimeout, "-T", "-mdstimeout", test_integer, GLOBUS_NULL);
-    oneargdef(arg_mdsbasedn, "-mdsbasedn", GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
-
     static globus_args_option_descriptor_t args_options[arg_num];
 
 #define setupopt(id) args_options[id-1] = defname(id)
 
 #define globusrun_i_args_init() \
 	setupopt(arg_i); setupopt(arg_q); setupopt(arg_o); setupopt(arg_s); \
-	setupopt(arg_w); setupopt(arg_n); setupopt(arg_l); setupopt(arg_b); \
+	setupopt(arg_w); setupopt(arg_n); setupopt(arg_b); \
 	setupopt(arg_p); setupopt(arg_d); setupopt(arg_a); \
 	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
 	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
-	setupopt(arg_status); setupopt(arg_mdshost); setupopt(arg_mdsport); \
-	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout); setupopt(arg_F); \
+	setupopt(arg_status); \
+	setupopt(arg_F); \
 	setupopt(arg_full_proxy);
 
     static globus_bool_t globus_l_globusrun_ctrlc = GLOBUS_FALSE;
@@ -505,26 +465,10 @@ static int arg_f_mode = O_RDONLY;
 	}
 	if(activation_err == NULL)
 	{
-	    err = globus_module_activate(GLOBUS_NEXUS_MODULE);
-	    if ( err != GLOBUS_SUCCESS )
-	    {
-		activation_err = "Error initializing nexus\n";
-	    }
-	}
-	if(activation_err == NULL)
-	{
 	    err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
 	    if ( err != GLOBUS_SUCCESS )
 	    {
 		activation_err = "Error initializing gass_server_ez\n";
-	    }
-	}
-	if(activation_err == NULL)
-	{
-	    err = globus_module_activate(GLOBUS_DUROC_CONTROL_MODULE);
-	    if ( err != GLOBUS_SUCCESS )
-	    {
-		activation_err = "Error initializing duroc control\n";
 	    }
 	}
         
@@ -639,7 +583,9 @@ static int arg_f_mode = O_RDONLY;
 	    return globus_l_globusrun_refresh_proxy(instance->values[0]);
 	    break;
 	case arg_mpirun:
-	    /* no-op */
+            fprintf(stderr, "not compatible with -mpirun %s\n",
+                    instance->values[0]);
+            exit(EXIT_FAILURE);
 	    break;
 
 	case arg_stop_manager:
@@ -647,22 +593,6 @@ static int arg_f_mode = O_RDONLY;
 
 	case arg_status:
 	    return(globus_l_globusrun_status_job(instance->values[0]));
-	    break;
-
-	case arg_mdshost:
-	    globus_libc_setenv("GRID_INFO_HOST", instance->values[0], 1);
-	    break;
-
-	case arg_mdsport:
-	    globus_libc_setenv("GRID_INFO_PORT", instance->values[0], 1);
-	    break;
-
-	case arg_mdsbasedn:
-	    globus_libc_setenv("GRID_INFO_BASEDN", instance->values[0], 1);
-	    break;
-
-	case arg_mdstimeout:
-	    globus_libc_setenv("GRID_INFO_TIMEOUT", instance->values[0], 1);
 	    break;
 
 	default:
@@ -781,11 +711,6 @@ static int arg_f_mode = O_RDONLY;
 	globusrun_l_args_error("no resource manager contact");
     }
 
-    /* intialize and start nexus */
-    globus_nexus_enable_fault_tolerance(globus_l_globusrun_fault_callback,
-					GLOBUS_NULL);
-
-
     if (options & GLOBUSRUN_ARG_USE_GASS)
     {
 	/* transform the RSL to send "free" output streams to our
@@ -881,26 +806,8 @@ static int arg_f_mode = O_RDONLY;
 
     if(globus_rsl_is_boolean_multi(request_ast))
     {
-	char *req;
-
-	if ( options & GLOBUSRUN_ARG_BATCH )
-	{
-	    globusrun_l_args_error("batch mode (-b) not supported for multi-requests");
-	}
-
-	if(rm_contact != GLOBUS_NULL)
-	{
-	    globus_libc_fprintf(stderr,
-				"%s warning: ignoring "
-				"resource manager contact for mulirequest\n",
-				program);
-	}
-	req = globus_rsl_unparse(request_ast);
-
-	err = globus_l_globusrun_durocrun(req,
-					      options,
-					      mpirun_version);
-	globus_free(req);
+        fprintf(stderr, "Multi-requests not supported with this version of globusrun\n");
+        err = EXIT_FAILURE;
     }
     else
     {
@@ -1582,599 +1489,6 @@ hard_exit:
 } /* globus_l_globusrun_gramrun() */
 
 /******************************************************************************
-Function: globus_l_globusrun_durocrun()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static int
-globus_l_globusrun_durocrun(char *request_string,
-			    unsigned long options,
-			    int mpi_version)
-{
-    globus_duroc_control_t control;
-    char *job_contact = GLOBUS_NULL;
-    int results_count;
-    int *results;
-    int err=0;
-    globus_bool_t verbose = !(options & (GLOBUSRUN_ARG_QUIET));
-
-    if (globus_l_delegation_mode !=
-            GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY)
-    {
-        fprintf(stderr, "Error: full delegation not supported for multijobs\n");
-        err = GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED;
-
-        goto user_exit;
-    }
-
-    /* trap SIGINTs until job is submitted, then potentially ignore them */
-    globus_l_globusrun_signal(SIGINT,
-                              globus_l_globusrun_sigint_handler);
-#   if defined(BUILD_LITE)
-    {
-            globus_reltime_t          delay_time;
-            globus_reltime_t          period_time;
-
-            GlobusTimeReltimeSet(delay_time, 0, 0);
-            GlobusTimeReltimeSet(period_time, 0, 500000);
-	    globus_callback_register_periodic(&globus_l_run_callback_handle,
-					      &delay_time,
-					      &period_time,
-	                                      globus_l_globusrun_signal_wakeup,
-					      GLOBUS_NULL);
-    }
-#   endif
-
-    err = globus_duroc_control_init (&control);
-
-    if(err != GLOBUS_SUCCESS)
-    {
-	globus_libc_fprintf(stderr,
-			    "Error initializing duroc control (%d)\n",
-			    err);
-	goto user_exit;
-    }
-
-    if(verbose)
-    {
-	globus_libc_fprintf(stderr,
-			   "making globus_duroc request: %s\n",
-			   request_string);
-    }
-
-    err = globus_duroc_control_job_request (&control,
-					    request_string,
-					    0,
-					    GLOBUS_NULL,
-					    &job_contact,
-					    &results_count,
-					    (volatile int **) &results);
-
-    if(verbose)
-    {
-	globus_libc_printf("duroc request status: %d\n"
-			   "duroc job contact: \"%s\"\n",
-			   err,
-			   ((err==GLOBUS_DUROC_SUCCESS)
-			    ? job_contact
-			    : ""));
-    }
-
-    if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
-    {
-        if(verbose)
-        {
-            globus_libc_printf("Cancelling job\n");
-        }
-	globus_l_globusrun_remove_cancel_poll();
-
-        globus_duroc_control_job_cancel(&control,
-                                        job_contact);
-        globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
-        goto user_exit;
-    }
-
-    if(options & GLOBUSRUN_ARG_IGNORE_CTRLC)
-    {
-	globus_l_globusrun_signal(SIGINT,
-                                  SIG_DFL);
-#       if defined(BUILD_LITE)
-	{
-	    globus_callback_unregister(
-	        globus_l_run_callback_handle,
-	        GLOBUS_NULL,
-	        GLOBUS_NULL,
-	        GLOBUS_NULL);
-	}
-#       endif
-    }
-
-    /* handle result of job request now */
-    if ( err == GLOBUS_DUROC_SUCCESS )
-    {
-	int i;
-
-	if(options & GLOBUSRUN_ARG_DRYRUN)
-	{
-	    globus_bool_t dryrun_ok=GLOBUS_TRUE;
-	    char **subjob_labels;
-
-	    subjob_labels = globus_l_globusrun_duroc_subjob_labels(request_string);
-	    for(i = 0; i < results_count; i++)
-	    {
-		if(results[i] != GLOBUS_DUROC_SUCCESS)
-		{
-		    if(globus_duroc_error_is_gram_client_error(results[i]) &&
-		       globus_duroc_error_get_gram_client_error(results[i]) != GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN)
-		    {
-			dryrun_ok = GLOBUS_FALSE;
-			globus_libc_printf("Duroc subjob (label = \"%s\") failed because %s (error code %d)\n",
-					   subjob_labels[i],
-					   globus_duroc_error_string(results[i]),
-					   results[i]);
-			globus_free(subjob_labels[i]);
-		    }
-		}
-		if(dryrun_ok)
-		{
-		    globus_libc_printf("Dryrun successful\n");
-		}
-            }
-            globus_free(subjob_labels);
-	    goto user_exit;
-	}
-	else			/* !dryrun */
-	{
-	    char **subjob_labels;
-
-	    subjob_labels = globus_l_globusrun_duroc_subjob_labels(request_string);
-
-	    if(verbose)
-	    {
-		globus_libc_printf("duroc subjob status:\n");
-	    }
-	    for (i=0; i<results_count; i++)
-	    {
-	        if(results[i] == GLOBUS_DUROC_SUCCESS)
-	        {
-		    if(verbose)
-		    {
-			globus_libc_printf("    Submission of subjob (label = \"%s\") succeeded\n",
-					   subjob_labels[i]);
-		    }
-	        }
-	        else
-	        {
-			globus_libc_printf("    Submission of subjob (label = \"%s\") failed because %s (error code %d)\n",
-					   subjob_labels[i],
-					   globus_duroc_error_string(results[i]),
-					   results[i]);
-	        }
-		  globus_free(subjob_labels[i]);
-	     }
-	     globus_free(subjob_labels);
-
-	    globus_free (results);
-	}
-    }
-    else
-    {
-	if(options & GLOBUSRUN_ARG_DRYRUN)
-	{
-	    if(verbose)
-	    {
-		globus_libc_printf("Dryrun failure\n");
-	    }
-	}
-	else
-	{
-	    if(verbose)
-	    {
-		globus_libc_fprintf(stderr,
-				    "duroc request failed, exiting.\n");
-	    }
-	}
-	return err;
-    }
-
-    if (options & GLOBUSRUN_ARG_INTERACTIVE)
-    {
-
-	globus_libc_printf ("entering interactive control mode...\n\n");
-
-	/* loop for commands */
-	while (1)
-	{
-	    int i;
-	    int     subjob_count;
-	    char ** subjob_labels;
-	    int   * subjob_states;
-
-            if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
-	    {
-		if(verbose)
-		{
-		    globus_libc_printf("Cancelling job\n");
-		}
-		globus_l_globusrun_remove_cancel_poll();
-
-		globus_duroc_control_job_cancel(&control,
-						job_contact);
-                globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
-		goto user_exit;
-	    }
-	    /* print job state summary */
-	    err = globus_duroc_control_subjob_states (&control,
-						      job_contact,
-						      &subjob_count,
-						      &subjob_states,
-						      &subjob_labels);
-	    if(err != GLOBUS_SUCCESS)
-	    {
-		printf("Error polling duroc control subjob states (%d)\n",
-		       err);
-		goto user_exit;
-	    }
-
-	    globus_libc_fprintf (stdout, "subjob states:\n");
-
-	    for (i=0; i<subjob_count; i++)
-	    {
-		globus_libc_printf (
-		    "subjob >>%s<< %s\n",
-		    (subjob_labels[i] ? subjob_labels[i] : "(none)"),
-		    ((subjob_states[i]
-		      ==GLOBUS_DUROC_SUBJOB_STATE_PENDING)
-		     ? "PEND"
-		     : ((subjob_states[i]
-			 ==GLOBUS_DUROC_SUBJOB_STATE_ACTIVE)
-			? "pend ACTIVE"
-			: ((subjob_states[i]
-			    ==GLOBUS_DUROC_SUBJOB_STATE_CHECKED_IN)
-			   ? "pend active CHECKIN"
-			   : ((subjob_states[i]
-			       ==GLOBUS_DUROC_SUBJOB_STATE_RELEASED)
-			      ? "pend active checkin RUN"
-			      : (subjob_states[i]
-				 ==GLOBUS_DUROC_SUBJOB_STATE_DONE)
-			      ? "DONE"
-			      : "FAILED")))));
-		globus_free (subjob_labels[i]);
-		subjob_labels[i] = NULL;
-	    }
-
-	    globus_libc_fprintf (stdout, "end subjob states.\n\n");
-
-	    globus_free (subjob_states);
-	    globus_free (subjob_labels);
-
-	    /* prompt for user command */
-
-	    globus_libc_fprintf (stdout, "\n"
-			   "enter command \"Dlabel\" (delete labeled subjob),\n"
-			   "              \"K\" (kill entire job),\n"
-			   "              \"C\" (commit current job),\n"
-			   "           or \"Q\" (quit request tool)\n\n");
-
-	    /* get user command and perform background processing */
-	    {
-		globus_fifo_t input;
-
-		err = globus_fifo_init (&input);
-		if(err != GLOBUS_SUCCESS)
-		{
-		    globus_libc_printf("Internal error intializing data structure\n");
-		    goto user_exit;
-		}
-
-		while ( globus_fifo_empty (&input) ) {
-		    ssize_t size;
-		    char buf[1];
-
-                    if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
-		    {
-			if(verbose)
-			{
-			    globus_libc_printf("Cancelling job\n");
-			}
-			globus_l_globusrun_remove_cancel_poll();
-
-			globus_duroc_control_job_cancel(&control,
-							job_contact);
-                        globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
-			goto user_exit;
-		    }
-		    size = read(fileno(stdin), buf, 1);
-
-		    if (size == 1)
-		    {
-			/* queue up data just read */
-			globus_fifo_enqueue (&input, (void *) (long) buf[0]);
-		    }
-		    else if (size < 0)
-		    {
-			/* no input ready */
-			globus_poll();
-		    }
-		    else
-		    {
-			/* eof? */
-			globus_libc_fprintf(stdout, "eof reached. exiting.\n");
-
-			goto user_exit;
-		    }
-		}
-
-		if ( ((char) (long) globus_fifo_peek (&input)) == 'C' )
-		{
-		    globus_libc_fprintf (stdout, "C commit requested\n");
-		    globus_fifo_dequeue (&input);
-
-		    globus_libc_fprintf (stdout,
-					 "releasing barrier at "
-					 "user's request...\n");
-
-		    err = globus_duroc_control_barrier_release (&control,
-								job_contact,
-								GLOBUS_TRUE);
-
-		    globus_libc_fprintf (stdout,
-					 "release returned %s.\n",
-					 (err ? "failure" : "success"));
-		}
-		else if ( ((char) (long) globus_fifo_peek (&input)) == 'Q' )
-		{
-		    globus_libc_fprintf (stdout, "Q quit requested\n");
-		    globus_fifo_dequeue (&input);
-
-		    goto user_exit;
-		}
-		else if ( ((char) (long) globus_fifo_peek (&input)) == 'K' )
-		{
-		    globus_libc_fprintf (stdout, "K kill job requested\n");
-		    globus_fifo_dequeue (&input);
-
-		    globus_libc_fprintf (stdout,
-					 "canceling job at user's request.\n");
-
-		    err = globus_duroc_control_job_cancel (&control,
-							   job_contact);
-
-		    globus_libc_fprintf (stdout,
-					 "cancel returned %s.\n",
-					 (err ? "failure" : "success"));
-		}
-		else if ( ((char) (long) globus_fifo_peek (&input)) == 'D' )
-		{
-		    /* get subjob label..
-		     * all characters up to but not including newline */
-		    int newline_read = 0;
-		    ssize_t size;
-		    char buf[1];
-		    char *subjob_label;
-
-		    globus_fifo_dequeue (&input); /* throw out 'D' */
-
-		    while ( ! newline_read )
-		    {
-                        if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
-			{
-			    if(verbose)
-			    {
-				printf("Cancelling job\n");
-			    }
-
-			    globus_l_globusrun_remove_cancel_poll();
-			    globus_duroc_control_job_cancel(&control,
-							    job_contact);
-                            globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
-			    goto user_exit;
-			}
-			size = read (fileno(stdin), buf, 1);
-
-			if (size == 1)
-			{
-			    if ( buf[0] != '\n' )
-			    {
-				globus_fifo_enqueue (&input,
-						     (void *) (long) buf[0]);
-			    }
-			    else
-			    {
-				newline_read = 1;
-			    }
-			}
-			else if ( size == -1 )
-			{
-			    /* no input ready */
-			}
-			else
-			{
-			    /* eof? */
-			    globus_libc_fprintf (stdout,
-						 "eof reached. exiting.\n");
-			    goto user_exit;
-			}
-		    }
-
-		    {
-			int len;
-
-			len = globus_fifo_size (&input);
-			if (len>0)
-			{
-			    subjob_label = globus_malloc (sizeof(char)
-							  * (len + 1));
-			    for (i=0; i<len; i++)
-			    {
-				subjob_label[i] = (char)
-				    (long) globus_fifo_dequeue (&input);
-			    }
-			    subjob_label[len] = '\0';
-			}
-			else
-			{
-			    subjob_label = "";
-			}
-		    }
-
-		    globus_libc_fprintf (stdout,
-					 "D delete subjob >>%s<< requested\n",
-					 subjob_label);
-
-		    err = globus_duroc_control_subjob_delete (&control,
-							      job_contact,
-							      subjob_label);
-
-		    if (!err)
-		    {
-			globus_libc_fprintf (stdout,
-					     "subjob >>%s<< deleted\n",
-					     subjob_label);
-		    }
-		    else
-		    {
-			globus_libc_fprintf (stdout,
-					     "subjob >>%s<< deletion failed "
-					     "(code %d)\n",
-					     subjob_label,
-					     err);
-		    }
-		}
-		else
-		{
-		    /* unknown character, reissue prompt */
-		    globus_fifo_dequeue (&input);
-		}
-	    }
-
-	    globus_poll ();
-	}
-
-    after_loop2: /* eliminate pesky dead-code compiler warning */
-	;
-    }
-    else
-    {
-	if(verbose)
-	{
-	    globus_libc_printf("releasing barrier in automatic mode...\n");
-	}
-
-	err = globus_duroc_control_barrier_release (&control,
-						    job_contact,
-						    GLOBUS_TRUE);
-
-	if(err)
-	{
-	    globus_libc_printf("barrier release failed because %s\n",
-			       globus_duroc_error_string(err));
-	}
-
-	if(verbose)
-	{
-	    globus_libc_printf("waiting for job termination\n");
-	}
-
-	while (GLOBUS_TRUE)
-	{
-	    int i;
-	    int     subjob_count;
-	    char ** subjob_labels;
-	    int   * subjob_states;
-	    int not_terminated = 0;
-
-	    /* poll for job state */
-            if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
-	    {
-		if(verbose)
-		{
-		    globus_libc_printf("Cancelling job\n");
-		}
-		globus_l_globusrun_remove_cancel_poll();
-		globus_duroc_control_job_cancel(&control,
-						job_contact);
-                globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
-		goto user_exit;
-	    }
-	    err = globus_duroc_control_subjob_states (&control,
-						      job_contact,
-						      &subjob_count,
-						      &subjob_states,
-						      &subjob_labels);
-            if(err != GLOBUS_SUCCESS)
-            {
-                globus_libc_printf("Error polling duroc control subjob states (%d)\n",
-                                   err);
-                goto user_exit;
-            }
-
-	    for (i=0; i<subjob_count; i++)
-	    {
-		if ( (subjob_states[i] != GLOBUS_DUROC_SUBJOB_STATE_DONE) &&
-		     (subjob_states[i] != GLOBUS_DUROC_SUBJOB_STATE_FAILED) )
-		{
-		    not_terminated = 1;
-		}
-
-		globus_free (subjob_labels[i]);
-		subjob_labels[i] = NULL;
-	    }
-
-	    globus_free (subjob_states);
-	    globus_free (subjob_labels);
-
-	    if ( not_terminated )
-	    {
-		globus_poll_blocking ();
-	    }
-	    else
-	    {
-		goto job_terminated;
-	    }
-	}
-
-    job_terminated:
-	goto user_exit;
-    }
-
-user_exit:
-
-    if (job_contact != NULL)
-    {
-        globus_libc_free(job_contact);
-    }
-    return err;
-} /* globus_l_globusrun_durocrun() */
-
-/******************************************************************************
-Function: globus_l_globusrun_fault_callback()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static int
-globus_l_globusrun_fault_callback (void *user_arg, int fault_code)
-{
-    int debug=0;
-    if(debug)
-    {
-
-	globus_libc_printf("globusrun received nexus fault code %d\n",
-			   fault_code);
-    }
-    return 0;
-} /* globus_l_globusrun_fault_callback() */
-
-
-/******************************************************************************
 Function: globus_l_globusrun_kill_job()
 
 Description:
@@ -2397,63 +1711,6 @@ globus_l_globusrun_signal_wakeup(
 } /* globus_l_globusrun_signal_wakeup() */
 #endif
 
-
-/******************************************************************************
-Function: globus_l_globusrun_duroc_subjob_labels()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static char **
-globus_l_globusrun_duroc_subjob_labels(char *request_string)
-{
-    char **subjob_labels;
-    globus_rsl_t *ast;
-    globus_list_t *subjob_list;
-    globus_rsl_t *subjob;
-    int list_size;
-    int i;
-
-    ast = globus_rsl_parse(request_string);
-
-    subjob_list = globus_rsl_boolean_get_operand_list(ast);
-
-    list_size = globus_list_size(subjob_list);
-
-    subjob_labels = globus_malloc(list_size * sizeof(char *));
-
-    for(i = 0; i < list_size; i++)
-    {
-	char **values;
-
-	subjob = globus_list_first(subjob_list);
-
-	globus_rsl_param_get(subjob,
-			     GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-			     "label",
-			     &values);
-
-	if(values[0] != GLOBUS_NULL)
-	{
-	    subjob_labels[i] = globus_libc_strdup(values[0]);
-	}
-	else
-	{
-	    subjob_labels[i] = globus_libc_strdup("<no label>");
-	}
-
-	globus_free(values);
-
-	subjob_list = globus_list_rest(subjob_list);
-    }
-
-    globus_rsl_free_recursive(ast);
-
-    return subjob_labels;
-} /* globus_l_globusrun_duroc_subjob_labels() */
 
 /******************************************************************************
 Function: globus_l_globusrun_signal()
