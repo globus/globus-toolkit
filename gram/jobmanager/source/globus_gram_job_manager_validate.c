@@ -140,6 +140,8 @@ globus_gram_job_manager_validation_init(
     globus_gram_job_manager_validation_record_t *
                                         record;
 
+    manager->validation_records = NULL;
+
     validation_filename = globus_common_create_string(
             "%s/share/globus_gram_job_manager/%s.rvf",
             manager->config->globus_location,
@@ -367,8 +369,6 @@ globus_l_gram_job_manager_read_validation_file(
     int                                 i;
     int                                 j;
     int                                 rc = GLOBUS_SUCCESS;
-
-    manager->validation_records = NULL;
 
     fp = fopen(validation_filename, "r");
 
