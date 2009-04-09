@@ -424,8 +424,6 @@ globus_l_gram_job_manager_cancel(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
           query = calloc(
                   1,
                   sizeof(globus_gram_job_manager_query_t));
@@ -972,8 +970,6 @@ globus_l_gram_job_manager_query_stop_manager(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
           globus_gram_job_manager_request_set_status(
                 request,
@@ -1078,8 +1074,6 @@ globus_l_gram_job_manager_query_valid(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
           return GLOBUS_TRUE;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:

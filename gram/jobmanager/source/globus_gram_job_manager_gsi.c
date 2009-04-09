@@ -386,23 +386,52 @@ globus_gram_job_manager_gsi_update_credential(
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential)
 {
-    OM_uint32                           major_status;
     OM_uint32                           minor_status;
-    gss_buffer_desc                     credential_buffer;
     int                                 rc;
-    int                                 fd;
 
     rc = globus_gram_protocol_set_credentials(credential);
     if(rc != GLOBUS_SUCCESS)
     {
         (void) gss_release_cred(&minor_status, &credential);
-        return rc;
+        goto set_creds_failed;
     }
+
     if(!globus_gram_job_manager_gsi_used(request))
     {
         /* I don't know what to do with this new credential. */
-        return GLOBUS_SUCCESS;
+        goto non_gsi;
     }
+    rc = globus_gram_job_manager_gsi_write_credential(
+            credential,
+            request->x509_user_proxy);
+
+non_gsi:
+set_creds_failed:
+    return rc;
+}
+/* globus_gram_job_manager_gsi_update_credential() */
+
+/* Write a GSSAPI credential to a given path
+ * @param credential
+ *     Credential to write
+ * @param path
+ *     Path to write to
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY
+ *     Error opening path
+ */
+int
+globus_gram_job_manager_gsi_write_credential(
+    gss_cred_id_t                       credential,
+    const char *                        path)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_buffer_desc                     credential_buffer;
+    int                                 rc;
+    int                                 fd;
 
     major_status = gss_export_cred(&minor_status,
                                    credential,
@@ -416,7 +445,7 @@ globus_gram_job_manager_gsi_update_credential(
     }
 
     fd = open(
-            request->x509_user_proxy,
+            path,
             O_WRONLY|O_CREAT|O_TRUNC,
             S_IRUSR|S_IWUSR);
     if(fd == -1)
@@ -448,155 +477,27 @@ export_failed:
 
     return rc;
 }
-/* globus_gram_job_manager_gsi_update_credential() */
+/* globus_gram_job_manager_gsi_write_credential() */
 
 static
 void
 globus_l_gram_job_manager_proxy_expiration(
     void *                              callback_arg)
 {
-    globus_gram_jobmanager_request_t *  request;
+    globus_gram_job_manager_t *         manager;
 
-    request = callback_arg;
+    manager = callback_arg;
 
-    globus_gram_job_manager_request_log(
-            request,
+    globus_gram_job_manager_log(
+            manager,
             "JM: User proxy expired! Abort, but leave job running!\n");
 
-    globus_mutex_lock(&request->mutex);
-    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-    switch(request->jobmanager_state)
-    {
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-          /* Proxy expiration callback isn't registered until the
-           * proxy has been relocated, so this should NEVER happen.
-           */
-          globus_assert(
-                request->jobmanager_state!=GLOBUS_GRAM_JOB_MANAGER_STATE_START);
-          break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
-        if(request->save_state)
-        {
-            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-            request->unsent_status_change = GLOBUS_TRUE;
-        }
-        else
-        {
-            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-            request->unsent_status_change = GLOBUS_TRUE;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
-        if(request->save_state)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
-        if(request->save_state)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else 
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
-        if(request->save_state)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else 
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
-        if(request->save_state)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else 
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
-        if(request->save_state)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else 
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
-        if(request->save_state)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else 
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
-        break;
-
-    }
-    globus_mutex_unlock(&request->mutex);
+    globus_mutex_lock(&manager->mutex);
+    /*
+     * TODO: Synthesize STOP signal for all job requests.
+     */
+    exit(EXIT_SUCCESS);
+    globus_mutex_unlock(&manager->mutex);
 }
 /* globus_l_gram_job_manager_proxy_expiration() */
 

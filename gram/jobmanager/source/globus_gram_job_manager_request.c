@@ -499,21 +499,6 @@ globus_gram_job_manager_request_init(
         goto get_dry_run_failed;
     }
 
-    rc = globus_gram_job_manager_rsl_attribute_get_boolean_value(
-            r->rsl,
-            GLOBUS_GRAM_PROTOCOL_SAVE_STATE_PARAM,
-            &r->save_state);
-    if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE)
-    {
-        r->save_state = GLOBUS_FALSE;
-        rc = GLOBUS_SUCCESS;
-    }
-    else if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SAVE_STATE;
-        goto get_save_state_failed;
-    }
-
     /* Some clients send (two_phase_commit = yes), others send
      * (two_phase_commit = timeout)
      */
@@ -778,7 +763,6 @@ make_remote_io_url_file_failed:
         }
 get_remote_io_url_failed:
 get_two_phase_commit_failed:
-get_save_state_failed:
 get_dry_run_failed:
 invalid_count:
 validate_rsl_failed:

@@ -80,8 +80,6 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2,
@@ -362,6 +360,8 @@ typedef struct globus_gram_job_manager_s
     globus_xio_handle_t                 active_job_manager_handle;
     /** Lock file related to the socket_fd */
     int                                 lock_fd;
+    /** Socket file path */
+    char *                              socket_path;
     /** Lock file path */
     char *                              lock_path;
     /** Fifo of script contexts ready to run */
@@ -372,6 +372,14 @@ typedef struct globus_gram_job_manager_s
     globus_fifo_t                       state_callback_fifo;
     /** Number of job state contact slots available */
     int                                 state_callback_slots;
+    /** Path of job manager credential */
+    char *                              cred_path;
+    /** Grace period oneshot */
+    globus_callback_handle_t            grace_period_timer;
+    /** All jobs are done and grace period is complete */
+    globus_bool_t                       done;
+    globus_fifo_t                       seg_event_queue;
+    int                                 seg_pause_count;
 }
 globus_gram_job_manager_t;
 
@@ -453,15 +461,6 @@ typedef struct
      * signal arrives.
      */
     int                                 commit_extend;
-
-    /**
-     * Save Job Manager State
-     *
-     * Generate a state file for possibly restarting the job manager
-     * at a later time after a failure or signal.
-     */
-    globus_bool_t                       save_state;
-
     /** Time when job manager process is first begun */
     time_t                              creation_time;
     /** Time when job manager gets jobid from scheduler */
@@ -767,6 +766,11 @@ globus_gram_job_manager_gsi_update_credential(
     gss_cred_id_t                       credential);
 
 int
+globus_gram_job_manager_gsi_write_credential(
+    gss_cred_id_t                       credential,
+    const char *                        path);
+
+int
 globus_gram_job_manager_gsi_update_proxy_timeout(
     globus_gram_job_manager_t *         manager,
     gss_cred_id_t                       cred,
@@ -1007,6 +1011,14 @@ void
 globus_gram_job_manager_seg_handle_event(
     globus_gram_jobmanager_request_t *  request);
 
+void
+globus_gram_job_manager_seg_pause(
+    globus_gram_job_manager_t *         manager);
+
+void
+globus_gram_job_manager_seg_resume(
+    globus_gram_job_manager_t *         manager);
+
 /* globus_gram_job_manager_auditing.c */
 int
 globus_gram_job_manager_auditing_file_write(
@@ -1068,6 +1080,7 @@ int
 globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_t *         manager,
     const char *                        jobid,
+    globus_bool_t                       locked,
     globus_gram_jobmanager_request_t ** request);
 
 int
@@ -1079,6 +1092,10 @@ globus_bool_t
 globus_gram_job_manager_request_exists(
     globus_gram_job_manager_t *         manager,
     const char *                        key);
+
+void
+globus_gram_job_manager_set_grace_period_timer(
+    globus_gram_job_manager_t *         manager);
 
 /* startup_socket.c */
 int

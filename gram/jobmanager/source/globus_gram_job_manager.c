@@ -56,6 +56,17 @@ typedef struct globus_gram_job_id_ref_s
 }
 globus_gram_job_id_ref_t;
 
+static
+int
+globus_l_gram_mkdir(
+    char *                              path);
+
+
+static
+void
+globus_l_gram_job_manager_grace_period_expired(
+    void *                              arg);
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -84,6 +95,7 @@ globus_gram_job_manager_init(
     globus_gram_job_manager_config_t *  config)
 {
     int                                 rc;
+    char *                              dir_prefix = NULL;
 
     if (manager == NULL || config == NULL)
     {
@@ -145,6 +157,31 @@ globus_gram_job_manager_init(
 
         goto job_id_hashtable_init_failed;
     }
+    dir_prefix = globus_common_create_string(
+            "%s/.globus/job/%s",
+            manager->config->home,
+            manager->config->hostname);
+    if (dir_prefix == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto malloc_dir_prefix_failed;
+    }
+    rc = globus_l_gram_mkdir(dir_prefix);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto mkdir_failed;
+    }
+
+    manager->cred_path = globus_common_create_string(
+            "%s/%s.cred",
+            dir_prefix,
+            manager->config->jobmanager_type);
+    if (manager->cred_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto malloc_cred_path_failed;
+    }
 
     if (cred != GSS_C_NO_CREDENTIAL)
     {
@@ -185,7 +222,25 @@ globus_gram_job_manager_init(
     manager->active_job_manager_handle = NULL;
     manager->socket_fd = -1;
     manager->lock_fd = -1;
-    manager->lock_path = NULL;
+    manager->lock_path = globus_common_create_string(
+            "%s/%s.lock",
+            dir_prefix,
+            manager->config->jobmanager_type);
+    if (manager->lock_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto malloc_lock_path_failed;
+    }
+
+    manager->socket_path = globus_common_create_string(
+            "%s/%s.sock",
+            dir_prefix,
+            manager->config->jobmanager_type);
+    if (manager->socket_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto malloc_socket_path_failed;
+    }
 
     rc = globus_fifo_init(&manager->script_fifo);
     if (rc != GLOBUS_SUCCESS)
@@ -210,16 +265,37 @@ globus_gram_job_manager_init(
 
     globus_mutex_unlock(&manager->mutex);
 
+    free(dir_prefix);
+
+    manager->done = GLOBUS_FALSE;
+    manager->grace_period_timer = GLOBUS_NULL_HANDLE;
+
+    manager->seg_pause_count = 0;
+    rc = globus_fifo_init(&manager->seg_event_queue);
+
     if (rc != GLOBUS_SUCCESS)
     {
 state_callback_fifo_init_failed:
         globus_fifo_destroy(&manager->script_fifo);
 script_fifo_init_failed:
+        free(manager->socket_path);
+        manager->socket_path = NULL;
+malloc_socket_path_failed:
+        free(manager->lock_path);
+        manager->lock_path = NULL;
+malloc_lock_path_failed:
 proxy_timeout_init_failed:
         globus_gram_protocol_callback_disallow(manager->url_base);
         free(manager->url_base);
 allow_attach_failed:
 set_credentials_failed:
+        free(manager->cred_path);
+        manager->cred_path = NULL;
+malloc_cred_path_failed:
+mkdir_failed:
+        free(dir_prefix);
+        dir_prefix = NULL;
+malloc_dir_prefix_failed:
         globus_hashtable_destroy(&manager->job_id_hash);
 job_id_hashtable_init_failed:
         globus_hashtable_destroy(&manager->request_hash);
@@ -246,6 +322,7 @@ cond_init_failed:
 mutex_init_failed:
         ;
     }
+
 out:
     return rc;
 }
@@ -498,13 +575,28 @@ globus_gram_job_manager_add_request(
     if (ref->key == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto key_malloc_failed;;
+        goto key_malloc_failed;
     }
 
     ref->request = request;
     ref->reference_count = 1;
 
     globus_mutex_lock(&manager->mutex);
+    if (manager->grace_period_timer != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(
+                manager->grace_period_timer,
+                NULL,
+                NULL,
+                NULL);
+
+        if (manager->done)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto grace_period_expired;
+        }
+        manager->grace_period_timer = GLOBUS_NULL_HANDLE;
+    }
     rc = globus_hashtable_insert(
             &manager->request_hash,
             ref->key,
@@ -520,6 +612,7 @@ globus_gram_job_manager_add_request(
     if (rc != GLOBUS_SUCCESS)
     {
 insert_failed:
+grace_period_expired:
         free(ref->key);
 key_malloc_failed:
         free(ref);
@@ -638,7 +731,10 @@ globus_gram_job_manager_remove_reference(
             free(ref->key);
             free(ref);
 
-            globus_cond_signal(&manager->cond);
+            if (globus_hashtable_empty(&manager->request_hash))
+            {
+                globus_gram_job_manager_set_grace_period_timer(manager);
+            }
         }
     }
     else
@@ -775,6 +871,8 @@ null_job_id:
  *     job manager state
  * @param jobid
  *     individual lrm job id string.
+ * @param locked
+ *     boolean flag: true if the manager is currently locked
  * @param request
  *     pointer to be set to the corresponding job request if found in the
  *     table. may be null if the caller already has a reference and wants to
@@ -789,6 +887,7 @@ int
 globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_t *         manager,
     const char *                        jobid,
+    globus_bool_t                       locked,
     globus_gram_jobmanager_request_t ** request)
 {
     int                                 rc = GLOBUS_SUCCESS;
@@ -805,7 +904,10 @@ globus_gram_job_manager_add_reference_by_jobid(
         *request = NULL;
     }
 
-    globus_mutex_lock(&manager->mutex);
+    if (!locked)
+    {
+        globus_mutex_lock(&manager->mutex);
+    }
     jobref = globus_hashtable_lookup(&manager->job_id_hash, (void *) jobid);
     if (!jobref)
     {
@@ -839,7 +941,10 @@ globus_gram_job_manager_add_reference_by_jobid(
     }
 
 no_such_job:
-    globus_mutex_unlock(&manager->mutex);
+    if (!locked)
+    {
+        globus_mutex_unlock(&manager->mutex);
+    }
 
     return rc;
 }
@@ -912,3 +1017,103 @@ globus_gram_job_manager_request_exists(
     return result;
 }
 /* globus_gram_job_manager_request_exists() */
+
+void
+globus_gram_job_manager_set_grace_period_timer(
+    globus_gram_job_manager_t *         manager)
+{
+    if (globus_hashtable_empty(&manager->request_hash))
+    {
+        globus_reltime_t        delay;
+        globus_result_t         result;
+
+        GlobusTimeReltimeSet(delay, 60, 0);
+
+        result = globus_callback_register_oneshot(
+                &manager->grace_period_timer,
+                &delay,
+                globus_l_gram_job_manager_grace_period_expired,
+                manager);
+        if (result != GLOBUS_SUCCESS)
+        {
+            manager->done = GLOBUS_TRUE;
+            globus_cond_signal(&manager->cond);
+        }
+    }
+}
+/* globus_gram_job_manager_set_grace_period_timer() */
+
+
+static
+int
+globus_l_gram_mkdir(
+    char *                              path)
+{
+    char *                              tmp;
+    int                                 rc;
+    struct stat                         statbuf;
+
+    if ((rc = stat(path, &statbuf)) < 0)
+    {
+        tmp = path;
+
+        while (tmp != NULL)
+        {
+            tmp = strchr(tmp+1, '/');
+            if (tmp != path)
+            {
+                if (tmp != NULL)
+                {
+                    *tmp = '\0';
+                }
+                if ((rc = stat(path, &statbuf)) < 0)
+                {
+                    mkdir(path, S_IRWXU);
+                }
+                if ((rc = stat(path, &statbuf)) < 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+
+                    goto error_exit;
+                }
+                if (tmp != NULL)
+                {
+                    *tmp = '/';
+                }
+            }
+        }
+    }
+    rc = GLOBUS_SUCCESS;
+error_exit:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+    }
+    return rc;
+}
+/* globus_l_gram_mkdir() */
+
+static
+void
+globus_l_gram_job_manager_grace_period_expired(
+    void *                              arg)
+{
+    globus_gram_job_manager_t *         manager;
+
+    manager = arg;
+
+
+    globus_mutex_lock(&manager->mutex);
+    (void) globus_callback_unregister(
+            manager->grace_period_timer,
+            NULL,
+            NULL,
+            NULL);
+    if (globus_hashtable_empty(&manager->request_hash))
+    {
+        manager->done = GLOBUS_TRUE;
+        globus_cond_signal(&manager->cond);
+    }
+    globus_mutex_unlock(&manager->mutex);
+}
+/* globus_l_gram_job_manager_grace_period_expired() */

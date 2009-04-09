@@ -220,6 +220,19 @@ main(
             {
                 continue;
             }
+
+            if (rc == GLOBUS_SUCCESS && manager.socket_fd != -1)
+            {
+                rc = globus_gram_job_manager_gsi_write_credential(
+                        cred,
+                        manager.cred_path);
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    fprintf(stderr, "write cred failed\n");
+                    exit(1);
+                }
+            }
         }
 
         if (manager.socket_fd != -1
@@ -255,7 +268,6 @@ main(
                             NULL,
                             STDOUT_FILENO,
                             context);
-                    exit(rc);
                 }
                 close(http_body_fd);
                 close(context_fd);
@@ -282,16 +294,19 @@ main(
             /*
              * Kick off the job state machine and send the response
              */
-            rc = globus_gram_job_manager_request_start(
-                    &manager,
-                    request,
-                    STDOUT_FILENO,
-                    client_contact,
-                    job_state_mask);
-            if (rc != GLOBUS_SUCCESS)
+            if (request)
             {
-                /* start frees reference to the job request */
-                request = NULL;
+                rc = globus_gram_job_manager_request_start(
+                        &manager,
+                        request,
+                        STDOUT_FILENO,
+                        client_contact,
+                        job_state_mask);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    /* start frees reference to the job request */
+                    request = NULL;
+                }
             }
             free(client_contact);
         }
@@ -311,6 +326,7 @@ main(
                 located_active_jm = GLOBUS_TRUE;
                 close(http_body_fd);
                 close(context_fd);
+                manager.done = GLOBUS_TRUE;
             }
         }
         if (rc == GLOBUS_SUCCESS)
@@ -320,13 +336,20 @@ main(
                     "Successfully handed descriptors to active job manager\n");
         }
     }
+    globus_mutex_lock(&manager.mutex);
+
+    if (manager.socket_fd != -1 &&
+        globus_hashtable_empty(&manager.request_hash) &&
+        manager.grace_period_timer == GLOBUS_NULL_HANDLE)
+    {
+        globus_gram_job_manager_set_grace_period_timer(&manager);
+    }
 
     /* For the active job manager, this will block until all jobs have
      * terminated. For any other job manager, the hashtable is empty so this
      * falls right through.
      */
-    globus_mutex_lock(&manager.mutex);
-    while (! globus_hashtable_empty(&manager.request_hash))
+    while (! manager.done)
     {
         globus_cond_wait(&manager.cond, &manager.mutex);
     }
@@ -339,12 +362,6 @@ main(
 
     globus_gram_job_manager_destroy(&manager);
     globus_gram_job_manager_config_destroy(&config);
-    /*
-    if (cred != GSS_C_NO_CREDENTIAL)
-    {
-        gss_release_cred(&minor_status, &cred);
-    }
-    */
 
     rc = globus_l_gram_deactivate();
     if (rc != GLOBUS_SUCCESS)

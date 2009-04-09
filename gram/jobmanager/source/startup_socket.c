@@ -50,12 +50,6 @@ globus_l_gram_startup_socket_callback(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg);
 
-static
-int
-globus_l_gram_mkdir(
-    globus_gram_job_manager_t *         manager,
-    char *                              path);
-
 globus_xio_driver_t                     globus_i_gram_job_manager_file_driver;
 globus_xio_stack_t                      globus_i_gram_job_manager_file_stack;
 #endif
@@ -85,8 +79,6 @@ globus_gram_job_manager_startup_socket_init(
 {
     static unsigned char                byte[1];
     int                                 sock = -1;
-    char                                dir_prefix[PATH_MAX];
-    char                                sockpath[PATH_MAX];
     int                                 rc = 0;
     globus_result_t                     result;
     struct sockaddr_un                  addr;
@@ -100,29 +92,6 @@ globus_gram_job_manager_startup_socket_init(
     if (!manager->config->single)
     {
         return GLOBUS_SUCCESS;
-    }
-    sprintf(dir_prefix,
-            "%s/.globus/job/%s",
-            manager->config->home,
-            manager->config->hostname);
-    rc = globus_l_gram_mkdir(manager, dir_prefix);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto mkdir_failed;
-    }
-
-    sprintf(sockpath,
-            "%s/%s.sock",
-            dir_prefix,
-            manager->config->jobmanager_type);
-
-    manager->lock_path = globus_common_create_string(
-            "%s/%s.lock",
-            dir_prefix,
-            manager->config->jobmanager_type);
-    if (manager->lock_path == NULL)
-    {
-        goto malloc_lock_path_failed;
     }
 
     /* Create and lock lockfile */
@@ -159,7 +128,7 @@ globus_gram_job_manager_startup_socket_init(
     /* create and bind socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = PF_LOCAL;
-    strncpy(addr.sun_path, sockpath, sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
 
     sock = socket(PF_LOCAL, SOCK_DGRAM, 0);
     if (sock < 0)
@@ -253,10 +222,6 @@ fcntl_lockfd_failed:
         close(lockfd);
         lockfd = -1;
 lockfd_open_failed:
-        free(manager->lock_path);
-        manager->lock_path = NULL;
-malloc_lock_path_failed:
-mkdir_failed:
         ;
     }
 
@@ -275,7 +240,7 @@ globus_gram_job_manager_starter_send(
     gss_cred_id_t                       cred)
 {
     int                                 sock;
-    char                                sockpath[PATH_MAX];
+    char                                sockpath[PATH_MAX != -1 ? PATH_MAX: _POSIX_PATH_MAX];
     char                                byte[1];
     int                                 rc = 0;
     struct sockaddr_un                  addr;
@@ -551,6 +516,10 @@ globus_l_gram_startup_socket_callback(
     {
         goto failed_import_cred;
     }
+    /* 
+     * TODO: Replace Job Manager credential with this credential if it lives
+     * beyond our current credential.
+     */
 
     /* Load request data */
     rc = globus_gram_job_manager_request_load(
@@ -672,56 +641,3 @@ attr_init_failed:
 }
 /* globus_l_gram_create_handle() */
 
-static
-int
-globus_l_gram_mkdir(
-    globus_gram_job_manager_t *         manager,
-    char *                              path)
-{
-    char *                              tmp;
-    int                                 rc;
-    struct stat                         statbuf;
-
-    if ((rc = stat(path, &statbuf)) < 0)
-    {
-        tmp = path;
-
-        while (tmp != NULL)
-        {
-            tmp = strchr(tmp+1, '/');
-            if (tmp != path)
-            {
-                if (tmp != NULL)
-                {
-                    *tmp = '\0';
-                }
-                if ((rc = stat(path, &statbuf)) < 0)
-                {
-                    mkdir(path, S_IRWXU);
-                }
-                if ((rc = stat(path, &statbuf)) < 0)
-                {
-                    globus_gram_job_manager_log(
-                        manager,
-                        "JMI: Unable to create part of directory path: %s\n",
-                        path);
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-
-                    goto error_exit;
-                }
-                if (tmp != NULL)
-                {
-                    *tmp = '/';
-                }
-            }
-        }
-    }
-    rc = GLOBUS_SUCCESS;
-error_exit:
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-    }
-    return rc;
-}
-/* globus_l_gram_mkdir() */
