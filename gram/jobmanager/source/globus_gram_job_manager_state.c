@@ -470,43 +470,39 @@ globus_gram_job_manager_state_machine(
                     event_registered = GLOBUS_TRUE;
                 }
             }
-            else if(! first_poll)
+            else if((! first_poll) && request->config->seg_module == NULL)
             {
                 /* Register next poll of job state */
-                if (request->config->seg_module == NULL)
-                {
-                    GlobusTimeReltimeSet(
-                            delay_time,
-                            request->poll_frequency, 0);
+                GlobusTimeReltimeSet(
+                        delay_time,
+                        request->poll_frequency, 0);
 
-                    globus_callback_register_oneshot(
-                            &request->poll_timer,
-                            &delay_time,
-                            globus_gram_job_manager_state_machine_callback,
-                            request);
-                    event_registered = GLOBUS_TRUE;
+                globus_callback_register_oneshot(
+                        &request->poll_timer,
+                        &delay_time,
+                        globus_gram_job_manager_state_machine_callback,
+                        request);
+                event_registered = GLOBUS_TRUE;
+            }
+            else
+            {
+                /* SEG has been started. If there is an event pending,
+                 * we should jump to POLL1 state and not set
+                 * event_registered, so that we can process it.
+                 *
+                 * Otherwise, we'll set event_registered and the next
+                 * query or SEG event will move the state machine.
+                 */
+                if (! globus_fifo_empty(&request->seg_event_queue))
+                {
+
+                    request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
                 }
                 else
                 {
-                    /* SEG has been started. If there is an event pending,
-                     * we should jump to POLL1 state and not set
-                     * event_registered, so that we can process it.
-                     *
-                     * Otherwise, we'll set event_registered and the next
-                     * query or SEG event will move the state machine.
-                     */
-                    if (! globus_fifo_empty(&request->seg_event_queue))
-                    {
-
-                        request->jobmanager_state =
-                            GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-                    }
-                    else
-                    {
-                        event_registered = GLOBUS_TRUE;
-                    }
+                    event_registered = GLOBUS_TRUE;
                 }
-
             }
         }
         break;
