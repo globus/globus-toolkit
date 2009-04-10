@@ -4,7 +4,7 @@
 # (expired, revoked, etc.).
 
 # Set GLOBUS_LOCATION as appropriate for your installation.
-GLOBUS_LOCATION="/usr/grid"
+GLOBUS_LOCATION="/usr/local/globus"
 export GLOBUS_LOCATION
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
