@@ -9,6 +9,7 @@ v4.7 XX Xxx 2009
     atomically (using rename) rather than overwriting
   - add myproxy-get-trustroots.cron example for keeping
     /etc/grid-security/certificates up-to-date
+  - support linking against flavored VOMS libraries
   - check certificate requests and issued certificates in the CA:
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6648)
     - add certificate_request_checker and certificate_issuer_checker
