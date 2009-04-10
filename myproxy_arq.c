@@ -121,9 +121,10 @@ main(int argc, char *argv[])
                 credlist[numcreds++] = credp;
             }
         }
-        for (i = 0; i < numcreds; i++) {
-            credlist[i]->next = credlist[i+1];
+        for (i = 1; i < numcreds; i++) {
+            credlist[i-1]->next = credlist[i];
         }
+        credlist[numcreds-1]->next = NULL;
         credp = credlist[0];
     } else {
         credp = &cred;
