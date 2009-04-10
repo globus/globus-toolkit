@@ -26,9 +26,12 @@ from a
 configured to act as a Certificate Authority.
 In the default mode, the command prompts for the 
 MyProxy pass phrase associated with the credential to be retrieved and
-stores the retrieved credential in the standard location (
+stores the retrieved credential in
+the location specified by the
+.B X509_USER_PROXY environment variable
+or 
 .I /tmp/x509up_u<uid>
-).
+if that environment variable is not set.
 .PP
 The
 .B myproxy-logon
@@ -95,9 +98,11 @@ Default: 12 hours
 .BI -o " file, " --out " file"
 Specifies where the retrieved proxy credential should be stored.  If
 this option is not specified, the proxy credential will be stored in
-the default location (
+the location specified by the
+.B X509_USER_PROXY environment variable
+or 
 .I /tmp/x509up_u<uid>
-).
+if that environment variable is not set.
 To write the credential to the command's standard output rather than
 to a file, use
 .B -o
@@ -108,12 +113,13 @@ Use this option to
 specify an existing, valid credential that you want to renew.
 Renewing a credential generally requires two certificate-based
 authentications.  The client authenticates with its identity, using
-the credential in the standard location or specified by
+the credential in the standard location or specified by the
 .B X509_USER_PROXY
 or
 .B X509_USER_CERT
 and
 .B X509_USER_KEY
+environment variables
 in addition to authenticating with the existing credential, in the
 location specified by this option, that it wants to renew.
 .TP
@@ -137,8 +143,13 @@ since passphrase authentication is not used for credential renewal.
 .TP
 .B -T, --trustroots
 Retrieve CA certificates directory from server (if available) to store
-in
-.IR ~/.globus/certificates .
+in the location specified by the
+.B X509_CERT_DIR
+environment variable if set or
+.I /etc/grid-security/certificates
+if running as root or
+.I ~/.globus/certificates
+if running as non-root.
 .TP
 .B -q, --quiet
 Only write output messages on error.
@@ -194,6 +205,30 @@ a range allowed by your firewall.
 If unset, MyProxy will follow the setting of the
 .B GLOBUS_TCP_PORT_RANGE
 environment variable.
+.TP
+.B X509_USER_CERT
+Specifies a non-standard location for the certificate to be used for
+authentication to the 
+.BR myproxy-server (8).
+.TP
+.B X509_USER_KEY
+Specifies a non-standard location for the private key to be used for
+authentication to the 
+.BR myproxy-server (8).
+.TP
+.B X509_USER_PROXY
+Specifies a non-standard location for the proxy credential to be used
+for authentication to the 
+.BR myproxy-server (8).
+Also specifies the output location for the proxy credential to be
+retrieved from the
+.BR myproxy-server (8)
+unless the 
+.B -o
+option is given.
+.TP
+.B X509_CERT_DIR
+Specifies a non-standard location for the CA certificates directory.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,

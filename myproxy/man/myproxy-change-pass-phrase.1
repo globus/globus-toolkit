@@ -112,6 +112,24 @@ a range allowed by your firewall.
 If unset, MyProxy will follow the setting of the
 .B GLOBUS_TCP_PORT_RANGE
 environment variable.
+.TP
+.B X509_USER_CERT
+Specifies a non-standard location for the certificate to be used for
+authentication to the 
+.BR myproxy-server (8).
+.TP
+.B X509_USER_KEY
+Specifies a non-standard location for the private key to be used for
+authentication to the 
+.BR myproxy-server (8).
+.TP
+.B X509_USER_PROXY
+Specifies a non-standard location for the proxy credential to be used
+for authentication to the 
+.BR myproxy-server (8).
+.TP
+.B X509_CERT_DIR
+Specifies a non-standard location for the CA certificates directory.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,
