@@ -118,6 +118,11 @@ globus_l_gram_seg_event_callback(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_scheduler_event_t *          new_event;
 
+    globus_gram_job_manager_log(
+            manager,
+            "SEG Event: Job %s in state %d\n",
+            event->job_id,
+            (int) event->event_type);
     if (event->event_type == GLOBUS_SCHEDULER_EVENT_RAW)
     {
         rc = GLOBUS_SUCCESS;
@@ -145,7 +150,16 @@ globus_l_gram_seg_event_callback(
          */
         if (manager->seg_pause_count > 0)
         {
+            globus_gram_job_manager_log(
+                    manager,
+                    "Submit running, queueing for later\n"); 
             rc = globus_fifo_enqueue(&manager->seg_event_queue, new_event);
+        }
+        else
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    "Unknown job ID, ignoring event\n");
         }
     }
     globus_mutex_unlock(&manager->mutex);
@@ -191,6 +205,13 @@ globus_gram_job_manager_seg_handle_event(
 
     event = globus_fifo_dequeue(&request->seg_event_queue);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Handling event: %s is in state %d (%p)\n",
+            event->job_id,
+            event->event_type,
+            request);
+
     if (globus_i_gram_job_manager_script_valid_state_change(
         request, event->event_type))
     {
@@ -212,6 +233,10 @@ void
 globus_gram_job_manager_seg_pause(
     globus_gram_job_manager_t *         manager)
 {
+    globus_gram_job_manager_log(
+            manager,
+            "Pausing SEG (count -> %d)\n",
+            manager->seg_pause_count+1);
     globus_mutex_lock(&manager->mutex);
     manager->seg_pause_count++;
     globus_mutex_unlock(&manager->mutex);
@@ -226,12 +251,19 @@ globus_gram_job_manager_seg_resume(
     globus_scheduler_event_t *          event;
     globus_gram_seg_resume_t *          resume;
 
+    globus_gram_job_manager_log(
+            manager,
+            "Resuming SEG (count -> %d)\n",
+            manager->seg_pause_count-1);
     globus_mutex_lock(&manager->mutex);
     manager->seg_pause_count--;
 
     if (manager->seg_pause_count == 0 &&
         !globus_fifo_empty(&manager->seg_event_queue))
     {
+        globus_gram_job_manager_log(
+                manager,
+                "Scheduling resume oneshot\n");
         resume = malloc(sizeof(globus_gram_seg_resume_t));
         if (resume != NULL)
         {
@@ -273,6 +305,9 @@ globus_l_seg_resume_callback(
     globus_gram_jobmanager_request_t *  request;
     int                                 rc;
 
+    globus_gram_job_manager_log(
+            resume->manager,
+            "Resume oneshot fired\n");
     while (!globus_list_empty(resume->events))
     {
         event = globus_list_remove(&resume->events, resume->events);
@@ -303,6 +338,13 @@ globus_l_gram_deliver_event(
     globus_result_t                     result;
     globus_mutex_lock(&request->mutex);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "Delivering event for %s to %s (%p)\n",
+            event->job_id,
+            request->job_contact_path,
+            request);
+
     /* Keep the state file's timestamp up to date so that
      * anything scrubbing the state files of old and dead
      * processes leaves it alone */
@@ -318,6 +360,11 @@ globus_l_gram_deliver_event(
         goto event_enqueue_failed;
     }
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Job is in %d state (%p)\n",
+            request->jobmanager_state,
+            request);
     if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
     {
         globus_reltime_t                delay_time;

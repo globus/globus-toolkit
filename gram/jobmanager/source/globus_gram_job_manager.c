@@ -775,6 +775,13 @@ globus_gram_job_manager_register_job_id(
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_job_id_ref_t *          ref;
 
+    globus_gram_job_manager_log(
+            manager,
+            "Registering job id %s -> %s (%p)\n",
+            job_id,
+            request->job_contact_path,
+            request);
+
     ref = malloc(sizeof(globus_gram_job_id_ref_t));
     if (ref == NULL)
     {

@@ -132,7 +132,6 @@ globus_gram_job_manager_state_machine_callback(
         request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
     {
         int rc;
-        globus_mutex_unlock(&request->mutex);
 
         if (request->job_id_string)
         {
@@ -140,6 +139,13 @@ globus_gram_job_manager_state_machine_callback(
                     request->manager,
                     request->job_id_string);
         }
+
+        while (!globus_fifo_empty(&request->seg_event_queue))
+        {
+            globus_gram_job_manager_seg_handle_event(request);
+        }
+
+        globus_mutex_unlock(&request->mutex);
 
         rc = globus_gram_job_manager_remove_reference(
                 request->manager,
@@ -870,6 +876,10 @@ globus_gram_job_manager_state_machine(
         globus_gram_job_manager_destroy_directory(
                 request,
                 request->job_dir);
+        globus_gram_job_manager_request_log(
+                request,
+                "Cleaning up cache tag %s\n",
+                request->cache_tag);
         globus_gass_cache_cleanup_tag_all(
                 request->cache_handle,
                 request->cache_tag);

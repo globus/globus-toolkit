@@ -1789,7 +1789,7 @@ globus_l_gram_init_cache(
          * force it to what the library would do anyway.
          */
         *cache_locationp = globus_common_create_string(
-                "%s/.globus/gass_cache",
+                "%s/.globus/.gass_cache",
                 request->config->home);
     }
 

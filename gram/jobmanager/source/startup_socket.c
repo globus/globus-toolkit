@@ -452,10 +452,11 @@ globus_l_gram_startup_socket_callback(
     message.msg_flags = 0;
 
     /* Attempt to receive file descriptors */
-    if (recvmsg(manager->socket_fd, &message, 0) < 0)
+    if ((rc = recvmsg(manager->socket_fd, &message, 0)) < 0)
     {
         goto failed_receive;
     }
+    cred_buffer.length = rc;
 
     for (control_message = CMSG_FIRSTHDR(&message);
          control_message != NULL;
@@ -477,7 +478,6 @@ globus_l_gram_startup_socket_callback(
     {
         goto failed_get_data;
     }
-    cred_buffer.length = iov[0].iov_len;
 
     byte[0] = 0;
     iov[0].iov_base = byte;
@@ -514,6 +514,25 @@ globus_l_gram_startup_socket_callback(
 
     if (GSS_ERROR(major_status))
     {
+        char *                          errstr;
+
+        globus_gss_assist_display_status_str(
+                &errstr,
+                "Import cred failed: ",
+                major_status,
+                minor_status,
+                0);
+
+        globus_gram_job_manager_log(
+                manager,
+                "%s\n",
+                errstr);
+        globus_gram_job_manager_log(
+                manager,
+                "CRED: %*s\n",
+                (int) cred_buffer.length,
+                cred_buffer.value);
+        free(errstr);
         goto failed_import_cred;
     }
     /* 
