@@ -1706,6 +1706,8 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
 {
     myproxy_certs_t *trusted_cert;
     char *file_path = NULL;
+    char *tmp_path = NULL;
+    int tmp_len;
     FILE *file = NULL;
     char *log_file_name = NULL;
     FILE *log_file = NULL;
@@ -1759,30 +1761,39 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
         }
 
         file_path = get_trusted_file_path(trusted_cert->filename);
-    
         if (file_path == NULL)
         {
             goto error;
         }
 
+        tmp_len = strlen(file_path)+strlen(".tmp")+1;
+        tmp_path = malloc(tmp_len);
+        snprintf(tmp_path, tmp_len, "%s%s", file_path, ".tmp");
+
         myproxy_debug("Creating trusted cert file: %s\n", file_path);
         
-        file = fopen(file_path, "w");
+        file = fopen(tmp_path, "w");
         if (file == NULL)
         {
-            myproxy_debug("Error opening \"%s\": %s\n",
-                          file_path, strerror(errno));
-            free(file_path);
-            file_path = NULL;
-            continue;
+            verror_put_errno(errno);
+            verror_put_string("Error opening \"%s\"", tmp_path);
+            goto error;
         }
 
         fprintf(file, "%s", trusted_cert->contents);
         fclose(file);
-        fprintf(log_file, "%ld: %s\n", time(NULL), file_path);
         file = NULL;
+        if (rename(tmp_path, file_path) < 0) {
+            verror_put_errno(errno);
+            verror_put_string("Unable to rename %s to %s",
+                              tmp_path, file_path);
+            goto error;
+        }
+        fprintf(log_file, "%ld: %s\n", time(NULL), file_path);
         free(file_path);
         file_path = NULL;
+        free(tmp_path);
+        tmp_path = NULL;
     }        
 
     free(log_file_name);
@@ -1804,6 +1815,10 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
     if (file_path != NULL)
     {
         free(file_path);
+    }
+    if (tmp_path != NULL)
+    {
+        free(tmp_path);
     }
     return -1;
 }
