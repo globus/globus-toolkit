@@ -18,6 +18,12 @@ It accesses the repository directly and must be run on the machine
 where the
 .BR myproxy-server (8)
 is installed from the account that owns the repository.
+.P
+An example cron job for running
+.B myproxy-admin-query
+periodically to remove invalid (expired, revoked, etc.) credentials
+from the repository is provided at
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy.cron .
 .SH OPTIONS
 .TP
 .B -h, --help
