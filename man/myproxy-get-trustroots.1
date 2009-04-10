@@ -19,6 +19,13 @@ environment variable if set or
 if running as root or
 .I ~/.globus/certificates
 if running as non-root.
+.P
+An example cron job for running
+.B myproxy-get-trustroots
+periodically to keep the
+.B X509_CERT_DIR 
+up-to-date is provided at
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-get-trustroots.cron .
 .SH OPTIONS
 .TP
 .B -h, --help
