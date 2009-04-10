@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.7 XX Xxx 2009
+  - in myproxy-get-trustroots and myproxy-logon -T, update files
+    atomically (using rename) rather than overwriting
   - check certificate requests and issued certificates in the CA:
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6648)
     - add certificate_request_checker and certificate_issuer_checker
