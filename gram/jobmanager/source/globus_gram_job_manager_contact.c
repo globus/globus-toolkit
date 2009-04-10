@@ -338,10 +338,9 @@ globus_l_gram_callback_queue(
     rc = globus_fifo_enqueue(&manager->state_callback_fifo, context);
     if (rc != GLOBUS_SUCCESS)
     {
+        rc = GLOBUS_FAILURE;
         goto failed_enqueue;
     }
-
-    rc = GLOBUS_FAILURE;
 
     while (manager->state_callback_slots > 0 &&
             !globus_fifo_empty(&manager->state_callback_fifo))
@@ -369,6 +368,10 @@ globus_l_gram_callback_queue(
             {
                 manager->state_callback_slots--;
                 context->active++;
+            }
+            else
+            {
+                rc = GLOBUS_SUCCESS;
             }
             free(contact);
         }

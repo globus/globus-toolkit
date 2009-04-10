@@ -321,9 +321,12 @@ globus_l_seg_resume_callback(
         {
             globus_scheduler_event_destroy(event);
         }
-        rc = globus_l_gram_deliver_event(
-                request,
-                event);
+        else if (request)
+        {
+            rc = globus_l_gram_deliver_event(
+                    request,
+                    event);
+        }
     }
 }
 /* globus_l_seg_resume_callback() */
