@@ -30,6 +30,7 @@
 
 #define JOB_MANAGER_SEG_SCHEDULER "JOB_MANAGER_SEG_SCHEDULER"
 
+const size_t                        GLOBUS_JOB_MANAGER_READ_BUFFER_SIZE = 4096;
 /**
  * Debug levels:
  * If the environment variable SEG_JOB_MANAGER_DEBUG is set to a bitwise or
@@ -62,7 +63,8 @@ enum
     SEG_JOB_MANAGER_ERROR_OUT_OF_MEMORY,
     SEG_JOB_MANAGER_ERROR_BAD_PATH,
     SEG_JOB_MANAGER_ERROR_LOG_PERMISSIONS,
-    SEG_JOB_MANAGER_ERROR_LOG_NOT_PRESENT
+    SEG_JOB_MANAGER_ERROR_LOG_NOT_PRESENT,
+    SEG_JOB_MANAGER_ERROR_LOG_EOF
 };
 
 /**
@@ -76,21 +78,8 @@ typedef struct
     struct tm                           start_timestamp;
     /** Stdio file handle of the log file */
     FILE *                              fp;
-    /** Buffer of log file data */
-    char *                              buffer;
     /** Callback for periodic file polling */
     globus_callback_handle_t            callback;
-    /** Length of the buffer */
-    size_t                              buffer_length;
-    /** Starting offset of valid data in the buffer. */
-    size_t                              buffer_point;
-    /** Amount of valid data in the buffer */
-    size_t                              buffer_valid;
-    /**
-     * Flag indicating a Log close event indicating that the current
-     * log was found in the log
-     */
-    globus_bool_t                       end_of_log;
     /**
      * Flag inidicating that this logfile isn't the one corresponding to
      * today, so and EOF on it should require us to close and open a newer
@@ -104,7 +93,6 @@ typedef struct
     char *                              log_dir;
 } globus_l_job_manager_logfile_state_t;
 
-static const time_t                     SECS_IN_DAY = 60*60*24;
 static globus_mutex_t                   globus_l_job_manager_mutex;
 static globus_cond_t                    globus_l_job_manager_cond;
 static globus_bool_t                    shutdown_called;
@@ -123,22 +111,12 @@ globus_l_job_manager_module_deactivate(void);
 
 static
 void
-globus_l_job_manager_read_callback(
+globus_l_job_manager_poll_callback(
     void *                              user_arg);
 
 static
 int
 globus_l_job_manager_parse_events(
-    globus_l_job_manager_logfile_state_t *      state);
-
-static
-int
-globus_l_job_manager_clean_buffer(
-    globus_l_job_manager_logfile_state_t *      state);
-
-static
-int
-globus_l_job_manager_increase_buffer(
     globus_l_job_manager_logfile_state_t *      state);
 
 static
@@ -152,9 +130,10 @@ globus_l_job_manager_find_logfile(
     globus_l_job_manager_logfile_state_t *      state);
 
 static
-time_t
-seg_l_timegm(
-    const struct tm *                   tm);
+globus_bool_t
+globus_l_time_is_newer(
+    struct tm *                         value,
+    struct tm *                         benchmark);
 
 GlobusExtensionDefineModule(globus_seg_job_manager) =
 {
@@ -182,18 +161,18 @@ globus_l_job_manager_module_activate(void)
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-        goto error;
+        goto activate_common_failed;
     }
     rc = globus_mutex_init(&globus_l_job_manager_mutex, NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
-        goto deactivate_common_error;
+        goto mutex_init_failed;
     }
     rc = globus_cond_init(&globus_l_job_manager_cond, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
-        goto destroy_mutex_error;
+        goto cond_init_failed;
     }
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
@@ -205,36 +184,26 @@ globus_l_job_manager_module_activate(void)
         SEG_JOB_MANAGER_DEBUG_ERROR
         SEG_JOB_MANAGER_DEBUG_TRACE);
 
-    logfile_state = globus_libc_calloc(
-            1,
-            sizeof(globus_l_job_manager_logfile_state_t));
-
+    logfile_state = calloc(1, sizeof(globus_l_job_manager_logfile_state_t));
     if (logfile_state == NULL)
     {
-        goto destroy_cond_error;
-        return 1;
-    }
-
-    rc = globus_l_job_manager_increase_buffer(logfile_state);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto free_logfile_state_error;
+        goto calloc_state_failed;
     }
 
     /* Configuration info */
     result = globus_scheduler_event_generator_get_timestamp(&timestamp_val);
-
     if (result != GLOBUS_SUCCESS)
     {
-        goto free_logfile_state_buffer_error;
+        goto get_timestamp_failed;
     }
 
     if (timestamp_val != 0)
     {
-        if (globus_libc_localtime_r(&timestamp_val,
+        if (globus_libc_gmtime_r(
+                &timestamp_val,
                 &logfile_state->start_timestamp) == NULL)
         {
-            goto free_logfile_state_buffer_error;
+            goto gmtime_failed;
         }
     }
     scheduler = globus_libc_getenv(JOB_MANAGER_SEG_SCHEDULER);
@@ -244,11 +213,10 @@ globus_l_job_manager_module_activate(void)
             ("Error: %s not set\n", JOB_MANAGER_SEG_SCHEDULER));
 
         result = GLOBUS_FAILURE;
-        goto free_logfile_state_buffer_error;
+        goto get_scheduler_failed;
     }
 
     sprintf(log_path_key, "%s_log_path", scheduler);
-
     result = globus_common_get_attribute_from_config_file(
             NULL,
             "etc/globus-job-manager-seg.conf",
@@ -258,7 +226,7 @@ globus_l_job_manager_module_activate(void)
     {
         SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_WARN,
                 ("unable to find log file in configuration\n"));
-        goto free_logfile_state_buffer_error;
+        goto get_path_key_failed;
     }
     /* Convert timestamp to filename */
     rc = globus_l_job_manager_find_logfile(logfile_state);
@@ -271,7 +239,7 @@ globus_l_job_manager_module_activate(void)
         {
             rc = SEG_JOB_MANAGER_ERROR_OUT_OF_MEMORY;
 
-            goto free_logfile_state_path_error;
+            goto fopen_failed;
         }
         GlobusTimeReltimeSet(delay, 0, 0);
     }
@@ -281,42 +249,45 @@ globus_l_job_manager_module_activate(void)
     }
     else
     {
-        goto free_logfile_state_path_error;
+        goto bad_log_path;
     }
 
     result = globus_callback_register_oneshot(
             &logfile_state->callback,
             &delay,
-            globus_l_job_manager_read_callback,
+            globus_l_job_manager_poll_callback,
             logfile_state);
     if (result != GLOBUS_SUCCESS)
     {
-        goto free_logfile_state_path_error;
+        goto oneshot_failed;
     }
     callback_count++;
 
     return 0;
-
-free_logfile_state_path_error:
+oneshot_failed:
+    if (logfile_state->fp)
+    {
+        fclose(logfile_state->fp);
+    }
+fopen_failed:
     if (logfile_state->path)
     {
-        globus_libc_free(logfile_state->path);
+        free(logfile_state->path);
     }
-    if (logfile_state->log_dir)
-    {
-        globus_libc_free(logfile_state->log_dir);
-    }
-free_logfile_state_buffer_error:
-    globus_libc_free(logfile_state->buffer);
-free_logfile_state_error:
-    globus_libc_free(logfile_state);
-destroy_cond_error:
+bad_log_path:
+    free(logfile_state->log_dir);
+get_path_key_failed:
+get_scheduler_failed:
+get_timestamp_failed:
+gmtime_failed:
+    free(logfile_state);
+calloc_state_failed:
     globus_cond_destroy(&globus_l_job_manager_cond);
-destroy_mutex_error:
+cond_init_failed:
     globus_mutex_destroy(&globus_l_job_manager_mutex);
-deactivate_common_error:
+mutex_init_failed:
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
-error:
+activate_common_failed:
     return 1;
 }
 /* globus_l_job_manager_module_activate() */
@@ -342,32 +313,24 @@ globus_l_job_manager_module_deactivate(void)
 }
 
 /**
- * read_cb:
- *  parse_events(buffer)
+ * Periodic poll of file to act like tail -f
  *
- *  if (!eof) // do i need to check stat state or will this behave well w/local
- *            // files?
- *      register read (read_cb)
- *  else
- *      if (it's an old logfile)
- *          register_close(old_close_cb)
- *      else
- *          register wakeup (wakeup_cb)
+ * @param user_arg
+ *     Logfile parsing state
  */
 static
 void
-globus_l_job_manager_read_callback(
+globus_l_job_manager_poll_callback(
     void *                              user_arg)
 {
     int                                 rc;
     globus_l_job_manager_logfile_state_t *      state = user_arg;
-    size_t                              max_to_read;
     globus_bool_t                       eof_hit = GLOBUS_FALSE;
     globus_reltime_t                    delay;
     globus_result_t                     result;
 
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
-            ("globus_l_job_manager_read_callback()\n"));
+            ("globus_l_job_manager_poll_callback()\n"));
 
     globus_mutex_lock(&globus_l_job_manager_mutex);
     if (shutdown_called)
@@ -382,50 +345,20 @@ globus_l_job_manager_read_callback(
 
     if (state->fp != NULL)
     {
-        /* Read data */
-        max_to_read = state->buffer_length - state->buffer_valid
-                - state->buffer_point;
-
-        SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
-                ("reading a maximum of %u bytes\n", max_to_read));
-
-        rc = fread(state->buffer + state->buffer_point + state->buffer_valid,
-                1, max_to_read, state->fp);
-        
-        SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
-                ("read %d bytes\n", rc));
-
-        if (rc < max_to_read)
-        {
-            if (feof(state->fp))
-            {
-                SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
-                        ("hit eof\n"));
-                eof_hit = GLOBUS_TRUE;
-                clearerr(state->fp);
-            }
-            else
-            {
-                /* XXX: Read error */
-            }
-        }
-
-        state->buffer_valid += rc;
-
         /* Parse data */
         SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
                 ("parsing events\n"));
         rc = globus_l_job_manager_parse_events(state);
-
-        SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
-                ("cleaning buffer\n"));
-        rc = globus_l_job_manager_clean_buffer(state);
+        if (rc == SEG_JOB_MANAGER_ERROR_LOG_EOF)
+        {
+            eof_hit = GLOBUS_TRUE;
+        }
     }
 
     /* If end of log, close this logfile and look for a new one. Also, if
      * the current day's log doesn't exist yet, check for it
      */
-    if (state->end_of_log || (eof_hit && state->old_log) || state->fp == NULL)
+    if ((eof_hit && state->old_log) || state->fp == NULL)
     {
         SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
                 ("got Log closed msg\n"));
@@ -450,7 +383,6 @@ globus_l_job_manager_read_callback(
             {
                 goto error;
             }
-            state->end_of_log = GLOBUS_FALSE;
             eof_hit = GLOBUS_FALSE;
 
             GlobusTimeReltimeSet(delay, 0, 0);
@@ -482,14 +414,14 @@ globus_l_job_manager_read_callback(
     result = globus_callback_register_oneshot(
             &state->callback,
             &delay,
-            globus_l_job_manager_read_callback,
+            globus_l_job_manager_poll_callback,
             state);
     if (result != GLOBUS_SUCCESS)
     {
         goto error;
     }
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
-            ("globus_l_job_manager_read_callback() exited with/success\n"));
+            ("globus_l_job_manager_poll_callback() exited with/success\n"));
     return;
 error:
     globus_mutex_lock(&globus_l_job_manager_mutex);
@@ -505,10 +437,10 @@ error:
     globus_mutex_unlock(&globus_l_job_manager_mutex);
 
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_WARN,
-            ("globus_l_job_manager_read_callback() exited with/error\n"));
+            ("globus_l_job_manager_poll_callback() exited with/error\n"));
     return;
 }
-/* globus_l_job_manager_read_callback() */
+/* globus_l_job_manager_poll_callback() */
 
 /**
  * Determine the next available JOB_MANAGER log file name from the 
@@ -554,7 +486,7 @@ globus_l_job_manager_find_logfile(
 
     now = time(NULL);
 
-    tm_result = globus_libc_localtime_r(&now, &tm_now);
+    tm_result = globus_libc_gmtime_r(&now, &tm_now);
     if (tm_result == NULL)
     {
         SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_WARN,
@@ -647,12 +579,7 @@ globus_l_job_manager_find_logfile(
 
                     globus_l_job_manager_normalize_date(&tm_val);
 
-                    if (tm_val.tm_year > tm_now.tm_year ||
-                        (tm_val.tm_year == tm_now.tm_year &&
-                         tm_val.tm_mon > tm_now.tm_mon) ||
-                        (tm_val.tm_year == tm_now.tm_year &&
-                         tm_val.tm_mon == tm_now.tm_mon &&
-                         tm_val.tm_mday > tm_now.tm_mday))
+                    if (globus_l_time_is_newer(&tm_val, &tm_now))
                     {
                         SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_ERROR,
                             ("looking for file in the future!\n"));
@@ -727,144 +654,49 @@ error:
 }
 /* globus_l_job_manager_find_logfile() */
 
-/**
- * Move any data in the state buffer to the beginning, to enable reusing 
- * buffer space which has already been parsed.
- */
-static
-int
-globus_l_job_manager_clean_buffer(
-    globus_l_job_manager_logfile_state_t *      state)
-{
-    SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
-            ("globus_l_job_manager_clean_buffer() called\n"));
-
-    /* move data to head of buffer */
-    if (state->buffer != NULL)
-    {
-        if(state->buffer_point > 0)
-        {
-            if (state->buffer_valid > 0)
-            {
-                memmove(state->buffer,
-                        state->buffer+state->buffer_point,
-                        state->buffer_valid);
-            }
-            state->buffer_point = 0;
-        }
-    }
-    SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
-            ("globus_l_job_manager_clean_buffer() exits\n"));
-    return 0;
-}
-/* globus_l_job_manager_clean_buffer() */
-
-/**
- * Reduce unused space in the log buffer, increasing the size of the buffer
- * if it is full.
- *
- * @param state
- *     JOB_MANAGER log state structure. The buffer-related fields of the structure
- *     may be modified by this function.
- */
-static
-int
-globus_l_job_manager_increase_buffer(
-    globus_l_job_manager_logfile_state_t *      state)
-{
-    char *                              save = state->buffer;
-    const size_t                        GLOBUS_JOB_MANAGER_READ_BUFFER_SIZE = 4096;
-    int                                 rc;
-
-    SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
-            ("globus_l_job_manager_increase_buffer() called\n"));
-    /* If the buffer is full, resize */
-    if (state->buffer_valid == state->buffer_length)
-    {
-        state->buffer = globus_libc_realloc(state->buffer,
-                    state->buffer_length + GLOBUS_JOB_MANAGER_READ_BUFFER_SIZE);
-        if (state->buffer == NULL)
-        {
-            SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_ERROR, ("realloc() failed\n"));
-
-            rc = SEG_JOB_MANAGER_ERROR_OUT_OF_MEMORY;
-            goto error;
-        }
-    }
-
-    state->buffer_length += GLOBUS_JOB_MANAGER_READ_BUFFER_SIZE;
-
-    SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
-            ("globus_l_job_manager_increase_buffer() exits w/success\n"));
-    return 0;
-
-error:
-    SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_WARN,
-            ("globus_l_job_manager_increase_buffer() exits w/failure\n"));
-    state->buffer = save;
-    return rc;
-}
-/* globus_l_job_manager_increase_buffer() */
-
 static
 int
 globus_l_job_manager_parse_events(
     globus_l_job_manager_logfile_state_t *      state)
 {
-    char *                              eol;
     int                                 rc;
-    char *                              p;
     int                                 protocol_msg_type;
     time_t                              stamp;
-    char *                              jobid;
+    char                                jobid[129];
+    char                                nl[2];
     int                                 job_state;
     int                                 exit_code;
-    int                                 jobid_start;
-    int                                 jobid_end;
-    time_t                              start_timestamp;
-    enum {
-        EXIT_CODE_UNASSIGNED = -1492
-
-    };
+    struct tm                           gmstamp, *gmstampp;
+    fpos_t                              pos;
 
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
             ("globus_l_job_manager_parse_events() called\n"));
 
-    state->buffer[state->buffer_point + state->buffer_valid] = '\0';
 
-    p = state->buffer + state->buffer_point;
-
-    while ((eol = strchr(p, '\n')) != NULL)
+    fgetpos(state->fp, &pos);
+    while ((rc = fscanf(state->fp, "%d;%ld;%128[^;];%d;%d%1[\n]",
+                    &protocol_msg_type,
+                    &stamp,
+                    jobid,
+                    &job_state,
+                    &exit_code,
+                    nl)) > 4)
     {
-        *(eol) = '\0';
-
-        exit_code = EXIT_CODE_UNASSIGNED;
-
-        rc = sscanf(p, "%d;%ld;%n%*[^;]%n;%d;%d", 
-            &protocol_msg_type,
-            &stamp,
-            &jobid_start,
-            &jobid_end,
-            &job_state,
-            &exit_code);
-
-        if (rc < 4 || exit_code == EXIT_CODE_UNASSIGNED)
+        if (rc == 4 && fscanf(state->fp, "%1[\n]", nl) != 1)
         {
             goto bad_line;
         }
-
-        jobid = p + jobid_start;
-        *(p + jobid_end) = '\0';
 
         if (protocol_msg_type != 1)
         {
             goto bad_line;
         }
 
-        start_timestamp = seg_l_timegm(&state->start_timestamp);
+        gmstampp = globus_libc_gmtime_r(&stamp, &gmstamp);
 
-        if (stamp < start_timestamp)
+        if (globus_l_time_is_newer(&state->start_timestamp, &gmstamp))
         {
+            /* Ignore events that occur before our start timestamp */
             goto bad_line;
         }
 
@@ -890,15 +722,22 @@ globus_l_job_manager_parse_events(
             goto bad_line;
         }
 bad_line:
-        p = eol+1;
+        fgetpos(state->fp, &pos);
     }
-
-    state->buffer_valid -= p - (state->buffer + state->buffer_point);
-    state->buffer_point = p - state->buffer;
+    if (feof(state->fp))
+    {
+        clearerr(state->fp);
+        rc = SEG_JOB_MANAGER_ERROR_LOG_EOF;
+    }
+    else
+    {
+        rc = 0;
+    }
+    fsetpos(state->fp, &pos);
 
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
             ("globus_l_job_manager_parse_events() exits\n"));
-    return 0;
+    return rc;
 }
 /* globus_l_job_manager_parse_events() */
 
@@ -943,40 +782,63 @@ globus_l_job_manager_normalize_date(
     } while (overflow_days > 0);
 }
 
-/**
- * Convert a struct tm to a time_t without accounting for the local timezone
- * or modifying the struct tm contents.
- *
- * This may get a little kooky when the TZ shift occurs near the DST change.
- */
 static
-time_t
-seg_l_timegm(
-    const struct tm *                   tm)
+globus_bool_t
+globus_l_time_is_newer(
+    struct tm *                         value,
+    struct tm *                         benchmark)
 {
-    struct tm                           tmp;
-    struct tm                           local_tm;
-    time_t                              local_time;
-    time_t                              shifted_time;
-
-    memcpy(&tmp, tm, sizeof(struct tm));
-
-    /* convert the tm to time_t in the local timezone */
-    local_time = mktime(&tmp);
-
-    /* create a new tm with this time (but without the TZ-related parts of the
-     * tm set) */
-    globus_libc_gmtime_r(&local_time, &local_tm);
-
-    /* convert the time to local time again, causing it to be shifted by
-     * time zone twice
-     */
-    shifted_time = mktime(&local_tm);
-
-    /*
-     * The difference between shifted_time and local_time is the TZ correction.
-     */
-    return local_time + (local_time - shifted_time);
+    if (value->tm_year < benchmark->tm_year)
+    {
+        return GLOBUS_FALSE;
+    }
+    else if (value->tm_year > benchmark->tm_year)
+    {
+        return GLOBUS_TRUE;
+    }
+    else if (value->tm_mon < benchmark->tm_mon)
+    {
+        return GLOBUS_FALSE;
+    }
+    else if (value->tm_mon > benchmark->tm_mon)
+    {
+        return GLOBUS_TRUE;
+    }
+    else if (value->tm_mday < benchmark->tm_mday)
+    {
+        return GLOBUS_FALSE;
+    }
+    else if (value->tm_mday > benchmark->tm_mday)
+    {
+        return GLOBUS_TRUE;
+    }
+    else if (value->tm_hour < benchmark->tm_hour)
+    {
+        return GLOBUS_FALSE;
+    }
+    else if (value->tm_hour > benchmark->tm_hour)
+    {
+        return GLOBUS_TRUE;
+    }
+    else if (value->tm_min < benchmark->tm_min)
+    {
+        return GLOBUS_FALSE;
+    }
+    else if (value->tm_min > benchmark->tm_min)
+    {
+        return GLOBUS_TRUE;
+    }
+    else if (value->tm_sec < benchmark->tm_sec)
+    {
+        return GLOBUS_FALSE;
+    }
+    else if (value->tm_sec > benchmark->tm_sec)
+    {
+        return GLOBUS_TRUE;
+    }
+    else
+    {
+        return GLOBUS_FALSE;
+    }
 }
-/* wsrl_l_timegm() */
-
+/* globus_l_time_is_newer() */
