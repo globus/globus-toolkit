@@ -10,6 +10,8 @@ v4.7 XX Xxx 2009
   - add myproxy-get-trustroots.cron example for keeping
     /etc/grid-security/certificates up-to-date
   - support linking against flavored VOMS libraries
+  - fix "self-authorization" check for CA requests
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6713)
   - check certificate requests and issued certificates in the CA:
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6648)
     - add certificate_request_checker and certificate_issuer_checker

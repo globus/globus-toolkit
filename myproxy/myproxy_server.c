@@ -1494,26 +1494,44 @@ no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
     respond_with_error_and_die(attrs, verror_get_string());
 }
 
+
+/* Check if we're granting access to a certificate with the same
+   identity as the requester (so-called "self-authz").
+   If the request is to access a credential in the repository,
+   check that. Otherwise, lookup the subject of the certificate
+   we'd issue from the CA.
+*/
 static int
 check_self_authz(myproxy_server_context_t *context,
                  myproxy_creds_t *creds,
                  myproxy_server_peer_t *client)
 {
-    char *cred_subject = NULL;
+    char *subject = NULL;
     int rval = 1;               /* default allow */
 
     if (context->allow_self_authz == 0) {
-        if (ssl_get_base_subject_file(creds->location, &cred_subject)) {
-            verror_put_string("internal error: ssl_get_base_subject_file() failed");
-            return -1;          /* error */
+        if (creds->location) {
+            if (ssl_get_base_subject_file(creds->location, &subject)) {
+                verror_put_string("internal error: ssl_get_base_subject_file(%s) failed in check_self_authz()", creds->location);
+                return -1;          /* error */
+            }
+        } else {
+            if (user_dn_lookup(creds->username,
+                                 &subject, context)) {
+                verror_put_string("unknown username: %s", 
+                                  creds->username);
+                return -1;          /* error */
+            }
         }
-        if (strcasecmp(client->name, cred_subject) == 0) {
+        if (strcasecmp(client->name, subject) == 0) {
+            verror_put_string("self-authz detected");
             rval = 0;           /* not allowed */
         }
     }
 
-    if (cred_subject)
-        free(cred_subject);
+    if (subject)
+        free(subject);
+
 
     return rval;
 }
@@ -1623,11 +1641,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 			creds.trusted_retrievers,
 			(const char **)context->default_trusted_retriever_dns);
        if (authorization_ok == 1) {
-           if (check_self_authz(context, &creds, client) == 1) {
+           if (check_self_authz(context, &creds, client) != 1) {
+               myproxy_log_verror();
+               myproxy_log("self-authz not allowed for trusted retriever");
+           } else {
                trusted_retriever = 1;
                myproxy_log("trusted retrievers policy matched");
-           } else {
-               myproxy_log("self-authz not allowed for trusted retriever");
            }
        }
 
