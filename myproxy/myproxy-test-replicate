@@ -185,7 +185,7 @@ $servercmd = "$myproxy_server -s $sl1dir -c $slconf";
 $servercmd .= " -p 0 -P $sl1pidfile -z $sl1portfile";
 &debug("running '$servercmd'");
 `$servercmd`;
-sleep(1);			# give server a chance to startup
+sleep(2);			# give server a chance to startup
 if (open SERVERPIDFILE, $sl1pidfile) {
     $sl1pid = <SERVERPIDFILE>;
     close SERVERPIDFILE;
@@ -212,7 +212,7 @@ $servercmd = "$myproxy_server -s $sl2dir -c $slconf";
 $servercmd .= " -p 0 -P $sl2pidfile -z $sl2portfile";
 &debug("running '$servercmd'");
 `$servercmd`;
-sleep(1);			# give server a chance to startup
+sleep(2);			# give server a chance to startup
 if (open SERVERPIDFILE, $sl2pidfile) {
     $sl2pid = <SERVERPIDFILE>;
     close SERVERPIDFILE;
@@ -248,7 +248,7 @@ sub start_sl3 {
   }
   &debug("running '$servercmd'");
   `$servercmd`;
-  sleep(1);                     # give server a chance to startup
+  sleep(2);                     # give server a chance to startup
   if (open SERVERPIDFILE, $sl3pidfile) {
     $sl3pid = <SERVERPIDFILE>;
     close SERVERPIDFILE;
@@ -293,7 +293,7 @@ $servercmd = "$myproxy_server -s $masterdir -c $masterconf";
 $servercmd .= " -p 0 -P $masterpidfile -z $masterportfile";
 &debug("running '$servercmd'");
 `$servercmd`;
-sleep(1);			# give server a chance to startup
+sleep(2);			# give server a chance to startup
 if (open SERVERPIDFILE, $masterpidfile) {
     $masterpid = <SERVERPIDFILE>;
     close SERVERPIDFILE;
