@@ -1,2 +1,2 @@
-&(executable = $(GLOBUS_LOCATION) # "/bin/globus-sh-exec")
- (arguments  = -e '$GLOBUS_SH_PERL -e ''if(-d $ENV{GLOBUS_LOCATION}) { print "1\n";} else { print "0\n";}''')
+&(executable = /bin/sh)
+ (arguments  = -c 'if [ -d $GLOBUS_LOCATION ]; then echo 1; else echo 0; fi')
