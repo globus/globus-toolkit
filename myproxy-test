@@ -228,7 +228,7 @@ if ($startserver) {
     $servercmd = $valgrind . $servercmd if (defined($valgrind));
     &debug("running '$servercmd'");
     system($servercmd);
-    sleep(1);			# give server a chance to startup
+    sleep(2);			# give server a chance to startup
     sleep(4) if (defined($valgrind)); # valgrind slows things down
     if (open SERVERPIDFILE) {
       $serverpid = <SERVERPIDFILE>;
