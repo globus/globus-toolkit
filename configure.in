@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.59 $)
+AC_REVISION($Revision: 1.60 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -194,7 +194,7 @@ AC_ARG_WITH(voms,
 		fi
 		if test "x$withval" != "xno" ; then
 		   CPPFLAGS="-I${withval}/include -I${withval}/include/glite/security/voms $CPPFLAGS"
-		   LDFLAGS="-L${withval}/lib $LDFLAGS"
+		   LDFLAGS="-L${withval}/lib -L${withval}/lib64 $LDFLAGS"
 		   AC_CHECK_HEADER(voms_apic.h)
            AC_SEARCH_LIBS(VOMS_Init, vomsc vomsc_$GLOBUS_FLAVOR_NAME, ,
 			     AC_MSG_ERROR([VOMS_Init not found in libvomsc]) )
