@@ -320,8 +320,6 @@ globus_gram_job_manager_state_machine(
             break;
         }
 
-        request->manager->seg_last_timestamp = time(NULL);
-
         globus_gram_job_manager_seg_pause(request->manager);
 
         rc = globus_gram_job_manager_script_submit(request);

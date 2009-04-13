@@ -145,11 +145,11 @@ globus_l_gram_seg_event_callback(
 
     if (rc != GLOBUS_SUCCESS)
     {
-        /* New submit script is running. Avoid race by adding this to the
-         * manager-wide queue
-         */
         if (manager->seg_pause_count > 0)
         {
+            /* New submit script is running. Avoid race by adding this to the
+             * manager-wide queue
+             */
             globus_gram_job_manager_log(
                     manager,
                     "Submit running, queueing for later\n"); 
@@ -162,19 +162,25 @@ globus_l_gram_seg_event_callback(
                     "Unknown job ID, ignoring event\n");
         }
     }
-    globus_mutex_unlock(&manager->mutex);
-
     if (rc != GLOBUS_SUCCESS)
     {
+        globus_mutex_unlock(&manager->mutex);
         goto manager_event_queue_failed;
     }
     else if (request == NULL)
     {
         /* Ignore unwanted event */
+        globus_mutex_unlock(&manager->mutex);
         goto done;
     }
     else
     {
+        if (event->timestamp > manager->seg_last_timestamp)
+        {
+            manager->seg_last_timestamp = event->timestamp;
+        }
+        globus_mutex_unlock(&manager->mutex);
+
         rc = globus_l_gram_deliver_event(
                 request,
                 new_event);
@@ -312,17 +318,24 @@ globus_l_seg_resume_callback(
     {
         event = globus_list_remove(&resume->events, resume->events);
 
+        globus_mutex_lock(&resume->manager->mutex);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 resume->manager,
                 event->job_id,
-                GLOBUS_FALSE,
+                GLOBUS_TRUE,
                 &request);
         if (rc != GLOBUS_SUCCESS)
         {
+            globus_mutex_unlock(&resume->manager->mutex);
             globus_scheduler_event_destroy(event);
         }
         else if (request)
         {
+            if (event->timestamp > manager->seg_last_timestamp)
+            {
+                manager->seg_last_timestamp = event->timestamp;
+            }
+            globus_mutex_unlock(&resume->manager->mutex);
             rc = globus_l_gram_deliver_event(
                     request,
                     event);
