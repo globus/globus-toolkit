@@ -56,6 +56,12 @@ globus_gram_job_manager_init_seg(
     globus_gram_job_manager_t *         manager)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 rc;
+
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Starting job monitoring for %s jobs\n",
+            manager->config->jobmanager_type);
 
     globus_mutex_lock(&manager->mutex);
     if (strcmp(manager->config->jobmanager_type, "fork") == 0)
@@ -77,7 +83,17 @@ globus_gram_job_manager_init_seg(
     }
     else
     {
-        globus_module_activate(GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE);
+        globus_gram_job_manager_log(
+                manager,
+                "JM: activating SEG\n");
+
+        rc = globus_module_activate(GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JM: Error activating SEG: %d\n", rc);
+        }
 
         globus_scheduler_event_generator_set_event_handler(
                 globus_l_gram_seg_event_callback,
@@ -85,8 +101,14 @@ globus_gram_job_manager_init_seg(
         globus_scheduler_event_generator_set_timestamp(
                 manager->seg_last_timestamp);
         setenv("JOB_MANAGER_SEG_SCHEDULER", manager->config->seg_module, 1);
-        globus_scheduler_event_generator_load_module(
+        rc = globus_scheduler_event_generator_load_module(
                 "job_manager");
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JM: Error loading SEG job_manager module: %d\n", rc);
+        }
 
     }
     manager->seg_started = GLOBUS_TRUE;
@@ -331,9 +353,9 @@ globus_l_seg_resume_callback(
         }
         else if (request)
         {
-            if (event->timestamp > manager->seg_last_timestamp)
+            if (event->timestamp > request->manager->seg_last_timestamp)
             {
-                manager->seg_last_timestamp = event->timestamp;
+                request->manager->seg_last_timestamp = event->timestamp;
             }
             globus_mutex_unlock(&resume->manager->mutex);
             rc = globus_l_gram_deliver_event(
