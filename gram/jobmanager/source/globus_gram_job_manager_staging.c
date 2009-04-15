@@ -71,6 +71,7 @@ globus_gram_job_manager_staging_create_list(
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM,
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM,
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM,
+        "filestreamout",
         NULL
     };
     int                                 errors_list[] =
@@ -78,6 +79,7 @@ globus_gram_job_manager_staging_create_list(
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN,
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED,
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT,
+        GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT,
         0
     };
 
@@ -158,6 +160,9 @@ globus_gram_job_manager_staging_remove(
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
           typestr = "file_stage_out";
           break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+          typestr = "file_stream_out";
+          break;
     }
 
     globus_gram_job_manager_request_log(
@@ -181,6 +186,9 @@ globus_gram_job_manager_staging_remove(
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
         list = &request->stage_out_todo;
+        break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+        list = &request->stage_stream_todo;
         break;
     }
 
@@ -314,6 +322,30 @@ globus_gram_job_manager_staging_write_state(
             return GLOBUS_FAILURE;
         }
     }
+    rc = fprintf(fp, "%d\n", globus_list_size(request->stage_stream_todo));
+    tmp_list = request->stage_stream_todo;
+    while(!globus_list_empty(tmp_list))
+    {
+        info = globus_list_first(tmp_list);
+        tmp_list = globus_list_rest(tmp_list);
+
+        tmp_str = globus_rsl_value_unparse(info->from);
+        rc = fprintf(fp, "%s\n", tmp_str);
+        free(tmp_str);
+
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
+
+        tmp_str = globus_rsl_value_unparse(info->to);
+        rc = fprintf(fp, "%s\n", tmp_str);
+        free(tmp_str);
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
+    }
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_staging_write_state() */
@@ -384,6 +416,19 @@ globus_gram_job_manager_staging_read_state(
         GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
         &request->stage_out_todo);
 
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto free_buffer_out;
+    }
+
+
+    rc = globus_l_gram_staging_list_read_state(
+        request,
+        fp,
+        buffer,
+        GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS,
+        &request->stage_stream_todo);
+
 free_buffer_out:
     free(buffer);
 out:
@@ -428,6 +473,10 @@ globus_l_gram_job_manager_staging_add_pair(
     {
         info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
     }
+    else if (strcmp(type, "filestreamout") == 0)
+    {
+        info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS;
+    }
 
     rc = globus_gram_job_manager_rsl_evaluate_value(
             request,
@@ -449,6 +498,9 @@ globus_l_gram_job_manager_staging_add_pair(
                 break;
               case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT;
+                break;
+              case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
                 break;
             }
         }
@@ -476,6 +528,9 @@ globus_l_gram_job_manager_staging_add_pair(
               case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT;
                 break;
+              case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+                break;
             }
         }
 
@@ -492,6 +547,9 @@ globus_l_gram_job_manager_staging_add_pair(
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
         globus_list_insert(&request->stage_out_todo, info);
+        break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+        globus_list_insert(&request->stage_stream_todo, info);
         break;
     }
 

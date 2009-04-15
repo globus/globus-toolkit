@@ -91,7 +91,8 @@ typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STAGE_IN,
     GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED,
-    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT
+    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
+    GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS
 }
 globus_gram_job_manager_staging_type_t;
 
@@ -524,6 +525,8 @@ typedef struct
     globus_list_t *                     stage_in_shared_todo;
     /** List of file_stage_out values which haven't yet been processed */
     globus_list_t *                     stage_out_todo;
+    /** List of file_stream_out values which haven't yet been processed */
+    globus_list_t *                     stage_stream_todo;
     /** Current state machine state */
     globus_gram_jobmanager_state_t      jobmanager_state;
     /** State to resume from in the case of a restart */
@@ -628,6 +631,10 @@ globus_gram_job_manager_request_init(
 
 void
 globus_gram_job_manager_request_destroy(
+    globus_gram_jobmanager_request_t *  request);
+
+void
+globus_gram_job_manager_request_free(
     globus_gram_jobmanager_request_t *  request);
 
 int

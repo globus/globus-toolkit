@@ -406,6 +406,11 @@ globus_gram_job_manager_request_init(
 
     r->client_contacts = NULL;
 
+    r->stage_in_todo = NULL;
+    r->stage_in_shared_todo = NULL;
+    r->stage_out_todo = NULL;
+    r->stage_stream_todo = NULL;
+
     if (r->jm_restart)
     {
         rc = globus_l_gram_restart(r);
@@ -459,6 +464,10 @@ globus_gram_job_manager_request_init(
     rc = globus_l_gram_validate_rsl(r);
     if(rc != GLOBUS_SUCCESS)
     {
+        globus_gram_job_manager_request_log(
+                r,
+                "Validation failed: %d\n",
+                rc);
         goto validate_rsl_failed;;
     }
     rc = globus_gram_job_manager_rsl_attribute_get_int_value(
@@ -649,9 +658,6 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
         goto cond_init_failed;
     }
-    r->stage_in_todo = NULL;
-    r->stage_in_shared_todo = NULL;
-    r->stage_out_todo = NULL;
     rc = globus_gram_job_manager_staging_create_list(r);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -803,6 +809,10 @@ symboltable_init_failed:
     }
 request_malloc_failed:
     *request = r;
+    globus_gram_job_manager_log(
+            manager,
+            "request_init exits with %d\n",
+            rc);
     return rc;
 }
 /* globus_gram_job_manager_request_init() */
@@ -1060,7 +1070,8 @@ bad_request:
 /**
  * Deallocate memory related to a request.
  *
- * This function frees the data within the request, and then frees the request.
+ * This function frees the data within the request, also destroying
+ * files associated with the request.
  * The caller must not access the request after this function has returned.
  *
  * @param request
@@ -1076,7 +1087,40 @@ globus_gram_job_manager_request_destroy(
     {
         return;
     }
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Destroying request\n");
+    if (request->scratchdir)
+    {
+        globus_gram_job_manager_destroy_directory(
+                request,
+                request->scratchdir);
+    }
+    globus_gram_job_manager_request_free(request);
+}
+/* globus_gram_job_manager_request_destroy() */
 
+/**
+ * Deallocate memory related to a request.
+ *
+ * This function frees the data within the request.
+ *
+ * @param request
+ *        Job request to destroy.
+ *
+ * @return GLOBUS_SUCCESS
+ */
+void
+globus_gram_job_manager_request_free(
+    globus_gram_jobmanager_request_t *  request)
+{
+    if (!request)
+    {
+        return;
+    }
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Freeing request memory\n");
     if (request->job_id_string)
     {
         free(request->job_id_string);
@@ -1103,12 +1147,8 @@ globus_gram_job_manager_request_destroy(
     }
     if (request->scratchdir)
     {
-        globus_gram_job_manager_destroy_directory(
-                request,
-                request->scratchdir);
         free(request->scratchdir);
     }
-    /* TODO: clean up: request->output? */
     if (request->cache_tag)
     {
         free(request->cache_tag);
@@ -1187,7 +1227,7 @@ globus_gram_job_manager_request_destroy(
             &request->seg_event_queue,
             globus_l_gram_event_destroy);
 }
-/* globus_gram_job_manager_request_destroy() */
+/* globus_gram_job_manager_request_free() */
 
 /**
  * Change the status associated with a job request
@@ -1702,6 +1742,9 @@ globus_l_gram_init_cache(
 {
     int                                 rc = GLOBUS_SUCCESS;
 
+    globus_gram_job_manager_request_log(
+            request,
+            "Initializing cache information for request\n");
     if (globus_gram_job_manager_rsl_attribute_exists(
                 request->rsl,
                 GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM))
@@ -1799,6 +1842,10 @@ failed_cache_open:
         }
     }
 failed_cache_eval:
+    globus_gram_job_manager_request_log(
+            request,
+            "cache init returns %d\n",
+            rc);
     return rc;
 }
 /* globus_l_gram_init_cache() */
@@ -1880,12 +1927,34 @@ globus_l_gram_restart(
 
     request->rsl = original_rsl;
 
-    /* Remove the two-phase commit from the original RSL; if the
-     * new client wants it, they can put it in their RSL
-     */
-    globus_gram_job_manager_rsl_remove_attribute(
-                request,
-                GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
+    rc = globus_gram_job_manager_rsl_attribute_get_boolean_value(
+            restart_rsl,
+            "restartcontacts",
+            &restart_contacts);
+
+    if (rc != GLOBUS_SUCCESS || !restart_contacts)
+    {
+        globus_gram_job_manager_contact_list_free(request);
+        rc = GLOBUS_SUCCESS;
+    }
+
+    restartcontacts = globus_gram_job_manager_rsl_extract_relation(
+            restart_rsl,
+            "restartcontacts");
+    if (restartcontacts != NULL)
+    {
+        globus_rsl_free_recursive(restartcontacts);
+    }
+
+    if (restartcontacts == GLOBUS_FALSE)
+    {
+        /* Remove the two-phase commit from the original RSL; if the
+         * new client wants it, they can put it in their RSL
+         */
+        globus_gram_job_manager_rsl_remove_attribute(
+                    request,
+                    GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
+    }
 
     /*
      * Remove stdout_position and stderr_position. We don't do streaming
@@ -1920,25 +1989,6 @@ globus_l_gram_restart(
         {
             goto failed_check_position;
         }
-    }
-
-    rc = globus_gram_job_manager_rsl_attribute_get_boolean_value(
-            restart_rsl,
-            "restartcontacts",
-            &restart_contacts);
-
-    if (rc != GLOBUS_SUCCESS || !restart_contacts)
-    {
-        globus_gram_job_manager_contact_list_free(request);
-        rc = GLOBUS_SUCCESS;
-    }
-
-    restartcontacts = globus_gram_job_manager_rsl_extract_relation(
-            restart_rsl,
-            "restartcontacts");
-    if (restartcontacts != NULL)
-    {
-        globus_rsl_free_recursive(restartcontacts);
     }
 
     request->rsl = globus_gram_job_manager_rsl_merge(
@@ -2193,10 +2243,16 @@ globus_l_gram_init_scratchdir(
     int                                 i;
     int                                 created = 0;
     enum { GLOBUS_GRAM_MKDIR_TRIES = 100 };
+
+    globus_gram_job_manager_request_log(
+            request,
+            "Initializing scratch directory for %p: [%s]\n",
+            request,
+            scratch_dir_base);
     /* In the case of a restart, this might have already been done */
     if (request->jm_restart && request->scratchdir != NULL)
     {
-        return rc;
+        goto skip_mkdir;
     }
     if (! globus_gram_job_manager_rsl_attribute_exists(
             rsl,
@@ -2298,6 +2354,7 @@ globus_l_gram_init_scratchdir(
         goto fatal_mkdir_err;
     }
 
+skip_mkdir:
     rc = globus_symboltable_insert(
             &request->symbol_table,
             "SCRATCH_DIRECTORY",
@@ -2865,7 +2922,7 @@ globus_gram_rewrite_output_as_staging(
     char *                              destination_url;
     int                                 rc;
 
-    /* Removes stdout from RSL */
+    /* Removes stdout or stderr from RSL */
     relation = globus_gram_job_manager_rsl_extract_relation(
             request->rsl,
             attribute);
@@ -3202,6 +3259,7 @@ globus_l_gram_get_output_destination(
     else
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto bad_input;
     }
 
     if (path == NULL)

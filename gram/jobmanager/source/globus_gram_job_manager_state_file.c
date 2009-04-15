@@ -136,7 +136,7 @@ globus_l_gram_state_file_create_lock(
     {
         globus_gram_job_manager_request_log(
                 request,
-                "JM: We are not the only job manager. symlinking %s to %s\n",
+                "JM: We are the only job manager. symlinking %s to %s\n",
                 request->manager->lock_path,
                 request->job_state_lock_file);
         (void) unlink(request->job_state_lock_file);

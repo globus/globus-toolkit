@@ -1418,7 +1418,7 @@ globus_l_gram_ref_swap_out(
 
         rc = globus_gram_job_manager_state_file_write(ref->request);
 
-        globus_gram_job_manager_request_destroy(ref->request);
+        globus_gram_job_manager_request_free(ref->request);
         free(ref->request);
         ref->request = NULL;
     }

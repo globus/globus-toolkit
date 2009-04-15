@@ -1082,7 +1082,19 @@ globus_l_gram_job_manager_state_machine(
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
-        if(!globus_list_empty(request->stage_out_todo))
+        if(!globus_list_empty(request->stage_stream_todo))
+        {
+            request->jobmanager_state
+                    = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
+            if(request->failure_code == GLOBUS_SUCCESS ||
+               request->failure_code ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED)
+            {
+                request->failure_code =
+                    GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
+            }
+        }
+        else if(!globus_list_empty(request->stage_out_todo))
         {
             request->jobmanager_state
                     = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;

@@ -1563,6 +1563,16 @@ globus_l_gram_job_manager_default_done(
                     value);
         }
     }
+    else if (strcmp(variable, "GRAM_SCRIPT_STAGED_STREAM") == 0)
+    {
+        if(request->jobmanager_state == starting_jobmanager_state)
+        {
+            globus_l_gram_job_manager_script_staged_done(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS,
+                    value);
+        }
+    }
     else if(strncmp(variable, "GRAM_SCRIPT_GT3", 15) == 0)
     {
         globus_gram_job_manager_request_log(
@@ -1818,7 +1828,9 @@ globus_l_gram_job_manager_print_rsl(
            (strcmp(globus_rsl_relation_get_attribute(ast_node),
                     "filestageinshared") == 0) ||
            (strcmp(globus_rsl_relation_get_attribute(ast_node),
-                    "filestageout") == 0))
+                    "filestageout") == 0) ||
+           (strcmp(globus_rsl_relation_get_attribute(ast_node),
+                    "filestreamout") == 0))
         {
             return 0;
         }
@@ -1997,6 +2009,11 @@ globus_l_gram_job_manager_script_write_description(
             GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
     globus_l_gram_job_manager_print_staging_list(
             request,
+            fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS);
+
+    globus_l_gram_job_manager_print_staging_list(
+            request,
             request->manager->jobmanager_log_fp,
             GLOBUS_GRAM_JOB_MANAGER_STAGE_IN);
     globus_l_gram_job_manager_print_staging_list(
@@ -2007,6 +2024,10 @@ globus_l_gram_job_manager_script_write_description(
             request,
             request->manager->jobmanager_log_fp,
             GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
+    globus_l_gram_job_manager_print_staging_list(
+            request,
+            request->manager->jobmanager_log_fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS);
     fprintf(fp, "\n};\n");
     fprintf(request->manager->jobmanager_log_fp, "\n};\n");
 
@@ -2198,13 +2219,17 @@ globus_l_gram_job_manager_print_staging_list(
         tmp_list = request->stage_out_todo;
         attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM;
         break;
+    case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+        tmp_list = request->stage_stream_todo;
+        attribute = "filestreamout";
+        break;
     }
     /* Always write the attribute to the script arg file, even if
      * it's empty---if we were restarted during staging, then we
      * may have files listed in the original RSL which have been staged
      * completely.
      */
-    fprintf(fp, ",\n%s => [", attribute);
+    fprintf(fp, ",\n    '%s' => [", attribute);
     while(!globus_list_empty(tmp_list))
     {
         info = globus_list_first(tmp_list);
