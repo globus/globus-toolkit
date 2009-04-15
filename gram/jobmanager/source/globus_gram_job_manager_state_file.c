@@ -100,10 +100,13 @@ globus_l_gram_state_file_create_lock(
     int                                 rc = GLOBUS_SUCCESS;
 
     globus_gram_job_manager_request_log(request,
-                            "JM: Creating and locking state lock file\n");
+                            "JM: Creating and locking state lock file.\n");
 
     if (request->manager->lock_fd == -1)
     {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: manager lock_fd is -1. We are not the only job manager\n");
         /* We are not in single job manager mode */
         request->job_state_lock_fd = open( request->job_state_lock_file,
                                            O_RDWR | O_CREAT,
@@ -131,6 +134,11 @@ globus_l_gram_state_file_create_lock(
     }
     else
     {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: We are not the only job manager. symlinking %s to %s\n",
+                request->manager->lock_path,
+                request->job_state_lock_file);
         (void) unlink(request->job_state_lock_file);
         rc = symlink(request->manager->lock_path, request->job_state_lock_file);
         if (rc != GLOBUS_SUCCESS)
@@ -254,6 +262,11 @@ globus_gram_job_manager_state_file_write(
         goto error_exit;
     }
     rc = globus_gram_job_manager_staging_write_state(request, fp);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = globus_gram_job_manager_write_callback_contacts(request, fp);
     if (rc < 0)
     {
         goto error_exit;
@@ -467,15 +480,7 @@ skip_single_check:
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-        /*
-         * Need to set the RSL substitution before reading the staging
-         * state---otherwise we may get an RSL evaluation error
-         */
         request->scratchdir = strdup(buffer);
-        globus_symboltable_insert(
-                &request->symbol_table,
-                "SCRATCH_DIRECTORY",
-                request->scratchdir);
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
@@ -483,7 +488,10 @@ skip_single_check:
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
-    request->manager->seg_last_timestamp = (time_t) tmp_timestamp;
+    if (request->manager->seg_last_timestamp > tmp_timestamp)
+    {
+        request->manager->seg_last_timestamp = (time_t) tmp_timestamp;
+    }
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
@@ -505,6 +513,11 @@ skip_single_check:
     {
         goto error_exit;
     }
+    rc = globus_gram_job_manager_read_callback_contacts(request, fp);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
 
     fclose(fp);
 
@@ -522,6 +535,19 @@ exit:
     return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
 }
 
+/**
+ * Try to set an advisory write lock on a file descriptor
+ *
+ * @param fd
+ *     Open file descriptor to lock.
+ * 
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE
+ *     Another process has the file locked.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE
+ *     System error locking the file.
+ */
 int
 globus_gram_job_manager_file_lock(
     int                                 fd)

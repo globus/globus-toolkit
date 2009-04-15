@@ -185,6 +185,13 @@ globus_gram_job_manager_rsl_need_stage_out(
     {
         return GLOBUS_TRUE;
     }
+    else if (globus_list_search_pred(
+                attributes,
+                globus_l_gram_job_manager_rsl_match,
+                "filestreamout"))
+    {
+        return GLOBUS_TRUE;
+    }
     else
     {
         return GLOBUS_FALSE;
@@ -437,7 +444,7 @@ attr_copy_failed:
 /**
  * Add a stage out value to the RSL
  *
- * Creates a new entry in the RSL's filestageout value list for the
+ * Creates a new entry in the RSL's filestreamout value list for the
  * given (@a source, @a destination) pair. If the RSL does not contain
  * filestageout, it is added; otherwise, the new pair is prepended to the
  * existing list.
@@ -457,7 +464,7 @@ attr_copy_failed:
  *     Malloc failed
  */
 int
-globus_gram_rsl_add_stage_out(
+globus_gram_rsl_add_stream_out(
     globus_gram_jobmanager_request_t *  request,
     globus_rsl_t *                      rsl,
     const char *                        source,
@@ -480,7 +487,7 @@ globus_gram_rsl_add_stage_out(
 
     globus_gram_job_manager_request_log(
             request,
-            "JM: Adding filestageout (%s %s) to RSL\n",
+            "JM: Adding filestreamout (%s %s) to RSL\n",
             source,
             destination);
 
@@ -488,15 +495,15 @@ globus_gram_rsl_add_stage_out(
     node = globus_list_search_pred(
             *operand_ref,
             globus_l_gram_job_manager_rsl_match,
-            (void *) GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM);
+            (void *) "filestreamout");
     if (!node)
     {
         /* No file_stage_out in RSL, add a new empty one */
         globus_gram_job_manager_request_log(
                 request,
-                "JM: No existing filestageout, adding it\n");
+                "JM: No existing filestreamout, adding it\n");
 
-        attr_copy = strdup(GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM);
+        attr_copy = strdup("filestreamout");
         if (attr_copy == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -548,7 +555,7 @@ attr_copy_failed:
         /* Adding new value to existing filestageout */
         globus_gram_job_manager_request_log(
                 request,
-                "JM: Appending to existing filestageout\n");
+                "JM: Appending to existing filestreamout\n");
         relation = globus_list_first(node);
     }
 
@@ -647,7 +654,7 @@ source_copy_failed:
 bad_relation:
     return rc;
 }
-/* globus_gram_rsl_add_stage_out() */
+/* globus_gram_rsl_add_stream_out() */
 
 /**
  * Add an environment variable to the job RSL.
@@ -975,7 +982,7 @@ globus_gram_job_manager_rsl_evaluate_value(
 
     globus_gram_job_manager_request_log(
             request,
-            "JM: Evaluating RSL Value");
+            "JM: Evaluating RSL Value\n");
 
     copy = globus_rsl_value_copy_recursive(value);
     if (copy == NULL)
@@ -1012,7 +1019,7 @@ free_copy_out:
 out:
     globus_gram_job_manager_request_log(
             request,
-            "JM: Evaluated RSL Value to %s",
+            "JM: Evaluated RSL Value to %s\n",
             *value_string ? *value_string : "NULL");
 
     return rc;

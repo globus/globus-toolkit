@@ -63,12 +63,12 @@ globus_gram_job_manager_init_seg(
             "JM: Starting job monitoring for %s jobs\n",
             manager->config->jobmanager_type);
 
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     if (strcmp(manager->config->jobmanager_type, "fork") == 0)
     {
         globus_reltime_t                delay;
 
-        GlobusTimeReltimeSet(delay, 10, 0);
+        GlobusTimeReltimeSet(delay, 1, 0);
 
         result = globus_callback_register_periodic(
                 &manager->fork_callback_handle,
@@ -113,7 +113,7 @@ globus_gram_job_manager_init_seg(
     }
     manager->seg_started = GLOBUS_TRUE;
 failed_periodic:
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 
     return result;
 }
@@ -157,12 +157,15 @@ globus_l_gram_seg_event_callback(
         goto copy_failed;
     }
 
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     /* Find the job request associated by this job id */
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Adding reference for SEG event for %s\n",
+            event->job_id);
     rc = globus_gram_job_manager_add_reference_by_jobid(
             manager,
             event->job_id,
-            GLOBUS_TRUE,
             &request);
 
     if (rc != GLOBUS_SUCCESS)
@@ -186,13 +189,13 @@ globus_l_gram_seg_event_callback(
     }
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_mutex_unlock(&manager->mutex);
+        GlobusGramJobManagerUnlock(manager);
         goto manager_event_queue_failed;
     }
     else if (request == NULL)
     {
         /* Ignore unwanted event */
-        globus_mutex_unlock(&manager->mutex);
+        GlobusGramJobManagerUnlock(manager);
         goto done;
     }
     else
@@ -201,7 +204,7 @@ globus_l_gram_seg_event_callback(
         {
             manager->seg_last_timestamp = event->timestamp;
         }
-        globus_mutex_unlock(&manager->mutex);
+        GlobusGramJobManagerUnlock(manager);
 
         rc = globus_l_gram_deliver_event(
                 request,
@@ -210,6 +213,10 @@ globus_l_gram_seg_event_callback(
 
     if (rc != GLOBUS_SUCCESS)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Failed to handle SEG event, removing reference for %s\n",
+                request->job_contact_path);
         (void) globus_gram_job_manager_remove_reference(
                 request->manager,
                 request->job_contact_path);
@@ -251,6 +258,10 @@ globus_gram_job_manager_seg_handle_event(
 
     globus_scheduler_event_destroy(event);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Done handling SEG event, removing reference for %s\n",
+            request->job_contact_path);
     (void) globus_gram_job_manager_remove_reference(
             request->manager,
             request->job_contact_path);
@@ -265,9 +276,9 @@ globus_gram_job_manager_seg_pause(
             manager,
             "Pausing SEG (count -> %d)\n",
             manager->seg_pause_count+1);
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     manager->seg_pause_count++;
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 }
 /* globus_gram_job_manager_seg_pause() */
 
@@ -283,7 +294,7 @@ globus_gram_job_manager_seg_resume(
             manager,
             "Resuming SEG (count -> %d)\n",
             manager->seg_pause_count-1);
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     manager->seg_pause_count--;
 
     if (manager->seg_pause_count == 0 &&
@@ -319,7 +330,7 @@ globus_gram_job_manager_seg_resume(
             }
         }
     }
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 }
 /* globus_gram_job_manager_seg_resume() */
 
@@ -340,24 +351,27 @@ globus_l_seg_resume_callback(
     {
         event = globus_list_remove(&resume->events, resume->events);
 
-        globus_mutex_lock(&resume->manager->mutex);
+        GlobusGramJobManagerLock(resume->manager);
+        globus_gram_job_manager_log(
+                resume->manager,
+                "JM: SEG resume, adding reference for %s\n",
+                event->job_id);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 resume->manager,
                 event->job_id,
-                GLOBUS_TRUE,
                 &request);
         if (rc != GLOBUS_SUCCESS)
         {
-            globus_mutex_unlock(&resume->manager->mutex);
+            GlobusGramJobManagerUnlock(resume->manager);
             globus_scheduler_event_destroy(event);
         }
-        else if (request)
+        else
         {
             if (event->timestamp > request->manager->seg_last_timestamp)
             {
                 request->manager->seg_last_timestamp = event->timestamp;
             }
-            globus_mutex_unlock(&resume->manager->mutex);
+            GlobusGramJobManagerUnlock(resume->manager);
             rc = globus_l_gram_deliver_event(
                     request,
                     event);
@@ -373,8 +387,9 @@ globus_l_gram_deliver_event(
     globus_scheduler_event_t *          event)
 {
     int                                 rc;
-    globus_result_t                     result;
-    globus_mutex_lock(&request->mutex);
+    globus_reltime_t                    delay_time;
+
+    GlobusGramJobManagerRequestLock(request);
 
     globus_gram_job_manager_request_log(
             request,
@@ -391,6 +406,14 @@ globus_l_gram_deliver_event(
         utime(request->job_state_file, NULL);
     }
 
+    if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
+        event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
+    {
+        (void) globus_gram_job_manager_unregister_job_id(
+                request->manager,
+                event->job_id);
+    }
+
     rc = globus_fifo_enqueue(&request->seg_event_queue, event);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -398,26 +421,18 @@ globus_l_gram_deliver_event(
         goto event_enqueue_failed;
     }
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Job is in %d state (%p)\n",
-            request->jobmanager_state,
-            request);
     if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
     {
-        globus_reltime_t                delay_time;
-
         GlobusTimeReltimeSet(delay_time, 0, 0); 
 
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 
-        result = globus_callback_register_oneshot(
-                &request->poll_timer,
-                &delay_time,
-                globus_gram_job_manager_state_machine_callback,
-                request);
+        rc = globus_gram_job_manager_state_machine_register(
+                request->manager,
+                request,
+                &delay_time);
 
-        if (result != GLOBUS_SUCCESS)
+        if (rc != GLOBUS_SUCCESS)
         {
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
         }
@@ -425,7 +440,7 @@ globus_l_gram_deliver_event(
     rc = GLOBUS_SUCCESS;
 
 event_enqueue_failed:
-    globus_mutex_unlock(&request->mutex);
+    GlobusGramJobManagerRequestUnlock(request);
 
     return rc;
 }
@@ -457,8 +472,14 @@ globus_l_gram_fork_poll_callback(
         char *                          tok_end = NULL;
         char *                          pid_string;
         char *                          job_id_string;
+        char *                          job_id_string_copy;
 
         job_id_string = globus_list_first(tmp);
+        job_id_string_copy = strdup(job_id_string);
+        if (job_id_string_copy == NULL)
+        {
+            continue;
+        }
 
         for (tok_end = NULL,
                     pid_string = strtok_r(job_id_string, ",", &tok_end);
@@ -488,13 +509,17 @@ globus_l_gram_fork_poll_callback(
             event = malloc(sizeof(globus_scheduler_event_t));
 
             event->event_type = GLOBUS_SCHEDULER_EVENT_DONE;
-            event->job_id = strdup(globus_list_first(tmp));
+            event->job_id = job_id_string_copy;
             event->timestamp = time(NULL);
             event->exit_code = 0;
             event->failure_code = 0;
             event->raw_event = NULL;
 
             globus_list_insert(&events, event);
+        }
+        else
+        {
+            free(job_id_string_copy);
         }
         free(job_id_string);
     }
@@ -505,47 +530,23 @@ globus_l_gram_fork_poll_callback(
     {
         event = globus_list_first(l);
 
+        GlobusGramJobManagerLock(manager);
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Fork poll, adding reference for %s\n",
+                event->job_id);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 manager,
                 event->job_id,
-                GLOBUS_FALSE,
                 &request);
+        GlobusGramJobManagerUnlock(manager);
 
         if (rc == GLOBUS_SUCCESS)
         {
-            globus_mutex_lock(&request->mutex);
-            /* Keep the state file's timestamp up to date so that
-             * anything scrubbing the state files of old and dead
-             * processes leaves it alone */
-            if(request->job_state_file)
-            {
-                utime(request->job_state_file, NULL);
-            }
-            rc = globus_fifo_enqueue(
-                    &request->seg_event_queue,
+            rc = globus_l_gram_deliver_event(   
+                    request,
                     event);
-            if (request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
-            {
-                globus_reltime_t                delay_time;
-                globus_result_t                 result;
 
-                GlobusTimeReltimeSet(delay_time, 0, 0); 
-
-                request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-
-                result = globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay_time,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-
-                if (result != GLOBUS_SUCCESS)
-                {
-                    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
-                }
-            }
-            globus_mutex_unlock(&request->mutex);
             if (rc != GLOBUS_SUCCESS)
             {
                 goto destroy_event;

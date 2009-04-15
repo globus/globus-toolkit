@@ -94,6 +94,10 @@ globus_gram_job_manager_startup_socket_init(
         return GLOBUS_SUCCESS;
     }
 
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Initializing startup socket: opening and locking %s\n",
+            manager->lock_path);
     /* Create and lock lockfile */
     for (i = 0, lockfd = -1; lockfd < 0 && i < GRAM_RETRIES; i++)
     {
@@ -101,6 +105,9 @@ globus_gram_job_manager_startup_socket_init(
     }
     if (lockfd < 0)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error opening lock file\n");
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
         goto lockfd_open_failed;
     }
@@ -122,8 +129,19 @@ globus_gram_job_manager_startup_socket_init(
     rc = globus_gram_job_manager_file_lock(lockfd);
     if (rc != GLOBUS_SUCCESS)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error locking lock file: %s (%d)\n",
+                manager->lock_path,
+                rc);
         goto lock_failed;
     }
+
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Got the lock for fd %d. I will monitor all %s jobs\n",
+            lockfd,
+            manager->config->jobmanager_type);
 
     /* create and bind socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -159,6 +177,10 @@ globus_gram_job_manager_startup_socket_init(
     (void) umask(old_umask);
     if (rc < 0)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Unable to bind socket to %s\n",
+                manager->socket_path);
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
 
         goto bind_failed;
@@ -227,6 +249,10 @@ lockfd_open_failed:
 
     *socket_fd = sock;
     *lock_fd = lockfd;
+    globus_gram_job_manager_log(
+            manager,
+            "JM: start_socket_init exit with %d\n",
+            rc);
     return rc;
 }
 /* globus_gram_job_manager_startup_socket_init() */
@@ -428,6 +454,9 @@ globus_l_gram_startup_socket_callback(
     char                                byte[1] = {0};
     char                                cmsgbuf[sizeof(struct cmsghdr) + 4 * sizeof(int)];
 
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Startup message available\n");
     cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
     cred_buffer.value = malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
     if (cred_buffer.value == NULL)
@@ -454,6 +483,10 @@ globus_l_gram_startup_socket_callback(
     /* Attempt to receive file descriptors */
     if ((rc = recvmsg(manager->socket_fd, &message, 0)) < 0)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error receiving startup message %d\n",
+                errno);
         goto failed_receive;
     }
     cred_buffer.length = rc;
@@ -476,6 +509,13 @@ globus_l_gram_startup_socket_callback(
 
     if (http_body_fd < 0 || context_fd < 0 || response_fd < 0 || acksock < 0)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error receiving fds in startup message (%d, %d, %d, %d)\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                acksock);
         goto failed_get_data;
     }
 
@@ -488,6 +528,9 @@ globus_l_gram_startup_socket_callback(
     rc = sendmsg(acksock, &message, 0);
     if (rc < 0)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error sending ack\n");
         goto ackfailed;
     }
 
@@ -500,6 +543,9 @@ globus_l_gram_startup_socket_callback(
     rc = recvmsg(acksock, &message, 0);
     if (rc < 0 || byte[0] != 1)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error receiving commit-ack\n");
         goto ackfailed;
     }
 

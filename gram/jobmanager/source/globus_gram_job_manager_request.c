@@ -32,6 +32,7 @@
 #include "globus_gram_protocol.h"
 #include "globus_gram_job_manager.h"
 #include "globus_rsl_assist.h"
+#include "globus_scheduler_event_generator_app.h"
 
 #include <string.h>
 #include <syslog.h>
@@ -79,9 +80,7 @@ globus_l_gram_init_cache(
 static
 int
 globus_l_gram_restart(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t **                     stdout_position_hack,
-    globus_rsl_t **                     stderr_position_hack);
+    globus_gram_jobmanager_request_t *  request);
 
 static
 int
@@ -106,9 +105,7 @@ globus_l_gram_init_scratchdir(
 static
 int
 globus_l_gram_validate_rsl(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t *                      stdout_position_hack,
-    globus_rsl_t *                      stderr_position_hack);
+    globus_gram_jobmanager_request_t *  request);
 
 static
 int
@@ -134,13 +131,6 @@ globus_l_gram_make_job_dir(
 
 static
 int
-globus_l_gram_rewrite_output_as_staging(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t *                      rsl,
-    const char *                        attribute);
-
-static
-int
 globus_l_gram_get_output_destinations(
     globus_gram_jobmanager_request_t *  request,
     globus_list_t *                     value_list,
@@ -152,6 +142,16 @@ globus_l_gram_get_output_destination(
     globus_gram_jobmanager_request_t *  request,
     globus_list_t *                     value_list,
     char **                             destination_url);
+
+static
+int
+globus_l_gram_check_position(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      position_rsl);
+
+static
+void
+globus_l_gram_event_destroy(void *datum);
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
@@ -208,8 +208,6 @@ globus_gram_job_manager_request_init(
     uint64_t                            uniq1, uniq2;
     int                                 rc;
     const char *                        tmp_string;
-    globus_rsl_t *                      stdout_position_hack = NULL;
-    globus_rsl_t *                      stderr_position_hack = NULL;
     int                                 count;
     int                                 tmpfd;
 
@@ -346,16 +344,6 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto failed_set_job_contact_path;
     }
-    /* Check to make sure we aren't restarting a job we're already monitoring
-     */
-    if (globus_gram_job_manager_request_exists(
-                manager,
-                r->job_contact_path))
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-        goto failed_check_exists;
-    }
-
 
     rc = globus_l_gram_make_job_dir(r, &r->job_dir);
     if (rc != GLOBUS_SUCCESS)
@@ -416,12 +404,11 @@ globus_gram_job_manager_request_init(
     }
     r->job_state_lock_fd = -1;
 
+    r->client_contacts = NULL;
+
     if (r->jm_restart)
     {
-        rc = globus_l_gram_restart(
-                r,
-                &stdout_position_hack,
-                &stderr_position_hack);
+        rc = globus_l_gram_restart(r);
 
         if (rc != GLOBUS_SUCCESS)
         {
@@ -469,16 +456,11 @@ globus_gram_job_manager_request_init(
     /* At this point, all of the RSL substitutions have been populated,
      * including those based on runtime values, so we can validate the RSL
      */
-    rc = globus_l_gram_validate_rsl(
-            r,
-            stdout_position_hack,
-            stderr_position_hack);
+    rc = globus_l_gram_validate_rsl(r);
     if(rc != GLOBUS_SUCCESS)
     {
         goto validate_rsl_failed;;
     }
-    stdout_position_hack = NULL;
-    stderr_position_hack = NULL;
     rc = globus_gram_job_manager_rsl_attribute_get_int_value(
             r->rsl,
             GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
@@ -586,7 +568,7 @@ globus_gram_job_manager_request_init(
     {
         const char * tmp;
 
-        rc = globus_l_gram_rewrite_output_as_staging(
+        rc = globus_gram_rewrite_output_as_staging(
                 r,
                 r->rsl,
                 GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
@@ -623,7 +605,7 @@ globus_gram_job_manager_request_init(
     {
         const char * tmp;
 
-        rc = globus_l_gram_rewrite_output_as_staging(
+        rc = globus_gram_rewrite_output_as_staging(
                 r,
                 r->rsl,
                 GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
@@ -667,7 +649,6 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
         goto cond_init_failed;
     }
-    r->client_contacts = NULL;
     r->stage_in_todo = NULL;
     r->stage_in_shared_todo = NULL;
     r->stage_out_todo = NULL;
@@ -678,7 +659,12 @@ globus_gram_job_manager_request_init(
     }
     
     r->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_START;
-    r->restart_state = GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+
+    if (r->jm_restart == NULL)
+    {
+        r->restart_state = GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+    }
+
     r->unsent_status_change = GLOBUS_FALSE;
     r->poll_timer = GLOBUS_NULL_HANDLE;
     rc = globus_fifo_init(&r->pending_queries);
@@ -783,14 +769,6 @@ init_scratchdir_failed:
 failed_eval_scratch_dir_base:
         free(r->cache_tag);
 cache_tag_alloc_failed:
-        if (stdout_position_hack)
-        {
-            globus_rsl_free_recursive(stdout_position_hack);
-        }
-        if (stderr_position_hack)
-        {
-            globus_rsl_free_recursive(stderr_position_hack);
-        }
 failed_restart:
         free(r->job_state_lock_file);
         free(r->job_state_file);
@@ -803,7 +781,6 @@ cached_stdout_symboltable_failed:
 cached_stdout_malloc_failed:
         globus_gram_job_manager_destroy_directory(r, r->job_dir);
 failed_make_job_dir:
-failed_check_exists:
         free(r->job_contact_path);
 failed_set_job_contact_path:
 failed_add_contact_to_symboltable:
@@ -973,7 +950,7 @@ globus_gram_job_manager_request_start(
         request->job_contact_path,
         request);
 
-    globus_mutex_lock(&request->mutex);
+    GlobusGramJobManagerRequestLock(request);
     if (rc != GLOBUS_SUCCESS)
     {
         goto add_request_failed;
@@ -1056,26 +1033,20 @@ bad_request:
             request->response_context);
     if (rc == GLOBUS_SUCCESS && rc2 == GLOBUS_SUCCESS)
     {
-        globus_result_t                 result;
         globus_reltime_t                delay;
 
         GlobusTimeReltimeSet(delay, 0, 0);
 
-        result = globus_callback_register_oneshot(
-                NULL,
-                &delay,
-                globus_gram_job_manager_state_machine_callback,
-                request);
-        if (result != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-        }
+        rc = globus_gram_job_manager_state_machine_register(
+                manager,
+                request,
+                &delay);
     }
     else if (rc == GLOBUS_SUCCESS && rc2 != GLOBUS_SUCCESS)
     {
         rc = rc2;
     }
-    globus_mutex_unlock(&request->mutex);
+    GlobusGramJobManagerRequestUnlock(request);
     if (rc != GLOBUS_SUCCESS)
     {
         rc = globus_gram_job_manager_remove_reference(
@@ -1171,8 +1142,13 @@ globus_gram_job_manager_request_destroy(
     {
         free(request->job_state_lock_file);
     }
-    if (request->job_state_lock_fd >= 0)
+    if (request->job_state_lock_fd >= 0 &&
+        request->job_state_lock_fd != request->manager->lock_fd)
     {
+        globus_gram_job_manager_request_log(
+                request,
+                "Closing job state lock file %d\n",
+                request->job_state_lock_fd);
         close(request->job_state_lock_fd);
     }
     globus_mutex_destroy(&request->mutex);
@@ -1207,7 +1183,9 @@ globus_gram_job_manager_request_destroy(
         OM_uint32 minor_status;
         gss_delete_sec_context(&minor_status, &request->response_context, NULL);
     }
-    globus_fifo_destroy(&request->seg_event_queue);
+    globus_fifo_destroy_all(
+            &request->seg_event_queue,
+            globus_l_gram_event_destroy);
 }
 /* globus_gram_job_manager_request_destroy() */
 
@@ -1270,6 +1248,12 @@ globus_gram_job_manager_request_set_status_time(
         return GLOBUS_FAILURE;
     request->status = status;
     request->status_update_time = valid_time;
+
+    globus_gram_job_manager_set_status(
+            request->manager,
+            request->job_contact_path,
+            request->status,
+            request->failure_code);
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_request_set_status() */
@@ -1822,13 +1806,15 @@ failed_cache_eval:
 static
 int
 globus_l_gram_restart(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t **                     stdout_position_hack,
-    globus_rsl_t **                     stderr_position_hack)
+    globus_gram_jobmanager_request_t *  request)
 {
     int                                 rc;
+    globus_rsl_t *                      stdout_position;
+    globus_rsl_t *                      stderr_position;
     globus_rsl_t *                      restart_rsl;
     globus_rsl_t *                      original_rsl;
+    globus_rsl_t *                      restartcontacts;
+    globus_bool_t                       restart_contacts = GLOBUS_FALSE;
 
     rc = globus_rsl_eval(request->rsl, &request->symbol_table);
     if(rc != GLOBUS_SUCCESS)
@@ -1840,6 +1826,7 @@ globus_l_gram_restart(
 
     rc = globus_gram_job_manager_validate_rsl(
             request,
+            request->rsl,
             GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -1901,19 +1888,58 @@ globus_l_gram_restart(
                 GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
 
     /*
-     * Remove stdout_position and stderr_position before merging.
-     * They aren't valid for job submission RSLs, but are for
-     * restart RSLs. They will be reinserted after validation.
+     * Remove stdout_position and stderr_position. We don't do streaming
+     * any more, so we will reject any restart where the positions
+     * aren't 0.
      */
-    *stdout_position_hack =
-        globus_gram_job_manager_rsl_extract_relation(
+    stdout_position = globus_gram_job_manager_rsl_extract_relation(
             restart_rsl,
             GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
+    if (stdout_position != NULL)
+    {
+        rc = globus_l_gram_check_position(
+                request,
+                stdout_position);
+        globus_rsl_free_recursive(stdout_position);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_check_position;
+        }
+    }
 
-    *stderr_position_hack = 
-        globus_gram_job_manager_rsl_extract_relation(
+    stderr_position = globus_gram_job_manager_rsl_extract_relation(
             restart_rsl,
             GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
+    if (stderr_position != NULL)
+    {
+        rc = globus_l_gram_check_position(
+                request,
+                stderr_position);
+        globus_rsl_free_recursive(stderr_position);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_check_position;
+        }
+    }
+
+    rc = globus_gram_job_manager_rsl_attribute_get_boolean_value(
+            restart_rsl,
+            "restartcontacts",
+            &restart_contacts);
+
+    if (rc != GLOBUS_SUCCESS || !restart_contacts)
+    {
+        globus_gram_job_manager_contact_list_free(request);
+        rc = GLOBUS_SUCCESS;
+    }
+
+    restartcontacts = globus_gram_job_manager_rsl_extract_relation(
+            restart_rsl,
+            "restartcontacts");
+    if (restartcontacts != NULL)
+    {
+        globus_rsl_free_recursive(restartcontacts);
+    }
 
     request->rsl = globus_gram_job_manager_rsl_merge(
                 original_rsl,
@@ -1923,6 +1949,7 @@ globus_l_gram_restart(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
+failed_check_position:
 parse_original_rsl_failed:
 state_file_read_failed:
 post_validate_eval_failed:
@@ -2482,16 +2509,9 @@ path_strdup_failed:
 /**
  * Evaluate and validate the job RSL
  * 
- * As a side-effect, if stdout_position_hack or stderr_position_hack are
- * non-NULL, they will be either moved into the request's job RSL or
- * freed.
  *
  * @param request
  *     Job request to validate
- * @param stdout_position_hack
- *     Replacement for stdout position if the job is a restart job
- * @param stderr_position_hack
- *     Replacement for stderr position if the job is a restart job
  *
  * @retval GLOBUS_SUCCESS
  *     Success.
@@ -2513,9 +2533,7 @@ path_strdup_failed:
 static
 int
 globus_l_gram_validate_rsl(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t *                      stdout_position_hack,
-    globus_rsl_t *                      stderr_position_hack)
+    globus_gram_jobmanager_request_t *  request)
 {
     int                                 rc = GLOBUS_SUCCESS;
 
@@ -2527,37 +2545,11 @@ globus_l_gram_validate_rsl(
     }
     rc = globus_gram_job_manager_validate_rsl(
             request,
+            request->rsl,
             GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
     if(rc != GLOBUS_SUCCESS)
     {
         goto validate_rsl_failed;
-    }
-    /*
-     * Insert stdout_position and stderr_position back to rsl if they were
-     * present in restart RSL
-     */
-    if (stdout_position_hack != NULL)
-    {
-        rc = globus_gram_job_manager_rsl_add_relation(
-            request->rsl,
-            stdout_position_hack);
-
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto add_stdout_position_failed;
-        }
-        stdout_position_hack = NULL;
-    }
-    if (stderr_position_hack != NULL)
-    {
-        rc = globus_gram_job_manager_rsl_add_relation(
-            request->rsl,
-            stderr_position_hack);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto add_stderr_position_failed;
-        }
-        stderr_position_hack = NULL;
     }
 
     rc = globus_rsl_eval(request->rsl, &request->symbol_table);
@@ -2568,18 +2560,8 @@ globus_l_gram_validate_rsl(
     }
 
 rsl_eval_failed2:
-add_stderr_position_failed:
-add_stdout_position_failed:
 validate_rsl_failed:
 rsl_eval_failed:
-    if (stdout_position_hack)
-    {
-        globus_rsl_free_recursive(stdout_position_hack);
-    }
-    if (stderr_position_hack)
-    {
-        globus_rsl_free_recursive(stderr_position_hack);
-    }
     return rc;
 }
 /* globus_l_gram_validate_rsl() */
@@ -2680,21 +2662,25 @@ globus_l_gram_export_cred(
     gss_buffer_desc                     buffer;
     int                                 rc = GLOBUS_SUCCESS;
 
-    if (cred == GSS_C_NO_CREDENTIAL)
+    if (cred == GSS_C_NO_CREDENTIAL && !request->jm_restart)
     {
         goto no_cred;
     }
-    major_status = gss_export_cred(
-            &minor_status,
-            cred,
-            GSS_C_NO_OID,
-            0,
-            &buffer);
 
-    if (GSS_ERROR(major_status))
+    if (cred != GSS_C_NO_CREDENTIAL)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-        goto export_cred_failed;
+        major_status = gss_export_cred(
+                &minor_status,
+                cred,
+                GSS_C_NO_OID,
+                0,
+                &buffer);
+
+        if (GSS_ERROR(major_status))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            goto export_cred_failed;
+        }
     }
 
     filename = globus_common_create_string(
@@ -2704,6 +2690,11 @@ globus_l_gram_export_cred(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto malloc_filename_failed;
+    }
+
+    if (cred == GSS_C_NO_CREDENTIAL && request->jm_restart)
+    {
+        goto jm_restart_done;
     }
 
     file = open(
@@ -2734,6 +2725,7 @@ fopen_failed:
     }
 malloc_filename_failed:
     gss_release_buffer(&minor_status, &buffer);
+jm_restart_done:
 export_cred_failed:
 no_cred:
     *proxy_filename = filename;
@@ -2858,9 +2850,8 @@ out:
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR
  *     Invalid stderr attribute
  */
-static
 int
-globus_l_gram_rewrite_output_as_staging(
+globus_gram_rewrite_output_as_staging(
     globus_gram_jobmanager_request_t *  request,
     globus_rsl_t *                      rsl,
     const char *                        attribute)
@@ -2945,7 +2936,7 @@ globus_l_gram_rewrite_output_as_staging(
     {
         /* Replace (stdout = (destination [tag])...
          * with (stdout = $jobdir/stdout) then add 
-         * (file_stage_out = ($jobdir/stdout destination)...)
+         * (file_stage_out_stdio = ($jobdir/stdout destination)...)
          */
         path = globus_common_create_string(
                 "%s/%s",
@@ -2970,7 +2961,7 @@ globus_l_gram_rewrite_output_as_staging(
         while (!globus_list_empty(destinations))
         {
             destination_url = globus_list_remove(&destinations, destinations);
-            rc = globus_gram_rsl_add_stage_out(
+            rc = globus_gram_rsl_add_stream_out(
                     request,
                     request->rsl,
                     path,
@@ -2983,7 +2974,7 @@ globus_l_gram_rewrite_output_as_staging(
                  * worth the effort to track these. We are going to fail
                  * this job anyhow.
                  */
-                goto multiple_add_stage_out_failed;
+                goto multiple_add_stream_out_failed;
             }
         }
         free(path);
@@ -2998,7 +2989,7 @@ globus_l_gram_rewrite_output_as_staging(
 single_add_output_failed:
         globus_url_destroy(&url);
 single_parse_destination_failed:
-multiple_add_stage_out_failed:
+multiple_add_stream_out_failed:
 multiple_add_output_failed:
         if (path)
         {
@@ -3023,7 +3014,7 @@ no_values:
 no_relation:
     return rc;
 }
-/* globus_l_gram_rewrite_output_as_staging() */
+/* globus_gram_rewrite_output_as_staging() */
 
 /**
  * Get the list of output destinations from an RSL value list
@@ -3368,4 +3359,88 @@ bad_input:
     return rc;
 }
 /* globus_l_gram_get_output_destination() */
+
+/**
+ * Check that all stdout_position or stderr_values are 0
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDOUT_POSITION
+ *     Invalid stdout_position
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDERR_POSITION
+ *     Invalid stderr_position
+ */
+static
+int
+globus_l_gram_check_position(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      position_rsl)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_rsl_value_t *                value_seq;
+    globus_list_t *                     values;
+    const char *                        value_string;
+    long                                longval;
+    char                                charval;
+
+    value_seq = globus_rsl_relation_get_value_sequence(position_rsl);
+
+    if (value_seq == NULL)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: checking that %s is a sequence of 0\n",
+                globus_rsl_relation_get_attribute(position_rsl));
+
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto non_sequence;
+    }
+
+    values = globus_rsl_value_sequence_get_value_list(value_seq);
+    while (!globus_list_empty(values))
+    {
+        value_string = globus_rsl_value_literal_get_string(
+                globus_list_first(values));
+        values = globus_list_rest(values);
+        if (value_string == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+            goto non_literal;
+        }
+
+        errno = 0;
+        if (scanf("%ld%c", &longval, &charval) != 1)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+            goto non_zero;
+        }
+
+    }
+non_zero:
+non_literal:
+non_sequence:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        if (strcmp(
+                    globus_rsl_relation_get_attribute(position_rsl),
+                    "stdoutposition") == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDOUT_POSITION;
+        }
+        else
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDERR_POSITION;
+        }
+    }
+    return rc;
+}
+/* globus_l_gram_check_position() */
+
+static
+void
+globus_l_gram_event_destroy(void *datum)
+{
+    globus_scheduler_event_destroy(datum);
+}
+/* globus_l_gram_event_destroy() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -61,8 +61,8 @@ globus_l_gram_job_manager_read_validation_file(
 static
 int
 globus_l_gram_job_manager_attribute_match(
-    void *                                datum,
-    void *                                args);
+    void *                              datum,
+    void *                              args);
 
 static
 globus_bool_t
@@ -73,22 +73,24 @@ globus_l_gram_job_manager_validation_string_match(
 static
 int
 globus_l_gram_job_manager_check_rsl_attributes(
-    globus_gram_jobmanager_request_t *        request,
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
-                                            when);
+                                        when);
 
 static
 globus_bool_t
 globus_l_gram_job_manager_attribute_exists(
-    globus_list_t *                        attributes,
-    char *                                attribute_name);
+    globus_list_t *                     attributes,
+    char *                              attribute_name);
 
 static
 int
 globus_l_gram_job_manager_insert_default_rsl(
-    globus_gram_jobmanager_request_t *        request,
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
-                                            when);
+                                        when);
 
 static
 globus_gram_job_manager_validation_record_t *
@@ -98,7 +100,7 @@ static
 void
 globus_l_gram_job_manager_validation_record_free(
     globus_gram_job_manager_validation_record_t *
-                                            record);
+                                        record);
 
 static
 void
@@ -278,14 +280,15 @@ globus_gram_job_manager_validation_destroy(
  */
 int
 globus_gram_job_manager_validate_rsl(
-    globus_gram_jobmanager_request_t *        request,
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
-                                            when)
+                                        when)
 {
     int                                        rc;
 
     /* First validation: RSL is a boolean "&" */
-    if(!globus_rsl_is_boolean_and(request->rsl))
+    if(!globus_rsl_is_boolean_and(rsl))
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
@@ -295,6 +298,7 @@ globus_gram_job_manager_validate_rsl(
      */
     rc = globus_l_gram_job_manager_check_rsl_attributes(
             request,
+            rsl,
             when);
 
     if(rc != GLOBUS_SUCCESS)
@@ -307,6 +311,7 @@ globus_gram_job_manager_validate_rsl(
      */
     rc = globus_l_gram_job_manager_insert_default_rsl(
             request,
+            rsl,
             when);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -812,12 +817,12 @@ static
 int
 globus_l_gram_job_manager_check_rsl_attributes(
     globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
                                         when)
 {
     globus_list_t *                     operands;
     globus_list_t *                     node;
-    globus_rsl_t *                      rsl = request->rsl;
     globus_rsl_t *                      relation;
     char *                              attribute;
     char *                              value_str;
@@ -929,16 +934,16 @@ globus_l_gram_job_manager_check_rsl_attributes(
 static
 int
 globus_l_gram_job_manager_insert_default_rsl(
-    globus_gram_jobmanager_request_t *        request,
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
-                                            when)
+                                        when)
 {
     globus_gram_job_manager_validation_record_t *
                                         record;
     globus_list_t **                    attributes;
     globus_rsl_t *                      new_relation;
     char *                              new_relation_str;
-    globus_rsl_t *                      rsl = request->rsl;
     globus_list_t *                     validation_records;
 
     attributes = globus_rsl_boolean_get_operand_list_ref(rsl);

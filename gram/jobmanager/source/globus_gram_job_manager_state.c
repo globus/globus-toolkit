@@ -67,6 +67,11 @@ void
 globus_l_gram_file_cleanup(
     globus_gram_jobmanager_request_t *  request);
 
+static
+globus_bool_t
+globus_l_gram_job_manager_state_machine(
+    globus_gram_jobmanager_request_t *  request);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -105,10 +110,11 @@ globus_gram_job_manager_state_machine_callback(
 {
     globus_gram_jobmanager_request_t *  request;
     globus_bool_t                       event_registered;
+    int                                 rc;
 
     request = user_arg;
 
-    globus_mutex_lock(&request->mutex);
+    GlobusGramJobManagerRequestLock(request);
 
     /*
      * If nobody tried to cancel this callback, then we need to unregister
@@ -122,40 +128,19 @@ globus_gram_job_manager_state_machine_callback(
     
     do
     {
-        event_registered = globus_gram_job_manager_state_machine(
-                request);
+        event_registered = globus_l_gram_job_manager_state_machine(request);
     }
     while(!event_registered);
 
-    if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE ||
-        request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
-        request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
-    {
-        int rc;
+    GlobusGramJobManagerRequestUnlock(request);
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Removing reference for state_machine_callback\n");
+    rc = globus_gram_job_manager_remove_reference(
+            request->manager,
+            request->job_contact_path);
+    assert(rc == GLOBUS_SUCCESS);
 
-        if (request->job_id_string)
-        {
-            (void) globus_gram_job_manager_unregister_job_id(
-                    request->manager,
-                    request->job_id_string);
-        }
-
-        while (!globus_fifo_empty(&request->seg_event_queue))
-        {
-            globus_gram_job_manager_seg_handle_event(request);
-        }
-
-        globus_mutex_unlock(&request->mutex);
-
-        rc = globus_gram_job_manager_remove_reference(
-                request->manager,
-                request->job_contact_path);
-        assert(rc == GLOBUS_SUCCESS);
-    }
-    else
-    {
-        globus_mutex_unlock(&request->mutex);
-    }
 }
 /* globus_gram_job_manager_state_machine_callback() */
 
@@ -163,8 +148,9 @@ globus_gram_job_manager_state_machine_callback(
 /*
  * Job Manager state machine.
  */
+static
 globus_bool_t
-globus_gram_job_manager_state_machine(
+globus_l_gram_job_manager_state_machine(
     globus_gram_jobmanager_request_t *  request)
 {
     globus_bool_t                       event_registered = GLOBUS_FALSE;
@@ -198,13 +184,14 @@ globus_gram_job_manager_state_machine(
                                      request->two_phase_commit,
                                      0);
 
-                globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay_time,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-
-                event_registered = GLOBUS_TRUE;
+                rc = globus_gram_job_manager_state_machine_register(
+                        request->manager,
+                        request,
+                        &delay_time);
+                if (rc == GLOBUS_SUCCESS)
+                {
+                    event_registered = GLOBUS_TRUE;
+                }
             }
         }
         break;
@@ -216,15 +203,17 @@ globus_gram_job_manager_state_machine(
                                  request->commit_extend,
                                  0);
 
-            globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay_time,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-
             request->commit_extend = 0;
+            rc = globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    &delay_time);
 
-            event_registered = GLOBUS_TRUE;
+
+            if (rc == GLOBUS_SUCCESS)
+            {
+                event_registered = GLOBUS_TRUE;
+            }
         }
         else if(request->two_phase_commit == 0)
         {
@@ -481,12 +470,14 @@ globus_gram_job_manager_state_machine(
                         delay_time,
                         request->poll_frequency, 0);
 
-                globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay_time,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-                event_registered = GLOBUS_TRUE;
+                rc = globus_gram_job_manager_state_machine_register(
+                        request->manager,
+                        request,
+                        &delay_time);
+                if (rc == GLOBUS_SUCCESS)
+                {
+                    event_registered = GLOBUS_TRUE;
+                }
             }
             else
             {
@@ -558,7 +549,90 @@ globus_gram_job_manager_state_machine(
          */
         query = globus_fifo_peek(&request->pending_queries);
 
-        if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
+
+        if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL &&
+            query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE)
+        {
+            globus_rsl_t *              tmp_rsl;
+
+	    globus_gram_job_manager_request_log(
+		request,
+		"Parsing query RSL: %s\n",
+		query->signal_arg);
+
+	    query->rsl = globus_rsl_parse(query->signal_arg);
+	    if(!query->rsl)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = next_state;
+		break;
+	    }
+	    rc = globus_rsl_assist_attributes_canonicalize(query->rsl);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = next_state;
+		break;
+	    }
+	    rc = globus_gram_job_manager_validate_rsl(
+		    request,
+                    query->rsl,
+		    GLOBUS_GRAM_VALIDATE_STDIO_UPDATE);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = next_state;
+		break;
+	    }
+	    rc = globus_rsl_eval(query->rsl, &request->symbol_table);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		query->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	        request->jobmanager_state = next_state;
+		break;
+	    }
+
+            rc = globus_gram_rewrite_output_as_staging(
+                    request,
+                    query->rsl,
+                    GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                query->failure_code = rc;
+                request->jobmanager_state = next_state;
+                break;
+            }
+                    
+            rc = globus_gram_rewrite_output_as_staging(
+                    request,
+                    query->rsl,
+                    GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                query->failure_code = rc;
+                request->jobmanager_state = next_state;
+                break;
+            }
+                    
+            tmp_rsl = globus_gram_job_manager_rsl_merge(
+		request->rsl,
+		query->rsl);
+
+	    if (tmp_rsl == GLOBUS_NULL)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = next_state;
+		break;
+	    }
+            globus_rsl_free_recursive(request->rsl);
+            request->rsl = tmp_rsl;
+
+            request->jobmanager_state = next_state;
+            globus_l_gram_remote_io_url_update(request);
+	    break;
+        }
+        else if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
         {
             rc = globus_gram_job_manager_script_signal(
                     request,
@@ -630,20 +704,22 @@ globus_gram_job_manager_state_machine(
 
         if(globus_fifo_empty(&request->pending_queries))
         {
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
+
             GlobusTimeReltimeSet(delay_time,
                                  request->two_phase_commit,
                                  0);
 
-            globus_callback_register_oneshot(
-                    &request->poll_timer,
-                    &delay_time,
-                    globus_gram_job_manager_state_machine_callback,
-                    request);
+            rc = globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    &delay_time);
 
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
-
-            event_registered = GLOBUS_TRUE;
+            if (rc == GLOBUS_SUCCESS)
+            {
+                event_registered = GLOBUS_TRUE;
+            }
         }
         else
         {
@@ -769,16 +845,17 @@ globus_gram_job_manager_state_machine(
             GlobusTimeReltimeSet(delay_time,
                                  request->commit_extend,
                                  0);
-
-            globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay_time,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-
             request->commit_extend = 0;
 
-            event_registered = GLOBUS_TRUE;
+            rc = globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    &delay_time);
+
+            if (rc == GLOBUS_SUCCESS)
+            {
+                event_registered = GLOBUS_TRUE;
+            }
         }
         else if(request->two_phase_commit == 0 || !request->client_contacts)
         {
@@ -1054,13 +1131,15 @@ globus_gram_job_manager_state_machine(
         {
             GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
 
-            globus_callback_register_oneshot(
-                    &request->poll_timer,
-                    &delay_time,
-                    globus_gram_job_manager_state_machine_callback,
-                    request);
+            rc = globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    &delay_time);
 
-            event_registered = GLOBUS_TRUE;
+            if (rc == GLOBUS_SUCCESS)
+            {
+                event_registered = GLOBUS_TRUE;
+            }
         }
         break;
     }
@@ -1695,3 +1774,63 @@ not_found:
     return;
 }
 /* globus_l_gram_file_cleanup() */
+
+/**
+ * Register the state machine callback callback for this request
+ *
+ * @param manager
+ *     Job manager state
+ * @param request
+ *     Locked jobmanager request structure.
+ * @param delay
+ *     Oneshot delay
+ */
+int
+globus_gram_job_manager_state_machine_register(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t *  request,
+    globus_reltime_t *                  delay)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result;
+
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Adding reference for state machine register for %s\n",
+            request->job_contact_path);
+    rc = globus_gram_job_manager_add_reference(
+            manager,
+            request->job_contact_path,
+            NULL);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_add_reference;
+    }
+
+    result = globus_callback_register_oneshot(
+            &request->poll_timer,
+            delay,
+            globus_gram_job_manager_state_machine_callback,
+            request);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto oneshot_failed;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+oneshot_failed:
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Oneshot register failed, removing reference for %s\n",
+                request->job_contact_path);
+        globus_gram_job_manager_remove_reference(
+                manager,
+                request->job_contact_path);
+failed_add_reference:
+        ;
+    }
+    return rc;
+}
+/* globus_gram_job_manager_state_machine_register() */

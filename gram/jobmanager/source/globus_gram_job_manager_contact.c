@@ -218,6 +218,9 @@ globus_gram_job_manager_contact_state_callback(
         goto context_malloc_failed;
     }
 
+    globus_gram_job_manager_request_log(
+            request,
+            "Adding reference for job state callbacks\n");
     rc = globus_gram_job_manager_add_reference(
             request->manager,
             request->job_contact_path,
@@ -312,6 +315,9 @@ queue_failed:
 nothing_to_send:
         free(context->message);
 
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Not sending callbacks, removing reference\n");
         globus_gram_job_manager_remove_reference(
                request->manager,
                request->job_contact_path);
@@ -324,6 +330,182 @@ context_malloc_failed:
 }
 /* globus_gram_job_manager_state_callback() */
 
+/**
+ * Write list of callback contacts to the given file
+ *
+ * @param request
+ *     Job request which should have its callback contacts written
+ * @param fp
+ *     File to write to
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE
+ *     Error writing state file
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed
+ */
+int
+globus_gram_job_manager_write_callback_contacts(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp)
+{
+    globus_gram_job_manager_contact_t * contact;
+    globus_list_t *                     tmp;
+    int                                 rc;
+
+    tmp = request->client_contacts;
+
+    rc = fprintf(fp, "%d\n", globus_list_size(tmp));
+    if (rc < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE;
+
+        goto failed_write_count;
+    }
+
+    while (! globus_list_empty(tmp))
+    {
+        contact = globus_list_first(tmp);
+        tmp = globus_list_rest(tmp);
+
+        rc = fprintf(fp, "%d %s\n", contact->job_state_mask, contact->contact);
+        if (rc < 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE;
+
+            goto failed_write_contact;
+        }
+    }
+    rc = GLOBUS_SUCCESS;
+
+failed_write_contact:
+failed_write_count:
+    return rc;
+}
+/* globus_gram_job_manager_write_callback_contacts() */
+
+/**
+ * Read list of callback contacts from the given file
+ *
+ * @param request
+ *     Job request which should have its callback contacts read
+ * @param fp
+ *     File to read from
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE
+ *     Error reading state file
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed
+ */
+int
+globus_gram_job_manager_read_callback_contacts(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp)
+{
+    globus_gram_job_manager_contact_t * contact;
+    globus_list_t **                    tmp;
+    int                                 count;
+    int                                 rc;
+    long                                off1, off2;
+    int                                 i;
+
+    request->client_contacts = NULL;
+    tmp = &request->client_contacts;
+
+    rc = fscanf(fp, "%d\n", &count);
+    if (rc != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+        goto failed_read_count;
+    }
+
+    for (i = 0; i < count; i++)
+    {
+        contact = malloc(sizeof(globus_gram_job_manager_contact_t));
+        if (contact == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto failed_malloc_contact;
+        }
+        off1 = ftell(fp);
+        if (off1 < 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+            goto failed_ftell;
+        }
+        rc = fscanf(fp, "%d %*s\n", &contact->job_state_mask); 
+        if (rc < 1)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto failed_read_mask;
+        }
+        off2 = ftell(fp);
+        if (rc < 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto failed_ftell2;
+        }
+        rc = fseek(fp, off1, SEEK_SET);
+        if (rc < 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto failed_fseek;
+        }
+
+        contact->contact = malloc(off2-off1+1);
+        if (contact->contact == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto failed_malloc_contact_string_failed;
+        }
+        rc = fscanf(fp, "%*d %s\n", contact->contact);
+        if (rc < 1)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+
+            goto failed_scan_contact;
+        }
+        contact->failed_count = 0;
+
+        rc = globus_list_insert(tmp, contact);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto failed_list_insert;
+        }
+        tmp = globus_list_rest_ref(*tmp);
+    }
+    rc = GLOBUS_SUCCESS;
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+failed_list_insert:
+failed_scan_contact:
+        free(contact->contact);
+failed_malloc_contact_string_failed:
+failed_fseek:
+failed_ftell2:
+failed_read_mask:
+failed_ftell:
+        free(contact);
+failed_malloc_contact:
+failed_read_count:
+        ;
+    }
+
+    return rc;
+}
+/* globus_gram_job_manager_write_callback_contacts() */
+
 static
 int
 globus_l_gram_callback_queue(
@@ -334,7 +516,7 @@ globus_l_gram_callback_queue(
     globus_list_t *                     references = NULL;
     globus_gram_jobmanager_request_t *  request;
 
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     rc = globus_fifo_enqueue(&manager->state_callback_fifo, context);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -388,12 +570,16 @@ globus_l_gram_callback_queue(
     }
 
 failed_enqueue:
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 
     while (!globus_list_empty(references))
     {
         char * key = globus_list_remove(&references, references);
 
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Done sending callbacks, removing reference for %s\n",
+                key);
         globus_gram_job_manager_remove_reference(
                manager,
                key);
@@ -423,7 +609,7 @@ globus_l_gram_callback_reply(
     request = context->request;
     manager = request->manager;
 
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     context->active--;
     manager->state_callback_slots++;
 
@@ -474,12 +660,16 @@ globus_l_gram_callback_reply(
             globus_list_insert(&references, request->job_contact_path);
         }
     }
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 
     while (!globus_list_empty(references))
     {
         char * key = globus_list_remove(&references, references);
 
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Done sending callbacks, removing reference for %s\n",
+                key);
         globus_gram_job_manager_remove_reference(
                manager,
                key);

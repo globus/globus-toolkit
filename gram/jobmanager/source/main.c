@@ -336,7 +336,7 @@ main(
                     "Successfully handed descriptors to active job manager\n");
         }
     }
-    globus_mutex_lock(&manager.mutex);
+    GlobusGramJobManagerLock(&manager);
 
     if (manager.socket_fd != -1 &&
         globus_hashtable_empty(&manager.request_hash) &&
@@ -351,9 +351,9 @@ main(
      */
     while (! manager.done)
     {
-        globus_cond_wait(&manager.cond, &manager.mutex);
+        GlobusGramJobManagerWait(&manager);
     }
-    globus_mutex_unlock(&manager.mutex);
+    GlobusGramJobManagerUnlock(&manager);
 
 
     globus_gram_job_manager_log(

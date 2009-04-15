@@ -587,6 +587,37 @@ globus_gram_job_manager_config_destroy(
     globus_gram_job_manager_config_t *  config);
 
 /* globus_gram_job_manager_request.c */
+#ifdef DEBUG_THREADS
+#define GlobusGramJobManagerRequestLock(request) \
+    do { \
+    globus_gram_job_manager_request_log( \
+            request, \
+            "JM: [tid=%ld] Locking request (%s:%d) %p\n", \
+            (long) globus_thread_self(), \
+            __FILE__, \
+            __LINE__, \
+            (request)); \
+    globus_mutex_lock(&(request)->mutex); \
+    } while (0)
+
+#define GlobusGramJobManagerRequestUnlock(request) \
+    do { \
+    globus_gram_job_manager_request_log( \
+            request, \
+            "JM: [tid=%ld] Unlocking request (%s:%d) %p\n", \
+            (long) globus_thread_self() \
+            __FILE__, \
+            __LINE__, \
+            (request)); \
+    globus_mutex_unlock(&(request)->mutex); \
+    } while (0)
+#else
+#define GlobusGramJobManagerRequestLock(request) \
+    globus_mutex_lock(&(request)->mutex)
+#define GlobusGramJobManagerRequestUnlock(request) \
+    globus_mutex_unlock(&(request)->mutex)
+#endif
+
 int
 globus_gram_job_manager_request_init(
     globus_gram_jobmanager_request_t ** request,
@@ -658,6 +689,11 @@ globus_gram_job_manager_destroy_directory(
     globus_gram_jobmanager_request_t *  request,
     const char *                        directory);
 
+int
+globus_gram_rewrite_output_as_staging(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        attribute);
 
 /* globus_gram_job_manager_validate.c */
 
@@ -687,6 +723,7 @@ extern
 int
 globus_gram_job_manager_validate_rsl(
     globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
                                         when);
 
@@ -709,15 +746,17 @@ void
 globus_gram_job_manager_contact_state_callback(
     globus_gram_jobmanager_request_t *  request);
 
+int
+globus_gram_job_manager_write_callback_contacts(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp);
+
+int
+globus_gram_job_manager_read_callback_contacts(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp);
+
 /* globus_gram_job_manager_state.c */
-void
-globus_gram_job_manager_state_machine_callback(
-    void *                              arg);
-
-globus_bool_t
-globus_gram_job_manager_state_machine(
-    globus_gram_jobmanager_request_t *  request);
-
 int
 globus_gram_job_manager_read_request(
     globus_gram_job_manager_t *         manager,
@@ -737,6 +776,12 @@ globus_gram_job_manager_reply(
 int
 globus_gram_job_manager_validate_username(
     globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_state_machine_register(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t *  request,
+    globus_reltime_t *                  delay);
 
 /* globus_gram_job_manager_gsi.c */
 int
@@ -940,7 +985,7 @@ globus_gram_rsl_add_output(
     const char *                        value);
 
 int
-globus_gram_rsl_add_stage_out(
+globus_gram_rsl_add_stream_out(
     globus_gram_jobmanager_request_t *  request,
     globus_rsl_t *                      rsl,
     const char *                        source,
@@ -1025,6 +1070,56 @@ globus_gram_job_manager_auditing_file_write(
     globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager.c */
+#ifdef DEBUG_THREADS
+#define GlobusGramJobManagerLock(manager) \
+    do { \
+    globus_gram_job_manager_log( \
+            manager, \
+            "JM: [tid=%ld] Locking manager (%s:%d) %p\n", \
+            (long) globus_thread_self() \
+            __FILE__, \
+            __LINE__, \
+            (manager)); \
+    globus_mutex_lock(&(manager)->mutex); \
+    } while (0)
+
+#define GlobusGramJobManagerUnlock(manager) \
+    do { \
+    globus_gram_job_manager_log( \
+            manager, \
+            "JM: [tid=%d] Unlocking manager (%s:%d) %p\n", \
+            (long) globus_thread_self() \
+            __FILE__, \
+            __LINE__, \
+            (manager)); \
+    globus_mutex_unlock(&(manager)->mutex); \
+    } while (0)
+#define GlobusGramJobManagerWait(manager) \
+    do { \
+        globus_gram_job_manager_log( \
+                manager, \
+                "JM: [tid=%ld] Condition Wait: Unlocking manager (%s:%d) %p\n", \
+                (long) globus_thread_self() \
+                __FILE__, \
+                __LINE__, \
+                (manager)); \
+        globus_cond_wait(&(manager)->cond, &(manager)->mutex); \
+        globus_gram_job_manager_log( \
+                manager, \
+                "JM: [tid=%ld] Condition Wait Returns: Locking manager (%s:%d) %p\n", \
+                (long) globus_thread_self() \
+                __FILE__, \
+                __LINE__, \
+                (manager)); \
+    } while (0)
+#else
+#define GlobusGramJobManagerLock(manager) \
+        globus_mutex_lock(&(manager)->mutex)
+#define GlobusGramJobManagerUnlock(manager) \
+        globus_mutex_unlock(&(manager)->mutex)
+#define GlobusGramJobManagerWait(manager) \
+        globus_cond_wait(&(manager)->cond, &(manager)->mutex);
+#endif
 int
 globus_gram_job_manager_init(
     globus_gram_job_manager_t *         manager,
@@ -1080,7 +1175,6 @@ int
 globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_t *         manager,
     const char *                        jobid,
-    globus_bool_t                       locked,
     globus_gram_jobmanager_request_t ** request);
 
 int
@@ -1096,6 +1190,20 @@ globus_gram_job_manager_request_exists(
 void
 globus_gram_job_manager_set_grace_period_timer(
     globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_job_manager_set_status(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_protocol_job_state_t    state,
+    int                                 failure_code);
+
+int
+globus_gram_job_manager_get_status(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_protocol_job_state_t *  state,
+    int *                               failure_code);
 
 /* startup_socket.c */
 int

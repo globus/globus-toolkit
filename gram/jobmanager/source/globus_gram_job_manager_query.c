@@ -126,6 +126,10 @@ globus_gram_job_manager_query_callback(
         goto invalid_query;
     }
 
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Trying to add reference for query handling: %s\n",
+            uri);
     rc = globus_gram_job_manager_add_reference(
             manager,
             uri,
@@ -142,6 +146,10 @@ globus_gram_job_manager_query_callback(
             goto invalid_query;
         }
 
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Trying to add reference for query handling: %s\n",
+                parsed_uri.url_path);
         rc = globus_gram_job_manager_add_reference(
                 manager,
                 parsed_uri.url_path,
@@ -155,7 +163,7 @@ globus_gram_job_manager_query_callback(
         }
     }
 
-    globus_mutex_lock(&request->mutex);
+    GlobusGramJobManagerRequestLock(request);
     status = request->status;
     job_failure_code = request->failure_code;
 
@@ -243,15 +251,19 @@ invalid_query:
     }
     if (request)
     {
-        globus_mutex_unlock(&request->mutex);
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Query callback complete: Removing reference for %s\n",
+                request->job_contact_path);
+        GlobusGramJobManagerRequestUnlock(request);
         rc = globus_gram_job_manager_remove_reference(
                 request->manager,
                 request->job_contact_path);
 
         if (rc != GLOBUS_SUCCESS)
         {
-            globus_gram_job_manager_request_log(
-                    request,
+            globus_gram_job_manager_log(
+                    manager,
                     "JM : Unexpected failure removing reference to request\n");
         }
     }
@@ -366,109 +378,83 @@ globus_l_gram_job_manager_cancel(
     globus_result_t                     result;
     globus_gram_job_manager_query_t *   query;
     globus_reltime_t                    delay;
-    globus_bool_t                       active;
 
     switch(request->jobmanager_state)
     {
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-          request->jobmanager_state
-                  = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
-
-          return GLOBUS_SUCCESS;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-          request->jobmanager_state
-                  = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-          globus_gram_job_manager_request_set_status(
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
+        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+        globus_gram_job_manager_request_set_status(
                 request,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
-          request->unsent_status_change = GLOBUS_TRUE;
-          if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
-          {
-              result = globus_callback_unregister(
-                  request->poll_timer,
-                  NULL,
-                  NULL,
-                  &active);
-              if(result == GLOBUS_SUCCESS && !active)
-              {
-                  GlobusTimeReltimeSet(delay, 0, 0);
-                  globus_callback_register_oneshot(
-                          &request->poll_timer,
-                          &delay,
-                          globus_gram_job_manager_state_machine_callback,
-                          request);
-              }
-          }
+        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
 
-          return GLOBUS_SUCCESS;
+        return GLOBUS_SUCCESS;
 
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
-          request->jobmanager_state
-                  = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-          globus_gram_job_manager_request_set_status(
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
+        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+        globus_gram_job_manager_request_set_status(
                 request,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
-          request->unsent_status_change = GLOBUS_TRUE;
+        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
+        request->unsent_status_change = GLOBUS_TRUE;
+        if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+        {
+            GlobusTimeReltimeSet(delay, 0, 0);
+            result = globus_callback_adjust_oneshot(
+                    request->poll_timer,
+                    &delay);
+        }
 
-          return GLOBUS_SUCCESS;
+        return GLOBUS_SUCCESS;
 
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-          query = calloc(
-                  1,
-                  sizeof(globus_gram_job_manager_query_t));
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
+        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+        globus_gram_job_manager_request_set_status(
+                request,
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
+        request->unsent_status_change = GLOBUS_TRUE;
+        return GLOBUS_SUCCESS;
+
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+    case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+        query = calloc(1, sizeof(globus_gram_job_manager_query_t));
   
-          query->type = GLOBUS_GRAM_JOB_MANAGER_CANCEL;
-          query->handle = handle;
-          query->signal = 0;
-          query->signal_arg = NULL;
+        query->type = GLOBUS_GRAM_JOB_MANAGER_CANCEL;
+        query->handle = handle;
+        query->signal = 0;
+        query->signal_arg = NULL;
   
-          globus_fifo_enqueue(&request->pending_queries, query);
-          *reply = GLOBUS_FALSE;
+        globus_fifo_enqueue(&request->pending_queries, query);
+        *reply = GLOBUS_FALSE;
   
-          if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
-          {
-              request->jobmanager_state =
-                  GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1;
-              if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
-              {
-                  result = globus_callback_unregister(
-                      request->poll_timer,
-                      NULL,
-                      NULL,
-                      &active);
-                  if(result == GLOBUS_SUCCESS && !active)
-                  {
-                      GlobusTimeReltimeSet(delay, 0, 0);
-                      globus_callback_register_oneshot(
-                              &request->poll_timer,
-                              &delay,
-                              globus_gram_job_manager_state_machine_callback,
-                              request);
-                  }
-              }
-              else
-              {
-                  GlobusTimeReltimeSet(delay, 0, 0);
-                  globus_callback_register_oneshot(
-                          &request->poll_timer,
-                          &delay,
-                          globus_gram_job_manager_state_machine_callback,
-                          request);
-              }
-          }
-          return GLOBUS_SUCCESS;
-      default:
+        if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1;
+            if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+            {
+                GlobusTimeReltimeSet(delay, 0, 0);
+                result = globus_callback_adjust_oneshot(
+                        request->poll_timer,
+                        &delay);
+            }
+            else
+            {
+                GlobusTimeReltimeSet(delay, 0, 0);
+                globus_gram_job_manager_state_machine_register(
+                        request->manager,
+                        request,
+                        &delay);
+            }
+        }
+        return GLOBUS_SUCCESS;
+    default:
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
         *reply = GLOBUS_TRUE;
         return rc;
@@ -556,7 +542,6 @@ globus_l_gram_job_manager_renew(
     globus_bool_t *                     reply)
 {
     globus_result_t                     result;
-    globus_bool_t                       active;
     globus_gram_job_manager_query_t *   query;
     int                                 rc = 0;
     globus_reltime_t                    delay;
@@ -598,21 +583,10 @@ globus_l_gram_job_manager_renew(
 
     if(doit && request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
     {
-        result = globus_callback_unregister(
-            request->poll_timer,
-            NULL,
-            NULL,
-            &active);
-
-        if(result == GLOBUS_SUCCESS && !active)
-        {
-            GlobusTimeReltimeSet(delay, 0, 0);
-            globus_callback_register_oneshot(
-                    &request->poll_timer,
-                    &delay,
-                    globus_gram_job_manager_state_machine_callback,
-                    request);
-        }
+        GlobusTimeReltimeSet(delay, 0, 0);
+        result = globus_callback_adjust_oneshot(
+                request->poll_timer,
+                &delay);
         /* ignore this failure... the callback will happen anyway. */
         rc = GLOBUS_SUCCESS;
     }
@@ -643,7 +617,6 @@ globus_l_gram_job_manager_signal(
     globus_reltime_t                    delay;
     globus_gram_job_manager_query_t *   query;
     globus_result_t                     result;
-    globus_bool_t                       active;
 
     *reply = GLOBUS_TRUE;
     if(args == NULL || sscanf(args, "%d", &signal) != 1)
@@ -709,21 +682,10 @@ globus_l_gram_job_manager_signal(
         }
         if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
         {
-            result = globus_callback_unregister(
-                request->poll_timer,
-                NULL,
-                NULL,
-                &active);
-
-            if(result == GLOBUS_SUCCESS && !active)
-            {
-                GlobusTimeReltimeSet(delay, 0, 0);
-                globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-            }
+            GlobusTimeReltimeSet(delay, 0, 0);
+            result = globus_callback_adjust_oneshot(
+                    request->poll_timer,
+                    &delay);
         }
         break;
 
@@ -769,25 +731,10 @@ globus_l_gram_job_manager_signal(
         }
         if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
         {
-            result = globus_callback_unregister(
+            GlobusTimeReltimeSet(delay, 0, 0);
+            result = globus_callback_adjust_oneshot(
                     request->poll_timer,
-                    NULL,
-                    NULL,
-                    &active);
-            if(result == GLOBUS_SUCCESS && !active)
-            {
-                /* 
-                 * Cancelled callback before it ran--schedule the
-                 * state machine to run after the query handler exits.
-                 */
-                request->poll_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
-                GlobusTimeReltimeSet(delay, 0, 0);
-                globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-            }
+                    &delay);
         }
         break;
 
@@ -917,8 +864,6 @@ globus_l_gram_job_manager_query_stop_manager(
     globus_gram_jobmanager_request_t *  request)
 {
     int                                 rc = GLOBUS_SUCCESS;
-    globus_result_t                     result;
-    globus_bool_t                       active;
     globus_gram_jobmanager_state_t      state;
     globus_reltime_t                    delay;
 
@@ -928,30 +873,18 @@ globus_l_gram_job_manager_query_stop_manager(
     {
         if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
         {
-            result = globus_callback_unregister(
+            GlobusTimeReltimeSet(delay, 0, 0);
+            globus_callback_adjust_oneshot(
                 request->poll_timer,
-                NULL,
-                NULL,
-                &active);
-
-            if(result == GLOBUS_SUCCESS && !active)
-            {
-                GlobusTimeReltimeSet(delay, 0, 0);
-                globus_callback_register_oneshot(
-                        &request->poll_timer,
-                        &delay,
-                        globus_gram_job_manager_state_machine_callback,
-                        request);
-            }
+                &delay);
         }
         else
         {
             GlobusTimeReltimeSet(delay, 0, 0);
-            globus_callback_register_oneshot(
-                    &request->poll_timer,
-                    &delay,
-                    globus_gram_job_manager_state_machine_callback,
-                    request);
+            globus_gram_job_manager_state_machine_register(
+                  request->manager,
+                  request,
+                  &delay);
         }
     }
 
@@ -1111,15 +1044,22 @@ globus_gram_job_manager_query_delegation_callback(
 {
     globus_gram_job_manager_query_t *   query;
     globus_gram_jobmanager_request_t *  request;
+    globus_reltime_t                    delay;
+
     request = arg;
 
-    globus_mutex_lock(&request->mutex);
+    GlobusGramJobManagerRequestLock(request);
 
     query = globus_fifo_peek(&request->pending_queries);
 
     query->delegated_credential = credential;
 
-    while(!globus_gram_job_manager_state_machine(request));
-    globus_mutex_unlock(&request->mutex);
+    GlobusTimeReltimeSet(delay, 0, 0);
+
+    globus_gram_job_manager_state_machine_register(
+            request->manager,
+            request,
+            &delay);
+    GlobusGramJobManagerRequestUnlock(request);
 }
 /* globus_l_gram_job_manager_delegation_callback() */

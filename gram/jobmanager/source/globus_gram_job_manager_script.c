@@ -244,6 +244,10 @@ globus_l_gram_job_manager_script_run(
         goto script_context_malloc_failed;
     }
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Adding reference for script %s\n",
+            request->job_contact_path);
     rc = globus_gram_job_manager_add_reference(
             request->manager,
             request->job_contact_path,
@@ -324,6 +328,11 @@ attr_cntl_program_failed:
 attr_init_failed:
         free(script_context->script_arg_file);
 script_arg_file_malloc_failed:
+
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Script failure, removing reference for %s\n",
+                request->job_contact_path);
         globus_gram_job_manager_remove_reference(
                 request->manager,
                 request->job_contact_path);
@@ -575,6 +584,10 @@ globus_l_gram_pclose_callback(
 
     globus_l_gram_job_manager_script_done(request->manager);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Script close complete, removing reference for %s\n",
+            request->job_contact_path);
     rc = globus_gram_job_manager_remove_reference(
             request->manager,
             request->job_contact_path);
@@ -682,38 +695,30 @@ globus_gram_job_manager_script_submit(
 
 /**
  * Set job request status and fire callback so it registers
- *
- * Avoids actually locking request if possible.
  */
 static
 int
 local_globus_set_status(
-    globus_gram_jobmanager_request_t *    request,
-    globus_gram_protocol_job_state_t      status)
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_protocol_job_state_t    status)
 {
-    if( ! request )
-        return GLOBUS_FAILURE;
+    globus_reltime_t                    delay;
+    int                                 rc;
 
     if(request->status != status)
     {
-        globus_mutex_lock(&request->mutex);
         globus_gram_job_manager_request_set_status(request, status);
         request->unsent_status_change = GLOBUS_TRUE;
-        globus_mutex_unlock(&request->mutex);
     }
 
-    {
-    /* Globus expects the callback to fire. Force it to
-     * run instantly. */
-        globus_reltime_t delay;
-        GlobusTimeReltimeSet(delay, 0, 0);
-        globus_callback_register_oneshot(
-            &request->poll_timer,
-            &delay,
-            globus_gram_job_manager_state_machine_callback,
-            request);
-    }
-    return GLOBUS_SUCCESS;
+    GlobusTimeReltimeSet(delay, 0, 0);
+
+    rc = globus_gram_job_manager_state_machine_register(
+            request->manager,
+            request,
+            &delay);
+
+    return rc;
 }
 /* local_globus_set_status() */
 
@@ -1448,8 +1453,9 @@ globus_l_gram_job_manager_default_done(
     const char *                        value)
 {
     int                                 script_status;
+    int                                 rc;
 
-    globus_mutex_lock(&request->mutex);
+    GlobusGramJobManagerRequestLock(request);
 
     if(failure_code)
     {
@@ -1459,11 +1465,10 @@ globus_l_gram_job_manager_default_done(
     {
         globus_reltime_t delay;
         GlobusTimeReltimeSet(delay, 0, 0);
-        globus_callback_register_oneshot(
-            &request->poll_timer,
-            &delay,
-            globus_gram_job_manager_state_machine_callback,
-            request);
+        rc = globus_gram_job_manager_state_machine_register(
+                request->manager,
+                request,
+                &delay);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_STATE") == 0)
     {
@@ -1574,7 +1579,7 @@ globus_l_gram_job_manager_default_done(
         request->unsent_status_change = GLOBUS_TRUE;
     }
 
-    globus_mutex_unlock(&request->mutex);
+    GlobusGramJobManagerRequestUnlock(request);
 }
 /* globus_l_gram_job_manager_default_done() */
 
@@ -1593,10 +1598,12 @@ globus_l_gram_job_manager_query_done(
 {
     int                                 script_status;
     globus_gram_job_manager_query_t *   query;
+    globus_reltime_t                    delay;
+    int                                 rc;
 
     query = arg;
 
-    globus_mutex_lock(&request->mutex);
+    GlobusGramJobManagerRequestLock(request);
 
     if(failure_code)
     {
@@ -1604,13 +1611,11 @@ globus_l_gram_job_manager_query_done(
     }
     if(!variable)
     {
-        globus_reltime_t delay;
         GlobusTimeReltimeSet(delay, 0, 0);
-        globus_callback_register_oneshot(
-            &request->poll_timer,
-            &delay,
-            globus_gram_job_manager_state_machine_callback,
-            request);
+        rc = globus_gram_job_manager_state_machine_register(
+                request->manager,
+                request,
+                &delay);
     }
     else if(strcmp(variable, "GRAM_SCRIPT_ERROR") == 0)
     {
@@ -1672,7 +1677,7 @@ globus_l_gram_job_manager_query_done(
             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
     }
 
-    globus_mutex_unlock(&request->mutex);
+    GlobusGramJobManagerRequestUnlock(request);
 }
 /* globus_l_gram_job_manager_default_done() */
 /**
@@ -1850,9 +1855,15 @@ globus_l_gram_job_manager_script_write_description(
 
     va_start(ap, request);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Script input: $description=\n{\n");
     fprintf(fp, "$description =\n{\n");
 
     globus_l_gram_job_manager_print_rsl(fp, request->rsl);
+    globus_l_gram_job_manager_print_rsl(
+            request->manager->jobmanager_log_fp,
+            request->rsl);
 
     /* Other non-rsl or rsl-override attributes */
     while(1)
@@ -1875,6 +1886,10 @@ globus_l_gram_job_manager_script_write_description(
                         string_value);
 
                 fprintf(fp, ",\n    '%s' => [ '%s' ]", attribute, prepared);
+                fprintf(request->manager->jobmanager_log_fp,
+                        ",\n    '%s' => [ '%s' ]",
+                        attribute,
+                        prepared);
                 free(prepared);
             }
             break;
@@ -1883,6 +1898,10 @@ globus_l_gram_job_manager_script_write_description(
           case 'd':
             int_value = va_arg(ap, int);
             fprintf(fp, ",\n    '%s' => [ '%d' ]", attribute, int_value);
+            fprintf(request->manager->jobmanager_log_fp,
+                    ",\n    '%s' => [ '%d' ]",
+                    attribute,
+                    int_value);
             break;
         }
     }
@@ -1893,10 +1912,16 @@ globus_l_gram_job_manager_script_write_description(
         fprintf(fp,
                 ",\n    'logfile' => [ '%s' ]",
                 request->manager->jobmanager_logfile);
+        fprintf(request->manager->jobmanager_log_fp,
+                ",\n    'logfile' => [ '%s' ]",
+                request->manager->jobmanager_logfile);
     }
     if(request->uniq_id)
     {
         fprintf(fp,
+                ",\n    'uniqid' => [ '%s' ]",
+                request->uniq_id);
+        fprintf(request->manager->jobmanager_log_fp,
                 ",\n    'uniqid' => [ '%s' ]",
                 request->uniq_id);
     }
@@ -1905,10 +1930,16 @@ globus_l_gram_job_manager_script_write_description(
         fprintf(fp,
                 ",\n    'jobid' => [ '%s' ]",
                 request->job_id_string);
+        fprintf(request->manager->jobmanager_log_fp,
+                ",\n    'jobid' => [ '%s' ]",
+                request->job_id_string);
     }
     if(request->cache_tag)
     {
         fprintf(fp,
+                ",\n    'cachetag' => [ '%s' ]",
+                request->cache_tag);
+        fprintf(request->manager->jobmanager_log_fp,
                 ",\n    'cachetag' => [ '%s' ]",
                 request->cache_tag);
     }
@@ -1917,10 +1948,16 @@ globus_l_gram_job_manager_script_write_description(
         fprintf(fp,
                 ",\n    'condoros' => [ '%s' ]",
                 request->config->condor_os);
+        fprintf(request->manager->jobmanager_log_fp,
+                ",\n    'condoros' => [ '%s' ]",
+                request->config->condor_os);
     }
     if(request->config->condor_arch)
     {
         fprintf(fp,
+                ",\n    'condorarch' => [ '%s' ]",
+                request->config->condor_arch);
+        fprintf(request->manager->jobmanager_log_fp,
                 ",\n    'condorarch' => [ '%s' ]",
                 request->config->condor_arch);
     }
@@ -1929,12 +1966,22 @@ globus_l_gram_job_manager_script_write_description(
         fprintf(fp,
                 ",\n    'jobdir' => [ '%s' ]",
                 request->job_dir);
+        fprintf(request->manager->jobmanager_log_fp,
+                ",\n    'jobdir' => [ '%s' ]",
+                request->job_dir);
     }
 
     fprintf(fp, ",\n    'streamingdisabled' => [ %d ]",
             request->config->streaming_disabled);
+    fprintf(request->manager->jobmanager_log_fp,
+            ",\n    'streamingdisabled' => [ %d ]",
+            request->config->streaming_disabled);
     fprintf(fp, ",\n    'streamingrequested' => [ %d ]",
             request->streaming_requested );
+    fprintf(request->manager->jobmanager_log_fp,
+            ",\n    'streamingrequested' => [ %d ]",
+            request->streaming_requested );
+
 
     globus_l_gram_job_manager_print_staging_list(
             request,
@@ -1948,7 +1995,20 @@ globus_l_gram_job_manager_script_write_description(
             request,
             fp,
             GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
+    globus_l_gram_job_manager_print_staging_list(
+            request,
+            request->manager->jobmanager_log_fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_IN);
+    globus_l_gram_job_manager_print_staging_list(
+            request,
+            request->manager->jobmanager_log_fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED);
+    globus_l_gram_job_manager_print_staging_list(
+            request,
+            request->manager->jobmanager_log_fp,
+            GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
     fprintf(fp, "\n};\n");
+    fprintf(request->manager->jobmanager_log_fp, "\n};\n");
 
     return GLOBUS_SUCCESS;
 }
@@ -2285,7 +2345,7 @@ globus_l_gram_script_queue(
     globus_gram_job_manager_script_context_t *
                                         head = NULL;
 
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     if (manager->script_slots_available > 0)
     {
         globus_assert(globus_fifo_empty(&manager->script_fifo));
@@ -2347,7 +2407,7 @@ xio_open_failed:
     {
         manager->script_slots_available++;
     }
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 
     return rc;
 }
@@ -2371,7 +2431,7 @@ globus_l_gram_job_manager_script_done(
     globus_gram_job_manager_script_context_t *
                                         head = NULL;
 
-    globus_mutex_lock(&manager->mutex);
+    GlobusGramJobManagerLock(manager);
     if (!globus_fifo_empty(&manager->script_fifo))
     {
         head = globus_fifo_dequeue(&manager->script_fifo);
@@ -2380,7 +2440,7 @@ globus_l_gram_job_manager_script_done(
     {
         manager->script_slots_available++;
     }
-    globus_mutex_unlock(&manager->mutex);
+    GlobusGramJobManagerUnlock(manager);
 
     if (head)
     {
