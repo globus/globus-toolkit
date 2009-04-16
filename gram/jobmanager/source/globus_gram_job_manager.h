@@ -381,6 +381,8 @@ typedef struct globus_gram_job_manager_s
     globus_bool_t                       done;
     globus_fifo_t                       seg_event_queue;
     int                                 seg_pause_count;
+    /** All jobs are being stopped. Don't allow new ones in */
+    globus_bool_t                       stop;
 }
 globus_gram_job_manager_t;
 

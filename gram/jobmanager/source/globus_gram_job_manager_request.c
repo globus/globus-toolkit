@@ -210,6 +210,7 @@ globus_gram_job_manager_request_init(
     const char *                        tmp_string;
     int                                 count;
     int                                 tmpfd;
+    int                                 proxy_timeout;
 
     /*** creating request structure ***/
     r = malloc(sizeof(globus_gram_jobmanager_request_t));
@@ -531,7 +532,6 @@ globus_gram_job_manager_request_init(
             GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
             &tmp_string);
         
-
     switch (rc)
     {
         if (tmp_string == NULL)
@@ -646,6 +646,28 @@ globus_gram_job_manager_request_init(
         close(tmpfd);
     }
 
+    rc = globus_gram_job_manager_rsl_attribute_get_int_value(
+            r->rsl,
+            GLOBUS_GRAM_PROTOCOL_PROXY_TIMEOUT_PARAM,
+            &proxy_timeout);
+
+    if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE)
+    {
+        rc = GLOBUS_SUCCESS;
+    }
+    else if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_PROXY_TIMEOUT;
+        goto bad_proxy_timeout;
+    }
+    else
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Ignoring job-specific proxy_timeout %d\n",
+                proxy_timeout);
+    }
+
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -739,6 +761,7 @@ staging_list_create_failed:
 cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
+bad_proxy_timeout:
 open_stderr_failed:
 rewrite_stderr_failed:
 open_stdout_failed:
@@ -2238,8 +2261,8 @@ globus_l_gram_init_scratchdir(
     char **                             scratchdir)
 {
     int                                 rc = GLOBUS_SUCCESS;
-    char *                              dir;
-    char *                              template;
+    char *                              dir = NULL;
+    char *                              template = NULL;
     int                                 i;
     int                                 created = 0;
     enum { GLOBUS_GRAM_MKDIR_TRIES = 100 };
@@ -2382,10 +2405,15 @@ fatal_mkdir_err:
         *scratchdir = NULL;
     }
 scratchname_strdup_failed:
-    /* Always free these intermediate values */
-    free(template);
+    if (template)
+    {
+        free(template);
+    }
 template_malloc_failed:
-    free(dir);
+    if (dir)
+    {
+        free(dir);
+    }
 eval_scratchdir_failed:
     return rc;
 }

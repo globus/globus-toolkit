@@ -424,6 +424,7 @@ globus_gram_job_manager_config_init(
         goto out;
     }
 
+    config->proxy_timeout = 10*60;
 
 out:
     return rc;

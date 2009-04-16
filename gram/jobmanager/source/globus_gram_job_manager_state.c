@@ -518,6 +518,13 @@ globus_l_gram_job_manager_state_machine(
              */
             break;
         }
+        else
+        {
+            /* Nothing in the SEG queue. We need to stay in this state to
+             * get SEG code to reregister the state machine
+             */
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
+        }
 
         if(rc != GLOBUS_SUCCESS)
         {
@@ -1232,7 +1239,7 @@ globus_gram_job_manager_reply(
                     sendsize,
                     &token_status,
                     globus_l_gram_gss_send_fd,
-                    (void *) response_fd,
+                    (void *) (intptr_t) response_fd,
                     request ? request->manager->jobmanager_log_fp : stderr);
         }
         else
@@ -1686,7 +1693,7 @@ globus_l_gram_gss_send_fd(
     int                                 rc;
     ssize_t                             written = 0;
     
-    fd = (int) arg;
+    fd = (int) (intptr_t) arg;
 
     lengthbuf[0] = length >> 24;
     lengthbuf[1] = length >> 16;
@@ -1805,6 +1812,13 @@ globus_gram_job_manager_state_machine_register(
 {
     int                                 rc = GLOBUS_SUCCESS;
     globus_result_t                     result;
+    globus_reltime_t                    nodelay;
+    if (delay == NULL)
+    {
+        GlobusTimeReltimeSet(nodelay, 0, 0);
+
+        delay = &delay;
+    }
 
     globus_gram_job_manager_log(
             manager,

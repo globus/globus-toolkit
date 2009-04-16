@@ -80,6 +80,14 @@ static
 void
 globus_l_gram_ref_swap_out(
     void *                              arg);
+
+static
+int
+globus_l_gram_add_reference_locked(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_jobmanager_request_t ** request);
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -118,6 +126,7 @@ globus_gram_job_manager_init(
     }
 
     manager->config = config;
+    manager->stop = GLOBUS_FALSE;
 
     rc = globus_mutex_init(&manager->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
@@ -576,6 +585,14 @@ globus_gram_job_manager_add_request(
             "Adding request %s -> %p\n",
             key,
             request);
+
+    GlobusGramJobManagerLock(manager);
+    if (manager->stop)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+        goto stop;
+    }
+
     ref = malloc(sizeof(globus_gram_job_manager_ref_t));
 
     if (ref == NULL)
@@ -598,7 +615,6 @@ globus_gram_job_manager_add_request(
     ref->request = request;
     ref->reference_count = 0;
 
-    GlobusGramJobManagerLock(manager);
     if (manager->grace_period_timer != GLOBUS_NULL_HANDLE)
     {
         globus_callback_unregister(
@@ -618,7 +634,6 @@ globus_gram_job_manager_add_request(
             &manager->request_hash,
             ref->key,
             ref);
-    GlobusGramJobManagerUnlock(manager);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -634,8 +649,10 @@ grace_period_expired:
 key_malloc_failed:
         free(ref);
 ref_malloc_failed:
+stop:
         ;
     }
+    GlobusGramJobManagerUnlock(manager);
     return rc;
 }
 /* globus_gram_job_manager_add_request() */
@@ -670,79 +687,12 @@ globus_gram_job_manager_add_reference(
     globus_gram_jobmanager_request_t ** request)
 {
     int                                 rc = GLOBUS_SUCCESS;
-    globus_result_t                     result;
-    globus_gram_job_manager_ref_t *     ref;
 
     GlobusGramJobManagerLock(manager);
-    ref = globus_hashtable_lookup(&manager->request_hash, (void *) key);
-    if (ref)
-    {
-        ref->reference_count++;
-
-        if (ref->cleanup_timer != GLOBUS_NULL_HANDLE)
-        {
-            result = globus_callback_unregister(
-                    ref->cleanup_timer,
-                    NULL,
-                    NULL,
-                    NULL);
-            ref->cleanup_timer = GLOBUS_NULL_HANDLE;
-        }
-        if (ref->request == NULL)
-        {
-            char * restart_rsl;
-
-            /* Reload request state */
-            restart_rsl = globus_common_create_string(
-                    "&(restart = '%s%s')(restartcontacts = yes)",
-                    manager->url_base,
-                    key+1 /* ignore leading / */);
-            if (restart_rsl == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                free(restart_rsl);
-                goto malloc_restart_rsl_failed;
-            }
-            rc = globus_gram_job_manager_request_init(
-                    &ref->request,
-                    manager,
-                    restart_rsl,
-                    GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                goto request_init_failed;
-            }
-            ref->request->jobmanager_state = ref->request->restart_state;
-        }
-        if (request)
-        {
-            *request = ref->request;
-        }
-        globus_gram_job_manager_log(
-                manager,
-                "Adding reference [%d] %s -> %p\n",
-                ref->reference_count,
-                ref->key,
-                ref->request);
-    }
-    else
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
-        if (request)
-        {
-            *request = NULL;
-        }
-        globus_gram_job_manager_log(
-                manager,
-                "Adding reference %s -> NOT FOUND\n",
-                key);
-    }
-request_init_failed:
-malloc_restart_rsl_failed:
+    rc = globus_l_gram_add_reference_locked(
+            manager,
+            key,
+            request);
     GlobusGramJobManagerUnlock(manager);
 
     return rc;
@@ -804,7 +754,15 @@ globus_gram_job_manager_remove_reference(
                         (void *) key);
                 if (globus_hashtable_empty(&manager->request_hash))
                 {
-                    globus_gram_job_manager_set_grace_period_timer(manager);
+                    if (manager->stop)
+                    {
+                        manager->done = GLOBUS_TRUE;
+                        globus_cond_signal(&manager->cond);
+                    }
+                    else
+                    {
+                        globus_gram_job_manager_set_grace_period_timer(manager);
+                    }
                 }
 
                 globus_gram_job_manager_log(
@@ -1004,7 +962,6 @@ globus_gram_job_manager_add_reference_by_jobid(
 {
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_job_id_ref_t *          jobref;
-    globus_gram_job_manager_ref_t *     ref;
 
     globus_gram_job_manager_log(
             manager,
@@ -1016,90 +973,30 @@ globus_gram_job_manager_add_reference_by_jobid(
         *request = NULL;
     }
 
+    if (manager->stop)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Manager is stopped, won't resolve jobid\n");
+
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+        goto stop;
+    }
+
     jobref = globus_hashtable_lookup(&manager->job_id_hash, (void *) jobid);
     if (!jobref)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
         goto no_such_job;
     }
-    ref = globus_hashtable_lookup(
-            &manager->request_hash,
-            jobref->job_contact_path);
 
-    if (ref)
-    {
-        ref->reference_count++;
-        if (ref->cleanup_timer != GLOBUS_NULL_HANDLE)
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    "JM: Unregistering cleanup timer for job %s\n",
-                    ref->key);
+    rc = globus_l_gram_add_reference_locked(
+            manager,
+            jobref->job_contact_path,
+            request);
 
-            globus_callback_unregister(ref->cleanup_timer, NULL, NULL, NULL);
-            ref->cleanup_timer = GLOBUS_NULL_HANDLE;
-        }
-        if (ref->request == NULL)
-        {
-            char * restart_rsl;
-
-            globus_gram_job_manager_log(
-                    manager,
-                    "JM: Reloading jobrequest for %s\n",
-                    ref->key);
-            /* Reload request state */
-            restart_rsl = globus_common_create_string(
-                    "&(restart = '%s%s')(restartcontacts = yes)",
-                    manager->url_base,
-                    jobref->job_contact_path+1/*ignore leading / */);
-            if (restart_rsl == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                free(restart_rsl);
-                goto malloc_restart_rsl_failed;
-            }
-            rc = globus_gram_job_manager_request_init(
-                    &ref->request,
-                    manager,
-                    restart_rsl,
-                    GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                goto request_init_failed;
-            }
-            ref->request->jobmanager_state = ref->request->restart_state;
-            globus_gram_job_manager_log(
-                    manager,
-                    "JM: Done reloading jobrequest for %s\n",
-                    ref->key);
-        }
-        if (request)
-        {
-            *request = ref->request;
-        }
-        globus_gram_job_manager_log(
-                manager,
-                "Adding reference [%d] %s -> %p\n",
-                ref->reference_count,
-                ref->key,
-                ref->request);
-    }
-    else
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
-        globus_gram_job_manager_log(
-                manager,
-                "Adding reference %s -> NOT FOUND\n",
-                jobref->job_contact_path);
-    }
-
-malloc_restart_rsl_failed:
-request_init_failed:
 no_such_job:
+stop:
 
     return rc;
 }
@@ -1303,6 +1200,146 @@ globus_gram_job_manager_set_grace_period_timer(
 }
 /* globus_gram_job_manager_set_grace_period_timer() */
 
+void
+globus_gram_job_manager_stop_all_jobs(
+    globus_gram_job_manager_t *         manager)
+{
+    globus_list_t *                     job_refs = NULL;
+    globus_list_t *                     tmp = NULL;
+    globus_gram_job_manager_ref_t *     ref;
+    globus_gram_jobmanager_request_t *  request;
+    int                                 rc;
+
+    GlobusGramJobManagerLock(manager);
+    manager->stop = GLOBUS_TRUE;
+    rc = globus_hashtable_to_list(
+            &manager->request_hash,
+            &job_refs);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        GlobusGramJobManagerUnlock(manager);
+        return;
+    }
+
+    tmp = job_refs;
+    while (!globus_list_empty(tmp))
+    {
+        ref = globus_list_first(tmp);
+        tmp = globus_list_rest(tmp);
+
+        /* Force request into memory if it isn't yet. */
+        rc = globus_l_gram_add_reference_locked(
+                manager,
+                ref->key,
+                NULL);
+        assert(rc == GLOBUS_SUCCESS);
+    }
+    GlobusGramJobManagerUnlock(manager);
+
+    tmp = job_refs;
+
+    while (!globus_list_empty(tmp))
+    {
+        ref = globus_list_first(tmp);
+        tmp = globus_list_rest(tmp);
+        request = ref->request;
+
+        GlobusGramJobManagerRequestLock(request);
+        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+
+        switch (request->jobmanager_state)
+        {
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+            request->unsent_status_change = GLOBUS_TRUE;
+
+            globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    NULL);
+            break;
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+            request->unsent_status_change = GLOBUS_TRUE;
+            break;
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            break;
+
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
+            break;
+        }
+        if (request->poll_timer)
+        {
+            globus_reltime_t            delay;
+
+            GlobusTimeReltimeSet(delay, 0, 0);
+
+            globus_callback_adjust_oneshot(
+                    request->poll_timer,
+                    &delay);
+        }
+        GlobusGramJobManagerRequestUnlock(request);
+
+        globus_gram_job_manager_remove_reference(
+                manager,
+                ref->key);
+    }
+    globus_list_free(job_refs);
+}
+/* globus_gram_job_manager_stop_all_jobs() */
+
 
 static
 int
@@ -1426,3 +1463,88 @@ unregistered:
     GlobusGramJobManagerUnlock(ref->manager);
 }
 /* globus_l_gram_ref_swap_out() */
+
+static
+int
+globus_l_gram_add_reference_locked(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_jobmanager_request_t ** request)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result;
+    globus_gram_job_manager_ref_t *     ref;
+
+    ref = globus_hashtable_lookup(&manager->request_hash, (void *) key);
+    if (ref)
+    {
+        ref->reference_count++;
+
+        if (ref->cleanup_timer != GLOBUS_NULL_HANDLE)
+        {
+            result = globus_callback_unregister(
+                    ref->cleanup_timer,
+                    NULL,
+                    NULL,
+                    NULL);
+            ref->cleanup_timer = GLOBUS_NULL_HANDLE;
+        }
+        if (ref->request == NULL)
+        {
+            char * restart_rsl;
+
+            /* Reload request state */
+            restart_rsl = globus_common_create_string(
+                    "&(restart = '%s%s')(restartcontacts = yes)",
+                    manager->url_base,
+                    key+1 /* ignore leading / */);
+            if (restart_rsl == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                free(restart_rsl);
+                goto malloc_restart_rsl_failed;
+            }
+            rc = globus_gram_job_manager_request_init(
+                    &ref->request,
+                    manager,
+                    restart_rsl,
+                    GSS_C_NO_CREDENTIAL,
+                    GSS_C_NO_CONTEXT);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto request_init_failed;
+            }
+            ref->request->jobmanager_state = ref->request->restart_state;
+        }
+        if (request)
+        {
+            *request = ref->request;
+        }
+        globus_gram_job_manager_log(
+                manager,
+                "Adding reference [%d] %s -> %p\n",
+                ref->reference_count,
+                ref->key,
+                ref->request);
+    }
+    else
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+        if (request)
+        {
+            *request = NULL;
+        }
+        globus_gram_job_manager_log(
+                manager,
+                "Adding reference %s -> NOT FOUND\n",
+                key);
+    }
+request_init_failed:
+malloc_restart_rsl_failed:
+
+    return rc;
+}
+/* globus_l_gram_add_reference_locked() */

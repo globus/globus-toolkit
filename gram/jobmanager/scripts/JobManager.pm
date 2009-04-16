@@ -696,7 +696,7 @@ sub stage_out
     $self->nfssync( $description->stderr(), 0 )
 	if defined $description->stderr();
 
-    foreach ($description->file_stage_out())
+    foreach ($description->file_stream_out())
     {
         next unless defined $_;
 
@@ -737,9 +737,9 @@ sub stage_out
             return Globus::GRAM::Error::STAGE_OUT_FAILED
         }
 
-	$self->respond({'STAGED_OUT' => "$local $remote"});
+	$self->respond({'STAGED_STREAM' => "$local $remote"});
     }
-    foreach ($description->file_stream_out())
+    foreach ($description->file_stage_out())
     {
         next unless defined $_;
 

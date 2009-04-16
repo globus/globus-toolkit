@@ -493,10 +493,7 @@ globus_l_gram_job_manager_proxy_expiration(
             "JM: User proxy expired! Abort, but leave job running!\n");
 
     GlobusGramJobManagerLock(manager);
-    /*
-     * TODO: Synthesize STOP signal for all job requests.
-     */
-    exit(EXIT_SUCCESS);
+    globus_gram_job_manager_stop_all_jobs(manager);
     GlobusGramJobManagerUnlock(manager);
 }
 /* globus_l_gram_job_manager_proxy_expiration() */

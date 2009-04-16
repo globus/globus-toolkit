@@ -547,6 +547,9 @@ globus_l_gram_job_manager_renew(
     globus_reltime_t                    delay;
     globus_bool_t                       doit = GLOBUS_FALSE;
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Renew request received\n");
     if(!globus_l_gram_job_manager_query_valid(request))
     {
        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
@@ -567,6 +570,10 @@ globus_l_gram_job_manager_renew(
     globus_fifo_enqueue(&request->pending_queries, query);
     *reply = GLOBUS_FALSE;
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Request currently in jm state %d\n",
+            request->jobmanager_state);
     if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
     {
         request->jobmanager_state =
@@ -583,12 +590,26 @@ globus_l_gram_job_manager_renew(
 
     if(doit && request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
     {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Forcing poll callback to happen now\n");
         GlobusTimeReltimeSet(delay, 0, 0);
         result = globus_callback_adjust_oneshot(
                 request->poll_timer,
                 &delay);
         /* ignore this failure... the callback will happen anyway. */
         rc = GLOBUS_SUCCESS;
+    }
+    else if (doit && request->manager->seg_started)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: We were waiting for the seg, so we'll register a  poll callback\n");
+        GlobusTimeReltimeSet(delay, 0, 0);
+        rc = globus_gram_job_manager_state_machine_register(
+              request->manager,
+              request,
+              &delay);
     }
 
 error_exit:
@@ -792,7 +813,7 @@ globus_l_gram_job_manager_signal(
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
                 break;
             }
-            if (!globus_list_empty(request->stage_out_todo))
+            if (!globus_list_empty(request->stage_stream_todo))
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING;
                 break;
@@ -1050,12 +1071,25 @@ globus_gram_job_manager_query_delegation_callback(
 
     GlobusGramJobManagerRequestLock(request);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Delegation completed with %d\n",
+            error_code);
+
     query = globus_fifo_peek(&request->pending_queries);
 
     query->delegated_credential = credential;
 
+
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: request in jm state %d\n",
+            request->jobmanager_state);
     GlobusTimeReltimeSet(delay, 0, 0);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: registering state machine callback\n");
     globus_gram_job_manager_state_machine_register(
             request->manager,
             request,
