@@ -16,6 +16,7 @@
 
 #include "globus_common.h"
 #include "globus_gram_client.h"
+#include "globus_gass_server_ez.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,10 +24,6 @@
 
 #define STDOUT_SIZE "18" /*strlen("hello\nhello again\n")*/
 
-const char * rsl = "&(executable=/bin/sh)"
-        "(arguments=-c '/bin/echo hello; /bin/sleep 30; /bin/echo hello again')"
-        "(stdout=/dev/../dev/null)"
-        "(save_state=yes)(two_phase=60)";
 
 typedef struct
 {
@@ -49,24 +46,58 @@ int main(int argc, char *argv[])
 {
     int rc = 1;
     monitor_t monitor;
+    char * gass_url;
+    char * rsl;
+    globus_gass_transfer_listener_t listener;
 
     if (argc < 2)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "Usage: %s RM-CONTACT\n"
                 "    RM-CONTACT: resource manager contact\n",
                 argv[0]);
-        goto error_exit;
+        goto args_error;
     }
 
     rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure activating GLOBUS_GRAM_CLIENT_MODULE: %s\n",
                 globus_gram_client_error_string(rc));
-        goto error_exit;
+        goto activate_common_failed;
+    }
+    rc = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "failure activating GLOBUS_GASS_SERVER_EZ_MODULE: %d\n",
+                rc);
+        goto activate_server_ez_failed;
+    }
+
+    rc = globus_gass_server_ez_init(
+            &listener,
+            NULL,
+            "https",
+            NULL,
+            GLOBUS_GASS_SERVER_EZ_WRITE_ENABLE,
+            NULL);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "failure inititializing gass server %d\n",
+                rc);
+        goto gass_server_ez_init_failed;
+    }
+    gass_url = globus_gass_transfer_listener_get_base_url(listener);       
+    if (gass_url == NULL)
+    {
+        fprintf(stderr,
+                "failure getting gass url\n");
+
+        goto gass_server_get_url_failed;
     }
 
     globus_mutex_init(&monitor.mutex, NULL);
@@ -81,10 +112,22 @@ int main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS || monitor.callback_contact == NULL)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure allowing callbacks\n");
         rc = -1;
-        goto destroy_monitor_exit;
+        goto allow_callback_failed;
+    }
+    rsl = globus_common_create_string(
+            "&(executable=/bin/sh)"
+            "(arguments=-c '/bin/echo hello; /bin/sleep 30; /bin/echo hello again')"
+            "(stdout=%s/dev/null)"
+            "(save_state = yes)"
+            "(two_phase=60)",
+            gass_url);
+    if (rsl == NULL)
+    {
+        fprintf(stderr, "Error creating rsl\n");
+        goto malloc_rsl_failed;
     }
 
     globus_mutex_lock(&monitor.mutex);
@@ -104,20 +147,20 @@ int main(int argc, char *argv[])
     {
         if (rc == GLOBUS_SUCCESS)
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "job manager did not return "
-                    "GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT\n");
+                    "GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT\n");
             rc = -1;
         }
         else
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "failure submitting job request [%d]: %s\n",
                     rc,
                     globus_gram_client_error_string(rc));
         }
 
-        goto disallow_exit;
+        goto job_request_failed;
     }
     rc = 0;
 
@@ -130,10 +173,10 @@ int main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure sending commit signal: %s\n",
                 globus_gram_client_error_string(rc));
-        goto disallow_exit;
+        goto commit_request_failed;
     }
 
     if (monitor.job_status  != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
@@ -148,11 +191,11 @@ int main(int argc, char *argv[])
 
         if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING)
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "job manager returned %d (%s) when I expected it to still "
                     "be streaming output\n",
                     rc, globus_gram_client_error_string(rc));
-            goto disallow_exit;
+            goto still_streaming_check_failed;
         }
     }
     while (monitor.job_status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
@@ -170,11 +213,11 @@ int main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "job manager returned %d (%s) when I expected it to still "
                 "be streaming output\n",
                 rc, globus_gram_client_error_string(rc));
-        goto disallow_exit;
+        goto still_streaming_check_failed2;
     }
 
     rc = globus_gram_client_job_signal(
@@ -186,11 +229,11 @@ int main(int argc, char *argv[])
 
     if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "job manager returned %d (%s) when I expected it to give me "
                 "an incorrect size error\n",
                 rc, globus_gram_client_error_string(rc));
-        goto disallow_exit;
+        goto incorrect_size_error;
     }
 
     rc = globus_gram_client_job_signal(
@@ -202,28 +245,40 @@ int main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure sending commit end signal: %s\n",
                 globus_gram_client_error_string(rc));
-        goto disallow_exit;
+        goto commit_end_failed;
     }
 
-disallow_exit:
+commit_end_failed:
+incorrect_size_error:
+still_streaming_check_failed2:
+still_streaming_check_failed:
+commit_request_failed:
     if (monitor.job_contact != NULL)
     {
         globus_gram_client_job_contact_free(monitor.job_contact);
     }
+job_request_failed:
+    free(rsl);
+malloc_rsl_failed:
+allow_callback_failed:
     globus_mutex_unlock(&monitor.mutex);
     globus_gram_client_callback_disallow(monitor.callback_contact);
-destroy_monitor_exit:
     if (monitor.callback_contact != NULL)
     {
-        globus_libc_free(monitor.callback_contact);
+        free(monitor.callback_contact);
     }
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
+gass_server_get_url_failed:
+    globus_gass_server_ez_shutdown(listener);
+gass_server_ez_init_failed:
+activate_server_ez_failed:
+activate_common_failed:
     globus_module_deactivate_all();
-error_exit:
+args_error:
     return rc;
 }
 

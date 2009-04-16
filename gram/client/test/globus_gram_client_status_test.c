@@ -120,7 +120,8 @@ int main(int argc, char *argv[])
 	if(rc != GLOBUS_SUCCESS &&
            rc != GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
            rc != GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER &&
-           rc != GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED)
+           rc != GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED &&
+           rc != GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND)
 	{
 	    goto destroy_callback_contact;
 	}
