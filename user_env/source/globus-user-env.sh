@@ -132,7 +132,7 @@ if [ -n "${LD_LIBRARY64_PATH}" ]; then
     export LD_LIBRARY64_PATH
 fi
 
-if [ -n "${PERL5LIB}" ]; then
+if [ -d $GLOBUS_LOCATION/lib/perl ]; then
     DELIM=""
     if [ "X${PERL5LIB}" != "X" ]; then
         DELIM=:

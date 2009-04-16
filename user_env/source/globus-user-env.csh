@@ -154,10 +154,13 @@ if ( $?LD_LIBRARY64_PATH ) then
     setenv LD_LIBRARY64_PATH "${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY64_PATH}"
 endif
 
-if ( $?PERL5LIB ) then
+if ( -d ${GLOBUS_LOCATION}/lib/perl ) then
     set DELIM
-    if ( "X${PERL5LIB}" != "X" ) then
+    if ( $?PERL5LIB ) then
         set DELIM=:
+    else
+        setenv PERL5LIB ''
+        DELIM=:
     endif
     setenv PERL5LIB "${GLOBUS_LOCATION}/lib/perl${DELIM}${PERL5LIB}"
 endif
