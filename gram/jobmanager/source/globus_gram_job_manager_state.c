@@ -479,7 +479,7 @@ globus_l_gram_job_manager_state_machine(
                     event_registered = GLOBUS_TRUE;
                 }
             }
-            else
+            else if (request->manager->seg_started)
             {
                 /* SEG has been started. If there is an event pending,
                  * we should jump to POLL1 state and not set
