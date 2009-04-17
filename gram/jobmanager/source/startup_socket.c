@@ -581,11 +581,6 @@ globus_l_gram_startup_socket_callback(
         free(errstr);
         goto failed_import_cred;
     }
-    /* 
-     * TODO: Replace Job Manager credential with this credential if it lives
-     * beyond our current credential.
-     */
-
     /* Load request data */
     rc = globus_gram_job_manager_request_load(
             manager,
@@ -608,6 +603,26 @@ globus_l_gram_startup_socket_callback(
         goto request_load_failed;
     }
 
+    rc = globus_gram_job_manager_gsi_update_credential(
+            manager,
+            NULL,
+            cred);
+    cred = GSS_C_NO_CREDENTIAL;
+
+    /* How much do I care about this error? */
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_reply(
+                request,
+                rc,
+                NULL,
+                response_fd,
+                context);
+
+        goto update_cred_failed;
+    }
+
+
     /* Start state machine and send response */
     rc = globus_gram_job_manager_request_start(
             manager,
@@ -621,16 +636,20 @@ globus_l_gram_startup_socket_callback(
         request = NULL;
     }
 
+update_cred_failed:
     free(contact);
 
     close(response_fd);
     response_fd = -1;
 request_load_failed:
 ackfailed:
-    gss_release_cred(
-            &minor_status,
-            &cred);
-    cred = GSS_C_NO_CREDENTIAL;
+    if (cred != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(
+                &minor_status,
+                &cred);
+        cred = GSS_C_NO_CREDENTIAL;
+    }
 failed_import_cred:
     close(acksock);
     close(http_body_fd);

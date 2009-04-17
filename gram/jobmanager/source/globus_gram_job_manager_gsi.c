@@ -32,8 +32,7 @@ static
 int
 globus_l_gram_job_manager_gsi_register_proxy_timeout(
     globus_gram_job_manager_t *         manager,
-    gss_cred_id_t                       cred,
-    int                                 timeout,
+    globus_reltime_t *                  timeout,
     globus_callback_handle_t *          callback_handle);
 
 int
@@ -153,13 +152,60 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
     int                                 timeout,
     globus_callback_handle_t *          callback_handle)
 {
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_reltime_t                    delay;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    OM_uint32                           lifetime;
+    time_t                              cred_expiration_time;
+
     *callback_handle = GLOBUS_NULL_HANDLE;
 
-    return globus_l_gram_job_manager_gsi_register_proxy_timeout(
-            manager,
+    cred_expiration_time = time(NULL);
+
+    major_status = gss_inquire_cred(
+            &minor_status,
             cred,
-            timeout,
+            NULL,
+            &lifetime,
+            NULL,
+            NULL);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+        goto failed_inquire_cred;
+    }
+
+    if (lifetime == GSS_C_INDEFINITE)
+    {
+        goto wont_expire;
+    }
+
+    cred_expiration_time += (time_t) lifetime;
+    if (((long) lifetime - timeout) <= 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+        globus_gram_job_manager_log(
+                manager,
+                "JM: user proxy lifetime is less than minimum "
+                "(%d seconds)\n",
+                timeout);
+        goto proxy_expired;
+    }
+
+    GlobusTimeReltimeSet(delay, lifetime - timeout, 0);
+    manager->cred_expiration_time = cred_expiration_time;
+
+    rc= globus_l_gram_job_manager_gsi_register_proxy_timeout(
+            manager,
+            &delay,
             callback_handle);
+
+proxy_expired:
+wont_expire:
+failed_inquire_cred:
+    return rc;
 }
 /* globus_gram_job_manager_gsi_register_proxy_timeout() */
 
@@ -235,54 +281,12 @@ failed_inquire_cred:
 /* globus_gram_job_manager_gsi_get_subject() */
 
 /**
- * Modify timeout to occur when the job manager's proxy is set to expire based on a new credential
- *
- * @param manager
- *     Job manager state (for logging)
- * @param cred
- *     Job manager credential
- * @param timeout
- *     Time (in seconds) to stop the manager if no credential is available.
- * @param callback_handle
- *     Pointer to the expiration callback handle. If this points to 
- *     GLOBUS_NULL_HANDLE, then a new callback will be created and this will
- *     be modified to point to it. Otherwise, the callback handle will be
- *     modified.
- *
- * @retval GLOBUS_SUCCESS
- *     Success
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
- *     User proxy expired
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
- *     No resources for callback
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
- *     Proxy not found
- */
-int
-globus_gram_job_manager_gsi_update_proxy_timeout(
-    globus_gram_job_manager_t *         manager,
-    gss_cred_id_t                       cred,
-    int                                 timeout,
-    globus_callback_handle_t *          callback_handle)
-{
-    return globus_l_gram_job_manager_gsi_register_proxy_timeout(
-            manager,
-            cred,
-            timeout,
-            callback_handle);
-
-}
-/* globus_gram_job_manager_gsi_update_proxy_timeout() */
-
-/**
  * Register timeout to occur when the job manager's proxy is set to expire
  *
  * @param manager
  *     Job manager state (for logging)
- * @param cred
- *     Job manager credential
  * @param timeout
- *     Time (in seconds) to stop the manager if no credential is available.
+ *     Relative time to delay before firing the proxy timeout
  * @param callback_handle
  *     Pointer to the expiration callback handle. If this points to 
  *     GLOBUS_NULL_HANDLE, then a new callback will be created and this will
@@ -302,111 +306,154 @@ static
 int
 globus_l_gram_job_manager_gsi_register_proxy_timeout(
     globus_gram_job_manager_t *         manager,
-    gss_cred_id_t                       cred,
-    int                                 timeout,
+    globus_reltime_t *                  timeout,
     globus_callback_handle_t *          callback_handle)
 {
     int                                 rc = GLOBUS_SUCCESS;
-    OM_uint32                           lifetime;
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
     globus_result_t                     result;
-    globus_reltime_t                    delay_time;
 
-    major_status = gss_inquire_cred(
-            &minor_status,
-            cred,
-            NULL,
-            &lifetime,
-            NULL,
-            NULL);
-
-    if(major_status == GSS_S_COMPLETE)
+    if (*callback_handle == GLOBUS_NULL_HANDLE)
     {
-        if (((int) lifetime - timeout) <= 0)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-            globus_gram_job_manager_log(
-                    manager,
-                    "JM: user proxy lifetime is less than minimum "
-                    "(%d seconds)\n",
-                    timeout);
-            goto proxy_expired;
-        }
-        else
-        {
-            /* set timer */
-            GlobusTimeReltimeSet(
-                    delay_time,
-                    lifetime - timeout,
-                    0);
-
-            if (*callback_handle == GLOBUS_NULL_HANDLE)
-            {
-                result = globus_callback_register_oneshot(
-                        callback_handle,
-                        &delay_time,
-                        globus_l_gram_job_manager_proxy_expiration,
-                        manager);
-            }
-            else
-            {
-                result = globus_callback_adjust_oneshot(
-                        *callback_handle,
-                        &delay_time);
-            }
-            if (result != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-                goto oneshot_failed;
-            }
-        }
+        result = globus_callback_register_oneshot(
+                callback_handle,
+                timeout,
+                globus_l_gram_job_manager_proxy_expiration,
+                manager);
     }
     else
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
-        goto inquire_failed;
+        result = globus_callback_adjust_oneshot(
+                *callback_handle,
+                timeout);
+    }
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
     }
 
-inquire_failed:
-proxy_expired:
-oneshot_failed:
     return rc;
 }
 /* globus_l_gram_job_manager_gsi_register_proxy_timeout() */
 
 /**
  * Update the request with a new security credential.
+ * 
+ * If the new credential will live longer than the current Job Manager-wide
+ * credential, use the new one with the GRAM protocol library, write it to the
+ * state directory, and update the proxy timeout. 
+ * 
+ * If the request is non-null, update the proxy on disk in the job directory so
+ * this particular job will have a copy of this credential.
+ * 
+ * The credential is either destroyed or passed to the GRAM Protocol library,
+ * which will destroy it when no longer needed. The caller must not free
+ * the credential.
  *
  * @param request
+ *     Job request to update with this credential
  * @param credential
+ *     New GSSAPI credential.
  */
 int
 globus_gram_job_manager_gsi_update_credential(
+    globus_gram_job_manager_t *         manager,
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential)
 {
+    OM_uint32                           major_status;
     OM_uint32                           minor_status;
-    int                                 rc;
+    OM_uint32                           lifetime;
+    time_t                              credential_expiration_time;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_reltime_t                    delay_time;
+    globus_bool_t                       set_credential = GLOBUS_FALSE;
 
-    rc = globus_gram_protocol_set_credentials(credential);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        (void) gss_release_cred(&minor_status, &credential);
-        goto set_creds_failed;
-    }
+    credential_expiration_time = time(NULL);
 
-    if(!globus_gram_job_manager_gsi_used(request))
-    {
-        /* I don't know what to do with this new credential. */
-        goto non_gsi;
-    }
-    rc = globus_gram_job_manager_gsi_write_credential(
+    major_status = gss_inquire_cred(
+            &minor_status,
             credential,
-            request->x509_user_proxy);
+            NULL,
+            &lifetime,
+            NULL,
+            NULL);
 
-non_gsi:
-set_creds_failed:
+    if (GSS_ERROR(major_status))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+        goto inquire_cred_failed;
+    }
+
+    if (lifetime != GSS_C_INDEFINITE)
+    {
+        credential_expiration_time += lifetime;
+    }
+    else
+    {
+        credential_expiration_time = 0;
+    }
+
+    if (manager->cred_expiration_time != 0 &&
+        (lifetime == GSS_C_INDEFINITE ||
+        credential_expiration_time > manager->cred_expiration_time))
+    {
+        manager->cred_expiration_time = credential_expiration_time;
+        rc = globus_gram_job_manager_gsi_write_credential(
+                credential,
+                manager->cred_path);
+        if (rc != 0)
+        {
+            goto write_manager_cred_failed;
+        }
+        set_credential = GLOBUS_TRUE;
+    }
+
+    if (request)
+    {
+        rc = globus_gram_job_manager_gsi_write_credential(
+                credential,
+                request->x509_user_proxy);
+        if (rc != 0)
+        {
+            goto write_job_cred_failed;
+        }
+    }
+
+    if (set_credential)
+    {
+        GlobusTimeReltimeSet(
+                delay_time,
+                lifetime - manager->config->proxy_timeout,
+                0);
+        rc = globus_l_gram_job_manager_gsi_register_proxy_timeout(
+                manager,
+                &delay_time,
+                &manager->proxy_expiration_timer);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto register_timeout_failed;
+        }
+
+        rc = globus_gram_protocol_set_credentials(credential);
+        credential = GSS_C_NO_CREDENTIAL;
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto set_credentials_failed;
+        }
+    }
+
+set_credentials_failed:
+register_timeout_failed:
+write_job_cred_failed:
+write_manager_cred_failed:
+inquire_cred_failed:
+    if (credential != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&minor_status, &credential);
+    }
+
     return rc;
 }
 /* globus_gram_job_manager_gsi_update_credential() */

@@ -248,6 +248,11 @@ main(
              */
             located_active_jm = GLOBUS_TRUE;
 
+            if (config.single)
+            {
+                /* TODO: Load existing job state files */
+            }
+
             if (!debugging_without_client)
             {
                 /* Normal operation: started by a job request */
@@ -284,7 +289,8 @@ main(
                     &manager,
                     rsl,
                     GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT);
+                    GSS_C_NO_CONTEXT,
+                    GLOBUS_FALSE);
                 if (rc != GLOBUS_SUCCESS)
                 {
                     fprintf(stderr, "Error initializing request\n");
@@ -328,12 +334,12 @@ main(
                 close(context_fd);
                 manager.done = GLOBUS_TRUE;
             }
-        }
-        if (rc == GLOBUS_SUCCESS)
-        {
-            globus_gram_job_manager_log(
-                    &manager,
-                    "Successfully handed descriptors to active job manager\n");
+            if (rc == GLOBUS_SUCCESS)
+            {
+                globus_gram_job_manager_log(
+                        &manager,
+                        "Successfully handed descriptors to active job manager\n");
+            }
         }
     }
     GlobusGramJobManagerLock(&manager);

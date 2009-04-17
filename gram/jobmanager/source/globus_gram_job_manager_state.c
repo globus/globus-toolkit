@@ -788,18 +788,9 @@ globus_l_gram_job_manager_state_machine(
              * store it on disk
              */
             rc = globus_gram_job_manager_gsi_update_credential(
+                    request->manager,
                     request,
                     query->delegated_credential);
-            if(rc != GLOBUS_SUCCESS)
-            {
-                break;
-            }
-
-            rc = globus_gram_job_manager_gsi_update_proxy_timeout(
-                    request->manager,
-                    query->delegated_credential,
-                    request->config->proxy_timeout,
-                    &request->manager->proxy_expiration_timer);
             if(rc != GLOBUS_SUCCESS)
             {
                 break;
@@ -1817,7 +1808,7 @@ globus_gram_job_manager_state_machine_register(
     {
         GlobusTimeReltimeSet(nodelay, 0, 0);
 
-        delay = &delay;
+        delay = &nodelay;
     }
 
     globus_gram_job_manager_log(

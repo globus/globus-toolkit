@@ -170,10 +170,14 @@ globus_l_gram_event_destroy(void *datum);
  * @param rsl
  *     Job request or restart RSL string
  * @param delegated_credential
- *    Credential delegated with the job request.
+ *     Credential delegated with the job request.
  * @param response_ctx
- *    Security context to use for sending the job request response, may be
- *    GSS_C_NO_CONTEXT if the job RSL came from the command-line.
+ *     Security context to use for sending the job request response, may be
+ *     GSS_C_NO_CONTEXT if the job RSL came from the command-line.
+ * @param reinit
+ *     Boolean value indicating whether this is an internally-generated
+ *     reinitialization of an existing job or a new job request from a 
+ *     client or command-line.
  *
  * @retval GLOBUS_SUCCESS
  *     Success
@@ -195,6 +199,8 @@ globus_l_gram_event_destroy(void *datum);
  *     Invalid restart RSL attribute.
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDIO_UPDATE_ATTRIBUTE
  *     Invalid stdio_update RSL attribute.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE
+ *     Old Job Manager is still alive.
  */
 int 
 globus_gram_job_manager_request_init(
@@ -202,7 +208,8 @@ globus_gram_job_manager_request_init(
     globus_gram_job_manager_t *         manager,
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
-    gss_ctx_id_t                        response_ctx)
+    gss_ctx_id_t                        response_ctx,
+    globus_bool_t                       reinit)
 {
     globus_gram_jobmanager_request_t *  r;
     uint64_t                            uniq1, uniq2;
@@ -345,6 +352,15 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto failed_set_job_contact_path;
     }
+
+    if (!reinit && globus_gram_job_manager_request_exists(
+            manager,
+            r->job_contact_path))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+        goto failed_check_exists;
+    }
+
 
     rc = globus_l_gram_make_job_dir(r, &r->job_dir);
     if (rc != GLOBUS_SUCCESS)
@@ -810,6 +826,7 @@ cached_stdout_symboltable_failed:
 cached_stdout_malloc_failed:
         globus_gram_job_manager_destroy_directory(r, r->job_dir);
 failed_make_job_dir:
+failed_check_exists:
         free(r->job_contact_path);
 failed_set_job_contact_path:
 failed_add_contact_to_symboltable:
@@ -934,7 +951,8 @@ globus_gram_job_manager_request_load(
             manager,
             rsl,
             cred,
-            *context);
+            *context,
+            GLOBUS_FALSE);
     if (rc != GLOBUS_SUCCESS)
     {
         goto request_init_failed;

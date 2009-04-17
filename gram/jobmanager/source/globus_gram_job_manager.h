@@ -342,6 +342,8 @@ typedef struct globus_gram_job_manager_s
     globus_list_t *                     validation_records;
     /** GRAM job manager listener contact string */
     char *                              url_base;
+    /** Time when the job manager-wide proxy will expire */
+    time_t                              cred_expiration_time;
     /** Timer tracking until the proxy expiration callback causes the job
      * manager to stop.
      */
@@ -629,7 +631,8 @@ globus_gram_job_manager_request_init(
     globus_gram_job_manager_t *         manager,
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
-    gss_ctx_id_t                        response_ctx);
+    gss_ctx_id_t                        response_ctx,
+    globus_bool_t                       reinit);
 
 void
 globus_gram_job_manager_request_destroy(
@@ -816,6 +819,7 @@ globus_gram_job_manager_gsi_get_subject(
 
 int
 globus_gram_job_manager_gsi_update_credential(
+    globus_gram_job_manager_t *         manager,
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential);
 
@@ -1213,6 +1217,10 @@ globus_gram_job_manager_get_status(
     const char *                        key,
     globus_gram_protocol_job_state_t *  state,
     int *                               failure_code);
+
+void
+globus_gram_job_manager_stop_all_jobs(
+    globus_gram_job_manager_t *         manager);
 
 /* startup_socket.c */
 int

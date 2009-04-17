@@ -145,7 +145,7 @@ globus_gram_job_manager_init(
      */
     GlobusGramJobManagerLock(manager);
 
-    manager->seg_last_timestamp = (time_t) 0;
+    manager->seg_last_timestamp = time(NULL);
     manager->seg_started = GLOBUS_FALSE;
 
     globus_l_gram_job_manager_open_logfile(manager);
@@ -225,6 +225,7 @@ globus_gram_job_manager_init(
     GlobusGramJobManagerLock(manager);
     if (cred != GSS_C_NO_CREDENTIAL)
     {
+        manager->cred_expiration_time = 1;
         rc = globus_gram_job_manager_gsi_register_proxy_timeout(
                 manager,
                 cred,
@@ -1510,7 +1511,8 @@ globus_l_gram_add_reference_locked(
                     manager,
                     restart_rsl,
                     GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT);
+                    GSS_C_NO_CONTEXT,
+                    GLOBUS_TRUE);
             if (rc != GLOBUS_SUCCESS)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
