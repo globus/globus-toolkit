@@ -62,16 +62,17 @@ CVS Information:
 ******************************************************************************/
 typedef struct globus_i_globusrun_gram_monitor_s
 {
-    globus_bool_t  done;
-    globus_mutex_t mutex;
-    globus_cond_t  cond;
+    globus_bool_t                       done;
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
 
-    globus_bool_t  verbose;
-    unsigned long  job_state;
-    int            submit_done;
-    int            failure_code;
-    char *         failure_message;
-    char *         job_contact;
+    globus_bool_t                       verbose;
+    unsigned long                       job_state;
+    int                                 submit_done;
+    int                                 failure_code;
+    char *                              failure_message;
+    globus_url_t                        job_contact;
+    char *                              job_contact_string;
 } globus_i_globusrun_gram_monitor_t;
 
 
@@ -111,9 +112,6 @@ static
 int
 globus_l_globusrun_stop_manager(
     char *			job_contact);
-
-static char *
-globus_l_globusrun_get_credential(void);
 
 static int
 globus_l_globusrun_kill_job(char * job_contact);
@@ -156,7 +154,6 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
 *****************************************************************************/
 enum
 {
-    GLOBUSRUN_ARG_INTERACTIVE           = 1,
     GLOBUSRUN_ARG_QUIET                 = 2,
     GLOBUSRUN_ARG_DRYRUN                = 4,
     GLOBUSRUN_ARG_PARSE_ONLY            = 8,
@@ -170,8 +167,6 @@ enum
     GLOBUSRUN_ARG_LIST                  = 2048,
     GLOBUSRUN_ARG_BATCH_FAST            = 4096
 };
-
-static globus_byte_t globus_l_globusrun_file_version=1;
 
 static char *  oneline_usage
    =  "globusrun [-help] [-f RSL file] [-s][-b][-d][...] [-r RM] [RSL]";
@@ -189,8 +184,6 @@ static char *  long_usage = \
 "           Display version\n"\
 "    -versions\n"\
 "           Display versions of all activated modules\n"\
-"    -i | -interactive \n"\
-"           Run globusrun in interactive mode (multirequests only)\n"\
 "    -f <rsl filename> | -file <rsl filename> \n"\
 "           Read RSL from the local file <rsl filename>. The RSL can\n"\
 "           be either a single job request, or a multirequest\n"\
@@ -238,9 +231,7 @@ static char *  long_usage = \
 "           Print the current status of the specified job.\n"\
 "    -b | -batch\n"\
 "           Cause globusrun to terminate after the job is successfully\n"\
-"           submitted to the scheduler. Useful for batch jobs. This option\n"\
-"           cannot be used together with -interactive, and is also\n"\
-"           incompatible with multi-request jobs.\n" \
+"           submitted to the scheduler. Useful for batch jobs.\n"
 "           If used with -s, files may be staged in to the job, but stdout\n"\
 "           and stderr will not be redirected.\n"\
 "           The \"handle\" or job ID of the submitted job will be written on\n"\
@@ -344,7 +335,7 @@ test_integer( char *   value,
 }
 
 
-enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_b,
+enum { arg_q = 1, arg_o, arg_s, arg_w, arg_n, arg_b,
 	     arg_p, arg_d, arg_a,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
@@ -369,7 +360,6 @@ static void* paramsname(id)[] = { (void *) testparams }; \
 globus_args_option_descriptor_t defname(id) = \
     { (int) id, (char **) listname(id), 1, funcname(id), (void **) paramsname(id) }
 
-flagdef(arg_i, "-i", "-interactive");
 flagdef(arg_q, "-q", "-quiet");
 flagdef(arg_o, "-o", "-output-enable");
 flagdef(arg_s, "-s", "-server");
@@ -396,7 +386,7 @@ static int arg_f_mode = O_RDONLY;
 #define setupopt(id) args_options[id-1] = defname(id)
 
 #define globusrun_i_args_init() \
-	setupopt(arg_i); setupopt(arg_q); setupopt(arg_o); setupopt(arg_s); \
+	setupopt(arg_q); setupopt(arg_o); setupopt(arg_s); \
 	setupopt(arg_w); setupopt(arg_n); setupopt(arg_b); \
 	setupopt(arg_p); setupopt(arg_d); setupopt(arg_a); \
 	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
@@ -431,7 +421,6 @@ static int arg_f_mode = O_RDONLY;
 	globus_args_option_instance_t *    instance          = GLOBUS_NULL;
 	unsigned short                     gass_port         = 0;
 	unsigned long                      options           = 0UL;
-	int                                mpirun_version    = 0;
 	int                                err               = GLOBUS_SUCCESS;
 	globus_gass_transfer_listener_t   listener		 =GLOBUS_NULL;
 	globus_gass_transfer_listenerattr_t * attr		 =GLOBUS_NULL;
@@ -518,10 +507,6 @@ static int arg_f_mode = O_RDONLY;
 
 	    switch(instance->id_number)
 	    {
-	    case arg_i:
-		options |= GLOBUSRUN_ARG_INTERACTIVE;
-		break;
-
 	    case arg_w:
 		options |= GLOBUSRUN_ARG_ALLOW_WRITES;
 	    case arg_s:
@@ -603,12 +588,6 @@ static int arg_f_mode = O_RDONLY;
     }
 
     globus_args_option_instance_list_free( &options_found );
-
-    if ( (options & GLOBUSRUN_ARG_BATCH) &&
-	 (options & GLOBUSRUN_ARG_INTERACTIVE) )
-    {
-	globusrun_l_args_error("option -i and -b are exclusive");
-    }
 
     if(options & GLOBUSRUN_ARG_AUTHENTICATE_ONLY)
     {
@@ -1106,23 +1085,61 @@ Parameters:
 
 Returns:
 ******************************************************************************/
-static void
-globus_l_globusrun_gram_callback_func(void *user_arg,
-				      char *job_contact,
-				      int state,
-				      int errorcode)
+static
+void
+globus_l_globusrun_gram_callback_func(
+    void *                              user_arg,
+    char *                              job_contact,
+    int                                 state,
+    int                                 errorcode)
 {
-    globus_i_globusrun_gram_monitor_t *monitor;
+    globus_i_globusrun_gram_monitor_t * monitor;
+    globus_url_t                        job_contact_url;
+    int                                 rc;
 
     monitor = (globus_i_globusrun_gram_monitor_t *) user_arg;
 
     globus_mutex_lock(&monitor->mutex);
-
-    if(monitor->job_contact != NULL &&
-            (strcmp(monitor->job_contact, job_contact) != 0))
+    if (!monitor->job_contact_string)
     {
         globus_mutex_unlock(&monitor->mutex);
         return;
+    }
+
+    if (strcmp(monitor->job_contact_string, job_contact) != 0)
+    {
+        rc = globus_url_parse(job_contact, &job_contact_url);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            if (monitor->verbose)
+            {
+                fprintf(stderr, "Error parsing job contact: %s\n", job_contact);
+            }
+            globus_mutex_unlock(&monitor->mutex);
+            return;
+        }
+
+        if(strcmp(monitor->job_contact.url_path, job_contact_url.url_path) == 0)
+        {
+            if (monitor->verbose)
+            {
+                fprintf(stderr, "Job moved to new contact: %s\n", job_contact);
+            }
+            /* Job has moved */
+            free(monitor->job_contact_string);
+            monitor->job_contact_string = strdup(job_contact);
+            globus_url_destroy(&monitor->job_contact);
+            memcpy(
+                    &monitor->job_contact,
+                    &job_contact_url,
+                    sizeof(globus_url_t));
+        }
+        else
+        {
+            globus_url_destroy(&job_contact_url);
+            globus_mutex_unlock(&monitor->mutex);
+            return;
+        }
     }
 
     monitor->job_state = state;
@@ -1255,7 +1272,8 @@ globus_l_globusrun_gramrun(char * request_string,
     monitor.failure_code = 0;
     monitor.verbose=verbose;
     monitor.job_state = 0;
-    monitor.job_contact = NULL;
+    memset(&monitor.job_contact, 0, sizeof(globus_url_t));
+    monitor.job_contact_string = NULL;
     monitor.submit_done = GLOBUS_FALSE;
     monitor.failure_message = NULL;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
@@ -1329,7 +1347,7 @@ globus_l_globusrun_gramrun(char * request_string,
     if(err == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
 	send_commit = GLOBUS_TRUE;
-	err = globus_gram_client_job_signal(monitor.job_contact,
+	err = globus_gram_client_job_signal(monitor.job_contact_string,
 				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
 					    "commit",
 					    &tmp1,
@@ -1365,8 +1383,8 @@ globus_l_globusrun_gramrun(char * request_string,
 
 	}
 
-	if  ((options & GLOBUSRUN_ARG_BATCH) && monitor.job_contact)
-	    globus_libc_printf("%s\n",monitor.job_contact);
+	if  ((options & GLOBUSRUN_ARG_BATCH) && monitor.job_contact_string)
+	    globus_libc_printf("%s\n",monitor.job_contact_string);
 
 	goto hard_exit;
     }
@@ -1377,7 +1395,7 @@ globus_l_globusrun_gramrun(char * request_string,
 
     if  (options & GLOBUSRUN_ARG_BATCH)
     {
-	globus_libc_printf("%s\n",monitor.job_contact);
+	globus_libc_printf("%s\n",monitor.job_contact_string);
     }
 
     globus_mutex_lock(&monitor.mutex);
@@ -1416,7 +1434,7 @@ globus_l_globusrun_gramrun(char * request_string,
 		printf("Cancelling job...\n");
 	    }
 	    globus_l_globusrun_remove_cancel_poll();
-	    globus_gram_client_job_cancel(monitor.job_contact);
+	    globus_gram_client_job_cancel(monitor.job_contact_string);
 	    globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
 	}
     }
@@ -1431,7 +1449,7 @@ globus_l_globusrun_gramrun(char * request_string,
     {
         if(send_commit == GLOBUS_TRUE)
         {
-            err = globus_gram_client_job_signal(monitor.job_contact,
+            err = globus_gram_client_job_signal(monitor.job_contact_string,
                     GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
                     "commit",
                     &tmp1,
@@ -1450,7 +1468,7 @@ globus_l_globusrun_gramrun(char * request_string,
     if (options & GLOBUSRUN_ARG_BATCH)
     {
         globus_gram_client_job_callback_unregister(
-                monitor.job_contact,
+                monitor.job_contact_string,
                 callback_contact,
                 &tmp1,
                 &tmp2);
@@ -1480,10 +1498,11 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 hard_exit:
 
-    if(monitor.job_contact != GLOBUS_NULL)
+    if(monitor.job_contact_string != GLOBUS_NULL)
     {
-	globus_gram_client_job_contact_free(monitor.job_contact);
+	globus_gram_client_job_contact_free(monitor.job_contact_string);
     }
+    globus_url_destroy(&monitor.job_contact);
 
     return err;
 } /* globus_l_globusrun_gramrun() */
@@ -1525,7 +1544,7 @@ globus_l_globusrun_refresh_proxy(
     monitor.failure_code = 0;
     monitor.verbose = GLOBUS_FALSE;
     monitor.job_state = 0;
-    monitor.job_contact = NULL;
+    monitor.job_contact_string = NULL;
     monitor.submit_done = GLOBUS_FALSE;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -1734,100 +1753,6 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int))
     return sigaction(signum, &act, GLOBUS_NULL);
 } /* globus_l_globusrun_signal() */
 
-/******************************************************************************
-Function: globus_l_globusrun_get_credential()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static
-char *
-globus_l_globusrun_get_credential(void)
-{
-    OM_uint32			major_status = 0;
-    OM_uint32			minor_status = 0;
-    gss_cred_id_t		credential = GSS_C_NO_CREDENTIAL;
-    gss_buffer_desc		tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t		tmp_buffer = &tmp_buffer_desc;
-    gss_name_t			my_name = GSS_C_NO_NAME;
-    char *			name;
-
-    major_status = globus_gss_assist_acquire_cred(&minor_status,
-					          GSS_C_BOTH,
-					          &credential);
-
-    if(major_status != GSS_S_COMPLETE)
-    {
-	globus_gss_assist_display_status(stdout,
-					 "Failed to acquire credentials: ",
-					 major_status,
-					 minor_status,
-					 0);
-	return GLOBUS_NULL;
-    }
-
-    major_status =
-	gss_inquire_cred(&minor_status,
-			credential,
-			&my_name,
-			GLOBUS_NULL,
-			GLOBUS_NULL,
-			GLOBUS_NULL);
-
-    if(major_status != GSS_S_COMPLETE)
-    {
-	globus_gss_assist_display_status(stdout,
-					 "Failed to determine my name: ",
-					 major_status,
-					 minor_status,
-					 0);
-
-	gss_release_cred(&minor_status,
-			 &credential);
-	return GLOBUS_NULL;
-    }
-    major_status =
-	gss_display_name(&minor_status,
-			 my_name,
-			 tmp_buffer,
-			 NULL);
-
-    if(major_status != GSS_S_COMPLETE)
-    {
-	globus_gss_assist_display_status(
-	    stdout,
-	    "Failed to convert my name to string: ",
-	    major_status,
-	    minor_status,
-	    0);
-
-	gss_release_name(&minor_status,
-			 &my_name);
-	gss_release_cred(&minor_status,
-			 &credential);
-	return GLOBUS_NULL;
-    }
-
-    name = globus_libc_strdup((char *) tmp_buffer_desc.value);
-
-    gss_release_buffer(&minor_status,
-		       tmp_buffer);
-    gss_release_name(&minor_status,
-		     &my_name);
-
-    gss_release_cred(&minor_status,
-		     &credential);
-    /*
-    printf("my name is %s\n", name);
-    */
-    return name;
-
-}/* globus_l_globusrun_get_credential() */
-
-
 static
 void
 globus_l_submit_callback(
@@ -1841,10 +1766,15 @@ globus_l_submit_callback(
 
     globus_mutex_lock(&monitor->mutex);
     monitor->submit_done = GLOBUS_TRUE;
-    monitor->job_contact = globus_libc_strdup(job_contact);
+    if (job_contact)
+    {
+        monitor->job_contact_string = strdup(job_contact);
+        globus_url_parse(job_contact, &monitor->job_contact);
+    }
     if (operation_failure_code != GLOBUS_SUCCESS)
     {
-        char * err = globus_gram_protocol_error_string(operation_failure_code);
+        const char * err = globus_gram_protocol_error_string(
+                operation_failure_code);
         monitor->failure_code = operation_failure_code;
         monitor->failure_message = globus_libc_strdup(err);
     }
