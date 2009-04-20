@@ -105,9 +105,6 @@ globus_gram_client_refresh_credentials_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_gram_client_register_refresh_credentials_test_SOURCES = globus_gram_client_register_refresh_credentials_test.c
 globus_gram_client_register_refresh_credentials_test_LDFLAGS = $(GPT_LDFLAGS)
 
-globus_gram_client_stop_manager_test_SOURCES = globus_gram_client_stop_manager_test.c
-globus_gram_client_stop_manager_test_LDFLAGS = $(GPT_LDFLAGS)
-
 globus_gram_client_two_phase_commit_test_SOURCES = globus_gram_client_two_phase_commit_test.c
 globus_gram_client_two_phase_commit_test_LDFLAGS = $(GPT_LDFLAGS)
 

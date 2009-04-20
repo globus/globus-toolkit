@@ -80,11 +80,12 @@ sub two_phase_test
         }
         else
         {
-            my $cache_out = `globus-gass-cache -list -tag $tag | wc -l`;
+            my $cache_out = `globus-gass-cache -list -tag $tag`;
             chomp($cache_out);
-            if($cache_out ne "0")
+            if($cache_out ne '')
             {
-                $errors .= "Test left unexpected droppings in the cache";
+                $errors .= "Test left unexpected droppings in the cache:\n"
+                         . "$cache_out";
                 print STDERR `globus-gass-cache -cleanup-tag $tag`;
             }
         }
