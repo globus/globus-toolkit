@@ -440,30 +440,7 @@ globus_l_gram_job_manager_state_machine(
             }
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 
-            if ((request->config->seg_module != NULL ||
-                 strcmp(request->config->jobmanager_type, "fork") == 0) &&
-                !request->manager->seg_started)
-            {
-                /* We want to use the SEG or fork fakeseg, so we'll start that
-                 * up. We won't have to reregister the callback after each
-                 * event in this case.
-                 */
-                rc = globus_gram_job_manager_init_seg(request->manager);
-
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    /* Error starting the SEG. Fallback to non-SEG mode */
-                    request->config->seg_module = NULL;
-                }
-                else
-                {
-                    /* SEG was now started. When an event arrives, it will
-                     * be enqueued and then state will change to POLL1
-                     */
-                    event_registered = GLOBUS_TRUE;
-                }
-            }
-            else if((! first_poll) && request->config->seg_module == NULL)
+            if (!first_poll && !request->manager->seg_started)
             {
                 /* Register next poll of job state */
                 GlobusTimeReltimeSet(
@@ -1345,7 +1322,8 @@ globus_l_gram_job_manager_set_restart_state(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
-        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
+        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
         changed = GLOBUS_TRUE;
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:

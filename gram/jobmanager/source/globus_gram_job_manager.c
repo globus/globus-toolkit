@@ -88,6 +88,20 @@ globus_l_gram_add_reference_locked(
     const char *                        key,
     globus_gram_jobmanager_request_t ** request);
 
+
+static
+int
+globus_l_gram_restart_job(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t ** request,
+    const char *                        job_contact_path);
+
+static
+int
+globus_l_gram_read_job_manager_cred(
+    globus_gram_job_manager_t *         manager,
+    const char *                        cred_path,
+    gss_cred_id_t *                     cred);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -145,7 +159,7 @@ globus_gram_job_manager_init(
      */
     GlobusGramJobManagerLock(manager);
 
-    manager->seg_last_timestamp = time(NULL);
+    manager->seg_last_timestamp = 0;
     manager->seg_started = GLOBUS_FALSE;
 
     globus_l_gram_job_manager_open_logfile(manager);
@@ -158,7 +172,7 @@ globus_gram_job_manager_init(
 
     rc = globus_hashtable_init(
             &manager->request_hash,
-            13,
+            89,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
     if (rc != GLOBUS_SUCCESS)
@@ -170,7 +184,7 @@ globus_gram_job_manager_init(
 
     rc = globus_hashtable_init(
             &manager->job_id_hash,
-            13,
+            89,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
     if (rc != GLOBUS_SUCCESS)
@@ -205,10 +219,19 @@ globus_gram_job_manager_init(
         goto malloc_cred_path_failed;
     }
 
-    if (cred != GSS_C_NO_CREDENTIAL)
+    if (cred == GSS_C_NO_CREDENTIAL)
     {
-        rc = globus_gram_protocol_set_credentials(cred);
+        rc = globus_l_gram_read_job_manager_cred(
+                manager,
+                manager->cred_path,
+                &cred);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto read_credentials_failed;
+        }
     }
+
+    rc = globus_gram_protocol_set_credentials(cred);
     if (rc != GLOBUS_SUCCESS)
     {
         goto set_credentials_failed;
@@ -312,6 +335,7 @@ proxy_timeout_init_failed:
         free(manager->url_base);
 allow_attach_failed:
 set_credentials_failed:
+read_credentials_failed:
         free(manager->cred_path);
         manager->cred_path = NULL;
 malloc_cred_path_failed:
@@ -784,7 +808,7 @@ globus_gram_job_manager_remove_reference(
                 globus_result_t         result;
 
                 /* short for testing */
-                GlobusTimeReltimeSet(delay, 0, 0);
+                GlobusTimeReltimeSet(delay, 60, 0);
                 globus_gram_job_manager_log(
                         manager,
                         "JM: Candidate for swap out from memory: %s\n",
@@ -1271,6 +1295,9 @@ globus_gram_job_manager_stop_all_jobs(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             request->unsent_status_change = GLOBUS_TRUE;
@@ -1341,6 +1368,137 @@ globus_gram_job_manager_stop_all_jobs(
 }
 /* globus_gram_job_manager_stop_all_jobs() */
 
+int
+globus_gram_job_manager_request_load_all(
+    globus_gram_job_manager_t *         manager,
+    globus_list_t **                    requests)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    char *                              state_dir_path = NULL;
+    char *                              state_file_pattern = NULL;
+    int                                 lock;
+    DIR *                               dir;
+    struct dirent *                     entry;
+    uint64_t                            uniq1, uniq2;
+    globus_gram_jobmanager_request_t *  request;
+
+    *requests = NULL;
+
+    if(manager->config->job_state_file_dir == NULL)
+    {
+        state_dir_path = globus_common_create_string(
+                "%s/tmp/gram_job_state/",
+                manager->config->globus_location);
+    }
+    else
+    {
+        state_dir_path = globus_common_create_string(
+                "%s",
+                manager->config->job_state_file_dir);
+    }
+
+    if (state_dir_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto state_dir_path_alloc_failed;
+    }
+
+    if(manager->config->job_state_file_dir == NULL)
+    {
+        state_file_pattern = globus_common_create_string(
+                "%s.%s.%%"PRIu64".%%"PRIu64"%%n",
+                manager->config->logname,
+                manager->config->hostname);
+    }
+    else
+    {
+        state_file_pattern = globus_common_create_string(
+                "job.%s.%%"PRIu64".%%"PRIu64"%%n",
+                manager->config->hostname);
+    }
+    if (state_file_pattern == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto state_file_pattern_alloc_failed;
+    }
+
+    dir = globus_libc_opendir(state_dir_path);
+    if (dir == NULL)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Unable to open job state dir for reloading all jobs\n");
+        goto opendir_failed;
+    }
+
+    while ((rc = globus_libc_readdir_r(dir, &entry)) == 0)
+    {
+        if ((sscanf( entry->d_name,
+                    state_file_pattern,
+                    &uniq1,
+                    &uniq2,
+                    &lock) == 2)
+            && (strlen(entry->d_name + lock) == 0))
+        {
+            /* Found candidate job state file. */
+            char * key = globus_common_create_string(
+                    "%"PRIu64"/%"PRIu64"/",
+                    uniq1,
+                    uniq2);
+
+            free(entry);
+            if (key == NULL)
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        "JM: Error allocating key for %"PRIu64"/%"PRIu64"\n",
+                        uniq1,
+                        uniq2);
+                continue;
+            }
+        
+            rc = globus_l_gram_restart_job(
+                    manager,
+                    &request,
+                    key);
+            free(key);
+
+            if (rc != GLOBUS_SUCCESS)
+            {
+                continue;
+            }
+            rc = globus_list_insert(
+                    requests,
+                    request);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                globus_gram_job_manager_request_free(request);
+                free(request);
+            }
+
+            if (manager->seg_last_timestamp == 0 ||
+                manager->seg_last_timestamp > request->seg_last_timestamp)
+            {
+                manager->seg_last_timestamp = request->seg_last_timestamp;
+            }
+        }
+        else
+        {
+            free(entry);
+        }
+    }
+    rc = 0;
+    globus_libc_closedir(dir);
+opendir_failed:
+    free(state_file_pattern);
+state_file_pattern_alloc_failed:
+    free(state_dir_path);
+state_dir_path_alloc_failed:
+    return rc;
+}
+/* globus_gram_job_manager_request_load_all() */
 
 static
 int
@@ -1492,30 +1650,15 @@ globus_l_gram_add_reference_locked(
         }
         if (ref->request == NULL)
         {
-            char * restart_rsl;
-
-            /* Reload request state */
-            restart_rsl = globus_common_create_string(
-                    "&(restart = '%s%s')(restartcontacts = yes)",
-                    manager->url_base,
-                    key+1 /* ignore leading / */);
-            if (restart_rsl == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                free(restart_rsl);
-                goto malloc_restart_rsl_failed;
-            }
-            rc = globus_gram_job_manager_request_init(
-                    &ref->request,
+            rc = globus_l_gram_restart_job(
                     manager,
-                    restart_rsl,
-                    GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT,
-                    GLOBUS_TRUE);
+                    &ref->request,
+                    key+1);
+
             if (rc != GLOBUS_SUCCESS)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                ref->reference_count--;
 
                 goto request_init_failed;
             }
@@ -1545,8 +1688,131 @@ globus_l_gram_add_reference_locked(
                 key);
     }
 request_init_failed:
-malloc_restart_rsl_failed:
 
     return rc;
 }
 /* globus_l_gram_add_reference_locked() */
+
+static
+int
+globus_l_gram_restart_job(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t ** request,
+    const char *                        job_contact_path)
+{
+    char *                              restart_rsl;
+    int                                 rc;
+
+    /* Reload request state */
+    restart_rsl = globus_common_create_string(
+            "&(restart = '%s%s')(restartcontacts = yes)",
+            manager->url_base,
+            job_contact_path);
+    if (restart_rsl == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto malloc_restart_rsl_failed;
+    }
+
+    rc = globus_gram_job_manager_request_init(
+            request,
+            manager,
+            restart_rsl,
+            GSS_C_NO_CREDENTIAL,
+            GSS_C_NO_CONTEXT,
+            GLOBUS_TRUE);
+malloc_restart_rsl_failed:
+    return rc;
+}
+/* globus_l_gram_restart_job() */
+
+static
+int
+globus_l_gram_read_job_manager_cred(
+    globus_gram_job_manager_t *         manager,
+    const char *                        cred_path,
+    gss_cred_id_t *                     cred)
+{
+    int                                 rc;
+    FILE *                              fp;
+    struct stat                         stat;
+    gss_buffer_desc                     buffer;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+
+    fp = fopen(manager->cred_path, "r");
+    if (fp == NULL)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error opening job manager cred\n");
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+        goto fopen_failed;
+    }
+
+    if (fstat(fileno(fp), &stat) != 0)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error checking job manager cred\n");
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        goto fstat_failed;
+    }
+
+    if (stat.st_uid != getuid() || (stat.st_mode & (S_IRWXG|S_IRWXO)))
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error with job manager cred permissions\n");
+
+        goto perm_check_failed;
+    }
+
+    buffer.length = (size_t) stat.st_size;
+
+    buffer.value = malloc(buffer.length+1);
+    if (buffer.value == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto buffer_malloc_failed;
+    }
+    rc = fread(buffer.value, 1, buffer.length, fp);
+    ((char *)buffer.value)[buffer.length] = 0;
+    if (rc != buffer.length)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+        goto fread_failed;
+    }
+    major_status = gss_import_cred(
+            &minor_status,
+            cred,
+            GSS_C_NO_OID,
+            0,
+            &buffer,
+            0,
+            NULL);
+    if (GSS_ERROR(major_status))
+    {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Error importing credential\n");
+        goto import_failed;
+    }
+
+    rc = GLOBUS_SUCCESS;
+import_failed:
+    free(buffer.value);
+fread_failed:
+buffer_malloc_failed:
+perm_check_failed:
+fstat_failed:
+    fclose(fp);
+fopen_failed:
+
+    return rc;
+}
+/* globus_l_gram_read_job_manager_cred() */

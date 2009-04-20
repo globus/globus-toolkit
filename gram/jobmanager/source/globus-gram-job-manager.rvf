@@ -266,26 +266,6 @@ Description: "Specifies a list of paths to be appended to the system-specific
               library path environment variables."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
-Attribute: label
-Description: "DUROC attribute"
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
-Publish: false
-
-Attribute: resource_manager_contact
-Description: "DUROC attribute"
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
-Publish: false
-
-Attribute: sub_job_start_type
-Description: "DUROC attribute"
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
-Publish: false
-
-Attribute: sub_job_comms_type
-Description: "DUROC attribute"
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
-Publish: false
-
 Attribute: username
 Description: Verify that the job is running as this user.
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

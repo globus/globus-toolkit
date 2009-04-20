@@ -65,12 +65,13 @@ main(
     globus_gram_jobmanager_request_t *  request = NULL;
     char *                              sleeptime_str;
     long                                sleeptime;
-    globus_bool_t                       debugging_without_client = GLOBUS_FALSE;
+    globus_bool_t                       started_without_client = GLOBUS_FALSE;
     globus_bool_t                       located_active_jm = GLOBUS_FALSE;
     char *                              rsl;
     int                                 http_body_fd;
     int                                 context_fd;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
+    globus_list_t *                     requests = NULL;
     OM_uint32                           major_status, minor_status;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
@@ -103,9 +104,9 @@ main(
     {
         exit(1);
     }
-    if (rsl)
+    if (rsl || (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL))
     {
-        debugging_without_client = GLOBUS_TRUE;
+        started_without_client = GLOBUS_TRUE;
     }
     /* Set environment variables from configuration */
     if(config.globus_location != NULL)
@@ -136,7 +137,7 @@ main(
             &minor_status,
             GSS_C_BOTH,
             &cred);
-    if ((!debugging_without_client) && GSS_ERROR(major_status))
+    if ((!started_without_client) && GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
                 stderr,
@@ -150,7 +151,7 @@ main(
     /*
      * Remove delegated proxy from disk.
      */
-    if ((!debugging_without_client) && getenv("X509_USER_PROXY") != NULL)
+    if ((!started_without_client) && getenv("X509_USER_PROXY") != NULL)
     {
         remove(getenv("X509_USER_PROXY"));
     }
@@ -169,7 +170,7 @@ main(
      * Pull out file descriptor numbers for security context and job request
      * from the environment (set by the gatekeeper)
      */
-    if (!debugging_without_client)
+    if (!started_without_client)
     {
         char * fd_env = getenv("GRID_SECURITY_HTTP_BODY_FD");
 
@@ -201,7 +202,7 @@ main(
      */
     while (!located_active_jm)
     {
-        if ((! debugging_without_client) || (config.single))
+        if (config.single)
         {
             /* We'll try to get the lock file associated with being the
              * active job manager here. If we get the OLD_JM_ALIVE error
@@ -236,11 +237,11 @@ main(
         }
 
         if (manager.socket_fd != -1
-                || debugging_without_client
+                || started_without_client
                 || (!config.single))
         {
             gss_ctx_id_t                context;
-            char *                      client_contact;
+            char *                      client_contact = NULL;
             int                         job_state_mask;
 
             /* We are the active job manager or a debug job manager or don't
@@ -250,10 +251,24 @@ main(
 
             if (config.single)
             {
-                /* TODO: Load existing job state files */
+                /* load existing jobs */
+                rc = globus_gram_job_manager_request_load_all(
+                        &manager,
+                        &requests);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_log(
+                            &manager,
+                            "JM: Error loading all requests\n");
+                }
+                rc = 0;
+            }
+            if (manager.seg_last_timestamp == 0)
+            {
+                manager.seg_last_timestamp = time(NULL);
             }
 
-            if (!debugging_without_client)
+            if (!started_without_client)
             {
                 /* Normal operation: started by a job request */
                 rc = globus_gram_job_manager_request_load(
@@ -279,7 +294,7 @@ main(
                 http_body_fd = -1;
                 context_fd = -1;
             }
-            else
+            else if (rsl)
             {
                 /* Debug operation: -rsl command-line option */
                 context = GSS_C_NO_CONTEXT;
@@ -297,6 +312,24 @@ main(
                     exit(1);
                 }
             }
+
+            /* Start off the SEG if we need it */
+            if (config.seg_module != NULL || 
+                strcmp(config.jobmanager_type, "fork") == 0)
+            {
+                rc = globus_gram_job_manager_init_seg(&manager);
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_log(
+                            &manager,
+                            "Error starting SEG: %d\n",
+                            rc);
+
+                    config.seg_module = NULL;
+                }
+            }
+
             /*
              * Kick off the job state machine and send the response
              */
@@ -314,7 +347,56 @@ main(
                     request = NULL;
                 }
             }
-            free(client_contact);
+
+            if (client_contact)
+            {
+                free(client_contact);
+            }
+
+            /* Restart all other requests */
+            while (!globus_list_empty(requests))
+            {
+                request = globus_list_first(requests);
+                requests = globus_list_rest(requests);
+
+                request->unsent_status_change = GLOBUS_TRUE;
+
+                /* Add it to the request table */
+                rc = globus_gram_job_manager_add_request(
+                    &manager,
+                    request->job_contact_path,
+                    request);
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_request_log(
+                            request,
+                            "JM: Error adding request to table: %d\n",
+                            rc);
+                    globus_gram_job_manager_request_free(request);
+                    free(request);
+                    request = NULL;
+                }
+
+                if (request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1 ||
+                    request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2 ||
+                    request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
+                    request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
+                {
+                    globus_gram_job_manager_seg_pause(&manager);
+                }
+                /* Kick off the state machine */
+                rc = globus_gram_job_manager_state_machine_register(
+                        &manager,
+                        request,
+                        NULL);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_log(
+                            &manager,
+                            "JM: Error starting state machine for request\n");
+                }
+            }
         }
         else
         {

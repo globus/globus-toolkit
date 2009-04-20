@@ -1098,12 +1098,14 @@ bad_request:
         rc = rc2;
     }
     GlobusGramJobManagerRequestUnlock(request);
+    /*
     if (rc != GLOBUS_SUCCESS)
     {
         rc = globus_gram_job_manager_remove_reference(
                 manager,
                 request->job_contact_path);
     }
+    */
     return rc;
 }
 /* globus_gram_job_manager_request_start() */

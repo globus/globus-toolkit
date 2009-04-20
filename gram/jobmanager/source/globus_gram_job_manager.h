@@ -578,6 +578,11 @@ typedef struct
      * Queue of pending SEG events
      */
     globus_fifo_t                       seg_event_queue;
+    /**
+     * Timestamp of the last SEG event we've completely processed. Initially
+     * set to the time of the job submission.
+     */
+    time_t                              seg_last_timestamp;
 }
 globus_gram_jobmanager_request_t;
 
@@ -706,6 +711,11 @@ globus_gram_rewrite_output_as_staging(
     globus_gram_jobmanager_request_t *  request,
     globus_rsl_t *                      rsl,
     const char *                        attribute);
+
+int
+globus_gram_job_manager_request_load_all(
+    globus_gram_job_manager_t *         manager,
+    globus_list_t **                    requests);
 
 /* globus_gram_job_manager_validate.c */
 

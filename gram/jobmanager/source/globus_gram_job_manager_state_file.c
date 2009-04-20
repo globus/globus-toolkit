@@ -51,7 +51,7 @@ globus_gram_job_manager_state_file_set(
         *state_file = globus_common_create_string(
                 "%s/tmp/gram_job_state/%s.%s.%s",
                 request->config->globus_location,
-                request->config->logname ? request->config->logname : "globus",
+                request->config->logname,
                 request->config->hostname,
                 request->uniq_id);
     }
@@ -246,7 +246,7 @@ globus_gram_job_manager_state_file_write(
         goto error_exit;
     }
     rc = fprintf(fp, "%lu\n",
-                 (unsigned long) request->manager->seg_last_timestamp);
+                 (unsigned long) request->seg_last_timestamp);
     if (rc < 0)
     {
         goto error_exit;
@@ -488,10 +488,7 @@ skip_single_check:
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
-    if (request->manager->seg_last_timestamp > tmp_timestamp)
-    {
-        request->manager->seg_last_timestamp = (time_t) tmp_timestamp;
-    }
+    request->seg_last_timestamp = (time_t) tmp_timestamp;
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
