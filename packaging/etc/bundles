@@ -8,7 +8,6 @@ BUNDLE globus-resource-management-server
 	globus_common_setup
 	globus_libtool
         globus_callout
-	globus_data_conversion
 	globus_gatekeeper_setup
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
@@ -18,7 +17,6 @@ BUNDLE globus-resource-management-server
 	globus_gass_cache
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
-	globus_mp
 	globus_rsl
 	globus_openssl_module
 	globus_rsl_assist
@@ -39,12 +37,9 @@ BUNDLE globus-resource-management-server
 	globus_ftp_control
 	globus_gass_transfer
 	globus_gram_protocol
-	globus_nexus
-	globus_duct_common
 	globus_ftp_client
 	globus_gass_server_ez
 	globus_gram_client
-	globus_duct_control
 	globus_gass_copy
 	globus_gass_cache_program
         globus_gram_job_manager_callout_error
@@ -64,14 +59,12 @@ BUNDLE globus-resource-management-sdk
 	globus_common_setup
 	globus_libtool
         globus_callout
-	globus_data_conversion
 	globus_openssl
 	globus_openssl_setup
 	globus_user_env
 	globus_gass_cache
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
-	globus_mp
 	globus_rsl
 	globus_openssl_module
 	globus_rsl_assist
@@ -90,18 +83,9 @@ BUNDLE globus-resource-management-sdk
 	globus_ftp_control
 	globus_gass_transfer
 	globus_gram_protocol
-	globus_nexus
-	globus_duct_common
 	globus_ftp_client
 	globus_gass_server_ez
 	globus_gram_client
-	globus_duct_control
-	globus_duct_runtime
-	globus_duroc_common
-	globus_duroc_control
-	globus_gram_myjob
-	globus_duroc_runtime
-	globus_duroc_bootstrap
 
 BUNDLE globus-resource-management-client
 	globus_core
@@ -110,13 +94,11 @@ BUNDLE globus-resource-management-client
         globus_hostname_lookup
 	globus_libtool
         globus_callout
-	globus_data_conversion
 	globus_openssl
 	globus_openssl_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
-	globus_mp
 	globus_rsl
 	globus_openssl_module
 	globus_rsl_assist
@@ -135,13 +117,8 @@ BUNDLE globus-resource-management-client
 	gssapi_error
 	globus_gass_transfer
 	globus_gram_protocol
-	globus_nexus
-	globus_duct_common
 	globus_gass_server_ez
 	globus_gram_client
-	globus_duct_control
-	globus_duroc_common
-	globus_duroc_control
 	globus_gram_client_tools
 
 BUNDLE globus-data-management-server
@@ -359,14 +336,6 @@ BUNDLE gt2-unthreaded
 	globus_common
 	globus_common_setup
 	globus_core
-	globus_data_conversion
-	globus_duct_common
-	globus_duct_control
-	globus_duct_runtime
-	globus_duroc_bootstrap
-	globus_duroc_common
-	globus_duroc_control
-	globus_duroc_runtime
 	globus_ftp_client
 	globus_ftp_control
 	globus_gaa_authz_callout_setup
@@ -384,7 +353,6 @@ BUNDLE gt2-unthreaded
 	globus_gram_job_manager_callout_error
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
-	globus_gram_myjob
 	globus_gram_protocol
 	globus_gridmap_callout_error
 	globus_gsi_callback
@@ -399,8 +367,6 @@ BUNDLE gt2-unthreaded
 	globus_io
 	globus_libtool
 	globus_libxml2
-	globus_mp
-	globus_nexus
 	globus_openssl
 	globus_openssl_setup
 	globus_openssl_module
@@ -516,25 +482,14 @@ BUNDLE globus-common-libs
 
 
 BUNDLE globus-gram
-        globus_data_conversion
-        globus_mp
-        globus_nexus
-        globus_duct_common
-        globus_duct_runtime
-        globus_gram_myjob
         globus_gass_cache_program
         globus_rsl_assist
         globus_gatekeeper_setup
         globus_gram_job_manager_setup
-        globus_duct_control
         globus_gram_job_manager_callout_error
 	globus_gram_job_manager_scripts
         globus_gram_job_manager
         globus_gram_job_manager_setup_fork
-        globus_duroc_common
-        globus_duroc_runtime
-        globus_duroc_bootstrap
-        globus_duroc_control
         globus_gatekeeper
         globus_gram_client_tools
 
