@@ -382,7 +382,7 @@ sub submit
                 
                 # the below should never fail since we just forked
                 setpgrp(0,$$);
-                POSIX::setsid()
+                POSIX::setsid();
 
                 if ( ! exec (@cmdline) )
                 {
