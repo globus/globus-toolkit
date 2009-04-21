@@ -16,7 +16,6 @@
 
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
-#include "globus_strptime.h"
 #include "globus_gram_protocol_constants.h"
 #include "version.h"
 
@@ -316,7 +315,7 @@ globus_l_job_manager_module_deactivate(void)
  * Periodic poll of file to act like tail -f
  *
  * @param user_arg
- *     Logfile parsing state
+ *     Log file parsing state
  */
 static
 void
@@ -324,10 +323,14 @@ globus_l_job_manager_poll_callback(
     void *                              user_arg)
 {
     int                                 rc;
-    globus_l_job_manager_logfile_state_t *      state = user_arg;
+    globus_l_job_manager_logfile_state_t *
+                                        state = user_arg;
     globus_bool_t                       eof_hit = GLOBUS_FALSE;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    time_t                              poll_time = time(NULL);
+    struct tm                           poll_tm, *tm_result;
+    char *                              today;
 
     SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_INFO,
             ("globus_l_job_manager_poll_callback()\n"));
@@ -355,14 +358,42 @@ globus_l_job_manager_poll_callback(
         }
     }
 
+    if (eof_hit)
+    {
+        /*
+         * Read and parsed until end of file in the callback. Check to see if
+         * the current date is past that file's lifetime
+         */
+        tm_result = globus_libc_gmtime_r(&poll_time, &poll_tm);
+        if (tm_result == NULL)
+        {
+            SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_WARN,
+                    ("Couldn't convert to gmtime\n"));
+        }
+        else
+        {
+            today = globus_common_create_string(
+                    "%s/%4d%02d%02d",
+                    state->log_dir,
+                    tm_result->tm_year+1900,
+                    tm_result->tm_mon+1,
+                    tm_result->tm_mday);
+            if (today && (strcmp(today, state->path) != 0))
+            {
+                state->old_log = GLOBUS_TRUE;
+            }
+            if (today)
+            {
+                free(today);
+            }
+        }
+    }
+
     /* If end of log, close this logfile and look for a new one. Also, if
      * the current day's log doesn't exist yet, check for it
      */
     if ((eof_hit && state->old_log) || state->fp == NULL)
     {
-        SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_TRACE,
-                ("got Log closed msg\n"));
-
         if (state->fp)
         {
             fclose(state->fp);
