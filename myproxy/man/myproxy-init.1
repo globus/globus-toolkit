@@ -314,8 +314,8 @@ Specifies the distinguished name (DN) of the
 .BR myproxy-server (8).
 All MyProxy client programs authenticate the server's identity.
 By default, MyProxy servers run with host credentials, so the MyProxy
-client programs expect the server to have a distinguished name of the
-form "host/<fqhn>" or "myproxy/<fqhn>"
+client programs expect the server to have a distinguished name with
+"/CN=host/<fqhn>" or "/CN=myproxy/<fqhn>" or "/CN=<fqhn>"
 (where <fqhn> is the fully-qualified hostname of
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
