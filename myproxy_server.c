@@ -351,11 +351,20 @@ handle_config(myproxy_server_context_t *server_context)
         readconfig = 0;         /* reset the flag now that we've read it */
     }
 
-    /* Check to see if config file had syslog_ident specified. */
-    /* If so, then re-open the syslog with the new name.       */
-    if ((!debug) && (server_context->syslog_ident != NULL)) {
+    /* Check to see if config file had syslog_ident
+       or syslog_facility specified.
+       If so, then re-open the syslog with the new name.       */
+    if ((!debug) &&
+        ((server_context->syslog_ident != NULL) ||
+         (server_context->syslog_facility != LOG_DAEMON))) {
         closelog();
-        myproxy_log_use_syslog(LOG_DAEMON,server_context->syslog_ident);
+        if (server_context->syslog_ident != NULL) {
+            myproxy_log_use_syslog(server_context->syslog_facility,
+                                   server_context->syslog_ident);
+        } else {
+            myproxy_log_use_syslog(server_context->syslog_facility,
+                                   server_context->my_name);
+        }
     }
 
     /* 

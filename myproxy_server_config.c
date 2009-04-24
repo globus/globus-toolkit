@@ -6,6 +6,8 @@
  * See myproxy_server.h for documentation.
  */
 
+#define SYSLOG_NAMES
+
 #include "myproxy_common.h"	/* all needed headers included here */
 
 #if defined(HAVE_REGCOMP) && defined(HAVE_REGEX_H)
@@ -95,12 +97,34 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->accepted_credentials_mapapp);
     context->check_multiple_credentials = 0;
     free_ptr(&context->syslog_ident);
+    context->syslog_facility = LOG_DAEMON;
 #if defined(HAVE_LIBSASL2)
     free_ptr(&myproxy_sasl_mech);
     free_ptr(&myproxy_sasl_serverFQDN);
     free_ptr(&myproxy_sasl_user_realm);
 #endif
 }
+
+/*
+ * decode_facility()
+ *
+ * Return the syslog facility number given a facility string.
+ */
+static int
+decode_facility(const char *name)
+{
+    CODE *c;
+
+    if (isdigit(*name))
+        return (atoi(name));
+
+    for (c = facilitynames; c->c_name; c++)
+        if (!strcasecmp(name, c->c_name))
+            return (c->c_val);
+
+    return (LOG_DAEMON);
+}
+
 
 /*
  * line_parse_callback()
@@ -421,6 +445,9 @@ line_parse_callback(void *context_arg,
     /* added by Terry Fleury for enhanced logging */
     else if (strcmp(directive, "syslog_ident") == 0) {
         context->syslog_ident = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "syslog_facility") == 0) {
+        context->syslog_facility = decode_facility(tokens[1]);
     }
 
     else if (strcmp(directive, "slave_servers") == 0) {
