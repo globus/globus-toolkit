@@ -284,6 +284,11 @@ You can optionally specify the string to be prepended to every message
 written to the syslog.  If not specified, the name defaults to the the
 program name, i.e. myproxy-server.
 .TP
+.BI syslog_facility " name"
+By default, the myproxy-server will log to the syslog "daemon"
+facility. With this option you can specify an alternate syslog
+facility, such as "auth", "user", "security", or "local0".
+.TP
 .BI request_timeout " seconds"
 Specifies the maximum time a 
 .BR myproxy-server (8)

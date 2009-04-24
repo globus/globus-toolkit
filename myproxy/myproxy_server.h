@@ -65,6 +65,7 @@ typedef struct
   char *accepted_credentials_mapapp;/* gridmap call-out */
   int check_multiple_credentials;   /* Check multiple creds for U/P match */
   char *syslog_ident;               /* Identity for logging to syslog */
+  int syslog_facility;              /* syslog facility */
   int limited_proxy;                /* Should we delegate a limited proxy? */
   int request_timeout;              /* Timeout for child processes */
   int allow_self_authz;             /* Allow client subject to match cert? */

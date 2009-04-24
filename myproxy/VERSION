@@ -23,6 +23,10 @@ v4.7 XX Xxx 2009
     - don't allow RSA exponents < 65537
     - add min_keylen option in myproxy-server.config for specifying a
       minimum allowed RSA key length
+  - add syslog_facility option in myproxy-server.config to configure
+    the myproxy-server to log to the specified syslog facility; the
+    default is the "daemon" facility
+    (http://bugzilla.globus.org/globus/show_bug.cgi?id=6717)
 
 v4.6 25 Mar 2009
   - add myproxy-get-trustroots command to download trusted CA
