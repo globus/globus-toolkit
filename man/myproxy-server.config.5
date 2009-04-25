@@ -288,6 +288,9 @@ program name, i.e. myproxy-server.
 By default, the myproxy-server will log to the syslog "daemon"
 facility. With this option you can specify an alternate syslog
 facility, such as "auth", "user", "security", or "local0".
+The facility can also be specified numerically as with the 
+.BR logger (1)
+command.
 .TP
 .BI request_timeout " seconds"
 Specifies the maximum time a 
