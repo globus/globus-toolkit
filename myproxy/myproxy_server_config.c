@@ -6,7 +6,7 @@
  * See myproxy_server.h for documentation.
  */
 
-#define SYSLOG_NAMES
+#define SYSLOG_NAMES            /* for facilitynames */
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
@@ -113,14 +113,20 @@ clear_server_context(myproxy_server_context_t *context)
 static int
 decode_facility(const char *name)
 {
+#if HAVE_DECL_FACILITYNAMES
     CODE *c;
+#endif
 
     if (isdigit(*name))
         return (atoi(name));
 
+#if HAVE_DECL_FACILITYNAMES
     for (c = facilitynames; c->c_name; c++)
         if (!strcasecmp(name, c->c_name))
             return (c->c_val);
+#endif
+
+    myproxy_log("warning: unknown syslog_facility (%s) in myproxy-server.config. defaulting to LOG_DAEMON.", name);
 
     return (LOG_DAEMON);
 }

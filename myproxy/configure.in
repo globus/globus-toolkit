@@ -75,6 +75,14 @@ dnl Check for socklen_t
 dnl
 AC_CHECK_TYPES(socklen_t)
 dnl
+dnl Check for facilitynames
+dnl
+AC_CHECK_DECLS([facilitynames], [], [],
+  [[
+        #define SYSLOG_NAMES
+        #include <syslog.h>
+  ]])
+dnl
 dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
 dnl
 uname=`(uname) 2>/dev/null`
