@@ -27,6 +27,9 @@ v4.7 XX Xxx 2009
     the myproxy-server to log to the specified syslog facility; the
     default is the "daemon" facility
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6717)
+  - added an example in myproxy-accepted-credentials-mapapp
+    of how to ban users (http://myproxy.ncsa.uiuc.edu/blacklist.html)
+  - added myproxy-admin-query -o option to query by owner DN
 
 v4.6 25 Mar 2009
   - add myproxy-get-trustroots command to download trusted CA
