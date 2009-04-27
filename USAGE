@@ -94,6 +94,7 @@ desperate attempt to maintain some consistency.
 -n | --no_passphrase              Don't prompt for passphrase
 -n | --no_passphrase              Don't prompt for passphrase
 -o | --out             <path>     Location of delegated proxy
+-o | --owner        <name>      Query by owner name
 -p | --port    <portnumber> Specifies the port to run on
 -p | --psport          <port #>   Port of the myproxy-server
 -p | --psport          <port #>   Port of the myproxy-server

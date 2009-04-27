@@ -24,6 +24,7 @@ static char usage[] =
 "    -s | --storage      <directory> Specifies the credential storage directory\n"
 "    -l | --username     <name>      Query by username\n"
 "    -k | --credname     <name>      Query by credential name\n"
+"    -o | --owner        <name>      Query by owner name\n"    
 "    -e | --expiring_in  <hours>     Query for creds expiring in less than \n"
 "                                    specified <hours>\n"
 "    -t | --time_left    <hours>     Query for creds with lifetime greater \n"
@@ -43,6 +44,7 @@ struct option long_options[] =
     {"usage",             no_argument, NULL, 'u'},
     {"username",    required_argument, NULL, 'l'},
     {"credname",    required_argument, NULL, 'k'},
+    {"owner",       required_argument, NULL, 'o'},
     {"config",      required_argument, NULL, 'c'},
     {"expiring_in", required_argument, NULL, 'e'},
     {"time_left",   required_argument, NULL, 't'},
@@ -56,7 +58,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hul:c:k:e:t:s:vVriL:U";
+static char short_options[] = "hul:c:k:o:e:t:s:vVriL:U";
 
 static char version[] =
 BINARY_NAME "version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -172,6 +174,9 @@ init_arguments(int argc,
 	    break;
         case 'k':	/* credname */
 	    cred.credname = strdup(optarg);
+	    break;
+        case 'o':	/* owner */
+	    cred.owner_name = strdup(optarg);
 	    break;
     case 'c':
         config_file = strdup(optarg);
