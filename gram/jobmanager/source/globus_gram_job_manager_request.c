@@ -824,7 +824,10 @@ cached_stderr_malloc_failed:
 cached_stdout_symboltable_failed:
         free(r->cached_stdout);
 cached_stdout_malloc_failed:
-        globus_gram_job_manager_destroy_directory(r, r->job_dir);
+        if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+        {
+            globus_gram_job_manager_destroy_directory(r, r->job_dir);
+        }
 failed_make_job_dir:
 failed_check_exists:
         free(r->job_contact_path);
