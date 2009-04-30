@@ -957,7 +957,6 @@ globus_l_gram_job_manager_state_machine(
             remove(request->job_state_lock_file);
         }
         globus_l_gram_job_manager_cancel_queries(request);
-        event_registered = GLOBUS_TRUE;
 
         break;
 
@@ -989,7 +988,6 @@ globus_l_gram_job_manager_state_machine(
             GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 
         globus_l_gram_job_manager_cancel_queries(request);
-        event_registered = GLOBUS_TRUE;
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
@@ -1013,6 +1011,15 @@ globus_l_gram_job_manager_state_machine(
                         "JM: Error writing audit record\n");
             }
         }
+        /* Clear any existing SEG events */
+        while (! globus_fifo_empty(&request->seg_event_queue))
+        {
+            /* A SEG event occurred recently. Let's update our job state
+             */
+            globus_gram_job_manager_seg_handle_event(request);
+
+        }
+
         event_registered = GLOBUS_TRUE;
         break;
 
@@ -1028,6 +1035,17 @@ globus_l_gram_job_manager_state_machine(
                     "JM: Error writing audit record\n");
         }
         event_registered = GLOBUS_TRUE;
+
+        if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE)
+        {
+            /* Clear any existing SEG events */
+            while (! globus_fifo_empty(&request->seg_event_queue))
+            {
+                /* A SEG event occurred recently. Let's update our job state
+                 */
+                globus_gram_job_manager_seg_handle_event(request);
+            }
+        }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:

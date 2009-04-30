@@ -414,6 +414,12 @@ globus_l_gram_deliver_event(
                 event->job_id);
     }
 
+    globus_gram_job_manager_request_log(
+    		request,
+		"JM: Enqueuing SEG Event %s state %d, request in jm state %d\n",
+		event->job_id,
+		event->event_type,
+		request->jobmanager_state);
     rc = globus_fifo_enqueue(&request->seg_event_queue, event);
     if (rc != GLOBUS_SUCCESS)
     {
