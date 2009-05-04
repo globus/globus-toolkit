@@ -736,6 +736,12 @@ BUNDLE gt4-gram-no-c
         globus_wsrf_rendezvous_common_schema
         globus_wsrf_rendezvous_service_java
 
+BUNDLE gram2-pbs
+        globus_scheduler_event_generator_pbs
+        globus_scheduler_event_generator_pbs_setup
+        globus_gram_job_manager_setup_pbs
+        globus_scheduler_event_generator_pbs_test
+                
 BUNDLE gt4-gram-pbs
         globus_wsrf_gram_service_java_setup_pbs
         globus_scheduler_event_generator_pbs
@@ -753,12 +759,24 @@ BUNDLE gt4-gram-condor
         globus_wsrf_mds_hawkeye
         globus_scheduler_event_generator_condor_test
 
+BUNDLE gram2-condor
+        globus_scheduler_event_generator_condor
+        globus_scheduler_event_generator_condor_setup                
+        globus_gram_job_manager_setup_condor
+        globus_scheduler_event_generator_condor_test
+
 BUNDLE gt4-gram-lsf
         globus_wsrf_gram_service_java_setup_lsf                
         globus_scheduler_event_generator_lsf
         globus_scheduler_event_generator_lsf_setup                
         globus_gram_job_manager_setup_lsf
         globus_scheduler_provider_setup_lsf
+        globus_scheduler_event_generator_lsf_test
+
+BUNDLE gram2-lsf
+        globus_scheduler_event_generator_lsf
+        globus_scheduler_event_generator_lsf_setup                
+        globus_gram_job_manager_setup_lsf
         globus_scheduler_event_generator_lsf_test
 
 BUNDLE gt4-gram-test
