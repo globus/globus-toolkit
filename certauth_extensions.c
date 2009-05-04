@@ -242,7 +242,6 @@ static int
 assign_serial_number( X509 *cert, 
 		      myproxy_server_context_t *server_context ) {
 
-  int increment  = 1;
   int retval = 1;
   long serialset;
 
@@ -331,7 +330,7 @@ assign_serial_number( X509 *cert,
 	  myproxy_debug("Loaded serial number 0x%s from %s", buf, serialfile);
       }
   } else {
-      ASN1_INTEGER_set(current, 1);
+      ASN1_INTEGER_set(current, server_context->certificate_serial_skip);
   }
 
   serial = BN_bin2bn( current->data, current->length, serial );
@@ -341,7 +340,7 @@ assign_serial_number( X509 *cert,
     goto error;
   }
 
-  if (!BN_add_word(serial, increment)) {
+  if (!BN_add_word(serial, server_context->certificate_serial_skip)) {
     verror_put_string("Error incrementing serial number\n");
     ssl_error_to_verror();
     goto error;
