@@ -34,6 +34,8 @@ v4.7 XX Xxx 2009
     repository file parser) with dynamically-sized buffer to support
     credentials with policies longer than 511 characters
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6723)
+  - added certificate_serial_skip in myproxy-server.config to support
+    staggered serial numbers across multiple CA instances
 
 v4.6 25 Mar 2009
   - add myproxy-get-trustroots command to download trusted CA

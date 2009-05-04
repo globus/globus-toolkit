@@ -52,6 +52,7 @@ typedef struct
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   int   min_keylen;                 /* minimum keylength for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
+  int   certificate_serial_skip;    /* CA serial number increment */
   char *certificate_out_dir;        /* path to certificate directory */
   char *ca_ldap_server;             /* URL to CA ldap user DN server */
   char *ca_ldap_uid_attribute;      /* Username attribute name */

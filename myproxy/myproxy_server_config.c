@@ -84,6 +84,7 @@ clear_server_context(myproxy_server_context_t *context)
     context->max_cert_lifetime = 0;
     context->min_keylen = 0;
     free_ptr(&context->certificate_serialfile);
+    context->certificate_serial_skip = 1;
     free_ptr(&context->certificate_out_dir);
     free_ptr(&context->ca_ldap_server);
     free_ptr(&context->ca_ldap_searchbase);
@@ -371,6 +372,9 @@ line_parse_callback(void *context_arg,
     }
     else if (strcmp(directive, "certificate_serialfile") == 0) {
 	context->certificate_serialfile = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_serial_skip") == 0) {
+	context->certificate_serial_skip = atoi(tokens[1]);
     }
     else if (strcmp(directive, "certificate_out_dir") == 0) {
 	context->certificate_out_dir = strdup(tokens[1]);
@@ -799,6 +803,12 @@ check_config(myproxy_server_context_t *context)
 	    verror_put_errno(errno);
 	    rval = -1;
 	}
+    if (context->certificate_serial_skip <= 0) {
+        verror_put_string("certificate_serial_skip (%s) <= 0",
+                          context->certificate_serial_skip);
+        verror_put_errno(errno);
+        rval = -1;
+    }
 	if (context->certificate_out_dir &&
 	    access(context->certificate_out_dir, W_OK) < 0) {
 	    verror_put_string("certificate_out_dir %s not writeable",
