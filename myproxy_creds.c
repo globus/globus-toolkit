@@ -517,6 +517,8 @@ read_data_file(struct myproxy_creds *creds,
     int done = 0;
     int line_number = 0;
     int return_code = -1;
+    char *line_buffer = NULL;
+    size_t line_buffer_len = 512;
 
     assert(creds != NULL);
     assert(datafile_path != NULL);
@@ -532,14 +534,16 @@ read_data_file(struct myproxy_creds *creds,
         goto error;
     }
 
+    line_buffer = (char *)malloc(line_buffer_len);
+    assert(line_buffer != NULL);
+
     while (!done)
     {
-        char buffer[512];
         char *variable;
         char *value;
         int len;
         
-        if (fgets(buffer, sizeof(buffer), data_stream) == NULL)
+        if (fgets(line_buffer, line_buffer_len, data_stream) == NULL)
         {
             int errno_save = errno;
             
@@ -557,19 +561,29 @@ read_data_file(struct myproxy_creds *creds,
             /* Not reached */
         }
 
-        /* Remove carriage return from credentials */
-        len = strlen(buffer);
-        
-        if (buffer[len - 1] == '\n')
-        {
-            buffer[len - 1] = '\0';
+        len = strlen(line_buffer);
+        while (line_buffer[len-1] != '\n') { /* didn't get a full line */
+            char *more;
+            line_buffer_len *= 2;
+            line_buffer = realloc(line_buffer, line_buffer_len);
+            assert(line_buffer != NULL);
+            more = line_buffer+len;
+            if (fgets(more, line_buffer_len-len, data_stream) == NULL) {
+                verror_put_errno(errno);
+                verror_put_string("reading %s", datafile_path);
+                goto error;
+            }
+            len = strlen(line_buffer);
         }
+
+        /* Remove terminating newline */
+        line_buffer[len-1] = '\0';
 
         line_number++;
         
-        variable = buffer;
+        variable = line_buffer;
         
-        value = strchr(buffer, '=');
+        value = strchr(line_buffer, '=');
 
         if (value != NULL)
         {
@@ -715,6 +729,10 @@ read_data_file(struct myproxy_creds *creds,
     if (data_stream != NULL)
     {
         fclose(data_stream);
+    }
+    if (line_buffer != NULL)
+    {
+        free(line_buffer);
     }
     
     return return_code;
