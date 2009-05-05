@@ -36,6 +36,10 @@ v4.7 XX Xxx 2009
     (http://bugzilla.globus.org/globus/show_bug.cgi?id=6723)
   - added certificate_serial_skip in myproxy-server.config to support
     staggered serial numbers across multiple CA instances
+  - added certificate_issuer_hashalg in myproxy-server.config to
+    configure the MyProxy CA to issue certificates using SHA-2 hash
+    algorithms (SHA-224, SHA-256, SHA-384, SHA-512) rather than SHA-1
+    (the default). Requires OpenSSL 0.9.8 or later.
 
 v4.6 25 Mar 2009
   - add myproxy-get-trustroots command to download trusted CA

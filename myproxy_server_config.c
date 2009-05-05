@@ -69,6 +69,7 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->certificate_issuer_program);
     free_ptr(&context->certificate_issuer_cert);
     free_ptr(&context->certificate_issuer_key);
+    context->certificate_hashalg = EVP_sha1();
     free_ptr(&context->certificate_request_checker);
     free_ptr(&context->certificate_issuer_checker);
     free_ptr(&context->certificate_issuer_key_passphrase);
@@ -313,6 +314,30 @@ line_parse_callback(void *context_arg,
     }
     else if (strcmp(directive, "certificate_issuer_key") == 0) {
 	context->certificate_issuer_key = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_hashalg") == 0) {
+        if (!strcasecmp(tokens[1], "sha1")) {
+            context->certificate_hashalg = EVP_sha1();
+#if defined(NID_sha224)
+        } else if (!strcasecmp(tokens[1], "sha224")) {
+            context->certificate_hashalg = EVP_sha224();
+#endif
+#if defined(NID_sha256)
+        } else if (!strcasecmp(tokens[1], "sha256")) {
+            context->certificate_hashalg = EVP_sha256();
+#endif
+#if defined(NID_sha384)
+        } else if (!strcasecmp(tokens[1], "sha384")) {
+            context->certificate_hashalg = EVP_sha384();
+#endif
+#if defined(NID_sha512)
+        } else if (!strcasecmp(tokens[1], "sha512")) {
+            context->certificate_hashalg = EVP_sha512();
+#endif
+        } else {
+            verror_put_string("Unknown or unsupported certificate_issuer_hashalg (%s)", tokens[1]);
+            goto error;
+        }
     }
     else if (strcmp(directive, "certificate_request_checker") == 0) {
 	context->certificate_request_checker = strdup(tokens[1]);

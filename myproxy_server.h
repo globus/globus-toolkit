@@ -37,6 +37,7 @@ typedef struct
   char *certificate_issuer_program; /* CA callout external program */
   char *certificate_issuer_cert;    /* CA certificate */
   char *certificate_issuer_key;     /* CA signing key */
+  const EVP_MD *certificate_hashalg; /* hash algorithm for issued EECs */
   char *certificate_request_checker; /* callout for checking certreqs */
   char *certificate_issuer_checker; /* callout for checking issued certs */
   char *certificate_openssl_engine_id;   /* Which OpenSSL engine to use */
