@@ -702,7 +702,7 @@ generate_certificate( X509_REQ                 *request,
 
   myproxy_debug("Signing internally generated certificate.");
 
-  if (!X509_sign(cert, cakey, EVP_sha1() ) ) {
+  if (!X509_sign(cert, cakey, server_context->certificate_hashalg ) ) {
     verror_put_string("Certificate/cakey sign failed.");
     ssl_error_to_verror();
     goto error;
@@ -1085,7 +1085,7 @@ handle_certificate(unsigned char            *input_buffer,
   } 
 
   /* convert pkey into string for output to log */
-  ASN1_digest(i2d_PUBKEY,EVP_sha1(),(char*)pkey,md,&md_len);
+  ASN1_digest((int (*)())i2d_PUBKEY,EVP_sha1(),(char*)pkey,md,&md_len);
   sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
 
   myproxy_log("Got a cert request for user \"%s\", "
