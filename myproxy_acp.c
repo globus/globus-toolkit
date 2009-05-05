@@ -50,7 +50,8 @@ static int read_passwd_from_stdin = 0;
 int
 main(int argc, char *argv[]) 
 {
-    char passphrase[MAX_PASS_LEN+1], new_passphrase[MAX_PASS_LEN+1], *np=NULL;
+    char passphrase[MAX_PASS_LEN+1] = {0};
+    char new_passphrase[MAX_PASS_LEN+1] = {0};
     int rval = 0;
 
     /* check library version */
@@ -85,7 +86,6 @@ main(int argc, char *argv[])
 	verror_print_error(stderr);
 	return 1;
     }
-    if (passphrase)
 	cred.passphrase = passphrase;
 
     /* Accept new passphrase */
@@ -102,10 +102,8 @@ main(int argc, char *argv[])
 	verror_print_error(stderr);
 	return 1;
     }
-    if (new_passphrase[0])
-	np = new_passphrase;
 
-    if (myproxy_creds_change_passphrase(&cred, np) < 0) {
+    if (myproxy_creds_change_passphrase(&cred, new_passphrase) < 0) {
 	verror_print_error(stderr);
 	exit(1);
     }
