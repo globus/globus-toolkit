@@ -18,7 +18,7 @@
 #define MGLUE_VERSION	""
 #endif
 
-#define NCSA_VERSION	" GLOBUS_GSSAPI_GPT_4.5"
+#define NCSA_VERSION	" GLOBUS_GSSAPI_GPT_4.6"
 
 #define SSH_VERSION	"OpenSSH_5.2"
 
