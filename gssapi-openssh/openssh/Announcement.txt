@@ -1,4 +1,4 @@
-GSI-OpenSSH 4.5, based on OpenSSH 5.2p1, is now available from:
+GSI-OpenSSH 4.6, based on OpenSSH 5.2p1, is now available from:
 
 http://grid.ncsa.uiuc.edu/ssh/download.html
 
@@ -11,28 +11,25 @@ Please use Bugzilla to report GSI-OpenSSH bugs:
 
 http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
 
-GSI-OpenSSH 4.5 Major changes
+GSI-OpenSSH 4.6 Major changes
 
    New features
 
-      * Updated to OpenSSH 5.2p1.
-
-      * Improved error handling in SXXsshd script:
-        http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6664
+      * None
 
    Bugs fixed
 
-      * Fixed GPT package to stop on build failures:
-        http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6544
+      * Fix bug in authmethods table, introduced in GSI-OpenSSH 4.5,
+        that disabled the gssapi-keyex, external-keyx, and gssapi
+        methods on the client-side (including those methods that
+        determine the server-side username automatically based on the
+        GSI context).
+
+      * Accept empty identity_buffer from
+        globus_gss_assist_map_and_authorize() to support external
+        gridmap callouts that don't set it:
+        http://bugzilla.globus.org/globus/show_bug.cgi?id=6687
 
 SHA1 checksums:
-8286f997a54ccba81ebb00cf2212fbf34a09aff1  gsi_openssh-4.5-src.tar.gz
-74b85021aac1d2fddbd7ec40a3a2d3b3e12f5d97  gsi_openssh_bundle-4.5-src.tar.gz
-4df5b5309a60b6687dee22b5a98fa6eb9754a043  gsi_openssh_compat-4.5-src.tar.gz
-1836fab465db4705f8b7992b928ef4ee91211f4e  gsi_openssh_setup-4.5-src.tar.gz
 
 MD5 checksums:
-7e4a097667d3f1f2ca725b7c0cb90c94  gsi_openssh-4.5-src.tar.gz
-31ae8778b61d54cc8f0a9502978cf2bb  gsi_openssh_bundle-4.5-src.tar.gz
-74bf5efd014e209ce84d8e27cec2fc66  gsi_openssh_compat-4.5-src.tar.gz
-7b2d89e1337062f1409d807072d4b8eb  gsi_openssh_setup-4.5-src.tar.gz
