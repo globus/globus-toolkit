@@ -63,13 +63,13 @@ $ make dist
 3. Verify that the source package builds against supported versions of
    the Globus Toolkit.  It should build without warnings.
 
-     $ gpt-build -verbose myproxy-*.tar.gz gcc32dbg
+     $ gpt-build -force -verbose myproxy-*.tar.gz gcc32dbg
 
    For instructions on submitting test builds to the UW NMI system,
    see nmi/README.  The results of all test builds, including
    automated nightly builds, can be viewed at:
 
-   http://nmi-s003.cs.wisc.edu/nmi/index.php?page=results%2Foverview&opt_project=MyProxy
+   http://nmi-web.cs.wisc.edu/nmi/index.php?page=results%2Foverview&opt_project=MyProxy
 
 4. Test the installation.  (-valgrind will work only on x86.)
 
