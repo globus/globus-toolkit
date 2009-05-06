@@ -1,9 +1,12 @@
-This is MyProxy v4.7 6 May 2009.
+This is MyProxy v4.8 XX Xxx 2009.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v4.8 XX Xxx 2009
+  - ...
+
 v4.7 6 May 2009
   - in myproxy-get-trustroots and myproxy-logon -T, update files
     atomically (using rename) rather than overwriting
