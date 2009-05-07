@@ -1,4 +1,4 @@
-GSI-OpenSSH 4.6, based on OpenSSH 5.2p1, is now available from:
+GSI-OpenSSH 4.7, based on OpenSSH 5.2p1, is now available from:
 
 http://grid.ncsa.uiuc.edu/ssh/download.html
 
@@ -11,24 +11,21 @@ Please use Bugzilla to report GSI-OpenSSH bugs:
 
 http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
 
-GSI-OpenSSH 4.6 Major changes
+GSI-OpenSSH 4.7 Major changes
 
    New features
 
-      * None
+      * Configure $GLOBUS_LOCATION/etc/ssh/ssh_config to enable only
+        GSSAPI authentication methods on the client-side, so other
+        methods (such as password or public key) aren't attempted when
+        GSI authentication fails. We expect users to select a standard
+        ssh client (rather than gsissh) for those methods. The server
+        still supports all methods by default to support both GSI and
+        non-GSI clients.
 
    Bugs fixed
 
-      * Fix bug in authmethods table, introduced in GSI-OpenSSH 4.5,
-        that disabled the gssapi-keyex, external-keyx, and gssapi
-        methods on the client-side (including those methods that
-        determine the server-side username automatically based on the
-        GSI context).
-
-      * Accept empty identity_buffer from
-        globus_gss_assist_map_and_authorize() to support external
-        gridmap callouts that don't set it:
-        http://bugzilla.globus.org/globus/show_bug.cgi?id=6687
+      * 
 
 SHA1 checksums:
 
