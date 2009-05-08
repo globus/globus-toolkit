@@ -4217,6 +4217,8 @@ globus_l_gass_cache_unlink_local( cache_names_t	*names )
 	/* It's ok if somebody else beat us to it */
 	(void) globus_l_gass_cache_unlink( names->local_tag_link );
 
+        /* Force the NFS server to update its cache info */
+        utimes( names->local_tag_file, NULL );
 	/* Now, stat the *main* tag file, see how many links it has */
 	/* It's ok if somebody else killed it before us! */
 	rc = globus_l_gass_cache_stat( names->local_tag_file, &statbuf );
@@ -4292,6 +4294,8 @@ globus_l_gass_cache_unlink_global( cache_names_t		*names,
     {
 	global_file = names->global_data_file;
     }
+
+    utimes(global_file, NULL);
     rc = globus_l_gass_cache_stat( global_file, &statbuf );
 
     /* ENOENT here means that it was killed by another process, ok */
@@ -6140,6 +6144,7 @@ globus_gass_cache_cleanup_tag_all(
     /* Done */
     globus_l_gass_cache_names_free( &names );
 
+    free(base_local_dir);
     /* Build some file names that we'll use. */
     {
 	char buf[256];
