@@ -235,7 +235,7 @@ globus_gram_job_manager_request_init(
     r->failure_code = 0;
     /* Won't be set until job has been submitted to the LRM */
     r->job_id_string = NULL;
-    r->poll_frequency = 30;
+    r->poll_frequency = 10;
     r->commit_extend = 0;
     r->scratchdir = NULL;
     r->creation_time = time(NULL);

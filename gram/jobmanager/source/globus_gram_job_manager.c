@@ -298,6 +298,13 @@ globus_gram_job_manager_init(
     /* Default number of scripts which can be run simultaneously */
     manager->script_slots_available = 5;
 
+    rc = globus_fifo_init(&manager->script_handles);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto script_handles_fifo_init_failed;
+    }
+
     rc = globus_fifo_init(&manager->state_callback_fifo);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -322,6 +329,8 @@ globus_gram_job_manager_init(
     if (rc != GLOBUS_SUCCESS)
     {
 state_callback_fifo_init_failed:
+        globus_fifo_destroy(&manager->script_handles);
+script_handles_fifo_init_failed:
         globus_fifo_destroy(&manager->script_fifo);
 script_fifo_init_failed:
         free(manager->socket_path);
@@ -417,6 +426,7 @@ globus_gram_job_manager_destroy(
 
     globus_fifo_destroy(&manager->state_callback_fifo);
     globus_fifo_destroy(&manager->script_fifo);
+    globus_fifo_destroy(&manager->script_handles);
 
     return;
 }

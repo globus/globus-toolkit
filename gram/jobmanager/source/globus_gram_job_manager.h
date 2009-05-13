@@ -371,6 +371,8 @@ typedef struct globus_gram_job_manager_s
     globus_fifo_t                       script_fifo;
     /** Number of script slots available for running scripts */
     int                                 script_slots_available;
+    /** Fifo of available script handles */
+    globus_fifo_t                       script_handles;
     /** Fifo of job state callback contexts to run */
     globus_fifo_t                       state_callback_fifo;
     /** Number of job state contact slots available */
