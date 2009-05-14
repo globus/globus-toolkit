@@ -47,15 +47,15 @@ globus_gram_client_test	gram/client/test	gpt null gram2_scalability_branch
 globus_gram_client_tools	gram_client_tools/source	gpt null gram2_scalability_branch
 globus_gram_client_tools_test	gram_client_tools/test	gpt
 globus_gram_documentation	gram/documentation	gpt
-globus_gram_job_manager	gram/jobmanager/source	gpt null gram2_scalability_branch
-globus_gram_job_manager_scripts	gram/jobmanager/scripts	gpt null gram2_scalability_branch
+globus_gram_job_manager	gram/jobmanager/source	gpt null jira_gram_7_branch
+globus_gram_job_manager_scripts	gram/jobmanager/scripts	gpt null jira_gram_7_branch
 globus_gram_job_manager_callout_error   gram/jobmanager/callout_error	gpt null gram2_scalability_branch
-globus_gram_job_manager_test	gram/jobmanager/test	gpt null gram2_scalability_branch
+globus_gram_job_manager_test	gram/jobmanager/test	gpt null jira_gram_7_branch
 globus_gram_job_manager_setup	gram/jobmanager/setup/program	gpt null gram2_scalability_branch
 globus_gram_job_manager_setup_condor	gram/jobmanager/setup/condor	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_fork	gram/jobmanager/setup/fork	gpt null gram2_scalability_branch
+globus_gram_job_manager_setup_fork	gram/jobmanager/setup/fork	gpt null jira_gram_7_branch
 globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs	gpt null gram2_scalability_branch
+globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs	gpt null jira_gram_7_branch
 globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote	gpt null gram2_scalability_branch
 globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt
 globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt
