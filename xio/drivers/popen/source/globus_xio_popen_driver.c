@@ -393,7 +393,6 @@ globus_l_xio_popen_child(
 #   if !defined(USE_SOCKET_PAIR)
     close(outfds[1]);
     close(infds[0]);
-#   endif
     rc = dup2(outfds[0], STDIN_FILENO);
     if(rc < 0)
     {
@@ -406,6 +405,24 @@ globus_l_xio_popen_child(
         goto error;
     }
     close(infds[1]);
+#   else
+    rc = dup2(outfds[1], STDIN_FILENO);
+    if(rc < 0)
+    {
+        close(infds[0]);
+        close(infds[1]);
+        goto error;
+    }
+    rc = dup2(infds[1], STDOUT_FILENO);
+    if(rc < 0)
+    {
+        close(infds[0]);
+        close(infds[1]);
+        goto error;
+    }
+    close(infds[0]);
+    close(infds[1]);
+#   endif
     if(attr->pass_env)
     {
         rc = execv(attr->program_name, attr->argv);
