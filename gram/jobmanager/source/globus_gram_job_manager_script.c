@@ -2101,6 +2101,11 @@ globus_l_gram_process_script_queue_locked(
 
         head->handle = globus_fifo_dequeue(&manager->script_handles);
     }
+    else 
+    {
+        /* No slots/handles available */
+        goto nothing_to_do;
+    }
 
     globus_gram_job_manager_log(
             manager,
@@ -2366,7 +2371,7 @@ attr_cntl_program_failed:
 
 attr_init_failed:
 env_strings_failed:
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 7; i++)
     {
         if (env[i] != NULL)
         {
