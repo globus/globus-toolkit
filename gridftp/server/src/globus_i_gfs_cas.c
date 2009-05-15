@@ -125,12 +125,12 @@ globus_gfs_acl_cas_authorize(
      */
     if(action == GFS_ACL_ACTION_AUTHZ_ASSERT)
     {
-        full_object = globus_common_create_string(
-            "ftp://%s%s", acl_info->hostname, object->name);
+        full_object = globus_libc_strdup(object->name);
     }
     else
     {
-        full_object = globus_libc_strdup(object->name);
+        full_object = globus_common_create_string(
+            "ftp://%s%s", acl_info->hostname, object->name);
     }    
 
     action_str = globus_gfs_acl_cas_action_to_string(action);
