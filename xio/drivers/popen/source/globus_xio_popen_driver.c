@@ -18,6 +18,10 @@
 #include "globus_xio_popen_driver.h"
 #include "version.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define USE_SOCKET_PAIR 1
 
 GlobusDebugDefine(GLOBUS_XIO_POPEN);
 
@@ -73,6 +77,8 @@ typedef struct xio_l_popen_attr_s
     char *                              program_name;
     char **                             argv;
     int                                 argc;
+    char **                             env;
+    int                                 env_count;
     globus_xio_popen_preexec_func_t     fork_cb;
 } xio_l_popen_attr_t;
 
@@ -101,10 +107,17 @@ typedef struct xio_l_popen_handle_s
     globus_off_t                        file_position;
     pid_t                               pid;
     globus_xio_popen_preexec_func_t     fork_cb;
+    globus_xio_operation_t              close_op;
 } xio_l_popen_handle_t;
 
 #define GlobusXIOPOpenPosition(handle)                                \
     globus_l_xio_popen_update_position(handle, 0, SEEK_CUR)
+
+static
+void
+globus_l_popen_waitpid(
+    xio_l_popen_handle_t *              handle,
+    int                                 opts);
 
 static
 globus_off_t
@@ -193,6 +206,15 @@ globus_l_xio_popen_attr_copy(
         }
         attr->argv[i] = NULL;
     }
+    if(src_attr->env_count > 0)
+    {
+        attr->env = (char **)globus_calloc(attr->env_count+1, sizeof(char*));
+        for(i = 0; i < attr->env_count; i++)
+        {
+            attr->env[i] = strdup(src_attr->env[i]);
+        }
+        attr->env[i] = NULL;
+    }
     *dst = attr;
 
     GlobusXIOPOpenDebugExit();
@@ -212,6 +234,7 @@ globus_l_xio_popen_attr_cntl(
 {
     int                                 i;
     char **                             argv;
+    char **                             env;
     xio_l_popen_attr_t *                attr;
     globus_xio_popen_preexec_func_t     cb;
     GlobusXIOName(globus_l_xio_popen_attr_cntl);
@@ -235,6 +258,21 @@ globus_l_xio_popen_attr_cntl(
             attr->argv[i] = NULL;
             attr->program_name = strdup(attr->argv[0]);
             break;
+
+        case GLOBUS_XIO_POPEN_SET_CHILD_ENV:
+            env = va_arg(ap, char **);
+            for(attr->env_count = 0; env[attr->env_count] != NULL;
+                attr->env_count++)
+            {
+            }
+            attr->env = calloc(attr->env_count + 1, sizeof(char *));
+            for(i = 0; i < attr->env_count; i++)
+            {
+                attr->env[i] = strdup(env[i]);
+            }
+            attr->env[i] = NULL;
+            break;
+
 
         case GLOBUS_XIO_POPEN_SET_PASS_ENV:
             attr->pass_env = va_arg(ap, globus_bool_t);
@@ -277,6 +315,14 @@ globus_l_xio_popen_attr_destroy(
             free(attr->argv[i]);
         }
         free(attr->argv);
+    }
+    if(attr->env_count > 0)
+    {
+        for(i = 0; i < attr->env_count; i++)
+        {
+            free(attr->env[i]);
+        }
+        free(attr->env);
     }
     if(attr->program_name != NULL)
     {
@@ -344,6 +390,7 @@ globus_l_xio_popen_child(
 {
     int                                 rc;
 
+#   if !defined(USE_SOCKET_PAIR)
     close(outfds[1]);
     close(infds[0]);
     rc = dup2(outfds[0], STDIN_FILENO);
@@ -351,23 +398,76 @@ globus_l_xio_popen_child(
     {
         goto error;
     }
+    close(outfds[0]);
     rc = dup2(infds[1], STDOUT_FILENO);
     if(rc < 0)
     {
         goto error;
     }
+    close(infds[1]);
+#   else
+    rc = dup2(outfds[1], STDIN_FILENO);
+    if(rc < 0)
+    {
+        close(infds[0]);
+        close(infds[1]);
+        goto error;
+    }
+    rc = dup2(infds[1], STDOUT_FILENO);
+    if(rc < 0)
+    {
+        close(infds[0]);
+        close(infds[1]);
+        goto error;
+    }
+    close(infds[0]);
+    close(infds[1]);
+#   endif
     if(attr->pass_env)
     {
         rc = execv(attr->program_name, attr->argv);
     }
     else
     {
-        char *                          env[] = {0};
+        char *                          l_env[] = {0};
+        char **                         env;
+
+        env = l_env;
+        if(attr->env != NULL)
+        {
+            env = attr->env;
+        }
         rc = execve(attr->program_name, attr->argv, env);
     }
 
 error:
     exit(rc);
+}
+
+static
+globus_result_t
+globus_l_xio_popen_init_child_pipe(
+    int                                 fd,
+    globus_xio_system_file_handle_t *   out_system)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_popen_init_child_pipe);
+
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+
+    result = globus_xio_system_file_init(out_system, fd);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_system_file_init", result);
+        goto error_init;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_init:
+
+    return result;
 }
 
 /*
@@ -382,6 +482,7 @@ globus_l_xio_popen_open(
     globus_xio_operation_t              op)
 {
     int                                 rc;
+    int                                 s_fds[2];
     int                                 infds[2];
     int                                 outfds[2];
     xio_l_popen_handle_t *              handle;
@@ -401,63 +502,167 @@ globus_l_xio_popen_open(
         goto error_handle;
     }
 
-    rc = pipe(infds);
-    if(rc != 0)
+#   if defined(USE_SOCKET_PAIR)
     {
-        result = GlobusXIOErrorSystemError("pipe", errno);
-        goto error_in_pipe;
+        rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, s_fds);
+        if(rc != 0)
+        {
+            result = GlobusXIOErrorSystemError("socketpair", errno);
+            goto error_in_pipe;
+        }
+
+        /* trick the rest of the code into thinking it is using pipe */
+        outfds[0] = s_fds[0];
+        outfds[1] = s_fds[1];
+        infds[0] = s_fds[0];
+        infds[1] = s_fds[1];
     }
-    rc = pipe(outfds);
-    if(rc != 0)
+#   else
     {
-        result = GlobusXIOErrorSystemError("pipe", errno);
-        goto error_out_pipe;
+        rc = pipe(infds);
+        if(rc != 0)
+        {
+            result = GlobusXIOErrorSystemError("pipe", errno);
+            goto error_in_pipe;
+        }
+        rc = pipe(outfds);
+        if(rc != 0)
+        {
+            result = GlobusXIOErrorSystemError("pipe", errno);
+            goto error_out_pipe;
+        }
     }
+#   endif
 
     handle->pid = fork();
-    if(handle->pid == 0)
+    if(handle->pid < 0)
+    {
+        result = GlobusXIOErrorSystemError("fork", errno);
+        goto error_fork;
+    }
+    else if(handle->pid == 0)
     {
         globus_l_xio_popen_child(attr, contact_info, infds, outfds);
     }
-    fcntl(outfds[1], F_SETFD, FD_CLOEXEC);
-    fcntl(infds[0], F_SETFD, FD_CLOEXEC);
 
-    handle->infd = infds[0];
-    handle->outfd = outfds[1];
+#   if defined(USE_SOCKET_PAIR)
+    {
+        handle->infd = s_fds[0];
+        handle->outfd = s_fds[0];
+        result = globus_l_xio_popen_init_child_pipe(
+            handle->infd,
+            &handle->in_system);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_init;
+        }
+        handle->out_system = handle->in_system;
+        close(s_fds[1]);
+    }
+#   else
+    {
+        handle->infd = infds[0];
+        handle->outfd = outfds[1];
 
-    result = globus_xio_system_file_init(&handle->out_system, handle->outfd);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_file_init", result);
-        goto error_init;
+        result = globus_l_xio_popen_init_child_pipe(
+            handle->outfd,
+            &handle->out_system);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_init;
+        }
+        result = globus_l_xio_popen_init_child_pipe(
+            handle->infd,
+            &handle->in_system);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_init;
+        }
+        close(outfds[0]);
+        close(infds[1]);
     }
-    result = globus_xio_system_file_init(&handle->in_system, handle->infd);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_file_init", result);
-        goto error_init;
-    }
-    
-    close(outfds[0]);
-    close(infds[1]);
+#   endif
+
     globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     
     GlobusXIOPOpenDebugExit();
     return GLOBUS_SUCCESS;
 
+#   if defined(USE_SOCKET_PAIR)
 error_init:
+error_fork:
+    close(s_fds[0]);
+    close(s_fds[1]);
+#   else
+error_init:
+error_fork:
     close(outfds[0]);
     close(outfds[1]);
 error_out_pipe:
     close(infds[0]);
     close(infds[1]);
+#   endif
 error_in_pipe:
     globus_l_xio_popen_handle_destroy(handle);
 error_handle:
     GlobusXIOPOpenDebugExitWithError();
     return result;
+}
+
+static
+void
+globus_l_xio_popen_close_oneshot(
+    void *                              arg)
+{
+    xio_l_popen_handle_t *              handle;
+    GlobusXIOName(globus_l_xio_popen_close_oneshot);
+
+    GlobusXIOPOpenDebugEnter();
+    handle = (xio_l_popen_handle_t *) arg;
+
+    globus_l_popen_waitpid(handle, WNOHANG);
+
+    GlobusXIOPOpenDebugExit();
+}
+
+static
+void
+globus_l_popen_waitpid(
+    xio_l_popen_handle_t *              handle,
+    int                                 opts)
+{
+    globus_result_t                     result;
+    int                                 status;
+    int                                 rc;
+    globus_reltime_t                    delay;
+    GlobusXIOName(globus_l_popen_waitpid);
+
+    /* XXX wait pid should be nonblocking
+       we need a way to get the exit status back to the user */
+    rc = waitpid(handle->pid, &status, opts);
+    if(rc > 0)
+    {
+        globus_xio_driver_finished_close(handle->close_op, GLOBUS_SUCCESS);
+        globus_l_xio_popen_handle_destroy(handle);
+    }
+    else if(rc < 0 || opts == 0)
+    {
+        result = GlobusXIOErrorSystemError("waitpid", errno);
+        globus_xio_driver_finished_close(handle->close_op, result);
+        globus_l_xio_popen_handle_destroy(handle);
+    }
+    else
+    {
+        GlobusTimeReltimeSet(delay, 0, 100);
+
+         globus_callback_register_oneshot(
+            NULL,
+            &delay,
+            globus_l_xio_popen_close_oneshot,
+            handle);
+    }
+
+    GlobusXIOPOpenDebugExit();
 }
 
 /*
@@ -476,16 +681,27 @@ globus_l_xio_popen_close(
     GlobusXIOPOpenDebugEnter();
     
     handle = (xio_l_popen_handle_t *) driver_specific_handle;
-    
+
+    handle->close_op = op;
     globus_xio_system_file_destroy(handle->in_system);
-    globus_xio_system_file_destroy(handle->out_system);
-    
+   
+    /* XXX Gotta deal with kill */ 
     globus_xio_system_file_close(handle->infd);
+
+#if !defined(USE_SOCKET_PAIR)
     globus_xio_system_file_close(handle->outfd);
-    
-    globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-    globus_l_xio_popen_handle_destroy(handle);
-    
+    globus_xio_system_file_destroy(handle->out_system);
+#endif
+
+    if(globus_xio_driver_operation_is_blocking(op))
+    {
+        globus_l_popen_waitpid(handle, 0);
+    }
+    else
+    {
+        globus_l_popen_waitpid(handle, WNOHANG);
+    }
+
     GlobusXIOPOpenDebugExit();
     return GLOBUS_SUCCESS;
 }
@@ -662,6 +878,8 @@ static globus_xio_string_cntl_table_t popen_l_string_opts_table[] =
     {"pass_env", GLOBUS_XIO_POPEN_SET_PASS_ENV,
         globus_xio_string_cntl_bool},
     {"argv", GLOBUS_XIO_POPEN_SET_PROGRAM,
+        globus_xio_string_cntl_string_list},
+    {"env", GLOBUS_XIO_POPEN_SET_CHILD_ENV,
         globus_xio_string_cntl_string_list},
     {0}
 };
