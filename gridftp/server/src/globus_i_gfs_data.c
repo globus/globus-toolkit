@@ -118,6 +118,7 @@ typedef struct
     globus_i_gfs_acl_handle_t           acl_handle;
 
     gss_cred_id_t                       del_cred;
+    gss_ctx_id_t                        context;
     char *                              subject;
     char *                              client_ip;
     char *                              username;
@@ -6096,7 +6097,7 @@ globus_i_gfs_data_session_start(
     globus_mutex_init(&session_handle->mutex, NULL);
     session_handle->ref = 1;
     session_handle->del_cred = session_info->del_cred;
-
+    session_handle->context = context;
 
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
@@ -7045,6 +7046,32 @@ globus_gridftp_server_get_session_username(
     GlobusGFSDebugEnter();
 
     *username = globus_libc_strdup(op->session_handle->real_username);
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_get_delegated_cred(
+    globus_gfs_operation_t              op,
+    gss_cred_id_t *                     del_cred)
+{
+    GlobusGFSName(globus_gridftp_server_get_delegated_cred);
+    GlobusGFSDebugEnter();
+
+    *del_cred = op->session_handle->del_cred;
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_get_sec_context(
+    globus_gfs_operation_t              op,
+    gss_ctx_id_t *                      context)
+{
+    GlobusGFSName(globus_gridftp_server_get_sec_context);
+    GlobusGFSDebugEnter();
+
+    *context = op->session_handle->context;
 
     GlobusGFSDebugExit();
 }

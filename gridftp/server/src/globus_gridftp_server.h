@@ -19,8 +19,8 @@
  * 
  * If you are interested in writing a module for this server and want to
  * discuss it's design, or are already writing one and would like support,
- * please subscribe to gridftp-mpd@globus.org by sending a message to 
- * majordomo@globus.org with the line 'subscribe gridftp-mpd' in the body.
+ * please subscribe to gridftp-dev@globus.org:
+ * https://lists.globus.org/mailman/listinfo/gridftp-dev
  * In fact, we'd like to hear from you even if you don't need any assistance.
  */
 
@@ -957,6 +957,35 @@ globus_gridftp_server_get_session_username(
     globus_gfs_operation_t              op,
     char **                             username);
    
+/*
+ * get delegated cred
+ * 
+ * This can can be called to get the delegated credential.  This may be called
+ * with any op after session_start() and and the credential pointer will be
+ * valid until at least session_stop.  del_cred will be NULL if it is not 
+ * available.
+ */
+void
+globus_gridftp_server_get_delegated_cred(
+    globus_gfs_operation_t              op,
+    gss_cred_id_t *                     del_cred);
+
+/*
+ * get security context (unsupported)
+ * 
+ * This can can be called to get the gssapi security context of the client 
+ * connection.  This may be called with any op after session_start() and 
+ * the context pointer will be valid until at least session_stop.  context 
+ * will be NULL if it is not available.  This is needed for accessing proxy
+ * extensions or other gssapi operations where the delegated credential is 
+ * not sufficient.  The caller should not attempt operations that modify the 
+ * context without fully understanding the effects. 
+ */
+void
+globus_gridftp_server_get_sec_context(
+    globus_gfs_operation_t              op,
+    gss_ctx_id_t *                      context);
+
 /*
  * get config string
  * 
