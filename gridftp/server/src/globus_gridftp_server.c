@@ -1616,7 +1616,20 @@ main(
         
         if(inetd)
         {
-            freopen("/dev/null", "w+", stdout);
+            if(globus_i_gfs_config_bool("ssh"))
+            {
+                struct stat             statbuf;
+            
+                rc = fstat(STDIN_FILENO, &statbuf);
+                if(rc == 0 && S_ISFIFO(statbuf.st_mode))
+                {
+                    /* using pipe driver */
+                }
+                else /* if(S_ISSOCK(statbuf.st_mode)) */
+                {
+                    freopen("/dev/null", "w+", stderr);
+                }
+            }
             freopen("/dev/null", "w+", stderr);
         }
 

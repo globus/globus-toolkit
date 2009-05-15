@@ -21,6 +21,7 @@
 #include "globus_xio.h"
 #include "globus_xio_system.h"
 #include "globus_xio_tcp_driver.h"
+#include "globus_xio_pipe_driver.h"
 #include "globus_xio_telnet.h"
 #include "globus_xio_gssapi_ftp.h"
 

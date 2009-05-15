@@ -265,6 +265,7 @@ static globus_size_t                    globus_l_gsc_fake_buffer_len = 1;
 
 static globus_gridftp_server_control_attr_t globus_l_gsc_default_attr;
 static globus_xio_driver_t              globus_l_gsc_tcp_driver;
+static globus_xio_driver_t              globus_l_gsc_pipe_driver;
 static globus_xio_driver_t              globus_l_gsc_gssapi_ftp_driver;
 static globus_xio_driver_t              globus_l_gsc_telnet_driver;
 static globus_hashtable_t               globus_l_gsc_pwent_cache;
@@ -303,6 +304,11 @@ globus_l_gsc_activate()
         return GLOBUS_FAILURE;
     }
     res = globus_xio_driver_load("tcp", &globus_l_gsc_tcp_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return GLOBUS_FAILURE;
+    }
+    res = globus_xio_driver_load("pipe", &globus_l_gsc_pipe_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -364,6 +370,7 @@ globus_l_gsc_deactivate()
         &globus_l_gsc_grent_cache, globus_l_gsc_grent_hash_destroy);
 
     globus_xio_driver_unload(globus_l_gsc_tcp_driver);
+    globus_xio_driver_unload(globus_l_gsc_pipe_driver);
     globus_xio_driver_unload(globus_l_gsc_telnet_driver);
     globus_xio_driver_unload(globus_l_gsc_gssapi_ftp_driver);
     globus_extension_unregister_builtin(GlobusXIOExtensionName(gssapi_ftp));
@@ -2666,10 +2673,13 @@ globus_gridftp_server_control_start(
 {
     globus_reltime_t                    delay;
     globus_result_t                     res;
+    int                                 rc;
     globus_i_gsc_server_handle_t *      server_handle;
     globus_i_gsc_attr_t *               i_attr;
     globus_xio_stack_t                  xio_stack;
     globus_xio_attr_t                   xio_attr;
+    struct stat                         statbuf;
+    globus_xio_driver_t                 transport;
     GlobusGridFTPServerName(globus_gridftp_server_control_start);
 
     GlobusGridFTPServerDebugEnter();
@@ -2683,6 +2693,22 @@ globus_gridftp_server_control_start(
     {
         res = GlobusGridFTPServerErrorParameter("system_handle");
         goto err;
+    }
+
+    rc = fstat(STDIN_FILENO, &statbuf);
+    if(rc != 0)
+    {
+        res = GlobusGridFTPServerErrorParameter("system_handle");
+        goto err;
+    }
+    
+    if(S_ISFIFO(statbuf.st_mode))
+    {
+        transport = globus_l_gsc_pipe_driver;
+    }
+    else /* if(S_ISSOCK(statbuf.st_mode)) */
+    {
+        transport = globus_l_gsc_tcp_driver;
     }
 
     i_attr = (globus_i_gsc_attr_t *) attr;
@@ -2709,7 +2735,7 @@ globus_gridftp_server_control_start(
     {
         goto err;
     }
-    res = globus_xio_stack_push_driver(xio_stack, globus_l_gsc_tcp_driver);
+    res = globus_xio_stack_push_driver(xio_stack, transport);
     if(res != GLOBUS_SUCCESS)
     {
         goto err;
@@ -2764,11 +2790,35 @@ globus_gridftp_server_control_start(
         goto err;
     }
 
-    res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
-        GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
-    if(res != GLOBUS_SUCCESS)
+    if(transport == globus_l_gsc_tcp_driver)
     {
-        goto err;
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
+            GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+    }
+    else if(transport == globus_l_gsc_pipe_driver)
+    {
+        int                             outfd;
+        
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_pipe_driver,
+            GLOBUS_XIO_PIPE_SET_IN_HANDLE, system_handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+
+        outfd = dup(STDOUT_FILENO);
+        freopen("/dev/null", "w+", stdout);
+
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_pipe_driver,
+            GLOBUS_XIO_PIPE_SET_OUT_HANDLE, outfd);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
     }
     res = globus_xio_handle_create(&server_handle->xio_handle, xio_stack);
     if(res != GLOBUS_SUCCESS)
@@ -3234,11 +3284,12 @@ globus_gsc_959_command_remove(
             globus_free(cmd_ent);
         }
     }
-    globus_mutex_lock(&server_handle->mutex);
+    globus_mutex_unlock(&server_handle->mutex);
 
     return GLOBUS_SUCCESS;
 
 error_notexist:
+    globus_mutex_unlock(&server_handle->mutex);
     return res;
 }
 
