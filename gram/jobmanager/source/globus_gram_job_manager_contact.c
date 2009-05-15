@@ -218,12 +218,10 @@ globus_gram_job_manager_contact_state_callback(
         goto context_malloc_failed;
     }
 
-    globus_gram_job_manager_request_log(
-            request,
-            "Adding reference for job state callbacks\n");
     rc = globus_gram_job_manager_add_reference(
             request->manager,
             request->job_contact_path,
+            "Job state callbacks",
             &context->request);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -315,12 +313,10 @@ queue_failed:
 nothing_to_send:
         free(context->message);
 
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: Not sending callbacks, removing reference\n");
         globus_gram_job_manager_remove_reference(
                request->manager,
-               request->job_contact_path);
+               request->job_contact_path,
+               "Job state callbacks");
 add_reference_failed:
 pack_message_failed:
         free(context);
@@ -582,7 +578,8 @@ failed_enqueue:
                 key);
         globus_gram_job_manager_remove_reference(
                manager,
-               key);
+               key,
+               "Job state callbacks");
     }
 
     return rc;
@@ -666,13 +663,10 @@ globus_l_gram_callback_reply(
     {
         char * key = globus_list_remove(&references, references);
 
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Done sending callbacks, removing reference for %s\n",
-                key);
         globus_gram_job_manager_remove_reference(
                manager,
-               key);
+               key,
+               "Job state callbacks");
     }
 }
 /* globus_l_gram_callback_reply() */

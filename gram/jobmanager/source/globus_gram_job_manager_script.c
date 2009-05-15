@@ -226,13 +226,10 @@ globus_l_gram_job_manager_script_run(
         goto script_context_malloc_failed;
     }
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Adding reference for script %s\n",
-            request->job_contact_path);
     rc = globus_gram_job_manager_add_reference(
             request->manager,
             request->job_contact_path,
+            "script",
             NULL);
     globus_assert(rc == GLOBUS_SUCCESS);
 
@@ -255,13 +252,10 @@ globus_l_gram_job_manager_script_run(
     if (rc != GLOBUS_SUCCESS)
     {
 queue_failed:
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: Script failure, removing reference for %s\n",
-                request->job_contact_path);
         globus_gram_job_manager_remove_reference(
                 request->manager,
-                request->job_contact_path);
+                request->job_contact_path,
+                "script");
         free(script_context);
     }
 script_context_malloc_failed:
@@ -471,7 +465,8 @@ globus_l_gram_job_manager_script_read(
 
     globus_gram_job_manager_remove_reference(
             request->manager,
-            request->job_contact_path);
+            request->job_contact_path,
+            "script");
 }
 /* globus_l_gram_job_manager_script_read() */
 
@@ -2097,7 +2092,10 @@ globus_l_gram_process_script_queue_locked(
     {
         head = globus_fifo_dequeue(&manager->script_fifo);
 
-        globus_assert(globus_fifo_empty(&manager->script_fifo));
+        if (globus_fifo_empty(&manager->script_handles))
+        {
+            globus_assert(globus_fifo_empty(&manager->script_fifo));
+        }
 
         head->handle = globus_fifo_dequeue(&manager->script_handles);
     }
@@ -2126,7 +2124,7 @@ globus_l_gram_process_script_queue_locked(
     {
         fprintf(manager->jobmanager_log_fp, 
                 "%s",
-                head->iov[i].iov_base);
+                (char *) head->iov[i].iov_base);
     }
     result = globus_xio_register_writev(
             head->handle->handle,

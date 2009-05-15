@@ -159,13 +159,10 @@ globus_l_gram_seg_event_callback(
 
     GlobusGramJobManagerLock(manager);
     /* Find the job request associated by this job id */
-    globus_gram_job_manager_log(
-            manager,
-            "JM: Adding reference for SEG event for %s\n",
-            event->job_id);
     rc = globus_gram_job_manager_add_reference_by_jobid(
             manager,
             event->job_id,
+            "SEG event",
             &request);
 
     if (rc != GLOBUS_SUCCESS)
@@ -213,13 +210,10 @@ globus_l_gram_seg_event_callback(
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Failed to handle SEG event, removing reference for %s\n",
-                request->job_contact_path);
         (void) globus_gram_job_manager_remove_reference(
                 request->manager,
-                request->job_contact_path);
+                request->job_contact_path,
+                "SEG event");
 manager_event_queue_failed:
         globus_scheduler_event_destroy(new_event);
 copy_failed:
@@ -258,13 +252,10 @@ globus_gram_job_manager_seg_handle_event(
 
     globus_scheduler_event_destroy(event);
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Done handling SEG event, removing reference for %s\n",
-            request->job_contact_path);
     (void) globus_gram_job_manager_remove_reference(
             request->manager,
-            request->job_contact_path);
+            request->job_contact_path,
+            "SEG event");
 }
 /* globus_gram_job_manager_seg_handle_event() */
 
@@ -352,13 +343,10 @@ globus_l_seg_resume_callback(
         event = globus_list_remove(&resume->events, resume->events);
 
         GlobusGramJobManagerLock(resume->manager);
-        globus_gram_job_manager_log(
-                resume->manager,
-                "JM: SEG resume, adding reference for %s\n",
-                event->job_id);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 resume->manager,
                 event->job_id,
+                "SEG event",
                 &request);
         if (rc != GLOBUS_SUCCESS)
         {
@@ -404,14 +392,6 @@ globus_l_gram_deliver_event(
     if(request->job_state_file)
     {
         utime(request->job_state_file, NULL);
-    }
-
-    if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
-        event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
-    {
-        (void) globus_gram_job_manager_unregister_job_id(
-                request->manager,
-                event->job_id);
     }
 
     globus_gram_job_manager_request_log(
@@ -537,13 +517,10 @@ globus_l_gram_fork_poll_callback(
         event = globus_list_first(l);
 
         GlobusGramJobManagerLock(manager);
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Fork poll, adding reference for %s\n",
-                event->job_id);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 manager,
                 event->job_id,
+                "SEG event",
                 &request);
         GlobusGramJobManagerUnlock(manager);
 

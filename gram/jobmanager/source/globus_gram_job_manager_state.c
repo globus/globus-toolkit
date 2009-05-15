@@ -133,12 +133,10 @@ globus_gram_job_manager_state_machine_callback(
     while(!event_registered);
 
     GlobusGramJobManagerRequestUnlock(request);
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Removing reference for state_machine_callback\n");
     rc = globus_gram_job_manager_remove_reference(
             request->manager,
-            request->job_contact_path);
+            request->job_contact_path,
+            "state machine");
     assert(rc == GLOBUS_SUCCESS);
 
 }
@@ -1011,6 +1009,12 @@ globus_l_gram_job_manager_state_machine(
                         "JM: Error writing audit record\n");
             }
         }
+
+        /* Don't allow any new SEG events to enter the queue */
+        (void) globus_gram_job_manager_unregister_job_id(
+                request->manager,
+                request->job_id_string);
+
         /* Clear any existing SEG events */
         while (! globus_fifo_empty(&request->seg_event_queue))
         {
@@ -1038,6 +1042,10 @@ globus_l_gram_job_manager_state_machine(
 
         if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE)
         {
+            /* Don't allow any new SEG events to enter the queue */
+            (void) globus_gram_job_manager_unregister_job_id(
+                    request->manager,
+                    request->job_id_string);
             /* Clear any existing SEG events */
             while (! globus_fifo_empty(&request->seg_event_queue))
             {
@@ -1807,13 +1815,10 @@ globus_gram_job_manager_state_machine_register(
         delay = &nodelay;
     }
 
-    globus_gram_job_manager_log(
-            manager,
-            "JM: Adding reference for state machine register for %s\n",
-            request->job_contact_path);
     rc = globus_gram_job_manager_add_reference(
             manager,
             request->job_contact_path,
+            "state machine",
             NULL);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -1840,7 +1845,8 @@ oneshot_failed:
                 request->job_contact_path);
         globus_gram_job_manager_remove_reference(
                 manager,
-                request->job_contact_path);
+                request->job_contact_path,
+                "state machine");
 failed_add_reference:
         ;
     }

@@ -1178,11 +1178,13 @@ int
 globus_gram_job_manager_add_reference(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request);
 
 int
 globus_gram_job_manager_remove_reference(
     globus_gram_job_manager_t *         manager,
+    const char *                        reason,
     const char *                        key);
 
 int
@@ -1200,6 +1202,7 @@ int
 globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_t *         manager,
     const char *                        jobid,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request);
 
 int
