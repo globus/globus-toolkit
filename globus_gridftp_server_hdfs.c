@@ -385,6 +385,10 @@ globus_l_gfs_hdfs_stat(
     if (strncmp(PathName, hdfs_handle->mount_point, hdfs_handle->mount_point_len)==0) {
         PathName += hdfs_handle->mount_point_len;
     }
+    while (PathName[0] == '/' && PathName[1] == '/')
+    {   
+        PathName++;
+    }
 
     sprintf(err_msg, "Going to do stat on file %s.\n", PathName);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
@@ -906,6 +910,11 @@ globus_l_gfs_hdfs_recv(
     if (strncmp(hdfs_handle->pathname, hdfs_handle->mount_point, hdfs_handle->mount_point_len) == 0) {
         hdfs_handle->pathname += hdfs_handle->mount_point_len;
     }
+    while (hdfs_handle->pathname[0] == '/' && hdfs_handle->pathname[1] == '/')
+    {
+        hdfs_handle->pathname++;
+    }
+
     sprintf(err_msg, "We are going to open file %s.\n", hdfs_handle->pathname);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
     hdfs_handle->op = op;
@@ -1162,6 +1171,10 @@ globus_l_gfs_hdfs_send(
     }
     if (strncmp(hdfs_handle->pathname, hdfs_handle->mount_point, hdfs_handle->mount_point_len)==0) {
         hdfs_handle->pathname += hdfs_handle->mount_point_len;
+    }
+    while (hdfs_handle->pathname[0] == '/' && hdfs_handle->pathname[1] == '/')
+    {
+        hdfs_handle->pathname++;
     }
 
     hdfs_handle->op = op;
