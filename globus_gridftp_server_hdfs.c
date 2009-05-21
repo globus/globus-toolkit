@@ -15,12 +15,10 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <hdfs.h>
+#include <stdio.h>
+#include <sys/mman.h>
 
 static const int default_id = 00;
-
-/*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- *  ADD ADDITIONAL INCLUDES HERE
- *@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 
 static
 globus_version_t local_version =
@@ -48,6 +46,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     short *                             used;
     int                                 optimal_count;
     int                                 max_buffer_count;
+    int                                 max_file_buffer_count;
     int                                 buffer_count; // Number of buffers we currently maintain in memory waiting to be written to HDFS.
     int                                 outstanding;
     globus_mutex_t                      mutex;
@@ -57,6 +56,8 @@ typedef struct globus_l_gfs_hdfs_handle_s
     int                                 mount_point_len;
     int                                 replicas;
     char *                              username;
+    FILE *                              tmpfile;
+    int                                 using_file_buffer;
 } globus_l_gfs_hdfs_handle_t;
 
 char err_msg[256];
@@ -93,6 +94,7 @@ globus_l_gfs_hdfs_start(
     GlobusGFSName(globus_l_gfs_hdfs_start);
 
     int max_buffer_count = 200;
+    int max_file_buffer_count = 1500;
     int load_limit = 20;
     int replicas;
     int port;
@@ -134,10 +136,22 @@ globus_l_gfs_hdfs_start(
     char * max_buffer_char = getenv("VDT_GRIDFTP_BUFFER_COUNT");
     if (max_buffer_char != NULL) {
         max_buffer_count = atoi(max_buffer_char);
-        if ((max_buffer_count < 5)  || (max_buffer_count > 500))
+        if ((max_buffer_count < 5)  || (max_buffer_count > 1000))
             max_buffer_count = 200;
     }
     hdfs_handle->max_buffer_count = max_buffer_count;
+    sprintf(err_msg, "Max memory buffer count: %i.\n", hdfs_handle->max_buffer_count);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
+
+    char * max_file_buffer_char = getenv("VDT_GRIDFTP_FILE_BUFFER_COUNT");
+    if (max_file_buffer_char != NULL) {
+        max_file_buffer_count = atoi(max_file_buffer_char);
+        if ((max_file_buffer_count < max_buffer_count)  || (max_buffer_count > 50000))
+            max_file_buffer_count = 3*max_buffer_count;
+    }
+    hdfs_handle->max_file_buffer_count = max_file_buffer_count;
+    sprintf(err_msg, "Max file buffer count: %i.\n", hdfs_handle->max_file_buffer_count);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
     if (load_limit_char != NULL) {
         load_limit = atoi(load_limit_char);
@@ -539,6 +553,8 @@ globus_l_gfs_hdfs_command(
         globus_gridftp_server_finished_command(op, GLOBUS_FAILURE, GLOBUS_NULL);
 }
 
+/*
+// Not used for now
 static
 void
 globus_l_gfs_hdfs_trev(
@@ -547,93 +563,143 @@ globus_l_gfs_hdfs_trev(
 )
 {
 
-    globus_l_gfs_hdfs_handle_t *       hdfs_handle;
-    GlobusGFSName(globus_l_gfs_hdfs_trev);
+		  globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+		  GlobusGFSName(globus_l_gfs_hdfs_trev);
 
-    hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Recieved a transfer event.\n");
+		  hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
+		  globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Recieved a transfer event.\n");
 
-    switch (event_info->type) {
-        case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got an abort request to the HDFS client.\n");
-            break;
-        default:
-            printf("Got some other transfer event.\n");
-    }
+		  switch (event_info->type) {
+					 case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
+								globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got an abort request to the HDFS client.\n");
+								break;
+					 default:
+								printf("Got some other transfer event.\n");
+		  }
 }
-
+*/
 
 /* receive file from client */
 
 static
 void
 globus_l_gfs_hdfs_write_to_storage(
-    globus_l_gfs_hdfs_handle_t *      hdfs_handle);
+					 globus_l_gfs_hdfs_handle_t *      hdfs_handle);
 
 
 /**
-* Scan through all the buffers we own, then write out all the consecutive ones to HDFS.
-*/
+ * Scan through all the buffers we own, then write out all the consecutive ones to HDFS.
+ */
 static
 globus_result_t
 globus_l_gfs_hdfs_dump_buffers(
-    globus_l_gfs_hdfs_handle_t *      hdfs_handle
-) {
-    globus_off_t * offsets = hdfs_handle->offsets;
-    globus_size_t * nbytes = hdfs_handle->nbytes;
-    globus_size_t bytes_written = 0;
-    int i, wrote_something;
-    int cnt = hdfs_handle->buffer_count;
-    GlobusGFSName(globus_l_gfs_hdfs_dump_buffers);
-    globus_result_t rc = GLOBUS_SUCCESS;
+					 globus_l_gfs_hdfs_handle_t *      hdfs_handle
+					 ) {
+		  globus_off_t * offsets = hdfs_handle->offsets;
+		  globus_size_t * nbytes = hdfs_handle->nbytes;
+		  globus_size_t bytes_written = 0;
+		  int i, wrote_something;
+		  int cnt = hdfs_handle->buffer_count;
+		  GlobusGFSName(globus_l_gfs_hdfs_dump_buffers);
+		  globus_result_t rc = GLOBUS_SUCCESS;
 
-    wrote_something=1;
-    // Loop through all our buffers; loop again if we write something.
-    while (wrote_something == 1) {
-        wrote_something=0;
-        // For each of our buffers.
-        for (i=0; i<cnt; i++) {
-            if (hdfs_handle->used[i] == 1 && offsets[i] == hdfs_handle->offset) {
-                //printf("Flushing %d bytes at offset %d from buffer %d.\n", nbytes[i], hdfs_handle->offset, i);
-                bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, hdfs_handle->buffer+i*hdfs_handle->block_size, nbytes[i]*sizeof(globus_byte_t));
-                if (bytes_written > 0)
-                    wrote_something = 1;
-                if (bytes_written != nbytes[i]) {
-                    rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
-                    hdfs_handle->done = GLOBUS_TRUE;
-                    return rc;
-                }
-                hdfs_handle->used[i] = 0;
-                hdfs_handle->offset += bytes_written;
-            }
-        }
-    }
-    //if (hdfs_handle->buffer_count > 10) {
-    //    printf("Waiting on buffer %d\n", hdfs_handle->offset);
-    //}
-    return rc;
+		  wrote_something=1;
+		  // Loop through all our buffers; loop again if we write something.
+		  while (wrote_something == 1) {
+					 wrote_something=0;
+					 // For each of our buffers.
+					 for (i=0; i<cnt; i++) {
+								if (hdfs_handle->used[i] == 1 && offsets[i] == hdfs_handle->offset) {
+										  //printf("Flushing %d bytes at offset %d from buffer %d.\n", nbytes[i], hdfs_handle->offset, i);
+										  bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, hdfs_handle->buffer+i*hdfs_handle->block_size, nbytes[i]*sizeof(globus_byte_t));
+										  if (bytes_written > 0)
+													 wrote_something = 1;
+										  if (bytes_written != nbytes[i]) {
+													 rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
+													 hdfs_handle->done = GLOBUS_TRUE;
+													 return rc;
+										  }
+										  hdfs_handle->used[i] = 0;
+										  hdfs_handle->offset += bytes_written;
+								}
+					 }
+		  }
+		  //if (hdfs_handle->buffer_count > 10) {
+		  //    printf("Waiting on buffer %d\n", hdfs_handle->offset);
+		  //}
+		  return rc;
 }
 
 /**
-*  Store the current output to a buffer.
-*/
+ *  Decide whether we should use a file buffer based on the current
+ *  memory usage.
+ *  Returns 1 if we should use a file buffer.
+ *  Else, returns 0.
+ */
+int use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
+        int buffer_count = hdfs_handle->buffer_count;
+		  if (buffer_count > hdfs_handle->max_file_buffer_count) {
+            return 1;
+		  }
+        if ((hdfs_handle->using_file_buffer == 1) && (buffer_count > hdfs_handle->max_buffer_count/2))
+            return 1;
+        return 0;
+}
+
+/**
+ *  Store the current output to a buffer.
+ */
 static
 globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle, globus_byte_t* buffer, globus_off_t offset, globus_size_t nbytes) {
-    GlobusGFSName(globus_l_gfs_hdfs_store_buffer);
-    globus_result_t rc = GLOBUS_SUCCESS;
-    int i, cnt = hdfs_handle->buffer_count;
-    short wrote_something = 0;
-    //if (hdfs_handle->buffer_count > 10) {
-    //    printf("Got buffer %d\n", offset);
-    //}
-    if (hdfs_handle == NULL) {
-        rc = GlobusGFSErrorGeneric("Storing buffer for un-allocated transfer");
-        return rc;
-    }
-    for (i = 0; i<cnt; i++) {
-        if (hdfs_handle->used[i] == 0) {
-            sprintf(err_msg, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
-            globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
+		  GlobusGFSName(globus_l_gfs_hdfs_store_buffer);
+		  globus_result_t rc = GLOBUS_SUCCESS;
+		  int i, cnt = hdfs_handle->buffer_count;
+		  short wrote_something = 0;
+		  if (hdfs_handle == NULL) {
+					 rc = GlobusGFSErrorGeneric("Storing buffer for un-allocated transfer");
+					 return rc;
+		  }
+
+        // Determine the type of buffer to use; allocate or transfer buffers as necessary
+        int use_buffer = use_file_buffer(hdfs_handle);
+        if ((use_buffer == 1) && (hdfs_handle->using_file_buffer == 0)) {
+            // Turn on file buffering, copy data from the current memory buffer.
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from memory buffer to file buffer.\n");
+            hdfs_handle->tmpfile = tmpfile();
+            int filedes = fileno(hdfs_handle->tmpfile);
+            if (filedes == -1) {
+                globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to determine file descriptor of temporary file.\n");
+                rc = GlobusGFSErrorGeneric("Failed to determine file descriptor of temporary file.");
+                return rc;
+            }
+            globus_byte_t * file_buffer = mmap(0, hdfs_handle->block_size*hdfs_handle->max_file_buffer_count, PROT_READ | PROT_WRITE, MAP_PRIVATE, filedes, 0);
+            memcpy(file_buffer, hdfs_handle->buffer, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
+            globus_free(hdfs_handle->buffer);
+            hdfs_handle->buffer = file_buffer;
+            hdfs_handle->using_file_buffer = 1;
+        } else if (use_buffer == 1) {
+            // Do nothing.  Continue to use the file buffer for now.
+        } else if (hdfs_handle->using_file_buffer == 1 && cnt < hdfs_handle->max_buffer_count) {
+            // Turn off file buffering; copy data to a new memory buffer
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from file buffer to memory buffer.\n");
+            globus_byte_t * tmp_buffer = globus_malloc(sizeof(globus_byte_t)*hdfs_handle->block_size*cnt);
+            if (tmp_buffer == NULL) {
+                rc = GlobusGFSErrorGeneric("Memory allocation error.");
+                globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Memory allocation error.");
+                return rc;
+            }
+            memcpy(tmp_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
+            hdfs_handle->using_file_buffer = 0;
+            fclose(hdfs_handle->tmpfile);
+        } else {
+            // Do nothing.  Continue to use the file buffer for now.
+        }
+
+        // Search for a free space in our buffer, and then actually make the copy.
+		  for (i = 0; i<cnt; i++) {
+					 if (hdfs_handle->used[i] == 0) {
+								sprintf(err_msg, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
+								globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             hdfs_handle->nbytes[i] = nbytes;
             hdfs_handle->offsets[i] = offset;
             hdfs_handle->used[i] = 1;
@@ -661,6 +727,8 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
         hdfs_handle->nbytes = globus_realloc(hdfs_handle->nbytes, hdfs_handle->buffer_count*sizeof(globus_size_t));
         hdfs_handle->offsets = globus_realloc(hdfs_handle->offsets, hdfs_handle->buffer_count*sizeof(globus_off_t));
         hdfs_handle->used = globus_realloc(hdfs_handle->used, hdfs_handle->buffer_count*sizeof(short));
+        if (hdfs_handle->using_file_buffer == 0)
+            hdfs_handle->buffer = globus_realloc(hdfs_handle->buffer, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
         if (hdfs_handle->buffer == NULL || hdfs_handle->nbytes==NULL || hdfs_handle->offsets==NULL || hdfs_handle->used==NULL) {
             rc = GlobusGFSErrorGeneric("Memory allocation error.");
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Memory allocation error.");
@@ -692,7 +760,9 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             hdfs_handle->offsets = globus_realloc(hdfs_handle->offsets, hdfs_handle->buffer_count*sizeof(globus_off_t));
             hdfs_handle->used = globus_realloc(hdfs_handle->used, hdfs_handle->buffer_count*sizeof(short));
             hdfs_handle->used[hdfs_handle->buffer_count-1] = 1;
-            hdfs_handle->buffer = globus_realloc(hdfs_handle->buffer, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
+            // Only reallocate the physical buffer if we're using a memory buffer, otherwise we screw up our mmap
+            if (hdfs_handle->using_file_buffer == 0)
+                hdfs_handle->buffer = globus_realloc(hdfs_handle->buffer, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
             if (hdfs_handle->buffer == NULL || hdfs_handle->nbytes==NULL || hdfs_handle->offsets==NULL || hdfs_handle->used==NULL) {  
                 rc = GlobusGFSErrorGeneric("Memory allocation error.");
                 globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Memory allocation error.");
@@ -1295,7 +1365,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
     NULL, /* list */
     globus_l_gfs_hdfs_send,
     globus_l_gfs_hdfs_recv,
-    NULL, /*globus_l_gfs_hdfs_trev, /* trev */
+    NULL, /*globus_l_gfs_hdfs_trev, */ /* trev */
     NULL, /* active */
     NULL, /* passive */
     NULL, /* data destroy */
