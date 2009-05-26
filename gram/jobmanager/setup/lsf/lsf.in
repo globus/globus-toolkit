@@ -375,7 +375,9 @@ sub poll
 
     # Verifying that the job is no longer there.
     # return code 255 = "Job <123> is not found"
-    if($exit_code == 255)
+    # 5/09: On some systems, bjobs can return 0, but the job is *not found*.
+    #       An additional check for this has been added below.
+    if (($exit_code == 255) || (($exit_code == 0) && ($_ =~ /is not found/)))
     {
         $self->log("bjobs rc is 255 == Job <123> is not found, running bhist");
         # The job was not found. It can also be that it queried
