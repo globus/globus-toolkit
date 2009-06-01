@@ -48,19 +48,19 @@ globus_gram_client_tools	gram_client_tools/source	gpt null gram2_scalability_bra
 globus_gram_client_tools_test	gram_client_tools/test	gpt
 globus_gram_documentation	gram/documentation	gpt
 globus_gram_job_manager	gram/jobmanager/source	gpt null gram2_scalability_branch
-globus_gram_job_manager_scripts	gram/jobmanager/scripts	gpt null gram2_scalability_branch
-globus_gram_job_manager_callout_error   gram/jobmanager/callout_error	gpt null gram2_scalability_branch
-globus_gram_job_manager_test	gram/jobmanager/test	gpt null gram2_scalability_branch
+globus_gram_job_manager_scripts	gram/jobmanager/scripts	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_callout_error   gram/jobmanager/callout_error	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_test	gram/jobmanager/test	gpt null jira_GRAM5-9_branch
 globus_gram_job_manager_setup	gram/jobmanager/setup/program	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_condor	gram/jobmanager/setup/condor	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_fork	gram/jobmanager/setup/fork	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs	gpt null gram2_scalability_branch
-globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote	gpt null gram2_scalability_branch
-globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt
-globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt
+globus_gram_job_manager_setup_condor	gram/jobmanager/setup/condor	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_setup_fork	gram/jobmanager/setup/fork	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote	gpt null jira_GRAM5-9_branch
+globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt null jira_GRAM5-jira_GRAM5-9_branch
+globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt null jira_GRAM5-9_branch
 globus_wsrf_gram_service_auditing_unit_test ws-gram/service/java/test/auditing tar
-globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt
+globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt null jira_GRAM5-9_branch
 globus_gram_protocol	gram/protocol/source	gpt null gram2_scalability_branch
 globus_gram_protocol_test	gram/protocol/test	gpt
 globus_xio_gridftp_multicast	gridftp/server/multi/source	gpt
@@ -362,7 +362,7 @@ globus_wsrf_replicator_common_java          ws-replica/replicator/common/java/so
 globus_wsrf_replicator_common_schema        ws-replica/replicator/common/schema	tar
 globus_wsrf_replicator_service_java         ws-replica/replicator/service/java/source	tar
 
-globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-manager/c/source gpt null gram2_scalability_branch
+globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-manager/c/source gpt null jira_GRAM5-9_branch
 globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt null gram2_scalability_branch
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
 globus_crft_util                    ws-transfer/reliable/client/c/crft_util/source gpt
