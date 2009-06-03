@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use strict;
+use Test::Harness;
 
 my $rc = 0;
 
@@ -9,18 +10,13 @@ if (! -d $ENV{GLOBUS_LOCATION}) {
     print "Environment variable GLOBUS_LOCATION is not defined => no test";
     $rc = 1;
 } else {
-    $rc += runTest("globus-gram-job-manager-auditing-job-submission-test.pl");
-    $rc += runTest("globus-gram-job-manager-auditing-upload-success-test.pl");
-    $rc += runTest("globus-gram-job-manager-auditing-upload-failure-test.pl");
+    my @tests = qw(
+            globus-gram-job-manager-auditing-job-submission-test.pl
+            globus-gram-job-manager-auditing-upload-success-test.pl
+            globus-gram-job-manager-auditing-tg-job-submission-test.pl
+            globus-gram-job-manager-auditing-upload-success-test.pl
+            globus-gram-job-manager-auditing-upload-failure-test.pl );
+    runtests(@tests);
 }
 
 exit (0 != $rc);
-
-sub runTest() {
-
-    my $test_name = shift;
-    print "Running $test_name ...\n";
-    my $rcx = system("./$test_name");
-    print STDOUT (0 == $rcx) ? "ok\n\n" : "failed\n\n";
-    return $rcx;
-}

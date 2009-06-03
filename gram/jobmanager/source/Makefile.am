@@ -33,7 +33,8 @@ libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_job_manager_state.c \
 	globus_gram_job_manager_state_file.c \
 	globus_gram_job_manager_validate.c \
-        startup_socket.c
+        startup_socket.c \
+        tg_gateway.c
 
 globus_job_manager_SOURCES = main.c
 globus_job_manager_lock_test_SOURCES = lock_test.c

@@ -13,11 +13,11 @@ use GatekeeperManager;
 use Util;
 
 my $configurationManager = ConfigurationManager->new();
-my $killGatekeeper = 0;              # kill the gatekeeper at the end (1=yes,0=no)
+my $killGatekeeper = 0;
 
 $ENV{X509_CERT_DIR} = cwd();
-$ENV{X509_USER_PROXY} = "testproxy.pem";
-system('chmod go-rw testproxy.pem'); 
+$ENV{X509_USER_PROXY} = "shibproxy.pem";
+system('chmod go-rw shibproxy.pem'); 
 
 # make sure the test audit directory is empty 
 $configurationManager->cleanupAuditDir();
@@ -71,6 +71,24 @@ for (my $i=0; $i<30; $i++) {
 if (!$foundRecords) {
     print "not ok #No audit record file per job created by Gram\n";
     exit(0);
+}
+
+# Check that audit records contain the tg gateway username
+foreach (glob($auditdir."/*.gramaudit")) {
+    my $file = $_;
+    my $line;
+    my $gateway_user;
+
+    local(*F);
+
+    open(F, "<$file");
+    chomp($line = <F>);
+
+    $gateway_user = (split(/,/, $line))[15];
+    if ($gateway_user ne '"testuser@example.org"') {
+        print "not ok # gateway_user = $gateway_user\n";
+        exit(0);
+    }
 }
 
 print "ok\n";

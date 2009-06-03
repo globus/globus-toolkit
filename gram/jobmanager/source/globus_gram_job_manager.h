@@ -1251,6 +1251,13 @@ globus_gram_job_manager_starter_send(
 extern globus_xio_driver_t              globus_i_gram_job_manager_file_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_file_stack;
 
+/* tg_gateway.c */
+int
+globus_i_gram_get_tg_gateway_user(
+    gss_cred_id_t                       cred,
+    char **                             gateway_user);
+
+
 EXTERN_C_END
 
 #endif /* GLOBUS_GRAM_JOB_MANAGER_INCLUDE */

@@ -15,6 +15,7 @@ package ConfigurationManager;
 
 use Util;
 use IO::File;
+use File::Copy qw(copy);
 use strict;
 
 sub new() {
@@ -23,109 +24,49 @@ sub new() {
   my $self={};
   bless($self, $proto);
   
-  my $util = Util->new();
-  
   $self->{'testdir'} = "$ENV{GLOBUS_LOCATION}/test/globus_gram_job_manager_auditing_test";
   $self->{'jobdir'} = $self->{'testdir'} . "/jobs";
   $self->{'recorddir'} = $self->{'testdir'} . "/records";
+  $self->{'configdir'} = $self->{'testdir'} . "/configuration";
   $self->{'auditdir'} = $self->{'testdir'} . "/audit_records";
-  $self->{'auditdir'} = $self->{'testdir'} . "/audit_records";
-  $self->{'dbconfigscript'} = "$ENV{GLOBUS_LOCATION}/setup/globus/setup-globus-gram-auditing";
 
-  # database configuration
-  $self->{'files'}->{'db'}->{'system'} = 
-      "$ENV{GLOBUS_LOCATION}/etc/globus-job-manager-audit.conf";
-  $self->{'files'}->{'db'}->{'backup'} =  
-      $self->{'testdir'}."/globus-job-manager-audit.conf.backup";
-  
   # substitution variables in the test configuration files
   $self->{'substVars'}->{'__GLOBUS_LOCATION__'} = "$ENV{GLOBUS_LOCATION}";
   $self->{'substVars'}->{'__AUDIT_DATA_DIR__'} = $self->{'auditdir'};
-  $self->{'substVars'}->{'__CURRENT_USER__'} = $util->trim(`whoami`);
-  $self->{'substVars'}->{'__EXE_ECHO__'} = $util->trim(`which echo`);
+  $self->{'substVars'}->{'__CURRENT_USER__'} = (getpwuid($>))[0];
+  $self->{'substVars'}->{'__CURRENT_TIME__'} = scalar(localtime);
+  $self->{'substVars'}->{'__EXE_ECHO__'} = Util::trim(`which echo`);
+
+  $self->{'conf'} = "$ENV{GLOBUS_LOCATION}/etc/globus-job-manager-audit.conf";
+  $self->{'goodconf'} = "$self->{testdir}/globus-job-manager-audit.conf";
+  $self->{'badconf'} = "$self->{testdir}/globus-job-manager-audit-bad.conf";
   
   return $self;
 }
 
-# install test configuration.
-sub installTestConfiguration() {
 
+sub getGoodConfiguration() {
     my $self = shift;
-    my $rc = 0;
-    my $util = Util->new();
-    
-    $util->debug("Installing test configuration"); 
-    if (system($self->{'dbconfigscript'}) != 0) {
-        $util->error("Error calling $self->{'dbconfigscript'}");
-        $rc = 1;
-    }
 
-    return $rc;
+    copy($self->{conf}, $self->{goodconf});
+
+    return $self->{'goodconf'};
 }
 
-# install buggy test configuration.
-sub installBuggyTestConfiguration() {
-
+sub getBadConfiguration() {
     my $self = shift;
-    my $rc = 0;
-    my $util = Util->new();
-    
-    $util->debug("Installing buggy test configuration (audit v3)"); 
-    if (system("$self->{'dbconfigscript'} -v 3") != 0) {
-        $util->error("Error calling $self->{'dbconfigscript'}");
-        $rc = 1;
+    my $in = new IO::File("<" . $self->{conf});
+    my $out = new IO::File(">" . $self->{badconf});
+
+    while (<$in>)
+    {
+        $_ =~ s/^DATABASE:(.*)/DATABASE:bad$1/;
+        $out->print($_);
     }
+    $in->close();
+    $out->close();
 
-    return $rc;
-}
-
-# make copies of existing configuration files
-sub backupOriginalConfiguration() {
-
-    my $self = shift;
-    my $rc = 0;
-    my $util = Util->new();
-    
-    for my $type ( keys %{$self->{'files'}} ) {     
-        my $command;
-        my $config_system = $self->{'files'}->{$type}->{'system'};
-        my $config_backup = $self->{'files'}->{$type}->{'backup'};
-        if (-e $config_system) {
-            $command = "cp $config_system $config_backup";
-            $util->debug("Making backup of original configuration:  $command"); 
-            if (system("$command") != 0) {
-                $util->error("Unable to make backup of system configuration " .
-                    $config_system . " in " . $config_backup);
-                $rc = 1;
-            }
-        }
-    }
-
-}
-
-# copy backup configuration files back to system.
-# returns 0 in case of success, 1 in case of error.
-sub restoreOriginalConfiguration() {
-
-    my $self = shift;
-    my $rc = 0;
-    my $util = Util->new();
-    
-    for my $type ( keys %{$self->{'files'}} ) {
-    
-        my $config_system = $self->{'files'}->{$type}->{'system'};
-        my $config_backup = $self->{'files'}->{$type}->{'backup'};
-        if (-e $config_backup) {
-            my $command = "cp $config_backup $config_system";
-            $util->debug("Restoring original configuration:  $command"); 
-            if (system("$command") != 0) {
-                $util->error("Unable to copy backup "
-                    . $config_backup . " back to " . $config_system);
-                $rc = 1;
-            }
-        }
-    }
-    return $rc;
+    return $self->{badconf};
 }
 
 # Get the test base directory
@@ -161,17 +102,16 @@ sub cleanupAuditDir() {
 
     my $self = shift;
     my $rc = 0;
-    my $util = Util->new();
 
-    $util->debug("Removing and recreating $self->{'auditdir'}"); 
+    Util::debug("Removing and recreating $self->{'auditdir'}"); 
     if (-e $self->{'auditdir'}) {
         if (system("rm -r $self->{'auditdir'}") != 0) {
-            $util->error("Cannot remove $self->{'auditdir'}");
+            Util::error("Cannot remove $self->{'auditdir'}");
             $rc = 1;
         }
     }
     if (system("mkdir $self->{'auditdir'}") != 0) {
-        $util->error("Cannot create $self->{'auditdir'}");
+        Util::error("Cannot create $self->{'auditdir'}");
         $rc = 1;
     }
     return $rc;

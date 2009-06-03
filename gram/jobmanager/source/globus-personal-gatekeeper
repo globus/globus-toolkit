@@ -448,6 +448,7 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -state-file-dir ${statefiledir}
 ${startargs}
 $single
+-globus-toolkit-version `globus-version`
 EOF
 
 
