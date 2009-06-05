@@ -231,10 +231,10 @@ globus_gram_job_manager_auditing_file_write(
         goto close_filename_out;
     }
 
-    rc = globus_i_gram_get_tg_gateway_user(
-            globus_i_gram_protocol_credential,
-            &name);
-    rc = globus_l_gram_audit_write_string(auditing_file, name, "\n");
+    rc = globus_l_gram_audit_write_string(
+            auditing_file,
+            request->gateway_user,
+            "\n");
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;

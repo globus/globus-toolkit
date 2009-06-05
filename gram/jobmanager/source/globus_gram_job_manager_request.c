@@ -241,6 +241,7 @@ globus_gram_job_manager_request_init(
     r->creation_time = time(NULL);
     r->queued_time = time(NULL);
     r->cache_tag = NULL;
+    r->gateway_user = NULL;
 
     rc = globus_symboltable_init(
             &r->symbol_table,
@@ -444,6 +445,13 @@ globus_gram_job_manager_request_init(
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
             goto cache_tag_alloc_failed;
+        }
+        rc = globus_i_gram_get_tg_gateway_user(
+                response_ctx,
+                &r->gateway_user);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            goto get_gateway_user_failed;
         }
     }
 
@@ -812,6 +820,11 @@ init_scratchdir_failed:
             free(r->scratch_dir_base);
         }
 failed_eval_scratch_dir_base:
+        if (r->gateway_user)
+        {
+            free(r->gateway_user);
+        }
+get_gateway_user_failed:
         free(r->cache_tag);
 cache_tag_alloc_failed:
 failed_restart:
@@ -1262,6 +1275,10 @@ globus_gram_job_manager_request_free(
     if (request->cache_location)
     {
         free(request->cache_location);
+    }
+    if (request->gateway_user)
+    {
+        free(request->gateway_user);
     }
     globus_gass_cache_close(&request->cache_handle);
     if (request->response_context != GSS_C_NO_CONTEXT)

@@ -26,7 +26,7 @@ gss_OID globus_saml_oid = &globus_l_saml_oid_desc;
 
 globus_bool_t
 globus_l_tg_saml_assertion_is_self_issued(
-    gss_cred_id_t                       cred,
+    gss_ctx_id_t                        ctx,
     const char *                        entity_id)
 {
     /* TODO: Process trusted authorities entities map */
@@ -36,7 +36,7 @@ globus_l_tg_saml_assertion_is_self_issued(
 
 int
 globus_i_gram_get_tg_gateway_user(
-    gss_cred_id_t                       cred,
+    gss_ctx_id_t                        context,
     char **                             gateway_user)
 {
     OM_uint32                           maj_stat, min_stat;
@@ -52,12 +52,12 @@ globus_i_gram_get_tg_gateway_user(
 
     *gateway_user = NULL;
 
-    /* Extract SAML assertion from X.509 Certificate */
-    maj_stat = gss_inquire_cred_by_oid(
+    maj_stat =  gss_inquire_sec_context_by_oid(
             &min_stat,
-            cred,
+            context,
             globus_saml_oid,
             &data_set);
+
     if (GSS_ERROR(maj_stat))
     {
         globus_gram_protocol_error_7_hack_replace_message(
@@ -147,7 +147,7 @@ globus_i_gram_get_tg_gateway_user(
     }
 
     if (! globus_l_tg_saml_assertion_is_self_issued(
-                cred,
+                context,
                 (const char *) xresult->stringval))
     {
         /* Ignore non-self issued assertions */
