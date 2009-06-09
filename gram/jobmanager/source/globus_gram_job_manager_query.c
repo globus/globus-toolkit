@@ -126,13 +126,10 @@ globus_gram_job_manager_query_callback(
         goto invalid_query;
     }
 
-    globus_gram_job_manager_log(
-            manager,
-            "JM: Trying to add reference for query handling: %s\n",
-            uri);
     rc = globus_gram_job_manager_add_reference(
             manager,
             uri,
+            "query",
             &request);
 
     if (rc != GLOBUS_SUCCESS)
@@ -146,13 +143,10 @@ globus_gram_job_manager_query_callback(
             goto invalid_query;
         }
 
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Trying to add reference for query handling: %s\n",
-                parsed_uri.url_path);
         rc = globus_gram_job_manager_add_reference(
                 manager,
                 parsed_uri.url_path,
+                "query",
                 &request);
 
         globus_url_destroy(&parsed_uri);
@@ -251,14 +245,11 @@ invalid_query:
     }
     if (request)
     {
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Query callback complete: Removing reference for %s\n",
-                request->job_contact_path);
         GlobusGramJobManagerRequestUnlock(request);
         rc = globus_gram_job_manager_remove_reference(
                 request->manager,
-                request->job_contact_path);
+                request->job_contact_path,
+                "query");
 
         if (rc != GLOBUS_SUCCESS)
         {

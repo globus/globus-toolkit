@@ -371,6 +371,8 @@ typedef struct globus_gram_job_manager_s
     globus_fifo_t                       script_fifo;
     /** Number of script slots available for running scripts */
     int                                 script_slots_available;
+    /** Fifo of available script handles */
+    globus_fifo_t                       script_handles;
     /** Fifo of job state callback contexts to run */
     globus_fifo_t                       state_callback_fifo;
     /** Number of job state contact slots available */
@@ -1176,11 +1178,13 @@ int
 globus_gram_job_manager_add_reference(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request);
 
 int
 globus_gram_job_manager_remove_reference(
     globus_gram_job_manager_t *         manager,
+    const char *                        reason,
     const char *                        key);
 
 int
@@ -1198,6 +1202,7 @@ int
 globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_t *         manager,
     const char *                        jobid,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request);
 
 int

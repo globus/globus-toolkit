@@ -19,6 +19,7 @@ my $contact;
 my $startargs = '-log never ';
 
 @tests = qw(
+    job-manager-script-test.pl
     globus-gram-job-manager-stdio-test.pl
     globus-gram-job-manager-submit-test.pl
     globus-gram-job-manager-failure-test.pl

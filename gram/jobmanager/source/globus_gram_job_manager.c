@@ -29,6 +29,9 @@
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
 
+static int globus_l_gram_swap_out_delay = 60;
+static int globus_l_gram_grace_period_delay = 60;
+
 static
 void
 globus_l_gram_job_manager_open_logfile(
@@ -86,6 +89,7 @@ int
 globus_l_gram_add_reference_locked(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request);
 
 
@@ -298,6 +302,13 @@ globus_gram_job_manager_init(
     /* Default number of scripts which can be run simultaneously */
     manager->script_slots_available = 5;
 
+    rc = globus_fifo_init(&manager->script_handles);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto script_handles_fifo_init_failed;
+    }
+
     rc = globus_fifo_init(&manager->state_callback_fifo);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -322,6 +333,8 @@ globus_gram_job_manager_init(
     if (rc != GLOBUS_SUCCESS)
     {
 state_callback_fifo_init_failed:
+        globus_fifo_destroy(&manager->script_handles);
+script_handles_fifo_init_failed:
         globus_fifo_destroy(&manager->script_fifo);
 script_fifo_init_failed:
         free(manager->socket_path);
@@ -417,6 +430,7 @@ globus_gram_job_manager_destroy(
 
     globus_fifo_destroy(&manager->state_callback_fifo);
     globus_fifo_destroy(&manager->script_fifo);
+    globus_fifo_destroy(&manager->script_handles);
 
     return;
 }
@@ -695,6 +709,8 @@ stop:
  *     Job manager state
  * @param key
  *     String key that uniquely identifies the job request
+ * @param reason
+ *     String describing why the reference is being added for logging
  * @param request
  *     Pointer to be set to the corresponding job request if found in the
  *     table. May be NULL if the caller already has a reference and wants to
@@ -709,6 +725,7 @@ int
 globus_gram_job_manager_add_reference(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request)
 {
     int                                 rc = GLOBUS_SUCCESS;
@@ -717,6 +734,7 @@ globus_gram_job_manager_add_reference(
     rc = globus_l_gram_add_reference_locked(
             manager,
             key,
+            reason,
             request);
     GlobusGramJobManagerUnlock(manager);
 
@@ -735,6 +753,8 @@ globus_gram_job_manager_add_reference(
  *     Job manager state
  * @param key
  *     String key that uniquely identifies the job request
+ * @param reason
+ *     String describing why the reference is being removed.
  *
  * @retval GLOBUS_SUCCESS
  *     Success.
@@ -744,7 +764,8 @@ globus_gram_job_manager_add_reference(
 int
 globus_gram_job_manager_remove_reference(
     globus_gram_job_manager_t *         manager,
-    const char *                        key)
+    const char *                        key,
+    const char *                        reason)
 {
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_jobmanager_request_t *  request = NULL;
@@ -757,7 +778,8 @@ globus_gram_job_manager_remove_reference(
 
         globus_gram_job_manager_log(
                 manager,
-                "Removing reference [%ld] %s -> %p\n",
+                "Removing reference (%s) [%ld] %s -> %p\n",
+                reason,
                 ref->reference_count,
                 key,
                 ref->request);
@@ -808,7 +830,7 @@ globus_gram_job_manager_remove_reference(
                 globus_result_t         result;
 
                 /* short for testing */
-                GlobusTimeReltimeSet(delay, 60, 0);
+                GlobusTimeReltimeSet(delay, globus_l_gram_swap_out_delay, 0);
                 globus_gram_job_manager_log(
                         manager,
                         "JM: Candidate for swap out from memory: %s\n",
@@ -983,6 +1005,7 @@ int
 globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_t *         manager,
     const char *                        jobid,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request)
 {
     int                                 rc = GLOBUS_SUCCESS;
@@ -1018,6 +1041,7 @@ globus_gram_job_manager_add_reference_by_jobid(
     rc = globus_l_gram_add_reference_locked(
             manager,
             jobref->job_contact_path,
+            reason,
             request);
 
 no_such_job:
@@ -1209,7 +1233,7 @@ globus_gram_job_manager_set_grace_period_timer(
         globus_reltime_t        delay;
         globus_result_t         result;
 
-        GlobusTimeReltimeSet(delay, 60, 0);
+        GlobusTimeReltimeSet(delay, globus_l_gram_grace_period_delay, 0);
 
         result = globus_callback_register_oneshot(
                 &manager->grace_period_timer,
@@ -1257,6 +1281,7 @@ globus_gram_job_manager_stop_all_jobs(
         rc = globus_l_gram_add_reference_locked(
                 manager,
                 ref->key,
+                "stop all jobs",
                 NULL);
         assert(rc == GLOBUS_SUCCESS);
     }
@@ -1362,7 +1387,8 @@ globus_gram_job_manager_stop_all_jobs(
 
         globus_gram_job_manager_remove_reference(
                 manager,
-                ref->key);
+                ref->key,
+                "stop all jobs");
     }
     globus_list_free(job_refs);
 }
@@ -1628,6 +1654,7 @@ int
 globus_l_gram_add_reference_locked(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
+    const char *                        reason,
     globus_gram_jobmanager_request_t ** request)
 {
     int                                 rc = GLOBUS_SUCCESS;
@@ -1670,7 +1697,8 @@ globus_l_gram_add_reference_locked(
         }
         globus_gram_job_manager_log(
                 manager,
-                "Adding reference [%d] %s -> %p\n",
+                "Adding reference (%s) [%d] %s -> %p\n",
+                reason,
                 ref->reference_count,
                 ref->key,
                 ref->request);
@@ -1684,7 +1712,7 @@ globus_l_gram_add_reference_locked(
         }
         globus_gram_job_manager_log(
                 manager,
-                "Adding reference %s -> NOT FOUND\n",
+                "Adding reference (reason) %s -> NOT FOUND\n",
                 key);
     }
 request_init_failed:

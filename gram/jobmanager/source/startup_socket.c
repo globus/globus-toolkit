@@ -453,11 +453,14 @@ globus_l_gram_startup_socket_callback(
     gss_cred_id_t                       cred;
     char                                byte[1] = {0};
     char                                cmsgbuf[sizeof(struct cmsghdr) + 4 * sizeof(int)];
+    const int                           MAX_NEW_PER_SELECT = 2;
+    int                                 accepted;
+    globus_bool_t                       done = GLOBUS_FALSE;
 
     globus_gram_job_manager_log(
             manager,
-            "JM: Startup message available\n");
-    cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
+            "JM: Startup message(s) available\n");
+
     cred_buffer.value = malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
     if (cred_buffer.value == NULL)
     {
@@ -465,201 +468,211 @@ globus_l_gram_startup_socket_callback(
 
         goto cred_buffer_malloc_failed;
     }
-    memset(cmsgbuf, 0, sizeof(cmsgbuf));
 
-    /* Prepare to receive credential from other job manager */
-    iov[0].iov_base = cred_buffer.value;
-    iov[0].iov_len = cred_buffer.length;
-        
-    /* Message metadata */
-    message.msg_name = NULL;
-    message.msg_namelen = 0;
-    message.msg_iov = iov;
-    message.msg_iovlen = 1;
-    message.msg_control = cmsgbuf;
-    message.msg_controllen = sizeof(cmsgbuf);
-    message.msg_flags = 0;
-
-    /* Attempt to receive file descriptors */
-    if ((rc = recvmsg(manager->socket_fd, &message, 0)) < 0)
+    for (accepted = 0; !done && accepted < MAX_NEW_PER_SELECT; accepted++)
     {
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Error receiving startup message %d\n",
-                errno);
-        goto failed_receive;
-    }
-    cred_buffer.length = rc;
+        cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
+        memset(cred_buffer.value, 0, cred_buffer.length);
 
-    for (control_message = CMSG_FIRSTHDR(&message);
-         control_message != NULL;
-         control_message = CMSG_NXTHDR(&message, control_message))
-    {
-        if (control_message->cmsg_level == SOL_SOCKET &&
-            control_message->cmsg_type == SCM_RIGHTS)
+        memset(cmsgbuf, 0, sizeof(cmsgbuf));
+        /* Prepare to receive credential from other job manager */
+        iov[0].iov_base = cred_buffer.value;
+        iov[0].iov_len = cred_buffer.length;
+            
+        /* Message metadata */
+        message.msg_name = NULL;
+        message.msg_namelen = 0;
+        message.msg_iov = iov;
+        message.msg_iovlen = 1;
+        message.msg_control = cmsgbuf;
+        message.msg_controllen = sizeof(cmsgbuf);
+        message.msg_flags = 0;
+
+        /* Attempt to receive file descriptors */
+        if ((rc = recvmsg(manager->socket_fd, &message, 0)) < 0)
         {
-            sent_fds = (int *) CMSG_DATA(control_message);
-            http_body_fd = sent_fds[0];
-            context_fd = sent_fds[1];
-            response_fd = sent_fds[2];
-            acksock = sent_fds[3];
-            break;
+            globus_gram_job_manager_log(
+                    manager,
+                    "JM: Error receiving startup message %d\n",
+                    errno);
+            done = GLOBUS_TRUE;
+            goto failed_receive;
         }
-    }
+        cred_buffer.length = rc;
 
-    if (http_body_fd < 0 || context_fd < 0 || response_fd < 0 || acksock < 0)
-    {
-        globus_gram_job_manager_log(
+        for (control_message = CMSG_FIRSTHDR(&message);
+             control_message != NULL;
+             control_message = CMSG_NXTHDR(&message, control_message))
+        {
+            if (control_message->cmsg_level == SOL_SOCKET &&
+                control_message->cmsg_type == SCM_RIGHTS)
+            {
+                sent_fds = (int *) CMSG_DATA(control_message);
+                http_body_fd = sent_fds[0];
+                context_fd = sent_fds[1];
+                response_fd = sent_fds[2];
+                acksock = sent_fds[3];
+                break;
+            }
+        }
+
+        if (http_body_fd < 0 || context_fd < 0 || response_fd < 0 || acksock < 0)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JM: Error receiving fds in startup message (%d, %d, %d, %d)\n",
+                    http_body_fd,
+                    context_fd,
+                    response_fd,
+                    acksock);
+            done = GLOBUS_TRUE;
+            goto failed_get_data;
+        }
+
+        byte[0] = 0;
+        iov[0].iov_base = byte;
+        iov[0].iov_len = sizeof(byte);
+        memset(&message, 0, sizeof(struct msghdr));
+        message.msg_iov = iov;
+        message.msg_iovlen = 1;
+        rc = sendmsg(acksock, &message, 0);
+        if (rc < 0)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JM: Error sending ack\n");
+            done = GLOBUS_TRUE;
+            goto ackfailed;
+        }
+
+        byte[0] = 0;
+        iov[0].iov_base = byte;
+        iov[0].iov_len = sizeof(byte);
+        memset(&message, 0, sizeof(struct msghdr));
+        message.msg_iov = iov;
+        message.msg_iovlen = 1;
+        rc = recvmsg(acksock, &message, 0);
+        if (rc < 0 || byte[0] != 1)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    "JM: Error receiving commit-ack\n");
+            done = GLOBUS_TRUE;
+            goto ackfailed;
+        }
+
+        major_status = gss_import_cred(
+                &minor_status,
+                &cred,
+                GSS_C_NO_OID,
+                0,
+                &cred_buffer,
+                0,
+                NULL);
+
+        if (GSS_ERROR(major_status))
+        {
+            char *                          errstr;
+
+            globus_gss_assist_display_status_str(
+                    &errstr,
+                    "Import cred failed: ",
+                    major_status,
+                    minor_status,
+                    0);
+
+            globus_gram_job_manager_log(
+                    manager,
+                    "%s\n",
+                    errstr);
+            free(errstr);
+            done = GLOBUS_TRUE;
+            goto failed_import_cred;
+        }
+        /* Load request data */
+        rc = globus_gram_job_manager_request_load(
                 manager,
-                "JM: Error receiving fds in startup message (%d, %d, %d, %d)\n",
                 http_body_fd,
                 context_fd,
-                response_fd,
-                acksock);
-        goto failed_get_data;
-    }
+                cred,
+                &request,
+                &context,
+                &contact,
+                &job_state_mask);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = globus_gram_job_manager_reply(
+                    NULL,
+                    rc,
+                    NULL,
+                    response_fd,
+                    context);
 
-    byte[0] = 0;
-    iov[0].iov_base = byte;
-    iov[0].iov_len = sizeof(byte);
-    memset(&message, 0, sizeof(struct msghdr));
-    message.msg_iov = iov;
-    message.msg_iovlen = 1;
-    rc = sendmsg(acksock, &message, 0);
-    if (rc < 0)
-    {
-        globus_gram_job_manager_log(
+            done = GLOBUS_TRUE;
+            goto request_load_failed;
+        }
+
+        rc = globus_gram_job_manager_gsi_update_credential(
                 manager,
-                "JM: Error sending ack\n");
-        goto ackfailed;
-    }
-
-    byte[0] = 0;
-    iov[0].iov_base = byte;
-    iov[0].iov_len = sizeof(byte);
-    memset(&message, 0, sizeof(struct msghdr));
-    message.msg_iov = iov;
-    message.msg_iovlen = 1;
-    rc = recvmsg(acksock, &message, 0);
-    if (rc < 0 || byte[0] != 1)
-    {
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Error receiving commit-ack\n");
-        goto ackfailed;
-    }
-
-    major_status = gss_import_cred(
-            &minor_status,
-            &cred,
-            GSS_C_NO_OID,
-            0,
-            &cred_buffer,
-            0,
-            NULL);
-
-    if (GSS_ERROR(major_status))
-    {
-        char *                          errstr;
-
-        globus_gss_assist_display_status_str(
-                &errstr,
-                "Import cred failed: ",
-                major_status,
-                minor_status,
-                0);
-
-        globus_gram_job_manager_log(
-                manager,
-                "%s\n",
-                errstr);
-        globus_gram_job_manager_log(
-                manager,
-                "CRED: %*s\n",
-                (int) cred_buffer.length,
-                cred_buffer.value);
-        free(errstr);
-        goto failed_import_cred;
-    }
-    /* Load request data */
-    rc = globus_gram_job_manager_request_load(
-            manager,
-            http_body_fd,
-            context_fd,
-            cred,
-            &request,
-            &context,
-            &contact,
-            &job_state_mask);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = globus_gram_job_manager_reply(
                 NULL,
-                rc,
-                NULL,
-                response_fd,
-                context);
+                cred);
+        cred = GSS_C_NO_CREDENTIAL;
 
-        goto request_load_failed;
-    }
+        /* How much do I care about this error? */
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_reply(
+                    request,
+                    rc,
+                    NULL,
+                    response_fd,
+                    context);
 
-    rc = globus_gram_job_manager_gsi_update_credential(
-            manager,
-            NULL,
-            cred);
-    cred = GSS_C_NO_CREDENTIAL;
+            done = GLOBUS_TRUE;
+            goto update_cred_failed;
+        }
 
-    /* How much do I care about this error? */
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_reply(
+
+        /* Start state machine and send response */
+        rc = globus_gram_job_manager_request_start(
+                manager,
                 request,
-                rc,
-                NULL,
                 response_fd,
-                context);
-
-        goto update_cred_failed;
-    }
-
-
-    /* Start state machine and send response */
-    rc = globus_gram_job_manager_request_start(
-            manager,
-            request,
-            response_fd,
-            contact,
-            job_state_mask);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        /* start decreases the reference count for the request */
-        request = NULL;
-    }
+                contact,
+                job_state_mask);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            /* start decreases the reference count for the request */
+            request = NULL;
+        }
 
 update_cred_failed:
-    free(contact);
+        free(contact);
 
-    close(response_fd);
-    response_fd = -1;
+        close(response_fd);
+        response_fd = -1;
 request_load_failed:
 ackfailed:
-    if (cred != GSS_C_NO_CREDENTIAL)
-    {
-        gss_release_cred(
-                &minor_status,
-                &cred);
-        cred = GSS_C_NO_CREDENTIAL;
-    }
+        if (cred != GSS_C_NO_CREDENTIAL)
+        {
+            gss_release_cred(
+                    &minor_status,
+                    &cred);
+            cred = GSS_C_NO_CREDENTIAL;
+        }
 failed_import_cred:
-    close(acksock);
-    close(http_body_fd);
-    close(context_fd);
-    if (response_fd != -1)
-    {
-        close(response_fd);
-    }
+        close(acksock);
+        close(http_body_fd);
+        close(context_fd);
+        if (response_fd != -1)
+        {
+            close(response_fd);
+        }
 failed_get_data:
 failed_receive:
+        ;
+    }
+
     free(cred_buffer.value);
 cred_buffer_malloc_failed:
     result = globus_xio_register_read(

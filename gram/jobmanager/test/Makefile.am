@@ -8,11 +8,12 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 Scripts = \
 	TESTS.pl \
-	globus-gram-job-manager-run-tests.pl
+	globus-gram-job-manager-run-tests.pl \
+        job-manager-script-test.pl
 
 Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
+	b38b4d8c.0 \
+	b38b4d8c.signing_policy \
 	testcred.pem
 
 pkgtest_SCRIPTS = $(Scripts)

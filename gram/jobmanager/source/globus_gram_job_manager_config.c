@@ -69,6 +69,7 @@ globus_gram_job_manager_config_init(
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
     *rsl = NULL;
+    config->single = GLOBUS_TRUE;
 
     /* if -conf is passed then get the arguments from the file
      * specified
@@ -266,9 +267,9 @@ globus_gram_job_manager_config_init(
         {
             config->streaming_disabled = GLOBUS_TRUE;
         }
-        else if (strcmp(argv[i], "-single") == 0)
+        else if (strcmp(argv[i], "-non-single") == 0)
         {
-            config->single = GLOBUS_TRUE;
+            config->single = GLOBUS_FALSE;
         }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
@@ -286,7 +287,7 @@ globus_gram_job_manager_config_init(
                     "\t-globus-gatekeeper-port port\n"
                     "\t-globus-gatekeeper-subject subject\n"
                     "\n"
-                    "Non-required Arguments:\n"
+                    "Options:\n"
                     "\t-home globus_location\n"
                     "\t-target-globus-location globus_location\n"
                     "\t-condor-arch arch, i.e. SUN4x\n"
@@ -303,6 +304,7 @@ globus_gram_job_manager_config_init(
                     "\t-seg-module SEG-MODULE\n"
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
+                    "\t-non-single\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"
