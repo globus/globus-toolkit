@@ -224,9 +224,21 @@ globus_gram_job_manager_auditing_file_write(
     }
 
     /* finished_flag */
-    rc = globus_l_gram_audit_write_string(auditing_file,"true","\n");
+    rc = globus_l_gram_audit_write_string(auditing_file,"true",",");
+
     if (rc != 0)
     {
+        goto close_filename_out;
+    }
+
+    rc = globus_l_gram_audit_write_string(
+            auditing_file,
+            request->gateway_user,
+            "\n");
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
         goto close_filename_out;
     }
 

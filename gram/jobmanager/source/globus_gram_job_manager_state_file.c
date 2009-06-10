@@ -163,8 +163,8 @@ globus_gram_job_manager_state_file_write(
     globus_gram_jobmanager_request_t *  request)
 {
     int                                 rc = GLOBUS_SUCCESS;
-    FILE *                              fp;
-    char                                tmp_file[1024];
+    FILE *                              fp = NULL;
+    char                                tmp_file[1024] = { 0 };
 
     rc = globus_l_gram_state_file_create_lock(request);
     if (rc != GLOBUS_SUCCESS)
@@ -271,6 +271,11 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp, "%s\n", request->gateway_user ? request->gateway_user : " ");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
 
     fclose( fp );
 
@@ -286,8 +291,15 @@ globus_gram_job_manager_state_file_write(
     return GLOBUS_SUCCESS;
 
 error_exit:
-    fclose(fp);
-    remove(tmp_file);
+    if (fp)
+    {
+        fclose(fp);
+    }
+    if (tmp_file[0] != 0)
+    {
+        remove(tmp_file);
+    }
+
     return GLOBUS_FAILURE;
 }
 /* globus_gram_job_manager_state_file_write() */
@@ -516,6 +528,14 @@ skip_single_check:
         goto error_exit;
     }
 
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    if(strcmp(buffer, " ") != 0)
+    {
+        request->job_id_string = strdup( buffer );
+    }
     fclose(fp);
 
     free(buffer);

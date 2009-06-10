@@ -585,6 +585,10 @@ typedef struct
      * set to the time of the job submission.
      */
     time_t                              seg_last_timestamp;
+    /**
+     * TG Gateway user for auditing (from SAML assertion)
+     */
+    char *                              gateway_user;
 }
 globus_gram_jobmanager_request_t;
 
@@ -1255,6 +1259,13 @@ globus_gram_job_manager_starter_send(
 
 extern globus_xio_driver_t              globus_i_gram_job_manager_file_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_file_stack;
+
+/* tg_gateway.c */
+int
+globus_i_gram_get_tg_gateway_user(
+    gss_ctx_id_t                        context,
+    char **                             gateway_user);
+
 
 EXTERN_C_END
 
