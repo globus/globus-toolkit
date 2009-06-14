@@ -58,7 +58,8 @@ typedef struct globus_l_gfs_hdfs_handle_s
     int                                 mount_point_len;
     int                                 replicas;
     char *                              username;
-    FILE *                              tmpfile;
+    char *                              tmp_file_pattern;
+    int                                 tmpfilefd;
     int                                 filedes;
     int                                 using_file_buffer;
 } globus_l_gfs_hdfs_handle_t;
@@ -226,8 +227,27 @@ globus_l_gfs_hdfs_start(
         return;
     }
 
+    hdfs_handle->tmp_file_pattern = (char *)NULL;
+
     globus_gridftp_server_operation_finished(
         op, GLOBUS_SUCCESS, &finished_info);
+}
+
+/*************************************************************************
+ *  remove_file_buffer
+ *  -------
+ *  This is called when cleaning up a file buffer. The file on disk is removed and
+ *  the internal memory for storing the filename is freed.
+ ************************************************************************/
+static void
+remove_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
+    if (hdfs_handle->tmp_file_pattern) {
+	sprintf(err_msg, "Removing file buffer %s.\n", hdfs_handle->tmp_file_pattern);
+	globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
+        unlink(hdfs_handle->tmp_file_pattern);
+        globus_free(hdfs_handle->tmp_file_pattern);
+	hdfs_handle->tmp_file_pattern = (char *)NULL;
+    }
 }
 
 /*************************************************************************
@@ -249,6 +269,7 @@ globus_l_gfs_hdfs_destroy(
         hdfsDisconnect(hdfs_handle->fs);
     if (hdfs_handle->username)
         globus_free(hdfs_handle->username);
+    remove_file_buffer(hdfs_handle);
     globus_free(hdfs_handle);
 }
 
@@ -671,13 +692,23 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
         if ((use_buffer == 1) && (hdfs_handle->using_file_buffer == 0)) {
             // Turn on file buffering, copy data from the current memory buffer.
             globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from memory buffer to file buffer.\n");
-            hdfs_handle->tmpfile = tmpfile();
-            int filedes = fileno(hdfs_handle->tmpfile);
+
+            char *tmpdir=getenv("TMPDIR");
+            if (tmpdir == NULL) {
+                tmpdir = "/tmp";
+            }
+            hdfs_handle->tmp_file_pattern = globus_malloc(sizeof(char) * (strlen(tmpdir) + 32));
+            sprintf(hdfs_handle->tmp_file_pattern, "%s/gridftp-hdfs-buffer-XXXXXX", tmpdir);
+
+            hdfs_handle->tmpfilefd = mkstemp(hdfs_handle->tmp_file_pattern);
+            int filedes = hdfs_handle->tmpfilefd;
             if (filedes == -1) {
                 globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to determine file descriptor of temporary file.\n");
                 rc = GlobusGFSErrorGeneric("Failed to determine file descriptor of temporary file.");
                 return rc;
             }
+            sprintf(err_msg, "Created file buffer %s.\n", hdfs_handle->tmp_file_pattern);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
             hdfs_handle->filedes = filedes;
             char * tmp_write = globus_calloc(hdfs_handle->block_size, sizeof(globus_byte_t));
             for (i=0; i<cnt; i++)
@@ -702,7 +733,8 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             memcpy(tmp_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
             munmap(hdfs_handle->buffer, hdfs_handle->block_size*hdfs_handle->buffer_count*sizeof(globus_byte_t));
             hdfs_handle->using_file_buffer = 0;
-            fclose(hdfs_handle->tmpfile);
+            close(hdfs_handle->tmpfilefd);
+	    remove_file_buffer(hdfs_handle);
             hdfs_handle->buffer = tmp_buffer;
         } else {
             // Do nothing.  Continue to use the file buffer for now.
@@ -744,7 +776,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             hdfs_handle->buffer = globus_realloc(hdfs_handle->buffer, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
         else {
             ftruncate(hdfs_handle->filedes, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
-            fseek(hdfs_handle->tmpfile, 0, SEEK_END);
+            lseek(hdfs_handle->tmpfilefd, 0, SEEK_END);
         }
         if (hdfs_handle->buffer == NULL || hdfs_handle->nbytes==NULL || hdfs_handle->offsets==NULL || hdfs_handle->used==NULL) {
             rc = GlobusGFSErrorGeneric("Memory allocation error.");
@@ -914,7 +946,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         else {
             munmap(hdfs_handle->buffer, hdfs_handle->block_size*hdfs_handle->buffer_count*sizeof(globus_byte_t));
             hdfs_handle->using_file_buffer = 0;
-            fclose(hdfs_handle->tmpfile);
+            close(hdfs_handle->tmpfilefd);
         }
         globus_free(hdfs_handle->used);
         globus_free(hdfs_handle->nbytes);
