@@ -825,7 +825,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
                 hdfs_handle->buffer = globus_realloc(hdfs_handle->buffer, hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
             } else {
                 // This not only extends the size of our file, but we extend it with the desired buffer data.
-                lseek(hdfs_handle->tmpfilefd, hdfs_handle->buffer+(hdfs_handle->buffer_count-1)*hdfs_handle->block_size, SEEK_SET);
+                lseek(hdfs_handle->tmpfilefd, (hdfs_handle->buffer_count-1)*hdfs_handle->block_size, SEEK_SET);
                 write(hdfs_handle->tmpfilefd, buffer, nbytes*sizeof(globus_byte_t));
                 // If our buffer was too small, 
                 if (nbytes < hdfs_handle->block_size) {
