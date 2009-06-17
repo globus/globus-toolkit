@@ -456,6 +456,7 @@ globus_l_gram_startup_socket_callback(
     const int                           MAX_NEW_PER_SELECT = 2;
     int                                 accepted;
     globus_bool_t                       done = GLOBUS_FALSE;
+    char *                              old_job_contact = NULL;
 
     globus_gram_job_manager_log(
             manager,
@@ -598,13 +599,14 @@ globus_l_gram_startup_socket_callback(
                 &request,
                 &context,
                 &contact,
-                &job_state_mask);
+                &job_state_mask,
+                &old_job_contact);
         if (rc != GLOBUS_SUCCESS)
         {
             rc = globus_gram_job_manager_reply(
                     NULL,
                     rc,
-                    NULL,
+                    old_job_contact,
                     response_fd,
                     context);
 
@@ -652,6 +654,10 @@ update_cred_failed:
         close(response_fd);
         response_fd = -1;
 request_load_failed:
+        if (old_job_contact != NULL)
+        {
+            free(old_job_contact);
+        }
 ackfailed:
         if (cred != GSS_C_NO_CREDENTIAL)
         {

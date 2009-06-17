@@ -178,6 +178,9 @@ globus_l_gram_event_destroy(void *datum);
  *     Boolean value indicating whether this is an internally-generated
  *     reinitialization of an existing job or a new job request from a 
  *     client or command-line.
+ * @param old_job_contact
+ *     Pointer to a string to be set to the old job contact if
+ *     GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE. Set to NULL otherwise.
  *
  * @retval GLOBUS_SUCCESS
  *     Success
@@ -209,7 +212,8 @@ globus_gram_job_manager_request_init(
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
-    globus_bool_t                       reinit)
+    globus_bool_t                       reinit,
+    char **                             old_job_contact)
 {
     globus_gram_jobmanager_request_t *  r;
     uint64_t                            uniq1, uniq2;
@@ -219,7 +223,10 @@ globus_gram_job_manager_request_init(
     int                                 tmpfd;
     int                                 proxy_timeout;
 
-    /*** creating request structure ***/
+    if (old_job_contact)
+    {
+        *old_job_contact = NULL;
+    }
     r = malloc(sizeof(globus_gram_jobmanager_request_t));
     if (r == NULL)
     {
@@ -359,6 +366,12 @@ globus_gram_job_manager_request_init(
             r->job_contact_path))
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+        if (old_job_contact)
+        {
+            *old_job_contact = r->job_contact;
+            r->job_contact = NULL;
+        }
+
         goto failed_check_exists;
     }
 
@@ -846,7 +859,10 @@ failed_check_exists:
         free(r->job_contact_path);
 failed_set_job_contact_path:
 failed_add_contact_to_symboltable:
-        free(r->job_contact);
+        if (r->job_contact)
+        {
+            free(r->job_contact);
+        }
 failed_set_job_contact:
         free(r->uniq_id);
 failed_set_uniq_id:
@@ -933,7 +949,8 @@ globus_gram_job_manager_request_load(
     globus_gram_jobmanager_request_t ** request,
     gss_ctx_id_t *                      context,
     char **                             contact,
-    int *                               job_state_mask)
+    int *                               job_state_mask,
+    char **                             old_job_contact)
 {
     int                                 rc;
     char *                              rsl;
@@ -968,7 +985,8 @@ globus_gram_job_manager_request_load(
             rsl,
             cred,
             *context,
-            GLOBUS_FALSE);
+            GLOBUS_FALSE,
+            old_job_contact);
     if (rc != GLOBUS_SUCCESS)
     {
         goto request_init_failed;

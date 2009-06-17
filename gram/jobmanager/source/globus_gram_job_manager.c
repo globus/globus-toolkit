@@ -1800,7 +1800,8 @@ globus_l_gram_restart_job(
             restart_rsl,
             GSS_C_NO_CREDENTIAL,
             GSS_C_NO_CONTEXT,
-            GLOBUS_TRUE);
+            GLOBUS_TRUE,
+            NULL);
 malloc_restart_rsl_failed:
     return rc;
 }

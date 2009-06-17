@@ -52,6 +52,12 @@ globus_l_gram_create_stack(
     const char *                        driver_name,
     globus_xio_stack_t *                stack,
     globus_xio_driver_t *               driver);
+
+static
+int
+globus_l_contact_path_match(
+    void *                              a,
+    void *                              b);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -72,7 +78,9 @@ main(
     int                                 context_fd;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
     globus_list_t *                     requests = NULL;
+    globus_list_t *                     tmp_list;
     OM_uint32                           major_status, minor_status;
+    char *                              old_job_contact = NULL;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -249,6 +257,68 @@ main(
              */
             located_active_jm = GLOBUS_TRUE;
 
+            if (!started_without_client)
+            {
+                /* Normal operation: started by a job request */
+                rc = globus_gram_job_manager_request_load(
+                        &manager,
+                        http_body_fd,
+                        context_fd,
+                        cred,
+                        &request,
+                        &context,
+                        &client_contact,
+                        &job_state_mask,
+                        &old_job_contact);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    rc = globus_gram_job_manager_reply(
+                            NULL,
+                            rc,
+                            old_job_contact,
+                            STDOUT_FILENO,
+                            context);
+                    if (old_job_contact)
+                    {
+                        free(old_job_contact);
+                    }
+                }
+                close(http_body_fd);
+                close(context_fd);
+                http_body_fd = -1;
+                context_fd = -1;
+            }
+            else if (rsl)
+            {
+                /* Debug operation: -rsl command-line option */
+                context = GSS_C_NO_CONTEXT;
+
+                rc = globus_gram_job_manager_request_init(
+                    &request,
+                    &manager,
+                    rsl,
+                    GSS_C_NO_CREDENTIAL,
+                    GSS_C_NO_CONTEXT,
+                    GLOBUS_FALSE,
+                    &old_job_contact);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    fprintf(stderr, "Error initializing request\n");
+                    if (old_job_contact)
+                    {
+                        fprintf(stderr,
+                                "Old Job Contact: %s\n",
+                                old_job_contact);
+                        free(old_job_contact);
+                    }
+                    exit(1);
+                }
+            }
+            if (request)
+            {
+                manager.seg_last_timestamp = request->seg_last_timestamp;
+            }
+
             if (config.single)
             {
                 /* load existing jobs */
@@ -268,51 +338,6 @@ main(
                 manager.seg_last_timestamp = time(NULL);
             }
 
-            if (!started_without_client)
-            {
-                /* Normal operation: started by a job request */
-                rc = globus_gram_job_manager_request_load(
-                        &manager,
-                        http_body_fd,
-                        context_fd,
-                        cred,
-                        &request,
-                        &context,
-                        &client_contact,
-                        &job_state_mask);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    rc = globus_gram_job_manager_reply(
-                            NULL,
-                            rc,
-                            NULL,
-                            STDOUT_FILENO,
-                            context);
-                }
-                close(http_body_fd);
-                close(context_fd);
-                http_body_fd = -1;
-                context_fd = -1;
-            }
-            else if (rsl)
-            {
-                /* Debug operation: -rsl command-line option */
-                context = GSS_C_NO_CONTEXT;
-
-                rc = globus_gram_job_manager_request_init(
-                    &request,
-                    &manager,
-                    rsl,
-                    GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT,
-                    GLOBUS_FALSE);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    fprintf(stderr, "Error initializing request\n");
-                    exit(1);
-                }
-            }
-
             /* Start off the SEG if we need it */
             if (config.seg_module != NULL || 
                 strcmp(config.jobmanager_type, "fork") == 0)
@@ -328,6 +353,26 @@ main(
 
                     config.seg_module = NULL;
                 }
+            }
+
+            /*
+             * If the request was a restart, remove it from the requests
+             * list so we don't try to double restart it
+             */
+
+            tmp_list = globus_list_search_pred(
+                    requests,
+                    globus_l_contact_path_match,
+                    request);
+
+            if (tmp_list)
+            {
+                globus_gram_jobmanager_request_t *
+                                        tmp_req;
+
+                tmp_req = globus_list_first(tmp_list);
+                globus_list_remove(&requests, tmp_list);
+                globus_gram_job_manager_request_free(tmp_req);
             }
 
             /*
@@ -376,6 +421,7 @@ main(
                     globus_gram_job_manager_request_free(request);
                     free(request);
                     request = NULL;
+                    continue;
                 }
 
                 if (request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1 ||
@@ -613,4 +659,20 @@ driver_load_failed:
     return result;
 }
 /* globus_l_gram_create_stack() */
+
+static
+int
+globus_l_contact_path_match(
+    void *                              a,
+    void *                              b)
+{
+    globus_gram_jobmanager_request_t   *ra, *rb;
+
+    ra = a;
+    rb = b;
+
+    return (strcmp(ra->job_contact_path, rb->job_contact_path) == 0);
+}
+/* globus_l_contact_path_match() */
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -80,7 +80,7 @@ globus_i_gram_get_tg_gateway_user(
     pl = data_set->elements[0].length;
 
     /* Convert DER-Encoded string to UTF8 */
-    asn1_str = d2i_ASN1_UTF8STRING(NULL, &p, pl);
+    asn1_str = d2i_ASN1_UTF8STRING(NULL, (void *) &p, pl);
     if (!asn1_str)
     {
         globus_gram_protocol_error_7_hack_replace_message(

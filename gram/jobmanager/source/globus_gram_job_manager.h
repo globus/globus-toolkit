@@ -643,7 +643,8 @@ globus_gram_job_manager_request_init(
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
-    globus_bool_t                       reinit);
+    globus_bool_t                       reinit,
+    char **                             old_job_contact);
 
 void
 globus_gram_job_manager_request_destroy(
@@ -697,7 +698,8 @@ globus_gram_job_manager_request_load(
     globus_gram_jobmanager_request_t ** request,
     gss_ctx_id_t *                      context,
     char **                             contact,
-    int *                               job_state_mask);
+    int *                               job_state_mask,
+    char **                             old_job_contact);
 
 int
 globus_gram_job_manager_request_start(
