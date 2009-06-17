@@ -145,7 +145,7 @@ globus_l_gram_state_file_create_lock(
         {
             globus_gram_job_manager_request_log(
                     request,
-                    "JM: Error linking manager lock file to state lock file\n");
+                    "JM: Error linking manager lock file to state lock file: %d\n", errno);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
             goto link_failed;
         }
@@ -471,6 +471,17 @@ skip_single_check:
         goto error_exit;
     }
     buffer[strlen(buffer)-1] = '\0';
+    if (strcmp(buffer, request->config->jobmanager_type) != 0)
+    {
+        /* Job should be handled by another job manager */
+        remove(request->job_state_lock_file);
+        goto error_exit;
+    }
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    buffer[strlen(buffer)-1] = '\0';
     if((sscanf(buffer,"%d",&i)) < 1)
     {
         /* The last line we grabbed was the jobmanager_type. Now we
@@ -532,9 +543,14 @@ skip_single_check:
     {
         goto error_exit;
     }
+    buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-        request->job_id_string = strdup( buffer );
+        request->gateway_user = strdup(buffer);
+    }
+    else
+    {
+        request->gateway_user = NULL;
     }
     fclose(fp);
 

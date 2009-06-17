@@ -411,7 +411,7 @@ globus_gram_job_manager_read_callback_contacts(
     request->client_contacts = NULL;
     tmp = &request->client_contacts;
 
-    rc = fscanf(fp, "%d\n", &count);
+    rc = fscanf(fp, "%d%*[\n]", &count);
     if (rc != 1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
@@ -434,7 +434,7 @@ globus_gram_job_manager_read_callback_contacts(
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
             goto failed_ftell;
         }
-        rc = fscanf(fp, "%d %*s\n", &contact->job_state_mask); 
+        rc = fscanf(fp, "%d %*s%*[\n]", &contact->job_state_mask); 
         if (rc < 1)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
@@ -463,7 +463,7 @@ globus_gram_job_manager_read_callback_contacts(
 
             goto failed_malloc_contact_string_failed;
         }
-        rc = fscanf(fp, "%*d %s\n", contact->contact);
+        rc = fscanf(fp, "%*d %s%*[\n]", contact->contact);
         if (rc < 1)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
