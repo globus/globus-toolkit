@@ -638,7 +638,7 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
         
-        argstr = globus_common_create_string("schema=%s;", target->url.scheme);
+        argstr = globus_common_create_string("scheme=%s;", target->url.scheme);
         if(client_handle->attr.clientinfo_app_name)
         {
             tmpstr = globus_common_create_string(
@@ -1076,15 +1076,6 @@ redo:
             }
             target->disk_stack_str = 
                 globus_libc_strdup(target->attr->disk_stack_str);
-            
-            if(client_handle->op == GLOBUS_FTP_CLIENT_GET)
-            {
-                /* if not a 3pt or put gotta set stack on local deal 
-                for now this will eb an error */
-                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-
-                goto notify_fault;
-            }      
         }
         else
         {
