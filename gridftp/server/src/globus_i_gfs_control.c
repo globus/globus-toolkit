@@ -2341,7 +2341,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         3,
         3,
-        "SITE CLIENTINFO <sp> appname=\"<name of app>\";appver=\"<version string>\";schema=\"<ftp,gsiftp,sshftp>\";anyother=\"<interesting client info>\";",
+        "SITE CLIENTINFO <sp> appname=\"<name of app>\";appver=\"<version string>\";scheme=\"<ftp,gsiftp,sshftp>\";anyother=\"<interesting client info>\";",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

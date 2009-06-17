@@ -145,7 +145,7 @@ typedef struct
     globus_list_t *                     disk_stack_list;
     char *                              client_appname;
     char *                              client_appver;
-    char *                              client_schema;
+    char *                              client_scheme;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -653,9 +653,9 @@ globus_l_gfs_free_session_handle(
     {
         globus_free(session_handle->client_appver);
     }
-    if(session_handle->client_schema)
+    if(session_handle->client_scheme)
     {
-        globus_free(session_handle->client_schema);
+        globus_free(session_handle->client_scheme);
     }
     if(session_handle->real_username)
     {
@@ -2352,9 +2352,10 @@ globus_i_gfs_data_request_command(
                 }
             }
 
-            if(starttag = strstr(cmd_info->pathname, "schema="))
+            if((starttag = strstr(cmd_info->pathname, "scheme=")) ||
+                (starttag = strstr(cmd_info->pathname, "schema=")))
             {
-                starttag += strlen("schema=");
+                starttag += strlen("scheme=");
                 if(strchr(starttag, ';'))
                 {
                     if(*starttag == '"')
@@ -2367,11 +2368,11 @@ globus_i_gfs_data_request_command(
                     }
                     if(rc == 1)
                     {
-                        if(session_handle->client_schema)
+                        if(session_handle->client_scheme)
                         {
-                            globus_free(session_handle->client_schema);
+                            globus_free(session_handle->client_scheme);
                         }
-                        session_handle->client_schema =
+                        session_handle->client_scheme =
                             globus_libc_strdup(tmp);
                     }
                 }
@@ -4983,7 +4984,7 @@ globus_l_gfs_data_end_transfer_kickout(
                 op->session_handle->subject,
                 op->session_handle->client_appname,
                 op->session_handle->client_appver,
-                op->session_handle->client_schema);
+                op->session_handle->client_scheme);
         }
     }
 

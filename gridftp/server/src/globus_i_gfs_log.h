@@ -93,6 +93,6 @@ globus_i_gfs_log_usage_stats(
     char *                              userdn,
     char *                              app,
     char *                              appver,
-    char *                              schema);
+    char *                              scheme);
       
 #endif

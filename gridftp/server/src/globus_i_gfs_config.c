@@ -191,7 +191,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "*(c) CODE - ftp result code (226 = success, 5xx = fail)\n"
     "*(D) DSI - DSI module in use\n"
     "*(A) EM - event modules in use\n"
-    "*(T) SCHEMA - ftp, gsiftp, sshftp, etc. (client supplied)\n"
+    "*(T) SCHEME - ftp, gsiftp, sshftp, etc. (client supplied)\n"
     "*(a) APP - guc, rft, generic library app, etc. (client supplied)\n"
     "*(V) APPVER - version string of above. (client supplied)\n"
     "(f) FILE - name of file/data transferred\n"

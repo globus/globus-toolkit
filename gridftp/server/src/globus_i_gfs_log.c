@@ -57,7 +57,7 @@ typedef enum globus_i_gfs_log_usage_tag_e
     GLOBUS_I_GFS_USAGE_CONFID   = 'C',
     GLOBUS_I_GFS_USAGE_DSI      = 'D',
     GLOBUS_I_GFS_USAGE_EM       = 'A',
-    GLOBUS_I_GFS_USAGE_SCHEMA   = 'T',
+    GLOBUS_I_GFS_USAGE_SCHEME   = 'T',
     GLOBUS_I_GFS_USAGE_APP      = 'a',
     GLOBUS_I_GFS_USAGE_APPVER   = 'V',
     GLOBUS_I_GFS_USAGE_SESSID   = 'U'
@@ -899,7 +899,7 @@ globus_i_gfs_log_usage_stats(
     char *                              userdn,
     char *                              app,
     char *                              appver,
-    char *                              schema)
+    char *                              scheme)
 {
     time_t                              start_time_time;
     time_t                              end_time_time;
@@ -1085,9 +1085,9 @@ globus_i_gfs_log_usage_stats(
                     value = globus_i_gfs_config_string("acl");
                     break;
     
-                  case GLOBUS_I_GFS_USAGE_SCHEMA:
+                  case GLOBUS_I_GFS_USAGE_SCHEME:
                     key = "SCHEMA";
-                    value = schema;
+                    value = scheme;
                     break;
     
                   case GLOBUS_I_GFS_USAGE_APP:
