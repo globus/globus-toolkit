@@ -29,18 +29,17 @@ BuildRequires: vdt_globus_essentials
 BuildRequires: vdt_globus_data_server
 BuildRequires: vdt_globus_sdk
 
-Requires:  jdk >= 2000:1.6.0_07-fcs
-Requires:  jpackage-utils
-Requires:  vdt_globus_essentials
+Requires:  hadoop-fuse
 Requires:  vdt_globus_data_server
+Requires:  xinetd
 
 Requires(pre): shadow-utils
-Requires(post): /sbin/chkconfig
+Requires(post): /sbin/service
 Requires(postun): /sbin/chkconfig
 Requires(postun): /sbin/service
 
 %description
-Distributed filesystem (HDFS) and task tracker.
+HDFS DIS plugin for GridFTP 
 
 %prep
 %setup -q
@@ -54,9 +53,13 @@ export GLOBUS_LOCATION=/opt/globus
 export GPT_LOCATION=/opt/gpt
 export PATH=$PATH:$GPT_LOCATION/sbin
 gpt-postinstall
+%ifarch x86_64
 gpt-build -nosrc gcc64
+%else
+gpt-build -nosrc gcc32
+%endif
 
-./configure --with-java=/usr/java/latest/ --with-hadoop=/opt/hadoop --sysconfdir=$RPM_BUILD_ROOT%{_sysconfdir} --prefix=$RPM_BUILD_ROOT
+./configure --with-java=/usr/java/latest/ --with-hadoop=/opt/hadoop --sysconfdir=$RPM_BUILD_ROOT%{_sysconfdir} --prefix=$RPM_BUILD_ROOT/usr
 
 make
 
@@ -76,6 +79,16 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
+/usr/bin/gridftp_hdfs_inetd
+/usr/bin/gridftp_hdfs_standalone
+/etc/xinetd.d/gsiftp-hdfs
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64.a
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64.la
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64.so
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64.so.0
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64.so.0.0.0
+/usr/share/gridftp_hdfs/gridftp-inetd.conf
+/usr/share/gridftp_hdfs/gridftp.conf
 
 %changelog
 * Thu Jun 18 2009 Brian Bockelman <bbockelm@cse.unl.edu> 0.1.0-1
