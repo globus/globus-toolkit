@@ -11,6 +11,8 @@ AC_CONFIG_SRCDIR([src/globus_gridftp_server_hdfs.c])
 AC_PROG_CC
 AC_PROG_LIBTOOL
 
+AC_ARG_WITH(logdir, [  -with-logdir=LOG        Log directory location], [logdir=${withval}], [logdir=$prefixdir/var/log])
+
 AC_ARG_WITH(jni, [  --with-java=JAVA_HOME   Location of java], [JNIHDIR=${withval}/include], [JNIHDIR=${JAVA_HOME}/include])
 AC_CHECK_FILE(${JNIHDIR}/jni.h, ,[AC_MSG_ERROR(Can't find jni.h in ${JNIHDIR})])
 
@@ -46,7 +48,8 @@ AC_CHECK_FUNCS([ftruncate gethostname memset munmap strdup strrchr])
 AC_SUBST(HADOOPHOME)
 AC_SUBST(JNIHDIR)
 AC_SUBST(INCLUDE)
+AC_SUBST(logdir)
 
-AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf scripts/inetd_starter.sh scripts/gridftp_hdfs_standalone])
 AC_OUTPUT
 
