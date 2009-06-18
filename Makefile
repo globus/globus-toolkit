@@ -36,9 +36,7 @@ POST_UNINSTALL = :
 build_triplet = x86_64-unknown-linux-gnu
 host_triplet = x86_64-unknown-linux-gnu
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(top_srcdir)/configure \
-	$(top_srcdir)/scripts/gridftp_hdfs_standalone.in \
-	$(top_srcdir)/scripts/inetd_starter.sh.in config.guess \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure config.guess \
 	config.sub depcomp install-sh ltmain.sh missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -48,8 +46,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_CLEAN_FILES = scripts/inetd_starter.sh \
-	scripts/gridftp_hdfs_standalone
+CONFIG_CLEAN_FILES =
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -101,6 +98,7 @@ EGREP = grep -E
 EXEEXT = 
 F77 = 
 FFLAGS = 
+GLOBUSLOCATION = /opt/globus/
 HADOOPHOME = /opt/osg/osg-100/hadoop
 INCLUDE =  -I/opt/osg/osg-100/hadoop/src/c++/libhdfs -I/opt/globus//include/gcc64
 INSTALL_DATA = ${INSTALL} -m 644
@@ -175,7 +173,7 @@ sharedstatedir = ${prefix}/com
 sysconfdir = ${prefix}/etc
 target_alias = 
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src conf
+SUBDIRS = src conf scripts
 all: all-recursive
 
 .SUFFIXES:
@@ -212,10 +210,6 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
-scripts/inetd_starter.sh: $(top_builddir)/config.status $(top_srcdir)/scripts/inetd_starter.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-scripts/gridftp_hdfs_standalone: $(top_builddir)/config.status $(top_srcdir)/scripts/gridftp_hdfs_standalone.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo

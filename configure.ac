@@ -48,8 +48,9 @@ AC_CHECK_FUNCS([ftruncate gethostname memset munmap strdup strrchr])
 AC_SUBST(HADOOPHOME)
 AC_SUBST(JNIHDIR)
 AC_SUBST(INCLUDE)
+AC_SUBST(GLOBUSLOCATION)
 AC_SUBST(logdir)
 
-AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf scripts/inetd_starter.sh scripts/gridftp_hdfs_standalone])
+AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf conf/gsiftp-hdfs scripts/gridftp_hdfs_inetd scripts/gridftp_hdfs_standalone])
 AC_OUTPUT
 

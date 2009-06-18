@@ -1,4 +1,4 @@
 
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src conf
+SUBDIRS = src conf scripts
 
