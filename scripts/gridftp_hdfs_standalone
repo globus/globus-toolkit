@@ -1,4 +1,0 @@
-#!/bin/sh                                                            
-                                                                      
-exec /opt/globus/sbin/globus-gridftp-server -c /usr/local/share/gridftp_hdfs/gridftp.conf -dsi hdfs -no-fork
-

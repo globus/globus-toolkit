@@ -1,4 +1,4 @@
-Name:           gridftp_hdfs
+Name:           gridftp-hdfs
 Version:        0.1.0
 Release:        1%{?dist}
 Summary:        HDFS DSI plugin for GridFTP
@@ -15,7 +15,7 @@ URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
 # autoreconf
 # ./configure --with-java=/usr/java/jdk1.6.0_14/ --with-hadoop=/opt/hadoop
 # make dist
-Source0:        gridftp_hdfs-0.1.0.tar.gz
+Source0:        gridftp-hdfs-0.1.0.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 # RHEL4 doesn't have java-devel, so we build with Sun's jdk instead.
@@ -79,16 +79,16 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-/usr/bin/gridftp_hdfs_inetd
-/usr/bin/gridftp_hdfs_standalone
+/usr/bin/gridftp-hdfs-inetd
+/usr/bin/gridftp-hdfs-standalone
 /etc/xinetd.d/gsiftp-hdfs
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.a
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.la
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.so
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.so.0
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.so.0.0.0
-/usr/share/gridftp_hdfs/gridftp-inetd.conf
-/usr/share/gridftp_hdfs/gridftp.conf
+/usr/share/gridftp-hdfs/gridftp-inetd.conf
+/usr/share/gridftp-hdfs/gridftp.conf
 
 %changelog
 * Thu Jun 18 2009 Brian Bockelman <bbockelm@cse.unl.edu> 0.1.0-1

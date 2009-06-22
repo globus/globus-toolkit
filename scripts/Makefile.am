@@ -1,3 +1,3 @@
 
-bin_SCRIPTS = gridftp_hdfs_standalone gridftp_hdfs_inetd
+bin_SCRIPTS = gridftp-hdfs-standalone gridftp-hdfs-inetd
 

@@ -1,5 +1,5 @@
 
-gridftpdir = $(datadir)/gridftp_hdfs
+gridftpdir = $(datadir)/gridftp-hdfs
 dist_gridftp_DATA = gridftp.conf gridftp-inetd.conf
 
 xinetddir = $(sysconfdir)/xinetd.d
