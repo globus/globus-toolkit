@@ -20,6 +20,7 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 #include "globus_i_gfs_ipc.h"
+#include <grp.h>
 
 #include <sys/wait.h>
 #include <signal.h>
@@ -1446,6 +1447,14 @@ main(
     globus_result_t                     result;
     GlobusGFSName(main);
 
+  /* drop supplemental groups */
+    if(getuid() == 0 && setgroups(0, NULL))
+    {
+        fprintf(stderr, 
+            "Error: unable to drop supplemental group privileges.\n");
+        return 1;
+    }
+    
     /* activte globus stuff */    
     if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||
