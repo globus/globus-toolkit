@@ -51,6 +51,6 @@ AC_SUBST(INCLUDE)
 AC_SUBST(GLOBUSLOCATION)
 AC_SUBST(logdir)
 
-AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf conf/gsiftp-hdfs scripts/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone])
+AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf conf/gridftp-hdfs scripts/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone])
 AC_OUTPUT
 

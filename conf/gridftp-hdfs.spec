@@ -81,7 +81,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 /usr/bin/gridftp-hdfs-inetd
 /usr/bin/gridftp-hdfs-standalone
-/etc/xinetd.d/gsiftp-hdfs
+/etc/xinetd.d/gridftp-hdfs
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.a
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.la
 /usr/lib/libglobus_gridftp_server_hdfs_gcc64.so

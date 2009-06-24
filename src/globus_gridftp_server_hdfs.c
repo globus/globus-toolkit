@@ -810,7 +810,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             if (gethostname(hostname, 255) != 0) {
                 sprintf(hostname, "UNKNOWN");
             }
-            sprintf(err_msg, "Allocated all %i file-backed buffers on server %s; aborting transfer.", hdfs_handle->max_buffer_count, hostname);
+            sprintf(err_msg, "Allocated all %i file-backed buffers on server %s; aborting transfer.", hdfs_handle->max_file_buffer_count, hostname);
             globus_free(hostname);
             rc = GlobusGFSErrorGeneric(err_msg);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.\n");

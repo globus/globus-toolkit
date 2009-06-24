@@ -1,4 +1,4 @@
-service gsiftp
+service gridftp
 {
     socket_type = stream
     protocol    = tcp
