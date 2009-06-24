@@ -277,6 +277,12 @@ globus_gram_job_manager_state_file_write(
         goto error_exit;
     }
 
+    rc = fprintf(fp, "%d\n", request->exit_code);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+
     fclose( fp );
 
     rc = rename( tmp_file, request->job_state_file );
@@ -552,6 +558,13 @@ skip_single_check:
     {
         request->gateway_user = NULL;
     }
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    buffer[strlen(buffer)-1] = 0;
+    sscanf(buffer, "%d", &request->exit_code);
+
     fclose(fp);
 
     free(buffer);

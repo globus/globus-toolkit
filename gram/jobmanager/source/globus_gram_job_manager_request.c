@@ -240,6 +240,7 @@ globus_gram_job_manager_request_init(
     r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
     r->status_update_time = 0;
     r->failure_code = 0;
+    r->exit_code = 0;
     /* Won't be set until job has been submitted to the LRM */
     r->job_id_string = NULL;
     r->poll_frequency = 10;

@@ -248,6 +248,10 @@ globus_gram_job_manager_seg_handle_event(
                 request,
                 event->event_type);
         request->unsent_status_change = GLOBUS_TRUE;
+        if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE)
+        {
+            request->exit_code = event->exit_code;
+        }
     }
 
     globus_scheduler_event_destroy(event);

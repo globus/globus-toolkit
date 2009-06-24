@@ -427,6 +427,14 @@ typedef struct
      * GLOBUS_GRAM_PROTOCOL_ERROR_*.
      */
     int                                 failure_code;
+
+    /**
+     * Job Exit Code
+     * 
+     * If the state is GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE, then this
+     * is an integer exit code from the job's executable.
+     */
+    int                                 exit_code;
     
     /**
      * Job identifier string
