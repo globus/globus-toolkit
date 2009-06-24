@@ -501,6 +501,7 @@ BUNDLE globus-gridftp
         gaa_plugin
         gaa_simple
         globus_xio_popen_driver
+        globus_xio_pipe_driver
         globus_xio_rate_driver
         globus_gaa_authz_callout_setup
         gaa_gss_generic
