@@ -1182,6 +1182,7 @@ globus_l_globusrun_gram_callback_func(
 	if(monitor->verbose)
 	{
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE\n");
+            printf("exit code: %d\n", errorcode);
 	}
         monitor->done = GLOBUS_TRUE;
 	break;
