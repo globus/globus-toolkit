@@ -13,7 +13,7 @@
 
 #include <grp.h>
 #include <pwd.h>
-#include <unistd.h>
+#include <syslog.h>
 #include <hdfs.h>
 #include <stdio.h>
 #define _GNU_SOURCE
@@ -61,6 +61,10 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char *                              tmp_file_pattern;
     int                                 tmpfilefd;
     int                                 using_file_buffer;
+    char *                              syslog_host; // The host to send syslog message to.
+    char *                              remote_host; // The remote host connecting to us.
+    char *                              local_host;  // Our local hostname.
+    char                                syslog_msg[256];  // Message printed out to syslog.
 } globus_l_gfs_hdfs_handle_t;
 
 char err_msg[256];
@@ -134,6 +138,23 @@ globus_l_gfs_hdfs_start(
     char * port_char = getenv("VDT_GRIDFTP_HDFS_PORT");
     char * mount_point_char = getenv("VDT_GRIDFTP_HDFS_MOUNT_POINT");
     char * load_limit_char = getenv("VDT_GRIDFTP_LOAD_LIMIT");
+
+    // Pull syslog configuration from environment.
+    char * syslog_host_char = getenv("VDT_GRIDFTP_SYSLOG");
+    if (syslog_host_char == NULL) {
+        hdfs_handle->syslog_host = NULL;
+        hdfs_handle->local_host = NULL;
+    } else {
+        hdfs_handle->syslog_host = syslog_host_char;
+        hdfs_handle->local_host = globus_malloc(sizeof(char)*256);
+        memset(hdfs_handle->local_host, '\0', sizeof(char)*256);
+        if (gethostname(hdfs_handle->local_host, 255) != 0) {
+            sprintf(hdfs_handle->local_host, "UNKNOWN");
+        }
+        hdfs_handle->remote_host = session_info->host_id;
+        openlog("GRIDFTP", 0, LOG_LOCAL2);
+        sprintf(hdfs_handle->syslog_msg, "%s %s %%s %%i", hdfs_handle->local_host, hdfs_handle->remote_host);
+    }
 
     // Determine the maximum number of buffers; default to 200.
     char * max_buffer_char = getenv("VDT_GRIDFTP_BUFFER_COUNT");
@@ -268,8 +289,11 @@ globus_l_gfs_hdfs_destroy(
         hdfsDisconnect(hdfs_handle->fs);
     if (hdfs_handle->username)
         globus_free(hdfs_handle->username);
+    if (hdfs_handle->local_host)
+        globus_free(hdfs_handle->local_host);
     remove_file_buffer(hdfs_handle);
     globus_free(hdfs_handle);
+    closelog();
 }
 
 void
@@ -636,6 +660,8 @@ globus_l_gfs_hdfs_dump_buffers(
 					 for (i=0; i<cnt; i++) {
 								if (hdfs_handle->used[i] == 1 && offsets[i] == hdfs_handle->offset) {
 										  //printf("Flushing %d bytes at offset %d from buffer %d.\n", nbytes[i], hdfs_handle->offset, i);
+										if (hdfs_handle->syslog_host != NULL)
+										  syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes[i]);
 										  bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, hdfs_handle->buffer+i*hdfs_handle->block_size, nbytes[i]*sizeof(globus_byte_t));
 										  if (bytes_written > 0)
 													 wrote_something = 1;
@@ -894,6 +920,8 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         if (offset == hdfs_handle->offset) {
             sprintf(err_msg, "Dumping this block immediately.\n");
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
+            if (hdfs_handle->syslog_host != NULL)
+                syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes);
             globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
             if (bytes_written != nbytes) {
                 rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
@@ -1223,7 +1251,9 @@ globus_l_gfs_hdfs_read_from_storage(
         {
             read_length = hdfs_handle->block_length;
         }
- 
+
+        if (hdfs_handle->syslog_host != NULL)
+            syslog(LOG_INFO, hdfs_handle->syslog_msg, "READ", read_length);
         nbytes = hdfsRead(hdfs_handle->fs, hdfs_handle->fd, buffer, read_length);
         if (nbytes == 0)    /* eof */
         {

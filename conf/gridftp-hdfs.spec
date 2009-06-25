@@ -54,9 +54,9 @@ export GPT_LOCATION=/opt/gpt
 export PATH=$PATH:$GPT_LOCATION/sbin
 gpt-postinstall
 %ifarch x86_64
-gpt-build -nosrc gcc64
+gpt-build -nosrc gcc64dbg
 %else
-gpt-build -nosrc gcc32
+gpt-build -nosrc gcc32dbg
 %endif
 
 ./configure --with-java=/usr/java/latest/ --with-hadoop=/opt/hadoop --sysconfdir=$RPM_BUILD_ROOT%{_sysconfdir} --prefix=$RPM_BUILD_ROOT/usr
@@ -82,11 +82,11 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/gridftp-hdfs-inetd
 /usr/bin/gridftp-hdfs-standalone
 /etc/xinetd.d/gridftp-hdfs
-/usr/lib/libglobus_gridftp_server_hdfs_gcc64.a
-/usr/lib/libglobus_gridftp_server_hdfs_gcc64.la
-/usr/lib/libglobus_gridftp_server_hdfs_gcc64.so
-/usr/lib/libglobus_gridftp_server_hdfs_gcc64.so.0
-/usr/lib/libglobus_gridftp_server_hdfs_gcc64.so.0.0.0
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64dbg.a
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64dbg.la
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64dbg.so
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64dbg.so.0
+/usr/lib/libglobus_gridftp_server_hdfs_gcc64dbg.so.0.0.0
 /usr/share/gridftp-hdfs/gridftp-inetd.conf
 /usr/share/gridftp-hdfs/gridftp.conf
 
