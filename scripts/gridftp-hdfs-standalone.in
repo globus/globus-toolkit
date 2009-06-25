@@ -1,4 +1,4 @@
 #!/bin/sh                                                            
                                                                       
-exec @GLOBUSLOCATION@/sbin/globus-gridftp-server -c @prefix@/share/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
+exec @GLOBUSLOCATION@/sbin/globus-gridftp-server -c @prefix_resolved@/share/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
 

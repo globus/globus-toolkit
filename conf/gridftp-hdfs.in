@@ -6,6 +6,6 @@ service gsiftp
     user        = root
     instances   = UNLIMITED
     cps         = 400 10
-    server      = @prefix@/bin/gridftp-hdfs-inetd
+    server      = @prefix_resolved@/bin/gridftp-hdfs-inetd
     disable     = no
 }

@@ -11,7 +11,7 @@ AC_CONFIG_SRCDIR([src/globus_gridftp_server_hdfs.c])
 AC_PROG_CC
 AC_PROG_LIBTOOL
 
-AC_ARG_WITH(logdir, [  -with-logdir=LOG        Log directory location], [logdir=${withval}], [logdir=$prefixdir/var/log])
+AC_ARG_WITH(logdir, [  -with-logdir=LOG        Log directory location], [logdir=${withval}], [logdir=/var/log])
 
 AC_ARG_WITH(java, [  --with-java=JAVA_HOME   Location of java], [JNIHDIR=${withval}/include], [JNIHDIR=${JAVA_HOME}/include])
 AC_CHECK_FILE(${JNIHDIR}/jni.h, ,[AC_MSG_ERROR(Can't find jni.h in ${JNIHDIR})])
@@ -45,11 +45,25 @@ AC_FUNC_MMAP
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([ftruncate gethostname memset munmap strdup strrchr])
 
+if test "x${prefix}" == "xNONE" ; then
+    prefix_resolved=${ac_default_prefix}
+else
+    eval "prefix_resolved=\"${prefix}\""
+fi
+
+if test "x${exec_prefix}" == "xNONE" ; then
+    exec_prefix_resolved=${ac_default_prefix}
+else
+    eval "exec_prefix_resolved=\"${exec_prefix}\""
+fi
+
 AC_SUBST(HADOOPHOME)
 AC_SUBST(JNIHDIR)
 AC_SUBST(INCLUDE)
 AC_SUBST(GLOBUSLOCATION)
 AC_SUBST(logdir)
+AC_SUBST(exec_prefix_resolved)
+AC_SUBST(prefix_resolved)
 
 AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf conf/gridftp-hdfs scripts/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone])
 AC_OUTPUT
