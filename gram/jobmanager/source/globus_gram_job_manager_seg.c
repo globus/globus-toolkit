@@ -411,6 +411,14 @@ globus_l_gram_deliver_event(
         goto event_enqueue_failed;
     }
 
+    if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
+        event->event_type ==  GLOBUS_SCHEDULER_EVENT_FAILED)
+    {
+        (void) globus_gram_job_manager_unregister_job_id(
+                request->manager,
+                request->job_id_string);
+    }
+
     if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
     {
         GlobusTimeReltimeSet(delay_time, 0, 0); 
@@ -471,6 +479,8 @@ globus_l_gram_fork_poll_callback(
             continue;
         }
 
+        pid_count = 0;
+        done_count = 0;
         for (tok_end = NULL,
                     pid_string = strtok_r(job_id_string, ",", &tok_end);
              pid_string != NULL;
