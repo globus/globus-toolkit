@@ -15,8 +15,8 @@
 #include <pwd.h>
 #include <syslog.h>
 #include <hdfs.h>
-#include <stdio.h>
 #define _GNU_SOURCE
+#include <stdio.h>
 #include <unistd.h>
 #include <sys/mman.h>
 
@@ -133,14 +133,14 @@ globus_l_gfs_hdfs_start(
     hdfs_handle->host = "hadoop-name";
     hdfs_handle->mount_point = "/mnt/hadoop";
     hdfs_handle->port = 9000;
-    char * replicas_char = getenv("VDT_GRIDFTP_HDFS_REPLICAS");
-    char * namenode = getenv("VDT_GRIDFTP_HDFS_NAMENODE");
-    char * port_char = getenv("VDT_GRIDFTP_HDFS_PORT");
-    char * mount_point_char = getenv("VDT_GRIDFTP_HDFS_MOUNT_POINT");
-    char * load_limit_char = getenv("VDT_GRIDFTP_LOAD_LIMIT");
+    char * replicas_char = getenv("GRIDFTP_HDFS_REPLICAS");
+    char * namenode = getenv("GRIDFTP_HDFS_NAMENODE");
+    char * port_char = getenv("GRIDFTP_HDFS_PORT");
+    char * mount_point_char = getenv("GRIDFTP_HDFS_MOUNT_POINT");
+    char * load_limit_char = getenv("GRIDFTP_LOAD_LIMIT");
 
     // Pull syslog configuration from environment.
-    char * syslog_host_char = getenv("VDT_GRIDFTP_SYSLOG");
+    char * syslog_host_char = getenv("GRIDFTP_SYSLOG");
     if (syslog_host_char == NULL) {
         hdfs_handle->syslog_host = NULL;
         hdfs_handle->local_host = NULL;
@@ -157,7 +157,7 @@ globus_l_gfs_hdfs_start(
     }
 
     // Determine the maximum number of buffers; default to 200.
-    char * max_buffer_char = getenv("VDT_GRIDFTP_BUFFER_COUNT");
+    char * max_buffer_char = getenv("GRIDFTP_BUFFER_COUNT");
     if (max_buffer_char != NULL) {
         max_buffer_count = atoi(max_buffer_char);
         if ((max_buffer_count < 5)  || (max_buffer_count > 1000))
@@ -167,7 +167,7 @@ globus_l_gfs_hdfs_start(
     sprintf(err_msg, "Max memory buffer count: %i.\n", hdfs_handle->max_buffer_count);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
-    char * max_file_buffer_char = getenv("VDT_GRIDFTP_FILE_BUFFER_COUNT");
+    char * max_file_buffer_char = getenv("GRIDFTP_FILE_BUFFER_COUNT");
     if (max_file_buffer_char != NULL) {
         max_file_buffer_count = atoi(max_file_buffer_char);
         if ((max_file_buffer_count < max_buffer_count)  || (max_buffer_count > 50000))
@@ -1112,10 +1112,73 @@ globus_l_gfs_hdfs_recv(
         return;
     }
 
+    int num_replicas = 0;
+    char * replica_map = getenv("GRIDFTP_HDFS_REPLICA_MAP");
+    fprintf(stderr, "Found replica map file %s\n", replica_map);
+    fflush(stderr);
+    if (replica_map != NULL) {
+	char *map_line = (char *)malloc(sizeof(char) * 256);
+        int line_length = 256;
+	char *map_line_index;
+	char *filename_index;
+	FILE *replica_map_fd = fopen(replica_map, "r");
+        ssize_t bytes_read = 0;
+	if (replica_map_fd == NULL) {
+            sprintf(err_msg, "Could not open %s for reading.\n", replica_map);
+	    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+	} else {
+	    fprintf(stderr, "Opened replica map file %s for reading\n", replica_map);
+	    fflush(stderr);
+	    while ( (bytes_read = getline(&map_line, &line_length, replica_map_fd)) > -1) {
+		fprintf(stderr, "Read replica map line %s", map_line);
+		fflush(stderr);
+		map_line_index = map_line;
+		filename_index = hdfs_handle->pathname;
+		/* Skip comment lines
+		 */
+		if (map_line && map_line[0] != '#') {
+		    /*
+		     * Skip over leading whitespace
+		     */
+		    for (; *map_line_index && *map_line_index == ' ';
+			map_line_index++);
+		    fprintf(stderr, "1: map_line_index=%s\n", map_line_index);
+		    fflush(stderr);
+		    for(; *map_line_index && *map_line_index == *filename_index;
+			map_line_index++, filename_index++);
+		    fprintf(stderr, "2: map_line_index=%s, filename_index=%s\n", map_line_index, filename_index);
+		    fflush(stderr);
+
+		    /*
+		     * If we've reached the end of the pattern, then we've found
+		     * a match with the hdfs filename.  Snarf up the # replicas
+		     * from the remainder of the line.
+		     */
+		    if (*map_line_index && (*map_line_index == ' ' || *map_line_index == '=' || *map_line_index == '\t')) {
+			for (; *map_line_index && *map_line_index != ' ' && *map_line_index != '='; map_line_index++);
+			fprintf(stderr, "3: map_line_index=%s\n", map_line_index);
+			fflush(stderr);
+			sscanf(map_line_index, "%d", &num_replicas);
+			fprintf(stderr, "Found match: %d replicas\n", num_replicas);
+			fflush(stderr);
+		    }
+		}
+	    }
+	    if (map_line != NULL)
+		free(map_line);
+	    fclose(replica_map_fd);
+	}
+    }
 
     // Check to make sure file exists, then open it write-only.
-    sprintf(err_msg, "Open file %s.\n", hdfs_handle->pathname);
+    if (num_replicas == 0) {
+	sprintf(err_msg, "Open file %s.\n", hdfs_handle->pathname);
+    } else {
+	sprintf(err_msg, "Open file %s with %d replicas.\n", hdfs_handle->pathname, num_replicas);
+    }
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
+    fprintf(stderr, err_msg);
+    fflush(stderr);
     if (hdfsExists(hdfs_handle->fs, hdfs_handle->pathname) == 0)
     {
         hdfsFileInfo *fileInfo;
@@ -1131,12 +1194,12 @@ globus_l_gfs_hdfs_recv(
             return;
         }
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
-            O_WRONLY, 0, 0, 0);
+            O_WRONLY, 0, num_replicas, 0);
     }
     else
     {
         hdfs_handle->fd = hdfsOpenFile(hdfs_handle->fs, hdfs_handle->pathname,
-                                 O_WRONLY, 0, 0, 0);
+                                 O_WRONLY, 0, num_replicas, 0);
     }
     if (!hdfs_handle->fd)
     {

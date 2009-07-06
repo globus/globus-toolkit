@@ -1,4 +1,14 @@
-#!/bin/sh                                                            
+#!/bin/sh
+
+HADOOP_CONF_DIR=/etc/hadoop
+
+export CLASSPATH=$(build-classpath hadoop):$HADOOP_CONF_DIR
+
+source $HADOOP_CONF_DIR/hadoop-env.sh
+
+if [ -e @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf ] ; then
+    . @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf
+fi
                                                                       
-exec @GLOBUSLOCATION@/sbin/globus-gridftp-server -c @prefix_resolved@/share/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
+exec @GLOBUSLOCATION@/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
 

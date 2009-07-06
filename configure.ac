@@ -57,6 +57,12 @@ else
     eval "exec_prefix_resolved=\"${exec_prefix}\""
 fi
 
+if test "x${sysconfdir}" == "xNONE/etc" ; then
+    sysconfdir_resolved=${ac_default_prefix}
+else
+    eval "sysconfdir_resolved=\"${sysconfdir}\""
+fi
+
 AC_SUBST(HADOOPHOME)
 AC_SUBST(JNIHDIR)
 AC_SUBST(INCLUDE)
@@ -64,6 +70,7 @@ AC_SUBST(GLOBUSLOCATION)
 AC_SUBST(logdir)
 AC_SUBST(exec_prefix_resolved)
 AC_SUBST(prefix_resolved)
+AC_SUBST(sysconfdir_resolved)
 
 AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf conf/gridftp-hdfs scripts/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone])
 AC_OUTPUT
