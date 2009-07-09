@@ -234,13 +234,16 @@ globus_gram_job_manager_contact_state_callback(
 
     rc = globus_gram_protocol_pack_status_update_message(
         request->job_contact,
-        request->status,
-        (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
-            ? request->exit_code
-            : request->failure_code,
+        (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+            ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
+            : request->status,
+        (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+            ? request->stop_reason
+            : (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+                ? request->exit_code
+                : request->failure_code,
         &context->message,
         &context->message_length);
-
     if (rc != GLOBUS_SUCCESS)
     {
         globus_gram_job_manager_request_log(

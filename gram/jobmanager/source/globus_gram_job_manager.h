@@ -75,8 +75,6 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH,
@@ -435,6 +433,14 @@ typedef struct
      * is an integer exit code from the job's executable.
      */
     int                                 exit_code;
+
+    /** Stop Reason
+     * 
+     * If the job request is stopped either by an explicit signal or a proxy
+     * timeout, this will be set to something besides 0, and that will be
+     * sent as part of a fail message to satisfy condor
+     */
+    int stop_reason;
     
     /**
      * Job identifier string
@@ -652,7 +658,8 @@ globus_gram_job_manager_request_init(
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
     globus_bool_t                       reinit,
-    char **                             old_job_contact);
+    char **                             old_job_contact,
+    globus_gram_jobmanager_request_t ** old_job_request);
 
 void
 globus_gram_job_manager_request_destroy(
@@ -707,7 +714,8 @@ globus_gram_job_manager_request_load(
     gss_ctx_id_t *                      context,
     char **                             contact,
     int *                               job_state_mask,
-    char **                             old_job_contact);
+    char **                             old_job_contact,
+    globus_gram_jobmanager_request_t ** old_job_request);
 
 int
 globus_gram_job_manager_request_start(
@@ -732,6 +740,11 @@ int
 globus_gram_job_manager_request_load_all(
     globus_gram_job_manager_t *         manager,
     globus_list_t **                    requests);
+
+int
+globus_i_gram_request_stdio_update(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      update_rsl);
 
 /* globus_gram_job_manager_validate.c */
 
@@ -820,6 +833,10 @@ globus_gram_job_manager_state_machine_register(
     globus_gram_job_manager_t *         manager,
     globus_gram_jobmanager_request_t *  request,
     globus_reltime_t *                  delay);
+
+int
+globus_i_gram_remote_io_url_update(
+    globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager_gsi.c */
 int

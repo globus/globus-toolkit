@@ -457,6 +457,7 @@ globus_l_gram_startup_socket_callback(
     int                                 accepted;
     globus_bool_t                       done = GLOBUS_FALSE;
     char *                              old_job_contact = NULL;
+    globus_gram_jobmanager_request_t *  old_job_request = NULL;
 
     globus_gram_job_manager_log(
             manager,
@@ -600,17 +601,65 @@ globus_l_gram_startup_socket_callback(
                 &context,
                 &contact,
                 &job_state_mask,
-                &old_job_contact);
+                &old_job_contact,
+                &old_job_request);
         if (rc != GLOBUS_SUCCESS)
         {
+            if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE &&
+                old_job_request)
+            {
+                if (old_job_request->two_phase_commit != 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
+                }
+                else
+                {
+                    rc = GLOBUS_SUCCESS;
+                }
+            }
             rc = globus_gram_job_manager_reply(
                     NULL,
                     rc,
-                    old_job_contact,
+                    (old_job_contact == NULL && old_job_request)
+                        ? old_job_request->job_contact
+                        : old_job_contact,
                     response_fd,
                     context);
 
             done = GLOBUS_TRUE;
+            rc = globus_gram_job_manager_gsi_update_credential(
+                    manager,
+                    NULL,
+                    cred);
+            cred = GSS_C_NO_CREDENTIAL;
+
+            if (old_job_request)
+            {
+                if (old_job_request->jobmanager_state ==
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                {
+                    if (old_job_request->two_phase_commit != 0)
+                    {
+                        old_job_request->jobmanager_state =
+                            GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+                    }
+                    else
+                    {
+                        old_job_request->jobmanager_state =
+                                old_job_request->restart_state;
+                    }
+
+                }
+                globus_gram_job_manager_state_machine_register(
+                        old_job_request->manager,
+                        old_job_request,
+                        NULL);
+
+                globus_gram_job_manager_remove_reference(
+                        old_job_request->manager,
+                        old_job_request->job_contact_path,
+                        "jm_restart");
+            }
             goto request_load_failed;
         }
 

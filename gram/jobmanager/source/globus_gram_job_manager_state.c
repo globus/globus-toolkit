@@ -52,11 +52,6 @@ globus_l_gram_job_manager_cancel_queries(
 
 static
 int
-globus_l_gram_remote_io_url_update(
-    globus_gram_jobmanager_request_t *  request);
-
-static
-int
 globus_l_gram_gss_send_fd(
     void *                              arg,
     void *                              buffer,
@@ -229,6 +224,7 @@ globus_l_gram_job_manager_state_machine(
              */
             request->poll_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+            request->stop_reason = GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT;
         }
         else
         {
@@ -482,7 +478,8 @@ globus_l_gram_job_manager_state_machine(
 
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 
-        if (request->config->seg_module == NULL)
+        if (request->config->seg_module == NULL &&
+            strcmp(request->config->jobmanager_type, "fork") != 0)
         {
             rc = globus_gram_job_manager_script_poll(request);
         }
@@ -535,8 +532,6 @@ globus_l_gram_job_manager_state_machine(
         if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL &&
             query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE)
         {
-            globus_rsl_t *              tmp_rsl;
-
 	    globus_gram_job_manager_request_log(
 		request,
 		"Parsing query RSL: %s\n",
@@ -575,43 +570,16 @@ globus_l_gram_job_manager_state_machine(
 		break;
 	    }
 
-            rc = globus_gram_rewrite_output_as_staging(
+            rc = globus_i_gram_request_stdio_update(
                     request,
-                    query->rsl,
-                    GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                query->failure_code = rc;
-                request->jobmanager_state = next_state;
-                break;
-            }
-                    
-            rc = globus_gram_rewrite_output_as_staging(
-                    request,
-                    query->rsl,
-                    GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                query->failure_code = rc;
-                request->jobmanager_state = next_state;
-                break;
-            }
-                    
-            tmp_rsl = globus_gram_job_manager_rsl_merge(
-		request->rsl,
-		query->rsl);
+                    query->rsl);
 
-	    if (tmp_rsl == GLOBUS_NULL)
-	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 	        request->jobmanager_state = next_state;
 		break;
-	    }
-            globus_rsl_free_recursive(request->rsl);
-            request->rsl = tmp_rsl;
 
             request->jobmanager_state = next_state;
-            globus_l_gram_remote_io_url_update(request);
+            globus_i_gram_remote_io_url_update(request);
 	    break;
         }
         else if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
@@ -849,9 +817,9 @@ globus_l_gram_job_manager_state_machine(
         }
         else
         {
-            request->jobmanager_state = 
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
-            globus_l_gram_job_manager_cancel_queries(request);
+            request->restart_state = request->jobmanager_state;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+            request->stop_reason = GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT;
 
             event_registered = GLOBUS_TRUE;
         }
@@ -963,29 +931,12 @@ globus_l_gram_job_manager_state_machine(
          * between the time the job request reply is sent and the 
          * job manager has noticed stop or failed
          */
-        request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-
-        if(request->job_history_status != request->status)
-        {
-            globus_gram_job_manager_history_file_create(request);
-            request->job_history_status = request->status;
-        }
-
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-        /*
-         * Send the job manager stopped or proxy expired failure callback.
-         */
-        globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-
         globus_gram_job_manager_contact_state_callback(request);
 
-        request->jobmanager_state = 
-            GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
+        globus_gram_job_manager_state_file_write(request);
 
-        globus_l_gram_job_manager_cancel_queries(request);
+        event_registered = GLOBUS_TRUE;
+
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
@@ -1028,7 +979,6 @@ globus_l_gram_job_manager_state_machine(
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
         globus_l_gram_job_manager_cancel_queries(request);
 
         if (globus_gram_job_manager_auditing_file_write(request)
@@ -1040,19 +990,16 @@ globus_l_gram_job_manager_state_machine(
         }
         event_registered = GLOBUS_TRUE;
 
-        if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE)
+        /* Don't allow any new SEG events to enter the queue */
+        (void) globus_gram_job_manager_unregister_job_id(
+                request->manager,
+                request->job_id_string);
+        /* Clear any existing SEG events */
+        while (! globus_fifo_empty(&request->seg_event_queue))
         {
-            /* Don't allow any new SEG events to enter the queue */
-            (void) globus_gram_job_manager_unregister_job_id(
-                    request->manager,
-                    request->job_id_string);
-            /* Clear any existing SEG events */
-            while (! globus_fifo_empty(&request->seg_event_queue))
-            {
-                /* A SEG event occurred recently. Let's update our job state
-                 */
-                globus_gram_job_manager_seg_handle_event(request);
-            }
+            /* A SEG event occurred recently. Let's update our job state
+             */
+            globus_gram_job_manager_seg_handle_event(request);
         }
         break;
 
@@ -1411,8 +1358,6 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)
@@ -1622,9 +1567,8 @@ globus_l_gram_job_manager_add_cache_info(
 }
 /* globus_l_gram_job_manager_add_cache_info() */
 
-static
 int
-globus_l_gram_remote_io_url_update(
+globus_i_gram_remote_io_url_update(
     globus_gram_jobmanager_request_t *  request)
 {
     FILE *                              fp;
@@ -1657,7 +1601,7 @@ fclose_failed:
 fopen_failed:
     return rc;
 }
-/* globus_l_gram_remote_io_url_update() */
+/* globus_i_gram_remote_io_url_update() */
 
 
 /**

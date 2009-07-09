@@ -200,7 +200,10 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
-    rc = fprintf(fp, "%4d\n", (int) request->jobmanager_state);
+    rc = fprintf(fp, "%4d\n",
+            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                    ? (int) request->restart_state
+                    : (int) request->jobmanager_state);
     if (rc < 0)
     {
         goto error_exit;

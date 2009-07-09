@@ -80,7 +80,8 @@ globus_l_gram_init_cache(
 static
 int
 globus_l_gram_restart(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_jobmanager_request_t ** old_job_request);
 
 static
 int
@@ -181,6 +182,11 @@ globus_l_gram_event_destroy(void *datum);
  * @param old_job_contact
  *     Pointer to a string to be set to the old job contact if
  *     GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE. Set to NULL otherwise.
+ * @param old_job_request
+ *     Pointer to a job request structure that will be set to an existing
+ *     one if the return value is GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE. Set
+ *     to NULL otherwise. If non-null, the caller must release a reference
+ *     when done processing this.
  *
  * @retval GLOBUS_SUCCESS
  *     Success
@@ -213,7 +219,8 @@ globus_gram_job_manager_request_init(
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
     globus_bool_t                       reinit,
-    char **                             old_job_contact)
+    char **                             old_job_contact,
+    globus_gram_jobmanager_request_t ** old_job_request)
 {
     globus_gram_jobmanager_request_t *  r;
     uint64_t                            uniq1, uniq2;
@@ -226,6 +233,10 @@ globus_gram_job_manager_request_init(
     if (old_job_contact)
     {
         *old_job_contact = NULL;
+    }
+    if (old_job_request)
+    {
+        *old_job_request = NULL;
     }
     r = malloc(sizeof(globus_gram_jobmanager_request_t));
     if (r == NULL)
@@ -241,6 +252,7 @@ globus_gram_job_manager_request_init(
     r->status_update_time = 0;
     r->failure_code = 0;
     r->exit_code = 0;
+    r->stop_reason = 0;
     /* Won't be set until job has been submitted to the LRM */
     r->job_id_string = NULL;
     r->poll_frequency = 10;
@@ -362,21 +374,6 @@ globus_gram_job_manager_request_init(
         goto failed_set_job_contact_path;
     }
 
-    if (!reinit && globus_gram_job_manager_request_exists(
-            manager,
-            r->job_contact_path))
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-        if (old_job_contact)
-        {
-            *old_job_contact = r->job_contact;
-            r->job_contact = NULL;
-        }
-
-        goto failed_check_exists;
-    }
-
-
     rc = globus_l_gram_make_job_dir(r, &r->job_dir);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -445,7 +442,7 @@ globus_gram_job_manager_request_init(
 
     if (r->jm_restart)
     {
-        rc = globus_l_gram_restart(r);
+        rc = globus_l_gram_restart(r, old_job_request);
 
         if (rc != GLOBUS_SUCCESS)
         {
@@ -572,14 +569,9 @@ globus_gram_job_manager_request_init(
         
     switch (rc)
     {
-        if (tmp_string == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
-            goto get_remote_io_url_failed;
-        }
-        break;
     case GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE:
         r->remote_io_url = NULL;
+        r->remote_io_url_file = NULL;
         break;
     case GLOBUS_SUCCESS:
         if (tmp_string != NULL)
@@ -910,6 +902,14 @@ request_malloc_failed:
  * @param job_state_mask
  *     Pointer to be set to the job state mask for which job state changes
  *     the client is interested in.
+ * @param old_job_contact
+ *     Pointer to a string to be set to the old job contact if
+ *     GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE. Set to NULL otherwise.
+ * @param old_job_request
+ *     Pointer to a job request structure that will be set to an existing
+ *     one if the return value is GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE. Set
+ *     to NULL otherwise. If non-null, the caller must release a reference
+ *     when done processing this.
  *
  * @retval GLOBUS_SUCCESS
  *     Success
@@ -951,7 +951,8 @@ globus_gram_job_manager_request_load(
     gss_ctx_id_t *                      context,
     char **                             contact,
     int *                               job_state_mask,
-    char **                             old_job_contact)
+    char **                             old_job_contact,
+    globus_gram_jobmanager_request_t ** old_job_request)
 {
     int                                 rc;
     char *                              rsl;
@@ -987,7 +988,8 @@ globus_gram_job_manager_request_load(
             cred,
             *context,
             GLOBUS_FALSE,
-            old_job_contact);
+            old_job_contact,
+            old_job_request);
     if (rc != GLOBUS_SUCCESS)
     {
         goto request_init_failed;
@@ -1133,14 +1135,6 @@ bad_request:
         rc = rc2;
     }
     GlobusGramJobManagerRequestUnlock(request);
-    /*
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = globus_gram_job_manager_remove_reference(
-                manager,
-                request->job_contact_path);
-    }
-    */
     return rc;
 }
 /* globus_gram_job_manager_request_start() */
@@ -1932,10 +1926,14 @@ failed_cache_eval:
 }
 /* globus_l_gram_init_cache() */
 
+/**
+ * 
+ */
 static
 int
 globus_l_gram_restart(
-    globus_gram_jobmanager_request_t *  request)
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_jobmanager_request_t ** old_job_request)
 {
     int                                 rc;
     globus_rsl_t *                      stdout_position;
@@ -1984,11 +1982,58 @@ globus_l_gram_restart(
             request,
             GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 
-    /* Read the job state file. This has all sorts of side-effects on
-     * the request structure
-     */
-    rc = globus_gram_job_manager_state_file_read(request);
-    if(rc != GLOBUS_SUCCESS)
+    if (globus_gram_job_manager_request_exists(
+            request->manager,
+            request->job_contact_path))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+    }
+    else
+    {
+        /* Read the job state file. This has all sorts of side-effects on
+         * the request structure
+         */
+        rc = globus_gram_job_manager_state_file_read(request);
+    }
+
+
+    if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+    {
+        /* Something is handling this request already. We'll check if it is
+         * this process. If so, we'll try to act like this is a stdio update
+         * on it. If it's in the STOP state, we'll tweak it back to the
+         * restart_state to get it going again.
+         */
+        rc = globus_gram_job_manager_add_reference(
+                request->manager,
+                request->job_contact_path,
+                "restart",
+                old_job_request);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            /* OK. It's alive, but not our job. Let it be */
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+
+            goto state_file_read_failed;
+        }
+        rc = globus_i_gram_request_stdio_update(
+                (*old_job_request),
+                request->rsl);
+        if (rc == GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+        }
+        else
+        {
+            rc = globus_gram_job_manager_remove_reference(
+                    request->manager,
+                    request->job_contact_path,
+                    "restart");
+            *old_job_request = NULL;
+        }
+        goto old_jm_alive;
+    }
+    else if(rc != GLOBUS_SUCCESS)
     {
         goto state_file_read_failed;
     }
@@ -2081,6 +2126,7 @@ globus_l_gram_restart(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
+old_jm_alive:
 failed_check_position:
 parse_original_rsl_failed:
 state_file_read_failed:
@@ -2090,6 +2136,127 @@ rsl_eval_failed:
     return rc;
 }
 /* globus_l_gram_restart() */
+
+int
+globus_i_gram_request_stdio_update(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      update_rsl)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    const char *                        tmp_string;
+    globus_rsl_t *                      tmp_rsl;
+    globus_rsl_t *                      stdout_position;
+    globus_rsl_t *                      stderr_position;
+
+    /*
+     * Remove stdout_position and stderr_position. We don't do streaming
+     * any more, so we will reject any restart where the positions
+     * aren't 0.
+     */
+    stdout_position = globus_gram_job_manager_rsl_extract_relation(
+            update_rsl,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
+    if (stdout_position != NULL)
+    {
+        rc = globus_l_gram_check_position(
+                request,
+                stdout_position);
+        globus_rsl_free_recursive(stdout_position);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_check_position;
+        }
+    }
+
+    stderr_position = globus_gram_job_manager_rsl_extract_relation(
+            update_rsl,
+            GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
+    if (stderr_position != NULL)
+    {
+        rc = globus_l_gram_check_position(
+                request,
+                stderr_position);
+        globus_rsl_free_recursive(stderr_position);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_check_position;
+        }
+    }
+
+    rc = globus_gram_rewrite_output_as_staging(
+            request,
+            update_rsl,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_rewrite_stdout;
+    }
+            
+    rc = globus_gram_rewrite_output_as_staging(
+            request,
+            update_rsl,
+            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_rewrite_stderr;
+    }
+            
+    tmp_rsl = globus_gram_job_manager_rsl_merge(
+        request->rsl,
+        update_rsl);
+
+    if (tmp_rsl == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto failed_rsl_merge;
+    }
+
+    request->rsl = tmp_rsl;
+    rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+            request->rsl,
+            GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
+            &tmp_string);
+        
+    switch (rc)
+    {
+    case GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE:
+        rc = GLOBUS_SUCCESS;
+        break;
+    case GLOBUS_SUCCESS:
+        if (tmp_string != NULL)
+        {
+            if (request->remote_io_url)
+            {
+                free(request->remote_io_url);
+            }
+            request->remote_io_url = strdup(tmp_string);
+            if (request->remote_io_url == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                goto get_remote_io_url_failed;
+            }
+        }
+        else
+        {
+    default:
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+            goto get_remote_io_url_failed;
+        }
+    }
+
+    if (request->remote_io_url)
+    {
+        rc = globus_i_gram_remote_io_url_update(request);
+    }
+
+get_remote_io_url_failed:
+failed_rewrite_stderr:
+failed_rewrite_stdout:
+failed_rsl_merge:
+failed_check_position:
+    return rc;
+}
+/* globus_i_gram_request_stdio_update() */
 
 /**
  * Add default environment variables to the job environment
