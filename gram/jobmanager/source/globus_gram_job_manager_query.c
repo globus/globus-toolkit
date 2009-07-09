@@ -902,6 +902,11 @@ globus_l_gram_job_manager_query_stop_manager(
 
     switch(state)
     {
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
+          request->unsent_status_change = GLOBUS_TRUE;
+          request->stop_reason = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+          request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+          break;
         case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
@@ -915,46 +920,17 @@ globus_l_gram_job_manager_query_stop_manager(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
-          globus_gram_job_manager_request_set_status(
-                request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-          request->unsent_status_change = GLOBUS_TRUE;
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
-          request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-          break;
         case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-          globus_gram_job_manager_request_set_status(
-                request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-          request->unsent_status_change = GLOBUS_TRUE;
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
-          request->jobmanager_state =
-              GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-          break;
         case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
-          globus_gram_job_manager_request_set_status(
-                request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-          request->unsent_status_change = GLOBUS_TRUE;
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
-          request->jobmanager_state =
-              GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-          break;
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
-          globus_gram_job_manager_request_set_status(
-                request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
           request->unsent_status_change = GLOBUS_TRUE;
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
-          request->jobmanager_state =
-              GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
+          request->stop_reason = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+          request->restart_state = request->jobmanager_state;
+          request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
           break;
         case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
@@ -980,9 +956,7 @@ globus_l_gram_job_manager_is_done(
 {
     if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
        request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE)
+           == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
     {
         globus_gram_job_manager_request_log(
                 request,
@@ -1038,8 +1012,6 @@ globus_l_gram_job_manager_query_valid(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
           return GLOBUS_FALSE;
     }
     return GLOBUS_FALSE;

@@ -790,8 +790,6 @@ globus_gram_job_manager_remove_reference(
              */
             request = ref->request;
             if (request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE ||
-                request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
                 request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
@@ -1259,16 +1257,13 @@ globus_gram_job_manager_request_exists(
     globus_gram_job_manager_t *         manager,
     const char *                        key)
 {
-    globus_bool_t                       result ;
+    globus_bool_t                       result;
+    globus_gram_job_manager_ref_t  *    ref;
     GlobusGramJobManagerLock(manager);
-    if (globus_hashtable_lookup(&manager->request_hash, (void *) key) != NULL)
-    {
-        result = GLOBUS_TRUE;
-    }
-    else
-    {
-        result = GLOBUS_FALSE;
-    }
+
+    ref = globus_hashtable_lookup(&manager->request_hash, (void *) key);
+
+    result = (ref != NULL && ref->request != NULL);
     GlobusGramJobManagerUnlock(manager);
 
     return result;
@@ -1347,12 +1342,13 @@ globus_gram_job_manager_stop_all_jobs(
         request = ref->request;
 
         GlobusGramJobManagerRequestLock(request);
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+        request->stop_reason = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+        request->restart_state = request->jobmanager_state;
 
         switch (request->jobmanager_state)
         {
         case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
@@ -1381,33 +1377,27 @@ globus_gram_job_manager_stop_all_jobs(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
             break;
 
         case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
@@ -1420,8 +1410,6 @@ globus_gram_job_manager_stop_all_jobs(
         case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
         case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-        case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
             break;
         }
         if (request->poll_timer)
@@ -1763,7 +1751,8 @@ globus_l_gram_add_reference_locked(
         }
         globus_gram_job_manager_log(
                 manager,
-                "Adding reference (reason) %s -> NOT FOUND\n",
+                "Adding reference (%s) %s -> NOT FOUND\n",
+                reason,
                 key);
     }
 request_init_failed:
@@ -1801,6 +1790,7 @@ globus_l_gram_restart_job(
             GSS_C_NO_CREDENTIAL,
             GSS_C_NO_CONTEXT,
             GLOBUS_TRUE,
+            NULL,
             NULL);
 malloc_restart_rsl_failed:
     return rc;

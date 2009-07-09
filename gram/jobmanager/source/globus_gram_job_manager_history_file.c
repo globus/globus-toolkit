@@ -99,7 +99,7 @@ globus_gram_job_manager_history_file_create(
         status_str = "ACTIVE     ";
         break;
       case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
-        if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
+        if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
             status_str = "JOBMANAGER_STOP";
         else
             status_str = "FAILED     ";

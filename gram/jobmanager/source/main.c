@@ -53,11 +53,6 @@ globus_l_gram_create_stack(
     globus_xio_stack_t *                stack,
     globus_xio_driver_t *               driver);
 
-static
-int
-globus_l_contact_path_match(
-    void *                              a,
-    void *                              b);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -78,9 +73,9 @@ main(
     int                                 context_fd;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
     globus_list_t *                     requests = NULL;
-    globus_list_t *                     tmp_list;
     OM_uint32                           major_status, minor_status;
     char *                              old_job_contact = NULL;
+    globus_gram_jobmanager_request_t *  old_job_request = NULL;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -269,7 +264,8 @@ main(
                         &context,
                         &client_contact,
                         &job_state_mask,
-                        &old_job_contact);
+                        &old_job_contact,
+                        &old_job_request);
                 if (rc != GLOBUS_SUCCESS)
                 {
                     rc = globus_gram_job_manager_reply(
@@ -278,10 +274,10 @@ main(
                             old_job_contact,
                             STDOUT_FILENO,
                             context);
-                    if (old_job_contact)
-                    {
-                        free(old_job_contact);
-                    }
+                }
+                if (old_job_contact)
+                {
+                    free(old_job_contact);
                 }
                 close(http_body_fd);
                 close(context_fd);
@@ -300,7 +296,8 @@ main(
                     GSS_C_NO_CREDENTIAL,
                     GSS_C_NO_CONTEXT,
                     GLOBUS_FALSE,
-                    &old_job_contact);
+                    &old_job_contact,
+                    NULL);
                 if (rc != GLOBUS_SUCCESS)
                 {
                     fprintf(stderr, "Error initializing request\n");
@@ -353,26 +350,6 @@ main(
 
                     config.seg_module = NULL;
                 }
-            }
-
-            /*
-             * If the request was a restart, remove it from the requests
-             * list so we don't try to double restart it
-             */
-
-            tmp_list = globus_list_search_pred(
-                    requests,
-                    globus_l_contact_path_match,
-                    request);
-
-            if (tmp_list)
-            {
-                globus_gram_jobmanager_request_t *
-                                        tmp_req;
-
-                tmp_req = globus_list_first(tmp_list);
-                globus_list_remove(&requests, tmp_list);
-                globus_gram_job_manager_request_free(tmp_req);
             }
 
             /*
@@ -659,20 +636,5 @@ driver_load_failed:
     return result;
 }
 /* globus_l_gram_create_stack() */
-
-static
-int
-globus_l_contact_path_match(
-    void *                              a,
-    void *                              b)
-{
-    globus_gram_jobmanager_request_t   *ra, *rb;
-
-    ra = a;
-    rb = b;
-
-    return (strcmp(ra->job_contact_path, rb->job_contact_path) == 0);
-}
-/* globus_l_contact_path_match() */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
