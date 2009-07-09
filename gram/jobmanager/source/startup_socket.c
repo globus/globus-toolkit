@@ -605,12 +605,21 @@ globus_l_gram_startup_socket_callback(
                 &old_job_request);
         if (rc != GLOBUS_SUCCESS)
         {
+            if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE &&
+                old_job_request)
+            {
+                if (old_job_request->two_phase_commit != 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
+                }
+                else
+                {
+                    rc = GLOBUS_SUCCESS;
+                }
+            }
             rc = globus_gram_job_manager_reply(
                     NULL,
-                    (old_job_request != NULL &&
-                            rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
-                        ? GLOBUS_SUCCESS
-                        : rc,
+                    rc,
                     (old_job_contact == NULL && old_job_request)
                         ? old_job_request->job_contact
                         : old_job_contact,
@@ -629,8 +638,16 @@ globus_l_gram_startup_socket_callback(
                 if (old_job_request->jobmanager_state ==
                         GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
                 {
-                    old_job_request->jobmanager_state =
-                            old_job_request->restart_state;
+                    if (old_job_request->two_phase_commit != 0)
+                    {
+                        old_job_request->jobmanager_state =
+                            GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+                    }
+                    else
+                    {
+                        old_job_request->jobmanager_state =
+                                old_job_request->restart_state;
+                    }
 
                 }
                 globus_gram_job_manager_state_machine_register(
