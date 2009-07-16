@@ -2314,6 +2314,7 @@ guc_l_convert_file_url(
     char *                              in_url)
 {
     char *                              tmp_ptr;
+    char *                              tmp_path;
     char                                start_dir[PATH_MAX];
     char *                              dir_ptr = "";
 
@@ -2335,9 +2336,14 @@ guc_l_convert_file_url(
         }
         dir_ptr = start_dir;
     }
-    tmp_ptr = globus_common_create_string("file://%s/%s",
-        dir_ptr, in_url);
-
+    tmp_path = globus_common_create_string("%s/%s", dir_ptr, in_url);
+    dir_ptr = globus_url_string_hex_encode(tmp_path, "");
+    
+    tmp_ptr = globus_common_create_string("file://%s", dir_ptr);
+    
+    globus_free(dir_ptr);
+    globus_free(tmp_path);
+    
     return tmp_ptr;
 }
 
