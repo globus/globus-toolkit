@@ -1666,6 +1666,7 @@ globus_xio_contact_parse(
     char *                              save = NULL;
     char *                              s;
     char *                              p;
+    globus_bool_t                       decode = GLOBUS_TRUE;
     globus_result_t                     result;
     GlobusXIOName(globus_xio_contact_parse);
 
@@ -1896,6 +1897,7 @@ globus_xio_contact_parse(
             }
             else
             {
+                decode = GLOBUS_FALSE;
                 contact_info->resource = globus_libc_strdup(working);
                 if(!contact_info->resource)
                 {
@@ -1908,15 +1910,19 @@ globus_xio_contact_parse(
                 }
             }
         }
-    
-        globus_l_xio_decode_hex(contact_info->resource);
-        globus_l_xio_decode_hex(contact_info->host);   
-        globus_l_xio_decode_hex(contact_info->port);   
-        globus_l_xio_decode_hex(contact_info->scheme); 
-        globus_l_xio_decode_hex(contact_info->user);   
-        globus_l_xio_decode_hex(contact_info->pass);   
-        globus_l_xio_decode_hex(contact_info->subject);
-                                
+
+        /* don't decode anything that wasn't passed in as part of a url */
+        if(decode)
+        {
+            globus_l_xio_decode_hex(contact_info->resource);
+            globus_l_xio_decode_hex(contact_info->host);   
+            globus_l_xio_decode_hex(contact_info->port);   
+            globus_l_xio_decode_hex(contact_info->scheme); 
+            globus_l_xio_decode_hex(contact_info->user);   
+            globus_l_xio_decode_hex(contact_info->pass);   
+            globus_l_xio_decode_hex(contact_info->subject);
+        }
+
         /* XXX validate some of the fields */
         
         globus_free(save);
