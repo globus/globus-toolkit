@@ -153,7 +153,7 @@ globus_l_gfs_hdfs_start(
         }
         hdfs_handle->remote_host = session_info->host_id;
         openlog("GRIDFTP", 0, LOG_LOCAL2);
-        sprintf(hdfs_handle->syslog_msg, "%s %s %%s %%i", hdfs_handle->local_host, hdfs_handle->remote_host);
+        sprintf(hdfs_handle->syslog_msg, "%s %s %%s %%i %%i", hdfs_handle->local_host, hdfs_handle->remote_host);
     }
 
     // Determine the maximum number of buffers; default to 200.
@@ -661,7 +661,7 @@ globus_l_gfs_hdfs_dump_buffers(
 								if (hdfs_handle->used[i] == 1 && offsets[i] == hdfs_handle->offset) {
 										  //printf("Flushing %d bytes at offset %d from buffer %d.\n", nbytes[i], hdfs_handle->offset, i);
 										if (hdfs_handle->syslog_host != NULL)
-										  syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes[i]);
+										  syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes[i], hdfs_handle->offset);
 										  bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, hdfs_handle->buffer+i*hdfs_handle->block_size, nbytes[i]*sizeof(globus_byte_t));
 										  if (bytes_written > 0)
 													 wrote_something = 1;
@@ -921,7 +921,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
             sprintf(err_msg, "Dumping this block immediately.\n");
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             if (hdfs_handle->syslog_host != NULL)
-                syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes);
+                syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
             globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
             if (bytes_written != nbytes) {
                 rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
@@ -1316,7 +1316,7 @@ globus_l_gfs_hdfs_read_from_storage(
         }
 
         if (hdfs_handle->syslog_host != NULL)
-            syslog(LOG_INFO, hdfs_handle->syslog_msg, "READ", read_length);
+            syslog(LOG_INFO, hdfs_handle->syslog_msg, "READ", read_length, local_io_count);
         nbytes = hdfsRead(hdfs_handle->fs, hdfs_handle->fd, buffer, read_length);
         if (nbytes == 0)    /* eof */
         {
