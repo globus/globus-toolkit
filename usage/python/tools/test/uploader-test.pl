@@ -37,6 +37,6 @@ my $test_dir = tempdir(CLEANUP => 1);
 for (my $i = 0; $i < scalar(@test_cases); $i++) {
     my $dir = "$test_dir/19700101";
     mkdir $dir, 0755;
-    copy($test_cases[$i], sprintf("$dir/%02d", $i));
-    test_upload($dir);
+    copy($test_cases[$i], sprintf("$dir/%02d.gup", $i));
+    test_upload($test_dir);
 }
