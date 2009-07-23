@@ -1,0 +1,61 @@
+'\" t
+.\"     Title: globus-usage-uploader
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 07/23/2009
+.\"    Manual: Globus Usage Statistics Tools
+.\"    Source: [FIXME: source]
+.\"  Language: English
+.\"
+.TH "GLOBUS\-USAGE\-UPLOA" "8" "07/23/2009" "[FIXME: source]" "Globus Usage Statistics Tools"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+globus-usage-uploader \- Store usage statistics packets in a database
+.SH "SYNOPSIS"
+.HP \w'\fBglobus\-usage\-uploader\fR\ 'u
+\fBglobus\-usage\-uploader\fR
+.SH "DESCRIPTION"
+.PP
+The
+\fBglobus\-usage\-uploader\fR
+command is a utility which parses usage packets in directories of the form created by
+\fBglobus\-usage\-collector\fR
+and uploads them to a postgresql database\&.
+.PP
+The full set of command\-line options to
+\fBglobus\-usage\-uploader\fR
+consists of:
+.TS
+allbox tab(:);
+l l
+l l
+l l.
+T{
+\-h
+T}:T{
+Display a help message and exit
+T}
+T{
+\-d \fIDIRECTORY\fR
+T}:T{
+Read data from \fIDIRECTORY\fR
+                    instead of the configured path\&.
+T}
+T{
+\-n
+T}:T{
+Don\'t commit usage packets to the database after
+                processing files (for testing)
+T}
+.TE
+.sp 1
+
