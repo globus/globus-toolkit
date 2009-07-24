@@ -253,6 +253,26 @@ BUNDLE globus-data-management-client
     globus_gass_copy
     globus_gridftp_sshftp_setup
 
+BUNDLE	gram-gridftp-test
+	globus_test
+	globus_common_test
+	globus_ftp_client_test
+	globus_gass_copy_test
+	globus_gridftp_server_test
+	globus_gram_client_test
+	globus_gram_client_tools_test
+	globus_gram_job_manager_test
+	globus_gram_protocol_test
+	globus_gssapi_gsi_test
+	globus_io_test
+	globus_openssl_error_test
+	globus_proxy_ssl_test
+	globus_authz_test
+    globus_xio_test
+	gaa_simple_test
+    globus_proxy_utils_test
+    globus_gram_job_manager_auditing_test
+
 BUNDLE	prews-test
 	globus_test
 	globus_common_test
