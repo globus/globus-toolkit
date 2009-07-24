@@ -12,3 +12,4 @@ config.cache
 config.status
 config.sub
 ltmain.sh
+*.tar.gz
