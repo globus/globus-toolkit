@@ -53,19 +53,21 @@ class PacketFile(object):
         lens = self.packet_file.read(2)
         if lens == '':
             return None
+        if len(lens) < 2:
+            raise EOFError("Error reading sender address length")
         [sender_len] = struct.unpack("!h", lens)
         sender = self.packet_file.read(sender_len)
-        if sender == '':
-            return None
+        if sender == '' or len(sender) < sender_len:
+            raise EOFError("Error reading sender address")
 
         lens = self.packet_file.read(2)
-        if lens == '':
-            return None
+        if lens == '' or len(lens) < 2:
+            raise EOFError("Error reading packet length")
         packet_len = 0
         [packet_len] = struct.unpack("!h", lens)
         packet = self.packet_file.read(packet_len)
-        if packet == '':
-            return None
+        if packet == '' or len(packet) < packet_len:
+            raise EOFError("Error reading packet")
 
         return (sender, packet)
 

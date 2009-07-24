@@ -96,11 +96,15 @@ def main(argv):
     con = driver_module.connect(connect_string())
     cursor = con.cursor()
 
-    total_packets = 0
-    failed_packets = 0
+    good_packets = 0
+    bad_packets = 0
+    good_files = 0
+    bad_files = []
+    last_dir_name = ''
     for dir_name in glob.glob(os.path.join(data_directory, '[0-9]*')):
+        print "Processing packets: " + os.path.basename(dir_name)
         for infile in glob.glob(os.path.join(dir_name, '*.gup')):
-            print "Processing " + infile
+            print "" + os.path.basename(infile) + "...",
             os.rename(infile, infile + ".upload")
             p = PacketFile(infile + ".upload", "r")
             packet_types = dict()
@@ -120,21 +124,31 @@ def main(argv):
                 for packet_type in packet_types.keys():
                     packets = packet_types[packet_type]
                     packets[0].__class__.upload_many(psycopg2, cursor, packets)
-                print "Processed " + str(packet_counts) + " packets"
+                print "ok [" + str(packet_counts) + " packets]"
                 if commit:
                     con.commit()
                 os.remove(infile + ".upload")
-                total_packets += packet_counts
+                good_packets += packet_counts
+                good_files += 1
             except Exception, detail:
-                failed_packets += packet_counts
+                bad_packets += packet_counts
                 os.rename(infile + ".upload", infile + ".failed")
-                print detail
+                print "not ok [" + str(detail) + "]"
                 con.rollback()
+                bad_files.append(infile + ".failed")
     con.rollback()
 
-    print "Success processing " + str(total_packets) + " packets."
-    print "Failed processing " + str(failed_packets) + " packets."
-    return (failed_packets != 0)
+    print
+    print "Processed " + str(good_files + len(bad_files)) + " file(s)."
+    print "Processed " + str(good_packets + bad_packets) + " packet(s)."
+    print ""
+    if len(bad_files) > 0:
+        print "***FAILURE processing " + str(len(bad_files)) + " file(s)."
+    if bad_packets > 0:
+        print "***FAILURE processing " + str(bad_packets) + " packet(s)."
+    for path in bad_files:
+        print "    " + path
+    return (bad_packets != 0 or len(bad_files) != 0)
 
 if __name__ == "__main__":
     retval = main(sys.argv)
