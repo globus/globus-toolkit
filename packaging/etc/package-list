@@ -409,3 +409,7 @@ gridshib_tests  gridshib/gt/service/java/test tar null HEAD
 gridway	gridway	tar	null	gw_5_4_branch
 globus_wsrf_bp_schemas wsrf/c/core/tests/ogsa-bp/schema gpt
 globus_c_wsrf_bp_interop wsrf/c/core/tests/ogsa-bp/bindings gpt
+# Python usage tools
+globus_usage_tools usage/python/tools/source gpt
+globus_usage_tools_setup usage/python/tools/setup gpt
+globus_usage_tools_test usage/python/tools/test gpt
