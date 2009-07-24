@@ -84,4 +84,18 @@
       </informaltable>
     </para>
   </section>
+  <section>
+    <title>Example Configuration</title>
+    <para>
+    <screen><programlisting>driver = "psycopg2"
+database = "newusage"
+host = ""
+port = ""
+user = ""
+password = ""
+data_directory = "/opt/globus/INSTALL/var/usage"
+collector_port = "4810"</programlisting>
+    </screen>
+    </para>
+  </section>
 </chapter>

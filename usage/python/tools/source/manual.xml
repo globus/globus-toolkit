@@ -3,6 +3,11 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
 
 <reference><title>Globus Usage Statistics Tools</title>
+<author>
+    <affiliation>
+        <orgname>University of Chicago</orgname>
+    </affiliation>
+</author>
 
 <refentry>
 <refmeta>
@@ -101,6 +106,11 @@ usage packet data. Each packet record consists of 4 fields:
 </refentry>
 
 <refentry>
+<info>
+<author>
+    <orgname>University of Chicago</orgname>
+</author>
+</info>
 <refmeta>
 <refentrytitle>globus-usage-uploader</refentrytitle>
 <manvolnum>8</manvolnum>
@@ -150,6 +160,20 @@ The full set of command-line options to
     </tgroup>
 </informaltable>
 </para>
+</refsect1>
+
+<refsect1><title>Examples</title>
+
+<screen><prompt>% </prompt><command>globus-usage-uploader</command>
+<computeroutput>
+Processing packets: 20090723
+Processing packets: 20090724
+14.gup... ok [2 packets]
+
+Processed 1 file(s).
+Processed 2 packet(s).
+</computeroutput></screen>
+
 </refsect1>
 
 </refentry>

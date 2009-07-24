@@ -113,4 +113,3 @@ class PacketFile(object):
         self.packet_file.write(sender)
         self.packet_file.write(struct.pack("!h", len(packet)))
         self.packet_file.write(packet)
-        self.packet_file.flush()
