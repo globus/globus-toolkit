@@ -1,0 +1,72 @@
+#!/bin/sh
+
+TEST=$1
+
+if [ x$GLOBUS_LOCATION = "x" ]; then
+   echo Error: GLOBUS_LOCATION must be set.
+   exit 1
+fi
+
+if [ x$TEST = "x" ]; then
+   echo "Usage: $0 test_package"
+   echo "          where test_package is a subdir of \$GLOBUS_LOCATION/test"
+   exit 1
+fi
+
+cd $GLOBUS_LOCATION/test
+
+# Setup the ordinary client environment
+. $GLOBUS_LOCATION/etc/globus-user-env.sh
+
+# Setup the grid-mapfile and such
+globus_test/testcred-setup.sh
+
+if [ $? -ne 0 ]; then
+   echo Failed to setup testcred environment, aborting test.
+   exit 2
+fi
+
+# Setup the test credentials/CA/gridmap environment
+. $GLOBUS_LOCATION/test/globus_test/testcred-env.sh
+
+# These things are supposed to go under test/, but the ant
+# build system for java packages makes it easier to put
+# them under share/ instead, so I check both places, but
+# prefer the test/ subdir.
+cd $GLOBUS_LOCATION/test/${TEST}
+if [ $? -ne 0 ]; then
+   if [ -f $GLOBUS_LOCATION/share/${TEST}/TESTS.pl ]; then
+      cd $GLOBUS_LOCATION/share/${TEST}
+      chmod +x TESTS.pl
+   else
+      echo Channot change to $GLOBUS_LOCATION/test/${TEST}
+      exit 1
+   fi
+fi
+
+./TESTS.pl
+if [ $? -ne 0 ]; then
+   echo find . -type f
+   find . -type f
+   for F in `find . -name '*.log.stdout'`; do
+      echo; echo $F; cat $F
+   done
+   for F in `find . -name '*.log.stderr'`; do
+      echo; echo $F; cat $F
+   done
+   if [ -d ./tests/test-reports ]; then
+      for F in `find ./tests/test-reports -print`; do
+         echo; echo $F; cat $F
+      done
+   fi
+
+   if [ -f submit_test/submit_test_script.log ]; then
+      for F in `find . -name '*test_script.log'`; do
+         echo; echo $F; cat $F
+      done
+   fi
+
+   exit 1
+fi
+
+exit 0
