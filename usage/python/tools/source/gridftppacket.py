@@ -42,7 +42,6 @@ class GridFTPPacket(CUsagePacket):
     __gftp_block_sizes = {}
     __gftp_buffer_sizes = {}
     __gftp_transfer_rate_sizes = {}
-    #
     __db_class = None
 
     def __init__(self, address, packet):
@@ -169,25 +168,28 @@ class GridFTPPacket(CUsagePacket):
         """
         host_id = None
         name = self.data.get("HOSTNAME")
-        if name is not None:
-            host_ip = GridFTPPacket.__dns_lookups.get(name)
-            host_id = GridFTPPacket.__dns_cache.get((host_ip, name))
-            if host_ip is None:
-                info = socket.getaddrinfo(name, 0)[0]
-                host_ip = GridFTPPacket.__dns_lookups[name] = info[4][0]
-            if host_id is None:
-                domain = name.rsplit(".", 1)[1]
-                values = (host_ip, name, domain)
-                cursor.execute('''
-                    INSERT INTO dns_cache(
-                        ip_address,
-                        hostname,
-                        domain)
-                    VALUES(%s, %s, %s)
-                    RETURNING ID
-                    ''', values)
-                host_id = cursor.fetchone()[0]
-                GridFTPPacket.__dns_cache[(host_ip, name)] = host_id
+        try:
+            if name is not None:
+                host_ip = self.ip_address;
+                host_id = GridFTPPacket.__dns_cache.get((host_ip, name))
+                if host_id is None:
+                    domain = None
+                    components = name.rsplit(".", 1)
+                    if len(components) > 1:
+                        domain = components[1]
+                    values = (host_ip, name, domain)
+                    cursor.execute('''
+                        INSERT INTO dns_cache(
+                            ip_address,
+                            hostname,
+                            domain)
+                        VALUES(%s, %s, %s)
+                        RETURNING ID
+                        ''', values)
+                    host_id = cursor.fetchone()[0]
+                    GridFTPPacket.__dns_cache[(host_ip, name)] = host_id
+        except Exception, detail:
+            print "Error processing " + name + ": " + str(detail)
         return host_id
 
     def get_scheme_id(self, cursor):
@@ -580,7 +582,7 @@ class GridFTPPacket(CUsagePacket):
                 pyts.tm_mday,
                 pyts.tm_hour,
                 pyts.tm_min,
-                float(pyts.tm_sec) + float('0.' + frac_secs[1]))
+                float(pyts.tm_sec) + float('0.' + frac_secs))
         return sqlts
 
     @staticmethod
