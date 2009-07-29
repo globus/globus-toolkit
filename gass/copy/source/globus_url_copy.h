@@ -22,6 +22,7 @@
 #define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
 #include "globus_ftp_client_plugin.h"
+#include "gssapi.h"
 
 typedef struct globus_guc_src_dst_pair_s
 {
@@ -68,6 +69,8 @@ typedef struct globus_guc_info_s
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
     globus_bool_t                       cache_dst_authz_assert;
+    gss_cred_id_t                       src_cred;
+    gss_cred_id_t                       dst_cred;
 
     globus_bool_t                       verbose;
     globus_bool_t                       quiet;

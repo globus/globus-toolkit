@@ -41,6 +41,8 @@ CVS Information:
 #include "globus_gass_copy.h"
 #include "globus_ftp_client_debug_plugin.h"
 #include "globus_ftp_client_restart_plugin.h"
+#include "globus_error_gssapi.h"
+
 /*
  *  use globus_io for netlogger stuff
  */
@@ -142,6 +144,11 @@ typedef struct
     globus_bool_t                       cache_dst_authz_assert;
     globus_l_guc_src_dst_pair_t *       free_pair;
     
+    gss_cred_id_t                       src_cred;
+    gss_cred_id_t                       dst_cred;
+    char *                              src_cred_subj;
+    char *                              dst_cred_subj;
+
     char *                              mc_file;
 
     char *                              list_url;
@@ -468,6 +475,11 @@ const char * long_usage =
 "      Set the XIO driver stack for the network on the destination GridFTP server.\n"
 "   -dst-fsstack | -dest-file-system-stack\n"
 "      Set the XIO driver stack for the disk on the destination GridFTP server.\n"
+"   -cred <path to credentials or proxy file>\n"
+"   -src-cred | -sc <path to credentials or proxy file>\n"
+"   -dst-cred | -dc <path to credentials or proxy file>\n"
+"      Set the credentials to use for source, destination, \n"
+"      or both ftp connections.\n"
 "\n";
 
 /***********
@@ -578,6 +590,9 @@ enum
     arg_cache_authz_assert,
     arg_cache_src_authz_assert,
     arg_cache_dst_authz_assert,
+    arg_cred,
+    arg_src_cred,
+    arg_dst_cred,
     arg_allo,
     arg_noallo,
     arg_delayed_pasv,
@@ -683,6 +698,9 @@ oneargdef(arg_dst_disk_stack_str, "-dst-fsstack", "-dest-file-system-stack", GLO
 oneargdef(arg_authz_assert, "-aa", "-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_src_authz_assert, "-saa", "-src-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dst_authz_assert, "-daa", "-dst-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_cred, "-cred", "-cred", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_src_cred, "-sc", "-src-cred", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_dst_cred, "-dc", "-dst-cred", GLOBUS_NULL, GLOBUS_NULL);
 
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -754,6 +772,9 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_pipeline);             \
     setupopt(arg_allo);         	\
     setupopt(arg_noallo);         	\
+    setupopt(arg_cred);         	\
+    setupopt(arg_src_cred);         	\
+    setupopt(arg_dst_cred);         	\
     setupopt(arg_stripe_bs);         	\
     setupopt(arg_striped);
 
@@ -919,6 +940,8 @@ globus_l_guc_ext(
     ext_info.quiet = g_quiet_flag;
     ext_info.delayed_pasv = guc_info->delayed_pasv;
     ext_info.pipeline = guc_info->pipeline;
+    ext_info.src_cred = guc_info->src_cred;
+    ext_info.dst_cred = guc_info->dst_cred;
 
     rc = globus_extension_activate(g_ext);
     if(rc != 0)
@@ -1152,6 +1175,14 @@ main(int argc, char **argv)
             err);
         return 1;
     }
+    err = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if( err != GLOBUS_SUCCESS )
+    {
+        globus_libc_fprintf(stderr, 
+            _GASCSL("Error %d, activating ftp restart plugin module\n"),
+            err);
+        return 1;
+    }
 
     memset(&guc_info, '\0', sizeof(globus_l_guc_info_t));
     globus_fifo_init(&guc_info.user_url_list);
@@ -1284,6 +1315,7 @@ main(int argc, char **argv)
 
     globus_l_guc_info_destroy(&guc_info);
 
+    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     /* XXX fix hang globus_module_deactivate_all(); */
 
     return ret_val;
@@ -1452,6 +1484,8 @@ void
 globus_l_guc_info_destroy(
     globus_l_guc_info_t *                    guc_info)
 {
+    OM_uint32                           min_stat;
+    
     if(guc_info->source_subject)
     {
         globus_free(guc_info->source_subject);
@@ -1475,6 +1509,22 @@ globus_l_guc_info_destroy(
     if(guc_info->dst_disk_stack_str)
     {
         globus_free(guc_info->dst_disk_stack_str);
+    }
+    if(guc_info->src_cred != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &guc_info->src_cred);
+    }
+    if(guc_info->dst_cred != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &guc_info->dst_cred);
+    }
+    if(guc_info->src_cred_subj)
+    {
+        globus_free(guc_info->src_cred_subj);
+    }
+    if(guc_info->dst_cred_subj)
+    {
+        globus_free(guc_info->dst_cred_subj);
     }
 
     /* destroy the list */
@@ -2408,6 +2458,95 @@ guc_l_pipe_to_stack_str(
 }
 
 static
+globus_result_t
+globus_l_guc_load_cred(
+    char *                              path,
+    gss_cred_id_t *                     out_cred,
+    char **                             out_subject)
+{
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+    gss_cred_id_t                       cred;
+    gss_buffer_desc                     buf;
+    gss_name_t                          name;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+
+    if(path)
+    {
+        buf.value = globus_common_create_string("X509_USER_PROXY=%s", path);
+        buf.length = strlen(buf.value);
+    
+        maj_stat = gss_import_cred(
+            &min_stat,
+            &cred,
+            GSS_C_NO_OID,
+            1, /* GSS_IMPEXP_MECH_SPECIFIC */
+            &buf,
+            0,
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            goto error;
+        }
+    
+        globus_free(buf.value);
+    }
+    else
+    {
+        maj_stat = gss_acquire_cred(
+            &min_stat,
+            GSS_C_NO_NAME,
+            0,
+            GSS_C_NULL_OID_SET,
+            GSS_C_ACCEPT,
+            &cred,
+            NULL,
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            goto error;
+        }
+    }
+
+    if(out_subject)
+    {
+        maj_stat = gss_inquire_cred(
+            &min_stat, cred, &name, NULL, NULL, NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            goto error;
+        }
+    
+        maj_stat = gss_display_name(&min_stat, name, &buf, NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            goto error;
+        }
+    
+        *out_subject = buf.value;
+        
+        gss_release_name(&min_stat, &name);
+    }
+    
+    if(out_cred)
+    {
+        *out_cred = cred;
+    }
+    else
+    {
+        gss_release_cred(&min_stat, &cred);
+    }
+
+    return result;
+    
+error:
+        result = globus_error_put(globus_error_construct_gssapi_error(
+            NULL, NULL, maj_stat, min_stat));
+    return result;
+}
+
+static
 int
 globus_l_guc_parse_arguments(
     int                                             argc,
@@ -2427,6 +2566,7 @@ globus_l_guc_parse_arguments(
     int                                             ext_arg_size;
     globus_off_t                                    tmp_off;
     char *                                          authz_assert = NULL;
+    char *                                          cred_path = NULL;
     globus_result_t                                 result;
 
     guc_info->list_url = NULL;
@@ -2473,6 +2613,10 @@ globus_l_guc_parse_arguments(
     guc_info->dst_authz_assert = GLOBUS_NULL;
     guc_info->cache_src_authz_assert = GLOBUS_FALSE;
     guc_info->cache_dst_authz_assert = GLOBUS_FALSE;
+    guc_info->src_cred = GSS_C_NO_CREDENTIAL;
+    guc_info->dst_cred = GSS_C_NO_CREDENTIAL;
+    guc_info->src_cred_subj = NULL;
+    guc_info->dst_cred_subj = NULL;
  
     /* determine the program name */
     
@@ -2801,6 +2945,35 @@ globus_l_guc_parse_arguments(
         case arg_cache_dst_authz_assert:
             guc_info->cache_dst_authz_assert = GLOBUS_TRUE;
             break;
+        case arg_cred:
+            cred_path = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_src_cred:
+            result = globus_l_guc_load_cred(
+                instance->values[0], 
+                &guc_info->src_cred, 
+                &guc_info->src_cred_subj);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    "Error loading source credential: %s\n",
+                    globus_error_print_friendly(globus_error_peek(result)));
+                    return -1;
+            }
+            break;
+        case arg_dst_cred:
+            result = globus_l_guc_load_cred(
+                instance->values[0], 
+                &guc_info->dst_cred,
+                &guc_info->dst_cred_subj);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    "Error loading destination credential: %s\n",
+                    globus_error_print_friendly(globus_error_peek(result)));
+                    return -1;
+            }
+            break;
 	case arg_delayed_pasv:
 	    guc_info->delayed_pasv = GLOBUS_TRUE;
 	    break;
@@ -2990,6 +3163,71 @@ globus_l_guc_parse_arguments(
         
     }
 
+    if(cred_path)
+    {
+        if(guc_info->src_cred == GSS_C_NO_CREDENTIAL)
+        {
+            result = globus_l_guc_load_cred(
+                cred_path, 
+                &guc_info->src_cred,
+                &guc_info->src_cred_subj);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    "Error loading source credential: %s\n",
+                    globus_error_print_friendly(globus_error_peek(result)));
+                    return -1;
+            }
+        }
+        if(guc_info->dst_cred == GSS_C_NO_CREDENTIAL)
+        {
+            result = globus_l_guc_load_cred(
+                cred_path, 
+                &guc_info->dst_cred,
+                &guc_info->dst_cred_subj);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    "Error loading dest credential: %s\n",
+                    globus_error_print_friendly(globus_error_peek(result)));
+                    return -1;
+            }
+        }
+        
+        globus_free(cred_path);
+    }
+    
+    if(guc_info->src_cred != GSS_C_NO_CREDENTIAL && 
+        guc_info->dst_cred == GSS_C_NO_CREDENTIAL)
+    {
+        result = globus_l_guc_load_cred(
+            NULL, 
+            &guc_info->dst_cred,
+            &guc_info->dst_cred_subj);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr,
+                "Error loading dest credential: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+                return -1;
+        }
+    }
+    if(guc_info->src_cred == GSS_C_NO_CREDENTIAL && 
+        guc_info->dst_cred != GSS_C_NO_CREDENTIAL)
+    {
+        result = globus_l_guc_load_cred(
+            NULL, 
+            &guc_info->src_cred,
+            &guc_info->src_cred_subj);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr,
+                "Error loading dest credential: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+                return -1;
+        }
+    }
+    
     if(subject && !guc_info->source_subject)
     {
         guc_info->source_subject = globus_libc_strdup(subject);
@@ -3884,6 +4122,8 @@ globus_l_guc_gass_attr_init(
     globus_bool_t                       cache_authz_assert;
     char *                              tmp_net_str = NULL;
     char *                              tmp_disk_str = NULL;
+    gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
+    char *                              dcau_subj = NULL;
 
     if(src)
     {                  
@@ -3892,6 +4132,12 @@ globus_l_guc_gass_attr_init(
         module_args = guc_info->src_module_args;
         authz_assert = guc_info->src_authz_assert,
         cache_authz_assert = guc_info->cache_src_authz_assert;
+        cred = guc_info->src_cred;
+        if(guc_info->src_cred_subj && guc_info->dst_cred_subj && 
+            strcmp(guc_info->src_cred_subj, guc_info->dst_cred_subj))
+        {
+            dcau_subj = guc_info->dst_cred_subj;
+        }
     }
     else
     {
@@ -3900,6 +4146,12 @@ globus_l_guc_gass_attr_init(
         module_args = guc_info->dst_module_args;
         authz_assert = guc_info->dst_authz_assert,
         cache_authz_assert = guc_info->cache_dst_authz_assert;
+        cred = guc_info->dst_cred;
+        if(guc_info->src_cred_subj && guc_info->dst_cred_subj && 
+            strcmp(guc_info->src_cred_subj, guc_info->dst_cred_subj))
+        {
+            dcau_subj = guc_info->src_cred_subj;
+        }
     }
     
     globus_url_parse(url, &url_info);
@@ -3987,11 +4239,12 @@ globus_l_guc_gass_attr_init(
 
         if(subject  ||
             url_info.user ||
-            url_info.password)
+            url_info.password ||
+            cred != GSS_C_NO_CREDENTIAL)
         {
             globus_ftp_client_operationattr_set_authorization(
                 ftp_attr,
-                GSS_C_NO_CREDENTIAL,
+                cred,
                 url_info.user,
                 url_info.password,
                 NULL,
@@ -4007,6 +4260,15 @@ globus_l_guc_gass_attr_init(
         }
         else
         {
+            if(dcau_subj)
+            {
+                dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SUBJECT;
+                dcau.subject.subject = dcau_subj;
+                globus_ftp_client_operationattr_set_dcau(
+                    ftp_attr,
+                    &dcau);
+            }
+            
             if(url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
             {
                 gsi_stack = "gsi,";
