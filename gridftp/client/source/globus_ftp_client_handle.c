@@ -1181,6 +1181,10 @@ globus_l_ftp_client_target_delete(
     {
         globus_libc_free(target->auth_info.auth_gssapi_subject);
     }
+    if(target->dcau.subject.subject)
+    {
+        globus_libc_free(target->dcau.subject.subject);
+    }
     if(target->net_stack_str)
     {
         globus_libc_free(target->net_stack_str);
