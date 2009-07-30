@@ -18,6 +18,8 @@ my $contact;
     globus-gram-protocol-error-test.pl
     globus-gram-protocol-io-test.pl
     globus-gram-protocol-pack-test.pl
+    pack-with-extensions-test.pl
+    unpack-with-extensions-test.pl
 );
 
 chdir "$globus_location/test/@PACKAGE@";

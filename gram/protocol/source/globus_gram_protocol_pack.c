@@ -21,15 +21,20 @@
 static
 globus_size_t
 globus_l_gram_protocol_quote_string(
-    const char *			in,
-    globus_byte_t *			bufp);
+    const char *                        in,
+    globus_byte_t *                     bufp);
 
 static
 int
 globus_l_gram_protocol_unquote_string(
-    const globus_byte_t *		inbuf,
-    globus_size_t			insize,
-    char *				out);
+    const globus_byte_t *               inbuf,
+    globus_size_t                       insize,
+    char *                              out);
+
+static
+void
+globus_l_gram_protocol_hash_entry_destroy(
+    void *                              datum);
 #endif
 
 /**
@@ -72,35 +77,35 @@ globus_l_gram_protocol_unquote_string(
  */
 int
 globus_gram_protocol_pack_job_request(
-    int					job_state_mask,
-    const char *			callback_url,
-    const char *			rsl,
-    globus_byte_t **			query,
-    globus_size_t *			querysize)
+    int                                 job_state_mask,
+    const char *                        callback_url,
+    const char *                        rsl,
+    globus_byte_t **                    query,
+    globus_size_t *                     querysize)
 {
-    int					len;
+    int                                 len;
 
     *query = globus_libc_malloc(
-			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
-			strlen(GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE) +
-			strlen(GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE) +
-			((callback_url) ? strlen(callback_url) : 2)
-			+ 2*strlen(rsl) + 16);
+                        strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+                        strlen(GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE) +
+                        strlen(GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE) +
+                        ((callback_url) ? strlen(callback_url) : 2)
+                        + 2*strlen(rsl) + 16);
 
     len = globus_libc_sprintf((char *) *query,
-			      GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-			      GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
-			      GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE
-			      "rsl: ",
-			      GLOBUS_GRAM_PROTOCOL_VERSION,
-			      job_state_mask,
-			      (callback_url) ? callback_url : "\"\"" );
+                              GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                              GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
+                              GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE
+                              "rsl: ",
+                              GLOBUS_GRAM_PROTOCOL_VERSION,
+                              job_state_mask,
+                              (callback_url) ? callback_url : "\"\"" );
 
     len += globus_l_gram_protocol_quote_string(rsl, (*query)+len );
 
     globus_libc_sprintf((char *)(*query)+len,
-			"%s",
-			CRLF);
+                        "%s",
+                        CRLF);
     *querysize = (globus_size_t)(len+3);
 
     return GLOBUS_SUCCESS;
@@ -134,21 +139,21 @@ globus_gram_protocol_pack_job_request(
  */
 int
 globus_gram_protocol_unpack_job_request(
-    const globus_byte_t *		query,
-    globus_size_t			querysize,
-    int  *				job_state_mask,
-    char **				callback_url,
-    char **				description)
+    const globus_byte_t *               query,
+    globus_size_t                       querysize,
+    int  *                              job_state_mask,
+    char **                             callback_url,
+    char **                             description)
 {
-    int					protocol_version;
-    int					rc;
-    globus_size_t			rsl_count;
-    char *				q = (char *) query;
-    char *				p;
+    int                                 protocol_version;
+    int                                 rc;
+    globus_size_t                       rsl_count;
+    char *                              q = (char *) query;
+    char *                              p;
 
     p = strstr(q, CRLF"rsl: ");
     if (!p)
-	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
     p+=strlen(CRLF"rsl: ");
     rsl_count = querysize - (globus_size_t)(p-q);
@@ -158,41 +163,41 @@ globus_gram_protocol_unpack_job_request(
 
     globus_libc_lock();
     rc = sscanf( q,
-		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		 GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
-		 GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE,
-		 &protocol_version,
-		 job_state_mask,
-		 *callback_url );
+                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                 GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
+                 GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE,
+                 &protocol_version,
+                 job_state_mask,
+                 *callback_url );
     globus_libc_unlock();
     if (rc != 3)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-	goto globus_gram_protocol_unpack_job_request_done;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        goto globus_gram_protocol_unpack_job_request_done;
     }
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
-	goto globus_gram_protocol_unpack_job_request_done;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+        goto globus_gram_protocol_unpack_job_request_done;
     }
     if (strcmp(*callback_url, "\"\"")==0)
     {
-	globus_libc_free(*callback_url);
-	*callback_url = GLOBUS_NULL;
+        globus_libc_free(*callback_url);
+        *callback_url = GLOBUS_NULL;
     }
 
     rc = globus_l_gram_protocol_unquote_string(
-	          (globus_byte_t*) p,
-		  rsl_count-3,        /* CR LF + null */
-		  *description );
+                  (globus_byte_t*) p,
+                  rsl_count-3,        /* CR LF + null */
+                  *description );
 
 globus_gram_protocol_unpack_job_request_done:
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_libc_free(*callback_url);
-	globus_libc_free(*description);
-	*callback_url = GLOBUS_NULL;
-	*description = GLOBUS_NULL;
+        globus_libc_free(*callback_url);
+        globus_libc_free(*description);
+        *callback_url = GLOBUS_NULL;
+        *description = GLOBUS_NULL;
     }
     return rc;
 }
@@ -228,35 +233,35 @@ globus_gram_protocol_unpack_job_request_done:
  */
 int
 globus_gram_protocol_pack_job_request_reply(
-    int					status,
-    const char *			job_contact,    /* may be null */
-    globus_byte_t **			reply,
-    globus_size_t *			replysize )
+    int                                 status,
+    const char *                        job_contact,    /* may be null */
+    globus_byte_t **                    reply,
+    globus_size_t *                     replysize )
 {
     *reply = globus_libc_malloc(
-		       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
-		       strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
-		       strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE) +
-		       ((job_contact) ? strlen(job_contact) + 3 : 3));
+                       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+                       strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+                       strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE) +
+                       ((job_contact) ? strlen(job_contact) + 3 : 3));
     if(*reply == GLOBUS_NULL)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     if (job_contact)
-	globus_libc_sprintf( (char *) *reply,
-			     GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-			     GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-			     GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
-			     GLOBUS_GRAM_PROTOCOL_VERSION,
-			     status,
-			     job_contact );
+        globus_libc_sprintf( (char *) *reply,
+                             GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                             GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                             GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
+                             GLOBUS_GRAM_PROTOCOL_VERSION,
+                             status,
+                             job_contact );
     else
-	globus_libc_sprintf( (char *) *reply,
-			     GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-			     GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
-			     GLOBUS_GRAM_PROTOCOL_VERSION,
-			     status );
+        globus_libc_sprintf( (char *) *reply,
+                             GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                             GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
+                             GLOBUS_GRAM_PROTOCOL_VERSION,
+                             status );
 
     *replysize = (globus_size_t)(strlen((char *) *reply) + 1);
     return GLOBUS_SUCCESS;
@@ -297,65 +302,65 @@ globus_gram_protocol_pack_job_request_reply(
  */
 int
 globus_gram_protocol_unpack_job_request_reply(
-    const globus_byte_t *		reply,
-    globus_size_t			replysize,
-    int *				status,
-    char **				job_contact )
+    const globus_byte_t *               reply,
+    globus_size_t                       replysize,
+    int *                               status,
+    char **                             job_contact )
 {
-    int					rc;
-    int					protocol_version;
-    char *				p;
+    int                                 rc;
+    int                                 protocol_version;
+    char *                              p;
 
     p = strstr((char *)reply, CRLF "job-manager-url:");
     if (p)
     {
-	*job_contact = globus_libc_malloc(
-	    replysize - strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE));
-	if(*job_contact == GLOBUS_NULL)
-	{
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-	}
+        *job_contact = globus_libc_malloc(
+            replysize - strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE));
+        if(*job_contact == GLOBUS_NULL)
+        {
+            return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        }
 
-	p+=2;  /* crlf */
+        p+=2;  /* crlf */
     }
 
     globus_libc_lock();
     rc = sscanf( (char *) reply,
-		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
-		 &protocol_version,
-		 status );
+                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
+                 &protocol_version,
+                 status );
     globus_libc_unlock();
     if (rc != 2 )
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-	goto globus_gram_protocol_unpack_job_request_done;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        goto globus_gram_protocol_unpack_job_request_done;
     }
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
-	goto globus_gram_protocol_unpack_job_request_done;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+        goto globus_gram_protocol_unpack_job_request_done;
     }
     rc = GLOBUS_SUCCESS;
     if (p)
     {
-	globus_libc_lock();
-	rc = sscanf( p,
-		     GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
-		     *job_contact );
-	globus_libc_unlock();
-	if (rc != 1)
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-	else
-	    rc = GLOBUS_SUCCESS;
+        globus_libc_lock();
+        rc = sscanf( p,
+                     GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
+                     *job_contact );
+        globus_libc_unlock();
+        if (rc != 1)
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        else
+            rc = GLOBUS_SUCCESS;
     }
 
 globus_gram_protocol_unpack_job_request_done:
 
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_libc_free(*job_contact);
-	*job_contact = NULL;
+        globus_libc_free(*job_contact);
+        *job_contact = NULL;
     }
 
     return rc;
@@ -385,27 +390,27 @@ globus_gram_protocol_unpack_job_request_done:
  */
 int
 globus_gram_protocol_pack_status_request(
-    const char *			status_request,
-    globus_byte_t **			query,
-    globus_size_t *			querysize)
+    const char *                        status_request,
+    globus_byte_t **                    query,
+    globus_size_t *                     querysize)
 {
-    globus_size_t			len;
+    globus_size_t                       len;
 
     *query = globus_libc_malloc(
-		       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
-		       strlen(GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE) +
-		       2*strlen(status_request));
+                       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+                       strlen(GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE) +
+                       2*strlen(status_request));
     if(*query == GLOBUS_NULL)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     len = globus_libc_sprintf( (char *) *query,
-			       GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
-			       GLOBUS_GRAM_PROTOCOL_VERSION );
+                               GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
+                               GLOBUS_GRAM_PROTOCOL_VERSION );
 
     len += globus_l_gram_protocol_quote_string( status_request,
-					    (*query) + len );
+                                            (*query) + len );
 
     globus_libc_sprintf( (char *)(*query)+len, CRLF);
 
@@ -444,20 +449,20 @@ globus_gram_protocol_pack_status_request(
  */
 int
 globus_gram_protocol_unpack_status_request(
-    const globus_byte_t *		query,
-    globus_size_t			querysize,
-    char **				status_request)
+    const globus_byte_t *               query,
+    globus_size_t                       querysize,
+    char **                             status_request)
 {
-    int					rc;
-    int					protocol_version;
-    char *				p;
-    globus_size_t			msgsize;
+    int                                 rc;
+    int                                 protocol_version;
+    char *                              p;
+    globus_size_t                       msgsize;
 
     p = strstr((char *) query, CRLF);
     if (!p)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-	goto error_exit;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        goto error_exit;
     }
 
     p+=2;
@@ -467,30 +472,30 @@ globus_gram_protocol_unpack_status_request(
 
     globus_libc_lock();
     rc = sscanf((char *) query,
-		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
-		 &protocol_version);
+                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
+                 &protocol_version);
     globus_libc_unlock();
     if (rc != 1)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-	goto error_exit;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        goto error_exit;
     }
     else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
-	goto error_exit;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+        goto error_exit;
     }
 
     rc = globus_l_gram_protocol_unquote_string(
-	          (globus_byte_t*) p,
-		  msgsize,
-		  *status_request);
+                  (globus_byte_t*) p,
+                  msgsize,
+                  *status_request);
 
 error_exit:
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_libc_free(*status_request);
-	*status_request = GLOBUS_NULL;
+        globus_libc_free(*status_request);
+        *status_request = GLOBUS_NULL;
     }
 
     return rc;
@@ -529,32 +534,32 @@ error_exit:
  */
 int
 globus_gram_protocol_pack_status_reply(
-    int					job_status,
-    int					failure_code,
-    int					job_failure_code,
-    globus_byte_t **			reply,
-    globus_size_t *			replysize)
+    int                                 job_status,
+    int                                 failure_code,
+    int                                 job_failure_code,
+    globus_byte_t **                    reply,
+    globus_size_t *                     replysize)
 {
     *reply = globus_libc_malloc(
-			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
-			strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
-			strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE) +
-			strlen(GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE)
-			+ 4 );
+                        strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+                        strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+                        strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE) +
+                        strlen(GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE)
+                        + 4 );
     if(*reply == GLOBUS_NULL)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     globus_libc_sprintf((char *)*reply,
-			GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-			GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-			GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE
-			GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE,
-			GLOBUS_GRAM_PROTOCOL_VERSION,
-			job_status,
-			failure_code,
-			job_failure_code);
+                        GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                        GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                        GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE
+                        GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE,
+                        GLOBUS_GRAM_PROTOCOL_VERSION,
+                        job_status,
+                        failure_code,
+                        job_failure_code);
 
     *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
 
@@ -596,37 +601,37 @@ globus_gram_protocol_pack_status_reply(
  */
 int
 globus_gram_protocol_unpack_status_reply(
-    const globus_byte_t *		reply,
-    globus_size_t			replysize,
-    int *				job_status,
-    int *				failure_code,
-    int *				job_failure_code)
+    const globus_byte_t *               reply,
+    globus_size_t                       replysize,
+    int *                               job_status,
+    int *                               failure_code,
+    int *                               job_failure_code)
 {
-    int					protocol_version;
-    int					rc;
+    int                                 protocol_version;
+    int                                 rc;
 
     globus_libc_unlock();
     rc = sscanf( (char *) reply,
-		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-		 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE
-		 GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE,
-		 &protocol_version,
-		 job_status,
-		 failure_code,
-		 job_failure_code );
+                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE
+                 GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE,
+                 &protocol_version,
+                 job_status,
+                 failure_code,
+                 job_failure_code );
     globus_libc_unlock();
     if (rc == 3)
     {
-	*job_failure_code = 0;
+        *job_failure_code = 0;
     }
     if (rc != 3 && rc != 4)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
     }
     else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
     }
 
     return GLOBUS_SUCCESS;
@@ -661,32 +666,32 @@ globus_gram_protocol_unpack_status_reply(
  */
 int
 globus_gram_protocol_pack_status_update_message(
-    char *				job_contact,
-    int					status,
-    int					failure_code,
-    globus_byte_t **			reply,
-    globus_size_t *			replysize)
+    char *                              job_contact,
+    int                                 status,
+    int                                 failure_code,
+    globus_byte_t **                    reply,
+    globus_size_t *                     replysize)
 {
     *reply = globus_libc_malloc(
-	strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
-	strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE) +
-	strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
-	strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE) +
-	strlen(job_contact) + 5 );
+        strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+        strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE) +
+        strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+        strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE) +
+        strlen(job_contact) + 5 );
     if(*reply == GLOBUS_NULL)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     globus_libc_sprintf( (char *) *reply,
-			 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-			 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
-			 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-			 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
-			 GLOBUS_GRAM_PROTOCOL_VERSION,
-			 job_contact,
-			 status,
-			 failure_code );
+                         GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                         GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
+                         GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                         GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+                         GLOBUS_GRAM_PROTOCOL_VERSION,
+                         job_contact,
+                         status,
+                         failure_code );
 
     *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
 
@@ -694,6 +699,120 @@ globus_gram_protocol_pack_status_update_message(
 }
 /* globus_gram_protocol_pack_status_update_message() */
 
+/**
+ * Pack a status update message with arbitrary extensions
+ * @ingroup globus_gram_protocol_pack
+ *
+ * Encodes the current status of a job in a GRAM protocol message.
+ * The resulting message may be sent with globus_gram_protocol_post()
+ * or framed with globus_gram_protocol_frame_request() and sent by the
+ * application. Status messages are sent by the job manager when the
+ * job's state changes. This version is generates messages which begin like
+ * those generated by globus_gram_protocol_pack_status_update_message() but
+ * includes additional application-defined extension attribute-value pairs.
+ *
+ * @param job_contact
+ *        The contact string associated with this job manager.
+ * @param status
+ *        The job's current @ref globus_gram_protocol_job_state_t "job
+ *        state".
+ * @param failure_code
+ *        The error associated with this job request, if the @a status
+ *        value is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ * @param extensions
+ *        Hashtable of globus_gram_protocol_hash_entry_t * values
+ *        containing extension attribute-value pairs.
+ * @param reply
+ *        An output variable which will be populated with a new
+ *        string containing the packed status message. The caller
+ *        must free this memory by calling globus_libc_free();
+ * @param replysize
+ *        An output variable which will be populated with the length
+ *        of the job request message returned in @a reply.
+ */
+int
+globus_gram_protocol_pack_status_update_message_with_extensions(
+    char *                              job_contact,
+    int                                 status,
+    int                                 failure_code,
+    globus_hashtable_t *                extensions,
+    globus_byte_t **                    reply,
+    globus_size_t *                     replysize)
+{
+    globus_gram_protocol_hash_entry_t * entry;
+    size_t                              len = 0;
+    char *                              tmp;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    if (job_contact == NULL || extensions == NULL ||
+        reply == NULL || replysize == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto null_param;
+    }
+
+    for (entry = globus_hashtable_first(extensions);
+         entry != NULL;
+         entry = globus_hashtable_next(extensions))
+    {
+        if (entry->attribute == NULL || entry->value == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_PACK_FAILED;
+
+            goto bad_attr;
+        }
+        len += strlen(entry->attribute) + strlen(entry->value) + 4;
+    }
+
+    tmp = globus_common_create_string(
+                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
+                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+                 GLOBUS_GRAM_PROTOCOL_VERSION,
+                 job_contact,
+                 status,
+                 failure_code);
+    if (tmp == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto tmp_malloc_failed;
+    }
+
+    len += strlen(tmp) + 1;
+    *reply = (globus_byte_t *) tmp;
+    tmp = realloc(tmp, len);
+    if (tmp == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        free(*reply);
+        *reply = NULL;
+
+        goto reply_realloc_failed;
+    }
+    *reply = (globus_byte_t *) tmp;
+
+    for (entry = extensions ? globus_hashtable_first(extensions) : NULL;
+         entry != NULL;
+         entry = globus_hashtable_next(extensions))
+    {
+        strcat(tmp, entry->attribute);
+        strcat(tmp, ": ");
+        strcat(tmp, entry->value);
+        strcat(tmp, "\r\n");
+    }
+
+    *replysize = (globus_size_t)(strlen(tmp) + 1);
+
+reply_realloc_failed:
+tmp_malloc_failed:
+bad_attr:
+null_param:
+
+    return rc;
+}
 
 /**
  * Unpack a status update message
@@ -731,11 +850,11 @@ globus_gram_protocol_pack_status_update_message(
  */
 int
 globus_gram_protocol_unpack_status_update_message(
-    const globus_byte_t *		reply,
-    globus_size_t			replysize,
-    char **				job_contact,
-    int *				status,
-    int *				failure_code)
+    const globus_byte_t *               reply,
+    globus_size_t                       replysize,
+    char **                             job_contact,
+    int *                               status,
+    int *                               failure_code)
 {
     int   protocol_version;
     int   rc;
@@ -743,19 +862,19 @@ globus_gram_protocol_unpack_status_update_message(
     *job_contact = globus_libc_malloc(replysize);
     if(*job_contact == GLOBUS_NULL)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     globus_libc_lock();
     rc = sscanf( (char *) reply,
-		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
-		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-		 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
-		 &protocol_version,
-		 *job_contact,
-		 status,
-		 failure_code );
+                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
+                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+                 &protocol_version,
+                 *job_contact,
+                 status,
+                 failure_code );
     globus_libc_unlock();
     if (rc != 4)
     {
@@ -770,24 +889,265 @@ globus_gram_protocol_unpack_status_update_message(
 }
 /* globus_gram_protocol_unpack_status_update_message() */
 
+/**
+ * Unpack a status update message to a hashtable
+ * @ingroup globus_gram_protocol_unpack
+ *
+ * Extracts the parameters of a status update from a GRAM message into a
+ * hashtable of globus_gram_protocol_hash_entry_t values. The hashtable will be
+ * initialized by this function and all of the attributes of the job in the
+ * status message will be included in it. If this function returns
+ * GLOBUS_SUCCESS, the caller is responsible for freeing
+ * the hashtable and its values.
+ *
+ * @param reply
+ *        The status update message.
+ * @param replysize
+ *        The length of the message.
+ * @param message_hash
+ *        An output variable which will be initialized to a hashtable
+ *        containing the message attributes. The caller must destroy this
+ *        hashtable calling globus_gram_protocol_hash_destroy()
+ *
+ * @retval GLOBUS_SUCCESS
+ *         Sucess
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
+ *         Unpack failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *         Malloc failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
+ *         Version mismatch
+ */
+int
+globus_gram_protocol_unpack_status_update_message_with_extensions(
+    const globus_byte_t *               reply,
+    globus_size_t                       replysize,
+    globus_hashtable_t *                message_hash)
+{
+    char *                              attribute;
+    char *                              value;
+    char *                              eol;
+    globus_gram_protocol_hash_entry_t * entry = NULL;
+    int                                 rc;
+
+    if (reply == NULL || message_hash == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
+    }
+    rc = globus_hashtable_init(
+            message_hash,
+            89,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto hashtable_init_failed;
+    }
+
+    for (attribute = (char *) reply; attribute != NULL;)
+    {
+        eol = strstr(attribute, "\r\n");
+        if (eol == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        value = strstr(attribute, ":");
+        if (value == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        if (value > eol)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+        if (entry == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto parse_error;
+        }
+
+        entry->attribute = malloc(value - attribute + 1);
+        if (entry->attribute == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto parse_error;
+        }
+        memcpy(entry->attribute, attribute, value - attribute);
+        entry->attribute[value - attribute] = 0;
+
+        attribute = strstr(attribute, CRLF);
+        if (attribute == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        /* Skip : */
+        value++;
+        /* Skip whitespace */
+        while (isspace(*value))
+        {
+            value++;
+        }
+        entry->value = malloc(attribute - value + 1);
+        memcpy(entry->value, value, attribute - value);
+        entry->value[attribute - value] = 0;
+
+        globus_hashtable_insert(message_hash, entry->attribute, entry);
+        entry = NULL;
+        attribute += 2;
+
+        if (*attribute == 0)
+        {
+            break;
+        }
+    }
+
+    /* Check that required attributes are present */
+    entry = globus_hashtable_lookup(
+            message_hash,
+            "protocol-version");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto verify_error;
+    }
+    if (strtol(entry->value, NULL, 10) != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+
+        goto verify_error;
+    }
+
+    entry = globus_hashtable_lookup(
+            message_hash,
+            "job-manager-url");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto verify_error;
+    }
+
+    entry = globus_hashtable_lookup(
+            message_hash,
+            "status");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        
+        goto verify_error;
+    }
+
+    entry = globus_hashtable_lookup(
+            message_hash,
+            "failure-code");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto verify_error;
+    }
+
+    rc = GLOBUS_SUCCESS;
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+verify_error:
+        entry = NULL;
+parse_error:
+        globus_hashtable_destroy_all(
+                message_hash,
+                globus_l_gram_protocol_hash_entry_destroy);
+        if (entry != NULL)
+        {
+            globus_l_gram_protocol_hash_entry_destroy(entry);
+        }
+hashtable_init_failed:
+        *message_hash = NULL;
+    }
+bad_param:
+
+    return rc;
+}
+/* globus_gram_protocol_unpack_status_update_message_with_extensions() */
+
+static
+void
+globus_l_gram_protocol_hash_entry_destroy(
+    void *                              datum)
+{
+    globus_gram_protocol_hash_entry_t * entry = datum;
+
+    if (entry)
+    {
+        if (entry->attribute)
+        {
+            free(entry->attribute);
+        }
+        if (entry->value)
+        {
+            free(entry->value);
+        }
+        free(entry);
+    }
+}
+
+/**
+ * Destroy message attribute hash
+ * @ingroup globus_gram_protocol_unpack
+ * 
+ * @param message_hash
+ *     Hashtable of globus_gram_protocol_hash_entry_t * values to destroy
+ */
+void
+globus_gram_protocol_hash_destroy(
+    globus_hashtable_t *                message_hash)
+{
+    if (message_hash != NULL)
+    {
+        globus_hashtable_destroy_all(
+                message_hash,
+                globus_l_gram_protocol_hash_entry_destroy);
+        *message_hash = NULL;
+    }
+}
+/* globus_gram_protocol_hash_destroy() */
+
+/* globus_l_gram_protocol_hash_entry_destroy() */
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* assumes bufp has sufficient memory */
 static
 globus_size_t
 globus_l_gram_protocol_quote_string(
-    const char *			in,
-    globus_byte_t *			bufp)
+    const char *                        in,
+    globus_byte_t *                     bufp)
 {
-    char *				out = (char *) bufp;
+    char *                              out = (char *) bufp;
 
-    *out++='"';			/* Start the quoted string */
+    *out++='"';                 /* Start the quoted string */
     while (*in)
     {
-	if (*in == '"' || *in == '\\')   /* need escaping */
-	    *out++ = '\\';
-	*out++ = *in++;
+        if (*in == '"' || *in == '\\')   /* need escaping */
+            *out++ = '\\';
+        *out++ = *in++;
     }
-    *out++ = '"';		/* End the quoted string. */
+    *out++ = '"';               /* End the quoted string. */
     *out   = '\0';
 
     return (globus_size_t)(out - (char *)bufp);
@@ -803,9 +1163,9 @@ globus_l_gram_protocol_quote_string(
 static
 int
 globus_l_gram_protocol_unquote_string(
-    const globus_byte_t *		inbuf,
-    globus_size_t			insize,
-    char *				out)
+    const globus_byte_t *               inbuf,
+    globus_size_t                       insize,
+    char *                              out)
 {
     globus_bool_t  in_quote = GLOBUS_FALSE;
     globus_bool_t  done     = GLOBUS_FALSE;
@@ -813,48 +1173,48 @@ globus_l_gram_protocol_unquote_string(
 
     if (*in == '"')
     {
-	in_quote = GLOBUS_TRUE;
-	++in;
+        in_quote = GLOBUS_TRUE;
+        ++in;
     }
     while (!done && ((globus_size_t)(in - (char *)inbuf) < insize))
     {
-	if (!*in)
-	{
-	    done = GLOBUS_TRUE;
-	    continue;
-	}
-	if (in_quote)
-	{
-	    if (*in == '"')  /* done */
-	    {
-		++in;
-		in_quote = GLOBUS_FALSE;
-		done = GLOBUS_TRUE;
-		continue;
-	    }
-	    else if (*in == '\\')   /* escaped characeter, do next instead */
-		*out++ = *(++in);
-	    else
-		*out++ = *in;
-	}
-	else   /* no quote */
-	{
-	    if (*in == '\r')	/* end of the line. */
-	    {
-	        if (*(++in) != '\n')
-		{
-		    /* Malformed line */
-		    return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-		}
-	    }
-	    /* TODO: Recognize % HEX HEX here. */
-	    *out++ = *in;
-	}
-	++in;
+        if (!*in)
+        {
+            done = GLOBUS_TRUE;
+            continue;
+        }
+        if (in_quote)
+        {
+            if (*in == '"')  /* done */
+            {
+                ++in;
+                in_quote = GLOBUS_FALSE;
+                done = GLOBUS_TRUE;
+                continue;
+            }
+            else if (*in == '\\')   /* escaped characeter, do next instead */
+                *out++ = *(++in);
+            else
+                *out++ = *in;
+        }
+        else   /* no quote */
+        {
+            if (*in == '\r')    /* end of the line. */
+            {
+                if (*(++in) != '\n')
+                {
+                    /* Malformed line */
+                    return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+                }
+            }
+            /* TODO: Recognize % HEX HEX here. */
+            *out++ = *in;
+        }
+        ++in;
     }   /* while */
 
     if (in_quote)
-	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
     *out  = '\0';
     return GLOBUS_SUCCESS;

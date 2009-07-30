@@ -1089,12 +1089,12 @@ static
 void
 globus_l_globusrun_gram_callback_func(
     void *                              user_arg,
-    char *                              job_contact,
-    int                                 state,
-    int                                 errorcode)
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     job_info)
 {
     globus_i_globusrun_gram_monitor_t * monitor;
     globus_url_t                        job_contact_url;
+    globus_gram_protocol_hash_entry_t * entry;
     int                                 rc;
 
     monitor = (globus_i_globusrun_gram_monitor_t *) user_arg;
@@ -1142,9 +1142,9 @@ globus_l_globusrun_gram_callback_func(
         }
     }
 
-    monitor->job_state = state;
+    monitor->job_state = job_info->job_state;
 
-    switch(state)
+    switch (job_info->job_state)
     {
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
 	if(monitor->verbose)
@@ -1176,13 +1176,23 @@ globus_l_globusrun_gram_callback_func(
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED\n");
 	}
         monitor->done = GLOBUS_TRUE;
-	monitor->failure_code = errorcode;
+	monitor->failure_code = job_info->protocol_error_code;
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
 	if(monitor->verbose)
 	{
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE\n");
-            printf("exit code: %d\n", errorcode);
+            if (job_info->extensions)
+            {
+                entry = globus_hashtable_lookup(
+                        &job_info->extensions,
+                        "exit-code");
+
+                if (entry != NULL)
+                {
+                    printf("exit code: %s\n", entry->value);
+                }
+            }
 	}
         monitor->done = GLOBUS_TRUE;
 	break;
@@ -1295,7 +1305,7 @@ globus_l_globusrun_gramrun(char * request_string,
 #       endif
     }
 
-    err = globus_gram_client_callback_allow(
+    err = globus_gram_client_info_callback_allow(
         globus_l_globusrun_gram_callback_func,
         (void *) &monitor,
         &callback_contact);

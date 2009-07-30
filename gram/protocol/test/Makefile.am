@@ -11,7 +11,9 @@ Scripts = \
 	globus-gram-protocol-allow-attach-test.pl \
 	globus-gram-protocol-error-test.pl \
 	globus-gram-protocol-io-test.pl \
-	globus-gram-protocol-pack-test.pl
+	globus-gram-protocol-pack-test.pl \
+        pack-with-extensions-test.pl \
+        unpack-with-extensions-test.pl
 
 Data = \
 	dc31a685.0 \
@@ -27,7 +29,9 @@ pkgtest_PROGRAMS= \
 	globus-gram-protocol-delegation-test \
         globus-gram-protocol-error-test \
 	globus-gram-protocol-io-test \
-	globus-gram-protocol-pack-test
+	globus-gram-protocol-pack-test \
+        pack-with-extensions-test \
+        unpack-with-extensions-test
 
 EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in $(Data)
 

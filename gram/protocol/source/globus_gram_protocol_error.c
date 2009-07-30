@@ -207,12 +207,6 @@ globus_thread_key_t                     globus_i_gram_protocol_error_10_key = 0;
 
 enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
 
-static char *
-globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
-
-static char * 
-globus_l_gram_protocol_error_10_hack_message = GLOBUS_NULL;
-
 /**
  * Error code translation.
  * @ingroup globus_gram_protocol_error_messages
