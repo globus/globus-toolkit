@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager">
 
-    <Aging_Version Age="4" Major="9" Minor="3"/>
+    <Aging_Version Age="4" Major="9" Minor="4"/>
     <Description>GRAM Jobmanager</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -33,7 +33,7 @@
 
             <Dependency Name="globus_gram_protocol">
                 <Version>
-                    <Simple_Version Major="5"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
     
@@ -113,7 +113,7 @@
 
             <Dependency Name="globus_gram_protocol">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
     
@@ -179,7 +179,7 @@
         <Source_Dependencies Type="doc_runtime">
             <Dependency Name="globus_gram_protocol" Package="doc">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -212,7 +212,7 @@
 
             <Dependency Name="globus_gram_protocol" Package="data">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
     
