@@ -191,6 +191,9 @@ globus_gram_job_manager_contact_state_callback(
     int                                 rc;
     globus_list_t *                     tmp_list;
     globus_gram_job_manager_contact_t * client_contact_node;
+    globus_hashtable_t                  extensions = NULL;
+    globus_gram_protocol_hash_entry_t * entry = NULL;
+
     globus_gram_job_callback_context_t *context = NULL;
 
     tmp_list = request->client_contacts;
@@ -232,18 +235,83 @@ globus_gram_job_manager_contact_state_callback(
     context->message_length = 0;
     context->active = 0;
 
-    rc = globus_gram_protocol_pack_status_update_message(
-        request->job_contact,
-        (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-            ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
-            : request->status,
-        (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-            ? request->stop_reason
-            : (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
-                ? request->exit_code
+    /* Create message extensions to send exit code if known */
+    if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
+        strcmp(request->config->jobmanager_type, "fork") != 0)
+    {
+        rc = globus_hashtable_init(
+                &extensions,
+                3,
+                globus_hashtable_string_hash,
+                globus_hashtable_string_keyeq);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto fail_extensions_init;
+        }
+        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+
+        if (entry == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto fail_extension_entry_malloc_failed;
+        }
+        entry->attribute = strdup("exit-code");
+        if (entry->attribute == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto fail_extension_attribute_malloc;
+        }
+        entry->value = globus_common_create_string("%d", request->exit_code);
+        if (entry->value == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto fail_extension_value_malloc;
+        }
+        rc = globus_hashtable_insert(
+                &extensions,
+                entry->attribute,
+                entry);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto fail_entry_insert;
+        }
+        entry = NULL;
+    }
+
+    if (extensions != NULL)
+    {
+        rc = globus_gram_protocol_pack_status_update_message_with_extensions(
+            request->job_contact,
+            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
+                : request->status,
+            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                ? request->stop_reason
                 : request->failure_code,
-        &context->message,
-        &context->message_length);
+            &extensions,
+            &context->message,
+            &context->message_length);
+    }
+    else
+    {
+        rc = globus_gram_protocol_pack_status_update_message(
+            request->job_contact,
+            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
+                : request->status,
+            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                ? request->stop_reason
+                : request->failure_code,
+            &context->message,
+            &context->message_length);
+    }
     if (rc != GLOBUS_SUCCESS)
     {
         globus_gram_job_manager_request_log(
@@ -322,6 +390,18 @@ nothing_to_send:
                request->manager,
                request->job_contact_path,
                "Job state callbacks");
+        if (entry != NULL)
+        {
+fail_entry_insert:
+            free(entry->value);
+fail_extension_value_malloc:
+            free(entry->attribute);
+fail_extension_attribute_malloc:
+            free(entry);
+        }
+fail_extension_entry_malloc_failed:
+        globus_gram_protocol_hash_destroy(&extensions);
+fail_extensions_init:
 add_reference_failed:
 pack_message_failed:
         free(context);

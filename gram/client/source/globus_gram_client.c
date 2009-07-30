@@ -66,34 +66,36 @@ globus_l_gram_client_callback_type_t;
 
 typedef struct
 {
-    globus_mutex_t			mutex;
-    globus_cond_t			cond;
-    globus_gram_protocol_handle_t	handle;
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    globus_gram_protocol_handle_t       handle;
     globus_l_gram_client_callback_type_t
-					type;
-    volatile globus_bool_t		done;
-    int					errorcode;
+                                        type;
+    volatile globus_bool_t              done;
+    int                                 errorcode;
 
     /* For job request only */
-    char *				contact;
+    char *                              contact;
 
     /* For job request / status */
-    int					status;
+    int                                 status;
 
     /* For job status only */
-    int					job_failure_code;
+    int                                 job_failure_code;
 
     /* For register_job_request */
     globus_gram_client_nonblocking_func_t
-					callback;
-    void *				callback_arg;
+                                        callback;
+    void *                              callback_arg;
 } globus_l_gram_client_monitor_t;
 
 typedef struct
 {
-    globus_gram_client_callback_func_t	callback;
-    void *				callback_arg;
-    char *				callback_contact;
+    globus_gram_client_callback_func_t  callback;
+    globus_gram_client_info_callback_func_t
+                                        info_callback;
+    void *                              callback_arg;
+    char *                              callback_contact;
 }
 globus_l_gram_client_callback_info_t;
 /******************************************************************************
@@ -103,11 +105,11 @@ globus_l_gram_client_callback_info_t;
 static
 int
 globus_l_gram_client_parse_gatekeeper_contact(
-    const char *			contact_string,
-    const char *			service_prefix,
+    const char *                        contact_string,
+    const char *                        service_prefix,
     const char *                        username,
-    char **				gatekeeper_url,
-    char **				gatekeeper_dn);
+    char **                             gatekeeper_url,
+    char **                             gatekeeper_dn);
 
 static int 
 globus_l_gram_client_setup_gatekeeper_attr(
@@ -125,70 +127,70 @@ globus_l_gram_client_setup_jobmanager_attr(
 static
 int
 globus_l_gram_client_job_request(
-    const char *			resource_manager_contact,
-    const char *			description,
-    int					job_state_mask,
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
     globus_i_gram_client_attr_t *       iattr,
-    const char *			callback_contact,
-    globus_l_gram_client_monitor_t *	monitor);
+    const char *                        callback_contact,
+    globus_l_gram_client_monitor_t *    monitor);
 
 static
 int 
 globus_l_gram_client_ping(
-    const char *			resource_manager_contact,
+    const char *                        resource_manager_contact,
     globus_i_gram_client_attr_t *       iattr,
-    globus_l_gram_client_monitor_t *	monitor);
+    globus_l_gram_client_monitor_t *    monitor);
 
 static
 int
 globus_l_gram_client_job_refresh_credentials(
-    char *				job_contact,
-    gss_cred_id_t			creds,
+    char *                              job_contact,
+    gss_cred_id_t                       creds,
     globus_i_gram_client_attr_t *       iattr,
-    globus_l_gram_client_monitor_t *	monitor);
+    globus_l_gram_client_monitor_t *    monitor);
 
 static
 void
 globus_l_gram_client_callback(
-    void *				arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			buf,
-    globus_size_t			nbytes,
-    int					errorcode,
-    char *				uri);
+    void *                              arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes,
+    int                                 errorcode,
+    char *                              uri);
 
 static
 void
 globus_l_gram_client_monitor_callback(
-    void *				user_arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			message,
-    globus_size_t			msgsize,
-    int					errorcode,
-    char *				uri);
+    void *                              user_arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     message,
+    globus_size_t                       msgsize,
+    int                                 errorcode,
+    char *                              uri);
 
 static
 void
 globus_l_gram_client_register_callback(
-    void *				user_arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			message,
-    globus_size_t			msgsize,
-    int					errorcode,
-    char *				uri);
+    void *                              user_arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     message,
+    globus_size_t                       msgsize,
+    int                                 errorcode,
+    char *                              uri);
 
 static
 int
 globus_l_gram_client_monitor_init(
-    globus_l_gram_client_monitor_t *	monitor,
+    globus_l_gram_client_monitor_t *    monitor,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 static
 int
 globus_l_gram_client_monitor_destroy(
-    globus_l_gram_client_monitor_t *	monitor);
+    globus_l_gram_client_monitor_t *    monitor);
 
 int
 globus_i_gram_client_deactivate(void);
@@ -209,11 +211,11 @@ globus_module_descriptor_t globus_gram_client_module =
     &local_version
 };
 
-static FILE *				globus_l_print_fp;
-static int				globus_l_is_initialized = 0;
-static globus_hashtable_t		globus_l_gram_client_contacts;
+static FILE *                           globus_l_print_fp;
+static int                              globus_l_is_initialized = 0;
+static globus_hashtable_t               globus_l_gram_client_contacts;
 
-static globus_mutex_t		        globus_l_mutex;
+static globus_mutex_t                   globus_l_mutex;
 static globus_mutex_t                   globus_l_rsl_mutex;
 
 #define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
@@ -222,7 +224,7 @@ static globus_mutex_t                   globus_l_rsl_mutex;
 
 /*
  * globus_i_gram_client_activate()
- * Description:	Initialize variables
+ * Description: Initialize variables
  * Call authorization routine for password entry.
  */
 int
@@ -233,13 +235,13 @@ globus_i_gram_client_activate(void)
     rc = globus_module_activate(GLOBUS_POLL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	return(rc);
+        return(rc);
     }
 
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	return(rc);
+        return(rc);
     }
 
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
@@ -251,29 +253,29 @@ globus_i_gram_client_activate(void)
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	return(rc);
+        return(rc);
     }
 
     
     if ( globus_l_is_initialized == 0 )
     {
-	/* initialize mutex which makes the client thread-safe */
-	int err;
-	err = globus_mutex_init (&globus_l_mutex, NULL);
-	assert (!err);
+        /* initialize mutex which makes the client thread-safe */
+        int err;
+        err = globus_mutex_init (&globus_l_mutex, NULL);
+        assert (!err);
 
         err = globus_mutex_init (&globus_l_rsl_mutex, NULL);
-	assert (!err);
+        assert (!err);
 
-	globus_l_is_initialized = 1;
+        globus_l_is_initialized = 1;
 
     }
     
     globus_l_print_fp = NULL;
     globus_hashtable_init(&globus_l_gram_client_contacts,
-	                  16,
-			  globus_hashtable_string_hash,
-			  globus_hashtable_string_keyeq);
+                          16,
+                          globus_hashtable_string_hash,
+                          globus_hashtable_string_keyeq);
 
 
     return 0;
@@ -290,11 +292,11 @@ globus_i_gram_client_deactivate(void)
 
     if ( globus_l_is_initialized == 0 )
     {
-	return(GLOBUS_FAILURE);
+        return(GLOBUS_FAILURE);
     }
     else
     {
-	globus_l_is_initialized = 0;
+        globus_l_is_initialized = 0;
     }
 
     /* 
@@ -305,7 +307,7 @@ globus_i_gram_client_deactivate(void)
     rc = globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	return(rc);
+        return(rc);
     }
 
     rc = globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
@@ -317,13 +319,13 @@ globus_i_gram_client_deactivate(void)
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	return(rc);
+        return(rc);
     }
 
     rc = globus_module_deactivate(GLOBUS_POLL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	return(rc);
+        return(rc);
     }
     globus_hashtable_destroy(&globus_l_gram_client_contacts);
 
@@ -344,12 +346,12 @@ globus_gram_client_debug(void)
 {
     globus_l_print_fp = stdout;
     globus_libc_fprintf(globus_l_print_fp,
-		  "globus_gram_client: debug messages will be printed.\n");
+                  "globus_gram_client: debug messages will be printed.\n");
 } /* globus_gram_client_debug() */
 
 
 /******************************************************************************
-Function:	globus_l_gram_client_parse_gatekeeper_url()
+Function:       globus_l_gram_client_parse_gatekeeper_url()
 Description:
 Parameters:
 Returns:
@@ -357,22 +359,22 @@ Returns:
 static
 int
 globus_l_gram_client_parse_gatekeeper_contact(
-    const char *			contact_string,
-    const char *			service_prefix,
+    const char *                        contact_string,
+    const char *                        service_prefix,
     const char *                        username,
-    char **				gatekeeper_url,
-    char **				gatekeeper_dn)
+    char **                             gatekeeper_url,
+    char **                             gatekeeper_dn)
 {
-    char *				duplicate;
-    char *				host = GLOBUS_NULL;
-    char *				port = GLOBUS_NULL;
-    char *				dn = GLOBUS_NULL;
-    char *				service;
-    int					got_port = 0;
-    int					got_service = 0;
-    char *				ptr;
-    unsigned short			iport;
-    globus_url_t			some_struct;
+    char *                              duplicate;
+    char *                              host = GLOBUS_NULL;
+    char *                              port = GLOBUS_NULL;
+    char *                              dn = GLOBUS_NULL;
+    char *                              service;
+    int                                 got_port = 0;
+    int                                 got_service = 0;
+    char *                              ptr;
+    unsigned short                      iport;
+    globus_url_t                        some_struct;
     int                                 rc = GLOBUS_SUCCESS;
 
     /*
@@ -382,7 +384,7 @@ globus_l_gram_client_parse_gatekeeper_contact(
     service = "jobmanager";
     iport = 2119;
 
-    if ((duplicate = globus_libc_strdup(contact_string)))
+    if ((duplicate = strdup(contact_string)))
     {
         host = duplicate;
 
@@ -411,26 +413,26 @@ globus_l_gram_client_parse_gatekeeper_contact(
 
         if (got_port || got_service) 
         {
-	    if ((dn = strchr(ptr, ':')))
-	    {
-		*dn++ = '\0';
-	    }
+            if ((dn = strchr(ptr, ':')))
+            {
+                *dn++ = '\0';
+            }
 
             if (got_port)
             {
-	        if ((service = strchr(port,'/')) != NULL)
+                if ((service = strchr(port,'/')) != NULL)
                 {
                     if ((service - port) > 1)
                     {
-	                iport = (unsigned short) atoi(port);
+                        iport = (unsigned short) atoi(port);
                     }
                     *service++ = '\0';
                 }
                 else
                 {
                     service = "jobmanager";
-	            if (strlen(port) > 0)
-	               iport = (unsigned short) atoi(port);
+                    if (strlen(port) > 0)
+                       iport = (unsigned short) atoi(port);
                 }
             }
         }
@@ -441,11 +443,11 @@ globus_l_gram_client_parse_gatekeeper_contact(
     } 
     else 
     {
-	if(globus_l_print_fp)
-	{
-	    globus_libc_fprintf(globus_l_print_fp,
-		                "strdup failed for contact_string\n");
-	}
+        if(globus_l_print_fp)
+        {
+            globus_libc_fprintf(globus_l_print_fp,
+                                "strdup failed for contact_string\n");
+        }
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto error_exit;
@@ -454,21 +456,21 @@ globus_l_gram_client_parse_gatekeeper_contact(
     if (! *host)
     {
         globus_libc_free(duplicate);
-	if(globus_l_print_fp)
-	{
-	    globus_libc_fprintf(globus_l_print_fp,
-		                "empty host value in contact_string\n");
-	}
+        if(globus_l_print_fp)
+        {
+            globus_libc_fprintf(globus_l_print_fp,
+                                "empty host value in contact_string\n");
+        }
        return(GLOBUS_GRAM_PROTOCOL_ERROR_BAD_GATEKEEPER_CONTACT);
     }
 
-    (*gatekeeper_url) = globus_libc_malloc(11 /* https://:/\0 */ +
-					   strlen(host) +
-					   5 + /*unsigned short*/
-					   strlen(service) +
-					   ((service_prefix != GLOBUS_NULL)
-					       ? strlen(service_prefix)
-					       : 0) +
+    (*gatekeeper_url) = malloc(11 /* https://:/\0 */ +
+                                           strlen(host) +
+                                           5 + /*unsigned short*/
+                                           strlen(service) +
+                                           ((service_prefix != GLOBUS_NULL)
+                                               ? strlen(service_prefix)
+                                               : 0) +
                                            ((username != NULL)
                                                ? strlen(username) + 1 : 0));
 
@@ -479,11 +481,11 @@ globus_l_gram_client_parse_gatekeeper_contact(
         goto free_duplicate_exit;
     }
     globus_libc_sprintf((*gatekeeper_url),
-	                "https://%s:%hu%s/%s%s%s",
-			host,
-			(unsigned short) iport,
-			((service_prefix != GLOBUS_NULL) ? service_prefix : ""),
-			service,
+                        "https://%s:%hu%s/%s%s%s",
+                        host,
+                        (unsigned short) iport,
+                        ((service_prefix != GLOBUS_NULL) ? service_prefix : ""),
+                        service,
                         (username != NULL) ? "@" : "",
                         (username != NULL) ? username : "");
 
@@ -497,7 +499,7 @@ globus_l_gram_client_parse_gatekeeper_contact(
 
     if ((dn) && (*dn))
     {
-   	*gatekeeper_dn = globus_libc_strdup(dn);
+        *gatekeeper_dn = strdup(dn);
 
         if((*gatekeeper_dn) == NULL)
         {
@@ -507,7 +509,7 @@ globus_l_gram_client_parse_gatekeeper_contact(
     }
     else
     {
-   	*gatekeeper_dn = NULL;
+        *gatekeeper_dn = NULL;
     }
     globus_libc_free(duplicate);
 
@@ -752,17 +754,17 @@ globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
  */
 int 
 globus_gram_client_register_ping(
-    const char *			resource_manager_contact,
+    const char *                        resource_manager_contact,
     globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
                                         register_callback,
     void *                              register_callback_arg)
 {
     globus_i_gram_client_attr_t *       iattr = NULL;
-    globus_l_gram_client_monitor_t *	monitor;
-    int					rc;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
 
     if(!monitor)
     {
@@ -813,10 +815,10 @@ globus_gram_client_register_ping(
  */
 int 
 globus_gram_client_ping(
-    const char *			resource_manager_contact)
+    const char *                        resource_manager_contact)
 {
-    int					rc;
-    globus_l_gram_client_monitor_t	monitor;
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
 
     globus_l_gram_client_monitor_init(&monitor, NULL, NULL);
 
@@ -834,7 +836,7 @@ globus_gram_client_ping(
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
 
@@ -898,41 +900,41 @@ globus_gram_client_ping(
  */
 int
 globus_gram_client_register_job_request(
-    const char *			resource_manager_contact,
-    const char *			description,
-    int					job_state_mask,
-    const char *			callback_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
     globus_i_gram_client_attr_t *       iattr = NULL;
-    globus_l_gram_client_monitor_t *	monitor;
-    int					rc;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     iattr = (globus_i_gram_client_attr_t *) attr;
 
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     rc = globus_l_gram_client_job_request(resource_manager_contact,
-	                                  description,
-				          job_state_mask,
+                                          description,
+                                          job_state_mask,
                                           iattr,
-				          callback_contact,
-				          monitor);
+                                          callback_contact,
+                                          monitor);
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
     return rc;
 }
@@ -969,46 +971,46 @@ globus_gram_client_register_job_request(
  */
 int 
 globus_gram_client_job_request(
-    const char *			resource_manager_contact,
-    const char *			description,
-    int					job_state_mask,
-    const char *			callback_contact,
-    char **				job_contact)
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    char **                             job_contact)
 {
-    int					rc;
-    globus_l_gram_client_monitor_t	monitor;
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
 
     if(job_contact)
     {
-	*job_contact = GLOBUS_NULL;
+        *job_contact = GLOBUS_NULL;
     }
 
     globus_l_gram_client_monitor_init(&monitor,
-	                              GLOBUS_NULL,
-				      GLOBUS_NULL);
+                                      GLOBUS_NULL,
+                                      GLOBUS_NULL);
 
     rc = globus_l_gram_client_job_request(resource_manager_contact,
-	                                  description,
-					  job_state_mask,
+                                          description,
+                                          job_state_mask,
                                           NULL,
-					  callback_contact,
-					  &monitor);
+                                          callback_contact,
+                                          &monitor);
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(&monitor);
+        globus_l_gram_client_monitor_destroy(&monitor);
 
-	return rc;
+        return rc;
     }
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
     if(job_contact)
     {
-	*job_contact = globus_libc_strdup(monitor.contact);
+        *job_contact = strdup(monitor.contact);
     }
     globus_mutex_unlock(&monitor.mutex);
 
@@ -1045,23 +1047,23 @@ globus_gram_client_error_string(int error_code)
  */
 int
 globus_l_gram_client_to_jobmanager(
-    const char *			job_contact,
-    const char *			request,
+    const char *                        job_contact,
+    const char *                        request,
     globus_i_gram_client_attr_t *       iattr,
     globus_l_gram_client_callback_type_t
-    					request_type,
-    globus_l_gram_client_monitor_t *	monitor)
+                                        request_type,
+    globus_l_gram_client_monitor_t *    monitor)
 {
-    int					rc;
-    globus_byte_t *			query = GLOBUS_NULL; 
-    globus_size_t			querysize;
+    int                                 rc;
+    globus_byte_t *                     query = GLOBUS_NULL; 
+    globus_size_t                       querysize;
     globus_io_attr_t                    attr;
     globus_bool_t                       use_attr = GLOBUS_FALSE;
 
     if (iattr != NULL && iattr->credential != GSS_C_NO_CREDENTIAL)
     {
         rc = globus_l_gram_client_setup_jobmanager_attr( 
-	             &attr,
+                     &attr,
                      iattr->credential);
         if (rc != GLOBUS_SUCCESS)
         {
@@ -1070,39 +1072,39 @@ globus_l_gram_client_to_jobmanager(
         use_attr = GLOBUS_TRUE;
     }
     rc = globus_gram_protocol_pack_status_request(
-	      request,
-	      &query,
-	      &querysize);
+              request,
+              &query,
+              &querysize);
 
     if (rc!=GLOBUS_SUCCESS)
     {
-	goto free_attr_exit;
+        goto free_attr_exit;
     }
     
     globus_mutex_lock(&monitor->mutex);
     monitor->type = request_type;
 
     rc = globus_gram_protocol_post(
-	         job_contact,
-		 &monitor->handle,
-		 use_attr ? &attr : NULL,
-		 query,
-		 querysize,
-		 (monitor->callback != GLOBUS_NULL) 
-		    ? globus_l_gram_client_register_callback
-		    : globus_l_gram_client_monitor_callback,
-		 monitor);
+                 job_contact,
+                 &monitor->handle,
+                 use_attr ? &attr : NULL,
+                 query,
+                 querysize,
+                 (monitor->callback != GLOBUS_NULL) 
+                    ? globus_l_gram_client_register_callback
+                    : globus_l_gram_client_monitor_callback,
+                 monitor);
 
     globus_mutex_unlock(&monitor->mutex);
 
     if(rc != GLOBUS_SUCCESS)
     {
         if(rc == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
-	    monitor->errorcode =
-		GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
-	}
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+            monitor->errorcode =
+                GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+        }
         else
         {
             monitor->errorcode = rc;
@@ -1111,7 +1113,7 @@ globus_l_gram_client_to_jobmanager(
 
     if(query)
     {
-	globus_libc_free(query);
+        globus_libc_free(query);
     }
 free_attr_exit:
     if(use_attr)
@@ -1145,34 +1147,34 @@ error_exit:
  */
 int
 globus_gram_client_job_cancel(
-    const char *			job_contact)
+    const char *                        job_contact)
 {
-    int                           	rc;
-    globus_l_gram_client_monitor_t	monitor;
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_l_gram_client_monitor_init(&monitor,
-	                              GLOBUS_NULL,
-				      GLOBUS_NULL);
+                                      GLOBUS_NULL,
+                                      GLOBUS_NULL);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
-	    				     "cancel",
+                                             "cancel",
                                              NULL,
-					     GLOBUS_GRAM_CLIENT_CANCEL,
-					     &monitor);
+                                             GLOBUS_GRAM_CLIENT_CANCEL,
+                                             &monitor);
 
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(&monitor);
+        globus_l_gram_client_monitor_destroy(&monitor);
 
-	return rc;
+        return rc;
     }
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
 
@@ -1213,38 +1215,38 @@ globus_gram_client_job_cancel(
  */
 int
 globus_gram_client_register_job_cancel(
-    const char *			job_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
-    int                           	rc;
-    globus_l_gram_client_monitor_t *	monitor;
+    int                                 rc;
+    globus_l_gram_client_monitor_t *    monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
 
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
-	    				     "cancel",
+                                             "cancel",
                                              (globus_i_gram_client_attr_t*)attr,
-					     GLOBUS_GRAM_CLIENT_CANCEL,
-					     monitor);
+                                             GLOBUS_GRAM_CLIENT_CANCEL,
+                                             monitor);
 
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
     return rc;
 }
@@ -1286,27 +1288,27 @@ globus_gram_client_register_job_cancel(
  */
 int 
 globus_gram_client_job_signal(
-    const char  *			job_contact,
-    globus_gram_protocol_job_signal_t	signal,
-    const char *			signal_arg,
-    int *				job_status,
-    int *				failure_code)
+    const char  *                       job_contact,
+    globus_gram_protocol_job_signal_t   signal,
+    const char *                        signal_arg,
+    int *                               job_status,
+    int *                               failure_code)
 {
     int       rc;
     char  *   request;
-    globus_l_gram_client_monitor_t	monitor;
+    globus_l_gram_client_monitor_t      monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_l_gram_client_monitor_init(&monitor,
-	                              GLOBUS_NULL,
-				      GLOBUS_NULL);
+                                      GLOBUS_NULL,
+                                      GLOBUS_NULL);
 
     if (signal_arg != NULL)
     {
-	/* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
-	request = (char *) globus_libc_malloc( strlen(signal_arg)
-					       + 6 + 10 + 2 + 1 );
+        /* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
+        request = (char *) malloc( strlen(signal_arg)
+                                               + 6 + 10 + 2 + 1 );
         if (request == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1314,15 +1316,15 @@ globus_gram_client_job_signal(
             goto error_exit;
         }
 
-	globus_libc_sprintf(request,
-			    "signal %d %s",
-			    signal,
-			    signal_arg);
+        globus_libc_sprintf(request,
+                            "signal %d %s",
+                            signal,
+                            signal_arg);
     }
     else
     {
-	/* 'signal' = 6, allow 10-digit integer, 1 space and null  */
-	request = (char *) globus_libc_malloc( 6 + 10 + 1 + 1 );
+        /* 'signal' = 6, allow 10-digit integer, 1 space and null  */
+        request = (char *) malloc( 6 + 10 + 1 + 1 );
         if (request == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1330,25 +1332,25 @@ globus_gram_client_job_signal(
             goto error_exit;
         }
 
-	globus_libc_sprintf(request,
-			    "signal %d",
-			    signal);
+        globus_libc_sprintf(request,
+                            "signal %d",
+                            signal);
     }
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
-					     request,
+                                             request,
                                              NULL,
-					     GLOBUS_GRAM_CLIENT_SIGNAL,
-					     &monitor);
+                                             GLOBUS_GRAM_CLIENT_SIGNAL,
+                                             &monitor);
     if(rc != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+        goto error_exit;
     }
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
 
@@ -1357,13 +1359,13 @@ globus_gram_client_job_signal(
 error_exit:
     if(job_status)
     {
-	*job_status = monitor.status;
+        *job_status = monitor.status;
     }
     if(failure_code)
     {
-	*failure_code = monitor.errorcode ?
-	    monitor.errorcode :
-	    monitor.job_failure_code;
+        *failure_code = monitor.errorcode ?
+            monitor.errorcode :
+            monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
     if (request != NULL)
@@ -1408,35 +1410,35 @@ error_exit:
  */
 int 
 globus_gram_client_register_job_signal(
-    const char  *			job_contact,
-    globus_gram_protocol_job_signal_t	signal,
-    const char *			signal_arg,
-    globus_gram_client_attr_t		attr,
+    const char  *                       job_contact,
+    globus_gram_protocol_job_signal_t   signal,
+    const char *                        signal_arg,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
-    int					rc;
-    char *				request;
-    globus_l_gram_client_monitor_t *	monitor;
+    int                                 rc;
+    char *                              request;
+    globus_l_gram_client_monitor_t *    monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     if (signal_arg != NULL)
     {
-	/* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
-	request = (char *) globus_libc_malloc( strlen(signal_arg)
-					       + 6 + 10 + 2 + 1 );
+        /* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
+        request = (char *) malloc( strlen(signal_arg)
+                                               + 6 + 10 + 2 + 1 );
         if (request == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1444,15 +1446,15 @@ globus_gram_client_register_job_signal(
             goto error_exit;
         }
 
-	globus_libc_sprintf(request,
-			    "signal %d %s",
-			    signal,
-			    signal_arg);
+        globus_libc_sprintf(request,
+                            "signal %d %s",
+                            signal,
+                            signal_arg);
     }
     else
     {
-	/* 'signal' = 6, allow 10-digit integer, 1 space and null  */
-	request = (char *) globus_libc_malloc( 6 + 10 + 1 + 1 );
+        /* 'signal' = 6, allow 10-digit integer, 1 space and null  */
+        request = (char *) malloc( 6 + 10 + 1 + 1 );
         if (request == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1460,22 +1462,22 @@ globus_gram_client_register_job_signal(
             goto error_exit;
         }
 
-	globus_libc_sprintf(request,
-			    "signal %d",
-			    signal);
+        globus_libc_sprintf(request,
+                            "signal %d",
+                            signal);
     }
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
-					     request,
+                                             request,
                                              attr,
-					     GLOBUS_GRAM_CLIENT_SIGNAL,
-					     monitor);
+                                             GLOBUS_GRAM_CLIENT_SIGNAL,
+                                             monitor);
     globus_libc_free(request);
 error_exit:
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
 
     return rc;
@@ -1507,34 +1509,34 @@ error_exit:
  */
 int
 globus_gram_client_job_status(
-    const char *			job_contact,
-    int *				job_status,
-    int *				failure_code)
+    const char *                        job_contact,
+    int *                               job_status,
+    int *                               failure_code)
 {
-    int					rc;
-    globus_l_gram_client_monitor_t 	monitor;
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_l_gram_client_monitor_init(&monitor,
-	                              GLOBUS_NULL,
-				      GLOBUS_NULL);
+                                      GLOBUS_NULL,
+                                      GLOBUS_NULL);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
-					     "status",
+                                             "status",
                                              NULL,
-					     GLOBUS_GRAM_CLIENT_STATUS,
-					     &monitor);
+                                             GLOBUS_GRAM_CLIENT_STATUS,
+                                             &monitor);
 
     if(rc != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+        goto error_exit;
     }
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
 
@@ -1543,13 +1545,13 @@ globus_gram_client_job_status(
 error_exit:
     if(job_status)
     {
-	*job_status = monitor.status;
+        *job_status = monitor.status;
     }
     if(failure_code)
     {
-	*failure_code = monitor.errorcode ?
-	    monitor.errorcode :
-	    monitor.job_failure_code;
+        *failure_code = monitor.errorcode ?
+            monitor.errorcode :
+            monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
 
@@ -1583,36 +1585,36 @@ error_exit:
  */
 int
 globus_gram_client_register_job_status(
-    const char *			job_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
-    int					rc;
-    globus_l_gram_client_monitor_t * 	monitor;
+    int                                 rc;
+    globus_l_gram_client_monitor_t *    monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
-					     "status",
+                                             "status",
                                              attr,
-					     GLOBUS_GRAM_CLIENT_STATUS,
-					     monitor);
+                                             GLOBUS_GRAM_CLIENT_STATUS,
+                                             monitor);
 
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
     return rc;
 }
@@ -1650,23 +1652,23 @@ globus_gram_client_register_job_status(
  */
 int 
 globus_gram_client_job_callback_register(
-    const char *			job_contact,
-    int					job_state_mask,
-    const char *			callback_contact,
-    int *				job_status,
-    int *				failure_code)
+    const char *                        job_contact,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    int *                               job_status,
+    int *                               failure_code)
 {
-    int					rc;
-    char  *				request;
-    globus_l_gram_client_monitor_t	monitor;
+    int                                 rc;
+    char  *                             request;
+    globus_l_gram_client_monitor_t      monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
     globus_l_gram_client_monitor_init(&monitor, GLOBUS_NULL, GLOBUS_NULL);
 
     /* 'register' = 8, allow 10-digit integer, 2 spaces and null  */
-    request = (char *) globus_libc_malloc( 
-	                  strlen(callback_contact)
-			  + 8 + 10 + 2 + 1 );
+    request = (char *) malloc( 
+                          strlen(callback_contact)
+                          + 8 + 10 + 2 + 1 );
 
     if (request == NULL)
     {
@@ -1676,26 +1678,26 @@ globus_gram_client_job_callback_register(
     }
 
     globus_libc_sprintf(request,
-			"register %d %s",
-			job_state_mask,
-			callback_contact);
+                        "register %d %s",
+                        job_state_mask,
+                        callback_contact);
 
     rc = globus_l_gram_client_to_jobmanager(
-	    job_contact,
-	    request,
+            job_contact,
+            request,
             NULL,
-	    GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
-	    &monitor);
+            GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
+            &monitor);
 
     if(rc != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+        goto error_exit;
     }
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
 
@@ -1704,13 +1706,13 @@ globus_gram_client_job_callback_register(
 error_exit:
     if(job_status)
     {
-	*job_status = monitor.status;
+        *job_status = monitor.status;
     }
     if(failure_code)
     {
-	*failure_code = monitor.errorcode ?
-	    monitor.errorcode :
-	    monitor.job_failure_code;
+        *failure_code = monitor.errorcode ?
+            monitor.errorcode :
+            monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
     if (request != NULL)
@@ -1751,23 +1753,23 @@ error_exit:
  */
 int 
 globus_gram_client_job_callback_unregister(
-    const char *			job_contact,
-    const char *			callback_contact,
-    int *				job_status,
-    int *				failure_code)
+    const char *                        job_contact,
+    const char *                        callback_contact,
+    int *                               job_status,
+    int *                               failure_code)
 {
-    int					rc;
-    char *				request;
-    globus_l_gram_client_monitor_t	monitor;
+    int                                 rc;
+    char *                              request;
+    globus_l_gram_client_monitor_t      monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_l_gram_client_monitor_init(&monitor, GLOBUS_NULL, GLOBUS_NULL);
 
     /* 'unregister' = 10, a space and null  */
-    request = (char *) globus_libc_malloc( 
-	                  strlen(callback_contact)
-			  + 10 + 1 + 1 );
+    request = (char *) malloc( 
+                          strlen(callback_contact)
+                          + 10 + 1 + 1 );
 
     if (request == NULL)
     {
@@ -1777,25 +1779,25 @@ globus_gram_client_job_callback_unregister(
     }
 
     globus_libc_sprintf(request,
-			"unregister %s",
-			callback_contact);
+                        "unregister %s",
+                        callback_contact);
 
     rc = globus_l_gram_client_to_jobmanager(
-	    job_contact,
-	    request,
+            job_contact,
+            request,
             NULL,
-	    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
-	    &monitor);
+            GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
+            &monitor);
 
     if(rc != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+        goto error_exit;
     }
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
 
@@ -1804,13 +1806,13 @@ globus_gram_client_job_callback_unregister(
 error_exit:
     if(job_status)
     {
-	*job_status = monitor.status;
+        *job_status = monitor.status;
     }
     if(failure_code)
     {
-	*failure_code = monitor.errorcode ?
-	    monitor.errorcode :
-	    monitor.job_failure_code;
+        *failure_code = monitor.errorcode ?
+            monitor.errorcode :
+            monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
 
@@ -1847,25 +1849,25 @@ error_exit:
  */
 int
 globus_gram_client_job_refresh_credentials(
-    char *				job_contact,
-    gss_cred_id_t			creds)
+    char *                              job_contact,
+    gss_cred_id_t                       creds)
 {
-    globus_l_gram_client_monitor_t	monitor;
-    int					rc;
+    globus_l_gram_client_monitor_t      monitor;
+    int                                 rc;
 
     globus_l_gram_client_monitor_init(&monitor,
-	                              GLOBUS_NULL,
-				      GLOBUS_NULL);
+                                      GLOBUS_NULL,
+                                      GLOBUS_NULL);
 
     rc = globus_l_gram_client_job_refresh_credentials(
-	    job_contact,
-	    creds,
+            job_contact,
+            creds,
             NULL,
-	    &monitor);
+            &monitor);
 
     if (rc != GLOBUS_SUCCESS)
     {
-	goto end;
+        goto end;
     }
 
     globus_mutex_lock(&monitor.mutex);
@@ -1910,36 +1912,36 @@ end:
  */
 int
 globus_gram_client_register_job_refresh_credentials(
-    char *				job_contact,
-    gss_cred_id_t			creds,
-    globus_gram_client_attr_t		attr,
+    char *                              job_contact,
+    gss_cred_id_t                       creds,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
-    globus_l_gram_client_monitor_t *	monitor;
-    int					rc;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
 
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     rc = globus_l_gram_client_job_refresh_credentials(
-	    job_contact,
-	    creds,
+            job_contact,
+            creds,
             attr,
-	    monitor);
+            monitor);
 
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
 
     return rc;
@@ -1978,33 +1980,33 @@ globus_gram_client_register_job_refresh_credentials(
  */
 int 
 globus_gram_client_register_job_callback_registration(
-    const char *			job_contact,
-    int					job_state_mask,
-    const char *			callback_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
-    int					rc;
-    char  *				request;
-    globus_l_gram_client_monitor_t *	monitor;
+    int                                 rc;
+    char  *                             request;
+    globus_l_gram_client_monitor_t *    monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     /* 'register' = 8, allow 10-digit integer, 2 spaces and null  */
-    request = (char *) globus_libc_malloc( 
-	                  strlen(callback_contact)
-			  + 8 + 10 + 2 + 1 );
+    request = (char *) malloc( 
+                          strlen(callback_contact)
+                          + 8 + 10 + 2 + 1 );
 
     if (request == NULL)
     {
@@ -2013,22 +2015,22 @@ globus_gram_client_register_job_callback_registration(
     }
 
     globus_libc_sprintf(request,
-			"register %d %s",
-			job_state_mask,
-			callback_contact);
+                        "register %d %s",
+                        job_state_mask,
+                        callback_contact);
 
     rc = globus_l_gram_client_to_jobmanager(
-	    job_contact,
-	    request,
+            job_contact,
+            request,
             NULL,
-	    GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
-	    monitor);
+            GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
+            monitor);
 
 error_exit:
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
 
     if(request != NULL)
@@ -2071,32 +2073,32 @@ error_exit:
  */
 int 
 globus_gram_client_register_job_callback_unregistration(
-    const char *			job_contact,
-    const char *			callback_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
-    int					rc;
-    char *				request;
-    globus_l_gram_client_monitor_t *	monitor;
+    int                                 rc;
+    char *                              request;
+    globus_l_gram_client_monitor_t *    monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
     if(!monitor)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
     globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-				      register_callback_arg);
+                                      register_callback,
+                                      register_callback_arg);
 
     /* 'unregister' = 10, a space and null  */
-    request = (char *) globus_libc_malloc( 
-	                  strlen(callback_contact)
-			  + 10 + 1 + 1 );
+    request = (char *) malloc( 
+                          strlen(callback_contact)
+                          + 10 + 1 + 1 );
     if (request == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -2105,21 +2107,21 @@ globus_gram_client_register_job_callback_unregistration(
     }
 
     globus_libc_sprintf(request,
-			"unregister %s",
-			callback_contact);
+                        "unregister %s",
+                        callback_contact);
 
     rc = globus_l_gram_client_to_jobmanager(
-	    job_contact,
-	    request,
+            job_contact,
+            request,
             attr,
-	    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
-	    monitor);
+            GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
+            monitor);
 
 error_exit:
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_l_gram_client_monitor_destroy(monitor);
-	globus_libc_free(monitor);
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
     }
     if(request != NULL)
     {
@@ -2162,9 +2164,9 @@ globus_gram_client_callback_allow(
     void * user_callback_arg,
     char ** callback_contact)
 {
-    int					rc;
+    int                                 rc;
     globus_l_gram_client_callback_info_t *
-					callback_info;
+                                        callback_info;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
@@ -2175,8 +2177,8 @@ globus_gram_client_callback_allow(
 
     *callback_contact = NULL;
 
-    callback_info = globus_libc_malloc(
-	                sizeof(globus_l_gram_client_callback_info_t));
+    callback_info = malloc(
+                        sizeof(globus_l_gram_client_callback_info_t));
 
     if (callback_info == NULL)
     {
@@ -2185,12 +2187,13 @@ globus_gram_client_callback_allow(
     }
 
     callback_info->callback = callback_func;
+    callback_info->info_callback = NULL;
     callback_info->callback_arg = user_callback_arg;
 
     rc = globus_gram_protocol_allow_attach(
-	    &callback_info->callback_contact,
-	    globus_l_gram_client_callback,
-	    callback_info);
+            &callback_info->callback_contact,
+            globus_l_gram_client_callback,
+            callback_info);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -2199,8 +2202,8 @@ globus_gram_client_callback_allow(
 
     globus_mutex_lock(&globus_l_mutex);
     rc = globus_hashtable_insert(&globus_l_gram_client_contacts,
-	                    callback_info->callback_contact,
-	                    callback_info);
+                            callback_info->callback_contact,
+                            callback_info);
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -2209,7 +2212,116 @@ globus_gram_client_callback_allow(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
-    *callback_contact = globus_libc_strdup(callback_info->callback_contact);
+    *callback_contact = strdup(callback_info->callback_contact);
+
+    if (*callback_contact == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto remove_from_hashtable_exit;
+    }
+    return rc;
+
+remove_from_hashtable_exit:
+    globus_mutex_lock(&globus_l_mutex);
+    globus_hashtable_remove(&globus_l_gram_client_contacts,
+            (void *) callback_info->callback_contact);
+    globus_mutex_unlock(&globus_l_mutex);
+
+disallow_exit:
+    globus_gram_protocol_callback_disallow(callback_info->callback_contact);
+    globus_libc_free(callback_info->callback_contact);
+free_callback_info_exit:
+    globus_libc_free(callback_info);
+
+error_exit:
+    return rc;
+} /* globus_gram_client_callback_allow() */
+
+/**
+ * Create a callback contact.
+ * @ingroup globus_gram_client_callback
+ *
+ * Creates a small GRAM server which can handle GRAM state updates from
+ * job managers.  The callback function associated with this server can handle
+ * arbitrary GRAM attributes passed in the protocol, unlike
+ * globus_gram_protocol_callback_allow which can only handle a fixed set of
+ * attributes. The contact information for this server is returned and
+ * may be used with the globus_gram_client_job_request() or
+ * globus_gram_client_callback_register() functions.
+ *
+ * @param callback_func
+ *        A pointer to the user's callback function to be called when
+ *        GRAM state changes are received from a Job Manager.
+ * @param user_callback_arg
+ *        A pointer to arbitrary data which is passed as the first
+ *        parameter to the @a callback_func function when it is called.
+ * @param callback_contact
+ *        A pointer to a char *. This pointer will be initialized with
+ *        a newly allocated string containing the information needed by
+ *        the Job Manager to contact this GRAM callback server. This
+ *        string should be freed by the user when it is no longer used.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the callback contact
+ * create was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
+ * values will be returned, indicating why the client could not create the
+ * callback contact.
+ */
+int 
+globus_gram_client_info_callback_allow(
+    globus_gram_client_info_callback_func_t
+                                        callback_func,
+    void *                              user_callback_arg,
+    char **                             callback_contact)
+{
+    int                                 rc;
+    globus_l_gram_client_callback_info_t *
+                                        callback_info;
+
+    GLOBUS_L_CHECK_IF_INITIALIZED;
+
+    if (callback_contact == NULL)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+    }
+
+    *callback_contact = NULL;
+
+    callback_info = malloc(sizeof(globus_l_gram_client_callback_info_t));
+
+    if (callback_info == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto error_exit;
+    }
+
+    callback_info->callback = NULL;
+    callback_info->info_callback = callback_func;
+    callback_info->callback_arg = user_callback_arg;
+
+    rc = globus_gram_protocol_allow_attach(
+            &callback_info->callback_contact,
+            globus_l_gram_client_callback,
+            callback_info);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto free_callback_info_exit;
+    }
+
+    globus_mutex_lock(&globus_l_mutex);
+    rc = globus_hashtable_insert(&globus_l_gram_client_contacts,
+                            callback_info->callback_contact,
+                            callback_info);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto disallow_exit;
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
+    *callback_contact = strdup(callback_info->callback_contact);
 
     if (*callback_contact == NULL)
     {
@@ -2258,30 +2370,30 @@ error_exit:
  */
 int 
 globus_gram_client_callback_disallow(
-    char *				callback_contact)
+    char *                              callback_contact)
 {
-    int					rc;
+    int                                 rc;
     globus_l_gram_client_callback_info_t *
-					callback_info;
+                                        callback_info;
 
     globus_mutex_lock(&globus_l_mutex);
 
     callback_info = globus_hashtable_remove(
-	    &globus_l_gram_client_contacts,
-	    (void *) callback_contact);
+            &globus_l_gram_client_contacts,
+            (void *) callback_contact);
 
     globus_mutex_unlock(&globus_l_mutex);
 
     if(callback_info != GLOBUS_NULL)
     {
-	rc = globus_gram_protocol_callback_disallow(callback_contact);
+        rc = globus_gram_protocol_callback_disallow(callback_contact);
 
-	globus_libc_free(callback_info->callback_contact);
-	globus_libc_free(callback_info);
+        globus_libc_free(callback_info->callback_contact);
+        globus_libc_free(callback_info);
     }
     else
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_CALLBACK_NOT_FOUND;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_CALLBACK_NOT_FOUND;
     }
 
     return rc;
@@ -2299,12 +2411,12 @@ globus_gram_client_callback_disallow(
  */
 int 
 globus_gram_client_job_contact_free(
-    char *				job_contact)
+    char *                              job_contact)
 {
     if(globus_l_print_fp)
     {
-	globus_libc_fprintf(globus_l_print_fp,
-		      "in globus_gram_client_job_contact_free()\n");
+        globus_libc_fprintf(globus_l_print_fp,
+                      "in globus_gram_client_job_contact_free()\n");
     }
 
     globus_free(job_contact);
@@ -2315,19 +2427,19 @@ globus_gram_client_job_contact_free(
 static
 int
 globus_l_gram_client_job_request(
-    const char *			resource_manager_contact,
-    const char *			description,
-    int					job_state_mask,
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
     globus_i_gram_client_attr_t *       iattr,
-    const char *			callback_contact,
-    globus_l_gram_client_monitor_t *	monitor)
+    const char *                        callback_contact,
+    globus_l_gram_client_monitor_t *    monitor)
 {
-    int					rc;
-    globus_byte_t *			query = GLOBUS_NULL;
-    globus_size_t			querysize; 
-    globus_io_attr_t			attr;
-    char *				url;
-    char *				dn;
+    int                                 rc;
+    globus_byte_t *                     query = GLOBUS_NULL;
+    globus_size_t                       querysize; 
+    globus_io_attr_t                    attr;
+    char *                              url;
+    char *                              dn;
     globus_rsl_t *                      rsl;
     char *                              username = NULL;
 
@@ -2349,7 +2461,7 @@ globus_l_gram_client_job_request(
 
         if (rc == 0 && username_value != NULL && username_value[0] != NULL)
         {
-            username = globus_libc_strdup(username_value[0]);
+            username = strdup(username_value[0]);
         }
 
         if (username_value != NULL)
@@ -2362,53 +2474,53 @@ globus_l_gram_client_job_request(
     }
 
     if ((rc = globus_l_gram_client_parse_gatekeeper_contact(
-	             resource_manager_contact,
-		     GLOBUS_NULL,
+                     resource_manager_contact,
+                     GLOBUS_NULL,
                      username,
-		     &url,
-		     &dn )) != GLOBUS_SUCCESS)
+                     &url,
+                     &dn )) != GLOBUS_SUCCESS)
     {
-	goto globus_gram_client_job_request_parse_failed;
+        goto globus_gram_client_job_request_parse_failed;
     }
 
     if ((rc = globus_l_gram_client_setup_gatekeeper_attr( 
-	             &attr,
+                     &attr,
                      (iattr != NULL)
                          ? iattr->credential : GSS_C_NO_CREDENTIAL,
-		     (iattr != NULL)
+                     (iattr != NULL)
                          ? iattr->delegation_mode
                          : GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
-		     dn )) != GLOBUS_SUCCESS)
+                     dn )) != GLOBUS_SUCCESS)
     {
         goto globus_gram_client_job_request_attr_failed;
     }
 
     if ((rc = globus_gram_protocol_pack_job_request(
-	             job_state_mask,
-		     callback_contact,
-		     description,
-		     &query,
-		     &querysize)) != GLOBUS_SUCCESS )
+                     job_state_mask,
+                     callback_contact,
+                     description,
+                     &query,
+                     &querysize)) != GLOBUS_SUCCESS )
     {
-	goto globus_gram_client_job_request_pack_failed;
+        goto globus_gram_client_job_request_pack_failed;
     }
 
     globus_mutex_lock(&monitor->mutex);
     monitor->type = GLOBUS_GRAM_CLIENT_JOB_REQUEST;
     rc = globus_gram_protocol_post(
-	         url,
-		 &monitor->handle,
-		 &attr,
-		 query,
-		 querysize,
-		 (monitor->callback != GLOBUS_NULL)
-		     ?  globus_l_gram_client_register_callback
-		     : globus_l_gram_client_monitor_callback,
-		 monitor);
+                 url,
+                 &monitor->handle,
+                 &attr,
+                 query,
+                 querysize,
+                 (monitor->callback != GLOBUS_NULL)
+                     ?  globus_l_gram_client_register_callback
+                     : globus_l_gram_client_monitor_callback,
+                 monitor);
     globus_mutex_unlock(&monitor->mutex);
 
     if (query)
-	globus_libc_free(query);
+        globus_libc_free(query);
 
 globus_gram_client_job_request_pack_failed:
     globus_io_tcpattr_destroy (&attr);
@@ -2430,47 +2542,47 @@ globus_gram_client_job_request_parse_failed:
 static
 int 
 globus_l_gram_client_ping(
-    const char *			resource_manager_contact,
+    const char *                        resource_manager_contact,
     globus_i_gram_client_attr_t *       iattr,
-    globus_l_gram_client_monitor_t *	monitor)
+    globus_l_gram_client_monitor_t *    monitor)
 {
-    int					rc;
+    int                                 rc;
     char *                              url;
     char *                              dn;
     globus_io_attr_t                    attr;
 
     rc = globus_l_gram_client_parse_gatekeeper_contact(
-	resource_manager_contact,
-	"ping",
+        resource_manager_contact,
+        "ping",
         NULL,
-	&url,
-	&dn );
+        &url,
+        &dn );
 
     if (rc != GLOBUS_SUCCESS)
     {
-	goto globus_gram_client_ping_parse_failed;
+        goto globus_gram_client_ping_parse_failed;
     }
 
     rc = globus_l_gram_client_setup_gatekeeper_attr( 
-	&attr,
+        &attr,
         (iattr != NULL) ? iattr->credential : GSS_C_NO_CREDENTIAL,
-	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
-	dn );
+        GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
+        dn );
 
     if (rc != GLOBUS_SUCCESS)
     {
-	goto globus_gram_client_ping_attr_failed;
+        goto globus_gram_client_ping_attr_failed;
     }
 
     globus_mutex_lock(&monitor->mutex);
     monitor->type = GLOBUS_GRAM_CLIENT_PING;
 
     rc = globus_gram_protocol_post(
-	         url,
-		 &monitor->handle,
-		 &attr,
-		 GLOBUS_NULL,
-		 0,
+                 url,
+                 &monitor->handle,
+                 &attr,
+                 GLOBUS_NULL,
+                 0,
                  (monitor->callback != NULL)
                      ? globus_l_gram_client_register_callback
                      : globus_l_gram_client_monitor_callback,
@@ -2492,14 +2604,14 @@ globus_gram_client_ping_parse_failed:
 static
 int
 globus_l_gram_client_job_refresh_credentials(
-    char *				job_contact,
-    gss_cred_id_t			creds,
+    char *                              job_contact,
+    gss_cred_id_t                       creds,
     globus_i_gram_client_attr_t *       attr,
-    globus_l_gram_client_monitor_t *	monitor)
+    globus_l_gram_client_monitor_t *    monitor)
 {
-    int					rc;
-    globus_byte_t *			query = GLOBUS_NULL;
-    globus_size_t			querysize;
+    int                                 rc;
+    globus_byte_t *                     query = GLOBUS_NULL;
+    globus_size_t                       querysize;
     OM_uint32                           reqflags = 0;
 
     globus_mutex_lock(&monitor->mutex);
@@ -2529,9 +2641,9 @@ globus_l_gram_client_job_refresh_credentials(
     monitor->type = GLOBUS_GRAM_CLIENT_RENEW;
 
     rc = globus_gram_protocol_pack_status_request(
-	 "renew",
-	 &query,
-	 &querysize);
+         "renew",
+         &query,
+         &querysize);
 
     if (rc!=GLOBUS_SUCCESS)
       goto end;
@@ -2540,24 +2652,24 @@ globus_l_gram_client_job_refresh_credentials(
      * credential to the job manager. call back when all is done.
      */
     rc = globus_gram_protocol_post_delegation(
-	 job_contact,
-	 &monitor->handle,
-	 GLOBUS_NULL,
-	 query,
-	 querysize,
-	 creds,
-	 GSS_C_NO_OID_SET,
-	 GSS_C_NO_BUFFER_SET,
+         job_contact,
+         &monitor->handle,
+         GLOBUS_NULL,
+         query,
+         querysize,
+         creds,
+         GSS_C_NO_OID_SET,
+         GSS_C_NO_BUFFER_SET,
          reqflags,
-	 0,
-	 (monitor->callback != GLOBUS_NULL)
-	     ?  globus_l_gram_client_register_callback
-	     : globus_l_gram_client_monitor_callback,
-	 monitor);
+         0,
+         (monitor->callback != GLOBUS_NULL)
+             ?  globus_l_gram_client_register_callback
+             : globus_l_gram_client_monitor_callback,
+         monitor);
 
     if(query)
     {
-	globus_libc_free(query);
+        globus_libc_free(query);
     }
 
 end:
@@ -2570,20 +2682,22 @@ end:
 static
 void
 globus_l_gram_client_callback(
-    void *				arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			buf,
-    globus_size_t			nbytes,
-    int					errorcode,
-    char *				uri)
+    void *                              arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes,
+    int                                 errorcode,
+    char *                              uri)
 {
     globus_l_gram_client_callback_info_t *
-					info;
-    char *				url = NULL;
-    int					job_status;
-    int					failure_code;
-    int					rc;
+                                        info;
+    char *                              url = NULL;
+    int                                 job_status;
+    int                                 failure_code;
+    int                                 rc;
     gss_ctx_id_t                        context;
+    globus_gram_client_job_info_t       job_info;
+    globus_gram_protocol_hash_entry_t * entry;
 
     info = arg;
     
@@ -2611,8 +2725,9 @@ globus_l_gram_client_callback(
             job_status   = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
             failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
         }
-        else
+        else if (info->callback != NULL)
         { 
+            /* GRAM2-style callback function */
             rc = globus_gram_protocol_unpack_status_update_message(
                 buf,
                 nbytes,
@@ -2620,18 +2735,67 @@ globus_l_gram_client_callback(
                 &job_status,
                 &failure_code);
         }
+        else if (info->info_callback != NULL)
+        {
+            memset(&job_info, 0, sizeof(globus_gram_client_job_info_t));
+
+            /* GRAM5-style callback function which adds additional info */
+            rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+                    buf,
+                    nbytes,
+                    &job_info.extensions);
+
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto error_out;
+            }
+
+            entry = globus_hashtable_lookup(
+                    &job_info.extensions,
+                    "job-manager-url");
+            if (entry != NULL)
+            {
+                job_info.job_contact = entry->value;
+            }
+
+            entry = globus_hashtable_lookup(
+                    &job_info.extensions,
+                    "status");
+            if (entry != NULL)
+            {
+                job_info.job_state = strtol(entry->value, NULL, 0);
+            }
+
+            entry = globus_hashtable_lookup(
+                    &job_info.extensions,
+                    "failure-code");
+            if (entry != NULL)
+            {
+                job_info.protocol_error_code = strtol(entry->value, NULL, 0);
+            }
+        }
     }
 
 error_out:
     rc = globus_gram_protocol_reply(handle,
-	                            200,
-				    GLOBUS_NULL,
-				    0);
+                                    200,
+                                    GLOBUS_NULL,
+                                    0);
     
-    info->callback(info->callback_arg,
-	           url,
-		   job_status,
-		   failure_code);
+    if (info->callback)
+    {
+        info->callback(info->callback_arg,
+                       url,
+                       job_status,
+                       failure_code);
+    }
+    else if (info->info_callback)
+    {
+        info->info_callback(info->callback_arg,
+                            job_info.job_contact,
+                            &job_info);
+        globus_gram_protocol_hash_destroy(&job_info.extensions);
+    }
 
     globus_libc_free(url);
 }
@@ -2639,15 +2803,15 @@ error_out:
 static
 void
 globus_l_gram_client_monitor_callback(
-    void *				user_arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			message,
-    globus_size_t			msgsize,
-    int					errorcode,
-    char *				uri)
+    void *                              user_arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     message,
+    globus_size_t                       msgsize,
+    int                                 errorcode,
+    char *                              uri)
 {
-    globus_l_gram_client_monitor_t *	monitor;
-    int					rc;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
 
     monitor = user_arg;
 
@@ -2664,49 +2828,49 @@ globus_l_gram_client_monitor_callback(
     if(monitor->errorcode == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
        monitor->type != GLOBUS_GRAM_CLIENT_JOB_REQUEST)
     {
-	monitor->errorcode = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+        monitor->errorcode = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
     }
 
     if(!errorcode)
     {
-	switch(monitor->type)
-	{
-	  case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
-	    rc = globus_gram_protocol_unpack_job_request_reply(
-		    message,
-		    msgsize,
-		    &monitor->status,
-		    &monitor->contact);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		monitor->errorcode = rc;
-	    }
-	    else
-	    {
-		monitor->errorcode = monitor->status;
-	    }
-	    break;
+        switch(monitor->type)
+        {
+          case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
+            rc = globus_gram_protocol_unpack_job_request_reply(
+                    message,
+                    msgsize,
+                    &monitor->status,
+                    &monitor->contact);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                monitor->errorcode = rc;
+            }
+            else
+            {
+                monitor->errorcode = monitor->status;
+            }
+            break;
 
-	  case GLOBUS_GRAM_CLIENT_PING:
-	  case GLOBUS_GRAM_CLIENT_RENEW:
-	    break;
-	  case GLOBUS_GRAM_CLIENT_STATUS:
-	  case GLOBUS_GRAM_CLIENT_SIGNAL:
-	  case GLOBUS_GRAM_CLIENT_CANCEL:
-	  case GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER:
-	  case GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER:
-	    rc = globus_gram_protocol_unpack_status_reply(
-		    message,
-		    msgsize,
-		    &monitor->status,
-		    &monitor->errorcode,
-		    &monitor->job_failure_code);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		monitor->errorcode = rc;
-	    }
-	    break;
-	}
+          case GLOBUS_GRAM_CLIENT_PING:
+          case GLOBUS_GRAM_CLIENT_RENEW:
+            break;
+          case GLOBUS_GRAM_CLIENT_STATUS:
+          case GLOBUS_GRAM_CLIENT_SIGNAL:
+          case GLOBUS_GRAM_CLIENT_CANCEL:
+          case GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER:
+          case GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER:
+            rc = globus_gram_protocol_unpack_status_reply(
+                    message,
+                    msgsize,
+                    &monitor->status,
+                    &monitor->errorcode,
+                    &monitor->job_failure_code);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                monitor->errorcode = rc;
+            }
+            break;
+        }
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
@@ -2716,15 +2880,15 @@ globus_l_gram_client_monitor_callback(
 static
 void
 globus_l_gram_client_register_callback(
-    void *				user_arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			message,
-    globus_size_t			msgsize,
-    int					errorcode,
-    char *				uri)
+    void *                              user_arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     message,
+    globus_size_t                       msgsize,
+    int                                 errorcode,
+    char *                              uri)
 {
-    globus_l_gram_client_monitor_t *	monitor;
-    int					rc;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
 
     monitor = user_arg;
 
@@ -2743,53 +2907,53 @@ globus_l_gram_client_register_callback(
     if(monitor->errorcode == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
        monitor->type != GLOBUS_GRAM_CLIENT_JOB_REQUEST)
     {
-	monitor->errorcode = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+        monitor->errorcode = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
     }
     if(!errorcode)
     {
-	switch(monitor->type)
-	{
-	  case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
-	    rc = globus_gram_protocol_unpack_job_request_reply(
-		    message,
-		    msgsize,
-		    &monitor->errorcode,
-		    &monitor->contact);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		monitor->errorcode = rc;
-	    }
-	    break;
+        switch(monitor->type)
+        {
+          case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
+            rc = globus_gram_protocol_unpack_job_request_reply(
+                    message,
+                    msgsize,
+                    &monitor->errorcode,
+                    &monitor->contact);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                monitor->errorcode = rc;
+            }
+            break;
 
-	  case GLOBUS_GRAM_CLIENT_PING:
-	  case GLOBUS_GRAM_CLIENT_RENEW:
-	    break;
-	  case GLOBUS_GRAM_CLIENT_STATUS:
-	  case GLOBUS_GRAM_CLIENT_SIGNAL:
-	  case GLOBUS_GRAM_CLIENT_CANCEL:
-	  case GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER:
-	  case GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER:
-	    rc = globus_gram_protocol_unpack_status_reply(
-		    message,
-		    msgsize,
-		    &monitor->status,
-		    &monitor->errorcode,
-		    &monitor->job_failure_code);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		monitor->errorcode = rc;
-	    }
-	    break;
-	}
+          case GLOBUS_GRAM_CLIENT_PING:
+          case GLOBUS_GRAM_CLIENT_RENEW:
+            break;
+          case GLOBUS_GRAM_CLIENT_STATUS:
+          case GLOBUS_GRAM_CLIENT_SIGNAL:
+          case GLOBUS_GRAM_CLIENT_CANCEL:
+          case GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER:
+          case GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER:
+            rc = globus_gram_protocol_unpack_status_reply(
+                    message,
+                    msgsize,
+                    &monitor->status,
+                    &monitor->errorcode,
+                    &monitor->job_failure_code);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                monitor->errorcode = rc;
+            }
+            break;
+        }
     }
 
     globus_mutex_unlock(&monitor->mutex);
 
     monitor->callback(monitor->callback_arg,
-	              monitor->errorcode,
-	              monitor->contact,
-		      monitor->status,
-		      monitor->job_failure_code);
+                      monitor->errorcode,
+                      monitor->contact,
+                      monitor->status,
+                      monitor->job_failure_code);
 
     globus_l_gram_client_monitor_destroy(monitor);
     globus_libc_free(monitor);
@@ -2799,10 +2963,10 @@ globus_l_gram_client_register_callback(
 static
 int
 globus_l_gram_client_monitor_init(
-    globus_l_gram_client_monitor_t *	monitor,
+    globus_l_gram_client_monitor_t *    monitor,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg)
+                                        register_callback,
+    void *                              register_callback_arg)
 {
     memset(monitor, '\0', sizeof(globus_l_gram_client_monitor_t));
 
@@ -2819,7 +2983,7 @@ globus_l_gram_client_monitor_init(
 static
 int
 globus_l_gram_client_monitor_destroy(
-    globus_l_gram_client_monitor_t *	monitor)
+    globus_l_gram_client_monitor_t *    monitor)
 {
 
     if (monitor->contact != GLOBUS_NULL)

@@ -93,9 +93,23 @@ EXTERN_C_BEGIN
  *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
  */
 typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
-						    char * job_contact,
-						    int state,
-						    int errorcode);
+                                                    char * job_contact,
+                                                    int state,
+                                                    int errorcode);
+
+typedef struct globus_gram_client_job_info_s
+{
+    globus_hashtable_t                  extensions;
+    const char *                        job_contact;
+    int                                 job_state;
+    int                                 protocol_error_code;
+}
+globus_gram_client_job_info_t;
+
+typedef void (* globus_gram_client_info_callback_func_t)(
+        void *                          user_callback_arg,
+        const char *                    job_contact,
+        globus_gram_client_job_info_t * job_info);
 
 /**
  * GRAM  operation attribute.
@@ -127,11 +141,11 @@ typedef void * globus_gram_client_attr_t;
  *        is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
  */
 typedef void (* globus_gram_client_nonblocking_func_t)(
-    void *				user_callback_arg,
-    globus_gram_protocol_error_t	operation_failure_code,
-    const char *			job_contact,
-    globus_gram_protocol_job_state_t	job_state,
-    globus_gram_protocol_error_t	job_failure_code);
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code);
 
 
 /******************************************************************************
@@ -147,48 +161,56 @@ typedef void (* globus_gram_client_nonblocking_func_t)(
 ******************************************************************************/
 int 
 globus_gram_client_callback_allow(
-    globus_gram_client_callback_func_t	callback_func,
-    void *				user_callback_arg,
-    char **				callback_contact);
+    globus_gram_client_callback_func_t  callback_func,
+    void *                              user_callback_arg,
+    char **                             callback_contact);
+
+
+int
+globus_gram_client_info_callback_allow(
+    globus_gram_client_info_callback_func_t
+                                        callback_func,
+    void *                              user_callback_arg,
+    char **                             callback_contact);
 
 int
 globus_gram_client_register_job_request(
-    const char *			resource_manager_contact,
-    const char *			description,
-    int					job_state_mask,
-    const char *			callback_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int 
 globus_gram_client_job_request(
-    const char *			resource_manager_contact,
-    const char *			description,
-    int					job_state_mask,
-    const char *			callback_contact,
-    char **				job_contact);
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    char **                             job_contact);
 
 int
 globus_gram_client_register_job_cancel(
-    const char *			job_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int 
 globus_gram_client_job_cancel(
-    const char *			job_contact);
+    const char *                        job_contact);
 
 int
 globus_gram_client_register_job_status(
-    const char *			job_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int
 globus_gram_client_job_refresh_credentials(
@@ -197,86 +219,86 @@ globus_gram_client_job_refresh_credentials(
 
 int
 globus_gram_client_register_job_refresh_credentials(
-    char *				job_contact,
-    gss_cred_id_t			creds,
-    globus_gram_client_attr_t		attr,
+    char *                              job_contact,
+    gss_cred_id_t                       creds,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int
 globus_gram_client_job_status(
-    const char *			job_contact,
-    int *				job_status,
-    int *				failure_code);
+    const char *                        job_contact,
+    int *                               job_status,
+    int *                               failure_code);
 
 int
 globus_gram_client_register_job_signal(
-    const char *			job_contact,
-    globus_gram_protocol_job_signal_t	signal,
-    const char *			signal_arg,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    globus_gram_protocol_job_signal_t   signal,
+    const char *                        signal_arg,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int
 globus_gram_client_job_signal(
-    const char *			job_contact,
-    globus_gram_protocol_job_signal_t	signal,
-    const char *			signal_arg,
-    int *				job_status,
-    int *				failure_code);
+    const char *                        job_contact,
+    globus_gram_protocol_job_signal_t   signal,
+    const char *                        signal_arg,
+    int *                               job_status,
+    int *                               failure_code);
 
 
 int
 globus_gram_client_register_job_callback_registration(
-    const char *			job_contact,
-    int					job_state_mask,
-    const char *			callback_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int
 globus_gram_client_job_callback_register(
-    const char *			job_contact,
-    int					job_state_mask,
-    const char *			callback_contact,
-    int *				job_status,
-    int *				failure_code);
+    const char *                        job_contact,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    int *                               job_status,
+    int *                               failure_code);
 
 int
 globus_gram_client_register_job_callback_unregistration(
-    const char *			job_contact,
-    const char *			callback_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        job_contact,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 int
 globus_gram_client_job_callback_unregister(
-    const char *			job_contact,
-    const char *			callback_contact,
-    int *				job_status,
-    int *				failure_code);
+    const char *                        job_contact,
+    const char *                        callback_contact,
+    int *                               job_status,
+    int *                               failure_code);
 
 int 
 globus_gram_client_callback_disallow(
-    char *				callback_contact);
+    char *                              callback_contact);
 
 int 
 globus_gram_client_job_contact_free(
-    char *				job_contact);
+    char *                              job_contact);
 
 /**
  * @defgroup globus_gram_client Other GRAM Client Functions
  */
 const char *
 globus_gram_client_error_string(
-    int					error_code);
+    int                                 error_code);
 
 int
 globus_gram_client_version(void);
@@ -286,15 +308,15 @@ globus_gram_client_set_credentials(gss_cred_id_t new_credentials);
 
 int 
 globus_gram_client_ping(
-    const char *			resource_manager_contact);
+    const char *                        resource_manager_contact);
 
 int 
 globus_gram_client_register_ping(
-    const char *			resource_manager_contact,
-    globus_gram_client_attr_t		attr,
+    const char *                        resource_manager_contact,
+    globus_gram_client_attr_t           attr,
     globus_gram_client_nonblocking_func_t
-    					register_callback,
-    void *				register_callback_arg);
+                                        register_callback,
+    void *                              register_callback_arg);
 
 void
 globus_gram_client_debug(void);
@@ -331,7 +353,7 @@ globus_gram_client_attr_get_delegation_mode(
 
 #define GLOBUS_GRAM_CLIENT_MODULE (&globus_gram_client_module)
 
-extern globus_module_descriptor_t	globus_gram_client_module;
+extern globus_module_descriptor_t       globus_gram_client_module;
 
 EXTERN_C_END
 #endif /* GLOBUS_I_GRAM_CLIENT_INCLUDE */
