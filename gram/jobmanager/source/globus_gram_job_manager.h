@@ -440,13 +440,13 @@ typedef struct
      * timeout, this will be set to something besides 0, and that will be
      * sent as part of a fail message to satisfy condor
      */
-    int stop_reason;
+    int                                 stop_reason;
     
     /**
      * Job identifier string
      *
      * String representation of the LRM job id. May be a comma-separated
-     * string of uniquely-pollable ID values. This value is filled in when the
+     * string of separately-pollable ID values. This value is filled in when the
      * request is submitted.
      */
     char *                              job_id_string;
@@ -1267,6 +1267,11 @@ globus_gram_job_manager_get_status(
 void
 globus_gram_job_manager_stop_all_jobs(
     globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_split_subjobs(
+    const char *                        job_id,
+    globus_list_t **                    subjobs);
 
 /* startup_socket.c */
 int
