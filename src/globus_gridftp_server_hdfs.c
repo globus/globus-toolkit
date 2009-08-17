@@ -67,7 +67,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char                                syslog_msg[256];  // Message printed out to syslog.
 } globus_l_gfs_hdfs_handle_t;
 
-#define MSG_SIZE 1024;
+#define MSG_SIZE 1024
 char err_msg[MSG_SIZE];
 static int local_io_block_size = 0;
 static int local_io_count = 0;
