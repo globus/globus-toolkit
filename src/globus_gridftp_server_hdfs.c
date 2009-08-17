@@ -67,7 +67,8 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char                                syslog_msg[256];  // Message printed out to syslog.
 } globus_l_gfs_hdfs_handle_t;
 
-char err_msg[1024];
+#define MSG_SIZE 1024;
+char err_msg[MSG_SIZE];
 static int local_io_block_size = 0;
 static int local_io_count = 0;
 
@@ -164,7 +165,7 @@ globus_l_gfs_hdfs_start(
             max_buffer_count = 200;
     }
     hdfs_handle->max_buffer_count = max_buffer_count;
-    sprintf(err_msg, "Max memory buffer count: %i.\n", hdfs_handle->max_buffer_count);
+    snprintf(err_msg, MSG_SIZE, "Max memory buffer count: %i.\n", hdfs_handle->max_buffer_count);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
     char * max_file_buffer_char = getenv("GRIDFTP_FILE_BUFFER_COUNT");
@@ -174,7 +175,7 @@ globus_l_gfs_hdfs_start(
             max_file_buffer_count = 3*max_buffer_count;
     }
     hdfs_handle->max_file_buffer_count = max_file_buffer_count;
-    sprintf(err_msg, "Max file buffer count: %i.\n", hdfs_handle->max_file_buffer_count);
+    snprintf(err_msg, MSG_SIZE, "Max file buffer count: %i.\n", hdfs_handle->max_file_buffer_count);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
     if (load_limit_char != NULL) {
@@ -223,10 +224,10 @@ globus_l_gfs_hdfs_start(
         buf_ptr = buf;
         token = strsep(&buf_ptr, " ");
         load = strtod(token, NULL);
-        sprintf(err_msg, "Detected system load %.2f.\n", load);
+        snprintf(err_msg, MSG_SIZE, "Detected system load %.2f.\n", load);
         globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
         if ((load >= load_limit) && (load < 1000)) {
-            sprintf(err_msg, "Preventing gridftp transfer startup due to system load of %.2f.\n", load);
+            snprintf(err_msg, MSG_SIZE, "Preventing gridftp transfer startup due to system load of %.2f.\n", load);
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,err_msg);
             sleep(5);
         } else {
@@ -236,7 +237,7 @@ globus_l_gfs_hdfs_start(
         fd = open("/proc/loadavg", O_RDONLY);
     }
 
-    sprintf(err_msg, "Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n", hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
+    snprintf(err_msg, MSG_SIZE, "Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n", hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
 
     hdfs_handle->fs = hdfsConnect("default", 0);
@@ -262,7 +263,7 @@ globus_l_gfs_hdfs_start(
 static void
 remove_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
     if (hdfs_handle->tmp_file_pattern) {
-	sprintf(err_msg, "Removing file buffer %s.\n", hdfs_handle->tmp_file_pattern);
+	snprintf(err_msg, MSG_SIZE, "Removing file buffer %s.\n", hdfs_handle->tmp_file_pattern);
 	globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
         unlink(hdfs_handle->tmp_file_pattern);
         globus_free(hdfs_handle->tmp_file_pattern);
@@ -453,7 +454,7 @@ globus_l_gfs_hdfs_stat(
         PathName++;
     }
 
-    sprintf(err_msg, "Going to do stat on file %s.\n", PathName);
+    snprintf(err_msg, MSG_SIZE, "Going to do stat on file %s.\n", PathName);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
  
 
@@ -465,7 +466,7 @@ globus_l_gfs_hdfs_stat(
         result = GlobusGFSErrorSystemError("stat", errno);
         goto error_stat1;
     }
-    sprintf(err_msg, "Finished HDFS stat operation.\n");
+    snprintf(err_msg, MSG_SIZE, "Finished HDFS stat operation.\n");
     globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
 
     mode_t mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777) :  (S_IFREG | 0666);
@@ -732,7 +733,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
                 rc = GlobusGFSErrorGeneric("Failed to determine file descriptor of temporary file.");
                 return rc;
             }
-            sprintf(err_msg, "Created file buffer %s.\n", hdfs_handle->tmp_file_pattern);
+            snprintf(err_msg, MSG_SIZE, "Created file buffer %s.\n", hdfs_handle->tmp_file_pattern);
             globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
             char * tmp_write = globus_calloc(hdfs_handle->block_size, sizeof(globus_byte_t));
             for (i=0; i<cnt; i++)
@@ -767,7 +768,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
         // Search for a free space in our buffer, and then actually make the copy.
 		  for (i = 0; i<cnt; i++) {
 					 if (hdfs_handle->used[i] == 0) {
-								sprintf(err_msg, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
+								snprintf(err_msg, MSG_SIZE, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
 								globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             hdfs_handle->nbytes[i] = nbytes;
             hdfs_handle->offsets[i] = offset;
@@ -787,11 +788,11 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
         }
     }
     i++;
-    sprintf(err_msg, "There are %i extra buffers.\n", cnt-i);
+    snprintf(err_msg, MSG_SIZE, "There are %i extra buffers.\n", cnt-i);
     globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
     // If there are more than 10 unused buffers, deallocate.
     if (cnt - i > 10) {
-        sprintf(err_msg, "About to deallocate %i buffers; %i will be left.\n", cnt-i, i);
+        snprintf(err_msg, MSG_SIZE, "About to deallocate %i buffers; %i will be left.\n", cnt-i, i);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
         hdfs_handle->buffer_count = i;
         hdfs_handle->nbytes = globus_realloc(hdfs_handle->nbytes, hdfs_handle->buffer_count*sizeof(globus_size_t));
@@ -815,7 +816,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
     // If wrote_something=0, then we have filled up all our buffers; allocate a new one.
     if (wrote_something == 0) {
         hdfs_handle->buffer_count += 1;
-        sprintf(err_msg, "Initializing buffer number %d.\n", hdfs_handle->buffer_count);
+        snprintf(err_msg, MSG_SIZE, "Initializing buffer number %d.\n", hdfs_handle->buffer_count);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
         // Refuse to allocate more than the max.
         if ((hdfs_handle->using_file_buffer == 0) && (hdfs_handle->buffer_count == hdfs_handle->max_buffer_count)) {
@@ -825,7 +826,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             if (gethostname(hostname, 255) != 0) {
                 sprintf(hostname, "UNKNOWN");
             }
-            sprintf(err_msg, "Allocated all %i memory buffers on server %s; aborting transfer.", hdfs_handle->max_buffer_count, hostname);
+            snprintf(err_msg, MSG_SIZE, "Allocated all %i memory buffers on server %s; aborting transfer.", hdfs_handle->max_buffer_count, hostname);
             globus_free(hostname);
             rc = GlobusGFSErrorGeneric(err_msg);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.\n");
@@ -836,7 +837,7 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             if (gethostname(hostname, 255) != 0) {
                 sprintf(hostname, "UNKNOWN");
             }
-            sprintf(err_msg, "Allocated all %i file-backed buffers on server %s; aborting transfer.", hdfs_handle->max_file_buffer_count, hostname);
+            snprintf(err_msg, MSG_SIZE, "Allocated all %i file-backed buffers on server %s; aborting transfer.", hdfs_handle->max_file_buffer_count, hostname);
             globus_free(hostname);
             rc = GlobusGFSErrorGeneric(err_msg);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.\n");
@@ -918,7 +919,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     {
         // First, see if we can dump this block immediately.
         if (offset == hdfs_handle->offset) {
-            sprintf(err_msg, "Dumping this block immediately.\n");
+            snprintf(err_msg, MSG_SIZE, "Dumping this block immediately.\n");
             globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             if (hdfs_handle->syslog_host != NULL)
                 syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
@@ -954,7 +955,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         {
             if (local_io_block_size != 0)
             {
-                sprintf(err_msg,"receive %d blocks of size %d bytes\n",
+                snprintf(err_msg, MSG_SIZE, "receive %d blocks of size %d bytes\n",
                                 local_io_count,local_io_block_size);
                 globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
             }
@@ -993,7 +994,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
                rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
              globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Failed to close file in HDFS.\n");
         }
-        sprintf(err_msg,"receive %d blocks of size %d bytes\n",
+        snprintf(err_msg, MSG_SIZE, "receive %d blocks of size %d bytes\n",
                         local_io_count,local_io_block_size);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
         local_io_count = 0;
@@ -1002,7 +1003,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         globus_gridftp_server_finished_transfer(op, rc);
     } else if (rc != GLOBUS_SUCCESS) {  // Done is set, but we have outstanding I/O = failed somewhere.
         // Don't close the file because the other transfers will want to finish up.
-        sprintf(err_msg, "We failed to finish the transfer, but there are %i outstanding writes left over.\n", hdfs_handle->outstanding);
+        snprintf(err_msg, MSG_SIZE, "We failed to finish the transfer, but there are %i outstanding writes left over.\n", hdfs_handle->outstanding);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
         hdfs_handle->done_status = rc;
     }
@@ -1018,7 +1019,7 @@ globus_l_gfs_hdfs_write_to_storage(
     globus_result_t                     rc;
 
     GlobusGFSName(globus_l_gfs_hdfs_write_to_storage);
-    sprintf(err_msg, "Globus write_to_storage; outstanding %d, optimal %d.\n", hdfs_handle->outstanding, hdfs_handle->optimal_count);
+    snprintf(err_msg, MSG_SIZE, "Globus write_to_storage; outstanding %d, optimal %d.\n", hdfs_handle->outstanding, hdfs_handle->optimal_count);
     globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
     while (hdfs_handle->outstanding < hdfs_handle->optimal_count) 
     {
@@ -1093,7 +1094,7 @@ globus_l_gfs_hdfs_recv(
         hdfs_handle->pathname++;
     }
 
-    sprintf(err_msg, "We are going to open file %s.\n", hdfs_handle->pathname);
+    snprintf(err_msg, MSG_SIZE, "We are going to open file %s.\n", hdfs_handle->pathname);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
     hdfs_handle->op = op;
     hdfs_handle->outstanding = 0;
@@ -1124,7 +1125,7 @@ globus_l_gfs_hdfs_recv(
 	FILE *replica_map_fd = fopen(replica_map, "r");
         ssize_t bytes_read = 0;
 	if (replica_map_fd == NULL) {
-            sprintf(err_msg, "Could not open %s for reading.\n", replica_map);
+            snprintf(err_msg, MSG_SIZE, "Could not open %s for reading.\n", replica_map);
 	    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
 	} else {
 	    fprintf(stderr, "Opened replica map file %s for reading\n", replica_map);
@@ -1172,9 +1173,9 @@ globus_l_gfs_hdfs_recv(
 
     // Check to make sure file exists, then open it write-only.
     if (num_replicas == 0) {
-	sprintf(err_msg, "Open file %s.\n", hdfs_handle->pathname);
+	snprintf(err_msg, MSG_SIZE, "Open file %s.\n", hdfs_handle->pathname);
     } else {
-	sprintf(err_msg, "Open file %s with %d replicas.\n", hdfs_handle->pathname, num_replicas);
+	snprintf(err_msg, MSG_SIZE, "Open file %s with %d replicas.\n", hdfs_handle->pathname, num_replicas);
     }
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
     fprintf(stderr, err_msg);
@@ -1211,19 +1212,19 @@ globus_l_gfs_hdfs_recv(
             sprintf(hostname, "UNKNOWN");
         }
         if (errno == EINTERNAL) {
-            sprintf(err_msg, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
+            snprintf(err_msg, MSG_SIZE, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
                 "on server %s; could be a misconfiguration or bad installation at the site",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else if (errno == EACCES) {
-            sprintf(err_msg, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
+            snprintf(err_msg, MSG_SIZE, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
                 " to open the HDFS file %s", hostname,
                 hdfs_handle->username, hdfs_handle->pathname);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else {
-            sprintf(err_msg, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
+            snprintf(err_msg, MSG_SIZE, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
@@ -1232,7 +1233,7 @@ globus_l_gfs_hdfs_recv(
         globus_free(hostname);
         return;
     }
-    sprintf(err_msg, "Successfully opened file %s for user %s.\n", hdfs_handle->pathname, hdfs_handle->username);
+    snprintf(err_msg, MSG_SIZE, "Successfully opened file %s for user %s.\n", hdfs_handle->pathname, hdfs_handle->username);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
     globus_gridftp_server_get_optimal_concurrency(hdfs_handle->op,
                                                   &hdfs_handle->optimal_count);
@@ -1247,7 +1248,7 @@ globus_l_gfs_hdfs_recv(
     if (hdfs_handle->buffer == NULL || hdfs_handle->nbytes==NULL || hdfs_handle->offsets==NULL || hdfs_handle->used==NULL) {  
         rc = GlobusGFSErrorMemory("Memory allocation error.");
         globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
-        sprintf(err_msg, "Memory allocation error.\n");
+        snprintf(err_msg, MSG_SIZE, "Memory allocation error.\n");
         globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
         return;
     }
@@ -1327,7 +1328,7 @@ globus_l_gfs_hdfs_read_from_storage(
         if (nbytes == 0)    /* eof */
         {
             hdfs_handle->done = GLOBUS_TRUE;
-            sprintf(err_msg,"send %d blocks of size %d bytes\n",
+            snprintf(err_msg, MSG_SIZE, "send %d blocks of size %d bytes\n",
                             local_io_count,local_io_block_size);
             globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
             local_io_count = 0;
@@ -1339,7 +1340,7 @@ globus_l_gfs_hdfs_read_from_storage(
             {
                  if (local_io_block_size != 0)
                  {
-                      sprintf(err_msg,"send %d blocks of size %d bytes\n",
+                      snprintf(err_msg, MSG_SIZE, "send %d blocks of size %d bytes\n",
                                       local_io_count,local_io_block_size);
                       globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
                  }
@@ -1454,7 +1455,7 @@ printf("File exists.\n");
             if (gethostname(hostname, 255) != 0) {
                 sprintf(hostname, "UNKNOWN");
             }
-            sprintf(err_msg, "Error for user %s accessing gridftp server %s.  The file you are trying to"
+            snprintf(err_msg, MSG_SIZE, "Error for user %s accessing gridftp server %s.  The file you are trying to"
                 " read, %s, is a directory.", hdfs_handle->username, hostname, hdfs_handle->pathname);
             rc = GlobusGFSErrorGeneric(err_msg);
             globus_free(hostname);
@@ -1467,7 +1468,7 @@ printf("File exists.\n");
         if (gethostname(hostname, 255) != 0) {
             sprintf(hostname, "UNKNOWN");
         }
-        sprintf(err_msg, "Error for user %s accessing gridftp server %s.  The file you are trying to "
+        snprintf(err_msg, MSG_SIZE, "Error for user %s accessing gridftp server %s.  The file you are trying to "
                 "read, %s, does not exist.", hdfs_handle->username, hostname, hdfs_handle->pathname);
         rc = GlobusGFSErrorGeneric(err_msg);
         globus_free(hostname);
@@ -1485,21 +1486,21 @@ printf("File exists.\n");
             sprintf(hostname, "UNKNOWN");
         }
         if (errno == EINTERNAL) {
-            sprintf(err_msg, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
+            snprintf(err_msg, MSG_SIZE, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
                 "on server %s; could be a misconfiguration or bad installation at the site",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else if (errno == EACCES) {
-            sprintf(err_msg, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
+            snprintf(err_msg, MSG_SIZE, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
                 " to open the HDFS file %s", hostname,
                 hdfs_handle->username, hdfs_handle->pathname);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else if (errno == ENOENT) {
-            sprintf(err_msg, "Failure for user %s on server %s; the requested file %s does not exist", hdfs_handle->username,
+            snprintf(err_msg, MSG_SIZE, "Failure for user %s on server %s; the requested file %s does not exist", hdfs_handle->username,
                 hostname, hdfs_handle->pathname);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else {
-            sprintf(err_msg, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
+            snprintf(err_msg, MSG_SIZE, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         }
