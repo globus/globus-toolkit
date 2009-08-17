@@ -67,7 +67,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char                                syslog_msg[256];  // Message printed out to syslog.
 } globus_l_gfs_hdfs_handle_t;
 
-char err_msg[256];
+char err_msg[1024];
 static int local_io_block_size = 0;
 static int local_io_count = 0;
 
@@ -1185,11 +1185,13 @@ globus_l_gfs_hdfs_recv(
         if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, hdfs_handle->pathname)) == NULL)
         {
             rc = GlobusGFSErrorGeneric("File exists in HDFS, but failed to perform `stat` on it.");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "File exists in HDFS, but failed to perform `stat` on it.\n");
             globus_gridftp_server_finished_transfer(op, rc);
             return;
         }
         if (fileInfo->mKind == kObjectKindDirectory) {
             rc = GlobusGFSErrorGeneric("Destination path is a directory; cannot overwrite.");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Destination path is a directory; cannot overwrite.\n");
             globus_gridftp_server_finished_transfer(op, rc);
             return;
         }
@@ -1212,22 +1214,26 @@ globus_l_gfs_hdfs_recv(
             sprintf(err_msg, "Failed to open file %s in HDFS for user %s due to an internal error in HDFS "
                 "on server %s; could be a misconfiguration or bad installation at the site",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else if (errno == EACCES) {
             sprintf(err_msg, "Permission error in HDFS from gridftp server %s; user %s is not allowed"
                 " to open the HDFS file %s", hostname,
                 hdfs_handle->username, hdfs_handle->pathname);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         } else {
             sprintf(err_msg, "Failed to open file %s in HDFS for user %s on server %s; unknown error from HDFS",
                 hdfs_handle->pathname, hdfs_handle->username, hostname);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
             rc = GlobusGFSErrorSystemError(err_msg, errno);
         }
         globus_gridftp_server_finished_transfer(op, rc);
         globus_free(hostname);
         return;
     }
-
+    sprintf(err_msg, "Successfully opened file %s for user %s.\n", hdfs_handle->pathname, hdfs_handle->username);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
     globus_gridftp_server_get_optimal_concurrency(hdfs_handle->op,
                                                   &hdfs_handle->optimal_count);
     hdfs_handle->buffer_count = hdfs_handle->optimal_count;
