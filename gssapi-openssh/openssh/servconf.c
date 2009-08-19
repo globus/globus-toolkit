@@ -58,6 +58,7 @@ initialize_server_options(ServerOptions *options)
 
 	/* Portable-specific options */
 	options->use_pam = -1;
+	options->permit_pam_user_change = -1;
 
 	/* Standard Options */
 	options->num_ports = 0;
@@ -154,6 +155,8 @@ fill_default_server_options(ServerOptions *options)
 	/* Portable-specific options */
 	if (options->use_pam == -1)
 		options->use_pam = 0;
+	if (options->permit_pam_user_change == -1)
+		options->permit_pam_user_change = 0;
 
 	/* Standard Options */
 	if (options->protocol == SSH_PROTO_UNKNOWN)
@@ -343,7 +346,7 @@ fill_default_server_options(ServerOptions *options)
 typedef enum {
 	sBadOption,		/* == unknown option */
 	/* Portable-specific options */
-	sUsePAM,
+	sUsePAM, sPermitPAMUserChange,
 	/* Standard Options */
 	sPort, sHostKeyFile, sServerKeyBits, sLoginGraceTime, sKeyRegenerationTime,
 	sPermitRootLogin, sLogFacility, sLogLevel,
@@ -394,8 +397,10 @@ static struct {
 	/* Portable-specific options */
 #ifdef USE_PAM
 	{ "usepam", sUsePAM, SSHCFG_GLOBAL },
+	{ "permitpamuserchange", sPermitPAMUserChange, SSHCFG_GLOBAL }
 #else
 	{ "usepam", sUnsupported, SSHCFG_GLOBAL },
+	{ "permitpamuserchange", sUnsupported, SSHCFG_GLOBAL },
 #endif
 	{ "pamauthenticationviakbdint", sDeprecated, SSHCFG_GLOBAL },
 	/* Standard Options */
@@ -775,6 +780,10 @@ process_server_config_line(ServerOptions *options, char *line,
 	/* Portable-specific options */
 	case sUsePAM:
 		intptr = &options->use_pam;
+		goto parse_flag;
+
+	case sPermitPAMUserChange:
+		intptr = &options->permit_pam_user_change;
 		goto parse_flag;
 
 	/* Standard Options */

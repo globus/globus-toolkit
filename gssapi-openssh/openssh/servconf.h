@@ -155,6 +155,7 @@ typedef struct {
 	char   *adm_forced_command;
 
 	int	use_pam;		/* Enable auth via PAM */
+ 	int	permit_pam_user_change;	/* Allow PAM to change user name */
         int     none_enabled;           /* enable NONE cipher switch */
         int     tcp_rcv_buf_poll;       /* poll tcp rcv window in autotuning kernels*/
 	int	hpn_disabled;		/* disable hpn functionality. false by default */
