@@ -551,7 +551,8 @@ sub verify_audit_fields
         return 0;
     }
 
-    if (! parse_timestamp(\$record_entries->[6]))
+    if ((! parse_timestamp(\$record_entries->[6])) &&
+        $record_entries->[6] ne 'NULL')
     {
         return 0;
     }
