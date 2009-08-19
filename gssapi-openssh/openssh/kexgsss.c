@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001-2006 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2009 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,8 +42,9 @@
 #include "dh.h"
 #include "ssh-gss.h"
 #include "monitor_wrap.h"
+#include "servconf.h"
 
-static void kex_gss_send_error(Gssctxt *ctxt);
+extern ServerOptions options;
 
 void
 kexgss_server(Kex *kex)
@@ -69,6 +70,7 @@ kexgss_server(Kex *kex)
 	BIGNUM *dh_client_pub = NULL;
 	int type = 0;
 	gss_OID oid;
+	char *mechs;
 
 	/* Initialise GSSAPI */
 
@@ -77,7 +79,8 @@ kexgss_server(Kex *kex)
 	 * into life
 	 */
 	if (!ssh_gssapi_oid_table_ok()) 
-		ssh_gssapi_server_mechanisms();
+		if ((mechs = ssh_gssapi_server_mechanisms()))
+			xfree(mechs);
 
 	debug2("%s: Identifying %s", __func__, kex->name);
 	oid = ssh_gssapi_id_kex(NULL, kex->name, kex->kex_type);
@@ -86,10 +89,8 @@ kexgss_server(Kex *kex)
 
 	debug2("%s: Acquiring credentials", __func__);
 
-	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, oid)))) {
-		kex_gss_send_error(ctxt);
+	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, oid))))
 		fatal("Unable to acquire credentials for the server");
-    }
 
 	switch (kex->kex_type) {
 	case KEX_GSS_GRP1_SHA1:
@@ -175,13 +176,12 @@ kexgss_server(Kex *kex)
 	} while (maj_status & GSS_S_CONTINUE_NEEDED);
 
 	if (GSS_ERROR(maj_status)) {
-		kex_gss_send_error(ctxt);
 		if (send_tok.length > 0) {
 			packet_start(SSH2_MSG_KEXGSS_CONTINUE);
 			packet_put_string(send_tok.value, send_tok.length);
 			packet_send();
 		}
-		packet_disconnect("GSSAPI Key Exchange handshake failed");
+		fatal("accept_ctx died");
 	}
 
 	if (!(ret_flags & GSS_C_MUTUAL_FLAG))
@@ -196,9 +196,16 @@ kexgss_server(Kex *kex)
 	klen = DH_size(dh);
 	kbuf = xmalloc(klen); 
 	kout = DH_compute_key(kbuf, dh_client_pub, dh);
+	if (kout < 0)
+		fatal("DH_compute_key: failed");
 
 	shared_secret = BN_new();
-	BN_bin2bn(kbuf, kout, shared_secret);
+	if (shared_secret == NULL)
+		fatal("kexgss_server: BN_new failed");
+
+	if (BN_bin2bn(kbuf, kout, shared_secret) == NULL)
+		fatal("kexgss_server: BN_bin2bn failed");
+
 	memset(kbuf, 0, klen);
 	xfree(kbuf);
 
@@ -233,7 +240,7 @@ kexgss_server(Kex *kex)
 		fatal("%s: Unexpected KEX type %d", __func__, kex->kex_type);
 	}
 
-	BN_free(dh_client_pub);
+	BN_clear_free(dh_client_pub);
 
 	if (kex->session_id == NULL) {
 		kex->session_id_len = hashlen;
@@ -249,11 +256,11 @@ kexgss_server(Kex *kex)
 
 	packet_start(SSH2_MSG_KEXGSS_COMPLETE);
 	packet_put_bignum2(dh->pub_key);
-	packet_put_string((char *)msg_tok.value,msg_tok.length);
+	packet_put_string(msg_tok.value,msg_tok.length);
 
 	if (send_tok.length != 0) {
 		packet_put_char(1); /* true */
-		packet_put_string((char *)send_tok.value, send_tok.length);
+		packet_put_string(send_tok.value, send_tok.length);
 	} else {
 		packet_put_char(0); /* false */
 	}
@@ -272,24 +279,10 @@ kexgss_server(Kex *kex)
 	kex_derive_keys(kex, hash, hashlen, shared_secret);
 	BN_clear_free(shared_secret);
 	kex_finish(kex);
-}
 
-static void 
-kex_gss_send_error(Gssctxt *ctxt) {
-	char *errstr;
-	OM_uint32 maj,min;
-		
-	errstr=PRIVSEP(ssh_gssapi_last_error(ctxt,&maj,&min));
-	if (errstr) {
-		packet_start(SSH2_MSG_KEXGSS_ERROR);
-		packet_put_int(maj);
-		packet_put_int(min);
-		packet_put_cstring(errstr);
-		packet_put_cstring("");
-		packet_send();
-		packet_write_wait();
-		/* XXX - We should probably log the error locally here */
-		xfree(errstr);
-	}
+	/* If this was a rekey, then save out any delegated credentials we
+	 * just exchanged.  */
+	if (options.gss_store_rekey)
+		ssh_gssapi_rekey_creds();
 }
 #endif /* GSSAPI */
