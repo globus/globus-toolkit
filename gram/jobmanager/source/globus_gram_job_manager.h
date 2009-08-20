@@ -405,9 +405,17 @@ typedef struct
      *
      * Use globus_gram_job_manager_request_set_status() to change.
      *
-     * @todo add link 
      */ 
     globus_gram_protocol_job_state_t    status;
+
+    /**
+     * Terminal state
+     * 
+     * The projected terminal state of the job. In the case of multiple
+     * ids returned from the submit script, this will be set to failed if
+     * any subjobs failed, or done otherwise.
+     */
+    globus_gram_protocol_job_state_t    expected_terminal_state;
 
     /**
      * Last time status was changed
@@ -447,9 +455,17 @@ typedef struct
      *
      * String representation of the LRM job id. May be a comma-separated
      * string of separately-pollable ID values. This value is filled in when the
-     * request is submitted.
+     * request is submitted. This version is modified as the subjobs complete. 
      */
     char *                              job_id_string;
+    /**
+     * Job identifier string
+     *
+     * String representation of the LRM job id. May be a comma-separated string
+     * of separately-pollable ID values. This value is filled in when the
+     * request is submitted.
+     */
+    char *                              original_job_id_string;
     
     /**
      * Poll Frequency

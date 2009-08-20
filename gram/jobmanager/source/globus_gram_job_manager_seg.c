@@ -300,17 +300,43 @@ globus_gram_job_manager_seg_handle_event(
 
     assert(found_subjob_id);
 
-    if (globus_i_gram_job_manager_script_valid_state_change(
-        request, event->event_type))
+    /* If this is a terminal event (done or failed), we'll update the expected
+     * terminal state (in the case of a multi-subjob case) and the exit code
+     * if the job's exit code is currently 0
+     *
+     * Thus, if any subjob fails or exits with a non-0 exit code, we will
+     * propogate that in the job state change notification.
+     */
+    if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
+        event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
     {
-        globus_gram_job_manager_request_set_status(
-                request,
-                event->event_type);
-        request->unsent_status_change = GLOBUS_TRUE;
+        if (request->expected_terminal_state ==
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+        {
+            request->expected_terminal_state = event->event_type;
+        }
         if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE &&
             request->exit_code == 0)
         {
             request->exit_code = event->exit_code;
+        }
+    }
+
+    /* If the last job terminated or any job moved to active, we'll update the
+     * job status and potentially send notifications.
+     */
+    if (*request->job_id_string == '\0' ||
+        (event->event_type != GLOBUS_SCHEDULER_EVENT_DONE &&
+         event->event_type != GLOBUS_SCHEDULER_EVENT_FAILED))
+    {
+        if (globus_i_gram_job_manager_script_valid_state_change(
+                    request,
+                    request->expected_terminal_state))
+        {
+            globus_gram_job_manager_request_set_status(
+                    request,
+                    request->expected_terminal_state);
+            request->unsent_status_change = GLOBUS_TRUE;
         }
     }
 

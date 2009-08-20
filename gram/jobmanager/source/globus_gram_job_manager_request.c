@@ -255,6 +255,7 @@ globus_gram_job_manager_request_init(
     r->stop_reason = 0;
     /* Won't be set until job has been submitted to the LRM */
     r->job_id_string = NULL;
+    r->original_job_id_string = NULL;
     r->poll_frequency = 10;
     r->commit_extend = 0;
     r->scratchdir = NULL;
@@ -262,6 +263,7 @@ globus_gram_job_manager_request_init(
     r->queued_time = time(NULL);
     r->cache_tag = NULL;
     r->gateway_user = NULL;
+    r->expected_terminal_state = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
 
     rc = globus_symboltable_init(
             &r->symbol_table,

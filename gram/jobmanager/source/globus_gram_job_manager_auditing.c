@@ -123,7 +123,8 @@ globus_gram_job_manager_auditing_file_write(
     }
 
     /* local_job_id */
-    rc = globus_l_gram_audit_write_string(auditing_file, request->job_id_string, ",");
+    rc = globus_l_gram_audit_write_string(auditing_file,
+            request->original_job_id_string, ",");
     if (rc != 0)
     {
         goto close_filename_out;

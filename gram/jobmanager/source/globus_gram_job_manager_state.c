@@ -400,22 +400,12 @@ globus_l_gram_job_manager_state_machine(
             request->job_history_status = request->status;
         }
 
-        /* Here, if we've started the SEG, we'll wait until all job ids
-         * have been processed before going to DONE or FAILED post-processing.
-         * Otherwise (poll or fork) we'll handle it immediately
-         */
-        if (((!request->manager->seg_started) ||
-                (request->job_id_string && *request->job_id_string == 0) ||
-                strcmp(request->config->jobmanager_type, "fork") == 0) &&
-                request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+        if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
         }
-        else if(((!request->manager->seg_started) ||
-                (request->job_id_string && *request->job_id_string == 0) ||
-                strcmp(request->config->jobmanager_type, "fork") == 0) &&
-                request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+        else if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
         {
             /* Job finished! start finalizing */
             if(globus_gram_job_manager_rsl_need_stage_out(request))
