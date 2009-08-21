@@ -325,9 +325,20 @@ globus_gram_job_manager_seg_handle_event(
     /* If the last job terminated or any job moved to active, we'll update the
      * job status and potentially send notifications.
      */
-    if (*request->job_id_string == '\0' ||
-        (event->event_type != GLOBUS_SCHEDULER_EVENT_DONE &&
-         event->event_type != GLOBUS_SCHEDULER_EVENT_FAILED))
+    if (event->event_type != GLOBUS_SCHEDULER_EVENT_DONE &&
+         event->event_type != GLOBUS_SCHEDULER_EVENT_FAILED)
+    {
+        if (globus_i_gram_job_manager_script_valid_state_change(
+                    request,
+                    event->event_type))
+        {
+            globus_gram_job_manager_request_set_status(
+                    request,
+                    event->event_type);
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
+    }
+    else if (*request->job_id_string == '\0')
     {
         if (globus_i_gram_job_manager_script_valid_state_change(
                     request,
