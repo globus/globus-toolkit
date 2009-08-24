@@ -400,7 +400,10 @@ fail_extension_attribute_malloc:
             free(entry);
         }
 fail_extension_entry_malloc_failed:
-        globus_gram_protocol_hash_destroy(&extensions);
+        if (extensions)
+        {
+            globus_gram_protocol_hash_destroy(&extensions);
+        }
 fail_extensions_init:
 add_reference_failed:
 pack_message_failed:
