@@ -1008,7 +1008,7 @@ globus_gram_client_job_request(
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
-    if(job_contact)
+    if(job_contact && monitor.contact)
     {
         *job_contact = strdup(monitor.contact);
     }
