@@ -100,7 +100,7 @@ typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
 typedef struct globus_gram_client_job_info_s
 {
     globus_hashtable_t                  extensions;
-    const char *                        job_contact;
+    char *                              job_contact;
     int                                 job_state;
     int                                 protocol_error_code;
 }
@@ -213,6 +213,15 @@ globus_gram_client_register_job_status(
     void *                              register_callback_arg);
 
 int
+globus_gram_client_register_job_status_with_info(
+    const char *                        job_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        info_callback,
+    void *                              callback_arg);
+
+
+int
 globus_gram_client_job_refresh_credentials(
     char *                              job_contact,
     gss_cred_id_t                       creds);
@@ -231,6 +240,11 @@ globus_gram_client_job_status(
     const char *                        job_contact,
     int *                               job_status,
     int *                               failure_code);
+
+int
+globus_gram_client_job_status_with_info(
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     job_info);
 
 int
 globus_gram_client_register_job_signal(
