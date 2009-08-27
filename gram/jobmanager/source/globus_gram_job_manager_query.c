@@ -113,9 +113,9 @@ globus_gram_job_manager_query_callback(
     globus_gram_jobmanager_request_t *  request = NULL;
     char *                              query           = GLOBUS_NULL;
     char *                              rest;
-    int                                 rc;
-    int                                 status;
-    int                                 job_failure_code;
+    int                                 rc = 0;
+    int                                 status = 0;
+    int                                 job_failure_code = 0;
     globus_bool_t                       reply           = GLOBUS_TRUE;
     globus_url_t                        parsed_uri;
     gss_ctx_id_t                        context;
@@ -1091,6 +1091,11 @@ globus_l_gram_create_extensions(
     globus_gram_protocol_hash_entry_t * entry = NULL;
     int                                 rc;
 
+    *extensions = NULL;
+    if (request == NULL)
+    {
+        goto no_extensions;
+    }
     rc = globus_hashtable_init(
             extensions,
             1,
@@ -1149,6 +1154,7 @@ fail_extension_entry_malloc_failed:
         *extensions = NULL;
     }
 hashtable_init_failed:
+no_extensions:
     return rc;
 }
 /* globus_l_gram_create_extensions() */
