@@ -72,7 +72,7 @@ typedef struct globus_l_gram_client_monitor_s
                                         type;
     volatile globus_bool_t              done;
 
-    globus_gram_client_job_info_t       info;
+    globus_gram_client_job_info_t *     info;
 
     globus_gram_client_nonblocking_func_t
                                         callback;
@@ -172,6 +172,7 @@ static
 int
 globus_l_gram_client_monitor_init(
     globus_l_gram_client_monitor_t *    monitor,
+    globus_gram_client_job_info_t *     info,
     globus_gram_client_nonblocking_func_t
                                         register_callback,
     globus_gram_client_info_callback_func_t
@@ -772,6 +773,7 @@ globus_gram_client_register_ping(
 
     globus_l_gram_client_monitor_init(
             monitor,
+            NULL,
             register_callback,
             NULL,
             register_callback_arg);
@@ -819,7 +821,7 @@ globus_gram_client_ping(
     int                                 rc;
     globus_l_gram_client_monitor_t      monitor;
 
-    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL);
+    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL, NULL);
 
     rc = globus_l_gram_client_ping(
             resource_manager_contact,
@@ -837,7 +839,7 @@ globus_gram_client_ping(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
 
     globus_mutex_unlock(&monitor.mutex);
 
@@ -920,10 +922,12 @@ globus_gram_client_register_job_request(
 
     iattr = (globus_i_gram_client_attr_t *) attr;
 
-    globus_l_gram_client_monitor_init(monitor,
-                                      register_callback,
-                                      NULL,
-                                      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     rc = globus_l_gram_client_job_request(resource_manager_contact,
                                           description,
@@ -985,10 +989,12 @@ globus_gram_client_job_request(
         *job_contact = NULL;
     }
 
-    globus_l_gram_client_monitor_init(&monitor,
-                                      NULL,
-                                      NULL,
-                                      NULL);
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
 
     rc = globus_l_gram_client_job_request(resource_manager_contact,
                                           description,
@@ -1008,10 +1014,10 @@ globus_gram_client_job_request(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
-    if(job_contact && monitor.info.job_contact)
+    rc = monitor.info->protocol_error_code;
+    if(job_contact && monitor.info->job_contact)
     {
-        *job_contact = strdup(monitor.info.job_contact);
+        *job_contact = strdup(monitor.info->job_contact);
     }
     globus_mutex_unlock(&monitor.mutex);
 
@@ -1103,12 +1109,12 @@ globus_l_gram_client_to_jobmanager(
         if(rc == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
-            monitor->info.protocol_error_code =
+            monitor->info->protocol_error_code =
                 GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
         }
         else
         {
-            monitor->info.protocol_error_code = rc;
+            monitor->info->protocol_error_code = rc;
         }
     }
 
@@ -1155,10 +1161,12 @@ globus_gram_client_job_cancel(
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    globus_l_gram_client_monitor_init(&monitor,
-                                      NULL,
-                                      NULL,
-                                      NULL);
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
                                              "cancel",
@@ -1178,7 +1186,7 @@ globus_gram_client_job_cancel(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
 
     globus_mutex_unlock(&monitor.mutex);
 
@@ -1235,10 +1243,12 @@ globus_gram_client_register_job_cancel(
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
-    globus_l_gram_client_monitor_init(monitor,
-                                      register_callback,
-                                      NULL,
-                                      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
                                              "cancel",
@@ -1303,10 +1313,12 @@ globus_gram_client_job_signal(
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    globus_l_gram_client_monitor_init(&monitor,
-                                      NULL,
-                                      NULL,
-                                      NULL);
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
 
     if (signal_arg != NULL)
     {
@@ -1356,25 +1368,25 @@ globus_gram_client_job_signal(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
 
     globus_mutex_unlock(&monitor.mutex);
 
 error_exit:
     if(job_status)
     {
-        *job_status = monitor.info.job_state;
+        *job_status = monitor.info->job_state;
     }
     if(failure_code)
     {
-        if (monitor.info.protocol_error_code)
+        if (monitor.info->protocol_error_code)
         {
-            *failure_code = monitor.info.protocol_error_code;
+            *failure_code = monitor.info->protocol_error_code;
         }
         else
         {
             *failure_code = globus_l_gram_info_get_int(
-                    &monitor.info.extensions,
+                    &monitor.info->extensions,
                     "job-failure-code");
         }
     }
@@ -1441,10 +1453,12 @@ globus_gram_client_register_job_signal(
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
-    globus_l_gram_client_monitor_init(monitor,
-                                      register_callback,
-                                      NULL,
-                                      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     if (signal_arg != NULL)
     {
@@ -1530,10 +1544,12 @@ globus_gram_client_job_status(
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    globus_l_gram_client_monitor_init(&monitor,
-                                      NULL,
-                                      NULL,
-                                      NULL);
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
                                              "status",
@@ -1551,25 +1567,25 @@ globus_gram_client_job_status(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
 
     globus_mutex_unlock(&monitor.mutex);
 
 error_exit:
     if(job_status)
     {
-        *job_status = monitor.info.job_state;
+        *job_status = monitor.info->job_state;
     }
     if(failure_code)
     {
-        if (monitor.info.protocol_error_code)
+        if (monitor.info->protocol_error_code)
         {
-            *failure_code = monitor.info.protocol_error_code;
+            *failure_code = monitor.info->protocol_error_code;
         }
         else
         {
             *failure_code = globus_l_gram_info_get_int(
-                    &monitor.info.extensions,
+                    &monitor.info->extensions,
                     "job-failure-code");
         }
     }
@@ -1621,10 +1637,12 @@ globus_gram_client_register_job_status(
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
-    globus_l_gram_client_monitor_init(monitor,
-	                              register_callback,
-                                      NULL,
-				      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 					     "status",
@@ -1686,6 +1704,7 @@ globus_gram_client_register_job_status_with_info(
     globus_l_gram_client_monitor_init(
             monitor,
             NULL,
+            NULL,
             info_callback,
             callback_arg);
 
@@ -1703,6 +1722,50 @@ globus_gram_client_register_job_status_with_info(
     return rc;
 }
 /* globus_gram_client_register_job_status_with_info() */
+
+int
+globus_gram_client_job_status_with_info(
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     info)
+{
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
+
+    GLOBUS_L_CHECK_IF_INITIALIZED;
+
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            info,
+            NULL,
+            NULL,
+            NULL);
+
+    rc = globus_l_gram_client_to_jobmanager( job_contact,
+                                             "status",
+                                             NULL,
+                                             GLOBUS_GRAM_CLIENT_STATUS,
+                                             &monitor);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+
+    globus_mutex_lock(&monitor.mutex);
+    while (!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    rc = monitor.info->protocol_error_code;
+
+    globus_mutex_unlock(&monitor.mutex);
+
+error_exit:
+    globus_l_gram_client_monitor_destroy(&monitor);
+
+    return rc;
+}
+/* globus_gram_client_job_status_with_info() */
 
 /**
  * Register a callback contact for job state changes.
@@ -1747,7 +1810,7 @@ globus_gram_client_job_callback_register(
     globus_l_gram_client_monitor_t      monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
-    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL);
+    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL, NULL);
 
     /* 'register' = 8, allow 10-digit integer, 2 spaces and null  */
     request = (char *) malloc( 
@@ -1783,25 +1846,25 @@ globus_gram_client_job_callback_register(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
 
     globus_mutex_unlock(&monitor.mutex);
 
 error_exit:
     if(job_status)
     {
-        *job_status = monitor.info.job_state;
+        *job_status = monitor.info->job_state;
     }
     if(failure_code)
     {
-        if (monitor.info.protocol_error_code)
+        if (monitor.info->protocol_error_code)
         {
-            *failure_code = monitor.info.protocol_error_code;
+            *failure_code = monitor.info->protocol_error_code;
         }
         else
         {
             *failure_code = globus_l_gram_info_get_int(
-                    &monitor.info.extensions,
+                    &monitor.info->extensions,
                     "job-failure-code");
         }
     }
@@ -1855,7 +1918,7 @@ globus_gram_client_job_callback_unregister(
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL);
+    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL, NULL);
 
     /* 'unregister' = 10, a space and null  */
     request = (char *) malloc( 
@@ -1890,25 +1953,25 @@ globus_gram_client_job_callback_unregister(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
 
     globus_mutex_unlock(&monitor.mutex);
 
 error_exit:
     if(job_status)
     {
-        *job_status = monitor.info.job_state;
+        *job_status = monitor.info->job_state;
     }
     if(failure_code)
     {
-        if (monitor.info.protocol_error_code)
+        if (monitor.info->protocol_error_code)
         {
-            *failure_code = monitor.info.protocol_error_code;
+            *failure_code = monitor.info->protocol_error_code;
         }
         else
         {
             *failure_code = globus_l_gram_info_get_int(
-                    &monitor.info.extensions,
+                    &monitor.info->extensions,
                     "job-failure-code");
         }
     }
@@ -1953,7 +2016,7 @@ globus_gram_client_job_refresh_credentials(
     globus_l_gram_client_monitor_t      monitor;
     int                                 rc;
 
-    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL);
+    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL, NULL);
 
     rc = globus_l_gram_client_job_refresh_credentials(
             job_contact,
@@ -1971,7 +2034,7 @@ globus_gram_client_job_refresh_credentials(
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = monitor.info.protocol_error_code;
+    rc = monitor.info->protocol_error_code;
     globus_mutex_unlock(&monitor.mutex);
 
 end:
@@ -2024,10 +2087,12 @@ globus_gram_client_register_job_refresh_credentials(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
-    globus_l_gram_client_monitor_init(monitor,
-                                      register_callback,
-                                      NULL,
-                                      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     rc = globus_l_gram_client_job_refresh_credentials(
             job_contact,
@@ -2096,10 +2161,12 @@ globus_gram_client_register_job_callback_registration(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
-    globus_l_gram_client_monitor_init(monitor,
-                                      register_callback,
-                                      NULL,
-                                      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     /* 'register' = 8, allow 10-digit integer, 2 spaces and null  */
     request = (char *) malloc( 
@@ -2189,10 +2256,12 @@ globus_gram_client_register_job_callback_unregistration(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
-    globus_l_gram_client_monitor_init(monitor,
-                                      register_callback,
-                                      NULL,
-                                      register_callback_arg);
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            register_callback,
+            NULL,
+            register_callback_arg);
 
     /* 'unregister' = 10, a space and null  */
     request = (char *) malloc( 
@@ -2916,7 +2985,7 @@ globus_l_gram_client_monitor_callback(
 
     globus_mutex_lock(&monitor->mutex);
 
-    monitor->info.protocol_error_code = errorcode;
+    monitor->info->protocol_error_code = errorcode;
     monitor->done = GLOBUS_TRUE;
 
     /* 
@@ -2924,11 +2993,11 @@ globus_l_gram_client_monitor_callback(
      * non-job request messages, we were talking to the job manager, so we'll
      * map to another error.
      */
-    if(monitor->info.protocol_error_code ==
+    if(monitor->info->protocol_error_code ==
                 GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
        monitor->type != GLOBUS_GRAM_CLIENT_JOB_REQUEST)
     {
-        monitor->info.protocol_error_code =
+        monitor->info->protocol_error_code =
                 GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
     }
 
@@ -2940,16 +3009,16 @@ globus_l_gram_client_monitor_callback(
             rc = globus_gram_protocol_unpack_job_request_reply(
                     message,
                     msgsize,
-                    &monitor->info.job_state,
-                    &monitor->info.job_contact);
+                    &monitor->info->job_state,
+                    &monitor->info->job_contact);
             if(rc != GLOBUS_SUCCESS)
             {
-                monitor->info.protocol_error_code = rc;
+                monitor->info->protocol_error_code = rc;
             }
             else
             {
                 /* XXX: Why is this? */
-                monitor->info.protocol_error_code = monitor->info.job_state;
+                monitor->info->protocol_error_code = monitor->info->job_state;
             }
             break;
 
@@ -2964,16 +3033,16 @@ globus_l_gram_client_monitor_callback(
             rc = globus_gram_protocol_unpack_status_reply_with_extensions(
                     message,
                     msgsize,
-                    &monitor->info.extensions);
+                    &monitor->info->extensions);
             if(rc != GLOBUS_SUCCESS)
             {
-                monitor->info.protocol_error_code = rc;
+                monitor->info->protocol_error_code = rc;
                 break;
             }
 
-            monitor->info.protocol_error_code = rc;
-            monitor->info.job_state = globus_l_gram_info_get_int(
-                    &monitor->info.extensions,
+            monitor->info->protocol_error_code = rc;
+            monitor->info->job_state = globus_l_gram_info_get_int(
+                    &monitor->info->extensions,
                     "status");
             break;
         }
@@ -3000,8 +3069,8 @@ globus_l_gram_client_register_callback(
 
     globus_mutex_lock(&monitor->mutex);
 
-    monitor->info.job_state = 0;
-    monitor->info.protocol_error_code = errorcode;
+    monitor->info->job_state = 0;
+    monitor->info->protocol_error_code = errorcode;
     monitor->done = GLOBUS_TRUE;
 
     /* 
@@ -3009,11 +3078,11 @@ globus_l_gram_client_register_callback(
      * non-job request messages, we were talking to the job manager, so we'll
      * map to another error.
      */
-    if(monitor->info.protocol_error_code ==
+    if(monitor->info->protocol_error_code ==
                 GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
        monitor->type != GLOBUS_GRAM_CLIENT_JOB_REQUEST)
     {
-        monitor->info.protocol_error_code =
+        monitor->info->protocol_error_code =
                 GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
     }
     if(!errorcode)
@@ -3024,11 +3093,11 @@ globus_l_gram_client_register_callback(
             rc = globus_gram_protocol_unpack_job_request_reply(
                     message,
                     msgsize,
-                    &monitor->info.protocol_error_code,
-                    &monitor->info.job_contact);
+                    &monitor->info->protocol_error_code,
+                    &monitor->info->job_contact);
             if(rc != GLOBUS_SUCCESS)
             {
-                monitor->info.protocol_error_code = rc;
+                monitor->info->protocol_error_code = rc;
             }
             break;
 
@@ -3044,19 +3113,19 @@ globus_l_gram_client_register_callback(
             rc = globus_gram_protocol_unpack_status_reply_with_extensions(
                     message,
                     msgsize,
-                    &monitor->info.extensions);
+                    &monitor->info->extensions);
             if (rc != GLOBUS_SUCCESS)
             {
-                monitor->info.protocol_error_code = rc;
+                monitor->info->protocol_error_code = rc;
             }
 
-            monitor->info.job_state = globus_l_gram_info_get_int(
-                    &monitor->info.extensions,
+            monitor->info->job_state = globus_l_gram_info_get_int(
+                    &monitor->info->extensions,
                     "status");
 
 
-            monitor->info.protocol_error_code = globus_l_gram_info_get_int(
-                    &monitor->info.extensions,
+            monitor->info->protocol_error_code = globus_l_gram_info_get_int(
+                    &monitor->info->extensions,
                     "failure-code");
             break;
         }
@@ -3068,18 +3137,18 @@ globus_l_gram_client_register_callback(
     {
         monitor->info_callback(
                 monitor->callback_arg,
-                monitor->info.job_contact,
-                &monitor->info);
+                monitor->info->job_contact,
+                monitor->info);
     }
     else
     {
         monitor->callback(
                 monitor->callback_arg,
-                monitor->info.protocol_error_code,
-                uri,
-                monitor->info.job_state,
+                monitor->info->protocol_error_code,
+                monitor->info->job_contact,
+                monitor->info->job_state,
                 globus_l_gram_info_get_int(
-                        &monitor->info.extensions,
+                        &monitor->info->extensions,
                         "job-failure-code"));
     }
 
@@ -3092,6 +3161,7 @@ static
 int
 globus_l_gram_client_monitor_init(
     globus_l_gram_client_monitor_t *    monitor,
+    globus_gram_client_job_info_t *     info,
     globus_gram_client_nonblocking_func_t
                                         register_callback,
     globus_gram_client_info_callback_func_t
@@ -3107,6 +3177,16 @@ globus_l_gram_client_monitor_init(
     monitor->info_callback = info_callback;
     monitor->callback_arg = register_callback_arg;
 
+    if (info)
+    {
+        memset(info, 0, sizeof(globus_gram_client_job_info_t));
+        monitor->info = info;
+    }
+    else
+    {
+        monitor->info = calloc(1, sizeof(globus_gram_client_job_info_t));
+    }
+
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gram_client_monitor_init() */
@@ -3117,10 +3197,10 @@ globus_l_gram_client_monitor_destroy(
     globus_l_gram_client_monitor_t *    monitor)
 {
 
-    if (monitor->info.job_contact != NULL)
+    if (monitor->info->job_contact != NULL)
     {
-        globus_gram_client_job_contact_free(monitor->info.job_contact);
-        monitor->info.job_contact = NULL;
+        globus_gram_client_job_contact_free(monitor->info->job_contact);
+        monitor->info->job_contact = NULL;
     }
 
     globus_mutex_destroy(&monitor->mutex);
@@ -3153,3 +3233,22 @@ globus_l_gram_info_get_int(
     }
 }
 /* globus_l_gram_info_get_int() */
+
+void
+globus_gram_client_job_info_destroy(
+    globus_gram_client_job_info_t *     info)
+{
+    if (!info)
+    {
+        return;
+    }
+    if (info->extensions)
+    {
+        globus_gram_protocol_hash_destroy(&info->extensions);
+    }
+    if (info->job_contact)
+    {
+        free(info->job_contact);
+    }
+}
+/* globus_gram_client_job_info_destroy() */
