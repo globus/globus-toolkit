@@ -144,7 +144,7 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
                    void *                              user_args);
 
 #   define globus_l_globusrun_remove_cancel_poll()  \
-    globus_callback_unregister(globus_l_run_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
+    globus_callback_unregister(globus_l_run_callback_handle, NULL, NULL, NULL);
 #else
 #   define globus_l_globusrun_remove_cancel_poll()
 #endif
@@ -268,7 +268,7 @@ static char *  long_usage = \
 
 #define globusrun_l_args_error(a) \
 { \
-    globus_libc_fprintf(stderr, \
+    fprintf(stderr, \
 			"\nERROR: " \
 			a \
 			"\n\nSyntax: %s\n" \
@@ -280,7 +280,7 @@ static char *  long_usage = \
 
 #define globusrun_l_args_error_fmt(fmt,arg) \
 { \
-    globus_libc_fprintf(stderr, \
+    fprintf(stderr, \
 			"\nERROR: " \
 			fmt \
 			"\n\nSyntax: %s\n" \
@@ -318,7 +318,7 @@ test_hostname( char *   value,
 					   buf,
 					   1024,
 					   &rc     );
-    if (hostent == GLOBUS_NULL)
+    if (hostent == NULL)
 	*errmsg = globus_libc_strdup("cannot resolve hostname");
     return rc;
 }
@@ -344,13 +344,13 @@ enum { arg_q = 1, arg_o, arg_s, arg_w, arg_n, arg_b,
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
-static char * listname(id)[] = { alias1, alias2, GLOBUS_NULL }
+static char * listname(id)[] = { alias1, alias2, NULL }
 
 #define defname(x) x##_definition
 #define flagdef(id,alias1,alias2) \
 namedef(id,alias1,alias2); \
 static globus_args_option_descriptor_t defname(id) = { id, listname(id), 0, \
-						GLOBUS_NULL, GLOBUS_NULL }
+						NULL, NULL }
 #define funcname(x) x##_predicate_test
 #define paramsname(x) x##_predicate_params
 #define oneargdef(id,alias1,alias2,testfunc,testparams) \
@@ -375,12 +375,12 @@ flagdef(arg_full_proxy, "-D", "-full-proxy");
 static int arg_f_mode = O_RDONLY;
 
     oneargdef(arg_f, "-f", "-file", globus_validate_filename, &arg_f_mode);
-    oneargdef(arg_r, "-r", "-resource", GLOBUS_NULL, GLOBUS_NULL);
-    oneargdef(arg_k, "-k", "-kill", test_job_id, GLOBUS_NULL);
-    oneargdef(arg_y, "-y", "-refresh-proxy", test_job_id, GLOBUS_NULL);
-    oneargdef(arg_stop_manager, "-stop-manager", NULL, test_job_id, GLOBUS_NULL);
-    oneargdef(arg_mpirun, "-mpirun", GLOBUS_NULL, test_integer, GLOBUS_NULL);
-    oneargdef(arg_status, "-status", GLOBUS_NULL, test_job_id, GLOBUS_NULL);
+    oneargdef(arg_r, "-r", "-resource", NULL, NULL);
+    oneargdef(arg_k, "-k", "-kill", test_job_id, NULL);
+    oneargdef(arg_y, "-y", "-refresh-proxy", test_job_id, NULL);
+    oneargdef(arg_stop_manager, "-stop-manager", NULL, test_job_id, NULL);
+    oneargdef(arg_mpirun, "-mpirun", NULL, test_integer, NULL);
+    oneargdef(arg_status, "-status", NULL, test_job_id, NULL);
     static globus_args_option_descriptor_t args_options[arg_num];
 
 #define setupopt(id) args_options[id-1] = defname(id)
@@ -410,23 +410,23 @@ static int arg_f_mode = O_RDONLY;
     int
     main(int argc, char* argv[])
     {
-	char *                             request_string    = GLOBUS_NULL;
-	char *                             request_file      = GLOBUS_NULL;
-	char *                             rm_contact        = GLOBUS_NULL;
-	char *                             program           = GLOBUS_NULL;
+	char *                             request_string    = NULL;
+	char *                             request_file      = NULL;
+	char *                             rm_contact        = NULL;
+	char *                             program           = NULL;
 	globus_bool_t                      ignore_ctrlc      = GLOBUS_FALSE;
-	globus_rsl_t *                     request_ast       = GLOBUS_NULL;
-	globus_list_t *                    options_found     = GLOBUS_NULL;
-	globus_list_t *                    list              = GLOBUS_NULL;
-	globus_args_option_instance_t *    instance          = GLOBUS_NULL;
+	globus_rsl_t *                     request_ast       = NULL;
+	globus_list_t *                    options_found     = NULL;
+	globus_list_t *                    list              = NULL;
+	globus_args_option_instance_t *    instance          = NULL;
 	unsigned short                     gass_port         = 0;
 	unsigned long                      options           = 0UL;
 	int                                err               = GLOBUS_SUCCESS;
-	globus_gass_transfer_listener_t   listener		 =GLOBUS_NULL;
-	globus_gass_transfer_listenerattr_t * attr		 =GLOBUS_NULL;
-	char *                             scheme		 =GLOBUS_NULL;
-	globus_gass_transfer_requestattr_t * reqattr	 =GLOBUS_NULL;
-	const char *                             activation_err  = GLOBUS_NULL;
+	globus_gass_transfer_listener_t   listener		 =NULL;
+	globus_gass_transfer_listenerattr_t * attr		 =NULL;
+	char *                             scheme		 =NULL;
+	globus_gass_transfer_requestattr_t * reqattr	 =NULL;
+	const char *                             activation_err  = NULL;
 
 	err = globus_module_activate(GLOBUS_COMMON_MODULE);
 	if ( err != GLOBUS_SUCCESS )
@@ -477,7 +477,7 @@ static int arg_f_mode = O_RDONLY;
 				   oneline_usage,
 				   long_usage,
 				   &options_found,
-				   GLOBUS_NULL   )) )  /* error on argument line */
+				   NULL   )) )  /* error on argument line */
 	{
 	    globus_module_deactivate_all();
 	    exit(err == GLOBUS_FAILURE ? 1 : 0);
@@ -544,7 +544,7 @@ static int arg_f_mode = O_RDONLY;
 
 	    case arg_r:
 		rm_contact=globus_libc_strdup(instance->values[0]);
-		if(rm_contact == GLOBUS_NULL)
+		if(rm_contact == NULL)
 		{
 		    globusrun_l_args_error_fmt("resolving resource manager %s",
 					       instance->values[0] );
@@ -599,13 +599,13 @@ static int arg_f_mode = O_RDONLY;
 	err = globus_gram_client_ping(rm_contact);
 	if(err == GLOBUS_SUCCESS)
 	{
-	    globus_libc_fprintf(stdout,
+	    fprintf(stdout,
 				"\nGRAM Authentication test successful\n");
 	    return 0;
 	}
 	else
 	{
-	    globus_libc_fprintf(stdout,
+	    fprintf(stdout,
 				"\nGRAM Authentication test failure: %s\n",
 				globus_gram_protocol_error_string(err));
 	    return 1;
@@ -663,7 +663,7 @@ static int arg_f_mode = O_RDONLY;
     }
 
     request_ast = globus_rsl_parse(request_string);
-    if(request_ast == GLOBUS_NULL)
+    if(request_ast == NULL)
     {
 	globusrun_l_args_error_fmt("cannot parse RSL %s",
 				   request_string );
@@ -671,7 +671,7 @@ static int arg_f_mode = O_RDONLY;
 
     if(!globus_rsl_is_boolean(request_ast))
     {
-	globus_libc_fprintf(stderr,
+	fprintf(stderr,
 			    "%s Error: Bad RSL\n",
 			    program);
 	err=GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
@@ -680,12 +680,12 @@ static int arg_f_mode = O_RDONLY;
 
     if(options & GLOBUSRUN_ARG_PARSE_ONLY)
     {
-	globus_libc_printf("RSL Parsed Successfully...\n");
+	printf("RSL Parsed Successfully...\n");
 	return 0;
     }
 
     if((!globus_rsl_is_boolean_multi(request_ast)) &&
-       rm_contact == GLOBUS_NULL)
+       rm_contact == NULL)
     {
 	globusrun_l_args_error("no resource manager contact");
     }
@@ -694,7 +694,7 @@ static int arg_f_mode = O_RDONLY;
     {
 	/* transform the RSL to send "free" output streams to our
 	 * stdout/stderr via gass, rather than to /dev/null */
-	char *gass_server_url = GLOBUS_NULL;
+	char *gass_server_url = NULL;
 	unsigned long server_ez_opts=0UL;
 	char *url_relation_string;
 	char *relation_format="rsl_substitution=(GLOBUSRUN_GASS_URL %s)";
@@ -733,7 +733,7 @@ static int arg_f_mode = O_RDONLY;
 
 	if((err != GLOBUS_SUCCESS))
 	{
-	    globus_libc_fprintf(stderr,
+	    fprintf(stderr,
 				"%s Error: initializing GASS (%d)\n",
 				program,
 				err);
@@ -743,11 +743,11 @@ static int arg_f_mode = O_RDONLY;
 	url_relation_string = globus_malloc(strlen(relation_format) +
 					    strlen(gass_server_url));
 
-	if(url_relation_string == GLOBUS_NULL)
+	if(url_relation_string == NULL)
 	{
 	    err=GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-	    globus_libc_fprintf(stderr,
+	    fprintf(stderr,
 				"%s Error: Malloc failed\n",
 				program);
 	    goto hard_exit;
@@ -1149,31 +1149,31 @@ globus_l_globusrun_gram_callback_func(
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING\n");
 	}
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN\n");
 	}
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT\n");
 	}
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE\n");
 	}
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED\n");
 	}
         monitor->done = GLOBUS_TRUE;
 	monitor->failure_code = job_info->protocol_error_code;
@@ -1181,7 +1181,7 @@ globus_l_globusrun_gram_callback_func(
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE\n");
             if (job_info->extensions)
             {
                 entry = globus_hashtable_lookup(
@@ -1199,7 +1199,7 @@ globus_l_globusrun_gram_callback_func(
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
 	if(monitor->verbose)
 	{
-	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED\n");
+	    printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED\n");
 	}
         monitor->done = GLOBUS_TRUE;
 	break;
@@ -1223,7 +1223,7 @@ globus_l_globusrun_gramrun(char * request_string,
 			   unsigned long options,
 			   char *rm_contact)
 {
-    char *callback_contact = GLOBUS_NULL;
+    char *callback_contact = NULL;
     globus_i_globusrun_gram_monitor_t monitor;
     int err;
     globus_bool_t verbose = !(options & GLOBUSRUN_ARG_QUIET);
@@ -1247,7 +1247,7 @@ globus_l_globusrun_gramrun(char * request_string,
 					      &delay_time,
 					      &period_time,
 	                                      globus_l_globusrun_signal_wakeup,
-					      GLOBUS_NULL);
+					      NULL);
 	}
 #       endif
     }
@@ -1287,8 +1287,8 @@ globus_l_globusrun_gramrun(char * request_string,
     monitor.job_contact_string = NULL;
     monitor.submit_done = GLOBUS_FALSE;
     monitor.failure_message = NULL;
-    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_mutex_init(&monitor.mutex, NULL);
+    globus_cond_init(&monitor.cond, NULL);
 
     if(options & GLOBUSRUN_ARG_IGNORE_CTRLC)
     {
@@ -1298,9 +1298,9 @@ globus_l_globusrun_gramrun(char * request_string,
 	{
 	    globus_callback_unregister(
 	        globus_l_run_callback_handle,
-	        GLOBUS_NULL,
-	        GLOBUS_NULL, 
-	        GLOBUS_NULL);
+	        NULL,
+	        NULL, 
+	        NULL);
 	}
 #       endif
     }
@@ -1312,7 +1312,7 @@ globus_l_globusrun_gramrun(char * request_string,
 
     if(err != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                             "Initializing GRAM Callback failed because %s (errorcode %d)\n",
                             globus_gram_protocol_error_string(err),
                             err);
@@ -1321,7 +1321,7 @@ globus_l_globusrun_gramrun(char * request_string,
     }
     else if(verbose)
     {
-        globus_libc_printf("globus_gram_client_callback_allow "
+        printf("globus_gram_client_callback_allow "
                            "successful\n");
     }
 
@@ -1341,7 +1341,7 @@ globus_l_globusrun_gramrun(char * request_string,
 	    globus_gram_client_callback_disallow(callback_contact);
 	    globus_free(callback_contact);
 	}
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                             "GRAM Job submission failed because %s (error code %d)\n",
                             globus_gram_protocol_error_string(err),
                             err);
@@ -1378,14 +1378,14 @@ globus_l_globusrun_gramrun(char * request_string,
 	{
 	    if(verbose)
 	    {
-		globus_libc_fprintf(stderr,
+		fprintf(stderr,
 				    "Dryrun successful\n");
 	    }
 	    err=0;
 	}
 	else
 	{
-	    globus_libc_fprintf(stderr,
+	    fprintf(stderr,
 				"GRAM Job submission failed because %s (error code %d)\n",
 				monitor.failure_message
                                     ? monitor.failure_message
@@ -1395,18 +1395,18 @@ globus_l_globusrun_gramrun(char * request_string,
 	}
 
 	if  ((options & GLOBUSRUN_ARG_BATCH) && monitor.job_contact_string)
-	    globus_libc_printf("%s\n",monitor.job_contact_string);
+	    printf("%s\n",monitor.job_contact_string);
 
 	goto hard_exit;
     }
     else if(verbose)
     {
-	globus_libc_printf("GRAM Job submission successful\n");
+	printf("GRAM Job submission successful\n");
     }
 
     if  (options & GLOBUSRUN_ARG_BATCH)
     {
-	globus_libc_printf("%s\n",monitor.job_contact_string);
+	printf("%s\n",monitor.job_contact_string);
     }
 
     globus_mutex_lock(&monitor.mutex);
@@ -1496,20 +1496,20 @@ globus_l_globusrun_gramrun(char * request_string,
     {
         if(verbose)
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                                 "Dryrun successful\n");
         }
     }
     else if(err != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                             "GRAM Job failed because %s (error code %d)\n",
                             globus_gram_protocol_error_string(err),
                             err);
     }
 hard_exit:
 
-    if(monitor.job_contact_string != GLOBUS_NULL)
+    if(monitor.job_contact_string != NULL)
     {
 	globus_gram_client_job_contact_free(monitor.job_contact_string);
     }
@@ -1536,7 +1536,7 @@ globus_l_globusrun_kill_job(char * job_contact)
     err = globus_gram_client_job_cancel(job_contact);
     if ( err != GLOBUS_SUCCESS )
     {
-	globus_libc_fprintf(stderr, "Error canceling job\n");
+	fprintf(stderr, "Error canceling job\n");
     }
 
     return err;
@@ -1557,8 +1557,8 @@ globus_l_globusrun_refresh_proxy(
     monitor.job_state = 0;
     monitor.job_contact_string = NULL;
     monitor.submit_done = GLOBUS_FALSE;
-    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_mutex_init(&monitor.mutex, NULL);
+    globus_cond_init(&monitor.cond, NULL);
 
     if (globus_l_delegation_mode !=
                 GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY)
@@ -1596,7 +1596,7 @@ globus_l_globusrun_refresh_proxy(
 
     if ( err != GLOBUS_SUCCESS )
     {
-	globus_libc_fprintf(stderr, "Error refreshing proxy: %s\n",
+	fprintf(stderr, "Error refreshing proxy: %s\n",
 		            globus_gram_client_error_string(err));
     }
     while (!monitor.submit_done)
@@ -1629,7 +1629,7 @@ globus_l_globusrun_stop_manager(
 
     if(err != GLOBUS_SUCCESS)
     {
-	globus_libc_fprintf(stderr, "Error stopping job manager: %s\n",
+	fprintf(stderr, "Error stopping job manager: %s\n",
 		            globus_gram_client_error_string(err));
     }
     return err;
@@ -1643,57 +1643,72 @@ Parameters:
 
 Returns:
 ******************************************************************************/
-static int
-globus_l_globusrun_status_job(char * job_contact)
+static
+int
+globus_l_globusrun_status_job(
+    char *                              job_contact)
 {
-    int job_status;
-    int failure_code;
-    int err;
+    int                                 failure_code;
+    int                                 err;
+    globus_gram_client_job_info_t       info;
+    globus_gram_protocol_hash_entry_t * entry;
 
-    err = globus_gram_client_job_status(job_contact,
-					&job_status,
-					&failure_code);
-    if ( err != GLOBUS_SUCCESS )
+    err = globus_gram_client_job_status_with_info(job_contact, &info);
+    failure_code = info.protocol_error_code;
+
+    if (err != GLOBUS_SUCCESS)
     {
-	if (failure_code==GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER)
+	if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER)
 	{
             err = GLOBUS_SUCCESS;
-	    globus_libc_printf("DONE\n");
+	    printf("DONE\n");
 	}
 	else
 	{
-	    globus_libc_printf("ERROR\n");
-	    globus_libc_fprintf(stderr,
+	    printf("ERROR\n");
+	    fprintf(stderr,
                  "GRAM Job status failed because %s (error code %d)\n",
                  globus_gram_protocol_error_string(failure_code),
-                 failure_code);
+                 info.protocol_error_code);
+            globus_gram_client_job_info_destroy(&info);
 	    return failure_code;
 	}
     }
     else
     {
-	switch(job_status)
+	switch (info.job_state)
 	{
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
-	    globus_libc_printf("PENDING\n");
+	    printf("PENDING\n");
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
-	    globus_libc_printf("ACTIVE\n");
+	    printf("ACTIVE\n");
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
-	    globus_libc_printf("FAILED\n");
+	    printf("FAILED\n");
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED:
-	    globus_libc_printf("SUSPENDED\n");
+	    printf("SUSPENDED\n");
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
-	    globus_libc_printf("DONE\n");
+	    printf("DONE\n");
+            if (info.extensions)
+            {
+                entry = globus_hashtable_lookup(
+                        &info.extensions,
+                        "exit-code");
+
+                if (entry != NULL)
+                {
+                    printf("exit code: %s\n", entry->value);
+                }
+            }
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
-	    globus_libc_printf("UNSUBMITTED\n");
+	    printf("UNSUBMITTED\n");
 	    break;
 	default:
-	    globus_libc_printf("UNKNOWN JOB STATE %d\n", job_status);
+	    printf("UNKNOWN JOB STATE %d\n", info.job_state);
 	    break;
 	}
     }
@@ -1761,7 +1776,7 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int))
     act.sa_handler = func;
     act.sa_flags = 0;
 
-    return sigaction(signum, &act, GLOBUS_NULL);
+    return sigaction(signum, &act, NULL);
 } /* globus_l_globusrun_signal() */
 
 static
