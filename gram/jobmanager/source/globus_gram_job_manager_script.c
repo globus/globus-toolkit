@@ -499,12 +499,25 @@ globus_gram_job_manager_script_submit(
         return GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
     }
 
-    rc = globus_l_gram_job_manager_script_run(
-                request,
-                script_cmd,
-                globus_l_gram_job_manager_default_done,
-                NULL,
-                NULL);
+    if (request->config->seg_module &&
+        strcmp(request->config->seg_module, "condor") == 0)
+    {
+        rc = globus_l_gram_job_manager_script_run(
+                    request,
+                    script_cmd,
+                    globus_l_gram_job_manager_default_done,
+                    NULL,
+                    "emitcondorprocesses", 'd', 1);
+    }
+    else
+    {
+        rc = globus_l_gram_job_manager_script_run(
+                    request,
+                    script_cmd,
+                    globus_l_gram_job_manager_default_done,
+                    NULL,
+                    NULL);
+    }
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -1168,6 +1181,7 @@ globus_l_gram_job_manager_default_done(
         if(value != NULL && strlen(value) > 0)
         {
             request->job_id_string = strdup(value);
+            request->original_job_id_string = strdup(value);
         }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ACCT_INFO") == 0)

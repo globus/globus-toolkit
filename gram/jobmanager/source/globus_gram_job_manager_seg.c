@@ -231,6 +231,9 @@ globus_gram_job_manager_seg_handle_event(
     globus_gram_jobmanager_request_t *  request)
 {
     globus_scheduler_event_t *          event;
+    char *                              subjob_id_ptr = NULL;
+    size_t                              subjob_id_len;
+    globus_bool_t                       found_subjob_id;
 
     event = globus_fifo_dequeue(&request->seg_event_queue);
 
@@ -241,16 +244,110 @@ globus_gram_job_manager_seg_handle_event(
             event->event_type,
             request);
 
-    if (globus_i_gram_job_manager_script_valid_state_change(
-        request, event->event_type))
+
+    found_subjob_id = GLOBUS_FALSE;
+    subjob_id_len = strlen(event->job_id);
+    while (!found_subjob_id)
     {
-        globus_gram_job_manager_request_set_status(
-                request,
-                event->event_type);
-        request->unsent_status_change = GLOBUS_TRUE;
-        if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE)
+        subjob_id_ptr = strstr(request->job_id_string, event->job_id);
+        assert(subjob_id_ptr != NULL);
+
+        if (subjob_id_ptr == request->job_id_string ||
+            (*(subjob_id_ptr - 1) == ','))
+        {
+            /* request->job_id_string starts with this subjob_id, or this
+             * subjob_id happens after a comma. If it ends with a comma or
+             * \0, then we've found a match.
+             */
+            if (subjob_id_ptr[subjob_id_len] == ',')
+            {
+                found_subjob_id = GLOBUS_TRUE;
+
+                if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
+                    event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
+                {
+                    /* Remove this sub job id from the list by moving
+                     * after the comma up until \0 to subjob_id_ptr
+                     */
+                    memmove(subjob_id_ptr,
+                            subjob_id_ptr + subjob_id_len + 1,
+                            strlen(subjob_id_ptr + subjob_id_len + 1) + 1);
+                }
+            }
+            else if (subjob_id_ptr[subjob_id_len] == 0)
+            {
+                /* This is the final subjob in the job_id_string */
+                found_subjob_id = GLOBUS_TRUE;
+                if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
+                    event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
+                {
+                    /* Don't need to do memmove here, just null terminate at
+                     * either the initial part of the string if subjob_id is
+                     * the only one in the list, or at the comma otherwise
+                     */
+                    if (subjob_id_ptr != request->job_id_string)
+                    {
+                        *(subjob_id_ptr - 1) = '\0';
+                    }
+                    else
+                    {
+                        request->job_id_string[0] = '\0';
+                    }
+                }
+            }
+        }
+    }
+
+    assert(found_subjob_id);
+
+    /* If this is a terminal event (done or failed), we'll update the expected
+     * terminal state (in the case of a multi-subjob case) and the exit code
+     * if the job's exit code is currently 0
+     *
+     * Thus, if any subjob fails or exits with a non-0 exit code, we will
+     * propogate that in the job state change notification.
+     */
+    if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
+        event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
+    {
+        if (request->expected_terminal_state ==
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+        {
+            request->expected_terminal_state = event->event_type;
+        }
+        if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE &&
+            request->exit_code == 0)
         {
             request->exit_code = event->exit_code;
+        }
+    }
+
+    /* If the last job terminated or any job moved to active, we'll update the
+     * job status and potentially send notifications.
+     */
+    if (event->event_type != GLOBUS_SCHEDULER_EVENT_DONE &&
+         event->event_type != GLOBUS_SCHEDULER_EVENT_FAILED)
+    {
+        if (globus_i_gram_job_manager_script_valid_state_change(
+                    request,
+                    event->event_type))
+        {
+            globus_gram_job_manager_request_set_status(
+                    request,
+                    event->event_type);
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
+    }
+    else if (*request->job_id_string == '\0')
+    {
+        if (globus_i_gram_job_manager_script_valid_state_change(
+                    request,
+                    request->expected_terminal_state))
+        {
+            globus_gram_job_manager_request_set_status(
+                    request,
+                    request->expected_terminal_state);
+            request->unsent_status_change = GLOBUS_TRUE;
         }
     }
 
@@ -416,7 +513,7 @@ globus_l_gram_deliver_event(
     {
         (void) globus_gram_job_manager_unregister_job_id(
                 request->manager,
-                request->job_id_string);
+                event->job_id);
     }
 
     if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)

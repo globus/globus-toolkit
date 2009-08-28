@@ -400,12 +400,12 @@ globus_l_gram_job_manager_state_machine(
             request->job_history_status = request->status;
         }
 
-        if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+        if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
         }
-        else if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+        else if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
         {
             /* Job finished! start finalizing */
             if(globus_gram_job_manager_rsl_need_stage_out(request))

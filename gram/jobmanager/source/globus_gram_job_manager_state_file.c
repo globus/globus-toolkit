@@ -213,6 +213,12 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp, "%4d\n", (int) request->expected_terminal_state);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+
     rc = fprintf(fp, "%4d\n", request->failure_code);
     if (rc < 0)
     {
@@ -223,6 +229,15 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp, "%s\n",
+                request->original_job_id_string
+                ? request->original_job_id_string
+                : "");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+
     rc = fprintf(fp, "%s\n", request->rsl_spec);
     if (rc < 0)
     {
@@ -452,6 +467,12 @@ skip_single_check:
     {
         goto error_exit;
     }
+    request->expected_terminal_state = atoi( buffer );
+
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto error_exit;
+    }
     request->failure_code = atoi( buffer );
 
     if(fgets( buffer, file_len, fp ) == NULL)
@@ -462,6 +483,16 @@ skip_single_check:
     if(strcmp(buffer, " ") != 0)
     {
         request->job_id_string = strdup( buffer );
+    }
+
+    if(fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    if(strcmp(buffer, " ") != 0)
+    {
+        request->original_job_id_string = strdup( buffer );
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {

@@ -97,15 +97,36 @@ typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
                                                     int state,
                                                     int errorcode);
 
+/**
+ * Extensible job information structure
+ * @ingroup globus_gram_client_callback
+ *
+ * Type used for passing extension information along with the job status
+ * information included in the GRAM2 protocol. This structure contains the
+ * information returned in job state callbacks plus a hashtable of extension
+ * entries that contain globus_gram_protocol_hash_entry_t name-value pairs.
+ */
 typedef struct globus_gram_client_job_info_s
 {
     globus_hashtable_t                  extensions;
-    const char *                        job_contact;
+    char *                              job_contact;
     int                                 job_state;
     int                                 protocol_error_code;
 }
 globus_gram_client_job_info_t;
 
+/**
+ * Callback type which can be used to received protocol extensions in addition
+ * to the GRAM2 protocol.
+ *
+ * @param  user_callback_arg
+ *     Application-specific callback information.
+ * @param job_contact
+ *     Job this information is related to
+ * @param job_info
+ *     Job state and extensions
+ * @see globus_gram_client_info_callback_allow()
+ */
 typedef void (* globus_gram_client_info_callback_func_t)(
         void *                          user_callback_arg,
         const char *                    job_contact,
@@ -213,6 +234,15 @@ globus_gram_client_register_job_status(
     void *                              register_callback_arg);
 
 int
+globus_gram_client_register_job_status_with_info(
+    const char *                        job_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        info_callback,
+    void *                              callback_arg);
+
+
+int
 globus_gram_client_job_refresh_credentials(
     char *                              job_contact,
     gss_cred_id_t                       creds);
@@ -231,6 +261,11 @@ globus_gram_client_job_status(
     const char *                        job_contact,
     int *                               job_status,
     int *                               failure_code);
+
+int
+globus_gram_client_job_status_with_info(
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     job_info);
 
 int
 globus_gram_client_register_job_signal(
@@ -350,6 +385,10 @@ int
 globus_gram_client_attr_get_delegation_mode(
     globus_gram_client_attr_t           attr,
     globus_io_secure_delegation_mode_t *mode);
+
+void
+globus_gram_client_job_info_destroy(
+    globus_gram_client_job_info_t *     info);
 
 #define GLOBUS_GRAM_CLIENT_MODULE (&globus_gram_client_module)
 

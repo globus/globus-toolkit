@@ -886,6 +886,8 @@ globus_gram_job_manager_register_job_id(
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_job_id_ref_t *          ref;
     globus_gram_job_id_ref_t *          old_ref;
+    globus_list_t                       *subjobs = NULL, *tmp_list;
+    char *                              subjob_id;
 
     globus_gram_job_manager_log(
             manager,
@@ -894,83 +896,124 @@ globus_gram_job_manager_register_job_id(
             request->job_contact_path,
             request);
 
-    GlobusGramJobManagerLock(manager);
-    old_ref = globus_hashtable_lookup(
-            &manager->job_id_hash,
-            job_id);
-
-    if (old_ref != NULL)
+    if (manager->config->seg_module != NULL)
     {
-        if (strcmp(old_ref->job_contact_path, request->job_contact_path) != 0)
+        /* If we're using the SEG, split on, so that seg events can be
+         * matched to the relevant job requests
+         */
+        rc = globus_gram_split_subjobs(job_id, &subjobs);
+        if (rc != GLOBUS_SUCCESS)
         {
-            globus_gram_job_manager_log(
-                    manager,
-                    "Error: Job ID %s is registered with a "
-                    "different job contact! (%s)\n",
-                    job_id,
-                    old_ref->job_contact_path);
+            goto split_job_id_failed;
+        }
+    }
+    else
+    {
+        char *                          tmp;
+
+        tmp = strdup(job_id);
+        if (tmp == NULL)
+        {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-            goto old_ref_exists;
+            goto dup_job_id_failed;
         }
-        else
+
+        rc = globus_list_insert(&subjobs, tmp);
+        if (tmp == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            free(tmp);
+
+            goto insert_dup_failed;
+        }
+    }
+
+    GlobusGramJobManagerLock(manager);
+    for (tmp_list = subjobs;
+         tmp_list != NULL;
+         tmp_list = globus_list_rest(tmp_list))
+    {
+        subjob_id = globus_list_first(tmp_list);
+
+        old_ref = globus_hashtable_lookup(
+                &manager->job_id_hash,
+                subjob_id);
+
+        if (old_ref != NULL)
+        {
+            if (strcmp(old_ref->job_contact_path,
+                        request->job_contact_path) != 0)
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        "Error: Job ID %s is registered with a "
+                        "different job contact! (%s)\n",
+                        job_id,
+                        old_ref->job_contact_path);
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto old_ref_exists;
+            }
+            else
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        "Job ID %s is already registered with this contact\n",
+                        job_id);
+                goto old_ref_exists;
+            }
+        }
+
+        ref = malloc(sizeof(globus_gram_job_id_ref_t));
+        if (ref == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            globus_gram_job_manager_log(
+                    manager,
+                    "Failed to malloc id_ref (errno: %d)\n",
+                    errno);
+
+            goto ref_malloc_failed;
+        }
+
+        ref->job_id = strdup(subjob_id);
+        if (ref->job_id == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            globus_gram_job_manager_log(
+                    manager,
+                    "Failed to strdup job_id %s (errno: %d)\n",
+                    job_id,
+                    errno);
+            goto job_id_strdup_failed;
+        }
+        ref->job_contact_path = strdup(request->job_contact_path);
+        if (ref->job_contact_path == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            globus_gram_job_manager_log(
+                    manager,
+                    "Failed to strdup job_contact_path %s (errno: %d)\n",
+                    request->job_contact_path,
+                    errno);
+            goto job_contact_path_strdup_failed;
+        }
+        rc = globus_hashtable_insert(
+                &manager->job_id_hash,
+                ref->job_id,
+                ref);
+        if (rc != GLOBUS_SUCCESS)
         {
             globus_gram_job_manager_log(
                     manager,
-                    "Job ID %s is already registered with this contact\n",
-                    job_id);
-            goto old_ref_exists;
+                    "Failed to insert into job_id_hash (rc: %d)\n",
+                    rc);
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto hash_insert_failed;
         }
-    }
-
-    ref = malloc(sizeof(globus_gram_job_id_ref_t));
-    if (ref == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_log(
-                manager,
-                "Failed to malloc id_ref (errno: %d)\n",
-                errno);
-
-        goto ref_malloc_failed;
-    }
-
-    ref->job_id = strdup(job_id);
-    if (ref->job_id == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_log(
-                manager,
-                "Failed to strdup job_id %s (errno: %d)\n",
-                job_id,
-                errno);
-        goto job_id_strdup_failed;
-    }
-    ref->job_contact_path = strdup(request->job_contact_path);
-    if (ref->job_contact_path == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        globus_gram_job_manager_log(
-                manager,
-                "Failed to strdup job_contact_path %s (errno: %d)\n",
-                request->job_contact_path,
-                errno);
-        goto job_contact_path_strdup_failed;
-    }
-    rc = globus_hashtable_insert(
-            &manager->job_id_hash,
-            ref->job_id,
-            ref);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_log(
-                manager,
-                "Failed to insert into job_id_hash (rc: %d)\n",
-                rc);
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto hash_insert_failed;
     }
 
     if (rc != GLOBUS_SUCCESS)
@@ -985,6 +1028,10 @@ job_id_strdup_failed:
 ref_malloc_failed:
 old_ref_exists:
     GlobusGramJobManagerUnlock(manager);
+    globus_list_destroy_all(subjobs, free);
+insert_dup_failed:
+dup_job_id_failed:
+split_job_id_failed:
     return rc;
 }
 /* globus_gram_job_manager_register_job_id() */
@@ -1886,3 +1933,57 @@ fopen_failed:
     return rc;
 }
 /* globus_l_gram_read_job_manager_cred() */
+
+int
+globus_gram_split_subjobs(
+    const char *                        job_id,
+    globus_list_t **                    subjobs)
+{
+    char *                              tok_end = NULL;
+    char *                              job_id_string;
+    char *                              job_id_string_copy;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    job_id_string_copy = strdup(job_id);
+    if (job_id_string_copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto job_id_copy_failed;
+    }
+
+    for (tok_end = NULL,
+                job_id_string = strtok_r(job_id_string_copy, ",", &tok_end);
+         job_id_string != NULL;
+         job_id_string = strtok_r(NULL, ",", &tok_end))
+    {
+        char *                      subjob_id = NULL;
+        subjob_id = strdup(job_id_string);
+        if (subjob_id == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto strdup_failed;
+        }
+        rc = globus_list_insert(subjobs, subjob_id);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            free(subjob_id);
+
+            goto insert_failed;
+        }
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+insert_failed:
+strdup_failed:
+        globus_list_destroy_all(*subjobs, free);
+        free(job_id_string_copy);
+job_id_copy_failed:
+        *subjobs = NULL;
+    }
+    return rc;
+}
+/* globus_gram_split_subjobs() */

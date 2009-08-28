@@ -405,9 +405,17 @@ typedef struct
      *
      * Use globus_gram_job_manager_request_set_status() to change.
      *
-     * @todo add link 
      */ 
     globus_gram_protocol_job_state_t    status;
+
+    /**
+     * Terminal state
+     * 
+     * The projected terminal state of the job. In the case of multiple
+     * ids returned from the submit script, this will be set to failed if
+     * any subjobs failed, or done otherwise.
+     */
+    globus_gram_protocol_job_state_t    expected_terminal_state;
 
     /**
      * Last time status was changed
@@ -440,16 +448,24 @@ typedef struct
      * timeout, this will be set to something besides 0, and that will be
      * sent as part of a fail message to satisfy condor
      */
-    int stop_reason;
+    int                                 stop_reason;
     
     /**
      * Job identifier string
      *
      * String representation of the LRM job id. May be a comma-separated
-     * string of uniquely-pollable ID values. This value is filled in when the
-     * request is submitted.
+     * string of separately-pollable ID values. This value is filled in when the
+     * request is submitted. This version is modified as the subjobs complete. 
      */
     char *                              job_id_string;
+    /**
+     * Job identifier string
+     *
+     * String representation of the LRM job id. May be a comma-separated string
+     * of separately-pollable ID values. This value is filled in when the
+     * request is submitted.
+     */
+    char *                              original_job_id_string;
     
     /**
      * Poll Frequency
@@ -1267,6 +1283,11 @@ globus_gram_job_manager_get_status(
 void
 globus_gram_job_manager_stop_all_jobs(
     globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_split_subjobs(
+    const char *                        job_id,
+    globus_list_t **                    subjobs);
 
 /* startup_socket.c */
 int
