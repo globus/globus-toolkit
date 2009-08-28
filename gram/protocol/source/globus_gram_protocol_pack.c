@@ -367,6 +367,268 @@ globus_gram_protocol_unpack_job_request_done:
 }
 /* globus_gram_protocol_unpack_job_request_reply() */
 
+int
+globus_gram_protocol_pack_job_request_reply_with_extensions(
+    int					status,
+    const char *			job_contact,    /* may be null */
+    globus_hashtable_t *                extensions,
+    globus_byte_t **			reply,
+    globus_size_t *			replysize)
+{
+    globus_gram_protocol_hash_entry_t * entry;
+    size_t                              len = 0;
+    int                                 chrs;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    if (reply != NULL)
+    {
+        *reply = NULL;
+    }
+
+    if (replysize != NULL)
+    {
+        *replysize = 0;
+    }
+    if (extensions == NULL || reply == NULL || replysize == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
+    }
+
+    for (entry = globus_hashtable_first(extensions);
+         entry != NULL;
+         entry = globus_hashtable_next(extensions))
+    {
+        if (entry->attribute == NULL || entry->value == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_PACK_FAILED;
+
+            goto bad_attr;
+        }
+        len += strlen(entry->attribute) + strlen(entry->value) + 4;
+    }
+    len += strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+           strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+           (job_contact
+            ? strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE)
+            : 0) +
+           (job_contact
+            ? strlen(job_contact) : 0) +
+           4;
+
+    *reply = malloc(len);
+    if(*reply == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto reply_malloc_failed;
+    }
+
+    if (job_contact)
+    {
+        chrs = sprintf((char *)*reply,
+                GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+                GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
+                GLOBUS_GRAM_PROTOCOL_VERSION,
+                status,
+                job_contact);
+    }
+    else
+    {
+        chrs = sprintf((char *)*reply,
+                GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+                GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
+                status,
+                GLOBUS_GRAM_PROTOCOL_VERSION);
+    }
+
+    for (entry = globus_hashtable_first(extensions);
+         entry != NULL;
+         entry = globus_hashtable_next(extensions))
+    {
+        chrs += sprintf(((char *) *reply) + chrs,
+                "%s: %s\r\n",
+                entry->attribute,
+                entry->value);
+    }
+
+    *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
+
+reply_malloc_failed:
+bad_attr:
+bad_param:
+    return rc;
+}
+/* globus_gram_protocol_pack_job_request_reply_with_extensions() */
+
+int
+globus_gram_protocol_unpack_job_request_reply_with_extensions(
+    const globus_byte_t *		reply,
+    globus_size_t			replysize,
+    int *				status,
+    char **				job_contact,
+    globus_hashtable_t *                extensions)
+{
+    char *                              attribute;
+    char *                              value;
+    char *                              eol;
+    globus_gram_protocol_hash_entry_t * entry = NULL;
+    int                                 rc;
+
+    if (reply == NULL || extensions == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
+    }
+    rc = globus_hashtable_init(
+            extensions,
+            17,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto hashtable_init_failed;
+    }
+
+    for (attribute = (char *) reply; attribute != NULL;)
+    {
+        eol = strstr(attribute, "\r\n");
+        if (eol == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        value = strstr(attribute, ":");
+        if (value == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        if (value > eol)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+        if (entry == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto parse_error;
+        }
+
+        entry->attribute = malloc(value - attribute + 1);
+        if (entry->attribute == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto parse_error;
+        }
+        memcpy(entry->attribute, attribute, value - attribute);
+        entry->attribute[value - attribute] = 0;
+
+        attribute = strstr(attribute, CRLF);
+        if (attribute == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        /* Skip : */
+        value++;
+        /* Skip whitespace */
+        while (isspace(*value))
+        {
+            value++;
+        }
+        entry->value = malloc(attribute - value + 1);
+        memcpy(entry->value, value, attribute - value);
+        entry->value[attribute - value] = 0;
+
+        globus_hashtable_insert(extensions, entry->attribute, entry);
+        entry = NULL;
+        attribute += 2;
+
+        if (*attribute == 0)
+        {
+            break;
+        }
+    }
+
+    /* Check that required attributes are present */
+    entry = globus_hashtable_lookup(
+            extensions,
+            "protocol-version");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto verify_error;
+    }
+    if (strtol(entry->value, NULL, 10) != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+
+        goto verify_error;
+    }
+
+    entry = globus_hashtable_lookup(
+            extensions,
+            "status");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        
+        goto verify_error;
+    }
+
+    entry = globus_hashtable_lookup(
+            extensions,
+            "job-manager-url");
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto verify_error;
+    }
+    *job_contact = strdup(entry->value);
+    if (*job_contact == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto copy_contact_failed;
+    }
+
+    rc = GLOBUS_SUCCESS;
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+copy_contact_failed:
+verify_error:
+        entry = NULL;
+parse_error:
+        globus_hashtable_destroy_all(
+                extensions,
+                globus_l_gram_protocol_hash_entry_destroy);
+        if (entry != NULL)
+        {
+            globus_l_gram_protocol_hash_entry_destroy(entry);
+        }
+hashtable_init_failed:
+        *extensions = NULL;
+    }
+bad_param:
+
+    return rc;
+}
 
 /**
  * Pack a GRAM Job Manager Query
@@ -809,7 +1071,7 @@ globus_gram_protocol_unpack_status_reply_with_extensions(
 
     rc = globus_hashtable_init(
             extensions,
-            89,
+            17,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
 
@@ -1257,7 +1519,7 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
     }
     rc = globus_hashtable_init(
             message_hash,
-            89,
+            17,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
 

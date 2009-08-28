@@ -1027,6 +1027,105 @@ globus_gram_client_job_request(
 }
 /* globus_gram_client_job_request() */
 
+int
+globus_gram_client_register_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        callback,
+    void *                              callback_arg)
+{
+    globus_i_gram_client_attr_t *       iattr = NULL;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
+
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
+    if(!monitor)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+
+    iattr = (globus_i_gram_client_attr_t *) attr;
+
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            NULL,
+            callback,
+            callback_arg);
+
+    rc = globus_l_gram_client_job_request(resource_manager_contact,
+                                          description,
+                                          job_state_mask,
+                                          iattr,
+                                          callback_contact,
+                                          monitor);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(monitor);
+        free(monitor);
+    }
+    return rc;
+}
+
+int 
+globus_gram_client_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    char **                             job_contact,
+    globus_gram_client_job_info_t *     info)
+{
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
+
+    if(job_contact)
+    {
+        *job_contact = NULL;
+    }
+
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            info,
+            NULL,
+            NULL,
+            NULL);
+
+    rc = globus_l_gram_client_job_request(resource_manager_contact,
+                                          description,
+                                          job_state_mask,
+                                          NULL,
+                                          callback_contact,
+                                          &monitor);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(&monitor);
+
+        return rc;
+    }
+
+    globus_mutex_lock(&monitor.mutex);
+    while (!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    rc = monitor.info->protocol_error_code;
+    if(job_contact && monitor.info->job_contact)
+    {
+        *job_contact = strdup(monitor.info->job_contact);
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    globus_l_gram_client_monitor_destroy(&monitor);
+
+    return rc;
+}
+/* globus_gram_client_job_request_with_info() */
+
 /**
  * Error code translation.
  * @ingroup globus_gram_client
@@ -2681,7 +2780,7 @@ globus_l_gram_client_job_request(
                  &attr,
                  query,
                  querysize,
-                 (monitor->callback != NULL)
+                 (monitor->callback != NULL || monitor->info_callback != NULL) 
                      ?  globus_l_gram_client_register_callback
                      : globus_l_gram_client_monitor_callback,
                  monitor);

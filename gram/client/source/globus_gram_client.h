@@ -214,6 +214,26 @@ globus_gram_client_job_request(
     char **                             job_contact);
 
 int
+globus_gram_client_register_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        callback,
+    void *                              callback_arg);
+
+int 
+globus_gram_client_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    char **                             job_contact,
+    globus_gram_client_job_info_t *     info);
+
+int
 globus_gram_client_register_job_cancel(
     const char *                        job_contact,
     globus_gram_client_attr_t           attr,

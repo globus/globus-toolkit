@@ -1136,11 +1136,38 @@ globus_gram_job_manager_reply(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     int                                 token_status;
+    globus_hashtable_t                  extensions;
+    globus_gram_protocol_hash_entry_t   entry;
+
+    rc = globus_hashtable_init(
+            &extensions,
+            1,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto hashtable_init_failed;
+    }
+
+    entry.attribute = "toolkit-version";
+    entry.value = request->config->globus_version;
+
+    rc = globus_hashtable_insert(&extensions, &entry.attribute, &entry);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto hash_insert_failed;
+    }
 
     /* Response to initial job request. */
-    rc = globus_gram_protocol_pack_job_request_reply(
+    rc = globus_gram_protocol_pack_job_request_reply_with_extensions(
             response_code,
             job_contact,
+            &extensions,
             &reply,
             &replysize);
 
@@ -1214,6 +1241,9 @@ globus_gram_job_manager_reply(
         request->failure_code = rc;
     }
 
+hash_insert_failed:
+    globus_hashtable_destroy(&extensions);
+hashtable_init_failed:
     return rc;
 }
 /* globus_gram_job_manager_reply() */

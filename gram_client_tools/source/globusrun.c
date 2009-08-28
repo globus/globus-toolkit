@@ -123,10 +123,8 @@ static
 void
 globus_l_submit_callback(
     void *                              user_callback_arg,
-    globus_gram_protocol_error_t        operation_failure_code,
     const char *                        job_contact,
-    globus_gram_protocol_job_state_t    job_state,
-    globus_gram_protocol_error_t        job_failure_code);
+    globus_gram_client_job_info_t *     job_info);
 
 /**** Support for SIGINT handling ****/
 static RETSIGTYPE
@@ -422,7 +420,7 @@ static int arg_f_mode = O_RDONLY;
 	unsigned short                     gass_port         = 0;
 	unsigned long                      options           = 0UL;
 	int                                err               = GLOBUS_SUCCESS;
-	globus_gass_transfer_listener_t   listener		 =NULL;
+	globus_gass_transfer_listener_t   listener		 =0;
 	globus_gass_transfer_listenerattr_t * attr		 =NULL;
 	char *                             scheme		 =NULL;
 	globus_gass_transfer_requestattr_t * reqattr	 =NULL;
@@ -1326,7 +1324,7 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 
     globus_mutex_lock(&monitor.mutex);
-    err = globus_gram_client_register_job_request(
+    err = globus_gram_client_register_job_request_with_info(
             rm_contact,
             request_string,
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
@@ -1783,31 +1781,37 @@ static
 void
 globus_l_submit_callback(
     void *                              user_callback_arg,
-    globus_gram_protocol_error_t        operation_failure_code,
     const char *                        job_contact,
-    globus_gram_protocol_job_state_t    job_state,
-    globus_gram_protocol_error_t        job_failure_code)
+    globus_gram_client_job_info_t *     info)
 {
     globus_i_globusrun_gram_monitor_t * monitor = user_callback_arg;
+    globus_gram_protocol_hash_entry_t * entry;
 
     globus_mutex_lock(&monitor->mutex);
     monitor->submit_done = GLOBUS_TRUE;
     if (job_contact)
     {
         monitor->job_contact_string = strdup(job_contact);
-        globus_url_parse(job_contact, &monitor->job_contact);
+        globus_url_parse(monitor->job_contact_string, &monitor->job_contact);
     }
-    if (operation_failure_code != GLOBUS_SUCCESS)
+    if (info->protocol_error_code != GLOBUS_SUCCESS)
     {
         const char * err = globus_gram_protocol_error_string(
-                operation_failure_code);
-        monitor->failure_code = operation_failure_code;
+                info->protocol_error_code);
+        monitor->failure_code = info->protocol_error_code;
         monitor->failure_message = globus_libc_strdup(err);
     }
-    else if (job_state > monitor->job_state)
+    else if (info->job_state > monitor->job_state)
     {
-        monitor->job_state = job_state;
-        monitor->failure_code = job_failure_code;
+        monitor->job_state = info->job_state;
+        entry = globus_hashtable_lookup(
+                &info->extensions,
+                "job-failure-code");
+
+        if (entry)
+        {
+            monitor->failure_code = atoi(entry->value);
+        }
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);

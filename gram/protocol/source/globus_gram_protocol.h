@@ -231,6 +231,22 @@ globus_gram_protocol_unpack_job_request_reply(
     int *				status,
     char **				job_contact);
 
+int
+globus_gram_protocol_pack_job_request_reply_with_extensions(
+    int					status,
+    const char *			job_contact,    /* may be null */
+    globus_hashtable_t *                extensions,
+    globus_byte_t **			reply,
+    globus_size_t *			replysize);
+
+
+int
+globus_gram_protocol_unpack_job_request_reply_with_extensions(
+    const globus_byte_t *		reply,
+    globus_size_t			replysize,
+    int *				status,
+    char **				job_contact,
+    globus_hashtable_t *                extensions);
 
 int
 globus_gram_protocol_pack_status_request(
