@@ -559,12 +559,11 @@ main(int xargc,
 
     /* 
      * Don't allow logins of /etc/nologins is defined. 
-     * Silently ignore them, as the sysadmin
-     * must have other problems.
      */
-
     if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
     {
+        failure(FAILED_NOLOGIN, 
+                "Not accepting connections at this time (/etc/nologin)");
         exit (1);
     }
 
@@ -1431,18 +1430,26 @@ static void doit()
      * if globus nologin is set, error message and exit
      */
         
+    if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
+    {
+        failure(FAILED_NOLOGIN, 
+                "Not accepting connections at this time (/etc/nologin)");
+        exit (1);
+    }
     if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
              &statbuf) == 0)
     {
-        failure(FAILED_NOLOGIN, 
-                "Not accepting connections at this time");
+        failure2(FAILED_NOLOGIN, 
+                "Not accepting connections at this time (%s)",
+                genfilename(gatekeeperhome, "etc", globusnologin));
     }
 
     if (stat(genfilename(gatekeeperhome,"var",globusnologin),
              &statbuf) == 0)
     {
-        failure(FAILED_NOLOGIN, 
-                "Not accepting connections at this time");
+        failure2(FAILED_NOLOGIN, 
+                "Not accepting connections at this time (%s)",
+                genfilename(gatekeeperhome, "var", globusnologin));
     }
 
     /* We will use the assist functions here since we 
