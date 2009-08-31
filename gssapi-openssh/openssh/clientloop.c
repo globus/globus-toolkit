@@ -1434,11 +1434,13 @@ client_loop(int have_pty, int escape_char_arg, int ssh2_chan_id)
 		if (!rekeying) {
 			channel_after_select(readset, writeset);
 
+#ifdef GSSAPI
 			if (options.gss_renewal_rekey &&
 			    ssh_gssapi_credentials_updated(GSS_C_NO_CONTEXT)) {
 				debug("credentials updated - forcing rekey");
 				need_rekeying = 1;
 			}
+#endif
 
 			if (need_rekeying || packet_need_rekeying()) {
 				debug("need rekeying");
