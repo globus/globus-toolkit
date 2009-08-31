@@ -530,7 +530,6 @@ static int ssh_gssapi_simple_conv(int n, const struct pam_message **msg,
 void
 ssh_gssapi_rekey_creds() {
 	int ok;
-	int ret;
 #ifdef USE_PAM
 	pam_handle_t *pamh = NULL;
 	struct pam_conv pamconv = {ssh_gssapi_simple_conv, NULL};
