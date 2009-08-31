@@ -1800,6 +1800,9 @@ main(int ac, char **av)
 		cleanup_exit(255);
 	}
 
+	/* set the HPN options for the child */
+	channel_set_hpn(options.hpn_disabled, options.hpn_buffer_size);
+
 	/*
 	 * We use get_canonical_hostname with usedns = 0 instead of
 	 * get_remote_ipaddr here so IP options will be checked.
@@ -1890,9 +1893,6 @@ main(int ac, char **av)
 		}
 	}
 #endif
-
-	/* set the HPN options for the child */
-	channel_set_hpn(options.hpn_disabled, options.hpn_buffer_size);
 
 	/*
 	 * We don't want to listen forever unless the other side
@@ -2327,16 +2327,17 @@ do_ssh2_kex(void)
 #endif
 
 	/* start key exchange */
-	/* start key exchange */
 	kex = kex_setup(myproposal);
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
 	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
 #ifdef GSSAPI
-	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
-	kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_server;
-	kex->kex[KEX_GSS_GEX_SHA1] = kexgss_server;
+	if (options.gss_keyex) {
+		kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+		kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_server;
+		kex->kex[KEX_GSS_GEX_SHA1] = kexgss_server;
+	}
 #endif
 	kex->server = 1;
 	kex->client_version_string=client_version_string;

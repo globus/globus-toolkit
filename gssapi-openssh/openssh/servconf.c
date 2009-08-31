@@ -103,6 +103,7 @@ initialize_server_options(ServerOptions *options)
 	options->gss_cleanup_creds = -1;
 	options->gss_strict_acceptor = -1;
 	options->gsi_allow_limited_proxy = -1;
+	options->gss_store_rekey = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
@@ -137,11 +138,11 @@ initialize_server_options(ServerOptions *options)
 	options->num_permitted_opens = -1;
 	options->adm_forced_command = NULL;
 	options->chroot_directory = NULL;
+	options->zero_knowledge_password_authentication = -1;
 	options->none_enabled = -1;
 	options->tcp_rcv_buf_poll = -1;
 	options->hpn_disabled = -1;
 	options->hpn_buffer_size = -1;
-	options->zero_knowledge_password_authentication = -1;
 }
 
 void
@@ -241,6 +242,8 @@ fill_default_server_options(ServerOptions *options)
 		options->gss_strict_acceptor = 1;
 	if (options->gsi_allow_limited_proxy == -1)
 		options->gsi_allow_limited_proxy = 0;
+	if (options->gss_store_rekey == -1)
+		options->gss_store_rekey = 0;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -370,17 +373,16 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssCleanupCreds,
     sGssDelegateCreds,
-    sGssStrictAcceptor,
-	sGssKeyEx, 
     sGssCredsPath,
 	sGsiAllowLimitedProxy,
-    sAcceptEnv, sPermitTunnel,
+	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
+	sGssKeyEx, sGssStoreRekey,
+	sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand, sChrootDirectory,
 	sUsePrivilegeSeparation, sAllowAgentForwarding,
-	sNoneEnabled, sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
 	sZeroKnowledgePasswordAuthentication,
+	sNoneEnabled, sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -442,22 +444,24 @@ static struct {
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_ALL },
 	{ "gssapidelegatecredentials", sGssDelegateCreds, SSHCFG_ALL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
-	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
 	{ "gssapicredentialspath", sGssCredsPath, SSHCFG_GLOBAL },
-	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
 #ifdef GSI
 	{ "gsiallowlimitedproxy", sGsiAllowLimitedProxy, SSHCFG_GLOBAL },
 #endif
+	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
+	{ "gssapistorecredentialsonrekey", sGssStoreRekey, SSHCFG_GLOBAL },
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_ALL },
 	{ "gssapidelegatecredentials", sUnsupported, SSHCFG_ALL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
-	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapicredentialspath", sUnsupported, SSHCFG_GLOBAL },
-	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
 #ifdef GSI
 	{ "gsiallowlimitedproxy", sUnsupported, SSHCFG_GLOBAL },
 #endif
+	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapistorecredentialsonrekey", sUnsupported, SSHCFG_GLOBAL },
 #endif
 #ifdef SESSION_HOOKS
     { "allowsessionhooks", sAllowSessionHooks, SSHCFG_GLOBAL },
@@ -1024,17 +1028,23 @@ process_server_config_line(ServerOptions *options, char *line,
 		intptr = &options->gss_cleanup_creds;
 		goto parse_flag;
 
-	case sGssStrictAcceptor:
-		intptr = &options->gss_strict_acceptor;
-		goto parse_flag;
-
 	case sGssCredsPath:
 		charptr = &options->gss_creds_path;
 		goto parse_filename;
 
+	case sGssStrictAcceptor:
+		intptr = &options->gss_strict_acceptor;
+		goto parse_flag;
+
+	case sGssStoreRekey:
+		intptr = &options->gss_store_rekey;
+		goto parse_flag;
+
+#ifdef GSI
 	case sGsiAllowLimitedProxy:
 		intptr = &options->gsi_allow_limited_proxy;
 		goto parse_flag;
+#endif
 
 #ifdef SESSION_HOOKS
         case sAllowSessionHooks:

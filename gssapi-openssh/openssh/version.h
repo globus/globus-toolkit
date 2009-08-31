@@ -23,6 +23,6 @@
 #define SSH_VERSION	"OpenSSH_5.2"
 
 #define SSH_PORTABLE	"p1"
-#define SSH_HPN         "-hpn13v5"
+#define SSH_HPN         "-hpn13v6"
 #define SSH_RELEASE	SSH_VERSION SSH_PORTABLE SSH_HPN \
             NCSA_VERSION GSI_VERSION KRB5_VERSION MGLUE_VERSION

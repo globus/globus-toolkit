@@ -57,7 +57,8 @@ ssh_gssapi_mech gssapi_gsi_mech = {
 	NULL,
 	&ssh_gssapi_gsi_userok,
 	&ssh_gssapi_gsi_localname,
-	&ssh_gssapi_gsi_storecreds
+	&ssh_gssapi_gsi_storecreds,
+    NULL
 };
 
 /*

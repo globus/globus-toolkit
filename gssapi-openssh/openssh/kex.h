@@ -127,6 +127,7 @@ struct Kex {
 	int	gss_deleg_creds;
 	int	gss_trust_dns;
 	char    *gss_host;
+	char	*gss_client;
 #endif
 	char	*client_version_string;
 	char	*server_version_string;

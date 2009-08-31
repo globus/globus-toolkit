@@ -574,13 +574,6 @@ int main(void) { exit(0); }
 	    [Use tunnel device compatibility to OpenBSD])
 	AC_DEFINE(SSH_TUN_PREPEND_AF, 1,
 	    [Prepend the address family to IP tunnel traffic])
-	m4_pattern_allow(AU_IPv)
-	AC_CHECK_DECL(AU_IPv4, [], 
-	    AC_DEFINE(AU_IPv4, 0, [System only supports IPv4 audit records])
-	    [#include <bsm/audit.h>]
-	AC_DEFINE(LASTLOG_WRITE_PUTUTXLINE, 1,
-	    [Define if pututxline updates lastlog too])
-	)
 	AC_MSG_CHECKING(if we have the Security Authorization Session API)
 	AC_TRY_COMPILE([#include <Security/AuthSession.h>],
 		[SessionCreate(0, 0);],
@@ -604,6 +597,13 @@ int main(void) { exit(0); }
 			AC_MSG_ERROR(*** Need a security framework to use the credentials cache API ***)
 		fi],
 		[AC_MSG_RESULT(no)]
+	)
+	m4_pattern_allow(AU_IPv)
+	AC_CHECK_DECL(AU_IPv4, [], 
+	    AC_DEFINE(AU_IPv4, 0, [System only supports IPv4 audit records])
+	    [#include <bsm/audit.h>]
+	AC_DEFINE(LASTLOG_WRITE_PUTUTXLINE, 1,
+	    [Define if pututxline updates lastlog too])
 	)
 	;;
 *-*-dragonfly*)

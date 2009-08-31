@@ -411,7 +411,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		/* Dont count server configuration issues against the client */
 		/* Allow initial try of "none" auth without failure penalty */
 		if (!authctxt->server_caused_failure &&
-            (authctxt->attempt > 1 || strcmp(method, "none") != 0))
+		    (authctxt->attempt > 1 || strcmp(method, "none") != 0))
 			authctxt->failures++;
 		if (authctxt->failures >= options.max_authtries) {
 #ifdef SSH_AUDIT_EVENTS

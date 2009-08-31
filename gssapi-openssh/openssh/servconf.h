@@ -95,13 +95,14 @@ typedef struct {
 #endif
 	int     kerberos_get_afs_token;		/* If true, try to get AFS token if
 						 * authenticated with Kerberos. */
+	int     gsi_allow_limited_proxy;	/* If true, accept limited proxies */
 	int     gss_authentication;	/* If true, permit GSSAPI authentication */
 	int     gss_deleg_creds;	/* If true, store delegated GSSAPI credentials*/
-	int 	gss_keyex;		/* If true, permit GSSAPI key exchange */
+	int     gss_keyex;		/* If true, permit GSSAPI key exchange */
 	int     gss_cleanup_creds;	/* If true, destroy cred cache on logout */
-	int 	gss_strict_acceptor;	/* If true, restrict the GSSAPI acceptor name */
 	char*   gss_creds_path;	/* If true, destroy cred cache on logout */
-	int     gsi_allow_limited_proxy;	/* If true, accept limited proxies */
+	int 	gss_strict_acceptor;	/* If true, restrict the GSSAPI acceptor name */
+	int 	gss_store_rekey;
 	int     password_authentication;	/* If true, permit password
 						 * authentication. */
 	int     kbd_interactive_authentication;	/* If true, permit */
