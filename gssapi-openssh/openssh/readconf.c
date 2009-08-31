@@ -127,8 +127,7 @@ typedef enum {
 	oClearAllForwardings, oNoHostAuthenticationForLocalhost,
 	oEnableSSHKeysign, oRekeyLimit, oVerifyHostKeyDNS, oConnectTimeout,
 	oAddressFamily, oGssAuthentication, oGssDelegateCreds,
-	oGssKeyEx,
-	oGssTrustDns,
+	oGssTrustDns, oGssKeyEx, oGssClientIdentity, oGssRenewalRekey,
 	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
 	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
 	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
@@ -171,11 +170,15 @@ static struct {
 	{ "gssapikeyexchange", oGssKeyEx },
 	{ "gssapidelegatecredentials", oGssDelegateCreds },
 	{ "gssapitrustdns", oGssTrustDns },
+	{ "gssapiclientidentity", oGssClientIdentity },
+	{ "gssapirenewalforcesrekey", oGssRenewalRekey },
 #else
 	{ "gssapiauthentication", oUnsupported },
 	{ "gssapikeyexchange", oUnsupported },
 	{ "gssapidelegatecredentials", oUnsupported },
 	{ "gssapitrustdns", oUnsupported },
+	{ "gssapiclientidentity", oUnsupported },
+	{ "gssapirenewalforcesrekey", oUnsupported },
 #endif
 	{ "fallbacktorsh", oDeprecated },
 	{ "usersh", oDeprecated },
@@ -235,25 +238,19 @@ static struct {
 	{ "tunneldevice", oTunnelDevice },
 	{ "localcommand", oLocalCommand },
 	{ "permitlocalcommand", oPermitLocalCommand },
-        { "noneenabled", oNoneEnabled },
-        { "tcprcvbufpoll", oTcpRcvBufPoll },
-        { "tcprcvbuf", oTcpRcvBuf },
-        { "noneswitch", oNoneSwitch },
-	{ "hpndisabled", oHPNDisabled },
-	{ "hpnbuffersize", oHPNBufferSize },
 	{ "visualhostkey", oVisualHostKey },
-	{ "noneenabled", oNoneEnabled },
-	{ "tcprcvbufpoll", oTcpRcvBufPoll },
-	{ "tcprcvbuf", oTcpRcvBuf },
-	{ "noneswitch", oNoneSwitch },
-	{ "hpndisabled", oHPNDisabled },
-	{ "hpnbuffersize", oHPNBufferSize },
 #ifdef JPAKE
 	{ "zeroknowledgepasswordauthentication",
 	    oZeroKnowledgePasswordAuthentication },
 #else
 	{ "zeroknowledgepasswordauthentication", oUnsupported },
 #endif
+	{ "noneenabled", oNoneEnabled },
+	{ "tcprcvbufpoll", oTcpRcvBufPoll },
+	{ "tcprcvbuf", oTcpRcvBuf },
+	{ "noneswitch", oNoneSwitch },
+	{ "hpndisabled", oHPNDisabled },
+	{ "hpnbuffersize", oHPNBufferSize },
 	{ NULL, oBadOption }
 };
 
@@ -473,7 +470,7 @@ parse_flag:
 		goto parse_flag;
 
 	case oGssKeyEx:
-	    	intptr = &options->gss_keyex;
+		intptr = &options->gss_keyex;
 		goto parse_flag;
 
 	case oGssDelegateCreds:
@@ -482,6 +479,14 @@ parse_flag:
 
 	case oGssTrustDns:
 		intptr = &options->gss_trust_dns;
+		goto parse_flag;
+
+	case oGssClientIdentity:
+		charptr = &options->gss_client_identity;
+		goto parse_string;
+
+	case oGssRenewalRekey:
+		intptr = &options->gss_renewal_rekey;
 		goto parse_flag;
 
 	case oBatchMode:
@@ -1073,6 +1078,8 @@ initialize_options(Options * options)
 	options->gss_keyex = -1;
 	options->gss_deleg_creds = -1;
 	options->gss_trust_dns = -1;
+	options->gss_renewal_rekey = -1;
+	options->gss_client_identity = NULL;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->kbd_interactive_devices = NULL;
@@ -1141,6 +1148,12 @@ initialize_options(Options * options)
 	options->tcp_rcv_buf_poll = -1;
 	options->tcp_rcv_buf = -1;
 	options->zero_knowledge_password_authentication = -1;
+	options->none_switch = -1;
+	options->none_enabled = -1;
+	options->hpn_disabled = -1;
+	options->hpn_buffer_size = -1;
+	options->tcp_rcv_buf_poll = -1;
+	options->tcp_rcv_buf = -1;
 }
 
 /*
@@ -1181,6 +1194,8 @@ fill_default_options(Options * options)
 		options->gss_deleg_creds = 1;
 	if (options->gss_trust_dns == -1)
 		options->gss_trust_dns = 1;
+	if (options->gss_renewal_rekey == -1)
+		options->gss_renewal_rekey = 0;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)

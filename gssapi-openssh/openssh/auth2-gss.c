@@ -1,7 +1,7 @@
 /* $OpenBSD: auth2-gss.c,v 1.16 2007/10/29 00:52:45 dtucker Exp $ */
 
 /*
- * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2007 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -62,7 +62,7 @@ userauth_external(Authctxt *authctxt)
         packet_check_eom();
 
 	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
-		return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
+		return(PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw)));
 	}
 	return 0;
 }
@@ -102,7 +102,8 @@ userauth_gsskeyex(Authctxt *authctxt)
 	    !GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gss_kex_context, 
 						   &gssbuf2, &mic)))) {
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
-		authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
+            authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user,
+                                                      authctxt->pw));
 	    }
 	}
 	
@@ -341,7 +342,8 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 
 	/* user should be set if valid but we double-check here */
 	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
-	    authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
+	    authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user,
+                                                  authctxt->pw));
 	} else {
 	    authenticated = 0;
 	}
@@ -397,9 +399,10 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
-		authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
+            authenticated =
+                PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw));
 	    } else {
-		authenticated = 0;
+            authenticated = 0;
 	    }
 	else
 		logit("GSSAPI MIC check failed");

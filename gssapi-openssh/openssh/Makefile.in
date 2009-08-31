@@ -42,7 +42,7 @@ CC=@CC@
 LD=@LD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=-I. -I$(srcdir) @CPPFLAGS@ $(PATHS) @DEFS@
-LIBS=@LIBS@ -lpthread
+LIBS=@LIBS@
 SSHDLIBS=@SSHDLIBS@
 LIBEDIT=@LIBEDIT@
 AR=@AR@
@@ -68,7 +68,7 @@ TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keys
 
 LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o bufbn.o buffer.o \
 	canohost.o channels.o cipher.o cipher-acss.o cipher-aes.o \
-	cipher-bf1.o cipher-ctr.o cipher-ctr-mt.o cipher-3des1.o cleanup.o \
+	cipher-bf1.o cipher-ctr.o cipher-3des1.o cleanup.o \
 	compat.o compress.o crc32.o deattack.o fatal.o hostfile.o \
 	log.o match.o md-sha256.o moduli.o nchan.o packet.o \
 	readpass.o rsa.o ttymodes.o xmalloc.o addrmatch.o \
@@ -76,8 +76,8 @@ LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o bufbn.o buffer.o \
 	monitor_fdpass.o rijndael.o ssh-dss.o ssh-rsa.o dh.o kexdh.o \
 	kexgex.o kexdhc.o kexgexc.o scard.o msg.o progressmeter.o dns.o \
 	pathnames.o \
-	kexgssc.o \
-	entropy.o scard-opensc.o gss-genr.o umac.o jpake.o schnorr.o
+	entropy.o scard-opensc.o gss-genr.o umac.o jpake.o schnorr.o \
+	kexgssc.o
 
 SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
 	sshconnect.o sshconnect1.o sshconnect2.o mux.o
@@ -90,8 +90,7 @@ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
 	auth2-none.o auth2-passwd.o auth2-pubkey.o auth2-jpake.o \
 	monitor_mm.o monitor.o monitor_wrap.o kexdhs.o kexgexs.o \
 	auth-krb5.o \
-	auth2-gss.o gss-serv.o gss-serv-krb5.o \
-	kexgsss.o \
+	auth2-gss.o gss-serv.o gss-serv-krb5.o kexgsss.o\
 	gss-serv-gsi.o \
 	loginrec.o auth-pam.o auth-shadow.o auth-sia.o md5crypt.o \
 	audit.o audit-bsm.o platform.o sftp-server.o sftp-common.o

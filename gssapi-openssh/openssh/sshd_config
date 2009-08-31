@@ -93,6 +93,10 @@ Protocol 2
 # and ChallengeResponseAuthentication to 'no'.
 #UsePAM yes
 
+# Set to 'yes' to allow the PAM stack to change the user name during
+# calls to authentication
+#PermitPAMUserChange no
+
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
 #GatewayPorts no

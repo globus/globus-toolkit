@@ -390,6 +390,22 @@ on logout.
 The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPICredentialsPath
+If specified, the delegated GSSAPI credential is stored in the
+given path, overwriting any existing credentials.  
+Paths can be specified with syntax similar to the AuthorizedKeysFile 
+option (i.e., accepting %h and %u tokens).  
+When using this option,
+setting 'GssapiCleanupCredentials no' is recommended,
+so logging out of one session
+doesn't remove the credentials in use by another session of
+the same user.
+Currently only implemented for the GSI mechanism.
+.It Cm GSIAllowLimitedProxy
+Specifies whether to accept limited proxy credentials for
+authentication.
+The default is
+.Dq no .
 .It Cm GSSAPIStrictAcceptorCheck
 Determines whether to be strict about the identity of the GSSAPI acceptor 
 a client authenticates against. If
@@ -407,21 +423,10 @@ Note that this option applies only to protocol version 2 GSSAPI connections,
 and setting it to 
 .Dq no
 may only work with recent Kerberos GSSAPI libraries.
-.It Cm GSSAPICredentialsPath
-If specified, the delegated GSSAPI credential is stored in the
-given path, overwriting any existing credentials.  
-Paths can be specified with syntax similar to the AuthorizedKeysFile 
-option (i.e., accepting %h and %u tokens).  
-When using this option,
-setting 'GssapiCleanupCredentials no' is recommended,
-so logging out of one session
-doesn't remove the credentials in use by another session of
-the same user.
-Currently only implemented for the GSI mechanism.
-.It Cm GSIAllowLimitedProxy
-Specifies whether to accept limited proxy credentials for
-authentication.
-The default is
+.It Cm GSSAPIStoreCredentialsOnRekey
+Controls whether the user's GSSAPI credentials should be updated following a 
+successful connection rekeying. This option can be used to accepted renewed 
+or updated credentials from a compatible client. The default is
 .Dq no .
 .It Cm HostbasedAuthentication
 Specifies whether rhosts or /etc/hosts.equiv authentication together
@@ -965,6 +970,12 @@ is enabled, you will not be able to run
 .Xr sshd 8
 as a non-root user.
 The default is
+.Dq no .
+.It Cm PermitPAMUserChange
+If set to
+.Dq yes
+this will enable PAM authentication to change the name of the user being
+authenticated.  The default is
 .Dq no .
 .It Cm UsePrivilegeSeparation
 Specifies whether

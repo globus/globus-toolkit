@@ -2662,10 +2662,10 @@ channel_setup_fwd_listener(int type, const char *listen_addr,
 		c = channel_new("port listener", type, sock, sock, -1,
 		    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
 		    0, "port listener", 1);
-		else
-			c = channel_new("port listener", type, sock, sock, -1,
-		    	  hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
-		    	  0, "port listener", 1); 
+ 		else
+ 			c = channel_new("port listener", type, sock, sock, -1,
+ 		    	  hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
+ 		    	  0, "port listener", 1); 
 		c->path = xstrdup(host);
 		c->host_port = port_to_connect;
 		c->listening_port = listen_port;

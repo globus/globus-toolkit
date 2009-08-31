@@ -237,6 +237,20 @@ pwcopy(struct passwd *pw)
 	return copy;
 }
 
+void
+pwfree(struct passwd *pw)
+{
+	xfree(pw->pw_name);
+	xfree(pw->pw_passwd);
+	xfree(pw->pw_gecos);
+#ifdef HAVE_PW_CLASS_IN_PASSWD
+	xfree(pw->pw_class);
+#endif
+	xfree(pw->pw_dir);
+	xfree(pw->pw_shell);
+	xfree(pw);
+}
+
 /*
  * Convert ASCII string to TCP/IP port number.
  * Port must be >=0 and <=65535.

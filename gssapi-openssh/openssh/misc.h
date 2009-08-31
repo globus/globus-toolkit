@@ -37,6 +37,7 @@ void	 ms_subtract_diff(struct timeval *, int *);
 void	 ms_to_timeval(struct timeval *, int);
 
 struct passwd *pwcopy(struct passwd *);
+void	 pwfree(struct passwd *);
 const char *ssh_gai_strerror(int);
 
 typedef struct arglist arglist;

@@ -527,6 +527,10 @@ getpwnamallow(const char *user)
 	    get_canonical_hostname(options.use_dns), get_remote_ipaddr());
 
 	pw = getpwnam(user);
+#ifdef USE_PAM
+	if (options.use_pam && options.permit_pam_user_change && pw == NULL)
+		pw = sshpam_getpw(user);
+#endif
 	if (pw == NULL) {
 		logit("Invalid user %.100s from %.100s",
 		      (user && user[0]) ? user : "unknown",
