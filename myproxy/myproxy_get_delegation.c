@@ -313,9 +313,15 @@ init_arguments(int argc,
         case 'l':	/* username */
             request->username = strdup(optarg);
             break;
-	case 'o':	/* output file */
-	    outputfile = strdup(optarg);
-	    if (outputfile[0] == '-' && outputfile[1] == '\0') quiet = 1;
+        case 'o':	/* output file */
+            outputfile = strdup(optarg);
+            if (outputfile[0] == '-' && outputfile[1] == '\0') {
+                if (voms) {
+                    fprintf(stderr, "-voms is not compatible with -o -\n");
+                    exit(1);
+                }
+                quiet = 1;
+            }
             break;    
 	case 'a':       /* special authorization */
 	    request->authzcreds = strdup(optarg);
@@ -352,6 +358,10 @@ init_arguments(int argc,
             myproxy_debug("Requesting trusted certificates.\n");
 	    break;
         case 'm':
+            if (outputfile && outputfile[0] == '-' && outputfile[1] == '\0') {
+                fprintf(stderr, "-voms is not compatible with -o -\n");
+                exit(1);
+            }
             voms = add_entry(voms, optarg);
             break;
         default:        /* print usage and exit */ 

@@ -8,7 +8,9 @@ v4.8 XX Xxx 2009
   - look for VOMS header files in include/voms directory for
     compatibility with Fedora's VOMS package
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6847)
-    
+  - exit with an error message when --voms and -o - are used together
+    in myproxy-logon
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6807)
 
 v4.7 6 May 2009
   - in myproxy-get-trustroots and myproxy-logon -T, update files
