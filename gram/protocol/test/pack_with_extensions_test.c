@@ -128,7 +128,7 @@ test_pack_with_extensions(void)
     globus_byte_t *                     message;
     globus_size_t                       message_size;
     globus_hashtable_t                  hashtable;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
     int                                 rc;
     char *                              job_contact = NULL;
     int                                 status = 0;
@@ -143,7 +143,7 @@ test_pack_with_extensions(void)
             rc == GLOBUS_SUCCESS,
             ("# Error initializing hash table (out of memory?)\n"));
 
-    entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+    entry = malloc(sizeof(globus_gram_protocol_extension_t));
     test_assert(
             entry != NULL,
             ("# Error creating extension\n"));
@@ -308,7 +308,7 @@ test_null_extension_value(void)
     globus_byte_t *                     message;
     globus_size_t                       message_size;
     globus_hashtable_t                  hashtable;
-    globus_gram_protocol_hash_entry_t   entry;
+    globus_gram_protocol_extension_t    entry;
     int                                 rc;
 
     rc = globus_hashtable_init(

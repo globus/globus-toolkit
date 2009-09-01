@@ -29,6 +29,7 @@
 #include "globus_rsl_assist.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_system_config_constants.h"
+#include "version.h"
 
 #include <string.h>
 
@@ -1136,12 +1137,12 @@ globus_gram_job_manager_reply(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     int                                 token_status;
-    globus_hashtable_t                  extensions;
-    globus_gram_protocol_hash_entry_t   entry;
+    globus_hashtable_t                  extensions = NULL;
+    globus_gram_protocol_extension_t *  extension = NULL;
 
     rc = globus_hashtable_init(
             &extensions,
-            1,
+            3,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
 
@@ -1152,16 +1153,52 @@ globus_gram_job_manager_reply(
         goto hashtable_init_failed;
     }
 
-    entry.attribute = "toolkit-version";
-    entry.value = request->config->globus_version;
+    if (request != NULL)
+    {
+        extension = globus_gram_protocol_create_extension(
+                "toolkit-version",
+                "\"%s\"",
+                request->config->globus_version);
 
-    rc = globus_hashtable_insert(&extensions, &entry.attribute, &entry);
+        if (extension == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto extension_create_failed;
+        }
+
+        rc = globus_hashtable_insert(&extensions, extension->attribute, extension);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto extension_insert_failed;
+        }
+    }
+
+    extension = globus_gram_protocol_create_extension(
+            "version",
+            "\"%d.%d (%d-%d)\"",
+            local_version.major,
+            local_version.minor,
+            local_version.timestamp,
+            local_version.branch_id);
+
+    if (extension == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto extension_create_failed;
+    }
+
+    rc = globus_hashtable_insert(&extensions, extension->attribute, extension);
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-        goto hash_insert_failed;
+        goto extension_insert_failed;
     }
+    extension = NULL;
 
     /* Response to initial job request. */
     rc = globus_gram_protocol_pack_job_request_reply_with_extensions(
@@ -1241,8 +1278,15 @@ globus_gram_job_manager_reply(
         request->failure_code = rc;
     }
 
-hash_insert_failed:
-    globus_hashtable_destroy(&extensions);
+extension_insert_failed:
+    globus_gram_protocol_hash_destroy(&extensions);
+extension_create_failed:
+    if (extension)
+    {
+        free(extension->attribute);
+        free(extension->value);
+        free(extension);
+    }
 hashtable_init_failed:
     return rc;
 }

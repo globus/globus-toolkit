@@ -33,7 +33,7 @@ globus_l_gram_protocol_unquote_string(
 
 static
 void
-globus_l_gram_protocol_hash_entry_destroy(
+globus_l_gram_protocol_extension_destroy(
     void *                              datum);
 #endif
 
@@ -375,7 +375,7 @@ globus_gram_protocol_pack_job_request_reply_with_extensions(
     globus_byte_t **			reply,
     globus_size_t *			replysize)
 {
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t * entry;
     size_t                              len = 0;
     int                                 chrs;
     int                                 rc = GLOBUS_SUCCESS;
@@ -440,8 +440,8 @@ globus_gram_protocol_pack_job_request_reply_with_extensions(
         chrs = sprintf((char *)*reply,
                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
-                status,
-                GLOBUS_GRAM_PROTOCOL_VERSION);
+                GLOBUS_GRAM_PROTOCOL_VERSION,
+                status);
     }
 
     for (entry = globus_hashtable_first(extensions);
@@ -474,10 +474,11 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
     char *                              attribute;
     char *                              value;
     char *                              eol;
-    globus_gram_protocol_hash_entry_t * entry = NULL;
+    globus_gram_protocol_extension_t * entry = NULL;
     int                                 rc;
 
-    if (reply == NULL || extensions == NULL)
+    if (reply == NULL || status == NULL || job_contact == NULL || 
+            extensions == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
 
@@ -517,7 +518,7 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
 
             goto parse_error;
         }
-        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+        entry = malloc(sizeof(globus_gram_protocol_extension_t));
         if (entry == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -589,6 +590,7 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
         
         goto verify_error;
     }
+    *status = atoi(entry->value);
 
     entry = globus_hashtable_lookup(
             extensions,
@@ -617,10 +619,10 @@ verify_error:
 parse_error:
         globus_hashtable_destroy_all(
                 extensions,
-                globus_l_gram_protocol_hash_entry_destroy);
+                globus_l_gram_protocol_extension_destroy);
         if (entry != NULL)
         {
-            globus_l_gram_protocol_hash_entry_destroy(entry);
+            globus_l_gram_protocol_extension_destroy(entry);
         }
 hashtable_init_failed:
         *extensions = NULL;
@@ -919,7 +921,7 @@ globus_gram_protocol_unpack_status_reply(
  *        The error code associated with the job if it has failed. This may
  *        be GLOBUS_SUCCESS if the job has not failed.
  * @param extensions
- *        Hashtable of globus_gram_protocol_hash_entry_t * values
+ *        Hashtable of globus_gram_protocol_extension_t * values
  *        containing extension attribute-value pairs.
  * @param reply
  *        A pointer which will be set to point to a newly allocated
@@ -942,7 +944,7 @@ globus_gram_protocol_pack_status_reply_with_extensions(
     globus_byte_t **                    reply,
     globus_size_t *                     replysize)
 {
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t * entry;
     size_t                              len = 0;
     int                                 chrs;
     int                                 rc = GLOBUS_SUCCESS;
@@ -1060,7 +1062,7 @@ globus_gram_protocol_unpack_status_reply_with_extensions(
     char *                              attribute;
     char *                              eol;
     char *                              value;
-    globus_gram_protocol_hash_entry_t * entry = NULL;
+    globus_gram_protocol_extension_t * entry = NULL;
 
     if (reply == NULL || extensions == NULL)
     {
@@ -1103,7 +1105,7 @@ globus_gram_protocol_unpack_status_reply_with_extensions(
 
             goto parse_error;
         }
-        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+        entry = malloc(sizeof(globus_gram_protocol_extension_t));
         if (entry == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1205,10 +1207,10 @@ verify_error:
 parse_error:
         globus_hashtable_destroy_all(
                 extensions,
-                globus_l_gram_protocol_hash_entry_destroy);
+                globus_l_gram_protocol_extension_destroy);
         if (entry != NULL)
         {
-            globus_l_gram_protocol_hash_entry_destroy(entry);
+            globus_l_gram_protocol_extension_destroy(entry);
         }
 hashtable_init_failed:
         *extensions = NULL;
@@ -1301,7 +1303,7 @@ globus_gram_protocol_pack_status_update_message(
  *        The error associated with this job request, if the @a status
  *        value is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
  * @param extensions
- *        Hashtable of globus_gram_protocol_hash_entry_t * values
+ *        Hashtable of globus_gram_protocol_extension_t * values
  *        containing extension attribute-value pairs.
  * @param reply
  *        An output variable which will be populated with a new
@@ -1320,7 +1322,7 @@ globus_gram_protocol_pack_status_update_message_with_extensions(
     globus_byte_t **                    reply,
     globus_size_t *                     replysize)
 {
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t * entry;
     size_t                              len = 0;
     char *                              tmp;
     int                                 rc = GLOBUS_SUCCESS;
@@ -1475,7 +1477,7 @@ globus_gram_protocol_unpack_status_update_message(
  * @ingroup globus_gram_protocol_unpack
  *
  * Extracts the parameters of a status update from a GRAM message into a
- * hashtable of globus_gram_protocol_hash_entry_t values. The hashtable will be
+ * hashtable of globus_gram_protocol_extension_t values. The hashtable will be
  * initialized by this function and all of the attributes of the job in the
  * status message will be included in it. If this function returns
  * GLOBUS_SUCCESS, the caller is responsible for freeing
@@ -1508,7 +1510,7 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
     char *                              attribute;
     char *                              value;
     char *                              eol;
-    globus_gram_protocol_hash_entry_t * entry = NULL;
+    globus_gram_protocol_extension_t * entry = NULL;
     int                                 rc;
 
     if (reply == NULL || message_hash == NULL)
@@ -1551,7 +1553,7 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
 
             goto parse_error;
         }
-        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
+        entry = malloc(sizeof(globus_gram_protocol_extension_t));
         if (entry == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1653,10 +1655,10 @@ verify_error:
 parse_error:
         globus_hashtable_destroy_all(
                 message_hash,
-                globus_l_gram_protocol_hash_entry_destroy);
+                globus_l_gram_protocol_extension_destroy);
         if (entry != NULL)
         {
-            globus_l_gram_protocol_hash_entry_destroy(entry);
+            globus_l_gram_protocol_extension_destroy(entry);
         }
 hashtable_init_failed:
         *message_hash = NULL;
@@ -1669,10 +1671,10 @@ bad_param:
 
 static
 void
-globus_l_gram_protocol_hash_entry_destroy(
+globus_l_gram_protocol_extension_destroy(
     void *                              datum)
 {
-    globus_gram_protocol_hash_entry_t * entry = datum;
+    globus_gram_protocol_extension_t * entry = datum;
 
     if (entry)
     {
@@ -1693,7 +1695,7 @@ globus_l_gram_protocol_hash_entry_destroy(
  * @ingroup globus_gram_protocol_unpack
  * 
  * @param message_hash
- *     Hashtable of globus_gram_protocol_hash_entry_t * values to destroy
+ *     Hashtable of globus_gram_protocol_extension_t * values to destroy
  */
 void
 globus_gram_protocol_hash_destroy(
@@ -1703,13 +1705,88 @@ globus_gram_protocol_hash_destroy(
     {
         globus_hashtable_destroy_all(
                 message_hash,
-                globus_l_gram_protocol_hash_entry_destroy);
+                globus_l_gram_protocol_extension_destroy);
         *message_hash = NULL;
     }
 }
 /* globus_gram_protocol_hash_destroy() */
 
-/* globus_l_gram_protocol_hash_entry_destroy() */
+
+/**
+ * Create a GRAM5 protocol extension entry
+ * @ingroup globus_gram_protocol_extensions
+ *
+ * Allocates a new GRAM5 protocol extension entry containing an attribute-value
+ * pair. The @a attribute parameter is copied into the extension, and the
+ * @a format parameter is a printf-style format string used to construct the
+ * value of the extension.
+ * 
+ * The caller is responsible for freeing the extension when done with it. The
+ * quoting rules described in @ref globus_gram_protocol must be implemented
+ * by the caller in the format string.
+ * 
+ * @param attribute
+ *     Name of the extension attribute
+ * @param format
+ *     Printf-style format string used along with the varargs to construct
+ *     the extension's value string.
+ *
+ * @retval
+ *     A new GRAM5 extension structure, or NULL if a malloc error occurred.
+ */
+globus_gram_protocol_extension_t *
+globus_gram_protocol_create_extension(
+    const char *                        attribute,
+    const char *                        format,
+    ...)
+{
+    globus_gram_protocol_extension_t *  extension;
+    va_list                             ap;
+    size_t                              vlen;
+
+    if (attribute == NULL || format == NULL)
+    {
+        extension = NULL;
+
+        goto bad_param;
+    }
+    extension = malloc(sizeof(globus_gram_protocol_extension_t));
+    if (extension == NULL)
+    {
+        goto malloc_extension_failed;
+    }
+    extension->attribute = strdup(attribute);
+    if (extension->attribute == NULL)
+    {
+        goto malloc_attribute_failed;
+    }
+
+    va_start(ap, format);
+    vlen = vsnprintf(NULL, 0, format, ap);
+    va_end(ap);
+
+    extension->value = malloc(vlen + 1);
+    if (extension->value == NULL)
+    {
+        goto malloc_value_failed;
+    }
+
+    va_start(ap, format);
+    vsnprintf(extension->value, vlen + 1, format, ap);
+    va_end(ap);
+
+    return extension;
+
+malloc_value_failed:
+    free(extension->attribute);
+malloc_attribute_failed:
+    free(extension);
+    extension = NULL;
+malloc_extension_failed:
+bad_param:
+    return extension;
+}
+/* globus_gram_protocol_create_extension() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* assumes bufp has sufficient memory */

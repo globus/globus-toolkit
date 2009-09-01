@@ -126,6 +126,15 @@ globus_l_submit_callback(
     const char *                        job_contact,
     globus_gram_client_job_info_t *     job_info);
 
+static
+void
+globus_l_refresh_callback(
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code);
+
 /**** Support for SIGINT handling ****/
 static RETSIGTYPE
 globus_l_globusrun_sigint_handler(int dummy);
@@ -1092,7 +1101,7 @@ globus_l_globusrun_gram_callback_func(
 {
     globus_i_globusrun_gram_monitor_t * monitor;
     globus_url_t                        job_contact_url;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
     int                                 rc;
 
     monitor = (globus_i_globusrun_gram_monitor_t *) user_arg;
@@ -1589,7 +1598,7 @@ globus_l_globusrun_refresh_proxy(
             job_contact,
             GSS_C_NO_CREDENTIAL,
             attr,
-            globus_l_submit_callback,
+            globus_l_refresh_callback,
             &monitor);
 
     if ( err != GLOBUS_SUCCESS )
@@ -1649,7 +1658,7 @@ globus_l_globusrun_status_job(
     int                                 failure_code;
     int                                 err;
     globus_gram_client_job_info_t       info;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
 
     err = globus_gram_client_job_status_with_info(job_contact, &info);
     failure_code = info.protocol_error_code;
@@ -1785,7 +1794,7 @@ globus_l_submit_callback(
     globus_gram_client_job_info_t *     info)
 {
     globus_i_globusrun_gram_monitor_t * monitor = user_callback_arg;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
 
     globus_mutex_lock(&monitor->mutex);
     monitor->submit_done = GLOBUS_TRUE;
@@ -1817,3 +1826,37 @@ globus_l_submit_callback(
     globus_mutex_unlock(&monitor->mutex);
 }
 /* globus_l_submit_callback() */
+
+static
+void
+globus_l_refresh_callback(
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code)
+{
+    globus_i_globusrun_gram_monitor_t * monitor = user_callback_arg;
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->submit_done = GLOBUS_TRUE;
+    if (job_contact)
+    {
+        monitor->job_contact_string = strdup(job_contact);
+        globus_url_parse(monitor->job_contact_string, &monitor->job_contact);
+    }
+    if (operation_failure_code != GLOBUS_SUCCESS)
+    {
+        const char * err = globus_gram_protocol_error_string(
+                operation_failure_code);
+        monitor->failure_code = operation_failure_code;
+        monitor->failure_message = globus_libc_strdup(err);
+    }
+    else if (job_state > monitor->job_state)
+    {
+        monitor->failure_code = job_failure_code;
+    }
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
+}
+/* globus_l_refresh_callback() */

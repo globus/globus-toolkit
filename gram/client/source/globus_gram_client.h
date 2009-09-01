@@ -104,7 +104,7 @@ typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
  * Type used for passing extension information along with the job status
  * information included in the GRAM2 protocol. This structure contains the
  * information returned in job state callbacks plus a hashtable of extension
- * entries that contain globus_gram_protocol_hash_entry_t name-value pairs.
+ * entries that contain globus_gram_protocol_extension_t name-value pairs.
  */
 typedef struct globus_gram_client_job_info_s
 {

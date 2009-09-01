@@ -59,7 +59,7 @@ typedef struct globus_gram_protocol_hash_entry_s
     char *                              attribute;
     char *                              value;
 }
-globus_gram_protocol_hash_entry_t;
+globus_gram_protocol_extension_t;
 
 typedef void (*globus_gram_protocol_callback_t)(
     void  *				arg,
@@ -328,6 +328,12 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
 void
 globus_gram_protocol_hash_destroy(
     globus_hashtable_t *                message_hash);
+
+globus_gram_protocol_extension_t *
+globus_gram_protocol_create_extension(
+    const char *                        attribute,
+    const char *                        format,
+    ...);
 
 int
 globus_gram_protocol_get_sec_context(

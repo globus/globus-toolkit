@@ -3,6 +3,7 @@
 #define test_assert(assertion, message) \
     if (!(assertion)) \
     { \
+        printf("# %s:%d ", __FILE__, __LINE__); \
         printf message; \
         return 1; \
     }
@@ -25,13 +26,13 @@ char *                                  job_id = "http://example.org:43343/1/2";
  *
  * PURPOSE:
  *     Check that
- *     globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions()
  *     correctly unpacks standard GRAM2 messages
  *
  * STEPS:
  *     - Creates a message using server-side API.
- *     - Parses message to hash.
- *     - Verifies that all attributes we expect in the message are present int
+ *     - Parses message to extensions hash.
+ *     - Verifies that all attributes we expect in the message are present in
  *       the parsed values.
  *     - Verifies that the number of attributes in the message match the count
  *       of ones we expect.
@@ -46,31 +47,33 @@ int test_unpack_with_extensions(void)
     char *                              expected[] =
     {
             "protocol-version",
-            "job-manager-url",
             "status",
-            "failure-code"
+            "job-manager-url",
     };
+    int                                 status;
+    char *                              job_contact;
     int                                 i;
 
-    rc = globus_gram_protocol_pack_status_update_message(   
-            job_id,
+    rc = globus_gram_protocol_pack_job_request_reply(   
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
-            0,
+            "https://example.org:123/1/2/",
             &message,
             &message_size);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error constructing test message: %d (%s)\n",
+            ("Error constructing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             message,
             message_size,
+            &status,
+            &job_contact,
             &hashtable);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error parsing test message: %d (%s)\n",
+            ("Error parsing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
@@ -80,11 +83,11 @@ int test_unpack_with_extensions(void)
         entry = globus_hashtable_lookup(&hashtable, expected[i]);
         test_assert(
                 entry != NULL,
-                ("# Missing expected attribute %s\n", expected[i]));
+                ("Missing expected attribute %s\n", expected[i]));
     }
 
     test_assert(ARRAY_LEN(expected) == globus_hashtable_size(&hashtable),
-            ("# Hash table contains %d entries, expected %d",
+            ("Hash table contains %d entries, expected %d",
              globus_hashtable_size(&hashtable),
              ARRAY_LEN(expected)));
 
@@ -99,13 +102,13 @@ int test_unpack_with_extensions(void)
 /* Test case:
  * PURPOSE:
  *     Make sure
- *     globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions()
  *     handles NULL message or hashtable with the expected error.
  * TEST STEPS:
  *   - Create message
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() with
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() with
  *     NULL message and verify that result is NULL_PARAM error
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() with
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() with
  *     NULL hashtable pointer and verify that result is NULL_PARAM error.
  */
 int test_null_param(void)
@@ -114,42 +117,72 @@ int test_null_param(void)
     globus_size_t                       message_size;
     globus_hashtable_t                  hashtable;
     int                                 rc;
+    int                                 status;
+    char *                              job_contact;
 
-    rc = globus_gram_protocol_pack_status_update_message(   
-            job_id,
+    rc = globus_gram_protocol_pack_job_request_reply(   
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
-            0,
+            "https://example.org:123/1/2/",
             &message,
             &message_size);
 
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error constructing test message %d (%s)\n",
+            ("Error constructing test message %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             NULL,
             message_size,
+            &status,
+            &job_contact,
             &hashtable);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER "
              "got %d (%s)\n",
              rc,
              globus_gram_protocol_error_string(rc)));
 
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             message,
             message_size,
+            NULL,
+            &job_contact,
+            &hashtable);
+    test_assert(
+            rc == GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER,
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER "
+             "got %d (%s)\n",
+             rc,
+             globus_gram_protocol_error_string(rc)));
+
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
+            message,
+            message_size,
+            &status,
+            NULL,
+            &hashtable);
+    test_assert(
+            rc == GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER,
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER "
+             "got %d (%s)\n",
+             rc,
+             globus_gram_protocol_error_string(rc)));
+
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
+            message,
+            message_size,
+            &status,
+            &job_contact,
             NULL);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER "
              "got %d (%s)\n",
              rc,
              globus_gram_protocol_error_string(rc)));
-
     free(message);
 
     return 0;
@@ -158,12 +191,12 @@ int test_null_param(void)
 /*
  * PURPOSE:
  *     Verify that
- *     globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions()
  *     catches protocol mismatch errors.
  * TEST STEPS:
  *   - Manually construct status update message with version equal to
  *     GLOBUS_GRAM_PROTOCOL_VERSION + 1
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() and
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() and
  *     expect a VERSION_MISMATCH error
  */
 int test_version_mismatch(void)
@@ -172,26 +205,30 @@ int test_version_mismatch(void)
     globus_size_t                       message_size;
     int                                 rc;
     globus_hashtable_t                  hashtable;
+    int                                 status;
+    char *                              job_contact;
 
     message = globus_common_create_string(
         "protocol-version: %d\r\n"
-        "job-manager-url: %s\r\n"
         "status: %d\r\n"
-        "failure-code: %d\r\n",
+        "failure-code: %d\r\n"
+        "job-failure-code: %d\r\n",
         GLOBUS_GRAM_PROTOCOL_VERSION + 1,
-        job_id,
         GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
+        0,
         0);
     test_assert(message != NULL,
-            ("# Error creating message (out of memory?)\n"));
+            ("Error creating message (out of memory?)\n"));
     message_size = strlen(message) + 1;
 
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             (globus_byte_t *) message,
             message_size,
+            &status,
+            &job_contact,
             &hashtable);
     test_assert(rc == GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH, "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH, "
             "got %d (%s)\n",
             rc, 
             globus_gram_protocol_error_string(rc)));
@@ -208,12 +245,12 @@ int test_version_mismatch(void)
 /*
  * PURPOSE:
  *     Verify that
- *     globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions()
  *     deals with messages missing attributes from GRAM2 protocol.
  * TEST STEPS:
  *   - Manually construct status update messages with each piece of the GRAM2
  *     protocol missing
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() and
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() and
  *     expect an UNPACK_FAILED error
  */
 int test_missing_attribute()
@@ -226,10 +263,11 @@ int test_missing_attribute()
     char *                              lines[] =
     {
         "protocol-version: 2\r\n",
-        "job-manager-url: http://example.org:43343/1/2\r\n",
         "status: 2\r\n",
         "failure-code: 0\r\n"
     };
+    int                                 status;
+    char *                              job_contact;
 
     for (i = 0; i < ARRAY_LEN(lines); i++)
     {
@@ -240,15 +278,17 @@ int test_missing_attribute()
                 lines[(i+2) % ARRAY_LEN(lines)]);
 
         test_assert(message != NULL,
-                ("# Error creating message (out of memory?)\n"));
+                ("Error creating message (out of memory?)\n"));
         message_size = strlen(message) + 1;
 
-        rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+        rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
                 (globus_byte_t *) message,
                 message_size,
+                &status,
+                &job_contact,
                 &hashtable);
         test_assert(rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED,
-                ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, "
+                ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, "
                 "got %d (%s)\n",
                 rc, 
                 globus_gram_protocol_error_string(rc)));
@@ -263,15 +303,15 @@ int test_missing_attribute()
 /*
  * PURPOSE:
  *     Verify that
- *     globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions()
  *     deals with messages containing extension attributes not defined in the
  *     GRAM2
  *     protocol.
  * TEST STEPS:
  *   - Construct a status update message with the
- *     globus_gram_protocol_pack_status_update_message_with_extensions()
+ *     globus_gram_protocol_pack_job_request_reply_with_extensions()
  *     function.
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() and
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() and
  *     expect a GLOBUS_SUCCESS
  *   - Check that our new attribute is in the hash
  */
@@ -286,12 +326,13 @@ test_extra_attributes(void)
     char *                              expected[] =
     {
             "protocol-version",
-            "job-manager-url",
             "status",
-            "failure-code",
+            "job-manager-url",
             "attribute"
     };
     int                                 i;
+    int                                 status;
+    char *                              job_contact;
 
     rc = globus_hashtable_init(
             &hashtable,
@@ -300,23 +341,22 @@ test_extra_attributes(void)
             globus_hashtable_string_keyeq);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error initializing hashtable (out of memory?)\n"));
+            ("Error initializing hashtable (out of memory?)\n"));
     entry = malloc(sizeof(globus_gram_protocol_extension_t));
     test_assert(entry != NULL,
-            ("# Error allocating hash entry (out of memory?)\n"));
+            ("Error allocating hash entry (out of memory?)\n"));
     entry->attribute = "attribute";
     entry->value = "value";
     rc = globus_hashtable_insert(&hashtable, entry->attribute, entry);
 
-    rc = globus_gram_protocol_pack_status_update_message_with_extensions(
-            job_id,
+    rc = globus_gram_protocol_pack_job_request_reply_with_extensions(
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
-            0,
+            "https://example.org:123/12/34",
             &hashtable,
             &message,
             &message_size);
     test_assert(rc == GLOBUS_SUCCESS,
-            ("# Error packing status message: %d (%s)\n",
+            ("Error packing status message: %d (%s)\n",
             rc, globus_gram_protocol_error_string(rc)));
 
     globus_hashtable_destroy(&hashtable);
@@ -325,17 +365,19 @@ test_extra_attributes(void)
 
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error constructing test message: %d (%s)\n",
+            ("Error constructing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             message,
             message_size,
+            &status,
+            &job_contact,
             &hashtable);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error parsing test message: %d (%s)\n",
+            ("Error parsing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
@@ -345,11 +387,11 @@ test_extra_attributes(void)
         entry = globus_hashtable_lookup(&hashtable, expected[i]);
         test_assert(
                 entry != NULL,
-                ("# Missing expected attribute %s\n", expected[i]));
+                ("Missing expected attribute %s\n", expected[i]));
     }
 
     test_assert(ARRAY_LEN(expected) == globus_hashtable_size(&hashtable),
-            ("# Hash table contains %d entries, expected %d",
+            ("Hash table contains %d entries, expected %d",
              globus_hashtable_size(&hashtable),
              ARRAY_LEN(expected)));
 
@@ -363,18 +405,18 @@ test_extra_attributes(void)
 /*
  * PURPOSE:
  *     Verify that
- *     globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions()
  *     deals with messages which are badly formatted: lines without ':', 
  *     values without terminating "\r\n"
  *     protocol.
  * TEST STEPS:
  *   - Construct a status update message with the
- *     globus_gram_protocol_pack_status_update_message() function.
+ *     globus_gram_protocol_pack_job_request_reply() function.
  *   - Replace initial ":" with "\t"
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() and
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() and
  *     expect a UNPACK_FAILED error
  *   - Replace "\t" with ":", then remove the training "\n" in the message
- *   - Call globus_gram_protocol_unpack_status_update_message_with_extensions() and
+ *   - Call globus_gram_protocol_unpack_job_request_reply_with_extensions() and
  *     expect a UNPACK_FAILED error
  */
 int
@@ -385,45 +427,50 @@ test_bad_message(void)
     globus_hashtable_t                  hashtable;
     char *                              ptr;
     int                                 rc;
+    int                                 status;
+    char *                              job_contact;
 
-    rc = globus_gram_protocol_pack_status_update_message(   
-            job_id,
+    rc = globus_gram_protocol_pack_job_request_reply(   
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
-            0,
+            "https://example.org:123/12/34/",
             &message,
             &message_size);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error constructing test message: %d (%s)\n",
+            ("Error constructing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
     ptr = strchr((char *) message, ':');
     test_assert(
             ptr != NULL,
-            ("# Error locating \":\" in message\n"));
+            ("Error locating \":\" in message\n"));
     *ptr = '\t';
 
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             message,
             message_size,
+            &status,
+            &job_contact,
             &hashtable);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
              " %d (%s)\n",
              rc,
              globus_gram_protocol_error_string(rc)));
 
     *ptr = ':';
     message[message_size-2] = 0;
-    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+    rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
             message,
             message_size,
+            &status,
+            &job_contact,
             &hashtable);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
              " %d (%s)\n",
              rc,
              globus_gram_protocol_error_string(rc)));
@@ -470,3 +517,4 @@ int main(int argc, char * argv[])
 
     return not_ok;
 }
+

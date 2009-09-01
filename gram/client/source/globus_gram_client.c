@@ -2964,7 +2964,7 @@ globus_l_gram_client_callback(
     int                                 rc;
     gss_ctx_id_t                        context;
     globus_gram_client_job_info_t       job_info;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
 
     info = arg;
     
@@ -3315,7 +3315,7 @@ globus_l_gram_info_get_int(
     globus_hashtable_t *                extensions,
     const char *                        key)
 {
-    globus_gram_protocol_hash_entry_t * entry = NULL;
+    globus_gram_protocol_extension_t *  entry = NULL;
 
     if (extensions && *extensions)
     {
