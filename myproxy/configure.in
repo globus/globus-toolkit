@@ -201,7 +201,7 @@ AC_ARG_WITH(voms,
 		   AC_MSG_ERROR([--with-voms requires PATH argument])
 		fi
 		if test "x$withval" != "xno" ; then
-		   CPPFLAGS="-I${withval}/include -I${withval}/include/glite/security/voms $CPPFLAGS"
+		   CPPFLAGS="-I${withval}/include -I${withval}/include/voms -I${withval}/include/glite/security/voms $CPPFLAGS"
 		   LDFLAGS="-L${withval}/lib -L${withval}/lib64 $LDFLAGS"
 		   AC_CHECK_HEADER(voms_apic.h)
            AC_SEARCH_LIBS(VOMS_Init, vomsc vomsc_$GLOBUS_FLAVOR_NAME, ,
