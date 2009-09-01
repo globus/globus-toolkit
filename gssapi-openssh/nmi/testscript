@@ -45,101 +45,53 @@ else
   make install
   cd ..
 fi
-echo ==================================================
-echo Installing Globus Toolkit...
-tar xfz gt*-all-source-installer.tar.gz
-cd gt*-installer
-./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
-            --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
-make gsi-openssh install
-. $GLOBUS_LOCATION/etc/globus-user-env.sh
-cd ..
-echo ==================================================
-echo Environment variables:
-env
-echo ==================================================
-GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
-export GLOBUS_FLAVOR_NAME
-echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.  Installing globus_core.
-gpt-build -nosrc $GLOBUS_FLAVOR_NAME
-if test -f gsi_openssh_bundle-*.tar.gz; then
+for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
   echo ==================================================
-  echo Building GSI-OpenSSH GPT bundle...
-  gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
-    GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
-fi
-if test -d gssapi-openssh/openssh; then
-  echo ==================================================
-  echo Installing autotools...
-  cd autotools
-  ./install-autotools $GLOBUS_LOCATION
+  echo Installing Globus Toolkit \($installer\)...
+  tar xfz $installer
+  cd gt*-installer
+  ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
+              --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
+  make gsi-openssh install
+  . $GLOBUS_LOCATION/etc/globus-user-env.sh
   cd ..
   echo ==================================================
-  cd gssapi-openssh/openssh
-  if test -f make_gpt_dist; then
-    echo Building GSI-OpenSSH GPT package from CVS...
-    ./make_gpt_dist
-    gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
-      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
-  else
-    echo Building GSI-OpenSSH from CVS trunk...
-    autoreconf
-    ./configure --prefix=$GLOBUS_LOCATION \
-      --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
-      --with-zlib=$ZLIB_LOCATION \
-      --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
-    make install-nokeys # nonroot
-  fi
-  cd ../..
-fi
-rm -rf gt*-installer
-if test -f nightly.tar.gz; then
+  echo Environment variables:
+  env
+  echo ==================================================
+  GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
+  export GLOBUS_FLAVOR_NAME
+  echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
+  if test -f gsi_openssh_bundle-*.tar.gz; then
     echo ==================================================
-    echo Installing GT CVS Trunk...
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
-    tar xfz nightly.tar.gz
-    cd gt*-installer
-    ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
-                --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
-    make gsi-openssh install
-    . $GLOBUS_LOCATION/etc/globus-user-env.sh
+    echo Building GSI-OpenSSH GPT bundle...
+    gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
+      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+  fi
+  if test -d gssapi-openssh/openssh; then
+    echo ==================================================
+    echo Installing autotools...
+    cd autotools
+    ./install-autotools $GLOBUS_LOCATION
     cd ..
     echo ==================================================
-    echo Environment variables:
-    env
-    echo ==================================================
-    GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
-    export GLOBUS_FLAVOR_NAME
-    echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
-    if test -f gsi_openssh_bundle-*.tar.gz; then
-        echo ==================================================
-        echo Building GSI-OpenSSH GPT bundle...
-        gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
-            GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+    cd gssapi-openssh/openssh
+    if test -f make_gpt_dist; then
+      echo Building GSI-OpenSSH GPT package from CVS...
+      ./make_gpt_dist
+      gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
+        GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+    else
+      echo Building GSI-OpenSSH from CVS trunk...
+      autoreconf
+      ./configure --prefix=$GLOBUS_LOCATION \
+        --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
+        --with-zlib=$ZLIB_LOCATION \
+        --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
+      make install-nokeys # nonroot
     fi
-    if test -d gssapi-openssh/openssh; then
-        echo ==================================================
-        echo Installing autotools...
-        cd autotools
-        ./install-autotools $GLOBUS_LOCATION
-        cd ..
-        echo ==================================================
-        cd gssapi-openssh/openssh
-        if test -f make_gpt_dist; then
-            echo Building GSI-OpenSSH GPT package from CVS...
-            rm -rf BUILD
-            gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
-                GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
-        else
-            echo Building GSI-OpenSSH from CVS trunk...
-            autoreconf
-            ./configure --prefix=$GLOBUS_LOCATION \
-                --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
-                --with-zlib=$ZLIB_LOCATION \
-                --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
-            make clean
-            make install-nokeys # nonroot
-        fi
-    fi
-fi
+    cd ../..
+  fi
+  rm -rf gt*-installer $GLOBUS_LOCATION
+done
 ) 2>&1 # we want stdout & stderr mixed in the output file
