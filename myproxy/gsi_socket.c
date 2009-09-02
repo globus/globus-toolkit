@@ -387,7 +387,7 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 
     if (self->error_string != NULL)
     {
-	chars = my_strncpy(buffer, self->error_string, bufferlen-1);
+	chars = my_strncpy(buffer, self->error_string, bufferlen);
 	
 	if (chars == -1)
 	{
