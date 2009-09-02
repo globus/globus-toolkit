@@ -130,8 +130,6 @@ my_vsnprintf(const char				*format,
 	return NULL;
     }
 
-#if defined(HAVE_VSNPRINTF) && defined(HAVE_VA_COPY)
-
     while (1)
     {
 	char *new_buffer;
@@ -168,12 +166,6 @@ my_vsnprintf(const char				*format,
 	buffer = new_buffer;
 	
     }
-#else /* !HAVE_VSNPRINTF */
-
-    /* XXX Just got to hope it's big enough */
-    string_len = vsprintf(buffer, format, ap);
-    
-#endif /* !HAVE_VSNPRINTF */
     
     return buffer;
 }
