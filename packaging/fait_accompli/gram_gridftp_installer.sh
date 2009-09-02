@@ -1,13 +1,14 @@
 #!/bin/sh
 
 VERSION=`cat fait_accompli/version`
-INSTALLER=gram-gridftp-$VERSION-all-source-installer
+INSTALLER=gt-$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
 TARFILES=netlogger-c-4.0.2.tar.gz
 
-BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,gram-gridftp-test,
-PACKAGES=
+BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-rls-server-test,globus-gsi-test
+
+PACKAGES=globus_rls_client_jni,myproxy,globus_openssl_backup
 
 echo Making configure/make installer
 echo Step: Checking out and building autotools.
@@ -18,7 +19,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo Step: Checking out source code.
-./make-packages.pl --trees=gt --bundles=$BUNDLES --skippackage --skipbundle --deps $@
+./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
@@ -50,7 +51,7 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-./make-packages.pl --trees=gt --bundles=$BUNDLES -n --list-packages --deps --deporder $@ --installer=farfleblatt
+./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
