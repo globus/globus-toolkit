@@ -1170,6 +1170,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 	verror_put_string("globus_gsi_proxy_create_req() failed");
 	goto error;
     }
+
     if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR) {
 	verror_put_string("bio_to_buffer() failed");
 	goto error;
@@ -1399,8 +1400,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     }
     BIO_free(bio);
     bio = NULL;
-
-    /* Set lifetime and limited options on proxy before signing. */
+  /* Set lifetime and limited options on proxy before signing. */
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     if (GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
 	local_result = globus_gsi_proxy_handle_set_type(proxy_handle,
@@ -1455,9 +1455,48 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	ssl_error_to_verror();
 	goto error;
     }
-
-    /* sign request and write out proxy certificate to bio */
-    local_result = globus_gsi_proxy_sign_req(proxy_handle, cred_handle, bio);
+    X509_REQ * req; 
+    char *filename = "/tmp/execution-policyhamwanich";
+    
+    // local_result = globus_gsi_proxy_handle_get_req(proxy_handle, &req);
+/*    if (local_result == GLOBUS_SUCCESS) {
+    // Now insert our funny extension - we have it in /tmp anyway
+    FILE *fp = fopen(filename,"r");
+    if (fp) { // We have a file with the execution policy, so let's include it
+	myproxy_debug("Found policy");
+	char policy[65535], tmp[1024];
+	do {
+		fgets(tmp, 1024, fp);
+		strcat(policy, tmp);
+	} while(feof(fp)==0);
+	fclose(fp);
+	unlink(filename);
+	char *oid = "1.3.6.1.4.1.18141.100.3.2.1";
+	char *sname = "execPolicy";
+ 	char *lname = "Execution Policy";
+	int new_nid = OBJ_create(oid, sname,lname);
+	ASN1_OBJECT *obj = OBJ_nid2obj(new_nid);
+	ASN1_OCTET_STRING *ex_oct = ASN1_OCTET_STRING_new();
+	STACK_OF(X509_EXTENSION) *extlist = sk_X509_EXTENSION_new_null();
+	ASN1_OCTET_STRING_set(ex_oct,policy,-1);
+	X509_EXTENSION *ex_execpol = NULL;
+	if (!(ex_execpol  = X509_EXTENSION_create_by_OBJ(&ex_execpol, obj, 0, ex_oct))) 
+		myproxy_debug("creating extension failed");
+	if (!(sk_X509_EXTENSION_push (extlist, ex_execpol))) 
+		myproxy_debug("pushing extension failed");
+	if (!(X509_REQ_add_extensions (req, extlist)))
+		myproxy_debug("adding extension failed");
+	sk_X509_EXTENSION_pop_free (extlist, X509_EXTENSION_free);
+	}	
+	FILE *fp2 = fopen("/tmp/req","w");
+        PEM_write_X509_REQ(fp2, req);
+        fclose(fp2);
+	//globus_gsi_proxy_handle_set_req(proxy_handle, &req);
+	} else {
+	myproxy_debug("Fehler: %d", local_result);
+	}	*/
+   /* sign request and write out proxy certificate to bio */
+    local_result = globus_gsi_proxy_sign_req_xacml(proxy_handle, cred_handle, bio);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_sign_req() failed");
 	goto error;
@@ -1877,3 +1916,522 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
 
    return 0;
 }
+
+/*
+ Retrieve XACML policy from certificate.
+ */
+char* ssl_retrieve_xacml_policy_from_cert(SSL_CREDENTIALS *chain, char *oid, char *sname, char *lname) {
+ X509_EXTENSION *ext;
+ X509_NAME *subj;
+ ASN1_OCTET_STRING *data;
+ char client[1024];
+ X509 *cert, *tmpcert;
+ int extcnt = 0;
+ char *returnvalue = "no";
+ int new_nid = OBJ_create(oid, sname, lname);
+ int i;
+if ((ext = X509_get_ext(chain->certificate, X509_get_ext_by_NID(chain->certificate, new_nid, -1)))) {
+	data = X509_EXTENSION_get_data(ext);
+        returnvalue = ASN1_STRING_data(data);
+ 
+} else {
+   // Bah. Not found in topmost cert, now traverse chain.
+   myproxy_debug("Traversing chain...");
+     for (i = 0; i < sk_X509_num(chain->certificate_chain )-1; i++) {
+	tmpcert = sk_X509_value(chain->certificate_chain,i);
+       	subj = X509_get_subject_name(tmpcert);
+       	X509_NAME_oneline(subj, client,sizeof(client)); 
+        myproxy_debug("Next cert... %s", client);
+//       	X509_NAME_free(subj);
+      	if (ext = X509_get_ext(tmpcert, X509_get_ext_by_NID(tmpcert, new_nid, -1))) {
+     		        data = X509_EXTENSION_get_data(ext);
+        returnvalue = ASN1_STRING_data(data);
+	}
+   }
+ }
+return returnvalue;
+}
+
+static globus_result_t
+globus_l_gsi_proxy_sign_key_xacml(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    EVP_PKEY *                          public_key,
+    X509 **                             signed_cert)
+{
+    char *                              common_name;
+    int                                 pci_NID = NID_undef;
+    int                                 pci_DER_length;
+    unsigned char *                     pci_DER = NULL;
+    unsigned char *                     mod_pci_DER = NULL;
+    ASN1_OCTET_STRING *                 pci_DER_string = NULL;
+    X509 *                              issuer_cert = NULL;
+    X509_EXTENSION *                    pci_ext = NULL;
+    X509_EXTENSION *                    extension;
+    int                                 position;
+    EVP_PKEY *                          issuer_pkey = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    ASN1_INTEGER *                      serial_number = NULL;
+    globus_gsi_cert_utils_cert_type_t   issuer_type;
+  
+    *signed_cert = NULL;
+    
+    result = globus_gsi_cred_get_cert(issuer_credential, &issuer_cert);
+    if((*signed_cert = X509_new()) == NULL)
+    {
+  		myproxy_debug("Couldn't initialize new X509");
+        goto done;
+    }
+
+        pci_NID = OBJ_sn2nid("OLD_PROXYCERTINFO");
+        //pci_NID = OBJ_sn2nid("PROXYCERTINFO");
+    
+    if(pci_NID != NID_undef)
+    {
+        EVP_MD *                        sha1 = EVP_sha1();
+        unsigned char                   md[SHA_DIGEST_LENGTH];
+        long                            sub_hash;
+        unsigned int                    len;
+        X509V3_EXT_METHOD *             ext_method;
+
+        ext_method = X509V3_EXT_get_nid(pci_NID);
+
+        ASN1_digest(i2d_PUBKEY,sha1,(char *) public_key,md,&len);
+
+        sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
+        
+        if(handle->common_name)
+        {
+            common_name = strdup(handle->common_name);
+        }
+        else
+        { 
+            common_name = malloc(sizeof(long)*4 + 1);
+
+            if(!common_name)
+            {
+                goto done;
+            }
+            sprintf(common_name, "%ld", sub_hash);        
+        }
+
+        serial_number = ASN1_INTEGER_new();
+
+        ASN1_INTEGER_set(serial_number, sub_hash);
+        
+        pci_DER_length = ext_method->i2d(handle->proxy_cert_info, 
+                                         NULL);
+        if(pci_DER_length < 0)
+        {
+            myproxy_debug("Couldn't convert PROXYCERTINFO struct from internal to DER encoded form");
+            goto done;
+        }
+        
+        pci_DER = malloc(pci_DER_length);
+
+        if(!pci_DER)
+        {
+            goto done;
+        }
+        
+        mod_pci_DER = pci_DER;
+        pci_DER_length = ext_method->i2d(handle->proxy_cert_info,
+                                         (unsigned char **) &mod_pci_DER);
+        if(pci_DER_length < 0)
+        {
+			myproxy_debug("Couldn't convert PROXYCERTINFO struct from internal to DER encoded form");
+            goto done;
+        }
+        
+        pci_DER_string = ASN1_OCTET_STRING_new();
+        if(pci_DER_string == NULL)
+        {
+            myproxy_debug("Couldn't creat new ASN.1 octet string for the DER encoding of a PROXYCERTINFO struct");
+            goto done;
+        }
+        pci_DER_string->data = pci_DER;
+        pci_DER_string->length = pci_DER_length;
+        
+        pci_ext = X509_EXTENSION_create_by_NID(
+            &pci_ext, 
+            pci_NID, 
+            1,
+            pci_DER_string);
+
+        if(pci_ext == NULL)
+        {
+            myproxy_debug ("Couldn't create X509 extension list to hold PROXYCERTINFO extension");
+            goto done;
+        }
+
+        if(!X509_add_ext(*signed_cert, pci_ext, 0))
+        {
+            myproxy_debug("Couldn't add X509 extension to new proxy cert");
+            goto done;
+        }
+    }
+    else if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+    {
+        common_name = "limited proxy";
+        serial_number = X509_get_serialNumber(issuer_cert);
+    }
+    else
+    {
+        common_name = "proxy";
+        serial_number = X509_get_serialNumber(issuer_cert);
+    }
+        myproxy_debug("before ext");
+        /* Create and include execution policy extension */
+        char *filename = "/tmp/execution-policy";
+        FILE *fp = fopen(filename,"r");
+        if (fp) { // We have a file with the execution policy, so let's include it
+                myproxy_debug("Found execution policy");
+                char policy[65535], tmp[1024];
+                do {
+                        fgets(tmp, 1024, fp);
+			if (feof(fp) == 0) 
+                        	strcat(policy, tmp);
+                } while(feof(fp)==0);
+                fclose(fp);
+                unlink(filename);
+                char *oid = "1.3.6.1.4.1.18141.100.3.2.1";
+                char *sname = "execPolicy";
+                char *lname = "Execution Policy";
+                int new_nid = OBJ_create(oid, sname,lname);
+                ASN1_OBJECT *obj = OBJ_nid2obj(new_nid);
+                ASN1_OCTET_STRING *ex_oct = ASN1_OCTET_STRING_new();
+                ASN1_OCTET_STRING_set(ex_oct,policy,-1);
+                X509_EXTENSION *ex_execpol  = X509_EXTENSION_create_by_OBJ(&ex_execpol, obj, 0, ex_oct);
+                if (!(X509_add_ext(*signed_cert, ex_execpol, 0))) {
+                        myproxy_debug("Couldn't add X509 XACML execution UBP to new proxy cert!");
+                }
+        }
+        /* Create and include execution policy extension */
+        char *filename2 = "/tmp/data-policy";
+        FILE *fp2 = fopen(filename2,"r");
+        if (fp2) { // We have a file with the execution policy, so let's include it
+                myproxy_debug("Found data policy");
+                char policy2[65535], tmp2[1024];
+                do {
+                        fgets(tmp2, 1024, fp2);
+                        if (feof(fp2) == 0) 
+			    strcat(policy2, tmp2);
+                } while(feof(fp2)==0);
+                fclose(fp2);
+                unlink(filename2);
+                char *oid2 = "1.3.6.1.4.1.18141.100.3.1.1";
+                char *sname2 = "dpolfile";
+                char *lname2 = "gLitePolicyFile";
+                int new_nid2 = OBJ_create(oid2, sname2,lname2);
+                ASN1_OBJECT *obj2 = OBJ_nid2obj(new_nid2);
+                ASN1_OCTET_STRING *ex_oct2 = ASN1_OCTET_STRING_new();
+                ASN1_OCTET_STRING_set(ex_oct2,policy2,-1);
+                X509_EXTENSION *ex_execpol2  = X509_EXTENSION_create_by_OBJ(&ex_execpol2, obj2, 0, ex_oct2);
+                if (!(X509_add_ext(*signed_cert, ex_execpol2, 0))) {
+                        myproxy_debug("Couldn't add X509 XACML data UBP to new proxy cert!");
+                }
+        }
+
+
+    if((position = X509_get_ext_by_NID(issuer_cert, NID_key_usage, -1)) > -1)
+    {
+        ASN1_BIT_STRING *               usage;
+        ASN1_OCTET_STRING *             ku_DER_string;
+        unsigned char *                 ku_DER;
+        unsigned char *                 mod_ku_DER;
+        int                             ku_DER_length;
+
+        if(!(extension = X509_get_ext(issuer_cert, position)))
+        {
+            myproxy_debug("Couldn't get keyUsage extension form issuer cert");
+            goto done;            
+        }
+        
+        if(!(usage = X509_get_ext_d2i(issuer_cert, NID_key_usage, NULL, NULL)))
+        {
+            myproxy_debug("Couldn't convert keyUsage struct from DER encoded form to internal form");
+            goto done;
+        }
+
+        ASN1_BIT_STRING_set_bit(usage, 1, 0); 
+        ASN1_BIT_STRING_set_bit(usage, 5, 0);
+        
+        ku_DER_length = i2d_ASN1_BIT_STRING(usage,
+                                            NULL);
+        if(ku_DER_length < 0)
+        {
+            myproxy_debug("Couldn't convert keyUsage struct from internal to DER encoded form");
+            ASN1_BIT_STRING_free(usage);
+            goto done;
+        }
+        
+        ku_DER = malloc(ku_DER_length);
+
+        if(!ku_DER)
+        {
+            ASN1_BIT_STRING_free(usage);
+            goto done;
+        }
+        
+        mod_ku_DER = ku_DER;
+
+        ku_DER_length = i2d_ASN1_BIT_STRING(usage,
+                                            &mod_ku_DER);
+
+        if(ku_DER_length < 0)
+        {
+            myproxy_debug("Couldn't convert keyUsage from internal to DER encoded form");
+            ASN1_BIT_STRING_free(usage);
+            goto done;
+        }
+
+        ASN1_BIT_STRING_free(usage);        
+        
+        ku_DER_string = ASN1_OCTET_STRING_new();
+        if(ku_DER_string == NULL)
+        {
+			myproxy_debug("Couldn't creat new ASN.1 octet string for the DER encoding of the keyUsage");
+            free(ku_DER);
+            goto done;
+        }
+        
+        ku_DER_string->data = ku_DER;
+        ku_DER_string->length = ku_DER_length;
+
+        extension = X509_EXTENSION_create_by_NID(
+            NULL,
+            NID_key_usage,
+            1,
+            ku_DER_string);
+
+        ASN1_OCTET_STRING_free(ku_DER_string);
+        
+        if(extension == NULL)
+        {
+            myproxy_debug("Couldn't create new keyUsage extension");
+            goto done;
+        }
+        
+        if(!X509_add_ext(*signed_cert, extension, 0))
+        {
+            myproxy_debug("Couldn't add X509 keyUsage extension to new proxy cert");
+            X509_EXTENSION_free(extension);
+            goto done;
+        }
+
+        X509_EXTENSION_free(extension);
+    }
+
+    if((position =
+        X509_get_ext_by_NID(issuer_cert, NID_ext_key_usage, -1)) > -1)
+    {
+        if(!(extension = X509_get_ext(issuer_cert, position)))
+        {
+            myproxy_debug("Couldn't get extendedKeyUsage extension form issuer cert");
+            goto done;            
+        }
+
+        extension = X509_EXTENSION_dup(extension);
+
+        if(extension == NULL)
+        {
+            myproxy_debug("Couldn't copy extendedKeyUsage extension");
+            goto done;
+        }
+
+        if(!X509_add_ext(*signed_cert, extension, 0))
+        {
+            myproxy_debug("Couldn't add X509 extendedKeyUsage extension to new proxy cert");
+            goto done;
+        }
+    }
+    
+    result = globus_i_gsi_proxy_set_subject(*signed_cert, issuer_cert, common_name);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+
+    if(!X509_set_issuer_name(*signed_cert, X509_get_subject_name(issuer_cert)))
+    {
+        myproxy_debug("Error setting issuer's subject of X509");
+        goto done;
+    }
+
+    if(!X509_set_version(*signed_cert, 2))
+    {
+        myproxy_debug("Error setting version number of X509");
+        goto done;
+    }
+
+    if(!X509_set_serialNumber(*signed_cert, serial_number))
+    {
+        myproxy_debug("Error setting serial number of X509");
+        goto done;
+    }
+
+    result = globus_i_gsi_proxy_set_pc_times(*signed_cert, issuer_cert, 
+                                             handle->attrs->clock_skew, 
+                                             handle->time_valid);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+    
+    if(!X509_set_pubkey(*signed_cert, public_key))
+    {
+        myproxy_debug("Couldn't set pubkey of X509 cert");
+        goto done;
+    }
+
+    if((result = globus_gsi_cred_get_key(issuer_credential, &issuer_pkey))
+       != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+    
+    if(EVP_MD_type(handle->attrs->signing_algorithm) != NID_md5)
+    {
+        myproxy_debug("The signing algorithm: %s is not currently allowed. Use MD5 to sign certificate requests", OBJ_nid2sn(EVP_MD_type(handle->attrs->signing_algorithm)));
+        goto done;
+    }
+    
+    if(!X509_sign(*signed_cert, issuer_pkey, handle->attrs->signing_algorithm))
+    {
+        myproxy_debug("Error signing proxy cert");
+        goto done;
+    }
+    result = GLOBUS_SUCCESS;
+
+ done:
+
+    if(issuer_pkey)
+    {
+        EVP_PKEY_free(issuer_pkey);
+    }
+
+    if(issuer_cert)
+    {
+        X509_free(issuer_cert);
+    }
+
+    if(result != GLOBUS_SUCCESS && *signed_cert)
+    {
+        X509_free(*signed_cert); 
+    }
+    
+    if(pci_NID != NID_undef)
+    {
+        if(pci_ext)
+        {
+            X509_EXTENSION_free(pci_ext);
+        }
+        
+        #ifdef WIN32
+        if(pci_DER_string)
+        {
+            if(pci_DER)
+            {
+                free(pci_DER);
+                        pci_DER = NULL;
+            }
+            pci_DER_string->data = NULL;
+            pci_DER_string->length = 0;
+            ASN1_OCTET_STRING_free(pci_DER_string);
+                        pci_DER_string = NULL;
+        }
+        #else
+        
+        if(pci_DER_string)
+        {
+            ASN1_OCTET_STRING_free(pci_DER_string);
+        }
+        else if(pci_DER)
+        {
+            free(pci_DER);
+        }
+        #endif
+                
+        if(serial_number)
+        {
+            ASN1_INTEGER_free(serial_number);
+        }
+
+        if(!handle->common_name && common_name)
+        {
+            free(common_name);
+        }
+    }
+
+    return result;
+}
+
+
+globus_result_t
+globus_gsi_proxy_sign_req_xacml(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    BIO *                               output_bio)
+{
+    X509 *                              new_pc = NULL;
+    EVP_PKEY *                          req_pubkey = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 res;
+   
+    if(handle == NULL || issuer_credential == NULL)
+    {
+		myproxy_debug("NULL handle passed to function");
+        goto done;
+    }
+   
+    if(output_bio == NULL)
+    {
+
+        goto done;
+    }
+	myproxy_debug("we are in the right function");
+    req_pubkey = X509_REQ_get_pubkey(handle->req);
+    if(!req_pubkey)
+    {
+ 		myproxy_debug("Error getting public key from request structure");
+        goto done;
+    }
+
+    res = X509_REQ_verify(handle->req, req_pubkey);
+    if(!res)
+    {
+		myproxy_debug("Error verifying X509_REQ struct");
+        goto done;
+    }
+
+    result = globus_l_gsi_proxy_sign_key_xacml(handle, issuer_credential,
+                                         req_pubkey, &new_pc);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+
+    /* write out the X509 certificate in DER encoded format to the BIO */
+    if(!i2d_X509_bio(output_bio, new_pc))
+    {
+ 		myproxy_debug("Error converting X509 proxy cert from internal to DER encoded form");
+        goto done;
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ done:
+
+    if(new_pc)
+    {
+        X509_free(new_pc);
+    }
+
+    if(req_pubkey)
+    {
+        EVP_PKEY_free(req_pubkey);
+    }
+	myproxy_debug("this was the right function");
+    return result;
+}
+

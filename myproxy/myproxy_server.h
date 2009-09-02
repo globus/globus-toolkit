@@ -35,6 +35,7 @@ typedef struct
   char *certificate_issuer;         /* CA issuer DN */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
+  int *evaluate_xacml_policy;		/* evaluate and renew xacml policies? 1=yes */
 } myproxy_server_context_t;
 
 

@@ -256,7 +256,13 @@ line_parse_callback(void *context_arg,
 	context->cert_dir = strdup(tokens[1]);
     }
 
-    else if (strcmp(directive, "pam") == 0)
+   /* Make XACML UBPs configurable */
+    else if (strcmp(directive, "renew-xacml-policy") == 0) 
+    {
+    	context->evaluate_xacml_policy = ((strcmp(tokens[1], "yes") == 0) ? 1 : 0);
+    }
+
+   else if (strcmp(directive, "pam") == 0)
     {
 	context->pam_policy = strdup(tokens[1]);
     }

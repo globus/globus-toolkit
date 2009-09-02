@@ -357,4 +357,5 @@ int ssl_get_times(const char *proxyfile, time_t *not_before, time_t *not_after);
  */
 void ssl_error_to_verror();
 
+char* ssl_retrieve_xacml_policy_from_cert(SSL_CREDENTIALS *chain, char *oid, char *sname, char *lname);
 #endif /* _SSL_UTILS_H */

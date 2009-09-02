@@ -335,8 +335,9 @@ int auth_cert_check_client (authorization_data_t *auth_data,
    unsigned char *p;
    unsigned int signature_len;
    char * authorization_subject = NULL;
+   char *xacml_execpol, *xacml_datapol;
    int return_status = 0;
-
+   char * buf = NULL;
    p = (unsigned char *)auth_data->client_data;
 
    signature_len = ntohl(*(unsigned int*)p);
@@ -344,13 +345,34 @@ int auth_cert_check_client (authorization_data_t *auth_data,
 
    signature = p;
    p += signature_len;
-
+   
    if (ssl_creds_from_buffer(p, auth_data->client_data_len - 4 - signature_len,
 	                     &chain) == SSL_ERROR) {
       verror_prepend_string("internal error: ssl_creds_from_buffer() failed");
       goto end;
    }
-
+   if (config->evaluate_xacml_policy == 1) {
+     if(xacml_execpol = ssl_retrieve_xacml_policy_from_cert(chain,"1.3.6.1.4.1.18141.100.3.2.1","execPolicy","Execution Policy") ) {
+	if (  (strncmp(xacml_execpol, "no", 2) != 0)  ) {
+   	myproxy_debug ("XACML execution policy found in chain." );
+   	char *filename = "/tmp/execution-policy"; // XXX add PID to filename!
+   	FILE *fp = fopen(filename,"w");
+   	fwrite(xacml_execpol, strlen(xacml_execpol),1, fp);
+   	fclose(fp);
+   	}
+	}
+   // Try to find data policy
+        if(xacml_datapol = ssl_retrieve_xacml_policy_from_cert(chain,"1.3.6.1.4.1.18141.3.100.1.1", "dpolfile", "gLitePolicyFile")) {
+	if ( (strncmp(xacml_datapol, "no", 2) != 0) ) {
+        myproxy_debug ("XACML data policy found in chain." );
+        char *filename = "/tmp/data-policy"; // XXX add PID to filename!
+        FILE *fp = fopen(filename,"w");
+        fwrite(xacml_datapol, strlen(xacml_datapol),1, fp);
+        fclose(fp);
+ 	}
+     }
+ 
+   }
    if (ssl_verify((unsigned char *)auth_data->server_data, 
 	          strlen(auth_data->server_data), 
 	          chain, signature, signature_len) == SSL_ERROR) {

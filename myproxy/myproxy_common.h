@@ -46,6 +46,11 @@ typedef int socklen_t;
 
 #include <globus_gss_assist.h>
 #include <globus_gsi_system_config.h>
+#include <globus_i_gsi_proxy.h>
+
+#include <globus_gsi_cert_utils.h>
+#include <globus_gsi_proxy.h>
+
 #include <gssapi.h>
 
 #include "myproxy.h" /* public headers */
