@@ -5,7 +5,12 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.8 XX Xxx 2009
-  - look for VOMS header files in include/voms directory for
+  - add myproxy-server.config proxy_extfile and proxy_extapp options
+    for including custom certificate extensions in proxy certificates
+    issued from the MyProxy repository (analogous to
+    certificate_extfile and certificate_extapp for the CA module)
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6786)
+ - look for VOMS header files in include/voms directory for
     compatibility with Fedora's VOMS package
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6847)
   - exit with an error message when --voms and -o - are used together

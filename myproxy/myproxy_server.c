@@ -699,6 +699,18 @@ handle_client(myproxy_socket_attrs_t *attrs,
 				      server_response, context);
 	  } else {
 	    myproxy_debug("retrieving proxy");
+        if (context->proxy_extfile) {
+            if (myproxy_set_extensions_from_file(context->proxy_extfile) < 0) {
+                myproxy_log("myproxy_set_extensions_from_file() failed");
+                myproxy_log_verror(); verror_clear();
+            }                
+        } else if (context->proxy_extapp) {
+            if (myproxy_set_extensions_from_callout(context->proxy_extapp,
+                        client_request->username, client_creds->location) < 0) {
+                myproxy_log("myproxy_set_extensions_from_callout() failed");
+                myproxy_log_verror(); verror_clear();
+            }
+        }
 	    get_proxy(attrs, client_creds, client_request, server_response,
 		      context->max_proxy_lifetime);
 	  }

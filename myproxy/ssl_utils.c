@@ -1189,7 +1189,6 @@ ssl_credentials_new()
     return creds;
 }
 
-
 int
 ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 			  unsigned char		**buffer,
@@ -1381,6 +1380,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     globus_gsi_cred_handle_t	cred_handle = NULL;
     globus_result_t		local_result;
     globus_gsi_cert_utils_cert_type_t   cert_type;
+    STACK_OF(X509_EXTENSION) *extensions = NULL;
     
     assert(creds != NULL);
     assert(creds->certificate);
@@ -1493,6 +1493,18 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 					       restrictions->lifetime/60);
     }
 
+    /* add any additional extensions */
+    myproxy_get_extensions(&extensions);
+    if (extensions) {
+        local_result =
+            globus_gsi_proxy_handle_set_extensions(proxy_handle, extensions);
+        if (local_result != GLOBUS_SUCCESS) {
+            verror_put_string("globus_gsi_proxy_handle_set_extensions() failed");
+            globus_error_to_verror(local_result);
+            goto error;
+        }
+    }
+
     /* send number of certificates in reply for backward compatibility */
     bio = BIO_new(BIO_s_mem());
     if (bio == NULL) {
@@ -1568,6 +1580,11 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	globus_gsi_cred_handle_destroy(cred_handle);
     }
     
+    if (extensions)
+    {
+        sk_X509_EXTENSION_free(extensions);
+    }
+
     return return_status;
 }
 

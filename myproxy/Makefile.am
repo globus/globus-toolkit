@@ -31,6 +31,8 @@ LibSources= \
 	myproxy_creds.h \
 	myproxy_delegation.c \
 	myproxy_delegation.h \
+	myproxy_extensions.c \
+	myproxy_extensions.h \
 	myproxy_read_pass.c \
 	myproxy_read_pass.h \
 	myproxy_log.c \
