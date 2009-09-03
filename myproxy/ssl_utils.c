@@ -401,7 +401,7 @@ my_init()
 
 	SSL_load_error_strings();
 
-	SSLeay_add_ssl_algorithms();
+    SSL_library_init();
 
 	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
