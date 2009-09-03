@@ -50,6 +50,7 @@ typedef int socklen_t;
 #include <openssl/bio.h>
 
 #include "myproxy.h" /* public headers */
+#include "myproxy_extensions.h"
 #include "myproxy_popen.h"
 #include "myproxy_ocsp.h"
 #include "accept_credmap.h"

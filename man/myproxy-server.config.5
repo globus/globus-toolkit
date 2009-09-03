@@ -298,6 +298,38 @@ Specifies the maximum time a
 child process should spend servicing a client request before aborting.
 By default, child processes will abort after 120 seconds.
 A negative value will disable the timeout.
+.TP
+.BI proxy_extfile " full-path-to-extension-file"
+Optionally specifies the full path to a file containing an OpenSSL
+formatted set of certificate extensions to include in all 
+proxy certificates issued from the MyProxy repository (analogous to
+.B certificate_extfile
+for the CA module).
+.TP
+.BI proxy_extapp " full-path-to-extension-callout-program"
+This is the call-out version of proxy_extfile.  It optionally
+specifies the full path to a call-out program for specifying
+proxy certificate extensions.  It will be passed the authenticated
+username and the proxy credential location as the two command arguments.
+On success, it should
+write the OpenSSL formatted set of certificate extensions to stdout
+and exit with zero status.  On error, it should write to stderr and
+exit with nonzero status.
+Either 
+.B proxy_extfile
+or
+.B proxy_extapp
+can be specified but not both.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
 .PP
 The MyProxy server can be optionally configured for authentication
 based on Pluggable Authentication Modules (PAM) and/or
@@ -512,9 +544,14 @@ This is the call-out version of certificate_extfile.  It optionally
 specifies the full path to a call-out program for specifying
 certificate extensions.  It will be passed the authenticated
 username as the single command argument.  On success, it should
-write the OpenSSL formatted set of certificate extensions #to stdout
+write the OpenSSL formatted set of certificate extensions to stdout
 and exit with zero status.  On error, it should write to stderr and
 exit with nonzero status.
+Either 
+.B certificate_extfile
+or
+.B certificate_extapp
+can be specified but not both.
 .RS
 .PP
 .B Be sure to follow secure coding practices for this call-out:

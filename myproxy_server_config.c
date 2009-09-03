@@ -493,6 +493,13 @@ line_parse_callback(void *context_arg,
 	context->request_timeout = atoi(tokens[1]);
     }
 
+    else if (strcmp(directive, "proxy_extfile") == 0) {
+	context->proxy_extfile = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "proxy_extapp") == 0) {
+	context->proxy_extapp = strdup(tokens[1]);
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);
@@ -793,6 +800,11 @@ check_config(myproxy_server_context_t *context)
 	        rval = -1;
 	    }
 	}
+    if (context->certificate_extfile &&
+        context->certificate_extapp) {
+        verror_put_string("either certificate_extfile or certificate_extapp can be specified but not both");
+        rval = -1;
+    }
 	if (context->certificate_extfile &&
 	    access(context->certificate_extfile, R_OK) < 0) {
 	    verror_put_string("certificate_extfile %s not readable",
@@ -908,6 +920,26 @@ check_config(myproxy_server_context_t *context)
     if (context->check_multiple_credentials) {
         myproxy_log("Checking multiple credentials during authorization");
     }
+
+    if (context->proxy_extfile &&
+        context->proxy_extapp) {
+        verror_put_string("either proxy_extfile or proxy_extapp can be specified but not both");
+        rval = -1;
+    }
+	if (context->proxy_extfile &&
+	    access(context->proxy_extfile, R_OK) < 0) {
+	    verror_put_string("proxy_extfile %s not readable",
+			      context->proxy_extfile);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->proxy_extapp &&
+	    access(context->proxy_extapp, X_OK) < 0) {
+	    verror_put_string("proxy_extapp %s not executable",
+			      context->proxy_extapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
 
     return rval;
 }
