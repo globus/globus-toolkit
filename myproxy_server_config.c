@@ -316,28 +316,14 @@ line_parse_callback(void *context_arg,
 	context->certificate_issuer_key = strdup(tokens[1]);
     }
     else if (strcmp(directive, "certificate_issuer_hashalg") == 0) {
-        if (!strcasecmp(tokens[1], "sha1")) {
-            context->certificate_hashalg = EVP_sha1();
-#if defined(NID_sha224)
-        } else if (!strcasecmp(tokens[1], "sha224")) {
-            context->certificate_hashalg = EVP_sha224();
-#endif
-#if defined(NID_sha256)
-        } else if (!strcasecmp(tokens[1], "sha256")) {
-            context->certificate_hashalg = EVP_sha256();
-#endif
-#if defined(NID_sha384)
-        } else if (!strcasecmp(tokens[1], "sha384")) {
-            context->certificate_hashalg = EVP_sha384();
-#endif
-#if defined(NID_sha512)
-        } else if (!strcasecmp(tokens[1], "sha512")) {
-            context->certificate_hashalg = EVP_sha512();
-#endif
-        } else {
+        SSL_library_init();
+        context->certificate_hashalg = EVP_get_digestbyname(tokens[1]);
+        if (context->certificate_hashalg == NULL) {
             verror_put_string("Unknown or unsupported certificate_issuer_hashalg (%s)", tokens[1]);
             goto error;
         }
+		myproxy_debug("certificate_issuer_hashalg is %s\n",
+                      OBJ_nid2ln(context->certificate_hashalg->type));
     }
     else if (strcmp(directive, "certificate_request_checker") == 0) {
 	context->certificate_request_checker = strdup(tokens[1]);
