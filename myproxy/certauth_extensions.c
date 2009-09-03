@@ -607,9 +607,9 @@ generate_certificate( X509_REQ                 *request,
 	  nconf_stream = fdopen(fds[1], "r");
 	  if (NCONF_load_fp(extconf, nconf_stream, &errorline) <= 0) {
 	      if (errorline <= 0) {
-		  verror_put_string("OpenSSL error parsing output of certificate_extfile call-out.");
+		  verror_put_string("OpenSSL error parsing output of certificate_extapp call-out.");
 	      } else {
-		  verror_put_string("OpenSSL error parsing line %ld of of certificate_extfile call-out output.", errorline);
+		  verror_put_string("OpenSSL error parsing line %ld of of certificate_extapp call-out output.", errorline);
 	      }
 	      fclose(nconf_stream);
 	      goto error;
