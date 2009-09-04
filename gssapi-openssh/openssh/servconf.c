@@ -399,7 +399,7 @@ static struct {
 	/* Portable-specific options */
 #ifdef USE_PAM
 	{ "usepam", sUsePAM, SSHCFG_GLOBAL },
-	{ "permitpamuserchange", sPermitPAMUserChange, SSHCFG_GLOBAL }
+	{ "permitpamuserchange", sPermitPAMUserChange, SSHCFG_GLOBAL },
 #else
 	{ "usepam", sUnsupported, SSHCFG_GLOBAL },
 	{ "permitpamuserchange", sUnsupported, SSHCFG_GLOBAL },
