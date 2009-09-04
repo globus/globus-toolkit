@@ -36,6 +36,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(HAVE_STDINT_H)
+#include <stdint.h>
+#else /* defined(HAVE_STDINT_H) */
+#if !defined(SIZE_MAX)
+#define SIZE_MAX ((size_t)-1)
+#endif /* !defined(SIZE_MAX) */
+#endif /* defined(HAVE_STDINT_H) */
+
 #if defined(HAVE_GETOPT_H)
 #include <getopt.h>
 #endif

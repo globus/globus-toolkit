@@ -18,6 +18,8 @@ v4.8 XX Xxx 2009
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6807)
   - fix a memory error in myproxy-info/myproxy-destroy error handling
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6849)
+  - check myproxy-server.config lines for correct number of arguments
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6852)
 
 v4.7 6 May 2009
   - in myproxy-get-trustroots and myproxy-logon -T, update files
