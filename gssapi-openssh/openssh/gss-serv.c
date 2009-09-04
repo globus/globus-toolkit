@@ -531,7 +531,7 @@ void
 ssh_gssapi_rekey_creds() {
 	int ok;
 #ifdef USE_PAM
-    int ret;
+	int ret;
 	pam_handle_t *pamh = NULL;
 	struct pam_conv pamconv = {ssh_gssapi_simple_conv, NULL};
 	char *envstr;
