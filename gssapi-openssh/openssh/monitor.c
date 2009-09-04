@@ -680,6 +680,11 @@ mm_answer_pwnamallow(int sock, Buffer *m)
 
 	if (authctxt->user) xfree(authctxt->user);
 	authctxt->user = xstrdup(username);
+#ifdef USE_PAM
+    if (options.permit_pam_user_change)
+        setproctitle("%s [priv]", pwent ? "[pam]" : "unknown");
+    else
+#endif
 	setproctitle("%s [priv]", pwent ? username : "unknown");
 	xfree(username);
 
