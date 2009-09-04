@@ -8,7 +8,8 @@ v4.8 XX Xxx 2009
   - add myproxy-server.config proxy_extfile and proxy_extapp options
     for including custom certificate extensions in proxy certificates
     issued from the MyProxy repository (analogous to
-    certificate_extfile and certificate_extapp for the CA module)
+    certificate_extfile and certificate_extapp for the CA module);
+    requires GT 4.2.0 libraries (or later)
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6786)
  - look for VOMS header files in include/voms directory for
     compatibility with Fedora's VOMS package
