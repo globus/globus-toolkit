@@ -373,6 +373,11 @@ globus_gram_client_register_ping(
                                         register_callback,
     void *                              register_callback_arg);
 
+int 
+globus_gram_client_get_jobmanager_version(
+    const char *                        resource_manager_contact,
+    globus_hashtable_t *                extensions);
+
 void
 globus_gram_client_debug(void);
 

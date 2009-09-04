@@ -244,6 +244,7 @@ main(
                 || (!config.single))
         {
             gss_ctx_id_t                context;
+            globus_bool_t               version_only;
             char *                      client_contact = NULL;
             int                         job_state_mask;
 
@@ -265,11 +266,13 @@ main(
                         &client_contact,
                         &job_state_mask,
                         &old_job_contact,
-                        &old_job_request);
-                if (rc != GLOBUS_SUCCESS)
+                        &old_job_request,
+                        &version_only);
+                if (rc != GLOBUS_SUCCESS || version_only)
                 {
                     rc = globus_gram_job_manager_reply(
                             NULL,
+                            &manager,
                             rc,
                             old_job_contact,
                             STDOUT_FILENO,

@@ -325,6 +325,17 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
     globus_size_t			replysize,
     globus_hashtable_t *                message_hash);
 
+int
+globus_gram_protocol_unpack_message(
+    const char *                        message,
+    size_t                              message_length,
+    globus_hashtable_t *                message_attributes);
+
+int
+globus_gram_protocol_pack_version_request(
+    char **                             request,
+    size_t *                            requestsize);
+
 void
 globus_gram_protocol_hash_destroy(
     globus_hashtable_t *                message_hash);

@@ -1124,6 +1124,7 @@ globus_l_gram_job_manager_state_machine(
 int
 globus_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_t *         manager,
     int                                 response_code,
     const char *                        job_contact,
     int                                 response_fd,
@@ -1153,12 +1154,12 @@ globus_gram_job_manager_reply(
         goto hashtable_init_failed;
     }
 
-    if (request != NULL)
+    if (manager != NULL)
     {
         extension = globus_gram_protocol_create_extension(
                 "toolkit-version",
-                "\"%s\"",
-                request->config->globus_version);
+                "%s",
+                manager->config->globus_version);
 
         if (extension == NULL)
         {
@@ -1167,7 +1168,10 @@ globus_gram_job_manager_reply(
             goto extension_create_failed;
         }
 
-        rc = globus_hashtable_insert(&extensions, extension->attribute, extension);
+        rc = globus_hashtable_insert(
+                &extensions,
+                extension->attribute,
+                extension);
         if (rc != GLOBUS_SUCCESS)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -1178,7 +1182,7 @@ globus_gram_job_manager_reply(
 
     extension = globus_gram_protocol_create_extension(
             "version",
-            "\"%d.%d (%d-%d)\"",
+            "%d.%d (%d-%d)",
             local_version.major,
             local_version.minor,
             local_version.timestamp,
@@ -1298,12 +1302,20 @@ globus_gram_job_manager_read_request(
     int                                 fd,
     char **                             rsl,
     char **                             client_contact,
-    int *                               job_state_mask)
+    int *                               job_state_mask,
+    globus_bool_t *                     version_only)
 {
     int                                 rc;
     globus_size_t                       jrbuf_size;
+    globus_hashtable_t                  extensions;
+    globus_gram_protocol_extension_t *  entry;
     globus_byte_t                       buffer[
                                             GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+
+    *rsl = NULL;
+    *client_contact = NULL;
+    *job_state_mask = 0;
+    *version_only = GLOBUS_FALSE;
 
     jrbuf_size = (globus_size_t) lseek(fd, 0, SEEK_END);
     (void) lseek(fd, 0, SEEK_SET);
@@ -1328,7 +1340,30 @@ globus_gram_job_manager_read_request(
             job_state_mask,
             client_contact,
             rsl);
-    if(rc != GLOBUS_SUCCESS)
+    if(rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED)
+    {
+        rc = globus_gram_protocol_unpack_message(
+                (const char *) buffer,
+                jrbuf_size,
+                &extensions);
+
+        if (rc == GLOBUS_SUCCESS)
+        {
+            entry = globus_hashtable_lookup(
+                    &extensions,
+                    "command");
+            if (entry != NULL && strcmp(entry->value, "version") == 0)
+            {
+                *version_only = GLOBUS_TRUE;
+            }
+            else
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+            }
+            globus_gram_protocol_hash_destroy(&extensions);
+        }
+    }
+    if (rc != GLOBUS_SUCCESS)
     {
         globus_gram_job_manager_log(
                 manager,

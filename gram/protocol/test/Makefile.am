@@ -14,6 +14,7 @@ Scripts = \
 	globus-gram-protocol-pack-test.pl \
         create-extensions-test.pl \
         pack-with-extensions-test.pl \
+        unpack-message-test.pl \
         unpack-with-extensions-test.pl \
         unpack-job-request-reply-with-extensions-test.pl \
         unpack-status-reply-with-extensions-test.pl
@@ -35,6 +36,7 @@ pkgtest_PROGRAMS= \
 	globus-gram-protocol-pack-test \
         create-extensions-test \
         pack-with-extensions-test \
+        unpack-message-test \
         unpack-with-extensions-test \
         unpack-job-request-reply-with-extensions-test \
         unpack-status-reply-with-extensions-test
@@ -68,6 +70,9 @@ unpack_status_reply_with_extensions_test_LDFLAGS = $(GPT_LDFLAGS)
 
 create_extensions_test_SOURCES = create_extensions_test.c
 create_extensions_test_LDFLAGS = $(GPT_LDFLAGS)
+
+unpack_message_test_SOURCES = unpack_message_test.c
+unpack_message_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

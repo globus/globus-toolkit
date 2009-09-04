@@ -277,7 +277,7 @@ globus_gram_job_manager_contact_state_callback(
     /* Add extensions for version numbers */
     entry = globus_gram_protocol_create_extension(
             "toolkit-version",
-            "\"%s\"",
+            "%s",
             request->config->globus_version);
     if (entry == NULL)
     {
@@ -297,7 +297,7 @@ globus_gram_job_manager_contact_state_callback(
     }
     entry = globus_gram_protocol_create_extension(
             "version",
-            "\"%d.%d (%d-%d)\"",
+            "%d.%d (%d-%d)",
             local_version.major,
             local_version.minor,
             local_version.timestamp,

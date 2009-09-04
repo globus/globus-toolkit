@@ -35,6 +35,20 @@ static
 void
 globus_l_gram_protocol_extension_destroy(
     void *                              datum);
+
+static
+int
+globus_l_gram_protocol_get_int_attribute(
+    globus_hashtable_t *                extensions,
+    const char *                        attribute_name,
+    int *                               value);
+
+static
+int
+globus_l_gram_protocol_get_string_attribute(
+    globus_hashtable_t *                extensions,
+    const char *                        attribute_name,
+    char **                             value);
 #endif
 
 /**
@@ -131,11 +145,11 @@ globus_gram_protocol_pack_job_request(
  * @param callback_url
  *        A pointer to be populated with a copy of the URL of the callback
  *        contact to be registered for this job request. The caller must
- *        free this memory by calling globus_libc_free().
+ *        free this memory by calling free().
  * @param description
  *        A pointer to be populated with a copy of the job description RSL
  *        for this job request. The caller must
- *        free this memory by calling globus_libc_free().
+ *        free this memory by calling free().
  */
 int
 globus_gram_protocol_unpack_job_request(
@@ -147,58 +161,90 @@ globus_gram_protocol_unpack_job_request(
 {
     int                                 protocol_version;
     int                                 rc;
-    globus_size_t                       rsl_count;
-    char *                              q = (char *) query;
-    char *                              p;
+    globus_hashtable_t                  attributes;
 
-    p = strstr(q, CRLF"rsl: ");
-    if (!p)
-        return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-    p+=strlen(CRLF"rsl: ");
-    rsl_count = querysize - (globus_size_t)(p-q);
-
-    *callback_url = globus_libc_malloc(p-q);
-    *description  = globus_libc_malloc(rsl_count);
-
-    globus_libc_lock();
-    rc = sscanf( q,
-                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-                 GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
-                 GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE,
-                 &protocol_version,
-                 job_state_mask,
-                 *callback_url );
-    globus_libc_unlock();
-    if (rc != 3)
+    if (query == NULL || job_state_mask == NULL || callback_url == NULL ||
+        description == NULL)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-        goto globus_gram_protocol_unpack_job_request_done;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
     }
+
+    *job_state_mask = 0;
+    *callback_url = NULL;
+    *description = NULL;
+
+    rc = globus_gram_protocol_unpack_message(
+            (const char *) query,
+            querysize,
+            &attributes);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto parse_error;
+    }
+
+    rc = globus_l_gram_protocol_get_int_attribute(
+            &attributes,
+            GLOBUS_GRAM_ATTR_PROTOCOL_VERSION,
+            &protocol_version);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto version_error;
+    }
+
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
-        goto globus_gram_protocol_unpack_job_request_done;
-    }
-    if (strcmp(*callback_url, "\"\"")==0)
-    {
-        globus_libc_free(*callback_url);
-        *callback_url = GLOBUS_NULL;
+
+        goto version_mismatch;
     }
 
-    rc = globus_l_gram_protocol_unquote_string(
-                  (globus_byte_t*) p,
-                  rsl_count-3,        /* CR LF + null */
-                  *description );
-
-globus_gram_protocol_unpack_job_request_done:
+    rc = globus_l_gram_protocol_get_int_attribute(
+            &attributes,
+            GLOBUS_GRAM_ATTR_JOB_STATE_MASK,
+            job_state_mask);
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_free(*callback_url);
-        globus_libc_free(*description);
-        *callback_url = GLOBUS_NULL;
-        *description = GLOBUS_NULL;
+        goto job_state_mask_failed;
     }
+
+    rc = globus_l_gram_protocol_get_string_attribute(
+            &attributes,
+            GLOBUS_GRAM_ATTR_CALLBACK_URL,
+            callback_url);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto callback_url_failed;
+    }
+
+    if (*callback_url[0] == '\0')
+    {
+        free(*callback_url);
+        *callback_url = NULL;
+    }
+
+    rc = globus_l_gram_protocol_get_string_attribute(
+            &attributes,
+            GLOBUS_GRAM_ATTR_RSL,
+            description);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        if (*callback_url)
+        {
+            free(*callback_url);
+            *callback_url = NULL;
+        }
+    }
+callback_url_failed:
+job_state_mask_failed:
+version_mismatch:
+version_error:
+    globus_gram_protocol_hash_destroy(&attributes);
+parse_error:
+bad_param:
     return rc;
 }
 /* globus_gram_protocol_unpack_job_request() */
@@ -307,62 +353,68 @@ globus_gram_protocol_unpack_job_request_reply(
     int *                               status,
     char **                             job_contact )
 {
-    int                                 rc;
+    int                                 rc = GLOBUS_SUCCESS;
     int                                 protocol_version;
-    char *                              p;
+    globus_hashtable_t                  message_attributes;
 
-    p = strstr((char *)reply, CRLF "job-manager-url:");
-    if (p)
+    if (reply == NULL || status == NULL || job_contact == NULL)
     {
-        *job_contact = globus_libc_malloc(
-            replysize - strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE));
-        if(*job_contact == GLOBUS_NULL)
-        {
-            return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        }
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
 
-        p+=2;  /* crlf */
+        goto bad_param;
+    }
+    *status = 0;
+    *job_contact = NULL;
+
+    rc = globus_gram_protocol_unpack_message(
+            (const char *) reply,
+            replysize,
+            &message_attributes);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto parse_error;
     }
 
-    globus_libc_lock();
-    rc = sscanf( (char *) reply,
-                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
-                 &protocol_version,
-                 status );
-    globus_libc_unlock();
-    if (rc != 2 )
+    rc = globus_l_gram_protocol_get_int_attribute(
+            &message_attributes,
+            GLOBUS_GRAM_ATTR_PROTOCOL_VERSION,
+            &protocol_version);
+    if (rc != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-        goto globus_gram_protocol_unpack_job_request_done;
+        goto version_error;
     }
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
-        goto globus_gram_protocol_unpack_job_request_done;
-    }
-    rc = GLOBUS_SUCCESS;
-    if (p)
-    {
-        globus_libc_lock();
-        rc = sscanf( p,
-                     GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
-                     *job_contact );
-        globus_libc_unlock();
-        if (rc != 1)
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-        else
-            rc = GLOBUS_SUCCESS;
+
+        goto version_mismatch;
     }
 
-globus_gram_protocol_unpack_job_request_done:
-
+    rc = globus_l_gram_protocol_get_int_attribute(
+            &message_attributes,
+            GLOBUS_GRAM_ATTR_STATUS,
+            status);
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_free(*job_contact);
-        *job_contact = NULL;
+        goto status_failed;
     }
 
+    /* Only if the job is successfully created */
+    rc = globus_l_gram_protocol_get_string_attribute(
+            &message_attributes,
+            GLOBUS_GRAM_ATTR_JOB_MANAGER_URL,
+            job_contact);
+    if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED)
+    {
+        rc = GLOBUS_SUCCESS;
+    }
+
+status_failed:
+version_mismatch:
+version_error:
+    globus_gram_protocol_hash_destroy(&message_attributes);
+parse_error:
+bad_param:
     return rc;
 }
 /* globus_gram_protocol_unpack_job_request_reply() */
@@ -406,7 +458,7 @@ globus_gram_protocol_pack_job_request_reply_with_extensions(
 
             goto bad_attr;
         }
-        len += strlen(entry->attribute) + strlen(entry->value) + 4;
+        len += strlen(entry->attribute) + (2*strlen(entry->value)) + 4;
     }
     len += strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
            strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
@@ -449,9 +501,14 @@ globus_gram_protocol_pack_job_request_reply_with_extensions(
          entry = globus_hashtable_next(extensions))
     {
         chrs += sprintf(((char *) *reply) + chrs,
-                "%s: %s\r\n",
-                entry->attribute,
-                entry->value);
+                "%s: ",
+                entry->attribute);
+
+        chrs += globus_l_gram_protocol_quote_string(
+                entry->value,
+                *reply + chrs);
+
+        chrs += sprintf(((char *) *reply) + chrs, "\r\n");
     }
 
     *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
@@ -471,9 +528,6 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
     char **				job_contact,
     globus_hashtable_t *                extensions)
 {
-    char *                              attribute;
-    char *                              value;
-    char *                              eol;
     globus_gram_protocol_extension_t * entry = NULL;
     int                                 rc;
 
@@ -484,84 +538,18 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
 
         goto bad_param;
     }
-    rc = globus_hashtable_init(
-            extensions,
-            17,
-            globus_hashtable_string_hash,
-            globus_hashtable_string_keyeq);
+    *status = 0;
+    *job_contact = NULL;
+    *extensions = NULL;
+
+    rc = globus_gram_protocol_unpack_message(
+            (char *) reply,
+            replysize,
+            extensions);
 
     if (rc != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto hashtable_init_failed;
-    }
-
-    for (attribute = (char *) reply; attribute != NULL;)
-    {
-        eol = strstr(attribute, "\r\n");
-        if (eol == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        value = strstr(attribute, ":");
-        if (value == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        if (value > eol)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        entry = malloc(sizeof(globus_gram_protocol_extension_t));
-        if (entry == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto parse_error;
-        }
-
-        entry->attribute = malloc(value - attribute + 1);
-        if (entry->attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto parse_error;
-        }
-        memcpy(entry->attribute, attribute, value - attribute);
-        entry->attribute[value - attribute] = 0;
-
-        attribute = strstr(attribute, CRLF);
-        if (attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        /* Skip : */
-        value++;
-        /* Skip whitespace */
-        while (isspace(*value))
-        {
-            value++;
-        }
-        entry->value = malloc(attribute - value + 1);
-        memcpy(entry->value, value, attribute - value);
-        entry->value[attribute - value] = 0;
-
-        globus_hashtable_insert(extensions, entry->attribute, entry);
-        entry = NULL;
-        attribute += 2;
-
-        if (*attribute == 0)
-        {
-            break;
-        }
+        goto parse_error;
     }
 
     /* Check that required attributes are present */
@@ -615,18 +603,9 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
     {
 copy_contact_failed:
 verify_error:
-        entry = NULL;
-parse_error:
-        globus_hashtable_destroy_all(
-                extensions,
-                globus_l_gram_protocol_extension_destroy);
-        if (entry != NULL)
-        {
-            globus_l_gram_protocol_extension_destroy(entry);
-        }
-hashtable_init_failed:
-        *extensions = NULL;
+        globus_gram_protocol_hash_destroy(extensions);
     }
+parse_error:
 bad_param:
 
     return rc;
@@ -975,7 +954,7 @@ globus_gram_protocol_pack_status_reply_with_extensions(
 
             goto bad_attr;
         }
-        len += strlen(entry->attribute) + strlen(entry->value) + 4;
+        len += strlen(entry->attribute) + (2*strlen(entry->value)) + 4;
     }
     len += strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
            strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
@@ -1006,9 +985,14 @@ globus_gram_protocol_pack_status_reply_with_extensions(
          entry = globus_hashtable_next(extensions))
     {
         chrs += sprintf(((char *) *reply) + chrs,
-                "%s: %s\r\n",
-                entry->attribute,
-                entry->value);
+                "%s: ",
+                entry->attribute);
+
+        chrs += globus_l_gram_protocol_quote_string(
+                entry->value,
+                *reply + chrs);
+
+        chrs += sprintf(((char *) *reply) + chrs, "\r\n");
     }
 
     *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
@@ -1059,9 +1043,6 @@ globus_gram_protocol_unpack_status_reply_with_extensions(
     globus_hashtable_t *                extensions)
 {
     int                                 rc;
-    char *                              attribute;
-    char *                              eol;
-    char *                              value;
     globus_gram_protocol_extension_t * entry = NULL;
 
     if (reply == NULL || extensions == NULL)
@@ -1071,84 +1052,14 @@ globus_gram_protocol_unpack_status_reply_with_extensions(
         goto bad_param;
     }
 
-    rc = globus_hashtable_init(
-            extensions,
-            17,
-            globus_hashtable_string_hash,
-            globus_hashtable_string_keyeq);
+    rc = globus_gram_protocol_unpack_message(
+            (const char *) reply,
+            replysize,
+            extensions);
 
     if (rc != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto hashtable_init_failed;
-    }
-
-    for (attribute = (char *) reply; attribute != NULL;)
-    {
-        eol = strstr(attribute, "\r\n");
-        if (eol == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        value = strstr(attribute, ":");
-        if (value == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        if (value > eol)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        entry = malloc(sizeof(globus_gram_protocol_extension_t));
-        if (entry == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto parse_error;
-        }
-
-        entry->attribute = malloc(value - attribute + 1);
-        if (entry->attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto parse_error;
-        }
-        memcpy(entry->attribute, attribute, value - attribute);
-        entry->attribute[value - attribute] = 0;
-
-        attribute = strstr(attribute, CRLF);
-        if (attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        /* Skip : */
-        value++;
-        /* Skip whitespace */
-        while (isspace(*value))
-        {
-            value++;
-        }
-        entry->value = malloc(attribute - value + 1);
-        memcpy(entry->value, value, attribute - value);
-        entry->value[attribute - value] = 0;
-
-        globus_hashtable_insert(extensions, entry->attribute, entry);
-        entry = NULL;
-        attribute += 2;
-
-        if (*attribute == 0)
-        {
-            break;
-        }
+        goto parse_error;
     }
     
     /* Check that required attributes are present */
@@ -1204,17 +1115,9 @@ globus_gram_protocol_unpack_status_reply_with_extensions(
     {
 verify_error:
         entry = NULL;
-parse_error:
-        globus_hashtable_destroy_all(
-                extensions,
-                globus_l_gram_protocol_extension_destroy);
-        if (entry != NULL)
-        {
-            globus_l_gram_protocol_extension_destroy(entry);
-        }
-hashtable_init_failed:
-        *extensions = NULL;
+        globus_gram_protocol_hash_destroy(extensions);
     }
+parse_error:
 bad_param:
 
     return rc;
@@ -1324,6 +1227,7 @@ globus_gram_protocol_pack_status_update_message_with_extensions(
 {
     globus_gram_protocol_extension_t * entry;
     size_t                              len = 0;
+    size_t                              chrs = 0;
     char *                              tmp;
     int                                 rc = GLOBUS_SUCCESS;
 
@@ -1345,7 +1249,7 @@ globus_gram_protocol_pack_status_update_message_with_extensions(
 
             goto bad_attr;
         }
-        len += strlen(entry->attribute) + strlen(entry->value) + 4;
+        len += strlen(entry->attribute) + (2*strlen(entry->value)) + 4;
     }
 
     tmp = globus_common_create_string(
@@ -1364,7 +1268,8 @@ globus_gram_protocol_pack_status_update_message_with_extensions(
         goto tmp_malloc_failed;
     }
 
-    len += strlen(tmp) + 1;
+    chrs = strlen(tmp);
+    len += chrs + 1;
     *reply = (globus_byte_t *) tmp;
     tmp = realloc(tmp, len);
     if (tmp == NULL)
@@ -1377,14 +1282,19 @@ globus_gram_protocol_pack_status_update_message_with_extensions(
     }
     *reply = (globus_byte_t *) tmp;
 
-    for (entry = extensions ? globus_hashtable_first(extensions) : NULL;
+    for (entry = globus_hashtable_first(extensions);
          entry != NULL;
          entry = globus_hashtable_next(extensions))
     {
-        strcat(tmp, entry->attribute);
-        strcat(tmp, ": ");
-        strcat(tmp, entry->value);
-        strcat(tmp, "\r\n");
+        chrs += sprintf(((char *) *reply) + chrs,
+                "%s: ",
+                entry->attribute);
+
+        chrs += globus_l_gram_protocol_quote_string(
+                entry->value,
+                *reply + chrs);
+
+        chrs += sprintf(((char *) *reply) + chrs, "\r\n");
     }
 
     *replysize = (globus_size_t)(strlen(tmp) + 1);
@@ -1507,9 +1417,6 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
     globus_size_t                       replysize,
     globus_hashtable_t *                message_hash)
 {
-    char *                              attribute;
-    char *                              value;
-    char *                              eol;
     globus_gram_protocol_extension_t * entry = NULL;
     int                                 rc;
 
@@ -1519,84 +1426,16 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
 
         goto bad_param;
     }
-    rc = globus_hashtable_init(
-            message_hash,
-            17,
-            globus_hashtable_string_hash,
-            globus_hashtable_string_keyeq);
 
+    *message_hash = NULL;
+
+    rc = globus_gram_protocol_unpack_message(
+            (const char * ) reply,
+            replysize,
+            message_hash);
     if (rc != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto hashtable_init_failed;
-    }
-
-    for (attribute = (char *) reply; attribute != NULL;)
-    {
-        eol = strstr(attribute, "\r\n");
-        if (eol == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        value = strstr(attribute, ":");
-        if (value == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        if (value > eol)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        entry = malloc(sizeof(globus_gram_protocol_extension_t));
-        if (entry == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto parse_error;
-        }
-
-        entry->attribute = malloc(value - attribute + 1);
-        if (entry->attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto parse_error;
-        }
-        memcpy(entry->attribute, attribute, value - attribute);
-        entry->attribute[value - attribute] = 0;
-
-        attribute = strstr(attribute, CRLF);
-        if (attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-            goto parse_error;
-        }
-        /* Skip : */
-        value++;
-        /* Skip whitespace */
-        while (isspace(*value))
-        {
-            value++;
-        }
-        entry->value = malloc(attribute - value + 1);
-        memcpy(entry->value, value, attribute - value);
-        entry->value[attribute - value] = 0;
-
-        globus_hashtable_insert(message_hash, entry->attribute, entry);
-        entry = NULL;
-        attribute += 2;
-
-        if (*attribute == 0)
-        {
-            break;
-        }
+        goto parse_error;
     }
 
     /* Check that required attributes are present */
@@ -1651,18 +1490,9 @@ globus_gram_protocol_unpack_status_update_message_with_extensions(
     if (rc != GLOBUS_SUCCESS)
     {
 verify_error:
-        entry = NULL;
-parse_error:
-        globus_hashtable_destroy_all(
-                message_hash,
-                globus_l_gram_protocol_extension_destroy);
-        if (entry != NULL)
-        {
-            globus_l_gram_protocol_extension_destroy(entry);
-        }
-hashtable_init_failed:
-        *message_hash = NULL;
+        globus_gram_protocol_hash_destroy(message_hash);
     }
+parse_error:
 bad_param:
 
     return rc;
@@ -1788,6 +1618,175 @@ bad_param:
 }
 /* globus_gram_protocol_create_extension() */
 
+int
+globus_gram_protocol_unpack_message(
+    const char *                        message,
+    size_t                              message_length,
+    globus_hashtable_t *                message_attributes)
+{
+    globus_gram_protocol_extension_t *  extension;
+    const char                          *attr_start, *value_start;
+    size_t                              attr_len, value_len;
+    const char *                        p;
+    char *                              q;
+    int                                 rc = GLOBUS_SUCCESS;
+    int                                 i;
+
+    if (message == NULL || message_attributes == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
+    }
+    rc = globus_hashtable_init(
+            message_attributes,
+            17,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto hashtable_init_failed;
+    }
+    p = message;
+
+    while (*p != 0)
+    {
+        attr_start = p;
+        /* Pull out attribute start and length */
+        while (*p != ':' && *p != '\0')
+        {
+            p++;
+        }
+
+        if (*p != ':')
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+
+        attr_len = p - attr_start;
+        p++;
+
+        if (*p != ' ')
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        p++;
+
+        if (*p == '"')
+        {
+            globus_bool_t               escaped = GLOBUS_FALSE;
+
+            p++;
+
+            value_start = p;
+            while (*p != 0)
+            {
+                if (escaped)
+                {
+                    escaped = GLOBUS_FALSE;
+                }
+                else if (*p == '"')
+                {
+                    break;
+                }
+                else if (*p == '\\')
+                {
+                    escaped = GLOBUS_TRUE;
+                }
+                p++;
+            }
+            value_len = p - value_start;
+            p++;
+        }
+        else
+        {
+            value_start = p;
+            while (*p != '\r' && *p != 0)
+            {
+                p++;
+            }
+            value_len = p - value_start;
+        }
+        if (*(p++) != '\r')
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        if (*(p++) != '\n')
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            goto parse_error;
+        }
+        extension = malloc(sizeof(globus_gram_protocol_extension_t));
+
+        extension->attribute = malloc(attr_len+1);
+        sprintf(extension->attribute, "%.*s", (int) attr_len, attr_start);
+        q = extension->value = malloc(value_len+1);
+
+        for (i = 0; i < value_len; i++)
+        {
+            if (value_start[i] != '\\')
+            {
+                *(q++) = value_start[i];
+            }
+            else
+            {
+                *(q++) = value_start[++i];
+            }
+        }
+        *q = '\0';
+
+        globus_hashtable_insert(
+                message_attributes,
+                extension->attribute,
+                extension);
+    }
+parse_error:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_protocol_hash_destroy(message_attributes);
+    }
+hashtable_init_failed:
+bad_param:
+    return rc;
+}
+/* globus_gram_protocol_unpack_message() */
+
+int
+globus_gram_protocol_pack_version_request(
+    char **                             request,
+    size_t *                            requestsize)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+
+    if (request == NULL || requestsize == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
+    }
+    *request = globus_common_create_string("command: version\r\n");
+    if (*request == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto malloc_failed;
+    }
+    *requestsize = strlen(*request) + 1;
+
+malloc_failed:
+bad_param:
+    return rc;
+}
+/* globus_gram_protocol_pack_version_request() */
+
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* assumes bufp has sufficient memory */
 static
@@ -1878,4 +1877,60 @@ globus_l_gram_protocol_unquote_string(
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gram_protocol_unquote_string() */
+
+static
+int
+globus_l_gram_protocol_get_int_attribute(
+    globus_hashtable_t *                extensions,
+    const char *                        attribute_name,
+    int *                               value)
+{
+    globus_gram_protocol_extension_t *  extension;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    extension = globus_hashtable_lookup(extensions, (void *) attribute_name);
+    if (extension == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto unpack_failed;
+    }
+
+    *value = atoi(extension->value);
+
+unpack_failed:
+    return rc;
+}
+/* globus_l_gram_protocol_get_int_attribute() */
+
+static
+int
+globus_l_gram_protocol_get_string_attribute(
+    globus_hashtable_t *                extensions,
+    const char *                        attribute_name,
+    char **                             value)
+{
+    globus_gram_protocol_extension_t *  extension;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    extension = globus_hashtable_lookup(extensions, (void *) attribute_name);
+    if (extension == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+        goto unpack_failed;
+    }
+
+    *value = strdup(extension->value);
+
+    if (*value == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+
+unpack_failed:
+    return rc;
+}
+/* globus_l_gram_protocol_get_string_attribute() */
+
 #endif

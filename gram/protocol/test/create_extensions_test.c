@@ -55,6 +55,17 @@ int test_create_extension(void)
     free(extension->value);
     free(extension);
 
+    extension = globus_gram_protocol_create_extension(
+            "test",
+            "%s",
+            "hello, world");
+    test_assert(extension != NULL,
+            ("Unable to create extension \"test: 1\"\n"));
+    test_assert(strcmp(extension->attribute, "test") == 0,
+            ("extension attribute mismatch\n"));
+    test_assert(strcmp(extension->value, "hello, world") == 0,
+            ("extension value mismatch\n"));
+
 
     return 0;
 }

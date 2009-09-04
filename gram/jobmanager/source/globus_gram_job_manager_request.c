@@ -954,7 +954,8 @@ globus_gram_job_manager_request_load(
     char **                             contact,
     int *                               job_state_mask,
     char **                             old_job_contact,
-    globus_gram_jobmanager_request_t ** old_job_request)
+    globus_gram_jobmanager_request_t ** old_job_request,
+    globus_bool_t *                     version_only)
 {
     int                                 rc;
     char *                              rsl;
@@ -963,6 +964,7 @@ globus_gram_job_manager_request_load(
     *context = GSS_C_NO_CONTEXT;
     *contact = NULL;
     *job_state_mask = 0;
+    *version_only = GLOBUS_FALSE;
 
     rc = globus_gram_job_manager_import_sec_context(
             manager,
@@ -978,26 +980,33 @@ globus_gram_job_manager_request_load(
             http_body_fd,
             &rsl,
             contact,
-            job_state_mask);
+            job_state_mask,
+            version_only);
     if (rc != GLOBUS_SUCCESS)
     {
         goto read_request_failed;
     }
-    rc = globus_gram_job_manager_request_init(
-            request,
-            manager,
-            rsl,
-            cred,
-            *context,
-            GLOBUS_FALSE,
-            old_job_contact,
-            old_job_request);
+    if (! (*version_only))
+    {
+        rc = globus_gram_job_manager_request_init(
+                request,
+                manager,
+                rsl,
+                cred,
+                *context,
+                GLOBUS_FALSE,
+                old_job_contact,
+                old_job_request);
+    }
     if (rc != GLOBUS_SUCCESS)
     {
         goto request_init_failed;
     }
 request_init_failed:
-    free(rsl);
+    if (rsl)
+    {
+        free(rsl);
+    }
 read_request_failed:
 import_context_failed:
     return rc;
@@ -1117,6 +1126,7 @@ bad_request:
 
     rc2 = globus_gram_job_manager_reply(
             request,
+            request->manager,
             response_code,
             job_contact,
             response_fd,

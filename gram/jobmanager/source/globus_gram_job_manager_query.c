@@ -1133,7 +1133,7 @@ globus_l_gram_create_extensions(
 
     entry = globus_gram_protocol_create_extension(
             "toolkit-version",
-            "\"%s\"",
+            "%s",
             request->config->globus_version);
     if (entry == NULL)
     {
@@ -1154,7 +1154,7 @@ globus_l_gram_create_extensions(
 
     entry = globus_gram_protocol_create_extension(
             "version",
-            "\"%d.%d (%d-%d)\"",
+            "%d.%d (%d-%d)",
             local_version.major,
             local_version.minor,
             local_version.timestamp,
