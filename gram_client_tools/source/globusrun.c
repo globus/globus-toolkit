@@ -123,6 +123,13 @@ static
 void
 globus_l_submit_callback(
     void *                              user_callback_arg,
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     job_info);
+
+static
+void
+globus_l_refresh_callback(
+    void *                              user_callback_arg,
     globus_gram_protocol_error_t        operation_failure_code,
     const char *                        job_contact,
     globus_gram_protocol_job_state_t    job_state,
@@ -165,105 +172,109 @@ enum
     GLOBUSRUN_ARG_BATCH                 = 512,
     GLOBUSRUN_ARG_STATUS                = 1024,
     GLOBUSRUN_ARG_LIST                  = 2048,
-    GLOBUSRUN_ARG_BATCH_FAST            = 4096
+    GLOBUSRUN_ARG_BATCH_FAST            = 4096,
+    GLOBUSRUN_ARG_JOB_MANAGER_VERSION   = 8192
 };
 
 static char *  oneline_usage
    =  "globusrun [-help] [-f RSL file] [-s][-b][-d][...] [-r RM] [RSL]";
 
-static char *  long_usage = \
-"\n" \
-"Syntax: globusrun [options] [RSL String]\n"\
-"        globusrun -version[s]\n"\
-"        globusrun -help\n"\
-"\n" \
-"    Options\n"\
-"    -help | -usage\n"\
-"           Display help\n"\
-"    -version\n"\
-"           Display version\n"\
-"    -versions\n"\
-"           Display versions of all activated modules\n"\
-"    -f <rsl filename> | -file <rsl filename> \n"\
-"           Read RSL from the local file <rsl filename>. The RSL can\n"\
-"           be either a single job request, or a multirequest\n"\
-"    -q | -quiet\n"\
-"           Quiet mode (do not print diagnostic messages)\n"\
-"    -o | -output-enable\n"\
-"           Use the GASS Server library to redirect standout output\n"\
-"           and standard error to globusrun. Implies -quiet\n"\
-"    -s | -server\n"\
-"           $(GLOBUSRUN_GASS_URL) can be used to access files local\n"\
-"           to the submission machine via GASS. Implies -output-enable\n"\
-"           and -quiet\n"\
-"    -w | -write-allow\n"\
-"           Enable the GASS Server library and allow writing to\n"\
-"           GASS URLs. Implies -server and -quiet.\n"\
-"    -mpirun <integer>\n"\
-"           Currently a no-op.\n"\
-"    -r <resource manager> | -resource  <resource manager> \n"\
-"           Submit the RSL job request to the specified resource manager.\n"\
-"           A resource manager can be specified in the following ways: \n\n"\
-"           host\n"\
-"           host:port\n"\
-"           host:port/service\n"\
-"           host/service\n"\
-"           host:/service\n"\
-"           host::subject\n"\
-"           host:port:subject\n"\
-"           host/service:subject\n"\
-"           host:/service:subject\n"\
-"           host:port/service:subject\n\n"\
-"           For those resource manager contacts which omit the port, \n"\
-"           service or subject field the following defaults are used:\n\n"\
-"           port = 2119 \n"\
-"           service = jobmanager \n"\
-"           subject = subject based on hostname\n\n"\
-"           This is a required argument when submitting a single RSL\n"\
-"           request\n"\
-"    -n | -no-interrupt\n"\
-"           Cause SIGINT to terminate globusrun, while leaving the\n"\
-"           submitted job to run to completion. By default the SIGINT\n"\
-"           signal will be trapped and the job will be terminated\n"\
-"    -k | -kill <job ID>\n"\
-"           Kill a disconnected globusrun job\n"\
-"    -status <job ID>\n"\
-"           Print the current status of the specified job.\n"\
-"    -b | -batch\n"\
-"           Cause globusrun to terminate after the job is successfully\n"\
+static char *  long_usage = 
+"\n" 
+"Syntax: globusrun [options] [RSL String]\n"
+"        globusrun -version[s]\n"
+"        globusrun -help\n"
+"\n" 
+"    Options\n"
+"    -help | -usage\n"
+"           Display help\n"
+"    -version\n"
+"           Display version\n"
+"    -versions\n"
+"           Display versions of all activated modules\n"
+"    -f <rsl filename> | -file <rsl filename> \n"
+"           Read RSL from the local file <rsl filename>. The RSL can\n"
+"           be either a single job request, or a multirequest\n"
+"    -q | -quiet\n"
+"           Quiet mode (do not print diagnostic messages)\n"
+"    -o | -output-enable\n"
+"           Use the GASS Server library to redirect standout output\n"
+"           and standard error to globusrun. Implies -quiet\n"
+"    -s | -server\n"
+"           $(GLOBUSRUN_GASS_URL) can be used to access files local\n"
+"           to the submission machine via GASS. Implies -output-enable\n"
+"           and -quiet\n"
+"    -w | -write-allow\n"
+"           Enable the GASS Server library and allow writing to\n"
+"           GASS URLs. Implies -server and -quiet.\n"
+"    -mpirun <integer>\n"
+"           Currently a no-op.\n"
+"    -r <resource manager> | -resource  <resource manager> \n"
+"           Submit the RSL job request to the specified resource manager.\n"
+"           A resource manager can be specified in the following ways: \n\n"
+"           host\n"
+"           host:port\n"
+"           host:port/service\n"
+"           host/service\n"
+"           host:/service\n"
+"           host::subject\n"
+"           host:port:subject\n"
+"           host/service:subject\n"
+"           host:/service:subject\n"
+"           host:port/service:subject\n\n"
+"           For those resource manager contacts which omit the port, \n"
+"           service or subject field the following defaults are used:\n\n"
+"           port = 2119 \n"
+"           service = jobmanager \n"
+"           subject = subject based on hostname\n\n"
+"           This is a required argument when submitting a single RSL\n"
+"           request\n"
+"    -n | -no-interrupt\n"
+"           Cause SIGINT to terminate globusrun, while leaving the\n"
+"           submitted job to run to completion. By default the SIGINT\n"
+"           signal will be trapped and the job will be terminated\n"
+"    -k | -kill <job ID>\n"
+"           Kill a disconnected globusrun job\n"
+"    -status <job ID>\n"
+"           Print the current status of the specified job.\n"
+"    -b | -batch\n"
+"           Cause globusrun to terminate after the job is successfully\n"
 "           submitted to the scheduler. Useful for batch jobs.\n"
-"           If used with -s, files may be staged in to the job, but stdout\n"\
-"           and stderr will not be redirected.\n"\
-"           The \"handle\" or job ID of the submitted job will be written on\n"\
-"           stdout.\n"\
-"    -F | -fast-batch\n"\
-"           Similar to -b but will exit as soon as the job has been sent\n"\
-"           to the GRAM job manager service without waiting for a callback\n"\
-"           with job submission state. Useful for hosts which are not able\n"\
-"           to receive job state callbacks.\n"\
-"    -full-proxy | -D\n"\
-"           Delegate a full proxy instead of a limited proxy.\n"\
-"    -refresh-proxy | -y <job ID>\n"\
-"           Cause globusrun to delegate a new proxy to the job named by the\n"\
-"           <job ID>\n"\
-"    -stop-manager <job  ID>\n"\
-"           Cause globusrun to stop the job manager, without killing the\n"\
-"           job. If the save_state RSL attribute is present, then a\n"\
-"           job manager can be restarted by using the restart RSL attribute.\n"\
-"\n"\
-"    Diagnostic Options\n"\
-"    -p | -parse\n"\
-"           Parse and validate the RSL only. Do not submit the job to\n"\
-"           a GRAM gatekeeper\n"\
-"    -a | -authenticate-only\n"\
-"           Submit a gatekeeper \"ping\" request only. Do not parse the\n"\
-"           RSL or submit the job request. Requires the -resource-manger \n"\
-"           argument\n"\
-"    -d | -dryrun\n"\
-"           Submit the RSL to the job manager as a \"dryrun\" test\n"\
-"           The request will be parsed and authenticated. The job manager\n"\
-"           will execute all of the preliminary operations, and stop\n"\
-"           just before the job request would be executed\n"\
+"           If used with -s, files may be staged in to the job, but stdout\n"
+"           and stderr will not be redirected.\n"
+"           The \"handle\" or job ID of the submitted job will be written on\n"
+"           stdout.\n"
+"    -F | -fast-batch\n"
+"           Similar to -b but will exit as soon as the job has been sent\n"
+"           to the GRAM job manager service without waiting for a callback\n"
+"           with job submission state. Useful for hosts which are not able\n"
+"           to receive job state callbacks.\n"
+"    -full-proxy | -D\n"
+"           Delegate a full proxy instead of a limited proxy.\n"
+"    -refresh-proxy | -y <job ID>\n"
+"           Cause globusrun to delegate a new proxy to the job named by the\n"
+"           <job ID>\n"
+"    -stop-manager <job  ID>\n"
+"           Cause globusrun to stop the job manager, without killing the\n"
+"           job. If the save_state RSL attribute is present, then a\n"
+"           job manager can be restarted by using the restart RSL attribute.\n"
+"\n"
+"    Diagnostic Options\n"
+"    -p | -parse\n"
+"           Parse and validate the RSL only. Do not submit the job to\n"
+"           a GRAM gatekeeper\n"
+"    -a | -authenticate-only\n"
+"           Submit a gatekeeper \"ping\" request only. Do not parse the\n"
+"           RSL or submit the job request. Requires the -resource-manger \n"
+"           argument\n"
+"    -d | -dryrun\n"
+"           Submit the RSL to the job manager as a \"dryrun\" test\n"
+"           The request will be parsed and authenticated. The job manager\n"
+"           will execute all of the preliminary operations, and stop\n"
+"           just before the job request would be executed\n"
+"    -j | -job-manager-version\n"
+"           Display the version of the job manager running at a particular\n"
+"           contact.\n"
 "\n";
 
 #define globusrun_l_args_error(a) \
@@ -339,7 +350,7 @@ enum { arg_q = 1, arg_o, arg_s, arg_w, arg_n, arg_b,
 	     arg_p, arg_d, arg_a,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
-	     arg_F, arg_full_proxy,
+	     arg_F, arg_j, arg_full_proxy,
 	     arg_num = arg_full_proxy };
 
 #define listname(x) x##_aliases
@@ -370,6 +381,7 @@ flagdef(arg_p, "-p", "-parse");
 flagdef(arg_d, "-d", "-dryrun");
 flagdef(arg_a, "-a", "-authenticate-only");
 flagdef(arg_F, "-F", "-fast-batch");
+flagdef(arg_j, "-j", "-job-manager-version");
 flagdef(arg_full_proxy, "-D", "-full-proxy");
 
 static int arg_f_mode = O_RDONLY;
@@ -393,198 +405,194 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
 	setupopt(arg_status); \
 	setupopt(arg_F); \
+        setupopt(arg_j); \
 	setupopt(arg_full_proxy);
 
-    static globus_bool_t globus_l_globusrun_ctrlc = GLOBUS_FALSE;
-    static globus_bool_t globus_l_globusrun_ctrlc_handled = GLOBUS_FALSE;
+static globus_bool_t globus_l_globusrun_ctrlc = GLOBUS_FALSE;
+static globus_bool_t globus_l_globusrun_ctrlc_handled = GLOBUS_FALSE;
 
-    /******************************************************************************
-    Function: main()
+int
+main(int argc, char* argv[])
+{
+    char *                             request_string    = NULL;
+    char *                             request_file      = NULL;
+    char *                             rm_contact        = NULL;
+    char *                             program           = NULL;
+    globus_bool_t                      ignore_ctrlc      = GLOBUS_FALSE;
+    globus_rsl_t *                     request_ast       = NULL;
+    globus_list_t *                    options_found     = NULL;
+    globus_list_t *                    list              = NULL;
+    globus_args_option_instance_t *    instance          = NULL;
+    unsigned short                     gass_port         = 0;
+    unsigned long                      options           = 0UL;
+    int                                err               = GLOBUS_SUCCESS;
+    globus_gass_transfer_listener_t   listener		 =0;
+    globus_gass_transfer_listenerattr_t * attr		 =NULL;
+    char *                             scheme		 =NULL;
+    globus_gass_transfer_requestattr_t * reqattr	 =NULL;
+    const char *                             activation_err  = NULL;
 
-    Description:
-
-    Parameters:
-
-    Returns:
-    ******************************************************************************/
-    int
-    main(int argc, char* argv[])
+    err = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if ( err != GLOBUS_SUCCESS )
     {
-	char *                             request_string    = NULL;
-	char *                             request_file      = NULL;
-	char *                             rm_contact        = NULL;
-	char *                             program           = NULL;
-	globus_bool_t                      ignore_ctrlc      = GLOBUS_FALSE;
-	globus_rsl_t *                     request_ast       = NULL;
-	globus_list_t *                    options_found     = NULL;
-	globus_list_t *                    list              = NULL;
-	globus_args_option_instance_t *    instance          = NULL;
-	unsigned short                     gass_port         = 0;
-	unsigned long                      options           = 0UL;
-	int                                err               = GLOBUS_SUCCESS;
-	globus_gass_transfer_listener_t   listener		 =NULL;
-	globus_gass_transfer_listenerattr_t * attr		 =NULL;
-	char *                             scheme		 =NULL;
-	globus_gass_transfer_requestattr_t * reqattr	 =NULL;
-	const char *                             activation_err  = NULL;
+        activation_err = "Error initializing globus\n";
+    }
 
-	err = globus_module_activate(GLOBUS_COMMON_MODULE);
-	if ( err != GLOBUS_SUCCESS )
-	{
-	    activation_err = "Error initializing globus\n";
-	}
-
-	if(activation_err == NULL)
-	{
-	    err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
-	    if ( err != GLOBUS_SUCCESS )
-	    {
-		activation_err = "Error initializing GSI GSS ASSIST\n";
-		return 1;
-	    }
+    if(activation_err == NULL)
+    {
+        err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            activation_err = "Error initializing GSI GSS ASSIST\n";
+            return 1;
         }
+    }
 
-	if(activation_err == NULL)
-	{
-	    err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-	    if ( err != GLOBUS_SUCCESS)
-	    {
-		activation_err = globus_gram_protocol_error_string(err);
-	    }
-	}
-	if(activation_err == NULL)
-	{
-	    err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
-	    if ( err != GLOBUS_SUCCESS )
-	    {
-		activation_err = "Error initializing gass_server_ez\n";
-	    }
-	}
-        
-	if (strrchr(argv[0],'/'))
-	    program = strrchr(argv[0],'/') + 1;
-	else
-	    program = argv[0];
+    if(activation_err == NULL)
+    {
+        err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+        if ( err != GLOBUS_SUCCESS)
+        {
+            activation_err = globus_gram_protocol_error_string(err);
+        }
+    }
+    if(activation_err == NULL)
+    {
+        err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            activation_err = "Error initializing gass_server_ez\n";
+        }
+    }
+    
+    if (strrchr(argv[0],'/'))
+        program = strrchr(argv[0],'/') + 1;
+    else
+        program = argv[0];
 
-	globusrun_i_args_init();
+    globusrun_i_args_init();
 
-	if ( 0 > (err = globus_args_scan( &argc,
-				   &argv,
-				   arg_num,
-				   args_options,
-				   "globusrun",
-				   &local_version,
-				   oneline_usage,
-				   long_usage,
-				   &options_found,
-				   NULL   )) )  /* error on argument line */
-	{
-	    globus_module_deactivate_all();
-	    exit(err == GLOBUS_FAILURE ? 1 : 0);
-	}
+    if ( 0 > (err = globus_args_scan( &argc,
+                               &argv,
+                               arg_num,
+                               args_options,
+                               "globusrun",
+                               &local_version,
+                               oneline_usage,
+                               long_usage,
+                               &options_found,
+                               NULL   )) )  /* error on argument line */
+    {
+        globus_module_deactivate_all();
+        exit(err == GLOBUS_FAILURE ? 1 : 0);
+    }
 
-	/* maximum one unflagged argument should remain: the RSL string */
-	if (argc > 2)
-	{
-	    globusrun_l_args_error("too many request strings specified");
-	}
-	
-	if (argc > 1)
-	    request_string = globus_libc_strdup(argv[1]);
+    /* maximum one unflagged argument should remain: the RSL string */
+    if (argc > 2)
+    {
+        globusrun_l_args_error("too many request strings specified");
+    }
+    
+    if (argc > 1)
+        request_string = globus_libc_strdup(argv[1]);
 
-	if (activation_err != NULL)
-	{
-	    fprintf(stderr, "%s", activation_err);
+    if (activation_err != NULL)
+    {
+        fprintf(stderr, "%s", activation_err);
 
-	    exit(-2);
-	}
+        exit(-2);
+    }
 
-	for (list = options_found;
-	     !globus_list_empty(list);
-	     list = globus_list_rest(list))
-	{
-	    instance = globus_list_first(list);
+    for (list = options_found;
+         !globus_list_empty(list);
+         list = globus_list_rest(list))
+    {
+        instance = globus_list_first(list);
 
-	    switch(instance->id_number)
-	    {
-	    case arg_w:
-		options |= GLOBUSRUN_ARG_ALLOW_WRITES;
-	    case arg_s:
-		options |= GLOBUSRUN_ARG_ALLOW_READS;
-	    case arg_o:
-		options |= GLOBUSRUN_ARG_USE_GASS;
-	    case arg_q:
-		options |= GLOBUSRUN_ARG_QUIET;
-		break;
+        switch(instance->id_number)
+        {
+        case arg_w:
+            options |= GLOBUSRUN_ARG_ALLOW_WRITES;
+        case arg_s:
+            options |= GLOBUSRUN_ARG_ALLOW_READS;
+        case arg_o:
+            options |= GLOBUSRUN_ARG_USE_GASS;
+        case arg_q:
+            options |= GLOBUSRUN_ARG_QUIET;
+            break;
 
-	    case arg_n:
-		options |= GLOBUSRUN_ARG_IGNORE_CTRLC;
-		ignore_ctrlc = GLOBUS_TRUE;
-		break;
+        case arg_n:
+            options |= GLOBUSRUN_ARG_IGNORE_CTRLC;
+            ignore_ctrlc = GLOBUS_TRUE;
+            break;
 
-	    case arg_a:
-		options |= GLOBUSRUN_ARG_AUTHENTICATE_ONLY;
-		break;
+        case arg_a:
+            options |= GLOBUSRUN_ARG_AUTHENTICATE_ONLY;
+            break;
 
-	    case arg_p:
-		options |= GLOBUSRUN_ARG_PARSE_ONLY;
-		break;
+        case arg_p:
+            options |= GLOBUSRUN_ARG_PARSE_ONLY;
+            break;
 
-	    case arg_b:
-		options |= GLOBUSRUN_ARG_BATCH;
-		break;
+        case arg_b:
+            options |= GLOBUSRUN_ARG_BATCH;
+            break;
 
-	    case arg_d:
-		options |= GLOBUSRUN_ARG_DRYRUN;
-		break;
+        case arg_d:
+            options |= GLOBUSRUN_ARG_DRYRUN;
+            break;
 
-            case arg_F:
-                options |= GLOBUSRUN_ARG_BATCH_FAST|GLOBUSRUN_ARG_BATCH;
-                break;
+        case arg_F:
+            options |= GLOBUSRUN_ARG_BATCH_FAST|GLOBUSRUN_ARG_BATCH;
+            break;
 
-	    case arg_r:
-		rm_contact=globus_libc_strdup(instance->values[0]);
-		if(rm_contact == NULL)
-		{
-		    globusrun_l_args_error_fmt("resolving resource manager %s",
-					       instance->values[0] );
-		}
-		break;
+        case arg_r:
+            rm_contact=globus_libc_strdup(instance->values[0]);
+            if(rm_contact == NULL)
+            {
+                globusrun_l_args_error_fmt("resolving resource manager %s",
+                                           instance->values[0] );
+            }
+            break;
 
-	    case arg_f:
-		request_file = globus_libc_strdup(instance->values[0]);
-	    break;
+        case arg_f:
+            request_file = globus_libc_strdup(instance->values[0]);
+            break;
 
-	case arg_k:
-	    return(globus_l_globusrun_kill_job(instance->values[0]));
-	    break;
+        case arg_k:
+            return(globus_l_globusrun_kill_job(instance->values[0]));
+            break;
 
-	case arg_full_proxy:
+        case arg_full_proxy:
             globus_l_delegation_mode =
                     GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY;
-	    break;
+            break;
 
-	case arg_y:
-	    return globus_l_globusrun_refresh_proxy(instance->values[0]);
-	    break;
-	case arg_mpirun:
+        case arg_y:
+            return globus_l_globusrun_refresh_proxy(instance->values[0]);
+            break;
+        case arg_mpirun:
             fprintf(stderr, "not compatible with -mpirun %s\n",
                     instance->values[0]);
             exit(EXIT_FAILURE);
-	    break;
+            break;
 
-	case arg_stop_manager:
-	    return globus_l_globusrun_stop_manager(instance->values[0]);
+        case arg_stop_manager:
+            return globus_l_globusrun_stop_manager(instance->values[0]);
 
-	case arg_status:
-	    return(globus_l_globusrun_status_job(instance->values[0]));
-	    break;
+        case arg_status:
+            return(globus_l_globusrun_status_job(instance->values[0]));
+            break;
 
-	default:
-	    globusrun_l_args_error_fmt("parse panic, arg id = %d",
-				       instance->id_number );
-	    break;
-	}
+        case arg_j:
+            options |= GLOBUSRUN_ARG_JOB_MANAGER_VERSION;
+            break;
+
+        default:
+            globusrun_l_args_error_fmt("parse panic, arg id = %d",
+                                       instance->id_number );
+            break;
+        }
     }
 
     globus_args_option_instance_list_free( &options_found );
@@ -611,6 +619,45 @@ static int arg_f_mode = O_RDONLY;
 	    return 1;
 	}
     }  /* authentication test */
+    else if (options & GLOBUSRUN_ARG_JOB_MANAGER_VERSION)
+    {
+        globus_hashtable_t              extensions;
+        globus_gram_protocol_extension_t *
+                                        extension;
+
+	if(!rm_contact)
+	{
+	    globusrun_l_args_error("no resource manager contact specified"
+				   "for version check" );
+	}
+	err = globus_gram_client_get_jobmanager_version(
+                rm_contact,
+                &extensions);
+	if(err == GLOBUS_SUCCESS)
+	{
+            extension = globus_hashtable_lookup(&extensions, "toolkit-version");
+            if (extension)
+            {
+                printf("Toolkit version: %s\n", extension->value);
+            }
+
+            extension = globus_hashtable_lookup(&extensions, "version");
+            if (extension)
+            {
+                printf("Job Manager version: %s\n", extension->value);
+            }
+
+	    return 0;
+	}
+	else
+	{
+	    fprintf(stdout,
+				"\nGRAM version check failed : %s\n",
+				globus_gram_protocol_error_string(err));
+	    return 1;
+	}
+    }
+
     if ( (request_string!=NULL)
 	 && (request_file!=NULL) )
     {
@@ -1094,7 +1141,7 @@ globus_l_globusrun_gram_callback_func(
 {
     globus_i_globusrun_gram_monitor_t * monitor;
     globus_url_t                        job_contact_url;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
     int                                 rc;
 
     monitor = (globus_i_globusrun_gram_monitor_t *) user_arg;
@@ -1326,7 +1373,7 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 
     globus_mutex_lock(&monitor.mutex);
-    err = globus_gram_client_register_job_request(
+    err = globus_gram_client_register_job_request_with_info(
             rm_contact,
             request_string,
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
@@ -1591,7 +1638,7 @@ globus_l_globusrun_refresh_proxy(
             job_contact,
             GSS_C_NO_CREDENTIAL,
             attr,
-            globus_l_submit_callback,
+            globus_l_refresh_callback,
             &monitor);
 
     if ( err != GLOBUS_SUCCESS )
@@ -1651,7 +1698,7 @@ globus_l_globusrun_status_job(
     int                                 failure_code;
     int                                 err;
     globus_gram_client_job_info_t       info;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
 
     err = globus_gram_client_job_status_with_info(job_contact, &info);
     failure_code = info.protocol_error_code;
@@ -1783,6 +1830,47 @@ static
 void
 globus_l_submit_callback(
     void *                              user_callback_arg,
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     info)
+{
+    globus_i_globusrun_gram_monitor_t * monitor = user_callback_arg;
+    globus_gram_protocol_extension_t *  entry;
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->submit_done = GLOBUS_TRUE;
+    if (job_contact)
+    {
+        monitor->job_contact_string = strdup(job_contact);
+        globus_url_parse(monitor->job_contact_string, &monitor->job_contact);
+    }
+    if (info->protocol_error_code != GLOBUS_SUCCESS)
+    {
+        const char * err = globus_gram_protocol_error_string(
+                info->protocol_error_code);
+        monitor->failure_code = info->protocol_error_code;
+        monitor->failure_message = globus_libc_strdup(err);
+    }
+    else if (info->job_state > monitor->job_state)
+    {
+        monitor->job_state = info->job_state;
+        entry = globus_hashtable_lookup(
+                &info->extensions,
+                "job-failure-code");
+
+        if (entry)
+        {
+            monitor->failure_code = atoi(entry->value);
+        }
+    }
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
+}
+/* globus_l_submit_callback() */
+
+static
+void
+globus_l_refresh_callback(
+    void *                              user_callback_arg,
     globus_gram_protocol_error_t        operation_failure_code,
     const char *                        job_contact,
     globus_gram_protocol_job_state_t    job_state,
@@ -1795,7 +1883,7 @@ globus_l_submit_callback(
     if (job_contact)
     {
         monitor->job_contact_string = strdup(job_contact);
-        globus_url_parse(job_contact, &monitor->job_contact);
+        globus_url_parse(monitor->job_contact_string, &monitor->job_contact);
     }
     if (operation_failure_code != GLOBUS_SUCCESS)
     {
@@ -1806,10 +1894,9 @@ globus_l_submit_callback(
     }
     else if (job_state > monitor->job_state)
     {
-        monitor->job_state = job_state;
         monitor->failure_code = job_failure_code;
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
 }
-/* globus_l_submit_callback() */
+/* globus_l_refresh_callback() */

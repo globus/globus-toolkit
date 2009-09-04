@@ -15,6 +15,7 @@
  */
 
 #include "globus_gram_job_manager.h"
+#include "version.h"
 
 #include <string.h>
 
@@ -192,7 +193,7 @@ globus_gram_job_manager_contact_state_callback(
     globus_list_t *                     tmp_list;
     globus_gram_job_manager_contact_t * client_contact_node;
     globus_hashtable_t                  extensions = NULL;
-    globus_gram_protocol_hash_entry_t * entry = NULL;
+    globus_gram_protocol_extension_t *  entry = NULL;
 
     globus_gram_job_callback_context_t *context = NULL;
 
@@ -235,43 +236,33 @@ globus_gram_job_manager_contact_state_callback(
     context->message_length = 0;
     context->active = 0;
 
+    rc = globus_hashtable_init(
+            &extensions,
+            3,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto fail_extensions_init;
+    }
+
     /* Create message extensions to send exit code if known */
     if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
         strcmp(request->config->jobmanager_type, "fork") != 0)
     {
-        rc = globus_hashtable_init(
-                &extensions,
-                3,
-                globus_hashtable_string_hash,
-                globus_hashtable_string_keyeq);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto fail_extensions_init;
-        }
-        entry = malloc(sizeof(globus_gram_protocol_hash_entry_t));
-
+        entry = globus_gram_protocol_create_extension(
+                "exit-code",
+                "%d",
+                request->exit_code);
         if (entry == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-            goto fail_extension_entry_malloc_failed;
+            goto extension_create_failed;
         }
-        entry->attribute = strdup("exit-code");
-        if (entry->attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-            goto fail_extension_attribute_malloc;
-        }
-        entry->value = globus_common_create_string("%d", request->exit_code);
-        if (entry->value == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto fail_extension_value_malloc;
-        }
         rc = globus_hashtable_insert(
                 &extensions,
                 entry->attribute,
@@ -282,8 +273,53 @@ globus_gram_job_manager_contact_state_callback(
 
             goto fail_entry_insert;
         }
-        entry = NULL;
     }
+    /* Add extensions for version numbers */
+    entry = globus_gram_protocol_create_extension(
+            "toolkit-version",
+            "%s",
+            request->config->globus_version);
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto extension_create_failed;
+    }
+    rc = globus_hashtable_insert(
+            &extensions,
+            entry->attribute,
+            entry);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto fail_entry_insert;
+    }
+    entry = globus_gram_protocol_create_extension(
+            "version",
+            "%d.%d (%d-%d)",
+            local_version.major,
+            local_version.minor,
+            local_version.timestamp,
+            local_version.branch_id);
+    if (entry == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto extension_create_failed;
+    }
+    rc = globus_hashtable_insert(
+            &extensions,
+            entry->attribute,
+            entry);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto fail_entry_insert;
+    }
+
+    entry = NULL;
 
     if (extensions != NULL)
     {
@@ -394,12 +430,10 @@ nothing_to_send:
         {
 fail_entry_insert:
             free(entry->value);
-fail_extension_value_malloc:
             free(entry->attribute);
-fail_extension_attribute_malloc:
             free(entry);
         }
-fail_extension_entry_malloc_failed:
+extension_create_failed:
         if (extensions)
         {
             globus_gram_protocol_hash_destroy(&extensions);

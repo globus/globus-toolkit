@@ -1,4 +1,7 @@
 aclocal.m4
+autom4te.cache
+configure
+ltmain.sh
 missing
 install-sh
 mkinstalldirs
@@ -13,3 +16,4 @@ globus_gram_client-[0-9]*
 *.lo
 *.la
 .libs
+version.h

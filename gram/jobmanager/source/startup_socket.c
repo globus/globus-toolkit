@@ -458,6 +458,7 @@ globus_l_gram_startup_socket_callback(
     globus_bool_t                       done = GLOBUS_FALSE;
     char *                              old_job_contact = NULL;
     globus_gram_jobmanager_request_t *  old_job_request = NULL;
+    globus_bool_t                       version_only = GLOBUS_FALSE;
 
     globus_gram_job_manager_log(
             manager,
@@ -602,7 +603,8 @@ globus_l_gram_startup_socket_callback(
                 &contact,
                 &job_state_mask,
                 &old_job_contact,
-                &old_job_request);
+                &old_job_request,
+                &version_only);
         if (rc != GLOBUS_SUCCESS)
         {
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE &&
@@ -619,6 +621,7 @@ globus_l_gram_startup_socket_callback(
             }
             rc = globus_gram_job_manager_reply(
                     NULL,
+                    manager,
                     rc,
                     (old_job_contact == NULL && old_job_request)
                         ? old_job_request->job_contact
@@ -670,10 +673,11 @@ globus_l_gram_startup_socket_callback(
         cred = GSS_C_NO_CREDENTIAL;
 
         /* How much do I care about this error? */
-        if (rc != GLOBUS_SUCCESS)
+        if (rc != GLOBUS_SUCCESS || version_only)
         {
             globus_gram_job_manager_reply(
                     request,
+                    manager,
                     rc,
                     NULL,
                     response_fd,
@@ -684,17 +688,20 @@ globus_l_gram_startup_socket_callback(
         }
 
 
-        /* Start state machine and send response */
-        rc = globus_gram_job_manager_request_start(
-                manager,
-                request,
-                response_fd,
-                contact,
-                job_state_mask);
-        if (rc != GLOBUS_SUCCESS)
+        if (!version_only)
         {
-            /* start decreases the reference count for the request */
-            request = NULL;
+            /* Start state machine and send response */
+            rc = globus_gram_job_manager_request_start(
+                    manager,
+                    request,
+                    response_fd,
+                    contact,
+                    job_state_mask);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                /* start decreases the reference count for the request */
+                request = NULL;
+            }
         }
 
 update_cred_failed:

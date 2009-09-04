@@ -59,7 +59,8 @@ typedef enum globus_l_gram_client_callback_type_e
     GLOBUS_GRAM_CLIENT_CANCEL,
     GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
     GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
-    GLOBUS_GRAM_CLIENT_RENEW
+    GLOBUS_GRAM_CLIENT_RENEW,
+    GLOBUS_GRAM_CLIENT_JOBMANAGER_VERSION
 }
 globus_l_gram_client_callback_type_t;
 
@@ -126,6 +127,13 @@ globus_l_gram_client_job_request(
 static
 int 
 globus_l_gram_client_ping(
+    const char *                        resource_manager_contact,
+    globus_i_gram_client_attr_t *       iattr,
+    globus_l_gram_client_monitor_t *    monitor);
+
+static
+int 
+globus_l_gram_client_get_jobmanager_version(
     const char *                        resource_manager_contact,
     globus_i_gram_client_attr_t *       iattr,
     globus_l_gram_client_monitor_t *    monitor);
@@ -849,6 +857,66 @@ globus_gram_client_ping(
 }
 /* globus_gram_client_ping() */
 
+/**
+ * Check for version information about a job manager
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Sends a GRAM protocol message which checks the version of the job manager
+ * running at a particular gatekeeper contact.
+ * see if a Globus Gatekeeper is running on a
+
+ * This function blocks while processing the version request.
+ *
+ * @param resource_manager_contact
+ *        A NULL-terminated character string containing a
+ *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
+ * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
+ * able to locate the requested service. Otherwise one of the
+ * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ */
+int 
+globus_gram_client_get_jobmanager_version(
+    const char *                        resource_manager_contact,
+    globus_hashtable_t *                extensions)
+{
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
+
+    globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL, NULL);
+
+    rc = globus_l_gram_client_get_jobmanager_version(
+            resource_manager_contact,
+            NULL,
+            &monitor);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(&monitor);
+
+        return rc;
+    }
+
+    globus_mutex_lock(&monitor.mutex);
+    while (!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    rc = monitor.info->protocol_error_code;
+
+    *extensions = monitor.info->extensions;
+    monitor.info->extensions = NULL;
+
+    globus_mutex_unlock(&monitor.mutex);
+
+    globus_l_gram_client_monitor_destroy(&monitor);
+
+    return rc;
+}
+/* globus_gram_client_get_jobmanager_version() */
+
+
 
 /**
  * Request a job be started (nonblocking).
@@ -1026,6 +1094,105 @@ globus_gram_client_job_request(
     return rc;
 }
 /* globus_gram_client_job_request() */
+
+int
+globus_gram_client_register_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        callback,
+    void *                              callback_arg)
+{
+    globus_i_gram_client_attr_t *       iattr = NULL;
+    globus_l_gram_client_monitor_t *    monitor;
+    int                                 rc;
+
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
+    if(!monitor)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+
+    iattr = (globus_i_gram_client_attr_t *) attr;
+
+    globus_l_gram_client_monitor_init(
+            monitor,
+            NULL,
+            NULL,
+            callback,
+            callback_arg);
+
+    rc = globus_l_gram_client_job_request(resource_manager_contact,
+                                          description,
+                                          job_state_mask,
+                                          iattr,
+                                          callback_contact,
+                                          monitor);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(monitor);
+        free(monitor);
+    }
+    return rc;
+}
+
+int 
+globus_gram_client_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    char **                             job_contact,
+    globus_gram_client_job_info_t *     info)
+{
+    int                                 rc;
+    globus_l_gram_client_monitor_t      monitor;
+
+    if(job_contact)
+    {
+        *job_contact = NULL;
+    }
+
+    globus_l_gram_client_monitor_init(
+            &monitor,
+            info,
+            NULL,
+            NULL,
+            NULL);
+
+    rc = globus_l_gram_client_job_request(resource_manager_contact,
+                                          description,
+                                          job_state_mask,
+                                          NULL,
+                                          callback_contact,
+                                          &monitor);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(&monitor);
+
+        return rc;
+    }
+
+    globus_mutex_lock(&monitor.mutex);
+    while (!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    rc = monitor.info->protocol_error_code;
+    if(job_contact && monitor.info->job_contact)
+    {
+        *job_contact = strdup(monitor.info->job_contact);
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    globus_l_gram_client_monitor_destroy(&monitor);
+
+    return rc;
+}
+/* globus_gram_client_job_request_with_info() */
 
 /**
  * Error code translation.
@@ -2681,7 +2848,7 @@ globus_l_gram_client_job_request(
                  &attr,
                  query,
                  querysize,
-                 (monitor->callback != NULL)
+                 (monitor->callback != NULL || monitor->info_callback != NULL) 
                      ?  globus_l_gram_client_register_callback
                      : globus_l_gram_client_monitor_callback,
                  monitor);
@@ -2768,6 +2935,79 @@ globus_gram_client_ping_parse_failed:
     return rc;
 }
 /* globus_l_gram_client_ping() */
+
+static
+int 
+globus_l_gram_client_get_jobmanager_version(
+    const char *                        resource_manager_contact,
+    globus_i_gram_client_attr_t *       iattr,
+    globus_l_gram_client_monitor_t *    monitor)
+{
+    int                                 rc;
+    char *                              url;
+    char *                              dn;
+    char *                              query;
+    size_t                              query_size;
+    globus_io_attr_t                    attr;
+
+    rc = globus_l_gram_client_parse_gatekeeper_contact(
+        resource_manager_contact,
+        NULL,
+        NULL,
+        &url,
+        &dn );
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto parse_failed;
+    }
+
+    rc = globus_l_gram_client_setup_gatekeeper_attr( 
+        &attr,
+        (iattr != NULL) ? iattr->credential : GSS_C_NO_CREDENTIAL,
+        GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
+        dn );
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto attr_failed;
+    }
+
+    rc = globus_gram_protocol_pack_version_request(
+         &query,
+         &query_size);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto pack_failed;
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->type = GLOBUS_GRAM_CLIENT_JOBMANAGER_VERSION;
+
+    rc = globus_gram_protocol_post(
+                 url,
+                 &monitor->handle,
+                 &attr,
+                 (globus_byte_t *) query,
+                 query_size,
+                 (monitor->callback != NULL)
+                     ? globus_l_gram_client_register_callback
+                     : globus_l_gram_client_monitor_callback,
+                 monitor);
+    globus_mutex_unlock(&monitor->mutex);
+
+    free(query);
+pack_failed:
+    globus_io_tcpattr_destroy (&attr);
+attr_failed:
+    free(url);
+    if (dn)
+        free(dn);
+parse_failed:
+    return rc;
+}
+/* globus_l_gram_client_get_jobmanager_version() */
+
 
 static
 int
@@ -2865,7 +3105,7 @@ globus_l_gram_client_callback(
     int                                 rc;
     gss_ctx_id_t                        context;
     globus_gram_client_job_info_t       job_info;
-    globus_gram_protocol_hash_entry_t * entry;
+    globus_gram_protocol_extension_t *  entry;
 
     info = arg;
     
@@ -2980,6 +3220,7 @@ globus_l_gram_client_monitor_callback(
 {
     globus_l_gram_client_monitor_t *    monitor;
     int                                 rc;
+    globus_gram_protocol_extension_t *  extension;
 
     monitor = user_arg;
 
@@ -3045,6 +3286,41 @@ globus_l_gram_client_monitor_callback(
                     &monitor->info->extensions,
                     "status");
             break;
+        case GLOBUS_GRAM_CLIENT_JOBMANAGER_VERSION:
+            rc = globus_gram_protocol_unpack_message(
+                    (const char *) message,
+                    msgsize,
+                    &monitor->info->extensions);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                monitor->info->protocol_error_code = rc;
+                break;
+            }
+            extension = globus_hashtable_lookup(
+                    &monitor->info->extensions,
+                    "failure-code");
+            if (extension != NULL)
+            {
+                monitor->info->protocol_error_code = atoi(extension->value);
+                break;
+            }
+
+            if (globus_hashtable_lookup(
+                    &monitor->info->extensions,
+                    "toolkit-version") == NULL &&
+                globus_hashtable_lookup(
+                    &monitor->info->extensions,
+                    "version") == NULL)
+            {
+                extension = globus_hashtable_lookup(
+                        &monitor->info->extensions,
+                        "status");
+
+                if (extension != NULL)
+                {
+                    monitor->info->protocol_error_code = atoi(extension->value);
+                }
+            }
         }
     }
     globus_cond_signal(&monitor->cond);
@@ -3063,6 +3339,7 @@ globus_l_gram_client_register_callback(
     char *                              uri)
 {
     globus_l_gram_client_monitor_t *    monitor;
+    globus_gram_protocol_extension_t *  extension;
     int                                 rc;
 
     monitor = user_arg;
@@ -3128,6 +3405,42 @@ globus_l_gram_client_register_callback(
                     &monitor->info->extensions,
                     "failure-code");
             break;
+        case GLOBUS_GRAM_CLIENT_JOBMANAGER_VERSION:
+            rc = globus_gram_protocol_unpack_message(
+                    (const char *) message,
+                    msgsize,
+                    &monitor->info->extensions);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                monitor->info->protocol_error_code = rc;
+                break;
+            }
+
+            extension = globus_hashtable_lookup(
+                    &monitor->info->extensions,
+                    "failure-code");
+            if (extension != NULL)
+            {
+                monitor->info->protocol_error_code = atoi(extension->value);
+                break;
+            }
+
+            if (globus_hashtable_lookup(
+                    &monitor->info->extensions,
+                    "toolkit-version") == NULL &&
+                globus_hashtable_lookup(
+                    &monitor->info->extensions,
+                    "version") == NULL)
+            {
+                extension = globus_hashtable_lookup(
+                        &monitor->info->extensions,
+                        "status");
+
+                if (extension != NULL)
+                {
+                    monitor->info->protocol_error_code = atoi(extension->value);
+                }
+            }
         }
     }
 
@@ -3216,7 +3529,7 @@ globus_l_gram_info_get_int(
     globus_hashtable_t *                extensions,
     const char *                        key)
 {
-    globus_gram_protocol_hash_entry_t * entry = NULL;
+    globus_gram_protocol_extension_t *  entry = NULL;
 
     if (extensions && *extensions)
     {

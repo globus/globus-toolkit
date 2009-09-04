@@ -731,7 +731,8 @@ globus_gram_job_manager_request_load(
     char **                             contact,
     int *                               job_state_mask,
     char **                             old_job_contact,
-    globus_gram_jobmanager_request_t ** old_job_request);
+    globus_gram_jobmanager_request_t ** old_job_request,
+    globus_bool_t *                     version_only);
 
 int
 globus_gram_job_manager_request_start(
@@ -830,11 +831,13 @@ globus_gram_job_manager_read_request(
     int                                 fd,
     char **                             rsl,
     char **                             client_contact,
-    int *                               job_state_mask);
+    int *                               job_state_mask,
+    globus_bool_t *                     version_only);
 
 int
 globus_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_t *         manager,
     int                                 response_code,
     const char *                        job_contact,
     int                                 response_fd,

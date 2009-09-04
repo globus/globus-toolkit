@@ -68,6 +68,13 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE \
                         "%s" CRLF
 
+#define GLOBUS_GRAM_ATTR_PROTOCOL_VERSION "protocol-version"
+#define GLOBUS_GRAM_ATTR_JOB_STATE_MASK "job-state-mask"
+#define GLOBUS_GRAM_ATTR_CALLBACK_URL "callback-url"
+#define GLOBUS_GRAM_ATTR_RSL "rsl"
+#define GLOBUS_GRAM_ATTR_STATUS "status"
+#define GLOBUS_GRAM_ATTR_JOB_MANAGER_URL "job-manager-url"
+
 typedef enum
 {
     GLOBUS_GRAM_PROTOCOL_REQUEST,

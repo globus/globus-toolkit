@@ -104,7 +104,7 @@ typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
  * Type used for passing extension information along with the job status
  * information included in the GRAM2 protocol. This structure contains the
  * information returned in job state callbacks plus a hashtable of extension
- * entries that contain globus_gram_protocol_hash_entry_t name-value pairs.
+ * entries that contain globus_gram_protocol_extension_t name-value pairs.
  */
 typedef struct globus_gram_client_job_info_s
 {
@@ -212,6 +212,26 @@ globus_gram_client_job_request(
     int                                 job_state_mask,
     const char *                        callback_contact,
     char **                             job_contact);
+
+int
+globus_gram_client_register_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        callback,
+    void *                              callback_arg);
+
+int 
+globus_gram_client_job_request_with_info(
+    const char *                        resource_manager_contact,
+    const char *                        description,
+    int                                 job_state_mask,
+    const char *                        callback_contact,
+    char **                             job_contact,
+    globus_gram_client_job_info_t *     info);
 
 int
 globus_gram_client_register_job_cancel(
@@ -352,6 +372,11 @@ globus_gram_client_register_ping(
     globus_gram_client_nonblocking_func_t
                                         register_callback,
     void *                              register_callback_arg);
+
+int 
+globus_gram_client_get_jobmanager_version(
+    const char *                        resource_manager_contact,
+    globus_hashtable_t *                extensions);
 
 void
 globus_gram_client_debug(void);
