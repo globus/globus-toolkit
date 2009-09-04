@@ -1110,25 +1110,28 @@ globus_l_gram_create_extensions(
         goto hashtable_init_failed;
     }
 
-    entry = globus_gram_protocol_create_extension(
-            "exit-code",
-            "%d",
-            request->exit_code);
-    if (entry == NULL)
+    if (request->config->seg_module != NULL)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        entry = globus_gram_protocol_create_extension(
+                "exit-code",
+                "%d",
+                request->exit_code);
+        if (entry == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-        goto extension_create_failed;
-    }
-    rc = globus_hashtable_insert(
-            extensions,
-            entry->attribute,
-            entry);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto extension_create_failed;
+        }
+        rc = globus_hashtable_insert(
+                extensions,
+                entry->attribute,
+                entry);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-        goto extension_insert_failed;
+            goto extension_insert_failed;
+        }
     }
 
     entry = globus_gram_protocol_create_extension(

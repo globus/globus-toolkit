@@ -64,7 +64,8 @@ globus_gram_job_manager_init_seg(
             manager->config->jobmanager_type);
 
     GlobusGramJobManagerLock(manager);
-    if (strcmp(manager->config->jobmanager_type, "fork") == 0)
+    if (manager->config->seg_module == NULL &&
+        strcmp(manager->config->jobmanager_type, "fork") == 0)
     {
         globus_reltime_t                delay;
 

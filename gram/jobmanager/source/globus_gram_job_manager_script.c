@@ -509,6 +509,16 @@ globus_gram_job_manager_script_submit(
                     NULL,
                     "emitcondorprocesses", 'd', 1);
     }
+    else if (request->config->seg_module &&
+        strcmp(request->config->seg_module, "fork") == 0)
+    {
+        rc = globus_l_gram_job_manager_script_run(
+                    request,
+                    script_cmd,
+                    globus_l_gram_job_manager_default_done,
+                    NULL,
+                    "useforkstarter", 'd', 1);
+    }
     else
     {
         rc = globus_l_gram_job_manager_script_run(
