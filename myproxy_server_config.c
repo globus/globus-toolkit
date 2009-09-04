@@ -39,6 +39,164 @@ free_ptr(char **p)
     *p = NULL;
 }
 
+struct config_directives {
+	char *name;	/* Directive name */
+	size_t minargs;	/* Minimal number of arguments */
+	size_t maxargs;	/* Maximal number of arguments */
+};
+
+/*
+ * Specify this constant for 'minargs' and 'maxargs' if you
+ * don't want to check the given limit.
+ *
+ * And yes, I can't make it static variable because it is
+ * used in the file-scope variable initialization  ;((
+ */
+#define NARGS_DONTCHECK SIZE_MAX
+
+static struct config_directives our_conf[] = {
+	{"allowed_clients", 0, NARGS_DONTCHECK},
+	{"accepted_credentials", 0, NARGS_DONTCHECK},
+	{"allowed_services", 0, NARGS_DONTCHECK},
+	{"authorized_retrievers", 0, NARGS_DONTCHECK},
+	{"default_retrievers", 0, NARGS_DONTCHECK},
+	{"authorized_renewers", 0, NARGS_DONTCHECK},
+	{"default_renewers", 0, NARGS_DONTCHECK},
+	{"authorized_key_retrievers", 0, NARGS_DONTCHECK},
+	{"default_key_retrievers", 0, NARGS_DONTCHECK},
+	{"trusted_key_retrievers", 0, NARGS_DONTCHECK},
+	{"default_trusted_retrievers", 0, NARGS_DONTCHECK},
+	{"passphrase_policy_program", 1, 1},
+	{"max_proxy_lifetime", 1, 1},
+	{"ignore_globus_limited_proxy_flag", 1, 1},
+	{"cert_dir", 1, 1},
+	{"pam", 1, 1},
+	{"pam_id", 1, 1},
+	{"sasl", 1, 1},
+	{"certificate_issuer_program", 1, 1},
+	{"certificate_issuer_cert", 1, 1},
+	{"certificate_issuer_key", 1, 1},
+	{"certificate_issuer_key_passphrase", 1, 1},
+	{"certificate_openssl_engine_id", 1, 1},
+	{"certificate_openssl_engine_lockfile", 1, 1},
+	{"certificate_openssl_engine_pre", 0, NARGS_DONTCHECK},
+	{"certificate_openssl_engine_post", 0, NARGS_DONTCHECK},
+	{"certificate_issuer_email_domain", 1, 1},
+	{"certificate_extfile", 1, 1},
+	{"certificate_extapp", 1, 1},
+	{"certificate_mapfile", 1, 1},
+	{"certificate_mapap", 1, 1},
+	{"max_cert_lifetime", 1, 1},
+	{"certificate_serialfile", 1, 1},
+	{"certificate_out_dir", 1, 1},
+	{"ca_ldap_server", 1, 1},
+	{"ca_ldap_searchbase", 1, 1},
+	{"ca_ldap_connect_dn", 1, 1},
+	{"ca_ldap_connect_passphrase", 1, 1},
+	{"ca_ldap_uid_attribute", 1, 1},
+	{"ca_ldap_dn_attribute", 1, 1},
+	{"pubcookie_granting_cert", 1, 1},
+	{"pubcookie_app_server_key", 1, 1},
+	{"accepted_credentials_mapfile", 1, 1},
+	{"accepted_credentials_mapapp", 1, 1},
+	{"check_multiple_credentials", 1, 1},
+#if defined(HAVE_OCSP)
+	{"ocsp_policy", 1, 1},
+	{"ocsp_responder_url", 1, 1},
+	{"ocsp_responder_cert", 1, 1},
+#endif /* defined(HAVE_OCSP) */
+	{"syslog_ident", 1, 1},
+	{"slave_servers", 0, NARGS_DONTCHECK},
+	{"request_timeout", 1, 1},
+/* Terminating entity */
+	{NULL, 0, 0}
+};
+
+/*
+ * plural_args()
+ *
+ * Returns the right form for the verb 'arguments' for the
+ * provided number of arguments.
+ */
+static const char *
+plural_args(int n)
+{
+    if (n == 1)
+        return "argument";
+    else
+        return "arguments";
+}
+
+/*
+ * check_config_line()
+ *
+ * Verifies that the splitted line tokens are appropriate for the
+ * given directive.  Just now it checks minimal and maximal number
+ * of arguments -- this enables other code to safely use 'token[n]'
+ * without overflowing the array index.
+ *
+ * This function prints warnings via myproxy_log().
+ */
+static int
+check_config_line(struct config_directives *conf_dirs,
+                  const char **tokens)
+{
+    size_t i, nargs;
+    const char *d;
+    struct config_directives *e = NULL;
+
+    if (tokens == NULL || tokens[0] == NULL) {
+        return 0;
+    }
+    d = tokens[0];
+
+    /*
+     * Search for the directive, exit silently if it wasn't found:
+     * we check only those directives that were provided to us
+     * and aren't going to warn about the extra ones -- this is
+     * up to other layers.
+     */
+    for (e = NULL, i = 0; conf_dirs[i].name != NULL; i++) {
+        if (strcmp(d, conf_dirs[i].name) == 0) {
+            e = conf_dirs + i;
+            break;
+        }
+    }
+    if (e == NULL)
+        return 0;
+
+    /* Do we need to check anything? */
+    if (e->minargs == NARGS_DONTCHECK && e->maxargs == NARGS_DONTCHECK)
+        return 0;
+
+    for (i = 1; tokens[i] != NULL && tokens[i][0] != '#'; i++);
+    nargs = i - 1;
+
+    if ((e->minargs != NARGS_DONTCHECK && nargs < e->minargs) ||
+     (e->maxargs != NARGS_DONTCHECK && nargs > e->maxargs)) {
+        char expl[1024];
+
+        if (e->minargs == e->maxargs) {
+            snprintf(expl, sizeof(expl), "takes exactly %d %s",
+             e->minargs, plural_args(e->minargs));
+        } else if (e->minargs == NARGS_DONTCHECK) {
+            snprintf(expl, sizeof(expl), "wants no more than %d %s",
+             e->maxargs, plural_args(e->maxargs));
+        } else if (e->maxargs == NARGS_DONTCHECK) {
+            snprintf(expl, sizeof(expl), "wants no less than %d %s",
+             e->minargs, plural_args(e->minargs));
+        } else {
+            snprintf(expl, sizeof(expl), "takes from %d to %d arguments",
+             e->minargs, e->maxargs);
+        }
+        myproxy_log("Directive '%s': supplied %d %s, %s.\n",
+         d, nargs, plural_args(nargs), expl);
+        return -1;
+    }
+
+    return 0;
+}
+
 /*
  * clear_server_context()
  *
@@ -157,6 +315,10 @@ line_parse_callback(void *context_arg,
     if ((tokens == NULL) || (*tokens == NULL) || (**tokens == '#')) {
 	return 0; /* Blank line or comment */
     }
+
+    /* Check basic sanity */
+    if (check_config_line(our_conf, tokens) != 0)
+        return -1;
 
     directive = tokens[0];
     
