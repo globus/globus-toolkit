@@ -12,7 +12,7 @@
 
     <With_Flavors build="yes" />
 
-    <Version_Label>GSI-OpenSSH 4.6 / OpenSSH 5.2p1 / HPN13v5</Version_Label>
+    <Version_Label>GSI-OpenSSH 4.7 / OpenSSH 5.2p1 / HPN13v6</Version_Label>
 
     <Source_Dependencies Type="compile">
       <Dependency Name="globus_openssl">
@@ -52,7 +52,7 @@
       </Setup_Dependency>
       <Setup_Dependency Name="gsi_openssh_setup">
         <Version>
-          <Version_Range Upper_Major="4" Upper_Minor="6" Lower_Major="4" Lower_Minor="6" />
+          <Version_Range Upper_Major="4" Upper_Minor="7" Lower_Major="4" Lower_Minor="7" />
         </Version>
       </Setup_Dependency>
     </Source_Setup_Dependency>

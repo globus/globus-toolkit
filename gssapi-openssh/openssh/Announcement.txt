@@ -23,9 +23,23 @@ GSI-OpenSSH 4.7 Major changes
         still supports all methods by default to support both GSI and
         non-GSI clients.
 
+      * Updated to 20090726 patch from Simon Wilkinson
+        (http://www.sxw.org.uk/computing/patches/openssh.html) which
+        adds support for cascading credentials.
+        https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6785
+
+      * Add support for PAM user switching when "PermitPAMUserChange
+        yes" is set in $GLOBUS_LOCATION/etc/ssh/sshd_config.
+        https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6839
+
+      * Update to HPN13V6
+        (http://www.psc.edu/networking/projects/hpn-ssh/) excluding
+        multi-threaded AES-CTR support due to unresolved problem that
+        causes the cipher to hang.
+
    Bugs fixed
 
-      * 
+      * None.
 
 SHA1 checksums:
 
