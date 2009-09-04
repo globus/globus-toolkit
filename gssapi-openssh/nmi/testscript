@@ -78,6 +78,7 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     cd gssapi-openssh/openssh
     if test -f make_gpt_dist; then
       echo Building GSI-OpenSSH GPT package from CVS...
+      rm -f gsi_openssh-*.tar.gz
       ./make_gpt_dist
       gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
         GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
