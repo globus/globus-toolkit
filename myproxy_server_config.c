@@ -657,10 +657,20 @@ line_parse_callback(void *context_arg,
     }
 
     else if (strcmp(directive, "proxy_extfile") == 0) {
-	context->proxy_extfile = strdup(tokens[1]);
+#if defined(HAVE_GLOBUS_GSI_PROXY_HANDLE_SET_EXTENSIONS)
+        context->proxy_extfile = strdup(tokens[1]);
+#else
+        verror_put_string("proxy_extfile is configured in myproxy-server.config but the myproxy-server is linked with GSI libraries (prior to GT 4.2.0) without extension support.");
+        goto error;
+#endif
     }
     else if (strcmp(directive, "proxy_extapp") == 0) {
-	context->proxy_extapp = strdup(tokens[1]);
+#if defined(HAVE_GLOBUS_GSI_PROXY_HANDLE_SET_EXTENSIONS)
+        context->proxy_extapp = strdup(tokens[1]);
+#else
+        verror_put_string("proxy_extapp is configured in myproxy-server.config but the myproxy-server is linked with GSI libraries (prior to GT 4.2.0) without extension support.");
+        goto error;
+#endif
     }
 
     else {

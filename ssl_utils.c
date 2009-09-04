@@ -1493,6 +1493,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 					       restrictions->lifetime/60);
     }
 
+#if defined(HAVE_GLOBUS_GSI_PROXY_HANDLE_SET_EXTENSIONS)
     /* add any additional extensions */
     myproxy_get_extensions(&extensions);
     if (extensions) {
@@ -1504,6 +1505,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
             goto error;
         }
     }
+#endif
 
     /* send number of certificates in reply for backward compatibility */
     bio = BIO_new(BIO_s_mem());
