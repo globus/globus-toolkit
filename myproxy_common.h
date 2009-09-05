@@ -92,4 +92,8 @@ typedef int socklen_t;
 # include <pam/pam_appl.h>
 #endif
 
+#ifndef va_copy
+#define va_copy(a,b) ((a) = (b))
+#endif
+
 #endif /* __MYPROXY_COMMON_H */
