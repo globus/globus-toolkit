@@ -94,7 +94,17 @@ AC_CHECK_LIB(globus_gsi_proxy_core_$GLOBUS_FLAVOR_NAME,
 dnl
 dnl Check for OCSP
 dnl
-AC_CHECK_LIB(crypto_$GLOBUS_FLAVOR_NAME, OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
+saved_LIBS="$LIBS"
+LIBS="$GPT_LIBS"
+AC_CHECK_FUNC(OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
+LIBS="$saved_LIBS"
+dnl
+dnl Check for UI_UTIL_read_pw
+dnl
+saved_LIBS="$LIBS"
+LIBS="$GPT_LIBS"
+AC_CHECK_FUNC(UI_UTIL_read_pw, AC_DEFINE(HAVE_UI_UTIL))
+LIBS="$saved_LIBS"
 dnl
 dnl Check for SASL
 dnl
