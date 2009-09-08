@@ -47,12 +47,6 @@ if test -d /prereq/valgrind-3.2.3/bin; then
     export PATH
     valgrind="-valgrind"
     echo valgrind-3.2.3 found.
-elif test -d /prereq/valgrind-2.4.0/bin; then
-    echo /prereq/valgrind-2.4.0/bin exists
-    PATH=$PATH:/prereq/valgrind-2.4.0/bin
-    export PATH
-    valgrind="-valgrind"
-    echo valgrind-2.4.0 found.
 else
     echo valgrind not found.
 fi
