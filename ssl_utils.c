@@ -1980,6 +1980,8 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
 
 end:
    X509_STORE_CTX_cleanup(&csc);
+   if (issuer)
+       X509_free(issuer);
    if (ssl)
       SSL_free(ssl);
    if (sslContext)
