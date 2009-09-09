@@ -558,6 +558,9 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     return_value = 0;
 
  error:
+    if (ctx) {
+        SSL_CTX_free(ctx);
+    }
     if (sbio) {
         BIO_ssl_shutdown(sbio);
         BIO_free_all(sbio);
