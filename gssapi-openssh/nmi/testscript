@@ -6,7 +6,15 @@ LOGNAME=$USER
 X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
 export GLOBUS_LOCATION LOGNAME X509_CERT_DIR
 (
-if test -n "${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}"; then
+if test -n "${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}"; then
+    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib/pkgconfig"
+    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/include"
+    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/include"
+    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib"
+    OPENSSL_LIBS="-lssl -lcrypto"
+    export PKG_CONFIG_PATH
+    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
+elif test -n "${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}"; then
     PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/lib/pkgconfig"
     OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/include"
     OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/include"
