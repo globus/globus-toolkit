@@ -90,12 +90,11 @@ while (($arg = shift @ARGV)) {
     } elsif ($arg eq "-valgrind") {
 	chomp($valgrind = `which valgrind 2>/dev/null`);
 	die "valgrind not in PATH, stopped" if (!(-x $valgrind));
-#    $valgrind .= " --tool=addrcheck";
+    &write_valgrind_supp();
 	$valgrind .= " --leak-check=full";
-#	$valgrind .= " --suppressions=$ENV{HOME}/.valgrind.supp";
-	$valgrind .= " --log-file=$tmpdir/valgrind.log.$$";
+	$valgrind .= " --suppressions=$tmpdir/valgrind.supp";
 	$valgrind .= " --undef-value-errors=no";
-#	$valgrind .= " --gen-suppressions=all";
+	$valgrind .= " --gen-suppressions=all";
 	$valgrind .= " --num-callers=50 -q ";
     } else {
 	print STDERR $usage;
@@ -225,7 +224,11 @@ if ($startserver) {
     $SERVERPORTFILE = "$tmpdir/myproxy-test.serverport.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
     $servercmd .= " -p 0 -P $SERVERPIDFILE -z $SERVERPORTFILE";
-    $servercmd = $valgrind . $servercmd if (defined($valgrind));
+    if (defined($valgrind)) {
+        $valgrindlog = File::Temp::tempnam($tmpdir, "valgrind.log.");
+        $valgrindlogopt = " --log-file=$valgrindlog ";
+        $servercmd = $valgrind . $valgrindlogopt . $servercmd;
+    }
     &debug("running '$servercmd'");
     system($servercmd);
     sleep(2);			# give server a chance to startup
@@ -1175,8 +1178,7 @@ print "MyProxy Tests Complete: ", $SUCCESSES, " tests passed, ";
 print $FAILURES, " tests failed\n";
 
 if (defined($valgrind)) {
-    `cat $tmpdir/valgrind.log.$$* > valgrind.log.$$`;
-    `rm -f $tmpdir/valgrind.log.$$*`;
+    `cat $tmpdir/valgrind.log.* > valgrind.log.$$`;
     if (-s "valgrind.log.$$") {
 	print "Valgrind errors in valgrind.log.$$.\n";
 	$FAILURES++;
@@ -1195,9 +1197,13 @@ exit $FAILURES;
 sub runtest {
     local($command, $input) = @_;
 
-    $command = $valgrind . $command if (defined($valgrind));
+    if (defined($valgrind)) {
+        $valgrindlog = File::Temp::tempnam($tmpdir, "valgrind.log.");
+        $valgrindlogopt = " --log-file=$valgrindlog ";
+        $command = $valgrind . $valgrindlogopt . $command;
+    }
     print STDERR "running: ", $command, "\n" if ($verbose); 
-   $pid = open3(*Writer, *Reader, '', "exec $command") ||
+    $pid = open3(*Writer, *Reader, '', "exec $command") ||
 	die "failed to run $command";
     print Writer $input if (defined($input));
     close(Writer);
@@ -1771,4 +1777,37 @@ sub openport {
     $port++;
   }
   die "failed to find available port";
+}
+
+sub write_valgrind_supp {
+    open(SUPP, ">$tmpdir/valgrind.supp") ||
+        die "failed to open $tmpdir/valgrind.supp, stopped";
+    print SUPP <<EOF;
+{
+   SSL_library_init
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:SSL_library_init
+   ...
+}
+{
+   getpwuid
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:getpwuid
+   ...
+}
+{
+   globus_i_gsi_gss_create_cred-fixed-Jan2009
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:globus_gsi_cred_get_cert_chain
+   fun:globus_i_gsi_gss_create_cred
+   ...
+}
+EOF
+    close(SUPP);
 }
