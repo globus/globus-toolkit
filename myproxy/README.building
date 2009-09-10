@@ -85,7 +85,7 @@ $ make dist
 
 6. Sign the release file with GPG.
 
-     $ gpg -b myproxy-*.tar.gz
+     $ gpg -ab myproxy-*.tar.gz
 
 7. Copy README, LICENSE, VERSION, and myproxy-*.tar.gz* to
    ftp.globus.org:/disks/ftp.globus.org/pub/myproxy
