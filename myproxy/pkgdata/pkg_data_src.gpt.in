@@ -3,9 +3,9 @@
 
 <gpt_package_metadata Name="myproxy" Format_Version="0.02">
 <Aging_Version Major="4" Minor="8" Age="0"/>
-<VersionLabel>MyProxy v4.8 XX Xxx 2009</VersionLabel>
+<VersionLabel>MyProxy v4.8 10 Sep 2009</VersionLabel>
 <Description>
-MyProxy Online Credential Repository
+MyProxy Credential Management Service
 </Description>
 <Version_Stability Release="stable"/>
 
