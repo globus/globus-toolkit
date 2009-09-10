@@ -3500,12 +3500,30 @@ AC_SEARCH_LIBS(getrrsetbyname, resolv,
 		AC_SEARCH_LIBS(res_query, resolv)
 		AC_SEARCH_LIBS(dn_expand, resolv)
 		AC_MSG_CHECKING(if res_query will link)
-		AC_TRY_LINK_FUNC(res_query, AC_MSG_RESULT(yes),
+		AC_LINK_IFELSE([
+#include "confdefs.h"
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <netdb.h>
+#include <resolv.h>
+int main()
+{
+	res_query (0, 0, 0, 0, 0);
+	return 0;
+}
+		   ],
+		    AC_MSG_RESULT(yes),
 		   [AC_MSG_RESULT(no)
 		    saved_LIBS="$LIBS"
 		    LIBS="$LIBS -lresolv"
 		    AC_MSG_CHECKING(for res_query in -lresolv)
 		    AC_LINK_IFELSE([
+#include "confdefs.h"
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <netdb.h>
 #include <resolv.h>
 int main()
 {
@@ -3513,8 +3531,7 @@ int main()
 	return 0;
 }
 			],
-			[LIBS="$LIBS -lresolv"
-			 AC_MSG_RESULT(yes)],
+			[AC_MSG_RESULT(yes)],
 			[LIBS="$saved_LIBS"
 			 AC_MSG_RESULT(no)])
 		    ])
