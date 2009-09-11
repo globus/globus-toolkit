@@ -253,6 +253,11 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp, "%s\n", request->config->service_tag);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
     rc = fprintf(fp, "%d\n", request->two_phase_commit);
     if (rc < 0)
     {
@@ -512,6 +517,17 @@ skip_single_check:
     }
     buffer[strlen(buffer)-1] = '\0';
     if (strcmp(buffer, request->config->jobmanager_type) != 0)
+    {
+        /* Job should be handled by another job manager */
+        remove(request->job_state_lock_file);
+        goto error_exit;
+    }
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    if (strcmp(buffer, request->config->service_tag) != 0)
     {
         /* Job should be handled by another job manager */
         remove(request->job_state_lock_file);

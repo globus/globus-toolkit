@@ -15,6 +15,7 @@
  */
 
 #include "globus_common.h"
+#include "globus_i_gram_protocol.h"
 #include "globus_gram_protocol_constants.h"
 
 /**
@@ -202,8 +203,7 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 167 */     "the job is not running in the account named by the 'user_name' parameter."
 };
 
-globus_thread_key_t                     globus_i_gram_protocol_error_7_key = 0;
-globus_thread_key_t                     globus_i_gram_protocol_error_10_key = 0;
+globus_thread_key_t                     globus_i_gram_protocol_error_key = 0;
 
 enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
 
@@ -224,34 +224,31 @@ enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
  *
  */
 const char *
-globus_gram_protocol_error_string(int error_code)
+globus_gram_protocol_error_string(
+    int                                 error_code)
 {
+    globus_hashtable_t *                hacktable;
+    char *                              str = NULL;
+
     if (error_code<0 || error_code>=GLOBUS_GRAM_PROTOCOL_ERROR_LAST)
         return("Invalid error code");
 
-    if (error_code == GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION)
-    {
-        char * hackmessage = globus_thread_getspecific(
-                globus_i_gram_protocol_error_7_key);
+    hacktable = globus_thread_getspecific(globus_i_gram_protocol_error_key);
 
-        if (hackmessage != NULL && hackmessage[0] != 0)
-        {
-            return hackmessage;
-        }
-    }
-    if (error_code == GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED)
+    if (hacktable != NULL)
     {
-        char * hackmessage = globus_thread_getspecific(
-                globus_i_gram_protocol_error_10_key);
-
-        if (hackmessage != NULL && hackmessage[0] != 0)
-        {
-            return hackmessage;
-        }
+        str = globus_hashtable_lookup(hacktable, (void *) error_code);
     }
 
-    return(globus_l_gram_protocol_error_strings[error_code]);
-} /* globus_gram_protocol_error_string() */
+    if (str == NULL)
+    {
+        str = globus_l_gram_protocol_error_strings[error_code];
+
+    }
+
+    return str;
+}
+/* globus_gram_protocol_error_string() */
 
 
 /**
@@ -276,26 +273,9 @@ globus_gram_protocol_error_string(int error_code)
 void
 globus_gram_protocol_error_7_hack_replace_message(const char * message)
 {
-    char * hackmessage = globus_thread_getspecific(
-            globus_i_gram_protocol_error_7_key);
-    size_t len;
-
-    if (!hackmessage)
-    {
-        hackmessage = malloc(GLOBUS_L_HACK_MESSAGE_MAX+1);
-        hackmessage[GLOBUS_L_HACK_MESSAGE_MAX] = 0;
-        globus_thread_setspecific(
-            globus_i_gram_protocol_error_7_key, hackmessage);
-    }
-    hackmessage[0] = 0;
-
-    if (message)
-    {
-        len = strlen(message);
-        strncpy(hackmessage, message, GLOBUS_L_HACK_MESSAGE_MAX);
-    }
+    globus_i_gram_protocol_error_hack_replace_message(7, message);
 }
-
+/* globus_gram_protocol_error_7_hack_replace_message() */
 
 /**
  * GSI specific error code hack.
@@ -320,22 +300,96 @@ globus_gram_protocol_error_7_hack_replace_message(const char * message)
 void
 globus_gram_protocol_error_10_hack_replace_message(const char * message)
 {
-    char * hackmessage = globus_thread_getspecific(
-            globus_i_gram_protocol_error_10_key);
-    size_t len;
+    globus_i_gram_protocol_error_hack_replace_message(10, message);
+}
 
-    if (!hackmessage)
+/**
+ * Replace an error code context-specific error message with a new message
+ *
+ * @param errorcode
+ *     Integer error code to associate the context-specific message with
+ * @param message
+ *     The new message string.
+ */
+void
+globus_i_gram_protocol_error_hack_replace_message(
+    int                                 errorcode,
+    const char *                        message)
+{
+    globus_hashtable_t *                hacktable;
+    char *                              old;
+    int                                 rc;
+
+    hacktable = globus_thread_getspecific(globus_i_gram_protocol_error_key);
+    if (!hacktable)
     {
-        hackmessage = malloc(GLOBUS_L_HACK_MESSAGE_MAX+1);
-        hackmessage[GLOBUS_L_HACK_MESSAGE_MAX] = 0;
-        globus_thread_setspecific(
-            globus_i_gram_protocol_error_10_key, hackmessage);
+        hacktable = malloc(sizeof(globus_hashtable_t));
+
+        if (hacktable != NULL)
+        {
+            rc = globus_hashtable_init(
+                    hacktable,
+                    17,
+                    globus_hashtable_int_hash,
+                    globus_hashtable_int_keyeq);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                free(hacktable);
+                hacktable = NULL;
+            }
+
+            globus_thread_setspecific(
+                globus_i_gram_protocol_error_key, hacktable);
+        }
     }
-    hackmessage[0] = 0;
+
+    if (hacktable == NULL)
+    {
+        return;
+    }
+
+    old = globus_hashtable_remove(hacktable, (void *) errorcode);
+    if (old)
+    {
+        free(old);
+        old = NULL;
+    }
 
     if (message)
     {
-        len = strlen(message);
-        strncpy(hackmessage, message, GLOBUS_L_HACK_MESSAGE_MAX);
+        old = strdup(message);
     }
+
+    if (old)
+    {
+        rc = globus_hashtable_insert(
+                hacktable,
+                (void *) errorcode,
+                old);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            free(old);
+        }
+    }
+}
+/* globus_l_gram_error_hack_replace_message() */
+
+static
+void
+globus_l_gram_protocol_errors_destroy(
+    void *                              str)
+{
+    if (str)
+    {
+        free(str);
+    }
+}
+/* globus_l_gram_protocol_errors_destroy() */
+
+void
+globus_i_gram_protocol_error_destroy(
+    void *                              arg)
+{
+    globus_hashtable_destroy_all(arg, globus_l_gram_protocol_errors_destroy);
 }

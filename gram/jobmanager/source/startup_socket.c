@@ -87,6 +87,7 @@ globus_gram_job_manager_startup_socket_init(
     int                                 i;
     int                                 rcvbuf;
     int                                 flags;
+    FILE *                              fp;
     enum { GRAM_RETRIES = 100 };
 
     if (!manager->config->single)
@@ -139,9 +140,14 @@ globus_gram_job_manager_startup_socket_init(
 
     globus_gram_job_manager_log(
             manager,
-            "JM: Got the lock for fd %d. I will monitor all %s jobs\n",
+            "JM: Got the lock for fd %d. I will monitor all %s jobs with tag %s\n",
             lockfd,
-            manager->config->jobmanager_type);
+            manager->config->jobmanager_type,
+            manager->config->service_tag);
+
+    fp = fopen(manager->pid_path, "w");
+    fprintf(fp, "%ld\n", (long) getpid());
+    fclose(fp);
 
     /* create and bind socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -282,10 +288,11 @@ globus_gram_job_manager_starter_send(
     enum { GRAM_RETRIES = 100 };
 
     sprintf(sockpath,
-            "%s/.globus/job/%s/%s.sock",
+            "%s/.globus/job/%s/%s.%s.sock",
             manager->config->home,
             manager->config->hostname,
-            manager->config->jobmanager_type);
+            manager->config->jobmanager_type,
+            manager->config->service_tag);
 
     /* create socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));

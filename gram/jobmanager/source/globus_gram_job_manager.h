@@ -298,6 +298,11 @@ typedef struct
     char *                              logname;
     /** GRAM host */
     char *                              hostname;
+    /**
+     * Service tag to differentiate job managers which are processing
+     * jobs for the same LRM with different configurations
+     */
+    char *                              service_tag;
 }
 globus_gram_job_manager_config_t;
 
@@ -365,6 +370,9 @@ typedef struct globus_gram_job_manager_s
     char *                              socket_path;
     /** Lock file path */
     char *                              lock_path;
+    /** Pid file path */
+    char *                              pid_path;
+
     /** Fifo of script contexts ready to run */
     globus_fifo_t                       script_fifo;
     /** Number of script slots available for running scripts */
@@ -433,6 +441,26 @@ typedef struct
      * GLOBUS_GRAM_PROTOCOL_ERROR_*.
      */
     int                                 failure_code;
+
+    /**
+     * Extended error message
+     */
+    char *                              gt3_failure_message;
+
+    /**
+     * Extended error type
+     */
+    char *                              gt3_failure_type;
+
+    /**
+     * Extended error information for staging errors (source url)
+     */
+    char *                              gt3_failure_source;
+
+    /**
+     * Extended error information for staging errors (destination url)
+     */
+    char *                              gt3_failure_destination;
 
     /**
      * Job Exit Code

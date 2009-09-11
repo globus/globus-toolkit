@@ -1349,36 +1349,63 @@ globus_gram_protocol_unpack_status_update_message(
     int *                               status,
     int *                               failure_code)
 {
-    int   protocol_version;
-    int   rc;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_hashtable_t                  extensions;
 
-    *job_contact = globus_libc_malloc(replysize);
-    if(*job_contact == GLOBUS_NULL)
+    if (reply == NULL || job_contact == NULL || status == NULL ||
+        failure_code == NULL)
     {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto bad_param;
+    }
+    *job_contact = NULL;
+    *status = 0;
+    *failure_code = 0;
+
+    rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
+            reply,
+            replysize,
+            &extensions);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto parse_error;
     }
 
-    globus_libc_lock();
-    rc = sscanf( (char *) reply,
-                 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-                 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
-                 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-                 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
-                 &protocol_version,
-                 *job_contact,
-                 status,
-                 failure_code );
-    globus_libc_unlock();
-    if (rc != 4)
+    rc = globus_l_gram_protocol_get_string_attribute(
+            &extensions,
+            GLOBUS_GRAM_ATTR_JOB_MANAGER_URL,
+            job_contact);
+    if (rc != GLOBUS_SUCCESS)
     {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-    }
-    else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
+        goto job_manager_url_error;
     }
 
-    return GLOBUS_SUCCESS;
+    rc = globus_l_gram_protocol_get_int_attribute(
+            &extensions,
+            GLOBUS_GRAM_ATTR_STATUS,
+            status);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto status_error;
+    }
+
+    rc = globus_l_gram_protocol_get_int_attribute(
+            &extensions,
+            GLOBUS_GRAM_ATTR_FAILURE_CODE,
+            failure_code);
+    if (rc != GLOBUS_SUCCESS)
+    {
+status_error:
+        free(*job_contact);
+        *job_contact = NULL;
+    }
+job_manager_url_error:
+    globus_gram_protocol_hash_destroy(&extensions);
+parse_error:
+bad_param:
+    return rc;
 }
 /* globus_gram_protocol_unpack_status_update_message() */
 
@@ -1415,86 +1442,198 @@ int
 globus_gram_protocol_unpack_status_update_message_with_extensions(
     const globus_byte_t *               reply,
     globus_size_t                       replysize,
-    globus_hashtable_t *                message_hash)
+    globus_hashtable_t *                extensions)
 {
-    globus_gram_protocol_extension_t * entry = NULL;
-    int                                 rc;
+    int                                 protocol_version;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_gram_protocol_extension_t *  entry;
+    int                                 failure_code;
+    char *                              failure_type = NULL;
+    char *                              failure_message = NULL;
+    char *                              failure_source = NULL;
+    char *                              failure_destination = NULL;
+    char *                              extended_error = NULL;
 
-    if (reply == NULL || message_hash == NULL)
+    if (reply == NULL || extensions == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
 
         goto bad_param;
     }
 
-    *message_hash = NULL;
-
     rc = globus_gram_protocol_unpack_message(
-            (const char * ) reply,
+            (const char *) reply,
             replysize,
-            message_hash);
+            extensions);
     if (rc != GLOBUS_SUCCESS)
     {
         goto parse_error;
     }
 
-    /* Check that required attributes are present */
-    entry = globus_hashtable_lookup(
-            message_hash,
-            "protocol-version");
-    if (entry == NULL)
+    rc = globus_l_gram_protocol_get_int_attribute(
+            extensions,
+            GLOBUS_GRAM_ATTR_PROTOCOL_VERSION,
+            &protocol_version);
+    if (rc != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-
-        goto verify_error;
+        goto version_missing_error;
     }
-    if (strtol(entry->value, NULL, 10) != GLOBUS_GRAM_PROTOCOL_VERSION)
+
+    if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
 
-        goto verify_error;
+        goto version_error;
     }
 
     entry = globus_hashtable_lookup(
-            message_hash,
-            "job-manager-url");
+            extensions,
+            GLOBUS_GRAM_ATTR_JOB_MANAGER_URL);
     if (entry == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
-        goto verify_error;
+        goto job_manager_url_error;
     }
 
     entry = globus_hashtable_lookup(
-            message_hash,
-            "status");
-    if (entry == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-        
-        goto verify_error;
-    }
-
-    entry = globus_hashtable_lookup(
-            message_hash,
-            "failure-code");
+            extensions,
+            GLOBUS_GRAM_ATTR_STATUS);
     if (entry == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
-        goto verify_error;
+        goto status_error;
     }
 
-    rc = GLOBUS_SUCCESS;
+    rc = globus_l_gram_protocol_get_int_attribute(
+            extensions,
+            GLOBUS_GRAM_ATTR_FAILURE_CODE,
+            &failure_code);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failure_code_error;
+    }
+
+    rc = globus_l_gram_protocol_get_string_attribute(
+            extensions,
+            "gt3-failure-type",
+            &failure_type);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED)
+        {
+            goto failure_type_error;
+        }
+        rc = GLOBUS_SUCCESS;
+    }
+
+    rc = globus_l_gram_protocol_get_string_attribute(
+            extensions,
+            "gt3-failure-message",
+            &failure_message);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED)
+        {
+            goto failure_message_error;
+        }
+        rc = GLOBUS_SUCCESS;
+    }
+
+    rc = globus_l_gram_protocol_get_string_attribute(
+            extensions,
+            "gt3-failure-source",
+            &failure_source);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED)
+        {
+            goto failure_source_error;
+        }
+        rc = GLOBUS_SUCCESS;
+    }
+
+    rc = globus_l_gram_protocol_get_string_attribute(
+            extensions,
+            "gt3-failure-destination",
+            &failure_destination);
 
     if (rc != GLOBUS_SUCCESS)
     {
-verify_error:
-        globus_gram_protocol_hash_destroy(message_hash);
+        if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED)
+        {
+            goto failure_destination_error;
+        }
+        rc = GLOBUS_SUCCESS;
+    }
+
+    if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED ||
+        failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_EXECUTABLE ||
+        failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_STDIN)
+    {
+        if (failure_type && 
+                (strcmp(failure_type, "executable") == 0 ||
+                 strcmp(failure_type, "stdin") == 0))
+        {
+            extended_error = globus_common_create_string(
+                    "the job manager could not stage in %s "
+                    "from %s",
+                    failure_type,
+                    failure_source ? failure_source : "UNKNOWN");
+        }
+        else
+        {
+            extended_error = globus_common_create_string(
+                    "the job manager could not stage in a file "
+                    "from %s to %s%s%s",
+                    failure_source ? failure_source : "UNKNOWN",
+                    failure_destination ? failure_destination : "UNKNOWN",
+                    (failure_message && *failure_message) ? ": " : "",
+                    (failure_message && *failure_message)
+                        ? failure_message : "");
+        }
+        if (extended_error)
+        {
+            globus_i_gram_protocol_error_hack_replace_message(
+                    failure_code,
+                    extended_error);
+            free(extended_error);
+        }
+    }
+
+    if (failure_destination)
+    {
+        free(failure_destination);
+    }
+failure_destination_error:
+    if (failure_source)
+    {
+        free(failure_source);
+    }
+failure_source_error:
+    if (failure_message)
+    {
+        free(failure_message);
+    }
+failure_message_error:
+    if (failure_type)
+    {
+        free(failure_type);
+    }
+failure_type_error:
+failure_code_error:
+status_error:
+job_manager_url_error:
+version_error:
+version_missing_error:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_protocol_hash_destroy(extensions);
+        *extensions = NULL;
     }
 parse_error:
 bad_param:
-
     return rc;
 }
 /* globus_gram_protocol_unpack_status_update_message_with_extensions() */

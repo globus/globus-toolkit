@@ -1262,6 +1262,26 @@ globus_l_gram_job_manager_default_done(
                 "JM: GT3 extended error message: %s:%s\n",
                 variable,
                 value ? value : "");
+        if (request->gt3_failure_type == NULL &&
+            strcmp(variable, "GRAM_SCRIPT_GT3_FAILURE_TYPE") == 0)
+        {
+            request->gt3_failure_type = strdup(value);
+        }
+        else if (request->gt3_failure_message == NULL &&
+            strcmp(variable, "GRAM_SCRIPT_GT3_FAILURE_MESSAGE") == 0)
+        {
+            request->gt3_failure_message = strdup(value);
+        }
+        else if (request->gt3_failure_source == NULL &&
+            strcmp(variable, "GRAM_SCRIPT_GT3_FAILURE_SOURCE") == 0)
+        {
+            request->gt3_failure_source = strdup(value);
+        }
+        else if (request->gt3_failure_destination == NULL &&
+            strcmp(variable, "GRAM_SCRIPT_GT3_FAILURE_DESTINATION") == 0)
+        {
+            request->gt3_failure_destination = strdup(value);
+        }
     }
     else if(request->jobmanager_state == starting_jobmanager_state)
     {

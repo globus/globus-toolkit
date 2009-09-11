@@ -238,7 +238,7 @@ globus_gram_job_manager_contact_state_callback(
 
     rc = globus_hashtable_init(
             &extensions,
-            3,
+            7,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
     if (rc != GLOBUS_SUCCESS)
@@ -272,6 +272,105 @@ globus_gram_job_manager_contact_state_callback(
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
             goto fail_entry_insert;
+        }
+    }
+    else if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+    {
+        if (request->gt3_failure_type != NULL)
+        {
+            entry = globus_gram_protocol_create_extension(
+                    "gt3-failure-type",
+                    "%s",
+                    request->gt3_failure_type);
+            if (entry == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto extension_create_failed;
+            }
+
+            rc = globus_hashtable_insert(
+                    &extensions,
+                    entry->attribute,
+                    entry);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto fail_entry_insert;
+            }
+        }
+        if (request->gt3_failure_message != NULL)
+        {
+            entry = globus_gram_protocol_create_extension(
+                    "gt3-failure-message",
+                    "%s",
+                    request->gt3_failure_message);
+            if (entry == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto extension_create_failed;
+            }
+
+            rc = globus_hashtable_insert(
+                    &extensions,
+                    entry->attribute,
+                    entry);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto fail_entry_insert;
+            }
+        }
+        if (request->gt3_failure_source != NULL)
+        {
+            entry = globus_gram_protocol_create_extension(
+                    "gt3-failure-source",
+                    "%s",
+                    request->gt3_failure_source);
+            if (entry == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto extension_create_failed;
+            }
+
+            rc = globus_hashtable_insert(
+                    &extensions,
+                    entry->attribute,
+                    entry);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto fail_entry_insert;
+            }
+        }
+        if (request->gt3_failure_destination != NULL)
+        {
+            entry = globus_gram_protocol_create_extension(
+                    "gt3-failure-destination",
+                    "%s",
+                    request->gt3_failure_destination);
+            if (entry == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto extension_create_failed;
+            }
+
+            rc = globus_hashtable_insert(
+                    &extensions,
+                    entry->attribute,
+                    entry);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto fail_entry_insert;
+            }
         }
     }
     /* Add extensions for version numbers */

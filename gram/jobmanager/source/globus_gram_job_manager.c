@@ -213,9 +213,10 @@ globus_gram_job_manager_init(
     }
 
     manager->cred_path = globus_common_create_string(
-            "%s/%s.cred",
+            "%s/%s.%s.cred",
             dir_prefix,
-            manager->config->jobmanager_type);
+            manager->config->jobmanager_type,
+            manager->config->service_tag);
     if (manager->cred_path == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -273,9 +274,10 @@ globus_gram_job_manager_init(
     manager->socket_fd = -1;
     manager->lock_fd = -1;
     manager->lock_path = globus_common_create_string(
-            "%s/%s.lock",
+            "%s/%s.%s.lock",
             dir_prefix,
-            manager->config->jobmanager_type);
+            manager->config->jobmanager_type,
+            manager->config->service_tag);
     if (manager->lock_path == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -283,13 +285,25 @@ globus_gram_job_manager_init(
     }
 
     manager->socket_path = globus_common_create_string(
-            "%s/%s.sock",
+            "%s/%s.%s.sock",
             dir_prefix,
-            manager->config->jobmanager_type);
+            manager->config->jobmanager_type,
+            manager->config->service_tag);
     if (manager->socket_path == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto malloc_socket_path_failed;
+    }
+
+    manager->pid_path = globus_common_create_string(
+            "%s/%s.%s.pid",
+            dir_prefix,
+            manager->config->jobmanager_type,
+            manager->config->service_tag);
+    if (manager->pid_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto malloc_pid_path_failed;
     }
 
     rc = globus_fifo_init(&manager->script_fifo);
@@ -337,6 +351,9 @@ state_callback_fifo_init_failed:
 script_handles_fifo_init_failed:
         globus_fifo_destroy(&manager->script_fifo);
 script_fifo_init_failed:
+        free(manager->pid_path);
+        manager->pid_path = NULL;
+malloc_pid_path_failed:
         free(manager->socket_path);
         manager->socket_path = NULL;
 malloc_socket_path_failed:

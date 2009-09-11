@@ -264,6 +264,10 @@ globus_gram_job_manager_request_init(
     r->cache_tag = NULL;
     r->gateway_user = NULL;
     r->expected_terminal_state = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
+    r->gt3_failure_type = NULL;
+    r->gt3_failure_message = NULL;
+    r->gt3_failure_source = NULL;
+    r->gt3_failure_destination = NULL;
 
     rc = globus_symboltable_init(
             &r->symbol_table,

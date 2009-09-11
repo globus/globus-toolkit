@@ -271,6 +271,11 @@ globus_gram_job_manager_config_init(
         {
             config->single = GLOBUS_FALSE;
         }
+        else if (strcmp(argv[i], "-service-tag") == 0
+                && (i+1 < argc))
+        {
+            config->service_tag = strdup(argv[++i]);
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -327,6 +332,11 @@ globus_gram_job_manager_config_init(
 
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
         goto out;
+    }
+
+    if (config->service_tag == NULL)
+    {
+        config->service_tag = strdup("untagged");
     }
 
     if(strcasecmp(config->jobmanager_type, "condor") == 0)

@@ -3,6 +3,7 @@
 #define test_assert(assertion, message) \
     if (!(assertion)) \
     { \
+        printf("# %s:%d ", __FILE__, __LINE__); \
         printf message; \
         return 1; \
     }
@@ -225,22 +226,22 @@ int test_missing_attribute()
     int                                 i;
     char *                              lines[] =
     {
-        "protocol-version: 2\r\n",
-        "job-manager-url: http://example.org:43343/1/2\r\n",
-        "status: 2\r\n",
-        "failure-code: 0\r\n"
+        "protocol-version: 2",
+        "job-manager-url: http://example.org:43343/1/2",
+        "status: 2",
+        "failure-code: 0"
     };
 
     for (i = 0; i < ARRAY_LEN(lines); i++)
     {
         message = globus_common_create_string(
-                "%s%s%s",
+                "%s\r\n%s\r\n%s\r\n",
                 lines[i % ARRAY_LEN(lines)],
                 lines[(i+1) % ARRAY_LEN(lines)],
                 lines[(i+2) % ARRAY_LEN(lines)]);
 
         test_assert(message != NULL,
-                ("# Error creating message (out of memory?)\n"));
+                ("Error creating message (out of memory?)\n"));
         message_size = strlen(message) + 1;
 
         rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
@@ -248,10 +249,11 @@ int test_missing_attribute()
                 message_size,
                 &hashtable);
         test_assert(rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED,
-                ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, "
-                "got %d (%s)\n",
+                ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, "
+                "got %d (%s) when missing %s\n",
                 rc, 
-                globus_gram_protocol_error_string(rc)));
+                globus_gram_protocol_error_string(rc),
+                lines[(i+3) % ARRAY_LEN(lines)]));
         free(message);
     }
 
@@ -300,10 +302,10 @@ test_extra_attributes(void)
             globus_hashtable_string_keyeq);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error initializing hashtable (out of memory?)\n"));
+            ("Error initializing hashtable (out of memory?)\n"));
     entry = malloc(sizeof(globus_gram_protocol_extension_t));
     test_assert(entry != NULL,
-            ("# Error allocating hash entry (out of memory?)\n"));
+            ("Error allocating hash entry (out of memory?)\n"));
     entry->attribute = "attribute";
     entry->value = "value";
     rc = globus_hashtable_insert(&hashtable, entry->attribute, entry);
@@ -316,7 +318,7 @@ test_extra_attributes(void)
             &message,
             &message_size);
     test_assert(rc == GLOBUS_SUCCESS,
-            ("# Error packing status message: %d (%s)\n",
+            ("Error packing status message: %d (%s)\n",
             rc, globus_gram_protocol_error_string(rc)));
 
     globus_hashtable_destroy(&hashtable);
@@ -325,7 +327,7 @@ test_extra_attributes(void)
 
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error constructing test message: %d (%s)\n",
+            ("Error constructing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
@@ -335,7 +337,7 @@ test_extra_attributes(void)
             &hashtable);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error parsing test message: %d (%s)\n",
+            ("Error parsing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
@@ -345,11 +347,11 @@ test_extra_attributes(void)
         entry = globus_hashtable_lookup(&hashtable, expected[i]);
         test_assert(
                 entry != NULL,
-                ("# Missing expected attribute %s\n", expected[i]));
+                ("Missing expected attribute %s\n", expected[i]));
     }
 
     test_assert(ARRAY_LEN(expected) == globus_hashtable_size(&hashtable),
-            ("# Hash table contains %d entries, expected %d",
+            ("Hash table contains %d entries, expected %d",
              globus_hashtable_size(&hashtable),
              ARRAY_LEN(expected)));
 
@@ -394,14 +396,14 @@ test_bad_message(void)
             &message_size);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("# Error constructing test message: %d (%s)\n",
+            ("Error constructing test message: %d (%s)\n",
             rc,
             globus_gram_protocol_error_string(rc)));
 
     ptr = strchr((char *) message, ':');
     test_assert(
             ptr != NULL,
-            ("# Error locating \":\" in message\n"));
+            ("Error locating \":\" in message\n"));
     *ptr = '\t';
 
     rc = globus_gram_protocol_unpack_status_update_message_with_extensions(
@@ -410,7 +412,7 @@ test_bad_message(void)
             &hashtable);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
              " %d (%s)\n",
              rc,
              globus_gram_protocol_error_string(rc)));
@@ -423,7 +425,7 @@ test_bad_message(void)
             &hashtable);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED,
-            ("# Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
+            ("Expected GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED, got "
              " %d (%s)\n",
              rc,
              globus_gram_protocol_error_string(rc)));
