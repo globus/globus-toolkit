@@ -40,6 +40,16 @@ echo ==================================================
 echo Directory contents:
 ls -Rl
 echo ==================================================
+valgrind=""
+if test -d /prereq/valgrind-3.5.0/bin; then
+    echo /prereq/valgrind-3.5.0/bin exists
+    PATH=$PATH:/prereq/valgrind-3.5.0/bin
+    export PATH
+    valgrind="-valgrind"
+    echo valgrind-3.5.0 found.
+else
+    echo valgrind not found.
+fi
 for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     echo ==================================================
     echo Installing Globus Toolkit \($installer\)...
