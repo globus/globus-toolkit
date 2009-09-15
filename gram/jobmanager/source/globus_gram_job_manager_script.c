@@ -507,7 +507,8 @@ globus_gram_job_manager_script_submit(
                     script_cmd,
                     globus_l_gram_job_manager_default_done,
                     NULL,
-                    "emitcondorprocesses", 'd', 1);
+                    "emitcondorprocesses", 'd', 1,
+                    NULL);
     }
     else if (request->config->seg_module &&
         strcmp(request->config->seg_module, "fork") == 0)
@@ -517,7 +518,8 @@ globus_gram_job_manager_script_submit(
                     script_cmd,
                     globus_l_gram_job_manager_default_done,
                     NULL,
-                    "useforkstarter", 'd', 1);
+                    "useforkstarter", 'd', 1,
+                    NULL);
     }
     else
     {
