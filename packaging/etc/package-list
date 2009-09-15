@@ -62,7 +62,7 @@ globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gp
 globus_wsrf_gram_service_auditing_unit_test ws-gram/service/java/test/auditing tar
 globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt null gram2_scalability_branch
 globus_gram_protocol	gram/protocol/source	gpt null gram2_scalability_branch
-globus_gram_protocol_test	gram/protocol/test	gpt
+globus_gram_protocol_test	gram/protocol/test	gpt null    gram2_scalability_branch
 globus_xio_gridftp_multicast	gridftp/server/multi/source	gpt
 globus_xio_gridftp_driver	gridftp/gridftp_driver/source	gpt
 globus_wuftpd_gridftp_server	gridftp/gsi-wuftpd/source	gpt
