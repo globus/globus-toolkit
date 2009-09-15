@@ -145,6 +145,10 @@ globus_i_gram_protocol_error_hack_replace_message(
     int                                 error_code,
     const char *                        message);
 
+void
+globus_i_gram_protocol_error_destroy(
+    void *                              arg);
+
 extern globus_mutex_t			globus_i_gram_protocol_mutex;
 extern globus_cond_t			globus_i_gram_protocol_cond;
 
