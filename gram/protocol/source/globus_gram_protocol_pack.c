@@ -1768,6 +1768,7 @@ globus_gram_protocol_unpack_message(
     size_t                              attr_len, value_len;
     const char *                        p;
     char *                              q;
+    const char *                        message_end;
     int                                 rc = GLOBUS_SUCCESS;
     int                                 i;
 
@@ -1777,6 +1778,8 @@ globus_gram_protocol_unpack_message(
 
         goto bad_param;
     }
+    message_end = message + message_length;
+
     rc = globus_hashtable_init(
             message_attributes,
             17,
@@ -1788,26 +1791,31 @@ globus_gram_protocol_unpack_message(
     }
     p = message;
 
-    while (*p != 0)
+    while (p < message_end && *p != 0)
     {
         attr_start = p;
         /* Pull out attribute start and length */
-        while (*p != ':' && *p != '\0')
+        while (p < message_end && *p != ':' && *p != '\0')
         {
             p++;
         }
 
-        if (*p != ':')
+        if (p < message_end && *p != ':')
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
             goto parse_error;
+        }
+        if (p >= message_end)
+        {
+            break;
         }
 
         attr_len = p - attr_start;
         p++;
 
-        if (*p != ' ')
+        if ((p < message_end && *p != ' ') ||
+            p >= message_end)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
@@ -1815,7 +1823,7 @@ globus_gram_protocol_unpack_message(
         }
         p++;
 
-        if (*p == '"')
+        if (p < message_end && *p == '"')
         {
             globus_bool_t               escaped = GLOBUS_FALSE;
 
@@ -1844,19 +1852,19 @@ globus_gram_protocol_unpack_message(
         else
         {
             value_start = p;
-            while (*p != '\r' && *p != 0)
+            while (p < message_end && *p != '\r' && *p != 0)
             {
                 p++;
             }
             value_len = p - value_start;
         }
-        if (*(p++) != '\r')
+        if ( p < message_end && *(p++) != '\r')
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
             goto parse_error;
         }
-        if (*(p++) != '\n')
+        if (p < message_end && *(p++) != '\n')
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
