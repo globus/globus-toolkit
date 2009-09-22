@@ -75,17 +75,7 @@ Makefile targets:
 i18n              Internationalization libraries
 prewsgram         Pre-webservices GRAM
 gridftp           GridFTP
-prewsmds          OpenLDAP-based MDS2
 prews             Pre-WS GRAM, MDS2, and GridFTP
-wsjava            Java WS Core
-wsc               C WS core
-wsmds             MDS4
-wsdel             Delegation Service
-wsrft             Reliable File Transfer service
-wsgram            GRAM4
-wscas             Community Authorization Service
-wstests           Tests for java webservices
-wsctests          Tests for C webservices
 prews-test        Tests for pre-webservices components
 rls               Replica Location Service
 
