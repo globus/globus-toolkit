@@ -459,13 +459,13 @@ class GridFTPPacket(CUsagePacket):
 
         """
         size_id = None
-        old_min = 2**64
+        old_min = -1
         if value != None:
             int_value = int(value)
             for i in table.keys():
-                testsize = table[i]
-                if (int_value > int(testsize)) and (int(testsize) < old_min):
-                    old_min = int(testsize)
+                bucketmin = int(table[i])
+                if (int_value > bucketmin) and (bucketmin > old_min):
+                    old_min = bucketmin
                     size_id = i
         return size_id
 
@@ -622,7 +622,9 @@ class GridFTPPacket(CUsagePacket):
         if starttime == None or endtime == None:
             return None
         start_float = self.timestr_to_float(starttime)
-        end_float = self.timestr_to_float(starttime)
+        end_float = self.timestr_to_float(endtime)
+        if start_float > end_float:
+            return None
         return "%f secs" % (end_float - start_float)
 
     @staticmethod
