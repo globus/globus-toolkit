@@ -1,7 +1,6 @@
 (* 1 *)
-&(executable = $(GLOBUS_LOCATION) # '/bin/globus-sh-exec')
- (arguments = -e '$GLOBUS_SH_PERL -e ''print STDERR "stderr\n"; '
-            #                    'print STDOUT "stdout\n";''')
+&(executable = /bin/sh)
+ (arguments = -c 'echo stderr 1>&2; echo stdout')
  (stdout = ("x-gass-cache://" # $(TEST_STDOUT) # ".001" ))
  (stderr = ("x-gass-cache://" # $(TEST_STDERR) # ".001" ))
  (file_stage_out = ("x-gass-cache://" # $(TEST_STDOUT) # ".001"

@@ -683,6 +683,12 @@ sub stage_out
     my $local_path;
     my @arg;
 
+    if (exists($self->{STDIO_MERGER}) && ref($self->{STDIO_MERGER}))
+    {
+        my $merger = $self->{STDIO_MERGER};
+        $merger->poll();
+    }
+
     $self->log("stage_out(enter)");
 
     $self->nfssync( $description->stdout(), 0 )
@@ -690,6 +696,49 @@ sub stage_out
     $self->nfssync( $description->stderr(), 0 )
 	if defined $description->stderr();
 
+    foreach ($description->file_stream_out())
+    {
+        next unless defined $_;
+
+	($local, $remote) = ($_->[0], $_->[1]);
+
+	# handle a couple of types of URLs for local files
+	$local_path = $local;
+	if($local_path =~ m|^x-gass-cache://|)
+	{
+            @arg = ($cache_pgm, '-query', '-t', $tag, $local_path);
+            $local_path = $self->pipe_out_cmd(@arg);
+
+            return Globus::GRAM::Error::STAGE_OUT_FAILED
+                if($local_path eq '');
+	}
+	elsif($local_path =~ m|^file:/|)
+	{
+	    $local_path =~ s|^file:/+|/|;
+	}
+	if($local_path !~ m|^/|)
+	{
+	    $local_path = $description->directory() . '/' . $local;
+	}
+
+        $self->nfssync($local_path, 0);
+        @arg = ($url_copy_pgm, 'file://' . $local_path, $remote);
+
+        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
+        if($rc != 0) {
+            $self->log("filestageout staging failed with $stderr");
+
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'filestageout',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $local,
+                'GT3_FAILURE_DESTINATION' => $remote
+            });
+            return Globus::GRAM::Error::STAGE_OUT_FAILED
+        }
+
+	$self->respond({'STAGED_STREAM' => "$local $remote"});
+    }
     foreach ($description->file_stage_out())
     {
         next unless defined $_;

@@ -9,11 +9,10 @@ sub new() {
   my $auditdir = shift;
   my $self={};
   bless($self, $proto);
-  my $util = Util->new();
 
   # check if the audit directory had been passed as argument
-  if ($util->trim($auditdir) eq "") {
-      $util->error("No audit directory specified in constructor of Uploader");
+  if (Util::trim($auditdir) eq "") {
+      Util::error("No audit directory specified in constructor of Uploader");
   } else {
       $self->{'auditdir'} = $auditdir;
   }
@@ -23,14 +22,16 @@ sub new() {
 sub loadGram2RecordsIntoDatabase() {
 
     my $self = shift;
+    my $conf = shift;
     my $expectErrors = shift;
     my $expectedNumberLeftoverRecords = shift;
-    my $util = Util->new();
     my $uploader = "$ENV{GLOBUS_LOCATION}/libexec/globus-gram-audit";
-    my $uploaderArgs = "--check --delete --audit-directory " . $self->{'auditdir'};
+    my $uploaderArgs = "--conf $conf --check --delete --audit-directory " . $self->{'auditdir'};
+
+    $uploaderArgs .= "> /dev/null 2>/dev/null" unless ($ENV{TEST_DEBUG});
     
     if (! -e $uploader) {
-        $util->error("Can't find " . $uploader . " to upload records");
+        Util::error("Can't find " . $uploader . " to upload records");
         return (0 == 1);
     } else {
         # load the records into the database
@@ -38,12 +39,12 @@ sub loadGram2RecordsIntoDatabase() {
         
         if ($expectErrors == 0) {
             if ($rcx != 0) {
-                $util->error("Error during upload, but did not expect errors");
+                Util::error("Error during upload, but did not expect errors");
                 return (0 == 1);
             }
         } else {
             if ($rcx == 0) {
-                $util->error("Expected errors, but uploader returned success");
+                Util::error("Expected errors, but uploader returned success");
                 return (0 == 1);        
             }
         }
@@ -51,12 +52,12 @@ sub loadGram2RecordsIntoDatabase() {
     
     # verify that the number of leftover files in the audit
     # directory fits with the number of expected errors
-    $util->debug("Checking for " . $expectedNumberLeftoverRecords .
+    Util::debug("Checking for " . $expectedNumberLeftoverRecords .
         " leftover audit record files after upload in " . $self->{'auditdir'});    
     my @leftoverFiles = glob($self->{'auditdir'}."/*.gramaudit");
     my $count = @leftoverFiles;
     if ($count != $expectedNumberLeftoverRecords) {
-        $util->error("Expected " . $expectedNumberLeftoverRecords . 
+        Util::error("Expected " . $expectedNumberLeftoverRecords . 
             " leftover files, but " . $count . " files are left over");
         return (0 == 1);                           
     }

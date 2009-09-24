@@ -1,18 +1,19 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS = pkgdata submit_test stdio_test failure_test proxy_expire_test \
+SUBDIRS = pkgdata submit_test stdio_test failure_test \
         rsl_size_test user_test
 
 pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 Scripts = \
 	TESTS.pl \
-	globus-gram-job-manager-run-tests.pl
+	globus-gram-job-manager-run-tests.pl \
+        job-manager-script-test.pl
 
 Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
+	b38b4d8c.0 \
+	b38b4d8c.signing_policy \
 	testcred.pem
 
 pkgtest_SCRIPTS = $(Scripts)

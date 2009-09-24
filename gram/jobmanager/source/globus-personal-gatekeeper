@@ -121,6 +121,20 @@ verify_setup ()
 }
 
 
+get_jm_arg_value()
+{
+    desired="$1"
+    shift
+
+    while [ "$#" -gt 0 ]; do
+        if [ "$1" = "$desired" ]; then
+            echo "$2"
+            break
+        fi
+        shift;
+    done
+}
+
 killem ()
 {
     found=false
@@ -159,6 +173,7 @@ killem ()
             fi
 
             if [ $dokill = true ]; then
+
                 echo "killing gatekeeper: \"${contact}\""
                 if [ -r ${dir}/gatekeeper.pid ]; then
                     pid=`${GLOBUS_SH_CAT-cat} ${dir}/gatekeeper.pid`
@@ -166,6 +181,32 @@ killem ()
                 fi
                 cd
 		statedir="${local_tmpdir}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
+                if [ -r ${dir}/jobmanager.conf ]; then
+                    host=`${bindir}/globus-hostname`
+                    args=`cat "${dir}/jobmanager.conf"`
+                    service_tag="`eval get_jm_arg_value -service-tag $args`"
+                    if [ "$service_tag" = "" ]; then
+                        service_tag=untagged
+                    fi
+                    lrm="`eval get_jm_arg_value -type $args`"
+                    tagged="$HOME/.globus/job/$host/$lrm.$service_tag"
+                    pidfile="$tagged.pid"
+                    sockfile="$tagged.sock"
+                    lockfile="$tagged.lock"
+                    credfile="$tagged.cred"
+                    jmpid=""
+                    if [ -r "$pidfile" ]; then
+                        read jmpid < "$pidfile"
+                    fi
+                    if [ "$jmpid" != "" ]; then
+                        kill $jmpid
+                    fi
+                    [ -e "$pidfile" ] && ${GLOBUS_SH_RM-rm} "$pidfile"
+                    [ -e "$sockfile" ] && ${GLOBUS_SH_RM-rm} "$sockfile"
+                    [ -e "$lockfile" ] && ${GLOBUS_SH_RM-rm} "$lockfile"
+                    [ -e "$credfile" ] && ${GLOBUS_SH_RM-rm} "$credfile"
+                fi
+
                 ${GLOBUS_SH_RM-rm} -rf ${dir} &
 		${GLOBUS_SH_RM-rm} -rf "${statedir}" &
             fi
@@ -270,6 +311,8 @@ file_prefix="personal-gatekeeper.$host"
 log=never
 seg=0
 startargs=''
+single=''
+valgrind=0
 
 while [ -n "$1" ]; do
     case "$1" in
@@ -309,6 +352,12 @@ while [ -n "$1" ]; do
 		fi
 		shift
 		;;
+        -single)
+                single="$1"
+                ;;
+        -valgrind)
+                valgrind=1
+                ;;
 	-port)
 		port="$2"
 		shift
@@ -389,9 +438,20 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
 
+if [ $valgrind -eq 1 ]; then
+    valgrind=`which valgrind`
+    if [ $? -ne 0 ]; then
+        echo "Error: can't find valgrind" 1>&2
+        exit 1
+    fi
+${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
+stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${libexecdir}/globus-job-manager -conf ${scratch}/jobmanager.conf
+EOF
+else
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
 stderr_log,local_cred - ${libexecdir}/globus-job-manager globus-job-manager -conf ${scratch}/jobmanager.conf
 EOF
+fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
 -gridmap ${scratch}/gridmap
@@ -426,9 +486,11 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -globus-host-osname ${host_osname}
 -globus-host-osversion ${host_osversion}
 -save-logfile ${log}
--machine-type unknown
 -state-file-dir ${statefiledir}
 ${startargs}
+$single
+-globus-toolkit-version `globus-version`
+-service-tag "${file_prefix}.$$"
 EOF
 
 

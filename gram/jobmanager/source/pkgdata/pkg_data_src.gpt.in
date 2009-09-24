@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager">
 
-    <Aging_Version Age="4" Major="9" Minor="0"/>
+    <Aging_Version Age="5" Major="10" Minor="5"/>
     <Description>GRAM Jobmanager</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -33,7 +33,7 @@
 
             <Dependency Name="globus_gram_protocol">
                 <Version>
-                    <Simple_Version Major="5"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
     
@@ -55,21 +55,15 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_ftp_client">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_gass_transfer">
+            <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_io">
+            <Dependency Name="globus_xio_popen_driver">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
@@ -85,18 +79,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_duct_control">
-                <Version>
-                    <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_nexus">
-                <Version>
-                    <Simple_Version Major="6"/>
-                </Version>
-            </Dependency>
-
             <Dependency Name="globus_gram_job_manager_callout_error">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -106,6 +88,12 @@
             <Dependency Name="globus_scheduler_event_generator">
                 <Version>
                     <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_libxml2">
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -125,7 +113,7 @@
 
             <Dependency Name="globus_gram_protocol">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
     
@@ -147,21 +135,15 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_ftp_client">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_gass_transfer">
+            <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_io">
+            <Dependency Name="globus_xio_popen_driver">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
@@ -177,18 +159,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_duct_control">
-                <Version>
-                    <Simple_Version Major="2"/>
-                </Version>
-            </Dependency>
-
-            <Dependency Name="globus_nexus">
-                <Version>
-                    <Simple_Version Major="6"/>
-                </Version>
-            </Dependency>
-
             <Dependency Name="globus_gram_job_manager_callout_error">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -199,12 +169,17 @@
                     <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_libxml2">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="doc_runtime">
             <Dependency Name="globus_gram_protocol" Package="doc">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -237,7 +212,7 @@
 
             <Dependency Name="globus_gram_protocol" Package="data">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
     

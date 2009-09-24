@@ -1561,6 +1561,7 @@ globus_i_gsi_gss_create_cred(
     globus_gsi_cert_utils_cert_type_t   cert_type;
     gss_buffer_desc                     name_buffer;
     X509 *                              eec;
+    STACK_OF(X509) *                    cert_chain = NULL;
     globus_bool_t                       free_eec = GLOBUS_FALSE;
     
     static char *                       _function_name_ =
@@ -1623,8 +1624,6 @@ globus_i_gsi_gss_create_cred(
 
     if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
     {
-        STACK_OF(X509) *                cert_chain;
-        
         local_result = globus_gsi_cred_get_cert_chain(
             newcred->cred_handle, 
             &cert_chain);
@@ -1646,6 +1645,7 @@ globus_i_gsi_gss_create_cred(
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             major_status = GSS_S_FAILURE;
             sk_X509_pop_free(cert_chain, X509_free);
+            cert_chain = NULL;
             goto error_exit;
         }
     }
@@ -1697,6 +1697,10 @@ globus_i_gsi_gss_create_cred(
     if (free_eec)
     {
         X509_free(eec);
+    }
+    if (cert_chain != NULL)
+    {
+        sk_X509_pop_free(cert_chain, X509_free);
     }
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     return major_status;

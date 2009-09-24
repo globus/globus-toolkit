@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,10 +52,6 @@ globus_gram_job_manager_logfile_flag_t;
 typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STATE_START,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN,
@@ -70,13 +66,6 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_DONE,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE,
@@ -86,13 +75,9 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2,
@@ -104,7 +89,8 @@ typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STAGE_IN,
     GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED,
-    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT
+    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT,
+    GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS
 }
 globus_gram_job_manager_staging_type_t;
 
@@ -119,11 +105,11 @@ globus_gram_job_manager_query_type_t;
 typedef struct
 {
     globus_gram_job_manager_staging_type_t
-					type;
-    globus_rsl_value_t *		from;
-    char *				evaled_from;
-    globus_rsl_value_t *		to;
-    char *				evaled_to;
+                                        type;
+    globus_rsl_value_t *                from;
+    char *                              evaled_from;
+    globus_rsl_value_t *                to;
+    char *                              evaled_to;
 }
 globus_gram_job_manager_staging_info_t;
 
@@ -133,19 +119,19 @@ typedef struct
      * Query type
      */
     globus_gram_job_manager_query_type_t
-					type;
+                                        type;
     /**
      * Connection handle
      *
      * Handle to send the script response to.
      */
-    globus_gram_protocol_handle_t	handle;
+    globus_gram_protocol_handle_t       handle;
     /**
      * Signal
      *
      * Type of signal to process.
      */
-    globus_gram_protocol_job_signal_t	signal;
+    globus_gram_protocol_job_signal_t   signal;
 
     /**
      * Signal-specific data
@@ -153,7 +139,7 @@ typedef struct
      * If a priority change maybe something like high, medium, low. see
      * the documentation on signals in the globus_gram_protocol library.
      */
-    char *				signal_arg;
+    char *                              signal_arg;
     /**
      * Query-specific RSL tree 
      *
@@ -162,77 +148,173 @@ typedef struct
      * stdout, stderr, stdout_position, stderr_position, and remoteio_url.
      * This will be merged with the request's tree as the signal is handled.
      */
-    globus_rsl_t *			rsl;
+    globus_rsl_t *                      rsl;
 
-    globus_gram_protocol_error_t	failure_code;
+    globus_gram_protocol_error_t        failure_code;
 
     /* When doing a proxy refresh, the newly delegated credential */
-    gss_cred_id_t			delegated_credential;
+    gss_cred_id_t                       delegated_credential;
 }
 globus_gram_job_manager_query_t;
 
 /**
- * Job Manager Request
+ * Command-line configuration for a LRM instance. All of these items are
+ * read from command-line or startup environment and do not change while
+ * the job manager is running.
  */
 typedef struct
 {
+    /*
+     * -------------------------------------------------------------------
+     * Values derived from command-line options and configuration file
+     * -------------------------------------------------------------------
+     */
     /**
-     * Job State
+     * Flag denoting the disposition of the log file once the job manager
+     * completes monitoring this job.
+     */
+    globus_gram_job_manager_logfile_flag_t
+                                        logfile_flag;
+    /** True if we are using kerberos for security instead of X.509
+     * certificates.
+     */
+    globus_bool_t                       kerberos;
+    /**
+     * Path to globus installation.
+     */
+    char *                              globus_location;
+    /**
+     * GLOBUS_LOCATION which can be used on the target execution nodes.
+     */
+    char *                              target_globus_location;
+    /**
+     * Job Manager Type
      *
-     * The state of the job. This corresponds to the job state machine
-     * described in the GRAM documentation.
-     *
-     * Use globus_gram_job_manager_request_set_status() to change.
-     *
-     * @todo add link 
+     * Identifies the scheduler which will be used to process this job
+     * request. Possible values are fork, loadleveler, lsf, easymcs, pbs,
+     * and others.
      */ 
-    globus_gram_protocol_job_state_t	status;
-
+    char *                              jobmanager_type;
     /**
-     * Last time status was changed
-     *
-     * The time that the status member was last changed.
-     * Automatically set by globus_gram_job_manager_request_set_status().
+     * Directory to store job state history information
      */
-    time_t 				status_update_time;
-
+    char *                              job_history_dir;
     /**
-     * Job Failure Reason
-     *
-     * If the state is GLOBUS_GRAM_STATE_FAILED, then this
-     * is an integer code that defines the failure. It is one of
-     * GLOBUS_GRAM_PROTOCOL_ERROR_*.
+     * Default cache path (may contain RSL substitutions)
      */
-    int					failure_code;
-    
+    char *                              cache_location;
     /**
-     * Job identifier
+     * Scratch directory root
      *
-     * Underlying queueing system job id for this job.
-     * This value is filled in when the request is submitted.
+     * If the client requests a scratch directory with a relative path,
+     * this base directory is prepended to it. It defaults to $(HOME),
+     * but can be overridden on the job manager command line or configuration
+     * file.
      */
-    char *				job_id;
-
+    char *                              scratch_dir_base;
     /**
-     * Unique job identifier
+     * Condor Architecture
      *
-     * Unique id for this job that will be consistent
-     * across jobmanager restarts/recoveries.
+     * Used only when type=condor.  Must match one of the archetecture values
+     * as defined by condor
      */
-    char *				uniq_id;
-
+    char *                              condor_arch;
     /**
-     * Poll Frequency
+     * Condor Operating System
      *
-     * How often should a check of the job status and output files be done.
-     */
-    unsigned int			poll_frequency;
-
+     * Used only when type=condor.  Must match one of the opsys values as
+     * defined by condor
+     */ 
+    char *                              condor_os;
+    /** gatekeeper host RSL substitution */
+    char *                              globus_gatekeeper_host;
+    /** gatekeeper port RSL substitution */
+    char *                              globus_gatekeeper_port;
+    /** gatekeeper subject RSL substitution */
+    char *                              globus_gatekeeper_subject;
+    /** host manufacturer RSL substitution */
+    char *                              globus_host_manufacturer;
+    /** host cputype RSL substitution */
+    char *                              globus_host_cputype;
+    /** host OS name RSL substitution */
+    char *                              globus_host_osname;
+    /** host OS version RSL substitution */
+    char *                              globus_host_osversion;
     /**
-     * SEG module to use for polling (optional)
+     * Firewall-friendly range of TCP ports that will be used for network
+     * traffic.
+     */
+    char *                              tcp_port_range;
+    /** Directory to store job_state files */
+    char *                              job_state_file_dir;
+    /**
+     * Site-wide trusted certificate path.
+     */
+    char *                              x509_cert_dir;
+    /**
+     * Extra site-wide environment variables to add to the job environment.
+     */
+    char *                              extra_envvars;
+    /**
+     * SEG module to use instead of polling.
      */
     char *                              seg_module;
+    /**
+     * Path to job auditing directory.
+     */
+    char *                              auditing_dir;
+    /** Globus Toolkit version */
+    char *                              globus_version;
+    /**
+     * Streaming
+     *
+     * streaming_disabled is set from the config option -disable-streaming.
+     * The default is false.
+     * This is passed to the batch system script to decide whether to allow the
+     * job. This lets admins disable streaming for most jobs, but allow it for
+     * certain ones (e.g. the grid monitor).
+     */
+    globus_bool_t                       streaming_disabled;
+    /**
+     * Minimum proxy lifetime (in seconds) to allow. Once it is noticed that
+     * the proxy will expire before that time, the job manager will go into the
+     * STOP state.
+     */
+    int                                 proxy_timeout;
+    /**
+     * Use the single job manager per user / jobmanager type feature
+     */
+    globus_bool_t                       single;
+    /*
+     * -------------------------------------------------------------------
+     * Values derived from job manager environment
+     * -------------------------------------------------------------------
+     */
+    /** GSI Subject name */
+    char *                              subject;
+    /** User home directory */
+    char *                              home;
+    /** Username */
+    char *                              logname;
+    /** GRAM host */
+    char *                              hostname;
+    /**
+     * Service tag to differentiate job managers which are processing
+     * jobs for the same LRM with different configurations
+     */
+    char *                              service_tag;
+}
+globus_gram_job_manager_config_t;
 
+/**
+ * Runtime state for a LRM instance. All of these items are
+ * computed from the configuration state above and may change during the
+ * lifetime of the job manager.
+ */
+typedef struct globus_gram_job_manager_s
+{
+    /** Link to the static job manager configuration */
+    globus_gram_job_manager_config_t *  config;
     /**
      * set to GLOBUS_TRUE when the seg monitoring has begun
      */
@@ -244,78 +326,181 @@ typedef struct
      */
     time_t                              seg_last_timestamp;
     /**
-     * Queue of pending SEG events
+     * Callback handle for fork SEG-like polling
      */
-    globus_fifo_t                       seg_event_queue;
-
-    /**
-     * Job Manager Type
-     *
-     * Identifies the scheduler which will be used to process this job
-     * request. Possible values are fork, loadleveler, lsf, easymcs, pbs,
-     * and others.
-     */ 
-    char *				jobmanager_type;
-    char *				tcp_port_range;
-    char *				globus_location;
-    /**
-     * GLOBUS_LOCATION which can be used on the target execution nodes.
-     */
-    char *				target_globus_location;
-
+    globus_callback_handle_t            fork_callback_handle;
     /**
      * Log File Name
      *
      * A path to a file to append logging information to.
      */
-    char *				jobmanager_logfile;
-
+    char *                              jobmanager_logfile;
     /**
      * Log File Pointer
      *
      * A stdio FILE pointer used for logging. NULL if no logging is requested.
      */
-    FILE *				jobmanager_log_fp;
-
-    /**
-     * Flag denoting the disposition of the log file once the job manager
-     * completes monitoring this job.
+    FILE *                              jobmanager_log_fp;
+    /** Scheduler-specific set of validation records */
+    globus_list_t *                     validation_records;
+    /** GRAM job manager listener contact string */
+    char *                              url_base;
+    /** Time when the job manager-wide proxy will expire */
+    time_t                              cred_expiration_time;
+    /** Timer tracking until the proxy expiration callback causes the job
+     * manager to stop.
      */
-    globus_gram_job_manager_logfile_flag_t
-					logfile_flag;
+    globus_callback_handle_t            proxy_expiration_timer;
+    /** Hashtable mapping request->job_contact_path to request */
+    globus_hashtable_t                  request_hash;
+    /** Hashtable mapping job id->job_contact_path */
+    globus_hashtable_t                  job_id_hash;
+    /** Lock for thread-safety */
+    globus_mutex_t                      mutex;
+    /** Condition for noting when all jobs are done */
+    globus_cond_t                       cond;
+    /** Unix domain socket for receiving new job requests from other job
+     * managers */
+    int                                 socket_fd;
+    /** XIO Handle for socket_fd so we can use XIO's select() loop */
+    globus_xio_handle_t                 active_job_manager_handle;
+    /** Lock file related to the socket_fd */
+    int                                 lock_fd;
+    /** Socket file path */
+    char *                              socket_path;
+    /** Lock file path */
+    char *                              lock_path;
+    /** Pid file path */
+    char *                              pid_path;
 
-     /**
-      * Standard Output File Name
-      *
-      * Absolute path to a file to be used as standard output for the
-      * executable.
-      */
-    char *				local_stdout;
+    /** Fifo of script contexts ready to run */
+    globus_fifo_t                       script_fifo;
+    /** Number of script slots available for running scripts */
+    int                                 script_slots_available;
+    /** Fifo of available script handles */
+    globus_fifo_t                       script_handles;
+    /** Fifo of job state callback contexts to run */
+    globus_fifo_t                       state_callback_fifo;
+    /** Number of job state contact slots available */
+    int                                 state_callback_slots;
+    /** Path of job manager credential */
+    char *                              cred_path;
+    /** Grace period oneshot */
+    globus_callback_handle_t            grace_period_timer;
+    /** All jobs are done and grace period is complete */
+    globus_bool_t                       done;
+    globus_fifo_t                       seg_event_queue;
+    int                                 seg_pause_count;
+    /** All jobs are being stopped. Don't allow new ones in */
+    globus_bool_t                       stop;
+}
+globus_gram_job_manager_t;
 
+/**
+ * Job Manager Request
+ */
+typedef struct
+{
+    /** Link to LRM-specific configuration */
+    globus_gram_job_manager_config_t *  config;
+    /** Link to LRM-specific runtime state */
+    globus_gram_job_manager_t *         manager;
     /**
-     * Standard Error File Name
+     * Job State
      *
-     * Absolute path to a file to be used as standard error for the
-     * executable.
-     */
-    char *				local_stderr;
-
-    /**
-     * Condor Architecture
+     * The state of the job. This corresponds to the job state machine
+     * described in the GRAM documentation.
      *
-     * Used only when type=condor.  Must match one of the archetecture values
-     * as defined by condor
-     */
-    char *				condor_arch;
-
-    /**
-     * Condor Operating System
+     * Use globus_gram_job_manager_request_set_status() to change.
      *
-     * Used only when type=condor.  Must match one of the opsys values as
-     * defined by condor
      */ 
-    char *				condor_os;
+    globus_gram_protocol_job_state_t    status;
 
+    /**
+     * Terminal state
+     * 
+     * The projected terminal state of the job. In the case of multiple
+     * ids returned from the submit script, this will be set to failed if
+     * any subjobs failed, or done otherwise.
+     */
+    globus_gram_protocol_job_state_t    expected_terminal_state;
+
+    /**
+     * Last time status was changed
+     *
+     * The time that the status member was last changed.
+     * Automatically set by globus_gram_job_manager_request_set_status().
+     */
+    time_t                              status_update_time;
+
+    /**
+     * Job Failure Reason
+     *
+     * If the state is GLOBUS_GRAM_STATE_FAILED, then this
+     * is an integer code that defines the failure. It is one of
+     * GLOBUS_GRAM_PROTOCOL_ERROR_*.
+     */
+    int                                 failure_code;
+
+    /**
+     * Extended error message
+     */
+    char *                              gt3_failure_message;
+
+    /**
+     * Extended error type
+     */
+    char *                              gt3_failure_type;
+
+    /**
+     * Extended error information for staging errors (source url)
+     */
+    char *                              gt3_failure_source;
+
+    /**
+     * Extended error information for staging errors (destination url)
+     */
+    char *                              gt3_failure_destination;
+
+    /**
+     * Job Exit Code
+     * 
+     * If the state is GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE, then this
+     * is an integer exit code from the job's executable.
+     */
+    int                                 exit_code;
+
+    /** Stop Reason
+     * 
+     * If the job request is stopped either by an explicit signal or a proxy
+     * timeout, this will be set to something besides 0, and that will be
+     * sent as part of a fail message to satisfy condor
+     */
+    int                                 stop_reason;
+    
+    /**
+     * Job identifier string
+     *
+     * String representation of the LRM job id. May be a comma-separated
+     * string of separately-pollable ID values. This value is filled in when the
+     * request is submitted. This version is modified as the subjobs complete. 
+     */
+    char *                              job_id_string;
+    /**
+     * Job identifier string
+     *
+     * String representation of the LRM job id. May be a comma-separated string
+     * of separately-pollable ID values. This value is filled in when the
+     * request is submitted.
+     */
+    char *                              original_job_id_string;
+    
+    /**
+     * Poll Frequency
+     *
+     * How often should a check of the job status and output files be done.
+     */
+    unsigned int                        poll_frequency;
 
     /**
      * Dry Run
@@ -323,7 +508,7 @@ typedef struct
      * If this is GLOBUS_TRUE, do not actually submit the job to the scheduler,
      * just verify the job parameters.
      */
-    globus_bool_t			dry_run;
+    globus_bool_t                       dry_run;
 
 
     /**
@@ -334,166 +519,226 @@ typedef struct
      *
      * The value is how many seconds to wait before timing out.
      */
-    int					two_phase_commit;
-    int					commit_extend;
+    int                                 two_phase_commit;
 
     /**
-     * Save Job Manager State
-     *
-     * Generate a state file for possibly restarting the job manager
-     * at a later time after a failure or signal.
+     * Value to extend the two-phase commit wait time by if a commit extend
+     * signal arrives.
      */
-    globus_bool_t			save_state;
-
+    int                                 commit_extend;
+    /** Time when job manager process is first begun */
+    time_t                              creation_time;
+    /** Time when job manager gets jobid from scheduler */
+    time_t                              queued_time;
+    /** Job-specific GASS cache tag. */
+    char *                              cache_tag;
+    /** RSL substitution symbol table */
+    globus_symboltable_t                symbol_table;
+    /** Parsed RSL values */
+    globus_rsl_t *                      rsl;
+    /** Canonical RSL document */
+    char *                              rsl_spec;
     /**
      * Previous Job Manager Contact 
      *
      * If we're restarting from a terminated Job Manager, this will specify
      * the old job contact so we can locate the Job Manager state file.
      */
-    char *				jm_restart;
-
+    char *                              jm_restart;
     /**
-     * Scratch directory root.
+     * Unique job identifier
      *
-     * If the client requests a scratch directory with a relative path,
-     * this bsae directory is prepended to it. It defaults to $(HOME),
-     * but can be overridden on the job manager command line or configuration
-     * file.
+     * Unique id for this job that will be consistent
+     * across jobmanager restarts/recoveries.
      */
-    char *				scratch_dir_base;
-
+    char *                              uniq_id;
+    /** Job contact string */
+    char *                              job_contact;
+    /** Unique job contact suffix */
+    char *                              job_contact_path;
+    /** Job-specific persistence file */
+    char *                              job_state_file;
+    /** Job-specific persistence lock file */
+    char *                              job_state_lock_file;
+    /** Job-specific scratch directory after RSL evaluation */
+    char *                              scratch_dir_base;
     /**
      * Job scratch directory.
      *
      * Scratch subdirectory created for this job. It will be removed
      * when the job completes. This is a subdirectory of scratch_dir_base.
      */
-    char *				scratchdir;
-
+    char *                              scratchdir;
+    /** remote_io_url value */
+    char *                              remote_io_url;
+    /** file to write remote_io_url to */
+    char *                              remote_io_url_file;
+    /** Job-specific proxy file */
+    char *                              x509_user_proxy;
+    /** Job-specific persistence lock descriptor */
+    int                                 job_state_lock_fd;
+    /** Thread safety */
+    globus_mutex_t                      mutex;
+    /** Thread safety */
+    globus_cond_t                       cond;
+    /** Clients registered for job state changes */
+    globus_list_t *                     client_contacts;
+    /** List of file_stage_in values which haven't yet been processed */
+    globus_list_t *                     stage_in_todo;
+    /** List of file_stage_in_shared values which haven't yet been processed */
+    globus_list_t *                     stage_in_shared_todo;
+    /** List of file_stage_out values which haven't yet been processed */
+    globus_list_t *                     stage_out_todo;
+    /** List of file_stream_out values which haven't yet been processed */
+    globus_list_t *                     stage_stream_todo;
+    /** Current state machine state */
+    globus_gram_jobmanager_state_t      jobmanager_state;
+    /** State to resume from in the case of a restart */
+    globus_gram_jobmanager_state_t      restart_state;
     /**
-     * Information about the destinations for the job's stdout and
-     * stderr. Opaque to all modules except globus_gram_job_manager_output.c
+     * True if a job state change hasn't been sent to the callbacks registered
+     * with it
      */
-    struct globus_l_gram_job_manager_output_info_t *
-					output;
-    /** Time when job manager process is first begun */
-    time_t                              creation_time;
-    /** Time when job manager gets jobid from scheduler */
-    time_t                              queued_time;
-    /** Globus Toolkit version */
-    char *                              globus_version;
-    /** GSI Subject name */
-    char *                              subject;
-    globus_gass_cache_t			cache_handle;
-    char *				cache_tag;
-
+    globus_bool_t                       unsent_status_change;
+    /** Timer tracking until the next job poll */
+    globus_callback_handle_t            poll_timer;
     /**
-     * Streaming
-     *
-     * streaming_disabled is set from the config option -disable-streaming.
-     * The default is false.
+     * Queue of job-specific operations (signals, cancel, etc) sent via the job
+     * interface.
+     */
+    globus_fifo_t                       pending_queries;
+    /** Directory for temporary job-specific files. */
+    char *                              job_dir;
+    /**
      * streaming_requested is set to true if there's at least one remote
      * destination for stdout or stderr. Otherwise, it's false.
-     * Both values get passed to the batch system shell script to decide
-     * whether to allow the job. This lets admins disable streaming for
-     * most jobs, but allow it for certain ones (e.g. the grid monitor).
      */
-    globus_bool_t			streaming_disabled;
-    globus_bool_t			streaming_requested;
-
-    globus_rsl_t *                      stdout_position_hack;
-    globus_rsl_t *                      stderr_position_hack;
-
-    globus_symboltable_t		symbol_table;
-    char *				rsl_spec;
-    globus_rsl_t *			rsl;
-
-    char *				remote_io_url;
-    char *				remote_io_url_file;
-
-    globus_bool_t			kerberos;
-    char *				x509_user_proxy;
-    char *                              x509_cert_dir;
-    char *                              extra_envvars;
-
-    char *				home;
-    char *				logname;
-    char *				globus_id;
-
-    char *				job_state_file_dir;
-    char *				job_state_file;
-    char *				job_state_lock_file;
-    int					job_state_lock_fd;
-
-    globus_mutex_t			mutex;
-    globus_cond_t			cond;
-    globus_bool_t			in_handler;
-    globus_list_t *			client_contacts;
-    globus_list_t *			validation_records;
-    globus_list_t *			stage_in_todo;
-    globus_list_t *			stage_in_shared_todo;
-    globus_list_t *			stage_out_todo;
-    globus_gram_jobmanager_state_t	jobmanager_state;
-    globus_gram_jobmanager_state_t	restart_state;
-    globus_bool_t			unsent_status_change;
-    globus_callback_handle_t		poll_timer;
-    globus_callback_handle_t		proxy_expiration_timer;
-    char *				url_base;
-    char *				job_contact;
-    char *				job_contact_path;
-    char *				old_job_contact;
-    gss_ctx_id_t			response_context;
-    globus_fifo_t			pending_queries;
-    globus_bool_t                       publish_jobs;
-    char *                              job_history_dir;
+    globus_bool_t                       streaming_requested;
+    /** Job-specific cache path after RSL evaluation */
+    char *                              cache_location;
+    /** Handle to add/remove files from the GASS cache */
+    globus_gass_cache_t                 cache_handle;
+    /** Path to job history file */
     char *                              job_history_file;
-    int					job_history_status;
-    char *				cache_location;
-    globus_bool_t			relocated_proxy;
-    int					proxy_timeout;
-    char *                              job_dir;
-    globus_bool_t                       disable_duct;
-    char *                              auditing_dir;
+    /** Last job state stored in the job history file */
+    int                                 job_history_status;
+     /**
+      * Value of the GLOBUS_CACHED_STDOUT RSL substitution
+      */
+    char *                              cached_stdout;
+     /**
+      * Value of the GLOBUS_CACHED_STDERR RSL substitution
+      */
+    char *                              cached_stderr;
+    /** Security context used to submit job */
+    gss_ctx_id_t                        response_context;
+    /** Job Contact of this job when being handled by another process */
+    char *                              old_job_contact;
+    /**
+     * Queue of pending SEG events
+     */
+    globus_fifo_t                       seg_event_queue;
+    /**
+     * Timestamp of the last SEG event we've completely processed. Initially
+     * set to the time of the job submission.
+     */
+    time_t                              seg_last_timestamp;
+    /**
+     * TG Gateway user for auditing (from SAML assertion)
+     */
+    char *                              gateway_user;
 }
 globus_gram_jobmanager_request_t;
 
+/* globus_gram_job_manager_config.c */
+int
+globus_gram_job_manager_config_init(
+    globus_gram_job_manager_config_t *  config,
+    int                                 argc,
+    char **                             argv,
+    char **                             rsl);
+
+void
+globus_gram_job_manager_config_destroy(
+    globus_gram_job_manager_config_t *  config);
+
 /* globus_gram_job_manager_request.c */
+#ifdef DEBUG_THREADS
+#define GlobusGramJobManagerRequestLock(request) \
+    do { \
+    globus_gram_job_manager_request_log( \
+            request, \
+            "JM: [tid=%ld] Locking request (%s:%d) %p\n", \
+            (long) globus_thread_self(), \
+            __FILE__, \
+            __LINE__, \
+            (request)); \
+    globus_mutex_lock(&(request)->mutex); \
+    } while (0)
+
+#define GlobusGramJobManagerRequestUnlock(request) \
+    do { \
+    globus_gram_job_manager_request_log( \
+            request, \
+            "JM: [tid=%ld] Unlocking request (%s:%d) %p\n", \
+            (long) globus_thread_self() \
+            __FILE__, \
+            __LINE__, \
+            (request)); \
+    globus_mutex_unlock(&(request)->mutex); \
+    } while (0)
+#else
+#define GlobusGramJobManagerRequestLock(request) \
+    globus_mutex_lock(&(request)->mutex)
+#define GlobusGramJobManagerRequestUnlock(request) \
+    globus_mutex_unlock(&(request)->mutex)
+#endif
+
 int
 globus_gram_job_manager_request_init(
-    globus_gram_jobmanager_request_t **	request);
+    globus_gram_jobmanager_request_t ** request,
+    globus_gram_job_manager_t *         manager,
+    char *                              rsl,
+    gss_cred_id_t                       delegated_credential,
+    gss_ctx_id_t                        response_ctx,
+    globus_bool_t                       reinit,
+    char **                             old_job_contact,
+    globus_gram_jobmanager_request_t ** old_job_request);
 
-int 
+void
 globus_gram_job_manager_request_destroy(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
+
+void
+globus_gram_job_manager_request_free(
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_request_set_status(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_protocol_job_state_t	status);
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_protocol_job_state_t    status);
 
 int
 globus_gram_job_manager_request_set_status_time(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_protocol_job_state_t	status,
-	time_t valid_time);
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_protocol_job_state_t    status,
+        time_t valid_time);
 
-void
-globus_gram_job_manager_request_open_logfile(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_logfile_flag_t
-    					logfile_flag);
 int
 globus_gram_job_manager_request_log(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			format,
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        format,
     ...);
 
 int
 globus_gram_job_manager_request_acct(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			format,
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        format,
     ...);
+
+int
+globus_gram_job_manager_symbol_table_populate(
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_history_file_set(
@@ -502,6 +747,49 @@ globus_gram_job_manager_history_file_set(
 int
 globus_gram_job_manager_history_file_create(
     globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_request_load(
+    globus_gram_job_manager_t *         manager,
+    int                                 http_body_fd,
+    int                                 context_fd,
+    gss_cred_id_t                       credential,
+    globus_gram_jobmanager_request_t ** request,
+    gss_ctx_id_t *                      context,
+    char **                             contact,
+    int *                               job_state_mask,
+    char **                             old_job_contact,
+    globus_gram_jobmanager_request_t ** old_job_request,
+    globus_bool_t *                     version_only);
+
+int
+globus_gram_job_manager_request_start(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t *  request,
+    int                                 response_fd,
+    const char *                        client_contact,
+    int                                 job_state_mask);
+
+void
+globus_gram_job_manager_destroy_directory(
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        directory);
+
+int
+globus_gram_rewrite_output_as_staging(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        attribute);
+
+int
+globus_gram_job_manager_request_load_all(
+    globus_gram_job_manager_t *         manager,
+    globus_list_t **                    requests);
+
+int
+globus_i_gram_request_stdio_update(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      update_rsl);
 
 /* globus_gram_job_manager_validate.c */
 
@@ -520,250 +808,253 @@ globus_gram_job_manager_validation_when_t;
 extern
 int
 globus_gram_job_manager_validation_init(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_job_manager_t *         config);
+
+extern
+int
+globus_gram_job_manager_validation_destroy(
+    globus_list_t *                     validation_records);
 
 extern
 int
 globus_gram_job_manager_validate_rsl(
     globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     globus_gram_job_manager_validation_when_t
-    					when);
+                                        when);
 
 /* globus_gram_job_manager_contact.c */
 int
 globus_gram_job_manager_contact_add(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			contact,
-    int					job_state_mask);
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        contact,
+    int                                 job_state_mask);
 
 int
 globus_gram_job_manager_contact_remove(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			contact);
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        contact);
 int
 globus_gram_job_manager_contact_list_free(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 void
 globus_gram_job_manager_contact_state_callback(
-    globus_gram_jobmanager_request_t *	request);
-
-/* globus_gram_job_manager_output.c */
-extern
-int
-globus_gram_job_manager_output_init(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_output_set_urls(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			type,
-    globus_list_t *			url_list,
-    globus_list_t *			position_list);
-
-int
-globus_gram_job_manager_output_get_cache_name(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			type,
-    char **                             out_name);
-char *
-globus_gram_job_manager_output_local_name(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			type);
-
-int
-globus_gram_job_manager_output_open(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_output_close(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_output_write_state(
-    globus_gram_jobmanager_request_t *	request,
-    FILE *				fp);
-
-int
-globus_gram_job_manager_output_read_state(
-    globus_gram_jobmanager_request_t *	request,
-    FILE *				fp);
-
-int
-globus_gram_job_manager_output_get_size(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			type,
-    globus_off_t *                      size
-    );
-
-int
-globus_gram_job_manager_output_check_size(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			type,
-    globus_off_t			size);
-
-int
-globus_gram_job_manager_output_make_job_dir(
     globus_gram_jobmanager_request_t *  request);
 
-/* globus_gram_job_manager_state.c */
-void
-globus_gram_job_manager_state_machine_callback(
-    void *				arg);
+int
+globus_gram_job_manager_write_callback_contacts(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp);
 
-globus_bool_t
-globus_gram_job_manager_state_machine(
-    globus_gram_jobmanager_request_t *	request);
+int
+globus_gram_job_manager_read_callback_contacts(
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp);
+
+/* globus_gram_job_manager_state.c */
+int
+globus_gram_job_manager_read_request(
+    globus_gram_job_manager_t *         manager,
+    int                                 fd,
+    char **                             rsl,
+    char **                             client_contact,
+    int *                               job_state_mask,
+    globus_bool_t *                     version_only);
+
+int
+globus_gram_job_manager_reply(
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_t *         manager,
+    int                                 response_code,
+    const char *                        job_contact,
+    int                                 response_fd,
+    gss_ctx_id_t                        response_context);
+
+int
+globus_gram_job_manager_validate_username(
+    globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_state_machine_register(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t *  request,
+    globus_reltime_t *                  delay);
+
+int
+globus_i_gram_remote_io_url_update(
+    globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager_gsi.c */
 int
 globus_gram_job_manager_import_sec_context(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_job_manager_t *         manager,
+    int                                 context_fd,
+    gss_ctx_id_t *                      response_contextp);
 
 globus_bool_t
 globus_gram_job_manager_gsi_used(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle);
 
 int
 globus_gram_job_manager_gsi_get_subject(
-    globus_gram_jobmanager_request_t *  request,
     char **                             subject_name);
 
 int
 globus_gram_job_manager_gsi_update_credential(
+    globus_gram_job_manager_t *         manager,
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential);
 
 int
+globus_gram_job_manager_gsi_write_credential(
+    gss_cred_id_t                       credential,
+    const char *                        path);
+
+int
 globus_gram_job_manager_gsi_update_proxy_timeout(
-    globus_gram_jobmanager_request_t *	request,
-    gss_cred_id_t			cred);
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle);
 
 int
 globus_gram_job_manager_gsi_relocate_proxy(
     globus_gram_jobmanager_request_t *  request,
     const char *                        new_proxy);
 
+int
+globus_gram_job_manager_call_authz_callout(
+    gss_ctx_id_t                        request_context,
+    gss_ctx_id_t                        authz_context,
+    const char *                        uniq_id,
+    const globus_rsl_t *                rsl,
+    const char *                        auth_type);
+
 /* globus_gram_job_manager_query.c */
 void
 globus_gram_job_manager_query_callback(
-    void *				arg,
-    globus_gram_protocol_handle_t	handle,
-    globus_byte_t *			buf,
-    globus_size_t			nbytes,
-    int					errorcode,
-    char *				uri);
+    void *                              arg,
+    globus_gram_protocol_handle_t       handle,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes,
+    int                                 errorcode,
+    char *                              uri);
 
 void
 globus_gram_job_manager_query_delegation_callback(
-    void *				arg,
-    globus_gram_protocol_handle_t	handle,
-    gss_cred_id_t			credential,
-    int					error_code);
+    void *                              arg,
+    globus_gram_protocol_handle_t       handle,
+    gss_cred_id_t                       credential,
+    int                                 error_code);
 
 void
 globus_gram_job_manager_query_reply(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query);
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_query_t *   query);
 
 /* globus_gram_job_manager_staging.c */
 int
 globus_gram_job_manager_staging_create_list(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_staging_remove(
-    globus_gram_jobmanager_request_t *	request,
+    globus_gram_jobmanager_request_t *  request,
     globus_gram_job_manager_staging_type_t
-    					type,
-    char *				from,
-    char *				to);
+                                        type,
+    char *                              from,
+    char *                              to);
 
 int
 globus_gram_job_manager_staging_write_state(
-    globus_gram_jobmanager_request_t *	request,
-    FILE *				fp);
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp);
 int
 globus_gram_job_manager_staging_read_state(
-    globus_gram_jobmanager_request_t *	request,
-    FILE *				fp);
+    globus_gram_jobmanager_request_t *  request,
+    FILE *                              fp);
+
+void
+globus_gram_job_manager_staging_free_all(
+    globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager_rsl.c */
 globus_rsl_t *
 globus_gram_job_manager_rsl_merge(
-    globus_rsl_t *			base_rsl,
-    globus_rsl_t *			override_rsl);
+    globus_rsl_t *                      base_rsl,
+    globus_rsl_t *                      override_rsl);
+
+globus_bool_t
+globus_gram_job_manager_rsl_attribute_exists(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute);
 
 globus_bool_t
 globus_gram_job_manager_rsl_need_stage_in(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 globus_bool_t
 globus_gram_job_manager_rsl_need_stage_out(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 globus_bool_t
 globus_gram_job_manager_rsl_need_file_cleanup(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 globus_bool_t
 globus_gram_job_manager_rsl_need_scratchdir(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 globus_bool_t
 globus_gram_job_manager_rsl_need_restart(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_rsl_env_add(
-    globus_rsl_t *			ast_node,
-    char *				var,
-    char *				value);
-
-int
-globus_gram_job_manager_rsl_request_fill(
-    globus_gram_jobmanager_request_t *	request);
+    globus_rsl_t *                      ast_node,
+    const char *                        var,
+    const char *                        value);
 
 int
 globus_gram_job_manager_rsl_eval_one_attribute(
-    globus_gram_jobmanager_request_t *	request,
+    globus_gram_jobmanager_request_t *  request,
     char *                              attribute,
     char **                             value);
 
 int
 globus_gram_job_manager_rsl_remove_attribute(
-    globus_gram_jobmanager_request_t *	request,
-    char *				attribute);
+    globus_gram_jobmanager_request_t *  request,
+    char *                              attribute);
 
 globus_rsl_t *
 globus_gram_job_manager_rsl_extract_relation(
-    globus_rsl_t *	                rsl,
-    char *				attribute);
-
-void
-globus_gram_job_manager_rsl_add_relation(
-    globus_rsl_t *	                rsl,
-    globus_rsl_t *	                relation);
+    globus_rsl_t *                      rsl,
+    const char *                        attribute);
 
 int
-globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
-    globus_gram_jobmanager_request_t *	request);
+globus_gram_job_manager_rsl_add_relation(
+    globus_rsl_t *                      rsl,
+    globus_rsl_t *                      relation);
 
 int
 globus_gram_job_manager_rsl_parse_value(
-    globus_gram_jobmanager_request_t *	request,
-    char *				value_string,
-    globus_rsl_value_t **		rsl_value);
+    globus_gram_jobmanager_request_t *  request,
+    char *                              value_string,
+    globus_rsl_value_t **               rsl_value);
 
 int
 globus_gram_job_manager_rsl_evaluate_value(
-    globus_gram_jobmanager_request_t *	request,
-    globus_rsl_value_t *		value,
-    char **				value_string);
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_value_t *                value,
+    char **                             value_string);
 
 int
 globus_gram_job_manager_rsl_eval_string(
@@ -771,88 +1062,289 @@ globus_gram_job_manager_rsl_eval_string(
     char *                              string,
     char **                             value_string);
 
+int
+globus_gram_job_manager_rsl_attribute_get_string_value(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    const char **                       value_ptr);
+
+int
+globus_gram_job_manager_rsl_attribute_get_boolean_value(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    globus_bool_t *                     value_ptr);
+
+int
+globus_gram_job_manager_rsl_attribute_get_int_value(
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    int *                               value_ptr);
+
+int
+globus_gram_rsl_add_output(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        attribute,
+    const char *                        value);
+
+int
+globus_gram_rsl_add_stream_out(
+    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
+    const char *                        source,
+    const char *                        destination);
+
 /* globus_gram_job_manager_state_file.c */
-void
+int
 globus_gram_job_manager_state_file_set(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request,
+    char **                             state_file,
+    char **                             state_lock_file);
+
+int
+globus_gram_job_manager_file_lock(
+    int                                 fd);
+
 int
 globus_gram_job_manager_state_file_read(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 int
 globus_gram_job_manager_state_file_write(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 int
 globus_gram_job_manager_state_file_register_update(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager_script.c */
 int 
-globus_gram_job_manager_script_make_scratchdir(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			scratch_dir);
-int 
 globus_gram_job_manager_script_stage_in(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 int 
 globus_gram_job_manager_script_stage_out(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 int 
 globus_gram_job_manager_script_submit(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 int 
 globus_gram_job_manager_script_poll(
-    globus_gram_jobmanager_request_t *	request);
-int 
-globus_gram_job_manager_script_file_cleanup(
-    globus_gram_jobmanager_request_t *	request);
-int 
-globus_gram_job_manager_script_rm_scratchdir(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *  request);
 int
 globus_gram_job_manager_script_signal(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query);
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_query_t *   query);
 int
 globus_gram_job_manager_script_cancel(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query);
-
-int
-globus_gram_job_manager_script_cache_cleanup(
-    globus_gram_jobmanager_request_t *	request);
-
-int 
-globus_gram_job_manager_script_remote_io_file_create(
-    globus_gram_jobmanager_request_t *	request);
-
-int 
-globus_gram_job_manager_script_proxy_relocate(
-    globus_gram_jobmanager_request_t *	request);
-
-int 
-globus_gram_job_manager_script_proxy_update(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query);
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_query_t *   query);
 
 globus_bool_t
 globus_i_gram_job_manager_script_valid_state_change(
     globus_gram_jobmanager_request_t *  request,
     globus_gram_protocol_job_state_t    new_state);
 
+extern globus_xio_driver_t              globus_i_gram_job_manager_popen_driver;
+extern globus_xio_stack_t               globus_i_gram_job_manager_popen_stack;
+
 /* globus_gram_job_manager_seg.c */
 globus_result_t
 globus_gram_job_manager_init_seg(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_job_manager_t *         request);
+
+globus_result_t
+globus_gram_job_manager_shutdown_seg(
+    const char *                        seg_module);
 
 void
 globus_gram_job_manager_seg_handle_event(
     globus_gram_jobmanager_request_t *  request);
 
+void
+globus_gram_job_manager_seg_pause(
+    globus_gram_job_manager_t *         manager);
+
+void
+globus_gram_job_manager_seg_resume(
+    globus_gram_job_manager_t *         manager);
+
 /* globus_gram_job_manager_auditing.c */
 int
 globus_gram_job_manager_auditing_file_write(
     globus_gram_jobmanager_request_t *  request);
+
+/* globus_gram_job_manager.c */
+#ifdef DEBUG_THREADS
+#define GlobusGramJobManagerLock(manager) \
+    do { \
+    globus_gram_job_manager_log( \
+            manager, \
+            "JM: [tid=%ld] Locking manager (%s:%d) %p\n", \
+            (long) globus_thread_self() \
+            __FILE__, \
+            __LINE__, \
+            (manager)); \
+    globus_mutex_lock(&(manager)->mutex); \
+    } while (0)
+
+#define GlobusGramJobManagerUnlock(manager) \
+    do { \
+    globus_gram_job_manager_log( \
+            manager, \
+            "JM: [tid=%d] Unlocking manager (%s:%d) %p\n", \
+            (long) globus_thread_self() \
+            __FILE__, \
+            __LINE__, \
+            (manager)); \
+    globus_mutex_unlock(&(manager)->mutex); \
+    } while (0)
+#define GlobusGramJobManagerWait(manager) \
+    do { \
+        globus_gram_job_manager_log( \
+                manager, \
+                "JM: [tid=%ld] Condition Wait: Unlocking manager (%s:%d) %p\n", \
+                (long) globus_thread_self() \
+                __FILE__, \
+                __LINE__, \
+                (manager)); \
+        globus_cond_wait(&(manager)->cond, &(manager)->mutex); \
+        globus_gram_job_manager_log( \
+                manager, \
+                "JM: [tid=%ld] Condition Wait Returns: Locking manager (%s:%d) %p\n", \
+                (long) globus_thread_self() \
+                __FILE__, \
+                __LINE__, \
+                (manager)); \
+    } while (0)
+#else
+#define GlobusGramJobManagerLock(manager) \
+        globus_mutex_lock(&(manager)->mutex)
+#define GlobusGramJobManagerUnlock(manager) \
+        globus_mutex_unlock(&(manager)->mutex)
+#define GlobusGramJobManagerWait(manager) \
+        globus_cond_wait(&(manager)->cond, &(manager)->mutex);
+#endif
+int
+globus_gram_job_manager_init(
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    globus_gram_job_manager_config_t *  config);
+
+void
+globus_gram_job_manager_destroy(
+    globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_job_manager_read_rsl(
+    globus_gram_job_manager_t *         manager,
+    char **                             rsl,
+    char **                             contact,
+    int *                               job_state_mask);
+
+int
+globus_gram_job_manager_log(
+    globus_gram_job_manager_t *         manager,
+    const char *                        format,
+    ...);
+
+int
+globus_gram_job_manager_add_request(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_add_reference(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    const char *                        reason,
+    globus_gram_jobmanager_request_t ** request);
+
+int
+globus_gram_job_manager_remove_reference(
+    globus_gram_job_manager_t *         manager,
+    const char *                        reason,
+    const char *                        key);
+
+int
+globus_gram_job_manager_register_job_id(
+    globus_gram_job_manager_t *         manager,
+    char *                              job_id,
+    globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_unregister_job_id(
+    globus_gram_job_manager_t *         manager,
+    char *                              job_id);
+
+int
+globus_gram_job_manager_add_reference_by_jobid(
+    globus_gram_job_manager_t *         manager,
+    const char *                        jobid,
+    const char *                        reason,
+    globus_gram_jobmanager_request_t ** request);
+
+int
+globus_gram_job_manager_get_job_id_list(
+    globus_gram_job_manager_t *         manager,
+    globus_list_t **                    job_id_list);
+
+globus_bool_t
+globus_gram_job_manager_request_exists(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key);
+
+void
+globus_gram_job_manager_set_grace_period_timer(
+    globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_job_manager_set_status(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_protocol_job_state_t    state,
+    int                                 failure_code);
+
+int
+globus_gram_job_manager_get_status(
+    globus_gram_job_manager_t *         manager,
+    const char *                        key,
+    globus_gram_protocol_job_state_t *  state,
+    int *                               failure_code);
+
+void
+globus_gram_job_manager_stop_all_jobs(
+    globus_gram_job_manager_t *         manager);
+
+int
+globus_gram_split_subjobs(
+    const char *                        job_id,
+    globus_list_t **                    subjobs);
+
+/* startup_socket.c */
+int
+globus_gram_job_manager_startup_socket_init(
+    globus_gram_job_manager_t *         manager,
+    globus_xio_handle_t *               handle,
+    int *                               socket_fd,
+    int *                               lock_fd);
+
+int
+globus_gram_job_manager_starter_send(
+    globus_gram_job_manager_t *         manager,
+    int                                 http_body_fd,
+    int                                 context_fd,
+    int                                 response_fd,
+    gss_cred_id_t                       cred);
+
+extern globus_xio_driver_t              globus_i_gram_job_manager_file_driver;
+extern globus_xio_stack_t               globus_i_gram_job_manager_file_stack;
+
+/* tg_gateway.c */
+int
+globus_i_gram_get_tg_gateway_user(
+    gss_ctx_id_t                        context,
+    char **                             gateway_user);
+
 
 EXTERN_C_END
 

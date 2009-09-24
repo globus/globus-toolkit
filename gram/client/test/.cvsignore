@@ -1,6 +1,9 @@
 aclocal.m4
+autom4te.cache
+configure
 missing
 install-sh
+ltmain.sh
 mkinstalldirs
 Makefile.in
 Makefile
@@ -10,7 +13,8 @@ config.cache
 config.status
 config.sub
 globus_gram_client_test-[0-9]*
-globus-gram-client-*-test
+globus-gram-client-run-tests.pl
+*-test
 *.lo
 *.la
 .libs

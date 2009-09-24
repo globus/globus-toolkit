@@ -85,7 +85,7 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("NULL or emtpy export_buffer parameter passed to function: %s"),
+            (_GGSL("NULL or empty export_buffer parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -99,7 +99,7 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("NULL or emtpy export_buffer parameter passed to function: %s"),
+            (_GGSL("NULL or empty export_buffer parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }

@@ -1,8 +1,7 @@
 (* 3 *)
-&(executable = $(GLOBUS_LOCATION) # '/bin/globus-sh-exec')
+&(executable = /bin/sh)
  (scratch_dir = $(HOME) )
- (arguments = -e '$GLOBUS_SH_PERL -e ''print STDERR "stderr\n"; '
-            #                      'print STDOUT "stdout\n";''')
+ (arguments = -c 'echo stderr 1>&2; echo stdout')
  (stdout = ( "x-gass-cache://" # $(TEST_STDOUT) # ".001" )
 	   ( $(SCRATCH_DIRECTORY) # "/stdout.002" )
 	   ( $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".003" )

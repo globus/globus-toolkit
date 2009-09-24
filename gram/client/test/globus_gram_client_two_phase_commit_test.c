@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char * format = "&(executable=/bin/true)(save_state=%s)(two_phase=%d)";
+const char * format = "&(executable=/bin/true)(two_phase=%d)";
 
 typedef struct
 {
@@ -72,15 +72,13 @@ int main(int argc, char *argv[])
     monitor_t monitor;
     char * rsl;
 
-    if (argc < 5 || (!globus_l_get_mode(&monitor, argv[2]))
-            || (strcmp(argv[3], "yes") && strcmp(argv[3], "no"))
-            || ((monitor.timeout = atoi(argv[4])) < 0))
+    if (argc < 4 || (!globus_l_get_mode(&monitor, argv[2]))
+            || ((monitor.timeout = atoi(argv[3])) < 0))
     {
         globus_libc_fprintf(stderr,
                 "Usage: %s RM-CONTACT MODE SAVE_STATE TIMEOUT\n"
                 "    RM-CONTACT: resource manager contact\n"
                 "    MODE: no-commit|no-commit-end|commit\n"
-                "    SAVE_STATE: yes|no\n"
                 "    TIMEOUT: two-phase timeout in seconds\n",
                 argv[0]);
         goto error_exit;
@@ -96,21 +94,13 @@ int main(int argc, char *argv[])
         goto error_exit;
     }
 
-    rsl = globus_libc_malloc(strlen(format)
-            + 1 + strlen(argv[3]) + strlen(argv[4]));
-
+    rsl = globus_common_create_string(format, monitor.timeout);
     if (rsl == NULL)
     {
         globus_libc_fprintf(stderr, "failure allocating rsl string\n");
         goto deactivate_exit;
     }
 
-    rc = sprintf(rsl, format, argv[3], monitor.timeout);
-    if (rc < 0)
-    {
-        globus_libc_fprintf(stderr, "failure formatting rsl string\n");
-        goto free_rsl_exit;
-    }
     globus_mutex_init(&monitor.mutex, NULL);
     globus_cond_init(&monitor.cond, NULL);
     monitor.job_contact = NULL;
@@ -219,12 +209,11 @@ disallow_exit:
 destroy_monitor_exit:
     if (monitor.callback_contact != NULL)
     {
-        globus_libc_free(monitor.callback_contact);
+        free(monitor.callback_contact);
     }
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-free_rsl_exit:
-    globus_libc_free(rsl);
+    free(rsl);
 deactivate_exit:
     globus_module_deactivate_all();
 error_exit:

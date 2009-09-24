@@ -43,21 +43,21 @@ BEGIN
 
 my $path = $ENV{GLOBUS_LOCATION} . '/lib';
 
-if($^O eq 'irix')
-{
+my $library_map = {
+    'linux' => [ 'LD_LIBRARY_PATH'],
+    'hpux' => [ 'SHLIB_PATH', 'LD_LIBRARY_PATH' ],
+    'solaris' => [ 'LD_LIBRARY_PATH', 'LD_LIBRARY_PATH_64' ],
+    'aix' => [ 'LIBPATH' ],
+    'irix' => [ 'LD_LIBRARY_PATH', 'LD_LIBRARYN32_PATH', 'LD_LIBRARY64_PATH' ],
+    'darwin' => [ 'DYLD_LIBRARY_PATH' ],
+    'freebsd' => [ 'LD_LIBRARY_PATH' ],
+    'openbsd' => [ 'LD_LIBRARY_PATH' ]
+};
 
-    &append_path(\%ENV, 'LD_LIBRARY64_PATH', $path);
-    &append_path(\%ENV, 'LD_LIBRARYN32PATH', $path);
-}
-elsif($^O eq 'aix')
+foreach my $libvar ($library_map->{$^O})
 {
-    &append_path(\%ENV, 'LIBPATH', $path);
+    &append_path(\%ENV, $libvar, $path);
 }
-elsif($^O eq 'darwin')
-{
-    &append_path(\%ENV, 'DYLD_LIBRARY_PATH', $path);
-}
-&append_path(\%ENV, 'LD_LIBRARY_PATH', $path);
 
 use Getopt::Long;
 use Globus::GRAM::Error;
@@ -70,72 +70,137 @@ GetOptions('manager-name|m=s' => \$manager_name,
 	   'command|c=s' => \$command);
 $|=1;
 
-if((!defined($manager_name)) ||
-   (!defined($argument_file)) ||
-   (!defined($command)))
+if (!defined($manager_name))
+{
+    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+}
+elsif (!defined($command))
+{
+    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+}
+elsif ($command ne 'interactive' && !defined($argument_file))
 {
     &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
 }
 
 my $manager_class = "Globus::GRAM::JobManager::$manager_name";
-my $job_description = new Globus::GRAM::JobDescription($argument_file);
 
 eval "require $manager_class";
 
-if($@)
+if ($command eq 'interactive')
 {
-    my $error_string = $@;
-    warn $error_string;
-    
-    if (defined($job_description) && defined($job_description->logfile()))
+    my $input = '';
+    my $icmd = '';
+    my $line;
+
+    while ($line = <>)
     {
-        my $log = $job_description->logfile;
-
-        local(*FH);
-
-        open(FH, ">>$log") || &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
-
-        print FH "JobManagerScript: Error loading $manager_class:\n",
-            $error_string;
-        close(FH);
-
-    }
-    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
-}
-
-$manager = new $manager_class($job_description) or
-    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
-
-# If we are submitting a job, we may need to update things like
-# executable & stdin to look in the cache.
-# We may also need to run the command through a filter script.
-if($command eq 'submit')
-{
-    if(defined $FILTER_COMMAND)
-    {
-        local $commandName = join(" ", $job_description->executable,
-                                       $job_description->arguments);
-        local @filterArgs = split(/\s+/, $FILTER_COMMAND);
-        if(-x $filterArgs[0])  # Make sure program is executable
+        if ($icmd eq '')
         {
-            local $rVal = (system(@filterArgs, $commandName)) >> 8;
-            if($rVal != 0)  # The filter command returned an error, so deny.
+            chomp($icmd = $line);
+            if ($icmd eq 'quit')
             {
-                &fail(Globus::GRAM::Error::AUTHORIZATION_DENIED_EXECUTABLE);
+                exit(0);
             }
+            next;
+        }
+        elsif ($line eq "\n")
+        {
+            # End of input
+            my $jd = eval $input;
+            if ($@)
+            {
+                &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+            }
+            $job_description = new Globus::GRAM::JobDescription($jd);
+            $manager = new $manager_class($job_description) or
+                &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+            &run_command($icmd, $manager);
+
+            $input = '';
+            $icmd = '';
+        }
+        else
+        {
+            $input .= $line;
         }
     }
-    $manager->rewrite_urls();
-}
-$result = $manager->$command();
-
-if(UNIVERSAL::isa($result, 'Globus::GRAM::Error'))
-{
-    &fail($result);
 }
 else
 {
-    $manager->respond($result);
+    my $error_string = '';
+    if($@)
+    {
+        $error_string = $@;
+        warn $error_string;
+    }
+    my $job_description = new Globus::GRAM::JobDescription($argument_file);
+        
+    if ($error_string)
+    {
+        if (defined($job_description) && defined($job_description->logfile()))
+        {
+            my $log = $job_description->logfile;
+
+            local(*FH);
+
+            open(FH, ">>$log") ||
+                    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+
+            print FH "JobManagerScript: Error loading $manager_class:\n",
+                $error_string;
+            close(FH);
+
+        }
+        &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+    }
+
+    $manager = new $manager_class($job_description) or
+        &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+
+    run_command($command, $manager);
+}
+
+
+sub run_command
+{
+    my ($cmd, $manager) = @_;
+
+    # If we are submitting a job, we may need to update things like
+    # executable & stdin to look in the cache.
+    # We may also need to run the command through a filter script.
+    if($cmd eq 'submit')
+    {
+        if(defined $FILTER_COMMAND)
+        {
+            local $commandName = join(" ", $job_description->executable,
+                                           $job_description->arguments);
+            local @filterArgs = split(/\s+/, $FILTER_COMMAND);
+            if(-x $filterArgs[0])  # Make sure program is executable
+            {
+                local $rVal = (system(@filterArgs, $commandName)) >> 8;
+                if($rVal != 0)  # The filter command returned an error, so deny.
+                {
+                    &fail(Globus::GRAM::Error::AUTHORIZATION_DENIED_EXECUTABLE);
+                }
+            }
+        }
+        $manager->rewrite_urls();
+    }
+    $result = $manager->$cmd();
+
+    if(UNIVERSAL::isa($result, 'Globus::GRAM::Error'))
+    {
+        &fail($result);
+    }
+    else
+    {
+        $manager->respond($result);
+    }
+    if ($command eq 'interactive')
+    {
+        print "\n";
+    }
 }
 
 sub fail
@@ -143,7 +208,7 @@ sub fail
     my $error = shift;
 
     print 'GRAM_SCRIPT_ERROR:', $error->value(), "\n";
-    exit 1;
+    exit(1) if ($command ne 'interactive');
 }
 
 sub append_path

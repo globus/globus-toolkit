@@ -67,8 +67,9 @@ globus_l_gram_protocol_activate(void)
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
     }
 
-    globus_thread_key_create(&globus_i_gram_protocol_error_7_key, free);
-    globus_thread_key_create(&globus_i_gram_protocol_error_10_key, free);
+    globus_thread_key_create(
+            &globus_i_gram_protocol_error_key,
+            globus_i_gram_protocol_error_destroy);
 
     /*
      * Get the GSSAPI security credential for this process.
@@ -141,6 +142,7 @@ globus_l_gram_protocol_deactivate(void)
 	}
     }
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
+    globus_io_tcpattr_destroy(&globus_i_gram_protocol_default_attr);
     globus_mutex_destroy(&globus_i_gram_protocol_mutex);
 
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);

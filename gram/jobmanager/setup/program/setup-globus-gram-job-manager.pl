@@ -88,12 +88,6 @@ sub setup_state_dir
 	{
 	    my $fs_type;
 
-	    chomp($fs_type = (split(/\n/, `df $last_built_path`))[-1]);
-
-	    if($fs_type !~ m%(/dev/|swap)%)
-	    {
-		print STDERR "WARNING: It looks like $built_path may not be on a local filesystem. WARNING: The test for local file systems is not 100% reliable. Ignore the below if this is a false positive.\n WARNING: The jobmanager requires state dir to be on a local filesystem\n WARNING: Rerun the jobmanager setup script with the -state-dir=<state dir> option.";
-	    }
 	    mkdir($built_path, 0755) ||
                 die "Unable to create directory $built_path\n";
 	}
@@ -103,8 +97,16 @@ sub setup_state_dir
     {
         chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
     }
-
     print "Done.\n";
+
+    print "Checking if state directory supports POSIX file locking... ";
+    $rc = system("$ENV{GLOBUS_LOCATION}/libexec/globus-job-manager-lock-test $state_dir/lock_test");
+    if ($rc)
+    {
+        die "no\n";
+    }
+    print "yes\n";
+
 }
 
 sub setup_audit_dir

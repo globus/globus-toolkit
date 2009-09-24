@@ -32,7 +32,7 @@ sub two_phase_test
     my ($errors,$rc) = ("",0);
     my ($output);
     my $cache_cmd;
-    my ($contact, $mode, $save_state, $timeout) = @_;
+    my ($contact, $mode, $timeout) = @_;
     my $tag;
     my $valgrind = "";
 
@@ -45,7 +45,7 @@ sub two_phase_test
         }
     }
     my $fh = new IO::File(
-            "$valgrind $test_exec \"$contact\" $mode $save_state $timeout |");
+            "$valgrind $test_exec \"$contact\" $mode $timeout |");
 
     $tag = join('', <$fh>);
     $fh->close();
@@ -62,33 +62,31 @@ sub two_phase_test
     }
     else
     {
-        my ($host, $uniq_id, $dropping_dir);
-        $tag =~ m|https://([^:]+):\d+/(\d+/\d+)/|;
-        $host = $1;
-        $uniq_id = $2;
-        $uniq_id =~ s|/|.|;
         sleep($timeout+5);
 
 
-        $dropping_dir = "$ENV{HOME}/.globus/job/$host/$uniq_id";
-
-        if (($mode eq 'no-commit-end') && ($save_state eq 'yes'))
+        if (($mode eq 'no-commit-end'))
         {
-            if(! -r $dropping_dir)
+            my $cache_out = `globus-gass-cache -list -tag $tag | wc -l`;
+            chomp($cache_out);
+            if($cache_out eq "0")
             {
                 $errors .= "Test should have left droppings";
             }
             else
             {
-                rmtree([$dropping_dir]);
+                print STDERR `globus-gass-cache -cleanup-tag $tag`;
             }
         }
         else
         {
-            if(-r $dropping_dir)
+            my $cache_out = `globus-gass-cache -list -tag $tag`;
+            chomp($cache_out);
+            if($cache_out ne '')
             {
-                $errors .= "Test left unexpected droppings in the cache";
-                rmtree([$dropping_dir]);
+                $errors .= "Test left unexpected droppings in the cache:\n"
+                         . "$cache_out";
+                print STDERR `globus-gass-cache -cleanup-tag $tag`;
             }
         }
     }
@@ -104,17 +102,11 @@ sub two_phase_test
 }
 
 push(@tests,
-        "two_phase_test('$ENV{CONTACT_STRING}','no-commit','no','1');");
+        "two_phase_test('$ENV{CONTACT_STRING}','no-commit','1');");
 push(@tests,
-        "two_phase_test('$ENV{CONTACT_STRING}','no-commit','yes','1');");
+        "two_phase_test('$ENV{CONTACT_STRING}','no-commit-end','10');");
 push(@tests,
-        "two_phase_test('$ENV{CONTACT_STRING}','no-commit-end','no','10');");
-push(@tests,
-        "two_phase_test('$ENV{CONTACT_STRING}','no-commit-end','yes','10');");
-push(@tests,
-        "two_phase_test('$ENV{CONTACT_STRING}','commit', 'no','10');");
-push(@tests,
-        "two_phase_test('$ENV{CONTACT_STRING}','commit', 'yes','10');");
+        "two_phase_test('$ENV{CONTACT_STRING}','commit', '10');");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

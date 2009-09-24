@@ -1,19 +1,3 @@
-/*
- * Copyright 1999-2006 University of Chicago
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 
 /*  A Bison parser, made from globus_rsl_parser.y
  by  GNU Bison version 1.25
@@ -43,8 +27,25 @@
 #define	RSL_RPAREN	270
 #define	RSL_VARIABLE_START	271
 
-#include "globus_common.h"
+#line 1 "globus_rsl_parser.y"
 
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "globus_common.h"
 #include <stdio.h>
 #include <memory.h>
 #include <string.h>
@@ -52,9 +53,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-
-
 #include "globus_rsl.h"
+
+extern globus_mutex_t globus_i_rsl_mutex;
 
 typedef struct globus_parse_state_s
 {
@@ -81,6 +82,7 @@ yyerror(char *str);
 static int my_yyinput();
 
 
+#line 60 "globus_rsl_parser.y"
 typedef union
 {
   int	               Int;
@@ -158,9 +160,9 @@ static const short yyrhs[] = {    18,
 
 #if YYDEBUG != 0
 static const short yyrline[] = { 0,
-    76,    80,    86,    93,    95,    96,   100,   106,   114,   123,
-   125,   126,   127,   128,   129,   132,   140,   146,   154,   159,
-   163,   169,   174,   178,   186
+    91,    95,   101,   108,   110,   111,   115,   121,   129,   138,
+   140,   141,   142,   143,   144,   147,   155,   161,   169,   174,
+   178,   184,   189,   193,   201
 };
 #endif
 
@@ -231,7 +233,7 @@ static const short yycheck[] = {     3,
 #define YYPURE 1
 
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-
+#line 3 "/Users/bester/tmp/bison-1.25/share/bison.simple"
 
 /* Skeleton output parser for bison,
    Copyright (C) 1984, 1989, 1990 Free Software Foundation, Inc.
@@ -424,7 +426,7 @@ __yy_memcpy (char *to, char *from, int count)
 #endif
 #endif
 
-
+#line 196 "/Users/bester/tmp/bison-1.25/share/bison.simple"
 
 /* The user can define YYPARSE_PARAM as the name of an argument to be passed
    into yyparse.  The argument should have type void *.
@@ -729,118 +731,143 @@ yyreduce:
   switch (yyn) {
 
 case 1:
+#line 92 "globus_rsl_parser.y"
 { parse_state.rsl_spec = yyvsp[0].RSL; ;
     break;}
 case 2:
+#line 97 "globus_rsl_parser.y"
 {
       yyval.RSL = globus_rsl_make_boolean (yyvsp[-1].Int, yyvsp[0].List);
       assert ((yyval.RSL)!=NULL);
     ;
     break;}
 case 3:
+#line 102 "globus_rsl_parser.y"
 { 
       yyval.RSL = yyvsp[0].RSL;
     ;
     break;}
 case 4:
+#line 109 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_MULTIREQ; ;
     break;}
 case 5:
+#line 110 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_AND; ;
     break;}
 case 6:
+#line 111 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_OR; ;
     break;}
 case 7:
+#line 117 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[-2].RSL, yyvsp[0].List);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 8:
+#line 122 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[-1].RSL, NULL);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 9:
+#line 131 "globus_rsl_parser.y"
 {
       yyval.RSL = globus_rsl_make_relation (yyvsp[-1].Int, yyvsp[-2].String, yyvsp[0].RSLval);
       assert ((yyval.RSL)!=NULL);
     ;
     break;}
 case 10:
+#line 139 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_EQ; ;
     break;}
 case 11:
+#line 140 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_NEQ; ;
     break;}
 case 12:
+#line 141 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_GT; ;
     break;}
 case 13:
+#line 142 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_GTEQ; ;
     break;}
 case 14:
+#line 143 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_LT; ;
     break;}
 case 15:
+#line 144 "globus_rsl_parser.y"
 { yyval.Int = GLOBUS_RSL_LTEQ; ;
     break;}
 case 16:
+#line 149 "globus_rsl_parser.y"
 {
       yyval.RSLval = globus_rsl_value_make_sequence (yyvsp[0].List);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 17:
+#line 157 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[-1].RSL, yyvsp[0].List);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 18:
+#line 162 "globus_rsl_parser.y"
 {
       yyval.List = globus_list_cons ((void *) yyvsp[0].RSL, NULL);
       assert ((yyval.List)!=NULL);
     ;
     break;}
 case 19:
+#line 171 "globus_rsl_parser.y"
 { 
       yyval.RSLval = yyvsp[-1].RSLval;
     ;
     break;}
 case 20:
+#line 174 "globus_rsl_parser.y"
 { yyval.RSLval = yyvsp[0].RSLval; ;
     break;}
 case 21:
+#line 180 "globus_rsl_parser.y"
 {
       yyval.RSLval = globus_rsl_value_make_concatenation (yyvsp[-2].RSLval, yyvsp[0].RSLval);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 22:
+#line 185 "globus_rsl_parser.y"
 { 
       yyval.RSLval = globus_rsl_value_make_literal (yyvsp[0].String);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 23:
+#line 189 "globus_rsl_parser.y"
 { yyval.RSLval = yyvsp[0].RSLval; ;
     break;}
 case 24:
+#line 195 "globus_rsl_parser.y"
 {
       yyval.RSLval = globus_rsl_value_make_variable (yyvsp[-1].RSLval);
       assert ((yyval.RSLval)!=NULL);
     ;
     break;}
 case 25:
+#line 202 "globus_rsl_parser.y"
 { yyval.String = yyvsp[0].String;
     ;
     break;}
 }
    /* the action file gets copied in in place of this dollarsign */
-
+#line 498 "/Users/bester/tmp/bison-1.25/share/bison.simple"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -1036,6 +1063,7 @@ yyerrhandle:
   yystate = yyn;
   goto yynewstate;
 }
+#line 206 "globus_rsl_parser.y"
 
 
 #include "globus_rsl_parser.lex.c"
@@ -1062,52 +1090,42 @@ yywrap()
 
 globus_rsl_t *globus_rsl_parse(char *buf)
 {
-    if (buf)
+    globus_rsl_t *                      rsl = NULL;
+
+    if (!buf)
     {
-        if (parse_state.error_structure)
-        {
-            parse_state.error_structure->code = 0;
-        }
-        parse_state.myinput = buf;
-        parse_state.myinputptr = buf;
-        parse_state.myinputlim = buf + strlen(buf);
+        goto null_buf;
+    }
 
-        /* George clever kludge to make yyparse() */
-        /* work more than once ... otherwise yyparse always */
-        /* rejects string (even valid strings) on calls after the first */
-        /* yy_init = 1;  */
-        if (yyin)
-            yyrestart(yyin);
+    globus_mutex_lock(&globus_i_rsl_mutex);
+    if (parse_state.error_structure)
+    {
+        parse_state.error_structure->code = 0;
+    }
+    parse_state.myinput = buf;
+    parse_state.myinputptr = buf;
+    parse_state.myinputlim = buf + strlen(buf);
 
-        yyparse();
+    /* George clever kludge to make yyparse() */
+    /* work more than once ... otherwise yyparse always */
+    /* rejects string (even valid strings) on calls after the first */
+    if (yyin)
+        yyrestart(yyin);
 
-/*
- *       if (parse_state.error_structure && 
- *           parse_state.error_structure->code != 0)
- *
- *      {
- *          printf("code=%d, line=%d, pos=%d, message=%s\n",
- *                 parse_state.error_structure->code,
- *                 parse_state.error_structure->line,
- *                 parse_state.error_structure->position,
- *                 parse_state.error_structure->message);
- *      }
- */
+    yyparse();
 
-        if (globus_parse_error_flag)
-        {
-            return (globus_rsl_t *) NULL;
-        }
-        else
-        {
-            return parse_state.rsl_spec;
-        }
+    if (globus_parse_error_flag)
+    {
+        goto parse_error;
     }
     else
     {
-        return (globus_rsl_t *) NULL;
+        rsl = parse_state.rsl_spec;
     }
-
+parse_error:
+    globus_mutex_unlock(&globus_i_rsl_mutex);
+null_buf:
+    return rsl;
 } /* globus_rsl_parse() */
 
 /*

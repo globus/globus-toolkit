@@ -68,6 +68,13 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE \
                         "%s" CRLF
 
+#define GLOBUS_GRAM_ATTR_PROTOCOL_VERSION "protocol-version"
+#define GLOBUS_GRAM_ATTR_JOB_STATE_MASK "job-state-mask"
+#define GLOBUS_GRAM_ATTR_CALLBACK_URL "callback-url"
+#define GLOBUS_GRAM_ATTR_RSL "rsl"
+#define GLOBUS_GRAM_ATTR_STATUS "status"
+#define GLOBUS_GRAM_ATTR_JOB_MANAGER_URL "job-manager-url"
+#define GLOBUS_GRAM_ATTR_FAILURE_CODE "failure-code"
 typedef enum
 {
     GLOBUS_GRAM_PROTOCOL_REQUEST,
@@ -133,6 +140,15 @@ int
 globus_i_gram_protocol_callback_disallow(
     globus_i_gram_protocol_listener_t *	listener);
 
+void
+globus_i_gram_protocol_error_hack_replace_message(
+    int                                 error_code,
+    const char *                        message);
+
+void
+globus_i_gram_protocol_error_destroy(
+    void *                              arg);
+
 extern globus_mutex_t			globus_i_gram_protocol_mutex;
 extern globus_cond_t			globus_i_gram_protocol_cond;
 
@@ -143,8 +159,7 @@ extern globus_bool_t 			globus_i_gram_protocol_shutdown_called;
 extern globus_io_attr_t			globus_i_gram_protocol_default_attr;
 extern int				globus_i_gram_protocol_num_connects;
 extern globus_gram_protocol_handle_t	globus_i_gram_protocol_handle;
-extern globus_thread_key_t              globus_i_gram_protocol_error_7_key;
-extern globus_thread_key_t              globus_i_gram_protocol_error_10_key;
+extern globus_thread_key_t              globus_i_gram_protocol_error_key;
 
 EXTERN_C_END
 

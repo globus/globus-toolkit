@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,44 +14,52 @@
  * limitations under the License.
  */
 
+#include "globus_common.h"
 #include "globus_gram_job_manager.h"
+#include "globus_gsi_system_config.h"
+#include "globus_callout.h"
+#include "globus_callout_constants.h"
+#include "globus_gram_jobmanager_callout_error.h"
 
 #include <string.h>
 
 static
 void
 globus_l_gram_job_manager_proxy_expiration(
-    void *				callback_arg);
+    void *                              callback_arg);
 
 static
 int
 globus_l_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *	request,
-    gss_cred_id_t			cred);
+    globus_gram_job_manager_t *         manager,
+    globus_reltime_t *                  timeout,
+    globus_callback_handle_t *          callback_handle);
 
 int
 globus_gram_job_manager_import_sec_context(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_job_manager_t *         manager,
+    int                                 context_fd,
+    gss_ctx_id_t *                      response_contextp)
 {
-    OM_uint32				major_status;
-    OM_uint32				minor_status;
-    int					token_status;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    int                                 token_status;
 
     major_status = globus_gss_assist_import_sec_context(
-    	&minor_status,
-	&request->response_context,
-	&token_status,
-	-1,
-	request->jobmanager_log_fp);
+        &minor_status,
+        response_contextp,
+        &token_status,
+        context_fd,
+        manager->jobmanager_log_fp);
 
     if(major_status != GSS_S_COMPLETE)
     {
-	globus_gram_job_manager_request_log(request,
-	                      "JM: Failed to load security context\n");
-	return GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Failed to load security context\n");
+        return GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     }
-    globus_gram_job_manager_request_log(request,
-			  "JM: Security context imported\n");
+    globus_gram_job_manager_log(manager, "JM: Security context imported\n");
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_import_sec_context() */
@@ -72,10 +80,10 @@ globus_gram_job_manager_import_sec_context(
  */
 globus_bool_t
 globus_gram_job_manager_gsi_used(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *  request)
 {
-    OM_uint32				major_status;
-    OM_uint32				minor_status;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
     /*
      * define the Globus object ids
      * This is regestered as a private enterprise
@@ -87,28 +95,29 @@ globus_gram_job_manager_gsi_used(
      * security 1
      * gssapi_ssleay 1
      */
-    gss_OID_desc 			gsi_mech=
-	    {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
-    gss_OID_set				mechs;
-    int					present = 0;
+    gss_OID_desc                        gsi_mech =
+        {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
+    gss_OID_set                         mechs;
+    int                                 present = 0;
 
     /*
      * Figure out if we're using GSI
      */
-    major_status = gss_indicate_mechs(&minor_status,
-				      &mechs);
+    major_status = gss_indicate_mechs(
+            &minor_status,
+            &mechs);
     if(major_status == GSS_S_COMPLETE)
     {
-	major_status = gss_test_oid_set_member(
-		&minor_status,
-		&gsi_mech,
-		mechs,
-		&present);
-	if(major_status != GSS_S_COMPLETE)
-	{
-	    present = 0;
-	}
-	gss_release_oid_set(&minor_status, &mechs);
+        major_status = gss_test_oid_set_member(
+                &minor_status,
+                &gsi_mech,
+                mechs,
+                &present);
+        if(major_status != GSS_S_COMPLETE)
+        {
+            present = 0;
+        }
+        gss_release_oid_set(&minor_status, &mechs);
     }
 
     return (present ? GLOBUS_TRUE : GLOBUS_FALSE);
@@ -116,37 +125,86 @@ globus_gram_job_manager_gsi_used(
 /* globus_l_gram_job_manager_gsi_used() */
 
 /**
- * Register function to be called before proxy expires
+ * Register timeout to occur when the job manager's proxy is set to expire
  *
- * @param request
+ * @param manager
+ *     Job manager state (for logging)
+ * @param cred
+ *     Job manager credential
+ * @param timeout
+ *     Time (in seconds) to stop the manager if no credential is available.
+ * @param callback_handle
+ *     Pointer to be set to the handle to the expiration callback.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
+ *     User proxy expired
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources for callback
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found
  */
 int
 globus_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred,
+    int                                 timeout,
+    globus_callback_handle_t *          callback_handle)
 {
-    OM_uint32				major_status;
-    OM_uint32				minor_status;
-    gss_cred_id_t			cred;
-    int					rc;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_reltime_t                    delay;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    OM_uint32                           lifetime;
+    time_t                              cred_expiration_time;
 
-    /*
-     * According to RFC 2743, this shouldn't be necessary, but GSI
-     * doesn't support inquire_cred with the default credential
-     */
-    major_status = globus_gss_assist_acquire_cred(
-	    &minor_status,
-	    GSS_C_BOTH,
-	    &cred);
+    *callback_handle = GLOBUS_NULL_HANDLE;
 
-    if(major_status != GSS_S_COMPLETE)
+    cred_expiration_time = time(NULL);
+
+    major_status = gss_inquire_cred(
+            &minor_status,
+            cred,
+            NULL,
+            &lifetime,
+            NULL,
+            NULL);
+
+    if (major_status != GSS_S_COMPLETE)
     {
-	globus_gram_job_manager_request_log(request,
-		      "JM: problem reading user proxy\n");
-	return GLOBUS_SUCCESS; /*?*/
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+        goto failed_inquire_cred;
     }
-    rc = globus_l_gram_job_manager_gsi_register_proxy_timeout(request, cred);
-    gss_release_cred(&minor_status, &cred);
 
+    if (lifetime == GSS_C_INDEFINITE)
+    {
+        goto wont_expire;
+    }
+
+    cred_expiration_time += (time_t) lifetime;
+    if (((long) lifetime - timeout) <= 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+        globus_gram_job_manager_log(
+                manager,
+                "JM: user proxy lifetime is less than minimum "
+                "(%d seconds)\n",
+                timeout);
+        goto proxy_expired;
+    }
+
+    GlobusTimeReltimeSet(delay, lifetime - timeout, 0);
+    manager->cred_expiration_time = cred_expiration_time;
+
+    rc= globus_l_gram_job_manager_gsi_register_proxy_timeout(
+            manager,
+            &delay,
+            callback_handle);
+
+proxy_expired:
+wont_expire:
+failed_inquire_cred:
     return rc;
 }
 /* globus_gram_job_manager_gsi_register_proxy_timeout() */
@@ -154,18 +212,27 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
 /**
  * Look up subject name from the process's credential.
  *
- * @param request
+ * @param subject_namep
+ *     Pointer to set to a copy of the subject name. The caller is responsible
+ *     for freeing this string.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Malloc failed.
  */
 int
 globus_gram_job_manager_gsi_get_subject(
-    globus_gram_jobmanager_request_t *	request,
-    char **                             subject_name)
+    char **                             subject_namep)
 {
-    OM_uint32				major_status;
-    OM_uint32				minor_status;
-    int					rc;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    int                                 rc = GLOBUS_SUCCESS;
     gss_name_t                          name;
     gss_buffer_desc                     export_name;
+    char *                              subject_name = NULL;
 
     export_name.value = NULL;
     export_name.length = 0;
@@ -179,466 +246,408 @@ globus_gram_job_manager_gsi_get_subject(
             NULL);
     if (major_status != GSS_S_COMPLETE)
     {
-        rc = GLOBUS_FAILURE;
-        goto out;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+        goto failed_inquire_cred;
     }
 
     major_status = gss_display_name(
             &minor_status,
             name,
             &export_name,
-            GSS_C_NO_OID);
+            NULL);
     if (major_status != GSS_S_COMPLETE)
     {
-        rc = GLOBUS_FAILURE;
-        goto release_name_out;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto failed_display_name;
     }
-release_name_out:
+
+    subject_name = strdup(export_name.value);
+    if (subject_name == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto failed_subject_name_copy;
+    }
+
+failed_subject_name_copy:
+    gss_release_buffer(&minor_status, &export_name);
+failed_display_name:
     major_status = gss_release_name(
             &minor_status, 
             &name);
-out:
-    *subject_name = export_name.value;
+failed_inquire_cred:
+    *subject_namep = subject_name;
     return rc;
 }
 /* globus_gram_job_manager_gsi_get_subject() */
+
 /**
- * Reset the function to be called before proxy expires based on the
- * time left in a newly delegated credential.
+ * Register timeout to occur when the job manager's proxy is set to expire
  *
- * @param request
- * @param cred
+ * @param manager
+ *     Job manager state (for logging)
+ * @param timeout
+ *     Relative time to delay before firing the proxy timeout
+ * @param callback_handle
+ *     Pointer to the expiration callback handle. If this points to 
+ *     GLOBUS_NULL_HANDLE, then a new callback will be created and this will
+ *     be modified to point to it. Otherwise, the callback handle will be
+ *     modified.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
+ *     User proxy expired
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources for callback
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND
+ *     Proxy not found
  */
-int
-globus_gram_job_manager_gsi_update_proxy_timeout(
-    globus_gram_jobmanager_request_t *	request,
-    gss_cred_id_t			cred)
-{
-    globus_bool_t			active;
-    globus_result_t			result;
-
-    result = globus_callback_unregister(request->proxy_expiration_timer,
-					NULL,
-					NULL,
-					&active);
-
-    if(result != GLOBUS_SUCCESS || active)
-    {
-	return GLOBUS_FAILURE;
-    }
-
-    return
-	globus_l_gram_job_manager_gsi_register_proxy_timeout(request, cred);
-}
-/* globus_gram_job_manager_gsi_update_proxy_timeout() */
-
 static
 int
 globus_l_gram_job_manager_gsi_register_proxy_timeout(
-    globus_gram_jobmanager_request_t *	request,
-    gss_cred_id_t			cred)
+    globus_gram_job_manager_t *         manager,
+    globus_reltime_t *                  timeout,
+    globus_callback_handle_t *          callback_handle)
 {
-    int					rc = GLOBUS_SUCCESS;
-    OM_uint32				lifetime;
-    OM_uint32				major_status;
-    OM_uint32				minor_status;
-    globus_reltime_t			delay_time;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result;
 
-    major_status = gss_inquire_cred(
-	    &minor_status,
-	    cred,
-	    NULL,
-	    &lifetime,
-	    NULL,
-	    NULL);
-
-    if(major_status == GSS_S_COMPLETE)
+    if (*callback_handle == GLOBUS_NULL_HANDLE)
     {
-	if ((int) lifetime - request->proxy_timeout <= 0)
-	{
-            globus_gram_job_manager_request_set_status(request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-	    request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-	    rc = GLOBUS_FAILURE;
-	    globus_gram_job_manager_request_log(
-		    request,
-		    "JM: user proxy lifetime is less than minimum "
-		    "(%d seconds)\n",
-		    request->proxy_timeout);
-	}
-	else
-	{
-	    /* set timer */
-	    GlobusTimeReltimeSet(delay_time, lifetime - request->proxy_timeout, 0);
-	    globus_callback_register_oneshot(
-		    &request->proxy_expiration_timer,
-		    &delay_time,
-		    globus_l_gram_job_manager_proxy_expiration,
-		    request);
-	}
+        result = globus_callback_register_oneshot(
+                callback_handle,
+                timeout,
+                globus_l_gram_job_manager_proxy_expiration,
+                manager);
     }
     else
     {
-	globus_gram_job_manager_request_log(request,
-		      "JM: problem reading user proxy\n");
+        result = globus_callback_adjust_oneshot(
+                *callback_handle,
+                timeout);
     }
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+    }
+
     return rc;
 }
 /* globus_l_gram_job_manager_gsi_register_proxy_timeout() */
 
 /**
  * Update the request with a new security credential.
+ * 
+ * If the new credential will live longer than the current Job Manager-wide
+ * credential, use the new one with the GRAM protocol library, write it to the
+ * state directory, and update the proxy timeout. 
+ * 
+ * If the request is non-null, update the proxy on disk in the job directory so
+ * this particular job will have a copy of this credential.
+ * 
+ * The credential is either destroyed or passed to the GRAM Protocol library,
+ * which will destroy it when no longer needed. The caller must not free
+ * the credential.
  *
  * @param request
+ *     Job request to update with this credential
  * @param credential
+ *     New GSSAPI credential.
  */
 int
 globus_gram_job_manager_gsi_update_credential(
-    globus_gram_jobmanager_request_t *	request,
-    gss_cred_id_t			credential)
+    globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t *  request,
+    gss_cred_id_t                       credential)
 {
-    OM_uint32				major_status;
-    OM_uint32				minor_status;
-    gss_buffer_desc			credential_buffer;
-    int					rc;
-    char *				x509_filename;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    OM_uint32                           lifetime;
+    time_t                              credential_expiration_time;
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_reltime_t                    delay_time;
+    globus_bool_t                       set_credential = GLOBUS_FALSE;
 
-    rc = globus_gram_protocol_set_credentials(credential);
-    if(rc != GLOBUS_SUCCESS)
-    {
-	(void) gss_release_cred(&minor_status, &credential);
-	return rc;
-    }
-    if(!globus_gram_job_manager_gsi_used(request))
-    {
-	/* I don't know what to do with this new credential. */
-	return GLOBUS_SUCCESS;
-    }
+    credential_expiration_time = time(NULL);
 
-    major_status = gss_export_cred(&minor_status,
-	                           credential,
-				   GSS_C_NO_OID,
-				   1, /* export cred to disk */
-				   &credential_buffer);
-    if(GSS_ERROR(major_status))
+    major_status = gss_inquire_cred(
+            &minor_status,
+            credential,
+            NULL,
+            &lifetime,
+            NULL,
+            NULL);
+
+    if (GSS_ERROR(major_status))
     {
-	/* Too bad, can't write the proxy to disk */
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-	goto export_failed;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+        goto inquire_cred_failed;
     }
 
-    x509_filename = strstr(credential_buffer.value, "=");
-
-    if(x509_filename == NULL)
+    if (lifetime != GSS_C_INDEFINITE)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-	goto strstr_failed;
+        credential_expiration_time += lifetime;
+    }
+    else
+    {
+        credential_expiration_time = 0;
     }
 
-    /* skip '=' */
-    x509_filename++;
-    rc = globus_gram_job_manager_gsi_relocate_proxy(request, x509_filename);
-
-    if(rc != GLOBUS_SUCCESS)
+    if (manager->cred_expiration_time != 0 &&
+        (lifetime == GSS_C_INDEFINITE ||
+        credential_expiration_time > manager->cred_expiration_time))
     {
-	remove(x509_filename);
+        manager->cred_expiration_time = credential_expiration_time;
+        rc = globus_gram_job_manager_gsi_write_credential(
+                credential,
+                manager->cred_path);
+        if (rc != 0)
+        {
+            goto write_manager_cred_failed;
+        }
+        set_credential = GLOBUS_TRUE;
     }
 
-strstr_failed:
-export_failed:
+    if (request)
+    {
+        rc = globus_gram_job_manager_gsi_write_credential(
+                credential,
+                request->x509_user_proxy);
+        if (rc != 0)
+        {
+            goto write_job_cred_failed;
+        }
+    }
+
+    if (set_credential)
+    {
+        GlobusTimeReltimeSet(
+                delay_time,
+                lifetime - manager->config->proxy_timeout,
+                0);
+        rc = globus_l_gram_job_manager_gsi_register_proxy_timeout(
+                manager,
+                &delay_time,
+                &manager->proxy_expiration_timer);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto register_timeout_failed;
+        }
+
+        rc = globus_gram_protocol_set_credentials(credential);
+        credential = GSS_C_NO_CREDENTIAL;
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto set_credentials_failed;
+        }
+    }
+
+set_credentials_failed:
+register_timeout_failed:
+write_job_cred_failed:
+write_manager_cred_failed:
+inquire_cred_failed:
+    if (credential != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&minor_status, &credential);
+    }
+
     return rc;
 }
 /* globus_gram_job_manager_gsi_update_credential() */
 
-/**
- * Relocates a proxy file into the GASS Cache. Updates the
- * X509_USER_PROXY environment variable to point to the new location
- * of the proxy, and then removes the file located at @a new_proxy.
- * In the case of an error, the @a new_proxy file will not be removed.
+/* Write a GSSAPI credential to a given path
+ * @param credential
+ *     Credential to write
+ * @param path
+ *     Path to write to
  *
- * @param request
- * @param new_proxy
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY
+ *     Error opening path
  */
 int
-globus_gram_job_manager_gsi_relocate_proxy(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			new_proxy)
+globus_gram_job_manager_gsi_write_credential(
+    gss_cred_id_t                       credential,
+    const char *                        path)
 {
-    struct stat				statbuf;
-    int					rc = 0;
-    char *				cred_file = NULL;
-    FILE *				infp = NULL;
-    FILE *				outfp = NULL;
-    char *				cred_data = NULL;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_buffer_desc                     credential_buffer;
+    int                                 rc;
+    int                                 fd;
 
-    rc = stat(new_proxy, &statbuf);
-
-    if(rc < 0 || statbuf.st_size <= 0)
+    major_status = gss_export_cred(&minor_status,
+                                   credential,
+                                   GSS_C_NO_OID,
+                                   0,
+                                   &credential_buffer);
+    if(GSS_ERROR(major_status))
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-	goto stat_failed;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        goto export_failed;
     }
 
-    cred_data = globus_libc_malloc(statbuf.st_size);
-
-    if(cred_data == NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-	goto cred_data_malloc_failed;
-    }
-    infp = fopen(new_proxy, "r");
-
-    if(infp == NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-	goto fopen_new_proxy_failed;
-    }
-
-    rc = fread(cred_data, (size_t) statbuf.st_size, 1, infp);
-
-    if(rc != 1)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-	goto fread_new_proxy_failed;
-    }
-
-    fclose(infp);
-    infp = NULL;
-
-    rc = globus_gram_job_manager_output_get_cache_name(
-            request,
-            "x509_up",
-            &cred_file);
-    
-    if(rc != 0)
-    {
-	goto cred_file_malloc_failed;
-    }
-
-    outfp = fopen(cred_file, "w");
-    if(outfp == NULL)
+    fd = open(
+            path,
+            O_WRONLY|O_CREAT|O_TRUNC,
+            S_IRUSR|S_IWUSR);
+    if(fd == -1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
 
-        goto fopen_cred_file_failed;
+        goto job_proxy_open_failed;
     }
-    rc = fchmod(fileno(outfp), 0600);
-    if(rc != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-        goto fchown_cred_file_failed;
-    }
-
-    rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
-    if(rc != 1)
+    rc = write(fd, credential_buffer.value, (size_t) credential_buffer.length);
+    if(rc < credential_buffer.length)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
 
-        goto cred_fwrite_failed;
+        goto job_proxy_write_failed;
     }
     rc = 0;
-    fclose(outfp);
-    outfp = NULL;
+    close(fd);
+    fd = -1;
 
-    globus_libc_setenv("X509_USER_PROXY",
-                       cred_file,
-                       1);
-    cred_file = NULL;
-
-cred_fwrite_failed:
-fchown_cred_file_failed:
-    if(outfp)
+job_proxy_write_failed:
+    if(fd != -1)
     {
-	fclose(outfp);
-	outfp = NULL;
+        close(fd);
+        fd = -1;
     }
-fopen_cred_file_failed:
-    if(cred_file)
-    {
-	globus_libc_free(cred_file);
-	cred_file = NULL;
-    }
-cred_file_malloc_failed:
-fread_new_proxy_failed:
-    if(infp != NULL)
-    {
-	globus_libc_free(infp);
-    }
-fopen_new_proxy_failed:
-    if(cred_data)
-    {
-	globus_libc_free(cred_data);
-    }
-cred_data_malloc_failed:
-stat_failed:
-    if(rc == GLOBUS_SUCCESS)
-    {
-	remove(new_proxy);
-    }
+job_proxy_open_failed:
+    (void) gss_release_buffer(&minor_status, &credential_buffer);
+export_failed:
 
     return rc;
 }
-/* globus_gram_job_manager_gsi_relocate_proxy() */
+/* globus_gram_job_manager_gsi_write_credential() */
 
 static
 void
 globus_l_gram_job_manager_proxy_expiration(
-    void *				callback_arg)
+    void *                              callback_arg)
 {
-    globus_gram_jobmanager_request_t *	request;
+    globus_gram_job_manager_t *         manager;
 
-    request = callback_arg;
+    manager = callback_arg;
 
-    globus_gram_job_manager_request_log(
-	    request,
-	    "JM: User proxy expired! Abort, but leave job running!\n");
+    globus_gram_job_manager_log(
+            manager,
+            "JM: User proxy expired! Abort, but leave job running!\n");
 
-    globus_mutex_lock(&request->mutex);
-    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-    switch(request->jobmanager_state)
-    {
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
-	  /* Proxy expiration callback isn't registered until the
-	   * proxy has been relocated, so this should NEVER happen.
-	   */
-	  globus_assert(/* premature proxy expiration */0);
-	  break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
-        if(request->save_state)
-        {
-	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-	    request->unsent_status_change = GLOBUS_TRUE;
-        }
-        else
-        {
-	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-	    request->unsent_status_change = GLOBUS_TRUE;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
-        if(request->save_state)
-        {
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-        }
-        else
-        {
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
-        }
-        break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
-	break;
-
-    }
-    globus_mutex_unlock(&request->mutex);
+    GlobusGramJobManagerLock(manager);
+    globus_gram_job_manager_stop_all_jobs(manager);
+    GlobusGramJobManagerUnlock(manager);
 }
 /* globus_l_gram_job_manager_proxy_expiration() */
+
+int
+globus_gram_job_manager_call_authz_callout(
+    gss_ctx_id_t                        request_context,
+    gss_ctx_id_t                        authz_context,
+    const char *                        uniq_id,
+    const globus_rsl_t *                rsl,
+    const char *                        auth_type)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result;
+    globus_object_t *                   error;
+    char *                              filename;
+    globus_callout_handle_t             authz_handle;
+
+    result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+    if(result != GLOBUS_SUCCESS)
+    {
+        error = globus_error_peek(result);
+        
+        if(! globus_error_match(
+               error,
+               GLOBUS_GSI_SYSCONFIG_MODULE,
+               GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
+        }
+        goto conf_filename_failed;
+    }
+
+    result = globus_callout_handle_init(&authz_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
+        goto handle_init_failed;
+    }
+    
+    result = globus_callout_read_config(authz_handle, filename);
+    if(result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
+        goto read_config_failed;
+    }
+    
+    result = globus_callout_call_type(authz_handle,
+                                      GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
+                                      request_context,
+                                      authz_context,
+                                      uniq_id,
+                                      rsl,
+                                      auth_type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        error = globus_error_peek(result);
+        
+        if (globus_error_match(
+               error,
+               GLOBUS_CALLOUT_MODULE,
+               GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED))
+        {
+            /* For queries, check authz self by default. The start case
+             * is handled by the gatekeeper.
+             */
+            if (strcmp(auth_type, "start") != 0)
+            {
+                if (globus_gram_protocol_authorize_self(authz_context))
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+                }
+            }
+        }
+        else if (globus_error_match(
+                   error,
+                   GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                   GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+        }
+        else if (globus_error_match(
+                    error,
+                    GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                    GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_INVALID_JOB))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_JOB_ID;
+        }
+        else if (globus_error_match(
+                    error,
+                    GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                    GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_BAD_EXECUTABLE))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_EXECUTABLE;
+        }
+        else
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
+            
+        }
+    }
+
+read_config_failed:
+    globus_callout_handle_destroy(authz_handle);
+handle_init_failed:
+    free(filename);
+conf_filename_failed:
+    return rc;
+}
+/* globus_gram_job_manager_call_authz_callout() */

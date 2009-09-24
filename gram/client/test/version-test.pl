@@ -1,12 +1,12 @@
 #! /usr/bin/env perl
 #
-# Ping a valid and invalid gatekeeper contact.
+# Get version of a job manager
 
 use strict;
 use POSIX;
 use Test;
 
-my $test_exec = './globus-gram-client-stop-manager-test';
+my $test_exec = 'version-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 
@@ -23,31 +23,30 @@ if ($ENV{CONTACT_STRING} eq "")
 
 my @tests;
 my @todo;
-my $testno=1;
+my $caseno=1;
 
-sub status_test
+sub ping_test
 {
     my ($errors,$rc) = ("",0);
     my ($output);
-    my ($contact, $arg, $result) = @_;
+    my ($contact) = @_;
     my $valgrind = "";
 
     if (exists $ENV{VALGRIND})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_stop_manager_test_" . $testno++ . ".log";
+        $valgrind = "valgrind --log-file=VALGRIND-version-test.log";
         if (exists $ENV{VALGRIND_OPTIONS})
         {
             $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
         }
     }
 
-    system("$valgrind $test_exec '$contact' $arg >/dev/null");
+    system("$valgrind $test_exec '$contact' >/dev/null");
     $rc = $?>> 8;
-    if($rc != $result)
+    if($rc != 0)
     {
         $errors .= "Test exited with $rc. ";
     }
-
     if($errors eq "")
     {
         ok('success', 'success');
@@ -57,8 +56,7 @@ sub status_test
         ok($errors, 'success');
     }
 }
-push(@tests, "status_test('$ENV{CONTACT_STRING}', 1, 0);");
-push(@tests, "status_test('$ENV{CONTACT_STRING}', 2, 0);");
+push(@tests, "ping_test('$ENV{CONTACT_STRING}');");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
