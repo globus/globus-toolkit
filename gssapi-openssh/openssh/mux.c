@@ -85,7 +85,7 @@ extern int tty_flag;
 extern Options options;
 extern int stdin_null_flag;
 extern char *host;
-int subsystem_flag;
+extern int subsystem_flag;
 extern Buffer command;
 
 /* Context for session open confirmation callback */
@@ -427,7 +427,10 @@ muxserver_accept_control(void)
 
 	set_nonblock(client_fd);
 
-	window = CHAN_SES_WINDOW_DEFAULT;
+	if (options.hpn_disabled) 
+	  window = CHAN_SES_WINDOW_DEFAULT;
+	else
+	  window = options.hpn_buffer_size;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (cctx->want_tty) {
 		window >>= 1;
