@@ -926,10 +926,11 @@ class GridFTPPacket(CUsagePacket):
                 minimum_size
 
     # Regular expression to handle GridFTP Server version strings such as
+    # 2.1 (gcc32dbg, 1122653280-63)
     # 3.14 (gcc32dbg, 1222134484-78) [Globus Toolkit 4.2.0]
     version_re = re.compile(\
         "([0-9]+)\\.([0-9]+) \\(([^,]*), " + \
-        "([0-9]+)-([0-9]+)\\) \\[([^\\]]*)\\]")
+        "([0-9]+)-([0-9]+)\\)( \\[([^\\]]*)\\])?")
 
     @staticmethod
     def __parse_version(verstring):
@@ -957,7 +958,7 @@ class GridFTPPacket(CUsagePacket):
                 matches.group(3),
                 int(matches.group(4)),
                 int(matches.group(5)),
-                matches.group(6))
+                matches.group(7))
         else:
             return None
 
