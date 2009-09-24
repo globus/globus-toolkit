@@ -61,6 +61,8 @@ static int ssh_gssapi_krb5_init();
 static int ssh_gssapi_krb5_userok(ssh_gssapi_client *client, char *name);
 static int ssh_gssapi_krb5_localname(ssh_gssapi_client *client, char **user);
 static void ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client);
+static int ssh_gssapi_krb5_updatecreds(ssh_gssapi_ccache *store,
+                                       ssh_gssapi_client *client);
 
 ssh_gssapi_mech gssapi_kerberos_mech = {
 	"toWM5Slw5Ew8Mqkay+al2g==",
@@ -243,7 +245,7 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 	return;
 }
 
-int
+static int
 ssh_gssapi_krb5_updatecreds(ssh_gssapi_ccache *store, 
     ssh_gssapi_client *client)
 {
