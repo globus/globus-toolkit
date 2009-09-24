@@ -31,14 +31,6 @@ globus_common_setup	common/setup	gpt
 globus_common_test	common/test	gpt
 globus_core	core/source	gpt
 globus_cyrus-sasl	gsi/sasl/patch-n-build pnb cyrus-sasl-1.5.27.tar.gz
-globus_data_conversion	data_conversion/source	gpt
-globus_duct_common	duct/common/source	gpt
-globus_duct_control	duct/control/source	gpt
-globus_duct_runtime	duct/runtime/source	gpt
-globus_duroc_bootstrap	duroc/bootstrap/source	gpt
-globus_duroc_common	duroc/common/source	gpt
-globus_duroc_control	duroc/control/source	gpt
-globus_duroc_runtime	duroc/runtime/source	gpt
 globus_ftp_client	gridftp/client/source	gpt
 globus_ftp_client_test	gridftp/client/test	gpt
 globus_ftp_control	gridftp/control/source	gpt
@@ -69,7 +61,6 @@ globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt
 globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt
 globus_wsrf_gram_service_auditing_unit_test ws-gram/service/java/test/auditing tar
 globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt
-globus_gram_myjob	gram/myjob/source	gpt
 globus_gram_protocol	gram/protocol/source	gpt
 globus_gram_protocol_test	gram/protocol/test	gpt
 globus_xio_gridftp_multicast	gridftp/server/multi/source	gpt
@@ -120,8 +111,6 @@ globus_mds_common_setup	mds/common/setup	gpt
 globus_mds_gris		mds/gris/source	gpt
 globus_mds_gris_setup	mds/gris/setup	gpt
 globus_mds_test		mds/tests	gpt
-globus_mp	mp/source	gpt
-globus_nexus	nexus/source	gpt
 globus_openldap	mds/openldap/patch-n-build pnb openldap-2.0.22.tar.gz
 globus_openssl_backup	gsi/openssl_gpt	        gpt
 globus_openssl	gsi/openssl/source	gpt
