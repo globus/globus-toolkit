@@ -49,6 +49,8 @@ extern ServerOptions options;
 static int ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name);
 static int ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user);
 static void ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client);
+static void ssh_gssapi_gsi_updatecreds(ssh_gssapi_ccache *store,
+				       ssh_gssapi_client *client);
 
 ssh_gssapi_mech gssapi_gsi_mech = {
 	"dZuIebMjgUqaxvbF7hDbAw==",
@@ -58,7 +60,7 @@ ssh_gssapi_mech gssapi_gsi_mech = {
 	&ssh_gssapi_gsi_userok,
 	&ssh_gssapi_gsi_localname,
 	&ssh_gssapi_gsi_storecreds,
-    NULL
+	&ssh_gssapi_gsi_updatecreds
 };
 
 /*
@@ -220,6 +222,15 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 	    do_pam_putenv(client->store.envvar, client->store.envval);
 #endif
 	gss_release_buffer(&minor_status, &export_cred);
+}
+
+/*
+ * Export updated GSI credential to disk.
+ */
+static void
+ssh_gssapi_gsi_updatecreds(ssh_gssapi_ccache *store,ssh_gssapi_client *client)
+{
+	ssh_gssapi_gsi_storecreds(client);
 }
 
 #endif /* GSI */
