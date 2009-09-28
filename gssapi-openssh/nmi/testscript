@@ -73,6 +73,7 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
   if test -f gsi_openssh_bundle-*.tar.gz; then
     echo ==================================================
     echo Building GSI-OpenSSH GPT bundle...
+    rm -rf BUILD
     gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
       GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
   fi
@@ -83,7 +84,9 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     ./install-autotools $GLOBUS_LOCATION
     cd ..
     echo ==================================================
-    cd gssapi-openssh/openssh
+    cd gssapi-openssh
+    cp -r openssh openssh.build
+    cd openssh.build
     if test -f make_gpt_dist; then
       echo Building GSI-OpenSSH GPT package from CVS...
       rm -f gsi_openssh-*.tar.gz
@@ -99,7 +102,9 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
         --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
       make install-nokeys # nonroot
     fi
-    cd ../..
+    cd ..
+    rm -rf openssh.build
+    cd ..
   fi
   rm -rf gt*-installer $GLOBUS_LOCATION
 done
