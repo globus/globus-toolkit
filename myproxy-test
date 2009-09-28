@@ -1480,12 +1480,16 @@ sub opensslsanitycheck {
   ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
   if ($exitstatus) {
     print STDERR "openssl rsa encrypt failed:\n", $cmd, "\n", $output;
+    `which openssl`;
+    `openssl version`;
     die;
   }
   $cmd = "openssl rsa -passin stdin -in $testkey > /dev/null";
   ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
   if ($exitstatus) {
     print STDERR "openssl rsa decrypt failed:\n", $cmd, "\n", $output;
+    `which openssl`;
+    `openssl version`;
     die;
   }
   unlink($testkey);
