@@ -631,6 +631,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
     if (myproxy_authorize_accept(context, attrs, 
                                  client_request, &client) < 0) {
         myproxy_log("authorization failed");
+        myproxy_creds_free(client_creds);
+        myproxy_free(NULL, client_request, server_response);
         respond_with_error_and_die(attrs, verror_get_string());
     }
 
@@ -662,6 +664,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	  }
 
       if (myproxy_creds_verify(client_creds) < 0) {
+        myproxy_creds_free(client_creds);
+        myproxy_free(NULL, client_request, server_response);
 	    respond_with_error_and_die(attrs, verror_get_string());
       }
 	}
@@ -731,6 +735,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client.name) < 0) {
+        myproxy_creds_free(client_creds);
+        myproxy_free(NULL, client_request, server_response);
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
@@ -762,6 +768,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client.name) < 0) {
+        myproxy_creds_free(client_creds);
+        myproxy_free(NULL, client_request, server_response);
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
@@ -792,10 +800,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     myproxy_log("Client %s disconnected", client.name);
    
     /* free stuff up */
-    if (client_creds != NULL) {
 	myproxy_creds_free(client_creds);
-    }
-
     myproxy_free(attrs, client_request, server_response);
 
     if (client.fqans) {
@@ -1020,6 +1025,8 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 
     myproxy_log("Exiting: %s", error);
     
+    myproxy_free(attrs, NULL, NULL);
+
     if(debug) exit(1); else _exit(1);
 }
 
