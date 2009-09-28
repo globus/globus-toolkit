@@ -193,16 +193,16 @@ check_config_line(struct config_directives *conf_dirs,
 
         if (e->minargs == e->maxargs) {
             snprintf(expl, sizeof(expl), "takes exactly %d %s",
-             e->minargs, plural_args(e->minargs));
+                     (int)e->minargs, plural_args(e->minargs));
         } else if (e->minargs == NARGS_DONTCHECK) {
             snprintf(expl, sizeof(expl), "wants no more than %d %s",
-             e->maxargs, plural_args(e->maxargs));
+                     (int)e->maxargs, plural_args(e->maxargs));
         } else if (e->maxargs == NARGS_DONTCHECK) {
             snprintf(expl, sizeof(expl), "wants no less than %d %s",
-             e->minargs, plural_args(e->minargs));
+                     (int)e->minargs, plural_args(e->minargs));
         } else {
             snprintf(expl, sizeof(expl), "takes from %d to %d arguments",
-             e->minargs, e->maxargs);
+                     (int)e->minargs, (int)e->maxargs);
         }
         myproxy_log("Directive '%s': supplied %d %s, %s.\n",
          d, nargs, plural_args(nargs), expl);
