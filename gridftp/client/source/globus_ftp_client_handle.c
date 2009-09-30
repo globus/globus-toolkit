@@ -1349,7 +1349,7 @@ globus_object_t *
 globus_i_ftp_client_target_find(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_i_ftp_client_operationattr_t *	attr,
+    globus_i_ftp_client_operationattr_t *       attr_in,
     globus_i_ftp_client_target_t **		target)
 {
     globus_url_t				parsed_url;
@@ -1357,6 +1357,8 @@ globus_i_ftp_client_target_find(
     globus_list_t *				node;
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_l_ftp_client_target_search_t         searcher;
+    globus_i_ftp_client_operationattr_t *       attr;
+    globus_result_t                             result;
 
     GlobusFuncName(globus_i_ftp_client_target_find);
 
@@ -1379,6 +1381,20 @@ globus_i_ftp_client_target_find(
 
     (*target) = GLOBUS_NULL;
 
+    if(attr_in)
+    {
+        attr = attr_in;
+    }
+    else
+    {
+        result = globus_ftp_client_operationattr_init(&attr);
+        if(result)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
+    }
+    
     /* Search the cache for a target which matches this URL. */
     searcher.url = &parsed_url;
     searcher.attr = attr;
@@ -1413,9 +1429,7 @@ globus_i_ftp_client_target_find(
 						   attr);
     }
     else /* found copy in cache... update attrs, url */
-    {
-	globus_result_t				result;
-	
+    {	
 	globus_ftp_client_operationattr_destroy(&(*target)->attr);
 	if(attr)
 	{
@@ -1476,6 +1490,10 @@ globus_i_ftp_client_target_find(
     globus_ftp_control_ipv6_allow(
         (*target)->control_handle, (*target)->attr->allow_ipv6);
     
+    if(!attr_in)
+    {
+        globus_ftp_client_operationattr_destroy(&attr);
+    }
     globus_url_destroy(&parsed_url);
 
     globus_i_ftp_client_control_is_active((*target)->control_handle);
@@ -1498,6 +1516,12 @@ free_target:
     }
 free_url:
     globus_url_destroy(&parsed_url);
+        
+    if(!attr_in)
+    {
+        globus_ftp_client_operationattr_destroy(&attr);
+    }
+
 error_exit:
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_i_ftp_client_target_find() exiting with error\n"));
@@ -1703,7 +1727,7 @@ globus_l_ftp_client_compare_canonically(
        cache_entry->url.port == key->url->port &&
        (strcmp(cache_entry->url.host, key->url->host) == 0))
     {
-        if(cache_entry->target && !key->want_empty)
+        if(cache_entry->target && key->attr && !key->want_empty)
 	{
 	    if(globus_ftp_control_auth_info_compare(
 	           &cache_entry->target->attr->auth_info,
