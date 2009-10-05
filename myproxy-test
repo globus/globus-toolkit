@@ -629,7 +629,7 @@ if ($exitstatus == 0) {
 # So, let's encrypt our proxy key.
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 $testkey = "$tmpdir/myproxy-test.$$.key";
-&runtest("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out $testkey",
+&runcmd("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out $testkey",
 	 $passphrase . "\n");
 chmod(0600, $testkey);
 
@@ -1091,7 +1091,7 @@ if ($exitstatus == 0) {
 &runtest("myproxy-init -v -a -c 1 -t 1 -S", $passphrase . "\n");
 &runtest("myproxy-init -v -x -R '$cert_subject' -k renew -c 1 -t 1",
 		 undef);
-&runtest("grid-proxy-init -limited -o \$X509_USER_PROXY.limited", undef);
+&runcmd("grid-proxy-init -limited -o \$X509_USER_PROXY.limited", undef);
 rename("\$X509_USER_PROXY", "\$X509_USER_PROXY.orig");
 rename("\$X509_USER_PROXY.limited", "\$X509_USER_PROXY");
 ($exitstatus, $output) =
@@ -1202,6 +1202,12 @@ sub runtest {
         $valgrindlogopt = " --log-file=$valgrindlog ";
         $command = $valgrind . $valgrindlogopt . $command;
     }
+    return &runcmd($command, $input);
+}
+
+sub runcmd {
+    local($command, $input) = @_;
+
     print STDERR "running: ", $command, "\n" if ($verbose); 
     $pid = open3(*Writer, *Reader, '', "exec $command") ||
 	die "failed to run $command";
@@ -1240,7 +1246,7 @@ sub docogtests {
 		 $passphrase . "\n");
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy anonget -o $tmpdir/myproxy-test.$$",
+	    &runcmd("$cogmyproxy anonget -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
@@ -1256,7 +1262,7 @@ sub docogtests {
 
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy get -o $tmpdir/myproxy-test.$$",
+	    &runcmd("$cogmyproxy get -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
@@ -1275,7 +1281,7 @@ sub docogtests {
 #     (http://bugzilla.globus.org/globus/show_bug.cgi?id=1914)
 #
     ($exitstatus, $output) =
-        &runtest("$cogmyproxy put -a -c 1 -t 1",
+        &runcmd("$cogmyproxy put -a -c 1 -t 1",
                  $passphrase . "\n");
     print "MyProxy CoG Test 3 (store credential with default name): ";
     if ($exitstatus == 0) {
@@ -1286,7 +1292,7 @@ sub docogtests {
 
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy anonget -o $tmpdir/myproxy-test.$$",
+	    &runcmd("$cogmyproxy anonget -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
@@ -1302,7 +1308,7 @@ sub docogtests {
 
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$cogmyproxy get -o $tmpdir/myproxy-test.$$",
+	    &runcmd("$cogmyproxy get -o $tmpdir/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
@@ -1316,7 +1322,7 @@ sub docogtests {
 	print "FAILED\n"; $FAILURES++; print STDERR $output;
     }
 
-    ($exitstatus, $output) = &runtest("$cogmyproxy info", undef);
+    ($exitstatus, $output) = &runcmd("$cogmyproxy info", undef);
     print "MyProxy CoG Test 6 (get info for stored credentials): ";
     if ($exitstatus == 0 && $output =~ /Owner/) {
         print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1326,7 +1332,7 @@ sub docogtests {
 
 
     ($exitstatus, $output) =
-        &runtest("$cogmyproxy destroy", undef);
+        &runcmd("$cogmyproxy destroy", undef);
     print "MyProxy CoG Test 7 (remove credential from repository): ";
     if ($exitstatus == 0 && $output =~ /was succes+fully/) {
         print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1335,7 +1341,7 @@ sub docogtests {
     }
 
     ($exitstatus, $output) =
-        &runtest("$cogmyproxy put -n -x -R '$cert_subject' -k 'mine' -c 1 -t 1",
+        &runcmd("$cogmyproxy put -n -x -R '$cert_subject' -k 'mine' -c 1 -t 1",
                  $passphrase . "\n");
     print "MyProxy CoG Test 8 (store credential with renewal policy): ";
     if ($exitstatus == 0) {
@@ -1345,7 +1351,7 @@ sub docogtests {
     }
 
     ($exitstatus, $output) =
-      &runtest("$cogmyproxy get -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$", undef);
+      &runcmd("$cogmyproxy get -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o $tmpdir/myproxy-test.$$", undef);
     print "MyProxy CoG Test 9 (renew credential): ";
     if ($exitstatus == 0) {
       ($exitstatus, $output) =
@@ -1434,7 +1440,7 @@ sub verifycert {
     } else {
       # shrug
     }
-    local($output) = &runtest("$grid_proxy_init $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ -pwstdin", $passphrase);
+    local($output) = &runcmd("$grid_proxy_init $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out $tmpdir/tmpproxy.$$ -pwstdin", $passphrase);
     if ($? != 0) {
 	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
 	unlink("$tmpdir/tmpproxy.$$");
@@ -1477,19 +1483,19 @@ sub verifytrustroots {
 sub opensslsanitycheck {
   $testkey = "$tmpdir/myproxy-test.$$.key";
   $cmd = "openssl rsa -des3 -passout stdin -in $ENV{'X509_USER_KEY'} -out $testkey";
-  ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
+  ($exitstatus, $output) = &runcmd($cmd, $passphrase . "\n");
   if ($exitstatus) {
     print STDERR "openssl rsa encrypt failed:\n", $cmd, "\n", $output;
-    `which openssl`;
-    `openssl version`;
+    system("which openssl");
+    system("openssl version");
     die;
   }
   $cmd = "openssl rsa -passin stdin -in $testkey > /dev/null";
-  ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
+  ($exitstatus, $output) = &runcmd($cmd, $passphrase . "\n");
   if ($exitstatus) {
     print STDERR "openssl rsa decrypt failed:\n", $cmd, "\n", $output;
-    `which openssl`;
-    `openssl version`;
+    system("which openssl");
+    system("openssl version");
     die;
   }
   unlink($testkey);
@@ -1528,7 +1534,7 @@ sub dogpiperftest {
 	$i = $perfiters;
 	while ($i--) {
 	    ($exitstatus, $output) =
-		&runtest("grid-proxy-init -hours 1 -out $tmpdir/myproxy-test.$$", undef);
+		&runcmd("grid-proxy-init -hours 1 -out $tmpdir/myproxy-test.$$", undef);
 	    if ($exitstatus != 0) {
 		print "$$: grid-proxy-init FAILED with $i iters to go.\n";
 		print STDERR $output;
@@ -1837,6 +1843,34 @@ sub write_valgrind_supp {
    ...
 }
 {
+   localtime
+   Memcheck:Leak
+   ...
+   fun:localtime
+   ...
+}
+{
+   gmtime
+   Memcheck:Leak
+   ...
+   fun:gmtime
+   ...
+}
+{
+   gethostbyname
+   Memcheck:Leak
+   ...
+   fun:gethostbyname
+   ...
+}
+{
+   sysloginitnotify
+   Memcheck:Leak
+   ...
+   fun:_sl_init_notify
+   ...
+}
+{
    globus_i_gsi_gss_create_cred-fixed-Jan2009
    Memcheck:Leak
    fun:malloc
@@ -1855,6 +1889,13 @@ sub write_valgrind_supp {
    fun:SSL_CTX_new
    ...
    fun:globus_gss_assist_acquire_cred
+   ...
+}
+{
+   globus_module_activate
+   Memcheck:Leak
+   ...
+   fun:globus_module_activate
    ...
 }
 EOF
