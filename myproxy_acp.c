@@ -124,7 +124,7 @@ init_arguments(int argc, char *argv[])
         switch(arg) {  
 	case 'h': 	/* print help and exit */
         case 'u': 	/* print help and exit */
-            printf(usage);
+            printf("%s", usage);
             exit(0);
        	    break;
         case 's': /* set the credential storage directory */
@@ -140,14 +140,14 @@ init_arguments(int argc, char *argv[])
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V':       /* print version and exit */
-            printf(version);
+            printf("%s", version);
             exit(0);
             break;
 	case 'S':
 	    read_passwd_from_stdin = 1;
 	    break;
         default:        /* print usage and exit */ 
-            fprintf(stderr, usage);
+            fprintf(stderr, "%s", usage);
 	    exit(1);
             break;	
         }
@@ -156,7 +156,7 @@ init_arguments(int argc, char *argv[])
     if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
 		argv[optind]);
-	fprintf(stderr, usage);
+	fprintf(stderr, "%s", usage);
 	exit(1);
     }
 

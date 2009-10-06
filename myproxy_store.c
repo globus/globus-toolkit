@@ -305,7 +305,7 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'u':		/* print help and exit */
-	    printf(usage);
+	    printf("%s", usage);
 	    exit(0);
 	    break;
 
@@ -314,7 +314,7 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'h':		/* print help and exit */
-	    printf(usage);
+	    printf("%s", usage);
 	    exit(0);
 	    break;
 
@@ -328,7 +328,7 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'V':		/* print version and exit */
-	    printf(version);
+	    printf("%s", version);
 	    exit(0);
 	    break;
 
@@ -467,7 +467,7 @@ init_arguments(int                     argc,
 	    break;
 
 	default:		/* print usage and exit */
-	    fprintf(stderr, usage);
+	    fprintf(stderr, "%s", usage);
 	    exit(1);
 	    break;
 	}
@@ -475,7 +475,7 @@ init_arguments(int                     argc,
 
     /* Check to see if myproxy-server specified */
     if (attrs->pshost == NULL) {
-	fprintf(stderr, usage);
+        fprintf(stderr, "%s", usage);
 	fprintf(stderr,
 		"Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
 	return -1;

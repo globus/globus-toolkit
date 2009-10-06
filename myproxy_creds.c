@@ -843,7 +843,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 	    verror_put_string("Error writing lockfile");
 	    goto clean_up;
 	}
-	fprintf(lockfile, creds->lockmsg);
+	fprintf(lockfile, "%s", creds->lockmsg);
 	fclose(lockfile);
     } else {
 	unlink(lock_path);
