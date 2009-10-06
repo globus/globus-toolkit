@@ -1886,7 +1886,7 @@ sub write_valgrind_supp {
 {
    globus_gss_assist_acquire_cred
    Memcheck:Leak
-   fun:malloc
+   ...
    fun:CRYPTO_malloc
    ...
    fun:X509_STORE_new
