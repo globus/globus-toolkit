@@ -196,7 +196,7 @@ main(int argc, char *argv[])
     server_context->run_as_daemon = 1;
 
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
-        fprintf(stderr, usage);
+        fprintf(stderr, "%s", usage);
         exit(1);
     }
 
@@ -865,7 +865,7 @@ init_arguments(int argc, char *argv[],
             context->portfile = strdup(optarg);
             break;
         case 'h': 	/* print help and exit */
-            printf(usage);
+            printf("%s", usage);
             exit(0);
             break;
         case 'c':
@@ -876,21 +876,21 @@ init_arguments(int argc, char *argv[],
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V': /* print version and exit */
-            printf(version);
+            printf("%s", version);
             exit(0);
             break;
         case 's': /* set the credential storage directory */
             myproxy_set_storage_dir(optarg);
             break;
 	case 'u': /* print version and exit */
-            printf(usage);
+            printf("%s", usage);
             exit(0);
             break;
         case 'd':
             debug = 1;
             break;
         default:        /* print usage and exit */ 
-            fprintf(stderr, usage);
+            fprintf(stderr, "%s", usage);
 	    exit(1);
             break;
         }

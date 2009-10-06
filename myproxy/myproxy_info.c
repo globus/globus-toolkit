@@ -212,7 +212,7 @@ init_arguments(int argc,
             break;
         case 'u': 	/* print help and exit */
 	case 'h': 	/* print help and exit */
-            printf(usage);
+        printf("%s", usage);
             exit(0);
             break;
         case 'l':	/* username */
@@ -222,7 +222,7 @@ init_arguments(int argc,
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V':       /* print version and exit */
-            printf(version);
+            printf("%s", version);
             exit(0);
             break;
 	case 'k':	/*credential name*/
@@ -233,7 +233,7 @@ init_arguments(int argc,
 	    dn_as_username = 1;
 	    break;
         default:        /* print usage and exit */ 
-            fprintf(stderr, usage);
+            fprintf(stderr, "%s", usage);
 	    exit(1);
             break;	
         }
@@ -242,13 +242,13 @@ init_arguments(int argc,
     if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
 		argv[optind]);
-	fprintf(stderr, usage);
+	fprintf(stderr, "%s", usage);
 	exit(1);
     }
 
     /* Check to see if myproxy-server specified */
     if (attrs->pshost == NULL) {
-	fprintf(stderr, usage);
+        fprintf(stderr, "%s", usage);
 	fprintf(stderr, "Unspecified myproxy-server. Please set the MYPROXY_SERVER environment variable\nor set the myproxy-server hostname via the -s flag.\n");
 	exit(1);
     }

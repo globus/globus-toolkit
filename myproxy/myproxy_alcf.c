@@ -112,13 +112,13 @@ int main(int argc, char *argv[])
 
     if (certfile == NULL) {
 	fprintf (stderr, "Specify certificate file with -c option\n");
-	fprintf(stderr, usage);
+	fprintf(stderr, "%s", usage);
 	goto cleanup;
     }
 
     if (keyfile == NULL) {
 	fprintf (stderr, "Specify key file with -y option\n");
-	fprintf(stderr, usage);
+	fprintf(stderr, "%s", usage);
 	goto cleanup;
     }
 
@@ -200,14 +200,14 @@ init_arguments(int argc,
 	    keyfile = strdup (optarg);
 	    break;
         case 'u': 	/* print help and exit */
-            printf(usage);
+            printf("%s", usage);
             exit(0);
        	    break;
 	case 't': 	/* Specify proxy lifetime in hours */
 	    my_creds->lifetime = SECONDS_PER_HOUR * atoi(optarg);
 	    break;        
 	case 'h': 	/* print help and exit */
-            printf(usage);
+            printf("%s", usage);
             exit(0);
             break;
         case 'l':	/* username */
@@ -217,7 +217,7 @@ init_arguments(int argc,
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V':       /* print version and exit */
-            printf(version);
+            printf("%s", version);
             exit(0);
             break;
 	
@@ -338,7 +338,7 @@ init_arguments(int argc,
 	    break;
 
         default:        /* print usage and exit */ 
-            fprintf(stderr, usage);
+            fprintf(stderr, "%s", usage);
 	    exit(1);
             break;	
         }
@@ -346,7 +346,7 @@ init_arguments(int argc,
     if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
 		argv[optind]);
-	fprintf(stderr, usage);
+	fprintf(stderr, "%s", usage);
 	exit(1);
     }
 }
