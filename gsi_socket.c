@@ -602,6 +602,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     int				i, rc=0, sock;
     FILE			*fp = NULL;
     char                        *cert_dir = NULL;
+    globus_result_t res;
     
     if (self == NULL)
     {
@@ -619,11 +620,13 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	goto error;
     }
 
-    GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
-    if (cert_dir) {
-	myproxy_debug("using trusted certificates directory %s", cert_dir);
+    res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+    if (res == GLOBUS_SUCCESS) {
+        myproxy_debug("using trusted certificates directory %s", cert_dir);
     } else {
-	myproxy_debug("error getting trusted certificates directory");
+        verror_put_string("error getting trusted certificates directory");
+        globus_error_to_verror(res);
+        goto error;
     }
 
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
@@ -791,6 +794,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     int				sock;
     FILE			*fp = NULL;
     char                        *cert_dir = NULL;
+    globus_result_t res;
 
     if (self == NULL) {	
 	return GSI_SOCKET_ERROR;
@@ -801,11 +805,13 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	goto error;
     }
 
-    GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
-    if (cert_dir) {
-	myproxy_debug("using trusted certificates directory %s", cert_dir);
+    res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+    if (res == GLOBUS_SUCCESS) {
+        myproxy_debug("using trusted certificates directory %s", cert_dir);
     } else {
-	myproxy_debug("error getting trusted certificates directory");
+        verror_put_string("error getting trusted certificates directory");
+        globus_error_to_verror(res);
+        goto error;
     }
 
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
