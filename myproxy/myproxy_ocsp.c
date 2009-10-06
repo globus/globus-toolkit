@@ -255,6 +255,7 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
   OCSP_BASICRESP        *basic = 0;
   myproxy_ocspresult_t  result;
   ASN1_GENERALIZEDTIME  *producedAt, *thisUpdate, *nextUpdate;
+  globus_result_t       res;
 
   if (!policy && !responder_url) {
       result = MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED;
@@ -303,9 +304,10 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
     result = MYPROXY_OCSPRESULT_ERROR_OUTOFMEMORY;
     goto end;
   }
-  GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
-  if (certdir == NULL) {
+  res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
+  if (res != GLOBUS_SUCCESS) {
     verror_put_string("failed to find GSI CA cert directory");
+    globus_error_to_verror(res);
     goto end;
   }
   X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);

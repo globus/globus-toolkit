@@ -174,6 +174,7 @@ main(int argc, char *argv[])
     globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
     res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
     if (res != GLOBUS_SUCCESS) {
+        globus_object_free(globus_error_get(res));
         myproxy_log("Bootstrapping MyProxy server root of trust.");
         myproxy_bootstrap_trust(socket_attrs);
     }

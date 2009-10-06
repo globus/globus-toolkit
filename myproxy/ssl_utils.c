@@ -1863,6 +1863,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_STORE_CTX        csc;
    SSL                   *ssl = NULL;
    SSL_CTX               *sslContext = NULL;
+   globus_result_t       res;
 
    int                                 callback_data_index;
    globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -1895,10 +1896,10 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
       goto end;
    }
 
-   GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
-   if (certdir == NULL) {
+   res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
+   if (res != GLOBUS_SUCCESS) {
       verror_put_string("failed to find GSI CA cert directory");
-      ssl_error_to_verror();
+      globus_error_to_verror(res);
       goto end;
    }
    X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
