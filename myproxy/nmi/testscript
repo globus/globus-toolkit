@@ -43,7 +43,7 @@ echo ==================================================
 valgrind=""
 if test -d /prereq/valgrind-3.5.0/bin; then
     echo /prereq/valgrind-3.5.0/bin exists
-    PATH=$PATH:/prereq/valgrind-3.5.0/bin
+    PATH=/prereq/valgrind-3.5.0/bin:$PATH
     export PATH
     valgrind="-valgrind"
     echo valgrind-3.5.0 found.
