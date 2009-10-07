@@ -1875,6 +1875,11 @@ sub write_valgrind_supp {
    ...
 }
 {
+   AES_cbc_encrypt
+   Memcheck:Addr4
+   fun:AES_cbc_encrypt
+}
+{
    globus_i_gsi_gss_create_cred-fixed-Jan2009
    Memcheck:Leak
    fun:malloc
