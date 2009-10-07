@@ -167,10 +167,18 @@ globus_gram_job_manager_staging_remove(
 
     globus_gram_job_manager_request_log(
             request,
-            "JM: Finished staging (%s = (%s %s))\n",
-            typestr,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.staging_remove.start "
+            "level=DEBUG "
+            "gramid=%s "
+            "src=\"%s\" "
+            "dst=\"%s\" "
+            "type=%s "
+            "\n",
+            request->job_contact_path,
             from,
-            to);
+            to,
+            typestr);
 
     query.evaled_from = from;
     query.evaled_to = to;
@@ -201,27 +209,53 @@ globus_gram_job_manager_staging_remove(
     {
         item = globus_list_remove(list, node);
 
+        globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.staging_remove.end "
+            "level=TRACE "
+            "gramid=%s "
+            "msg=\"%s\" "
+            "src=\"%s\" "
+            "dst=\"%s\" "
+            "type=%s "
+            "status=%d "
+            "\n",
+            request->job_contact_path,
+            "File staged",
+            from,
+            to,
+            typestr,
+            0);
+
         globus_rsl_value_free_recursive(item->from);
         globus_rsl_value_free_recursive(item->to);
         free(item->evaled_from);
         free(item->evaled_to);
         free(item);
-
-        globus_gram_job_manager_request_log(
-            request,
-            "JM: successfully removed (%s = (%s %s)) from todo list\n",
-            typestr,
-            from,
-            to);
     }
     else
     {
         globus_gram_job_manager_request_log(
             request,
-            "JM: strange... (%s = (%s %s)) wasn't in the todo list\n",
-            typestr,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+            "event=gram.staging_remove.end "
+            "level=WARN "
+            "gramid=%s "
+            "msg=\"%s\" "
+            "src=\"%s\" "
+            "dst=\"%s\" "
+            "type=%s "
+            "status=%d "
+            "msg=\"%s\" "
+            "\n",
+            request->job_contact_path,
+            "File staged",
             from,
-            to);
+            to,
+            typestr,
+            0,
+            "Unexpected staging completion");
     }
     return GLOBUS_SUCCESS;
 }

@@ -43,11 +43,14 @@ EXTERN_C_BEGIN
 /* Type definitions */
 typedef enum
 {
-    GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE,
-    GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS,
-    GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR
+    GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL = 1 << 0,
+    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR = 1 << 1,
+    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN =  1 << 2,
+    GLOBUS_GRAM_JOB_MANAGER_LOG_INFO =  1 << 3,
+    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG = 1 << 4,
+    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE = 1 << 5
 }
-globus_gram_job_manager_logfile_flag_t;
+globus_gram_job_manager_log_level_t;
 
 typedef enum
 {
@@ -169,12 +172,6 @@ typedef struct
      * Values derived from command-line options and configuration file
      * -------------------------------------------------------------------
      */
-    /**
-     * Flag denoting the disposition of the log file once the job manager
-     * completes monitoring this job.
-     */
-    globus_gram_job_manager_logfile_flag_t
-                                        logfile_flag;
     /** True if we are using kerberos for security instead of X.509
      * certificates.
      */
@@ -285,6 +282,23 @@ typedef struct
      * Use the single job manager per user / jobmanager type feature
      */
     globus_bool_t                       single;
+    /**
+     * Events to record to syslog/log file
+     */
+    globus_gram_job_manager_log_level_t log_levels;
+    /**
+     * Flag indicating whether to use syslog for logging
+     */
+    globus_bool_t                       syslog_enabled;
+    /**
+     * Flag indicating whether to use syslog for logging
+     */
+    globus_bool_t                       stdiolog_enabled;
+    /**
+     * Log file directory
+     */
+    const char *                        stdiolog_directory;
+
     /*
      * -------------------------------------------------------------------
      * Values derived from job manager environment
@@ -329,18 +343,6 @@ typedef struct globus_gram_job_manager_s
      * Callback handle for fork SEG-like polling
      */
     globus_callback_handle_t            fork_callback_handle;
-    /**
-     * Log File Name
-     *
-     * A path to a file to append logging information to.
-     */
-    char *                              jobmanager_logfile;
-    /**
-     * Log File Pointer
-     *
-     * A stdio FILE pointer used for logging. NULL if no logging is requested.
-     */
-    FILE *                              jobmanager_log_fp;
     /** Scheduler-specific set of validation records */
     globus_list_t *                     validation_records;
     /** GRAM job manager listener contact string */
@@ -724,9 +726,10 @@ globus_gram_job_manager_request_set_status_time(
     globus_gram_protocol_job_state_t    status,
         time_t valid_time);
 
-int
+void
 globus_gram_job_manager_request_log(
     globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_log_level_t level,
     const char *                        format,
     ...);
 
@@ -784,6 +787,7 @@ globus_gram_rewrite_output_as_staging(
 int
 globus_gram_job_manager_request_load_all(
     globus_gram_job_manager_t *         manager,
+    globus_gram_jobmanager_request_t *  initial_request,
     globus_list_t **                    requests);
 
 int
@@ -1201,6 +1205,7 @@ globus_gram_job_manager_auditing_file_write(
     do { \
         globus_gram_job_manager_log( \
                 manager, \
+                GLOBUS_GRAM_LOG_TRACE, \
                 "JM: [tid=%ld] Condition Wait: Unlocking manager (%s:%d) %p\n", \
                 (long) globus_thread_self() \
                 __FILE__, \
@@ -1209,6 +1214,7 @@ globus_gram_job_manager_auditing_file_write(
         globus_cond_wait(&(manager)->cond, &(manager)->mutex); \
         globus_gram_job_manager_log( \
                 manager, \
+                GLOBUS_GRAM_LOG_TRACE, \
                 "JM: [tid=%ld] Condition Wait Returns: Locking manager (%s:%d) %p\n", \
                 (long) globus_thread_self() \
                 __FILE__, \
@@ -1233,16 +1239,10 @@ void
 globus_gram_job_manager_destroy(
     globus_gram_job_manager_t *         manager);
 
-int
-globus_gram_job_manager_read_rsl(
-    globus_gram_job_manager_t *         manager,
-    char **                             rsl,
-    char **                             contact,
-    int *                               job_state_mask);
-
-int
+void
 globus_gram_job_manager_log(
     globus_gram_job_manager_t *         manager,
+    globus_gram_job_manager_log_level_t level,
     const char *                        format,
     ...);
 
@@ -1345,6 +1345,15 @@ globus_i_gram_get_tg_gateway_user(
     gss_ctx_id_t                        context,
     char **                             gateway_user);
 
+
+/* logging.c */
+extern globus_logging_handle_t          globus_i_gram_job_manager_log_stdio;
+extern globus_logging_handle_t          globus_i_gram_job_manager_log_sys;
+
+extern
+char *
+globus_gram_prepare_log_string(
+    const char *                        instr);
 
 EXTERN_C_END
 

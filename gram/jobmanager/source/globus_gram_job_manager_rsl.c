@@ -352,12 +352,6 @@ globus_gram_rsl_add_output(
     globus_rsl_value_t *                value_sequence;
     int                                 rc = GLOBUS_SUCCESS;
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Adding %s = %s to RSL\n",
-            attribute,
-            value);
-
     attr_copy = strdup(attribute);
     if (attr_copy == NULL)
     {
@@ -485,12 +479,6 @@ globus_gram_rsl_add_stream_out(
     globus_rsl_value_t *                new_stage_sequence;
 
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Adding filestreamout (%s %s) to RSL\n",
-            source,
-            destination);
-
     operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
     node = globus_list_search_pred(
             *operand_ref,
@@ -499,10 +487,6 @@ globus_gram_rsl_add_stream_out(
     if (!node)
     {
         /* No file_stage_out in RSL, add a new empty one */
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: No existing filestreamout, adding it\n");
-
         attr_copy = strdup("filestreamout");
         if (attr_copy == NULL)
         {
@@ -553,9 +537,6 @@ attr_copy_failed:
     else
     {
         /* Adding new value to existing filestageout */
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: Appending to existing filestreamout\n");
         relation = globus_list_first(node);
     }
 
@@ -919,11 +900,6 @@ globus_gram_job_manager_rsl_parse_value(
     globus_rsl_value_t *                values;
     int                                 rc = GLOBUS_SUCCESS;
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Parsing value string %s to rsl_value_t *\n",
-            value_string);
-
     rsl_spec = malloc(strlen(format) + strlen(value_string) + 1);
 
     if (rsl_spec == NULL)
@@ -980,10 +956,6 @@ globus_gram_job_manager_rsl_evaluate_value(
 
     *value_string = NULL;
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Evaluating RSL Value\n");
-
     copy = globus_rsl_value_copy_recursive(value);
     if (copy == NULL)
     {
@@ -1017,10 +989,6 @@ free_copy_out:
     globus_rsl_value_free_recursive(copy);
 
 out:
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Evaluated RSL Value to %s\n",
-            *value_string ? *value_string : "NULL");
 
     return rc;
 }

@@ -65,6 +65,7 @@ globus_gram_job_manager_config_init(
     int                                 i;
     int                                 rc = 0;
     char                                hostname[MAXHOSTNAMELEN];
+    char *                              conf_path;
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
@@ -88,14 +89,31 @@ globus_gram_job_manager_config_init(
         /* get file length via fseek & ftell */
         if ((fp = fopen(argv[2], "r")) == NULL)
         {
-            fprintf(stderr, "failed to open configuration file\n");
+            globus_gram_job_manager_log(
+                    NULL,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
+                    "event=gram.config.end level=FATAL path=\"%s\" "
+                    "status=-1 msg=\"%s\" errno=%d reason=\"%s\"\n",
+                    conf_path,
+                    "Error opening configuration file",
+                    errno,
+                    strerror(errno));
             exit(1);
         }
+        conf_path = argv[2];
         fseek(fp, 0, SEEK_END);
         length = ftell(fp);
         if (length <=0)
         {
-           fprintf(stderr,"failed to determine length of configuration file\n");
+            globus_gram_job_manager_log(
+                    NULL,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
+                    "event=gram.config.end level=FATAL path=\"%s\" "
+                    "status=-1 msg=\"%s\" errno=%d reason=\"%s\"\n",
+                    conf_path,
+                    "Error determining config file length",
+                    errno,
+                    strerror(errno));
            exit(1);
         }
         rewind(fp);
@@ -104,8 +122,15 @@ globus_gram_job_manager_config_init(
         i = fread(newbuf, 1, length, fp);
         if (i < 0)
         {
-            fprintf(stderr, "Unable to read parameters from configuration "
-                            "file\n");
+            globus_gram_job_manager_log(
+                    NULL,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
+                    "event=gram.config.end level=FATAL path=\"%s\" "
+                    "status=-1 msg=\"%s\" errno=%d reason=\"%s\"\n",
+                    conf_path,
+                    "Error reading configuration file",
+                    errno,
+                    strerror(errno));
             exit(1);
         }
         newbuf[i] = '\0';
@@ -121,30 +146,16 @@ globus_gram_job_manager_config_init(
         argv = newargv;
         argc = newargc + 1;
     }
+    /* Default log level if nothing specified on command-line or config file */
+    config->log_levels = GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL
+                       | GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
 
     /*
      * Parse the command line arguments
      */
     for (i = 1; i < argc; i++)
     {
-        if ((strcmp(argv[i], "-save-logfile") == 0)
-                 && (i + 1 < argc))
-        {
-            if (strcmp(argv[i+1], "always") == 0)
-            {
-                config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS;
-            }
-            else if(strcmp(argv[i+1], "on_error") == 0)
-            {
-                config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
-            }
-            else if(strcmp(argv[i+1], "on-error") == 0)
-            {
-                config->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
-            }
-            i++;
-        }
-        else if(strcmp(argv[i], "-rsl") == 0)
+        if(strcmp(argv[i], "-rsl") == 0)
         {
             if(i + 1 < argc)
             {
@@ -152,7 +163,14 @@ globus_gram_job_manager_config_init(
             }
             else
             {
-                fprintf(stderr, "-rsl argument requires and rsl\n");
+                globus_gram_job_manager_request_log(
+                        NULL,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
+                        "event=gram.config.end level=FATAL path=\"%s\" " 
+                        "status=-1 msg=\"%s\" option=%s\n",
+                        conf_path,
+                        "Missing argument",
+                        "-rsl");
                 exit(1);
             }
         }
@@ -276,6 +294,51 @@ globus_gram_job_manager_config_init(
         {
             config->service_tag = strdup(argv[++i]);
         }
+        else if (strcmp(argv[i], "-enable-syslog") == 0)
+        {
+            config->syslog_enabled = GLOBUS_TRUE;
+            i++;
+        }
+        else if (strcmp(argv[i], "-stdio-log") == 0
+                && (i+1 < argc))
+        {
+            config->stdiolog_enabled = GLOBUS_TRUE;
+            config->stdiolog_directory = strdup(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-log-levels") == 0
+                && (i+1 < argc))
+        {
+            char *                  log_level_string = strdup(argv[++i]);
+            char *                  level_string = NULL;
+
+            while ((level_string = strsep(&log_level_string, "|")) != NULL)
+            {
+                if (strcmp(level_string, "FATAL") == 0)
+                {
+                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL;
+                }
+                else if (strcmp(level_string, "ERROR") == 0)
+                {
+                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
+                }
+                else if (strcmp(level_string, "WARN") == 0)
+                {
+                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_WARN;
+                }
+                else if (strcmp(level_string, "INFO") == 0)
+                {
+                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_INFO;
+                }
+                else if (strcmp(level_string, "DEBUG") == 0)
+                {
+                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG;
+                }
+                else if (strcmp(level_string, "TRACE") == 0)
+                {
+                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE;
+                }
+            }
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -298,8 +361,10 @@ globus_gram_job_manager_config_init(
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-history job-history-directory\n" 
-                    "\t-save-logfile [ always | on_error ]\n"
                     "\t-scratch-dir-base scratch-directory\n"
+                    "\t-enable-syslog\n"
+                    "\t-stdio-log DIRECTORY\n"
+                    "\t-log-levels TRACE|INFO|DEBUG|WARN|ERROR|FATAL\n"
                     "\t-state-file-dir state-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
                     "\t-x509-cert-dir DIRECTORY\n"
@@ -319,16 +384,24 @@ globus_gram_job_manager_config_init(
         }
         else
         {
-            fprintf(stderr, "Warning: Ignoring unknown argument %s\n\n",
-                    argv[i]);
+            globus_gram_job_manager_log(
+                NULL,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.config level=ERROR path=\"%s\" "
+                "argument=%s reason=\"Invalid command-line option\"\n",
+                conf_path ? conf_path : "ARGV",
+                argv[i] ? argv[i] : "");
         }
     }
 
     /* Verify that required values are present */
     if(config->jobmanager_type == NULL)
     {
-        fprintf(stderr,
-                "JM: Jobmanager service misconfigured: missing -type option\n");
+        globus_gram_job_manager_log(
+            NULL,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram.config level=ERROR path=\"%s\" argument=\"-type\" reason=\"Missing -type command-line option\"\n",
+            conf_path ? conf_path : "ARGV");
 
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
         goto out;
@@ -343,18 +416,22 @@ globus_gram_job_manager_config_init(
     {
         if(config->condor_arch == NULL)
         {
-            fprintf(stderr,
-                    "JMI: Condor_arch must be specified when "
-                    "jobmanager type is condor\n");
+            globus_gram_job_manager_log(
+                NULL,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.config level=ERROR path=\"%s\" argument=\"-condor-arch\" reason=\"Missing -condor-arch command-line option for condor LRM\"\n",
+                conf_path ? conf_path : "ARGV");
 
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONDOR_ARCH;
             goto out;
         }
         if(config->condor_os == NULL)
         {
-           fprintf(stderr,
-                   "JMI: condor_os must be specified when "
-                   "jobmanager type is condor\n");
+            globus_gram_job_manager_log(
+                NULL,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.config level=ERROR path=\"%s\" argument=\"-condor-os\" reason=\"Missing -condor-os command-line option for condor LRM\"\n",
+                conf_path ? conf_path : "ARGV");
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONDOR_OS;
             goto out;
         }
@@ -642,4 +719,3 @@ globus_l_gram_tokenize(char * command, char ** args, int * n)
 }
 /* globus_l_gram_tokenize() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-

@@ -63,13 +63,13 @@ Syntax: globus-personal-gatekeeper [options]
     -debug
     Displays extra output
 
-    -start [-jmtype <type>] [-auditdir <dir>] [-port <port>] [-log=always|never|on_error] [-seg] [-acctfile file]
+    -start [-jmtype <type>] [-auditdir <dir>] [-port <port>] [-log[=DIRECTORY]] [-seg] [-acctfile file]
     Starts a new gatekeeper, mapping default service to a
     jobmanager. By default, the jobmanager is configured with
     jmtype=fork. The option -port can be used to restrict the
     gatekeeper to use a particular port. The default is to let the
     system choose a port. The -log switch causes the job manager
-    to choose when log files will be created in the user's home directory.
+    to write log messages to files in DIRECTORY.
     If -seg is used, then the Scheduler Event Generator will be used to 
     poll job state. The -auditdir switch tells the jobmanager where
     to store the audit-records. The -acctfile switch tells the gatekeeper
@@ -312,6 +312,7 @@ log=never
 seg=0
 startargs=''
 single=''
+logdir=""
 valgrind=0
 
 while [ -n "$1" ]; do
@@ -343,13 +344,11 @@ while [ -n "$1" ]; do
 		jmtype="$2"
 		shift
 		;;
-	-log)
-		if test "$2" = "on_error" -o "$2" = "always" -o "$2" = "never"
-                then
-		    log=$2
-		else
-		    globus_args_unrecognized_option "$1"
-		fi
+	-log*)
+                logdir=`expr "$1" : "-log=\(.*\)"`
+                if [ "$logdir" = "" ]; then
+                    logdir="$HOME"
+                fi
 		shift
 		;;
         -single)
@@ -476,6 +475,9 @@ host_cputype=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $1}'`
 host_manufacturer=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $2}'`
 host_osname=`${GLOBUS_SH_UNAME-uname} -s`
 host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
+if [ "$logdir" != "" ]; then
+    log_line=`echo "-stdio-log \"$logdir\""`
+fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION}
@@ -485,7 +487,7 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -globus-host-manufacturer ${host_manufacturer}
 -globus-host-osname ${host_osname}
 -globus-host-osversion ${host_osversion}
--save-logfile ${log}
+$log_line
 -state-file-dir ${statefiledir}
 ${startargs}
 $single

@@ -1106,7 +1106,7 @@ globus_l_gram_job_manager_validate_log(
     va_list                             ap;
 
     va_start(ap, fmt);
-    vfprintf(manager->jobmanager_log_fp, fmt, ap);
+    /*vfprintf(manager->jobmanager_log_fp, fmt, ap);*/
     va_end(ap);
 #endif
 }
