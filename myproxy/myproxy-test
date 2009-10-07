@@ -1901,6 +1901,14 @@ sub write_valgrind_supp {
    ...
 }
 {
+   gss_release_name
+   Memcheck:Leak
+   ...
+   fun:gss_release_name
+   fun:globus_gss_assist_accept_sec_context
+   ...
+}
+{
    globus_module_activate
    Memcheck:Leak
    ...
