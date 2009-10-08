@@ -25,7 +25,27 @@
 
 globus_logging_handle_t                 globus_i_gram_job_manager_log_stdio;
 globus_logging_handle_t                 globus_i_gram_job_manager_log_sys;
-globus_logging_module_t                 globus_l_gram_logging_module;
+static FILE *                           globus_l_gram_log_fp = NULL;
+
+static
+void
+globus_l_gram_logging_close(
+    void *                              user_arg);
+
+static
+void
+globus_l_gram_logging_write(
+    globus_byte_t *                     buf,
+    globus_size_t                       length,
+    void *                              user_arg);
+
+globus_logging_module_t                 globus_l_gram_logging_module =
+{
+    NULL,
+    globus_l_gram_logging_write,
+    globus_l_gram_logging_close,
+    NULL
+};
 
 int
 globus_gram_job_manager_logging_init(
@@ -34,9 +54,6 @@ globus_gram_job_manager_logging_init(
     globus_result_t                     result = GLOBUS_SUCCESS;
     time_t                              now;
     struct tm *                         nowtm;
-    char *                              path;
-    FILE *                              fp;
-
 
     if (config->syslog_enabled)
     {
@@ -64,30 +81,18 @@ globus_gram_job_manager_logging_init(
 
     if (config->stdiolog_enabled)
     {
+        globus_l_gram_logging_module.header_func =
+                globus_logging_stdio_ng_module.header_func;
         now = time(NULL);
         nowtm = gmtime(&now);
 
-        path = globus_common_create_string(
-                "%s/gram_%04d%02d%02d.log",
-                config->stdiolog_directory,
-                nowtm->tm_year + 1900,
-                nowtm->tm_mon + 1,
-                nowtm->tm_mday);
-
-        if (path == NULL)
-        {
-            fprintf(stderr, "Error constructing logging path\n");
-        }
-
-        fp = fopen(path, "a");
-        setvbuf(fp, NULL, _IONBF, 0);
         result = globus_logging_init(
                 &globus_i_gram_job_manager_log_stdio,
                 NULL,
                 0,
                 config->log_levels|GLOBUS_LOGGING_INLINE,
-                &globus_logging_stdio_ng_module,
-                fp);
+                &globus_l_gram_logging_module,
+                (void *) config->stdiolog_directory);
 
         if (result != GLOBUS_SUCCESS)
         {
@@ -148,3 +153,70 @@ globus_gram_prepare_log_string(
     return outstr;
 }
 /* globus_gram_prepare_log_string() */
+
+static
+void
+globus_l_gram_logging_write(
+    globus_byte_t *                     buf,
+    globus_size_t                       length,
+    void *                              user_arg)
+{
+    const char *                        dir = user_arg;
+    time_t                              now;
+    struct tm *                         now_tm;
+    static char                         path[MAXPATHLEN] = "";
+    static char                         last_path[MAXPATHLEN] = "";
+    int                                 fd;
+    int                                 flags;
+    int                                 rc;
+
+    now = time(NULL);
+    now_tm = gmtime(&now);
+
+    snprintf(
+            path,
+            sizeof(path),
+            "%s/gram_%04d%02d%02d.log",
+            dir,
+            now_tm->tm_year + 1900,
+            now_tm->tm_mon + 1,
+            now_tm->tm_mday);
+
+    if (strcmp(path, last_path) != 0)
+    {
+        strcpy(last_path, path);
+        if (globus_l_gram_log_fp != NULL)
+        {
+            freopen(path, "a", globus_l_gram_log_fp);
+        }
+        else
+        {
+            globus_l_gram_log_fp = fopen(path, "a");
+            globus_assert(globus_l_gram_log_fp != NULL);
+            setvbuf(globus_l_gram_log_fp, NULL, _IONBF, 0);
+        }
+
+        fd = fileno(globus_l_gram_log_fp);
+        flags = fcntl(fd, F_GETFL);
+        globus_assert(flags >= 0);
+        flags |= FD_CLOEXEC;
+        rc = fcntl(fd, F_SETFL, flags);
+        globus_assert(rc >= 0);
+    }
+
+    fwrite(buf, length, 1, globus_l_gram_log_fp);
+}
+/* globus_l_gram_logging_write() */
+
+static
+void
+globus_l_gram_logging_close(
+    void *                              user_arg)
+{
+    if (globus_l_gram_log_fp != NULL)
+    {
+        fclose(globus_l_gram_log_fp);
+        globus_l_gram_log_fp = NULL;
+    }
+}
+/* globus_l_gram_logging_close() */

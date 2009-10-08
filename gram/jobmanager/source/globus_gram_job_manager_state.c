@@ -1422,7 +1422,7 @@ globus_gram_job_manager_reply(
                         "gramid=%s "
                         "status=%d "
                         "\n",
-                        request->job_contact_path,
+                        request ? request->job_contact_path : "",
                         0);
             }
         }

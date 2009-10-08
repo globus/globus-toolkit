@@ -335,10 +335,7 @@ globus_l_gram_job_manager_script_read(
                 free(errstr_escaped);
             }
         }
-        else
-        {
-            result = GLOBUS_SUCCESS;
-        }
+        script_handle->result = result;
     }
 
     while((p = memchr(script_handle->return_buf, '\n', nbytes)) != NULL)
