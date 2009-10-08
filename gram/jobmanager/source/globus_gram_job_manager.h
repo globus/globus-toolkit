@@ -1351,6 +1351,11 @@ extern globus_logging_handle_t          globus_i_gram_job_manager_log_stdio;
 extern globus_logging_handle_t          globus_i_gram_job_manager_log_sys;
 
 extern
+int
+globus_gram_job_manager_logging_init(
+    globus_gram_job_manager_config_t *  config);
+
+extern
 char *
 globus_gram_prepare_log_string(
     const char *                        instr);

@@ -158,6 +158,13 @@ globus_l_gram_job_manager_script_done(
     globus_gram_job_manager_t *         manager,
     globus_gram_script_handle_t         handle);
 
+static
+void
+globus_l_script_close_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
 /**
  * Begin execution of a job manager script
  */
@@ -2191,8 +2198,11 @@ globus_l_gram_process_script_queue_locked(
             {
                 free(escaped_errstr);
             }
-            globus_xio_close(head->handle->handle, NULL);
-            free(head->handle);
+            globus_xio_register_close(
+                    head->handle->handle,
+                    NULL,
+                    globus_l_script_close_callback,
+                    head->handle);
             head->handle = NULL;
             manager->script_slots_available++;
             continue;
@@ -2210,8 +2220,11 @@ globus_l_gram_process_script_queue_locked(
         {
             GlobusTimeReltimeSet(delay, 0, 0);
 
-            globus_xio_close(head->handle->handle, NULL);
-            free(head->handle);
+            globus_xio_register_close(
+                    head->handle->handle,
+                    NULL,
+                    globus_l_script_close_callback,
+                    head->handle);
             head->handle = NULL;
             manager->script_slots_available++;
 
@@ -2285,6 +2298,7 @@ malloc_iov_failed:
 }
 /* globus_l_gram_fifo_to_iovec() */
 
+
 /**
  * Finished processing a script, start another if one is queued
  *
@@ -2307,9 +2321,12 @@ globus_l_gram_job_manager_script_done(
     }
     else
     {
-        globus_xio_close(handle->handle, NULL);
+        globus_xio_register_close(
+                handle->handle,
+                NULL,
+                globus_l_script_close_callback,
+                handle);
         manager->script_slots_available++;
-        free(handle);
     }
 
     globus_l_gram_process_script_queue_locked(manager);
@@ -2502,3 +2519,15 @@ script_path_malloc_failed:
     return rc;
 }
 /* globus_gram_job_manager_script_handle_init() */
+
+static
+void
+globus_l_script_close_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    free(user_arg);
+}
+/* globus_l_script_close_callback() */
+
