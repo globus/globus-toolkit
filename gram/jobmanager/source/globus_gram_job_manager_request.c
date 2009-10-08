@@ -57,12 +57,6 @@ globus_l_gram_symboltable_add(
     const char *                        value);
 
 static
-void
-globus_l_gram_log_rsl(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        label);
-
-static
 int
 globus_l_gram_generate_id(
     globus_gram_jobmanager_request_t *  request,
@@ -291,11 +285,6 @@ globus_gram_job_manager_request_init(
         goto symboltable_populate_failed;
     }
 
-    globus_gram_job_manager_request_log(
-            r,
-            "Pre-parsed RSL string: %s\n",
-            rsl);
-    
     r->rsl = globus_rsl_parse(rsl);
     if (r->rsl == NULL)
     {
@@ -303,7 +292,6 @@ globus_gram_job_manager_request_init(
 
         goto rsl_parse_failed;
     }
-    globus_l_gram_log_rsl(r, "Job Request RSL");
 
     rc = globus_rsl_assist_attributes_canonicalize(r->rsl);
     if(rc != GLOBUS_SUCCESS)
@@ -320,8 +308,6 @@ globus_gram_job_manager_request_init(
         goto rsl_unparse_failed;
     }
 
-    globus_l_gram_log_rsl(r, "Job Request RSL (canonical)");
-    
     /* If this is a restart job, the id will come from the restart RSL
      * value; otherwise, it will be generated from current pid and time
      */
@@ -506,11 +492,7 @@ globus_gram_job_manager_request_init(
     rc = globus_l_gram_validate_rsl(r);
     if(rc != GLOBUS_SUCCESS)
     {
-        globus_gram_job_manager_request_log(
-                r,
-                "Validation failed: %d\n",
-                rc);
-        goto validate_rsl_failed;;
+        goto validate_rsl_failed;
     }
     rc = globus_gram_job_manager_rsl_attribute_get_int_value(
             r->rsl,
@@ -696,13 +678,6 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_PROXY_TIMEOUT;
         goto bad_proxy_timeout;
     }
-    else
-    {
-        globus_gram_job_manager_log(
-                manager,
-                "JM: Ignoring job-specific proxy_timeout %d\n",
-                proxy_timeout);
-    }
 
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
@@ -854,7 +829,6 @@ cached_stdout_malloc_failed:
             globus_gram_job_manager_destroy_directory(r, r->job_dir);
         }
 failed_make_job_dir:
-failed_check_exists:
         free(r->job_contact_path);
 failed_set_job_contact_path:
 failed_add_contact_to_symboltable:
@@ -880,10 +854,7 @@ symboltable_init_failed:
     }
 request_malloc_failed:
     *request = r;
-    globus_gram_job_manager_log(
-            manager,
-            "request_init exits with %d\n",
-            rc);
+
     return rc;
 }
 /* globus_gram_job_manager_request_init() */
@@ -1175,9 +1146,6 @@ globus_gram_job_manager_request_destroy(
     {
         return;
     }
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Destroying request\n");
     if (request->scratchdir)
     {
         globus_gram_job_manager_destroy_directory(
@@ -1206,9 +1174,6 @@ globus_gram_job_manager_request_free(
     {
         return;
     }
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Freeing request memory\n");
     if (request->job_id_string)
     {
         free(request->job_id_string);
@@ -1273,10 +1238,6 @@ globus_gram_job_manager_request_free(
     if (request->job_state_lock_fd >= 0 &&
         request->job_state_lock_fd != request->manager->lock_fd)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                "Closing job state lock file %d\n",
-                request->job_state_lock_fd);
         close(request->job_state_lock_fd);
     }
     globus_mutex_destroy(&request->mutex);
@@ -1378,8 +1339,19 @@ globus_gram_job_manager_request_set_status_time(
 {
     if( ! request )
         return GLOBUS_FAILURE;
+
     request->status = status;
     request->status_update_time = valid_time;
+
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            "event=gram.job.info "
+            "gramid=%s "
+            "job_status=%d "
+            "\n",
+            request->job_contact_path,
+            status);
 
     globus_gram_job_manager_set_status(
             request->manager,
@@ -1405,43 +1377,35 @@ globus_gram_job_manager_request_set_status_time(
  *
  * @return This function returns the value returned by vfprintf.
  */
-int
+void
 globus_gram_job_manager_request_log(
     globus_gram_jobmanager_request_t *  request,
+    globus_gram_job_manager_log_level_t level,
     const char *                        format,
     ... )
 {
-    struct tm *curr_tm;
-    time_t curr_time;
     va_list ap;
-    int rc;
 
-    if (!request)
+    if (globus_i_gram_job_manager_log_sys != NULL)
     {
-        return -1;
+        va_start(ap, format);
+        globus_logging_vwrite(
+            globus_i_gram_job_manager_log_sys,
+            level,
+            format,
+            ap);
+        va_end(ap);
     }
-
-    if ( request->manager->jobmanager_log_fp == NULL )
+    if (globus_i_gram_job_manager_log_stdio != NULL)
     {
-        return -1;
+        va_start(ap, format);
+        globus_logging_vwrite(
+            globus_i_gram_job_manager_log_stdio,
+            level,
+            format,
+            ap);
+        va_end(ap);
     }
-
-    time( &curr_time );
-    curr_tm = localtime( &curr_time );
-
-    fprintf(request->manager->jobmanager_log_fp,
-         "%d/%d %02d:%02d:%02d ",
-             curr_tm->tm_mon + 1, curr_tm->tm_mday,
-             curr_tm->tm_hour, curr_tm->tm_min,
-             curr_tm->tm_sec );
-
-    va_start(ap, format);
-
-    rc = vfprintf(request->manager->jobmanager_log_fp, format, ap);
-
-    va_end(ap);
-
-    return rc;
 }
 /* globus_gram_job_manager_request_log() */
 
@@ -1555,24 +1519,13 @@ globus_gram_job_manager_request_acct(
 
     if (sscanf( gk_acct_fd, "%d", &fd ) != 1)
     {
-        globus_gram_job_manager_request_log( request,
-            "ERROR: %s has bad value: '%s'\n", gk_acct_fd_var, gk_acct_fd );
         return -1;
     }
 
-    if (fcntl( fd, F_SETFD, FD_CLOEXEC ) < 0)
-    {
-        globus_gram_job_manager_request_log( request,
-            "ERROR: cannot set FD_CLOEXEC on %s '%s': %s\n",
-            gk_acct_fd_var, gk_acct_fd, strerror( errno ) );
-    }
+    fcntl( fd, F_SETFD, FD_CLOEXEC );
 
     if ((rc = write( fd, buf, n )) != n)
     {
-        globus_gram_job_manager_request_log( request,
-            "ERROR: only wrote %d bytes to %s '%s': %s\n%s\n",
-            rc, gk_acct_fd_var, gk_acct_fd, strerror( errno ), buf + t );
-
         rc = -1;
     }
 
@@ -1690,34 +1643,6 @@ globus_l_gram_symboltable_add(
 }
 /* globus_l_gram_symboltable_add() */
 
-/**
- * Dump an RSL specification to the request's log file
- */
-static
-void
-globus_l_gram_log_rsl(
-    globus_gram_jobmanager_request_t *  request,
-    const char *                        label)
-{
-    char *                              tmp_str;
-
-    tmp_str = globus_rsl_unparse(request->rsl);
-
-    if(tmp_str)
-    {
-        globus_gram_job_manager_request_log(
-                request,
-                "\n<<<<<%s\n%s\n"
-                ">>>>>%s\n",
-                label,
-                tmp_str,
-                label);
-
-        free(tmp_str);
-    }
-}
-/* globus_l_gram_log_rsl() */
-
 static
 int
 globus_l_gram_generate_id(
@@ -1730,10 +1655,6 @@ globus_l_gram_generate_id(
 
     if(globus_gram_job_manager_rsl_need_restart(request))
     {
-        globus_gram_job_manager_request_log(
-                request,
-                "Job Request is a Job Restart\n");
-
         /* Need to do this before unique id is set */
         rc = globus_gram_job_manager_rsl_eval_one_attribute(
                 request,
@@ -1754,10 +1675,6 @@ globus_l_gram_generate_id(
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_RESTART;
             goto failed_jm_restart_eval;
         }
-        globus_gram_job_manager_request_log(
-                request,
-                "Will try to restart job %s\n",
-                request->jm_restart);
 
         rc = sscanf(
                 request->jm_restart,
@@ -1833,10 +1750,17 @@ globus_l_gram_init_cache(
     globus_gass_cache_t  *              cache_handlep)
 {
     int                                 rc = GLOBUS_SUCCESS;
+    int                                 gassrc = GLOBUS_SUCCESS;
 
     globus_gram_job_manager_request_log(
             request,
-            "Initializing cache information for request\n");
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.gass_cache_init.start "
+            "level=TRACE "
+            "gramid=%s "
+            "\n",
+            request->job_contact_path);
+
     if (globus_gram_job_manager_rsl_attribute_exists(
                 request->rsl,
                 GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM))
@@ -1853,39 +1777,53 @@ globus_l_gram_init_cache(
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
             }
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.gass_cache_init.end "
+                    "level=ERROR "
+                    "gramid=%s "
+                    "status=%d "
+                    "msg=\"%s\" "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    -rc,
+                    "Error evaluating cache RSL attribute",
+                    globus_gram_protocol_error_string(rc));
+
             goto failed_cache_eval;
         }
 
         /* cache location in rsl, but not a literal after eval */
         if ((*cache_locationp) == NULL)
         {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
+
             globus_gram_job_manager_request_log(
                     request,
-                    "Poorly-formed RSL gass_cache attribute\n");
-
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.gass_cache_init.end "
+                    "level=ERROR "
+                    "gramid=%s "
+                    "status=%d "
+                    "msg=\"%s\" "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    -rc,
+                    "Error evaluating cache RSL attribute",
+                    globus_gram_protocol_error_string(rc));
 
             goto failed_cache_eval;
         }
-
-        globus_gram_job_manager_request_log(
-                request,
-                "Overriding system gass_cache location %s "
-                " with RSL-supplied %s\n",
-                request->config->cache_location
-                    ? request->config->cache_location : "NULL",
-                *(cache_locationp));
     }
     else if (request->config->cache_location != NULL)
     {
         /* If -cache-location was on command-line or config file, then 
          * eval and use it
          */
-        globus_gram_job_manager_request_log(
-                request,
-                "gass_cache location: %s\n",
-                request->config->cache_location);
-
         rc = globus_gram_job_manager_rsl_eval_string(
                 request,
                 request->config->cache_location,
@@ -1893,12 +1831,21 @@ globus_l_gram_init_cache(
 
         if(rc != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.gass_cache_init.end "
+                    "level=ERROR "
+                    "gramid=%s "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+
             goto failed_cache_eval;
         }
-        globus_gram_job_manager_request_log(
-                request,
-                "gass_cache location (post-eval): %s\n",
-                *cache_locationp);
     }
     else
     {
@@ -1910,10 +1857,21 @@ globus_l_gram_init_cache(
         *cache_locationp = globus_common_create_string(
                 "%s/.globus/.gass_cache",
                 request->config->home);
+
     }
 
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.gass_cache_init.info "
+            "level=TRACE "
+            "gramid=%s "
+            "path=%s\n",
+            request->job_contact_path,
+            *(cache_locationp));
+
     memset(cache_handlep, 0, sizeof(globus_gass_cache_t));
-    rc = globus_gass_cache_open(*cache_locationp, cache_handlep);
+    gassrc = rc = globus_gass_cache_open(*cache_locationp, cache_handlep);
     if(rc != GLOBUS_SUCCESS)
     {
         if (*cache_locationp)
@@ -1924,8 +1882,24 @@ globus_l_gram_init_cache(
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE;
         }
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.gass_cache_init.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "path=%s "
+                "msg=\"%s\" "
+                "gasserror=%d "
+                "reason=\"%s\"\n",
+                request->job_contact_path,
+                -rc,
+                *(cache_locationp),
+                "Error opening GASS cache",
+                gassrc,
+                globus_gass_cache_error_string(gassrc));
 
-        goto failed_cache_open;
 failed_cache_open:
         if (*cache_locationp)
         {
@@ -1933,11 +1907,21 @@ failed_cache_open:
             *cache_locationp = NULL;
         }
     }
+    else
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.gass_cache_init.end "
+                "level=TRACE "
+                "gramid=%s "
+                "status=%d "
+                "path=%s\n",
+                request->job_contact_path,
+                0,
+                *(cache_locationp));
+    }
 failed_cache_eval:
-    globus_gram_job_manager_request_log(
-            request,
-            "cache init returns %d\n",
-            rc);
     return rc;
 }
 /* globus_l_gram_init_cache() */
@@ -2054,10 +2038,6 @@ globus_l_gram_restart(
         goto state_file_read_failed;
     }
 
-    globus_gram_job_manager_request_log(
-        request,
-        "Pre-parsed Original RSL string: %s\n",
-        request->rsl_spec);
 
     original_rsl = globus_rsl_parse(request->rsl_spec);
     if (!original_rsl)
@@ -2398,11 +2378,6 @@ globus_l_gram_populate_environment(
             if (q) *q = '\0';
             if (*p && (val = getenv(p)))
             {
-                globus_gram_job_manager_request_log(
-                        request,
-                        "Appending extra env.var %s=%s\n",
-                        p,
-                        val);
                 rc = globus_l_gram_add_environment(
                         request->rsl,
                         p,
@@ -2511,9 +2486,15 @@ globus_l_gram_init_scratchdir(
 
     globus_gram_job_manager_request_log(
             request,
-            "Initializing scratch directory for %p: [%s]\n",
-            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.init_scratchdir.start "
+            "level=DEBUG "
+            "gramid=%s "
+            "base=\"%s\" "
+            "\n",
+            request->job_contact_path,
             scratch_dir_base);
+
     /* In the case of a restart, this might have already been done */
     if (request->jm_restart && request->scratchdir != NULL)
     {
@@ -2524,12 +2505,8 @@ globus_l_gram_init_scratchdir(
             GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM))
     {
         *scratchdir = NULL;
-        return rc;
+        goto no_scratch;
     }
-
-    globus_gram_job_manager_request_log(
-            request,
-            "Evaluating scratch directory RSL\n");
 
     rc = globus_gram_job_manager_rsl_eval_one_attribute(
             request,
@@ -2539,8 +2516,20 @@ globus_l_gram_init_scratchdir(
     {
         globus_gram_job_manager_request_log(
                 request,
-                "Evaluation of scratch directory RSL failed: %d\n",
-                rc);
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.init_scratchdir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "attribute=%s "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                "RSL evaluation failed",
+                GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
+                -rc,
+                globus_gram_protocol_error_string(rc));
         if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
@@ -2549,16 +2538,36 @@ globus_l_gram_init_scratchdir(
     }
     else if (dir == NULL)
     {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
+
         globus_gram_job_manager_request_log(
                 request,
-                "Evaluation of scratch directory RSL didn't "
-                "yield string\n");
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.init_scratchdir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "attribute=%s "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                "RSL evaluation didn't yield a string",
+                GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
+                -rc,
+                globus_gram_protocol_error_string(rc));
         goto eval_scratchdir_failed;
     }
+
     globus_gram_job_manager_request_log(
             request,
-            "Scratch Directory RSL -> %s\n",
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.init_scratchdir.info "
+            "level=TRACE "
+            "gramid=%s "
+            "dir=\"%s\" "
+            "\n",
+            request->job_contact_path,
             dir);
 
     if (dir[0] == '/')
@@ -2578,6 +2587,22 @@ globus_l_gram_init_scratchdir(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.init_scratchdir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "status=%d "
+                "errno=%d "
+                "reason=\"%s\"\n",
+                request->job_contact_path,
+                "Directory template allocation failed",
+                -rc,
+                errno,
+                strerror(errno));
+
         goto template_malloc_failed;
     }
 
@@ -2590,6 +2615,24 @@ globus_l_gram_init_scratchdir(
         if (scratchname == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.init_scratchdir.end "
+                    "level=ERROR "
+                    "gramid=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "errno=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    "Directory template allocation failed",
+                    -rc,
+                    errno,
+                    strerror(errno));
+
             goto scratchname_strdup_failed;
         }
         *scratchdir = mktemp(scratchname);
@@ -2599,6 +2642,23 @@ globus_l_gram_init_scratchdir(
             if (errno != EEXIST && errno != EINTR)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.init_scratchdir.end "
+                        "level=ERROR "
+                        "gramid=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "errno=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        "Error creating directory",
+                        -rc,
+                        errno,
+                        strerror(errno));
+
                 goto fatal_mkdir_err;
             }
             else
@@ -2616,6 +2676,19 @@ globus_l_gram_init_scratchdir(
     if (*scratchdir == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.init_scratchdir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "status=%d "
+                "\n",
+                request->job_contact_path,
+                "Error creating directory",
+                -rc);
         goto fatal_mkdir_err;
     }
 
@@ -2627,6 +2700,18 @@ skip_mkdir:
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.init_scratchdir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "status=%d "
+                "\n",
+                request->job_contact_path,
+                "Error inserting scratch directory into RSL symbol table",
+                -rc);
 
         goto insert_symbol_failed;
     }
@@ -2640,12 +2725,28 @@ skip_mkdir:
         globus_symboltable_remove(
                 &request->symbol_table,
                 "SCRATCH_DIRECTORY");
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.init_scratchdir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                "Error inserting scratch directory into job environment",
+                -rc,
+                globus_gram_protocol_error_string(rc));
 insert_symbol_failed:
         rmdir(*scratchdir);
 fatal_mkdir_err:
         free(*scratchdir);
         *scratchdir = NULL;
     }
+    else
 scratchname_strdup_failed:
     if (template)
     {
@@ -2657,6 +2758,23 @@ template_malloc_failed:
         free(dir);
     }
 eval_scratchdir_failed:
+no_scratch:
+    if (rc == GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                "event=gram.init_scratchdir.end "
+                "level=DEBUG "
+                "gramid=%s "
+                "status=%d "
+                "%s=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                0,
+                *scratchdir ? "path" : "reason",
+                *scratchdir ? *scratchdir : "scratch_dir not in RSL");
+    }
     return rc;
 }
 /* globus_l_gram_init_scratchdir() */
@@ -2683,21 +2801,65 @@ globus_gram_job_manager_destroy_directory(
     struct stat                         st;
     globus_list_t *                     unchecked_dir_list = NULL;
     globus_list_t *                     dir_list = NULL;
+    int                                 failures = 0;
 
     globus_gram_job_manager_request_log(
             request,
-            "JM: Destroying directory %s\n",
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.directory_destroy.start "
+            "level=TRACE "
+            "gramid=%s "
+            "path=\"%s\" "
+            "\n",
+            request->job_contact_path,
             directory);
 
     path = strdup(directory);
     if (path == NULL)
     {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.directory_destroy.end "
+                "level=WARN "
+                "gramid=%s "
+                "path=\"%s\" "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                directory,
+                -rc,
+                globus_gram_protocol_error_string(rc));
+
         goto path_strdup_failed;
     }
     rc = globus_list_insert(&unchecked_dir_list, path);
     if (rc != GLOBUS_SUCCESS)
     {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.directory_destroy.end "
+                "level=WARN "
+                "gramid=%s "
+                "path=\"%s\" "
+                "status=%d "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                directory,
+                -rc,
+                errno,
+                strerror(errno));
+
         free(path);
+
         goto unchecked_dir_insert_failed;
     }
 
@@ -2717,22 +2879,50 @@ globus_gram_job_manager_destroy_directory(
         rc = globus_list_insert(&dir_list, path);
         if (rc != GLOBUS_SUCCESS)
         {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
             globus_gram_job_manager_request_log(
                     request,
-                    "JM: Error inserting %s into directory list\n",
-                    path);
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.directory_destroy.info "
+                    "level=WARN "
+                    "gramid=%s "
+                    "path=\"%s\" "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "errno=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    path,
+                    "List insert failed",
+                    -rc,
+                    errno,
+                    strerror(errno));
+            failures++;
             continue;
         }
 
         dir = opendir(path);
         if (dir == NULL)
         {
-            int save_errno = errno;
             globus_gram_job_manager_request_log(
                     request,
-                    "JM: Error opendir(%s): %d\n",
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.directory_destroy.info "
+                    "level=WARN "
+                    "gramid=%s "
+                    "path=\"%s\" "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "errno=%d "
+                    "reason=\"%s\"\n",
+                    request->job_contact_path,
                     path,
-                    save_errno);
+                    "opendir failed",
+                    -1,
+                    errno,
+                    strerror(errno));
+            failures++;
             continue;
         }
 
@@ -2751,22 +2941,50 @@ globus_gram_job_manager_destroy_directory(
             {
                 globus_gram_job_manager_request_log(
                         request,
-                        "JM: Error create string: %s/%s failed\n",
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.directory_destroy.info "
+                        "level=WARN "
+                        "gramid=%s "
+                        "path=\"%s\" "
+                        "file=\"%s\" "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "errno=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
                         path,
-                        entry.d_name);
+                        entry.d_name,
+                        "Malloc failed",
+                        -1,
+                        errno,
+                        strerror(errno));
+                failures++;
                 continue;
             }
             rc = lstat(new_path, &st);
             if (rc < 0)
             {
-                int save_errno = errno;
                 globus_gram_job_manager_request_log(
                         request,
-                        "JM: Error lstat(%s/%s): %d\n",
-                        path,
-                        entry.d_name,
-                        save_errno);
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.directory_destroy.info "
+                        "level=WARN "
+                        "gramid=%s "
+                        "path=\"%s\" "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "errno=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        new_path,
+                        "lstat failed",
+                        -1,
+                        errno,
+                        strerror(errno));
 
+                failures++;
                 continue;
             }
 
@@ -2777,27 +2995,53 @@ globus_gram_job_manager_destroy_directory(
                 {
                     globus_gram_job_manager_request_log(
                             request,
-                            "JM: Error inserting %s into list\n",
-                            new_path);
+                            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                            "event=gram.directory_destroy.info "
+                            "level=WARN "
+                            "gramid=%s "
+                            "path=\"%s\" "
+                            "msg=\"%s\" "
+                            "status=%d "
+                            "errno=%d "
+                            "reason=\"%s\" "
+                            "\n",
+                            request->job_contact_path,
+                            new_path,
+                            "List insert failed",
+                            -1,
+                            errno,
+                            strerror(errno));
+
                     free(new_path);
+                    failures++;
                     continue;
                 }
             }
             else
             {
-                globus_gram_job_manager_request_log(
-                        request,
-                        "JM: Removing file entry: %s\n",
-                        new_path);
                 rc = unlink(new_path);
                 if (rc < 0)
                 {
-                    int save_errno = errno;
                     globus_gram_job_manager_request_log(
                             request,
-                            "JM: Error unlink(%s): %d\n",
+                            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                            "event=gram.directory_destroy.info "
+                            "level=WARN "
+                            "gramid=%s "
+                            "path=\"%s\" "
+                            "msg=\"%s\" "
+                            "status=%d "
+                            "errno=%d "
+                            "reason=\"%s\" "
+                            "\n",
+                            request->job_contact_path,
                             new_path,
-                            save_errno);
+                            "Unlink failed",
+                            -1,
+                            errno,
+                            strerror(errno));
+
+                    failures++;
                 }
                 free(new_path);
                 new_path = NULL;
@@ -2811,22 +3055,46 @@ globus_gram_job_manager_destroy_directory(
         /* Second pass removes (should be empty) subdirectories */
         path = globus_list_remove(&dir_list, dir_list);
 
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: Removing directory %s\n",
-                path);
         rc = rmdir(path);
         if (rc < 0)
         {
-            int save_errno = errno;
             globus_gram_job_manager_request_log(
                     request,
-                    "JM: Error removing %s: %d\n",
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.directory_destroy.info "
+                    "level=WARN "
+                    "gramid=%s "
+                    "path=\"%s\" "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "errno=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
                     path,
-                    save_errno);
+                    "rmdir failed",
+                    -1,
+                    errno,
+                    strerror(errno));
+            failures++;
         }
         free(path);
     }
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.directory_destroy.end "
+            "level=DEBUG "
+            "gramid=%s "
+            "path=\"%s\" "
+            "failures=%d "
+            "status=%d "
+            "\n",
+            request->job_contact_path,
+            directory,
+            failures,
+            failures == 0 ? 0 : -1);
+
 unchecked_dir_insert_failed:
 path_strdup_failed:
     return;
@@ -2921,16 +3189,22 @@ globus_l_gram_remote_io_url_file_create(
     int                                 rc = GLOBUS_SUCCESS;
     FILE *                              fp;
 
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.remote_io_url_file_create.start "
+            "level=TRACE "
+            "gramid=%s "
+            "url=\"%s\" "
+            "\n",
+            request->job_contact_path,
+            remote_io_url ? remote_io_url : "");
+
     if (!remote_io_url)
     {
         *remote_io_url_filep = NULL;
         goto out;
     }
-
-    globus_gram_job_manager_request_log(
-            request,
-            "creating remote_io_url file for %s\n",
-            remote_io_url);
 
     *remote_io_url_filep = globus_common_create_string(
                 "%s/remote_io_file",
@@ -2938,30 +3212,100 @@ globus_l_gram_remote_io_url_file_create(
     if (remote_io_url_filep == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.remote_io_url_file_create.end "
+                "level=ERROR "
+                "gramid=%s "
+                "url=\"%s\" "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\"\n",
+                request->job_contact_path,
+                remote_io_url,
+                -rc,
+                "Error allocating path string",
+                errno,
+                strerror(errno));
         goto set_remote_io_url_file_failed;
     }
     fp = fopen(*remote_io_url_filep, "w");
     if (fp == NULL)
     {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+
         globus_gram_job_manager_request_log(
                 request,
-                "error opening remote_io_url_file %s\n",
-                *remote_io_url_filep);
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.remote_io_url_file_create.end "
+                "level=ERROR "
+                "gramid=%s "
+                "url=\"%s\" "
+                "path=\"%s\" "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                remote_io_url,
+                *remote_io_url_filep,
+                -rc,
+                "Error opening file",
+                errno,
+                strerror(errno));
+
         goto fopen_failed;
     }
 
-    globus_gram_job_manager_request_log(
-            request,
-            "writing remote_io_url to %s\n",
-            *remote_io_url_filep);
     rc = fprintf(fp, "%s\n", remote_io_url);
     if (rc < (1+strlen(remote_io_url)))
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.remote_io_url_file_create.end "
+                "level=ERROR "
+                "gramid=%s "
+                "url=\"%s\" "
+                "path=\"%s\" "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                remote_io_url,
+                *remote_io_url_filep,
+                -rc,
+                "Error writing remote_io file",
+                errno,
+                strerror(errno));
+
+        goto write_failed;
     }
     rc = GLOBUS_SUCCESS;
 
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.remote_io_url_file_create.end "
+            "level=TRACE "
+            "gramid=%s "
+            "url=\"%s\" "
+            "path=\"%s\" "
+            "status=0 "
+            "\n",
+            request->job_contact_path,
+            remote_io_url,
+            *remote_io_url_filep);
+
+write_failed:
     fclose(fp);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -3090,6 +3434,15 @@ globus_l_gram_make_job_dir(
     int                                 rc;
     struct stat                         statbuf;
 
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.make_job_dir.start "
+            "level=TRACE "
+            "gramid=%s "
+            "\n",
+            request->job_contact_path);
+
     out_file = globus_common_create_string(
                 "%s/.globus/job/%s/%s",
                 request->config->home,
@@ -3098,6 +3451,24 @@ globus_l_gram_make_job_dir(
     if (out_file == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.make_job_dir.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                -rc,
+                "Error allocating path string",
+                errno,
+                strerror(errno));
+
         goto out;
     }
 
@@ -3120,11 +3491,26 @@ globus_l_gram_make_job_dir(
                 }
                 if ((rc = stat(out_file, &statbuf)) < 0)
                 {
-                    globus_gram_job_manager_request_log(
-                        request,
-                        "JMI: Unable to create part of job dir path: %s\n",
-                        out_file);
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+
+                    globus_gram_job_manager_request_log(
+                            request,
+                            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                            "event=gram.make_job_dir.end "
+                            "level=ERROR "
+                            "gramid=%s "
+                            "status=%d "
+                            "path=%s "
+                            "msg=\"%s\" "
+                            "errno=%d "
+                            "reason=\"%s\" "
+                            "\n",
+                            request->job_contact_path,
+                            -rc,
+                            out_file,
+                            "Error creating directory",
+                            errno,
+                            strerror(errno));
 
                     goto error_exit;
                 }
@@ -3135,6 +3521,18 @@ globus_l_gram_make_job_dir(
             }
         }
     }
+
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.make_job_dir.end "
+            "level=TRACE "
+            "gramid=%s "
+            "status=0 "
+            "path=%s "
+            "\n",
+            request->job_contact_path,
+            out_file);
 
 error_exit:
     if (rc != GLOBUS_SUCCESS)
@@ -3715,11 +4113,6 @@ globus_l_gram_check_position(
 
     if (value_seq == NULL)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: checking that %s is a sequence of 0\n",
-                globus_rsl_relation_get_attribute(position_rsl));
-
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
         goto non_sequence;
     }

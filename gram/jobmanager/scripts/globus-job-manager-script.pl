@@ -138,20 +138,14 @@ else
         
     if ($error_string)
     {
-        if (defined($job_description) && defined($job_description->logfile()))
-        {
-            my $log = $job_description->logfile;
+        my $msg = "Error loading $manager_class: $error_string";
 
-            local(*FH);
+        $msg =~ s/\\/\\\\/g;
+        $msg =~ s/\n/\\n/g;
+        $msg =~ s/\"/\\\"/g;
 
-            open(FH, ">>$log") ||
-                    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+        print "GRAM_SCRIPT_LOG:msg=\"$msg\"\n";
 
-            print FH "JobManagerScript: Error loading $manager_class:\n",
-                $error_string;
-            close(FH);
-
-        }
         &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
     }
 

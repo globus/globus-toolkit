@@ -122,13 +122,56 @@ globus_gram_job_manager_query_callback(
     globus_url_t                        parsed_uri;
     gss_ctx_id_t                        context;
 
+    globus_gram_job_manager_log(
+        manager,
+        GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+        "event=gram.query.start "
+        "level=INFO "
+        "uri=\"%s\" "
+        "\n",
+        uri);
+
+    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
+    {
+        char *                          querystring;
+
+        querystring = globus_gram_prepare_log_string((char *) buf);
+
+        globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.query.info "
+            "level=TRACE "
+            "uri=\"%s\" "
+            "message=\"%s\" "
+            "\n",
+            uri,
+            querystring ? querystring : "");
+
+        if (querystring)
+        {
+            free(querystring);
+        }
+    }
+
     if (uri == NULL)
     {
-        globus_gram_job_manager_request_log(
-            request,
-            "globus_gram_job_manager_query_callback missing uri\n");
-
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+
+        globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram.query.end "
+            "level=ERROR "
+            "status=%d "
+            "uri=%s "
+            "msg=\"%s\" "
+            "reason=\"%s\" "
+            "\n",
+            -rc,
+            "NULL",
+            "Invalid query",
+            globus_gram_protocol_error_string(rc));
 
         goto invalid_query;
     }
@@ -160,6 +203,21 @@ globus_gram_job_manager_query_callback(
 
         if (rc != GLOBUS_SUCCESS)
         {
+            globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.query.end "
+                "level=ERROR "
+                "status=%d "
+                "uri=%s "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                uri,
+                "Unable to find job for URI",
+                globus_gram_protocol_error_string(rc));
+
             goto invalid_query;
         }
     }
@@ -175,11 +233,6 @@ globus_gram_job_manager_query_callback(
         goto unpack_failed;
     }
 
-    globus_gram_job_manager_request_log(
-        request,
-        "JM : in globus_l_gram_job_manager_query_callback, query=%s\n",
-        query);
-    
     if ((rc = globus_gram_protocol_get_sec_context(
                 handle,
                 &context)) != GLOBUS_SUCCESS)
@@ -238,10 +291,27 @@ unpack_failed:
         job_failure_code = 0;
     }
 
-    globus_gram_job_manager_request_log( request,
-                   "JM : reply: (status=%d failure code=%d (%s))\n",
-                   status, rc, globus_gram_protocol_error_string(rc));
 
+    globus_gram_job_manager_request_log(
+            request,
+            rc
+                ? GLOBUS_GRAM_JOB_MANAGER_LOG_INFO
+                : GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram.query.end "
+            "level=%s "
+            "gramid=%s "
+            "uri=\"%s\" "
+            "msg=\"%s\" "
+            "status=%d "
+            "%s%s "
+            "\n",
+            request->job_contact_path,
+            uri,
+            rc ? "Done processing query" : "Error processing query",
+            rc ? -rc : 0,
+            rc ? "reason=\"" : "",
+            rc ? globus_gram_protocol_error_string(rc) : "",
+            rc ? "\"" : "");
 
 invalid_query:
     if(reply)
@@ -257,13 +327,6 @@ invalid_query:
                 request->manager,
                 request->job_contact_path,
                 "query");
-
-        if (rc != GLOBUS_SUCCESS)
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    "JM : Unexpected failure removing reference to request\n");
-        }
     }
 
     if(query)
@@ -313,7 +376,6 @@ globus_l_gram_job_manager_query_reply(
     int                                 job_failure_code)
 {
     int                                 rc;
-    int                                 i;
     int                                 code;
     globus_size_t                       replysize;
     globus_byte_t *                     reply             = GLOBUS_NULL;
@@ -356,17 +418,6 @@ globus_l_gram_job_manager_query_reply(
         free(reply);
         reply = GLOBUS_NULL;
         replysize = 0;
-    }
-    if (request)
-    {
-        globus_gram_job_manager_request_log(request,
-                      "JM : sending reply:\n");
-        for (i=0; i<replysize && reply[i] != 0; i++)
-        {
-            fprintf(request->manager->jobmanager_log_fp, "%c", reply[i]);
-        }
-        globus_gram_job_manager_request_log(request,
-                              "-------------------\n");
     }
 
     globus_gram_protocol_reply(handle,
@@ -563,11 +614,33 @@ globus_l_gram_job_manager_renew(
 
     globus_gram_job_manager_request_log(
             request,
-            "JM: Renew request received\n");
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.proxyrenew.start "
+            "level=DEBUG "
+            "gramid=%s "
+            "\n",
+            request->job_contact_path);
+
     if(!globus_l_gram_job_manager_query_valid(request))
     {
-       rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
-       goto error_exit;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.proxyrenew.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                -rc,
+                "Unable to process query",
+                globus_gram_protocol_error_string(rc));
+
+        goto error_exit;
     }
 
     query = calloc(1, sizeof(globus_gram_job_manager_query_t));
@@ -575,6 +648,22 @@ globus_l_gram_job_manager_renew(
     if(query == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.proxyrenew.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                -rc,
+                "Malloc failed",
+                globus_gram_protocol_error_string(rc));
+
         goto error_exit;
     }
 
@@ -584,10 +673,6 @@ globus_l_gram_job_manager_renew(
     globus_fifo_enqueue(&request->pending_queries, query);
     *reply = GLOBUS_FALSE;
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Request currently in jm state %d\n",
-            request->jobmanager_state);
     if(request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
     {
         request->jobmanager_state =
@@ -604,9 +689,6 @@ globus_l_gram_job_manager_renew(
 
     if(doit && request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: Forcing poll callback to happen now\n");
         GlobusTimeReltimeSet(delay, 0, 0);
         result = globus_callback_adjust_oneshot(
                 request->poll_timer,
@@ -616,15 +698,22 @@ globus_l_gram_job_manager_renew(
     }
     else if (doit && request->manager->seg_started)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: We were waiting for the seg, so we'll register a  poll callback\n");
         GlobusTimeReltimeSet(delay, 0, 0);
         rc = globus_gram_job_manager_state_machine_register(
               request->manager,
               request,
               &delay);
     }
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.proxyrenew.end "
+            "level=DEBUG "
+            "gramid=%s "
+            "status=%d "
+            "\n",
+            request->job_contact_path,
+            0);
 
 error_exit:
     if(rc != GLOBUS_SUCCESS)
@@ -981,17 +1070,9 @@ globus_l_gram_job_manager_is_done(
        request->jobmanager_state
            == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                "JM: job manager request handling is done, "
-                "request will be denied\n");
-
         return GLOBUS_TRUE;
     }
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: job manager request handling is not done yet, "
-                "request will be processed\n");
+
     return GLOBUS_FALSE;
 }
 /* globus_l_gram_job_manager_is_done() */
@@ -1057,25 +1138,13 @@ globus_gram_job_manager_query_delegation_callback(
 
     GlobusGramJobManagerRequestLock(request);
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: Delegation completed with %d\n",
-            error_code);
-
     query = globus_fifo_peek(&request->pending_queries);
 
     query->delegated_credential = credential;
 
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: request in jm state %d\n",
-            request->jobmanager_state);
     GlobusTimeReltimeSet(delay, 0, 0);
 
-    globus_gram_job_manager_request_log(
-            request,
-            "JM: registering state machine callback\n");
     globus_gram_job_manager_state_machine_register(
             request->manager,
             request,

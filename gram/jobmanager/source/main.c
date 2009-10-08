@@ -107,6 +107,11 @@ main(
     {
         exit(1);
     }
+    rc = globus_gram_job_manager_logging_init(&config);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        exit(1);
+    }
     if (rsl || (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL))
     {
         started_without_client = GLOBUS_TRUE;
@@ -324,13 +329,8 @@ main(
                 /* load existing jobs */
                 rc = globus_gram_job_manager_request_load_all(
                         &manager,
+                        request,
                         &requests);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    globus_gram_job_manager_log(
-                            &manager,
-                            "JM: Error loading all requests\n");
-                }
                 rc = 0;
             }
             if (manager.seg_last_timestamp == 0)
@@ -346,11 +346,6 @@ main(
 
                 if (rc != GLOBUS_SUCCESS)
                 {
-                    globus_gram_job_manager_log(
-                            &manager,
-                            "Error starting SEG: %d\n",
-                            rc);
-
                     config.seg_module = NULL;
                 }
             }
@@ -394,10 +389,6 @@ main(
 
                 if (rc != GLOBUS_SUCCESS)
                 {
-                    globus_gram_job_manager_request_log(
-                            request,
-                            "JM: Error adding request to table: %d\n",
-                            rc);
                     globus_gram_job_manager_request_free(request);
                     free(request);
                     request = NULL;
@@ -416,12 +407,6 @@ main(
                         &manager,
                         request,
                         NULL);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    globus_gram_job_manager_log(
-                            &manager,
-                            "JM: Error starting state machine for request\n");
-                }
             }
         }
         else
@@ -441,12 +426,6 @@ main(
                 close(http_body_fd);
                 close(context_fd);
                 manager.done = GLOBUS_TRUE;
-            }
-            if (rc == GLOBUS_SUCCESS)
-            {
-                globus_gram_job_manager_log(
-                        &manager,
-                        "Successfully handed descriptors to active job manager\n");
             }
         }
     }
@@ -472,7 +451,10 @@ main(
 
     globus_gram_job_manager_log(
             &manager,
-            "JM: exiting globus_gram_job_manager.\n");
+            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            "event=gram.end "
+            "level=DEBUG "
+            "\n");
 
     if (manager.socket_fd != -1)
     {
