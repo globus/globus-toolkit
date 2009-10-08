@@ -350,7 +350,8 @@ globus_l_gram_job_manager_script_read(
 
         if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
         {
-            escaped = globus_gram_prepare_log_string(script_handle->return_buf);
+            escaped = globus_gram_prepare_log_string(
+                    (char *) &script_handle->return_buf[0]);
 
             globus_gram_job_manager_request_log(
                     request,
@@ -358,7 +359,8 @@ globus_l_gram_job_manager_script_read(
                     "event=gram.script_read.info "
                     "level=TRACE "
                     "gramid=%s "
-                    "response=\"%s\"\n",
+                    "response=\"%s\" "
+                    "\n",
                     request->job_contact_path,
                     escaped ? escaped : "");
 
@@ -1223,6 +1225,20 @@ globus_l_gram_job_manager_default_done(
             request->gt3_failure_destination = strdup(value);
         }
     }
+    else if(strcmp(variable, "GRAM_SCRIPT_LOG") == 0)
+    {
+        if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.script.log "
+                    "level=DEBUG "
+                    "%s "
+                    "\n",
+                    value);
+        }
+    }
     else if(request->jobmanager_state == starting_jobmanager_state)
     {
         globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
@@ -1316,6 +1332,20 @@ globus_l_gram_job_manager_query_done(
         {
             globus_gram_job_manager_request_set_status(request, script_status);
             request->unsent_status_change = GLOBUS_TRUE;
+        }
+    }
+    else if(strcmp(variable, "GRAM_SCRIPT_LOG") == 0)
+    {
+        if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.script.log "
+                    "level=DEBUG "
+                    "%s "
+                    "\n",
+                    value);
         }
     }
     else

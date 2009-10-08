@@ -477,6 +477,7 @@ host_osname=`${GLOBUS_SH_UNAME-uname} -s`
 host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 if [ "$logdir" != "" ]; then
     log_line=`echo "-stdio-log \"$logdir\""`
+    log_levels="-log-levels 'FATAL|ERROR'"
 fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
@@ -488,6 +489,7 @@ ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -globus-host-osname ${host_osname}
 -globus-host-osversion ${host_osversion}
 $log_line
+$log_levels
 -state-file-dir ${statefiledir}
 ${startargs}
 $single

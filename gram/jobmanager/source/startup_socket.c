@@ -880,9 +880,7 @@ globus_l_gram_startup_socket_callback(
                     "errno=%d "
                     "reason=\"%s\" "
                     "\n",
-                    (accepted == 0)
-                            ? GLOBUS_GRAM_JOB_MANAGER_LOG_WARN
-                            : GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    (accepted == 0) ? "WARN" : "DEBUG",
                     manager->socket_fd,
                     "recvmsg failed",
                     -rc,

@@ -107,6 +107,7 @@ globus_gram_prepare_log_string(
     const char *                        instr)
 {
     char *                              outstr;
+    int                                 i = 0;
     if (instr == NULL)
     {
         return NULL;
@@ -121,28 +122,28 @@ globus_gram_prepare_log_string(
     {
         if (*instr == '\n')
         {
-            *(outstr++) = '\\';
-            *(outstr++) = 'n';
+            outstr[i++] = '\\';
+            outstr[i++] = 'n';
             instr++;
         }
         else if (*instr == '\\')
         {
-            *(outstr++) = '\\';
-            *(outstr++) = '\\';
+            outstr[i++] = '\\';
+            outstr[i++] = '\\';
             instr++;
         }
         else if (*instr == '"')
         {
-            *(outstr++) = '\\';
-            *(outstr++) = '"';
+            outstr[i++] = '\\';
+            outstr[i++] = '"';
             instr++;
         }
         else
         {
-            *(outstr++) = *(instr++);
+            outstr[i++] = *(instr++);
         }
     }
-    *outstr = '\0';
+    outstr[i++] = '\0';
 
     return outstr;
 }
