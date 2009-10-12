@@ -61,6 +61,7 @@ int myproxy_set_trustroots_defaults(
     client_request->version = strdup(MYPROXY_VERSION);
     client_request->command_type = MYPROXY_GET_TRUSTROOTS;
     client_request->want_trusted_certs = 1;
+    client_request->username = strdup("");
 
     myproxy_debug("Requesting trusted certificates.\n");
 
