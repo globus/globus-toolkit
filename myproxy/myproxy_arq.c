@@ -180,6 +180,7 @@ init_arguments(int argc,
 	    break;
     case 'c':
         config_file = strdup(optarg);
+        break;
 	case 'e':	/* expiring in <hours> */
 	    cred.end_time = (SECONDS_PER_HOUR * atoi(optarg)) + time(0);
 	    break;
