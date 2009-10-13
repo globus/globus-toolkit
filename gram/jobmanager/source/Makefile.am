@@ -46,6 +46,12 @@ globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
+man1datadir=$(mandir)/man1
+man1data_DATA = globus-personal-gatekeeper.1
+
+man8datadir=$(mandir)/man8
+man8data_DATA = globus-job-manager.8
+
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper \
 	     $(validation_DATA) \
@@ -57,6 +63,7 @@ EXTRA_DIST = globus-personal-gatekeeper \
 	     globus_gram_job_manager_script_tutorial.dox \
 	     globus_job_manager_rsl_validation.dox \
 	     job_execution_environment.dox \
+             manual.xml $(man1data_DATA) $(man8data_DATA) \
 	     main.dox \
 	     dirt.sh
 

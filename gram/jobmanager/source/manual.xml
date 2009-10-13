@@ -1,0 +1,528 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<!-- Canonical version of this document lives in 
+cvs.globus.org:/home/globdev/CVS/globus-packages gram/jobmanager/source/manual.xml
+-->
+
+
+<reference><title>GRAM Job Manager</title>
+<author>
+    <affiliation>
+        <orgname>University of Chicago</orgname>
+    </affiliation>
+</author>
+
+<refentry>
+<refmeta>
+<refentrytitle>globus-job-manager</refentrytitle>
+<manvolnum>8</manvolnum>
+</refmeta>
+
+<refnamediv>
+<refdescriptor>GRAM Job Manager</refdescriptor>
+<refname>globus-job-manager</refname>
+<refpurpose>Execute and monitor jobs</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+<cmdsynopsis>
+<command>globus-job-manager</command>
+<arg choice="req">-type <replaceable>LRM</replaceable></arg>
+<arg>-conf <replaceable>CONFIG_PATH</replaceable></arg>
+<arg>-help</arg>
+<arg>-globus-host-manufacturer <replaceable>MANUFACTURER</replaceable></arg>
+<arg>-globus-host-cputype <replaceable>CPUTYPE</replaceable></arg>
+<arg>-globus-host-osname <replaceable>OSNAME</replaceable></arg>
+<arg>-globus-host-osversion <replaceable>OSVERSION</replaceable></arg>
+<arg>-globus-gatekeeper-host <replaceable>HOST</replaceable></arg>
+<arg>-globus-gatekeeper-port <replaceable>PORT</replaceable></arg>
+<arg>-globus-gatekeeper-subject <replaceable>SUBJECT</replaceable></arg>
+<arg>-home <replaceable>GLOBUS_LOCATION</replaceable></arg>
+<arg>-target-globus-location <replaceable>TARGET_GLOBUS_LOCATION</replaceable></arg>
+<arg>-condor-arch <replaceable>ARCH</replaceable></arg>
+<arg>-condor-os <replaceable>OS</replaceable></arg>
+<arg>-history <replaceable>HISTORY_DIRECTORY</replaceable></arg>
+<arg>-scratch-dir-base <replaceable>SCRATCH_DIRECTORY</replaceable></arg>
+<arg>-enable-syslog</arg>
+<arg>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></arg>
+<arg>-log-levels <replaceable>LEVELS</replaceable></arg>
+<arg>-state-file-dir <replaceable>STATE_DIRECTORY</replaceable></arg>
+<arg>-globus-tcp-port-range <replaceable>PORT_RANGE</replaceable></arg>
+<arg>-x509-cert-dir <replaceable>TRUSTED_CERTIFICATE_DIRECTORY</replaceable></arg>
+<arg>-cache-location <replaceable>GASS_CACHE_DIRECTORY</replaceable></arg>
+<arg>-k</arg>
+<arg>-extra-envvars <replaceable>VAR=VAL,...</replaceable></arg>
+<arg>-seg-module <replaceable>SEG_MODULE</replaceable></arg>
+<arg>-audit-directory <replaceable>AUDIT_DIRECTORY</replaceable></arg>
+<arg>-globus-toolkit-version <replaceable>TOOLKIT_VERSION</replaceable></arg>
+<arg>-non-single</arg>
+<arg>-disable-streaming</arg>
+<arg>-service-tag <replaceable>SERVICE_TAG</replaceable></arg>
+<arg>-rsl <replaceable>RSL</replaceable></arg>
+</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1><title>Description</title>
+<para>
+The <command>globus-job-manager</command> program is a servivce which starts
+and controls GRAM jobs which are executed by a local resource management
+system, such as LSF or Condor. The <command>globus-job-manager</command>
+program is typically started by the <command>globus-gatekeeper</command>
+program and not directly by a user. It runs until all jobs it is managing have
+terminated or its delegated credentials have expired.
+</para>
+
+<para>
+Typically, users interact with the <command>globus-job-manager</command>
+program via client applications such as <command>globusrun</command>,
+<command>globus-job-submit</command>, or tools
+such as CoG jglobus or Condor-G.
+</para>
+
+<para>
+The full set of command-line options to
+<command>globus-job-manager</command> consists of:
+
+<informaltable>
+    <tgroup cols="2" align="left">
+        <tbody>
+            <row>
+                <entry>-help</entry>
+                <entry>Display a help message to standard error and exit</entry>
+            </row>
+            <row>
+                <entry>-type <replaceable>LRM</replaceable></entry>
+                <entry>Execute jobs using the local resource manager named <replaceable>LRM</replaceable>.
+                </entry>
+            </row>
+            <row>
+                <entry>-conf <replaceable>CONFIG_PATH</replaceable></entry>
+                <entry>Read additional command-line arguments from the file <replaceable>CONFIG_PATH</replaceable>. If present, this must be the first command-line argument to the <command>globus-job-manager</command> program.
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-host-manufacturer
+                        <replaceable>MANUFACTURER</replaceable></entry>
+                <entry>Indicate the manufacturer of the system which the jobs will execute on. This parameter sets the value of the <varname>$(GLOBUS_HOST_MANUFACTURER)</varname> RSL substitution to <replaceable>MANUFACTURER</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-host-cputype <replaceable>CPUTYPE</replaceable></entry>
+                <entry>Indicate the CPU type of the system which the jobs will execute on. This parameter sets the value of the <varname>$(GLOBUS_HOST_CPUTYPE)</varname> RSL substitution to <replaceable>CPUTYPE</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-host-osname <replaceable>OSNAME</replaceable></entry>
+                <entry>Indicate the operating system type of the system which the jobs will execute on. This parameter sets the value of the <varname>$(GLOBUS_HOST_OSNAME)</varname> RSL substitution to <replaceable>OSNAME</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-host-osversion <replaceable>OSVERSION</replaceable></entry>
+                <entry>Indicate the operating system version of the system which the jobs will execute on. This parameter sets the value of the <varname>$(GLOBUS_HOST_OSVERSION)</varname> RSL substitution to <replaceable>OSVERSION</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-gatekeeper-host <replaceable>HOST</replaceable></entry>
+                <entry>Indicate the host name of the machine which the job was submitted to. This parameter sets the value of the <varname>$(GLOBUS_GATEKEEPER_HOST)</varname> RSL substitution to <replaceable>HOST</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-gatekeeper-port <replaceable>PORT</replaceable></entry>
+                <entry>Indicate the TCP port number of gatekeeper to which jobs are submitted to. This parameter sets the value of the <varname>$(GLOBUS_GATEKEEPER_PORT)</varname> RSL substitution to <replaceable>PORT</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-gatekeeper-subject <replaceable>SUBJECT</replaceable></entry>
+                <entry>Indicate the X.509 identity of the gatekeeper to which jobs are submitted to. This parameter sets the value of the <varname>$(GLOBUS_GATEKEEPER_SUBJECT)</varname> RSL substitution to <replaceable>PORT</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-home <replaceable>GLOBUS_LOCATION</replaceable></entry>
+                <entry>Indicate the path where the Globus Toolkit(r) is installed on the service node. This is used by the job manager to locate its support and configuration files.
+                </entry>
+            </row>
+            <row>
+                <entry>-target-globus-location <replaceable>TARGET_GLOBUS_LOCATION</replaceable></entry>
+                <entry>Indicate the path where the Globus Toolkit(r) is installed on the execution host. If this is omitted, the value specified as a parameter to <arg>-home</arg> is used. This parameter sets the value of the <varname>$(GLOBUS_LOCATION)</varname> RSL substitution to <replaceable>TARGET_GLOBUS_LOCATION</replaceable>
+                </entry>
+            </row>
+            <row>
+                <entry>-history <replaceable>HISTORY_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to write job history files to <replaceable>HISTORY_DIRECTORY</replaceable>. These files are described in the FILES section below.
+                </entry>
+            </row>
+            <row>
+                <entry>-scratch-dir-base <replaceable>SCRATCH_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to use <replaceable>SCRATCH_DIRECTORY</replaceable> as the default scratch directory root if a relative path is specified in the job RSL's <varname>scratch_dir</varname> attribute.
+                </entry>
+            </row>
+            <row>
+                <entry>-enable-syslog</entry>
+                <entry>Configure the job manager to write log messages via syslog. Logging is further controlled by the argument to the <arg>-log-levels</arg> parameter described below.
+                </entry>
+            </row>
+            <row>
+                <entry>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to write log messages to files  in the <replaceable>LOG_DIRECTORY</replaceable> directory. Files will be named <filename><replaceable>LOG_DIRECTORY</replaceable>/gram_<replaceable>YYYYMMDD</replaceable>.log</filename>. Logging is further controlled by the argument to the <arg>-log-levels</arg> parameter described below.
+                </entry>
+            </row>
+            <row>
+                <entry>-log-levels <replaceable>LEVELS</replaceable></entry>
+                <entry>Configure the job manager to write log messages of certain levels to syslog and/or log files. The available log levels are <literal>FATAL</literal>, <literal>ERROR</literal>, <literal>WARN</literal>, <literal>INFO</literal>, <literal>DEBUG</literal>, and <literal>TRACE</literal>. Multiple values can be combined with the <literal>|</literal> character. The default value of logging when enabled is <literal>FATAL|ERROR</literal>.
+                </entry>
+            </row>
+            <row>
+                <entry>-state-file-dir <replaceable>STATE_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to write state files to <replaceable>STATE_DIRECTORY</replaceable>. If not specified, the job manager uses the default of <filename><varname>$GLOBUS_LOCATION</varname>/tmp/gram_job_state/</filename>. This directory must be writable by all users and be on a file system which supports POSIX advisory file locks.
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-tcp-port-range <replaceable>PORT_RANGE</replaceable></entry>
+                <entry>Configure the job manager to restrict its TCP/IP communication to use ports in the range described by <replaceable>PORT_RANGE</replaceable>. This value is also made available in the job environment via the <varname>GLOBUS_TCP_PORT_RANGE</varname> environment variable.
+                </entry>
+            </row>
+            <row>
+                <entry>-x509-cert-dir <replaceable>TRUSTED_CERTIFICATE_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to search <replaceable>TRUSTED_CERTIFICATE_DIRECTORY</replaceable> for its list of trusted CA certificates and their signing policies. This value is also made available in the job environment via the <varname>X509_CERT_DIR</varname> environment variable.
+                </entry>
+            </row>
+            <row>
+                <entry>-cache-location <replaceable>GASS_CACHE_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to use the path <replaceable>GASS_CACHE_DIRECTORY</replaceable> for its temporary GASS-cache files. This value is also made available in the job environment via the <varname>GLOBUS_GASS_CACHE_DEFAULT</varname> environment variable.
+                </entry>
+            </row>
+            <row>
+                <entry>-k</entry>
+                <entry>Configure the job manager to assume it is using Kerberos for authentication instead of X.509 certificates. This disables some certificate-specific processing in the job manager.
+                </entry>
+            </row>
+            <row>
+                <entry>-extra-envvars <replaceable>VAR=VAL,...</replaceable></entry>
+                <entry>Configure the job manager to define a set of environment variables in the job environment beyond those defined in the base job environment. The format of the parameter to this argument is a comma-separated sequence of VAR=VAL pairs, where <literal>VAR</literal> is the variable name and <literal>VAL</literal> is the variables value.
+                </entry>
+            </row>
+            <row>
+                <entry>-seg-module <replaceable>SEG_MODULE</replaceable></entry>
+                <entry>Configure the job manager to use the schedule event generator module named by <replaceable>SEG_MODULE</replaceable> to detect job state changes events from the local resource manager, in place of the less efficient polling operations used in GT2. To use this, one instance of the <command>globus-job-manager-event-generator</command> must be running to process events for the LRM into a generic format that the job manager can parse.
+                </entry>
+            </row>
+            <row>
+                <entry>-audit-directory <replaceable>AUDIT_DIRECTORY</replaceable></entry>
+                <entry>Configure the job manager to write audit records to the directory named by <replaceable>AUDIT_DIRECTORY</replaceable>. This records can be loaded into a database using the <command>globus-gram-audit</command> program.
+                </entry>
+            </row>
+            <row>
+                <entry>-globus-toolkit-version <replaceable>TOOLKIT_VERSION</replaceable></entry>
+                <entry>Configure the job manager to use <replaceable>TOOLKIT_VERSION</replaceable> as the version for audit and usage stats records.
+                </entry>
+            </row>
+            <row>
+                <entry>-non-single</entry>
+                <entry>Configure the job manager to run a separate job manager process per job, like in GT2. Not recommended.
+                </entry>
+            </row>
+            <row>
+                <entry>-service-tag <replaceable>SERVICE_TAG</replaceable></entry>
+                <entry>Configure the job manager to use <replaceable>SERVICE_TAG</replaceable> as a unique identifier to allow multiple GRAM instances to use the same job state directories without interfering with each other's jobs. If not set, the value <literal>untagged</literal> will be used.
+                </entry>
+            </row>
+            <row>
+                <entry>-rsl <replaceable>RSL</replaceable></entry>
+                <entry>Start the job manager with the job specified by <replaceable>RSL</replaceable> instead of expecting a job request from the network.
+                </entry>
+            </row>
+            <row>
+                <entry>-disable-streaming</entry>
+                <entry>Configure the job manager to disable file streaming. This is propagated to the LRM script interface but has no effect in GRAM5.
+                </entry>
+            </row>
+            <row>
+                <entry>-condor-arch <replaceable>ARCH</replaceable></entry>
+                <entry>Set the architecture specification for condor jobs to be <replaceable>ARCH</replaceable> in job classified ads generated by the GRAM5 codnor LRM script. This is required for the condor LRM but ignored for all others.
+                </entry>
+            </row>
+            <row>
+                <entry>-condor-os <replaceable>OS</replaceable></entry>
+                <entry>Set the operating system specification for condor jobs to be <replaceable>OS</replaceable> in job classified ads generated by the GRAM5 codnor LRM script. This is required for the condor LRM but ignored for all others.
+                </entry>
+            </row>
+        </tbody>
+    </tgroup>
+</informaltable>
+</para>
+</refsect1>
+
+<refsect1><title>ENVIRONMENT</title>
+<para>
+If the following variables affect the execution of <command>globus-job-manager</command>
+
+<informaltable>
+    <tgroup cols="2" align="left">
+        <tbody>
+            <row>
+                <entry>HOME</entry>
+                <entry>User's home directory.</entry>
+            </row>
+            <row>
+                <entry>LOGNAME</entry>
+                <entry>User's name.</entry>
+            </row>
+            <row>
+                <entry>JOBMANAGER_SYSLOG_ID</entry>
+                <entry>String to prepend to syslog audit messages.</entry>
+            </row>
+            <row>
+                <entry>JOBMANAGER_SYSLOG_FAC</entry>
+                <entry>Facility to log syslog audit messages as.</entry>
+            </row>
+            <row>
+                <entry>JOBMANAGER_SYSLOG_LVL</entry>
+                <entry>Priority level to use for syslog audit messages.</entry>
+            </row>
+            <row>
+                <entry>GATEKEEPER_JM_ID</entry>
+                <entry>Job manager ID to be used in syslog audit records.</entry>
+            </row>
+            <row>
+                <entry>GATEKEEPER_PEER</entry>
+                <entry>Peer information to be used in syslog audit records</entry>
+            </row>
+            <row>
+                <entry>GLOBUS_ID</entry>
+                <entry>Credential information to be used in syslog audit records</entry>
+            </row>
+            <row>
+                <entry>GLOBUS_JOB_MANAGER_SLEEP</entry>
+                <entry>Time (in seconds) to sleep when the job manager is started. [For debugging purposes only]</entry>
+            </row>
+            <row>
+                <entry>GRID_SECURITY_HTTP_BODY_FD</entry>
+                <entry>File descriptor of an open file which contains the initial job request and to which the initial job reply should be sent. This file descriptor is inherited from the <command>globus-gatekeeper</command>.
+                </entry>
+            </row>
+            <row>
+                <entry>X509_USER_PROXY</entry>
+                <entry>Path to the X.509 user proxy which was delegated by the client to the <command>globus-gatekeeper</command> program to be used by the job manager.
+                </entry>
+            </row>
+            <row>
+                <entry>GRID_SECURITY_CONTEXT_FD</entry>
+                <entry>File descriptor containing an exported security context that the job manager should use to reply to the client which submitted the job.
+                </entry>
+            </row>
+        </tbody>
+    </tgroup>
+</informaltable>
+</para>
+
+</refsect1>
+<refsect1><title>Configuration</title>
+<para>
+</para>
+</refsect1>
+
+<refsect1><title>Files</title>
+<para>
+</para>
+</refsect1>
+
+</refentry>
+
+<refentry>
+<info>
+<author>
+    <orgname>University of Chicago</orgname>
+</author>
+</info>
+<refmeta>
+<refentrytitle>globus-personal-gatekeeper</refentrytitle>
+<manvolnum>1</manvolnum>
+</refmeta>
+
+<refnamediv>
+<refdescriptor>Manage a user's personal gatekeeper daemon</refdescriptor>
+<refname>globus-personal-gatekeeper</refname>
+<refpurpose>Manage a user's personal gatekeeper daemon</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+
+<cmdsynopsis>
+<command>globus-personal-gatekeeper</command>
+<arg>-help</arg>
+<arg>-usage</arg>
+<arg>-version</arg>
+<arg>-versions</arg>
+<arg>-list</arg>
+<arg>-directory <replaceable>CONTACT</replaceable></arg>
+</cmdsynopsis>
+
+<cmdsynopsis>
+<command>globus-personal-gatekeeper</command>
+    <arg>-debug</arg>
+    <arg choice="req">-start</arg>
+    <arg>-jmtype <replaceable>LRM</replaceable></arg>
+    <arg>-auditdir <replaceable>AUDIT_DIRECTORY</replaceable></arg>
+    <arg>-port <replaceable>PORT</replaceable></arg>
+    <arg>-log<arg>=<replaceable>DIRECTORY</replaceable></arg></arg>
+    <arg>-seg</arg>
+    <arg>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></arg>
+</cmdsynopsis>
+
+<cmdsynopsis>
+<command>globus-personal-gatekeeper</command>
+<arg>-killall</arg>
+<arg>-kill</arg>
+</cmdsynopsis>
+
+</refsynopsisdiv>
+
+<refsect1><title>Description</title>
+<para>
+The <command>globus-personal-gatekeeper</command> command is a utility which
+manages a gatekeeper and job manager service for a single user. Depending on
+the command-line arguments it will operate in one of several modes. In the
+first set of arguments indicated in the synopsis, the program provides
+information about the <command>globus-personal-gatekeeper</command> command or
+about instances of the <command>globus-personal-gatekeeper</command> that are
+running currently. The second set of arguments indicated in the synopsis
+provide control over starting a new
+<command>globus-personal-gatekeeper</command> instance. The final set of
+arguments provide control for terminating one or more
+<command>globus-personal-gatekeeper</command> instances.
+</para>
+
+<para>
+The <arg>-start</arg> mode will create a new subdirectory of
+<filename><envar>$HOME</envar>/.globus</filename> and write the configuration
+files needed to start a <command>globus-gatekeeper</command> daemon which will
+invoke the <command>globus-job-manager</command> service when new authenticated
+connections are made to its service port. The
+<command>globus-personal-gatekeeper</command> then exits, printing the contact
+string for the new gatekeeper prefixed by <literal>GRAM contact: </literal> to
+standard output. In addition to the arguments described above, any arguments
+described in <command>globus-job-manager(8)</command> can be appended to the
+command-line and will be added to the job manager configuration for the service
+started by the <command>globus-gatekeeper</command>.
+</para>
+
+<para>
+The new <command>globus-gatekeeper</command> will continue to run in the
+background until killed by invoking
+<command>globus-personal-gatekeeper</command> with the <arg>-kill</arg> or
+<arg>-killall</arg> argument. When killed, it will kill the
+<command>globus-gatekeeper</command> and <command>globus-job-manager</command>
+processes, remove state files and configuration data, and then exit. Jobs which
+are running when the personal gatekeeper is killed will continue to run, but
+their job directory will be destroyed so they may fail in the LRM.
+</para>
+
+<para>
+The full set of command-line options to
+<command>globus-personal-gatekeeper</command> consists of:
+
+<informaltable>
+    <tgroup cols="2">
+        <tbody>
+            <row>
+                <entry>-help | -usage</entry>
+                <entry>Print command-line option summary and exit</entry>
+            </row>
+            <row>
+                <entry>-version</entry>
+                <entry>Print software version</entry>
+            </row>
+            <row>
+                <entry>-versions</entry>
+                <entry>Print software version including DiRT information</entry>
+            </row>
+            <row>
+                <entry>-list</entry>
+                <entry>Print a list of all currently running personal gatekeepers. These entries will be printed one per line.</entry>
+            </row>
+            <row>
+                <entry>-directory <replaceable>CONTACT</replaceable></entry>
+                <entry>Print the configuration directory for the personal gatekeeper with the contact string <replaceable>CONTACT</replaceable>.</entry>
+            </row>
+            <row>
+                <entry>-debug</entry>
+                <entry>Print additional debugging information when starting a personal gatekeeper. This option is ignored in other modes.</entry>
+            </row>
+            <row>
+                <entry>-start</entry>
+                <entry>Start a new personal gatekeeper process.</entry>
+            </row>
+            <row>
+                <entry>-jmtype <replaceable>LRM</replaceable></entry>
+                <entry>Use <replaceable>LRM</replaceable> as the local resource manager interface. If not provided when starting a personal gatekeeper, the job manager will use the default <literal>fork</literal> LRM.</entry>
+            </row>
+            <row>
+                <entry>-auditdir <replaceable>AUDIT_DIRECTORY</replaceable></entry>
+                <entry>Write audit report files to <replaceable>AUDIT_DIRECTORY</replaceable>. If not provided, the job manager will not write any audit files.</entry>
+            </row>
+            <row>
+                <entry>-port <replaceable>PORT</replaceable></entry>
+                <entry>Listen for gatekeeper TCP/IP connections on the port <replaceable>PORT</replaceable>. If not provided, the gatekeeper will let the operating system choose.</entry>
+            </row>
+            <row>
+                <entry>-log<arg>=<replaceable>DIRECTORY</replaceable></arg></entry>
+                <entry>Write job manager log files to <replaceable>DIRECTORY</replaceable>. If <replaceable>DIRECTORY</replaceable> is omitted, the default of <filename><envar>$HOME</envar></filename> will be used. If this option is not present, the job manager will not write any log files.</entry>
+            </row>
+            <row>
+                <entry>-seg</entry>
+                <entry>Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the <command>globus-job-manager-event-generator</command> program for the LRM specified by the <arg>-jmtype</arg> option.</entry>
+            </row>
+            <row>
+                <entry>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></entry>
+                <entry>Write gatekeeper accounting entries to <replaceable>ACCOUNTING_FILE</replaceable>. If not provided, no accounting records are written.</entry>
+            </row>
+        </tbody>
+    </tgroup>
+</informaltable>
+</para>
+</refsect1>
+
+<refsect1><title>Examples</title>
+
+<para>
+This example shows the output when starting a new personal gatekeeper which
+will schedule jobs via the <literal>lsf</literal> LRM, with debugging enabled.
+</para>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -start -jmtype lsf</command>
+<computeroutput>
+verifying setup...
+done.
+GRAM contact: personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User
+</computeroutput></screen>
+
+<para>
+This example shows the output when listing the current active personal
+gatekeepers.
+</para>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -list</command>
+<computeroutput>
+personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User
+</computeroutput></screen>
+
+<para>
+This example shows the output when querying the configuration directory for th
+eabove personal gatekeeper.
+gatekeepers.
+</para>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -directory "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"</command>
+<computeroutput>
+/home/juser/.globus/.personal-gatekeeper.personal-grid.example.org.1337
+</computeroutput></screen>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -kill "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"</command>
+<computeroutput>
+killing gatekeeper: "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"
+</computeroutput></screen>
+
+</refsect1>
+
+</refentry>
+
+</reference>
