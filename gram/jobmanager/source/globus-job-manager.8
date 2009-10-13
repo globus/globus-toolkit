@@ -3,11 +3,11 @@
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
 .\"      Date: 10/13/2009
-.\"    Manual: GRAM Job Manager
-.\"    Source: [FIXME: source]
+.\"    Manual: GRAM5 Commands
+.\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-MANAGER" "8" "10/13/2009" "[FIXME: source]" "GRAM Job Manager"
+.TH "GLOBUS\-JOB\-MANAGER" "8" "10/13/2009" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -135,7 +135,7 @@ T}
 T{
 \-target\-globus\-location \fITARGET_GLOBUS_LOCATION\fR
 T}:T{
-Indicate the path where the Globus Toolkit(r) is installed on the execution host\&. If this is omitted, the value specified as a parameter to  [\-home] is used\&. This parameter sets the value of the \fI$(GLOBUS_LOCATION)\fR RSL substitution to \fITARGET_GLOBUS_LOCATION\fR
+Indicate the path where the Globus Toolkit(r) is installed on the execution host\&. If this is omitted, the value specified as a parameter to \fB\-home\fR is used\&. This parameter sets the value of the \fI$(GLOBUS_LOCATION)\fR RSL substitution to \fITARGET_GLOBUS_LOCATION\fR
 T}
 T{
 \-history \fIHISTORY_DIRECTORY\fR
@@ -150,12 +150,12 @@ T}
 T{
 \-enable\-syslog
 T}:T{
-Configure the job manager to write log messages via syslog\&. Logging is further controlled by the argument to the  [\-log\-levels] parameter described below\&.
+Configure the job manager to write log messages via syslog\&. Logging is further controlled by the argument to the \fB\-log\-levels\fR parameter described below\&.
 T}
 T{
 \-stdio\-log \fILOG_DIRECTORY\fR
 T}:T{
-Configure the job manager to write log messages to files  in the \fILOG_DIRECTORY\fR directory\&. Files will be named \fILOG_DIRECTORY\fR/gram_\fIYYYYMMDD\fR\&.log\&. Logging is further controlled by the argument to the  [\-log\-levels] parameter described below\&.
+Configure the job manager to write log messages to files  in the \fILOG_DIRECTORY\fR directory\&. Files will be named \fILOG_DIRECTORY\fR/gram_\fIYYYYMMDD\fR\&.log\&. Logging is further controlled by the argument to the \fB\-log\-levels\fR parameter described below\&.
 T}
 T{
 \-log\-levels \fILEVELS\fR

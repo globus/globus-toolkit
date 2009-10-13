@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: globus-personal-gatekeeper
-.\"    Author: 
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
 .\"      Date: 10/13/2009
-.\"    Manual: GRAM Job Manager
+.\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-PERSONAL\-GA" "1" "10/13/2009" "University of Chicago" "GRAM Job Manager"
+.TH "GLOBUS\-PERSONAL\-GA" "1" "10/13/2009" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -42,7 +42,7 @@ instance\&. The final set of arguments provide control for terminating one or mo
 instances\&.
 .PP
 The
-[\-start]
+\fB\-start\fR
 mode will create a new subdirectory of
 \fB$HOME\fR/\&.globus
 and write the configuration files needed to start a
@@ -63,9 +63,9 @@ The new
 will continue to run in the background until killed by invoking
 \fBglobus\-personal\-gatekeeper\fR
 with the
-[\-kill]
+\fB\-kill\fR
 or
-[\-killall]
+\fB\-killall\fR
 argument\&. When killed, it will kill the
 \fBglobus\-gatekeeper\fR
 and
@@ -141,14 +141,14 @@ T}:T{
 Listen for gatekeeper TCP/IP connections on the port \fIPORT\fR\&. If not provided, the gatekeeper will let the operating system choose\&.
 T}
 T{
-\-log [=\fIDIRECTORY\fR]
+\-log\fB=\fR\fB\fIDIRECTORY\fR\fR
 T}:T{
 Write job manager log files to \fIDIRECTORY\fR\&. If \fIDIRECTORY\fR is omitted, the default of \fB$HOME\fR will be used\&. If this option is not present, the job manager will not write any log files\&.
 T}
 T{
 \-seg
 T}:T{
-Try to use the SEG mechanism to receive job state change information, instead of polling for these\&. These require either the system administrator or the user to run an instance of the \fBglobus\-job\-manager\-event\-generator\fR program for the LRM specified by the  [\-jmtype] option\&.
+Try to use the SEG mechanism to receive job state change information, instead of polling for these\&. These require either the system administrator or the user to run an instance of the \fBglobus\-job\-manager\-event\-generator\fR program for the LRM specified by the \fB\-jmtype\fR option\&.
 T}
 T{
 \-acctfile \fIACCOUNTING_FILE\fR
@@ -216,8 +216,3 @@ killing gatekeeper: "personal\-grid\&.example\&.org:57846:/DC=org/DC=example/CN=
 .if n \{\
 .RE
 .\}
-.SH "AUTHOR"
-.br
-.RS 4
-Author.
-.RE

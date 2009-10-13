@@ -6,16 +6,13 @@ cvs.globus.org:/home/globdev/CVS/globus-packages gram/jobmanager/source/manual.x
 -->
 
 
-<reference><title>GRAM Job Manager</title>
-<author>
-    <affiliation>
-        <orgname>University of Chicago</orgname>
-    </affiliation>
-</author>
+<reference id="gram5-cmd">
+<title>GRAM5 Commands</title>
 
 <refentry>
 <refmeta>
 <refentrytitle>globus-job-manager</refentrytitle>
+<refmiscinfo class="author">University of Chicago</refmiscinfo>
 <manvolnum>8</manvolnum>
 </refmeta>
 
@@ -143,7 +140,7 @@ The full set of command-line options to
             </row>
             <row>
                 <entry>-target-globus-location <replaceable>TARGET_GLOBUS_LOCATION</replaceable></entry>
-                <entry>Indicate the path where the Globus Toolkit(r) is installed on the execution host. If this is omitted, the value specified as a parameter to <arg>-home</arg> is used. This parameter sets the value of the <varname>$(GLOBUS_LOCATION)</varname> RSL substitution to <replaceable>TARGET_GLOBUS_LOCATION</replaceable>
+                <entry>Indicate the path where the Globus Toolkit(r) is installed on the execution host. If this is omitted, the value specified as a parameter to <option>-home</option> is used. This parameter sets the value of the <varname>$(GLOBUS_LOCATION)</varname> RSL substitution to <replaceable>TARGET_GLOBUS_LOCATION</replaceable>
                 </entry>
             </row>
             <row>
@@ -158,12 +155,12 @@ The full set of command-line options to
             </row>
             <row>
                 <entry>-enable-syslog</entry>
-                <entry>Configure the job manager to write log messages via syslog. Logging is further controlled by the argument to the <arg>-log-levels</arg> parameter described below.
+                <entry>Configure the job manager to write log messages via syslog. Logging is further controlled by the argument to the <option>-log-levels</option> parameter described below.
                 </entry>
             </row>
             <row>
                 <entry>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></entry>
-                <entry>Configure the job manager to write log messages to files  in the <replaceable>LOG_DIRECTORY</replaceable> directory. Files will be named <filename><replaceable>LOG_DIRECTORY</replaceable>/gram_<replaceable>YYYYMMDD</replaceable>.log</filename>. Logging is further controlled by the argument to the <arg>-log-levels</arg> parameter described below.
+                <entry>Configure the job manager to write log messages to files  in the <replaceable>LOG_DIRECTORY</replaceable> directory. Files will be named <filename><replaceable>LOG_DIRECTORY</replaceable>/gram_<replaceable>YYYYMMDD</replaceable>.log</filename>. Logging is further controlled by the argument to the <option>-log-levels</option> parameter described below.
                 </entry>
             </row>
             <row>
@@ -329,13 +326,9 @@ If the following variables affect the execution of <command>globus-job-manager</
 </refentry>
 
 <refentry>
-<info>
-<author>
-    <orgname>University of Chicago</orgname>
-</author>
-</info>
 <refmeta>
 <refentrytitle>globus-personal-gatekeeper</refentrytitle>
+<refmiscinfo class="author">University of Chicago</refmiscinfo>
 <manvolnum>1</manvolnum>
 </refmeta>
 
@@ -392,7 +385,7 @@ arguments provide control for terminating one or more
 </para>
 
 <para>
-The <arg>-start</arg> mode will create a new subdirectory of
+The <option>-start</option> mode will create a new subdirectory of
 <filename><envar>$HOME</envar>/.globus</filename> and write the configuration
 files needed to start a <command>globus-gatekeeper</command> daemon which will
 invoke the <command>globus-job-manager</command> service when new authenticated
@@ -408,8 +401,8 @@ started by the <command>globus-gatekeeper</command>.
 <para>
 The new <command>globus-gatekeeper</command> will continue to run in the
 background until killed by invoking
-<command>globus-personal-gatekeeper</command> with the <arg>-kill</arg> or
-<arg>-killall</arg> argument. When killed, it will kill the
+<command>globus-personal-gatekeeper</command> with the <option>-kill</option> or
+<option>-killall</option> argument. When killed, it will kill the
 <command>globus-gatekeeper</command> and <command>globus-job-manager</command>
 processes, remove state files and configuration data, and then exit. Jobs which
 are running when the personal gatekeeper is killed will continue to run, but
@@ -464,12 +457,12 @@ The full set of command-line options to
                 <entry>Listen for gatekeeper TCP/IP connections on the port <replaceable>PORT</replaceable>. If not provided, the gatekeeper will let the operating system choose.</entry>
             </row>
             <row>
-                <entry>-log<arg>=<replaceable>DIRECTORY</replaceable></arg></entry>
+                <entry>-log<option>=<replaceable>DIRECTORY</replaceable></option></entry>
                 <entry>Write job manager log files to <replaceable>DIRECTORY</replaceable>. If <replaceable>DIRECTORY</replaceable> is omitted, the default of <filename><envar>$HOME</envar></filename> will be used. If this option is not present, the job manager will not write any log files.</entry>
             </row>
             <row>
                 <entry>-seg</entry>
-                <entry>Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the <command>globus-job-manager-event-generator</command> program for the LRM specified by the <arg>-jmtype</arg> option.</entry>
+                <entry>Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the <command>globus-job-manager-event-generator</command> program for the LRM specified by the <option>-jmtype</option> option.</entry>
             </row>
             <row>
                 <entry>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></entry>
