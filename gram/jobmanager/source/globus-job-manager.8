@@ -1,7 +1,7 @@
 '\" t
 .\"     Title: globus-job-manager
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 10/13/2009
 .\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
@@ -319,8 +319,88 @@ File descriptor containing an exported security context that the job manager sho
 T}
 .TE
 .sp 1
-.SH "CONFIGURATION"
-.PP
 .SH "FILES"
 .PP
+.TS
+allbox tab(:);
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l
+l l.
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIred\fR
+T}:T{
+Job manager delegated user credential\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIlock\fR
+T}:T{
+Job manager state lock file\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIpid\fR
+T}:T{
+Job manager pid file\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fILRM\fR\&.\fITAG\fR\&.\fIsock\fR
+T}:T{
+Job manager socket for inter\-job manager communications\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/
+T}:T{
+Job\-specific state directory\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/stdin
+T}:T{
+Standard input which has been staged from a remote URL\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/stdout
+T}:T{
+Standard output which will be staged from a remote URL\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/stderr
+T}:T{
+Standard error which will be staged from a remote URL\&.
+T}
+T{
+\fB$HOME\fR/\&.globus/job/\fIHOSTNAME\fR/\fIJOB_ID\fR/x509_user_proxy
+T}:T{
+Job\-specific delegated credential\&.
+T}
+T{
+\fB$GLOBUS_LOCATION\fR/tmp/gram_job_state/job\&.\fIHOSTNAME\fR\&.\fIJOB_ID\fR
+T}:T{
+Job state file\&.
+T}
+T{
+\fB$GLOBUS_LOCATION\fR/tmp/gram_job_state/job\&.\fIHOSTNAME\fR\&.\fIJOB_ID\fR\&.lock
+T}:T{
+Job state lock file\&. In most cases this will be a symlink to the job manager lock file\&.
+T}
+T{
+\fB$GLOBUS_LOCATION\fR/etc/globus\-job\-manager\&.conf
+T}:T{
+Default location of the global job manager configuration file\&.
+T}
+T{
+\fB$GLOBUS_LOCATION\fR/etc/grid\-services/jobmanager\-\fILRM\fR
+T}:T{
+Default location of the LRM\-specific gatekeeper configuration file\&.
+T}
+.TE
+.sp 1
 

@@ -76,5 +76,10 @@ globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	    < globus-gram-job-manager.rvf \
 	    > globus_gram_job_manager_rsl.dox
 
+if GENERATE_MANPAGES
+$(man1data_DATA) $(man8data_DATA): manual.xml
+	$(XMLLINT) --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml
+	$(XSLTPROC) http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
+endif
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

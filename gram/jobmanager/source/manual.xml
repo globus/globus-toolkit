@@ -12,12 +12,11 @@ cvs.globus.org:/home/globdev/CVS/globus-packages gram/jobmanager/source/manual.x
 <refentry>
 <refmeta>
 <refentrytitle>globus-job-manager</refentrytitle>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
 <manvolnum>8</manvolnum>
+<refmiscinfo class="author">University of Chicago</refmiscinfo>
 </refmeta>
 
 <refnamediv>
-<refdescriptor>GRAM Job Manager</refdescriptor>
 <refname>globus-job-manager</refname>
 <refpurpose>Execute and monitor jobs</refpurpose>
 </refnamediv>
@@ -311,15 +310,68 @@ If the following variables affect the execution of <command>globus-job-manager</
     </tgroup>
 </informaltable>
 </para>
-
-</refsect1>
-<refsect1><title>Configuration</title>
-<para>
-</para>
 </refsect1>
 
 <refsect1><title>Files</title>
 <para>
+<informaltable>
+    <tgroup cols="2" align="left">
+        <tbody>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>LRM</replaceable>.<replaceable>TAG</replaceable>.<replaceable>red</replaceable></filename></entry>
+                <entry>Job manager delegated user credential.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>LRM</replaceable>.<replaceable>TAG</replaceable>.<replaceable>lock</replaceable></filename></entry>
+                <entry>Job manager state lock file.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>LRM</replaceable>.<replaceable>TAG</replaceable>.<replaceable>pid</replaceable></filename></entry>
+                <entry>Job manager pid file.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>LRM</replaceable>.<replaceable>TAG</replaceable>.<replaceable>sock</replaceable></filename></entry>
+                <entry>Job manager socket for inter-job manager communications.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>JOB_ID</replaceable>/</filename></entry>
+                <entry>Job-specific state directory.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>JOB_ID</replaceable>/stdin</filename></entry>
+                <entry>Standard input which has been staged from a remote URL.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>JOB_ID</replaceable>/stdout</filename></entry>
+                <entry>Standard output which will be staged from a remote URL.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>JOB_ID</replaceable>/stderr</filename></entry>
+                <entry>Standard error which will be staged from a remote URL.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$HOME</envar>/.globus/job/<replaceable>HOSTNAME</replaceable>/<replaceable>JOB_ID</replaceable>/x509_user_proxy</filename></entry>
+                <entry>Job-specific delegated credential.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$GLOBUS_LOCATION</envar>/tmp/gram_job_state/job.<replaceable>HOSTNAME</replaceable>.<replaceable>JOB_ID</replaceable></filename></entry>
+                <entry>Job state file.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$GLOBUS_LOCATION</envar>/tmp/gram_job_state/job.<replaceable>HOSTNAME</replaceable>.<replaceable>JOB_ID</replaceable>.lock</filename></entry>
+                <entry>Job state lock file. In most cases this will be a symlink to the job manager lock file.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$GLOBUS_LOCATION</envar>/etc/globus-job-manager.conf</filename></entry>
+                <entry>Default location of the global job manager configuration file.</entry>
+            </row>
+            <row>
+                <entry><filename><envar>$GLOBUS_LOCATION</envar>/etc/grid-services/jobmanager-<replaceable>LRM</replaceable></filename></entry>
+                <entry>Default location of the LRM-specific gatekeeper configuration file.</entry>
+            </row>
+        </tbody>
+    </tgroup>
+</informaltable>
 </para>
 </refsect1>
 
@@ -328,12 +380,11 @@ If the following variables affect the execution of <command>globus-job-manager</
 <refentry>
 <refmeta>
 <refentrytitle>globus-personal-gatekeeper</refentrytitle>
-<refmiscinfo class="author">University of Chicago</refmiscinfo>
 <manvolnum>1</manvolnum>
+<refmiscinfo class="author">University of Chicago</refmiscinfo>
 </refmeta>
 
 <refnamediv>
-<refdescriptor>Manage a user's personal gatekeeper daemon</refdescriptor>
 <refname>globus-personal-gatekeeper</refname>
 <refpurpose>Manage a user's personal gatekeeper daemon</refpurpose>
 </refnamediv>
