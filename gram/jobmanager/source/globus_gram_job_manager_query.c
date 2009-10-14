@@ -294,9 +294,8 @@ unpack_failed:
 
     globus_gram_job_manager_request_log(
             request,
-            rc
-                ? GLOBUS_GRAM_JOB_MANAGER_LOG_INFO
-                : GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            rc ? GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR
+                    : GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
             "event=gram.query.end "
             "level=%s "
             "gramid=%s "
@@ -305,9 +304,10 @@ unpack_failed:
             "status=%d "
             "%s%s "
             "\n",
+            rc ? "ERROR" : "INFO",
             request->job_contact_path,
             uri,
-            rc ? "Done processing query" : "Error processing query",
+            rc ? "Error processing query" : "Done processing query" ,
             rc ? -rc : 0,
             rc ? "reason=\"" : "",
             rc ? globus_gram_protocol_error_string(rc) : "",
