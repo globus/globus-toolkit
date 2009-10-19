@@ -145,8 +145,6 @@ roaming_write(int fd, const void *buf, size_t count, int *cont)
 		if (out_buf_size > 0)
 			buf_append(buf, ret);
 	}
-	debug3("Wrote %ld bytes for a total of %llu", (long)ret,
-	    (unsigned long long)write_bytes);
 	return ret;
 }
 
