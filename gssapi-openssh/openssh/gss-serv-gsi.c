@@ -225,12 +225,13 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 }
 
 /*
- * Export updated GSI credential to disk.
+ * Export updated GSI credentials to disk.
  */
-static void
+static int
 ssh_gssapi_gsi_updatecreds(ssh_gssapi_ccache *store,ssh_gssapi_client *client)
 {
 	ssh_gssapi_gsi_storecreds(client);
+	return 1;
 }
 
 #endif /* GSI */

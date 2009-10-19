@@ -535,6 +535,7 @@ ssh_gssapi_rekey_creds() {
 	pam_handle_t *pamh = NULL;
 	struct pam_conv pamconv = {ssh_gssapi_simple_conv, NULL};
 	char *envstr;
+	char **p;char **pw;
 #endif
 
 	if (gssapi_client.store.filename == NULL && 
@@ -563,6 +564,18 @@ ssh_gssapi_rekey_creds() {
  	    &pamconv, &pamh);
 	if (ret)
 		return;
+
+	/* Put ssh pam stack env variables in this new pam stack env 
+	 * Using pam-pkinit, KRB5CCNAME is set during do_pam_session
+	 * this addition enables pam-pkinit to access KRB5CCNAME if used 
+	 * in sshd-rekey stack too
+	 */
+	pw = p = fetch_pam_environment();
+	while ( *pw != NULL ) {
+	        pam_putenv(pamh,*pw);
+		pw++;
+	}
+	free_pam_environment(p);
 
 	xasprintf(&envstr, "%s=%s", gssapi_client.store.envvar, 
 	    gssapi_client.store.envval);
