@@ -3878,6 +3878,7 @@ globus_l_guc_init_gass_copy_handle(
         list = globus_list_rest(list))
     {
         plugin_name = globus_list_first(list);
+        plugin_name = globus_libc_strdup(plugin_name);
         plugin_arg = NULL;
         tmp_s = strchr(plugin_name, ':');
         if(tmp_s != NULL)
@@ -3920,6 +3921,7 @@ globus_l_guc_init_gass_copy_handle(
                     globus_error_print_friendly(globus_error_peek(result)));
             }
         }
+        globus_free(plugin_name);
     }
 
     if(g_use_debug)
