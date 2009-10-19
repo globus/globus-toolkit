@@ -56,6 +56,20 @@ GlobusDebugDefine(GLOBUS_USAGE);
     }
 #endif
 
+#define GlobusUsageTr(_msg, _len, _from, _to)     \
+do                                                \
+{                                                 \
+    char *                  _ptr;                 \
+    char *                  _stop;                \
+    _stop = (char *) _msg + _len;                 \
+    _ptr = strchr((char * ) _msg, _from);         \
+    while(_ptr != NULL && _ptr <  _stop)          \
+    {                                             \
+        *_ptr = _to;                              \
+        _ptr = strchr((char * ) _ptr, _from);     \
+    }                                             \
+} while(0)
+
 #define PACKET_SIZE 1472
 
 static int
@@ -289,8 +303,9 @@ globus_usage_stats_handle_init(
 
     if(globus_libc_gethostname(hostname, 255) == 0)
     {
-        new_handle->data_length += sprintf(new_handle->data + new_handle->data_length,
-                               "HOSTNAME=%s", hostname);
+        new_handle->data_length += 
+            sprintf((char *) new_handle->data + new_handle->data_length,
+                "HOSTNAME=%s", hostname);
     }
     new_handle->header_length = new_handle->data_length;
     
@@ -424,7 +439,6 @@ globus_l_usage_stats_write_packet(
     nstamp = htonl(stamp.tv_sec);
     memcpy(handle->data + GLOBUS_L_USAGE_STATS_TIMESTAMP_OFFSET, 
            (void *)&nstamp, 4);
-
     targets_list = handle->xio_desc_list;
     server_list = handle->targets;
     while(targets_list)
@@ -507,11 +521,13 @@ globus_usage_stats_send_array(
             const char *                key;
             const char *                value;
             int                         length; 
-
+            int                         val_len;
+            int                         val_start;
             key = key_array[i];
             value = value_array[i];
             
-            length = strlen(key) + strlen(value);
+            val_len = strlen(value);
+            length = strlen(key) + val_len;
 
             if(index(value, ' '))
             {
@@ -528,8 +544,11 @@ globus_usage_stats_send_array(
                             "Parameters don't fit into one packet"));
                 }
                 handle->data_length += sprintf(
-                    handle->data + handle->data_length,
+                    (char *) handle->data + handle->data_length,
                     "%s=\"%s\" ", key, value);
+                val_start = handle->data + handle->data_length - val_len - 2;
+                GlobusUsageTr(val_start, val_len, '"', '\'');
+                GlobusUsageTr(val_start, val_len, '\n', ' ');
             }
             else
             {
@@ -546,8 +565,11 @@ globus_usage_stats_send_array(
                             "Parameters don't fit into one packet"));
                 }
                 handle->data_length += sprintf(
-                    handle->data + handle->data_length,
+                    (char *) handle->data + handle->data_length,
                     "%s=%s ", key, value);
+                val_start = handle->data + handle->data_length - val_len - 1;
+                GlobusUsageTr(val_start, val_len, '"', '\'');
+                GlobusUsageTr(val_start, val_len, '\n', ' ');
             }
         }
     }
@@ -622,8 +644,12 @@ globus_usage_stats_vsend(
         {
             const char *                key = va_arg(ap, char *);
             const char *                value = va_arg(ap, char *);
-            int                         length = strlen(key) +
-                                                 strlen(value);
+            int                         length;
+            int                         val_len;
+            int                         val_start;
+            
+            val_len = strlen(value);
+            length = strlen(key) + val_len;
 
             if(index(value, ' '))
             {
@@ -640,8 +666,11 @@ globus_usage_stats_vsend(
                             "Parameters don't fit into one packet"));
                 }
                 handle->data_length += sprintf(
-                    handle->data + handle->data_length,
+                    (char *) handle->data + handle->data_length,
                     "%s=\"%s\" ", key, value);
+                val_start = handle->data + handle->data_length - val_len - 2;
+                GlobusUsageTr(val_start, val_len, '"', '\'');
+                GlobusUsageTr(val_start, val_len, '\n', ' ');
             }
             else
             {
@@ -658,8 +687,11 @@ globus_usage_stats_vsend(
                             "Parameters don't fit into one packet"));
                 }
                 handle->data_length += sprintf(
-                    handle->data + handle->data_length,
+                    (char *) handle->data + handle->data_length,
                     "%s=%s ", key, value);
+                val_start = handle->data + handle->data_length - val_len - 1;
+                GlobusUsageTr(val_start, val_len, '"', '\'');
+                GlobusUsageTr(val_start, val_len, '\n', ' ');
             }
         }
     }
