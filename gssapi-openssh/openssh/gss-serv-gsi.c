@@ -49,7 +49,7 @@ extern ServerOptions options;
 static int ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name);
 static int ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user);
 static void ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client);
-static void ssh_gssapi_gsi_updatecreds(ssh_gssapi_ccache *store,
+static int ssh_gssapi_gsi_updatecreds(ssh_gssapi_ccache *store,
 				       ssh_gssapi_client *client);
 
 ssh_gssapi_mech gssapi_gsi_mech = {
