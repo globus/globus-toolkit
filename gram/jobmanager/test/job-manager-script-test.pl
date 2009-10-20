@@ -67,6 +67,10 @@ sub test_interactive_poll
     print $child_in "\$description = { jobid => [ '$dummy_pid' ] };\n\n";
     while (($_ = <$child_out>) ne "\n")
     {
+        if ($_ =~ /^GRAM_SCRIPT_LOG/)
+        {
+            next;
+        }
         if ($_ ne "GRAM_SCRIPT_JOB_STATE:2\n")
         {
             ok($_, "GRAM_SCRIPT_JOB_STATE:2\n");
@@ -84,6 +88,10 @@ sub test_interactive_poll
     print $child_in "\$description = { jobid => [ '$dummy_pid' ] };\n\n";
     while (($_ = <$child_out>) ne "\n")
     {
+        if ($_ =~ /^GRAM_SCRIPT_LOG/)
+        {
+            next;
+        }
         if ($_ ne "GRAM_SCRIPT_JOB_STATE:8\n")
         {
             ok($_, "GRAM_SCRIPT_JOB_STATE:8\n");
@@ -128,7 +136,11 @@ sub test_interactive_multipoll
         print $child_in "\$description = { jobid => [ '$dummy_pid' ] };\n\n";
         while (($_ = <$child_out>) ne "\n")
         {
-            if ($_ ne "GRAM_SCRIPT_JOB_STATE:2\n")
+            if ($_ =~ m/^GRAM_SCRIPT_LOG/)
+            {
+                next;
+            }
+            elsif ($_ ne "GRAM_SCRIPT_JOB_STATE:2\n")
             {
                 ok($_, "GRAM_SCRIPT_JOB_STATE:2\n");
                 kill 'TERM', $dummy_pid;
@@ -146,7 +158,11 @@ sub test_interactive_multipoll
     print $child_in "\$description = { jobid => [ '$dummy_pid' ] };\n\n";
     while (($_ = <$child_out>) ne "\n")
     {
-        if ($_ ne "GRAM_SCRIPT_JOB_STATE:8\n")
+        if ($_ =~ m/^GRAM_SCRIPT_LOG/)
+        {
+            next;
+        }
+        elsif ($_ ne "GRAM_SCRIPT_JOB_STATE:8\n")
         {
             ok($_, "GRAM_SCRIPT_JOB_STATE:8\n");
             return;
