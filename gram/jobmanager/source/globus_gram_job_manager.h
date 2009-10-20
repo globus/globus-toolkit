@@ -740,8 +740,7 @@ int
 globus_gram_job_manager_config_init(
     globus_gram_job_manager_config_t *  config,
     int                                 argc,
-    char **                             argv,
-    char **                             rsl);
+    char **                             argv);
 
 void
 globus_gram_job_manager_config_destroy(

@@ -34,7 +34,6 @@
 #include "globus_callout.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_protocol.h"
-#include "globus_rsl.h"
 #include "globus_gass_cache.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
@@ -68,7 +67,6 @@ main(
     long                                sleeptime;
     globus_bool_t                       started_without_client = GLOBUS_FALSE;
     globus_bool_t                       located_active_jm = GLOBUS_FALSE;
-    char *                              rsl;
     int                                 http_body_fd;
     int                                 context_fd;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
@@ -102,7 +100,7 @@ main(
     }
 
     /* Parse command line options to get jobmanager configuration */
-    rc = globus_gram_job_manager_config_init(&config, argc, argv, &rsl);
+    rc = globus_gram_job_manager_config_init(&config, argc, argv);
     if (rc != GLOBUS_SUCCESS)
     {
         exit(1);
@@ -112,7 +110,7 @@ main(
     {
         exit(1);
     }
-    if (rsl || (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL))
+    if (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL)
     {
         started_without_client = GLOBUS_TRUE;
     }
@@ -296,33 +294,6 @@ main(
                 close(context_fd);
                 http_body_fd = -1;
                 context_fd = -1;
-            }
-            else if (rsl)
-            {
-                /* Debug operation: -rsl command-line option */
-                context = GSS_C_NO_CONTEXT;
-
-                rc = globus_gram_job_manager_request_init(
-                    &request,
-                    &manager,
-                    rsl,
-                    GSS_C_NO_CREDENTIAL,
-                    GSS_C_NO_CONTEXT,
-                    GLOBUS_FALSE,
-                    &old_job_contact,
-                    NULL);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    fprintf(stderr, "Error initializing request\n");
-                    if (old_job_contact)
-                    {
-                        fprintf(stderr,
-                                "Old Job Contact: %s\n",
-                                old_job_contact);
-                        free(old_job_contact);
-                    }
-                    exit(1);
-                }
             }
             if (request)
             {

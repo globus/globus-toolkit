@@ -22,7 +22,7 @@
 globus-job-manager \- Execute and monitor jobs
 .SH "SYNOPSIS"
 .HP \w'\fBglobus\-job\-manager\fR\ 'u
-\fBglobus\-job\-manager\fR {\-type\ \fILRM\fR} [\-conf\ \fICONFIG_PATH\fR] [\-help] [\-globus\-host\-manufacturer\ \fIMANUFACTURER\fR] [\-globus\-host\-cputype\ \fICPUTYPE\fR] [\-globus\-host\-osname\ \fIOSNAME\fR] [\-globus\-host\-osversion\ \fIOSVERSION\fR] [\-globus\-gatekeeper\-host\ \fIHOST\fR] [\-globus\-gatekeeper\-port\ \fIPORT\fR] [\-globus\-gatekeeper\-subject\ \fISUBJECT\fR] [\-home\ \fIGLOBUS_LOCATION\fR] [\-target\-globus\-location\ \fITARGET_GLOBUS_LOCATION\fR] [\-condor\-arch\ \fIARCH\fR] [\-condor\-os\ \fIOS\fR] [\-history\ \fIHISTORY_DIRECTORY\fR] [\-scratch\-dir\-base\ \fISCRATCH_DIRECTORY\fR] [\-enable\-syslog] [\-stdio\-log\ \fILOG_DIRECTORY\fR] [\-log\-levels\ \fILEVELS\fR] [\-state\-file\-dir\ \fISTATE_DIRECTORY\fR] [\-globus\-tcp\-port\-range\ \fIPORT_RANGE\fR] [\-x509\-cert\-dir\ \fITRUSTED_CERTIFICATE_DIRECTORY\fR] [\-cache\-location\ \fIGASS_CACHE_DIRECTORY\fR] [\-k] [\-extra\-envvars\ \fIVAR=VAL,\&.\&.\&.\fR] [\-seg\-module\ \fISEG_MODULE\fR] [\-audit\-directory\ \fIAUDIT_DIRECTORY\fR] [\-globus\-toolkit\-version\ \fITOOLKIT_VERSION\fR] [\-non\-single] [\-disable\-streaming] [\-disable\-usagestats] [\-usagestats\-target\ \fITARGET\fR] [\-service\-tag\ \fISERVICE_TAG\fR] [\-rsl\ \fIRSL\fR]
+\fBglobus\-job\-manager\fR {\-type\ \fILRM\fR} [\-conf\ \fICONFIG_PATH\fR] [\-help] [\-globus\-host\-manufacturer\ \fIMANUFACTURER\fR] [\-globus\-host\-cputype\ \fICPUTYPE\fR] [\-globus\-host\-osname\ \fIOSNAME\fR] [\-globus\-host\-osversion\ \fIOSVERSION\fR] [\-globus\-gatekeeper\-host\ \fIHOST\fR] [\-globus\-gatekeeper\-port\ \fIPORT\fR] [\-globus\-gatekeeper\-subject\ \fISUBJECT\fR] [\-home\ \fIGLOBUS_LOCATION\fR] [\-target\-globus\-location\ \fITARGET_GLOBUS_LOCATION\fR] [\-condor\-arch\ \fIARCH\fR] [\-condor\-os\ \fIOS\fR] [\-history\ \fIHISTORY_DIRECTORY\fR] [\-scratch\-dir\-base\ \fISCRATCH_DIRECTORY\fR] [\-enable\-syslog] [\-stdio\-log\ \fILOG_DIRECTORY\fR] [\-log\-levels\ \fILEVELS\fR] [\-state\-file\-dir\ \fISTATE_DIRECTORY\fR] [\-globus\-tcp\-port\-range\ \fIPORT_RANGE\fR] [\-x509\-cert\-dir\ \fITRUSTED_CERTIFICATE_DIRECTORY\fR] [\-cache\-location\ \fIGASS_CACHE_DIRECTORY\fR] [\-k] [\-extra\-envvars\ \fIVAR=VAL,\&.\&.\&.\fR] [\-seg\-module\ \fISEG_MODULE\fR] [\-audit\-directory\ \fIAUDIT_DIRECTORY\fR] [\-globus\-toolkit\-version\ \fITOOLKIT_VERSION\fR] [\-non\-single] [\-disable\-streaming] [\-disable\-usagestats] [\-usagestats\-target\ \fITARGET\fR] [\-service\-tag\ \fISERVICE_TAG\fR]
 .SH "DESCRIPTION"
 .PP
 The
@@ -44,7 +44,6 @@ The full set of command\-line options to
 consists of:
 .TS
 allbox tab(:);
-l l
 l l
 l l
 l l
@@ -218,11 +217,6 @@ T{
 \-service\-tag \fISERVICE_TAG\fR
 T}:T{
 Configure the job manager to use \fISERVICE_TAG\fR as a unique identifier to allow multiple GRAM instances to use the same job state directories without interfering with each other\'s jobs\&. If not set, the value untagged will be used\&.
-T}
-T{
-\-rsl \fIRSL\fR
-T}:T{
-Start the job manager with the job specified by \fIRSL\fR instead of expecting a job request from the network\&.
 T}
 T{
 \-disable\-streaming

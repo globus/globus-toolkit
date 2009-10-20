@@ -56,7 +56,6 @@ cvs.globus.org:/home/globdev/CVS/globus-packages gram/jobmanager/source/manual.x
 <arg>-disable-usagestats</arg>
 <arg>-usagestats-target <replaceable>TARGET</replaceable></arg>
 <arg>-service-tag <replaceable>SERVICE_TAG</replaceable></arg>
-<arg>-rsl <replaceable>RSL</replaceable></arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -222,11 +221,6 @@ The full set of command-line options to
             <row>
                 <entry>-service-tag <replaceable>SERVICE_TAG</replaceable></entry>
                 <entry>Configure the job manager to use <replaceable>SERVICE_TAG</replaceable> as a unique identifier to allow multiple GRAM instances to use the same job state directories without interfering with each other's jobs. If not set, the value <literal>untagged</literal> will be used.
-                </entry>
-            </row>
-            <row>
-                <entry>-rsl <replaceable>RSL</replaceable></entry>
-                <entry>Start the job manager with the job specified by <replaceable>RSL</replaceable> instead of expecting a job request from the network.
                 </entry>
             </row>
             <row>
