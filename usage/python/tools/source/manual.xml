@@ -25,6 +25,8 @@
 <command>globus-usage-collector</command>
 <arg>-h</arg>
 <arg>-p <replaceable>PORT</replaceable></arg>
+<arg>-b</arg>
+<arg>-f <replaceable>FILE</replaceable></arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -55,6 +57,17 @@ The full set of command-line options to
                 <entry>-d <replaceable>DIRECTORY</replaceable></entry>
                 <entry>Write data to <replaceable>DIRECTORY</replaceable>
                     instead of the configured path.</entry>
+            </row>
+            <row>
+                <entry>-b</entry>
+                <entry>Run the <command>globus-usage-collector</command>
+                    process in the background</entry>
+            </row>
+            <row>
+                <entry>-f <replaceable>FILE</replaceable></entry>
+                <entry>Write the process ID of the backgrounded
+                <command>globus-usage-collector</command> process to
+                <replaceable>FILE</replaceable>.</entry>
             </row>
         </tbody>
     </tgroup>
@@ -124,6 +137,9 @@ usage packet data. Each packet record consists of 4 fields:
 <refsynopsisdiv>
 <cmdsynopsis>
 <command>globus-usage-uploader</command>
+<arg>-h</arg>
+<arg>-d <replaceable>DIRECTORY</replaceable></arg>
+<arg>-n</arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 

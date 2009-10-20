@@ -38,15 +38,14 @@ import struct
 import os
 import getopt
 import socket
+import signal
 
 sys.path.append(
     os.path.join(os.environ['GLOBUS_LOCATION'], 'lib', 'python', 'usage'))
 
 import packetfile
+import usageconfig
 
-# Default configuration values:
-data_directory = os.path.join(
-    os.environ['GLOBUS_LOCATION'], 'var', 'usage')
 collector_port = "4810"
 
 
@@ -56,7 +55,16 @@ execfile(
         os.environ['GLOBUS_LOCATION'], 'etc', 'globus-usage-tools.conf'))
 
 
-packetfile = packetfile.PacketFile(data_directory, "a")
+packetfile = packetfile.PacketFile(usageconfig.data_directory, "a")
+
+pidfile_path = None
+def termhandler(signum, frame):
+    if pidfile_path != None:
+        os.remove(pidfile_path)
+    sys.exit(0)
+
+# Set the signal handler and a 5-second alarm
+signal.signal(signal.SIGTERM, termhandler)
 
 class Receiver(SocketServer.BaseRequestHandler):
     """
@@ -83,7 +91,9 @@ def usage(exe):
     usagestr += """
 Options:
   -h                       Print this message and exit
+  -b                       Run collector as a background process
   -d DIRECTORY             Write packets in DIRECTORY instead of the default
+  -f FILE                  Write process id of backgrounded process to FILE
   -p PORT                  Listen for usage packets on UDP port PORT"""
     print usagestr 
 
@@ -92,10 +102,14 @@ def main(argv):
     globus-usage-collector main program
 
     """
+    global pidfile_path
+
+    background = 0
+    pid = -1
 
     try:
         port = int(collector_port)
-        opts, args = getopt.getopt(argv[1:], "d:p:h")
+        opts, args = getopt.getopt(argv[1:], "d:p:hbf:")
         for option_name in opts:
             if option_name[0] == '-h':
                 usage(argv[0])
@@ -103,13 +117,37 @@ def main(argv):
             elif option_name[0] == "-p":
                 port = int(option_name[1])
             elif option_name[0] == "-d":
-                data_directory = option_name[1]
+                usageconfig.data_directory = option_name[1]
+            elif option_name[0] == "-b":
+                background = 1
+            elif option_name[0] == "-f":
+                pidfile_path = option_name[1]
+
         if args != []:
             print "Unexpected command-line: ", args
             return 1
 
+        if background != 0:
+            pid = os.fork()
+            if pid < 0:
+                print "Error forking process"
+                sys.exit(1)
+            elif pid > 0:
+                print "Running in background (%d)" % (pid)
+                if pidfile_path != None:
+                    pidfile = file(pidfile_path, "w")
+                    pidfile.write("%d\n" % (pid))
+                    pidfile.close()
+                sys.exit(0)
+
         receiver = SocketServer.UDPServer(('', port), Receiver)
         print "Starting usage collector on UDP port " + str(port)
+        sys.stdin.close()
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdin = file("/dev/null", "r")
+        sys.stdout = file("/dev/null", "a")
+        sys.stderr = file("/dev/null", "a")
         receiver.serve_forever()
     except KeyboardInterrupt:
         print "Quitting..."

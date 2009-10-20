@@ -13,3 +13,4 @@ config.sub
 configure
 ltconfig
 ltmain.sh
+*.pyc

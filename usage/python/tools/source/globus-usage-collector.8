@@ -2,12 +2,12 @@
 .\"     Title: globus-usage-collector
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 07/24/2009
+.\"      Date: 09/24/2009
 .\"    Manual: Globus Usage Statistics Tools
 .\"    Source: [FIXME: source]
 .\"  Language: English
 .\"
-.TH "GLOBUS\-USAGE\-COLLE" "8" "07/24/2009" "[FIXME: source]" "Globus Usage Statistics Tools"
+.TH "GLOBUS\-USAGE\-COLLE" "8" "09/24/2009" "[FIXME: source]" "Globus Usage Statistics Tools"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 globus-usage-collector \- Record usage statistics packets
 .SH "SYNOPSIS"
 .HP \w'\fBglobus\-usage\-collector\fR\ 'u
-\fBglobus\-usage\-collector\fR [\-h] [\-p\ \fIPORT\fR]
+\fBglobus\-usage\-collector\fR [\-h] [\-p\ \fIPORT\fR] [\-b] [\-f\ \fIFILE\fR]
 .SH "DESCRIPTION"
 .PP
 The
@@ -34,6 +34,8 @@ The full set of command\-line options to
 consists of:
 .TS
 allbox tab(:);
+l l
+l l
 l l
 l l
 l l.
@@ -53,6 +55,19 @@ T{
 T}:T{
 Write data to \fIDIRECTORY\fR
                     instead of the configured path\&.
+T}
+T{
+\-b
+T}:T{
+Run the \fBglobus\-usage\-collector\fR
+                    process in the background
+T}
+T{
+\-f \fIFILE\fR
+T}:T{
+Write the process ID of the backgrounded
+                \fBglobus\-usage\-collector\fR process to
+                \fIFILE\fR\&.
 T}
 .TE
 .sp 1
