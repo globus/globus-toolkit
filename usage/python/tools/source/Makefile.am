@@ -7,8 +7,10 @@ usage_modules = \
     cusagepacket.py \
     cwscorev1packet.py \
     cwscorev2packet.py \
+    dnscache.py \
     drspacket.py \
     gram4packet.py \
+    gram5packet.py \
     gridftppacket.py \
     iptimemonitorpacket.py \
     javawscorev1packet.py \
@@ -21,6 +23,7 @@ usage_modules = \
     packetparser.py \
     rftpacket.py \
     rlspacket.py \
+    usageconfig.py \
     usagepacket.py
 usage_manual = globus-usage-collector.8 globus-usage-uploader.8
 

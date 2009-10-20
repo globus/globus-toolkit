@@ -32,6 +32,7 @@ import rftpacket
 import drspacket
 import mdsaggregatorpacket
 import ogsadaipacket
+import gram5packet
 
 __packet_classifier = \
 {
@@ -47,7 +48,9 @@ __packet_classifier = \
     (7,0): rlspacket.RLSPacket,
     (8,0): mpigpacket.MPIGPacket,
     (9,0): drspacket.DRSPacket,
-    (10,1): ogsadaipacket.OGSADAIPacket
+    (10,1): ogsadaipacket.OGSADAIPacket,
+    (20,0): gram5packet.GRAM5JMPacket,
+    (20,1): gram5packet.GRAM5JobPacket
 }
 
 def parse(address, packet):

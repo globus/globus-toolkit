@@ -17,7 +17,7 @@ Utilities and objects for processing GridFTP usage packets.
 """
 
 from cusagepacket import CUsagePacket
-import socket
+from dnscache import DNSCache
 import time
 import re
 
@@ -28,8 +28,7 @@ class GridFTPPacket(CUsagePacket):
     
     __all_init = 0
     # Caches of key -> id maps
-    __dns_cache = {}
-    __dns_lookups = {}
+    __dns_cache = None
     __gftp_versions = {}
     __gftp_server = {}
     __gftp_users = {}
@@ -149,7 +148,7 @@ class GridFTPPacket(CUsagePacket):
             self.get_buffer_size_id(),
             self.get_transfer_rate_id())
 
-    def get_host_id(self, cursor):
+    def get_host_id(self):
         """
         Determine the host key which matches the HOSTNAME string
         in this packet. If this HOSTNAME is not defined in the cache,
@@ -166,31 +165,7 @@ class GridFTPPacket(CUsagePacket):
         key may be newly defined and cached.
 
         """
-        host_id = None
-        name = self.data.get("HOSTNAME")
-        try:
-            if name is not None:
-                host_ip = self.ip_address;
-                host_id = GridFTPPacket.__dns_cache.get((host_ip, name))
-                if host_id is None:
-                    domain = None
-                    components = name.rsplit(".", 1)
-                    if len(components) > 1:
-                        domain = components[1]
-                    values = (host_ip, name, domain)
-                    cursor.execute('''
-                        INSERT INTO dns_cache(
-                            ip_address,
-                            hostname,
-                            domain)
-                        VALUES(%s, %s, %s)
-                        RETURNING ID
-                        ''', values)
-                    host_id = cursor.fetchone()[0]
-                    GridFTPPacket.__dns_cache[(host_ip, name)] = host_id
-        except Exception, detail:
-            print "Error processing " + name + ": " + str(detail)
-        return host_id
+        return GridFTPPacket.__dns_cache.get_host_id(self.ip_address, self.data.get("HOSTNAME"))
 
     def get_scheme_id(self, cursor):
         """
@@ -320,7 +295,7 @@ class GridFTPPacket(CUsagePacket):
 
         """
         server_id = None
-        host_id = self.get_host_id(cursor)
+        host_id = self.get_host_id()
         gftp_version = self.get_version_id(cursor)
         event_modules = self.data.get('EM')
         conf_id = self.data.get("CONFID")
@@ -464,7 +439,7 @@ class GridFTPPacket(CUsagePacket):
             int_value = int(value)
             for i in table.keys():
                 bucketmin = int(table[i])
-                if (int_value > bucketmin) and (bucketmin > old_min):
+                if (int_value >= bucketmin) and (bucketmin >= old_min):
                     old_min = bucketmin
                     size_id = i
         return size_id
@@ -574,7 +549,7 @@ class GridFTPPacket(CUsagePacket):
         """
         if datetimestr == None:
             return None
-        [secs_since_epoch, frac_secs] = datetimestr.split('.')
+        [secs_since_epoch, millis] = datetimestr.split('.')
         pyts = time.strptime(secs_since_epoch, '%Y%m%d%H%M%S')
         sqlts = GridFTPPacket.__db_class.Timestamp(
                 pyts.tm_year,
@@ -582,7 +557,7 @@ class GridFTPPacket(CUsagePacket):
                 pyts.tm_mday,
                 pyts.tm_hour,
                 pyts.tm_min,
-                float(pyts.tm_sec) + float('0.' + frac_secs))
+                float(pyts.tm_sec) + float(millis) / 1000000)
         return sqlts
 
     @staticmethod
@@ -599,10 +574,10 @@ class GridFTPPacket(CUsagePacket):
         Floating point representation of the timestamp
 
         """
-        [secs, fracsecs] = datetimestr.split('.')
+        [secs, millis] = datetimestr.split('.')
         pyts = time.strptime(secs, '%Y%m%d%H%M%S')
         secs_since_epoch = time.strftime("%s", pyts)
-        return float(secs_since_epoch) + float("0." + fracsecs)
+        return float(secs_since_epoch) + float(millis) / 1000000
 
     def interval(self, starttime, endtime):
         """
@@ -630,28 +605,17 @@ class GridFTPPacket(CUsagePacket):
     @staticmethod
     def __init_dns_cache(cursor):
         """
-        Initialize the global dictionary dns_cache which caches the values in the
-        similarly-named table and also the dns_lookups dictionary which contains
-        cached mappings from IP address -> hostname.
-        
-        The dns_cache dictionary maps
-        (ip_address, hostname) -> host_id
-
-        The dns_lookups dictionary maps
-        hostname -> ip_address
+        Initialize the global DNSCache object which caches the values in
+        the similarly-named table.
 
         Arguments:
         cursor -- An SQL cursor to use to read the dns_cache table
 
         Returns:
-        None, but alters the global variables dns_cache and dns_lookups
+        None, but alters the class-wide variable __dns_cache
 
         """
-        cursor.execute("SELECT id, ip_address, hostname FROM dns_cache")
-        for row in cursor:
-            [dns_id, ip_address, hostname] = row
-            GridFTPPacket.__dns_lookups[hostname] = ip_address
-            GridFTPPacket.__dns_cache[(ip_address, hostname)] = dns_id
+        GridFTPPacket.__dns_cache = DNSCache(cursor)
 
     @staticmethod
     def __init_versions(cursor):

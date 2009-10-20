@@ -49,6 +49,7 @@ class CUsagePacket(UsagePacket):
         ip_data = header_data[0:16]
         #self.ip_address = UsagePacket.parse_address(ip_data)
         self.send_time = tuple((list(time.gmtime(send_time_data)))[0:6])
+        self.send_time_ticks = send_time_data
 
         body_str = self.packet_body[self.packet_body_offset:]
 
