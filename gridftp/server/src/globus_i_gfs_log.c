@@ -824,11 +824,11 @@ globus_i_gfs_log_transfer(
     }
 
     sprintf(out_buf,
-        "DATE=%04d%02d%02d%02d%02d%02d.%d "
+        "DATE=%04d%02d%02d%02d%02d%02d.%06d "
         "HOST=%s "
         "PROG=%s "
         "NL.EVNT=FTP_INFO "
-        "START=%04d%02d%02d%02d%02d%02d.%d "
+        "START=%04d%02d%02d%02d%02d%02d.%06d "
         "USER=%s "
         "FILE=%s "
         "BUFFER=%ld "
@@ -961,7 +961,7 @@ globus_i_gfs_log_usage_stats(
                         goto err;
                     }
                     start_tm_time = *tmp_tm_time;
-                    sprintf(start_b, "%04d%02d%02d%02d%02d%02d.%d",
+                    sprintf(start_b, "%04d%02d%02d%02d%02d%02d.%06d",
                         start_tm_time.tm_year + 1900,
                         start_tm_time.tm_mon + 1,
                         start_tm_time.tm_mday,
@@ -981,7 +981,7 @@ globus_i_gfs_log_usage_stats(
                         goto err;
                     }
                     end_tm_time = *tmp_tm_time;
-                    sprintf(end_b, "%04d%02d%02d%02d%02d%02d.%d",
+                    sprintf(end_b, "%04d%02d%02d%02d%02d%02d.%06d",
                         end_tm_time.tm_year + 1900,
                         end_tm_time.tm_mon + 1,
                         end_tm_time.tm_mday,
