@@ -339,6 +339,15 @@ globus_gram_job_manager_config_init(
                 }
             }
         }
+        else if (strcmp(argv[i], "-disable-usagestats") == 0)
+        {
+            config->usage_disabled = GLOBUS_TRUE;
+        }
+        else if (strcmp(argv[i], "-usagestats-targets") == 0
+                && (i+1 < argc))
+        {
+            config->usage_targets = strdup(argv[++i]);
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -374,6 +383,7 @@ globus_gram_job_manager_config_init(
                     "\t-seg-module SEG-MODULE\n"
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
+                    "\t-usagestats-targets <host:port>[!<default | all>],...\n"
                     "\t-non-single\n"
                     "\n"
                     "Note: if type=condor then\n"

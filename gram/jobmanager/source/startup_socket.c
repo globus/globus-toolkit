@@ -648,6 +648,20 @@ globus_gram_job_manager_starter_send(
     OM_uint32                           major_status, minor_status;
     int                                 sndbuf;
     enum { GRAM_RETRIES = 100 };
+    struct linger                       linger;
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            "event=gram.send_job.start "
+            "level=INFO "
+            "http_body_fd=%d "
+            "context_fd=%d "
+            "response_fd=%d "
+            "\n",
+            http_body_fd,
+            context_fd,
+            response_fd);
 
     sprintf(sockpath,
             "%s/.globus/job/%s/%s.%s.sock",
@@ -664,6 +678,26 @@ globus_gram_job_manager_starter_send(
     if (sock < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "errno=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                errno,
+                "Error creating datagram socket",
+                strerror(errno));
         goto socket_failed;
     }
     sndbuf = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
@@ -671,12 +705,55 @@ globus_gram_job_manager_starter_send(
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "errno=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                errno,
+                "Error setting datagram socket buffer",
+                strerror(errno));
         goto setsockopt_failed;
     }
     rc = connect(sock, (struct sockaddr *) &addr, sizeof(addr));
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "address=\"%s\" "
+                "errno=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                sockpath,
+                errno,
+                "Error making datagram connecting to Job Manager",
+                strerror(errno));
         goto connect_failed;
     }
     /* create acksocks */
@@ -684,8 +761,42 @@ globus_gram_job_manager_starter_send(
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "errno=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                errno,
+                "Error creating ack socket pair",
+                strerror(errno));
         goto socketpair_failed;
     }
+    linger.l_onoff = 1;
+    linger.l_linger = 5;
+    setsockopt(
+            acksock[0],
+            SOL_SOCKET,
+            SO_LINGER,
+            &linger,
+            sizeof(linger));
+    setsockopt(
+            acksock[1],
+            SOL_SOCKET,
+            SO_LINGER,
+            &linger,
+            sizeof(linger));
 
     /* Export credential to be sent to active job manager */
     major_status = gss_export_cred(
@@ -697,12 +808,44 @@ globus_gram_job_manager_starter_send(
     if (GSS_ERROR(major_status))
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                "Error exporting proxy");
         goto export_cred_failed;
     }
 
     if (cred_buffer.length > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                "Proxy larger than protocol allows");
         goto cred_too_big;
     }
 
@@ -736,24 +879,65 @@ globus_gram_job_manager_starter_send(
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                "Error sending datagram",
+                errno,
+                strerror(errno));
         goto sendmsg_failed;
     }
-    close(acksock[0]);
-    acksock[0] = -1;
     memset(&message, 0, sizeof(struct msghdr));
     iov[0].iov_base = &byte;
     iov[0].iov_len = 1;
     message.msg_iov = iov;
     message.msg_iovlen = 1;
-    rc = recvmsg(acksock[1], &message, 0);
+    rc = recvmsg(acksock[1], &message, MSG_WAITALL);
     if (rc < 0 || byte[0] != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                "Error receiving ack",
+                errno,
+                strerror(errno));
     }
     else
     {
         rc = GLOBUS_SUCCESS;
     }
+    close(acksock[0]);
+    acksock[0] = -1;
     memset(&message, 0, sizeof(struct msghdr));
     iov[0].iov_base = &byte;
     iov[0].iov_len = 1;
@@ -764,10 +948,44 @@ globus_gram_job_manager_starter_send(
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                -rc,
+                "Error sending ack",
+                errno,
+                strerror(errno));
     }
     else
     {
         rc = GLOBUS_SUCCESS;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                "event=gram.send_job.end "
+                "level=INFO "
+                "http_body_fd=%d "
+                "context_fd=%d "
+                "response_fd=%d "
+                "status=%d "
+                "\n",
+                http_body_fd,
+                context_fd,
+                response_fd,
+                0);
     }
     
 sendmsg_failed:
@@ -825,10 +1043,14 @@ globus_l_gram_startup_socket_callback(
     const int                           MAX_NEW_PER_SELECT = 2;
     int                                 accepted;
     globus_bool_t                       done = GLOBUS_FALSE;
+    int                                 tries;
     char *                              old_job_contact = NULL;
     globus_gram_jobmanager_request_t *  old_job_request = NULL;
     globus_bool_t                       version_only = GLOBUS_FALSE;
     static unsigned char                cred_buffer_value[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    gss_name_t                          name;
+    gss_buffer_desc                     output_name;
+    struct linger                       linger;
 
     cred_buffer.value = cred_buffer_value;
 
@@ -861,7 +1083,22 @@ globus_l_gram_startup_socket_callback(
         message.msg_flags = 0;
 
         /* Attempt to receive file descriptors */
-        if ((rc = recvmsg(manager->socket_fd, &message, 0)) < 0)
+        tries = 10;
+        while (tries > 0)
+        { 
+            rc = recvmsg(manager->socket_fd, &message, 0);
+            if (rc <= 0 && errno == EINPROGRESS)
+            {
+                tries--;
+                globus_libc_usleep(1000);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (rc < 0)
         {
             done = GLOBUS_TRUE;
 
@@ -944,12 +1181,22 @@ globus_l_gram_startup_socket_callback(
             goto failed_get_data;
         }
 
+        linger.l_onoff = 1;
+        linger.l_linger = 5;
+        setsockopt(
+                response_fd,
+                SOL_SOCKET,
+                SO_LINGER,
+                &linger,
+                sizeof(linger));
+
         byte[0] = 0;
         iov[0].iov_base = byte;
         iov[0].iov_len = sizeof(byte);
         memset(&message, 0, sizeof(struct msghdr));
         message.msg_iov = iov;
         message.msg_iovlen = 1;
+        errno = 0;
         rc = sendmsg(acksock, &message, 0);
         if (rc < 0)
         {
@@ -990,12 +1237,17 @@ globus_l_gram_startup_socket_callback(
         memset(&message, 0, sizeof(struct msghdr));
         message.msg_iov = iov;
         message.msg_iovlen = 1;
-        rc = recvmsg(acksock, &message, 0);
+        errno = 0;
+        rc = -1;
+        tries = 10;
+        while (rc < 1 && tries > 0)
+        {
+            rc = recvmsg(acksock, &message, MSG_WAITALL);
+            tries--;
+        }
         if (rc < 0 || byte[0] != 1)
         {
             done = GLOBUS_TRUE;
-
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
             globus_gram_job_manager_log(
                     manager,
@@ -1011,16 +1263,22 @@ globus_l_gram_startup_socket_callback(
                     "acksock=%d "
                     "errno=%d "
                     "reason=\"%s\" "
+                    "rc=%d "
+                    "byte=%d "
                     "\n",
                     manager->socket_fd,
-                    -rc,
+                    -GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED,
                     "Failed receiving ack",
                     http_body_fd,
                     context_fd,
                     response_fd,
                     acksock,
                     errno,
-                    strerror(errno));
+                    strerror(errno),
+                    (int) rc,
+                    (int) byte[0]);
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
             goto ackfailed;
         }
@@ -1140,6 +1398,7 @@ globus_l_gram_startup_socket_callback(
             }
             else
             {
+                globus_i_gram_send_job_failure_stats(manager, rc);
                 globus_gram_job_manager_log(
                         manager,
                         GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -1200,6 +1459,31 @@ globus_l_gram_startup_socket_callback(
             goto request_load_failed;
         }
 
+        if (!version_only)
+        {
+            major_status = gss_inquire_cred(
+                    &minor_status,
+                    cred,
+                    &name,
+                    NULL,
+                    NULL,
+                    NULL);
+            /* Don't care too much if this fails, as the user_dn will be
+             * set to NULL in that case
+             */
+            if (major_status == GSS_S_COMPLETE)
+            {
+                major_status = gss_display_name(
+                        &minor_status,
+                        name,
+                        &output_name,
+                        NULL);
+                request->job_stats.user_dn = strdup(output_name.value);
+                gss_release_name(&minor_status, &name);
+                gss_release_buffer(&minor_status, &output_name);
+            }
+        }
+
         rc = globus_gram_job_manager_gsi_update_credential(
                 manager,
                 NULL,
@@ -1221,7 +1505,6 @@ globus_l_gram_startup_socket_callback(
             goto update_cred_failed;
         }
 
-
         if (!version_only)
         {
             globus_sockaddr_t           peer_address;
@@ -1238,7 +1521,7 @@ globus_l_gram_startup_socket_callback(
             {
                 rc = globus_libc_addr_to_contact_string(
                         &peer_address,
-                        0,
+                        GLOBUS_LIBC_ADDR_NUMERIC,
                         &peer_str);
             }
 
@@ -1253,7 +1536,11 @@ globus_l_gram_startup_socket_callback(
                     request->job_contact_path,
                     peer_str ? peer_str : "\"\"");
 
-            if (peer_str)
+            if (request->job_stats.client_address == NULL)
+            {
+                request->job_stats.client_address = peer_str;
+            }
+            else if (peer_str)
             {
                 free(peer_str);
             }
@@ -1287,14 +1574,12 @@ globus_l_gram_startup_socket_callback(
 update_cred_failed:
         free(contact);
 
-        close(response_fd);
         response_fd = -1;
 request_load_failed:
         if (old_job_contact != NULL)
         {
             free(old_job_contact);
         }
-ackfailed:
         if (cred != GSS_C_NO_CREDENTIAL)
         {
             gss_release_cred(
@@ -1302,26 +1587,51 @@ ackfailed:
                     &cred);
             cred = GSS_C_NO_CREDENTIAL;
         }
+ackfailed:
 failed_import_cred:
 failed_get_data:
         if (acksock != -1)
         {
             close(acksock);
+            acksock = -1;
         }
         if (http_body_fd != -1)
         {
             close(http_body_fd);
+            http_body_fd = -1;
         }
         if (context_fd != -1)
         {
             close(context_fd);
+            context_fd = -1;
         }
         if (response_fd != -1)
         {
             close(response_fd);
+            response_fd = -1;
         }
 failed_receive:
         ;
+    }
+    if (acksock != -1)
+    {
+        close(acksock);
+        acksock = -1;
+    }
+    if (http_body_fd != -1)
+    {
+        close(http_body_fd);
+        http_body_fd = -1;
+    }
+    if (context_fd != -1)
+    {
+        close(context_fd);
+        context_fd = -1;
+    }
+    if (response_fd != -1)
+    {
+        close(response_fd);
+        response_fd = -1;
     }
 
     result = globus_xio_register_read(

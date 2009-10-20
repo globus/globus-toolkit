@@ -405,6 +405,61 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp,
+            "%ld.%09ld %ld.%09ld %ld.%09ld "
+            "%ld.%09ld %ld.%09ld %ld.%09ld %ld.%09ld "
+            "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+            request->job_stats.unsubmitted_timestamp.tv_sec,
+            request->job_stats.unsubmitted_timestamp.tv_nsec,
+            request->job_stats.file_stage_in_timestamp.tv_sec,
+            request->job_stats.file_stage_in_timestamp.tv_nsec,
+            request->job_stats.pending_timestamp.tv_sec,
+            request->job_stats.pending_timestamp.tv_nsec,
+            request->job_stats.active_timestamp.tv_sec,
+            request->job_stats.active_timestamp.tv_nsec,
+            request->job_stats.failed_timestamp.tv_sec,
+            request->job_stats.failed_timestamp.tv_nsec,
+            request->job_stats.file_stage_out_timestamp.tv_sec,
+            request->job_stats.file_stage_out_timestamp.tv_nsec,
+            request->job_stats.done_timestamp.tv_sec,
+            request->job_stats.done_timestamp.tv_nsec,
+            request->job_stats.restart_count,
+            request->job_stats.callback_count,
+            request->job_stats.status_count,
+            request->job_stats.register_count,
+            request->job_stats.unregister_count,
+            request->job_stats.signal_count,
+            request->job_stats.refresh_count,
+            request->job_stats.file_clean_up_count,
+            request->job_stats.file_stage_in_http_count,
+            request->job_stats.file_stage_in_https_count,
+            request->job_stats.file_stage_in_ftp_count,
+            request->job_stats.file_stage_in_gsiftp_count,
+            request->job_stats.file_stage_in_shared_http_count,
+            request->job_stats.file_stage_in_shared_https_count,
+            request->job_stats.file_stage_in_shared_ftp_count,
+            request->job_stats.file_stage_in_shared_gsiftp_count,
+            request->job_stats.file_stage_out_http_count,
+            request->job_stats.file_stage_out_https_count,
+            request->job_stats.file_stage_out_ftp_count,
+            request->job_stats.file_stage_out_gsiftp_count);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp,
+            "%s\n%s\n",
+            request->job_stats.client_address
+                ?  request->job_stats.client_address
+                : " ",
+            request->job_stats.user_dn
+                ? request->job_stats.user_dn
+                : " ");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+
 
     /*
      * On some filsystems, write + rename is *not* atomic, so we explicitly
@@ -785,50 +840,50 @@ skip_single_check:
 
     if(fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_job_id_string;
     }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-        request->original_job_id_string = strdup( buffer );
+        request->original_job_id_string = strdup(buffer);
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_original_job_id_string;
     }
     buffer[strlen(buffer)-1] = '\0';
     request->rsl_spec = strdup( buffer );
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_rsl_spec;
     }
     buffer[strlen(buffer)-1] = '\0';
     request->cache_tag = strdup( buffer );
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_cache_tag;
     }
     buffer[strlen(buffer)-1] = '\0';
     if (strcmp(buffer, request->config->jobmanager_type) != 0)
     {
         /* Job should be handled by another job manager */
         remove(request->job_state_lock_file);
-        goto error_exit;
+        goto free_cache_tag;
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_cache_tag;
     }
     buffer[strlen(buffer)-1] = '\0';
     if (strcmp(buffer, request->config->service_tag) != 0)
     {
         /* Job should be handled by another job manager */
         remove(request->job_state_lock_file);
-        goto error_exit;
+        goto free_cache_tag;
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_cache_tag;
     }
     buffer[strlen(buffer)-1] = '\0';
     if((sscanf(buffer,"%d",&i)) < 1)
@@ -840,14 +895,14 @@ skip_single_check:
          */
         if(fgets( buffer, file_len, fp ) == NULL)
         {
-            goto error_exit;
+            goto free_cache_tag;
         }
         buffer[strlen(buffer)-1] = '\0';
     }
     request->two_phase_commit = atoi(buffer);
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_cache_tag;
     }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
@@ -856,7 +911,7 @@ skip_single_check:
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_scratchdir;
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
@@ -864,33 +919,38 @@ skip_single_check:
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_scratchdir;
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
     request->creation_time = (time_t) tmp_timestamp;
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_scratchdir;
     }
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
     request->queued_time = (time_t) tmp_timestamp;
 
+    request->stage_in_todo = NULL;
+    request->stage_in_shared_todo = NULL;
+    request->stage_out_todo = NULL;
+    request->stage_stream_todo = NULL;
+
     rc = globus_gram_job_manager_staging_read_state(request,fp);
     if(rc != GLOBUS_SUCCESS)
     {
-        goto error_exit;
+        goto free_scratchdir;
     }
     rc = globus_gram_job_manager_read_callback_contacts(request, fp);
     if(rc != GLOBUS_SUCCESS)
     {
-        goto error_exit;
+        goto free_scratchdir;
     }
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_scratchdir;
     }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
@@ -903,10 +963,81 @@ skip_single_check:
     }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto error_exit;
+        goto free_gateway_user;
     }
     buffer[strlen(buffer)-1] = 0;
     sscanf(buffer, "%d", &request->exit_code);
+
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_gateway_user;
+    }
+    buffer[strlen(buffer)-1] = 0;
+    sscanf(buffer,
+            "%ld.%09ld %ld.%09ld %ld.%09ld "
+            "%ld.%09ld %ld.%09ld %ld.%09ld %ld.%09ld "
+            "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+            &request->job_stats.unsubmitted_timestamp.tv_sec,
+            &request->job_stats.unsubmitted_timestamp.tv_nsec,
+            &request->job_stats.file_stage_in_timestamp.tv_sec,
+            &request->job_stats.file_stage_in_timestamp.tv_nsec,
+            &request->job_stats.pending_timestamp.tv_sec,
+            &request->job_stats.pending_timestamp.tv_nsec,
+            &request->job_stats.active_timestamp.tv_sec,
+            &request->job_stats.active_timestamp.tv_nsec,
+            &request->job_stats.failed_timestamp.tv_sec,
+            &request->job_stats.failed_timestamp.tv_nsec,
+            &request->job_stats.file_stage_out_timestamp.tv_sec,
+            &request->job_stats.file_stage_out_timestamp.tv_nsec,
+            &request->job_stats.done_timestamp.tv_sec,
+            &request->job_stats.done_timestamp.tv_nsec,
+            &request->job_stats.restart_count,
+            &request->job_stats.callback_count,
+            &request->job_stats.status_count,
+            &request->job_stats.register_count,
+            &request->job_stats.unregister_count,
+            &request->job_stats.signal_count,
+            &request->job_stats.refresh_count,
+            &request->job_stats.file_clean_up_count,
+            &request->job_stats.file_stage_in_http_count,
+            &request->job_stats.file_stage_in_https_count,
+            &request->job_stats.file_stage_in_ftp_count,
+            &request->job_stats.file_stage_in_gsiftp_count,
+            &request->job_stats.file_stage_in_shared_http_count,
+            &request->job_stats.file_stage_in_shared_https_count,
+            &request->job_stats.file_stage_in_shared_ftp_count,
+            &request->job_stats.file_stage_in_shared_gsiftp_count,
+            &request->job_stats.file_stage_out_http_count,
+            &request->job_stats.file_stage_out_https_count,
+            &request->job_stats.file_stage_out_ftp_count,
+            &request->job_stats.file_stage_out_gsiftp_count);
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_gateway_user;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    if(strcmp(buffer, " ") != 0)
+    {
+        request->job_stats.client_address = strdup(buffer);
+    }
+    else
+    {
+        request->job_stats.client_address = NULL;
+    }
+
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_client_address;
+    }
+    buffer[strlen(buffer)-1] = 0;
+    if(strcmp(buffer, " ") != 0)
+    {
+        request->job_stats.user_dn = strdup(buffer);
+    }
+    else
+    {
+        request->job_stats.user_dn = NULL;
+    }
 
     fclose(fp);
 
@@ -924,6 +1055,49 @@ skip_single_check:
             0);
 
     return GLOBUS_SUCCESS;
+
+free_client_address:
+    if (request->job_stats.client_address != NULL)
+    {
+        free(request->job_stats.client_address);
+        request->job_stats.client_address = NULL;
+    }
+free_gateway_user:
+    if (request->gateway_user != NULL)
+    {
+        free(request->gateway_user);
+        request->gateway_user = NULL;
+    }
+free_scratchdir:
+    if (request->scratchdir != NULL)
+    {
+        free(request->scratchdir);
+        request->scratchdir = NULL;
+    }
+free_cache_tag:
+    if (request->cache_tag != NULL)
+    {
+        free(request->cache_tag);
+        request->cache_tag = NULL;
+    }
+free_rsl_spec:
+    if (request->rsl_spec != NULL)
+    {
+        free(request->rsl_spec);
+        request->rsl_spec = NULL;
+    }
+free_original_job_id_string:
+    if (request->original_job_id_string != NULL)
+    {
+        free(request->original_job_id_string);
+        request->original_job_id_string = NULL;
+    }
+free_job_id_string:
+    if (request->job_id_string != NULL)
+    {
+        free(request->job_id_string);
+        request->job_id_string = NULL;
+    }
 error_exit:
     rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
 

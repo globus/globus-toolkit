@@ -293,6 +293,7 @@ globus_l_gram_job_manager_script_read(
     globus_bool_t                       eof = GLOBUS_FALSE;
     char *                              p;
     int                                 failure_code = 0;
+    int                                 i;
 
     script_context = user_arg;
     request = script_context->request;
@@ -532,6 +533,13 @@ globus_l_gram_job_manager_script_read(
             request->manager,
             request->job_contact_path,
             "script");
+
+    for (i = 0; i < script_context->iovcnt; i++)
+    {
+        free(script_context->iov[i].iov_base);
+    }
+    free(script_context->iov);
+    free(script_context);
 }
 /* globus_l_gram_job_manager_script_read() */
 
@@ -1114,7 +1122,19 @@ globus_l_gram_job_manager_default_done(
         else if(globus_i_gram_job_manager_script_valid_state_change(
                     request, script_status))
         {
-        globus_gram_job_manager_request_set_status(request, script_status);
+            if ((script_status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE) &&
+                    globus_gram_job_manager_rsl_need_stage_out(request))
+            {
+                globus_gram_job_manager_request_set_status(
+                        request,
+                        GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT);
+            }
+            else
+            {
+                globus_gram_job_manager_request_set_status(
+                        request,
+                        script_status);
+            }
             request->unsent_status_change = GLOBUS_TRUE;
         }
     }
@@ -2336,6 +2356,26 @@ globus_l_gram_job_manager_script_done(
     return;
 }
 /* globus_l_gram_job_manager_script_done() */
+
+
+void
+globus_gram_job_manager_script_close_all(
+    globus_gram_job_manager_t *         manager)
+{
+    globus_gram_script_handle_t         handle;
+
+    while (!globus_fifo_empty(&manager->script_handles))
+    {
+        handle = globus_fifo_dequeue(&manager->script_handles);
+
+        globus_xio_close(
+                handle->handle,
+                NULL);
+        free(handle);
+        manager->script_slots_available++;
+    }
+}
+/* globus_gram_job_manager_script_close_all() */
 
 int
 globus_gram_job_manager_script_handle_init(

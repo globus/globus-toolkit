@@ -33,6 +33,7 @@ if test "x$xml_catalog_path" != x"notset"; then
 fi
 
 AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
+AC_DEFINE_UNQUOTED(GLOBUS_FLAVOR_NAME, "$GLOBUS_FLAVOR_NAME")
 
 GLOBUS_FINALIZE
 

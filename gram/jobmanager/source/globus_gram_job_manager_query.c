@@ -262,22 +262,27 @@ globus_gram_job_manager_query_callback(
     else if (strcmp(query,"status")==0)
     {
         status = request->status;
+        request->job_stats.status_count++;
     }
     else if (strcmp(query,"signal")==0)
     {
         rc = globus_l_gram_job_manager_signal(request, rest, handle, &reply);
+        request->job_stats.signal_count++;
     }
     else if (strcmp(query,"register")==0)
     {
         rc = globus_l_gram_job_manager_register(request, rest);
+        request->job_stats.register_count++;
     }
     else if (strcmp(query,"unregister")==0)
     {
         rc = globus_l_gram_job_manager_unregister(request, rest, handle);
+        request->job_stats.unregister_count++;
     }
     else if (strcmp(query,"renew")==0)
     {
         rc = globus_l_gram_job_manager_renew(request, handle, &reply);
+        request->job_stats.refresh_count++;
     }
     else
     {

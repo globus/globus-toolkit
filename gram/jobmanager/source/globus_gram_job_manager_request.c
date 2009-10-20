@@ -241,7 +241,9 @@ globus_gram_job_manager_request_init(
     }
     r->config = manager->config;
     r->manager = manager;
+    memset(&r->job_stats, 0, sizeof(globus_i_gram_usage_job_tracker_t));
 
+    GlobusTimeAbstimeGetCurrent(r->job_stats.unsubmitted_timestamp);
     r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
     r->status_update_time = 0;
     r->failure_code = 0;
@@ -262,6 +264,7 @@ globus_gram_job_manager_request_init(
     r->gt3_failure_message = NULL;
     r->gt3_failure_source = NULL;
     r->gt3_failure_destination = NULL;
+    r->seg_last_timestamp = 0;
 
     rc = globus_symboltable_init(
             &r->symbol_table,
@@ -440,6 +443,8 @@ globus_gram_job_manager_request_init(
         {
             goto failed_restart;
         }
+        
+        manager->usagetracker->count_restarted++;
     }
     else
     {
@@ -696,8 +701,15 @@ globus_gram_job_manager_request_init(
     {
         goto staging_list_create_failed;
     }
-    
-    r->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+
+    if (reinit && r->jm_restart)
+    {
+        r->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
+    }
+    else
+    {
+        r->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+    }
 
     if (r->jm_restart == NULL)
     {
@@ -748,7 +760,7 @@ globus_gram_job_manager_request_init(
     }
 
     rc = globus_gram_job_manager_state_file_write(r);
-
+    
     if (rc != GLOBUS_SUCCESS)
     {
         globus_fifo_destroy(&r->seg_event_queue);
@@ -828,6 +840,7 @@ cached_stdout_malloc_failed:
         {
             globus_gram_job_manager_destroy_directory(r, r->job_dir);
         }
+        free(r->job_dir);
 failed_make_job_dir:
         free(r->job_contact_path);
 failed_set_job_contact_path:
@@ -839,6 +852,10 @@ failed_add_contact_to_symboltable:
 failed_set_job_contact:
         free(r->uniq_id);
 failed_set_uniq_id:
+        if (r->jm_restart)
+        {
+            free(r->jm_restart);
+        }
 failed_generate_id:
         free(r->rsl_spec);
 rsl_unparse_failed:
@@ -1065,6 +1082,8 @@ globus_gram_job_manager_request_start(
         rc = globus_gram_job_manager_request_set_status(
                 request,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+                
+        manager->usagetracker->count_dryrun++;
     }
 contact_add_failed:
 username_denied:
@@ -1178,6 +1197,10 @@ globus_gram_job_manager_request_free(
     {
         free(request->job_id_string);
     }
+    if (request->original_job_id_string)
+    {
+        free(request->original_job_id_string);
+    }
     if (request->uniq_id)
     {
         free(request->uniq_id);
@@ -1279,6 +1302,14 @@ globus_gram_job_manager_request_free(
     globus_fifo_destroy_all(
             &request->seg_event_queue,
             globus_l_gram_event_destroy);
+    if (request->job_stats.client_address != NULL)
+    {
+        free(request->job_stats.client_address);
+    }
+    if (request->job_stats.user_dn != NULL)
+    {
+        free(request->job_stats.user_dn);
+    }
 }
 /* globus_gram_job_manager_request_free() */
 
@@ -1304,6 +1335,33 @@ globus_gram_job_manager_request_set_status(
     globus_gram_jobmanager_request_t *  request,
     globus_gram_protocol_job_state_t    status)
 {
+    switch (status)
+    {
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.pending_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.active_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.failed_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.done_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.unsubmitted_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.file_stage_in_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
+            GlobusTimeAbstimeGetCurrent(request->job_stats.file_stage_out_timestamp);
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED:
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL:
+            break;
+    }
     return globus_gram_job_manager_request_set_status_time(
             request,
             status,
@@ -1653,6 +1711,7 @@ globus_l_gram_generate_id(
 {
     int                                 rc = GLOBUS_SUCCESS;
 
+    *jm_restart = NULL;
     if(globus_gram_job_manager_rsl_need_restart(request))
     {
         /* Need to do this before unique id is set */
@@ -1900,7 +1959,6 @@ globus_l_gram_init_cache(
                 gassrc,
                 globus_gass_cache_error_string(gassrc));
 
-failed_cache_open:
         if (*cache_locationp)
         {
             free(*cache_locationp);
@@ -2122,6 +2180,7 @@ globus_l_gram_restart(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
+    request->job_stats.restart_count++;
 old_jm_alive:
 failed_check_position:
 parse_original_rsl_failed:
@@ -3080,6 +3139,7 @@ globus_gram_job_manager_destroy_directory(
         }
         free(path);
     }
+
     globus_gram_job_manager_request_log(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
