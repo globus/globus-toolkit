@@ -391,14 +391,10 @@ globus_l_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
         }
-        else if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+        else if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
+                 request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT)
         {
             /* Job finished! start finalizing */
-            if(globus_gram_job_manager_rsl_need_stage_out(request))
-            {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT);
-                globus_gram_job_manager_contact_state_callback(request);
-            }
             request->jobmanager_state =
                     GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT;
             break;
@@ -1039,6 +1035,7 @@ globus_l_gram_job_manager_state_machine(
              */
             globus_gram_job_manager_seg_handle_event(request);
         }
+        globus_i_gram_send_job_stats(request);
         globus_gram_job_manager_request_log(
                 request,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
@@ -1082,6 +1079,7 @@ globus_l_gram_job_manager_state_machine(
                     (int) request->exit_code & 0xffff);
         }
 
+        globus_i_gram_send_job_stats(request);
         globus_gram_job_manager_request_log(
                 request,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,

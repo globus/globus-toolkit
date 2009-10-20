@@ -32,27 +32,6 @@
 static int globus_l_gram_swap_out_delay = 60;
 static int globus_l_gram_grace_period_delay = 60;
 
-typedef struct globus_gram_job_manager_ref_s
-{
-    /* Local copy of the unique hashtable key */
-    char *                              key;
-    /* Pointer to manager */
-    globus_gram_job_manager_t *         manager;
-    /* Pointer to the request */
-    globus_gram_jobmanager_request_t *  request;
-    /* Count of callbacks, queries, etc that have access to this now.
-     * When 0, the request is eligible for removal
-     */
-    int                                 reference_count;
-    /* Timer to delay cleaning up unreferenced requests */
-    globus_callback_handle_t            cleanup_timer;
-    /* Current job state, for status updates without having to reload */
-    globus_gram_protocol_job_state_t    job_state;
-    /* Current job failure code, for status updates without having to reload */
-    int                                 failure_code;
-}
-globus_gram_job_manager_ref_t;
-
 typedef struct globus_gram_job_id_ref_s
 {
     /* Local copy of the unique job id used as the key to the job_id_hash */
@@ -137,7 +116,8 @@ globus_gram_job_manager_init(
 
         goto out;
     }
-
+    
+    manager->usagetracker = NULL;
     manager->config = config;
     manager->stop = GLOBUS_FALSE;
 
@@ -337,6 +317,9 @@ globus_gram_job_manager_init(
     manager->seg_pause_count = 0;
     rc = globus_fifo_init(&manager->seg_event_queue);
 
+    manager->usagetracker = 
+        globus_calloc(1, sizeof(globus_i_gram_usage_tracker_t));   
+
     if (rc != GLOBUS_SUCCESS)
     {
 state_callback_fifo_init_failed:
@@ -421,7 +404,12 @@ globus_gram_job_manager_destroy(
     globus_fifo_destroy(&manager->state_callback_fifo);
     globus_fifo_destroy(&manager->script_fifo);
     globus_fifo_destroy(&manager->script_handles);
-
+    
+    if(manager->usagetracker)
+    {
+        free(manager->usagetracker);
+    }
+                              
     return;
 }
 /* globus_gram_job_manager_destroy() */
@@ -468,7 +456,6 @@ globus_gram_job_manager_log(
          * have parsed command-line options to figure out where log messages
          * ought to go
          */
-        va_start(ap, format);
         now = time(NULL);
         nowtm = gmtime(&now);
         fprintf(stderr, "ts=%04d-%02d-%02dT%02d:%02d:%02dZ id=%lu ",
@@ -480,8 +467,8 @@ globus_gram_job_manager_log(
                 nowtm->tm_sec,
                 (unsigned long) getpid());
 
+        va_start(ap, format);
         vfprintf(stderr, format, ap);
-        fprintf(stderr, "\n");
         va_end(ap);
     }
 }
@@ -641,6 +628,18 @@ globus_gram_job_manager_add_request(
             ref->key,
             ref);
 
+    if(rc == GLOBUS_SUCCESS)
+    {
+        manager->usagetracker->count_current_jobs++;
+
+        if(manager->usagetracker->count_peak_jobs < 
+            manager->usagetracker->count_current_jobs)
+        {
+            manager->usagetracker->count_peak_jobs = 
+                manager->usagetracker->count_current_jobs;
+        }
+    }
+
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -765,6 +764,9 @@ globus_gram_job_manager_remove_reference(
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_jobmanager_request_t *  request = NULL;
     globus_gram_job_manager_ref_t *     ref;
+    char                                gramid[64];
+
+    strncpy(gramid, key, sizeof(gramid));
 
     globus_gram_job_manager_log(
             manager,
@@ -807,6 +809,8 @@ globus_gram_job_manager_remove_reference(
                 request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
             {
+                request->manager->usagetracker->count_current_jobs--;
+
                 globus_gram_job_manager_log(
                         manager,
                         GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
@@ -938,7 +942,7 @@ globus_gram_job_manager_remove_reference(
                 "msg=\"%s\" "
                 "reason=\"%s\" "
                 "\n",
-                key,
+                gramid,
                 -rc,
                 "Error resolving job",
                 globus_gram_protocol_error_string(rc));
@@ -954,7 +958,7 @@ globus_gram_job_manager_remove_reference(
                 "gramid=%s "
                 "status=%d "
                 "\n",
-                key,
+                gramid,
                 0);
     }
     GlobusGramJobManagerUnlock(manager);
@@ -1904,7 +1908,6 @@ globus_gram_job_manager_request_load_all(
                     uniq1,
                     uniq2);
 
-            free(entry);
             if (key == NULL)
             {
                 globus_gram_job_manager_log(
@@ -1926,6 +1929,7 @@ globus_gram_job_manager_request_load_all(
                         errno,
                         strerror(errno));
 
+                free(entry);
                 continue;
             }
 
@@ -1959,6 +1963,7 @@ globus_gram_job_manager_request_load_all(
                         &request,
                         key);
             }
+            free(entry);
             free(key);
 
             if (rc != GLOBUS_SUCCESS)
@@ -1973,12 +1978,13 @@ globus_gram_job_manager_request_load_all(
                             "statedir=\"%s\" "
                             "msg=\"%s\" "
                             "gramid=%"PRIu64"/%"PRIu64" "
-                            "errno=%d "
+                            "status=%d "
                             "reason=\"%s\"\n",
                             state_dir_path,
                             "Error restarting job",
                             uniq1,
                             uniq2,
+                            -rc,
                             globus_gram_protocol_error_string(rc));
                 }
 
@@ -2401,6 +2407,7 @@ globus_l_gram_restart_job(
             GLOBUS_TRUE,
             NULL,
             NULL);
+    free(restart_rsl);
 malloc_restart_rsl_failed:
     return rc;
 }

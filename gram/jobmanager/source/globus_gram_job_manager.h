@@ -262,6 +262,14 @@ typedef struct
     char *                              auditing_dir;
     /** Globus Toolkit version */
     char *                              globus_version;
+    /** Usage stats enabled by default */
+    globus_bool_t                       usage_disabled;
+    /** Usage stats target servers 
+     * List of servers to report usage statistics to.  A null value
+     * will result in the standard Globus listener getting the default set
+     * of packets. 
+     */
+    char *                              usage_targets;
     /**
      * Streaming
      *
@@ -319,6 +327,54 @@ typedef struct
     char *                              service_tag;
 }
 globus_gram_job_manager_config_t;
+
+typedef struct 
+{
+    globus_callback_handle_t            session_timer_handle;
+    char *                              jm_id;
+    globus_abstime_t                    jm_start_time;
+    
+    int                                 count_total_done;
+    int                                 count_total_failed;
+    int                                 count_total_canceled;
+    int                                 count_restarted;
+    int                                 count_dryrun;
+    int                                 count_peak_jobs;
+    int                                 count_current_jobs;
+} globus_i_gram_usage_tracker_t;
+
+typedef struct globus_i_gram_usage_job_tracker_s
+{
+    globus_abstime_t                    unsubmitted_timestamp;
+    globus_abstime_t                    file_stage_in_timestamp;
+    globus_abstime_t                    pending_timestamp;
+    globus_abstime_t                    active_timestamp;
+    globus_abstime_t                    failed_timestamp;
+    globus_abstime_t                    file_stage_out_timestamp;
+    globus_abstime_t                    done_timestamp;
+    int                                 restart_count;
+    int                                 callback_count;
+    int                                 status_count;
+    int                                 register_count;
+    int                                 unregister_count;
+    int                                 signal_count;
+    int                                 refresh_count;
+    int                                 file_clean_up_count;
+    int                                 file_stage_in_http_count;
+    int                                 file_stage_in_https_count;
+    int                                 file_stage_in_ftp_count;
+    int                                 file_stage_in_gsiftp_count;
+    int                                 file_stage_in_shared_http_count;
+    int                                 file_stage_in_shared_https_count;
+    int                                 file_stage_in_shared_ftp_count;
+    int                                 file_stage_in_shared_gsiftp_count;
+    int                                 file_stage_out_http_count;
+    int                                 file_stage_out_https_count;
+    int                                 file_stage_out_ftp_count;
+    int                                 file_stage_out_gsiftp_count;
+    char *                              client_address;
+    char *                              user_dn;
+} globus_i_gram_usage_job_tracker_t;
 
 /**
  * Runtime state for a LRM instance. All of these items are
@@ -395,6 +451,8 @@ typedef struct globus_gram_job_manager_s
     int                                 seg_pause_count;
     /** All jobs are being stopped. Don't allow new ones in */
     globus_bool_t                       stop;
+    /** Usage stats tracking data */
+    globus_i_gram_usage_tracker_t *     usagetracker;
 }
 globus_gram_job_manager_t;
 
@@ -649,8 +707,33 @@ typedef struct
      * TG Gateway user for auditing (from SAML assertion)
      */
     char *                              gateway_user;
+    /**
+     * Information to be tracked for usagestats
+     */
+    globus_i_gram_usage_job_tracker_t   job_stats;
 }
 globus_gram_jobmanager_request_t;
+
+typedef struct globus_gram_job_manager_ref_s
+{
+    /* Local copy of the unique hashtable key */
+    char *                              key;
+    /* Pointer to manager */
+    globus_gram_job_manager_t *         manager;
+    /* Pointer to the request */
+    globus_gram_jobmanager_request_t *  request;
+    /* Count of callbacks, queries, etc that have access to this now.
+     * When 0, the request is eligible for removal
+     */
+    int                                 reference_count;
+    /* Timer to delay cleaning up unreferenced requests */
+    globus_callback_handle_t            cleanup_timer;
+    /* Current job state, for status updates without having to reload */
+    globus_gram_protocol_job_state_t    job_state;
+    /* Current job failure code, for status updates without having to reload */
+    int                                 failure_code;
+}
+globus_gram_job_manager_ref_t;
 
 /* globus_gram_job_manager_config.c */
 int
@@ -1147,6 +1230,11 @@ globus_i_gram_job_manager_script_valid_state_change(
     globus_gram_jobmanager_request_t *  request,
     globus_gram_protocol_job_state_t    new_state);
 
+void
+globus_gram_job_manager_script_close_all(
+    globus_gram_job_manager_t *         manager);
+
+
 extern globus_xio_driver_t              globus_i_gram_job_manager_popen_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_popen_stack;
 
@@ -1319,6 +1407,37 @@ int
 globus_gram_split_subjobs(
     const char *                        job_id,
     globus_list_t **                    subjobs);
+
+/* globus_gram_job_manager_usagestats.c */
+
+globus_result_t
+globus_i_gram_usage_start_session_stats(
+    globus_gram_job_manager_t *         manager);
+
+globus_result_t
+globus_i_gram_usage_end_session_stats(
+    globus_gram_job_manager_t *         manager);
+    
+void
+globus_i_gram_send_session_stats(
+    globus_gram_job_manager_t *         manager);
+    
+void
+globus_i_gram_send_job_stats(
+    globus_gram_jobmanager_request_t *  request);
+    
+void
+globus_i_gram_send_job_failure_stats(
+    globus_gram_job_manager_t *         manager,
+    int                                 rc);
+
+globus_result_t
+globus_i_gram_usage_stats_init(
+    globus_gram_job_manager_t *         manager);
+
+globus_result_t
+globus_i_gram_usage_stats_destroy(
+    globus_gram_job_manager_t *         manager);
 
 /* startup_socket.c */
 int

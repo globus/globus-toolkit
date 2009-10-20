@@ -394,9 +394,20 @@ globus_gram_job_manager_seg_handle_event(
                     request,
                     request->expected_terminal_state))
         {
-            globus_gram_job_manager_request_set_status(
-                    request,
-                    request->expected_terminal_state);
+            if ((request->expected_terminal_state ==
+                    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE) &&
+                globus_gram_job_manager_rsl_need_stage_out(request))
+            {
+                globus_gram_job_manager_request_set_status(
+                        request,
+                        GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT);
+            }
+            else
+            {
+                globus_gram_job_manager_request_set_status(
+                        request,
+                        request->expected_terminal_state);
+            }
             request->unsent_status_change = GLOBUS_TRUE;
         }
     }

@@ -96,6 +96,12 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+            
+            <Dependency Name="globus_usage">
+                <Version>
+                    <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
@@ -172,6 +178,12 @@
             <Dependency Name="globus_libxml2">
                 <Version>
                     <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_usage">
+                <Version>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

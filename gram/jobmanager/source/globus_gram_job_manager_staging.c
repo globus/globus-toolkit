@@ -228,6 +228,64 @@ globus_gram_job_manager_staging_remove(
             typestr,
             0);
 
+        if (item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_IN)
+        {
+            if (strncmp(item->evaled_from, "http://", 7) == 0)
+            {
+                request->job_stats.file_stage_in_http_count++;
+            }
+            else if (strncmp(item->evaled_from, "https://", 8) == 0)
+            {
+                request->job_stats.file_stage_in_https_count++;
+            }
+            else if (strncmp(item->evaled_from, "ftp://", 6) == 0)
+            {
+                request->job_stats.file_stage_in_ftp_count++;
+            }
+            else if (strncmp(item->evaled_from, "gsiftp://", 6) == 0)
+            {
+                request->job_stats.file_stage_in_gsiftp_count++;
+            }
+        }
+        else if (item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED)
+        {
+            if (strncmp(item->evaled_from, "http://", 7) == 0)
+            {
+                request->job_stats.file_stage_in_shared_http_count++;
+            }
+            else if (strncmp(item->evaled_from, "https://", 8) == 0)
+            {
+                request->job_stats.file_stage_in_shared_https_count++;
+            }
+            else if (strncmp(item->evaled_from, "ftp://", 6) == 0)
+            {
+                request->job_stats.file_stage_in_shared_ftp_count++;
+            }
+            else if (strncmp(item->evaled_from, "gsiftp://", 6) == 0)
+            {
+                request->job_stats.file_stage_in_shared_gsiftp_count++;
+            }
+        }
+        else if (item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT ||
+                 item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS)
+        {
+            if (strncmp(item->evaled_to, "http://", 7) == 0)
+            {
+                request->job_stats.file_stage_out_http_count++;
+            }
+            else if (strncmp(item->evaled_to, "https://", 8) == 0)
+            {
+                request->job_stats.file_stage_out_https_count++;
+            }
+            else if (strncmp(item->evaled_to, "ftp://", 6) == 0)
+            {
+                request->job_stats.file_stage_out_ftp_count++;
+            }
+            else if (strncmp(item->evaled_to, "gsiftp://", 6) == 0)
+            {
+                request->job_stats.file_stage_out_gsiftp_count++;
+            }
+        }
         globus_rsl_value_free_recursive(item->from);
         globus_rsl_value_free_recursive(item->to);
         free(item->evaled_from);
@@ -465,6 +523,10 @@ globus_gram_job_manager_staging_read_state(
 
 free_buffer_out:
     free(buffer);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_staging_free_all(request);
+    }
 out:
     return rc;
 }

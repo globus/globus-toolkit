@@ -256,6 +256,11 @@ main(
             /* We are the active job manager or a debug job manager or don't
              * care about the distinction
              */
+
+            GlobusTimeAbstimeGetCurrent(manager.usagetracker->jm_start_time);            
+            globus_i_gram_usage_stats_init(&manager);
+            globus_i_gram_usage_start_session_stats(&manager);
+
             located_active_jm = GLOBUS_TRUE;
 
             if (!started_without_client)
@@ -456,8 +461,12 @@ main(
             "level=DEBUG "
             "\n");
 
+    /* Clean-up to do if we are the active job manager only */
     if (manager.socket_fd != -1)
     {
+        globus_gram_job_manager_script_close_all(&manager);
+        globus_i_gram_usage_end_session_stats(&manager);
+        globus_i_gram_usage_stats_destroy(&manager);
         remove(manager.pid_path);
         remove(manager.cred_path);
         remove(manager.socket_path);

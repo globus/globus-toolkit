@@ -928,6 +928,11 @@ globus_gram_job_manager_contact_state_callback(
         goto queue_failed;
     }
 
+    if (extensions != NULL)
+    {
+        globus_gram_protocol_hash_destroy(&extensions);
+    }
+
     globus_gram_job_manager_request_log(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -1151,13 +1156,14 @@ failed_read_mask:
 failed_ftell:
         free(contact);
 failed_malloc_contact:
+        globus_gram_job_manager_contact_list_free(request);
 failed_read_count:
         ;
     }
 
     return rc;
 }
-/* globus_gram_job_manager_write_callback_contacts() */
+/* globus_gram_job_manager_read_callback_contacts() */
 
 static
 int
@@ -1267,6 +1273,7 @@ globus_l_gram_callback_queue(
 
             if (rc == GLOBUS_SUCCESS)
             {
+                request->job_stats.callback_count++;
                 manager->state_callback_slots--;
                 context->active++;
 
