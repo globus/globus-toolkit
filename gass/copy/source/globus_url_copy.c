@@ -67,6 +67,8 @@ typedef struct
 {
     char *                              src_url;
     char *                              dst_url;
+    globus_off_t                        offset;
+    globus_off_t                        length;
 } globus_l_guc_src_dst_pair_t;
 
 typedef struct globus_l_guc_handle_s
@@ -116,6 +118,7 @@ typedef struct
     int                                 restart_retries;
     int                                 restart_interval;
     int                                 restart_timeout;
+    int                                 stall_timeout;
     globus_size_t                       stripe_bs;
     globus_bool_t			            striped;
     globus_bool_t			            rfc1738;
@@ -162,6 +165,8 @@ typedef struct globus_l_guc_transfer_s
     globus_l_guc_handle_t *             handle;
     char *                              src_url;
     char *                              dst_url;
+    globus_off_t                        offset;
+    globus_off_t                        length;
 } globus_l_guc_transfer_t;
 
 /*****************************************************************************
@@ -347,7 +352,7 @@ const char * long_usage =
 "  -dbg | -debugftp \n"
 "       Debug ftp connections.  Prints control channel communication\n"
 "       to stderr\n"
-   
+
 "  -rst | -restart \n"
 "       Restart failed ftp operations.\n"
 "  -rst-retries <retries>\n"
@@ -359,7 +364,10 @@ const char * long_usage =
 "  -rst-timeout <seconds>\n"
 "       Maximum time after a failure to keep retrying.  Use 0 for no\n" 
 "       timeout.  Default is 0.\n"
-   
+"  -stall-timeout | -st <seconds>\n"
+"       How long before cancelling/restarting a transfer with no data\n"
+"       movement.  Set to 0 to disable.  Default is 300 seconds.\n"
+
 "  -rp | -relative-paths\n"
 "      The path portion of ftp urls will be interpereted as relative to the\n"
 "      user's starting directory on the server.  By default, all paths are\n"
@@ -554,6 +562,7 @@ enum
     arg_rst_retries, 
     arg_rst_interval, 
     arg_rst_timeout, 
+    arg_stall_timeout,
     arg_ss, 
     arg_ds, 
     arg_tcp_bs,
@@ -684,6 +693,7 @@ oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_rst_retries, "-rst-retries", "-restart-retries", test_integer, GLOBUS_NULL);
 oneargdef(arg_rst_interval, "-rst-interval", "-restart-interval", test_integer, GLOBUS_NULL);
 oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLOBUS_NULL);
+oneargdef(arg_stall_timeout, "-st", "-stall-timeout", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
 oneargdef(arg_src_pipe_str, "-SP", "-src-pipe", GLOBUS_NULL, GLOBUS_NULL);
@@ -731,6 +741,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_rst_retries);          \
     setupopt(arg_rst_interval);         \
     setupopt(arg_rst_timeout);          \
+    setupopt(arg_stall_timeout);        \
     setupopt(arg_ss);                   \
     setupopt(arg_ds);                   \
     setupopt(arg_tcp_bs);               \
@@ -918,6 +929,7 @@ globus_l_guc_ext(
     ext_info.restart_retries = guc_info->restart_retries;
     ext_info.restart_interval = guc_info->restart_interval;
     ext_info.restart_timeout = guc_info->restart_timeout;
+    ext_info.stall_timeout = guc_info->stall_timeout;
     ext_info.stripe_bs = guc_info->stripe_bs;
     ext_info.striped = guc_info->striped;
     ext_info.rfc1738 = guc_info->rfc1738;
@@ -1059,6 +1071,8 @@ globus_l_guc_transfer_kickout(
                 &transfer_info->guc_info->expanded_url_list);
             src_url = url_pair->src_url;
             dst_url = url_pair->dst_url;
+            transfer_info->offset = url_pair->offset;
+            transfer_info->length = url_pair->length;
             
             globus_free(url_pair);
             
@@ -1533,6 +1547,7 @@ globus_l_guc_info_destroy(
 static
 int
 globus_l_guc_parse_file(
+    globus_l_guc_info_t *                           guc_info,
     char *                                          file_name, 
     globus_fifo_t *                                 user_url_list)
 {
@@ -1546,6 +1561,8 @@ globus_l_guc_parse_file(
     int                                             line_num = 0;
     int                                             rc;
     globus_bool_t                                   stdin_used;
+    globus_off_t                                    offset;
+    globus_off_t                                    length;
 
     stdin_used = (strcmp(file_name, "-") == 0);
     fptr = (stdin_used) ? stdin : fopen(file_name, "r");
@@ -1559,6 +1576,8 @@ globus_l_guc_parse_file(
         line_num++;
         p = line;
         url_len = 0;
+        offset = guc_info->partial_offset;
+        length = guc_info->partial_length;
                 
         while(*p && isspace(*p))
         {
@@ -1620,12 +1639,16 @@ globus_l_guc_parse_file(
         {
             p++;
         }
-        if(*p && !isspace(*p))
+        if(*p)
         {
-            goto error_parse;
+            rc = sscanf(p, "%"GLOBUS_OFF_T_FORMAT",%"GLOBUS_OFF_T_FORMAT,
+                 &offset, &length);
+            if(rc < 1 || offset < 0)
+            {   
+                goto error_parse;
+            }
         }
-        
-                
+
         if(strcmp(src_url, "-") == 0 && strcmp(dst_url, "-") == 0)
         {
             fprintf(stderr, _GASCSL("stdin and stdout cannot be used together.\n"));
@@ -1645,6 +1668,8 @@ globus_l_guc_parse_file(
                 globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
         ent->src_url = globus_libc_strdup(src_url);
         ent->dst_url = globus_libc_strdup(dst_url);
+        ent->offset = offset;
+        ent->length = length;
         globus_fifo_enqueue(user_url_list, ent);
     }
 
@@ -1722,6 +1747,14 @@ globus_l_guc_transfer(
             dst_url,
             GLOBUS_FALSE);
     }
+
+    /* setting offsets should have been an attr option in gass_copy but 
+      since we only run one operation per handle this will be ok. */
+    globus_gass_copy_set_partial_offsets(
+        &handle->gass_copy_handle, 
+        transfer_info->offset,
+        (transfer_info->length == -1) ? 
+            -1 : transfer_info->offset + transfer_info->length);
 
     if(source_io_handle)
     {
@@ -1845,6 +1878,8 @@ globus_l_guc_transfer(
 
             url_pair.src_url = src_url;
             url_pair.dst_url = dst_url;
+            url_pair.offset = transfer_info->offset;
+            url_pair.length = transfer_info->length;
             
             result = globus_gass_copy_mkdir(
                 &handle->gass_copy_handle,
@@ -1984,6 +2019,8 @@ globus_l_guc_transfer_files(
             
         transfer_info->src_url = NULL;
         transfer_info->dst_url = NULL;
+        transfer_info->offset = -1;
+        transfer_info->length = -1;
         transfer_info->handle = guc_info->handles[i];
         transfer_info->guc_info = guc_info;
         
@@ -2585,6 +2622,7 @@ globus_l_guc_parse_arguments(
     guc_info->restart_retries = 5;
     guc_info->restart_interval = 0;
     guc_info->restart_timeout = 0;
+    guc_info->stall_timeout = 300;
     guc_info->stripe_bs = -1;
     guc_info->striped = GLOBUS_FALSE;
     guc_info->partial_offset = -1;
@@ -2807,6 +2845,9 @@ globus_l_guc_parse_arguments(
             break;
         case arg_rst_timeout:
             guc_info->restart_timeout = atoi(instance->values[0]);
+            break;
+        case arg_stall_timeout:
+            guc_info->stall_timeout = atoi(instance->values[0]);
             break;
         case arg_recurse:
             guc_info->recurse = GLOBUS_TRUE;
@@ -3116,15 +3157,17 @@ globus_l_guc_parse_arguments(
             return -1;
         }
 
-        if(globus_l_guc_parse_file(file_name, &guc_info->expanded_url_list) != 0)
+        if(globus_l_guc_parse_file(
+            guc_info, file_name, &guc_info->user_url_list) != 0)
         {
             globus_free(file_name);
             return -1;
         }
+/*
         globus_fifo_enqueue(
             &guc_info->user_url_list, 
             globus_fifo_dequeue(&guc_info->expanded_url_list));
-
+*/
         globus_free(file_name);
     }
     else if(guc_info->list_url == NULL) /* only if we are not listing */
@@ -3157,6 +3200,8 @@ globus_l_guc_parse_arguments(
 
             ent->src_url = guc_l_convert_file_url(argv[1]);
             ent->dst_url = guc_l_convert_file_url(argv[2]);
+            ent->offset = guc_info->partial_offset;
+            ent->length = guc_info->partial_length;
  
             globus_fifo_enqueue(&guc_info->user_url_list, ent);
         }
@@ -3425,8 +3470,10 @@ globus_l_guc_expand_urls(
                     globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
         
             expanded_url_pair->src_url = globus_libc_strdup(src_url);
-            expanded_url_pair->dst_url = globus_libc_strdup(dst_url);          
-
+            expanded_url_pair->dst_url = globus_libc_strdup(dst_url);
+            expanded_url_pair->offset = user_url_pair->offset;
+            expanded_url_pair->length = user_url_pair->length;
+            
             globus_fifo_enqueue(
                 &guc_info->expanded_url_list, 
                 expanded_url_pair);
@@ -3717,8 +3764,10 @@ globus_l_guc_expand_single_url(
                 globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
     
         expanded_url_pair->src_url = matched_src_url;
-        expanded_url_pair->dst_url = matched_dest_url;                
-        
+        expanded_url_pair->dst_url = matched_dest_url;
+        expanded_url_pair->offset = url_pair->offset;
+        expanded_url_pair->length = url_pair->length;
+
         globus_fifo_enqueue(
             &guc_info->expanded_url_list, 
             expanded_url_pair);
@@ -3972,6 +4021,19 @@ globus_l_guc_init_gass_copy_handle(
 
             return -1;
         }
+        
+        if(guc_info->stall_timeout)
+        {
+            result = globus_ftp_client_restart_plugin_set_stall_timeout(
+                &restart_plugin, guc_info->stall_timeout);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr, _GASCSL("Error: Unable to init debug plugin %s\n"),
+                    globus_error_print_friendly(globus_error_peek(result)));
+    
+                return -1;
+            }
+        }
 
         result = globus_ftp_client_handleattr_add_plugin(
             &ftp_handleattr,
@@ -3984,6 +4046,42 @@ globus_l_guc_init_gass_copy_handle(
             return -1;
         }
     }
+    else if(guc_info->stall_timeout)
+    {        
+        GlobusTimeAbstimeSet(timeout, 0, 1);
+        timeout_p = &timeout;
+
+        result = globus_ftp_client_restart_plugin_init(
+            &restart_plugin, 0, NULL, timeout_p); 
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, _GASCSL("Error: Unable to init debug plugin %s\n"),
+                globus_error_print_friendly(globus_error_peek(result)));
+
+            return -1;
+        }
+        
+        result = globus_ftp_client_restart_plugin_set_stall_timeout(
+            &restart_plugin, guc_info->stall_timeout);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, _GASCSL("Error: Unable to init debug plugin %s\n"),
+                globus_error_print_friendly(globus_error_peek(result)));
+
+            return -1;
+        }
+
+        result = globus_ftp_client_handleattr_add_plugin(
+            &ftp_handleattr,
+            &restart_plugin);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, _GASCSL("Error: Unable to register restart plugin %s\n"),
+                globus_error_print_friendly(globus_error_peek(result)));
+
+            return -1;
+        }
+    }        
 
     if(guc_info->rfc1738)
     {
@@ -4040,15 +4138,6 @@ globus_l_guc_init_gass_copy_handle(
             GLOBUS_TRUE);
     }
     
-    if(guc_info->partial_offset != -1)
-    {
-        globus_gass_copy_set_partial_offsets(
-            gass_copy_handle, 
-            guc_info->partial_offset,
-            (guc_info->partial_length == -1) ? -1 : 
-            guc_info->partial_offset + guc_info->partial_length);
-    }
-
     if(!guc_info->pipeline)
     {
         globus_gass_copy_set_allocate(gass_copy_handle, guc_info->allo);
@@ -4072,7 +4161,7 @@ globus_l_guc_init_gass_copy_handle(
     }
 
 
-    if(g_use_restart)
+    if(g_use_restart || guc_info->stall_timeout)
     {
         globus_ftp_client_handleattr_remove_plugin(
             &ftp_handleattr,

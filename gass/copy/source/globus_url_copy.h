@@ -50,6 +50,7 @@ typedef struct globus_guc_info_s
     int                                 restart_retries;
     int                                 restart_interval;
     int                                 restart_timeout;
+    int                                 stall_timeout;
     globus_size_t                       stripe_bs;
     globus_bool_t                       striped;
     globus_bool_t                       rfc1738;

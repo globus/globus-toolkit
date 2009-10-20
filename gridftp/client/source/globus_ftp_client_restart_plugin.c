@@ -110,6 +110,7 @@ typedef struct
     globus_bool_t                               abort_pending;
 
     int                                 ticker;
+    int                                 stall_timeout;
     globus_callback_handle_t            ticker_handle;
     globus_bool_t                       ticker_set;
     globus_bool_t                       xfer_running;
@@ -402,6 +403,7 @@ globus_l_ftp_client_restart_plugin_copy(
 	goto destroy_exit;
     }
     newd->backoff = d->backoff;
+    newd->stall_timeout = d->stall_timeout;
 
     return newguy;
 
@@ -851,6 +853,13 @@ globus_l_ftp_client_restart_plugin_complete(
         free(d->ticker_nbyte_a);
         d->ticker_nbyte_a = NULL;
     }
+    if(d->ticker_set)
+    {
+        d->ticker_set = GLOBUS_FALSE;
+        globus_callback_unregister(
+            d->ticker_handle, NULL, NULL, NULL);
+    }
+
 }
 
 static
@@ -858,8 +867,10 @@ void
 l_ticker_cb(
     void *                              user_arg)
 {
-    globus_result_t                     result;
+    globus_result_t                         result;
     globus_l_ftp_client_restart_plugin_t *  d;
+    globus_abstime_t	                    when;
+    globus_bool_t                           retry = GLOBUS_TRUE;
 
     d = (globus_l_ftp_client_restart_plugin_t *) user_arg;
 
@@ -873,46 +884,76 @@ l_ticker_cb(
     /* allow 1 tic to insure resolution */
     if(d->ticker > 1)
     {
-        globus_abstime_t                when;
-
-        /* stalled, restart the transfer */
-        GlobusTimeAbstimeGetCurrent(when);
-
-        switch(d->operation)
+        if(d->abort_pending)
         {
-            case GLOBUS_FTP_CLIENT_GET:
-                result = globus_ftp_client_plugin_restart_get(
-                    d->ticker_ftp_handle,
-                    d->source_url,
-                    &d->source_attr,
-                    NULL,
-                    &when);
-                break;
-            case GLOBUS_FTP_CLIENT_PUT:
-                result = globus_ftp_client_plugin_restart_put(
-                    d->ticker_ftp_handle,
-                    d->dest_url,
-                    &d->dest_attr,
-                    NULL,
-                    &when);
-                break;
-            case GLOBUS_FTP_CLIENT_TRANSFER:
-                result = globus_ftp_client_plugin_restart_third_party_transfer(
-                    d->ticker_ftp_handle,
-                    d->source_url,
-                    &d->source_attr,
-                    d->dest_url,
-                    &d->dest_attr,
-                    NULL,
-                    &when);
-                break;
+            return;
+        }
+        
+        if(d->max_retries == 0)
+        {
+            retry = GLOBUS_FALSE;
+        }
+        else if(d->max_retries > 0)
+        {
+            d->max_retries--;
+        }
+        
+        GlobusTimeAbstimeGetCurrent(when);
+        if((d->deadline.tv_sec != 0 || d->deadline.tv_nsec != 0) &&
+            globus_abstime_cmp(&when, &d->deadline) > 0)
+        {
+            retry = GLOBUS_FALSE;
+        }
 
-            default:
-                globus_assert(0 && "should never happen--memory corruption");
+        GlobusTimeAbstimeSet(when, d->interval.tv_sec, d->interval.tv_usec);
+        
+        if(retry)
+        {
+            if(d->backoff)
+            {
+                GlobusTimeReltimeMultiply(d->interval, 2);
+            }
+            
+            switch(d->operation)
+            {
+                case GLOBUS_FTP_CLIENT_GET:
+                    result = globus_ftp_client_plugin_restart_get(
+                        d->ticker_ftp_handle,
+                        d->source_url,
+                        &d->source_attr,
+                        NULL,
+                        &when);
+                    break;
+                case GLOBUS_FTP_CLIENT_PUT:
+                    result = globus_ftp_client_plugin_restart_put(
+                        d->ticker_ftp_handle,
+                        d->dest_url,
+                        &d->dest_attr,
+                        NULL,
+                        &when);
+                    break;
+                case GLOBUS_FTP_CLIENT_TRANSFER:
+                    result = globus_ftp_client_plugin_restart_third_party_transfer(
+                        d->ticker_ftp_handle,
+                        d->source_url,
+                        &d->source_attr,
+                        d->dest_url,
+                        &d->dest_attr,
+                        NULL,
+                        &when);
+                    break;
+    
+                default:
+                    globus_assert(0 && "should never happen--memory corruption");
+            }
         }
     }
     d->ticker++;
 
+    if(!retry)
+    {
+        globus_ftp_client_plugin_abort(d->ticker_ftp_handle);
+    }
 }
 
 static 
@@ -921,13 +962,26 @@ l_begin_xfer(
     globus_ftp_client_handle_t *        ftp_handle,
     globus_l_ftp_client_restart_plugin_t *  d)
 {
-    if(!d->ticker_set)
+    globus_reltime_t                    period;
+
+    if(!d->stall_timeout)
     {
         return;
     }
     d->ticker = 0;
     d->ticker_ftp_handle = ftp_handle;
     d->xfer_running = GLOBUS_TRUE;
+    d->ticker_set = GLOBUS_TRUE;
+    
+    /* start a timer, half of stall timeout */
+    /* we won't restart/abort until the 2nd callback with no data */
+    GlobusTimeReltimeSet(period, d->stall_timeout/2, 0);
+    globus_callback_register_periodic(
+        &d->ticker_handle,
+        &period,
+        &period,
+        l_ticker_cb,
+        d);
 }
 
 static
@@ -1230,7 +1284,6 @@ globus_ftp_client_restart_plugin_set_stall_timeout(
     int                                 to_secs)
 {
     globus_l_ftp_client_restart_plugin_t *	d;
-    globus_reltime_t                    period;
     globus_result_t                     result;
 
     result = globus_ftp_client_plugin_get_plugin_specific(
@@ -1239,17 +1292,8 @@ globus_ftp_client_restart_plugin_set_stall_timeout(
     {
         return result;
     }
-
-    /* start a timer */
-    GlobusTimeReltimeSet(period, to_secs, 0);
-    d->ticker_set = GLOBUS_TRUE;
-    globus_callback_register_periodic(
-        &d->ticker_handle,
-        &period,
-        &period,
-        l_ticker_cb,
-        d);
-
+    
+    d->stall_timeout = to_secs;
     return GLOBUS_SUCCESS;
 }
 
@@ -1309,7 +1353,7 @@ globus_ftp_client_restart_plugin_init(
     }
         
     d =
-	globus_libc_malloc(sizeof(globus_l_ftp_client_restart_plugin_t));
+	globus_libc_calloc(1, sizeof(globus_l_ftp_client_restart_plugin_t));
 
     if(! d)
     {
