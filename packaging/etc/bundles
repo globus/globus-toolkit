@@ -334,12 +334,9 @@ BUNDLE globus-rls-server THREADED
         globus_rls_server
         globus_rls_server_setup
         globus_xio
-        globus_replica_common_java
-        globus_replica_naming_core_java
 
 BUNDLE globus-rls-server-test
         globus_rls_test
-        globus_replica_naming_test_unit
 
 BUNDLE gt2-unthreaded
 	gaa_core
