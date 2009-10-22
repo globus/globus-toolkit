@@ -65,8 +65,6 @@ globus_gram_job_manager_config_init(
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
-    config->single = GLOBUS_TRUE;
-
     /* if -conf is passed then get the arguments from the file
      * specified
      */
@@ -145,6 +143,12 @@ globus_gram_job_manager_config_init(
     config->log_levels = GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL
                        | GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
 
+    /* Default to sending usage stats to the globus.org service. This can be
+     * disabled by using -disable-usagestats in the configuration or
+     * by setting a different usagestats target by using 
+     * -usagestats-targets in the configuration
+     */
+    config->usage_targets = strdup("usage-stats.globus.org:4810");
     /*
      * Parse the command line arguments
      */
@@ -261,10 +265,6 @@ globus_gram_job_manager_config_init(
         {
             config->streaming_disabled = GLOBUS_TRUE;
         }
-        else if (strcmp(argv[i], "-non-single") == 0)
-        {
-            config->single = GLOBUS_FALSE;
-        }
         else if (strcmp(argv[i], "-service-tag") == 0
                 && (i+1 < argc))
         {
@@ -322,6 +322,11 @@ globus_gram_job_manager_config_init(
         else if (strcmp(argv[i], "-usagestats-targets") == 0
                 && (i+1 < argc))
         {
+            if (config->usage_targets)
+            {
+                free(config->usage_targets);
+                config->usage_targets = NULL;
+            }
             config->usage_targets = strdup(argv[++i]);
         }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
@@ -360,7 +365,6 @@ globus_gram_job_manager_config_init(
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
                     "\t-usagestats-targets <host:port>[!<default | all>],...\n"
-                    "\t-non-single\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"

@@ -619,8 +619,7 @@ globus_gram_job_manager_state_file_read(
 
     /* Try to obtain a lock on the state lock file */
     if ( request->job_state_lock_file != NULL &&
-         request->job_state_lock_fd < 0 &&
-         request->config->single)
+         request->job_state_lock_fd < 0)
     {
         rc = fstat(request->manager->lock_fd, &single_lock_stat);
         if (rc < 0)

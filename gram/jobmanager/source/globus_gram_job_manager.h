@@ -287,10 +287,6 @@ typedef struct
      */
     int                                 proxy_timeout;
     /**
-     * Use the single job manager per user / jobmanager type feature
-     */
-    globus_bool_t                       single;
-    /**
      * Events to record to syslog/log file
      */
     globus_gram_job_manager_log_level_t log_levels;
@@ -869,7 +865,6 @@ globus_gram_rewrite_output_as_staging(
 int
 globus_gram_job_manager_request_load_all(
     globus_gram_job_manager_t *         manager,
-    globus_gram_jobmanager_request_t *  initial_request,
     globus_list_t **                    requests);
 
 int
@@ -939,6 +934,9 @@ globus_gram_job_manager_read_callback_contacts(
     FILE *                              fp);
 
 /* globus_gram_job_manager_state.c */
+extern
+const char *                            globus_i_gram_job_manager_state_strings[];
+
 int
 globus_gram_job_manager_read_request(
     globus_gram_job_manager_t *         manager,

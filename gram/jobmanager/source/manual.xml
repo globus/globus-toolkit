@@ -51,7 +51,6 @@ cvs.globus.org:/home/globdev/CVS/globus-packages gram/jobmanager/source/manual.x
 <arg>-seg-module <replaceable>SEG_MODULE</replaceable></arg>
 <arg>-audit-directory <replaceable>AUDIT_DIRECTORY</replaceable></arg>
 <arg>-globus-toolkit-version <replaceable>TOOLKIT_VERSION</replaceable></arg>
-<arg>-non-single</arg>
 <arg>-disable-streaming</arg>
 <arg>-disable-usagestats</arg>
 <arg>-usagestats-target <replaceable>TARGET</replaceable></arg>
@@ -211,11 +210,6 @@ The full set of command-line options to
             <row>
                 <entry>-globus-toolkit-version <replaceable>TOOLKIT_VERSION</replaceable></entry>
                 <entry>Configure the job manager to use <replaceable>TOOLKIT_VERSION</replaceable> as the version for audit and usage stats records.
-                </entry>
-            </row>
-            <row>
-                <entry>-non-single</entry>
-                <entry>Configure the job manager to run a separate job manager process per job, like in GT2. Not recommended.
                 </entry>
             </row>
             <row>

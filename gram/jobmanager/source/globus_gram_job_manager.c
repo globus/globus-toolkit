@@ -1782,7 +1782,6 @@ globus_gram_job_manager_stop_all_jobs(
 int
 globus_gram_job_manager_request_load_all(
     globus_gram_job_manager_t *         manager,
-    globus_gram_jobmanager_request_t *  initial_request,
     globus_list_t **                    requests)
 {
     int                                 rc = GLOBUS_SUCCESS;
@@ -1933,36 +1932,10 @@ globus_gram_job_manager_request_load_all(
                 continue;
             }
 
-            /* key does not contain leading / so we skip the first char
-             * of the initial request's job contact path
-             */
-            if (strcmp(key, initial_request->job_contact_path+1) == 0)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-                globus_gram_job_manager_log(
-                        manager,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-                        "event=gram.reload_requests.info "
-                        "level=DEBUG "
-                        "statedir=\"%s\" "
-                        "file=\"%s\" "
-                        "msg=\"%s\" "
-                        "gramid=%"PRIu64"/%"PRIu64" "
-                        "\n",
-                        state_dir_path,
-                        entry->d_name,
-                        "Ingoring request state file, it matches this "
-                        "process's initial job",
-                        uniq1,
-                        uniq2);
-            }
-            else
-            {
-                rc = globus_l_gram_restart_job(
-                        manager,
-                        &request,
-                        key);
-            }
+            rc = globus_l_gram_restart_job(
+                    manager,
+                    &request,
+                    key);
             free(entry);
             free(key);
 
