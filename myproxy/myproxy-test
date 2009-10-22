@@ -123,7 +123,7 @@ if (!defined($timeleft) || $timeleft eq "") {
   die "stopped";
 }
 die "proxy expired, stopped" if ($timeleft < 60);
-die "proxy lifetime too short, stopped" if ($timeleft < 60*60*3);
+die "proxy lifetime too short, stopped" if ($timeleft < 60*60*6);
 die "proxy is limited, stopped" if (`$grid_proxy_info -type` =~ /limited/);
 chomp($cert_subject = `$grid_proxy_info -identity`);
 die "grid-proxy-info -identity failed, stopped"
@@ -219,6 +219,7 @@ if ($startserver) {
     print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
     print CONF "accepted_credentials_mapapp $bintrue\n" if (-x $bintrue);
     print CONF "allow_self_authorization true\n"; # temporary workaround
+    print CONF "check_multiple_credentials true\n";
     close(CONF);
     $SERVERPIDFILE = "$tmpdir/myproxy-test.serverpid.$$";
     $SERVERPORTFILE = "$tmpdir/myproxy-test.serverport.$$";
@@ -1160,6 +1161,184 @@ if (defined($origtrustrootdir)) {
   $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
 } else {
   delete $ENV{'X509_CERT_DIR'};
+}
+
+#
+# Test 42
+#
+if ($startserver) { # only way to know check_multiple_credentials is true
+  $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
+  ($exitstatus, $output) =
+    &runtest("myproxy-init -v -a -k multiple -c 1 -t 1 -S",
+             $passphrase . "\n");
+  print "MyProxy Test 42 (check_multiple_credentials): ";
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-logon -k multiple -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
+               $passphrase . "\n");
+  }
+  if ($exitstatus == 0) {
+    $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
+    ($exitstatus, $output) =
+      &runtest("myproxy-logon -k multiple -t 1 -o $tmpdir/myproxy-test.$$ -v -S",
+               $passphrase . "\n");
+    if ($exitstatus == 0) {
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "Shouldn't have allowed retrieval with bad passphrase.\n";
+      print STDERR $output;
+    } else {
+      print "SUCCEEDED\n"; $SUCCESSES++;
+    }
+  } else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+  }
+  &runtest("myproxy-destroy -v -k multiple", undef);
+} else {
+  print "MyProxy Test 42 (check_multiple_credentials): SKIPPED\n";
+}
+
+#
+# Test 43
+#
+if ($startserver) { # only case we have direct access to repository
+  ($exitstatus, $output) =
+    &runtest("myproxy-init -v -a -l test-user1 -c 2 -t 2 -S",
+             $passphrase . "\n");
+  print "MyProxy Test 43 (myproxy-admin-query): ";
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-init -v -a -l test-user2 -k test-credname -c 4 -t 4 -S",
+               $passphrase . "\n");
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 2) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 1: Should have returned two credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -l test-user1 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 1) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 2: Should have returned one credential. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -e 5 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 2) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 3: Should have returned two credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -t 5 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 0) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 4: Should have returned no credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -e 3 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 1) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 5: Should have returned one credential. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -t 3 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 1) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 6: Should have returned one credential. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -e 1 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 0) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 7: Should have returned no credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -t 1 -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 2) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 8: Should have returned two credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -i -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 0) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 9: Should have returned no credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -r -s $serverdir -c $serverconf");
+  }
+  if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+      &runtest("myproxy-admin-query -s $serverdir -c $serverconf");
+    @usernames = split(/username/, $output);
+    if ($#usernames != 0) {
+      $exitstatus = 1;
+      print "FAILED\n"; $FAILURES++;
+      print STDERR "CASE 10: Should have returned no credentials. Found ",
+        $#usernames, ".\n";
+      print STDERR $output;
+    }
+  }
+  if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+  }
+} else {
+  print "MyProxy Test 43 (myproxy-admin-query): SKIPPED\n";
 }
 
 
