@@ -391,6 +391,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     int   use_ca_callout = 0;
     int   found_auth_cred = 0;
     int   num_auth_creds = 0;
+    char  *command_name = NULL;
 
     myproxy_creds_t *client_creds;
     myproxy_creds_t *all_creds;
@@ -452,26 +453,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
     free(client_buffer);
     client_buffer = NULL;
 
-    /* Fill in client_creds with info from the request that describes
-       the credentials the request applies to. */
-    client_creds->owner_name     = strdup(client.name);
-    client_creds->username       = strdup(client_request->username);
-    client_creds->passphrase     = strdup(client_request->passphrase);
-    client_creds->lifetime 	 = client_request->proxy_lifetime;
-    if (client_request->retrievers != NULL)
-	client_creds->retrievers = strdup(client_request->retrievers);
-    if (client_request->keyretrieve != NULL)
-	client_creds->keyretrieve = strdup(client_request->keyretrieve);
-    if (client_request->trusted_retrievers != NULL)
-	client_creds->trusted_retrievers =
-	    strdup(client_request->trusted_retrievers);
-    if (client_request->renewers != NULL)
-	client_creds->renewers   = strdup(client_request->renewers);
-    if (client_request->credname != NULL)
-	client_creds->credname   = strdup (client_request->credname);
-    if (client_request->creddesc != NULL)
-	client_creds->creddesc   = strdup (client_request->creddesc);
-
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
       
@@ -480,81 +461,56 @@ handle_client(myproxy_socket_attrs_t *attrs,
      * even if the request is denied. */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY: 
+        command_name = "GET"; break;
     case MYPROXY_RETRIEVE_CERT:
-        myproxy_log("Received %s request for username %s", 
-                    (client_request->command_type == MYPROXY_GET_PROXY)
-                    ? "GET"
-                    : "RETRIEVE", client_creds->username);
-        if (client_request->credname != NULL)
-            myproxy_debug("  Credname: %s", client_creds->credname);
-        myproxy_debug("  Requested lifetime: %d seconds",
-                      client_request->proxy_lifetime);
-        myproxy_debug("  Max. delegation lifetime: %d seconds",
-                      client_creds->lifetime);
-        if (context->max_proxy_lifetime) {
-            myproxy_debug("  Server max_proxy_lifetime: %d seconds",
-                          context->max_proxy_lifetime);
-        }
-        break;
+        command_name = "RETRIEVE"; break;
     case MYPROXY_PUT_PROXY:
-        myproxy_log("Received PUT request for username %s",
-                    client_creds->username);
-        if (client_request->credname != NULL)
-            myproxy_debug("  Credname: %s", client_creds->credname);
-        myproxy_debug("  Max. delegation lifetime: %d seconds",
-                      client_creds->lifetime);
-        if (client_creds->retrievers != NULL)
-            myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
-        if (client_creds->renewers != NULL)
-    	    myproxy_debug("  Renewer policy: %s", client_creds->renewers);
-        break;
+        command_name = "PUT"; break;
     case MYPROXY_INFO_PROXY:
-        myproxy_log("Received INFO request for username %s",
-                    client_request->username);
-        if (client_request->credname != NULL)
-            myproxy_debug("  Credname: %s", client_creds->credname);
-        break;
+        command_name = "INFO"; break;
     case MYPROXY_DESTROY_PROXY:
-        myproxy_log("Received DESTROY request for username %s",
-                    client_request->username);
-        if (client_request->credname != NULL)
-            myproxy_debug("  Credname: %s", client_creds->credname);
-        break;
+        command_name = "DESTROY"; break;
     case MYPROXY_CHANGE_CRED_PASSPHRASE:
-        myproxy_log("Received CHANGE_CRED_PASSPHRASE request for username: %s",
-                    client_request->username);
-        if (client_request->credname != NULL)
-            myproxy_debug("  Credname: %s", client_creds->credname);
-        break;
+        command_name = "CHANGE_CRED_PASSPHRASE"; break;
     case MYPROXY_STORE_CERT:
-        myproxy_log("Received STORE request for username %s",
-                    client_creds->username);
-        if (client_request->credname != NULL)
-            myproxy_debug("  Credname: %s", client_creds->credname);
-        myproxy_debug("  Max. delegation lifetime: %d seconds",
-                      client_creds->lifetime);
-        if (client_creds->retrievers != NULL)
-            myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
-        if (client_creds->renewers != NULL)
-            myproxy_debug("  Renewer policy: %s", client_creds->renewers);
-        if (client_creds->keyretrieve != NULL)
-            myproxy_debug("  Key Retriever policy: %s", client_creds->keyretrieve);
-        break;
+        command_name = "STORE"; break;
     case MYPROXY_GET_TRUSTROOTS:
-        myproxy_log("Received GET TRUSTROOTS request");
-        break;
+        command_name = "GET TRUSTROOTS"; break;
     default:
         myproxy_log("Received UNKNOWN command: %d",
                     client_request->command_type);
         respond_with_error_and_die(attrs, "UNKNOWN command in request.\n");
     }
+    if (client_request->username) {
+        myproxy_log("Received %s request for username %s",
+                    command_name, client_request->username);
+    } else {
+        myproxy_log("Received %s request", command_name);
+    }
+    if (client_request->credname != NULL) {
+        myproxy_debug("  Credname: %s", client_request->credname);
+    }
+    if (client_request->proxy_lifetime) {
+        myproxy_debug("  Requested lifetime: %d seconds",
+                      client_request->proxy_lifetime);
+    }
+    if (client_request->retrievers != NULL) {
+        myproxy_debug("  Retriever policy: %s", client_request->retrievers);
+    }
+    if (client_request->renewers != NULL) {
+        myproxy_debug("  Renewer policy: %s", client_request->renewers);
+    }
+    if (client_request->keyretrieve != NULL) {
+        myproxy_debug("  Key Retriever policy: %s",
+                      client_request->keyretrieve);
+    }
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
-	myproxy_log("client %s Invalid version number (%s) received",
-		    client.name, client_request->version);
+        myproxy_log("client %s Invalid version number (%s) received",
+                    client.name, client_request->version);
         respond_with_error_and_die(attrs,
-				   "Invalid version number received.\n");
+                                   "Invalid version number received.\n");
     }
 
     if (client_request->command_type != MYPROXY_GET_TRUSTROOTS) {
@@ -569,7 +525,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
             respond_with_error_and_die(attrs,
                                        "Invalid username received.\n");
         }
+    }
 
+    if (client_request->command_type == MYPROXY_GET_PROXY) {
         /* If the check_multiple_credentials option has been set AND no
          * client_request->credname is specified, then check ALL credentials
          * with the specified username for one that matches all other criteria
@@ -581,7 +539,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
          * username and other user-specified criteria (e.g. passphrase).  */
         if ((context->check_multiple_credentials) &&
             (client_request->credname == NULL) &&
-            /* Do an initial check for things like INFO which always authz ok */
+            /* Do an initial check for authz of "default" credential */
             (myproxy_authorize_accept(context,attrs,
                                       client_request,&client) != 0)) {
 
@@ -608,22 +566,16 @@ handle_client(myproxy_socket_attrs_t *attrs,
                         found_auth_cred = 1;  /* Good! Authz success! */
                     } else {
                         /* Free up char memory allocated by strdup earlier */
-                        if (cur_cred->credname)
+                        if (cur_cred->credname) {
                             free(client_request->credname);
+                            client_request->credname = NULL;
+                        }
                         cur_cred = cur_cred->next;   /* Try next cred in list */
                     }
-                } /* end while ((!found_auth_cred) && (cur_cred != NULL)) loop */
+                } /* end while ((!found_auth_cred) && (cur_cred != NULL)) */
             } /* end if (myproxy_admin_retrieve_all) */
 
             myproxy_creds_free(all_creds);
-
-            if (!found_auth_cred) {
-                myproxy_log("checked %d credentials with username '%s' "
-                            "but none were authorized", 
-                            num_auth_creds,client_request->username);
-                respond_with_error_and_die(attrs,"Checked multiple credentials. "
-                                           "None were authorized for access.\n");
-            } /* end if (!found_auth_cred) */
         } /*** END check_multiple_credentials ***/
     }
 
@@ -631,10 +583,30 @@ handle_client(myproxy_socket_attrs_t *attrs,
     if (myproxy_authorize_accept(context, attrs, 
                                  client_request, &client) < 0) {
         myproxy_log("authorization failed");
-        myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
         respond_with_error_and_die(attrs, verror_get_string());
     }
+
+    /* Fill in client_creds with info from the request that describes
+       the credentials the request applies to.
+       We must do this *after* processing check_multiple_credentials above. */
+    client_creds->owner_name     = strdup(client.name);
+    client_creds->username       = strdup(client_request->username);
+    client_creds->passphrase     = strdup(client_request->passphrase);
+    client_creds->lifetime 	 = client_request->proxy_lifetime;
+    if (client_request->retrievers != NULL)
+        client_creds->retrievers = strdup(client_request->retrievers);
+    if (client_request->keyretrieve != NULL)
+        client_creds->keyretrieve = strdup(client_request->keyretrieve);
+    if (client_request->trusted_retrievers != NULL)
+        client_creds->trusted_retrievers =
+            strdup(client_request->trusted_retrievers);
+    if (client_request->renewers != NULL)
+        client_creds->renewers   = strdup(client_request->renewers);
+    if (client_request->credname != NULL)
+        client_creds->credname   = strdup (client_request->credname);
+    if (client_request->creddesc != NULL)
+        client_creds->creddesc   = strdup (client_request->creddesc);
 
     /* Handle client request */
     switch (client_request->command_type) {
@@ -652,6 +624,15 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	  /* Retrieve the credentials from the repository */
 	  if (myproxy_creds_retrieve(client_creds) < 0) {
 	    respond_with_error_and_die(attrs, verror_get_string());
+	  }
+
+	  myproxy_debug("  Owner: %s", client_creds->username);
+	  myproxy_debug("  Location: %s", client_creds->location);
+	  myproxy_debug("  Max. delegation lifetime: %d seconds",
+			client_creds->lifetime);
+	  if (context->max_proxy_lifetime) {
+	      myproxy_debug("  Server max_proxy_lifetime: %d seconds",
+			    context->max_proxy_lifetime);
 	  }
 
 	  /* Are credentials locked? */
@@ -1233,8 +1214,7 @@ cleanup:
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    if ((creds->credname && myproxy_creds_retrieve(creds) < 0) ||
-        (!creds->credname && myproxy_creds_retrieve_all(creds) < 0)) {
+    if (myproxy_creds_retrieve_all(creds) < 0) {
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
        response->error_string = strdup(verror_get_string());

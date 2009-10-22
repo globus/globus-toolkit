@@ -736,7 +736,9 @@ Typically when a credential is accessed by a client, the server checks only
 one credential for possible access authorization, even if there are multiple
 credentials stored under the given username.  If this option is set to
 "true" AND the client does not specify a credential name for a MyProxy
-operation, then the server will check multiple credentials with the given
+GET operation (i.e., from 
+.BR myproxy-logon (1)),
+then the server will check multiple credentials with the given
 username.  If a credential is found to be authorized for client access, then
 that one will be used during processing.  The default value for this option
 is "false".
