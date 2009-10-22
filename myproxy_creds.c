@@ -946,229 +946,178 @@ error:
     return return_code;
 }
 
-int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
+/*
+ * We implement the query logic of both myproxy_creds_retrieve_all()
+ * and myproxy_admin_retrieve_all() in this function here since
+ * querying the repository has gotten sufficiently complex that we
+ * don't want it implemented in multiple places. Note that because of
+ * the translations we do between username/credname and the actual
+ * filename used to store the credentials, we do a brute force scan,
+ * calling myproxy_creds_retrieve() for each credentials, relying on
+ * that function to set username/credname/etc. correctly for us, again
+ * so we have just one function that does the translation. Beware
+ * trying to optimize this function, because the handling of usernames
+ * containing '/' and '-' characters can cause surprises.
+ */
+static int 
+myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
 {
-    char *username = NULL, *h_username = NULL, *owner_name = NULL;
-    size_t h_username_len = 0;
-    struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
-    DIR *dir = NULL;
-    struct dirent *de = NULL;
-    int return_code = -1;
-
-    /*
-     * cur_cred always points to the last valid credential in the list.
-     * If cur_cred is NULL, we haven't found any credentials yet.
-     * The first cred in the list is the one passed in.  Other creds
-     *    in the list are ones we allocated and added.
-     */
-
-    if ((creds == NULL) || (creds->username == NULL)) {
-        verror_put_errno(EINVAL);
-        goto error;
-    }
-
-    /* stash username and owner_name so we can test each credential */
-    username = strdup(creds->username);
-    if (strchr(creds->username, '/')) {
-	h_username = strmd5(username, NULL);
-    } else {
-	h_username = strdup(creds->username);
-    sterilize_string(h_username);
-    }
-    h_username_len = strlen(h_username);
-    owner_name = strdup(creds->owner_name);
-
-    new_cred = creds; /* new_cred is what we're filling in */
-
-    /* first, try to get the default credential */
-    if (new_cred->credname) {
-	free(new_cred->credname); new_cred->credname = NULL;
-    }
-    if (myproxy_creds_retrieve(new_cred) == 0) {
-	if (strcmp(owner_name, new_cred->owner_name) == 0) {
-	    cur_cred = creds;
-	    new_cred = malloc(sizeof(struct myproxy_creds));
-	    memset(new_cred, 0, sizeof(struct myproxy_creds));
-	} else {
-	    /* owned by someone else; re-initialize cred structure */
-	    myproxy_creds_free_contents(new_cred);
-	}
-    }
-
-    if ((dir = opendir(storage_dir)) == NULL) {
-	verror_put_string("failed to open credential storage directory");
-	goto error;
-    }
-    while ((de = readdir(dir)) != NULL) {
-	if (!strncmp(de->d_name, h_username, h_username_len) &&
-	    de->d_name[h_username_len] == '-' &&
-	    !strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
-	    char *credname, *dot;
-	    credname = strdup(de->d_name+h_username_len+1);
-	    dot = strrchr(credname, '.');
-	    *dot = '\0';
-	    if (new_cred->username) free(new_cred->username);
-	    if (new_cred->credname) free(new_cred->credname);
-	    new_cred->username = strdup(username);
-	    new_cred->credname = strdup(credname);
-	    free(credname);
-	    if (myproxy_creds_retrieve(new_cred) == 0) {
-		if (strcmp(owner_name, new_cred->owner_name) == 0) {
-		    if (cur_cred) cur_cred->next = new_cred;
-		    cur_cred = new_cred;
-		    new_cred = malloc(sizeof(struct myproxy_creds));
-		    memset(new_cred, 0, sizeof(struct myproxy_creds));
-		} else {
-		    /* owned by someone else; re-initialize cred structure */
-		    myproxy_creds_free_contents(new_cred);
-		}
-	    }
-	}
-    }
-    closedir(dir);
-
-    if (!cur_cred) {
-	verror_clear();	/* other errors may indicate if credentials
-			   owned by someone else exist */
-	verror_put_string("no credentials found for user %s, owner \"%s\"",
-			  username, owner_name);
-	goto error;
-    }
-
-    return_code = 0;
-
- error:
-    if (username) free(username);
-    if (h_username) free(h_username);
-    if (owner_name) free(owner_name);
-    if (cur_cred && new_cred) {
-	myproxy_creds_free_contents(new_cred);
-	free(new_cred);
-    }
-    return return_code;
-}
-
-/* Retrieves info about all credentials. Verifies username and
-   remaining lifetime if specified.
-   If query is username or lifetime based, username should be
-   specified in creds->username
-   and remaining lifetime in creds->end_time
-*/
-int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
-{
+    char *username = NULL, *credname = NULL, *owner_name = NULL;
+    time_t end_time = 0, start_time = 0;
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
     DIR *dir = NULL;
     struct dirent *de = NULL;
     int return_code = -1, numcreds=0;
-    char *username = NULL, *credname = NULL;
-    time_t end_time = 0, start_time = 0;
 
     if (check_storage_directory() == -1) {
         goto error;
     }
-
-    /*
-     * cur_cred always points to the last valid credential in the list.
-     * If cur_cred is NULL, we haven't found any credentials yet.
-     * The first cred in the list is the one passed in.  Other creds
-     *    in the list are ones we allocated and added.
-     */
 
     if (creds == NULL) {
         verror_put_errno(EINVAL);
         goto error;
     }
 
+    /* stash query values so we can test each credential */
+    if (creds->username) {
+        username = creds->username;
+        creds->username = NULL;
+    }
+    if (creds->owner_name) {
+        owner_name = creds->owner_name;
+        creds->owner_name = NULL;
+    }
+    if (creds->credname) {
+        credname = creds->credname;
+        creds->credname = NULL;
+    }
+    if (creds->start_time) {
+        start_time = creds->start_time;
+        creds->start_time = 0;
+    }
+    if (creds->end_time) {
+        end_time = creds->end_time;
+        creds->end_time = 0;
+    }
+
+    /*
+     * cur_cred always points to the last valid credential in the list.
+     * If cur_cred is NULL, we haven't found any credentials yet.
+     * The first cred in the list is the one passed in.  Other creds
+     *    in the list are ones we allocated and added.
+     */
+
     new_cred = creds; /* new_cred is what we're filling in */
 
-    if (creds->username) {
-	username = creds->username;
-	creds->username = NULL;
-    }
-
-    if (creds->credname) {
-	credname = creds->credname;
-	creds->credname = NULL;
-    }
-
-    if (creds->start_time) {
-	start_time = creds->start_time;
-	creds->start_time = 0;
-    }
-
-    if (creds->end_time) {
-	end_time = creds->end_time;
-	creds->end_time = 0;
-    }
-
     if ((dir = opendir(storage_dir)) == NULL) {
-	verror_put_string("failed to open credential storage directory");
-	goto error;
+        verror_put_string("failed to open credential storage directory");
+        goto error;
     }
-
-    /* Credential data file names are of the form   "<username>-<credname>.data" where <credname> is "" for 
-       default credentials */
-
     while ((de = readdir(dir)) != NULL) {
-	if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
-	    char *cname = NULL, *dot, *dash;
-
-	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
-
-	    dot = strrchr(de->d_name, '.');
-	    *dot = '\0';
-
-	    if (dash) /*Credential with a name */
-	    	cname = dash+1;
-
-	    if (new_cred->username) free(new_cred->username);
-	    if (new_cred->credname) free(new_cred->credname);
-
-	    if (dash != NULL)	/*Stash '-' and beyond in de->d_name (Gives username) */
-		*dash = '\0';
-
-	    new_cred->username = strdup(de->d_name);
-
-	    if (cname)
-	    	new_cred->credname = strdup(cname);
-	    else
-		new_cred->credname = NULL;
-
-	    if (username)	/* use username to query if specified */
-		if (strcmp(username, new_cred->username))
-			continue;
-
-	    if (credname)
-		if ((new_cred->credname == NULL && credname[0] != '\0') ||
-		    (new_cred->credname != NULL &&
-		     strcmp(credname, new_cred->credname)))
-			continue;
-
-	    if (myproxy_creds_retrieve(new_cred) == 0) {
-		if ((start_time == 0 || start_time < new_cred->end_time) &&
-		    (end_time == 0 || end_time >= new_cred->end_time)) {
-			if (cur_cred) cur_cred->next = new_cred;
-			cur_cred = new_cred;
-			new_cred = malloc(sizeof(struct myproxy_creds));
-			memset(new_cred, 0, sizeof(struct myproxy_creds));
-			numcreds++;
-		} else {
-			myproxy_creds_free_contents(new_cred);
-		}
+        if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
+            char *cname = NULL, *dot, *dash;
+            dash = strchr (de->d_name, '-');
+            dot = strrchr(de->d_name, '.');
+            *dot = '\0';
+            if (dash) { /*Credential with a name */
+                *dash = '\0';
+                cname = dash+1;
+            }
+            if (new_cred->username) free(new_cred->username);
+            if (new_cred->credname) free(new_cred->credname);
+            new_cred->username = strdup(de->d_name);
+            if (cname) {
+                new_cred->credname = strdup(cname);
+            } else {
+                new_cred->credname = NULL;
+            }
+            if (myproxy_creds_retrieve(new_cred) == 0) {
+                if (username && strcmp(username, new_cred->username))
+                    continue;
+                if (owner_name && strcmp(owner_name, new_cred->owner_name))
+                    continue;
+                if (credname &&
+                    ((!new_cred->credname && credname[0] != '\0') ||
+                     (new_cred->credname &&
+                      strcmp(credname, new_cred->credname))))
+                    continue;
+                if ((start_time && start_time > new_cred->end_time) ||
+                    (end_time && end_time < new_cred->end_time))
+                    continue;
+                if (cur_cred) cur_cred->next = new_cred;
+                cur_cred = new_cred;
+                new_cred = malloc(sizeof(struct myproxy_creds));
+                memset(new_cred, 0, sizeof(struct myproxy_creds));
+                numcreds++;
+            } else {
+                verror_put_string("failed to retrieve credentials for "
+                                  "username \"%s\", credname \"%s\"",
+                                  new_cred->username,
+                                  new_cred->credname ? new_cred->credname : "");
+                myproxy_log_verror(); /* internal error; should not happen */
+                verror_clear();
+            }
 	    }
 	}
-    }
     closedir(dir);
 
     return_code = numcreds;
 
  error:
     if (username) free(username);
+    if (owner_name) free(owner_name);
+    if (credname) free(credname);
     if (cur_cred && new_cred) {
-	myproxy_creds_free_contents(new_cred);
-	free(new_cred);
+        myproxy_creds_free_contents(new_cred);
+        free(new_cred);
     }
     return return_code;
+}
+
+int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
+{
+    int return_code = -1;
+    char *username = NULL, *credname = NULL, *owner_name = NULL;
+
+    if ((creds == NULL) || (creds->username == NULL) ||
+        (creds->owner_name == NULL)) {
+        verror_put_errno(EINVAL);
+        return -1;
+    }
+
+    /* stash query values for error message */
+    username = strdup(creds->username);
+    owner_name = strdup(creds->owner_name);
+    if (creds->credname) {
+        credname = strdup(creds->credname);
+    }
+
+    return_code = myproxy_creds_retrieve_all_ex(creds);
+
+    if (return_code > 0) {
+        return_code = 0;
+    } else if (return_code == 0) {
+        if (credname) {
+            verror_put_string("no credentials found with name %s for user %s, "
+                              ", owner \"%s\"",
+                              credname, username, owner_name);
+        } else {
+            verror_put_string("no credentials found for user %s, owner \"%s\"",
+                              username, owner_name);
+        }
+        return_code = -1;
+    }
+
+    free(username);
+    free(owner_name);
+    if (credname) free(credname);
+
+    return return_code;
+}
+
+int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
+{
+    return myproxy_creds_retrieve_all_ex(creds);
 }
 
 int
