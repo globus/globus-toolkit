@@ -2049,6 +2049,7 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
 {
    FILE         *cert_file = NULL;
    X509         *cert = NULL;
+   char         *tz = NULL;
 
    assert(path != NULL);
 
@@ -2065,6 +2066,10 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
        *not_before = 0;
    if (not_after)
        *not_after = 0;
+
+   tz = getenv("TZ");
+   setenv("TZ", "", 1);
+   tzset();
 
    while ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) != NULL) {
        if (not_before) {
@@ -2086,6 +2091,12 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
        X509_free(cert);
        cert = NULL;
    }
+
+   if (tz)
+       setenv("TZ", tz, 1);
+   else
+       unsetenv("TZ");
+   tzset();
 
    fclose(cert_file);
    ERR_clear_error();		/* clear EOF error */
