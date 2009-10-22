@@ -76,12 +76,13 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
 /*
  * myproxy_creds_retrieve_all()
  *
- * Retrieve all credentials associated with the username and owner
- * name in the given myproxy_creds structure.  If multiple credentials
- * are stored under the given username, they'll be chained together in
- * a linked-list using the next field in the given myproxy_creds
- * structure.  The default credential (i.e., with no credname) will be
- * first in the list, if one exists.
+ * Retrieve all credentials associated with the username, owner
+ * name, and credname (if given) in the given myproxy_creds structure.
+ * If multiple credentials are stored under the given username,
+ * they'll be chained together in a linked-list using the next field
+ * in the given myproxy_creds structure.
+ * The default credential (i.e., with no credname) will be first in
+ * the list, if one exists.
  * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
  *
  * Returns -1 on error, 0 on success.
