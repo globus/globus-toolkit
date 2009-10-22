@@ -81,7 +81,7 @@ int verbose = 0;
 int
 main(int argc, char *argv[]) 
 {
-    int numcreds;
+    int numcreds = 0, return_value = 1;
     myproxy_server_context_t server_context = { 0 };
     struct myproxy_creds *credp = NULL;
 
@@ -123,11 +123,16 @@ main(int argc, char *argv[])
                 credlist[numcreds++] = credp;
             }
         }
-        for (i = 1; i < numcreds; i++) {
-            credlist[i-1]->next = credlist[i];
+        if (numcreds) {
+            for (i = 1; i < numcreds; i++) {
+                credlist[i-1]->next = credlist[i];
+            }
+            credlist[numcreds-1]->next = NULL;
+            credp = credlist[0];
+        } else {
+            credp = &cred;
         }
-        credlist[numcreds-1]->next = NULL;
-        credp = credlist[0];
+        free(credlist);
     } else {
         credp = &cred;
     }
@@ -144,11 +149,19 @@ main(int argc, char *argv[])
     } else {
 	if (myproxy_print_cred_info(credp, stdout) < 0) {
 	    verror_print_error(stderr);
-	    exit(1);
+        goto cleanup;
 	}
     }
 
-    return 0;
+    return_value = 0;
+
+ cleanup:
+    if (cred.next) {
+        myproxy_creds_free(cred.next);
+    }
+    myproxy_creds_free_contents(&cred);
+
+    return return_value;
 }
 
 void 
