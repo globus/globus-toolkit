@@ -890,7 +890,6 @@ bad_operand_list:
 
 int
 globus_gram_job_manager_rsl_parse_value(
-    globus_gram_jobmanager_request_t *  request,
     char *                              value_string,
     globus_rsl_value_t **               rsl_value)
 {
@@ -947,7 +946,7 @@ out:
 
 int
 globus_gram_job_manager_rsl_evaluate_value(
-    globus_gram_jobmanager_request_t *  request,
+    globus_symboltable_t *              symbol_table,
     globus_rsl_value_t *                value,
     char **                             value_string)
 {
@@ -980,7 +979,7 @@ globus_gram_job_manager_rsl_evaluate_value(
     {
         rc = globus_rsl_value_eval(
                 copy,
-                &request->symbol_table,
+                symbol_table,
                 value_string,
                 0);
     }
@@ -996,7 +995,7 @@ out:
 
 int
 globus_gram_job_manager_rsl_eval_string(
-    globus_gram_jobmanager_request_t *  request,
+    globus_symboltable_t *              symbol_table,
     char *                              string,
     char **                             value_string)
 {
@@ -1006,7 +1005,6 @@ globus_gram_job_manager_rsl_eval_string(
     *value_string = NULL;
 
     rc = globus_gram_job_manager_rsl_parse_value(
-            request,
             string,
             &value);
 
@@ -1016,7 +1014,7 @@ globus_gram_job_manager_rsl_eval_string(
     }
 
     rc = globus_gram_job_manager_rsl_evaluate_value(
-            request,
+            symbol_table,
             value,
             value_string);
 

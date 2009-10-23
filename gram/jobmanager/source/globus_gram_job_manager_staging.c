@@ -575,7 +575,7 @@ globus_l_gram_job_manager_staging_add_pair(
     }
 
     rc = globus_gram_job_manager_rsl_evaluate_value(
-            request,
+            &request->symbol_table,
             info->from,
             &info->evaled_from);
 
@@ -604,7 +604,7 @@ globus_l_gram_job_manager_staging_add_pair(
         goto eval_from_failed;
     }
     rc = globus_gram_job_manager_rsl_evaluate_value(
-            request,
+            &request->symbol_table,
             info->to,
             &info->evaled_to);
 
@@ -797,7 +797,7 @@ globus_l_gram_staging_list_read_state(
             goto free_info_out;
         }
         rc = globus_gram_job_manager_rsl_parse_value(
-                request, buffer, &info->from);
+                buffer, &info->from);
         if (rc != GLOBUS_SUCCESS)
         {
             goto free_info_out;
@@ -810,14 +810,14 @@ globus_l_gram_staging_list_read_state(
             goto free_info_from_out;
         }
         rc = globus_gram_job_manager_rsl_parse_value(
-                request, buffer, &info->to);
+                buffer, &info->to);
         if (rc != GLOBUS_SUCCESS)
         {
             goto free_info_from_out;
         }
 
         rc = globus_gram_job_manager_rsl_evaluate_value(
-                request,
+                &request->symbol_table,
                 info->from,
                 &info->evaled_from);
 
@@ -827,7 +827,7 @@ globus_l_gram_staging_list_read_state(
         }
 
         rc = globus_gram_job_manager_rsl_evaluate_value(
-                request,
+                &request->symbol_table,
                 info->to,
                 &info->evaled_to);
         if (rc != GLOBUS_SUCCESS)

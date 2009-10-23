@@ -25,6 +25,7 @@
 
 globus_logging_handle_t                 globus_i_gram_job_manager_log_stdio;
 globus_logging_handle_t                 globus_i_gram_job_manager_log_sys;
+static globus_symboltable_t             globus_l_gram_log_symboltable;
 static FILE *                           globus_l_gram_log_fp = NULL;
 
 static
@@ -81,6 +82,35 @@ globus_gram_job_manager_logging_init(
 
     if (config->stdiolog_enabled)
     {
+        int rc;
+
+        rc = globus_symboltable_init(
+                &globus_l_gram_log_symboltable,
+                globus_hashtable_string_hash,
+                globus_hashtable_string_keyeq);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error initializing logging: symboltable_init\n");
+            exit(1);
+        }
+
+        rc = globus_symboltable_create_scope(&globus_l_gram_log_symboltable);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error initializing logging: create scope\n");
+            exit(1);
+        }
+
+        rc = globus_i_gram_symbol_table_populate(
+                config,
+                &globus_l_gram_log_symboltable);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr,
+                    "Error initializing logging: symboltable_populate\n");
+            exit(1);
+        }
+
         globus_l_gram_logging_module.header_func =
                 globus_logging_stdio_ng_module.header_func;
         now = time(NULL);
@@ -164,6 +194,7 @@ globus_l_gram_logging_write(
     const char *                        dir = user_arg;
     time_t                              now;
     struct tm *                         now_tm;
+    static char *                       evaluated_dir = NULL;
     static char                         path[MAXPATHLEN] = "";
     static char                         last_path[MAXPATHLEN] = "";
     int                                 fd;
@@ -173,11 +204,19 @@ globus_l_gram_logging_write(
     now = time(NULL);
     now_tm = gmtime(&now);
 
+    if (evaluated_dir == NULL)
+    {
+        globus_gram_job_manager_rsl_eval_string(
+                &globus_l_gram_log_symboltable,
+                dir,
+                &evaluated_dir);
+    }
+
     snprintf(
             path,
             sizeof(path),
             "%s/gram_%04d%02d%02d.log",
-            dir,
+            evaluated_dir ? evaluated_dir : dir,
             now_tm->tm_year + 1900,
             now_tm->tm_mon + 1,
             now_tm->tm_mday);
