@@ -962,8 +962,10 @@ error:
 static int 
 myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
 {
-    char *username = NULL, *credname = NULL, *owner_name = NULL;
+    char *username = NULL, *sterile_username = NULL;
+    char *credname = NULL, *owner_name = NULL;
     time_t end_time = 0, start_time = 0;
+    size_t sterile_username_len = 0;
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
     DIR *dir = NULL;
     struct dirent *de = NULL;
@@ -982,6 +984,16 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
     if (creds->username) {
         username = creds->username;
         creds->username = NULL;
+        if (strchr(username, '/')) {
+            sterile_username = strmd5(username, NULL);
+        } else {
+            sterile_username = strdup(username);
+        }
+        if (sterile_username == NULL) {
+            goto error;
+        }
+        sterilize_string(sterile_username);
+        sterile_username_len = strlen(sterile_username);
     }
     if (creds->owner_name) {
         owner_name = creds->owner_name;
@@ -1016,6 +1028,14 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
     while ((de = readdir(dir)) != NULL) {
         if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
             char *cname = NULL, *dot, *dash;
+
+            /* optimization: skip credential right away if username
+                             doesn't match */
+            if (sterile_username && 
+                strncmp(de->d_name, sterile_username, sterile_username_len)) {
+                continue;
+            }
+
             dash = strchr (de->d_name, '-');
             dot = strrchr(de->d_name, '.');
             *dot = '\0';
@@ -1065,6 +1085,7 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
 
  error:
     if (username) free(username);
+    if (sterile_username) free(sterile_username);
     if (owner_name) free(owner_name);
     if (credname) free(credname);
     if (cur_cred && new_cred) {
