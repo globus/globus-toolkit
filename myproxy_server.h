@@ -98,6 +98,14 @@ typedef struct myproxy_server_peer_t {
 int myproxy_server_config_read(myproxy_server_context_t *context);
 
 /*
+ * myproxy_server_clear_context()
+ *
+ * Re-initialize the myproxy_server_context_t structure,
+ * deallocating memory as needed.
+ */
+void myproxy_server_clear_context(myproxy_server_context_t *context);
+
+/*
  * myproxy_server_check_policy_list()
  *
  * Check to see if the given client matches an entry the dn_list.

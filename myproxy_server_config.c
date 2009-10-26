@@ -280,6 +280,12 @@ clear_server_context(myproxy_server_context_t *context)
 #endif
 }
 
+void
+myproxy_server_clear_context(myproxy_server_context_t *context)
+{
+    clear_server_context(context);
+}
+
 /*
  * decode_facility()
  *
