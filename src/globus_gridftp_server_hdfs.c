@@ -668,6 +668,7 @@ globus_l_gfs_hdfs_dump_buffers(
 													 wrote_something = 1;
 										  if (bytes_written != nbytes[i]) {
 													 rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
+													 snprintf(err_msg, MSG_SIZE, "Error from HDFS during write: %s\n", strerror(errno));
 													 hdfs_handle->done = GLOBUS_TRUE;
 													 return rc;
 										  }
@@ -926,6 +927,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
             globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
             if (bytes_written != nbytes) {
                 rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
+                snprintf(err_msg, MSG_SIZE, "Error from HDFS during write: %s\n", strerror(errno));
                 hdfs_handle->done = GLOBUS_TRUE;
             } else {
                 hdfs_handle->offset += bytes_written;
