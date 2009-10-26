@@ -1,0 +1,4 @@
+method = cvs
+cvs_root = :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
+cvs_module = autotools
+#cvs_tag = 

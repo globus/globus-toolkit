@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# This cron script fetches trust roots (CA certificates, CRLs)
+# from a myproxy-server.
+
+# Customize the following environment variables as appropriate.
+GLOBUS_LOCATION="/usr/local/globus"
+MYPROXY_SERVER="myproxy.ncsa.uiuc.edu"
+export GLOBUS_LOCATION MYPROXY_SERVER
+
+# set if connecting to a myproxy-server on a non-standard port
+#MYPROXY_SERVER_PORT=7512
+#export MYPROXY_SERVER_PORT
+
+# set if using a non-standard trust root directory
+#X509_CERT_DIR=/etc/grid-security/certificates
+#export X509_CERT_DIR
+
+# set if using credentials in a non-standard location
+#X509_USER_CERT=/etc/grid-security/hostcert.pem
+#X509_USER_KEY=/etc/grid-security/hostkey.pem
+#export X509_USER_CERT X509_USER_KEY
+
+# set if using a proxy in a non-standard location
+#X509_USER_PROXY=/tmp/x509up_u0
+#export X509_USER_PROXY
+
+# set to force anonymous authentication to the myproxy-server and
+# avoid using client-side credentials
+#X509_USER_CERT=/dev/null
+#X509_USER_KEY=/dev/null
+#X509_USER_PROXY=/dev/null
+#export X509_USER_CERT X509_USER_KEY X509_USER_PROXY
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+
+${GLOBUS_LOCATION}/bin/myproxy-get-trustroots 2>&1 | \
+  logger -t myproxy-get-trustroots.cron -p cron.info
+
+exit 0
