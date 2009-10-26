@@ -160,6 +160,7 @@ main(int argc, char *argv[])
         myproxy_creds_free(cred.next);
     }
     myproxy_creds_free_contents(&cred);
+    myproxy_server_clear_context(&server_context);
 
     return return_value;
 }
