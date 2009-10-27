@@ -1807,3 +1807,12 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
 
     return return_value;
 }
+
+int 
+GSI_SOCKET_get_errno(GSI_SOCKET *self)
+{
+    if (self)
+        return self->error_number;
+
+    return 0;
+}
