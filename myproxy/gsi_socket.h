@@ -313,4 +313,12 @@ int GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag);
  */
 int GSI_SOCKET_context_established(GSI_SOCKET *self);
 
+/*
+ * GSI_SOCKET_get_errno()
+ *
+ * Returns saved errno if the socket exists. Otherwise returns 0.
+ *
+ */
+int GSI_SOCKET_get_errno(GSI_SOCKET *self);
+
 #endif /* !__GSI_SOCKET_H */

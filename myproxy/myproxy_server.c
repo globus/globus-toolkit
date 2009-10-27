@@ -78,7 +78,8 @@ void respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 
 void send_response(myproxy_socket_attrs_t *server_attrs, 
 		   myproxy_response_t *response, 
-		   char *client_name);
+		   char *client_name,
+		   int ignore_net_error);
 
 void get_proxy(myproxy_socket_attrs_t *server_attrs, 
 	       myproxy_creds_t *creds,
@@ -671,7 +672,13 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
 	/* Send initial OK response */
         if (client_request->command_type != MYPROXY_GET_TRUSTROOTS) {
-            send_response(attrs, server_response, client.name);
+            send_response(attrs, server_response, client.name, 0);
+            /* Any trustroots wanted as addl. info would have been sent
+               in this send.  No need to send them again later. */
+            if (server_response->trusted_certs) {
+                myproxy_certs_free(server_response->trusted_certs);
+                server_response->trusted_certs = NULL;
+            }
         }
 
         if( client_request->command_type == MYPROXY_GET_PROXY )
@@ -722,7 +729,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	}
 
 	/* Send initial OK response */
-	send_response(attrs, server_response, client.name);
+	send_response(attrs, server_response, client.name, 0);
 
 	/* Store the credentials in the repository and
 	   set final server_response */
@@ -761,7 +768,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     case MYPROXY_STORE_CERT:
         /* Store the end-entity credential */
           /* Send initial OK response */
-          send_response(attrs, server_response, client.name);
+          send_response(attrs, server_response, client.name, 0);
  
           /* Store the credentials in the repository and
              set final server_response */
@@ -775,7 +782,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
     }
 
     /* return server response */
-    send_response(attrs, server_response, client.name);
+    /* ignore any send errors for this final OK message since currently some clients
+       may close without waiting for this terminating message to be received
+       due to a timing issue */
+    send_response(attrs, server_response, client.name, 1 /* ignore net errors */);
 
     /* Log request */
     myproxy_log("Client %s disconnected", client.name);
@@ -1012,7 +1022,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 }
 
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
-		   char *client_name)
+		   char *client_name, int ignore_net_error)
 {
     char *server_buffer = NULL;
     int responselen;
@@ -1037,8 +1047,13 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
     }
 
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
+        int error_number = GSI_SOCKET_get_errno(attrs->gsi_socket);
+
 	myproxy_log_verror();
-        my_failure_chld("error in myproxy_send()\n");
+        if (!(ignore_net_error &&
+              (error_number == EPIPE ||
+               error_number == ECONNRESET)))
+            my_failure_chld("error in myproxy_send()\n");
     } 
     free(response->version);
     response->version = NULL;
@@ -1892,7 +1907,7 @@ do_authz_handshake(myproxy_socket_attrs_t *attrs,
    myproxy_debug("sending MYPROXY_AUTHORIZATION_RESPONSE");
    authorization_init_server(&server_response.authorization_data, methods);
    server_response.response_type = MYPROXY_AUTHORIZATION_RESPONSE;
-   send_response(attrs, &server_response, client_name);
+   send_response(attrs, &server_response, client_name, 0);
 
    /* Wait for client's response. Its first four bytes are supposed to
       contain a specification of the method that the client chose for
