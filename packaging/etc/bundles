@@ -268,7 +268,6 @@ BUNDLE	prews-test
         globus_xio_test
 	gaa_simple_test
         globus_proxy_utils_test
-        globus_rls_test
         globus_gram_job_manager_auditing_test
 
 BUNDLE globus-gsi
