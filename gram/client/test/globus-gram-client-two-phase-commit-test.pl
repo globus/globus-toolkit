@@ -76,6 +76,7 @@ sub two_phase_test
             else
             {
                 print STDERR `globus-gass-cache -cleanup-tag $tag`;
+                system("globusrun", "-r", "$ENV{CONTACT_STRING}", "&(restart=$tag)");
             }
         }
         else

@@ -35,6 +35,12 @@
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
+
+            <Dependency Name="globus_gass_server_ez">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
@@ -47,6 +53,12 @@
             <Dependency Name="globus_gram_client">
                 <Version>
                     <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gass_server_ez">
+                <Version>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 

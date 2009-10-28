@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char * format = "&(executable=/bin/true)(two_phase=%d)";
+const char * format = "&(executable=/bin/sh)(two_phase=%d)";
 
 typedef struct
 {
