@@ -69,136 +69,161 @@ in that it allows interactive start\-up of GRAM jobs\&. However, unlike
 The full set of options to
 \fBglobus\-job\-run\fR
 are:
-.TS
-tab(:);
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l
-l l.
-T{
+.PP
 \-help | \-usage
-T}:T{
-.sp
+.RS 4
 Display a help message to standard error and exit\&.
-T}
-T{
+.RE
+.PP
 \-version
-T}:T{
-.sp
-Display the software version of the \fBglobus\-job\-run\fR program to standard output\&.
-T}
-T{
+.RS 4
+Display the software version of the
+\fBglobus\-job\-run\fR
+program to standard output\&.
+.RE
+.PP
 \-version
-T}:T{
-.sp
-Display the software version of the \fBglobus\-job\-run\fR program including DiRT information to standard output\&.
-T}
-T{
+.RS 4
+Display the software version of the
+\fBglobus\-job\-run\fR
+program including DiRT information to standard output\&.
+.RE
+.PP
 \-dumprsl
-T}:T{
-.sp
-Translate the command\-line options to \fBglobus\-job\-run\fR into an RSL expression that can be used with tools such as \fBglobusrun\fR\&.
-T}
-T{
+.RS 4
+Translate the command\-line options to
+\fBglobus\-job\-run\fR
+into an RSL expression that can be used with tools such as
+\fBglobusrun\fR\&.
+.RE
+.PP
 \-dryrun
-T}:T{
-.sp
-Submit the job request to the GRAM service with the dryrun option enabled\&. When this option is used, the GRAM service prepares to execute the job but stops before submitting the job to the LRM\&. This can be used to diagnose some problems such as missing files\&.
-T}
-T{
+.RS 4
+Submit the job request to the GRAM service with the
+dryrun
+option enabled\&. When this option is used, the GRAM service prepares to execute the job but stops before submitting the job to the LRM\&. This can be used to diagnose some problems such as missing files\&.
+.RE
+.PP
 \-verify
-T}:T{
-.sp
-Submit the job request to the GRAM service with the dryrun option enabled and then without it enabled if the dryrun is successful\&.
-T}
-T{
+.RS 4
+Submit the job request to the GRAM service with the
+dryrun
+option enabled and then without it enabled if the dryrun is successful\&.
+.RE
+.PP
 \-file \fIARGUMENT_FILE\fR
-T}:T{
-.sp
-Read additional command\-line options from \fIARGUMENT_FILE\fR\&.
-T}
-T{
+.RS 4
+Read additional command\-line options from
+\fIARGUMENT_FILE\fR\&.
+.RE
+.PP
 \-np \fIPROCESSES\fR | \-count \fIPROCESSES\fR
-T}:T{
-.sp
-Start \fIPROCESSES\fR instances of the executable as a single job\&.
-T}
-T{
+.RS 4
+Start
+\fIPROCESSES\fR
+instances of the executable as a single job\&.
+.RE
+.PP
 \-m \fIMAX_TIME\fR | \-maxtime \fIMAX_TIME\fR
-T}:T{
-.sp
-Schedule the job to run for a maximum of \fIMAX_TIME\fR minutes\&.
-T}
-T{
+.RS 4
+Schedule the job to run for a maximum of
+\fIMAX_TIME\fR
+minutes\&.
+.RE
+.PP
 \-p \fIPROJECT\fR | \-project \fIPROJECT\fR
-T}:T{
-.sp
-Request that the job use the allocation \fIPROJECT\fR when submitting the job to the LRM\&.
-T}
-T{
+.RS 4
+Request that the job use the allocation
+\fIPROJECT\fR
+when submitting the job to the LRM\&.
+.RE
+.PP
 \-q \fIQUEUE\fR | \-queue \fIQUEUE\fR
-T}:T{
-.sp
-Request that the job be submitted to the LRM using the named \fIQUEUE\fR\&.
-T}
-T{
+.RS 4
+Request that the job be submitted to the LRM using the named
+\fIQUEUE\fR\&.
+.RE
+.PP
 \-d \fIDIRECTORY\fR | \-directory \fIDIRECTORY\fR
-T}:T{
-.sp
-Run the job in the directory named by \fIDIRECTORY\fR\&. Input and output files will be interpreted relative to this directory\&. This directory must exist on the file system on the LRM\-managed resource\&. If not specified, the job will run in the home directory of the user the job is running as\&.
-T}
-T{
+.RS 4
+Run the job in the directory named by
+\fIDIRECTORY\fR\&. Input and output files will be interpreted relative to this directory\&. This directory must exist on the file system on the LRM\-managed resource\&. If not specified, the job will run in the home directory of the user the job is running as\&.
+.RE
+.PP
 \-env \fINAME\fR=\fIVALUE\fR
-T}:T{
-.sp
-Define an environment variable named by \fINAME\fR with the value \fIVALUE\fR in the job environment\&. This option may be specified multiple times to define multiple environment variables\&.
-T}
-T{
+.RS 4
+Define an environment variable named by
+\fINAME\fR
+with the value
+\fIVALUE\fR
+in the job environment\&. This option may be specified multiple times to define multiple environment variables\&.
+.RE
+.PP
 \-stdin [\-l | \-s] \fISTDIN_FILE\fR
-T}:T{
-.sp
-Use the file named by \fISTDIN_FILE\fR as the standard input of the job\&. If the \fB\-l\fR option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the \fB\-s\fR option is specified, then this file is interpreted to be on the file system where \fBglobus\-job\-run\fR is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
-T}
-T{
+.RS 4
+Use the file named by
+\fISTDIN_FILE\fR
+as the standard input of the job\&. If the
+\fB\-l\fR
+option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
+\fB\-s\fR
+option is specified, then this file is interpreted to be on the file system where
+\fBglobus\-job\-run\fR
+is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
+.RE
+.PP
 \-stdout [\-l | \-s] \fISTDOUT_FILE\fR
-T}:T{
-.sp
-Use the file named by \fISTDOUT_FILE\fR as the destination for the standard output of the job\&. If the \fB\-l\fR option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the \fB\-s\fR option is specified, then this file is interpreted to be on the file system where \fBglobus\-job\-run\fR is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
-T}
-T{
+.RS 4
+Use the file named by
+\fISTDOUT_FILE\fR
+as the destination for the standard output of the job\&. If the
+\fB\-l\fR
+option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
+\fB\-s\fR
+option is specified, then this file is interpreted to be on the file system where
+\fBglobus\-job\-run\fR
+is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
+.RE
+.PP
 \-stderr [\-l | \-s] \fISTDERR_FILE\fR
-T}:T{
-.sp
-Use the file named by \fISTDERR_FILE\fR as the destination for the standard error of the job\&. If the \fB\-l\fR option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the \fB\-s\fR option is specified, then this file is interpreted to be on the file system where \fBglobus\-job\-run\fR is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
-T}
-T{
+.RS 4
+Use the file named by
+\fISTDERR_FILE\fR
+as the destination for the standard error of the job\&. If the
+\fB\-l\fR
+option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
+\fB\-s\fR
+option is specified, then this file is interpreted to be on the file system where
+\fBglobus\-job\-run\fR
+is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
+.RE
+.PP
 \-x \fIRSL_CLAUSE\fR
-T}:T{
-.sp
-Add a set of custom RSL attributes described by \fIRSL_CLAUSE\fR to the job description\&. The clause must be an RSL conjunction and may contain one or more attributes\&. This can be used to include attributes which can not be defined by other command\-line options of \fBglobus\-job\-run\fR\&.
-T}
-T{
+.RS 4
+Add a set of custom RSL attributes described by
+\fIRSL_CLAUSE\fR
+to the job description\&. The clause must be an RSL conjunction and may contain one or more attributes\&. This can be used to include attributes which can not be defined by other command\-line options of
+\fBglobus\-job\-run\fR\&.
+.RE
+.PP
 \-l | \-s
-T}:T{
-.sp
-When included outside the context of \fB\-stdin\fR, \fB\-stdout\fR, or \fB\-stderr\fR command\-line options, \fB\-l\fR and \fB\-s\fR alter the interpretation of the executable path\&. If the \fB\-l\fR option is specified, then the executable is interpreted to be on a file system local to the LRM\&. If the \fB\-s\fR option is specified, then the executable is interpreted to be on the file system where \fBglobus\-job\-run\fR is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
-T}
-.TE
-.sp 1
+.RS 4
+When included outside the context of
+\fB\-stdin\fR,
+\fB\-stdout\fR, or
+\fB\-stderr\fR
+command\-line options,
+\fB\-l\fR
+and
+\fB\-s\fR
+alter the interpretation of the executable path\&. If the
+\fB\-l\fR
+option is specified, then the executable is interpreted to be on a file system local to the LRM\&. If the
+\fB\-s\fR
+option is specified, then the executable is interpreted to be on the file system where
+\fBglobus\-job\-run\fR
+is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
+.RE
 .SH "ENVIRONMENT"
 .PP
 If the following variables affect the execution of

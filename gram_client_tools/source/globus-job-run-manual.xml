@@ -120,156 +120,152 @@ parameters to define the job instead of RSL expressions.
 <para>
 The full set of options to <command>globus-job-run</command> are:
 
-<informaltable frame="none">
-    <tgroup cols="2" align="left">
-        <tbody>
-            <row>
-                <entry>-help | -usage</entry>
-                <entry><simpara>Display a help message to standard error and
-                exit.</simpara></entry>
-            </row>
-            <row>
-                <entry>-version</entry>
-                <entry><simpara>Display the software version of the
-                        <command>globus-job-run</command> program to
-                        standard output.</simpara></entry>
-            </row>
-            <row>
-                <entry>-version</entry>
-                <entry><simpara>Display the software version of the
-                <command>globus-job-run</command> program including DiRT
-                information to standard output.</simpara></entry>
-            </row>
-            <row>
-                <entry>-dumprsl</entry>
-                <entry><simpara>Translate the command-line options to
-                <command>globus-job-run</command> into an RSL expression
-                that can be used with tools such as
-                <command>globusrun</command>.</simpara></entry>
-            </row>
-            <row>
-                <entry>-dryrun</entry>
-                <entry><simpara>Submit the job request to the GRAM service
-                with the <literal>dryrun</literal> option enabled. When this
-                option is used, the GRAM service prepares to execute the job
-                but stops before submitting the job to the LRM. This can be
-                used to diagnose some problems such as missing files.
-                </simpara></entry>
-            </row>
-            <row>
-                <entry>-verify</entry>
-                <entry><simpara>Submit the job request to the GRAM service
-                with the <literal>dryrun</literal> option enabled and then
-                without it enabled if the dryrun is
-                successful.</simpara></entry>
-            </row>
-            <row>
-                <entry>-file <replaceable>ARGUMENT_FILE</replaceable></entry>
-                <entry><simpara>Read additional command-line options from
-                <replaceable>ARGUMENT_FILE</replaceable>.</simpara></entry>
-            </row>
-            <row>
-                <entry>-np <replaceable>PROCESSES</replaceable> | -count <replaceable>PROCESSES</replaceable></entry>
-                <entry><simpara>Start <replaceable>PROCESSES</replaceable>
-                instances of the executable as a single job.</simpara></entry>
-            </row>
-            <row>
-                <entry>-m <replaceable>MAX_TIME</replaceable> | -maxtime <replaceable>MAX_TIME</replaceable></entry>
-                <entry><simpara>Schedule the job to run for a maximum of
-                <replaceable>MAX_TIME</replaceable> minutes.</simpara></entry>
-            </row>
-            <row>
-                <entry>-p <replaceable>PROJECT</replaceable> | -project <replaceable>PROJECT</replaceable></entry>
-                <entry><simpara>Request that the job use the allocation
-                <replaceable>PROJECT</replaceable> when submitting the job
-                to the LRM.</simpara></entry>
-            </row>
-            <row>
-                <entry>-q <replaceable>QUEUE</replaceable> | -queue <replaceable>QUEUE</replaceable></entry>
-                <entry><simpara>Request that the job be submitted to the
-                LRM using the named <replaceable>QUEUE</replaceable>.
-                </simpara></entry>
-            </row>
-            <row>
-                <entry>-d <replaceable>DIRECTORY</replaceable> | -directory <replaceable>DIRECTORY</replaceable></entry>
-                <entry><simpara>Run the job in the directory named by 
-                <replaceable>DIRECTORY</replaceable>. Input and output files
-                will be interpreted relative to this directory. This directory
-                must exist on the file system on the LRM-managed
-                resource. If not specified, the job will run in the home
-                directory of the user the job is running as.</simpara></entry>
-            </row>
-            <row>
-                <entry>-env <replaceable>NAME</replaceable>=<replaceable>VALUE</replaceable></entry>
-                <entry><simpara>Define an environment variable named by 
-                <replaceable>NAME</replaceable> with the value
-                <replaceable>VALUE</replaceable> in the job environment. This
-                option may be specified multiple times to define multiple 
-                environment variables.</simpara></entry>
-            </row>
-            <row>
-                <entry>-stdin [-l | -s] <replaceable>STDIN_FILE</replaceable></entry>
-                <entry><simpara>Use the file named by
-                <replaceable>STDIN_FILE</replaceable> as the standard input
-                of the job. If the <option>-l</option> option is specified,
-                then this file is interpreted to be on a file system local
-                to the LRM. If the <option>-s</option> option is specified,
-                then this file is interpreted to be on the file system where
-                <command>globus-job-run</command> is being executed, and the
-                file will be staged via GASS. If neither is specified, the
-                local behavior is assumed.</simpara></entry>
-            </row>
-            <row>
-                <entry>-stdout [-l | -s] <replaceable>STDOUT_FILE</replaceable></entry>
-                <entry><simpara>Use the file named by
-                <replaceable>STDOUT_FILE</replaceable> as the destination for
-                the standard output of the job. If the <option>-l</option>
-                option is specified, then this file is interpreted to be on a
-                file system local to the LRM. If the <option>-s</option> option
-                is specified, then this file is interpreted to be on the file
-                system where <command>globus-job-run</command> is being
-                executed, and the file will be staged via GASS. If neither is
-                specified, the local behavior is assumed.</simpara></entry>
-            </row>
-            <row>
-                <entry>-stderr [-l | -s] <replaceable>STDERR_FILE</replaceable></entry>
-                <entry><simpara>Use the file named by
-                <replaceable>STDERR_FILE</replaceable> as the destination for
-                the standard error of the job. If the <option>-l</option>
-                option is specified, then this file is interpreted to be on a
-                file system local to the LRM. If the <option>-s</option> option
-                is specified, then this file is interpreted to be on the file
-                system where <command>globus-job-run</command> is being
-                executed, and the file will be staged via GASS. If neither is
-                specified, the local behavior is assumed.</simpara></entry>
-            </row>
-            <row>
-                <entry>-x <replaceable>RSL_CLAUSE</replaceable></entry>
-                <entry><simpara>Add a set of custom RSL attributes described
-                by <replaceable>RSL_CLAUSE</replaceable> to the job
-                description. The clause must be an RSL conjunction and may
-                contain one or more attributes. This can be used to include
-                attributes which can not be defined by other command-line
-                options of <command>globus-job-run</command>.</simpara></entry>
-            </row>
-            <row>
-                <entry>-l | -s</entry>
-                <entry><simpara>When included outside the context of
-                <option>-stdin</option>, <option>-stdout</option>, or
-                <option>-stderr</option> command-line options,
-                <option>-l</option> and <option>-s</option> alter the
-                interpretation of the executable path. If the
-                <option>-l</option> option is specified, then the executable is
-                interpreted to be on a file system local to the LRM. If the
-                <option>-s</option> option is specified, then the executable is
-                interpreted to be on the file system where
-                <command>globus-job-run</command> is being executed, and the
-                file will be staged via GASS. If neither is
-                specified, the local behavior is assumed.</simpara></entry>
-            </row>
-        </tbody>
-    </tgroup>
-</informaltable>
+<variablelist>
+    <varlistentry>
+        <term>-help | -usage</term>
+        <listitem><simpara>Display a help message to standard error and
+        exit.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-version</term>
+        <listitem><simpara>Display the software version of the
+                <command>globus-job-run</command> program to
+                standard output.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-version</term>
+        <listitem><simpara>Display the software version of the
+        <command>globus-job-run</command> program including DiRT
+        information to standard output.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-dumprsl</term>
+        <listitem><simpara>Translate the command-line options to
+        <command>globus-job-run</command> into an RSL expression
+        that can be used with tools such as
+        <command>globusrun</command>.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-dryrun</term>
+        <listitem><simpara>Submit the job request to the GRAM service
+        with the <literal>dryrun</literal> option enabled. When this
+        option is used, the GRAM service prepares to execute the job
+        but stops before submitting the job to the LRM. This can be
+        used to diagnose some problems such as missing files.
+        </simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-verify</term>
+        <listitem><simpara>Submit the job request to the GRAM service
+        with the <literal>dryrun</literal> option enabled and then
+        without it enabled if the dryrun is
+        successful.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-file <replaceable>ARGUMENT_FILE</replaceable></term>
+        <listitem><simpara>Read additional command-line options from
+        <replaceable>ARGUMENT_FILE</replaceable>.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-np <replaceable>PROCESSES</replaceable> | -count <replaceable>PROCESSES</replaceable></term>
+        <listitem><simpara>Start <replaceable>PROCESSES</replaceable>
+        instances of the executable as a single job.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-m <replaceable>MAX_TIME</replaceable> | -maxtime <replaceable>MAX_TIME</replaceable></term>
+        <listitem><simpara>Schedule the job to run for a maximum of
+        <replaceable>MAX_TIME</replaceable> minutes.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-p <replaceable>PROJECT</replaceable> | -project <replaceable>PROJECT</replaceable></term>
+        <listitem><simpara>Request that the job use the allocation
+        <replaceable>PROJECT</replaceable> when submitting the job
+        to the LRM.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-q <replaceable>QUEUE</replaceable> | -queue <replaceable>QUEUE</replaceable></term>
+        <listitem><simpara>Request that the job be submitted to the
+        LRM using the named <replaceable>QUEUE</replaceable>.
+        </simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-d <replaceable>DIRECTORY</replaceable> | -directory <replaceable>DIRECTORY</replaceable></term>
+        <listitem><simpara>Run the job in the directory named by 
+        <replaceable>DIRECTORY</replaceable>. Input and output files
+        will be interpreted relative to this directory. This directory
+        must exist on the file system on the LRM-managed
+        resource. If not specified, the job will run in the home
+        directory of the user the job is running as.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-env <replaceable>NAME</replaceable>=<replaceable>VALUE</replaceable></term>
+        <listitem><simpara>Define an environment variable named by 
+        <replaceable>NAME</replaceable> with the value
+        <replaceable>VALUE</replaceable> in the job environment. This
+        option may be specified multiple times to define multiple 
+        environment variables.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-stdin [-l | -s] <replaceable>STDIN_FILE</replaceable></term>
+        <listitem><simpara>Use the file named by
+        <replaceable>STDIN_FILE</replaceable> as the standard input
+        of the job. If the <option>-l</option> option is specified,
+        then this file is interpreted to be on a file system local
+        to the LRM. If the <option>-s</option> option is specified,
+        then this file is interpreted to be on the file system where
+        <command>globus-job-run</command> is being executed, and the
+        file will be staged via GASS. If neither is specified, the
+        local behavior is assumed.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-stdout [-l | -s] <replaceable>STDOUT_FILE</replaceable></term>
+        <listitem><simpara>Use the file named by
+        <replaceable>STDOUT_FILE</replaceable> as the destination for
+        the standard output of the job. If the <option>-l</option>
+        option is specified, then this file is interpreted to be on a
+        file system local to the LRM. If the <option>-s</option> option
+        is specified, then this file is interpreted to be on the file
+        system where <command>globus-job-run</command> is being
+        executed, and the file will be staged via GASS. If neither is
+        specified, the local behavior is assumed.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-stderr [-l | -s] <replaceable>STDERR_FILE</replaceable></term>
+        <listitem><simpara>Use the file named by
+        <replaceable>STDERR_FILE</replaceable> as the destination for
+        the standard error of the job. If the <option>-l</option>
+        option is specified, then this file is interpreted to be on a
+        file system local to the LRM. If the <option>-s</option> option
+        is specified, then this file is interpreted to be on the file
+        system where <command>globus-job-run</command> is being
+        executed, and the file will be staged via GASS. If neither is
+        specified, the local behavior is assumed.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-x <replaceable>RSL_CLAUSE</replaceable></term>
+        <listitem><simpara>Add a set of custom RSL attributes described
+        by <replaceable>RSL_CLAUSE</replaceable> to the job
+        description. The clause must be an RSL conjunction and may
+        contain one or more attributes. This can be used to include
+        attributes which can not be defined by other command-line
+        options of <command>globus-job-run</command>.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-l | -s</term>
+        <listitem><simpara>When included outside the context of
+        <option>-stdin</option>, <option>-stdout</option>, or
+        <option>-stderr</option> command-line options,
+        <option>-l</option> and <option>-s</option> alter the
+        interpretation of the executable path. If the
+        <option>-l</option> option is specified, then the executable is
+        interpreted to be on a file system local to the LRM. If the
+        <option>-s</option> option is specified, then the executable is
+        interpreted to be on the file system where
+        <command>globus-job-run</command> is being executed, and the
+        file will be staged via GASS. If neither is
+        specified, the local behavior is assumed.</simpara></listitem>
+    </varlistentry>
+</variablelist>
 </para>
 </refsect1>
 
