@@ -43,12 +43,6 @@ enum
     GRAM_JOB_MANAGER_COMMIT_TIMEOUT=60
 };
 
-
-static
-int
-globus_l_gram_symbol_table_populate(
-    globus_gram_jobmanager_request_t *  request);
-
 static
 int
 globus_l_gram_symboltable_add(
@@ -282,7 +276,9 @@ globus_gram_job_manager_request_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto symboltable_create_scope_failed;
     }
-    rc = globus_l_gram_symbol_table_populate(r);
+    rc = globus_i_gram_symbol_table_populate(
+            r->config,
+            &r->symbol_table);
     if (rc != GLOBUS_SUCCESS)
     {
         goto symboltable_populate_failed;
@@ -464,7 +460,7 @@ globus_gram_job_manager_request_init(
     }
 
     rc = globus_gram_job_manager_rsl_eval_string(
-            r,
+            &r->symbol_table,
             r->config->scratch_dir_base,
             &r->scratch_dir_base);
     if(rc != GLOBUS_SUCCESS)
@@ -1602,28 +1598,28 @@ globus_gram_job_manager_request_acct(
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
  *     Malloc failed
  */
-static
 int
-globus_l_gram_symbol_table_populate(
-    globus_gram_jobmanager_request_t *  request)
+globus_i_gram_symbol_table_populate(
+    globus_gram_job_manager_config_t *  config,
+    globus_symboltable_t *              symbol_table)
 {
     int                                 rc = GLOBUS_SUCCESS;
     int                                 i;
     struct { char * symbol; char *value; } symbols[] =
     {
-        { "HOME", request->config->home },
-        { "LOGNAME", request->config->logname },
-        { "GLOBUS_ID", request->config->subject },
-        { "GLOBUS_HOST_MANUFACTURER",request->config->globus_host_manufacturer},
-        { "GLOBUS_HOST_CPUTYPE",request->config->globus_host_cputype},
-        { "GLOBUS_HOST_OSNAME",request->config->globus_host_osname},
-        { "GLOBUS_HOST_OSVERSION",request->config->globus_host_osversion},
-        { "GLOBUS_GATEKEEPER_HOST",request->config->globus_gatekeeper_host},
-        { "GLOBUS_GATEKEEPER_PORT",request->config->globus_gatekeeper_port},
-        { "GLOBUS_GATEKEEPER_SUBJECT",request->config->globus_gatekeeper_subject},
-        { "GLOBUS_LOCATION", request->config->target_globus_location },
-        { "GLOBUS_CONDOR_OS", request->config->condor_os },
-        { "GLOBUS_CONDOR_ARCH", request->config->condor_arch },
+        { "HOME", config->home },
+        { "LOGNAME", config->logname },
+        { "GLOBUS_ID", config->subject },
+        { "GLOBUS_HOST_MANUFACTURER",config->globus_host_manufacturer},
+        { "GLOBUS_HOST_CPUTYPE",config->globus_host_cputype},
+        { "GLOBUS_HOST_OSNAME",config->globus_host_osname},
+        { "GLOBUS_HOST_OSVERSION",config->globus_host_osversion},
+        { "GLOBUS_GATEKEEPER_HOST",config->globus_gatekeeper_host},
+        { "GLOBUS_GATEKEEPER_PORT",config->globus_gatekeeper_port},
+        { "GLOBUS_GATEKEEPER_SUBJECT",config->globus_gatekeeper_subject},
+        { "GLOBUS_LOCATION", config->target_globus_location },
+        { "GLOBUS_CONDOR_OS", config->condor_os },
+        { "GLOBUS_CONDOR_ARCH", config->condor_arch },
         /* Others are job dependent values inserted after they are computed:
          * - GLOBUS_GRAM_JOB_CONTACT
          * - GLOBUS_CACHED_STDOUT
@@ -1637,7 +1633,7 @@ globus_l_gram_symbol_table_populate(
     for (i = 0; symbols[i].symbol != NULL; i++)
     {
         rc = globus_l_gram_symboltable_add(
-                &request->symbol_table,
+                symbol_table,
                 symbols[i].symbol,
                 symbols[i].value);
         if (rc != GLOBUS_SUCCESS)
@@ -1651,7 +1647,7 @@ failed_insert_symbol:
         for (--i; i >=0; i--)
         {
             globus_symboltable_remove(
-                    &request->symbol_table,
+                    symbol_table,
                     symbols[i].symbol);
         }
     }
@@ -1884,7 +1880,7 @@ globus_l_gram_init_cache(
          * eval and use it
          */
         rc = globus_gram_job_manager_rsl_eval_string(
-                request,
+                &request->symbol_table,
                 request->config->cache_location,
                 cache_locationp);
 

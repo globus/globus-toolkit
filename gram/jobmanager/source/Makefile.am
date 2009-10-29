@@ -53,6 +53,14 @@ man1data_DATA = globus-personal-gatekeeper.1
 man8datadir=$(mandir)/man8
 man8data_DATA = globus-job-manager.8
 
+man5datadir=$(mandir)/man5
+man5data_DATA = rsl.5
+
+MANUAL_SOURCE = globus-personal-gatekeeper-manual.xml \
+                globus-job-manager-manual.xml \
+                manual.xml \
+                rsl.xml
+
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper \
 	     $(validation_DATA) \
@@ -64,7 +72,10 @@ EXTRA_DIST = globus-personal-gatekeeper \
 	     globus_gram_job_manager_script_tutorial.dox \
 	     globus_job_manager_rsl_validation.dox \
 	     job_execution_environment.dox \
-             manual.xml $(man1data_DATA) $(man8data_DATA) \
+             $(MANUAL_SOURCE) \
+             $(man1data_DATA) \
+             $(man5data_DATA) \
+             $(man8data_DATA) \
 	     main.dox \
 	     dirt.sh
 
@@ -76,11 +87,17 @@ globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	perl scripts/create_rsl_documentation.pl \
 	    < globus-gram-job-manager.rvf \
 	    > globus_gram_job_manager_rsl.dox
+rsl.xml: globus-gram-job-manager.rvf
+	perl scripts/create_rsl_documentation.pl -x \
+	    < globus-gram-job-manager.rvf \
+	    > rsl.xml
 
 if GENERATE_MANPAGES
-$(man1data_DATA) $(man8data_DATA): manual.xml
-	$(XMLLINT) --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml
-	$(XSLTPROC) http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
+export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
+
+$(man1data_DATA) $(man5data_DATA) $(man8data_DATA): $(MANUAL_SOURCE)
+	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
+	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
 endif
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -747,6 +747,21 @@ globus_l_gram_job_manager_signal(
     globus_gram_job_manager_query_t *   query;
     globus_result_t                     result;
 
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.signal.start "
+            "level=DEBUG "
+            "gramid=%s "
+            "signal=\"%s\" "
+            "msg=\"%s\" "
+            "jmstate=%s "
+            "\n",
+            request->job_contact_path,
+            args,
+            "GRAM signal",
+            globus_i_gram_job_manager_state_strings[request->jobmanager_state]);
+
     *reply = GLOBUS_TRUE;
     if(args == NULL || sscanf(args, "%d", &signal) != 1)
     {
@@ -766,6 +781,25 @@ globus_l_gram_job_manager_signal(
         if(!after_signal || strlen(after_signal) == 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Missing signal argument",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
             break;
         }
         query = calloc(1, sizeof(globus_gram_job_manager_query_t));
@@ -776,6 +810,32 @@ globus_l_gram_job_manager_signal(
         if(after_signal)
         {
             query->signal_arg = strdup(after_signal);
+            if (query->signal_arg == NULL)
+            {
+                free(query);
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.signal.end "
+                        "level=WARN "
+                        "gramid=%s "
+                        "signal=\"%s\" "
+                        "jmstate=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        args,
+                        globus_i_gram_job_manager_state_strings[
+                                request->jobmanager_state],
+                        "malloc failed",
+                        -rc,
+                        globus_gram_protocol_error_string(rc));
+                break;
+            }
         }
 
         if(!globus_l_gram_job_manager_query_valid(request))
@@ -787,6 +847,26 @@ globus_l_gram_job_manager_signal(
             free(query);
 
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Invalid query",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
             break;
         }
 
@@ -824,10 +904,31 @@ globus_l_gram_job_manager_signal(
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT;
 
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Two-phase commit signal when job doesn't have two_phase timeout",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
             break;
         }
         else if(request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE ||
+		request->jobmanager_state == 
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_START)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
@@ -856,6 +957,25 @@ globus_l_gram_job_manager_signal(
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
 
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Two-phase commit signal in invalid jobmanager state",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
             break;
         }
         if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
@@ -871,10 +991,50 @@ globus_l_gram_job_manager_signal(
         if ((!after_signal) || (strlen(after_signal) == 0))
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Missing argument to commit extend signal",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
         }
         else if(request->two_phase_commit == 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Two-phase commit extend signal when job doesn't have two_phase timeout",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
         }
         else if((request->jobmanager_state ==
                  GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE) ||
@@ -910,6 +1070,25 @@ globus_l_gram_job_manager_signal(
             if (rc != GLOBUS_SUCCESS)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.signal.end "
+                        "level=WARN "
+                        "gramid=%s "
+                        "signal=\"%s\" "
+                        "jmstate=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        args,
+                        globus_i_gram_job_manager_state_strings[
+                                request->jobmanager_state],
+                        "Stdio size signal when stdout not in RSL",
+                        -rc,
+                        globus_gram_protocol_error_string(rc));
                 break;
             }
             rc = globus_gram_job_manager_rsl_attribute_get_string_value(
@@ -919,11 +1098,49 @@ globus_l_gram_job_manager_signal(
             if (rc != GLOBUS_SUCCESS)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.signal.end "
+                        "level=WARN "
+                        "gramid=%s "
+                        "signal=\"%s\" "
+                        "jmstate=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        args,
+                        globus_i_gram_job_manager_state_strings[
+                                request->jobmanager_state],
+                        "Stdio size signal when stderr not in RSL",
+                        -rc,
+                        globus_gram_protocol_error_string(rc));
                 break;
             }
             if (!globus_list_empty(request->stage_stream_todo))
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.signal.end "
+                        "level=WARN "
+                        "gramid=%s "
+                        "signal=\"%s\" "
+                        "jmstate=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        args,
+                        globus_i_gram_job_manager_state_strings[
+                                request->jobmanager_state],
+                        "Stdio size signal when output still streaming",
+                        -rc,
+                        globus_gram_protocol_error_string(rc));
                 break;
             }
             if (strcmp(local_stdout, request->cached_stdout) == 0)
@@ -933,6 +1150,27 @@ globus_l_gram_job_manager_signal(
                 if (rc < 0)
                 {
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                    globus_gram_job_manager_request_log(
+                            request,
+                            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                            "event=gram.signal.end "
+                            "level=WARN "
+                            "gramid=%s "
+                            "signal=\"%s\" "
+                            "jmstate=%s "
+                            "msg=\"%s\" "
+                            "status=%d "
+                            "errno=%d "
+                            "reason=\"%s\" "
+                            "\n",
+                            request->job_contact_path,
+                            args,
+                            globus_i_gram_job_manager_state_strings[
+                                    request->jobmanager_state],
+                            "Unable get stdout file size",
+                            -rc,
+                            errno,
+                            strerror(errno));
                     break;
                 }
                 local_size_stdout = st.st_size;
@@ -945,6 +1183,27 @@ globus_l_gram_job_manager_signal(
                 if (rc < 0)
                 {
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_QUERY;
+                    globus_gram_job_manager_request_log(
+                            request,
+                            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                            "event=gram.signal.end "
+                            "level=WARN "
+                            "gramid=%s "
+                            "signal=\"%s\" "
+                            "jmstate=%s "
+                            "msg=\"%s\" "
+                            "status=%d "
+                            "errno=%d "
+                            "reason=\"%s\" "
+                            "\n",
+                            request->job_contact_path,
+                            args,
+                            globus_i_gram_job_manager_state_strings[
+                                    request->jobmanager_state],
+                            "Unable get stderr file size",
+                            -rc,
+                            errno,
+                            strerror(errno));
                     break;
                 }
                 local_size_stderr = st.st_size;
@@ -952,10 +1211,56 @@ globus_l_gram_job_manager_signal(
             else if (out_size >= 0 && out_size != local_size_stdout)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.signal.end "
+                        "level=WARN "
+                        "gramid=%s "
+                        "signal=\"%s\" "
+                        "jmstate=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "stdout_signal_size=%d "
+                        "stdout_actual_size=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        args,
+                        globus_i_gram_job_manager_state_strings[
+                                request->jobmanager_state],
+                        "Stdout size mismatch"
+                        -rc,
+                        out_size,
+                        local_size_stdout,
+                        globus_gram_protocol_error_string(rc));
             }
             else if (err_size >= 0 && err_size != local_size_stderr)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.signal.end "
+                        "level=WARN "
+                        "gramid=%s "
+                        "signal=\"%s\" "
+                        "jmstate=%s "
+                        "msg=\"%s\" "
+                        "status=%d "
+                        "stdout_signal_size=%d "
+                        "stdout_actual_size=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        args,
+                        globus_i_gram_job_manager_state_strings[
+                                request->jobmanager_state],
+                        "Stderr size mismatch"
+                        -rc,
+                        err_size,
+                        local_size_stderr,
+                        globus_gram_protocol_error_string(rc));
             }
             else
             {
@@ -965,15 +1270,102 @@ globus_l_gram_job_manager_signal(
         else
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Missing argument to stdio_size signal",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
         }
         break;
 
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STOP_MANAGER:
         rc = globus_l_gram_job_manager_query_stop_manager(request);
 
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Error stopping manager",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+        }
+
         break;
     default:
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_UNKNOWN_SIGNAL_TYPE;
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Unknown signal",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+        }
+    }
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                "event=gram.signal.end "
+                "level=DEBUG "
+                "gramid=%s "
+                "signal=\"%s\" "
+                "jmstate=%s "
+                "msg=\"%s\" "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                args,
+                globus_i_gram_job_manager_state_strings[
+                        request->jobmanager_state],
+                "Signal processed or queued",
+                0,
+                globus_gram_protocol_error_string(rc));
     }
     return rc;
 }

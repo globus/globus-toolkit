@@ -46,9 +46,6 @@ globus_l_gram_tokenize(
  *     Count of command-line arguments to the job manager.
  * @param argv
  *     Array of command-line arguments to the job manager.
- * @param rsl
- *     Out: Value of RSL specified in the command-line arguments. NULL if
- *     RSL is not specified.
  *
  * @retval GLOBUS_SUCCESS
  *     Success
@@ -59,8 +56,7 @@ int
 globus_gram_job_manager_config_init(
     globus_gram_job_manager_config_t *  config,
     int                                 argc,
-    char **                             argv,
-    char **                             rsl)
+    char **                             argv)
 {
     int                                 i;
     int                                 rc = 0;
@@ -68,9 +64,6 @@ globus_gram_job_manager_config_init(
     char *                              conf_path;
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
-
-    *rsl = NULL;
-    config->single = GLOBUS_TRUE;
 
     /* if -conf is passed then get the arguments from the file
      * specified
@@ -150,31 +143,18 @@ globus_gram_job_manager_config_init(
     config->log_levels = GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL
                        | GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
 
+    /* Default to sending usage stats to the globus.org service. This can be
+     * disabled by using -disable-usagestats in the configuration or
+     * by setting a different usagestats target by using 
+     * -usagestats-targets in the configuration
+     */
+    config->usage_targets = strdup("usage-stats.globus.org:4810");
     /*
      * Parse the command line arguments
      */
     for (i = 1; i < argc; i++)
     {
-        if(strcmp(argv[i], "-rsl") == 0)
-        {
-            if(i + 1 < argc)
-            {
-                *rsl = strdup(argv[++i]);
-            }
-            else
-            {
-                globus_gram_job_manager_request_log(
-                        NULL,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
-                        "event=gram.config.end level=FATAL path=\"%s\" " 
-                        "status=-1 msg=\"%s\" option=%s\n",
-                        conf_path,
-                        "Missing argument",
-                        "-rsl");
-                exit(1);
-            }
-        }
-        else if (strcmp(argv[i], "-k") == 0)
+        if (strcmp(argv[i], "-k") == 0)
         {
             config->kerberos = GLOBUS_TRUE;
         }
@@ -285,10 +265,6 @@ globus_gram_job_manager_config_init(
         {
             config->streaming_disabled = GLOBUS_TRUE;
         }
-        else if (strcmp(argv[i], "-non-single") == 0)
-        {
-            config->single = GLOBUS_FALSE;
-        }
         else if (strcmp(argv[i], "-service-tag") == 0
                 && (i+1 < argc))
         {
@@ -346,6 +322,11 @@ globus_gram_job_manager_config_init(
         else if (strcmp(argv[i], "-usagestats-targets") == 0
                 && (i+1 < argc))
         {
+            if (config->usage_targets)
+            {
+                free(config->usage_targets);
+                config->usage_targets = NULL;
+            }
             config->usage_targets = strdup(argv[++i]);
         }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
@@ -384,7 +365,6 @@ globus_gram_job_manager_config_init(
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
                     "\t-usagestats-targets <host:port>[!<default | all>],...\n"
-                    "\t-non-single\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"

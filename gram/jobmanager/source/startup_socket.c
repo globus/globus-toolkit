@@ -91,11 +91,6 @@ globus_gram_job_manager_startup_socket_init(
     FILE *                              fp;
     enum { GRAM_RETRIES = 100 };
 
-    if (!manager->config->single)
-    {
-        return GLOBUS_SUCCESS;
-    }
-
     globus_gram_job_manager_log(
             manager,
             GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -1100,15 +1095,30 @@ globus_l_gram_startup_socket_callback(
 
         if (rc < 0)
         {
+            int level;
+            char * levelstr;
             done = GLOBUS_TRUE;
 
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
+            if (manager->done)
+            {
+                level = GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE;
+                levelstr = "TRACE";
+            }
+            else if (accepted == 0)
+            {
+                level = GLOBUS_GRAM_JOB_MANAGER_LOG_WARN;
+                levelstr = "WARN";
+            }
+            else
+            {
+                level = GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG;
+                levelstr = "DEBUG";
+            }
             globus_gram_job_manager_log(
                     manager,
-                    (accepted == 0)
-                        ? GLOBUS_GRAM_JOB_MANAGER_LOG_WARN
-                        : GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    level,
                     "event=gram.new_request.end "
                     "level=%s "
                     "fd=%d "
@@ -1117,7 +1127,7 @@ globus_l_gram_startup_socket_callback(
                     "errno=%d "
                     "reason=\"%s\" "
                     "\n",
-                    (accepted == 0) ? "WARN" : "DEBUG",
+                    levelstr,
                     manager->socket_fd,
                     "recvmsg failed",
                     -rc,
@@ -1358,13 +1368,17 @@ globus_l_gram_startup_socket_callback(
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE &&
                 old_job_request)
             {
-                if (old_job_request->two_phase_commit != 0)
+                if (old_job_request->status ==
+                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED )
                 {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
+                    rc = old_job_request->failure_code;
                 }
-                else
+                else if (old_job_request->two_phase_commit != 0) 
                 {
-                    rc = GLOBUS_SUCCESS;
+                    /*
+                     * Condor-G expects waiting for commit message on restarts.
+                     */
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
                 }
                 globus_gram_job_manager_log(
                         manager,
@@ -1374,30 +1388,22 @@ globus_l_gram_startup_socket_callback(
                         "gramid=%s "
                         "msg=\"%s\" "
                         "response=%d "
+                        "job_state=%d "
+                        "job_manager_state=%s "
+                        "job_manager_restart_state=%s "
                         "\n",
                         old_job_request->job_contact_path,
                         "Restarting already restarted request",
-                        rc);
+                        rc,
+                        old_job_request->status,
+                        globus_i_gram_job_manager_state_strings[
+                                old_job_request->jobmanager_state],
+                        globus_i_gram_job_manager_state_strings[
+                                old_job_request->restart_state]);
             }
-            else if (old_job_request)
+            else if(rc != GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
             {
-                globus_gram_job_manager_log(
-                        manager,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-                        "event=gram.new_request.info "
-                        "level=DEBUG "
-                        "gramid=%s "
-                        "msg=\"%s\" "
-                        "response=%d "
-                        "\n",
-                        old_job_request->job_contact_path
-                                ? old_job_request->job_contact_path
-                                : "",
-                        globus_gram_protocol_error_string(rc),
-                        rc);
-            }
-            else
-            {
+                assert(old_job_request == NULL);
                 globus_i_gram_send_job_failure_stats(manager, rc);
                 globus_gram_job_manager_log(
                         manager,
@@ -1431,25 +1437,70 @@ globus_l_gram_startup_socket_callback(
 
             if (old_job_request)
             {
+                /* This occurs when a client tries to restart a job that
+                 * we found during the load_all when this process started.
+                 *
+                 * We'll return information to the client about the job and
+                 * make sure the job manager knows about the client
+                 * contact/mask.
+                 *
+                 * If it is in a STOP state or two-phase end state, then we
+                 * need to fake the restart by setting the state to just after
+                 * two-phase commit and let the restart logic in the state
+                 * machine pick it up from there.
+                 * 
+                 * Additionally, in the STOP state, we need to register the
+                 * state machine.
+                 */
+                globus_gram_job_manager_contact_add(
+                        old_job_request,
+                        contact,
+                        job_state_mask);
+                
                 if (old_job_request->jobmanager_state ==
                         GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
                 {
-                    if (old_job_request->two_phase_commit != 0)
+                    if (old_job_request->jm_restart)
                     {
-                        old_job_request->jobmanager_state =
-                            GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+                        free(old_job_request->jm_restart);
                     }
-                    else
-                    {
-                        old_job_request->jobmanager_state =
-                                old_job_request->restart_state;
-                    }
+                    old_job_request->jm_restart = strdup(
+                            old_job_request->job_contact);
 
+                    /* In GLOBUS_GRAM_JOB_MANAGER_STATE_START,
+                     * the state machine jumps to the current restart state
+                     * based on the value in the state file after receiving
+                     * a two-phase commit signal
+                     */
+                    old_job_request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+
+                    /* If the job is in another state, we'll assume that it's
+                     * already being handled by the state machine
+                     */
+                    globus_gram_job_manager_state_machine_register(
+                            old_job_request->manager,
+                            old_job_request,
+                            NULL);
                 }
-                globus_gram_job_manager_state_machine_register(
-                        old_job_request->manager,
-                        old_job_request,
-                        NULL);
+                else if (old_job_request->jobmanager_state ==
+                                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
+                         old_job_request->jobmanager_state ==
+                                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)
+                {
+                    if (old_job_request->jm_restart)
+                    {
+                        free(old_job_request->jm_restart);
+                    }
+                    old_job_request->jm_restart = strdup(old_job_request->job_contact);
+
+                    /* In GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED,
+                     * the state machine jumps to the current restart state
+                     * based on the value in the state file.
+                     */
+                    old_job_request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_START;
+                }
 
                 globus_gram_job_manager_remove_reference(
                         old_job_request->manager,

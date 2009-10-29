@@ -287,10 +287,6 @@ typedef struct
      */
     int                                 proxy_timeout;
     /**
-     * Use the single job manager per user / jobmanager type feature
-     */
-    globus_bool_t                       single;
-    /**
      * Events to record to syslog/log file
      */
     globus_gram_job_manager_log_level_t log_levels;
@@ -740,8 +736,7 @@ int
 globus_gram_job_manager_config_init(
     globus_gram_job_manager_config_t *  config,
     int                                 argc,
-    char **                             argv,
-    char **                             rsl);
+    char **                             argv);
 
 void
 globus_gram_job_manager_config_destroy(
@@ -870,13 +865,17 @@ globus_gram_rewrite_output_as_staging(
 int
 globus_gram_job_manager_request_load_all(
     globus_gram_job_manager_t *         manager,
-    globus_gram_jobmanager_request_t *  initial_request,
     globus_list_t **                    requests);
 
 int
 globus_i_gram_request_stdio_update(
     globus_gram_jobmanager_request_t *  request,
     globus_rsl_t *                      update_rsl);
+
+int
+globus_i_gram_symbol_table_populate(
+    globus_gram_job_manager_config_t *  config,
+    globus_symboltable_t *              symbol_table);
 
 /* globus_gram_job_manager_validate.c */
 
@@ -940,6 +939,9 @@ globus_gram_job_manager_read_callback_contacts(
     FILE *                              fp);
 
 /* globus_gram_job_manager_state.c */
+extern
+const char *                            globus_i_gram_job_manager_state_strings[];
+
 int
 globus_gram_job_manager_read_request(
     globus_gram_job_manager_t *         manager,
@@ -1133,19 +1135,18 @@ globus_gram_job_manager_rsl_add_relation(
 
 int
 globus_gram_job_manager_rsl_parse_value(
-    globus_gram_jobmanager_request_t *  request,
     char *                              value_string,
     globus_rsl_value_t **               rsl_value);
 
 int
 globus_gram_job_manager_rsl_evaluate_value(
-    globus_gram_jobmanager_request_t *  request,
+    globus_symboltable_t *              symbol_table,
     globus_rsl_value_t *                value,
     char **                             value_string);
 
 int
 globus_gram_job_manager_rsl_eval_string(
-    globus_gram_jobmanager_request_t *  request,
+    globus_symboltable_t *              symbol_table,
     char *                              string,
     char **                             value_string);
 
