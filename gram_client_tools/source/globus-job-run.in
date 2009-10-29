@@ -34,7 +34,7 @@ DIRT_BRANCH_ID='@DIRT_BRANCH_ID@'
 
 case "$PROGRAM_NAME" in
 *-run)
-   short_usage="$PROGRAM_NAME {[-:] <contact string> [-np N] <executable> [<arg>...]}..."
+   short_usage="$PROGRAM_NAME <contact string> [-np N] <executable> [<arg>...]"
    std_file_statement="default to stdout/stdout of $PROGRAM_NAME."
    ;;
 *-submit)
@@ -49,22 +49,13 @@ ${GLOBUS_SH_CAT-cat} >&2 <<EOF
 
 Usage: $PROGRAM_NAME
       [-help|-usage]                     print usage and exit
-      [-version]                         print version and exit
+      [-version[s]]                      print version and exit
 Usage: $PROGRAM_NAME
       [-dumprsl]                         output RSL, don't run job
       [-dryrun]                          verify RSL, don't run job
       [-verify]                          perform dryrun, then run job
       [-file             file]           read rest of arguments from file
-      [-stdin    [-l|-s] file]           global input default
-      [-stdout   [-l|-s] file]           global output default
-      [-stderr   [-l|-s] file]           global error output default
-      [-env              name=value]...  global environment default
-      [-args             [jobarg]...]    job-wide arguments
-      [ host-clause  |                   job description
-        -: host-clause...]               subjob description (multi-req)
-
-host-clause syntax:
-      { contact string                   only the hostname is required.
+      contact string                     only the hostname is required.
         [-np             N]              number of processing elements
         [-count          N]              same as -np
         [-host-count     nodes]          number of SMP nodes (IBM SP)
@@ -99,24 +90,6 @@ host-clause syntax:
        hostname/service:subject
        hostname:/service:subject
        hostname:port/service:subject
-
-   More than one host-clause can be specified, in which case the job runs
-   on all of the hosts simultaneously.
-
-   The host clause begins with '-:' for a multi-request, and the contact string
-   of the remote resource for a single request. It allows any of the
-   specified options in any order. The first unrecognized (non-flagged)
-   term  is treated as the executable, with arguments following immediately
-   after.
-
-   In the multi-request case, arguments may be specified specifically for
-   each host-clause by appending them after the name of the executable, or
-   job-wide with the -args flag. In either case, arguments continue until
-   the end of the command-line or until the next '-:' flag signifying
-   a new host-clause.
-
-   Two '-:' flags in a row are interpreted as an escaped '-:' and the host-
-   clause continues until the next unpaired '-:' flag or end of input.
 
    If more than one setting is defined (such as two -stdin definitions),
    the setting defined last on the command line will be used.
@@ -425,22 +398,10 @@ parse_user_args ()
     shift_count=0
     temp_arguments=""
     while ${GLOBUS_SH_EXPR-expr} "$#" \> 0 > /dev/null 2> /dev/null ; do
-	if [ "$1" = "-:" ] ; then
-	    if [ "$2" = "-:" ] ; then
-		shift 2
-		shift_count=`${GLOBUS_SH_EXPR-expr} "$shift_count" + 2 2> /dev/null`
-		arg="\"-:\""
-		temp_arguments="${temp_arguments} ${arg}"
-	    else
-		echo "$temp_arguments"
-		return $shift_count
-	    fi
-	else
-	    arg=`echo "$1" | stringify`
-	    temp_arguments="${temp_arguments} ${arg}"
-	    shift
-	    shift_count=`${GLOBUS_SH_EXPR-expr} "$shift_count" + 1 2> /dev/null`
-	fi
+        arg=`echo "$1" | stringify`
+        temp_arguments="${temp_arguments} ${arg}"
+        shift
+        shift_count=`${GLOBUS_SH_EXPR-expr} "$shift_count" + 1 2> /dev/null`
     done
 
     echo "$temp_arguments"
@@ -581,7 +542,7 @@ parse_hostclause ()
 	    esac
 	    #
 	    # this should be  [-l|-s] executable [args...]
-	    # where [args...] is terminated by EOL or a single -:
+	    # where [args...] is terminated by EOL
 	    #
 	    # fileopt() needs a "executable" option first though.
 	    #
@@ -600,14 +561,7 @@ parse_hostclause ()
 	    # and now the arguments...
 	    #
 	    while [ ! "$#" = "0" ]; do
-		if [ "$1" = "-:" ]; then
-		    if [ $# -ge 2 -a "$2" = "-:" ] ; then
-			shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
-			shift
-		    else
-			break
-		    fi
-                elif [ "$1" = "--" ]; then
+                if [ "$1" = "--" ]; then
                     shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
                     if [ $# -ge 2 -a "$2" = "--" ]; then
                         shift
@@ -653,76 +607,6 @@ parse_global_opts ()
 	    shift
 	    job_verify=true
 	    job_submit=true
-	    ;;
-	-stdin | -stdout | -stderr | -file)
-	    parse_fileopt "$@"
-	    shift_count=$?
-	    if [ ${shift_count} -eq 0 ]; then
-		return 1
-	    fi
-	    case "$1" in
-		-file)
-		    file=${result}
-		    if [ ! -r $file ]; then
-			globus_args_option_error "$1" \
-					    "file \"${file}\" does not exist"
-		    fi
-		    arglist=`read_argument_file $file`
-		    eval set -- ${arglist}
-		    parse_global_opts "$@"
-		    return $?
-		    ;;
-		-stdin)
-		    job_stdin=${result}
-		    ;;
-		-stdout)
-		    job_stdout=${result}
-		    ;;
-		-stderr)
-		    job_stderr=${result}
-		    ;;
-	    esac
-	    shift $shift_count
-	    ;;
-	-env)
-	    job_environment=${job_environment}\ `parse_environment "$@"`
-	    shift_count=$?
-	    if [ ${shift_count} -eq 0 ] ; then
-		return 1
-	    else
-		shift $shift_count
-	    fi
-	    ;;
-	-args)
-	    shift 1
-	    arguments=`parse_user_args "$@"`
-	    shift $?
-	    ;;
-	-:)
-	    if [ ${single_flag} -gt 0 ]; then
-		globus_args_option_error "$1" \
-				      "Cannot mix single and multi-req syntax"
-	    fi
-	    case "${PROGRAM_NAME}" in
-		*-submit)
-		    globus_args_option_error "$1" "batch multi-reqs not supported"
-		    ;;
-		*-run)
-		    job_is_multi=true
-		    ;;
-	    esac
-	    if [ ${job_hostclause_count} -eq 0 ] ; then
-		echo "+"
-	    fi
-	    shift 1
-	    parse_hostclause "$@"
-	    shift_count=$?
-	    if [ ${shift_count} -eq 0 ] ; then
-		return 1
-	    else
-		shift $shift_count
-		job_hostclause_count=`${GLOBUS_SH_EXPR-expr} $job_hostclause_count + 1`
-	    fi
 	    ;;
 	-- )
 	    shift 1

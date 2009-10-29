@@ -194,7 +194,7 @@ static char *  long_usage =
 "           Display versions of all activated modules\n"
 "    -f <rsl filename> | -file <rsl filename> \n"
 "           Read RSL from the local file <rsl filename>. The RSL can\n"
-"           be either a single job request, or a multirequest\n"
+"           be a single job request\n"
 "    -q | -quiet\n"
 "           Quiet mode (do not print diagnostic messages)\n"
 "    -o | -output-enable\n"
@@ -1753,6 +1753,12 @@ globus_l_globusrun_status_job(
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
 	    printf("UNSUBMITTED\n");
+	    break;
+	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
+	    printf("STAGE_IN\n");
+	    break;
+	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
+	    printf("STAGE_OUT\n");
 	    break;
 	default:
 	    printf("UNKNOWN JOB STATE %d\n", info.job_state);
