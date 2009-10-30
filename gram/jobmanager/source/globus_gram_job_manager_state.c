@@ -256,8 +256,6 @@ globus_l_gram_job_manager_state_machine(
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
             request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT;
             request->unsent_status_change = GLOBUS_TRUE;
-            /* Don't do two-phase commit after sending FAILED state change */
-            request->two_phase_commit = 0;
         }
         break;
 
