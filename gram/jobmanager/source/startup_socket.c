@@ -901,7 +901,9 @@ globus_gram_job_manager_starter_send(
     iov[0].iov_len = 1;
     message.msg_iov = iov;
     message.msg_iovlen = 1;
-    rc = recvmsg(acksock[1], &message, MSG_WAITALL);
+    close(acksock[0]);
+    acksock[0] = -1;
+    rc = recvmsg(acksock[1], &message, 0);
     if (rc < 0 || byte[0] != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
@@ -931,8 +933,6 @@ globus_gram_job_manager_starter_send(
     {
         rc = GLOBUS_SUCCESS;
     }
-    close(acksock[0]);
-    acksock[0] = -1;
     memset(&message, 0, sizeof(struct msghdr));
     iov[0].iov_base = &byte;
     iov[0].iov_len = 1;
@@ -1252,7 +1252,7 @@ globus_l_gram_startup_socket_callback(
         tries = 10;
         while (rc < 1 && tries > 0)
         {
-            rc = recvmsg(acksock, &message, MSG_WAITALL);
+            rc = recvmsg(acksock, &message, 0);
             tries--;
         }
         if (rc < 0 || byte[0] != 1)
@@ -1625,7 +1625,6 @@ globus_l_gram_startup_socket_callback(
 update_cred_failed:
         free(contact);
 
-        response_fd = -1;
 request_load_failed:
         if (old_job_contact != NULL)
         {
