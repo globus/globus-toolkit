@@ -81,7 +81,6 @@ $ make dist
    releases.
 
      $ cvs tag MYPROXY_X_X
-     $ cvs tag -F GT4
 
 6. Sign the release file with GPG.
 
