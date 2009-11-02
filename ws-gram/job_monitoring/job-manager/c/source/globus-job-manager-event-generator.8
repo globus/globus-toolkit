@@ -1,0 +1,94 @@
+'\" t
+.\"     Title: globus-job-manager-event-generator
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 11/02/2009
+.\"    Manual: GRAM5 Commands
+.\"    Source: University of Chicago
+.\"  Language: English
+.\"
+.TH "GLOBUS\-JOB\-MANAGER" "8" "11/02/2009" "University of Chicago" "GRAM5 Commands"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+globus-job-manager-event-generator \- Create LRM\-independent SEG files for the job manager to parse
+.SH "SYNOPSIS"
+.HP \w'\fBglobus\-job\-manager\-event\-generator\fR\ 'u
+\fBglobus\-job\-manager\-event\-generator\fR [\-help] {\-scheduler\ \fILRM\fR} [\-background] [\-pidfile\ \fIPIDPATH\fR]
+.SH "DESCRIPTION"
+.PP
+The
+\fBglobus\-job\-manager\-event\-generator\fR
+program is a utility which uses LRM\-specific SEG parsers to generate a LRM\-independent log file that a job manager instance can use to process job status change events\&. This program runs independently of all
+\fBglobus\-job\-manager\fR
+instances so that only one process needs to deal with the LRM interface\&. The
+\fBglobus\-job\-manager\-event\-generator\fR
+program can be run as a privileged user if required to interface with the LRM\&.
+.PP
+In order for
+\fBglobus\-job\-manager\-event\-generator\fR
+to handle events for a particular LRM, the
+globus_scheduler_event_generator_job_manager_setup
+setup package must be configured after the LRM\-specific setup package has been run\&. This can be forced by
+\fBgpt\-postinstall \-force\fR
+or running the command
+\fBcd \fR\fB\fB$GLOBUS_LOCATION\fR\fR\fB/setup/globus; \&./setup\-seg\-job\-manager\&.pl\fR\&.
+.PP
+The full set of command\-line options to
+\fBglobus\-job\-manager\-event\-generator\fR
+consists of:
+.TS
+tab(:);
+l l
+l l
+l l
+l l.
+T{
+\-help
+T}:T{
+.sp
+Print command\-line option summary and exit\&.
+T}
+T{
+\-scheduler \fILRM\fR
+T}:T{
+.sp
+Process events for the local resource manager named by \fILRM\fR\&.
+T}
+T{
+\-background
+T}:T{
+.sp
+Run \fBglobus\-job\-manager\-event\-generator\fR as a background process\&. It will fork a new process, print out its process ID and then the original process will terminate\&.
+T}
+T{
+\-pidfile \fIPIDPATH\fR
+T}:T{
+.sp
+Write the process ID of an instance of \fBglobus\-job\-manager\-event\-generator\fR to the file named by \fIPIDPATH\fR\&. This file can be used to kill or monitor the \fBglobus\-job\-manager\-event\-generator\fR process\&.
+T}
+.TE
+.sp 1
+.SH "FILES"
+.PP
+globus\-job\-manager\-seg\&.conf
+.RS 4
+Configuration file for
+\fBglobus\-job\-manager\-event\-generator\fR\&. Each line consists of a string of the form
+\fILRM\fR_log_path=\fIPATH\fR, which indicates the directory containing LRM\-independent format SEG log files for the LRM\&. This file is created by the running the
+globus_scheduler_event_generator_job_manager_setup
+setup package\&.
+.RE
+.SH "SEE ALSO"
+.PP
+
+\fBglobus-scheduler-event-generator\fR(8),
+\fBglobus-job-manager\fR(8)
