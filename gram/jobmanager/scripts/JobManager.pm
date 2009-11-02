@@ -118,7 +118,9 @@ sub log
     my $self = shift;
     my $msg = join("", @_);
 
-    $msg =~ s/\"/\\\"/;
+    $msg =~ s/\\/\\\\/g;
+    $msg =~ s/\n/\\n/g;
+    $msg =~ s/\"/\\\"/g;
 
     $self->respond({LOG => "msg=\"$msg\""});
 
