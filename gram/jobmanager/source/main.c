@@ -34,6 +34,7 @@
 #include "globus_callout.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_protocol.h"
+#include "globus_rsl.h"
 #include "globus_gass_cache.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
@@ -67,11 +68,14 @@ main(
     long                                sleeptime;
     globus_bool_t                       started_without_client = GLOBUS_FALSE;
     globus_bool_t                       located_active_jm = GLOBUS_FALSE;
+    char *                              rsl;
     int                                 http_body_fd;
     int                                 context_fd;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
     globus_list_t *                     requests = NULL;
     OM_uint32                           major_status, minor_status;
+    char *                              old_job_contact = NULL;
+    globus_gram_jobmanager_request_t *  old_job_request = NULL;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -98,17 +102,12 @@ main(
     }
 
     /* Parse command line options to get jobmanager configuration */
-    rc = globus_gram_job_manager_config_init(&config, argc, argv);
+    rc = globus_gram_job_manager_config_init(&config, argc, argv, &rsl);
     if (rc != GLOBUS_SUCCESS)
     {
         exit(1);
     }
-    rc = globus_gram_job_manager_logging_init(&config);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        exit(1);
-    }
-    if (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL)
+    if (rsl || (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL))
     {
         started_without_client = GLOBUS_TRUE;
     }
@@ -206,52 +205,28 @@ main(
      */
     while (!located_active_jm)
     {
-        /* We'll try to get the lock file associated with being the
-         * active job manager here. If we get the OLD_JM_ALIVE error
-         * somebody else has it
-         */
-        rc = globus_gram_job_manager_startup_socket_init(
-                &manager,
-                &manager.active_job_manager_handle,
-                &manager.socket_fd,
-                &manager.lock_fd);
-        if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+        if (config.single)
         {
-            rc = GLOBUS_SUCCESS;
-        }
-        else if (rc != GLOBUS_SUCCESS)
-        {
-            /* Some system error. Try again */
-            continue;
-        }
-
-        if (rc == GLOBUS_SUCCESS && manager.socket_fd != -1)
-        {
-            if (!started_without_client)
+            /* We'll try to get the lock file associated with being the
+             * active job manager here. If we get the OLD_JM_ALIVE error
+             * somebody else has it
+             */
+            rc = globus_gram_job_manager_startup_socket_init(
+                    &manager,
+                    &manager.active_job_manager_handle,
+                    &manager.socket_fd,
+                    &manager.lock_fd);
+            if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
             {
-                /* We've acquired the manager socket */
-                rc = fork();
+                rc = GLOBUS_SUCCESS;
             }
-            else
+            else if (rc != GLOBUS_SUCCESS)
             {
-                rc = 1;
+                continue;
             }
 
-            if (rc < 0)
+            if (rc == GLOBUS_SUCCESS && manager.socket_fd != -1)
             {
-                fprintf(stderr, "fork failed: %s", strerror(errno));
-                exit(1);
-            }
-            else if (rc > 0)
-            {
-                /* We are the parent process, which means we hold 
-                 * the manager lock file and have an open socket for
-                 * processing new jobs.
-                 *
-                 * The lock is not inherited by the child process, so
-                 * we'll act like the single job manager and let the
-                 * forked processes pass the job fds to me.
-                 */
                 rc = globus_gram_job_manager_gsi_write_credential(
                         cred,
                         manager.cred_path);
@@ -261,58 +236,106 @@ main(
                     fprintf(stderr, "write cred failed\n");
                     exit(1);
                 }
-                if (!started_without_client)
-                {
-                    started_without_client = GLOBUS_TRUE;
-                    close(http_body_fd);
-                    http_body_fd = -1;
-                    close(context_fd);
-                    context_fd = -1;
-                    fclose(stdout);
-                }
-                rc = GLOBUS_SUCCESS;
-            }
-            else
-            {
-                /* We are the child process. We'll close our reference to
-                 * the job manager socket and lock and let the other
-                 * process process jobs
-                 */
-                close(manager.socket_fd);
-                close(manager.lock_fd);
-                manager.socket_fd = -1;
-                manager.lock_fd = -1;
             }
         }
 
-        /* If manager.socket_fd != -1 then we are the parent from the fork
-         * above. We will restart all existing jobs and then allow the startup
-         * socket to accept new jobs from other job managers.
-         */
-        if (manager.socket_fd != -1)
+        if (manager.socket_fd != -1
+                || started_without_client
+                || (!config.single))
         {
-            GlobusTimeAbstimeGetCurrent(manager.usagetracker->jm_start_time);            
-            globus_i_gram_usage_stats_init(&manager);
-            globus_i_gram_usage_start_session_stats(&manager);
+            gss_ctx_id_t                context;
+            char *                      client_contact = NULL;
+            int                         job_state_mask;
 
+            /* We are the active job manager or a debug job manager or don't
+             * care about the distinction
+             */
             located_active_jm = GLOBUS_TRUE;
 
-            /* Load existing jobs. The show must go on if this fails */
-            (void) globus_gram_job_manager_request_load_all(
-                    &manager,
-                    &requests);
+            if (!started_without_client)
+            {
+                /* Normal operation: started by a job request */
+                rc = globus_gram_job_manager_request_load(
+                        &manager,
+                        http_body_fd,
+                        context_fd,
+                        cred,
+                        &request,
+                        &context,
+                        &client_contact,
+                        &job_state_mask,
+                        &old_job_contact,
+                        &old_job_request);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    rc = globus_gram_job_manager_reply(
+                            NULL,
+                            rc,
+                            old_job_contact,
+                            STDOUT_FILENO,
+                            context);
+                }
+                if (old_job_contact)
+                {
+                    free(old_job_contact);
+                }
+                close(http_body_fd);
+                close(context_fd);
+                http_body_fd = -1;
+                context_fd = -1;
+            }
+            else if (rsl)
+            {
+                /* Debug operation: -rsl command-line option */
+                context = GSS_C_NO_CONTEXT;
 
-            /* At this point, seg_last_timestamp is the earliest last timestamp 
-             * for any pre-existing jobs. If that is 0, then we don't have any
-             * existing jobs so we'll just ignore seg events prior to now.
-             */
+                rc = globus_gram_job_manager_request_init(
+                    &request,
+                    &manager,
+                    rsl,
+                    GSS_C_NO_CREDENTIAL,
+                    GSS_C_NO_CONTEXT,
+                    GLOBUS_FALSE,
+                    &old_job_contact,
+                    NULL);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    fprintf(stderr, "Error initializing request\n");
+                    if (old_job_contact)
+                    {
+                        fprintf(stderr,
+                                "Old Job Contact: %s\n",
+                                old_job_contact);
+                        free(old_job_contact);
+                    }
+                    exit(1);
+                }
+            }
+            if (request)
+            {
+                manager.seg_last_timestamp = request->seg_last_timestamp;
+            }
+
+            if (config.single)
+            {
+                /* load existing jobs */
+                rc = globus_gram_job_manager_request_load_all(
+                        &manager,
+                        &requests);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_log(
+                            &manager,
+                            "JM: Error loading all requests\n");
+                }
+                rc = 0;
+            }
             if (manager.seg_last_timestamp == 0)
             {
                 manager.seg_last_timestamp = time(NULL);
             }
 
-            /* Start off the SEG if we need it.
-             */
+            /* Start off the SEG if we need it */
             if (config.seg_module != NULL || 
                 strcmp(config.jobmanager_type, "fork") == 0)
             {
@@ -320,10 +343,39 @@ main(
 
                 if (rc != GLOBUS_SUCCESS)
                 {
+                    globus_gram_job_manager_log(
+                            &manager,
+                            "Error starting SEG: %d\n",
+                            rc);
+
                     config.seg_module = NULL;
                 }
             }
-            /* Restart job requests */
+
+            /*
+             * Kick off the job state machine and send the response
+             */
+            if (request)
+            {
+                rc = globus_gram_job_manager_request_start(
+                        &manager,
+                        request,
+                        STDOUT_FILENO,
+                        client_contact,
+                        job_state_mask);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    /* start frees reference to the job request */
+                    request = NULL;
+                }
+            }
+
+            if (client_contact)
+            {
+                free(client_contact);
+            }
+
+            /* Restart all other requests */
             while (!globus_list_empty(requests))
             {
                 request = globus_list_first(requests);
@@ -339,17 +391,16 @@ main(
 
                 if (rc != GLOBUS_SUCCESS)
                 {
-                    /* Ignore this error */
+                    globus_gram_job_manager_request_log(
+                            request,
+                            "JM: Error adding request to table: %d\n",
+                            rc);
                     globus_gram_job_manager_request_free(request);
                     free(request);
                     request = NULL;
                     continue;
                 }
 
-                /* Some states will cause us to act like the job was just
-                 * submitted, so the seg will be restarted in the state
-                 * machine
-                 */
                 if (request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1 ||
                     request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2 ||
                     request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
@@ -362,18 +413,18 @@ main(
                         &manager,
                         request,
                         NULL);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    globus_gram_job_manager_log(
+                            &manager,
+                            "JM: Error starting state machine for request\n");
+                }
             }
         }
-        else if (!started_without_client)
+        else
         {
-            /* If manager.socket_fd == -1 then we are either the child from the
-             * fork or another process started somehow (either command-line
-             * invocation or via a job submit). If we have a client, then we'll
-             * send our fds to the job manager with the lock and let it process
-             * the job.
-             *
-             * If this succeeds, we set located_active_jm and leave the loop.
-             * Otherwise, we try again.
+            /* Defer to the active job manager by sending the file descriptors
+             * to it
              */
             rc = globus_gram_job_manager_starter_send(
                     &manager,
@@ -387,6 +438,12 @@ main(
                 close(http_body_fd);
                 close(context_fd);
                 manager.done = GLOBUS_TRUE;
+            }
+            if (rc == GLOBUS_SUCCESS)
+            {
+                globus_gram_job_manager_log(
+                        &manager,
+                        "Successfully handed descriptors to active job manager\n");
             }
         }
     }
@@ -412,22 +469,8 @@ main(
 
     globus_gram_job_manager_log(
             &manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
-            "event=gram.end "
-            "level=DEBUG "
-            "\n");
+            "JM: exiting globus_gram_job_manager.\n");
 
-    /* Clean-up to do if we are the active job manager only */
-    if (manager.socket_fd != -1)
-    {
-        globus_gram_job_manager_script_close_all(&manager);
-        globus_i_gram_usage_end_session_stats(&manager);
-        globus_i_gram_usage_stats_destroy(&manager);
-        remove(manager.pid_path);
-        remove(manager.cred_path);
-        remove(manager.socket_path);
-        remove(manager.lock_path);
-    }
     globus_gram_job_manager_destroy(&manager);
     globus_gram_job_manager_config_destroy(&config);
 

@@ -52,20 +52,6 @@ globus_gram_job_manager_auditing_file_write(
     int                                 rc;
     const char *                        auditing_dir;
     
-    
-    if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
-    {
-        request->manager->usagetracker->count_total_done++;
-    }
-    else
-    {
-        request->manager->usagetracker->count_total_failed++;
-        if(request->failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED)
-        {
-            request->manager->usagetracker->count_total_canceled++;
-        }
-    }
-        
     auditing_dir = request->config->auditing_dir;
 
     if (auditing_dir == NULL)
@@ -137,8 +123,7 @@ globus_gram_job_manager_auditing_file_write(
     }
 
     /* local_job_id */
-    rc = globus_l_gram_audit_write_string(auditing_file,
-            request->original_job_id_string, ",");
+    rc = globus_l_gram_audit_write_string(auditing_file, request->job_id_string, ",");
     if (rc != 0)
     {
         goto close_filename_out;

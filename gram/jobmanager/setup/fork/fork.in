@@ -35,7 +35,6 @@ package Globus::GRAM::JobManager::fork;
 @ISA = qw(Globus::GRAM::JobManager);
 
 my ($mpirun, $mpiexec);
-my ($starter_in, $starter_out, $starter_index) = (undef, undef, 0);
 my %signo;
 
 BEGIN
@@ -94,8 +93,6 @@ sub submit
     my $fork_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-fork.conf";
     my $log_path = '/dev/null';
     my $is_grid_monitor = 0;
-
-    $starter_index++;
 
     if (-r $fork_conf)
     {
@@ -231,28 +228,27 @@ sub submit
 
     if ($description->use_fork_starter() && -x $fork_starter)
     {
-        if (!defined($starter_in) && !defined($starter_out))
-        {
-            $pid = IPC::Open2::open2($starter_out, $starter_in,
-                    "$fork_starter $log_path");
-            my $oldfh = select $starter_out;
-            $|=1;
-            select $oldfh;
-        }
+        local(*STARTER_OUT, *STARTER_IN);
 
-        print $starter_in "100;perl-fork-start-$$-$starter_index;";
+        $pid = IPC::Open2::open2(\*STARTER_OUT, \*STARTER_IN,
+                "$fork_starter $log_path");
+        my $oldfh = select STARTER_OUT;
+        $|=1;
+        select $oldfh;
+
+        print STARTER_IN "100;perl-fork-start-$$;";
         
-        print $starter_in 'directory='.
+        print STARTER_IN 'directory='.
             &escape_for_starter($description->directory()) . ';';
 
         if (keys %CHILD_ENV > 0) {
-            print $starter_in 'environment='.
+            print STARTER_IN 'environment='.
                 join(',', map { &escape_for_starter($_)
                         .'='.&escape_for_starter($CHILD_ENV{$_})
                     } (keys %CHILD_ENV)) . ';';
         }
 
-        print $starter_in "count=$count;";
+        print STARTER_IN "count=$count;";
 
         my @softenv = $description->softenv();
         my $enable_default_software_environment
@@ -280,19 +276,19 @@ sub submit
             close(CMD);
             chmod 0700, $cmd_script_name;
 
-            print $starter_in 'executable=' .
+            print STARTER_IN 'executable=' .
                 &escape_for_starter($cmd_script_name). ';';
-            print $starter_in 'arguments=;';
+            print STARTER_IN 'arguments=;';
             #########################
         }
         else
         {
-            print $starter_in 'executable=' .
+            print STARTER_IN 'executable=' .
                     &escape_for_starter($cmdline[0]). ';';
             shift @cmdline;
             if ($#cmdline >= 0)
             {
-                print $starter_in 'arguments=' .
+                print STARTER_IN 'arguments=' .
                         join(',', map {&escape_for_starter($_)} @cmdline) .
                         ';';
             }
@@ -323,18 +319,19 @@ sub submit
             }
         }
 
-        print $starter_in "stdin=" . &escape_for_starter($description->stdin()).
+        print STARTER_IN "stdin=" . &escape_for_starter($description->stdin()).
                 ';';
-        print $starter_in "stdout=" .
+        print STARTER_IN "stdout=" .
                 join(',', map {&escape_for_starter($_)} @job_stdout) . ';';
-        print $starter_in "stderr=" .
+        print STARTER_IN "stderr=" .
                 join(',', map {&escape_for_starter($_)} @job_stderr) . "\n";
 
-        while (<$starter_out>) {
+        close(STARTER_IN);
+        while (<STARTER_OUT>) {
             chomp;
             my @res = split(/;/, $_);
 
-            if ($res[1] ne "perl-fork-start-$$-$starter_index") {
+            if ($res[1] ne "perl-fork-start-$$") {
                 next;
             }
             if ($res[0] == '101') {
@@ -342,9 +339,11 @@ sub submit
                 last;
             } elsif ($res[0] == '102') {
                 $self->respond({GT3_FAILURE_MESSAGE => "starter: $res[3]" });
+                close(STARTER_OUT);
                 return new Globus::GRAM::Error($res[2]);
             }
         }
+        close(STARTER_OUT);
         $description->add('jobid', join(',', @job_id));
         return { JOB_STATE => Globus::GRAM::JobState::ACTIVE,
                  JOB_ID => join(',', @job_id) };
@@ -572,15 +571,4 @@ sub escape_for_starter
     return $str;
 }
 
-END
-{
-    if (defined($starter_in))
-    {
-        close($starter_in);
-    }
-    if (defined($starter_out))
-    {
-        close($starter_out);
-    }
-}
 1;

@@ -281,8 +281,6 @@ globus_l_gass_copy_glob_expand_file_url(
     info->base_url = globus_libc_strdup(info->url);
 
     info->glob_pattern = strrchr(info->base_url, '/');
-    globus_url_string_hex_decode(info->glob_pattern);
-    
     if(info->glob_pattern == GLOBUS_NULL || *info->glob_pattern == '\0')
     {
         result = globus_error_put(
@@ -493,7 +491,6 @@ globus_l_gass_copy_glob_expand_ftp_url(
 
     info->base_url = globus_libc_strdup(info->url);
     info->glob_pattern = strrchr(info->base_url, '/');
-    globus_url_string_hex_decode(info->glob_pattern);
     
     if(info->glob_pattern == GLOBUS_NULL || *info->glob_pattern == '\0')
     {

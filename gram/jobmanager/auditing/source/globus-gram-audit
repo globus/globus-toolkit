@@ -136,11 +136,7 @@ else
         $delete_sth = undef;
     }
 
-    if ($check) {
-        $check_sth = checkstatement($dbh, \%conf);
-    } else {
-        $check_sth = undef;
-    }
+    $check_sth = checkstatement($dbh, \%conf);
 
     foreach my $f (glob("$audit_directory/*.gramaudit")) {
         my $r = upload_record($f, $dbh, $sth, $check_sth, $delete_sth); 
@@ -551,8 +547,7 @@ sub verify_audit_fields
         return 0;
     }
 
-    if ((! parse_timestamp(\$record_entries->[6])) &&
-        $record_entries->[6] ne 'NULL')
+    if (! parse_timestamp(\$record_entries->[6]))
     {
         return 0;
     }
@@ -609,9 +604,9 @@ sub parse_boolean
 sub parse_timestamp
 {
     my $timestamp_string_ref = $_[0];
-    my %months = ( 'Jan' => 1, 'Feb' => 2, 'Mar' => 3, 'Apr' => 4, 'May' => 5,
-                   'Jun' => 6, 'Jul' => 7, 'Aug' => 8, 'Sep' => 9, 'Oct' => 10,
-                   'Nov' => 11, 'Dec' => 12 );
+    my %months = ( 'Jan' => 0, 'Feb' => 1, 'Mar' => 2, 'Apr' => 3, 'May' => 4,
+                   'Jun' => 5, 'Jul' => 6, 'Aug' => 7, 'Sep' => 8, 'Oct' => 9,
+                   'Nov' => 10, 'Dec' => 11 );
 
     # Convert to SQL standard date-time format 
     if ($$timestamp_string_ref !~

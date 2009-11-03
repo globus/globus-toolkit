@@ -246,6 +246,7 @@ static char *   service_name = NULL;
 static char *   grid_services = "etc/grid-services";
 static char *   gridmap = "etc/gridmap";
 static char *   globuskmap = "etc/globuskmap";
+static char *   globuspwd = NULL;
 static char *   globuscertdir = "cert";
 static char *   globuskeydir = "key";
 static char *   globusnologin ="globus-nologin";
@@ -797,6 +798,12 @@ main(int xargc,
             gridmap = argv[i+1];
             i++;
         }
+        else if ((strcmp(argv[i], "-globuspwd") == 0)
+                 && (i + 1 < argc))
+        {
+            globuspwd = argv[i+1];
+            i++;
+        }
         else if ((strcmp(argv[i], "-globuskeydir") == 0)
                  && (i + 1 < argc))
         {
@@ -909,7 +916,7 @@ main(int xargc,
                     "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path] ",
                     "[-launch_method fork_and_exit|fork_and_wait|dont_fork] "
                     "[-grid_services file] ",
-                    "[-globusid globusid] [-gridmap file] ",
+                    "[-globusid globusid] [-gridmap file] [-globuspwd file]",
                     "[-x509_cert_dir path] [-x509_cert_file file]",
                     "[-x509_user_cert file] [-x509_user_key file]",
                     "[-x509_user_proxy file]",
@@ -963,6 +970,10 @@ main(int xargc,
     }
         
     setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
+    if (globuspwd) 
+    {
+        setenv("GLOBUSPWD", genfilename(gatekeeperhome,globuspwd,NULL),1);
+    }
 
     if (x509_cert_dir)
     {

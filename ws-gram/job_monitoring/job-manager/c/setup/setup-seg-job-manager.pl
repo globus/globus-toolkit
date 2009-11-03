@@ -31,7 +31,7 @@ foreach (<$pkgdir/globus_scheduler_event_generator*>)
     {
         next;
     }
-    elsif(/setup$/ || /job_manager/)
+    elsif(/setup$/ || /job_manager/ || /fork/)
     {
         next;
     }

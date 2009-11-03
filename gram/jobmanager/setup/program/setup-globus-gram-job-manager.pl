@@ -186,8 +186,7 @@ sub setup_job_manager_conf
 	-globus-host-osname $os_name
 	-globus-host-osversion $os_version
         -globus-toolkit-version $toolkit_version
-	-stdio-log \"\$(HOME)\"
-        -log-levels 'FATAL|ERROR'
+	-save-logfile on_error
 	-state-file-dir $state_dir
 	-machine-type unknown
 EOF
