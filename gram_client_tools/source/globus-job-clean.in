@@ -63,8 +63,6 @@ EOF
     you have specifically stated to save that in another file but
     the default).
 EOF
-    resourceline="-resource         (-r)  Cleanup job using the specified resource
-                                manager"
     fi
     ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
 
@@ -73,9 +71,10 @@ EOF
     Options:
 	-help, -usage           Displays usage
         -version                Displays version
+        -resource         (-r)  Cleanup job using the specified resource
+                                manager
 	-force            (-f)  Do not ask user to confirm ${action}
 	-quiet            (-q)  Quiet ${action} (no output, implies -f)
-        $resourceline
 EOF
     echo "" >&2
 }
@@ -84,10 +83,10 @@ globus_source ${libexecdir}/globus-args-parser-header $*
 
 cancelJob()
 {
-    status="`${bindir}/globusrun -status \"$1\"`"
+    status=`${bindir}/globusrun -status "$1"`
     xxx=$?
     if [ ${xxx} -eq 0 ]; then
-	if [ "${status}" != "DONE" ]; then
+	if [ ${status} != "DONE" ]; then
 	    ${bindir}/globusrun -kill "$1"
 	    xxx=$?
 	fi

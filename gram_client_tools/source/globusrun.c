@@ -177,7 +177,7 @@ enum
 };
 
 static char *  oneline_usage
-   =  "globusrun [-help] [-f RSL file] [-s][-b][-d][...] [-r RM] [RSL]\n";
+   =  "globusrun [-help] [-f RSL file] [-s][-b][-d][...] [-r RM] [RSL]";
 
 static char *  long_usage = 
 "\n" 
@@ -194,7 +194,7 @@ static char *  long_usage =
 "           Display versions of all activated modules\n"
 "    -f <rsl filename> | -file <rsl filename> \n"
 "           Read RSL from the local file <rsl filename>. The RSL can\n"
-"           be a single job request\n"
+"           be either a single job request, or a multirequest\n"
 "    -q | -quiet\n"
 "           Quiet mode (do not print diagnostic messages)\n"
 "    -o | -output-enable\n"
@@ -207,6 +207,8 @@ static char *  long_usage =
 "    -w | -write-allow\n"
 "           Enable the GASS Server library and allow writing to\n"
 "           GASS URLs. Implies -server and -quiet.\n"
+"    -mpirun <integer>\n"
+"           Currently a no-op.\n"
 "    -r <resource manager> | -resource  <resource manager> \n"
 "           Submit the RSL job request to the specified resource manager.\n"
 "           A resource manager can be specified in the following ways: \n\n"
@@ -346,7 +348,7 @@ test_integer( char *   value,
 
 enum { arg_q = 1, arg_o, arg_s, arg_w, arg_n, arg_b,
 	     arg_p, arg_d, arg_a,
-	     arg_r, arg_f, arg_k, arg_y, arg_status,
+	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
 	     arg_F, arg_j, arg_full_proxy,
 	     arg_num = arg_full_proxy };
@@ -389,6 +391,7 @@ static int arg_f_mode = O_RDONLY;
     oneargdef(arg_k, "-k", "-kill", test_job_id, NULL);
     oneargdef(arg_y, "-y", "-refresh-proxy", test_job_id, NULL);
     oneargdef(arg_stop_manager, "-stop-manager", NULL, test_job_id, NULL);
+    oneargdef(arg_mpirun, "-mpirun", NULL, test_integer, NULL);
     oneargdef(arg_status, "-status", NULL, test_job_id, NULL);
     static globus_args_option_descriptor_t args_options[arg_num];
 
@@ -399,7 +402,7 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_w); setupopt(arg_n); setupopt(arg_b); \
 	setupopt(arg_p); setupopt(arg_d); setupopt(arg_a); \
 	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
-	setupopt(arg_stop_manager); \
+	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
 	setupopt(arg_status); \
 	setupopt(arg_F); \
         setupopt(arg_j); \
@@ -567,6 +570,11 @@ main(int argc, char* argv[])
 
         case arg_y:
             return globus_l_globusrun_refresh_proxy(instance->values[0]);
+            break;
+        case arg_mpirun:
+            fprintf(stderr, "not compatible with -mpirun %s\n",
+                    instance->values[0]);
+            exit(EXIT_FAILURE);
             break;
 
         case arg_stop_manager:
@@ -1745,12 +1753,6 @@ globus_l_globusrun_status_job(
 	    break;
 	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
 	    printf("UNSUBMITTED\n");
-	    break;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
-	    printf("STAGE_IN\n");
-	    break;
-	case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
-	    printf("STAGE_OUT\n");
 	    break;
 	default:
 	    printf("UNKNOWN JOB STATE %d\n", info.job_state);

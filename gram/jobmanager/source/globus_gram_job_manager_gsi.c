@@ -44,107 +44,22 @@ globus_gram_job_manager_import_sec_context(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     int                                 token_status;
-    gss_name_t                          globus_id = NULL;
-    gss_buffer_desc                     globus_id_token = { 0, NULL };
-
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.import_sec_context.start level=TRACE fd=%d\n",
-            context_fd);
 
     major_status = globus_gss_assist_import_sec_context(
         &minor_status,
         response_contextp,
         &token_status,
         context_fd,
-        NULL /*manager->jobmanager_log_fp*/);
+        manager->jobmanager_log_fp);
 
-    if (GSS_ERROR(major_status))
+    if(major_status != GSS_S_COMPLETE)
     {
-        char *                          error_string = NULL;
-        char *                          escaped_error_string;
-        globus_gss_assist_display_status_str(
-                &error_string,
-                "",
-                major_status,
-                minor_status,
-                0);
-
-        escaped_error_string = globus_gram_prepare_log_string(error_string);
-
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.import_sec_context.end level=ERROR status=%d "
-                "major_status=%d msg=\"Failed to load security context\" "
-                "reason=\"%s\"\n",
-                -GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED,
-                major_status,
-                escaped_error_string ? escaped_error_string : "");
-
-        if (error_string)
-        {
-            free(error_string);
-        }
-        if (escaped_error_string)
-        {
-            free(escaped_error_string);
-        }
-
+                "JM: Failed to load security context\n");
         return GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     }
-
-    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
-    {
-        do
-        {
-            major_status = gss_inquire_context(
-                    &minor_status,
-                    *response_contextp,
-                    &globus_id,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL);
-        }
-        while (major_status == GSS_S_CONTINUE_NEEDED);
-
-        if (major_status == GSS_S_COMPLETE)
-        {
-            do 
-            {
-                major_status = gss_display_name(
-                        &minor_status,
-                        globus_id,
-                        &globus_id_token,
-                        NULL);
-            }
-            while (major_status == GSS_S_CONTINUE_NEEDED);
-        }
-
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.import_sec_context.end "
-                "level=TRACE "
-                "status=%d "
-                "globusid=\"%s\" "
-                "\n",
-                0,
-                globus_id_token.value != NULL ? globus_id_token.value : "");
-
-        gss_release_buffer(
-                &minor_status, 
-                &globus_id_token);
-
-        gss_release_name(
-                &minor_status,
-                &globus_id);
-    }
-
+    globus_gram_job_manager_log(manager, "JM: Security context imported\n");
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_import_sec_context() */
@@ -244,13 +159,6 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
     OM_uint32                           lifetime;
     time_t                              cred_expiration_time;
 
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.register_proxy_timeout.start "
-            "level=TRACE "
-            "\n");
-
     *callback_handle = GLOBUS_NULL_HANDLE;
 
     cred_expiration_time = time(NULL);
@@ -265,49 +173,12 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
 
     if (major_status != GSS_S_COMPLETE)
     {
-        char *                          error_string = NULL;
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
-
-        globus_gss_assist_display_status_str(
-                &error_string,
-                "",
-                major_status,
-                minor_status,
-                0);
-
-        globus_gram_prepare_log_string(error_string);
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.register_proxy_timeout.end "
-                "level=ERROR "
-                "status=%d "
-                "msg=\"%s\" "
-                "major_status=%d "
-                "reason=\"%s\"\n",
-                -rc,
-                "gss_inquire_cred failed",
-                major_status,
-                error_string ? error_string : "");
-        if (error_string)
-        {
-            free(error_string);
-        }
         goto failed_inquire_cred;
     }
 
     if (lifetime == GSS_C_INDEFINITE)
     {
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.register_proxy_timeout.end "
-                "level=TRACE "
-                "status=%d "
-                "lifetime=indefinite "
-                "msg=\"%s\" "
-                "\n",
-                "User proxy has indefinite lifetime");
         goto wont_expire;
     }
 
@@ -317,61 +188,19 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.register_proxy_timeout.end "
-                "level=ERROR "
-                "status=%d "
-                "lifetime=%d "
-                "msg=\"user proxy lifetime is less than minimum "
-                "(%d seconds)\" "
-                "reason=\"%s\" "
-                "\n",
-                (int) -rc,
-                lifetime,
-                timeout,
-                globus_gram_protocol_error_string(rc));
+                "JM: user proxy lifetime is less than minimum "
+                "(%d seconds)\n",
+                timeout);
         goto proxy_expired;
     }
 
     GlobusTimeReltimeSet(delay, lifetime - timeout, 0);
     manager->cred_expiration_time = cred_expiration_time;
 
-    rc = globus_l_gram_job_manager_gsi_register_proxy_timeout(
+    rc= globus_l_gram_job_manager_gsi_register_proxy_timeout(
             manager,
             &delay,
             callback_handle);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.register_proxy_timeout.end "
-                "level=ERROR "
-                "status=%d "
-                "lifetime=%d "
-                "msg=\"Error registering proxy timeout callback\" "
-                "reason=\"%s\" "
-                "\n",
-                (int) -rc,
-                lifetime,
-                globus_gram_protocol_error_string(rc));
-    }
-    else
-    {
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.register_proxy_timeout.end "
-                "level=TRACE "
-                "status=%d "
-                "lifetime=%d "
-                "timeout=%d "
-                "\n",
-                (int) -rc,
-                lifetime,
-                timeout);
-    }
 
 proxy_expired:
 wont_expire:
@@ -708,9 +537,7 @@ globus_l_gram_job_manager_proxy_expiration(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-            "event=gram.proxy_expire.end level=WARN "
-            "msg=\"Proxy expired, stopping job manager\"\n");
+            "JM: User proxy expired! Abort, but leave job running!\n");
 
     GlobusGramJobManagerLock(manager);
     globus_gram_job_manager_stop_all_jobs(manager);

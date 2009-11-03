@@ -197,8 +197,8 @@ parse_assertion_failed:
 assertion_string_malloc_failed:
     ASN1_UTF8STRING_free(asn1_str);
 utfstring_failed:
-empty_data_set:
     gss_release_buffer_set(&min_stat, &data_set);
+empty_data_set:
 inquire_failed:
     return rc;
 }

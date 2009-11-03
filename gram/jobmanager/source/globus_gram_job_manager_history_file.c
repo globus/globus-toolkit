@@ -81,12 +81,7 @@ globus_gram_job_manager_history_file_create(
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.history_file_create.start "
-            "level=TRACE "
-            "gramid=%s "
-            "\n",
-            request->job_contact_path);
+            "JM: in globus_gram_job_manager_history_file_create()\n");
 
     timestamp = time(0);
 
@@ -140,22 +135,8 @@ globus_gram_job_manager_history_file_create(
         {
             globus_gram_job_manager_request_log(
                     request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                    "event=gram.history_file_create.end "
-                    "level=WARN "
-                    "gramid=%s "
-                    "msg=\"%s\" "
-                    "path=\"%s\" "
-                    "errno=%d "
-                    "reason=\"%s\" "
-                    "status=-1 "
-                    "\n",
-                    request->job_contact_path,
-                    "Error opening job history file",
-                    request->job_history_file,
-                    errno,
-                    strerror(errno));
-
+                    "JM: Failed opening job history file %s\n",
+                    request->job_history_file);
             return GLOBUS_FAILURE;
         }
         fprintf(history_fp, "%s\t%10ld\n", status_str,timestamp);
@@ -164,19 +145,8 @@ globus_gram_job_manager_history_file_create(
     {
         globus_gram_job_manager_request_log(
                 request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.history_file_create.end "
-                "level=WARN "
-                "gramid=%s "
-                "msg=\"%s\" "
-                "path=\"%s\" "
-                "errno=%d "
-                "reason=\"%s\" "
-                "status=-1\n",
-                request->job_contact_path,
-                request->job_history_file,
-                errno,
-                strerror(errno));
+                "JM: Failed opening job history file %s\n",
+                request->job_history_file);
 
         return GLOBUS_FAILURE;
     }
@@ -189,18 +159,6 @@ globus_gram_job_manager_history_file_create(
                 status_str,timestamp);
     }
     fclose(history_fp);
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.history_file_create.end "
-            "level=TRACE "
-            "gramid=%s "
-            "path=\"%s\" "
-            "status=%d\n",
-            request->job_contact_path,
-            request->job_history_file,
-            0);
 
     return GLOBUS_SUCCESS;
 }

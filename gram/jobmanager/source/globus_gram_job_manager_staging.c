@@ -167,18 +167,10 @@ globus_gram_job_manager_staging_remove(
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.staging_remove.start "
-            "level=DEBUG "
-            "gramid=%s "
-            "src=\"%s\" "
-            "dst=\"%s\" "
-            "type=%s "
-            "\n",
-            request->job_contact_path,
+            "JM: Finished staging (%s = (%s %s))\n",
+            typestr,
             from,
-            to,
-            typestr);
+            to);
 
     query.evaled_from = from;
     query.evaled_to = to;
@@ -209,111 +201,27 @@ globus_gram_job_manager_staging_remove(
     {
         item = globus_list_remove(list, node);
 
-        globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.staging_remove.end "
-            "level=TRACE "
-            "gramid=%s "
-            "msg=\"%s\" "
-            "src=\"%s\" "
-            "dst=\"%s\" "
-            "type=%s "
-            "status=%d "
-            "\n",
-            request->job_contact_path,
-            "File staged",
-            from,
-            to,
-            typestr,
-            0);
-
-        if (item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_IN)
-        {
-            if (strncmp(item->evaled_from, "http://", 7) == 0)
-            {
-                request->job_stats.file_stage_in_http_count++;
-            }
-            else if (strncmp(item->evaled_from, "https://", 8) == 0)
-            {
-                request->job_stats.file_stage_in_https_count++;
-            }
-            else if (strncmp(item->evaled_from, "ftp://", 6) == 0)
-            {
-                request->job_stats.file_stage_in_ftp_count++;
-            }
-            else if (strncmp(item->evaled_from, "gsiftp://", 6) == 0)
-            {
-                request->job_stats.file_stage_in_gsiftp_count++;
-            }
-        }
-        else if (item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED)
-        {
-            if (strncmp(item->evaled_from, "http://", 7) == 0)
-            {
-                request->job_stats.file_stage_in_shared_http_count++;
-            }
-            else if (strncmp(item->evaled_from, "https://", 8) == 0)
-            {
-                request->job_stats.file_stage_in_shared_https_count++;
-            }
-            else if (strncmp(item->evaled_from, "ftp://", 6) == 0)
-            {
-                request->job_stats.file_stage_in_shared_ftp_count++;
-            }
-            else if (strncmp(item->evaled_from, "gsiftp://", 6) == 0)
-            {
-                request->job_stats.file_stage_in_shared_gsiftp_count++;
-            }
-        }
-        else if (item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT ||
-                 item->type == GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS)
-        {
-            if (strncmp(item->evaled_to, "http://", 7) == 0)
-            {
-                request->job_stats.file_stage_out_http_count++;
-            }
-            else if (strncmp(item->evaled_to, "https://", 8) == 0)
-            {
-                request->job_stats.file_stage_out_https_count++;
-            }
-            else if (strncmp(item->evaled_to, "ftp://", 6) == 0)
-            {
-                request->job_stats.file_stage_out_ftp_count++;
-            }
-            else if (strncmp(item->evaled_to, "gsiftp://", 6) == 0)
-            {
-                request->job_stats.file_stage_out_gsiftp_count++;
-            }
-        }
         globus_rsl_value_free_recursive(item->from);
         globus_rsl_value_free_recursive(item->to);
         free(item->evaled_from);
         free(item->evaled_to);
         free(item);
+
+        globus_gram_job_manager_request_log(
+            request,
+            "JM: successfully removed (%s = (%s %s)) from todo list\n",
+            typestr,
+            from,
+            to);
     }
     else
     {
         globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-            "event=gram.staging_remove.end "
-            "level=WARN "
-            "gramid=%s "
-            "msg=\"%s\" "
-            "src=\"%s\" "
-            "dst=\"%s\" "
-            "type=%s "
-            "status=%d "
-            "msg=\"%s\" "
-            "\n",
-            request->job_contact_path,
-            "File staged",
-            from,
-            to,
+            "JM: strange... (%s = (%s %s)) wasn't in the todo list\n",
             typestr,
-            0,
-            "Unexpected staging completion");
+            from,
+            to);
     }
     return GLOBUS_SUCCESS;
 }
@@ -523,10 +431,6 @@ globus_gram_job_manager_staging_read_state(
 
 free_buffer_out:
     free(buffer);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        globus_gram_job_manager_staging_free_all(request);
-    }
 out:
     return rc;
 }
@@ -575,7 +479,7 @@ globus_l_gram_job_manager_staging_add_pair(
     }
 
     rc = globus_gram_job_manager_rsl_evaluate_value(
-            &request->symbol_table,
+            request,
             info->from,
             &info->evaled_from);
 
@@ -604,7 +508,7 @@ globus_l_gram_job_manager_staging_add_pair(
         goto eval_from_failed;
     }
     rc = globus_gram_job_manager_rsl_evaluate_value(
-            &request->symbol_table,
+            request,
             info->to,
             &info->evaled_to);
 
@@ -797,7 +701,7 @@ globus_l_gram_staging_list_read_state(
             goto free_info_out;
         }
         rc = globus_gram_job_manager_rsl_parse_value(
-                buffer, &info->from);
+                request, buffer, &info->from);
         if (rc != GLOBUS_SUCCESS)
         {
             goto free_info_out;
@@ -810,14 +714,14 @@ globus_l_gram_staging_list_read_state(
             goto free_info_from_out;
         }
         rc = globus_gram_job_manager_rsl_parse_value(
-                buffer, &info->to);
+                request, buffer, &info->to);
         if (rc != GLOBUS_SUCCESS)
         {
             goto free_info_from_out;
         }
 
         rc = globus_gram_job_manager_rsl_evaluate_value(
-                &request->symbol_table,
+                request,
                 info->from,
                 &info->evaled_from);
 
@@ -827,7 +731,7 @@ globus_l_gram_staging_list_read_state(
         }
 
         rc = globus_gram_job_manager_rsl_evaluate_value(
-                &request->symbol_table,
+                request,
                 info->to,
                 &info->evaled_to);
         if (rc != GLOBUS_SUCCESS)
