@@ -56,6 +56,13 @@
  * [including the GNU Public Licence.]
  */
 
+/* disable assert() unless BIO_DEBUG has been defined */
+#ifndef BIO_DEBUG
+# ifndef NDEBUG
+#  define NDEBUG
+# endif
+#endif
+
 /* 
  * Stolen from tjh's ssl/ssl_trc.c stuff.
  */
@@ -102,14 +109,14 @@
  * o ...                                       (for OpenSSL)
  */
 
-#if HAVE_LONG_DOUBLE
+#ifdef HAVE_LONG_DOUBLE
 #define LDOUBLE long double
 #else
 #define LDOUBLE double
 #endif
 
 #if HAVE_LONG_LONG
-# if defined(WIN32) && !defined(__GNUC__)
+# if defined(OPENSSL_SYS_WIN32) && !defined(__GNUC__)
 # define LLONG _int64
 # else
 # define LLONG long long
@@ -371,7 +378,7 @@ _dopr(
             case 'p':
                 value = (long)va_arg(args, void *);
                 fmtint(sbuffer, buffer, &currlen, maxlen,
-                    value, 16, min, max, flags);
+                    value, 16, min, max, flags|DP_F_NUM);
                 break;
             case 'n': /* XXX */
                 if (cflags == DP_C_SHORT) {
@@ -475,8 +482,9 @@ fmtint(
     int flags)
 {
     int signvalue = 0;
+    char *prefix = "";
     unsigned LLONG uvalue;
-    char convert[20];
+    char convert[DECIMAL_SIZE(value)+3];
     int place = 0;
     int spadlen = 0;
     int zpadlen = 0;
@@ -494,6 +502,10 @@ fmtint(
         else if (flags & DP_F_SPACE)
             signvalue = ' ';
     }
+    if (flags & DP_F_NUM) {
+	if (base == 8) prefix = "0";
+	if (base == 16) prefix = "0x";
+    }
     if (flags & DP_F_UP)
         caps = 1;
     do {
@@ -501,13 +513,13 @@ fmtint(
             (caps ? "0123456789ABCDEF" : "0123456789abcdef")
             [uvalue % (unsigned) base];
         uvalue = (uvalue / (unsigned) base);
-    } while (uvalue && (place < 20));
-    if (place == 20)
+    } while (uvalue && (place < sizeof convert));
+    if (place == sizeof convert)
         place--;
     convert[place] = 0;
 
     zpadlen = max - place;
-    spadlen = min - OSSL_MAX(max, place) - (signvalue ? 1 : 0);
+    spadlen = min - OSSL_MAX(max, place) - (signvalue ? 1 : 0) - strlen(prefix);
     if (zpadlen < 0)
         zpadlen = 0;
     if (spadlen < 0)
@@ -528,6 +540,12 @@ fmtint(
     /* sign */
     if (signvalue)
         doapr_outch(sbuffer, buffer, currlen, maxlen, signvalue);
+
+    /* prefix */
+    while (*prefix) {
+	doapr_outch(sbuffer, buffer, currlen, maxlen, *prefix);
+	prefix++;
+    }
 
     /* zeros */
     if (zpadlen > 0) {
@@ -558,12 +576,12 @@ abs_val(LDOUBLE value)
 }
 
 static LDOUBLE
-pow10(int exp)
+pow10(int in_exp)
 {
     LDOUBLE result = 1;
-    while (exp) {
+    while (in_exp) {
         result *= 10;
-        exp--;
+        in_exp--;
     }
     return result;
 }
@@ -634,8 +652,8 @@ fmtfp(
             (caps ? "0123456789ABCDEF"
               : "0123456789abcdef")[intpart % 10];
         intpart = (intpart / 10);
-    } while (intpart && (iplace < 20));
-    if (iplace == 20)
+    } while (intpart && (iplace < sizeof iconvert));
+    if (iplace == sizeof iconvert)
         iplace--;
     iconvert[iplace] = 0;
 
@@ -646,7 +664,7 @@ fmtfp(
               : "0123456789abcdef")[fracpart % 10];
         fracpart = (fracpart / 10);
     } while (fplace < max);
-    if (fplace == 20)
+    if (fplace == sizeof fconvert)
         fplace--;
     fconvert[fplace] = 0;
 
@@ -685,7 +703,7 @@ fmtfp(
      * Decimal point. This should probably use locale to find the correct
      * char to print out.
      */
-    if (max > 0) {
+    if (max > 0 || (flags & DP_F_NUM)) {
         doapr_outch(sbuffer, buffer, currlen, maxlen, '.');
 
         while (fplace > 0)
@@ -716,12 +734,13 @@ doapr_outch(
     if (buffer) {
 	while (*currlen >= *maxlen) {
 	    if (*buffer == NULL) {
-		assert(*sbuffer != NULL);
 		if (*maxlen == 0)
 		    *maxlen = 1024;
 		*buffer = OPENSSL_malloc(*maxlen);
-		if (*currlen > 0)
+		if (*currlen > 0) {
+		    assert(*sbuffer != NULL);
 		    memcpy(*buffer, *sbuffer, *currlen);
+		}
 		*sbuffer = NULL;
 	    } else {
 		*maxlen += 1024;
@@ -761,7 +780,9 @@ int BIO_vprintf (BIO *bio, const char *format, va_list args)
 	{
 	int ret;
 	size_t retlen;
-	MS_STATIC char hugebuf[1024*10];
+	char hugebuf[1024*2];	/* Was previously 10k, which is unreasonable
+				   in small-stack environments, like threads
+				   or DOS programs. */
 	char *hugebufp = hugebuf;
 	size_t hugebufsize = sizeof(hugebuf);
 	char *dynbuf = NULL;
@@ -815,5 +836,5 @@ int BIO_vsnprintf(char *buf, size_t n, const char *format, va_list args)
 		 * had the buffer been large enough.) */
 		return -1;
 	else
-		return (retlen <= INT_MAX) ? retlen : -1;
+		return (retlen <= INT_MAX) ? (int)retlen : -1;
 	}
