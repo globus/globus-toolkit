@@ -13,7 +13,7 @@ my $configurationManager = ConfigurationManager->new();
 my $recorddir = $configurationManager->getRecordDir();
 my $auditdir = $configurationManager->getAuditDir();
 my $uploader = Uploader->new($auditdir);
-my $backed_up = 0;
+my $util = Util->new();
 my %recordFiles = (
     "ok1"  => $recorddir . "/ok.gramaudit",
     "bad1" => $recorddir . "/too-few-fields.gramaudit",
@@ -21,45 +21,32 @@ my %recordFiles = (
     "bad3" => $recorddir . "/non-existing-username.gramaudit",
 );
 
-print "1..1\n";
+# swap in test configuration and cleanup audit directory
+$configurationManager->backupOriginalConfiguration();
+$configurationManager->installTestConfiguration();
 
-Util::debug("-- Trying 2 buggy records. expecting errors and 2 leftover files");
+$util->debug("-- Trying 2 buggy records. expecting errors and 2 leftover files");
 $expectErrors = 1;
 $expectedNumberLeftoverRecords = 2;
-tryUpload($expectErrors,
-    $expectedNumberLeftoverRecords,
-    $configurationManager->getGoodConfiguration(),
-    ($recordFiles{"bad1"}, $recordFiles{"bad2"}));
+tryUpload($expectErrors, $expectedNumberLeftoverRecords, ($recordFiles{"bad1"}, $recordFiles{"bad2"}));
 
-Util::debug("-- Trying 1 ok and 1 buggy record. expecting errors and 1 leftover file");
+$util->debug("-- Trying 1 ok and 1 buggy record. expecting errors and 1 leftover file");
 $expectErrors = 1;
 $expectedNumberLeftoverRecords = 1;
-tryUpload(
-    $expectErrors,
-    $expectedNumberLeftoverRecords,
-    $configurationManager->getGoodConfiguration(),
-    ($recordFiles{"ok1"}, $recordFiles{"bad2"}));
+tryUpload($expectErrors, $expectedNumberLeftoverRecords, ($recordFiles{"ok1"}, $recordFiles{"bad2"}));
 
-Util::debug("-- Trying 1 record where record file owner != local user id as defined in the record");
+$util->debug("-- Trying 1 record where record file owner != local user id as defined in the record");
 $expectErrors = 1;
 $expectedNumberLeftoverRecords = 1;
-tryUpload(
-    $expectErrors,
-    $expectedNumberLeftoverRecords,
-    $configurationManager->getGoodConfiguration(),
-    ($recordFiles{"bad3"}));
+tryUpload($expectErrors, $expectedNumberLeftoverRecords, ($recordFiles{"bad3"}));
 
-Util::debug("-- Trying invalid audit config");
+$util->debug("-- Trying invalid audit version (v3)");
 $expectErrors = 1;
 $expectedNumberLeftoverRecords = 1;
-tryUpload(
-    $expectErrors,
-    $expectedNumberLeftoverRecords,
-    $configurationManager->getBadConfiguration(),
-    ($recordFiles{"ok1"}));
+$configurationManager->installBuggyTestConfiguration();
+tryUpload($expectErrors, $expectedNumberLeftoverRecords, ($recordFiles{"ok1"}));
 
-print "ok\n";
-exit(0);
+cleanupAndExit(0);
 
 ############################ Helper methods ####################################
 
@@ -67,7 +54,6 @@ sub tryUpload {
 	
     my $expectErrors = shift;
     my $numberLeftoverRecords = shift;
-    my $conf = shift;
     my @recordArray = @_;
     my $numberOfRecords = @recordArray;
     
@@ -76,8 +62,8 @@ sub tryUpload {
 
     # make sure the test audit directory is empty 
     if (getNumberFilesInAuditDir() != 0) {
-        print "not ok #Audit directory not empty\n";
-        exit(0);
+        $util->error("Audit directory not empty");
+        cleanupAndExit(1);    
     }
 
     foreach(@recordArray) {
@@ -86,13 +72,13 @@ sub tryUpload {
 
     # make sure the test records are in place
     if (getNumberFilesInAuditDir() != $numberOfRecords) {
-        print "not ok #Audit directory not empty\n";
-        exit(0);
+        $util->error("Audit directory not empty");
+        cleanupAndExit(1);    
     }
         
-    if (!$uploader->loadGram2RecordsIntoDatabase($conf, $expectErrors, $numberLeftoverRecords)) {
-        print "not ok #Upload of record did not work as expected.\n";
-        exit(0);
+    if (!$uploader->loadGram2RecordsIntoDatabase($expectErrors, $numberLeftoverRecords)) {
+        $util->error("Upload of record did not work as expected.");
+        cleanupAndExit(1);    
     }
 }
 
@@ -102,4 +88,12 @@ sub getNumberFilesInAuditDir {
     my @audit_record_files = glob($auditdir . "/*.gramaudit");
     my $count = @audit_record_files;
     return $count;
+}
+
+sub cleanupAndExit {
+
+    my $rc = shift;
+    # restore original configuration
+    $configurationManager->restoreOriginalConfiguration();
+    exit $rc;
 }

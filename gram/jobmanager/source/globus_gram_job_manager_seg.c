@@ -60,13 +60,11 @@ globus_gram_job_manager_init_seg(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg.start level=TRACE module=%s\n",
-            manager->config->seg_module ? manager->config->seg_module : "fork");
+            "JM: Starting job monitoring for %s jobs\n",
+            manager->config->jobmanager_type);
 
     GlobusGramJobManagerLock(manager);
-    if (manager->config->seg_module == NULL &&
-        strcmp(manager->config->jobmanager_type, "fork") == 0)
+    if (strcmp(manager->config->jobmanager_type, "fork") == 0)
     {
         globus_reltime_t                delay;
 
@@ -80,29 +78,6 @@ globus_gram_job_manager_init_seg(
                 manager);
         if (result != GLOBUS_SUCCESS)
         {
-            char *                      errstr;
-            char *                      errstr_escaped;
-            errstr = globus_error_print_friendly(globus_error_peek(result));
-
-            errstr_escaped = globus_gram_prepare_log_string(
-                    errstr);
-
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                    "event=gram.seg.end level=WARN status=%d "
-                    "reason=\"%s\"\n",
-                    -1,
-                    errstr_escaped ? errstr_escaped : "");
-
-            if (errstr_escaped)
-            {
-                free(errstr_escaped);
-            }
-            if (errstr)
-            {
-                free(errstr);
-            }
             goto failed_periodic;
         }
     }
@@ -110,20 +85,14 @@ globus_gram_job_manager_init_seg(
     {
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.seg.activate.start level=TRACE module=%s\n",
-                manager->config->seg_module);
+                "JM: activating SEG\n");
 
         rc = globus_module_activate(GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE);
         if (rc != GLOBUS_SUCCESS)
         {
             globus_gram_job_manager_log(
                     manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.seg.activate.end level=ERROR error=%d "
-                    "reason=\"Error activating SEG\"\n",
-                    rc);
-            goto failed_activate;
+                    "JM: Error activating SEG: %d\n", rc);
         }
 
         globus_scheduler_event_generator_set_event_handler(
@@ -138,17 +107,11 @@ globus_gram_job_manager_init_seg(
         {
             globus_gram_job_manager_log(
                     manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.seg.end level=ERROR error=%d "
-                    "module=%s reason=\"Error loading job_manager SEG "
-                    "module\"\n",
-                    rc,
-                    manager->config->seg_module);
+                    "JM: Error loading SEG job_manager module: %d\n", rc);
         }
 
     }
     manager->seg_started = GLOBUS_TRUE;
-failed_activate:
 failed_periodic:
     GlobusGramJobManagerUnlock(manager);
 
@@ -179,12 +142,9 @@ globus_l_gram_seg_event_callback(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg.event.start level=TRACE segid=\"%s\" "
-            "state=%d event_ts=%ld\n",
+            "SEG Event: Job %s in state %d\n",
             event->job_id,
-            (int) event->event_type,
-            (long int) event->timestamp);
+            (int) event->event_type);
     if (event->event_type == GLOBUS_SCHEDULER_EVENT_RAW)
     {
         rc = GLOBUS_SUCCESS;
@@ -199,10 +159,13 @@ globus_l_gram_seg_event_callback(
 
     GlobusGramJobManagerLock(manager);
     /* Find the job request associated by this job id */
+    globus_gram_job_manager_log(
+            manager,
+            "JM: Adding reference for SEG event for %s\n",
+            event->job_id);
     rc = globus_gram_job_manager_add_reference_by_jobid(
             manager,
             event->job_id,
-            "SEG event",
             &request);
 
     if (rc != GLOBUS_SUCCESS)
@@ -214,19 +177,14 @@ globus_l_gram_seg_event_callback(
              */
             globus_gram_job_manager_log(
                     manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.seg.event.queue level=TRACE segid=\"%s\"\n",
-                    event->job_id);
+                    "Submit running, queueing for later\n"); 
             rc = globus_fifo_enqueue(&manager->seg_event_queue, new_event);
         }
         else
         {
             globus_gram_job_manager_log(
                     manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.seg.event.end level=TRACE segid=\"%s\" "
-                    "reason=\"Event ID doesn't match known job id\"\n",
-                    event->job_id);
+                    "Unknown job ID, ignoring event\n");
         }
     }
     if (rc != GLOBUS_SUCCESS)
@@ -255,10 +213,13 @@ globus_l_gram_seg_event_callback(
 
     if (rc != GLOBUS_SUCCESS)
     {
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Failed to handle SEG event, removing reference for %s\n",
+                request->job_contact_path);
         (void) globus_gram_job_manager_remove_reference(
                 request->manager,
-                request->job_contact_path,
-                "SEG event");
+                request->job_contact_path);
 manager_event_queue_failed:
         globus_scheduler_event_destroy(new_event);
 copy_failed:
@@ -276,161 +237,34 @@ globus_gram_job_manager_seg_handle_event(
     globus_gram_jobmanager_request_t *  request)
 {
     globus_scheduler_event_t *          event;
-    char *                              subjob_id_ptr = NULL;
-    size_t                              subjob_id_len;
-    globus_bool_t                       found_subjob_id;
 
     event = globus_fifo_dequeue(&request->seg_event_queue);
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.handle_seg_event.start "
-            "level=DEBUG "
-            "state=%d "
-            "gramid=%s "
-            "jobid=\"%s\" "
-            "\n",
+            "JM: Handling event: %s is in state %d (%p)\n",
+            event->job_id,
             event->event_type,
-            request->job_contact_path,
-            event->job_id);
+            request);
 
-    found_subjob_id = GLOBUS_FALSE;
-    subjob_id_len = strlen(event->job_id);
-    while (!found_subjob_id)
+    if (globus_i_gram_job_manager_script_valid_state_change(
+        request, event->event_type))
     {
-        subjob_id_ptr = strstr(request->job_id_string, event->job_id);
-        assert(subjob_id_ptr != NULL);
-
-        if (subjob_id_ptr == request->job_id_string ||
-            (*(subjob_id_ptr - 1) == ','))
-        {
-            /* request->job_id_string starts with this subjob_id, or this
-             * subjob_id happens after a comma. If it ends with a comma or
-             * \0, then we've found a match.
-             */
-            if (subjob_id_ptr[subjob_id_len] == ',')
-            {
-                found_subjob_id = GLOBUS_TRUE;
-
-                if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
-                    event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
-                {
-                    /* Remove this sub job id from the list by moving
-                     * after the comma up until \0 to subjob_id_ptr
-                     */
-                    memmove(subjob_id_ptr,
-                            subjob_id_ptr + subjob_id_len + 1,
-                            strlen(subjob_id_ptr + subjob_id_len + 1) + 1);
-                }
-            }
-            else if (subjob_id_ptr[subjob_id_len] == 0)
-            {
-                /* This is the final subjob in the job_id_string */
-                found_subjob_id = GLOBUS_TRUE;
-                if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
-                    event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
-                {
-                    /* Don't need to do memmove here, just null terminate at
-                     * either the initial part of the string if subjob_id is
-                     * the only one in the list, or at the comma otherwise
-                     */
-                    if (subjob_id_ptr != request->job_id_string)
-                    {
-                        *(subjob_id_ptr - 1) = '\0';
-                    }
-                    else
-                    {
-                        request->job_id_string[0] = '\0';
-                    }
-                }
-            }
-        }
+        globus_gram_job_manager_request_set_status(
+                request,
+                event->event_type);
+        request->unsent_status_change = GLOBUS_TRUE;
     }
-
-    assert(found_subjob_id);
-
-    /* If this is a terminal event (done or failed), we'll update the expected
-     * terminal state (in the case of a multi-subjob case) and the exit code
-     * if the job's exit code is currently 0
-     *
-     * Thus, if any subjob fails or exits with a non-0 exit code, we will
-     * propogate that in the job state change notification.
-     */
-    if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
-        event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
-    {
-        if (request->expected_terminal_state ==
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
-        {
-            request->expected_terminal_state = event->event_type;
-        }
-        if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE &&
-            request->exit_code == 0)
-        {
-            request->exit_code = event->exit_code;
-        }
-    }
-
-    /* If the last job terminated or any job moved to active, we'll update the
-     * job status and potentially send notifications.
-     */
-    if (event->event_type != GLOBUS_SCHEDULER_EVENT_DONE &&
-         event->event_type != GLOBUS_SCHEDULER_EVENT_FAILED)
-    {
-        if (globus_i_gram_job_manager_script_valid_state_change(
-                    request,
-                    event->event_type))
-        {
-            globus_gram_job_manager_request_set_status(
-                    request,
-                    event->event_type);
-            request->unsent_status_change = GLOBUS_TRUE;
-        }
-    }
-    else if (*request->job_id_string == '\0')
-    {
-        if (globus_i_gram_job_manager_script_valid_state_change(
-                    request,
-                    request->expected_terminal_state))
-        {
-            if ((request->expected_terminal_state ==
-                    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE) &&
-                globus_gram_job_manager_rsl_need_stage_out(request))
-            {
-                globus_gram_job_manager_request_set_status(
-                        request,
-                        GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT);
-            }
-            else
-            {
-                globus_gram_job_manager_request_set_status(
-                        request,
-                        request->expected_terminal_state);
-            }
-            request->unsent_status_change = GLOBUS_TRUE;
-        }
-    }
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.handle_seg_event.end "
-            "level=DEBUG "
-            "state=%d "
-            "gramid=%s "
-            "jobid=\"%s\" "
-            "\n",
-            event->event_type,
-            request->job_contact_path,
-            event->job_id);
 
     globus_scheduler_event_destroy(event);
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: Done handling SEG event, removing reference for %s\n",
+            request->job_contact_path);
     (void) globus_gram_job_manager_remove_reference(
             request->manager,
-            request->job_contact_path,
-            "SEG event");
+            request->job_contact_path);
 }
 /* globus_gram_job_manager_seg_handle_event() */
 
@@ -440,25 +274,11 @@ globus_gram_job_manager_seg_pause(
 {
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg_pause.start "
-            "level=TRACE "
-            "count=%d "
-            "\n",
+            "Pausing SEG (count -> %d)\n",
             manager->seg_pause_count+1);
-
     GlobusGramJobManagerLock(manager);
     manager->seg_pause_count++;
     GlobusGramJobManagerUnlock(manager);
-
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg_pause.end "
-            "level=TRACE "
-            "count=%d "
-            "\n",
-            manager->seg_pause_count);
 }
 /* globus_gram_job_manager_seg_pause() */
 
@@ -472,19 +292,17 @@ globus_gram_job_manager_seg_resume(
 
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg_resume.start "
-            "level=TRACE "
-            "count=%d "
-            "\n",
+            "Resuming SEG (count -> %d)\n",
             manager->seg_pause_count-1);
-
     GlobusGramJobManagerLock(manager);
     manager->seg_pause_count--;
 
     if (manager->seg_pause_count == 0 &&
         !globus_fifo_empty(&manager->seg_event_queue))
     {
+        globus_gram_job_manager_log(
+                manager,
+                "Scheduling resume oneshot\n");
         resume = malloc(sizeof(globus_gram_seg_resume_t));
         if (resume != NULL)
         {
@@ -513,14 +331,6 @@ globus_gram_job_manager_seg_resume(
         }
     }
     GlobusGramJobManagerUnlock(manager);
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg_resume.end "
-            "level=TRACE "
-            "count=%d "
-            "\n",
-            manager->seg_pause_count-1);
 }
 /* globus_gram_job_manager_seg_resume() */
 
@@ -535,34 +345,23 @@ globus_l_seg_resume_callback(
     int                                 rc;
 
     globus_gram_job_manager_log(
-            NULL,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg.resume_callback.start "
-            "level=TRACE "
-            "\n");
-
+            resume->manager,
+            "Resume oneshot fired\n");
     while (!globus_list_empty(resume->events))
     {
         event = globus_list_remove(&resume->events, resume->events);
 
         GlobusGramJobManagerLock(resume->manager);
+        globus_gram_job_manager_log(
+                resume->manager,
+                "JM: SEG resume, adding reference for %s\n",
+                event->job_id);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 resume->manager,
                 event->job_id,
-                "SEG event",
                 &request);
         if (rc != GLOBUS_SUCCESS)
         {
-            globus_gram_job_manager_log(
-                    NULL,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.seg.resume_callback.end "
-                    "level=TRACE "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "\n",
-                    0,
-                    "Ignoring unknown job id");
             GlobusGramJobManagerUnlock(resume->manager);
             globus_scheduler_event_destroy(event);
         }
@@ -576,17 +375,6 @@ globus_l_seg_resume_callback(
             rc = globus_l_gram_deliver_event(
                     request,
                     event);
-
-            globus_gram_job_manager_log(
-                    NULL,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.seg.resume_callback.end "
-                    "level=TRACE "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "\n",
-                    -rc,
-                    "Delivered event");
         }
     }
 }
@@ -605,17 +393,10 @@ globus_l_gram_deliver_event(
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg_deliver_event.start "
-            "level=TRACE "
-            "gramid=%s "
-            "jobid=\"%s\" "
-            "state=%d "
-            "jmstate=%d\n",
-            request->job_contact_path,
+            "Delivering event for %s to %s (%p)\n",
             event->job_id,
-            event->event_type,
-            request->jobmanager_state);
+            request->job_contact_path,
+            request);
 
     /* Keep the state file's timestamp up to date so that
      * anything scrubbing the state files of old and dead
@@ -625,41 +406,25 @@ globus_l_gram_deliver_event(
         utime(request->job_state_file, NULL);
     }
 
-    rc = globus_fifo_enqueue(&request->seg_event_queue, event);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.seg_deliver_event.end "
-                "level=ERROR "
-                "gramid=%s "
-                "jobid=\"%s\" "
-                "state=%d "
-                "jmstate=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                event->job_id,
-                event->event_type,
-                request->jobmanager_state,
-                -rc,
-                "Fifo enqueue failed",
-                globus_gram_protocol_error_string(rc));
-
-        goto event_enqueue_failed;
-    }
-
     if (event->event_type == GLOBUS_SCHEDULER_EVENT_DONE ||
-        event->event_type ==  GLOBUS_SCHEDULER_EVENT_FAILED)
+        event->event_type == GLOBUS_SCHEDULER_EVENT_FAILED)
     {
         (void) globus_gram_job_manager_unregister_job_id(
                 request->manager,
                 event->job_id);
+    }
+
+    globus_gram_job_manager_request_log(
+    		request,
+		"JM: Enqueuing SEG Event %s state %d, request in jm state %d\n",
+		event->job_id,
+		event->event_type,
+		request->jobmanager_state);
+    rc = globus_fifo_enqueue(&request->seg_event_queue, event);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto event_enqueue_failed;
     }
 
     if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
@@ -679,23 +444,6 @@ globus_l_gram_deliver_event(
         }
     }
     rc = GLOBUS_SUCCESS;
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.seg_deliver_event.end "
-            "level=TRACE "
-            "gramid=%s "
-            "jobid=\"%s\" "
-            "state=%d "
-            "jmstate=%d "
-            "status=%d "
-            "\n",
-            request->job_contact_path,
-            event->job_id,
-            event->event_type,
-            request->jobmanager_state,
-            0);
 
 event_enqueue_failed:
     GlobusGramJobManagerRequestUnlock(request);
@@ -739,8 +487,6 @@ globus_l_gram_fork_poll_callback(
             continue;
         }
 
-        pid_count = 0;
-        done_count = 0;
         for (tok_end = NULL,
                     pid_string = strtok_r(job_id_string, ",", &tok_end);
              pid_string != NULL;
@@ -791,10 +537,13 @@ globus_l_gram_fork_poll_callback(
         event = globus_list_first(l);
 
         GlobusGramJobManagerLock(manager);
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Fork poll, adding reference for %s\n",
+                event->job_id);
         rc = globus_gram_job_manager_add_reference_by_jobid(
                 manager,
                 event->job_id,
-                "SEG event",
                 &request);
         GlobusGramJobManagerUnlock(manager);
 

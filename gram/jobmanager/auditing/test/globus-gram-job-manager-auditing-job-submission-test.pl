@@ -3,19 +3,23 @@
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 BEGIN { push(@INC, "./perl_modules"); }
 
-print "1..1\n";
-
 use strict;
 use Cwd;
 require 5.005;
 use ConfigurationManager;
+use GatekeeperManager;
 use Util;
 
 my $configurationManager = ConfigurationManager->new();
+my $gatekeeperManager = GatekeeperManager->new();
+my $util = Util->new();
+my $killGatekeeper = 0;              # kill the gatekeeper at the end (1=yes,0=no)
 
-$ENV{X509_CERT_DIR} = cwd();
-$ENV{X509_USER_PROXY} = "testproxy.pem";
-system('chmod go-rw testproxy.pem'); 
+if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255) {
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
+    system('chmod go-rw testcred.pem'); 
+}
 
 # make sure the test audit directory is empty 
 $configurationManager->cleanupAuditDir();
@@ -27,13 +31,17 @@ $configurationManager->replaceSubstitutionVars();
 my @jobFiles = glob($configurationManager->getJobDir()."/*.rsl");
 my $numberOfJobs = @jobFiles;
 if ($numberOfJobs == 0) {
-    print "not ok #No jobs to submit. Check job directory for *.rsl files\n";
-    exit(0);
+    $util->error("No jobs to submit. Check job directory for *.rsl files");
+    cleanupAndExit($killGatekeeper, 1);
 }
+
+# start a personal gatekeeper for testing purpose
+$gatekeeperManager->startGatekeeper($configurationManager->getAuditDir());
+$killGatekeeper = 1;
 
 # submit the jobs
 foreach (@jobFiles) {    my $command = "globusrun -s -r \"$ENV{CONTACT_STRING}\" -f $_";
-    Util::debug("Submitting job: $command");
+    $util->debug("Submitting job: $command");
     `$command`;
 }
 
@@ -44,28 +52,41 @@ my @auditRecordFiles;
 
 # check if an audit record file for each job was created
 my $auditdir = $configurationManager->getAuditDir();
-Util::debug("Looking for $numberOfJobs audit record in $auditdir");
+$util->debug("Looking for $numberOfJobs audit record in $auditdir");
 for (my $i=0; $i<30; $i++) {
     @auditRecordFiles = glob($auditdir."/*.gramaudit");
     my $count = @auditRecordFiles;
     if ($count == $numberOfJobs) {
-        Util::debug("Found $count audit records");
+        $util->debug("Found $count audit records");
         $foundRecords = 1;
         last;
     } elsif ($count > $numberOfJobs) {
-        print "not ok #Found $count audit records. That's too many\n";
-        exit(0);
+        $util->error("Found $count audit records. That's too many");
+        cleanupAndExit($killGatekeeper, 1);
     } else {
-        Util::debug("Found $count audit records");
+        $util->debug("Found $count audit records");
         sleep(1);
     } 
 }
 
 # if the audit-record file was not found
 if (!$foundRecords) {
-    print "not ok #No audit record file per job created by Gram\n";
-    exit(0);
+    $util->error("No audit record file per job created by Gram");
+    cleanupAndExit($killGatekeeper, 1);
 }
 
-print "ok\n";
-exit(0);
+cleanupAndExit($killGatekeeper, 0);
+
+############################ Helper methods ####################################
+
+# stops and removes data of the personal gatekeeper and returns the
+# success of the script (0=success, 1=failure)
+sub cleanupAndExit {
+
+    my $killGatekeeper = shift;
+    my $rc = shift;
+    if($killGatekeeper) {
+	    $gatekeeperManager->stopGatekeeper();
+    }
+    exit $rc;
+}

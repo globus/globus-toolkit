@@ -54,13 +54,6 @@ enum { GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE = 64000 };
 enum { GLOBUS_GRAM_PROTOCOL_PARAM_SIZE = 1024 };
 typedef unsigned long globus_gram_protocol_handle_t;
 
-typedef struct globus_gram_protocol_hash_entry_s
-{
-    char *                              attribute;
-    char *                              value;
-}
-globus_gram_protocol_extension_t;
-
 typedef void (*globus_gram_protocol_callback_t)(
     void  *				arg,
     globus_gram_protocol_handle_t	handle,
@@ -231,22 +224,6 @@ globus_gram_protocol_unpack_job_request_reply(
     int *				status,
     char **				job_contact);
 
-int
-globus_gram_protocol_pack_job_request_reply_with_extensions(
-    int					status,
-    const char *			job_contact,    /* may be null */
-    globus_hashtable_t *                extensions,
-    globus_byte_t **			reply,
-    globus_size_t *			replysize);
-
-
-int
-globus_gram_protocol_unpack_job_request_reply_with_extensions(
-    const globus_byte_t *		reply,
-    globus_size_t			replysize,
-    int *				status,
-    char **				job_contact,
-    globus_hashtable_t *                extensions);
 
 int
 globus_gram_protocol_pack_status_request(
@@ -270,14 +247,6 @@ globus_gram_protocol_pack_status_reply(
     globus_byte_t **			reply,
     globus_size_t *			replysize);
 
-int
-globus_gram_protocol_pack_status_reply_with_extensions(
-    int					job_status,
-    int					failure_code,
-    int					job_failure_code,
-    globus_hashtable_t *                extensions,
-    globus_byte_t **			reply,
-    globus_size_t *			replysize);
 
 int
 globus_gram_protocol_unpack_status_reply(
@@ -287,11 +256,6 @@ globus_gram_protocol_unpack_status_reply(
     int *				failure_code,
     int *				job_failure_code);
 
-int
-globus_gram_protocol_unpack_status_reply_with_extensions(
-    const globus_byte_t *               reply,
-    globus_size_t                       replysize,
-    globus_hashtable_t *                extensions);
 
 int
 globus_gram_protocol_pack_status_update_message(   
@@ -309,42 +273,6 @@ globus_gram_protocol_unpack_status_update_message(
     char **				job_contact,
     int *				status,
     int *				failure_code);
-
-int
-globus_gram_protocol_pack_status_update_message_with_extensions(
-    char *                              job_contact,
-    int                                 status,
-    int                                 failure_code,
-    globus_hashtable_t *                extensions,
-    globus_byte_t **                    reply,
-    globus_size_t *                     replysize);
-
-int
-globus_gram_protocol_unpack_status_update_message_with_extensions(
-    const globus_byte_t *		reply,
-    globus_size_t			replysize,
-    globus_hashtable_t *                message_hash);
-
-int
-globus_gram_protocol_unpack_message(
-    const char *                        message,
-    size_t                              message_length,
-    globus_hashtable_t *                message_attributes);
-
-int
-globus_gram_protocol_pack_version_request(
-    char **                             request,
-    size_t *                            requestsize);
-
-void
-globus_gram_protocol_hash_destroy(
-    globus_hashtable_t *                message_hash);
-
-globus_gram_protocol_extension_t *
-globus_gram_protocol_create_extension(
-    const char *                        attribute,
-    const char *                        format,
-    ...);
 
 int
 globus_gram_protocol_get_sec_context(

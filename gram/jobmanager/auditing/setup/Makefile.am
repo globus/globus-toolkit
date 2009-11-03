@@ -1,7 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS = pkgdata schemas
+SUBDIRS = pkgdata
 
 setup_SCRIPTS = setup-globus-gram-auditing
 

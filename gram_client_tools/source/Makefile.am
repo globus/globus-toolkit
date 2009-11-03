@@ -33,22 +33,6 @@ globusrun_SOURCES = globusrun.c
 globusrun_LDFLAGS = $(GPT_LDFLAGS)
 globusrun_LDADD = $(GPT_PGM_LINKS)
 
-man1datadir=$(mandir)/man1
-man1data_DATA = globus-job-cancel.1 \
-                globus-job-clean.1 \
-                globus-job-run.1  \
-                globus-job-status.1 \
-                globus-job-submit.1 \
-                globusrun.1
-
-MANUAL_SOURCE = globus-job-cancel-manual.xml \
-                globus-job-clean-manual.xml \
-                globus-job-run-manual.xml \
-                globus-job-status-manual.xml \
-                globus-job-submit-manual.xml \
-                globusrun-manual.xml \
-                manual.xml
-
 globus-job-cancel: globus-job-clean
 	cp globus-job-clean globus-job-cancel
 
@@ -56,15 +40,6 @@ globus-job-submit: globus-job-run
 	cp globus-job-run globus-job-submit
 
 CLEANFILES=globus-job-submit globus-job-cancel
-
-if GENERATE_MANPAGES
-export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
-
-$(man1data_DATA): $(MANUAL_SOURCE)
-	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
-	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
-endif
-
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

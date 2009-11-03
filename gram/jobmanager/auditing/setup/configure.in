@@ -14,7 +14,6 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
-        schemas/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 )

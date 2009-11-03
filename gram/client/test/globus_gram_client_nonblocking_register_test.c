@@ -64,7 +64,6 @@ test1()
 	goto disable_module;
     }
 
-    memset(&monitor, 0, sizeof(monitor_t));
     globus_mutex_init(&monitor.mutex ,GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.state = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
@@ -126,8 +125,8 @@ test1()
 
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
-    free(callback_contact);
-    free(job_contact);
+    globus_libc_free(callback_contact);
+    globus_libc_free(job_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
@@ -156,7 +155,6 @@ test2()
 	goto disable_module;
     }
 
-    memset(&monitor, 0, sizeof(monitor_t));
     globus_mutex_init(&monitor.mutex ,GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.state = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
@@ -257,14 +255,14 @@ test2()
 
 destroy_callback_contact2:
     globus_gram_client_callback_disallow(callback_contact[2]);
-    free(callback_contact[2]);
+    globus_libc_free(callback_contact[2]);
 destroy_callback_contact1:
     globus_gram_client_callback_disallow(callback_contact[1]);
-    free(callback_contact[1]);
+    globus_libc_free(callback_contact[1]);
 destroy_callback_contact0:
     globus_gram_client_callback_disallow(callback_contact[0]);
-    free(callback_contact[0]);
-    free(job_contact);
+    globus_libc_free(callback_contact[0]);
+    globus_libc_free(job_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
@@ -360,13 +358,13 @@ test3()
 	rc = 0;
     }
 
-    free(job_contact);
+    globus_libc_free(job_contact);
 destroy_bad_callback_contact:
     globus_gram_client_callback_disallow(bad_callback_contact);
-    free(bad_callback_contact);
+    globus_libc_free(bad_callback_contact);
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
-    free(callback_contact);
+    globus_libc_free(callback_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);

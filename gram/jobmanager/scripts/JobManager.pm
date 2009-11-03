@@ -95,8 +95,17 @@ sub new
         new Globus::GRAM::ExtensionsHandler($class, $description);
     }
 
+    if(defined($description->logfile()))
+    {
+        local(*FH);
+        open(FH, '>>'. $description->logfile());
+        select((select(FH),$|=1)[$[]);
+        $self->{log} = *FH;
+    }
+
     bless $self, $class;
 
+    $self->log("New Perl JobManager created.");
     eval { File::Path::mkpath($self->job_dir(), 0, 0700); };
 
     if ($@) {
@@ -116,13 +125,12 @@ a timestamp.
 sub log
 {
     my $self = shift;
-    my $msg = join("", @_);
 
-    $msg =~ s/\\/\\\\/g;
-    $msg =~ s/\n/\\n/g;
-    $msg =~ s/\"/\\\"/g;
-
-    $self->respond({LOG => "msg=\"$msg\""});
+    if(exists($self->{log}))
+    {
+        my $fh = $self->{log};
+	print $fh scalar(localtime(time)), " JM_SCRIPT: ", @_, "\n";
+    }
 
     return;
 }

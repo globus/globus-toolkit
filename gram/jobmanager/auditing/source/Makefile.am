@@ -7,21 +7,18 @@ SUBDIRS= pkgdata
 libexec_SCRIPTS = globus-gram-audit
 
 pkgdata_DATA = 
+pkgdocdir = $(GLOBUS_LOCATION)/share/doc/$(PACKAGE)
 
-mandatadir=$(mandir)/man8
-mandata_DATA = globus-gram-audit.8
-MANUAL_SOURCE = manual.xml globus-gram-audit-manual.xml 
+pkgdoc_DATA = globus-gram-audit.html
 
 # Files which we want to put in the source package
-EXTRA_DIST = $(libexec_SCRIPTS) $(mandata_DATA) $(MANUAL_SOURCE)
+EXTRA_DIST = $(libexec_SCRIPTS) $(pkgdata_DATA)
 
-if GENERATE_MANPAGES
-export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
+globus-gram-audit.html: globus-gram-audit
+	pod2html --noindex globus-gram-audit | \
+	    sed -e 's,</HEAD>,<LINK REL="stylesheet" HREF="../../../../doxygen/globus.css"></HEAD>,' > $@
 
-$(mandata_DATA): $(MANUAL_SOURCE)
-	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
-	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
-endif
+CLEANFILES=globus-gram-audit.html
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

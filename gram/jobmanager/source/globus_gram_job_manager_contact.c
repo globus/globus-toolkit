@@ -15,7 +15,6 @@
  */
 
 #include "globus_gram_job_manager.h"
-#include "version.h"
 
 #include <string.h>
 
@@ -83,14 +82,7 @@ globus_gram_job_manager_contact_add(
 
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.callback_register.start "
-            "level=TRACE "
-            "gramid=%s "
-            "contact=%s "
-            "mask=%d "
-            "\n",
-            request->job_contact_path,
+            "JM: Adding new callback contact (url=%s, mask=%d)\n",
             contact,
             job_state_mask);
 
@@ -99,24 +91,7 @@ globus_gram_job_manager_contact_add(
     {
         globus_gram_job_manager_request_log(
                 request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback_register.end "
-                "level=ERROR "
-                "gramid=%s "
-                "contact=%s "
-                "mask=%d "
-                "msg=\"%s\" "
-                "status=%d "
-                "errno=%d "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                contact,
-                job_state_mask,
-                "Malloc failed",
-                -GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED,
-                errno,
-                strerror(errno));
+                "JM: Failed to malloc callback contact structure\n");
         goto error_exit;
     }
     callback->contact = strdup(contact);
@@ -124,24 +99,8 @@ globus_gram_job_manager_contact_add(
     {
         globus_gram_job_manager_request_log(
                 request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback_register.end "
-                "level=ERROR "
-                "gramid=%s "
-                "contact=%s "
-                "mask=%d "
-                "msg=\"%s\" "
-                "status=%d "
-                "errno=%d "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                contact,
-                job_state_mask,
-                "Malloc failed",
-                -GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED,
-                errno,
-                strerror(errno));
+                "JM: Failed to make a copy of contact string %s\n",
+                contact);
 
         goto strdup_contact_failed;
     }
@@ -153,36 +112,13 @@ globus_gram_job_manager_contact_add(
     {
         globus_gram_job_manager_request_log(
                 request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback_register.end "
-                "level=ERROR "
-                "gramid=%s "
-                "contact=%s "
-                "mask=%d "
-                "status=%d "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                contact,
-                job_state_mask,
-                "List insert failed",
-                strerror(errno),
-                -GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED);
+                "JM: Failed to insert callback contact into list\n");
         goto list_insert_failed;
     }
+
     globus_gram_job_manager_request_log(
             request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.callback_register.end "
-            "level=TRACE "
-            "gramid=%s "
-            "contact=%s "
-            "mask=%d "
-            "status=%d\n",
-            request->job_contact_path,
-            contact,
-            job_state_mask,
-            0);
+            "JM: Added successfully\n");
 
     return GLOBUS_SUCCESS;
 
@@ -255,45 +191,17 @@ globus_gram_job_manager_contact_state_callback(
     int                                 rc;
     globus_list_t *                     tmp_list;
     globus_gram_job_manager_contact_t * client_contact_node;
-    globus_hashtable_t                  extensions = NULL;
-    globus_gram_protocol_extension_t *  entry = NULL;
-    globus_gram_protocol_job_state_t    state;
-
-    state = (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-            ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
-            : request->status;
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.callback.start "
-            "level=DEBUG "
-            "gramid=%s "
-            "state=%d "
-            "\n",
-            request->job_contact_path,
-            state);
-
     globus_gram_job_callback_context_t *context = NULL;
 
     tmp_list = request->client_contacts;
 
+    globus_gram_job_manager_request_log(
+            request,
+            "JM: %s empty client callback list.\n",
+            (tmp_list) ? ("NOT") : "" );
+
     if (globus_list_empty(tmp_list))
     {
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-                "event=gram.callback.end "
-                "level=DEBUG "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                state,
-                0,
-                "Empty callback contact list");
         return;
     }
 
@@ -304,48 +212,21 @@ globus_gram_job_manager_contact_state_callback(
 
         globus_gram_job_manager_request_log(
                 request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "errno=%d "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Malloc failed",
-                errno,
-                strerror(errno));
+                "JM: error %d while creating status message\n",
+                rc);
 
         goto context_malloc_failed;
     }
 
+    globus_gram_job_manager_request_log(
+            request,
+            "Adding reference for job state callbacks\n");
     rc = globus_gram_job_manager_add_reference(
             request->manager,
             request->job_contact_path,
-            "Job state callbacks",
             &context->request);
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Add reference failed",
-                globus_gram_protocol_error_string(rc));
         goto add_reference_failed;
     }
     context->contacts = NULL;
@@ -353,468 +234,19 @@ globus_gram_job_manager_contact_state_callback(
     context->message_length = 0;
     context->active = 0;
 
-    rc = globus_hashtable_init(
-            &extensions,
-            7,
-            globus_hashtable_string_hash,
-            globus_hashtable_string_keyeq);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    rc = globus_gram_protocol_pack_status_update_message(
+        request->job_contact,
+        request->status,
+        request->failure_code,
+        &context->message,
+        &context->message_length);
 
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Hashtable init failed",
-                globus_gram_protocol_error_string(rc));
-
-        goto fail_extensions_init;
-    }
-
-    /* Create message extensions to send exit code if known */
-    if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
-        request->config->seg_module != NULL)
-    {
-        entry = globus_gram_protocol_create_extension(
-                "exit-code",
-                "%d",
-                request->exit_code);
-        if (entry == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            globus_gram_job_manager_request_log(
-                    request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.callback.end "
-                    "level=ERROR "
-                    "gramid=%s "
-                    "state=%d "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "reason=\"%s\" "
-                    "\n",
-                    request->job_contact_path,
-                    state,
-                    -rc,
-                    "Message extension initialization failed",
-                    globus_gram_protocol_error_string(rc));
-
-            goto extension_create_failed;
-        }
-
-        rc = globus_hashtable_insert(
-                &extensions,
-                entry->attribute,
-                entry);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            globus_gram_job_manager_request_log(
-                    request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.callback.end "
-                    "level=ERROR "
-                    "gramid=%s "
-                    "state=%d "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "reason=\"%s\" "
-                    "\n",
-                    request->job_contact_path,
-                    state,
-                    -rc,
-                    "Message extension hashtable insert failed",
-                    globus_gram_protocol_error_string(rc));
-
-            goto fail_entry_insert;
-        }
-    }
-    else if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-    {
-        if (request->gt3_failure_type != NULL)
-        {
-            entry = globus_gram_protocol_create_extension(
-                    "gt3-failure-type",
-                    "%s",
-                    request->gt3_failure_type);
-            if (entry == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension initialization failed",
-                        globus_gram_protocol_error_string(rc));
-
-                goto extension_create_failed;
-            }
-
-            rc = globus_hashtable_insert(
-                    &extensions,
-                    entry->attribute,
-                    entry);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension hashtable insert failed",
-                        globus_gram_protocol_error_string(rc));
-
-                goto fail_entry_insert;
-            }
-        }
-        if (request->gt3_failure_message != NULL)
-        {
-            entry = globus_gram_protocol_create_extension(
-                    "gt3-failure-message",
-                    "%s",
-                    request->gt3_failure_message);
-            if (entry == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension initialization failed",
-                        globus_gram_protocol_error_string(rc));
-
-                goto extension_create_failed;
-            }
-
-            rc = globus_hashtable_insert(
-                    &extensions,
-                    entry->attribute,
-                    entry);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension hashtable insert failed",
-                        globus_gram_protocol_error_string(rc));
-                goto fail_entry_insert;
-            }
-        }
-        if (request->gt3_failure_source != NULL)
-        {
-            entry = globus_gram_protocol_create_extension(
-                    "gt3-failure-source",
-                    "%s",
-                    request->gt3_failure_source);
-            if (entry == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension hashtable insert failed",
-                        globus_gram_protocol_error_string(rc));
-                goto extension_create_failed;
-            }
-
-            rc = globus_hashtable_insert(
-                    &extensions,
-                    entry->attribute,
-                    entry);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension hashtable insert failed",
-                        globus_gram_protocol_error_string(rc));
-                goto fail_entry_insert;
-            }
-        }
-        if (request->gt3_failure_destination != NULL)
-        {
-            entry = globus_gram_protocol_create_extension(
-                    "gt3-failure-destination",
-                    "%s",
-                    request->gt3_failure_destination);
-            if (entry == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension initialization failed",
-                        globus_gram_protocol_error_string(rc));
-                goto extension_create_failed;
-            }
-
-            rc = globus_hashtable_insert(
-                    &extensions,
-                    entry->attribute,
-                    entry);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                globus_gram_job_manager_request_log(
-                        request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        "Message extension hashtable insert failed",
-                        globus_gram_protocol_error_string(rc));
-                goto fail_entry_insert;
-            }
-        }
-    }
-    /* Add extensions for version numbers */
-    entry = globus_gram_protocol_create_extension(
-            "toolkit-version",
-            "%s",
-            request->config->globus_version);
-    if (entry == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Message extension initialization failed",
-                globus_gram_protocol_error_string(rc));
-        goto extension_create_failed;
-    }
-    rc = globus_hashtable_insert(
-            &extensions,
-            entry->attribute,
-            entry);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Message extension hashtable insert failed",
-                globus_gram_protocol_error_string(rc));
-        goto fail_entry_insert;
-    }
-    entry = globus_gram_protocol_create_extension(
-            "version",
-            "%d.%d (%d-%d)",
-            local_version.major,
-            local_version.minor,
-            local_version.timestamp,
-            local_version.branch_id);
-    if (entry == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Message extension initialization failed",
-                globus_gram_protocol_error_string(rc));
-        goto extension_create_failed;
-    }
-    rc = globus_hashtable_insert(
-            &extensions,
-            entry->attribute,
-            entry);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Message extension hashtable insert failed",
-                globus_gram_protocol_error_string(rc));
-        goto fail_entry_insert;
-    }
-
-    entry = NULL;
-
-    if (extensions != NULL)
-    {
-        rc = globus_gram_protocol_pack_status_update_message_with_extensions(
-            request->job_contact,
-            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-                ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
-                : request->status,
-            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-                ? request->stop_reason
-                : request->failure_code,
-            &extensions,
-            &context->message,
-            &context->message_length);
-    }
-    else
-    {
-        rc = globus_gram_protocol_pack_status_update_message(
-            request->job_contact,
-            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-                ? GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED
-                : request->status,
-            (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
-                ? request->stop_reason
-                : request->failure_code,
-            &context->message,
-            &context->message_length);
-    }
     if (rc != GLOBUS_SUCCESS)
     {
         globus_gram_job_manager_request_log(
                 request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.end "
-                "level=ERROR "
-                "gramid=%s "
-                "state=%d "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Error packing message",
-                globus_gram_protocol_error_string(rc));
+                "JM: error %d while creating status message\n",
+                rc);
         goto pack_message_failed;
     }
 
@@ -834,24 +266,8 @@ globus_gram_job_manager_contact_state_callback(
 
                 globus_gram_job_manager_request_log(
                         request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d"
-                        "contact=%s "
-                        "msg=\"%s\" "
-                        "errno=%d "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        client_contact_node->contact,
-                        "Copy of contact string failed",
-                        errno,
-                        strerror(errno));
-
+                        "JM: error %d while creating status message\n",
+                        rc);
                 continue;
             }
 
@@ -859,26 +275,13 @@ globus_gram_job_manager_contact_state_callback(
 
             if (rc != GLOBUS_SUCCESS)
             {
+                free(contact);
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
                 globus_gram_job_manager_request_log(
                         request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                        "event=gram.callback.end "
-                        "level=ERROR "
-                        "gramid=%s "
-                        "state=%d "
-                        "status=%d"
-                        "contact=%s "
-                        "msg=\"%s\" "
-                        "reason=\"%s\"\n",
-                        request->job_contact_path,
-                        state,
-                        -rc,
-                        client_contact_node->contact,
-                        "Error inserting contact string into list",
-                        globus_gram_protocol_error_string(rc));
-                free(contact);
+                        "JM: error %d while creating status message\n",
+                        rc);
                 continue;
             }
         }
@@ -888,64 +291,14 @@ globus_gram_job_manager_contact_state_callback(
     {
         /* Nothing to send... free context */
         rc = GLOBUS_FAILURE;
-
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.callback.end "
-                "level=WARN "
-                "gramid=%s "
-                "state=%d "
-                "status=%d"
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Unexpectedly empty contact list",
-                globus_gram_protocol_error_string(rc));
         goto nothing_to_send;
     }
 
     rc = globus_l_gram_callback_queue(request->manager, context);
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_gram_job_manager_request_log(
-                request,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.callback.end "
-                "level=WARN "
-                "gramid=%s "
-                "state=%d "
-                "status=%d"
-                "msg=\"%s\" "
-                "reason=\"%s\"\n",
-                request->job_contact_path,
-                state,
-                -rc,
-                "Error queuing callback messages",
-                globus_gram_protocol_error_string(rc));
         goto queue_failed;
     }
-
-    if (extensions != NULL)
-    {
-        globus_gram_protocol_hash_destroy(&extensions);
-    }
-
-    globus_gram_job_manager_request_log(
-            request,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.callback.end "
-            "level=DEBUG "
-            "gramid=%s "
-            "state=%d "
-            "status=%d "
-            "msg=\"%s\"\n",
-            request->job_contact_path,
-            state,
-            rc,
-            "Done queuing callback messages");
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -962,23 +315,12 @@ queue_failed:
 nothing_to_send:
         free(context->message);
 
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: Not sending callbacks, removing reference\n");
         globus_gram_job_manager_remove_reference(
                request->manager,
-               request->job_contact_path,
-               "Job state callbacks");
-        if (entry != NULL)
-        {
-fail_entry_insert:
-            free(entry->value);
-            free(entry->attribute);
-            free(entry);
-        }
-extension_create_failed:
-        if (extensions)
-        {
-            globus_gram_protocol_hash_destroy(&extensions);
-        }
-fail_extensions_init:
+               request->job_contact_path);
 add_reference_failed:
 pack_message_failed:
         free(context);
@@ -1073,7 +415,7 @@ globus_gram_job_manager_read_callback_contacts(
     request->client_contacts = NULL;
     tmp = &request->client_contacts;
 
-    rc = fscanf(fp, "%d%*[\n]", &count);
+    rc = fscanf(fp, "%d\n", &count);
     if (rc != 1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
@@ -1096,7 +438,7 @@ globus_gram_job_manager_read_callback_contacts(
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
             goto failed_ftell;
         }
-        rc = fscanf(fp, "%d %*s%*[\n]", &contact->job_state_mask); 
+        rc = fscanf(fp, "%d %*s\n", &contact->job_state_mask); 
         if (rc < 1)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
@@ -1125,7 +467,7 @@ globus_gram_job_manager_read_callback_contacts(
 
             goto failed_malloc_contact_string_failed;
         }
-        rc = fscanf(fp, "%*d %s%*[\n]", contact->contact);
+        rc = fscanf(fp, "%*d %s\n", contact->contact);
         if (rc < 1)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
@@ -1156,14 +498,13 @@ failed_read_mask:
 failed_ftell:
         free(contact);
 failed_malloc_contact:
-        globus_gram_job_manager_contact_list_free(request);
 failed_read_count:
         ;
     }
 
     return rc;
 }
-/* globus_gram_job_manager_read_callback_contacts() */
+/* globus_gram_job_manager_write_callback_contacts() */
 
 static
 int
@@ -1175,49 +516,11 @@ globus_l_gram_callback_queue(
     globus_list_t *                     references = NULL;
     globus_gram_jobmanager_request_t *  request;
 
-    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
-    {
-        char *                          message;
-
-        message = globus_gram_prepare_log_string((char *) context->message);
-
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.callback.queue.start "
-                "level=TRACE "
-                "gramid=%s "
-                "msg=\"%s\" "
-                "status_message=\"%s\""
-                "\n",
-                context->request->job_contact_path,
-                "Queuing status update message",
-                message ? message : "");
-        if (message)
-        {
-            free(message);
-        }
-    }
-
     GlobusGramJobManagerLock(manager);
     rc = globus_fifo_enqueue(&manager->state_callback_fifo, context);
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_FAILURE;
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.callback.queue.end "
-                "level=ERROR "
-                "gramid=%s "
-                "msg=\"%s\" "
-                "status=%d "
-                "reason=\"%s\""
-                "\n",
-                context->request->job_contact_path,
-                "Error enqueuing context in callback fifo",
-                -rc,
-                globus_gram_protocol_error_string(rc));
         goto failed_enqueue;
     }
 
@@ -1234,34 +537,6 @@ globus_l_gram_callback_queue(
             
             contact = globus_list_remove(&context->contacts, context->contacts);
 
-            if (manager->config->log_levels &
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
-            {
-                char *                  message;
-
-                message = globus_gram_prepare_log_string(
-                        (char *) context->message);
-
-                globus_gram_job_manager_log(
-                        manager,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                        "event=gram.callback.queue.process.start "
-                        "level=TRACE "
-                        "gramid=%s "
-                        "msg=\"%s\" "
-                        "contact=%s "
-                        "status_message=\"%s\""
-                        "\n",
-                        context->request->job_contact_path,
-                        "Sending status update message",
-                        contact,
-                        message ? message : "");
-                if (message)
-                {
-                    free(message);
-                }
-            }
-
             rc = globus_gram_protocol_post(
                     contact,
                     NULL,
@@ -1273,44 +548,11 @@ globus_l_gram_callback_queue(
 
             if (rc == GLOBUS_SUCCESS)
             {
-                request->job_stats.callback_count++;
                 manager->state_callback_slots--;
                 context->active++;
-
-                globus_gram_job_manager_log(
-                        manager,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                        "event=gram.callback.queue.process.end "
-                        "level=TRACE "
-                        "gramid=%s "
-                        "contact=%s "
-                        "msg=\"%s\" "
-                        "status=%d "
-                        "\n",
-                        context->request->job_contact_path,
-                        contact,
-                        "Message posted",
-                        rc);
             }
             else
             {
-                globus_gram_job_manager_log(
-                        manager,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                        "event=gram.callback.queue.process.end "
-                        "level=WARN "
-                        "gramid=%s "
-                        "contact=%s "
-                        "msg=\"%s\" "
-                        "status=%d "
-                        "reason=\"%s\" "
-                        "\n",
-                        context->request->job_contact_path,
-                        contact,
-                        "Message posted",
-                        -rc,
-                        globus_gram_protocol_error_string(rc));
-
                 rc = GLOBUS_SUCCESS;
             }
             free(contact);
@@ -1323,7 +565,6 @@ globus_l_gram_callback_queue(
         {
             free(context->message);
             free(context);
-            context = NULL;
             globus_list_insert(&references, request->job_contact_path);
         }
     }
@@ -1335,25 +576,13 @@ failed_enqueue:
     {
         char * key = globus_list_remove(&references, references);
 
-        globus_gram_job_manager_remove_reference(
-               manager,
-               key,
-               "Job state callbacks");
-    }
-
-    if (rc == GLOBUS_SUCCESS)
-    {
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.callback.queue.end "
-                "level=TRACE "
-                "%s%s%s"
-                "status=%d\n",
-                context ? "gramid=" : "",
-                context ? context->request->job_contact_path : "",
-                context ? " " : "",
-                -rc);
+                "JM: Done sending callbacks, removing reference for %s\n",
+                key);
+        globus_gram_job_manager_remove_reference(
+               manager,
+               key);
     }
 
     return rc;
@@ -1437,10 +666,13 @@ globus_l_gram_callback_reply(
     {
         char * key = globus_list_remove(&references, references);
 
+        globus_gram_job_manager_log(
+                manager,
+                "JM: Done sending callbacks, removing reference for %s\n",
+                key);
         globus_gram_job_manager_remove_reference(
                manager,
-               key,
-               "Job state callbacks");
+               key);
     }
 }
 /* globus_l_gram_callback_reply() */

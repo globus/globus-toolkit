@@ -2,20 +2,31 @@ package Util;
 
 use strict;
 
+sub new() {
+
+  my $proto = shift;
+  my $self={};
+  bless($self, $proto);  
+  return $self;
+}
+
 # remove whitespaces from string
-sub trim ($) {
+sub trim () {
+    my $self = shift;
     my $string = shift;
     $string =~ s/^\s+//;
     $string =~ s/\s+$//;
     return $string;
 }
 
-sub debug($) {
+sub debug() {
+    my $self = shift;
     my $string = shift;
-    print STDOUT "    [DEBUG]: $string\n" if ($ENV{TEST_DEBUG});
+    print STDOUT "    [DEBUG]: $string\n";
 }
 
-sub error($) {
+sub error() {
+    my $self = shift;
     my $string = shift;
     print STDOUT "    [-->ERROR<--]: $string\n";
 }

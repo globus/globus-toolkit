@@ -176,7 +176,7 @@ sub create_services_file
                     "${libexecdir}/globus-job-manager globus-job-manager ".
 		    "-conf ${job_manager_conf} -type ${manager_type} ".
 		    "-machine-type unknown ".
-		    "$extra_config\n";
+		    "-publish-jobs $extra_config\n";
 
     $service_file->close();
 }
