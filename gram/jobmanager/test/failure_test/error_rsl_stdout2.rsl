@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT *)
-&(executable=/bin/sh)
- (stdout=(bad (format string) ))
