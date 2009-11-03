@@ -2,12 +2,12 @@
 .\"     Title: globus-job-status
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 10/29/2009
+.\"      Date: 11/03/2009
 .\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-STATUS" "1" "10/29/2009" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-STATUS" "1" "11/03/2009" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -79,51 +79,39 @@ The job has completed execution and is currently staging files from the service 
 The full set of options to
 \fBglobus\-job\-status\fR
 are:
-.TS
-tab(:);
-l l
-l l
-l l.
-T{
-\-help | \-usage
-T}:T{
-.sp
+.PP
+\fB\-help\fR, \fB\-usage\fR
+.RS 4
 Display a help message to standard error and exit\&.
-T}
-T{
-\-version
-T}:T{
-.sp
-Display the software version of the \fBglobus\-job\-status\fR program to standard output\&.
-T}
-T{
-\-version
-T}:T{
-.sp
-Display the software version of the \fBglobus\-job\-status\fR program including DiRT information to standard output\&.
-T}
-.TE
-.sp 1
+.RE
+.PP
+\fB\-version\fR
+.RS 4
+Display the software version of the
+\fBglobus\-job\-status\fR
+program to standard output\&.
+.RE
+.PP
+\fB\-versions\fR
+.RS 4
+Display the software version of the
+\fBglobus\-job\-status\fR
+program including DiRT information to standard output\&.
+.RE
 .SH "ENVIRONMENT"
 .PP
 If the following variables affect the execution of
 \fBglobus\-job\-status\fR\&.
-.TS
-tab(:);
-l l
-l l.
-T{
+.PP
 X509_USER_PROXY
-T}:T{
+.RS 4
 Path to proxy credential\&.
-T}
-T{
+.RE
+.PP
 X509_CERT_DIR
-T}:T{
+.RS 4
 Path to trusted certificate directory\&.
-T}
-.TE
-.sp 1
+.RE
 .SH "BUGS"
 .PP
 The

@@ -34,9 +34,20 @@ globusrun_LDFLAGS = $(GPT_LDFLAGS)
 globusrun_LDADD = $(GPT_PGM_LINKS)
 
 man1datadir=$(mandir)/man1
-man1data_DATA = globus-job-run.1 globus-job-status.1
+man1data_DATA = globus-job-cancel.1 \
+                globus-job-clean.1 \
+                globus-job-run.1  \
+                globus-job-status.1 \
+                globus-job-submit.1 \
+                globusrun.1
 
-MANUAL_SOURCE = globus-job-run-manual.xml globus-job-status-manual.xml
+MANUAL_SOURCE = globus-job-cancel-manual.xml \
+                globus-job-clean-manual.xml \
+                globus-job-run-manual.xml \
+                globus-job-status-manual.xml \
+                globus-job-submit-manual.xml \
+                globusrun-manual.xml \
+                manual.xml
 
 globus-job-cancel: globus-job-clean
 	cp globus-job-clean globus-job-cancel

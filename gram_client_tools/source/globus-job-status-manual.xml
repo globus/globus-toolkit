@@ -5,7 +5,7 @@
 $Header$
 -->
 
-<refentry>
+<refentry id="gram5-cmd-globus-job-status">
 <refmeta>
 <refentrytitle>globus-job-status</refentrytitle>
 <manvolnum>1</manvolnum>
@@ -88,29 +88,26 @@ supported by <command>globus-job-status</command> are:
 <para>
 The full set of options to <command>globus-job-status</command> are:
 
-<informaltable frame="none">
-    <tgroup cols="2" align="left">
-        <tbody>
-            <row>
-                <entry>-help | -usage</entry>
-                <entry><simpara>Display a help message to standard error and
-                exit.</simpara></entry>
-            </row>
-            <row>
-                <entry>-version</entry>
-                <entry><simpara>Display the software version of the
-                        <command>globus-job-status</command> program to
-                        standard output.</simpara></entry>
-            </row>
-            <row>
-                <entry>-version</entry>
-                <entry><simpara>Display the software version of the
-                <command>globus-job-status</command> program including DiRT
-                information to standard output.</simpara></entry>
-            </row>
-        </tbody>
-    </tgroup>
-</informaltable>
+<variablelist>
+    <varlistentry>
+        <term><option>-help</option></term>
+        <term><option>-usage</option></term>
+        <listitem><simpara>Display a help message to standard error and
+        exit.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-version</option></term>
+        <listitem><simpara>Display the software version of the
+                <command>globus-job-status</command> program to
+                standard output.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-versions</option></term>
+        <listitem><simpara>Display the software version of the
+        <command>globus-job-status</command> program including DiRT
+        information to standard output.</simpara></listitem>
+    </varlistentry>
+</variablelist>
 </para>
 </refsect1>
 
@@ -119,20 +116,16 @@ The full set of options to <command>globus-job-status</command> are:
 If the following variables affect the execution of
 <command>globus-job-status</command>.
 
-<informaltable frame="none">
-    <tgroup cols="2" align="left">
-        <tbody>
-            <row>
-                <entry>X509_USER_PROXY</entry>
-                <entry>Path to proxy credential.</entry>
-            </row>
-            <row>
-                <entry>X509_CERT_DIR</entry>
-                <entry>Path to trusted certificate directory.</entry>
-            </row>
-        </tbody>
-    </tgroup>
-</informaltable>
+<variablelist>
+    <varlistentry>
+        <term>X509_USER_PROXY</term>
+        <listitem><simpara>Path to proxy credential.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>X509_CERT_DIR</term>
+        <listitem><simpara>Path to trusted certificate directory.</simpara></listitem>
+    </varlistentry>
+</variablelist>
 </para>
 </refsect1>
 

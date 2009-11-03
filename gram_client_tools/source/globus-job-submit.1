@@ -1,5 +1,5 @@
 '\" t
-.\"     Title: globus-job-run
+.\"     Title: globus-job-submit
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
 .\"      Date: 11/03/2009
@@ -7,7 +7,7 @@
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-RUN" "1" "11/03/2009" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-SUBMIT" "1" "11/03/2009" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -19,10 +19,10 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-globus-job-run \- Execute a job using GRAM
+globus-job-submit \- Submit a batch job using GRAM
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-job\-run\fR\ 'u
-\fBglobus\-job\-run\fR [\-dumprsl] [\-dryrun] [\-verify]
+.HP \w'\fBglobus\-job\-submit\fR\ 'u
+\fBglobus\-job\-submit\fR [\-dumprsl] [\-dryrun] [\-verify]
 .br
 [\-file\ \fIARGUMENT_FILE\fR]
 .br
@@ -43,12 +43,12 @@ globus-job-run \- Execute a job using GRAM
 [\-x\ \fIRSL_CLAUSE\fR]
 .br
 [\-l | \-s] \fIEXECUTABLE\fR [ARGUMENT...]
-.HP \w'\fBglobus\-job\-run\fR\ 'u
-\fBglobus\-job\-run\fR [\-help] [\-usage] [\-version] [\-versions]
+.HP \w'\fBglobus\-job\-submit\fR\ 'u
+\fBglobus\-job\-submit\fR [\-help] [\-usage] [\-version] [\-versions]
 .SH "DESCRIPTION"
 .PP
 The
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 program constructs a job description from its command\-line options and then submits the job to the GRAM service running at
 \fISERVICE_CONTACT\fR\&. The executable and arguments to the executable are provided on the command\-line after all other options\&. Note that the
 \fB\-dumprsl\fR,
@@ -59,15 +59,21 @@ command\-line options must occur before the first non\-option argument, the
 \fISERVICE_CONTACT\fR\&.
 .PP
 The
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 provides similar functionality to
 \fBglobusrun\fR
-in that it allows interactive start\-up of GRAM jobs\&. However, unlike
+in that it allows batch submission of GRAM jobs\&. However, unlike
 \fBglobusrun\fR, it uses command\-line parameters to define the job instead of RSL expressions\&.
+.PP
+To retrieve the output and error streams of the job, use the program
+\fBglobus\-job\-get\-output\fR\&. To reclaim resources used by the job by deleting cached files and job state, use the program
+\fBglobus\-job\-clean\fR\&. To cancel a batch job submitted by
+\fBglobus\-job\-submit\fR, use the program
+\fBglobus\-job\-cancel\fR\&.
 .SH "OPTIONS"
 .PP
 The full set of options to
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 are:
 .PP
 \fB\-help\fR, \fB\-usage\fR
@@ -78,21 +84,21 @@ Display a help message to standard error and exit\&.
 \fB\-version\fR
 .RS 4
 Display the software version of the
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 program to standard output\&.
 .RE
 .PP
-\fB\-version\fR
+\fB\-versions\fR
 .RS 4
 Display the software version of the
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 program including DiRT information to standard output\&.
 .RE
 .PP
 \fB\-dumprsl\fR
 .RS 4
 Translate the command\-line options to
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 into an RSL expression that can be used with tools such as
 \fBglobusrun\fR\&.
 .RE
@@ -168,7 +174,7 @@ as the standard input of the job\&. If the
 option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
 \fB\-s\fR
 option is specified, then this file is interpreted to be on the file system where
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
 .RE
 .PP
@@ -181,7 +187,7 @@ as the destination for the standard output of the job\&. If the
 option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
 \fB\-s\fR
 option is specified, then this file is interpreted to be on the file system where
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
 .RE
 .PP
@@ -194,7 +200,7 @@ as the destination for the standard error of the job\&. If the
 option is specified, then this file is interpreted to be on a file system local to the LRM\&. If the
 \fB\-s\fR
 option is specified, then this file is interpreted to be on the file system where
-\fBglobus\-job\-run\fR
+\fBglobus\-job\-submit\fR
 is being executed, and the file will be staged via GASS\&. If neither is specified, the local behavior is assumed\&.
 .RE
 .PP
@@ -203,7 +209,7 @@ is being executed, and the file will be staged via GASS\&. If neither is specifi
 Add a set of custom RSL attributes described by
 \fIRSL_CLAUSE\fR
 to the job description\&. The clause must be an RSL conjunction and may contain one or more attributes\&. This can be used to include attributes which can not be defined by other command\-line options of
-\fBglobus\-job\-run\fR\&.
+\fBglobus\-job\-submit\fR\&.
 .RE
 .PP
 \fB\-l\fR
@@ -236,7 +242,7 @@ is being executed, and the file will be staged via GASS\&. If neither is specifi
 .SH "ENVIRONMENT"
 .PP
 If the following variables affect the execution of
-\fBglobus\-job\-run\fR\&.
+\fBglobus\-job\-submit\fR\&.
 .PP
 \fBX509_USER_PROXY\fR
 .RS 4
@@ -251,7 +257,7 @@ Path to trusted certificate directory\&.
 .PP
 
 \fBglobusrun\fR(1),
-\fBglobus-job-submit\fR(1),
+\fBglobus-job-run\fR(1),
 \fBglobus-job-clean\fR(1),
 \fBglobus-job-get-output\fR(1),
 \fBglobus-job-cancel\fR(1)

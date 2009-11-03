@@ -5,20 +5,20 @@
 $Header$
 -->
 
-<refentry id="gram5-cmd-globus-job-run">
+<refentry id="gram5-cmd-globus-job-submit">
 <refmeta>
-<refentrytitle>globus-job-run</refentrytitle>
+<refentrytitle>globus-job-submit</refentrytitle>
 <manvolnum>1</manvolnum>
 <refmiscinfo class="author">University of Chicago</refmiscinfo>
 </refmeta>
 
 <refnamediv>
-<refname>globus-job-run</refname>
-<refpurpose>Execute a job using GRAM</refpurpose>
+<refname>globus-job-submit</refname>
+<refpurpose>Submit a batch job using GRAM</refpurpose>
 </refnamediv>
 <refsynopsisdiv>
 <cmdsynopsis>
-<command>globus-job-run</command>
+<command>globus-job-submit</command>
 <arg>-dumprsl</arg>
 <arg>-dryrun</arg>
 <arg>-verify</arg>
@@ -87,7 +87,7 @@ $Header$
 <arg rep="repeat">ARGUMENT</arg>
 </cmdsynopsis>
 <cmdsynopsis>
-<command>globus-job-run</command>
+<command>globus-job-submit</command>
 <arg>-help</arg>
 <arg>-usage</arg>
 <arg>-version</arg>
@@ -97,7 +97,8 @@ $Header$
 
 <refsect1><title>Description</title>
 <para>
-The <command>globus-job-run</command> program constructs a job description from
+The <command>globus-job-submit</command> program constructs a job description
+from
 its command-line options and then submits the job to the GRAM service running
 at <replaceable>SERVICE_CONTACT</replaceable>. The executable and arguments to
 the executable are provided on the command-line after all other options.
@@ -108,17 +109,26 @@ occur before the first non-option argument, the
 </para>
 
 <para>
-The <command>globus-job-run</command> provides similar functionality to 
-<command>globusrun</command> in that it allows interactive start-up of GRAM
+The <command>globus-job-submit</command> provides similar functionality to 
+<command>globusrun</command> in that it allows batch submission of GRAM
 jobs. However, unlike <command>globusrun</command>, it uses command-line
 parameters to define the job instead of RSL expressions.
+</para>
+
+<para>
+To retrieve the output and error streams of the job, use the program
+<command>globus-job-get-output</command>.  To reclaim resources used
+by the job by deleting cached files and job state, use the program
+<command>globus-job-clean</command>. To cancel a batch job submitted by
+<command>globus-job-submit</command>, use the program
+<command>globus-job-cancel</command>.
 </para>
 
 </refsect1>
 
 <refsect1><title>Options</title>
 <para>
-The full set of options to <command>globus-job-run</command> are:
+The full set of options to <command>globus-job-submit</command> are:
 
 <variablelist>
     <varlistentry>
@@ -130,19 +140,19 @@ The full set of options to <command>globus-job-run</command> are:
     <varlistentry>
         <term><option>-version</option></term>
         <listitem><simpara>Display the software version of the
-                <command>globus-job-run</command> program to
+                <command>globus-job-submit</command> program to
                 standard output.</simpara></listitem>
     </varlistentry>
     <varlistentry>
-        <term><option>-version</option></term>
+        <term><option>-versions</option></term>
         <listitem><simpara>Display the software version of the
-        <command>globus-job-run</command> program including DiRT
+        <command>globus-job-submit</command> program including DiRT
         information to standard output.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-dumprsl</option></term>
         <listitem><simpara>Translate the command-line options to
-        <command>globus-job-run</command> into an RSL expression
+        <command>globus-job-submit</command> into an RSL expression
         that can be used with tools such as
         <command>globusrun</command>.</simpara></listitem>
     </varlistentry>
@@ -219,7 +229,7 @@ The full set of options to <command>globus-job-run</command> are:
         then this file is interpreted to be on a file system local
         to the LRM. If the <option>-s</option> option is specified,
         then this file is interpreted to be on the file system where
-        <command>globus-job-run</command> is being executed, and the
+        <command>globus-job-submit</command> is being executed, and the
         file will be staged via GASS. If neither is specified, the
         local behavior is assumed.</simpara></listitem>
     </varlistentry>
@@ -231,7 +241,7 @@ The full set of options to <command>globus-job-run</command> are:
         option is specified, then this file is interpreted to be on a
         file system local to the LRM. If the <option>-s</option> option
         is specified, then this file is interpreted to be on the file
-        system where <command>globus-job-run</command> is being
+        system where <command>globus-job-submit</command> is being
         executed, and the file will be staged via GASS. If neither is
         specified, the local behavior is assumed.</simpara></listitem>
     </varlistentry>
@@ -243,7 +253,7 @@ The full set of options to <command>globus-job-run</command> are:
         option is specified, then this file is interpreted to be on a
         file system local to the LRM. If the <option>-s</option> option
         is specified, then this file is interpreted to be on the file
-        system where <command>globus-job-run</command> is being
+        system where <command>globus-job-submit</command> is being
         executed, and the file will be staged via GASS. If neither is
         specified, the local behavior is assumed.</simpara></listitem>
     </varlistentry>
@@ -254,7 +264,7 @@ The full set of options to <command>globus-job-run</command> are:
         description. The clause must be an RSL conjunction and may
         contain one or more attributes. This can be used to include
         attributes which can not be defined by other command-line
-        options of <command>globus-job-run</command>.</simpara></listitem>
+        options of <command>globus-job-submit</command>.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-l</option></term>
@@ -287,7 +297,7 @@ The full set of options to <command>globus-job-run</command> are:
 <refsect1><title>ENVIRONMENT</title>
 <para>
 If the following variables affect the execution of
-<command>globus-job-run</command>.
+<command>globus-job-submit</command>.
 
 <variablelist>
     <varlistentry>
@@ -306,7 +316,7 @@ If the following variables affect the execution of
 <refsect1><title>See Also</title>
 <para>
 <citerefentry><refentrytitle>globusrun</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-<citerefentry><refentrytitle>globus-job-submit</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+<citerefentry><refentrytitle>globus-job-run</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>globus-job-clean</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>globus-job-get-output</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
 <citerefentry><refentrytitle>globus-job-cancel</refentrytitle><manvolnum>1</manvolnum></citerefentry>
