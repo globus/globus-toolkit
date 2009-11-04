@@ -124,7 +124,7 @@ The full set of command-line options to
     </varlistentry>
     <varlistentry>
         <term><option>-globus-gatekeeper-subject <replaceable>SUBJECT</replaceable></option></term>
-        <listitem><simpara>Indicate the X.509 identity of the gatekeeper to which jobs are submitted to. This parameter sets the value of the <varname>$(GLOBUS_GATEKEEPER_SUBJECT)</varname> RSL substitution to <replaceable>PORT</replaceable>
+        <listitem><simpara>Indicate the X.509 identity of the gatekeeper to which jobs are submitted to. This parameter sets the value of the <varname>$(GLOBUS_GATEKEEPER_SUBJECT)</varname> RSL substitution to <replaceable>SUBJECT</replaceable>
         </simpara></listitem>
     </varlistentry>
     <varlistentry>
