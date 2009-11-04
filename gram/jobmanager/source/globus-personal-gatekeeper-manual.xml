@@ -92,64 +92,61 @@ their job directory will be destroyed so they may fail in the LRM.
 The full set of command-line options to
 <command>globus-personal-gatekeeper</command> consists of:
 
-<informaltable frame="none">
-    <tgroup cols="2">
-        <tbody>
-            <row>
-                <entry>-help | -usage</entry>
-                <entry>Print command-line option summary and exit</entry>
-            </row>
-            <row>
-                <entry>-version</entry>
-                <entry>Print software version</entry>
-            </row>
-            <row>
-                <entry>-versions</entry>
-                <entry>Print software version including DiRT information</entry>
-            </row>
-            <row>
-                <entry>-list</entry>
-                <entry>Print a list of all currently running personal gatekeepers. These entries will be printed one per line.</entry>
-            </row>
-            <row>
-                <entry>-directory <replaceable>CONTACT</replaceable></entry>
-                <entry>Print the configuration directory for the personal gatekeeper with the contact string <replaceable>CONTACT</replaceable>.</entry>
-            </row>
-            <row>
-                <entry>-debug</entry>
-                <entry>Print additional debugging information when starting a personal gatekeeper. This option is ignored in other modes.</entry>
-            </row>
-            <row>
-                <entry>-start</entry>
-                <entry>Start a new personal gatekeeper process.</entry>
-            </row>
-            <row>
-                <entry>-jmtype <replaceable>LRM</replaceable></entry>
-                <entry>Use <replaceable>LRM</replaceable> as the local resource manager interface. If not provided when starting a personal gatekeeper, the job manager will use the default <literal>fork</literal> LRM.</entry>
-            </row>
-            <row>
-                <entry>-auditdir <replaceable>AUDIT_DIRECTORY</replaceable></entry>
-                <entry>Write audit report files to <replaceable>AUDIT_DIRECTORY</replaceable>. If not provided, the job manager will not write any audit files.</entry>
-            </row>
-            <row>
-                <entry>-port <replaceable>PORT</replaceable></entry>
-                <entry>Listen for gatekeeper TCP/IP connections on the port <replaceable>PORT</replaceable>. If not provided, the gatekeeper will let the operating system choose.</entry>
-            </row>
-            <row>
-                <entry>-log<option>=<replaceable>DIRECTORY</replaceable></option></entry>
-                <entry>Write job manager log files to <replaceable>DIRECTORY</replaceable>. If <replaceable>DIRECTORY</replaceable> is omitted, the default of <filename><envar>$HOME</envar></filename> will be used. If this option is not present, the job manager will not write any log files.</entry>
-            </row>
-            <row>
-                <entry>-seg</entry>
-                <entry>Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the <command>globus-job-manager-event-generator</command> program for the LRM specified by the <option>-jmtype</option> option.</entry>
-            </row>
-            <row>
-                <entry>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></entry>
-                <entry>Write gatekeeper accounting entries to <replaceable>ACCOUNTING_FILE</replaceable>. If not provided, no accounting records are written.</entry>
-            </row>
-        </tbody>
-    </tgroup>
-</informaltable>
+<variablelist>
+    <varlistentry>
+        <term><option>-help</option></term>
+        <term><option>-usage</option></term>
+        <listitem><simpara>Print command-line option summary and exit</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-version</option></term>
+        <listitem><simpara>Print software version</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-versions</option></term>
+        <listitem><simpara>Print software version including DiRT information</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-list</option></term>
+        <listitem><simpara>Print a list of all currently running personal gatekeepers. These entries will be printed one per line.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-directory <replaceable>CONTACT</replaceable></option></term>
+        <listitem><simpara>Print the configuration directory for the personal gatekeeper with the contact string <replaceable>CONTACT</replaceable>.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-debug</option></term>
+        <listitem><simpara>Print additional debugging information when starting a personal gatekeeper. This option is ignored in other modes.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-start</option></term>
+        <listitem><simpara>Start a new personal gatekeeper process.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-jmtype <replaceable>LRM</replaceable></option></term>
+        <listitem><simpara>Use <replaceable>LRM</replaceable> as the local resource manager interface. If not provided when starting a personal gatekeeper, the job manager will use the default <literal>fork</literal> LRM.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-auditdir <replaceable>AUDIT_DIRECTORY</replaceable></option></term>
+        <listitem><simpara>Write audit report files to <replaceable>AUDIT_DIRECTORY</replaceable>. If not provided, the job manager will not write any audit files.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-port <replaceable>PORT</replaceable></option></term>
+        <listitem><simpara>Listen for gatekeeper TCP/IP connections on the port <replaceable>PORT</replaceable>. If not provided, the gatekeeper will let the operating system choose.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-log<optional>=<replaceable>DIRECTORY</replaceable></optional></option></term>
+        <listitem><simpara>Write job manager log files to <replaceable>DIRECTORY</replaceable>. If <replaceable>DIRECTORY</replaceable> is omitted, the default of <filename><envar>$HOME</envar></filename> will be used. If this option is not present, the job manager will not write any log files.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-seg</option></term>
+        <listitem><simpara>Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the <command>globus-job-manager-event-generator</command> program for the LRM specified by the <option>-jmtype</option> option.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></option></term>
+        <listitem><simpara>Write gatekeeper accounting entries to <replaceable>ACCOUNTING_FILE</replaceable>. If not provided, no accounting records are written.</simpara></listitem>
+    </varlistentry>
+</variablelist>
 </para>
 </refsect1>
 
