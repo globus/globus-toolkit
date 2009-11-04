@@ -15,8 +15,7 @@ perldocdir=$(GLOBUS_LOCATION)/share/doc/perl/Globus/GRAM
 globusperl_DATA = \
     JobDescription.pm \
     JobManager.pm \
-    StdioMerger.pm \
-    ExtensionsHandler.pm
+    StdioMerger.pm
 perldoc_DATA = JobManager.html JobDescription.html
 
 # Files which we want to put in the source package
