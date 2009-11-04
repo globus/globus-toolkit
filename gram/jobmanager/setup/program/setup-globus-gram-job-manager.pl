@@ -30,15 +30,6 @@ my $state_dir   = "$globusdir/tmp/gram_job_state";
 my $help	= 0;
 my $auditing_dir = '';   
 
-eval {
-    require "XML/Parser.pm";
-};
-
-if ($@)
-{
-    print STDERR "ERROR: Required perl module XML::Parser not found\n";
-    exit(1);
-}
 GetOptions('state-dir|s=s' => \$state_dir,
            'auditing-dir|a=s' => \$auditing_dir,
            'help|h' => \$help);
