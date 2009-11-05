@@ -998,6 +998,12 @@ globus_xio_driver_safe_table_from_string(
     char *                              driver_string,
     globus_hashtable_t *                safe_table);
 
+globus_result_t
+globus_xio_driver_list_create_ent(
+    const char *                        driver_desc,
+    globus_xio_driver_t                 driver_in,
+    globus_bool_t                       load,
+    globus_xio_driver_list_ent_t **     ent_out);
 
 extern globus_module_descriptor_t       globus_i_xio_module;
 #define GLOBUS_XIO_MODULE &globus_i_xio_module

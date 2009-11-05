@@ -325,6 +325,8 @@ static const globus_l_gfs_config_option_t option_list[] =
      NULL /* version string */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"module_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
     NULL /* used to store list of allowed modules */, NULL, NULL,GLOBUS_FALSE, NULL},
+ {"popen_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
+    NULL /* used to store list of allowed popen execs */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"exec_name", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* full path of server used when fork/execing */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"dsi_options", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -377,7 +379,12 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"dc_whitelist", "dc_whitelist", NULL, "dc-whitelist", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma seperated list of drivers allowed on the network stack.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"fs_whitelist", "fs_whitelist", NULL, "fs-whitelist", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma seperated list of drivers allowed on the disk stack.", NULL, NULL,GLOBUS_FALSE, NULL}
+    "A comma seperated list of drivers allowed on the disk stack.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"popen_whitelist", "popen_whitelist", NULL, "popen-whitelist", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma seperated list of programs that the popen driver is allowed to "
+    "execute, when used on the network or disk stack.  An alias may also be "
+    "specified, so that a client does not need to specify the full path. "
+    "Format is [alias:]prog,[alias:]prog. example: /bin/gzip,tar:/bin/tar", NULL, NULL, GLOBUS_FALSE, NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -1667,6 +1674,7 @@ globus_result_t
 globus_l_gfs_config_misc()
 {
     globus_list_t *                     module_list = NULL;
+    globus_list_t *                     popen_list = NULL;
     char *                              module;
     char *                              ptr;
     char *                              default_dsi;
@@ -1918,6 +1926,25 @@ globus_l_gfs_config_misc()
         }
                        
     }
+    
+    value = globus_libc_strdup(globus_i_gfs_config_string("popen_whitelist"));
+    if(value != NULL)
+    {
+        module = value;
+        while((ptr = strchr(module, ',')) != NULL)
+        {
+            *ptr = '\0';
+            globus_list_insert(&popen_list, globus_libc_strdup(module)); 
+            module = ptr + 1;
+        }
+        if(ptr == NULL)
+        {
+            globus_list_insert(&popen_list, globus_libc_strdup(module)); 
+        }               
+        globus_free(value);             
+    }
+    globus_l_gfs_config_set("popen_list", 0, popen_list);   
+
     if(globus_i_gfs_config_string("load_dsi_module") == NULL)
     {
         globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("file"));    

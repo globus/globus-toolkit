@@ -22,6 +22,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include "globus_io.h"
+#include "globus_xio.h"
 
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
@@ -1943,17 +1944,24 @@ globus_l_gfs_load_safe(
             &ent);
         if(result != GLOBUS_SUCCESS)
         {
+            char *                      msg = NULL;
             /* just log the error */
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_ERR,
                 "Some network stack drivers failed to load: %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                msg = globus_error_print_friendly(globus_error_peek(result)));
+                
+            if(msg)
+            {
+                globus_free(msg);
+            }
         }
         else
         {
             /* add to the table */
             globus_hashtable_insert(safe_table, ent->driver_name, ent);
         }
+        globus_free(driver_desc);
     }
 }
 
@@ -2262,6 +2270,167 @@ globus_l_gfs_data_stat_kickout(
     GlobusGFSDebugExit();
 }
 
+static
+globus_result_t
+globus_l_gfs_data_approve_popen(
+    char *                              in_cmd,
+    char **                             out_cmd)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_list_t *                     list;
+    char                                delim;
+    char                                end_delim;
+    char *                              start;
+    char *                              cmd = NULL;
+    char *                              end;
+    char *                              ptr;
+    char *                              alias;
+    char *                              prog;
+    char *                              tmp;
+    char *                              out = NULL;
+    globus_bool_t                       found;
+    int                                 size;
+    char                                endchars[] = "#,;";
+
+    GlobusGFSName(globus_l_gfs_data_approve_popen);
+    GlobusGFSDebugEnter();
+
+    if(strstr(in_cmd, "popen:") == NULL)
+    {
+        out = globus_libc_strdup(in_cmd);
+    }
+    else
+    {
+        cmd = globus_libc_strdup(in_cmd);
+        if(cmd == NULL)
+        {
+            result = GlobusGFSErrorGeneric("small malloc failure.");
+            goto error;
+        }
+        
+        end = cmd;
+        while(end && (ptr = strstr(end, "popen:")))
+        {
+            start = end;
+            ptr = strstr(ptr, "argv=");
+            if(ptr == NULL)
+            {
+                result = GlobusGFSErrorGeneric("popen argv not supplied.");
+                goto error;
+            }
+                
+            ptr += 5;
+    
+            delim = *ptr;
+            *ptr = '\0';        
+            ptr++;
+        
+            endchars[0] = delim;
+            end = strpbrk(ptr, endchars);
+              
+            if(end != NULL)
+            {
+                end_delim = *end;
+                *end = '\0';
+                end++;
+            }
+    
+            for(found = GLOBUS_FALSE,
+                list = (globus_list_t *) globus_i_gfs_config_get("popen_list");
+                !globus_list_empty(list) && !found;
+                list = globus_list_rest(list))
+            {
+                /* parse out prog name from <prog> or <alias>:<prog> */
+                alias = (char *) globus_list_first(list);
+                prog = strchr(alias, ':');
+                if(prog != NULL)
+                {
+                    size = prog - alias;
+                    prog++;
+                }
+                else
+                {
+                    size = strlen(alias);
+                    prog = alias;
+                    
+                }
+                if((strncmp(alias, ptr, size) == 0 && strlen(ptr) == size) ||
+                    strcmp(prog, ptr) == 0)
+                {
+                    found = GLOBUS_TRUE;
+                }
+            } 
+            if(found)
+            {
+                if(access(prog, R_OK | X_OK) < 0)
+                {
+                    tmp = globus_common_create_string(
+                        "access check of popen program '%s'", ptr);
+                    result = GlobusGFSErrorSystemError(tmp, errno);
+                    globus_free(tmp);
+                    goto error;
+                }
+
+                if(end)
+                {
+                    tmp = globus_common_create_string("%s%s%c%s%c",
+                        out ? out : "", start, delim, prog, end_delim);
+                    if(out)
+                    {
+                        globus_free(out);
+                    }
+                    out = tmp;
+                }
+                else
+                {
+                    tmp = globus_common_create_string("%s%s%c%s", 
+                        out ? out : "", start, delim, prog);
+                    if(out)
+                    {
+                        globus_free(out);
+                    }
+                    out = tmp;
+                }
+            }
+            else
+            {
+                GlobusGFSErrorGenericStr(result,
+                    ("program '%s' not whitelisted.", ptr));
+                goto error;
+            }
+        }
+        if(end)
+        {
+            tmp = globus_common_create_string("%s%s",
+                out ? out : "", end);
+            if(out)
+            {
+                globus_free(out);
+            }
+            out = tmp;
+        }
+
+        globus_free(cmd);
+    }
+    
+    *out_cmd = out;
+    
+    GlobusGFSDebugExit();
+    return result;
+
+error:
+    if(cmd)
+    {
+        globus_free(cmd);
+    }
+    if(out)
+    {
+        globus_free(out);
+    }
+    GlobusGFSDebugExitWithError();
+    return result;
+}
+
 void
 globus_i_gfs_data_request_command(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -2284,6 +2453,7 @@ globus_i_gfs_data_request_command(
     globus_gfs_acl_object_desc_t        object;
     char *                              tmp;
     char *                              starttag;
+    char *                              new_cmd;
     GlobusGFSName(globus_i_gfs_data_request_command);
     GlobusGFSDebugEnter();
 
@@ -2361,14 +2531,27 @@ globus_i_gfs_data_request_command(
                         GLOBUS_FALSE);
                     op->session_handle->net_stack_list = NULL;
                 }
-                result = globus_xio_driver_list_from_string(
-                    cmd_info->pathname,
-                    &op->session_handle->net_stack_list,
-                    &gfs_l_data_net_allowed_drivers);
+
+                result = globus_l_gfs_data_approve_popen(
+                        cmd_info->pathname, &new_cmd);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusGFSErrorWrapFailed(
-                        "Setting data channel driver stack", result);
+                        "Approving popen arguments", result);
+                }
+                else
+                {
+                    result = globus_xio_driver_list_from_string(
+                        new_cmd,
+                        &op->session_handle->net_stack_list,
+                        &gfs_l_data_net_allowed_drivers);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusGFSErrorWrapFailed(
+                            "Setting data channel driver stack", result);
+                    }
+                    
+                    globus_free(new_cmd);
                 }
             }
 
@@ -2385,7 +2568,7 @@ globus_i_gfs_data_request_command(
                 op->session_handle->disk_stack_list = NULL;
             }
             else
-            {
+            {                
                 if(op->session_handle->disk_stack_list)
                 {
                     globus_xio_driver_list_destroy(
@@ -2393,14 +2576,27 @@ globus_i_gfs_data_request_command(
                         GLOBUS_FALSE);
                     op->session_handle->disk_stack_list = NULL;
                 }
-                result = globus_xio_driver_list_from_string(
-                    cmd_info->pathname,
-                    &op->session_handle->disk_stack_list,
-                    &gfs_l_data_disk_allowed_drivers);
+                
+                result = globus_l_gfs_data_approve_popen(
+                        cmd_info->pathname, &new_cmd);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusGFSErrorWrapFailed(
-                        "Setting data channel driver stack", result);
+                        "Approving popen arguments", result);
+                }
+                else
+                {
+                    result = globus_xio_driver_list_from_string(
+                        new_cmd,
+                        &op->session_handle->disk_stack_list,
+                        &gfs_l_data_disk_allowed_drivers);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        result = GlobusGFSErrorWrapFailed(
+                            "Setting filesystem driver stack", result);
+                    }
+                    
+                    globus_free(new_cmd);
                 }
             }
 
