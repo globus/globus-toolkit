@@ -564,6 +564,44 @@ error:
 /* globus_ftp_client_handle_get_user_pointer() */
 /*@}*/
 
+globus_result_t
+globus_ftp_client_handle_get_restart_marker(
+    const globus_ftp_client_handle_t *          handle,
+    globus_ftp_client_restart_marker_t *        marker)
+{
+    globus_object_t *                           err;
+    globus_i_ftp_client_handle_t *              i_handle;
+    GlobusFuncName(globus_ftp_client_handle_get_restart_marker);
+
+    if(handle == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
+
+        goto error;
+    }
+    else if(marker == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker");
+
+        goto error;
+    }
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
+        goto error;
+    }
+    i_handle = *(globus_i_ftp_client_handle_t **) handle;
+    globus_ftp_client_restart_marker_copy(marker, &i_handle->restart_marker);
+
+    return GLOBUS_SUCCESS;
+
+error:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handle_get_restart_marker() */
+
+
 /**
  * @name Plugins
  */

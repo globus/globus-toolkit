@@ -393,6 +393,12 @@ globus_ftp_client_restart_marker_get_total(
     globus_off_t *				total_bytes);
 
 globus_result_t
+globus_ftp_client_restart_marker_get_first_block(
+    globus_ftp_client_restart_marker_t *        marker,
+    globus_off_t *                              offset,
+    globus_off_t *                              end_offset);
+
+globus_result_t
 globus_ftp_client_restart_marker_to_string(
     globus_ftp_client_restart_marker_t *	marker,
     char **					marker_string);
@@ -445,6 +451,11 @@ globus_result_t
 globus_ftp_client_handle_get_user_pointer(
     const globus_ftp_client_handle_t *		handle,
     void **					user_pointer);
+
+globus_result_t
+globus_ftp_client_handle_get_restart_marker(
+    const globus_ftp_client_handle_t *          handle,
+    globus_ftp_client_restart_marker_t *        marker);
 
 globus_result_t
 globus_ftp_client_handle_add_plugin(

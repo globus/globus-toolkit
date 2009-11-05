@@ -609,7 +609,11 @@ redo:
 	     */
 	    globus_l_ftp_client_parse_feat(target, response);
 	}
-
+        
+        globus_i_ftp_client_feature_set(
+            target->features,
+            GLOBUS_FTP_CLIENT_FEATURE_CLIENTINFO,
+            GLOBUS_FTP_CLIENT_MAYBE);
         target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CLIENTINFO;
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT)
@@ -627,14 +631,12 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_CLIENTINFO:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_CLIENTINFO;
 
-	/*
 	if(globus_i_ftp_client_feature_get(
 		target->features, 
 		GLOBUS_FTP_CLIENT_FEATURE_CLIENTINFO) == GLOBUS_FALSE)
 	{
 	    goto skip_clientinfo;
 	}
-	*/
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
         
@@ -725,6 +727,16 @@ redo:
 	    target->clientinfo_argstr = 
 	        globus_libc_strdup(target->attr->clientinfo_argstr);
 	}
+	else
+	{
+            globus_i_ftp_client_feature_set(
+                target->features,
+                GLOBUS_FTP_CLIENT_FEATURE_CLIENTINFO,
+                GLOBUS_FTP_CLIENT_FALSE);
+            response->response_class = GLOBUS_FTP_POSITIVE_COMPLETION_REPLY;
+            globus_object_free(error);
+            error = NULL;
+        }
 
     skip_clientinfo:
     	if (client_handle->op == GLOBUS_FTP_CLIENT_FEAT)

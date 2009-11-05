@@ -503,6 +503,55 @@ globus_ftp_client_restart_marker_get_total(
 
 }
 
+globus_result_t
+globus_ftp_client_restart_marker_get_first_block(
+    globus_ftp_client_restart_marker_t *        marker,
+    globus_off_t *                              start_offset,
+    globus_off_t *                              end_offset)
+{
+    GlobusFuncName(globus_ftp_client_restart_marker_get_first_block);
+
+    if(marker == GLOBUS_NULL)
+    {
+        return globus_error_put(
+                GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
+    }
+
+    if(start_offset == GLOBUS_NULL)
+    {
+        return globus_error_put(
+                GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("start_offset"));
+    }
+
+    if(end_offset == GLOBUS_NULL)
+    {
+        return globus_error_put(
+                GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("end_offset"));
+    }
+
+    *start_offset = 0;
+    *end_offset = 0;
+    
+    if(marker->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
+    {
+        *end_offset = marker->stream.offset;
+    }
+    else if(marker->type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK &&
+            !globus_fifo_empty(&marker->extended_block.ranges))
+    {
+        globus_i_ftp_client_range_t *           range;
+
+        range = (globus_i_ftp_client_range_t *) 
+            globus_fifo_peek(&marker->extended_block.ranges);
+        
+        *start_offset = range->offset;
+        *end_offset = range->end_offset;
+    }
+
+    return GLOBUS_SUCCESS;
+
+}
+
 /**
  * Create a string representation of a restart marker.
  * @ingroup globus_ftp_client_restart_marker
