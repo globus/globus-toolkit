@@ -2866,36 +2866,49 @@ globus_ftp_control_local_pasv(
                address->host[3] == 0 &&
                handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTED)
             {
-                unsigned short       p;
+                unsigned short          p;
+                char *                  dataip;
                 
-                res = globus_io_tcp_get_local_address_ex(
-                          &handle->cc_handle.io_handle,
-                          address->host,
-                          &address->hostlen,
-                          &p);
-                if(res != GLOBUS_SUCCESS)
+                if(dataip = globus_libc_getenv("GLOBUS_FTP_CLIENT_DATA_IP"))
                 {
-                    char *              cs;
-                    globus_sockaddr_t   addr;
-                    
-                    GlobusLibcSockaddrSetFamily(addr, AF_INET);
-                    GlobusLibcSockaddrSetPort(addr, address->port);
-                    result = globus_libc_addr_to_contact_string(
-                        &addr,
-                        GLOBUS_LIBC_ADDR_LOCAL | 
-                        GLOBUS_LIBC_ADDR_NUMERIC |
-                        GLOBUS_LIBC_ADDR_IPV4,
-                        &cs);
+                    result = globus_libc_contact_string_to_ints(
+                        dataip, address->host, &address->hostlen, NULL);
                     if(result != GLOBUS_SUCCESS)
                     {
                         return result;
                     }
-                    result = globus_libc_contact_string_to_ints(
-                        cs, address->host, &address->hostlen, NULL);
-                    globus_free(cs);
-                    if(result != GLOBUS_SUCCESS)
+                }
+                else
+                {                    
+                    res = globus_io_tcp_get_local_address_ex(
+                              &handle->cc_handle.io_handle,
+                              address->host,
+                              &address->hostlen,
+                              &p);
+                    if(res != GLOBUS_SUCCESS)
                     {
-                        return result;
+                        char *              cs;
+                        globus_sockaddr_t   addr;
+                        
+                        GlobusLibcSockaddrSetFamily(addr, AF_INET);
+                        GlobusLibcSockaddrSetPort(addr, address->port);
+                        result = globus_libc_addr_to_contact_string(
+                            &addr,
+                            GLOBUS_LIBC_ADDR_LOCAL | 
+                            GLOBUS_LIBC_ADDR_NUMERIC |
+                            GLOBUS_LIBC_ADDR_IPV4,
+                            &cs);
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                            return result;
+                        }
+                        result = globus_libc_contact_string_to_ints(
+                            cs, address->host, &address->hostlen, NULL);
+                        globus_free(cs);
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                            return result;
+                        }
                     }
                 }
            }
