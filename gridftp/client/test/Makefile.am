@@ -33,6 +33,7 @@ Scripts= \
 	globus-ftp-client-size-test.pl \
 	globus-ftp-client-transfer-test.pl \
 	globus-ftp-client-caching-transfer-test.pl \
+	globus-ftp-client-caching-extended-get-test.pl \
 	globus-ftp-client-user-auth-test.pl
 
 test_SCRIPTS = $(Scripts)
