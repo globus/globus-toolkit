@@ -1833,7 +1833,7 @@ globus_l_gsc_parse_command(
     tmp_ptr = globus_malloc(GSC_MAX_COMMAND_NAME_LEN+1);
     cmd_a[0] = tmp_ptr;
     ctr = 0;
-    for(start_ptr = command;*start_ptr!=' '&&*start_ptr!='\r';start_ptr++)
+    for(start_ptr = command;*start_ptr!=' '&& !(*start_ptr=='\r' && *(start_ptr+1)=='\n');start_ptr++)
     {
         if(!isalpha(*start_ptr))
         {
@@ -1853,13 +1853,13 @@ globus_l_gsc_parse_command(
     while(argc_ndx < argc && !done)
     {
         /* skip past all leading spaces */
-        while(isspace(*start_ptr) && *start_ptr != '\r')
+        while(isspace(*start_ptr) && !(*start_ptr=='\r' && *(start_ptr+1)=='\n'))
         {
             start_ptr++;
         }
 
         /* if we hit the end just return the count */
-        if(*start_ptr == '\r')
+        if(*start_ptr=='\r' && *(start_ptr+1)=='\n')
         {
             cmd_a[argc_ndx] = NULL;
             return argc_ndx;
@@ -1869,19 +1869,19 @@ globus_l_gsc_parse_command(
         cmd_a[argc_ndx] = globus_malloc(strlen(start_ptr));
         tmp_ptr = cmd_a[argc_ndx];
         /* move to the next blank, verify parameter is alpha numeric */
-        for(ndx = 0; !isspace(start_ptr[ndx]) && start_ptr[ndx] != '\r'; ndx++)
+        for(ndx = 0; !isspace(start_ptr[ndx]) && !(start_ptr[ndx]=='\r' && start_ptr[ndx+1]=='\n'); ndx++)
         {
             *tmp_ptr = start_ptr[ndx];
             tmp_ptr++;
         }
-        if(start_ptr[ndx] == '\r')
+        if(start_ptr[ndx]=='\r' && start_ptr[ndx+1]=='\n')
         {
             done = GLOBUS_TRUE;
         }
         else if(argc_ndx == argc-1)
         {
             /* copy in the rest of the command */
-            while(start_ptr[ndx] != '\r')
+            while(!(start_ptr[ndx]=='\r' && start_ptr[ndx+1]=='\n'))
             {
                 *tmp_ptr = start_ptr[ndx];
                 tmp_ptr++;
