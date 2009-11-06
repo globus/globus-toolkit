@@ -56,7 +56,7 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     tar xfz $installer
     cd gt*-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
-    make gsi-myproxy install
+    make globus_usage gsi-myproxy install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     echo ==================================================
     echo Environment variables:
