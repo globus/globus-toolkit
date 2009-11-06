@@ -11,7 +11,21 @@
 
 extern int errno;
 
-typedef struct 
+typedef struct myproxy_usage_s {
+    int   pam_used;
+    int   sasl_used;
+    int   cred_pphrase_used;
+    int   trusted_retr;
+    int   certauthz_used;
+    int   pubcookie_used;
+    int   ca_used;
+    int   credentials_exist;
+    int   trustroots_sent;
+    char  client_ip[256];
+} myproxy_usage_t;
+
+
+typedef struct myproxy_server_context_s
 {
   char *my_name;                    /* My name for logging and such */
   int run_as_daemon;                /* Run as a daemon? */
@@ -73,6 +87,9 @@ typedef struct
   int allow_self_authz;             /* Allow client subject to match cert? */
   char *proxy_extfile;              /* Extensions for issued proxies */
   char *proxy_extapp;               /* proxy extension call-out */
+  int disable_usage_stats;          /* 0 if default usage metrics reporting OK */
+  char *usage_stats_target;         /* Usage Statistics target string */
+  myproxy_usage_t usage;
 } myproxy_server_context_t;
 
 typedef struct myproxy_server_peer_t {

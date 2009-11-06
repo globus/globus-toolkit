@@ -28,7 +28,7 @@ typedef enum
 } myproxy_proto_response_type_t;
 
 /* client/server socket attributes */
-typedef struct 
+typedef struct myproxy_socket_attrs_s
 {
   char *pshost;	
   int psport;

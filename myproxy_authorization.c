@@ -393,6 +393,9 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
     *    credential passphrase */
    if (exist && (encrypted || creds->passphrase))
    {
+      if (config)
+          config->usage.cred_pphrase_used = 1;
+
       if (client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
 	  client_auth_data->client_data != NULL &&
 	  myproxy_creds_verify_passphrase(creds,
@@ -407,6 +410,8 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
    }
    
    if (config && config->pubcookie_cert) {
+       config->usage.pubcookie_used = 1;
+
        myproxy_debug("attempting pubcookie verification");
        if (!cred_passphrase_match) {
 	   cred_passphrase_match =
@@ -457,6 +462,9 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 
       auth_pam_result = auth_pam(creds->username,
 				 client_auth_data->client_data, pam_id, NULL);
+      if (config)
+          config->usage.pam_used = 1;
+
       if (auth_pam_result && strcmp("OK", auth_pam_result) == 0) {
 	 pam_success = 1;
 	 myproxy_log("PAM authentication succeeded for %s",
@@ -641,6 +649,9 @@ int auth_cert_check_client (authorization_data_t *auth_data,
    char * cred_subject = NULL;
    int return_status = 0;
 
+   if (config)
+       config->usage.certauthz_used = 1;
+
    p = (unsigned char *)auth_data->client_data;
 
    signature_len = ntohl(*(unsigned int*)p);
@@ -775,6 +786,9 @@ int auth_sasl_check_client (authorization_data_t *auth_data,
 			    char *client_name,
 			    myproxy_server_context_t* config)
 { 
+    if (config)
+        config->usage.sasl_used = 1;
+
     if (myproxy_sasl_authenticated) {
 	myproxy_log("SASL authentication succeeded for %s",
 		    creds->username);
