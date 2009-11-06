@@ -167,9 +167,19 @@ sub find_basic_block4
     if (/(^.*\.gcno\z)/s) {
         my $fileinfo = new Globus::Coverage::File();
         my $in;
+	my $gcdafile;
+	my $odir;
         local(*PIPE);
 
-        open(PIPE, "gcov -f -p -l -b -o .libs \"$_\" | sed -e s\"/Function '_/Function '__/\" | c++filt|") || return;
+	$gcdafile = $_;
+	$gcdafile =~ s/.gcno$/.gcda/;
+
+	if (-r $gcdafile) {
+            $odir = "-o . ";
+	} elsif (-r ".libs/$gcdafile") {
+	    $odir = "-o .libs ";
+	}
+        open(PIPE, "gcov -f -p -l -b $odir \"$_\" | sed -e s\"/Function '_/Function '__/\" | c++filt|") || return;
 
         while ($in = <PIPE>) {
             chomp;

@@ -175,6 +175,9 @@ sub create_file_page {
 
     foreach my $function ($fileinfo->function_names()) {
         my $funcinfo = $fileinfo->function($function);
+	if ($function =~ m/^gnu_/ || $function =~ m/^\*/) {
+		next;
+	}
 
         if ($funcinfo->statement_coverage()->[0] == 0) {
             next;
