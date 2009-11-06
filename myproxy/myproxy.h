@@ -84,6 +84,7 @@ int myproxy_check_version_ex(int major, int minor, int micro);
 #include "myproxy_sasl_client.h"
 #include "myproxy_sasl_server.h"
 #include "myproxy_server.h"
+#include "myproxy_usage.h"
 #include "verror.h"
 
 #endif /* __MYPROXY_H */

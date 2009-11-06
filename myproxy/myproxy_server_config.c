@@ -123,6 +123,8 @@ static struct config_directives our_conf[] = {
 	{"request_timeout", 1, 1},
 	{"proxy_extfile", 1, 1},
 	{"proxy_extapp", 1, 1},
+	{"disable_usage_stats", 1, 1},
+	{"usage_stats_target", 1, 1},
 /* Terminating entity */
 	{NULL, 0, 0}
 };
@@ -278,6 +280,9 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&myproxy_sasl_serverFQDN);
     free_ptr(&myproxy_sasl_user_realm);
 #endif
+    context->disable_usage_stats = 0;
+    free_ptr(&context->usage_stats_target);
+    memset(&context->usage, 0, sizeof(context->usage));
 }
 
 void
@@ -678,7 +683,18 @@ line_parse_callback(void *context_arg,
         goto error;
 #endif
     }
-
+    else if (strcmp(directive, "disable_usage_stats") == 0) {
+        if ((!strcasecmp(tokens[1], "true")) ||
+            (!strcasecmp(tokens[1], "enabled")) ||
+            (!strcasecmp(tokens[1], "yes")) ||
+            (!strcasecmp(tokens[1], "on")) ||
+            (!strcmp(tokens[1], "1"))) {
+            context->disable_usage_stats = 1;
+        }
+    }
+    else if (strcmp(directive, "usage_stats_target") == 0) {
+	context->usage_stats_target = strdup(tokens[1]);
+    }
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);
@@ -888,6 +904,10 @@ check_config(myproxy_server_context_t *context)
     }
     if (context->allow_self_authz) {
         myproxy_debug("allow_self_authorization is enabled");
+    }
+    if (context->disable_usage_stats) {
+        myproxy_debug("disable_usage_stats is enabled.");
+        myproxy_debug("server will not report usage metrics");
     }
     if (context->trusted_retriever_dns &&
         !strcmp(context->trusted_retriever_dns[0], "*")) {

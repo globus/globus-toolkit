@@ -134,9 +134,9 @@ verify_passphrase(struct myproxy_creds *creds,
 		  char *client_name,
 		  myproxy_server_context_t* config);
 
-/* returns 0 if authentication failed,
-           1 if authentication succeeded,
-	   2 if certificate-based (renewal) authentication succeeded */
+/* returns -1 if authentication failed,
+            0 if authentication succeeded,
+            1 if certificate-based (renewal) authentication succeeded */
 static int authenticate_client(myproxy_socket_attrs_t *attrs,
 			       struct myproxy_creds *creds,
 			       myproxy_request_t *client_request,
@@ -319,7 +319,10 @@ main(int argc, char *argv[])
 	     }
 	     
 	     /* child process */
-         myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
+             snprintf(server_context->usage.client_ip,
+                      sizeof(server_context->usage.client_ip), "%s",
+                      inet_ntoa(client_addr.sin_addr)); /* TODO: IPv6 support */
+             myproxy_log("Connection from %s", server_context->usage.client_ip);
 	     close(0);
 	     close(1);
 	     if (!debug) {
@@ -346,11 +349,13 @@ int
 handle_config(myproxy_server_context_t *server_context)
 {
     if (readconfig) {
+        /* Clear usage metrics  */
+        myproxy_usage_stats_close(server_context);
+
         if (myproxy_server_config_read(server_context) == -1) {
             return -1;
         }
         readconfig = 0;         /* reset the flag now that we've read it */
-    }
 
     /* Check to see if config file had syslog_ident
        or syslog_facility specified.
@@ -377,6 +382,13 @@ handle_config(myproxy_server_context_t *server_context)
       setenv( "GRIDMAP", server_context->certificate_mapfile, 1 );
     } else {
       setenv( "GRIDMAP", "/etc/grid-security/grid-mapfile", 0 );
+    }
+
+        if (myproxy_usage_stats_init(server_context) != GLOBUS_SUCCESS)
+        {
+            verror_put_string("Error Initializing Usage Stat Target(s)!");
+            return -1;
+        }
     }
 
     return 0;
@@ -584,6 +596,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
     if (myproxy_authorize_accept(context, attrs, 
                                  client_request, &client) < 0) {
         myproxy_log("authorization failed");
+        myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_free(NULL, client_request, server_response);
         respond_with_error_and_die(attrs, verror_get_string());
     }
@@ -624,6 +638,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	if (!use_ca_callout) {
 	  /* Retrieve the credentials from the repository */
 	  if (myproxy_creds_retrieve(client_creds) < 0) {
+            myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 0 /* FAILURE */);
 	    respond_with_error_and_die(attrs, verror_get_string());
 	  }
 
@@ -642,10 +658,14 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    error = malloc(strlen(msg)+strlen(client_creds->lockmsg)+1);
 	    strcpy(error, msg);
 	    strcat(error, client_creds->lockmsg);
+            myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 0 /* FAILURE */);
 	    respond_with_error_and_die(attrs, error);
 	  }
 
       if (myproxy_creds_verify(client_creds) < 0) {
+            myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
 	    respond_with_error_and_die(attrs, verror_get_string());
@@ -678,6 +698,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
             if (server_response->trusted_certs) {
                 myproxy_certs_free(server_response->trusted_certs);
                 server_response->trusted_certs = NULL;
+                context->usage.trustroots_sent = 1;
             }
         }
 
@@ -686,6 +707,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	  /* Delegate the credential and set final server_response */
 
 	  if (use_ca_callout) {
+	    context->usage.ca_used = 1;
 	    myproxy_debug("using CA callout");
 	    get_certificate_authority(attrs, client_creds, client_request,
 				      server_response, context);
@@ -723,6 +745,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client.name) < 0) {
+            myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
 	    respond_with_error_and_die(attrs, verror_get_string());
@@ -756,6 +780,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client.name) < 0) {
+            myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
 	    respond_with_error_and_die(attrs, verror_get_string());
@@ -789,6 +815,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
     /* Log request */
     myproxy_log("Client %s disconnected", client.name);
+
+    /* Send metrics */
+    myproxy_send_usage_metrics(attrs, &client, context, client_request,
+			       client_creds, server_response, 1 /* SUCCESS */);
    
     /* free stuff up */
 	myproxy_creds_free(client_creds);
@@ -1632,6 +1662,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
                goto end;
            }
 
+           context->usage.credentials_exist = credentials_exist;
+
            if (strcmp(creds.owner_name, client->name) == 0) {
                client_owns_credentials = 1;
            }
@@ -1669,6 +1701,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
                myproxy_log("self-authz not allowed for trusted retriever");
            } else {
                trusted_retriever = 1;
+               context->usage.trusted_retr = 1;
                myproxy_log("trusted retrievers policy matched");
            }
        }
@@ -1944,6 +1977,7 @@ do_authz_handshake(myproxy_socket_attrs_t *attrs,
 
 #if defined(HAVE_LIBSASL2)
    if (auth_data->method == AUTHORIZETYPE_SASL) {
+       config->usage.sasl_used = 1;
        if (auth_sasl_negotiate_server(attrs, client_request) < 0) {
 	   verror_put_string("SASL authentication failed");
 	   goto end;
