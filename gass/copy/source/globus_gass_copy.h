@@ -365,6 +365,12 @@ globus_gass_copy_get_url_mode(
     char * url,
     globus_gass_copy_url_mode_t * mode);
 
+/* get current ftp client handle -- use with care if modifying the handle */
+globus_result_t
+globus_gass_copy_get_ftp_handle(
+    globus_gass_copy_handle_t *         handle,
+    globus_ftp_client_handle_t *        ftp_handle);
+
 /** initialize the attr structure */
 globus_result_t
 globus_gass_copy_attr_init(
