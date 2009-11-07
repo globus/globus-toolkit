@@ -3831,6 +3831,12 @@ globus_l_guc_expand_urls(
     globus_bool_t                       no_matches = GLOBUS_TRUE;
     globus_bool_t                       was_error = GLOBUS_FALSE;
     globus_bool_t                       no_expand = GLOBUS_FALSE;
+
+    globus_hashtable_init(
+        &guc_info->recurse_hash,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
             
     if(!globus_fifo_empty(&guc_info->user_url_list))
     {
@@ -3857,12 +3863,6 @@ globus_l_guc_expand_urls(
             no_expand = GLOBUS_TRUE;
         }
                 
-        globus_hashtable_init(
-            &guc_info->recurse_hash,
-            256,
-            globus_hashtable_string_hash,
-            globus_hashtable_string_keyeq);
-
         globus_l_guc_gass_attr_init(
             &handle->source_gass_copy_attr,
             &handle->source_gass_attr,
@@ -3928,10 +3928,7 @@ globus_l_guc_expand_urls(
 
             no_matches = GLOBUS_FALSE;
         }
-        
-        globus_hashtable_destroy_all(&guc_info->recurse_hash,
-            globus_l_guc_hashtable_element_free);
-        
+                
         globus_free(user_url_pair->src_url);
         globus_free(user_url_pair->dst_url);
         globus_free(user_url_pair);
@@ -3968,7 +3965,10 @@ globus_l_guc_expand_urls(
                 GLOBUS_NULL,
                 _GASCSL("There was an error with one or more transfers.\n")));
     }
-    
+
+    globus_hashtable_destroy_all(&guc_info->recurse_hash,
+        globus_l_guc_hashtable_element_free);
+
     return result;
 
 error_expand:
