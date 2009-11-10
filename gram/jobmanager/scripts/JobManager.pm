@@ -513,7 +513,7 @@ sub stage_in
     {
         @arg = ($cache_pgm, '-add', '-t', $tag, $description->executable());
 
-        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
+        ($stderr, $rc) = $self->pipe_out_cmd(@arg);
 
         if ($rc != 0) {
             $self->log("executable staging failed with $stderr");
