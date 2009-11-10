@@ -180,7 +180,6 @@ sub setup_job_manager_conf
 	-stdio-log \"\$(HOME)\"
         -log-levels 'FATAL|ERROR'
 	-state-file-dir $state_dir
-	-machine-type unknown
 EOF
     if ($auditing_dir ne '')
     {
