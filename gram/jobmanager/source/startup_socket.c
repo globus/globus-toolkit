@@ -1380,6 +1380,10 @@ globus_l_gram_startup_socket_callback(
                      */
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
                 }
+                else
+                {
+                    rc = GLOBUS_SUCCESS;
+                }
                 globus_gram_job_manager_log(
                         manager,
                         GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
