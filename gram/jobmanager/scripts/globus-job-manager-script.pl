@@ -54,7 +54,7 @@ my $library_map = {
     'openbsd' => [ 'LD_LIBRARY_PATH' ]
 };
 
-foreach my $libvar ($library_map->{$^O})
+foreach my $libvar (@{$library_map->{$^O}})
 {
     &append_path(\%ENV, $libvar, $path);
 }
