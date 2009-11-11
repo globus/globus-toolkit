@@ -86,6 +86,7 @@ typedef struct globus_l_guc_handle_s
     
     void *                              guc_info;
     void *                              current_transfer;
+    int                                 id;
 } globus_l_guc_handle_t;
 
 typedef struct 
@@ -236,7 +237,8 @@ static
 int
 globus_l_guc_init_gass_copy_handle(
     globus_gass_copy_handle_t *                     gass_copy_handle,
-    globus_l_guc_info_t *                           guc_info);
+    globus_l_guc_info_t *                           guc_info, 
+    int                                             id);
 
 static
 int
@@ -1415,11 +1417,10 @@ main(int argc, char **argv)
             &guc_info.handles[i]->source_gass_copy_attr);
         globus_gass_copy_attr_init(
             &guc_info.handles[i]->dest_gass_copy_attr);
-    
+        guc_info.handles[i]->id = i;
         /* initialize gass copy handle */
         if(globus_l_guc_init_gass_copy_handle(
-               &guc_info.handles[i]->gass_copy_handle, 
-               &guc_info) != 0)
+               &guc_info.handles[i]->gass_copy_handle, &guc_info, i) != 0)
         {
             fprintf(stderr, _GASCSL("Failed to initialize handle.\n"));
             return 1;
@@ -2257,7 +2258,7 @@ globus_l_guc_transfer_files(
     {
         transfer_info = (globus_l_guc_transfer_t *)
             globus_malloc(sizeof(globus_l_guc_transfer_t));
-            
+
         transfer_info->src_url = NULL;
         transfer_info->dst_url = NULL;
         transfer_info->offset = -1;
@@ -2281,7 +2282,10 @@ globus_l_guc_transfer_files(
             fprintf(stderr, _GASCSL("\nCancelling copy...\n"));
             guc_info->cancelled = GLOBUS_TRUE;
             
-            globus_l_guc_dump_urls(guc_info);
+            if(guc_info->dumpfile)
+            {
+                globus_l_guc_dump_urls(guc_info);
+            }
 
             for(i = 0; i < guc_info->conc; i++)
             {        
@@ -2663,11 +2667,15 @@ guc_l_convert_file_url(
         if(tmp_ptr == NULL)
         {
             /* just punt if the system call fails */
-            return strdup(in_url);
+            return globus_libc_strdup(in_url);
         }
         dir_ptr = start_dir;
+        tmp_path = globus_common_create_string("%s/%s", dir_ptr, in_url);
     }
-    tmp_path = globus_common_create_string("%s/%s", dir_ptr, in_url);
+    else
+    {
+        tmp_path = globus_libc_strdup(in_url);
+    }
     dir_ptr = globus_url_string_hex_encode(tmp_path, "");
     
     tmp_ptr = globus_common_create_string("file://%s", dir_ptr);
@@ -3978,11 +3986,7 @@ error_expand:
 error_transfer:            
     globus_hashtable_destroy_all(&guc_info->recurse_hash,
         globus_l_guc_hashtable_element_free);
-    
-    globus_free(user_url_pair->src_url);
-    globus_free(user_url_pair->dst_url);
-    globus_free(user_url_pair);
- 
+     
     return result;                
 }
 
@@ -4184,7 +4188,8 @@ static
 int
 globus_l_guc_init_gass_copy_handle(
     globus_gass_copy_handle_t *                     gass_copy_handle,
-    globus_l_guc_info_t *                           guc_info)
+    globus_l_guc_info_t *                           guc_info,
+    int                                             id)
 {
     globus_ftp_client_plugin_t                      plugin;
     globus_list_t *                                 list;
@@ -4461,7 +4466,7 @@ globus_l_guc_init_gass_copy_handle(
         result = globus_gass_copy_register_performance_cb(
             gass_copy_handle,
             globus_l_gass_copy_performance_cb,
-            GLOBUS_NULL);
+            (void *) id);
 
         if(result != GLOBUS_SUCCESS)
         {
