@@ -1216,6 +1216,17 @@ globus_l_globusrun_gram_callback_func(
 	}
         monitor->done = GLOBUS_TRUE;
 	monitor->failure_code = job_info->protocol_error_code;
+        if (job_info->extensions)
+        {
+            entry = globus_hashtable_lookup(
+                    &job_info->extensions,
+                    "gt3-failure-message");
+
+            if (entry != NULL)
+            {
+                monitor->failure_message = strdup(entry->value);
+            }
+        }
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
 	if(monitor->verbose)
@@ -1545,6 +1556,10 @@ globus_l_globusrun_gramrun(char * request_string,
                             "GRAM Job failed because %s (error code %d)\n",
                             globus_gram_protocol_error_string(err),
                             err);
+        if (monitor.failure_message != NULL)
+        {
+            fprintf(stderr, "Details: %s\n", monitor.failure_message);
+        }
     }
 hard_exit:
 
