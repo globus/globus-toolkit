@@ -36,6 +36,7 @@ globusrun_LDADD = $(GPT_PGM_LINKS)
 man1datadir=$(mandir)/man1
 man1data_DATA = globus-job-cancel.1 \
                 globus-job-clean.1 \
+                globus-job-get-output.1 \
                 globus-job-run.1  \
                 globus-job-status.1 \
                 globus-job-submit.1 \
@@ -43,6 +44,7 @@ man1data_DATA = globus-job-cancel.1 \
 
 MANUAL_SOURCE = globus-job-cancel-manual.xml \
                 globus-job-clean-manual.xml \
+                globus-job-get-output-manual.xml \
                 globus-job-run-manual.xml \
                 globus-job-status-manual.xml \
                 globus-job-submit-manual.xml \

@@ -35,6 +35,8 @@ $Header$
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="globus-job-clean-manual.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
+    href="globus-job-get-output-manual.xml"></xi:include>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="globus-job-run-manual.xml"></xi:include>
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="globus-job-status-manual.xml"></xi:include>
