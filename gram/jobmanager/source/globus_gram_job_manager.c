@@ -807,7 +807,10 @@ globus_gram_job_manager_remove_reference(
             if (request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
                 request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE ||
+                (request->jobmanager_state == 
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP &&
+                 manager->stop == GLOBUS_TRUE))
             {
                 request->manager->usagetracker->count_current_jobs--;
 
