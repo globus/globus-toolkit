@@ -1472,7 +1472,7 @@ globus_l_gass_transfer_http_listener_destroy(
     new_proto = (globus_gass_transfer_http_listener_proto_t *) proto;
 
     globus_l_gass_transfer_http_lock();
-    if(new_proto->state != GLOBUS_GASS_TRANSFER_LISTENER_CLOSED)
+    if(new_proto->state != GLOBUS_GASS_TRANSFER_HTTP_LISTENER_CLOSED)
     {
 	new_proto->destroy_called=GLOBUS_TRUE;
     }

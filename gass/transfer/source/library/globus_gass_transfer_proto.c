@@ -566,9 +566,14 @@ globus_gass_transfer_proto_new_listener_request(
 	globus_i_gass_transfer_unlock();
 	l->close_callback(l->close_callback_arg,
 			  listener);
+
+	l->proto->destroy(l->proto,
+			  listener);
+
 	globus_i_gass_transfer_lock();
 
 	/* Destroy GASS's reference to this listener */
+	globus_i_gass_transfer_listener_destroy(listener);
 	globus_i_gass_transfer_listener_destroy(listener);
 
 	globus_i_gass_transfer_unlock();
