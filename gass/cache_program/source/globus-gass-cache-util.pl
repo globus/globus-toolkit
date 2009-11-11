@@ -328,7 +328,7 @@ sub GassCacheListNormal ( )
     # *************************************************
     print "Scanning the global entries in $CacheInfo{GLOBAL_ROOT}\n" if( $Verbose );
     my %Global;
-    $Cmd = "find $CacheInfo{GLOBAL_ROOT} -name 'data*' -print";
+    $Cmd = "$ENV{GLOBUS_LOCATION}/bin/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{GLOBAL_ROOT} -name \"data*\" -print'";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -371,7 +371,7 @@ sub GassCacheListNormal ( )
     # ******************************************
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n" if( $Verbose );
     my %Local;
-    $Cmd = "find $CacheInfo{LOCAL_ROOT} -name 'data.*' -print";
+    $Cmd = "$ENV{GLOBUS_LOCATION}/bin/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -name \"data*\" -print'";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -690,7 +690,7 @@ sub GassCacheCleanupUrlNormal ( )
     # Scan through the local directory, now..
     my %Local;
     my $LocalCount = 0;
-    my $Cmd = "find $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print";
+    my $Cmd = "$ENV{GLOBUS_LOCATION}/bin/globus-sh-exec -e '\${GLOBUS_SH_FIND-find} $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print'";
     open( FIND, "$Cmd|" ) || die "Can't run '$Cmd'";
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n"
 	if( $Verbose );
@@ -729,7 +729,10 @@ sub GassCacheCleanupUrlNormal ( )
 	}
 	else
 	{
-	    $Tag = `cat $TagFile`;
+            local(*TAGFILE);
+            open(TAGFILE, "<$TagFile");
+            chomp($Tag = <TAGFILE>);
+            close(TAGFILE);
 	}
 
 	# Store it...
