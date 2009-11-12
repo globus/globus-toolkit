@@ -156,6 +156,7 @@ typedef struct
 
     char *                              mc_file;
     char *                              dumpfile;
+    char *                              alias_file;
 
     char *                              list_url;
     int                                 conc_outstanding;
@@ -172,6 +173,19 @@ typedef struct globus_l_guc_transfer_s
     globus_off_t                        length;
     globus_bool_t                       needs_mkdir;
 } globus_l_guc_transfer_t;
+
+typedef struct
+{
+    char *                              name;
+    int                                 entries;
+    int                                 index;
+    char *                              hostname[1];
+} globus_l_guc_alias_t;
+    
+static globus_hashtable_t               guc_l_alias_table;
+static globus_bool_t                    guc_l_aliases = GLOBUS_FALSE;
+static globus_l_guc_alias_t *           guc_l_src_alias_ent = NULL;
+static globus_l_guc_alias_t *           guc_l_dst_alias_ent = NULL;
 
 /*****************************************************************************
                           Module specific prototypes
@@ -298,12 +312,9 @@ static char *                           g_l_mc_fs_str = NULL;
 *****************************************************************************/
 
 const char * oneline_usage =
-"globus-url-copy [-help | -usage] [-version[s]] [-vb] [-dbg] [-b | -a]\n"
-"                        [-q] [-r] [-rst] [-f <filename>]\n"
-"                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
-"                        [-tcp-bs <size>] [-bs <size>] [-p <parallelism>]\n"
-"                        [-notpt] [-nodcau] [-dcsafe | -dcpriv]\n"
-"                        <sourceURL> <destURL>";
+"globus-url-copy [-help] [-vb] [-dbg] [-r] [-rst] [-s <subject>]\n"
+"                        [-p <parallelism>] [-tcp-bs <size>] [-bs <size>]\n"
+"                        -f <filename> | <sourceURL> <destURL>\n";
 
 const char * long_usage =
 "\nglobus-url-copy [options] <sourceURL> <destURL>\n"
@@ -352,7 +363,7 @@ const char * long_usage =
 "       operations.\n"
 "  -t <transfer time in seconds>\n"
 "       Run the transfer for this number of seconds and then end.\n"
-"       Useful for performance testing.\n"   
+"       Useful for performance testing or forced restart loops.\n"   
 "  -q | -quiet \n"
 "       Suppress all output for successful operation\n"
 "  -v | -verbose \n"
@@ -378,6 +389,11 @@ const char * long_usage =
 "  -stall-timeout | -st <seconds>\n"
 "       How long before cancelling/restarting a transfer with no data\n"
 "       movement.  Set to 0 to disable.  Default is 600 seconds.\n"
+"  -df <filename> | -dumpfile <filename>\n"
+"       Path to file where untransferred urls will be saved for later\n"
+"       restarting.  Resulting file is the same format as the -f input file.\n"
+"       If file exists, it will be read and all other url input will be\n"
+"       ignored.\n"
 
 "  -rp | -relative-paths\n"
 "      The path portion of ftp urls will be interpereted as relative to the\n"
@@ -471,34 +487,42 @@ const char * long_usage =
 "  -nl-bottleneck | -nlb\n"
 "      Use NetLogger to estimate speeds of disk and network read/write\n"
 "      system calls, and attempt to determine the bottleneck component\n"
-"   -src-pipe | -SP <command line>\n"
-"      Set the source end of a remote transfer to use piped in input\n"
-"      with the given command line.  do not use with -fsstack\n"
-"   -dst-pipe | -DP <command line>\n"
-"      Set the destination end of a remote transfer to write data to then"
-"      standard input of the program run via the given command line.  Do\n"
-"      not use with -fsstack\n"
-"   -pipe <command line>\n"
-"      sets both -src-pipe and -dst-pipe to the same thing\n"
-"   -dcstack | -data-channel-stack\n"
-"      Set the XIO driver stack for the network on both the source and\n"
-"      and the destination.  Both must be gridftp servers\n"
-"   -fsstack | -file-system-stack\n"
-"      Set the XIO driver stack for the disk on both the source and\n"
-"      and the destination.  Both must be gridftp servers\n"
-"   -src-dcstack | -source-data-channel-stack\n"
-"      Set the XIO driver stack for the network on the source GridFTP server.\n"
-"   -src-fsstack | -source-file-system-stack.\n"
-"      Set the XIO driver stack for the disk on the source GridFTP server.\n"
-"   -dst-dcstack | -dest-data-channel-stack\n"
-"      Set the XIO driver stack for the network on the destination GridFTP server.\n"
-"   -dst-fsstack | -dest-file-system-stack\n"
-"      Set the XIO driver stack for the disk on the destination GridFTP server.\n"
-"   -cred <path to credentials or proxy file>\n"
-"   -src-cred | -sc <path to credentials or proxy file>\n"
-"   -dst-cred | -dc <path to credentials or proxy file>\n"
-"      Set the credentials to use for source, destination, \n"
-"      or both ftp connections.\n"
+"  -src-pipe | -SP <command line>\n"
+"     Set the source end of a remote transfer to use piped in input\n"
+"     with the given command line.  do not use with -fsstack\n"
+"  -dst-pipe | -DP <command line>\n"
+"     Set the destination end of a remote transfer to write data to then"
+"     standard input of the program run via the given command line.  Do\n"
+"     not use with -fsstack\n"
+"  -pipe <command line>\n"
+"     sets both -src-pipe and -dst-pipe to the same thing\n"
+"  -dcstack | -data-channel-stack\n"
+"     Set the XIO driver stack for the network on both the source and\n"
+"     and the destination.  Both must be gridftp servers\n"
+"  -fsstack | -file-system-stack\n"
+"     Set the XIO driver stack for the disk on both the source and\n"
+"     and the destination.  Both must be gridftp servers\n"
+"  -src-dcstack | -source-data-channel-stack\n"
+"     Set the XIO driver stack for the network on the source GridFTP server.\n"
+"  -src-fsstack | -source-file-system-stack.\n"
+"     Set the XIO driver stack for the disk on the source GridFTP server.\n"
+"  -dst-dcstack | -dest-data-channel-stack\n"
+"     Set the XIO driver stack for the network on the destination GridFTP server.\n"
+"  -dst-fsstack | -dest-file-system-stack\n"
+"     Set the XIO driver stack for the disk on the destination GridFTP server.\n"
+"  -cred <path to credentials or proxy file>\n"
+"  -src-cred | -sc <path to credentials or proxy file>\n"
+"  -dst-cred | -dc <path to credentials or proxy file>\n"
+"     Set the credentials to use for source, destination, \n"
+"     or both ftp connections.\n"
+"  -af <filename> | -alias-file <filename>\n"
+"       File with mapping of logical host aliases to lists of physical\n"
+"       hosts.  When used with multiple conncurrent connections, each\n"
+"       connection uses the next host in the list.\n"
+"       Each line should either be an alias, noted with the @\n"
+"       symbol, or a hostname[:port].\n"
+"       Currently, only the aliases @source and @destination are valid,\n"
+"       and they are used for every source or destination url.\n"
 "\n";
 
 /***********
@@ -556,6 +580,7 @@ enum
     arg_plugin,
     arg_mc,
     arg_dumpfile,
+    arg_aliasfile,
     arg_modname,
     arg_modargs,
     arg_src_modname,
@@ -686,6 +711,7 @@ oneargdef(arg_nl_interval, "-nli","-nl-interval", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
 oneargdef(arg_mc, "-MC", "-multicast", NULL, NULL);
 oneargdef(arg_dumpfile, "-df", "-dumpfile", NULL, NULL);
+oneargdef(arg_aliasfile, "-af", "-alias-file", NULL, NULL);
 oneargdef(arg_plugin, "-CP", "-plugin", NULL, NULL);
 oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
 oneargdef(arg_modargs, "-mp", "-module-parameters", NULL, NULL);
@@ -737,6 +763,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_ext);                  \
     setupopt(arg_mc);                   \
     setupopt(arg_dumpfile);             \
+    setupopt(arg_aliasfile);            \
     setupopt(arg_plugin);               \
     setupopt(arg_modname);              \
     setupopt(arg_modargs);              \
@@ -1063,6 +1090,103 @@ globus_l_guc_interrupt_handler(
 
 
 static
+int
+globus_l_guc_enqueue_pair(
+    globus_fifo_t *                     q,
+    globus_l_guc_src_dst_pair_t *       pair)
+{
+    return globus_fifo_enqueue(q, pair);
+}
+
+char *
+globus_l_guc_url_replace_host(
+    char *                              in_url,
+    char *                              host)
+{
+    char *                              out;
+    char *                              ptr;
+    char *                              tmp;
+    char *                              end;
+    
+    tmp = globus_libc_strdup(in_url);
+    ptr = strstr(tmp, "ftp://");
+    if(ptr == NULL)
+    {
+        goto skip;
+    }
+    ptr += 5;
+    *ptr = '\0';
+    ptr++;
+    end = strchr(ptr, '/');
+    if(end == NULL)
+    {
+        goto skip;
+    }
+    
+    out = globus_common_create_string("%s/%s%s", tmp, host, end);
+    globus_free(tmp);
+    
+    return out;
+    
+skip:
+    globus_free(tmp);
+    return NULL;    
+}
+
+static
+globus_l_guc_src_dst_pair_t *
+globus_l_guc_dequeue_pair(
+    globus_fifo_t *                     q,
+    int                                 handle_id)
+{
+    globus_l_guc_src_dst_pair_t *       pair;
+    globus_l_guc_alias_t *              src_alias = NULL;
+    globus_l_guc_alias_t *              dst_alias = NULL;
+    char *                              new_src;
+    char *                              new_dst;
+    
+    pair = (globus_l_guc_src_dst_pair_t *) globus_fifo_dequeue(q);
+    
+    if(!guc_l_aliases)
+    {
+        return pair;
+    }
+    
+    /*
+    src_alias = (globus_l_guc_alias_t *) 
+        globus_hashtable_lookup(&guc_l_alias_table, (void *) "source");
+    dst_alias = (globus_l_guc_alias_t *) 
+        globus_hashtable_lookup(&guc_l_alias_table, (void *) "destination");
+    */
+    src_alias = guc_l_src_alias_ent;
+    dst_alias = guc_l_dst_alias_ent;
+    
+    if(src_alias && src_alias->entries > 0)
+    {
+        new_src = globus_l_guc_url_replace_host(
+            pair->src_url, src_alias->hostname[handle_id % src_alias->entries]);
+        if(new_src != NULL)
+        {
+            globus_free(pair->src_url);
+            pair->src_url = new_src;
+        }
+    }
+
+    if(dst_alias && dst_alias->entries > 0)
+    {
+        new_dst = globus_l_guc_url_replace_host(
+            pair->dst_url, dst_alias->hostname[handle_id % dst_alias->entries]);
+        if(new_dst != NULL)
+        {
+            globus_free(pair->dst_url);
+            pair->dst_url = new_dst;
+        }
+    }
+    return pair;
+
+}
+
+static
 void
 globus_l_guc_dump_urls(
     void *                              user_arg)
@@ -1228,8 +1352,9 @@ globus_l_guc_transfer_kickout(
         if(!g_monitor.done && !transfer_info->guc_info->cancelled &&
             !globus_fifo_empty(&transfer_info->guc_info->expanded_url_list))
         {        
-            url_pair = (globus_l_guc_src_dst_pair_t *) globus_fifo_dequeue(
-                &transfer_info->guc_info->expanded_url_list);
+            url_pair = globus_l_guc_dequeue_pair(
+                &transfer_info->guc_info->expanded_url_list,
+                transfer_info->handle->id);
             src_url = url_pair->src_url;
             dst_url = url_pair->dst_url;
             transfer_info->offset = url_pair->offset;
@@ -1243,8 +1368,9 @@ globus_l_guc_transfer_kickout(
         else if(!g_monitor.done && !transfer_info->guc_info->cancelled &&
             !globus_fifo_empty(&transfer_info->guc_info->user_url_list))
         {        
-            url_pair = (globus_l_guc_src_dst_pair_t *) globus_fifo_dequeue(
-                &transfer_info->guc_info->user_url_list);
+            url_pair = globus_l_guc_dequeue_pair(
+                &transfer_info->guc_info->user_url_list,
+                transfer_info->handle->id);
             src_url = url_pair->src_url;
             dst_url = url_pair->dst_url;
             transfer_info->offset = url_pair->offset;
@@ -1574,7 +1700,7 @@ globus_l_url_copy_monitor_callback(
             url_pair->offset = transfer_info->offset;
             url_pair->length = transfer_info->length;
             
-            globus_fifo_enqueue(
+            globus_l_guc_enqueue_pair(
                 &transfer_info->guc_info->user_url_list, 
                 url_pair);
 
@@ -1759,9 +1885,18 @@ globus_l_guc_info_destroy(
     {
         globus_free(guc_info->dst_cred_subj);
     }
+    if(guc_info->alias_file)
+    {
+        globus_free(guc_info->alias_file);
+    }
+    if(guc_info->dumpfile)
+    {
+        globus_free(guc_info->dumpfile);
+    }
 
     /* destroy the list */
 }
+
 
 static
 int
@@ -1905,6 +2040,113 @@ error_parse:
         fclose(fptr);
     }
     fprintf(stderr, _GASCSL("Problem parsing url list: line %d\n"), line_num);
+    return -2;
+ 
+}
+
+static
+int
+globus_l_guc_load_alias_file(
+    char *                                          file_name)
+{
+    FILE *                                          fptr;
+    char                                            line[1024];
+    char                                            buf[256];
+    globus_bool_t                                   newalias = GLOBUS_TRUE;
+    int                                             line_num = 0;
+    int                                             rc;
+    char *                                          p;
+    globus_l_guc_alias_t *                          alias_ent = NULL;
+
+    globus_hashtable_init(
+        &guc_l_alias_table,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    if(!file_name)
+    {
+        return -1;
+    }
+    fptr = fopen(file_name, "r");
+    if(fptr == NULL)
+    {
+        return -1;
+    }
+
+    while(fgets(line, sizeof(line), fptr) != NULL)
+    {
+        line_num++;
+        p = line;
+                
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
+        if(*p == '\0' || *p == '#')
+        {
+            continue;
+        }
+        
+        if(*p == '@')
+        {
+            newalias = GLOBUS_TRUE;
+            rc = sscanf(p, "@%s", buf);
+            if(rc != 1)
+            {   
+                goto error_parse;
+            }
+        }
+        else
+        {
+            if(!alias_ent)
+            {   
+                goto error_parse;
+            }
+            rc = sscanf(p, "%s", buf);
+            if(rc != 1)
+            {   
+                goto error_parse;
+            }
+        }           
+
+        if(newalias)
+        {
+            alias_ent = (globus_l_guc_alias_t *)
+                globus_malloc(sizeof(globus_l_guc_alias_t) + sizeof(char *) * 50);
+            alias_ent->name = globus_libc_strdup(buf);
+            alias_ent->entries = 0;
+            alias_ent->index = 0;
+            rc = globus_hashtable_insert(
+                &guc_l_alias_table,
+                alias_ent->name,
+                (void *) alias_ent);
+            if(rc != 0)
+            {
+                goto error_parse;
+            }            
+            newalias = GLOBUS_FALSE;
+        }
+        else
+        {
+            alias_ent->hostname[alias_ent->entries] = globus_libc_strdup(buf);
+            alias_ent->entries++;
+        }
+    }
+
+    fclose(fptr);
+    
+    guc_l_aliases = GLOBUS_TRUE;
+    guc_l_src_alias_ent = (globus_l_guc_alias_t *) 
+        globus_hashtable_lookup(&guc_l_alias_table, (void *) "source");
+    guc_l_src_alias_ent = (globus_l_guc_alias_t *) 
+        globus_hashtable_lookup(&guc_l_alias_table, (void *) "destination");
+
+    return 0;
+    
+error_parse:
+    fclose(fptr);
+    fprintf(stderr, 
+        "Problem parsing alias file %s: line %d\n", file_name, line_num);
     return -2;
  
 }
@@ -2113,6 +2355,7 @@ globus_l_guc_transfer(
                 result = GLOBUS_SUCCESS;
             }
 
+            globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
             globus_l_guc_gass_attr_init(
                 &handle->source_gass_copy_attr,
                 &handle->source_gass_attr,
@@ -2134,7 +2377,7 @@ globus_l_guc_transfer(
                 url_pair->offset = transfer_info->offset;
                 url_pair->length = transfer_info->length;
                 
-                globus_fifo_enqueue(
+                globus_l_guc_enqueue_pair(
                     &transfer_info->guc_info->user_url_list, 
                     url_pair);
 
@@ -2908,6 +3151,7 @@ globus_l_guc_parse_arguments(
     guc_info->src_cred_subj = NULL;
     guc_info->dst_cred_subj = NULL;
     guc_info->dumpfile = NULL;
+    guc_info->alias_file = NULL;
     /* determine the program name */
     
     program = strrchr(argv[0],'/');
@@ -2988,6 +3232,9 @@ globus_l_guc_parse_arguments(
             break;
         case arg_dumpfile:
             guc_info->dumpfile = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_aliasfile:
+            guc_info->alias_file = globus_libc_strdup(instance->values[0]);
             break;
         case arg_plugin:
             g_client_lib_plugin_list = globus_list_from_string(
@@ -3409,9 +3656,8 @@ globus_l_guc_parse_arguments(
         
         if(rc == 0 && globus_fifo_empty(&guc_info->user_url_list))
         {
-            globus_url_copy_l_args_error(
-                "Dumpfile exists and is empty.  Nothing to do.");
-            return 0;
+            printf("Dumpfile exists and is empty.  Nothing to do.");
+            exit(2);
         }
         else if(rc == -2)
         {
@@ -3484,6 +3730,8 @@ globus_l_guc_parse_arguments(
         }
         
     }
+
+    globus_l_guc_load_alias_file(guc_info->alias_file);
 
     if(cred_path)
     {
@@ -3848,8 +4096,8 @@ globus_l_guc_expand_urls(
             
     if(!globus_fifo_empty(&guc_info->user_url_list))
     {
-        user_url_pair = (globus_l_guc_src_dst_pair_t *)
-                    globus_fifo_dequeue(&guc_info->user_url_list);
+        user_url_pair = globus_l_guc_dequeue_pair(
+            &guc_info->user_url_list, handle->id);
 
         src_url = user_url_pair->src_url;
         dst_url = user_url_pair->dst_url;
@@ -3882,24 +4130,21 @@ globus_l_guc_expand_urls(
 
         if(!no_expand)
         { 
-            globus_l_guc_transfer_t *   transfer_info;
-            
-            transfer_info = (globus_l_guc_transfer_t *)
-                globus_malloc(sizeof(globus_l_guc_transfer_t));
-                
-            transfer_info->src_url = user_url_pair->src_url;
-            transfer_info->dst_url = user_url_pair->dst_url;
-            transfer_info->offset = user_url_pair->offset;
-            transfer_info->length = user_url_pair->length;
-            transfer_info->handle = handle;
-            transfer_info->guc_info = guc_info;
-            handle->current_transfer = transfer_info;
-            transfer_info->guc_info->conc_outstanding++;
+            globus_l_guc_transfer_t    transfer_info;
+                            
+            transfer_info.src_url = user_url_pair->src_url;
+            transfer_info.dst_url = user_url_pair->dst_url;
+            transfer_info.offset = user_url_pair->offset;
+            transfer_info.length = user_url_pair->length;
+            transfer_info.handle = handle;
+            transfer_info.guc_info = guc_info;
+            handle->current_transfer = &transfer_info;
+            transfer_info.guc_info->conc_outstanding++;
 
-            result = globus_l_guc_expand_single_url(transfer_info);
+            result = globus_l_guc_expand_single_url(&transfer_info);
 
             handle->current_transfer = NULL;
-            transfer_info->guc_info->conc_outstanding--;
+            transfer_info.guc_info->conc_outstanding--;
                                          
             if(result != GLOBUS_SUCCESS)
             {
@@ -3907,13 +4152,13 @@ globus_l_guc_expand_urls(
                 url_pair = (globus_l_guc_src_dst_pair_t *)
                         globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
             
-                url_pair->src_url = globus_libc_strdup(transfer_info->src_url);
-                url_pair->dst_url = globus_libc_strdup(transfer_info->dst_url);
-                url_pair->offset = transfer_info->offset;
-                url_pair->length = transfer_info->length;
+                url_pair->src_url = globus_libc_strdup(transfer_info.src_url);
+                url_pair->dst_url = globus_libc_strdup(transfer_info.dst_url);
+                url_pair->offset = transfer_info.offset;
+                url_pair->length = transfer_info.length;
                 
                 globus_fifo_enqueue(
-                    &transfer_info->guc_info->user_url_list, 
+                    &transfer_info.guc_info->user_url_list, 
                     url_pair);
 
                 goto error_expand;
@@ -4089,7 +4334,7 @@ globus_l_guc_expand_single_url(
         expanded_url_pair->offset = transfer_info->offset;
         expanded_url_pair->length = transfer_info->length;
 
-        globus_fifo_enqueue(
+        globus_l_guc_enqueue_pair(
             &guc_info->expanded_url_list, 
             expanded_url_pair);
     }
