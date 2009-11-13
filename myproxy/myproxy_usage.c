@@ -24,6 +24,8 @@
 
 #include "myproxy_common.h"
 
+#ifndef NO_GLOBUS_USAGE
+
 static globus_list_t *myproxy_usage_handle_list = NULL;
 
 #define MYPROXY_USAGE_ID 11
@@ -396,6 +398,7 @@ myproxy_log_usage_stats(
     
     return;
 }
+#endif /* NO_GLOBUS_USAGE */
 
 void
 myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
@@ -406,6 +409,7 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
                            myproxy_response_t *response,
                            int success_flag)
 {
+#ifndef NO_GLOBUS_USAGE
     char info_bits[32];
     char *userdn = NULL;
 
@@ -440,4 +444,5 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
                             request->username,
                             userdn);
 
+#endif /* NO_GLOBUS_USAGE */
 }

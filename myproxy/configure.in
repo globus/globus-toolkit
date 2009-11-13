@@ -86,6 +86,13 @@ if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
 fi
 AC_SUBST(SYSLIBS)
 dnl
+dnl Check for globus_usage_stats_send_array
+dnl
+AC_CHECK_LIB(globus_usage_$GLOBUS_FLAVOR_NAME,
+             globus_usage_stats_send_array,
+[            LIBS="$LIBS -lglobus_usage_$GLOBUS_FLAVOR_NAME -lglobus_xio_$GLOBUS_FLAVOR_NAME"],
+             AC_DEFINE(NO_GLOBUS_USAGE))
+dnl
 dnl Check for globus_gsi_proxy_handle_set_extensions
 dnl
 AC_CHECK_LIB(globus_gsi_proxy_core_$GLOBUS_FLAVOR_NAME,
