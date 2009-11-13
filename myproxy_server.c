@@ -349,8 +349,10 @@ int
 handle_config(myproxy_server_context_t *server_context)
 {
     if (readconfig) {
+#ifndef NO_GLOBUS_USAGE
         /* Clear usage metrics  */
         myproxy_usage_stats_close(server_context);
+#endif
 
         if (myproxy_server_config_read(server_context) == -1) {
             return -1;
@@ -384,11 +386,13 @@ handle_config(myproxy_server_context_t *server_context)
       setenv( "GRIDMAP", "/etc/grid-security/grid-mapfile", 0 );
     }
 
+#ifndef NO_GLOBUS_USAGE
         if (myproxy_usage_stats_init(server_context) != GLOBUS_SUCCESS)
         {
             verror_put_string("Error Initializing Usage Stat Target(s)!");
             return -1;
         }
+#endif
     }
 
     return 0;

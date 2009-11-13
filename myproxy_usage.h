@@ -22,6 +22,8 @@
 #ifndef __MYPROXY_USAGE_H
 #define __MYPROXY_USAGE_H
 
+#ifndef NO_GLOBUS_USAGE
+
 #include "globus_usage.h"
 
 struct myproxy_socket_attrs_s;
@@ -34,6 +36,8 @@ myproxy_usage_stats_init(struct myproxy_server_context_s *context);
 
 void
 myproxy_usage_stats_close(struct myproxy_server_context_s *context);
+
+#endif /* NO_GLOBUS_USAGE */
 
 void
 myproxy_send_usage_metrics(struct myproxy_socket_attrs_s *attrs,
