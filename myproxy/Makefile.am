@@ -49,6 +49,7 @@ LibSources= \
 	myproxy_sasl_server.c \
 	myproxy_server.h \
 	myproxy_server_config.c \
+	myproxy_usage.h \
 	plugin_common.c \
 	plugin_common.h \
 	port_getopt.h \
