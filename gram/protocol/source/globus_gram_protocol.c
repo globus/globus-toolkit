@@ -165,6 +165,38 @@ globus_l_gram_protocol_deactivate(void)
 
 /************************* help function *********************************/
 
+/**
+ * @brief Create default I/O attribute for GRAM
+ * @ingroup globus_gram_protocol_io
+ *
+ * @details
+ * The @a globus_gram_protocol_setup_attr() function creates a new
+ * globus_io attribute containing the default set of values needed for
+ * communication between a GRAM client and a job manager. These attributes
+ * include:
+ * - SO_KEEPALIVE
+ * - GSSAPI Mutual Authentication
+ * - GSSAPI Self Authorization
+ * - SSL-compatible message wrapping
+ *
+ * @param attr
+ *     A pointer to a @a globus_io_attr_t structure which will be initialized
+ *     by this function.
+ *
+ * @return
+ *     Upon success, globus_gram_protocol_setup_attr() modifies the @a attr
+ *     parameter to point to a new attribute and returns the value
+ *     @a GLOBUS_SUCCESS. When this occurs, the caller must destroy
+ *     the attribute when no longer needed by calling
+ *     globus_io_tcpattr_destroy(). If an error occurs, its value will be
+ *     returned and the attribute pointed to by the @a attr parameter will be
+ *     set to an uninitialized state.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED
+ *     Error initializing attribute
+ */
 int
 globus_gram_protocol_setup_attr(globus_io_attr_t *  attr)
 {
@@ -225,6 +257,31 @@ error_exit:
     return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
 }
 
+/**
+ * @brief Determine if a GSSAPI context has the same source and target identities
+ * @ingroup globus_gram_protocol_io
+ *
+ * @details
+ * The @a globus_gram_protocol_authorize_self() function implements a predicate
+ * which returns true if the source and destination identities used to
+ * establish the GSSAPI security context are the same.
+ *
+ * @param context
+ *     A GSSAPI security context which has been previously established. The
+ *     source and target names of this context will be inspected by this 
+ *     function.
+ * 
+ * @return
+ *     If the source and target identiies are the same, then
+ *     @a #globus_gram_protocol_authorize_self() returns @a GLOBUS_TRUE,
+ *     otherwise, this function returns @a GLOBUS_FALSE.
+ *
+ * @retval GLOBUS_TRUE
+ *     The source and target identities are the same.
+ * @retval GLOBUS_FALSE
+ *     The source and target identities are not the same or this function is
+ *     unabled to inspect the security context.
+ */
 globus_bool_t
 globus_gram_protocol_authorize_self(
     gss_ctx_id_t                        context)

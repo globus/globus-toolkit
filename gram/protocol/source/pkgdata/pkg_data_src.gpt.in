@@ -23,6 +23,13 @@
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>
 
+    <Source_Dependencies Type="doc_runtime" >
+      <Dependency Name="globus_common" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_io" Package="doc" > <Version > <Simple_Version Major="6" /> </Version> </Dependency>
+    </Source_Dependencies>
+    
+
+
     <Build_Environment >
       <cflags >@GPT_PKG_CFLAGS@</cflags>
       <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>

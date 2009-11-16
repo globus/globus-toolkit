@@ -52,6 +52,19 @@ EXTERN_C_BEGIN
 enum { GLOBUS_GRAM_PROTOCOL_VERSION = 2 };
 enum { GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE = 64000 };
 enum { GLOBUS_GRAM_PROTOCOL_PARAM_SIZE = 1024 };
+/**
+ * @typedef globus_gram_protocol_handle_t
+ * @brief Unique GRAM protocol identifier
+ * @ingroup globus_gram_protocol_io
+ *
+ * @details
+ * The @a #globus_gram_protocol_handle_t data type is used by functions in
+ * the GRAM protocol API as a unique discriminant between instances
+ * of a callback invocation.
+ *
+ * There are no public functions that operate on these handles. They are
+ * used as identifiers for callback functions.
+ */
 typedef unsigned long globus_gram_protocol_handle_t;
 
 typedef struct globus_gram_protocol_hash_entry_s

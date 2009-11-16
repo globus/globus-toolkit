@@ -30,9 +30,11 @@ globus_l_gram_protocol_lookup_reason(
  * @defgroup globus_gram_protocol_framing Message Framing
  * @ingroup globus_gram_protocol_functions
  *
- * The functions in this section take GRAM request (or query) and
- * reply messages, and frame them with HTTP headers, so that they can be
- * sent. These functions should be used when an application wants to control
+ * The functions in this section frame a GRAM request, query, or reply 
+ * message with HTTP headers compatible with the GRAM2 protocol parsers in 
+ * GT2 GT3, and GT4. 
+ *
+ * These functions should be used when an application wants to control
  * the way that the GRAM Protocol messages are sent, while still using
  * the standard message formatting and framing routines. An alternative
  * set of functions in the @ref globus_gram_protocol_io section of the manual
@@ -40,27 +42,45 @@ globus_l_gram_protocol_lookup_reason(
  */
 
 /**
- * Frame a GRAM query
+ * @brief Create a HTTP-framed copy of a GRAM request
  * @ingroup globus_gram_protocol_framing
  *
- * Adds an HTTP frame around a GRAM protocol message. The frame is
- * constructed from the URL, the GRAM protocol message type header,
- * and a message length header. The framed message is returned
- * in a new string pointed to by @a framedmsg parameter and the
- * length of the framed message is returned in the @a framedsize parameter.
+ * @details
+ * The @a globus_gram_protocol_frame_request() function adds HTTP 1.1
+ * framing around the input message. The framed message includes HTTP headers 
+ * relating the the destination URL and the length of the message content.
+ * The framed message is returned by modifying @a framedmsg to point to a
+ * newly allocated string. The integer pointed to by the @a framedsize
+ * parameter is set to the length of this message.
  *
  * @param url
- *        The URL of the GRAM resource to contact.
+ *        The URL of the GRAM resource to contact. This is parsed and used
+ *        to generate the HTTP POST operation destination and the Host
+ *        HTTP header.
  * @param msg
- *        The message to be framed.
+ *        A string containing the message content to be framed.
  * @param msgsize
- *        The length of the unframed message.
+ *        The length of the string pointed to by @a msg
  * @param framedmsg
- *        A return parameter, which will contain the framed message
- *        upon this function's return.
+ *        An output parameter which will be set to a copy of the @a msg string
+ *        with an HTTP frame around it.
  * @param framedsize
- *        A return parameter, which will contain the length of the
+ *        An output parameter which will be set to the length of the 
  *        framed message.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_frame_request() will return
+ *     GLOBUS_SUCCESS and the @a framedmsg and @a framedsize parameters will be
+ *     modified to point to the new framed message string and its length
+ *     respectively. When this occurs, the caller is responsible for freeing
+ *     the string pointed to by @a framedmsg. If an error occurs, its value
+ *     will returned and the @a framedmsg and @a framedsize parameters will 
+ *     be uninitialized.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *     Invalid job contact
  */
 int
 globus_gram_protocol_frame_request(
@@ -155,27 +175,42 @@ out:
 }
 
 /**
- * Frame a GRAM reply
+ * @brief Create a HTTP-framed copy of a GRAM reply
  * @ingroup globus_gram_protocol_framing
  *
- * Adds an HTTP frame around a GRAM protocol reply. The frame is
- * constructed from the message code passed as the first parameter.
- * The framed reply is returned
- * in a new string pointed to by @a framedmsg parameter and the
- * length of the framed reply is returned in the @a framedsize parameter.
+ * @details
+ * The @a globus_gram_protocol_frame_reply() function adds HTTP 1.1
+ * framing around the input message. The framed message includes HTTP headers 
+ * relating the the status of the operation being replied to and the length of
+ * the message content.  The framed message is returned by modifying
+ * @a framedmsg to point to a newly allocated string. The integer pointed to by
+ * the @a framedsize
+ * parameter is set to the length of this message.
  *
  * @param code
- *        The HTTP response code to associate with this reply.
+ *        The HTTP response code to send along with this reply.
  * @param msg
- *        The reply to be framed.
+ *        A string containing the reply message content to be framed.
  * @param msgsize
- *        The length of the unframed reply.
+ *        The length of the string pointed to by @a msg.
  * @param framedmsg
- *        A return parameter, which will contain the framed reply
- *        upon this function's return.
+ *        An output parameter which will be set to a copy of the @a msg
+ *        string with an HTTP reply frame around it.
  * @param framedsize
- *        A return parameter, which will contain the length of the
- *        framed reply.
+ *        An output parameter which will be set to the length of the 
+ *        framed reply string pointed to by @a framedmsg.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_frame_reply() will return
+ *     GLOBUS_SUCCESS and the @a framedmsg and @a framedsize parameters will be
+ *     modified to point to the new framed message string and its length
+ *     respectively. When this occurs, the caller is responsible for freeing
+ *     the string pointed to by @a framedmsg. If an error occurs, its value
+ *     will returned and the @a framedmsg and @a framedsize parameters will 
+ *     be uninitialized.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
  */
 int
 globus_gram_protocol_frame_reply(

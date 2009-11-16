@@ -62,32 +62,47 @@ globus_l_gram_protocol_get_string_attribute(
  */
 
 /**
- * Pack a GRAM Job Request
+ * @brief Pack a GRAM Job Request
  * @ingroup globus_gram_protocol_pack 
  *
- * Encodes the parameters of a job request in a GRAM protocol message.
- * The resulting message may be sent with globus_gram_protocol_post()
- * or framed with globus_gram_protocol_frame_request() and sent by the
- * application.
+ * @details
+ * The @a globus_gram_protocol_pack_job_request() function combines its
+ * parameters into a GRAM job request message body. The caller may frame
+ * and send the resulting message by calling @a globus_gram_protocol_post()
+ * or just frame it by calling @a globus_gram_protocol_frame_request() and send
+ * it by some other mechanism. The globus_gram_protocol_pack_job_request()
+ * function returns the packed message by modifying the @a query parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
  *
  * @param job_state_mask
- *        The bitwise-or of the job states which the client would like
- *        to register for job state change callbacks.
+ *     The bitwise-or of the GRAM job states which the client would like
+ *     to register for job state change callbacks.
  * @param callback_url
- *        A callback contact string which will be contacted when a
- *        job state change which matches the @a job_state_mask occurs.
- *        This may be NULL, if the client does not wish to register
- *        a callback contact with this job request.
+ *     A callback contact string which will be contacted when a
+ *     job state change which matches the @a job_state_mask occurs.
+ *     This may be NULL, if the client does not wish to register
+ *     a callback contact with this job request. Typically, this value
+ *     is returned in the @a url parameter to
+ *     @a globus_gram_protocol_allow_attach().
  * @param rsl
- *        An RSL string which contains the job request. This will
- *        be parsed and validated on the server side.
+ *     An RSL string which contains the job request. This will
+ *     be processed on the server side.
  * @param query
- *        An output variable which will be populated with a new
- *        string containing the packed job request message. The caller
- *        must free this memory by calling globus_libc_free();
+ *     An output parameter which will be set to a new
+ *     string containing the packed job request message. The caller
+ *     must free this memory by calling free()
  * @param querysize
- *        An output variable which will be populated with the length
- *        of the job request message returned in @a query.
+ *     An output parameter which will be populated with the length
+ *     of the job request message returned in @a query.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_pack_job_request() returns
+ *     GLOBUS_SUCCESS and modifies the  @a query and @a querysize parameters to
+ *     point to the values described above.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
  */
 int
 globus_gram_protocol_pack_job_request(
@@ -126,30 +141,48 @@ globus_gram_protocol_pack_job_request(
 }
 /* globus_gram_protocol_pack_job_request() */
 
-
 /**
- * Unpack a job request
+ * @brief Unpack a GRAM Job Request
  * @ingroup globus_gram_protocol_unpack
  *
- * Extracts the parameters of a job request from a GRAM message. The
- * parameters to this function mirror those of
- * globus_gram_protocol_pack_job_request().
+ * @details
+ * The @a globus_gram_protocol_unpack_job_request() function parses the
+ * job request message packed in the @a query message and returns copies of
+ * the standard message attributes in the @a job_state_mask, @a callback_url,
+ * and @a description parameters.
  *
  * @param query
- *        The job request.
+ *     The unframed job request message to parse.
  * @param querysize
- *        The length of the job request string.
+ *     The length of the job request message string.
  * @param job_state_mask
- *        A pointer to an integer to be populated with the job state
- *        mask in the job request.
+ *     A pointer to an integer to be set to the job state
+ *     mask from the job request.
  * @param callback_url
- *        A pointer to be populated with a copy of the URL of the callback
- *        contact to be registered for this job request. The caller must
- *        free this memory by calling free().
+ *     A pointer to be set with a copy of the URL of the callback
+ *     contact to be registered for this job request. The caller must
+ *     free this memory by calling free().
  * @param description
- *        A pointer to be populated with a copy of the job description RSL
- *        for this job request. The caller must
- *        free this memory by calling free().
+ *     A pointer to be set to a copy of the job description RSL
+ *     string for this job request. The caller must
+ *     free this memory by calling free().
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_unpack_job_request() will
+ *     return @a GLOBUS_SUCCESS and modify the @a job_state_mask,
+ *     @a callback_url, and @a description parameters to values extracted
+ *     from the message in @a query. If an error occurs, an integer error code
+ *     will be returned and the values of @a job_state_mask, @a callback_url,
+ *     and @a description will be undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
+ *     Unpack failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_job_request(
@@ -250,32 +283,43 @@ bad_param:
 /* globus_gram_protocol_unpack_job_request() */
 
 /**
- * Pack a GRAM reply message 
+ * @brief Pack a GRAM reply message
  * @ingroup globus_gram_protocol_pack
  *
- * Encodes the parameters of a reply to a job request in a GRAM protocol
- * message.  The resulting message may be sent with
- * globus_gram_protocol_post() or framed with
- * globus_gram_protocol_frame_request() and sent by the application.
+ * @details
+ * The @a globus_gram_protocol_pack_job_request_reply() function combines its
+ * parameters into a GRAM reply message body. The caller may frame
+ * and send the resulting message by calling @a globus_gram_protocol_reply()
+ * or just frame it by calling @a globus_gram_protocol_frame_reply() and send
+ * it by some other mechanism. The 
+ * @a globus_gram_protocol_pack_job_request_reply()
+ * function returns the packed message by modifying the @a reply parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
  *
  * @param status
- *        The job's failure code if the job failed, or 0, if the job
- *        request was processed successfully.
+ *     The job's failure code if the job failed, or 0, if the job
+ *     request was processed successfully.
  * @param job_contact
- *        A string containing the job's contact string, which may
- *        be used to contact the job manager to query or cancel the job.
- *        This may be NULL, if the job request was not successfull.
+ *     A string containing the job contact string. This may be
+ *     NULL, if the job request was not successful.
  * @param reply
- *        A pointer which will be set to point to a newly allocated
- *        reply string. The string must be freed by the caller with
- *        globus_libc_free()
+ *     A pointer which will be set to the packed reply string
+ *     The caller must free this string by calling free().
  * @param replysize
- *        The length of the reply string.
+ *     A pointer which will be set to the length of the reply string.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_pack_job_request_reply() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a reply and @a replysize parameters
+ *     to point to the values described above. If an error occurs, an integer
+ *     error code is returned and the values pointed to by @a reply and
+ *     @a replysize are undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully constructed.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_MALLOC_FAILED
- *         Memory for the reply string could not be allocated.
+ *     Out of memory
  */
 int
 globus_gram_protocol_pack_job_request_reply(
@@ -315,36 +359,46 @@ globus_gram_protocol_pack_job_request_reply(
 /* globus_gram_protocol_pack_job_request_reply() */
 
 /**
- * Unpack a reply to a GRAM job request
+ * @brief Unpack a GRAM reply message
  * @ingroup globus_gram_protocol_unpack
  *
- * Extracts the parameters of a reply to a job request from a GRAM message.
- * The parameters to this function mirror those of
- * globus_gram_protocol_pack_job_request_reply().
+ * @details
+ * The @a globus_gram_protocol_unpack_job_request_reply() function parses the
+ * reply message packed in the @a reply message and returns copies of
+ * the standard message attributes in the @a status and @a job_contact
+ * parameters. 
  *
  * @param reply
- *        The job request reply.
+ *     The unframed job reply message to parse.
  * @param replysize
- *        The length of the reply string.
+ *     The length of the reply string.
  * @param status
- *        A pointer to an integer to be populated with the failure code
- *        associated with the job request. This may be GLOBUS_SUCCESS,
- *        if the job request was successful.
+ *     A pointer to an integer to be set to the failure code
+ *     associated with the job request. This may be GLOBUS_SUCCESS,
+ *     if the job request was successful.
  * @param job_contact
- *        A pointer to a string to be populated with the job's contact
- *        string.  This may set to NULL if the job request failed. If
- *        non-NULL upon return, the caller must free this string using
- *        globus_libc_free().
+ *     A pointer to a string to be set to the job contact string.  This may set
+ *     to NULL if the job request failed. If @a
+ *     globus_gram_protocol_unpack_job_request_reply() returns GLOBUS_SUCCESS,
+ *     then the caller must free this string using free().
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_unpack_job_request_reply() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a status and @a job_contact
+ *     parameters to point to the values described above. If an error occurs,
+ *     an integer error code is returned and the values pointed to by @a status
+ *     and @a job_contact are undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully unpacked.
+ *     Success
+ * @retval GLOBUS_GRAN_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *         Memory for the @a job_contact string could not be allocated.
+ *     Out of memory
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
- *         The reply message couldn't be parsed.
+ *     Unpack failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
- *         The reply message was in an incompatible version of the
- *         GRAM protocol.
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_job_request_reply(
@@ -419,6 +473,51 @@ bad_param:
 }
 /* globus_gram_protocol_unpack_job_request_reply() */
 
+/**
+ * @brief Pack a GRAM reply message with extension attributes
+ * @ingroup globus_gram_protocol_pack
+ *
+ * @details
+ * The @a globus_gram_protocol_pack_job_request_reply_with_extensions()
+ * function combines its parameters into a GRAM reply message body. The
+ * caller may frame and send the resulting message by calling
+ * @a globus_gram_protocol_reply() or just frame it by calling
+ * @a globus_gram_protocol_frame_reply() and send it by some other mechanism.
+ * The @a globus_gram_protocol_pack_job_request_reply_with_extensions()
+ * function returns the packed message by modifying the @a reply parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
+ *
+ * @param status
+ *     The job's failure code if the job failed, or 0, if the job
+ *     request was processed successfully.
+ * @param job_contact
+ *     A string containing the job contact string. This may be
+ *     NULL, if the job request was not successful.
+ * @param extensions
+ *     A pointer to a hash table keyed on a string attribute name with the
+ *     hash values being pointers to @a globus_gram_protocol_extension_t
+ *     structures. These will be encoded in the reply message after the
+ *     standard attributes.
+ * @param reply
+ *     A pointer which will be set to the packed reply string
+ *     The caller must free this string by calling free().
+ * @param replysize
+ *     A pointer which will be set to the length of the reply string.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_pack_job_request_reply_with_extensions() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a reply and @a replysize parameters
+ *     to point to the values described above. If an error occurs, an integer
+ *     error code is returned and the values pointed to by @a reply and
+ *     @a replysize are undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_MALLOC_FAILED
+ *     Out of memory
+ */
 int
 globus_gram_protocol_pack_job_request_reply_with_extensions(
     int					status,
@@ -520,6 +619,59 @@ bad_param:
 }
 /* globus_gram_protocol_pack_job_request_reply_with_extensions() */
 
+/**
+ * @brief Unpack a GRAM reply message, parsing all extensions
+ * @ingroup globus_gram_protocol_unpack
+ *
+ * @details
+ * The @a globus_gram_protocol_unpack_job_request_reply_with_extensions()
+ * function parses the reply message packed in the @a reply message parameter
+ * and returns copies of the standard message attributes in the @a status and
+ * @a job_contact parameters, and all other extension attributes in the
+ * hashtable pointed to by @a extensions. Each entry in the hashtable will
+ * be keyed by the attribute name and the value will be a pointer to a
+ * @a globus_gram_protocol_extension_t structure.
+ *
+ * @param status
+ *     A pointer to an integer to be set to the failure code
+ *     associated with the job request. This may be GLOBUS_SUCCESS,
+ *     if the job request was successful.
+ * @param job_contact
+ *     A pointer to a string to be set to the job contact string.  This may set
+ *     to NULL if the job request failed. If @a
+ *     globus_gram_protocol_unpack_job_request_reply_with_extensions() returns
+ *     GLOBUS_SUCCESS, then the caller must free this string using free().
+ * @param extensions
+ *     A pointer to be set to a hash table containing the
+ *     names and values of all protocol extensions present in the response
+ *     message. If
+ *     @a globus_gram_protocol_unpack_job_request_reply_with_extensions()
+ *     returns GLOBUS_SUCCESS, the caller must free this hash table and its
+ *     values by calling globus_gram_protocol_hash_destroy().
+ * @param reply
+ *     The unframed job reply message to parse.
+ * @param replysize
+ *     The length of the reply string.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_unpack_job_request_reply_with_extensions()
+ *     returns @a GLOBUS_SUCCESS and modifies the  @a status, @a job_contact,
+ *     and @a extensions to point to the values described above. If an error
+ *     occurs, an integer error code is returned and the values pointed to by
+ *     @a status, @a job_contact, and @a extensions are undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAN_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
+ *     Unpack failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
+ *     Version mismatch
+ */
 int
 globus_gram_protocol_unpack_job_request_reply_with_extensions(
     const globus_byte_t *		reply,
@@ -612,24 +764,48 @@ bad_param:
 }
 
 /**
- * Pack a GRAM Job Manager Query
+ * @brief Pack a GRAM query message
  * @ingroup globus_gram_protocol_pack 
  *
- * Encodes the parameters of a job status request, or other GRAM query
- * in a GRAM protocol message.  The resulting message may be sent with
- * globus_gram_protocol_post() or framed with
- * globus_gram_protocol_frame_request() and sent by the
- * application.
+ * @details
+ * The @a globus_gram_protocol_pack_status_request()
+ * function combines its parameters into a GRAM status query message body. The
+ * caller may frame and send the resulting message by calling
+ * @a globus_gram_protocol_post() or just frame it by calling
+ * @a globus_gram_protocol_frame_request() and send it by some other mechanism.
+ * The @a globus_gram_protocol_pack_status_request()
+ * function returns the packed message by modifying the @a query parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
  *
  * @param status_request
- *        A string containing the type of query. This may be "status",
- *        "register", "unregister", "signal", or "cancel".
+ *     A string containing the type of query message to send, including any
+ *     query parameters. The valid strings supported by GRAM in GT5 are:
+ *     - status
+ *     - register
+ *     - unregister
+ *     - signal
+ *     - renew
+ *     - cancel
  * @param query
- *        An output variable which will be populated with a new
- *        string containing the packed job query message.
+ *     An output parameter which will be set to a new
+ *     string containing the packed job query message.
  * @param querysize
- *        An output variable which will be populated with the length
- *        of the job query message returned in @a query.
+ *     An output parameter which will be set to the length
+ *     of the job query message returned in @a query.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_pack_status_request() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a query and @a querysize parameters
+ *     to point to the values described above. If an error occurs, an integer
+ *     error code is returned and the values pointed to by @a query and
+ *     @a querysize are undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_MALLOC_FAILED
+ *     Out of memory
  */
 int
 globus_gram_protocol_pack_status_request(
@@ -664,31 +840,38 @@ globus_gram_protocol_pack_status_request(
 /* globus_gram_protocol_pack_status_request() */
 
 /**
- * Unpack a GRAM query
+ * @brief Unpack a GRAM query message
  * @ingroup globus_gram_protocol_unpack
  *
- * Extracts the parameters of a query from a GRAM message.
- * The parameters to this function mirror those of
- * globus_gram_protocol_pack_status_request().
+ * @details
+ * The @a globus_gram_protocol_unpack_status_request()
+ * function parses the message packed in the @a query parameter
+ * and returns a copy of the message in the @a status_request parameter.
  *
  * @param query
- *        The GRAM query.
+ *     The unframed query message to parse.
  * @param querysize
- *        The length of the query string.
+ *     The length of the query string.
  * @param status_request
- *        A pointer to a string to be populated with the query 
- *        string.  The caller must free this string using
- *        globus_libc_free().
+ *     A pointer to a string to be set to the query 
+ *     value.  The caller must free this string using free().
  *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_unpack_status_request() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a status_request parameter
+ *     to point to the value described above. If an error occurs, an integer
+ *     error code is returned and the value pointed to by @a status_request
+ *     is undefined.
+
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully unpacked.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *         Memory for the @a job_contact string could not be allocated.
+ *     Out of memory
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
- *         The reply message couldn't be parsed.
+ *     Unpack failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
- *         The reply message was in an incompatible version of the
- *         GRAM protocol.
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_status_request(
@@ -746,34 +929,48 @@ error_exit:
 /* globus_gram_protocol_unpack_status_request() */
 
 /**
- * Pack a GRAM reply message 
+ * @brief Pack a GRAM query reply message 
  * @ingroup globus_gram_protocol_pack
  *
- * Encodes the parameters of a reply to a job manager query in a GRAM
- * protocol message.  The resulting message may be sent with
- * globus_gram_protocol_reply().
- * globus_gram_protocol_frame_reply() and sent by the application.
+ * @details
+ * The @a globus_gram_protocol_pack_status_reply()
+ * function combines its parameters into a GRAM status reply message body. The
+ * caller may frame and send the resulting message by calling
+ * @a globus_gram_protocol_reply() or just frame it by calling
+ * @a globus_gram_protocol_frame_reply() and send it by some other mechanism.
+ * The @a globus_gram_protocol_pack_status_reply()
+ * function returns the packed message by modifying the @a reply parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
  *
  * @param job_status
- *        The job's current @ref globus_gram_protocol_job_state_t "job
- *        state".
+ *     The job's current @ref globus_gram_protocol_job_state_t "job
+ *     state".
  * @param failure_code
- *        The error code generated by the query. This may be GLOBUS_SUCCESS
- *        if the query succeeded.
+ *     The error code generated by the query. This may be GLOBUS_SUCCESS
+ *     if the query succeeded.
  * @param job_failure_code
- *        The error code associated with the job if it has failed. This may
- *        be GLOBUS_SUCCESS if the job has not failed.
+ *     The error code associated with the job if it has failed. This may
+ *     be GLOBUS_SUCCESS if the job has not failed.
  * @param reply
- *        A pointer which will be set to point to a newly allocated
- *        reply string. The string must be freed by the caller with
- *        globus_libc_free()
+ *     An output parameter which will be set to a new
+ *     string containing the packed reply message.
  * @param replysize
- *        The length of the reply string.
+ *     An output parameter which will be set to the length
+ *     of the reply message returned in @a reply.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_pack_status_reply() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a reply and @a replysize parameters
+ *     to point to the values described above. If an error occurs, an integer
+ *     error code is returned and the values pointed to by @a reply and
+ *     @a replysize are undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully constructed.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_MALLOC_FAILED
- *         Memory for the reply string could not be allocated.
+ *     Out of memory
  */
 int
 globus_gram_protocol_pack_status_reply(
@@ -811,36 +1008,44 @@ globus_gram_protocol_pack_status_reply(
 /* globus_gram_protocol_pack_status_reply() */
 
 /**
- * Unpack a reply to a GRAM status request
+ * @brief Unpack a GRAM query reply
  * @ingroup globus_gram_protocol_unpack
- *
- * Extracts the parameters of a reply to a status request from a GRAM message.
- * The parameters to this function mirror those of
- * globus_gram_protocol_pack_status_reply().
+ * @details
+ * The @a globus_gram_protocol_unpack_status_reply()
+ * function parses the message packed in the @a reply parameter
+ * and sets the current job state, protocol failure code, and job failure code
+ * values in its output parameters.
  *
  * @param reply
- *        The job request reply.
+ *     The unframed reply message to parse.
  * @param replysize
- *        The length of the reply string.
+ *     The length of the reply message.
  * @param job_status
- *        A pointer to an integer to be populated with thejob's current @ref
- *        globus_gram_protocol_job_state_t "job state".
+ *     A pointer to an integer to be set to the job's current @ref
+ *     globus_gram_protocol_job_state_t "job state".
  * @param failure_code
- *        A pointer to an integer to be populated with the failure code
- *        associated with the status request. This may be GLOBUS_SUCCESS,
- *        if the job request was successful.
+ *     A pointer to an integer to be set to the failure code
+ *     associated with the query request. This may be GLOBUS_SUCCESS,
+ *     if the request was successful.
  * @param job_failure_code
- *        A pointer to an integer to be populated with the failure code
- *        for the job, if the @a job_status is
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     A pointer to an integer to be set to the failure code
+ *     for the job, if the @a job_status is
+ *     GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_unpack_status_reply() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a job_status, @a failure_code,
+ *     and @a job_failure_code parameters to point to the value described
+ *     above. If an error occurs, an integer error code is returned and the
+ *     values pointed to by @a job_status, @a failure_code, and
+ *     @a job_failure_code are undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully unpacked.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
- *         The reply message couldn't be parsed.
+ *     Unpack failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
- *         The reply message was in an incompatible version of the
- *         GRAM protocol.
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_status_reply(
@@ -882,37 +1087,51 @@ globus_gram_protocol_unpack_status_reply(
 /* globus_gram_protocol_unpack_status_reply() */
 
 /**
- * Pack a GRAM reply message with extensions
+ * @brief Pack a GRAM query reply message with extensions
  * @ingroup globus_gram_protocol_pack
  *
- * Encodes the parameters of a reply to a job manager query in a GRAM
- * protocol message.  The resulting message may be sent with
- * globus_gram_protocol_reply().
- * globus_gram_protocol_frame_reply() and sent by the application.
+ * @details
+ * The @a globus_gram_protocol_pack_status_reply_with_extensions()
+ * function combines its parameters into a GRAM status reply message body. The
+ * caller may frame and send the resulting message by calling
+ * @a globus_gram_protocol_reply() or just frame it by calling
+ * @a globus_gram_protocol_frame_reply() and send it by some other mechanism.
+ * The @a globus_gram_protocol_pack_status_reply_with_extensions()
+ * function returns the packed message by modifying the @a reply parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
  *
  * @param job_status
- *        The job's current @ref globus_gram_protocol_job_state_t "job
- *        state".
+ *     The job's current @ref globus_gram_protocol_job_state_t "job
+ *     state".
  * @param failure_code
- *        The error code generated by the query. This may be GLOBUS_SUCCESS
- *        if the query succeeded.
+ *     The error code generated by the query. This may be GLOBUS_SUCCESS
+ *     if the query succeeded.
  * @param job_failure_code
- *        The error code associated with the job if it has failed. This may
- *        be GLOBUS_SUCCESS if the job has not failed.
+ *     The error code associated with the job if it has failed. This may
+ *     be GLOBUS_SUCCESS if the job has not failed.
  * @param extensions
- *        Hashtable of globus_gram_protocol_extension_t * values
- *        containing extension attribute-value pairs.
+ *     A pointer to a hash table containing the 
+ *     names and values of the protocol extensions to add to this message.
  * @param reply
- *        A pointer which will be set to point to a newly allocated
- *        reply string. The string must be freed by the caller with
- *        globus_libc_free()
+ *     An output parameter which will be set to a new
+ *     string containing the packed reply message.
  * @param replysize
- *        The length of the reply string.
+ *     An output parameter which will be set to the length
+ *     of the reply message returned in @a reply.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_pack_status_reply_with_extensions() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a reply and @a replysize parameters
+ *     to point to the values described above. If an error occurs, an integer
+ *     error code is returned and the values pointed to by @a reply and
+ *     @a replysize are undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully constructed.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_MALLOC_FAILED
- *         Memory for the reply string could not be allocated.
+ *     Out of memory
  */
 int
 globus_gram_protocol_pack_status_reply_with_extensions(
@@ -1005,36 +1224,42 @@ bad_param:
 /* globus_gram_protocol_pack_status_reply_with_extensions() */
 
 /**
- * Unpack a reply to a GRAM status request with extensions
+ * @brief Unpack a GRAM query reply with extensions
  * @ingroup globus_gram_protocol_unpack
- *
- * Extracts the parameters of a reply to a status request from a GRAM message.
- * The parameters to this function mirror those of
- * globus_gram_protocol_pack_status_reply().
+ * @details
+ * The @a globus_gram_protocol_unpack_status_reply_with_extensions()
+ * function parses the message packed in the @a reply parameter,
+ * storing all attributes and values in a hash table. The @a extensions
+ * parameter is modified to point to that hash table. The caller of
+ * @a globus_gram_protocol_unpack_status_reply_with_extensions() must
+ * free that hash table by calling @a globus_gram_protocol_hash_destroy().
  *
  * @param reply
- *        The job request reply.
+ *     The unframed reply message to parse.
  * @param replysize
- *        The length of the reply string.
- * @param job_status
- *        A pointer to an integer to be populated with thejob's current @ref
- *        globus_gram_protocol_job_state_t "job state".
- * @param failure_code
- *        A pointer to an integer to be populated with the failure code
- *        associated with the status request. This may be GLOBUS_SUCCESS,
- *        if the job request was successful.
- * @param job_failure_code
- *        A pointer to an integer to be populated with the failure code
- *        for the job, if the @a job_status is
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     The length of the reply message.
+ * @param extensions
+ *     A pointer to be set to a hash table containing the
+ *     names and values of all protocol attributes present in the reply
+ *     message. If
+ *     @a globus_gram_protocol_unpack_status_reply_with_extensions()
+ *     returns GLOBUS_SUCCESS, the caller must free this hash table and its
+ *     values by calling globus_gram_protocol_hash_destroy().
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_unpack_status_reply_with_extensions() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a extensions
+ *     parameter to point to the value described
+ *     above. If an error occurs, an integer error code is returned and the
+ *     value pointed to by @a extensions is undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully unpacked.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
- *         The reply message couldn't be parsed.
+ *     Unpack failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
- *         The reply message was in an incompatible version of the
- *         GRAM protocol.
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_status_reply_with_extensions(
@@ -1125,30 +1350,47 @@ bad_param:
 /* globus_gram_protocol_unpack_status_reply_with_extensions() */
 
 /**
- * Pack a status update message
+ * @brief Pack a GRAM status update message
  * @ingroup globus_gram_protocol_pack
  *
- * Encodes the current status of a job in a GRAM protocol message.
- * The resulting message may be sent with globus_gram_protocol_post()
- * or framed with globus_gram_protocol_frame_request() and sent by the
- * application. Status messages are sent by the job manager when the
- * job's state changes.
+ * @details
+ * The @a globus_gram_protocol_pack_status_update_message()
+ * function combines its parameters into a GRAM status update message body. The
+ * caller may frame and send the resulting message by calling
+ * @a globus_gram_protocol_post() or just frame it by calling
+ * @a globus_gram_protocol_frame_request() and send it by some other mechanism.
+ * The @a globus_gram_protocol_pack_status_update_message()
+ * function returns the packed message by modifying the @a reply parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
  *
  * @param job_contact
- *        The contact string associated with this job manager.
+ *     The job contact string associated with the job.
  * @param status
- *        The job's current @ref globus_gram_protocol_job_state_t "job
- *        state".
+ *     The job's current @ref globus_gram_protocol_job_state_t "job state".
  * @param failure_code
- *        The error associated with this job request, if the @a status
- *        value is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     The error associated with this job request if the @a status
+ *     value is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
  * @param reply
- *        An output variable which will be populated with a new
- *        string containing the packed status message. The caller
- *        must free this memory by calling globus_libc_free();
+ *     An output parameter which will be set to a new
+ *     string containing the packed status message. The caller
+ *     must free this memory by calling free()
  * @param replysize
- *        An output variable which will be populated with the length
- *        of the job request message returned in @a reply.
+ *     An output parameter which will be set to the length
+ *     of the status message returned in @a reply.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_pack_status_update_message() returns
+ *     @a GLOBUS_SUCCESS and modifies the  @a reply and @a replysize
+ *     parameters as described above.
+ *     If an error occurs, an integer error code is returned and the
+ *     values pointed to by @a reply and @a replysize are undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
  */
 int
 globus_gram_protocol_pack_status_update_message(
@@ -1186,35 +1428,50 @@ globus_gram_protocol_pack_status_update_message(
 /* globus_gram_protocol_pack_status_update_message() */
 
 /**
- * Pack a status update message with arbitrary extensions
+ * @brief Pack a GRAM status update message with extensions
  * @ingroup globus_gram_protocol_pack
  *
- * Encodes the current status of a job in a GRAM protocol message.
- * The resulting message may be sent with globus_gram_protocol_post()
- * or framed with globus_gram_protocol_frame_request() and sent by the
- * application. Status messages are sent by the job manager when the
- * job's state changes. This version is generates messages which begin like
- * those generated by globus_gram_protocol_pack_status_update_message() but
- * includes additional application-defined extension attribute-value pairs.
+ * @details
+ * The @a globus_gram_protocol_pack_status_update_message_with_extensions()
+ * function combines its parameters into a GRAM status update message body. The
+ * caller may frame and send the resulting message by calling
+ * @a globus_gram_protocol_post() or just frame it by calling
+ * @a globus_gram_protocol_frame_request() and send it by some other mechanism.
+ * The @a globus_gram_protocol_pack_status_update_message_with_extensions()
+ * function returns the packed message by modifying the @a reply parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string. 
  *
  * @param job_contact
- *        The contact string associated with this job manager.
+ *     The job contact string associated with the job.
  * @param status
- *        The job's current @ref globus_gram_protocol_job_state_t "job
- *        state".
+ *     The job's current @ref globus_gram_protocol_job_state_t "job state".
  * @param failure_code
- *        The error associated with this job request, if the @a status
- *        value is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     The error associated with this job request if the @a status
+ *     value is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
  * @param extensions
- *        Hashtable of globus_gram_protocol_extension_t * values
- *        containing extension attribute-value pairs.
+ *     A pointer to a hash table keyed by extension attribute names with the
+ *     values being pointers to globus_gram_protocol_extension_t structures.
  * @param reply
- *        An output variable which will be populated with a new
- *        string containing the packed status message. The caller
- *        must free this memory by calling globus_libc_free();
+ *     An output parameter which will be set to a new
+ *     string containing the packed status message. The caller
+ *     must free this memory by calling free()
  * @param replysize
- *        An output variable which will be populated with the length
- *        of the job request message returned in @a reply.
+ *     An output parameter which will be set to the length
+ *     of the status message returned in @a reply.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_pack_status_update_message_with_extensions()
+ *     returns @a GLOBUS_SUCCESS and modifies the  @a reply and @a replysize
+ *     parameters as described above.
+ *     If an error occurs, an integer error code is returned and the
+ *     values pointed to by @a reply and @a replysize are undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
  */
 int
 globus_gram_protocol_pack_status_update_message_with_extensions(
@@ -1308,38 +1565,50 @@ null_param:
 }
 
 /**
- * Unpack a status update message
+ * @brief Unpack a GRAM status update message
  * @ingroup globus_gram_protocol_unpack
  *
- * Extracts the parameters of a status update from a GRAM message.
- * The parameters to this function mirror those of
- * globus_gram_protocol_pack_status_update_message().
+ * @details
+ * The @a globus_gram_protocol_unpack_status_update_message()
+ * function parses the message packed in the @a reply parameter,
+ * storing the standard message attribute values in its return parameters
+ * @a job_contact, @a status, and @a failure_code. The caller is responsible
+ * for freeing the @a job_contact value.
  *
  * @param reply
- *        The status update message.
+ *     The unframed reply message to parse.
  * @param replysize
- *        The length of the message.
+ *     The length of the reply message.
  * @param job_contact
- *        An output variable which will be populated with a new
- *        string containing the job contact string. The caller
- *        must free this memory by calling globus_libc_free().
+ *     An output parameter to be set to the job contact string.
+ *     If @a globus_gram_protocol_unpack_status_update_message() returns
+ *     GLOBUS_SUCCESS, then the caller must free this string using free().
  * @param status
- *        A pointer to an integer to be populated with the job's current @ref
- *        globus_gram_protocol_job_state_t "job state".
+ *     An output parameter to be set to the integer value of the job's current
+ *     @ref globus_gram_protocol_job_state_t "job state".
  * @param failure_code
- *        A pointer to an integer to be populated with the failure code
- *        for the job, if the @a job_status is
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     An output parameter to be set to the integer failure code for
+ *     the job if the @a job_status is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_unpack_status_update_message()
+ *     returns @a GLOBUS_SUCCESS and modifies the @a job_contact, @a status,
+ *     and @a failure_code parameters as described above.
+ *     If an error occurs, an integer error code is returned and the
+ *     values pointed to by the @a job_contact, @a status, and @a failure_code
+ *     parameters are undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The message was successfully unpacked.
+ *     Sucess
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
- *         The message couldn't be parsed.
+ *     Unpack failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *         Memory for the @a job_contact string could not be allocated.
+ *     Out of memory
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
- *         The status message was in an incompatible version of the
- *         GRAM protocol.
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_status_update_message(
@@ -1410,33 +1679,41 @@ bad_param:
 /* globus_gram_protocol_unpack_status_update_message() */
 
 /**
- * Unpack a status update message to a hashtable
+ * @brief Unpack a GRAM status update message with extensions
  * @ingroup globus_gram_protocol_unpack
  *
- * Extracts the parameters of a status update from a GRAM message into a
- * hashtable of globus_gram_protocol_extension_t values. The hashtable will be
- * initialized by this function and all of the attributes of the job in the
- * status message will be included in it. If this function returns
- * GLOBUS_SUCCESS, the caller is responsible for freeing
- * the hashtable and its values.
+ * @details
+ * The @a globus_gram_protocol_unpack_status_update_message_with_extensions()
+ * function parses the message packed in the @a reply parameter,
+ * storing the message attribute values in its return parameter
+ * @a extensions. The caller is responsible for freeing the @a extensions
+ * hash table by calling @a globus_gram_protocol_hash_destroy().
  *
  * @param reply
- *        The status update message.
+ *     The unframed reply message to parse.
  * @param replysize
- *        The length of the message.
- * @param message_hash
- *        An output variable which will be initialized to a hashtable
- *        containing the message attributes. The caller must destroy this
- *        hashtable calling globus_gram_protocol_hash_destroy()
+ *     The length of the reply message.
+ * @param extensions
+ *     An output parameter which will be initialized to a hashtable
+ *     containing the message attributes. The caller must destroy this
+ *     hashtable calling globus_gram_protocol_hash_destroy().
+ *
+ * @return
+ *     Upon success,
+ *     @a globus_gram_protocol_unpack_status_update_message_with_extensions()
+ *     returns @a GLOBUS_SUCCESS and modifies the @a extensions
+ *     parameter as described above.
+ *     If an error occurs, an integer error code is returned and the
+ *     value pointed to by the @a extensions parameters is undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         Sucess
+ *     Sucess
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED
- *         Unpack failed
+ *     Unpack failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *         Malloc failed
+ *     Malloc failed
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH
- *         Version mismatch
+ *     Version mismatch
  */
 int
 globus_gram_protocol_unpack_status_update_message_with_extensions(
@@ -1638,6 +1915,7 @@ bad_param:
 }
 /* globus_gram_protocol_unpack_status_update_message_with_extensions() */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 void
 globus_l_gram_protocol_extension_destroy(
@@ -1658,6 +1936,7 @@ globus_l_gram_protocol_extension_destroy(
         free(entry);
     }
 }
+#endif
 
 /**
  * Destroy message attribute hash
@@ -1905,6 +2184,43 @@ bad_param:
 }
 /* globus_gram_protocol_unpack_message() */
 
+/**
+ * @brief Pack a GRAM version request message
+ * @ingroup globus_gram_protocol_pack
+ * 
+ * @details
+ * The @a globus_gram_protocol_pack_job_request() function creates a copy
+ * of the GRAM version request.  The caller may frame
+ * and send the resulting message by calling @a globus_gram_protocol_post()
+ * or just frame it by calling @a globus_gram_protocol_frame_request() and send
+ * it by some other mechanism. The globus_gram_protocol_pack_version_request()
+ * function returns the packed message by modifying the @a request parameter to
+ * point to a new string containing the message. The caller is responsible for
+ * freeing that string.
+ *
+ * @param request
+ *     An output parameter which will be set to a new
+ *     string containing the packed version request message. The caller
+ *     must free this memory by calling free().
+ * @param requestsize
+ *     An output parameter which will be populated with the length
+ *     of the version request message returned in @a query.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_pack_job_request() returns
+ *     GLOBUS_SUCCESS and modifies the  @a request and @a requestsize
+ *     parameters to point to the values described above. If an error occurs,
+ *     @a globus_gram_protocol_pack_version_request() returns an integer
+ *     error code and the values pointed to by @a request and @a requestsize
+ *     are undefined.
+ * 
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ */
 int
 globus_gram_protocol_pack_version_request(
     char **                             request,
