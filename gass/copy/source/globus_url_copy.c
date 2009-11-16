@@ -2138,7 +2138,7 @@ globus_l_guc_load_alias_file(
     guc_l_aliases = GLOBUS_TRUE;
     guc_l_src_alias_ent = (globus_l_guc_alias_t *) 
         globus_hashtable_lookup(&guc_l_alias_table, (void *) "source");
-    guc_l_src_alias_ent = (globus_l_guc_alias_t *) 
+    guc_l_dst_alias_ent = (globus_l_guc_alias_t *) 
         globus_hashtable_lookup(&guc_l_alias_table, (void *) "destination");
 
     return 0;
