@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_protocol" >
 
-  <Aging_Version Age="6" Major="9" Minor="0" />
+  <Aging_Version Age="6" Major="9" Minor="1" />
   <Description >GRAM Protocol Library</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -22,6 +22,13 @@
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>
+
+    <Source_Dependencies Type="doc_runtime" >
+      <Dependency Name="globus_common" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_io" Package="doc" > <Version > <Simple_Version Major="6" /> </Version> </Dependency>
+    </Source_Dependencies>
+    
+
 
     <Build_Environment >
       <cflags >@GPT_PKG_CFLAGS@</cflags>

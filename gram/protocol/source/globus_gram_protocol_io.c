@@ -197,46 +197,54 @@ globus_l_gram_protocol_free_old_credentials();
  * @defgroup globus_gram_protocol_io Message I/O
  * @ingroup globus_gram_protocol_functions
  *
- * The functions in this section 
+ * The functions in this section are related to sending and receiving
+ * GRAM protocol messages. 
  */
 
 /**
- * Create a GRAM Protocol listener.
+ * @brief Create a GRAM protocol service listener
  * @ingroup globus_gram_protocol_io
  *
- * Creates a GRAM Protocol listener. The listener will automatically
- * accept new connections on it's TCP/IP port and parse GRAM requests.
- * The requests will be passed to the specified @a callback function
- * to the user can unpack the request, handle it, and send a reply
- * by calling globus_gram_protocol_reply().
+ * @details
+ * The @a globus_gram_protocol_allow_attach() function creates a 
+ * GRAM protocol listener to which other processes can send GRAM protocol
+ * messages. The listener will automatically accept new connections on it's
+ * TCP/IP port and parse GRAM requests.  The requests will be passed to the
+ * function pointed to by the @a callback parameter for the
+ * application to unpack, handle, and send a reply by calling
+ * @a globus_gram_protocol_reply().
  *
  * @param url
- *        A pointer to a character array which will be allocated to
- *        hold the URL of the listener. This URL may be published or
- *        otherwise passed to applications which need to contact this
- *        protocol server. The URL will be of the form
- *        https://&lt;host&gt;:&lt;port&gt;/. It is the user's responsibility
- *        to free this memory.
+ *     An output parameter that will be initialized to point to a string
+ *     that will hold the URL of the new listener. This URL may be published
+ *     or otherwise passed to applications which need to contact this
+ *     GRAM protocol server. The URL will be of the form
+ *     @a https://host:port/. 
  * @param callback
- *        The callback function to be called when a new request has been
- *        received by this listener. This function will be passed the
- *        request, which may be unpacked using one of the functions described 
- *        in the @link globus_gram_protocol_pack message packing @endlink
- *        section of the documentation.
+ *     A pointer to a function to be called when a new request has been
+ *     received by this listener. This function will be passed the
+ *     request, which may be unpacked using one of the functions described 
+ *     in the @link globus_gram_protocol_pack message packing @endlink
+ *     section of the documentation.
  * @param callback_arg
- *        A pointer to arbitrary user data which will be passed to the callback
- *        function as it's first parameter.
+ *     A pointer to arbitrary user data which will be passed to the callback
+ *     function as its first parameter.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_allow_attach() returns
+ *     @a GLOBUS_SUCCESS and modifies the @a url parameter to point to a newly
+ *     allocated string. The caller is then responsible for freeing this
+ *     string. If an error occurs, an integer error code will be returned and
+ *     the @a url parameter value will be uninitialized.
  *
  * @retval GLOBUS_SUCCESS
- *         The listener was created. The @a url parameter points to
- *         a string containing the contact URL for the listener.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
- *         The GRAM Protocol module was not properly activated.
+ *     Invalid request
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *         A memory allocation failed when trying to create the
- *         listener.
+ *     Out of memory
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
- *         Some I/O error occurred when trying to create the listener.
+ *     No resources
  *
  * @see globus_gram_protocol_callback_disallow()
  */
@@ -254,7 +262,7 @@ globus_gram_protocol_allow_attach(
     globus_i_gram_protocol_listener_t *	listener;
     globus_list_t *			node;
 
-    *url = GLOBUS_NULL;
+    *url = NULL;
 
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
     if(globus_i_gram_protocol_shutdown_called)
@@ -265,7 +273,7 @@ globus_gram_protocol_allow_attach(
     }
 
     handle = globus_libc_malloc(sizeof(globus_io_handle_t));
-    if(handle == GLOBUS_NULL)
+    if(handle == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto error_exit;
@@ -286,7 +294,7 @@ globus_gram_protocol_allow_attach(
     }
 
     listener = globus_libc_malloc(sizeof(globus_i_gram_protocol_listener_t));
-    if(listener == GLOBUS_NULL)
+    if(listener == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto close_handle_exit;
@@ -297,7 +305,7 @@ globus_gram_protocol_allow_attach(
     listener->callback = callback;
     listener->callback_arg = callback_arg;
     listener->connection_count = 0;
-    globus_cond_init(&listener->cond, GLOBUS_NULL);
+    globus_cond_init(&listener->cond, NULL);
 
     globus_list_insert(&globus_i_gram_protocol_listeners, listener);
 
@@ -313,7 +321,7 @@ globus_gram_protocol_allow_attach(
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     (*url) = globus_libc_malloc(17 + strlen(hostnamebuf));
 
-    if((*url) == GLOBUS_NULL)
+    if((*url) == NULL)
     {
         goto remove_listener_exit;
     }
@@ -335,7 +343,7 @@ globus_gram_protocol_allow_attach(
   close_handle_exit:
     res = globus_io_register_close(handle,
                                    globus_l_gram_protocol_close_listener,
-				   GLOBUS_NULL);
+				   NULL);
     if(res != GLOBUS_SUCCESS)
     {
   free_handle_exit:
@@ -349,25 +357,35 @@ globus_gram_protocol_allow_attach(
 /* globus_gram_protocol_allow_attach() */
 
 /**
- * Disable a listener from handling any new requests.
+ * @brief Stop a GASS protocol listener from handling new requests
  * @ingroup globus_gram_protocol_io
  *
- * Disables a listener making it unable to receive any new requests,
- * and freeing memory associated with the listener. Will block if a request
- * is in progress, but once this function returns, no further request callbacks
- * create by the listener will occur.
+ * @details
+ * The @a globus_gram_protocol_callback_disallow() function stops the
+ * listener named by the value of the @a url parameter from receiving any
+ * new requests. It also frees memory used internally by the GRAM protocol
+ * implementation to handle requests for this listener.
+ *
+ * The @a globus_gram_protocol_callback_disallow() function will wait until
+ * all requests being processed by this listener have completed processing.
+ * Once @a globus_gram_protocol_callback_disallow() returns, no further
+ * request callbacks will occur for the listener.
  *
  * @param url
- *        The URL of the listener to disable.
+ *     A pointer to the URL string which names the listener to disable.
  *
+ * @return
+ *     Upon success, the @a globus_gram_protocol_callback_disallow() function
+ *     returns @a GLOBUS_SUCCESS and frees internal state associated with the
+ *     listener named by the @a url parameter. If an error occurs, its integer
+ *     error code value will be returned and no listener will be affected.
+ *     
  * @retval GLOBUS_SUCCESS
- *         The listener was closed. No further callbacks will be
- *         called on behalf of this listener.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
- *         The @a url string could not be parsed.
+ *     Invalid job contact
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_CALLBACK_NOT_FOUND
- *         The GRAM protocol library doesn't know of any listener associated
- *         with this URL.
+ *     Callback not found
  *
  * @see globus_gram_protocol_allow_attach()
  */
@@ -399,7 +417,7 @@ globus_gram_protocol_callback_disallow(
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
 
     /* Locate listener with matching port number */
-    handle = GLOBUS_NULL;
+    handle = NULL;
     list = globus_i_gram_protocol_listeners;
     while(!handle && !globus_list_empty(list))
     {
@@ -431,60 +449,78 @@ globus_gram_protocol_callback_disallow(
 
 
 /**
- * Frame and send a GRAM protocol request.
+ * @brief Post a GRAM protocol request to a GRAM server
  * @ingroup globus_gram_protocol_io
  *
- * Connects to the GRAM Protocol server specified by the @a url
- * parameter, frames the message with HTTP headers, and sends
- * it. If @a callback is non-NULL, then the function pointed to by
- * it will be called when a response is received from the server.
+ * @details
+ * The @a globus_gram_protocol_post() function initiates a GRAM protocol
+ * message exchange with a GRAM protocol listener. It returns after framing
+ * the message and initiating the connection. When the message exchange is
+ * complete, the function pointed to by @a callback is invoked either in
+ * another thread or when a non-threaded application calls the 
+ * @a globus_poll() or @a globus_cond_wait() functions.
  *
  * @param url
- *        The URL of the server to send the message to. The
- *        @a url may be freed once this function returns.
+ *     A pointer to a string containing the URL of the server to post the
+ *     request to. This URL must be an HTTPS URL naming a GRAM service
+ *     resource.
  * @param handle
- *        A pointer to a globus_gram_protocol_handle_t which
- *        will be initialized with a unique handle identifier. This
- *        identifier will be passed to the @a callback function to 
- *        allow the caller to differentiate replies to multiple GRAM Protocol
- *        servers.
+ *     A pointer to a @a globus_gram_protocol_handle_t which
+ *     will be initialized with a unique handle identifier. This
+ *     identifier will be passed to the @a callback function to 
+ *     allow the caller to differentiate replies to multiple GRAM Protocol
+ *     requests. This pointer may be NULL if the caller will not have
+ *     multiple simultaneous requests.
  * @param attr
- *        A pointer to a Globus I/O attribute set, which will be used as
- *        parameters when connecting to the GRAM server. The attribute set
- *        may be GLOBUS_NULL, in which case, the default GRAM Protocol
- *        attributes will be used (authentication to self, SSL-compatible
- *        transport, with message integrity).
+ *     A pointer to a Globus I/O attribute set, which will be used as
+ *     parameters when connecting to the GRAM server. The value of
+ *     @a attr may be NULL, in which case, the default GRAM Protocol
+ *     attributes will be used (authentication to self, SSL-compatible
+ *     transport, with message integrity).
  * @param message
- *        A pointer to a message array to be sent to the GRAM server. This is
- *        normally created by calling one of the GRAM Protocol 
- *        @link globus_gram_protocol_pack pack @endlink functions. This
- *        message need not be NULL terminated. The memory associated with
- *        @a message may be freed as soon as this function returns.
+ *     A pointer to a message string to be sent to the GRAM server. This is
+ *     normally created by calling one of the GRAM Protocol 
+ *     @link globus_gram_protocol_pack pack @endlink functions. This
+ *     message need not be NULL terminated as the length is passed in
+ *     the @a message_size parameter. 
  * @param message_size
- *        The length of the @a message string. Typically generated as one of
- *        the output parameters to one of the GRAM Protocol 
- *        @link globus_gram_protocol_pack pack @endlink functions.
+ *     The length of the @a message string. Typically generated as one of
+ *     the output parameters to one of the GRAM Protocol 
+ *     @link globus_gram_protocol_pack pack @endlink functions.
  * @param callback
- *        A pointer to a callback function to call when the response to this
- *        message is received. This may be GLOBUS_NULL, in which case no
- *        callback will be received, and the caller will be unable to verify
- *        whether the message was successfully received.
+ *     A pointer to a function to call when the response to this
+ *     message is received or the message exchange fails. This may be NULL,
+ *     in which case no callback will be received, and the caller will be
+ *     unable to verify whether the message was successfully received.
  * @param callback_arg
- *        A pointer to arbitrary user data which will be passed to the callback
- *        function as it's first parameter.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a callback as its first parameter. This may
+ *     be NULL if the application has a NULL @a callback or does not require
+ *     the pointer to establish its context in the callback.
+ *
+ * @return
+ *    Upon success, @a globus_gram_protocol_post() returns GLOBUS_SUCCESS,
+ *    initiates the message exchange, registers the function pointed to by
+ *    @a callback to be called when the exchange completes or fails, and
+ *    modifies the @a handle parameter if it is non-NULL. If an
+ *    error occurs, its error code will be returned, the @a handle parameter
+ *    will be uninitialized and the function pointed to be @a callback will
+ *    not be called.
  *
  * @retval GLOBUS_SUCCESS
- *         The message was successfully framed, and is in the process of
- *         being sent.
+ *    Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
- *         The @a url parameter could not be parsed.
+ *    Invalid job contact
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *         A memory allocation failed when trying to frame or send
- *         the message.
+ *    Out of memory
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
- *         The GRAM Protocol module was not properly activated.
+ *    Invalid request
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
- *         Some I/O error occurred when trying to send the message.
+ *    No resources
+ *
+ * @note
+ * There is no way to time out or cancel a service request that is
+ * begun with @a globus_gram_protocol_post().
  *
  * @see globus_gram_protocol_reply()
  */
@@ -515,6 +551,111 @@ globus_gram_protocol_post(
 }
 /* globus_gram_protocol_post() */
 
+
+/**
+ * @brief Post a GRAM protocol delegation request to a GRAM server
+ * @ingroup globus_gram_protocol_io
+ *
+ * @details
+ * The @a globus_gram_protocol_post_delegation() function initiates a GRAM
+ * protocol delegation exchange with a GRAM protocol listener. The delegation
+ * protocol is a custom mix of HTTP and SSL records.
+ *
+ * The @a globus_gram_protocol_post_delegation() function returns after framing
+ * the message and initiating the connection to be used for delegation. When
+ * the message exchange is complete, the function pointed to by @a callback is
+ * invoked either in another thread or when a non-threaded application calls
+ * the @a globus_poll() or @a globus_cond_wait() functions.
+ *
+ * @param url
+ *     A pointer to a string containing the URL of the server to post the
+ *     request to. This URL must be an HTTPS URL naming a GRAM service
+ *     resource.
+ * @param handle
+ *     A pointer to a @a globus_gram_protocol_handle_t which
+ *     will be initialized with a unique handle identifier. This
+ *     identifier will be passed to the @a callback function to 
+ *     allow the caller to differentiate replies to multiple GRAM Protocol
+ *     requests. This pointer may be NULL if the caller will not have
+ *     multiple simultaneous requests.
+ * @param attr
+ *     A pointer to a Globus I/O attribute set, which will be used as
+ *     parameters when connecting to the GRAM server. The value of
+ *     @a attr may be NULL, in which case, the default GRAM Protocol
+ *     attributes will be used (authentication to self, SSL-compatible
+ *     transport, with message integrity).
+ * @param message
+ *     A pointer to a message string to be sent to the GRAM server. This is
+ *     normally created by calling one of the GRAM Protocol 
+ *     @link globus_gram_protocol_pack pack @endlink functions. This
+ *     message need not be NULL terminated as the length is passed in
+ *     the @a message_size parameter. 
+ * @param message_size
+ *     The length of the @a message string. Typically generated as one of
+ *     the output parameters to one of the GRAM Protocol 
+ *     @link globus_gram_protocol_pack pack @endlink functions.
+ * @param cred_handle
+ *     Handle to an existing GSSAPI security credential. If this parameter
+ *     is set to @a GSS_C_NO_CREDENTIAL, then the current account's default
+ *     credential will be used. A proxy credential sharing the identity of this
+ *     credential will be delegated to the GRAM protocol server.
+ * @param restriction_oids
+ *     A set of OID values indicating the data in the @a restriction_buffers
+ *     parameter. This parameter may have the value GSS_C_NO_OID_SET if there
+ *     are no restriction buffers.
+ * @param restriction_buffers
+ *     A set of binary data buffers which will be included in the delegated
+ *     credential. The type of data in these buffers is determined by the
+ *     OID values in @a restriction_oids. This parameter may have the value
+ *     GSS_C_EMPTY_BUFFER_SET if there are no extra restrictions to be 
+ *     added to the credential.
+ * @param req_flags
+ *     A bitwise-or of GSSAPI flag values to use when delegating the
+ *     credential using @a gss_init_delegation().
+ * @param time_req
+ *     An integer value indicating the length of time (in seconds) that the
+ *     delegated credential should be valid for. This is an advisory parameter:
+ *     no error will be returned if a credential with the requested lifetime
+ *     can not be created.
+ * @param callback
+ *     A pointer to a function to call when the response to this
+ *     message is received or the message exchange fails. This may be NULL,
+ *     in which case no callback will be received, and the caller will be
+ *     unable to verify whether the message was successfully received.
+ * @param callback_arg
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a callback as its first parameter. This may
+ *     be NULL if the application has a NULL @a callback or does not require
+ *     the pointer to establish its context in the callback.
+ *
+ * @return
+ *    Upon success, @a globus_gram_protocol_post_delegation() returns
+ *    GLOBUS_SUCCESS, initiates the message exchange, registers the function
+ *    pointed to by @a callback to be called when the exchange completes or
+ *    fails, and modifies the @a handle parameter if it is non-NULL. If an
+ *    error occurs, its error code will be returned, the @a handle parameter
+ *    will be uninitialized and the function pointed to be @a callback will
+ *    not be called. In the case of a protocol or delegation failure, the
+ *    callback function will be called with the @a errorcode parameter
+ *    set to the error.
+ *
+ * @retval GLOBUS_SUCCESS
+ *    Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *    Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
+ *
+ * @note
+ * There is no way to time out or cancel a service request that is
+ * begun with @a globus_gram_protocol_post_delegation().
+ *
+ * @see globus_gram_protocol_reply()
+ */
 int
 globus_gram_protocol_post_delegation(
     const char *			url,
@@ -548,43 +689,50 @@ globus_gram_protocol_post_delegation(
 /* globus_gram_protocol_post_delegation() */
 
 /**
- * Frame and send a GRAM protocol reply.
+ * @brief Reply to a GRAM protocol message
  * @ingroup globus_gram_protocol_io
  *
- * On an existing handle, frame and send the reply. The reply consists of a
- * response code and a message.
- *
- * This function should only be called in response to a callback containing
- * a GRAM Protocol request. It should not be called using the same handle
- * as created by calling globus_gram_protocol_post().
- *
+ * @details
+ * The @a #globus_gram_protocol_reply() function sends a response message
+ * to a client which initiated a GRAM message exchange. The
+ * @a #globus_gram_protocol_reply() function composes the message with an 
+ * HTTP message frame and then sends it to the client which initiated the
+ * exchange.
+ * 
  * @param handle
- *        The GRAM Protocol handle created when a connection arrives on
- *        a listener created by globus_gram_protocol_allow_attach(). The
- *        handle will be passed to the callback. The user must reply to
- *        all request callbacks which they receive.
+ *    A GRAM protocol handle which is used by this function to determine
+ *    the network connection to use for this reply. This must be the same
+ *    value as was passed as a parameter to the callback function registered
+ *    with the @a #globus_gram_protocol_allow_attach() function.
  * @param code
- *        A response code. The code should be one from the standard HTTP
- *        response codes described in RFC XXX.
+ *    The HTTP response code. The code should be one from the set described
+ *    in RFC 2616.
  * @param message
- *        A pointer to a message array to be sent to the GRAM client. This is
- *        normally created by calling one of the GRAM Protocol 
- *        @link globus_gram_protocol_pack pack @endlink functions. This
- *        message need not be NULL terminated. The memory associated with
- *        @a message may be freed as soon as this function returns.
+ *     A pointer to a message string to be sent to the GRAM client. This is
+ *     normally created by calling one of the GRAM Protocol 
+ *     @link globus_gram_protocol_pack pack @endlink functions. This
+ *     message need not be NULL terminated as the length is passed in
+ *     the @a message_size parameter. 
  * @param message_size
- *        The length of the @a message string. Typically generated as one of
- *        the output parameters to one of the GRAM Protocol 
- *        @link globus_gram_protocol_pack pack @endlink functions.
+ *     The length of the @a message string. Typically generated as one of
+ *     the output parameters to one of the GRAM Protocol 
+ *     @link globus_gram_protocol_pack pack @endlink functions.
  *
+ * @return
+ *     Upon success, @a #globus_gram_protocol_reply() returns GLOBUS_SUCCESS,
+ *     frames the @a message with an HTTP header and initiates sending the
+ *     message to the client. The caller must not try to use the value of the
+ *     @a handle parameter after this function returns. If an error occurs,
+ *     its integer error code will be returned.
+ *    
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully framed and is being sent.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
- *         The GRAM Protocol module was not properly activated.
+ *     Invalid request
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
- *         Some I/O error occurred when trying to send the reply.
+ *     No Resources
  *
- * @see globus_gram_protocol_post()
+ * @see #globus_gram_protocol_allow_attach()
  */
 int
 globus_gram_protocol_reply(
@@ -606,6 +754,68 @@ globus_gram_protocol_reply(
 }
 /* globus_gram_protocol_reply() */
 
+/**
+ * @brief Perform the server-side of the GSSAPI delegation handshake to receive a new delegated credential
+ * @ingroup globus_gram_protocol_io
+ *
+ * @details
+ * The @a globus_gram_protocol_accept_delegation() function performs the
+ * service side accepting of a GRAM protocol delegation exchange with a GRAM
+ * protocol client. This is performed after the delegation HTTP message has
+ * been unpacked by the application. 
+ *
+ * The @a globus_gram_protocol_accept_delegation() function returns after
+ * processing the GSSAPI handshake, passing the delegated credential or
+ * error information to the function pointed to by the @a callback parameter.
+ *
+ * @param handle
+ *     A GRAM protocol handle on which the server received a protocol refresh
+ *     message.
+ * @param restriction_oids
+ *     A set of OID values indicating the data in the @a restriction_buffers
+ *     parameter. This parameter may have the value GSS_C_NO_OID_SET if there
+ *     are no restriction buffers.
+ * @param restriction_buffers
+ *     A set of binary data buffers which will be included in the delegated
+ *     credential. The type of data in these buffers is determined by the
+ *     OID values in @a restriction_oids. This parameter may have the value
+ *     GSS_C_EMPTY_BUFFER_SET if there are no extra restrictions to be 
+ *     added to the credential.
+ * @param req_flags
+ *     A bitwise-or of GSSAPI flag values to use when delegating the
+ *     credential using @a gss_init_delegation().
+ * @param time_req
+ *     An integer value indicating the length of time (in seconds) that the
+ *     delegated credential should be valid for. This is an advisory parameter:
+ *     no error will be returned if a credential with the requested lifetime
+ *     can not be created.
+ * @param callback
+ *     A pointer to a function to call when the delegation handshake has
+ *     completed or failed. This function will be passed the value of
+ *     @a arg as well as the handle and delegated credential or erorr
+ *     that occurred processing the delegation messages.
+ * @param arg
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a callback as its first parameter. This may
+ *     be NULL if the application has a NULL @a callback or does not require
+ *     the pointer to establish its context in the callback.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_accept_delegation() returns 
+ *     GLOBUS_SUCCESS and registers the function pointed to by @a callback 
+ *     to be called after the delegation completes or fails. If an error
+ *     occurs, @a globus_gram_protocol_accept_delegation() returns an integer
+ *     error code and the @a callback function is not registered.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_MALLOC_FAILED
+ *     Malloc failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *     Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources
+ */
 int
 globus_gram_protocol_accept_delegation(
     globus_gram_protocol_handle_t       handle,
@@ -644,25 +854,34 @@ globus_gram_protocol_accept_delegation(
 /* globus_gram_protocol_accept_delegation() */
 
 /**
- * Extract the GSS Context from a GRAM Connection
+ * @brief Get a reference to the GSSAPI security context associated with a GRAM protocol handle
  * @ingroup globus_gram_protocol_io
  *
- * Extract the GSS Context from a existing, connected handle
- *
- * This function should only be called after the GRAM protocol connection has
- * been established.
+ * @details
+ * The @a #globus_gram_protocol_get_sec_context() function retrieves a
+ * reference to the GSSAPI security context associated with a particular GRAM
+ * protocol handle. This context may be inspected by the caller but must not be
+ * destroyed by the caller.  The @a #globus_gram_protocol_get_sec_context()
+ * function must only be called after the GRAM protocol library has called
+ * the @a callback function associated with a GRAM protocol message exchange.
  *
  * @param handle
- *        The GRAM Protocol handle created when a connection arrives on
- *        a listener created by globus_gram_protocol_allow_attach(). 
+ *     The GRAM protocol handle associated with a GRAM protocol message
+ *     exchange.
  * @param context
- *        The GSS Context associated with the connection.
+ *     The GSSAPI security context associated with the protocol handle.
+ *
+ * @return
+ *     Upon success, @a #globus_gram_protocol_get_sec_context() returns
+ *     GLOBUS_SUCCESS and modifies the @a context parameter to point to the
+ *     security context associated with the @a handle parameter. If an error
+ *     occurs, an interger error code is returned and the value of the 
+ *     @a context parameter is undefined.
  *
  * @retval GLOBUS_SUCCESS
- *         The reply was successfully framed and is being sent.
+ *     Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
- *         The GRAM Protocol module was not properly activated.
- *
+ *     Invalid request
  */
 int
 globus_gram_protocol_get_sec_context(
@@ -675,7 +894,7 @@ globus_gram_protocol_get_sec_context(
     int					rc;
 
     list = globus_i_gram_protocol_connections;
-    while(list != GLOBUS_NULL)
+    while(list != NULL)
     {
         connection = globus_list_first(list);
 	if(connection->handle == handle)
@@ -685,7 +904,7 @@ globus_gram_protocol_get_sec_context(
 	list = globus_list_rest(list);
     }
 
-    if(list == GLOBUS_NULL)
+    if(list == NULL)
     {
 	/* No match */
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
@@ -755,7 +974,7 @@ globus_l_gram_protocol_listen_callback(
 		    1,
 		    sizeof(globus_i_gram_protocol_connection_t));
 
-    if(connection == GLOBUS_NULL)
+    if(connection == NULL)
     {
         goto error_exit;
     }
@@ -763,7 +982,7 @@ globus_l_gram_protocol_listen_callback(
     connection->callback = listener->callback;
     connection->callback_arg = listener->callback_arg;
     connection->io_handle = globus_libc_malloc(sizeof(globus_io_handle_t));
-    if(connection->io_handle == GLOBUS_NULL)
+    if(connection->io_handle == NULL)
     {
         goto free_connection_exit;
     }
@@ -834,7 +1053,7 @@ globus_l_gram_protocol_listen_callback(
  * Frees the handle.
  *
  * @param callback_arg
- *        This parameter should always be GLOBUS_NULL. It is ignored.
+ *        This parameter should always be NULL. It is ignored.
  * @param handle
  *        A pointer to the TCP listener Globus I/O handle which is being
  *        closed. This handle will be freed during this function.
@@ -865,7 +1084,7 @@ globus_l_gram_protocol_close_listener(
  * @param callback_arg
  *        A pointer to the
  *        @link globus_i_gram_protocol_connection_t connection @endlink
- *        structure for this request. This should never be GLOBUS_NULL.
+ *        structure for this request. This should never be NULL.
  * @param handle
  *        The Globus I/O handle associated with the connection.
  * @param result
@@ -901,7 +1120,7 @@ globus_l_gram_protocol_accept_callback(
         globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
     connection->bufsize = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
 
-    if(connection->buf == GLOBUS_NULL)
+    if(connection->buf == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto error_exit;
@@ -959,7 +1178,7 @@ globus_l_gram_protocol_accept_callback(
  * @param callback_arg
  *        A pointer to the
  *        @link globus_i_gram_protocol_connection_t connection @endlink
- *        structure for this request. This should never be GLOBUS_NULL.
+ *        structure for this request. This should never be NULL.
  * @param handle
  *        The Globus I/O handle associated with the connection.
  * @param result
@@ -1104,7 +1323,7 @@ globus_l_gram_protocol_read_request_callback(
  * @param callback_arg
  *        A pointer to the
  *        @link globus_i_gram_protocol_connection_t connection @endlink
- *        structure for this request. This should never be GLOBUS_NULL.
+ *        structure for this request. This should never be NULL.
  * @param handle
  *        The Globus I/O handle associated with the connection.
  * @param result
@@ -1173,10 +1392,10 @@ globus_l_gram_protocol_connect_callback(
     {
 	connection->callback(connection->callback_arg,
 			     connection->handle,
-			     GLOBUS_NULL,
+			     NULL,
 			     0,
 			     rc,
-			     GLOBUS_NULL);
+			     NULL);
     }
     
     result = globus_io_register_close(
@@ -1209,7 +1428,7 @@ globus_l_gram_protocol_connect_callback(
  * @param callback_arg
  *        A pointer to the
  *        @link globus_i_gram_protocol_connection_t connection @endlink
- *        structure for this request. This should never be GLOBUS_NULL.
+ *        structure for this request. This should never be NULL.
  * @param handle
  *        The Globus I/O handle associated with the connection.
  * @param result
@@ -1254,7 +1473,7 @@ globus_l_gram_protocol_write_request_callback(
                                GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
     connection->replybufsize = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
 
-    if(connection->replybufsize == GLOBUS_NULL)
+    if(connection->replybufsize == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto error_exit;
@@ -1287,10 +1506,10 @@ globus_l_gram_protocol_write_request_callback(
 	 */
 	connection->callback(connection->callback_arg,
 			     connection->handle,
-			     GLOBUS_NULL,
+			     NULL,
 			     0,
 			     rc,
-			     GLOBUS_NULL);
+			     NULL);
     }
     result = globus_io_register_close(
 	    handle,
@@ -1324,7 +1543,7 @@ globus_l_gram_protocol_write_request_callback(
  * @param callback_arg
  *        A pointer to the
  *        @link globus_i_gram_protocol_connection_t connection @endlink
- *        structure for this reply. This should never be GLOBUS_NULL.
+ *        structure for this reply. This should never be NULL.
  * @param handle
  *        The Globus I/O handle associated with the connection.
  * @param result
@@ -1410,7 +1629,7 @@ globus_l_gram_protocol_write_reply_callback(
  * @param callback_arg
  *        A pointer to the
  *        @link globus_i_gram_protocol_connection_t connection @endlink
- *        structure for this reply. This should never be GLOBUS_NULL.
+ *        structure for this reply. This should never be NULL.
  * @param handle
  *        The Globus I/O handle associated with the connection.
  * @param result
@@ -1536,7 +1755,7 @@ globus_l_gram_protocol_read_reply_callback(
 			     connection->replybuf,
 			     connection->payload_length,
 			     connection->rc,
-			     GLOBUS_NULL);
+			     NULL);
     }
     if ((!connection->rc) && connection->keep_open)
     {
@@ -1722,14 +1941,14 @@ globus_l_gram_protocol_free_old_credentials()
                 return;
             }
             
-	    if (conn->io_handle != GLOBUS_NULL)
+	    if (conn->io_handle != NULL)
 	    {
 	        gss_cred_id_t           cur_cred;
 	        
 	        globus_io_tcp_get_credential(conn->io_handle, &cur_cred);
 	        if (cur_cred == cred)
                 {
-                    dead_cred = GLOBUS_NULL;
+                    dead_cred = NULL;
                     break;
                 }
 	    }
@@ -1739,7 +1958,7 @@ globus_l_gram_protocol_free_old_credentials()
 
 	cred_list = globus_list_rest(cred_list);
 
-	if (dead_cred != GLOBUS_NULL)
+	if (dead_cred != NULL)
 	{
 	    globus_list_remove(&globus_i_gram_protocol_old_creds,
 			       dead_cred);
@@ -1950,7 +2169,7 @@ globus_l_gram_protocol_reply(
     /* lookup up connection using handle as key */
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
     list = globus_i_gram_protocol_connections;
-    while(list != GLOBUS_NULL)
+    while(list != NULL)
     {
         connection = globus_list_first(list);
 	if(connection->handle == handle)
@@ -1960,7 +2179,7 @@ globus_l_gram_protocol_reply(
 	list = globus_list_rest(list);
     }
 
-    if(list == GLOBUS_NULL)
+    if(list == NULL)
     {
 	/* No match */
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
@@ -1968,7 +2187,7 @@ globus_l_gram_protocol_reply(
 	goto error_exit;
     }
     if(connection->read_type != GLOBUS_GRAM_PROTOCOL_REQUEST ||
-       connection->replybuf != GLOBUS_NULL)
+       connection->replybuf != NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
 
@@ -2018,7 +2237,7 @@ globus_l_gram_protocol_reply(
 
   free_reply_exit:
     globus_libc_free(connection->replybuf);
-    connection->replybuf = GLOBUS_NULL;
+    connection->replybuf = NULL;
     connection->replybufsize = 0;
   error_exit:
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
@@ -2094,7 +2313,7 @@ globus_l_gram_protocol_post(
                      1,
 		     sizeof(globus_i_gram_protocol_connection_t));
     
-    if(connection == GLOBUS_NULL)
+    if(connection == NULL)
     {
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 	goto free_framed_exit;
@@ -2130,7 +2349,7 @@ globus_l_gram_protocol_post(
 	*handle = connection->handle;
     }
     connection->io_handle = globus_libc_malloc(sizeof(globus_io_handle_t));
-    if(connection->io_handle == GLOBUS_NULL)
+    if(connection->io_handle == NULL)
     {
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 	goto free_connection_exit;
@@ -2548,7 +2767,7 @@ globus_l_gram_protocol_init_delegation(
 			     connection->replybuf,
 			     connection->payload_length,
 			     connection->rc,
-			     GLOBUS_NULL);
+			     NULL);
     }
     /* For reply handling, we just need to close up the connection
      * after we've dispatched the callback.
@@ -2687,5 +2906,3 @@ out:
 
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
-

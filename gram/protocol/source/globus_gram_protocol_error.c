@@ -19,11 +19,11 @@
 #include "globus_gram_protocol_constants.h"
 
 /**
- * @defgroup globus_gram_protocol_error_messages Error Translation
+ * @defgroup globus_gram_protocol_error_messages Error Messages
  * @ingroup globus_gram_protocol_functions
  *
- * Functions in this section handle translating GRAM error codes to
- * strings which can help the user diagnose GRAM problems. 
+ * Functions in this section handle converting GRAM error codes to
+ * strings which can help the user diagnose GRAM problems.
  */
 static char *
 globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
@@ -208,20 +208,24 @@ globus_thread_key_t                     globus_i_gram_protocol_error_key = 0;
 enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
 
 /**
- * Error code translation.
+ * @brief
+ * Get a description of a a GRAM error code
  * @ingroup globus_gram_protocol_error_messages
  *
- * This function takes the error code value and returns the associated error
- * code string. The string is statically allocated by the Globus GRAM Protocol
- * library and should not be modified or freed.
- *
+ * @details
+ * The @a globus_gram_protocol_error_string() function takes a GRAM error code
+ * value and returns the associated error code string for the message. The
+ * string is statically allocated by the GRAM Protocol
+ * library and should not be modified or freed by the caller. The string is
+ * intended to complete a sentence of the form
+ * "[operation] failed because ..."
+ * 
  * @param error_code
- *        The error code to look up.
+ *        The error code to translate into a string.
  *
- * @return An error string containing the reason for the error. The error
- *         string is written to be used in the context
- *         "[operation] failed because [error_string]".
- *
+ * @return
+ *     The @a globus_gram_protocol_error_string() function returns a static
+ *     string containing an explanation of the error.
  */
 const char *
 globus_gram_protocol_error_string(
@@ -252,22 +256,34 @@ globus_gram_protocol_error_string(
 
 
 /**
- * GSI specific error code hack.
+ * @brief Replace the error message associated with error 7 with a custom message
  * @ingroup globus_gram_protocol_error_messages
  *
- * This function creates a custom version of the error message for the error
- * GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION.  <b>This function should really
- * only used by the GRAM client library.</b>
+ * @details
+ * The @a globus_gram_protocol_error_7_hack_replace_message() function creates
+ * a custom version of the error message for the error
+ * @a GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION. The string pointed to by the
+ * @a message parameter is copied to thread-local storage, and subsequent calls
+ * to @a globus_gram_protocol_error_string() with this error number will return
+ * this copy of the string. Each time
+ * globus_gram_protocol_error_7_hack_replace_message() is called for
+ * a particular thread, the previous message is freed.
+ *
+ * The purpose of this function is to allow more meaningful error messages to
+ * be generated when authentication failures occur. In particular, the specific
+ * GSSAPI error reason can be used in place of a generic authorization failure
+ * message.
  *
  * @param message
- *        The new message to be associated with error code 7.
+ *        The new message to be associated with the
+ *        GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION error code.
  *
  * @note
- *     Since Globus 4.2.2 this function uses thread-specific storage, so that
+ *     Since Globus 5.0.0, this function uses thread-specific storage, so that
  *     the value returned by globus_gram_protocol_error_string() for 
  *     GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION is that for the last
  *     authorization error where
- *     globus_gram_protocol_error_7_hack_replace_message() was called from
+ *     @a globus_gram_protocol_error_7_hack_replace_message() was called from
  *     this thread.
  */
 void
@@ -278,24 +294,35 @@ globus_gram_protocol_error_7_hack_replace_message(const char * message)
 /* globus_gram_protocol_error_7_hack_replace_message() */
 
 /**
- * GSI specific error code hack.
+ * @brief Replace the error message associated with error 10 with a custom message
  * @ingroup globus_gram_protocol_error_messages
  *
- * This function creates a custom version of the error message for the error
- * GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED.  <b>This function should really
- * only used by the GRAM client library.</b>
+ * @details
+ * The @a globus_gram_protocol_error_10_hack_replace_message() function creates
+ * a custom version of the error message for the error
+ * @a GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED. The string pointed to by the
+ * @a message parameter is copied to thread-local storage, and subsequent calls
+ * to @a globus_gram_protocol_error_string() with this error number will return
+ * this copy of the string. Each time
+ * globus_gram_protocol_error_10_hack_replace_message() is called for
+ * a particular thread, the previous message is freed.
  *
- * This function uses thread-specific storage, so that
- * the value returned by globus_gram_protocol_error_string() for 
- * GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED is that for the last
- * protocol error where
- * globus_gram_protocol_error_10_hack_replace_message() was called from
- * this thread.
+ * The purpose of this function is to allow more meaningful error messages to
+ * be generated when protocol errors occur. In particular, the specific
+ * XIO error reason can be used in place of a generic protocol failure
+ * message.
  *
  * @param message
- *        The new message to be associated with error code 10.
+ *        The new message to be associated with the
+ *        GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED error code.
  *
- * @since Globus 4.2.2
+ * @note
+ *     Since Globus 5.0.0, this function uses thread-specific storage, so that
+ *     the value returned by globus_gram_protocol_error_string() for 
+ *     GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED is that for the last
+ *     authorization error where
+ *     @a globus_gram_protocol_error_10_hack_replace_message() was called from
+ *     this thread.
  */
 void
 globus_gram_protocol_error_10_hack_replace_message(const char * message)
@@ -303,6 +330,7 @@ globus_gram_protocol_error_10_hack_replace_message(const char * message)
     globus_i_gram_protocol_error_hack_replace_message(10, message);
 }
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Replace an error code context-specific error message with a new message
  *
@@ -393,3 +421,4 @@ globus_i_gram_protocol_error_destroy(
 {
     globus_hashtable_destroy_all(arg, globus_l_gram_protocol_errors_destroy);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
