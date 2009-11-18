@@ -835,7 +835,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
        free(client.fqans);
     }
 
+#ifndef NO_GLOBUS_USAGE
     myproxy_usage_stats_close(context);
+#endif
 
     return 0;
 }
