@@ -835,6 +835,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
        free(client.fqans);
     }
 
+    myproxy_usage_stats_close(context);
+
     return 0;
 }
 
