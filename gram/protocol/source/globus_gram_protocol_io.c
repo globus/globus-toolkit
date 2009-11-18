@@ -1974,6 +1974,29 @@ globus_l_gram_protocol_free_old_credentials()
 
 }
 
+/**
+ * @brief Set GRAM default credential
+ * @ingroup globus_gram_protocol_io
+ * @details
+ * The @a globus_gram_protocol_set_credentials() function causes subsequent
+ * GRAM operations to use the GSSAPI credential @a new_credentials. After this
+ * function returns, the caller must not use the credential, as it may be freed
+ * by GRAM when it is no longer needed.
+ *
+ * As a side effect, @a globus_gram_protocol_set_credentials() may free any 
+ * credential previously used by GRAM.
+ *
+ * @param new_credentials
+ *     New GSSAPI credential to use.
+ *
+ * @return
+ *     Upon success, @a globus_gram_protocol_set_credentials() returns
+ *     GLOBUS_SUCCESS. There are currently no error cases handled by this
+ *     function.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ */
 int
 globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials)
 {
@@ -2008,6 +2031,7 @@ globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials)
 
     return GLOBUS_SUCCESS;
 }
+/* globus_gram_protocol_set_credentials() */
 
 
 /* Parsing Functions */
