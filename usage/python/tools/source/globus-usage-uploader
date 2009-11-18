@@ -74,6 +74,8 @@ def main(argv):
         now = datetime.utcnow()
         todays_files = (now.year == dd.year and now.month == dd.month and \
             now.day == dd.day)
+        packet_types = dict()
+        packet_counts = 0
         for infile in glob.glob(os.path.join(dir_name, '*.gup')):
             hour=os.path.basename(infile).partition(".")[0]
             if todays_files and int(hour) >= now.hour:
@@ -81,24 +83,29 @@ def main(argv):
             print "" + os.path.basename(infile) + "...",
             os.rename(infile, infile + ".upload")
             p = PacketFile(infile + ".upload", "r")
-            packet_types = dict()
-            packet_counts = 0
             try:
                 while 1:
-                    res = p.read_packet()
-                    if res is not None:
-                        packet = packetparser.parse(res[0], res[1])
-                        if not(packet_types.has_key(packet.__class__)):
-                            packet_types[packet.__class__] = [packet]
+                    packet_types.clear()
+                    packet_counts = 0;
+                    # Process 10000 packets at a go
+                    for x in range(0, 10000):
+                        res = p.read_packet()
+                        if res is not None:
+                            packet = packetparser.parse(res[0], res[1])
+                            if not(packet_types.has_key(packet.__class__)):
+                                packet_types[packet.__class__] = [packet]
+                            else:
+                                packet_types[packet.__class__].append(packet)
+                            packet_counts += 1
                         else:
-                            packet_types[packet.__class__].append(packet)
-                        packet_counts += 1
-                    else:
+                            break
+                    # Nothing left in the file 
+                    if packet_counts == 0:
                         break
-                for packet_type in packet_types.keys():
-                    packets = packet_types[packet_type]
-                    packets[0].__class__.upload_many(usageconfig.driver_module, cursor, packets)
-                print "ok [" + str(packet_counts) + " packets]"
+                    for packet_type in packet_types.keys():
+                        packets = packet_types[packet_type]
+                        packets[0].__class__.upload_many(usageconfig.driver_module, cursor, packets)
+                    print "ok [" + str(packet_counts) + " packets]"
                 if commit:
                     con.commit()
                 os.remove(infile + ".upload")
