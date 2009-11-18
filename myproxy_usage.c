@@ -79,16 +79,18 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
            return result;
     }
 
-    if (context->usage_stats_target) {
+    if (!context->usage_stats_target ||
+        !strcasecmp(context->usage_stats_target, "default"))
+        target_str = strdup(CILOGON_COLLECTOR);
+    else
         target_str = strdup(context->usage_stats_target);
-        if (target_str == NULL)
-        {
-            verror_put_string("ERROR: strdup failure for target_str");
-            goto error;
-        }
 
-        myproxy_log("Processing usage_stats_target (%s)\n", target_str);
+    if (target_str == NULL)
+    {
+        verror_put_string("ERROR: strdup failure for target_str");
+        goto error;
     }
+    myproxy_log("Processing usage_stats_target (%s)\n", target_str);
 
     if(target_str && strchr(target_str, '!'))
     {
@@ -198,16 +200,6 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
         usage_ent = (myproxy_usage_ent_t *) globus_list_first(list);
 
         usage_ent->handle = NULL;
-        if (usage_ent->target && !strcasecmp(usage_ent->target, "default"))
-        {
-            free(usage_ent->target);
-            usage_ent->target = strdup(CILOGON_COLLECTOR);
-            if (usage_ent->target == NULL)
-            {
-                verror_put_string("ERROR: couldn't allocate for taglist");
-                goto error;
-            }
-        }
         myproxy_log("USAGE: Initializing (%s) (%s)", usage_ent->target?:"NULL",
                      usage_ent->taglist?:"NULL");
         result = globus_usage_stats_handle_init(
