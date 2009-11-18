@@ -220,6 +220,8 @@ if ($startserver) {
     print CONF "accepted_credentials_mapapp $bintrue\n" if (-x $bintrue);
     print CONF "allow_self_authorization true\n"; # temporary workaround
     print CONF "check_multiple_credentials true\n";
+    print CONF "disable_usage_stats \"false\"\n";
+    print CONF "usage_stats_target \"default\"\n";
     close(CONF);
     $SERVERPIDFILE = "$tmpdir/myproxy-test.serverpid.$$";
     $SERVERPORTFILE = "$tmpdir/myproxy-test.serverport.$$";
@@ -492,6 +494,24 @@ if (!($output =~ /default credential/)) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+#
+# Test 10.a
+#
+if ($startserver && defined($serverpid)) { # only case we have direct access to server
+#  ($exitstatus, $output) = kill('HUP', $serverpid);
+  ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
+  print "MyProxy Test 10.a (kill -HUP $serverpid ): ";
+  if ($exitstatus != 0) {
+      print "FAILED with $exitstatus\n"; $FAILURES++;
+      print STDERR $output;
+  } else {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+  }
+} else {
+  print "MyProxy Test 10.a (kill -HUP <myproxy-server>): SKIPPED\n";
+}
+
+
 ($exitstatus, $output) =
     &runtest("myproxy-init -v -r 'nobody' -k 'nobody' -c 1 -t 1 -S",
 	     $passphrase . "\n");
@@ -685,6 +705,7 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+
 #
 # Test 20
 #
@@ -729,6 +750,23 @@ if (defined($origtrustrootdir)) {
   $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
 } else {
   delete $ENV{'X509_CERT_DIR'};
+}
+
+#
+# Test 20.a
+#
+if ($startserver && defined($serverpid)) { # only case we have direct access to server
+#  ($exitstatus, $output) = kill('HUP', $serverpid);
+  ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
+  print "MyProxy Test 20.a (kill -HUP $serverpid ): ";
+  if ($exitstatus != 0) {
+      print "FAILED with $exitstatus\n"; $FAILURES++;
+      print STDERR $output;
+  } else {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+  }
+} else {
+  print "MyProxy Test 20.a (kill -HUP <myproxy-server>): SKIPPED\n";
 }
 
 #
@@ -884,6 +922,7 @@ if ($exitstatus == 0) {
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
 `rm -f $tmpdir/myproxy-test.*.12.*.$$.pem`;
 
+
 #
 # Test 30
 #
@@ -899,6 +938,23 @@ if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 30.a
+#
+if ($startserver && defined($serverpid)) { # only case we have direct access to server
+#  ($exitstatus, $output) = kill('HUP', $serverpid);
+  ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
+  print "MyProxy Test 30.a (kill -HUP $serverpid ): ";
+  if ($exitstatus != 0) {
+      print "FAILED with $exitstatus\n"; $FAILURES++;
+      print STDERR $output;
+  } else {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+  }
+} else {
+  print "MyProxy Test 30.a (kill -HUP <myproxy-server>): SKIPPED\n";
 }
 
 #
@@ -1140,6 +1196,24 @@ cleanup_limited:
 &runtest("myproxy-destroy -v", undef);
 &runtest("myproxy-destroy -v -k renew", undef);
 rename("\$X509_USER_PROXY.orig", "\$X509_USER_PROXY");
+
+#
+# Test 40.a
+#
+if ($startserver && defined($serverpid)) { # only case we have direct access to server
+#  ($exitstatus, $output) = kill('HUP', $serverpid);
+  ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
+  print "MyProxy Test 40.a (kill -HUP $serverpid ): ";
+  if ($exitstatus != 0) {
+      print "FAILED with $exitstatus\n"; $FAILURES++;
+      print STDERR $output;
+  } else {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+  }
+} else {
+  print "MyProxy Test 40.a (kill -HUP <myproxy-server>): SKIPPED\n";
+}
+
 
 #
 # Test 41
