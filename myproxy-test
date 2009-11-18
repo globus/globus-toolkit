@@ -2180,6 +2180,14 @@ sub write_valgrind_supp {
    fun:globus_module_activate
    ...
 }
+{
+   __libc_dlopen_mode
+   Memcheck:Addr4
+   ...
+   fun:__libc_dlopen_mode
+   fun:__nss_lookup_function
+   ...
+}
 EOF
     close(SUPP);
 }
