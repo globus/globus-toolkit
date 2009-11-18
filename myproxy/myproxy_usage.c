@@ -411,6 +411,7 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
 {
 #ifndef NO_GLOBUS_USAGE
     char info_bits[32];
+    char *alloced_userdn = NULL;
     char *userdn = NULL;
 
     if (context->disable_usage_stats)
@@ -422,7 +423,10 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
     else if (context->usage.credentials_exist)
         userdn = creds->owner_name;
     else
-        user_dn_lookup(request->username, &userdn, context);
+        if (user_dn_lookup(request->username, &alloced_userdn, context))
+            userdn = "";
+        else
+            userdn = alloced_userdn;
 
     sprintf(info_bits, "%d%d%d%d%d%d%d%d%d",
             context->usage.pam_used?1:0,
@@ -444,5 +448,7 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
                             request->username,
                             userdn);
 
+    if (alloced_userdn)
+        free(alloced_userdn);
 #endif /* NO_GLOBUS_USAGE */
 }
