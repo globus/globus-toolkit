@@ -1056,6 +1056,10 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     
     myproxy_free(attrs, NULL, NULL);
 
+#ifndef NO_GLOBUS_USAGE
+    myproxy_usage_stats_close(context);
+#endif
+
     if(debug) exit(1); else _exit(1);
 }
 
