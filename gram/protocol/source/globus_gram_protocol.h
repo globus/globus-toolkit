@@ -67,9 +67,20 @@ enum { GLOBUS_GRAM_PROTOCOL_PARAM_SIZE = 1024 };
  */
 typedef unsigned long globus_gram_protocol_handle_t;
 
+/**
+ * @typedef globus_gram_protocol_extension_t
+ * @brief GRAM protocol extension attribute-value pair
+ * @ingroup globus_gram_protocol_io
+ *
+ * @details
+ * The @a globus_gram_protocol_extension_t data type contains an attribute
+ * value pair that represents an extension to the GRAM2 protocol.
+ */
 typedef struct globus_gram_protocol_hash_entry_s
 {
+    /** Name of the extension attribute */
     char *                              attribute;
+    /** Value of the extension attribute */
     char *                              value;
 }
 globus_gram_protocol_extension_t;
