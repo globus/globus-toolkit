@@ -20,12 +20,10 @@
  * 
  * Resource Managemant Client APIs
  * 
- * This file contains the Resource Management Client API funtion
- * calls.  The resource management API provides functions for 
- * submitting a job request to a RM, for asking when a job
- * (submitted or not) might run, for cancelling a request,
- * for requesting notification of state changes for a request,
- * and for checking for pending notifications.
+ * This file contains the GRAM Client API functions.
+ * This API provides functions for submitting a job request to a GRAM resource,
+ * checking status, cancelling a job and requesting notification of state
+ * changes for a request.
  * 
  * CVS Information:
  * 
@@ -38,7 +36,6 @@
 /*
  * Include header files
  */
-
 #include "globus_config.h"
 #include "globus_i_gram_client.h"
 #include "globus_gram_protocol.h"
@@ -227,8 +224,6 @@ static globus_mutex_t                   globus_l_rsl_mutex;
 
 #define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
 /*
  * globus_i_gram_client_activate()
  * Description: Initialize variables
@@ -338,13 +333,20 @@ globus_i_gram_client_deactivate(void)
 
     return (GLOBUS_SUCCESS);
 } /* globus_i_gram_client_deactivate() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 
 
 /**
- * Enable debugging messages.
+ * @brief Enable GRAM debugging
  * @ingroup globus_gram_client
  *
- * Enables the displaying of internal debugging information.
+ * @details
+ * The @a globus_gram_client_debug() function enables
+ * the displaying of internal GRAM debug messages to standard output. Most
+ * of the information printed by this debugging system is related to errors
+ * that occur during GRAM Client API functions. The messages printed to
+ * standard output are not structured in any way.
  *
  * @return void
  */
@@ -357,12 +359,7 @@ globus_gram_client_debug(void)
 } /* globus_gram_client_debug() */
 
 
-/******************************************************************************
-Function:       globus_l_gram_client_parse_gatekeeper_url()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 int
 globus_l_gram_client_parse_gatekeeper_contact(
@@ -687,15 +684,17 @@ error_exit:
     
     return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 } /* globus_l_gram_client_setup_jobmanager_attr() */
+#endif
 
 /**
- * Version checking
+ * @brief Return GRAM protocol version
  * @ingroup globus_gram_client
  *
- * Return the version of the GRAM protocol which this implementation of the
- * GRAM client library understands.
+ * @details
+ * The @a globus_gram_client_version() function returns the version of the
+ * GRAM protocol understood by this implementation.
  *
- * @return An integer representing the protocol revision.
+ * @return The integer protocol revision.
  */
 int 
 globus_gram_client_version(void)
@@ -706,19 +705,25 @@ globus_gram_client_version(void)
 
 
 /**
- * Set the default GRAM credential
+ * @brief Set the default GRAM credential
  * @ingroup globus_gram_client
  *
- * Set the credential to use by default for all future GRAM network operations.
- * These include job requests, job signals, callback registration, and job
- * state callbacks. The credential must no longer be used by the caller, and
- * will be freed by GRAM when no longer needed.
+ * @details
+ * The @a globus_gram_client_set_credentials() function causes subsequent
+ * GRAM operations to use the GSSAPI credential @a new_credentials.
+ * These operations include job requests, job signals, callback registration,
+ * and job state callbacks. After this function returns, the caller must not
+ * use the credential, as it may be freed by GRAM when it is no longer needed.
  *
  * @param new_credentials
  *     New GSSAPI credential to use.
  *
- * @return This function returns GLOBUS_SUCCESS if the default credential has
- * been set.
+ * @return
+ *     Upon success, @a globus_gram_client_set_credentials() returns
+ *     GLOBUS_SUCCESS. There are no error values returned by this fucntion.
+ * 
+ * @retval GLOBUS_SUCCESS
+ *     Success
  */
 int
 globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
@@ -727,37 +732,58 @@ globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
 }
 
 /**
- * Verify that a gatekeeper is running (nonblocking).
+ * @brief Send a ping request to a GRAM service
  * @ingroup globus_gram_client_job_functions
  *
- * Sends a specially-formated GRAM protocol message which checks to
- * see if a Globus Gatekeeper is running on a given PORT, and whether that
+ * @details
+ * The @a globus_gram_client_register_ping() function sends a
+ * specially-formatted GRAM protocol message which checks to
+ * see if a Gatekeeper is running on a given PORT, and whether that
  * Gatekeeper is configured to support the desired job manager service.
- * This is primarily used for diagnostic purposes.
+ * This is used for diagnostic purposes.
  *
- * If this function determines that the ping could not be processed before
- * contacting the gatekeeper (for example, a malformed
+ * If @a globus_gram_client_register_ping() determines that this request could
+ * not be processed before contacting the gatekeeper (for example, a malformed
  * @a resource_manager_contact),  it will return an error, and the 
- * @a regiser_callback function will not be called.
+ * @a regiser_callback function will not be called. Otherwise, the success or
+ * failure an be determined by the @a operation_failure_code parameter to
+ * the function pointed to by the @a register_callback parameter.
  *
  * @param resource_manager_contact
- *        A NULL-terminated character string containing a
- *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink that
+ *     this function will contact.
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the gatekeeper. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        The callback function to call when the ping request has
- *        completed. 
+ *     A pointer to a function to call when the ping request has completed or
+ *     failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
- * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
- * able to locate the requested service. Otherwise one of the
- * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon success, @a globus_gram_client_register_ping() returns
+ *     GLOBUS_SUCCESS and the @a register_callback function will be called once
+ *     the ping operation completes. If an error occurs, this function returns
+ *     an integer error code and the function pointed to by the
+ *     @a register_callback parameter will not be called.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int 
 globus_gram_client_register_ping(
@@ -802,25 +828,38 @@ globus_gram_client_register_ping(
 /* globus_gram_client_register_ping() */
 
 /**
- * Verify that a gatekeeper is running.
+ * @brief Send a ping request to a GRAM service
  * @ingroup globus_gram_client_job_functions
  *
- * Sends a specially-formated GRAM protocol message which checks to
- * see if a Globus Gatekeeper is running on a given PORT, and whether that
+ * @details
+ * The @a globus_gram_client_ping() function sends a
+ * specially-formatted GRAM protocol message which checks to
+ * see if a Gatekeeper is running on a given PORT, and whether that
  * Gatekeeper is configured to support the desired job manager service.
- * This is primarily used for diagnostic purposes.
- *
- * This function blocks while processing the ping request.
+ * This is used for diagnostic purposes.
  *
  * @param resource_manager_contact
- *        A NULL-terminated character string containing a
- *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink that
+ *     this function will contact.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
- * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
- * able to locate the requested service. Otherwise one of the
- * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon success, @a globus_gram_client_ping() contacts the gatekeeper
+ *     service and returns @a GLOBUS_SUCCESS.  If an error occurs, this
+ *     function returns an integer error code.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int 
 globus_gram_client_ping(
@@ -858,24 +897,48 @@ globus_gram_client_ping(
 /* globus_gram_client_ping() */
 
 /**
- * Check for version information about a job manager
+ * @brief Get version information from a job manager
  * @ingroup globus_gram_client_job_functions
  *
- * Sends a GRAM protocol message which checks the version of the job manager
- * running at a particular gatekeeper contact.
- * see if a Globus Gatekeeper is running on a
-
- * This function blocks while processing the version request.
+ * @details
+ * The @a globus_gram_client_get_jobmanager_version() function sends a message
+ * to a GRAM service which returns information about the job manager version
+ * in the value pointed to by the @a extensions parameter. Note that job
+ * managers prior to GT5 do not support the version request and so will return
+ * a GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED error. This function blocks
+ * while processing this request.
  *
  * @param resource_manager_contact
- *        A NULL-terminated character string containing a
- *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ * @param extensions
+ *     A pointer to a hash table which will be initialized to contain the
+ *     version information returned by the service. The extensions defined by
+ *     GRAM5 are @a toolkit-version and @a version.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
- * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
- * able to locate the requested service. Otherwise one of the
- * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon success, @a globus_gram_client_get_jobmanager_version() function
+ *     returns GLOBUS_SUCCESS and modifies the @a extensions parameter as
+ *     described above. If an error occurs, the integer error code will be
+ *     returned and the value pointed to by the @a extensions parameter is
+ *     undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_GATEKEEPER_CONTACT
+ *     Bad gatekeeper contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     NULL parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int 
 globus_gram_client_get_jobmanager_version(
@@ -916,56 +979,67 @@ globus_gram_client_get_jobmanager_version(
 }
 /* globus_gram_client_get_jobmanager_version() */
 
-
-
 /**
- * Request a job be started (nonblocking).
+ * @brief Send a job request to a GRAM service
  * @ingroup globus_gram_client_job_functions
  *
- * Request access to interactive resources at the current time. A job request
- * is atomic: either all of the requested processes are created, or none are
- * created.  This is the nonblocking version of
- * globus_gram_client_job_request(). Instead of waiting for the job manager
- * to acknowledge that the job has been submitted or started, this function
- * immediately returns after beginning the job submission. The
- * @a register_callback function will be called to let the caller know whether
- * the job request has been submitted successfully or not.
+ * @details
+ * The @a globus_gram_client_register_job_request() function sends a
+ * GRAM protocol message to a service to request that it start a job on behalf
+ * of the client. 
  *
- * If this function determines that the job request could not be processed
- * before contacting the job manager (for example, a malformed 
- * @a resource_manager_contact) it will return an error, and the
- * @a register_callback function will not be called.
+ * If @a globus_gram_client_register_job_request() determines that this request
+ * could not be processed before contacting the gatekeeper (for example, a
+ * malformed @a resource_manager_contact),  it will return an error, and the 
+ * @a regiser_callback function will not be called. Otherwise, the success or
+ * failure an be determined by the @a operation_failure_code parameter to
+ * the function pointed to by the @a register_callback parameter.
  *
  * @param resource_manager_contact
- *        A NULL-terminated character string containing a
- *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink that
+ *     this function will contact.
  * @param description
- *        An RSL description of the requested job. A GRAM RSL consists of
- *        a conjunction of
- *        @link globus_gram_rsl_parameters RSL parameters @endlink.
+ *     A pointer to a string containing the job request information formatted
+ *     in RSL syntax.
  * @param job_state_mask
- *         0, a bitwise OR of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
- *         GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL.
+ *     A bitwise-or of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states that
+ *     the job manager will send job state notification messages for to the
+ *     contact named by @a callback_contact.
  * @param callback_contact
- *        The URL which will receive all messages about the job.
+ *     A GRAM listener contact that the job manager will send job state
+ *     notification messages to.
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the gatekeeper. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        The callback function to call when the job request submission has
- *        completed. This function will be passed a copy of the job_contact
- *        which the user must free, and an error code (the job status 
- *        value is undefined).
+ *     A pointer to a function to call when the job_request request has
+ *     completed or failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if successful,
- * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon success, @a globus_gram_client_register_job_request() returns
+ *     GLOBUS_SUCCESS and the @a register_callback function will be called once
+ *     the job request operation completes. If an error occurs, this function
+ *     returns an integer error code and the function pointed to by the
+ *     @a register_callback parameter will not be called.
  *
- * @see @ref globus_gram_resource_manager_contact
- * @see globus_gram_client_job_request()
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int
 globus_gram_client_register_job_request(
@@ -1013,33 +1087,57 @@ globus_gram_client_register_job_request(
 /* globus_gram_client_register_job_request() */
 
 /**
- * Request a job be started.
+ * @brief Send a job request to a GRAM service
  * @ingroup globus_gram_client_job_functions
  *
- * Request access to interactive resources at the current time. A job request
- * is atomic: either all of the requested processes are created, or none are
- * created. 
+ * @details
+ * The @a globus_gram_client_job_request() function sends a
+ * GRAM protocol message to a service to request that it start a job on behalf
+ * of the client.  Unlike, @a globus_gram_client_register_job_request(),
+ * @a globus_gram_client_job_request() blocks until the job
+ * request has been processed by the service. 
  *
  * @param resource_manager_contact
- *        A NULL-terminated character string containing a
- *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink that
+ *     this function will contact.
  * @param description
- *        An RSL description of the requested job. A GRAM RSL consists of
- *        a conjunction of
- *        @link globus_gram_rsl_parameters RSL parameters @endlink.
+ *     A pointer to a string containing the job request information formatted
+ *     in RSL syntax.
  * @param job_state_mask
- *         0, a bitwise OR of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
- *         GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL.
+ *     A bitwise-or of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states that
+ *     the job manager will send job state notification messages for to the
+ *     contact named by @a callback_contact.
  * @param callback_contact
- *        The URL which will receive all messages about the job.
+ *     A GRAM listener contact that the job manager will send job state
+ *     notification messages to.
  * @param job_contact
- *        In a successful case, this is set to a unique identifier for each job.
+ *     An output parameter pointing to a string that will be set to the
+ *     job contact for this job. This value will only be set if the job
+ *     request is successful or the two-phase commit protocol is being used
+ *     and the return code is @a GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if successful,
- * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon success, @a globus_gram_client_job_request() returns
+ *     GLOBUS_SUCCESS and modifies the value pointed to by @a job_contact as
+ *     described above.  If an error occurs, this function
+ *     returns an integer error code and the value pointed to by
+ *     @a job_contact. In addition to the error codes described below, any
+ *     #globus_gram_protocol_error_t value may be returned as a cause for
+ *     the job to fail.
  *
- * @see @ref globus_gram_resource_manager_contact
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int 
 globus_gram_client_job_request(
@@ -1095,6 +1193,71 @@ globus_gram_client_job_request(
 }
 /* globus_gram_client_job_request() */
 
+/**
+ * @brief Send a job request to a GRAM service with extensions-aware callback
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @details
+ * The @a globus_gram_client_register_job_request_with_info() function sends a
+ * GRAM protocol message to a service to request that it start a job on behalf
+ * of the client. 
+ *
+ * If @a globus_gram_client_register_job_request_with_info() determines that
+ * this request could not be processed before contacting the gatekeeper (for
+ * example, a malformed @a resource_manager_contact),  it will return an error,
+ * and the @a callback function will not be called. Otherwise, the
+ * success or failure an be determined by the @a operation_failure_code
+ * parameter to the function pointed to by the @a callback parameter. The
+ * difference between this function and
+ * @a #globus_gram_client_register_job_request() is the function signature of
+ * the callback function.
+ *
+ * @param resource_manager_contact
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink that
+ *     this function will contact.
+ * @param description
+ *     A pointer to a string containing the job request information formatted
+ *     in RSL syntax.
+ * @param job_state_mask
+ *     A bitwise-or of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states that
+ *     the job manager will send job state notification messages for to the
+ *     contact named by @a callback_contact.
+ * @param callback_contact
+ *     A GRAM listener contact that the job manager will send job state
+ *     notification messages to.
+ * @param attr
+ *     A set of client attributes to use to contact the gatekeeper. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
+ * @param callback
+ *     A pointer to a function to call when the job_request request has
+ *     completed or failed.
+ * @param callback_arg
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a callback as its @a user_callback_arg
+ *     parameter.
+ *
+ * @return
+ *     Upon success, @a globus_gram_client_register_job_request_with_info()
+ *     returns GLOBUS_SUCCESS and the @a callback function will be
+ *     called once the job request operation completes. If an error occurs,
+ *     this function returns an integer error code and the function pointed to
+ *     by the @a callback parameter will not be called.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
+ */
 int
 globus_gram_client_register_job_request_with_info(
     const char *                        resource_manager_contact,
@@ -1139,6 +1302,64 @@ globus_gram_client_register_job_request_with_info(
     return rc;
 }
 
+/**
+ * @brief Send a job request to a GRAM service and parse extensions in the response
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @details
+ * The @a globus_gram_client_job_request_with_info() function sends a
+ * GRAM protocol message to a service to request that it start a job on behalf
+ * of the client.  Unlike,
+ * @a globus_gram_client_register_job_request_with_info(),
+ * @a globus_gram_client_job_request_with_info() blocks until the job
+ * request has been processed by the service. 
+ *
+ * @param resource_manager_contact
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink that
+ *     this function will contact.
+ * @param description
+ *     A pointer to a string containing the job request information formatted
+ *     in RSL syntax.
+ * @param job_state_mask
+ *     A bitwise-or of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states that
+ *     the job manager will send job state notification messages for to the
+ *     contact named by @a callback_contact.
+ * @param callback_contact
+ *     A GRAM listener contact that the job manager will send job state
+ *     notification messages to.
+ * @param job_contact
+ *     An output parameter pointing to a string that will be set to the
+ *     job contact for this job. This value will only be set if the job
+ *     request is successful or the two-phase commit protocol is being used
+ *     and the return code is @a GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT.
+ * @param info
+ *     An output parameter pointing to a structure to hold the extensions in
+ *     the GRAM response. The caller is responsible for destroying this by
+ *     calling the @a globus_gram_client_job_info_destroy() function.
+ *
+ * @return
+ *     Upon success, @a globus_gram_client_job_request_with_info() returns
+ *     GLOBUS_SUCCESS and modifies the values pointed to by @a job_contact and
+ *     @a info as described above.  If an error occurs, this function
+ *     returns an integer error code and the value pointed to by
+ *     @a job_contact. In addition to the error codes described below, any
+ *     #globus_gram_protocol_error_t value may be returned as a cause for
+ *     the job to fail.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
+ */
 int 
 globus_gram_client_job_request_with_info(
     const char *                        resource_manager_contact,
@@ -1195,19 +1416,22 @@ globus_gram_client_job_request_with_info(
 /* globus_gram_client_job_request_with_info() */
 
 /**
- * Error code translation.
+ * @brief Get a description of a a GRAM error code
  * @ingroup globus_gram_client
  *
- * This function takes the error code value and returns the associated error
- * code string. The string is statically allocated by the Globus GRAM Client
- * library and should not be modified or freed.
+ * @details
+ * The @a globus_gram_client_error_string() function takes a GRAM error code
+ * value and returns the associated error code string. The string is statically
+ * allocated by the Globus GRAM Client library and should not be modified or
+ * freed. The string is intended to complete a sentence of the form
+ * "[operation] failed because ..."
  *
  * @param error_code
- *        The error code to look up.
+ *     The error code to translate into a string.
  *
- * @return An error string containing the reason for the error. The error
- *         string is written to be used in the context
- *         "[operation] failed because [error_string]".
+ * @return
+ *     The @a globus_gram_client_error_string() function returns a static 
+ *     string containing an explanation of the error.
  *
  */
 const char *
@@ -1215,7 +1439,9 @@ globus_gram_client_error_string(int error_code)
 {
     return globus_gram_protocol_error_string(error_code);
 }
+/* globus_gram_protocol_error_string() */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /*
  * packing/sending to jobmanager URL/waiting/unpacking 
  */
@@ -1298,24 +1524,34 @@ error_exit:
     return rc;
 }
 /* globus_l_gram_client_to_jobmanager() */
+#endif
 
 /**
- * Cancel a GRAM-managed job.
+ * @brief Cancel a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * Removes a @a PENDING job request, or kills all processes associated
- * with an @a ACTIVE job, releasing any associated resources
+ * @details
+ * The @a globus_gram_client_job_cancel() function cancels a
+ * GRAM job. Depending on the job's current state, this cancellation may be
+ * immediate or require a delay for interacting with the LRM servicing the
+ * job. Notification when the job has been successfully canceled will be
+ * sent to all client contacts registered for notifications after the 
+ * cancellation has been completely processed. Unlike,
+ * @a globus_gram_client_register_job_cancel(),
+ * @a globus_gram_client_job_cancel() blocks until the job
+ * cancel request has been processed by the service. 
+
  *
  * @param  job_contact
- *         The job contact string of the job to contact. This is the same
- *         value returned from globus_gram_client_job_request() or
- *         globus_gram_client_register_job_request().
+ *     A NULL-terminated character string containing a
+ *     GRAM job contact that this function will contact to cancel the job.
  *
  * @return
- *         This function returns GLOBUS_SUCCESS if the cancellation
- *         was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
- *         values will be returned, indicating why the client could not cancel
- *         the job.
+ *     Upon succes, @a globus_gram_client_job_cancel() returns
+ *     @a GLOBUS_SUCCESS if the cancellation was successful posted to the 
+ *     service. If an error occurs, @a globus_gram_client_job_cancel()
+ *     returns one of the #globus_gram_protocol_error_t values
+ *     values indicating why the client could not cancel the job.
  *
  * @see globus_gram_client_register_job_cancel()
  */
@@ -1364,29 +1600,53 @@ globus_gram_client_job_cancel(
 /* globus_gram_client_job_cancel() */
 
 /**
- * Nonblocking cancel of a GRAM-managed job.
+ * @brief Cancel a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * Removes a @a PENDING job request, or kills all processes associated
- * with an @a ACTIVE job, releasing any associated resources
+ * @details
+ * The @a globus_gram_client_register_job_cancel() function sends a message
+ * to a GRAM service to cancel a GRAM job. Depending on the job's current
+ * state, this cancellation may be immediate or require a delay for
+ * interacting with the LRM servicing the job. In either case, this function
+ * returns as soon as it is able to start sending the message. Notification
+ * when the job has been successfully canceled will be sent to all client
+ * contacts registered for notifications after the cancellation has been
+ * completely processed.
  *
  * @param  job_contact
- *         The job contact string of the job to contact. This is the same
- *         value returned from globus_gram_client_job_request() or
- *         globus_gram_client_register_job_request().
+ *     A NULL-terminated character string containing a
+ *     GRAM job contact that this function will contact to cancel the job.
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        The callback function to call when the job request cancel has
- *        completed. 
+ *     A pointer to a function to call when the job_request request has
+ *     completed or failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if successful,
- * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon succes, @a globus_gram_client_register_job_cancel() returns
+ *     @a GLOBUS_SUCCESS if the cancellation was successful posted to the 
+ *     service. If an error occurs, @a globus_gram_client_register_job_cancel()
+ *     returns one an integer error code indicating why it could not cancel the
+ *     job.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  *
  * @see globus_gram_client_job_cancel()
  */
@@ -1433,36 +1693,53 @@ globus_gram_client_register_job_cancel(
 /* globus_gram_client_register_job_cancel() */
 
 /**
- * Signal a job manager.
+ * @brief Send a signal a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * Send a signal to a GRAM job manager to modify the way it handles a job
- * request. Signals consist of a signal number, and an optional string
+ * @details
+ * The @a globus_gram_client_job_signal() function sends a signal message to
+ * a job managed by the GRAM service.
+ * Signals consist of a signal number and an optional string
  * argument. The meanings of the signals supported by the GRAM job manager
- * are defined in the
- * @link globus_gram_protocol_constants GRAM Protocol documentation @endlink
+ * are defined in the GRAM Protocol documentation.
+ * Unlike @a globus_gram_client_register_job_signal(), this function blocks
+ * until the signal has been delivered and acknowledged by the GRAM service.
  *
  * @param job_contact
- *         The job contact string of the job manager to signal.
+ *     The job contact string of the job manager to contact. This is the
+ *     same value returned from globus_gram_client_job_request().
  * @param signal
- *         The signal code to send to the job manager.
+ *     The signal code to send to the job manager.
  * @param signal_arg
- *         Parameters for the signal, as described in the documentation
- *         for the globus_gram_protocol_job_signal_t.
+ *     Parameters for the signal, as described in the documentation
+ *     for the #globus_gram_protocol_job_signal_t enumeration.
  * @param job_status
- *         A pointer to an integer which will return the new job status,
- *         if the signal causes the job's state to change (for example,
- *         the GLOBUS_GRAM_PROTOCOL_JOB_CANCEL signal will cause the
- *         job to enter the #GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED).
+ *     An output parameter pointing to an integer to set to the status
+ *     of the job after the signal has been processed.
  * @param failure_code
- *         An error code indicating why the job manager could not process
- *         the signal.
+ *     An output parameter pointing to an integer to set to the reason
+ *     why the job has failed if the value pointed to by @a job_status is
+ *     set to @a GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED by this function.
  *
  * @return
- *         This function returns GLOBUS_SUCCESS if the signal
- *         was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
- *         values will be returned, indicating why the client could not signal
- *         the job.
+ *     Upon success, @a globus_gram_client_job_signal() returns GLOBUS_SUCCESS
+ *     after sending the signal and receiving a response and modifies the
+ *     @a job_status and @a failure_code parameters as described above. If an
+ *     error occurs, this function returns an integer error code indicating
+ *     why the client could not signal the job.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  *
  * @see globus_gram_client_register_job_signal()
  */
@@ -1568,35 +1845,59 @@ error_exit:
 /* globus_gram_client_job_signal() */
 
 /**
- * Nonblocking signal a job manager.
+ * @brief Send a signal a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * Send a signal to a GRAM job manager to modify the way it handles a job
- * request. Signals consist of a signal number, and an optional string
+ * @details
+ * The @a globus_gram_client_register_job_signal() function sends a signal
+ * message to a job managed by the GRAM service.
+ * Signals consist of a signal number and an optional string
  * argument. The meanings of the signals supported by the GRAM job manager
- * are defined in the
- * @link globus_gram_protocol_constants GRAM Protocol documentation @endlink
+ * are defined in the GRAM Protocol documentation. This function returns as
+ * soon as it has determined that its parameters are valid and it has
+ * begun to send the message to the GRAM service.
  *
  * @param job_contact
- *         The job contact string of the job manager to signal.
+ *     The job contact string of the job manager to contact. This is the
+ *     same value returned from globus_gram_client_job_request().
  * @param signal
- *         The signal code to send to the job manager.
+ *     The signal code to send to the job manager.
  * @param signal_arg
- *         Parameters for the signal, as described in the documentation
- *         for the globus_gram_protocol_job_signal_t.
+ *     Parameters for the signal, as described in the documentation
+ *     for the #globus_gram_protocol_job_signal_t enumeration.
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        The callback function to call when the job signal has
- *        completed. 
+ *     A pointer to a function to call when the signal request has
+ *     completed or failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
  *
  * @return
- * This function returns GLOBUS_SUCCESS if successful,
- * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *     Upon success, @a globus_gram_client_job_register_signal() returns
+ *     GLOBUS_SUCCESS after beginnning to send the signal to the GRAM job and
+ *     registers the @a register_callback function to be called once that
+ *     has completed. If an error occurs, this function returns an integer
+ *     error code indicating why the client could not signal the job.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
+ *
+ * @see globus_gram_client_register_job_signal()
  */
 int 
 globus_gram_client_register_job_signal(
@@ -1678,27 +1979,48 @@ error_exit:
 /* globus_gram_client_register_job_signal() */
 
 /**
- * Query a job's status.
+ * @brief Send a status query to a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * This function queries the status of the job associated with the job contact,
- * returning it's current job status and job failure reason if it has failed.
+ * @details
+ * The @a globus_gram_client_status() function queries the current status of
+ * the job associated with the job contact,
+ * returning its current status, as well as the job's failure reason if it has
+ * failed in this function's return parameters. This function blocks until
+ * the service has responded to the status query.
  *
  * @param job_contact
- *        The job contact string of the job to query. This is the same
- *        value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to query. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param job_status
- *        A pointer to an integer which will be populated with the current
- *        status of the job. This will be one of the
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_* values if this function is
- *        successful.
+ *     An output parameter that points to an integer to be set to the current
+ *     status of the job named by the @a job_contact parameter.
  * @param failure_code
- *        The reason why the job failed if the @a job_status is set to 
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     An output parameter that points to an integer to be set to the reason
+ *     why the job failed if its current status is
+ *     @a GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED. If the job has not failed,
+ *     the value will be set to 0.
  *
- * @return This function returns GLOBUS_SUCCESS if the job state query was
- * successfully. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values will
- * be returned, indicating why the client could not query the job state.
+ * @return
+ *     Upon success, the @a globus_gram_client_job_status() function returns
+ *     @a GLOBUS_SUCCESS, sends a job state query to the job named by
+ *     @a job_contact and parses the service response, modifying the values
+ *     pointed to by @a job_status and @a failure_code as described above. If
+ *     an error occurs, @a globus_gram_client_job_status() returns an integer
+ *     error code.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int
 globus_gram_client_job_status(
@@ -1763,28 +2085,52 @@ error_exit:
 /* globus_gram_client_job_status() */
 
 /**
- * Nonblocking query of a job's status.
+ * @brief Send a status query to a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * This function queries the status of the job associated with the job contact,
- * returning it's current job status and job failure reason if it has failed.
+ * @details
+ * The @a globus_gram_client_register_job_status() function initiates a
+ * query of the current status of the job associated with the @a job contact
+ * parameter. The job's status and failure code are passed to the function
+ * pointed to by the @a register_callback parameter. This function returns
+ * as soon as it has begun requesting the job status.
  *
  * @param job_contact
- *        The job contact string of the job to query. This is the same
- *        value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to query. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        Callback function to be called when the job status query has
- *        been processed.
+ *     A pointer to a function to call when the status request has
+ *     completed or failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
  *
- * @return This function returns GLOBUS_SUCCESS if the job state query was
- * successfully. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values will
- * be returned, indicating why the client could not query the job state.
+ * @return
+ *     Upon success, the @a globus_gram_client_register_job_status() function
+ *     returns @a GLOBUS_SUCCESS and begins to send a job state query to the
+ *     job named by @a job_contact and registers the function pointed to by
+ *     the @a register_callback parameter to be called once the status query
+ *     terminates or fails.  If an error occurs,
+ *     @a globus_gram_client_register_job_status() returns an integer
+ *     error code.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int
 globus_gram_client_register_job_status(
@@ -1827,28 +2173,52 @@ globus_gram_client_register_job_status(
 /* globus_gram_client_register_job_status() */
 
 /**
- * Nonblocking query of a job's status.
+ * @brief Send a status query to a GRAM job
  * @ingroup globus_gram_client_job_functions
  *
- * This function queries the status of the job associated with the job contact,
- * returning it's current job status and job failure reason if it has failed.
+ * @details
+ * The @a globus_gram_client_register_job_status_with_info() function initiates
+ * a query of the current status of the job associated with the @a job contact
+ * parameter. Job information is returned via the @a job_info parameter passed
+ * to the function pointed to by the @a info_callback parameter.
+ * This function returns as soon as it has begun requesting the job status.
  *
  * @param job_contact
- *        The job contact string of the job to query. This is the same
- *        value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to query. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- * @param register_callback
- *        Callback function to be called when the job status query has
- *        been processed.
- * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
+ * @param info_callback
+ *     A pointer to a function to call when the status request has
+ *     completed or failed.
+ * @param callback_arg
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a info_callback as its @a user_callback_arg
+ *     parameter.
  *
- * @return This function returns GLOBUS_SUCCESS if the job state query was
- * successfully. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values will
- * be returned, indicating why the client could not query the job state.
+ * @return
+ *     Upon success, the @a globus_gram_client_register_job_status_with_info()
+ *     function returns @a GLOBUS_SUCCESS and begins to send a job state query
+ *     to the job named by @a job_contact and registers the function pointed to
+ *     by the @a info_callback parameter to be called once the status query
+ *     terminates or fails.  If an error occurs,
+ *     @a globus_gram_client_register_job_status_with_info() returns an integer
+ *     error code.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int
 globus_gram_client_register_job_status_with_info(
@@ -1890,6 +2260,49 @@ globus_gram_client_register_job_status_with_info(
 }
 /* globus_gram_client_register_job_status_with_info() */
 
+/**
+ * @brief Send a status query to a GRAM job
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @details
+ * The @a globus_gram_client_status_with_info() function queries the current
+ * status of the job associated with the job contact,
+ * returning its current status, as well as the job's failure reason if it has
+ * failed in this function's return parameters. This function blocks until
+ * the service has responded to the status query.
+ *
+ * @param job_contact
+ *     The job contact string of the job to query. This is the same
+ *     value returned from globus_gram_client_job_request().
+ * @param info
+ *     An output parameter that points to a globus_gram_client_job_info_t 
+ *     structure which will be populated with the state information associated
+ *     with the job named by the @a job_contact parameter. The caller is
+ *     responsible for calling globus_gram_client_job_info_destroy() to free
+ *     the state pointed to by this parameter if this function returns 
+ *     @a GLOBUS_SUCCESS.
+ *
+ * @return
+ *     Upon success, the @a globus_gram_client_job_status_with_info() function
+ *     returns @a GLOBUS_SUCCESS, sends a job state query to the job named by
+ *     @a job_contact and parses the service response, modifying the structure
+ *     pointed to by @a info as described above. If
+ *     an error occurs, @a globus_gram_client_job_status_with_info() returns an
+ *     integer error code.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
+ */
 int
 globus_gram_client_job_status_with_info(
     const char *                        job_contact,
@@ -1935,34 +2348,60 @@ error_exit:
 /* globus_gram_client_job_status_with_info() */
 
 /**
- * Register a callback contact for job state changes.
+ * @brief Register a new callback contact to be notified for job state changes
  * @ingroup globus_gram_client_job_functions
  *
- * @param job_contact
- *        The job contact string of the job to contact. This is the same
- *        value returned from globus_gram_client_job_request().
- * @param job_state_mask
- *        A mask indicating which job state changes should be sent to the
- *        @a callback_contact. This may be 0 (no job state changes), a
- *        bitwise-or  of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL to register for all job states.
- * @param callback_contact
- *        A URL string containing a GRAM client callback. This string should
- *        normally be generated by a process calling
- *        globus_gram_client_callback_allow().
- * @param job_status
- *        A pointer to an integer which will be populated with the current
- *        status of the job. This will be one of the
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_* values if this function is
- *        successful.
- * @param failure_code
- *        Set to an error code when the job manager is unable to process
- *        this registration.
+ * @details
+ * The @a globus_gram_client_job_callback_register() function contacts a
+ * GRAM service managing a job and instructs it to send subsequent job state
+ * callbacks to the client listening for callbacks at the contact url named
+ * by the @a callback_contact parameter. This function blocks until the 
+ * registration operation either completes or exits.
  *
- * @return This function returns GLOBUS_SUCCESS if the callback registration
- * was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
- * will be returned, indicating why the client could not register the callback
- * contact.
+ * @param job_contact
+ *     The job contact string of the job to contact. This is the same
+ *     value returned from globus_gram_client_job_request().
+ * @param job_state_mask
+ *     A bitwise-or of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states that
+ *     the job manager will send job state notification messages for to the
+ *     contact named by @a callback_contact.
+ * @param callback_contact
+ *     A URL string containing a GRAM client callback. This string is
+ *     normally be generated by a process calling
+ *     @a globus_gram_client_callback_allow().
+ * @param job_status
+ *     An output parameter pointing to an integer to set to the status
+ *     of the job after the registration message has been processed.
+ * @param failure_code
+ *     An output parameter that points to an integer to be set to the reason
+ *     why the job failed if its current status is
+ *     @a GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED. If the job has not failed,
+ *     the value will be set to 0.
+ *
+ * @return
+ *     Upon success, the @a globus_gram_client_job_callback_register() function
+ *     returns @a GLOBUS_SUCCESS, sends a registration request the job named by
+ *     @a job_contact and parses the service response, modifying the values
+ *     pointed to by the @a job_status and @a failure_code parameters as
+ *     described above. If an error occurs,
+ *     @a globus_gram_client_job_callback_register() returns an
+ *     integer error code indicating why it can't register the callback
+ *     contact. The return code may be any value defined by the
+ *     @a globus_gram_protocol_error_t enumeration in addition to those
+ *     listed below.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int 
 globus_gram_client_job_callback_register(
@@ -2046,31 +2485,58 @@ error_exit:
 /* globus_gram_client_job_callback_register() */
 
 /**
- * Unregister a callback contact from future job state changes.
+ * @brief Unregister a callback contact to stop job state change notifications
  * @ingroup globus_gram_client_job_functions
  *
+ * @details
+ * The @a globus_gram_client_job_callback_unregister() function contacts a
+ * GRAM service managing a job and instructs it to stop sending job state
+ * callbacks to the client listening for callbacks at the contact url named
+ * by the @a callback_contact parameter. This function blocks until the 
+ * unregistration operation either completes or exits. It is possible that
+ * callbacks related to the job arrive at the contact after this function 
+ * returns depending on network delays.
+ * 
  * @param job_contact
- *        The job contact string of the job manager to contact. This is the
- *        same value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to contact. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param callback_contact
- *        A URL string containing a GRAM client callback. This string should
- *        normally be generated by a process calling
- *        globus_gram_client_callback_allow(). If this function returns
- *        successfully, the process managing the callback_contact should
- *        not receive future job state changes.
+ *     A URL string containing a GRAM client callback. This string is
+ *     normally be generated by a process calling
+ *     @a globus_gram_client_callback_allow().
  * @param job_status
- *        A pointer to an integer which will be populated with the current
- *        status of the job. This will be one of the
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_* values if this function is
- *        successful.
+ *     An output parameter pointing to an integer to set to the status
+ *     of the job after the registration message has been processed.
  * @param failure_code
- *        Set to an error code when the job manager is unable to process
- *        this registration.
+ *     An output parameter that points to an integer to be set to the reason
+ *     why the job failed if its current status is
+ *     @a GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED. If the job has not failed,
+ *     the value will be set to 0.
  *
- * @return This function returns GLOBUS_SUCCESS if the callback unregistration
- * was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
- * will be returned, indicating why the client could not unregister the
- * callback contact.
+ * @return
+ *     Upon success, the @a globus_gram_client_job_callback_unregister()
+ *     function returns @a GLOBUS_SUCCESS, sends an unregister request the job
+ *     named by @a job_contact and parses the service response, modifying the
+ *     values pointed to by the @a job_status and @a failure_code parameters as
+ *     described above. If an error occurs,
+ *     @a globus_gram_client_job_callback_unregister() returns an
+ *     integer error code indicating why it can't unregister the callback
+ *     contact. The return code may be any value defined by the
+ *     @a globus_gram_protocol_error_t enumeration in addition to those
+ *     listed below.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int 
 globus_gram_client_job_callback_unregister(
@@ -2154,26 +2620,49 @@ error_exit:
 /* globus_gram_client_job_callback_unregister() */
 
 /**
- * Delegate new credentials to a job manager.
+ * @brief Delegate a new credential to a job
  * @ingroup globus_gram_client_job_functions
  *
- * This function performs a new delegation handshake with the job
- * manager, updating it with a new user proxy. This will allow the job
- * manager to continue to send job state callbacks after the original
- * proxy would have expired.
+ * @details
+ * The @a globus_gram_client_job_refresh_credentials() function sends a
+ * "renew" signal to a GRAM service and then initiates the delegation of
+ * a new credential to the job manager and job. This prevents errors that
+ * can occur when a credential expires. This function blocks until the
+ * delegation has completed or failed.
  *
  * @param job_contact
- *        The job contact string of the job manager to contact. This is the
- *        same value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to contact. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param creds
- *        A credential which should be used to contact the job manager. This
- *        may be GSS_C_NO_CREDENTIAL to use the process's default
- *        credential.
+ *     A GSSAPI credential handle which will be used to authenticate with the
+ *     job manager and sign the delegated credential. This parameter's value
+ *     may be set to @a GSS_C_NO_CREDENTIAL to indicate the desire to use this
+ *     process's default credential.
  *
- * @return This function returns GLOBUS_SUCCESS if the delegation
- * was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
- * will be returned, indicating why the client could not unregister the
- * callback contact.
+ * @return 
+ *     Upon success, the @a globus_gram_client_job_refresh_credentials()
+ *     function returns @a GLOBUS_SUCCESS, sends an proxy renew request the job
+ *     named by @a job_contact, parses the service response and performs a
+ *     GSSAPI delegation to send a new credential to the job service.
+ *     If an error occurs,
+ *     @a globus_gram_client_job_refresh_credentials() returns an
+ *     integer error code indicating why it can't refresh the job service's
+ *     credential. The return code may be any value defined by the
+ *     @a globus_gram_protocol_error_t enumeration in addition to those
+ *     listed below.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int
 globus_gram_client_job_refresh_credentials(
@@ -2212,29 +2701,59 @@ end:
 /* globus_gram_client_job_refresh_credentials() */
 
 /**
- * Delegate new credentials to a job manager (nonblocking).
+ * @brief Delegate a new credential to a job
  * @ingroup globus_gram_client_job_functions
  *
- * This function performs the same operation as globus_gram_client_job_refresh_credentials(), but without blocking the calling thread. Once the delegation
- * has completed, it's final status will be reported in the
- * @a register_callback.
+ * @details
+ * The @a globus_gram_client_register_job_refresh_credentials() function sends
+ * a "renew" signal to a GRAM service and then initiates the delegation of
+ * a new credential to the job manager and job. This prevents errors that
+ * can occur when a credential expires.  This function returns as
+ * soon as it has determined that its parameters are valid and it has
+ * begun to send the message to the GRAM service.
  *
  * @param job_contact
- *        The job contact string of the job manager to contact. This is the
- *        same value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to contact. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param creds
- *        A credential which should be used to contact the job manager. This
- *        may be GSS_C_NO_CREDENTIAL to use the process's default
- *        credential.
+ *     A GSSAPI credential handle which will be used to authenticate with the
+ *     job manager and sign the delegated credential. This parameter's value
+ *     may be set to @a GSS_C_NO_CREDENTIAL to indicate the desire to use this
+ *     process's default credential.
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        Callback function to be called when the job refresh has
- *        been processed.
+ *     A pointer to a function to call when the status request has
+ *     completed or failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
+ *
+ * @return 
+ *     Upon success, the @a globus_gram_client_job_refresh_credentials()
+ *     function returns @a GLOBUS_SUCCESS and begins sending the "renew"
+ *     request to the GRAM service. If an error occurs,
+ *     @a globus_gram_client_job_refresh_credentials() returns an
+ *     integer error code indicating why it can't refresh the job service's
+ *     credential. The return code may be any value defined by the
+ *     @a globus_gram_protocol_error_t enumeration in addition to those
+ *     listed below.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  */
 int
 globus_gram_client_register_job_refresh_credentials(
@@ -2275,35 +2794,65 @@ globus_gram_client_register_job_refresh_credentials(
 
     return rc;
 }
+/* globus_gram_client_register_job_refresh_credentials() */
+
 /**
- * Nonblocking register a callback contact for job state changes.
+ * @brief Register a new callback contact to be notified for job state changes
  * @ingroup globus_gram_client_job_functions
  *
- * @param job_contact
- *        The job contact string of the job to contact. This is the same
- *        value returned from globus_gram_client_job_request().
- * @param job_state_mask
- *        A mask indicating which job state changes should be sent to the
- *        @a callback_contact. This may be 0 (no job state changes), a
- *        bitwise-or  of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL to register for all job states.
- * @param callback_contact
- *        A URL string containing a GRAM client callback. This string should
- *        normally be generated by a process calling
- *        globus_gram_client_callback_allow().
- * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- * @param register_callback
- *        The callback function to call when the job signal has
- *        completed. 
- * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ * @details
+ * The @a globus_gram_client_register_job_callback_registration() function
+ * initiates the protocol to contact a GRAM service and request that it
+ * send subsequent job state callbacks to the client listening for callbacks at
+ * the contact url named by the @a callback_contact parameter. This function
+ * returns as soon as it has validated its parameters and begun sending the
+ * GRAM message. When the registration is complete, the function pointed to
+ * by @a register_callback is called.
  *
- * @return This function returns GLOBUS_SUCCESS if the successfull, otherwise
- * one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
- * will be returned, indicating why the operation failed.
+ * @param job_contact
+ *     The job contact string of the job to contact. This is the same
+ *     value returned from globus_gram_client_job_request().
+ * @param job_state_mask
+ *     A bitwise-or of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states that
+ *     the job manager will send job state notification messages for to the
+ *     contact named by @a callback_contact.
+ * @param callback_contact
+ *     A URL string containing a GRAM client callback. This string is
+ *     normally be generated by a process calling
+ *     @a globus_gram_client_callback_allow().
+ * @param attr
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
+ * @param register_callback
+ *     A pointer to a function to call when the registration request has
+ *     completed or failed.
+ * @param register_callback_arg
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
+ *
+ * @return
+ *     Upon success, the
+ *     @a globus_gram_client_register_job_callback_registration() function
+ *     returns @a GLOBUS_SUCCESS, begins to send a registration request to
+ *     the job named by @a job_contact, and schedules the @a register_callback
+ *     to be called once the registration completes or fails.
+ *     If an error occurs, this function returns an
+ *     integer error code indicating why it can't process the request.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  *
  * @see globus_gram_client_job_callback_register()
  */
@@ -2375,31 +2924,60 @@ error_exit:
 /* globus_gram_client_register_job_callback_registration() */
 
 /**
- * Nonblocking unregistration of a callback contact.
+ * @brief Unregister a callback contact to stop job state change notifications
  * @ingroup globus_gram_client_job_functions
  *
+ * @details
+ * The @a globus_gram_client_register_job_callback_unregistration() function
+ * initiates the protocol to contact a GRAM service and request that it
+ * stop sending job state callbacks to the client listening at
+ * the contact url named by the @a callback_contact parameter. This function
+ * returns as soon as it has validated its parameters and begun sending the
+ * GRAM message. When the unregistration is complete, the function pointed to
+ * by @a register_callback is called.
+ * 
  * @param job_contact
- *        The job contact string of the job manager to contact. This is the
- *        same value returned from globus_gram_client_job_request().
+ *     The job contact string of the job to contact. This is the same
+ *     value returned from globus_gram_client_job_request().
  * @param callback_contact
- *        A URL string containing a GRAM client callback. This string should
- *        normally be generated by a process calling
- *        globus_gram_client_callback_allow(). If this function returns
- *        successfully, the process managing the callback_contact should
- *        not receive future job state changes.
+ *     A URL string containing a GRAM client callback. This string is
+ *     normally be generated by a process calling
+ *     @a globus_gram_client_callback_allow().
  * @param attr
- *        Client attributes to be used. Should be set to
- *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ *     A set of client attributes to use to contact the job. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param register_callback
- *        The callback function to call when the job signal has
- *        completed. 
+ *     A pointer to a function to call when the registration request has
+ *     completed or failed.
  * @param register_callback_arg
- *        A pointer to user data which will be passed to the callback as
- *        it's @a user_callback_arg.
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a register_callback as its @a user_callback_arg
+ *     parameter.
  *
- * @return This function returns GLOBUS_SUCCESS if the successfull, otherwise
- * one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
- * will be returned, indicating why the operation failed.
+ * @return
+ *     Upon success, the
+ *     @a globus_gram_client_register_job_callback_unregistration()
+ *     function returns @a GLOBUS_SUCCESS, begins sending an unregister request
+ *     to the job named by @a job_contact and schedules the function pointed to
+ *     by the @a register_callback parameter to be called.
+ *     If an error occurs,
+ *     @a globus_gram_client_register_job_callback_unregistration() returns an
+ *     integer error code indicating why it can't process the unregister
+ *     request.
+ *
+ * @retval GLOBUS_GRAM_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol error
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
  *
  * @see globus_gram_client_job_callback_unregister()
  */
@@ -2468,30 +3046,44 @@ error_exit:
 /* globus_gram_client_register_job_callback_unregistration() */
 
 /**
- * Create a callback contact.
+ * @brief Begin listening for job state change callbacks
  * @ingroup globus_gram_client_callback
  *
- * Creates a small GRAM server which can handle GRAM state updates from
- * job managers.  The contact information for this server is returned and
+ * @details
+ * The globus_gram_client_callback_allow() function initializes a GRAM protocol
+ * service in the current process which will process job state updates from
+ * GRAM Job Managers. The URL to contact this service is returned and
  * may be used with the globus_gram_client_job_request() or
- * globus_gram_client_callback_register() functions.
+ * globus_gram_client_callback_register() family of functions.
  *
  * @param callback_func
- *        A pointer to the user's callback function to be called when
- *        GRAM state changes are received from a Job Manager.
+ *     A pointer to a function to call when a new job state update is
+ *     received.
  * @param user_callback_arg
- *        A pointer to arbitrary data which is passed as the first
- *        parameter to the @a callback_func function when it is called.
+ *     A pointer to application-specific data which is passed to the
+ *     function pointed to by @a callback_func as its @a user_callback_arg
+ *     parameter.
  * @param callback_contact
- *        A pointer to a char *. This pointer will be initialized with
- *        a newly allocated string containing the information needed by
- *        the Job Manager to contact this GRAM callback server. This
- *        string should be freed by the user when it is no longer used.
+ *     An output parameter that points to a string that will be allocated 
+ *     and set to the URL that the GRAM callback listener is waiting on.
  *
- * @return This function returns GLOBUS_SUCCESS if the callback contact
- * create was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
- * values will be returned, indicating why the client could not create the
- * callback contact.
+ * @return 
+ *     Upon success, @a globus_gram_client_callback_allow() returns 
+ *     @a GLOBUS_SUCCESS opens a TCP port to accept job state updates and
+ *     modifies the value pointed to by the @a callback_contact parameter 
+ *     as described above. If an error occurs,
+ *     @a globus_gram_client_callback_allow() returns an integer error code.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *     Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources
  */
 int 
 globus_gram_client_callback_allow(
@@ -2574,33 +3166,45 @@ error_exit:
 } /* globus_gram_client_callback_allow() */
 
 /**
- * Create a callback contact.
+ * @brief Begin listening for job state change callbacks
  * @ingroup globus_gram_client_callback
  *
- * Creates a small GRAM server which can handle GRAM state updates from
- * job managers.  The callback function associated with this server can handle
- * arbitrary GRAM attributes passed in the protocol, unlike
- * globus_gram_protocol_callback_allow which can only handle a fixed set of
- * attributes. The contact information for this server is returned and
- * may be used with the globus_gram_client_job_request() or
- * globus_gram_client_callback_register() functions.
+ * @details
+ * The globus_gram_client_info_callback_allow() function initializes a GRAM
+ * protocol service in the current process which will process job state updates
+ * from GRAM Job Managers. The URL to contact this service is returned and
+ * may be used with the globus_gram_client_job_request_with_info() or
+ * globus_gram_client_register_job_status_with_info() family of functions.
  *
  * @param callback_func
- *        A pointer to the user's callback function to be called when
- *        GRAM state changes are received from a Job Manager.
+ *     A pointer to a function to call when a new job state update is
+ *     received. The function signature of this parameter supports
+ *     GRAM protocol extensions.
  * @param user_callback_arg
- *        A pointer to arbitrary data which is passed as the first
- *        parameter to the @a callback_func function when it is called.
+ *     A pointer to application-specific data which is passed to the
+ *     function pointed to by @a callback_func as its @a user_callback_arg
+ *     parameter.
  * @param callback_contact
- *        A pointer to a char *. This pointer will be initialized with
- *        a newly allocated string containing the information needed by
- *        the Job Manager to contact this GRAM callback server. This
- *        string should be freed by the user when it is no longer used.
+ *     An output parameter that points to a string that will be allocated 
+ *     and set to the URL that the GRAM callback listener is waiting on.
  *
- * @return This function returns GLOBUS_SUCCESS if the callback contact
- * create was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
- * values will be returned, indicating why the client could not create the
- * callback contact.
+ * @return 
+ *     Upon success, @a globus_gram_client_callback_allow() returns 
+ *     @a GLOBUS_SUCCESS opens a TCP port to accept job state updates and
+ *     modifies the value pointed to by the @a callback_contact parameter 
+ *     as described above. If an error occurs,
+ *     @a globus_gram_client_callback_allow() returns an integer error code.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     Null parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *     Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *     No resources
  */
 int 
 globus_gram_client_info_callback_allow(
@@ -2684,24 +3288,34 @@ error_exit:
 
 
 /**
- * Disable a callback handler.
+ * @brief Stop listening for job state change callbacks
  * @ingroup globus_gram_client_callback
  *
- * Disables the GRAM server created by calling
- * globus_gram_client_callback_allow(). This function blocks until all
- * pending job state updates being handled by this server are dispatched.
+ * @details
+ * The globus_gram_client_callback_disallow() function stops the GRAM protocol
+ * handler associated with a callback contact from receiving further messages.
+ * After this function returns, no further callbacks for this contact will
+ * be called. Furthermore, the network port associated with the protocol
+ * handler will be released.
  *
- * This function can only be used to disable a callback created in
+ * This function can only be used to disable a callback contact created in
  * the current process.
  *
  * @param callback_contact
- *        The callback contact string returned by calling
- *        globus_gram_client_callback_allow.
+ *     A callback contact string that refers to a protocol handler in
+ *     the current process.
  *
- * @return This function returns GLOBUS_SUCCESS if the callback contact
- * was disabled successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
- * values will be returned, indicating why the client could not disable the
- * callback contact.
+ * @return 
+ *     Upon success, @a globus_gram_client_callback_disallow() returns 
+ *     @a GLOBUS_SUCCESS, closes the network port associated with the
+ *     @a callback_contact parameter and stops further callbacks from 
+ *     occurring.  If an error occurs,
+ *     @a globus_gram_client_callback_disallow() returns an integer error code.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_CALLBACK_NOT_FOUND
+ *     Callback not found
  */
 int 
 globus_gram_client_callback_disallow(
@@ -2744,6 +3358,26 @@ globus_gram_client_callback_disallow(
  *        A job contact string returned in a successful call to
  *        globus_gram_client_job_request()
  */
+/**
+ * @brief Free a job contact string
+ * @ingroup globus_gram_client
+ *
+ * @details
+ * The @a globus_gram_client_job_contact_free() function frees a job
+ * contact string that was allocated by a call to one of the functions
+ * in the @a globus_gram_client_job_request() family. The free() function
+ * can be used in place of this function. After this function returns, the
+ * string pointed to by the @a job_contact parameter has an undefined value.
+ *
+ * @param job_contact
+ *     Pointer to a job contact string returned by a GRAM client API function.
+ *
+ * @return
+ *     This function always returns GLOBUS_SUCCESS.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ */
 int 
 globus_gram_client_job_contact_free(
     char *                              job_contact)
@@ -2759,6 +3393,7 @@ globus_gram_client_job_contact_free(
     return (0);
 } /* globus_gram_client_job_contact_free() */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 int
 globus_l_gram_client_job_request(
@@ -3546,7 +4181,21 @@ globus_l_gram_info_get_int(
     }
 }
 /* globus_l_gram_info_get_int() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
+/**
+ * @brief Free memory associated with a globus_gram_client_job_info_t structure
+ * @ingroup globus_gram_client
+ *
+ * @details
+ *     The @a globus_gram_client_job_info_destroy() function frees data pointed
+ *     to by the @a extensions and @a job_contact fields of the
+ *     @a globus_gram_client_job_info_t structure pointed to by the 
+ *     @a info parameter. 
+ *
+ * @param info
+ *     A structure containing data to free.
+ */
 void
 globus_gram_client_job_info_destroy(
     globus_gram_client_job_info_t *     info)
