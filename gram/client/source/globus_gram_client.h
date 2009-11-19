@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-/*
-gram_client.h
-
-Description:
-    This header file contains the exported client interface of 
-    the Resource Allocation Management System.
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-*/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file gram_client.h
+ *
+ * This header file contains the exported client interface of 
+ * the Resource Allocation Management System.
+ *
+ * CVS Information:
+ *  $Source$
+ *  $Date$
+ *  $Revision$
+ *  $Author$
+ */
+#endif
 
 #ifndef GLOBUS_I_GRAM_CLIENT_INCLUDE
 #define GLOBUS_I_GRAM_CLIENT_INCLUDE
@@ -54,7 +54,7 @@ EXTERN_C_BEGIN
  * @mainpage Resource Management Client API
  * @anchor globus_gram_client_main
  *
- * The resource manager API provides function for requesting
+ * The resource management API provides function for requesting
  * that a job be started or terminated, as well as for requesting
  * information about the status of a job.
  */
@@ -69,55 +69,89 @@ EXTERN_C_BEGIN
  */
 
 /**
- * GRAM state callback type.
+ * @brief Signature for GRAM state notification callback functions
  * @ingroup globus_gram_client_callback
  *
- * Type of a GRAM Client state callback function. A pointer to a function
- * of this type is passed to the globus_gram_client_callback_allow() function
- * to create a callback contact. This contact can be passed to
- * globus_gram_client_job_request() or
- * globus_gram_client_job_callback_register() to let the job manager
- * know to send information on GRAM job state changes to the user's function.
+ * @details
+ * The @a globus_gram_client_callback_func_t type describes the function
+ * signature for job state callbacks.  A pointer to a function
+ * of this type is passed to the @a globus_gram_client_callback_allow()
+ * function to create a callback contact. The contact string can be passed to
+ * @a globus_gram_client_job_request() or
+ * @a globus_gram_client_job_callback_register() to let the job management
+ * service know to where to send information on GRAM job state changes.
  *
  * @param user_callback_arg
- *        A pointer to arbitrary user data.
+ *     A pointer to application-specific data.
  * @param job_contact
- *        A string containing the job contact. This string will contain
- *        the same value as the return job_contact parameter from
- *        globus_gram_client_job_request().
+ *     A string containing the job contact. This string indicates which job
+ *     this callback is referring to. It should in most cases match the return
+ *     value @a job_contact from a call to @a globus_gram_client_job_request()
+ *     or in the @a job_contact parameter to the
+ *     @a globus_gram_client_nonblocking_func_t used with
+ *     @a globus_gram_client_register_job_request(). However, in some cases,
+ *     the port number in the job contact URL may change if the job manager
+ *     is restarted.
  * @param state
- *        The new state (one of the #globus_gram_protocol_job_state_t values)
- *        of the job.
+ *     The new state (one of the #globus_gram_protocol_job_state_t values)
+ *     of the job.
  * @param errorcode
- *        The error code if the @a state parameter is equal to
- *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     The error code if the @a state parameter is equal to
+ *     GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
  */
-typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
-                                                    char * job_contact,
-                                                    int state,
-                                                    int errorcode);
+typedef void (* globus_gram_client_callback_func_t)(
+    void *                              user_callback_arg,
+    char *                              job_contact,
+    int                                 state,
+    int                                 errorcode);
 
 /**
- * Extensible job information structure
+ * @brief Extensible job information structure
  * @ingroup globus_gram_client_callback
  *
- * Type used for passing extension information along with the job status
+ * @details
+ * The @a #globus_gram_client_job_info_t data type is used to pass protocol
+ * extensions along with the standard job status
  * information included in the GRAM2 protocol. This structure contains the
- * information returned in job state callbacks plus a hashtable of extension
- * entries that contain globus_gram_protocol_extension_t name-value pairs.
+ * information returned in job state callbacks plus a hash table of extension
+ * entries that contain @a #globus_gram_protocol_extension_t name-value pairs.
  */
 typedef struct globus_gram_client_job_info_s
 {
+    /**
+     * Table of extension values
+     */
     globus_hashtable_t                  extensions;
+    /**
+     * GRAM Job Contact String
+     */
     char *                              job_contact;
+    /**
+     * GRAM Job State
+     */
     int                                 job_state;
+    /**
+     * GRAM Error Code
+     */
     int                                 protocol_error_code;
 }
 globus_gram_client_job_info_t;
 
 /**
- * Callback type which can be used to received protocol extensions in addition
- * to the GRAM2 protocol.
+ * @brief Signature for GRAM state notification callback functions with
+ * extension support
+ * @ingroup globus_gram_client_callback
+ *
+ * @details
+ * The @a #globus_gram_client_info_callback_func_t type describes the function
+ * signature for job state callbacks that carry any GRAM protocol extensions
+ * beyond the set used in GRAM2.  A pointer to a function
+ * of this type is passed to the @a globus_gram_client_info_callback_allow()
+ * function to create a callback contact that can handle extensions. The
+ * contact string can be passed to
+ * @a globus_gram_client_job_request() or
+ * @a globus_gram_client_job_callback_register() to let the job management
+ * service know to where to send information on GRAM job state changes.
  *
  * @param  user_callback_arg
  *     Application-specific callback information.
@@ -125,41 +159,70 @@ globus_gram_client_job_info_t;
  *     Job this information is related to
  * @param job_info
  *     Job state and extensions
+ *
  * @see globus_gram_client_info_callback_allow()
  */
 typedef void (* globus_gram_client_info_callback_func_t)(
-        void *                          user_callback_arg,
-        const char *                    job_contact,
-        globus_gram_client_job_info_t * job_info);
+    void *                              user_callback_arg,
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     job_info);
 
 /**
- * GRAM  operation attribute.
- * @ingroup globus_gram_client_callback
+ * @brief GRAM client operation attribute
+ * @ingroup globus_gram_client_attr
+ *
+ * @details
+ * The @a #globus_gram_client_attr_t type is an opaque type describing
+ * GRAM attributes. It can be accessed or modified by functions in the 
+ * @ref globus_gram_client_attr documentation.
  */
 typedef void * globus_gram_client_attr_t;
 
+
+/**
+ * @brief Default GRAM client operation attribute
+ * @ingroup globus_gram_client_attr
+ * @hideinitializer
+ * @details
+ * The @a GLOBUS_GRAM_CLIENT_NO_ATTR macro defines a constant for use
+ * when a user of the GRAM client API does not want to specify any
+ * non-default GRAM attributes.
+ */
 #define GLOBUS_GRAM_CLIENT_NO_ATTR (globus_gram_client_attr_t) NULL
 
 /**
- * GRAM nonblocking operation callback function.
+ * @brief Signature for callbacks signalling completion of non-blocking GRAM requests
  * @ingroup globus_gram_client_callback
  *
- * Type of a callback indicating completion of a nonblocking GRAM call.
+ * @details
+ * The @a #globus_gram_client_info_callback_func_t type describes the function
+ * signature for callbacks which indicate that a GRAM operation has completed.
+ * A pointer to a function of this type is passed to the
+ * following functions:
+ * - @a globus_gram_client_register_job_request()
+ * - @a globus_gram_client_register_job_cancel()
+ * - @a globus_gram_client_register_job_status()
+ * - @a globus_gram_client_register_job_refresh_credentials()
+ * - @a globus_gram_client_register_job_signal()
+ * - @a globus_gram_client_register_job_callback_registration()
+ * - @a globus_gram_client_register_job_callback_unregistration()
+ * - @a globus_gram_client_register_ping()
  * 
  * @param user_callback_arg
- *        The register_callback_arg value passed to the nonblocking
- *        function.
+ *     Application-specific callback information.
  * @param operation_failure_code
- *        The result of nonblocking call, indicating whether the call
- *        was processed by the job manager successfully or not.
- * @param job_conatc
- *        A string containing the job contact.
+ *     The result of the nonblocking operation , indicating whether the
+ *     operation was processed by the job manager successfully or not.
+ * @param job_contact
+ *     A string containing the job contact associated with this non-blocking
+ *     operation.
  * @param job_state
- *        The new state (one of the #globus_gram_protocol_job_state_t
- *        values) of the job.
+ *     The state (one of the #globus_gram_protocol_job_state_t
+ *     values) of the job related to this non-blocking operation.
  * @param job_failure_code
- *        The error code of the job request if the job_state parameter
- *        is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *     The error code of the job request if the job_state parameter
+ *     is GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED. Otherwise, its value is
+ *     undefined.
  */
 typedef void (* globus_gram_client_nonblocking_func_t)(
     void *                              user_callback_arg,
@@ -168,10 +231,6 @@ typedef void (* globus_gram_client_nonblocking_func_t)(
     globus_gram_protocol_job_state_t    job_state,
     globus_gram_protocol_error_t        job_failure_code);
 
-
-/******************************************************************************
-                               Global variables
-******************************************************************************/
 
 /**
  * @defgroup globus_gram_client_job_functions GRAM Job Functions
@@ -421,4 +480,3 @@ extern globus_module_descriptor_t       globus_gram_client_module;
 
 EXTERN_C_END
 #endif /* GLOBUS_I_GRAM_CLIENT_INCLUDE */
-
