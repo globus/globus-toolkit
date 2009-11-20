@@ -74,7 +74,8 @@ int handle_client(myproxy_socket_attrs_t *server_attrs,
                   myproxy_server_context_t *server_context);
 
 void respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
-				const char *error);
+				const char *error,
+				myproxy_server_context_t *context);
 
 void send_response(myproxy_socket_attrs_t *server_attrs, 
 		   myproxy_response_t *response, 
@@ -439,7 +440,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	  sizeof(client.name), &client.fqans) < 0) {
 	/* Client_name may not be set on error so don't use it. */
 	myproxy_log_verror();
-	respond_with_error_and_die(attrs, "authentication failed");
+	respond_with_error_and_die(attrs, "authentication failed", context);
     }
 
     /* Log client name */
@@ -458,14 +459,14 @@ handle_client(myproxy_socket_attrs_t *attrs,
     requestlen = myproxy_recv_ex(attrs, &client_buffer);
     if (requestlen <= 0) {
         myproxy_log_verror();
-	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()");
+	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()", context);
     }
    
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
 	myproxy_log_verror();
-        respond_with_error_and_die(attrs, "error parsing request");
+        respond_with_error_and_die(attrs, "error parsing request", context);
     }
     free(client_buffer);
     client_buffer = NULL;
@@ -496,7 +497,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     default:
         myproxy_log("Received UNKNOWN command: %d",
                     client_request->command_type);
-        respond_with_error_and_die(attrs, "UNKNOWN command in request.\n");
+        respond_with_error_and_die(attrs, "UNKNOWN command in request.\n", context);
     }
     if (client_request->username) {
         myproxy_log("Received %s request for username %s",
@@ -527,7 +528,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
         myproxy_log("client %s Invalid version number (%s) received",
                     client.name, client_request->version);
         respond_with_error_and_die(attrs,
-                                   "Invalid version number received.\n");
+                                   "Invalid version number received.\n", context);
     }
 
     if (client_request->command_type != MYPROXY_GET_TRUSTROOTS) {
@@ -540,7 +541,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                         (client_request->username == NULL ? "<NULL>" :
                          client_request->username));
             respond_with_error_and_die(attrs,
-                                       "Invalid username received.\n");
+                                       "Invalid username received.\n", context);
         }
     }
 
@@ -603,7 +604,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
         myproxy_send_usage_metrics(attrs, &client, context, client_request,
 			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_free(NULL, client_request, server_response);
-        respond_with_error_and_die(attrs, verror_get_string());
+        respond_with_error_and_die(attrs, verror_get_string(), context);
     }
 
     /* Fill in client_creds with info from the request that describes
@@ -644,7 +645,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	  if (myproxy_creds_retrieve(client_creds) < 0) {
             myproxy_send_usage_metrics(attrs, &client, context, client_request,
 			       client_creds, server_response, 0 /* FAILURE */);
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, verror_get_string(), context);
 	  }
 
 	  myproxy_debug("  Owner: %s", client_creds->username);
@@ -664,7 +665,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    strcat(error, client_creds->lockmsg);
             myproxy_send_usage_metrics(attrs, &client, context, client_request,
 			       client_creds, server_response, 0 /* FAILURE */);
-	    respond_with_error_and_die(attrs, error);
+	    respond_with_error_and_die(attrs, error, context);
 	  }
 
       if (myproxy_creds_verify(client_creds) < 0) {
@@ -672,7 +673,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, verror_get_string(), context);
       }
 	}
 
@@ -753,7 +754,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, verror_get_string(), context);
 	}
 
 	/* Send initial OK response */
@@ -788,7 +789,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 			       client_creds, server_response, 0 /* FAILURE */);
         myproxy_creds_free(client_creds);
         myproxy_free(NULL, client_request, server_response);
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, verror_get_string(), context);
 	}
 
 	change_passwd(client_creds, client_request->new_passphrase,
@@ -1028,7 +1029,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 
 void
 respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
-			   const char *error)
+			   const char *error, myproxy_server_context_t *context)
 {
     myproxy_response_t		response = {0}; /* initialize with 0s */
     int				responselen;
@@ -1547,7 +1548,8 @@ static int myproxy_check_policy(myproxy_server_context_t *context,
 }
 
 static void
-no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
+no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[],
+               myproxy_server_context_t *context)
 {
     verror_clear();  /* don't distract with other errors */
     if (!credname) {
@@ -1556,7 +1558,7 @@ no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
     } else {
         verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", username, credname);
     }
-    respond_with_error_and_die(attrs, verror_get_string());
+    respond_with_error_and_die(attrs, verror_get_string(), context);
 }
 
 
@@ -1694,8 +1696,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	  goto end;
        
        if (!credentials_exist) {
-           no_creds_abort(attrs,
-                          client_request->username, client_request->credname);
+           no_creds_abort(attrs, client_request->username, client_request->credname,
+                          context);
        }
        /* fall through to MYPROXY_GET_PROXY */
 
@@ -1750,7 +1752,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
            if ( (context->certificate_issuer_program == NULL) && 
                 (context->certificate_issuer_cert == NULL) ) {
                no_creds_abort(attrs, client_request->username,
-                              client_request->credname);
+                              client_request->credname, context);
            }
 
            if (context->certificate_issuer_cert) {
@@ -1759,7 +1761,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
                                     &userdn, context ) ) {
                    verror_put_string("unknown username: %s", 
                                      client_request->username);
-                   respond_with_error_and_die(attrs, verror_get_string());
+                   respond_with_error_and_die(attrs, verror_get_string(), context);
                }
                if (userdn) {
                    free(userdn);
