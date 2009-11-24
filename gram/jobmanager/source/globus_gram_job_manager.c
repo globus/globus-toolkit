@@ -1354,9 +1354,9 @@ globus_gram_job_manager_add_reference_by_jobid(
 
         globus_gram_job_manager_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
                 "event=gram.add_reference.end "
-                "level=ERROR "
+                "level=INFO "
                 "jobid=\"%s\" "
                 "status=%d "
                 "msg=\"%s\" "
