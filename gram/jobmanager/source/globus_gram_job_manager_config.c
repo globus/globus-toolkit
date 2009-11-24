@@ -87,7 +87,7 @@ globus_gram_job_manager_config_init(
                     GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL,
                     "event=gram.config.end level=FATAL path=\"%s\" "
                     "status=-1 msg=\"%s\" errno=%d reason=\"%s\"\n",
-                    conf_path,
+                    argv[2],
                     "Error opening configuration file",
                     errno,
                     strerror(errno));
