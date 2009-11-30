@@ -6,6 +6,11 @@ Version History
 ---------------
 v5.0 XX Xxx 2009
   - add Globus Usage Metrics to the myproxy-server
+  - add myproxy-server.config request_size_limit parameter to control
+    myproxy-server network limits, and fix network limit handling to
+    apply only to myproxy-server (not clients), so clients can handle
+    large X509_CERT_DIR contents
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6889)
 
 v4.9 2 Nov 2009
   - fix support for "check_multiple_credentials true" in

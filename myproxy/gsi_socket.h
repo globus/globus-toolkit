@@ -304,6 +304,15 @@ int GSI_SOCKET_peer_used_limited_proxy(GSI_SOCKET *self);
 int GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag);
 
 /*
+ * GSI_SOCKET_set_max_token_len()
+ *
+ * Set the maximum size of accepted incoming tokens (in bytes).
+ * No limit is enforced by default.
+ * A zero or negative value disables the limit.
+ */
+int GSI_SOCKET_set_max_token_len(GSI_SOCKET *self, int bytes);
+
+/*
  * GSI_SOCKET_context_established()
  *
  * Returns 1 if the socket's secure context has been established via

@@ -18,6 +18,7 @@ struct _gsi_socket
     OM_uint32			minor_status;
     char			*peer_name;
     int             limited_proxy; /* 1 if peer used a limited proxy */
+    int             max_token_len;
 };
 
 #define DEFAULT_SERVICE_NAME		"host"
@@ -162,7 +163,8 @@ write_all(const int sock,
  */
 static int
 read_token(const int sock,
-	   char **p_buffer)
+           char **p_buffer,
+           const int max_token_len)
 {
     enum header_fields 
     {
@@ -186,6 +188,10 @@ read_token(const int sock,
 
 	if (read_all(sock, (char *)header, sizeof(header)) < 0) {
 	    if (errno == EPIPE && tot_buffer_len > 0) goto done;
+	    if (*p_buffer != NULL) {
+            free(*p_buffer);
+            *p_buffer = NULL;
+	    }
 	    return -1;
 	}
 
@@ -195,6 +201,10 @@ read_token(const int sock,
 	if (((header[flag] < 20) || (header[flag] > 26)) ||
 	    (header[major_version] != 3) ||
 	    ((header[minor_version] != 0) && (header[minor_version] != 1))) {
+	    if (*p_buffer != NULL) {
+            free(*p_buffer);
+            *p_buffer = NULL;
+	    }
 	    errno = EINVAL;
 	    return -1;
 	}
@@ -202,6 +212,16 @@ read_token(const int sock,
 	data_len = (header[length_high_byte] << 8) + header[length_low_byte];
 
 	buffer_len = data_len + sizeof(header);
+
+    if (max_token_len > 0 && (tot_buffer_len+buffer_len) > max_token_len) {
+	    if (*p_buffer != NULL) {
+            free(*p_buffer);
+            *p_buffer = NULL;
+	    }
+        verror_put_string("max_token_len (%d) exceeded", max_token_len);
+        errno = ENOMEM;
+        return -1;
+    }
 
 	bufferp = *p_buffer = realloc(*p_buffer, tot_buffer_len+buffer_len);
 	
@@ -237,7 +257,7 @@ read_token(const int sock,
 	    *p_buffer = NULL;
 	    return -1;
 	}
-    } while (retval == 1 && tot_buffer_len < MAX_TOKEN_LEN);
+    } while (retval == 1);
     
 done:
     return tot_buffer_len;
@@ -522,6 +542,16 @@ GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag)
         return GSI_SOCKET_ERROR;
     }
     self->limited_proxy = flag;
+    return 0;
+}
+
+int
+GSI_SOCKET_set_max_token_len(GSI_SOCKET *self, int bytes)
+{
+    if (self == NULL) {
+        return GSI_SOCKET_ERROR;
+    }
+    self->max_token_len = bytes;
     return 0;
 }
 
@@ -1164,7 +1194,8 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     } else {
 
 	bytes_read = read_token(self->sock,
-				(char **) &buffer);
+                            (char **) &buffer,
+                            self->max_token_len);
     
 	if (bytes_read == -1)
 	{
