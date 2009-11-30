@@ -2186,6 +2186,15 @@ sub write_valgrind_supp {
    ...
 }
 {
+   globus_i_gsi_gss_handshake
+   Memcheck:Leak
+   ...
+   fun:globus_i_gsi_gss_handshake
+   fun:gss_accept_sec_context
+   fun:globus_gss_assist_accept_sec_context
+   ...
+}
+{
    globus_module_activate
    Memcheck:Leak
    ...
