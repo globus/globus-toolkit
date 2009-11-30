@@ -151,6 +151,21 @@ if running as root or
 .I ~/.globus/certificates
 if running as non-root.
 .TP
+.B -b, --bootstrap
+Unless this option is specified, then if the
+.B X509_CERT_DIR 
+exists and the CA that signed the
+.BR myproxy-server (8)
+certificate is not trusted, 
+.B myproxy-logon
+will fail with an error,
+to protect against man-in-the-middle attacks.
+If, however, this option is specified,
+.B myproxy-logon
+will accept the CA to bootstrap trust.
+This option implies 
+.BR -T .
+.TP
 .B -q, --quiet
 Only write output messages on error.
 .TP

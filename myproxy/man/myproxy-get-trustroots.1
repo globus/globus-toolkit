@@ -28,6 +28,19 @@ up-to-date is provided at
 .IR $GLOBUS_LOCATION/share/myproxy/myproxy-get-trustroots.cron .
 .SH OPTIONS
 .TP
+.B -b, --bootstrap
+Unless this option is specified, then if the
+.B X509_CERT_DIR 
+exists and the CA that signed the
+.BR myproxy-server (8)
+certificate is not trusted, 
+.B myproxy-get-trustroots
+will fail with an error,
+to protect against man-in-the-middle attacks.
+If, however, this option is specified,
+.B myproxy-get-trustroots
+will accept the CA to bootstrap trust.
+.TP
 .B -h, --help
 Displays command usage text and exits.
 .TP
