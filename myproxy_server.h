@@ -84,6 +84,7 @@ typedef struct myproxy_server_context_s
   int syslog_facility;              /* syslog facility */
   int limited_proxy;                /* Should we delegate a limited proxy? */
   int request_timeout;              /* Timeout for child processes */
+  int request_size_limit;           /* Size limit for incoming requests */
   int allow_self_authz;             /* Allow client subject to match cert? */
   char *proxy_extfile;              /* Extensions for issued proxies */
   char *proxy_extapp;               /* proxy extension call-out */

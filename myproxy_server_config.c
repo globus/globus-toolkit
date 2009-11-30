@@ -121,6 +121,7 @@ static struct config_directives our_conf[] = {
 	{"syslog_facility", 1, 1},
 	{"slave_servers", 0, NARGS_DONTCHECK},
 	{"request_timeout", 1, 1},
+	{"request_size_limit", 1, 1},
 	{"proxy_extfile", 1, 1},
 	{"proxy_extapp", 1, 1},
 	{"disable_usage_stats", 1, 1},
@@ -237,6 +238,7 @@ clear_server_context(myproxy_server_context_t *context)
     context->max_proxy_lifetime = 0;
     context->max_cred_lifetime = 0;
     context->limited_proxy = 0;
+    context->request_size_limit = 0x100000; /* 1MB default */
     free_ptr(&context->cert_dir);
     free_ptr(&context->pam_policy);
     free_ptr(&context->pam_id);
@@ -665,6 +667,10 @@ line_parse_callback(void *context_arg,
 
     else if (strcmp(directive, "request_timeout") == 0) {
 	context->request_timeout = atoi(tokens[1]);
+    }
+
+    else if (strcmp(directive, "request_size_limit") == 0) {
+	context->request_size_limit = atoi(tokens[1]);
     }
 
     else if (strcmp(directive, "proxy_extfile") == 0) {

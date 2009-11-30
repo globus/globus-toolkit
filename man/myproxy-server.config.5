@@ -299,6 +299,14 @@ child process should spend servicing a client request before aborting.
 By default, child processes will abort after 120 seconds.
 A negative value will disable the timeout.
 .TP
+.BI request_size_limit " bytes"
+Limits the amount of incoming application-level protocol data the
+.BR myproxy-server (8)
+will accept from clients, to avoid memory exhaustion
+under heavy load. Specified in bytes.
+Defaults to 1MB (1048576 bytes).
+A zero or negative value disables the limit.
+.TP
 .BI proxy_extfile " full-path-to-extension-file"
 Optionally specifies the full path to a file containing an OpenSSL
 formatted set of certificate extensions to include in all 

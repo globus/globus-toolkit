@@ -435,6 +435,11 @@ handle_client(myproxy_socket_attrs_t *attrs,
         return -1;
     }
 
+    if (context->request_size_limit > 0) {
+        GSI_SOCKET_set_max_token_len(attrs->gsi_socket,
+                                     context->request_size_limit);
+    }
+
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept_fqans(attrs, client.name,
 	  sizeof(client.name), &client.fqans) < 0) {
