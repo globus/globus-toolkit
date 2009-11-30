@@ -237,7 +237,7 @@ if ($startserver) {
     sleep(2);			# give server a chance to startup
     sleep(4) if (defined($valgrind)); # valgrind slows things down
     if (open SERVERPIDFILE) {
-      $serverpid = <SERVERPIDFILE>;
+      chomp($serverpid = <SERVERPIDFILE>);
       close SERVERPIDFILE;
     }
     if (!defined($serverpid) || $serverpid eq "") {
@@ -500,7 +500,7 @@ if (!($output =~ /default credential/)) {
 if ($startserver && defined($serverpid)) { # only case we have direct access to server
 #  ($exitstatus, $output) = kill('HUP', $serverpid);
   ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
-  print "MyProxy Test 10.a (kill -HUP $serverpid ): ";
+  print "MyProxy Test 10.a (kill -HUP $serverpid): ";
   if ($exitstatus != 0) {
       print "FAILED with $exitstatus\n"; $FAILURES++;
       print STDERR $output;
@@ -758,7 +758,7 @@ if (defined($origtrustrootdir)) {
 if ($startserver && defined($serverpid)) { # only case we have direct access to server
 #  ($exitstatus, $output) = kill('HUP', $serverpid);
   ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
-  print "MyProxy Test 20.a (kill -HUP $serverpid ): ";
+  print "MyProxy Test 20.a (kill -HUP $serverpid): ";
   if ($exitstatus != 0) {
       print "FAILED with $exitstatus\n"; $FAILURES++;
       print STDERR $output;
@@ -946,7 +946,7 @@ if ($exitstatus == 0) {
 if ($startserver && defined($serverpid)) { # only case we have direct access to server
 #  ($exitstatus, $output) = kill('HUP', $serverpid);
   ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
-  print "MyProxy Test 30.a (kill -HUP $serverpid ): ";
+  print "MyProxy Test 30.a (kill -HUP $serverpid): ";
   if ($exitstatus != 0) {
       print "FAILED with $exitstatus\n"; $FAILURES++;
       print STDERR $output;
@@ -1203,7 +1203,7 @@ rename("\$X509_USER_PROXY.orig", "\$X509_USER_PROXY");
 if ($startserver && defined($serverpid)) { # only case we have direct access to server
 #  ($exitstatus, $output) = kill('HUP', $serverpid);
   ($exitstatus, $output) = &runtest("/bin/kill -HUP $serverpid");
-  print "MyProxy Test 40.a (kill -HUP $serverpid ): ";
+  print "MyProxy Test 40.a (kill -HUP $serverpid): ";
   if ($exitstatus != 0) {
       print "FAILED with $exitstatus\n"; $FAILURES++;
       print STDERR $output;
