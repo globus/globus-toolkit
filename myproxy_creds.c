@@ -1913,14 +1913,14 @@ myproxy_clean_crls()
         if (in) BIO_free_all(in);
         in = BIO_new(BIO_s_file());
         if (BIO_read_filename(in, path) <= 0) {
-            myproxy_debug("can't read %s", path);
-            continue;
+            myproxy_log("can't read %s", path);
+            UNLINK_CRL(path);
         }
         if (x) X509_CRL_free(x);
 		x=PEM_read_bio_X509_CRL(in, NULL, NULL, NULL);
         if (!x) {
-            myproxy_debug("can't parse CRL at %s", path);
-            continue;
+            myproxy_log("can't parse CRL at %s", path);
+            UNLINK_CRL(path);
         }
         BIO_free_all(in);
         in = NULL;
