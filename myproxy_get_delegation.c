@@ -32,6 +32,7 @@ static char usage[] = \
 "       -k | --credname        <name>     Specify credential name\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -T | --trustroots                 Manage trust roots\n"
+"       -b | --bootstrap                  Bootstrap trust in myproxy-server\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
 "       -N | --no_credentials             Authenticate only. Don't retrieve\n"
 "                                         credentials.\n"
@@ -55,6 +56,7 @@ struct option long_options[] =
     {"credname",	 required_argument, NULL, 'k'},
     {"stdin_pass",             no_argument, NULL, 'S'},
     {"trustroots",             no_argument, NULL, 'T'},
+    {"bootstrap",              no_argument, NULL, 'b'},
     {"no_passphrase",          no_argument, NULL, 'n'},
     {"no_passphrase",          no_argument, NULL, 'N'},
     {"quiet",                  no_argument, NULL, 'q'},
@@ -62,7 +64,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:SnNTqm:";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:SnNTbqm:";
 
 static char version[] =
 "myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -87,6 +89,7 @@ static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
 static int use_empty_passwd = 0;
 static int quiet = 0;
+static int bootstrap = 0;
 static int no_credentials = 0;
 static char **voms = NULL;
 
@@ -121,61 +124,18 @@ main(int argc, char *argv[])
     memset(server_response, 0, sizeof(*server_response));
 
     /* Setup defaults */
-    myproxy_set_delegation_defaults(socket_attrs,client_request);
+    myproxy_set_delegation_defaults(socket_attrs, client_request);
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    /* Bootstrap trusted certificate directory if none exists. */
-    if (client_request->want_trusted_certs) {
-        char *cert_dir = NULL;
-        globus_result_t res;
-
-        globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
-        res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
-        if (res != GLOBUS_SUCCESS) {
-            globus_object_free(globus_error_get(res));
-            myproxy_log("Bootstrapping MyProxy server root of trust.");
-            myproxy_bootstrap_trust(socket_attrs);
-        }
-        if (cert_dir) free(cert_dir);
-    }
-
-    /* Connect to server. */
-    if (myproxy_init_client(socket_attrs) < 0) {
+    /* Connect to server and authenticate.
+       Bootstrap trust roots as needed. */
+    if (myproxy_bootstrap_client(socket_attrs,
+                                 client_request->want_trusted_certs,
+                                 bootstrap) < 0) {
         verror_print_error(stderr);
         goto cleanup;
-    }
-    
-    /* Attempt anonymous-mode credential retrieval if we don't have a
-       credential. */
-    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
-
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        verror_print_error(stderr);
-        if (client_request->want_trusted_certs &&
-            strstr(verror_get_string(), "CRL") != NULL) {
-            verror_clear();
-            myproxy_log("CRL error detected.  Attempting to recover.");
-            switch (myproxy_clean_crls()) {
-            case -1:
-                verror_print_error(stderr);
-            case 0:
-                goto cleanup;
-            case 1:
-                if (myproxy_init_client(socket_attrs) < 0) {
-                    verror_print_error(stderr);
-                    goto cleanup;
-                }
-                if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-                    verror_print_error(stderr);
-                    goto cleanup;
-                }
-            }
-        } else {
-            goto cleanup;
-        }
     }
 
     if (!outputfile && !no_credentials) {
@@ -336,6 +296,11 @@ init_arguments(int argc,
 	    break;
 	case 'q':
 	    quiet = 1;
+	    break;
+	case 'b':
+	    bootstrap = 1;
+	    request->want_trusted_certs = 1; /* -b implies -T */
+        myproxy_debug("Requesting trusted certificates.\n");
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);

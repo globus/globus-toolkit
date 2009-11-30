@@ -460,15 +460,19 @@ myproxy_check_version_ex(int major, int minor, int micro) {
 int
 myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 {
-    char *cert_dir = NULL, *tmp_cert_dir = NULL;
+    char *cert_dir = NULL, *tmp_cert_dir = NULL, *work_dir = NULL;
     int return_value = -1;
     BIO *sbio = 0;
     SSL_CTX *ctx = 0;
     SSL *ssl = 0;
     STACK_OF(X509) *sk = 0;
     int i;
-    char buf[BUFSIZ];
-    int sockfd = -1;;
+    char buf[BUFSIZ], buf2[BUFSIZ];
+    int sockfd = -1;
+    mode_t prev_umask = 0;
+    X509 *x;
+
+    myproxy_log("Bootstrapping MyProxy server root of trust.");
 
 	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
@@ -477,24 +481,30 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 	SSL_load_error_strings();
 	OpenSSL_add_ssl_algorithms();
 
-    /* Make writable only by user */
-    umask(S_IWGRP|S_IWOTH);
+    /* make writable only by user */
+    prev_umask = umask(S_IWGRP|S_IWOTH);
 
-    /* create temporary directory for atomic bootstrap */
+    /* initialize X509_CERT_DIR */
     cert_dir = get_trusted_certs_path();
     if (!cert_dir) {
         goto error;
     }
-    tmp_cert_dir = strdup(cert_dir);
-    if (tmp_cert_dir[strlen(tmp_cert_dir)-1] == '/') {
-        tmp_cert_dir[strlen(tmp_cert_dir)-1] = '\0';
-    }
-    snprintf(buf, BUFSIZ, ".%d/", getpid());
-    if (my_append(&tmp_cert_dir, buf, NULL) == -1) {
-        goto error;
-    }
-    if (make_path(tmp_cert_dir) == -1) {
-        goto error;
+    if (access(cert_dir, X_OK) == 0) {
+        myproxy_debug("%s exists. Updating.", cert_dir);
+        work_dir = cert_dir;
+    } else {     /* create temporary directory for atomic bootstrap */
+        tmp_cert_dir = strdup(cert_dir);
+        if (tmp_cert_dir[strlen(tmp_cert_dir)-1] == '/') {
+            tmp_cert_dir[strlen(tmp_cert_dir)-1] = '\0';
+        }
+        snprintf(buf, BUFSIZ, ".%d/", getpid());
+        if (my_append(&tmp_cert_dir, buf, NULL) == -1) {
+            goto error;
+        }
+        if (make_path(tmp_cert_dir) == -1) {
+            goto error;
+        }
+        work_dir = tmp_cert_dir;
     }
 
     /* get trust root(s) from the myproxy-server */
@@ -516,46 +526,70 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     if (BIO_flush(sbio) <= 0) goto error;
 
     sk=SSL_get_peer_cert_chain(ssl);
+    x = sk_X509_value(sk,0);    /* start with EEC */
     for (i=1; i<sk_X509_num(sk); i++) {
-        X509 *x;
+        X509 *xp;
         BIO *certbio, *policybio;
         unsigned long hash;
-        char path[MAXPATHLEN];
+        char path[MAXPATHLEN], tmppath[MAXPATHLEN];
 
+        xp = x;
         x = sk_X509_value(sk,i);
         hash = X509_subject_name_hash(x);
-        snprintf(path, MAXPATHLEN, "%s%08lx.0", tmp_cert_dir, hash);
-        certbio = BIO_new_file(path, "w");
+        snprintf(path, MAXPATHLEN, "%s%08lx.0", work_dir, hash);
+        snprintf(tmppath, MAXPATHLEN, "%s.tmp", path);
+        certbio = BIO_new_file(tmppath, "w");
         if (!certbio) {
-            verror_put_string("failed to open %s", path);
+            verror_put_string("failed to open %s", tmppath);
             goto error;
         }
         PEM_write_bio_X509(certbio,x);
         BIO_free(certbio);
+        if (rename(tmppath, path) < 0) { /* atomic update */
+            verror_put_errno(errno);
+            verror_put_string("Unable to rename %s to %s\n",
+                              tmppath, path);
+            goto error;
+        }
+        myproxy_debug("renamed %s to %s", tmppath, path);
         myproxy_debug("wrote trusted certificate to %s", path);
         snprintf(path, MAXPATHLEN, "%s%08lx.signing_policy",
-                 tmp_cert_dir, hash);
-        policybio = BIO_new_file(path, "w");
+                 work_dir, hash);
+        snprintf(tmppath, MAXPATHLEN, "%s.tmp", path);
+        policybio = BIO_new_file(tmppath, "w");
         if (!policybio) {
-            verror_put_string("failed to open %s", path);
+            verror_put_string("failed to open %s", tmppath);
             goto error;
         }
         X509_NAME_oneline(X509_get_subject_name(x),buf,sizeof buf);
-        BIO_printf(policybio, "access_id_CA X509 '%s'\npos_rights globus CA:sign\ncond_subjects globus \"*\"\n", buf);
+        X509_NAME_oneline(X509_get_subject_name(xp),buf2,sizeof buf2);
+        BIO_printf(policybio, "access_id_CA X509 '%s'\npos_rights globus CA:sign\ncond_subjects globus '\"%s\"'\n", buf, buf2);
         BIO_free(policybio);
+        if (rename(tmppath, path) < 0) { /* atomic update */
+            verror_put_errno(errno);
+            verror_put_string("Unable to rename %s to %s\n",
+                              tmppath, path);
+            goto error;
+        }
+        myproxy_debug("renamed %s to %s", tmppath, path);
         myproxy_debug("wrote trusted certificate policy to %s", path);
+        if (i==1) {
+            myproxy_log("New trusted MyProxy server: %s", buf2, hash);
+        }
+        myproxy_log("New trusted CA (%08lx.0): %s", hash, buf);
     }
 
-    /* success. commit the bootstrapped directory. */
-    if (rename(tmp_cert_dir, cert_dir) < 0) {
-        verror_put_errno(errno);
-        verror_put_string("Unable to rename %s to %s\n",
-                          tmp_cert_dir, cert_dir);
-        goto error;
+    if (tmp_cert_dir) {       /* commit the bootstrapped directory. */
+        if (rename(tmp_cert_dir, cert_dir) < 0) {
+            verror_put_errno(errno);
+            verror_put_string("Unable to rename %s to %s\n",
+                              tmp_cert_dir, cert_dir);
+            goto error;
+        }
+        myproxy_debug("renamed %s to %s", tmp_cert_dir, cert_dir);
     }
-    myproxy_debug("renamed %s to %s", tmp_cert_dir, cert_dir);
 
-    return_value = 0;
+    return_value = 0;           /* success */
 
  error:
     if (ctx) {
@@ -573,7 +607,86 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     }
     if (cert_dir) free(cert_dir);
     if (tmp_cert_dir) free(tmp_cert_dir);
+    if (prev_umask) umask(prev_umask);          /* restore umask */
 
+    return return_value;
+}
+
+int
+myproxy_bootstrap_client(myproxy_socket_attrs_t *socket_attrs,
+                         int bootstrap_if_no_cert_dir,
+                         int bootstrap_even_if_cert_dir_exists)
+{
+    int return_value = -1;
+
+    /* Bootstrap trusted certificate directory if none exists. */
+    if (bootstrap_if_no_cert_dir) {
+        char *cert_dir = NULL;
+        globus_result_t res;
+
+        globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
+        res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+        if (res != GLOBUS_SUCCESS) {
+            globus_object_free(globus_error_get(res));
+            if (myproxy_bootstrap_trust(socket_attrs) < 0) {
+                goto cleanup;
+            }
+        }
+        if (cert_dir) free(cert_dir);
+    }
+
+    /* Connect to server. */
+    if (myproxy_init_client(socket_attrs) < 0) {
+        goto cleanup;
+    }
+    
+    /* Attempt anonymous-mode credential retrieval if we don't have a
+       credential. */
+    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
+
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+        if (bootstrap_if_no_cert_dir) {
+            if (strstr(verror_get_string(), "CRL") != NULL) {
+                myproxy_log("CRL error detected.  Attempting to recover.");
+                switch (myproxy_clean_crls()) {
+                case -1:
+                    verror_print_error(stderr);
+                case 0:
+                    goto cleanup;
+                }
+                verror_clear();
+            } else if (strstr(verror_get_string(),
+                              "Can't get the local trusted CA certificate") != NULL) {
+                if (bootstrap_even_if_cert_dir_exists) {
+                    if (myproxy_bootstrap_trust(socket_attrs) < 0) {
+                        goto cleanup;
+                    }
+                    verror_clear();
+                } else {
+                    verror_put_string("The CA that signed the myproxy-server's certificate is untrusted.");
+                    verror_put_string("If you want to trust the CA, re-run with the -b option.");
+                    goto cleanup;
+                }
+            } else {
+                goto cleanup;
+            }
+            /* Try again after recovery attempt... */
+            if (myproxy_init_client(socket_attrs) < 0) {
+                verror_print_error(stderr);
+                goto cleanup;
+            }
+            GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
+            if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+                verror_print_error(stderr);
+                goto cleanup;
+            }
+        }
+    }
+
+    return_value = 0;           /* success */
+
+ cleanup:
     return return_value;
 }
 
@@ -582,8 +695,12 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     myproxy_debug("MyProxy %s", myproxy_version(0,0,0));
 
     assert(attrs);
+    if (attrs->gsi_socket) {
+        GSI_SOCKET_destroy(attrs->gsi_socket);
+        attrs->gsi_socket = NULL;
+        close(attrs->socket_fd);
+    }
     attrs->socket_fd = -1;
-    attrs->gsi_socket = NULL;
 
     attrs->socket_fd = get_connected_myproxy_host_socket(
         attrs->pshost,attrs->psport);
@@ -696,7 +813,6 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    
    return return_value;
 }
-
 
 int 
 myproxy_authenticate_accept_fqans(myproxy_socket_attrs_t *attrs, char *client_name, const int namelen, char ***fqans)

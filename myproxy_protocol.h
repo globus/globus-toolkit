@@ -336,6 +336,18 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
  * 
  */
 int myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs);
- 
+
+/*
+ * myproxy_bootstrap_client()
+ *
+ * Connect to server and authenticate.
+ * Bootstrap trust roots as needed/requested.
+ * Allows anonymous authentication.
+ * Called by myproxy-logon and myproxy-get-trustroots.
+ *
+ */
+int myproxy_bootstrap_client(myproxy_socket_attrs_t *attrs,
+                             int bootstrap_if_no_cert_dir,
+                             int bootstrap_even_if_cert_dir_exists);
 
 #endif /* __MYPROXY_PROTOCOL_H */

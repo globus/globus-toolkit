@@ -20,6 +20,7 @@ static char usage[] = \
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -q | --quiet                      Only output on error\n"
+"       -b | --bootstrap                  Bootstrap trust in myproxy-server\n"
 "\n";
 
 struct option long_options[] =
@@ -31,10 +32,11 @@ struct option long_options[] =
     {"verbose",                no_argument, NULL, 'v'},
     {"version",                no_argument, NULL, 'V'},
     {"quiet",                  no_argument, NULL, 'q'},
+    {"bootstrap",              no_argument, NULL, 'b'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:vVq";
+static char short_options[] = "hus:p:vVqb";
 
 static char version[] =
 "myproxy-get-trustroots version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -51,6 +53,7 @@ init_arguments(int argc, char *argv[],
 #define my_setlinebuf(stream)	setvbuf((stream), (char *) NULL, _IOLBF, 0)
 
 static int quiet = 0;
+static int bootstrap = 0;
 
 int myproxy_set_trustroots_defaults(
     myproxy_socket_attrs_t *socket_attrs,
@@ -138,8 +141,6 @@ main(int argc, char *argv[])
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
     int return_value = 1;
-    char *cert_dir = NULL;
-    globus_result_t res;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -172,50 +173,13 @@ main(int argc, char *argv[])
     /* Bootstrap trusted certificate directory if none exists. */
     assert(client_request->want_trusted_certs);
 
-    globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
-    res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
-    if (res != GLOBUS_SUCCESS) {
-        globus_object_free(globus_error_get(res));
-        myproxy_log("Bootstrapping MyProxy server root of trust.");
-        myproxy_bootstrap_trust(socket_attrs);
-    }
-    if (cert_dir) free(cert_dir);
-
-    /* Connect to server. */
-    if (myproxy_init_client(socket_attrs) < 0) {
+    /* Connect to server and authenticate.
+       Bootstrap trust roots as needed. */
+    if (myproxy_bootstrap_client(socket_attrs,
+                                 client_request->want_trusted_certs,
+                                 bootstrap) < 0) {
         verror_print_error(stderr);
         goto cleanup;
-    }
-    
-    /* Attempt anonymous-mode retrieval if we don't have a
-       credential. */
-    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
-
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        verror_print_error(stderr);
-        if (client_request->want_trusted_certs &&
-            strstr(verror_get_string(), "CRL") != NULL) {
-            verror_clear();
-            myproxy_log("CRL error detected.  Attempting to recover.");
-            switch (myproxy_clean_crls()) {
-            case -1:
-                verror_print_error(stderr);
-            case 0:
-                goto cleanup;
-            case 1:
-                if (myproxy_init_client(socket_attrs) < 0) {
-                    verror_print_error(stderr);
-                    goto cleanup;
-                }
-                if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-                    verror_print_error(stderr);
-                    goto cleanup;
-                }
-            }
-        } else {
-            goto cleanup;
-        }
     }
 
     if (myproxy_get_trustroots(socket_attrs, client_request, server_response)!=0) {
@@ -281,6 +245,9 @@ init_arguments(int argc,
             break;
 	case 'q':
 	    quiet = 1;
+	    break;
+	case 'b':
+	    bootstrap = 1;
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);

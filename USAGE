@@ -43,6 +43,7 @@ desperate attempt to maintain some consistency.
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
 -a | --authorization   <path>     Use credential for authorization (instead of passphrase)
 -a | --authorization   <path>     Use credential for authorization (instead of passphrase)
+-b | --bootstrap                  Bootstrap trust in myproxy-server
 -c | --certfile        <filename> Certificate file name
 -c | --certfile       <filename>  Certificate file name
 -c | --certfile       <filename>  Certificate file name
