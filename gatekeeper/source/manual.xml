@@ -2,7 +2,7 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
 <!-- Canonical version of this document lives in 
-cvs.globus.org:/home/globdev/CVS/globus-packages gram/jobmanager/source/manual.xml
+$Id$
 -->
 
 
@@ -104,7 +104,7 @@ such as CoG jglobus or Condor-G.
 
 <para>
 The full set of command-line options to
-<command>globus-job-manager</command> consists of:
+<command>globus-gatekeeper</command> consists of:
 
 <variablelist>
     <varlistentry>
@@ -204,7 +204,7 @@ The full set of command-line options to
 
 <refsect1><title>ENVIRONMENT</title>
 <para>
-If the following variables affect the execution of <command>globus-job-manager</command>
+If the following variables affect the execution of <command>globus-gatekeeper</command>
 
 <variablelist>
     <varlistentry>
