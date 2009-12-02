@@ -1615,6 +1615,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     {
 	ssl_free_buffer(output_buffer);
     }
+    if (fd >= 0) close(fd);
 
     return return_value;
 }
