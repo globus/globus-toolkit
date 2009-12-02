@@ -1,0 +1,4 @@
+*.filelist
+Makefile*
+pkg_data_gcc*
+pkg_data_src.gpt
