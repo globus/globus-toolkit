@@ -2,12 +2,12 @@
 .\"     Title: globus-job-manager
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 11/09/2009
+.\"      Date: 12/02/2009
 .\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-JOB\-MANAGER" "8" "11/09/2009" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-JOB\-MANAGER" "8" "12/02/2009" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 globus-job-manager \- Execute and monitor jobs
 .SH "SYNOPSIS"
 .HP \w'\fBglobus\-job\-manager\fR\ 'u
-\fBglobus\-job\-manager\fR {\-type\ \fILRM\fR} [\-conf\ \fICONFIG_PATH\fR] [\-help] [\-globus\-host\-manufacturer\ \fIMANUFACTURER\fR] [\-globus\-host\-cputype\ \fICPUTYPE\fR] [\-globus\-host\-osname\ \fIOSNAME\fR] [\-globus\-host\-osversion\ \fIOSVERSION\fR] [\-globus\-gatekeeper\-host\ \fIHOST\fR] [\-globus\-gatekeeper\-port\ \fIPORT\fR] [\-globus\-gatekeeper\-subject\ \fISUBJECT\fR] [\-home\ \fIGLOBUS_LOCATION\fR] [\-target\-globus\-location\ \fITARGET_GLOBUS_LOCATION\fR] [\-condor\-arch\ \fIARCH\fR] [\-condor\-os\ \fIOS\fR] [\-history\ \fIHISTORY_DIRECTORY\fR] [\-scratch\-dir\-base\ \fISCRATCH_DIRECTORY\fR] [\-enable\-syslog] [\-stdio\-log\ \fILOG_DIRECTORY\fR] [\-log\-levels\ \fILEVELS\fR] [\-state\-file\-dir\ \fISTATE_DIRECTORY\fR] [\-globus\-tcp\-port\-range\ \fIPORT_RANGE\fR] [\-x509\-cert\-dir\ \fITRUSTED_CERTIFICATE_DIRECTORY\fR] [\-cache\-location\ \fIGASS_CACHE_DIRECTORY\fR] [\-k] [\-extra\-envvars\ \fIVAR=VAL,\&.\&.\&.\fR] [\-seg\-module\ \fISEG_MODULE\fR] [\-audit\-directory\ \fIAUDIT_DIRECTORY\fR] [\-globus\-toolkit\-version\ \fITOOLKIT_VERSION\fR] [\-disable\-streaming] [\-disable\-usagestats] [\-usagestats\-target\ \fITARGET\fR] [\-service\-tag\ \fISERVICE_TAG\fR]
+\fBglobus\-job\-manager\fR {\-type\ \fILRM\fR} [\-conf\ \fICONFIG_PATH\fR] [\-help] [\-globus\-host\-manufacturer\ \fIMANUFACTURER\fR] [\-globus\-host\-cputype\ \fICPUTYPE\fR] [\-globus\-host\-osname\ \fIOSNAME\fR] [\-globus\-host\-osversion\ \fIOSVERSION\fR] [\-globus\-gatekeeper\-host\ \fIHOST\fR] [\-globus\-gatekeeper\-port\ \fIPORT\fR] [\-globus\-gatekeeper\-subject\ \fISUBJECT\fR] [\-home\ \fIGLOBUS_LOCATION\fR] [\-target\-globus\-location\ \fITARGET_GLOBUS_LOCATION\fR] [\-condor\-arch\ \fIARCH\fR] [\-condor\-os\ \fIOS\fR] [\-history\ \fIHISTORY_DIRECTORY\fR] [\-scratch\-dir\-base\ \fISCRATCH_DIRECTORY\fR] [\-enable\-syslog] [\-stdio\-log\ \fILOG_PATTERN\fR] [\-log\-levels\ \fILEVELS\fR] [\-state\-file\-dir\ \fISTATE_DIRECTORY\fR] [\-globus\-tcp\-port\-range\ \fIPORT_RANGE\fR] [\-x509\-cert\-dir\ \fITRUSTED_CERTIFICATE_DIRECTORY\fR] [\-cache\-location\ \fIGASS_CACHE_DIRECTORY\fR] [\-k] [\-extra\-envvars\ \fIVAR=VAL,\&.\&.\&.\fR] [\-seg\-module\ \fISEG_MODULE\fR] [\-audit\-directory\ \fIAUDIT_DIRECTORY\fR] [\-globus\-toolkit\-version\ \fITOOLKIT_VERSION\fR] [\-disable\-streaming] [\-disable\-usagestats] [\-usagestats\-target\ \fITARGET\fR] [\-service\-tag\ \fISERVICE_TAG\fR]
 .SH "DESCRIPTION"
 .PP
 The
@@ -155,18 +155,17 @@ Configure the job manager to write log messages via syslog\&. Logging is further
 parameter described below\&.
 .RE
 .PP
-\fB\-stdio\-log \fR\fB\fILOG_DIRECTORY\fR\fR
+\fB\-stdio\-log \fR\fB\fILOG_PATTERN\fR\fR
 .RS 4
-Configure the job manager to write log messages to files in the
-\fILOG_DIRECTORY\fR
-directory\&. Files will be named
-\fILOG_DIRECTORY\fR/gram_\fIYYYYMMDD\fR\&.log\&. Logging is further controlled by the argument to the
-\fB\-log\-levels\fR
-parameter described below\&. The
-\fILOG_DIRECTORY\fR
-value can include variables derived from the job manager environment using the same syntax as RSL substitutions\&. For example,
-\-stdio\-log $(HOME)
-would cause each user\'s logs to be stored in their individual home directories\&.
+Configure the job manager to write log messages to files which are composed by evaluating the
+\fILOG_PATTERN\fR
+string\&. This pattern can contain substitutions for
+HOME,
+LOGNAME,
+DATE, and
+GLOBUS_LOCATION, using the syntax
+$(\fIsubstitution\-name\fR)\&. For example, the personal gatekeeper uses the pattern "$(HOME)/gram_$(DATE)\&.log" to write log entries to files in the local user\'s home directory, with names that contain the date in the form
+YYYYMMDD\&.
 .RE
 .PP
 \fB\-log\-levels \fR\fB\fILEVELS\fR\fR

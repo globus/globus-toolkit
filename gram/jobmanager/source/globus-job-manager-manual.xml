@@ -37,7 +37,7 @@ $Header$
 <arg>-history <replaceable>HISTORY_DIRECTORY</replaceable></arg>
 <arg>-scratch-dir-base <replaceable>SCRATCH_DIRECTORY</replaceable></arg>
 <arg>-enable-syslog</arg>
-<arg>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></arg>
+<arg>-stdio-log <replaceable>LOG_PATTERN</replaceable></arg>
 <arg>-log-levels <replaceable>LEVELS</replaceable></arg>
 <arg>-state-file-dir <replaceable>STATE_DIRECTORY</replaceable></arg>
 <arg>-globus-tcp-port-range <replaceable>PORT_RANGE</replaceable></arg>
@@ -52,6 +52,7 @@ $Header$
 <arg>-disable-usagestats</arg>
 <arg>-usagestats-target <replaceable>TARGET</replaceable></arg>
 <arg>-service-tag <replaceable>SERVICE_TAG</replaceable></arg>
+<arg>-enable-callout</arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -153,8 +154,17 @@ The full set of command-line options to
         </simpara></listitem>
     </varlistentry>
     <varlistentry>
-        <term><option>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></option></term>
-        <listitem><simpara>Configure the job manager to write log messages to files  in the <replaceable>LOG_DIRECTORY</replaceable> directory. Files will be named <filename><replaceable>LOG_DIRECTORY</replaceable>/gram_<replaceable>YYYYMMDD</replaceable>.log</filename>. Logging is further controlled by the argument to the <option>-log-levels</option> parameter described below. The <replaceable>LOG_DIRECTORY</replaceable> value can include variables derived from the job manager environment using the same syntax as RSL substitutions. For example, <literal>-stdio-log $(HOME)</literal> would cause each user's logs to be stored in their individual home directories.</simpara></listitem>
+        <term><option>-stdio-log <replaceable>LOG_PATTERN</replaceable></option></term>
+        <listitem><simpara>Configure the job manager to write log messages to
+        files which are composed by evaluating the
+        <replaceable>LOG_PATTERN</replaceable> string. This pattern can contain
+        substitutions for <literal>HOME</literal>, <literal>LOGNAME</literal>, 
+        <literal>DATE</literal>, and <literal>GLOBUS_LOCATION</literal>, using
+        the syntax
+        <literal>$(</literal><replaceable>substitution-name</replaceable><literal>)</literal>. For example, the personal gatekeeper
+        uses the pattern "$(HOME)/gram_$(DATE).log" to write log entries to
+        files in the local user's home directory, with names that contain
+        the date in the form <literal>YYYYMMDD</literal>.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-log-levels <replaceable>LEVELS</replaceable></option></term>
@@ -224,6 +234,12 @@ The full set of command-line options to
     <varlistentry>
         <term><option>-usagestats-target <replaceable>TARGET</replaceable></option></term>
         <listitem><simpara>Send usage packets to a data collection service for analysis. The <replaceable>TARGET</replaceable> string consists of a comma-separated list of HOST:PORT combinations, each contaiing an optional list of data to send. See <ulink url="http://confluence.globus.org/display/~bester/GRAM5+Usage+Stats+Packets">Usage Stats Packets</ulink> for more information about the tags. Special tag strings of <literal>all</literal> (which enables all tags) and <literal>default</literal> may be used, or a sequence of characters for the various tags.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-enable-callout</option></term>
+        <listitem><simpara>Allow the use of GSI callouts for job submissions
+        and queries. This can increase the job manager's memory
+        use.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-condor-arch <replaceable>ARCH</replaceable></option></term>

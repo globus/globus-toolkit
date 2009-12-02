@@ -347,7 +347,7 @@ while [ -n "$1" ]; do
 	-log*)
                 logdir=`expr "$1" : "-log=\(.*\)"`
                 if [ "$logdir" = "" ]; then
-                    logdir="$HOME"
+                    logdir="\$(HOME)/gram_\$(DATE).log"
                 fi
 		shift
 		;;

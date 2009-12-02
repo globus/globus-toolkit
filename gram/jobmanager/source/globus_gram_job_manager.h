@@ -321,6 +321,11 @@ typedef struct
      * jobs for the same LRM with different configurations
      */
     char *                              service_tag;
+    /**
+     * Boolean flag indicating whether to enable GSI callouts
+     * on GRAM operations or not. Default to no.
+     */
+    globus_bool_t                       enable_callout;
 }
 globus_gram_job_manager_config_t;
 
@@ -1021,6 +1026,7 @@ globus_gram_job_manager_gsi_relocate_proxy(
 
 int
 globus_gram_job_manager_call_authz_callout(
+    globus_gram_job_manager_config_t *  config,
     gss_ctx_id_t                        request_context,
     gss_ctx_id_t                        authz_context,
     const char *                        uniq_id,
@@ -1135,7 +1141,7 @@ globus_gram_job_manager_rsl_add_relation(
 
 int
 globus_gram_job_manager_rsl_parse_value(
-    char *                              value_string,
+    const char *                        value_string,
     globus_rsl_value_t **               rsl_value);
 
 int
@@ -1147,7 +1153,7 @@ globus_gram_job_manager_rsl_evaluate_value(
 int
 globus_gram_job_manager_rsl_eval_string(
     globus_symboltable_t *              symbol_table,
-    char *                              string,
+    const char *                        string,
     char **                             value_string);
 
 int

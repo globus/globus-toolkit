@@ -1044,6 +1044,7 @@ globus_gram_job_manager_request_start(
     }
 
     rc = globus_gram_job_manager_call_authz_callout(
+            request->config,
             request->response_context,
             request->response_context,
             request->uniq_id,

@@ -241,6 +241,7 @@ globus_gram_job_manager_query_callback(
     }
 
     rc = globus_gram_job_manager_call_authz_callout(
+            request->config,
             request->response_context,
             context,
             request->uniq_id,

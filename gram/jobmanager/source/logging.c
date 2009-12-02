@@ -194,9 +194,11 @@ globus_l_gram_logging_write(
     const char *                        dir = user_arg;
     time_t                              now;
     struct tm *                         now_tm;
+    struct tm                           last_tm;
+    globus_bool_t                       first = GLOBUS_TRUE;
     static char *                       evaluated_dir = NULL;
     static char                         path[MAXPATHLEN] = "";
-    static char                         last_path[MAXPATHLEN] = "";
+    static char                         date_str[9];
     int                                 fd;
     int                                 flags;
     int                                 rc;
@@ -204,26 +206,61 @@ globus_l_gram_logging_write(
     now = time(NULL);
     now_tm = gmtime(&now);
 
-    if (evaluated_dir == NULL)
+    if (first)
     {
-        globus_gram_job_manager_rsl_eval_string(
+        memset(&last_tm, 0, sizeof(struct tm));
+        first = GLOBUS_FALSE;
+    }
+
+    if (now_tm->tm_year != last_tm.tm_year ||
+        now_tm->tm_mon != last_tm.tm_mon ||
+        now_tm->tm_mday != last_tm.tm_mday)
+    {
+        /* New day, reevaluate */
+        sprintf(date_str, "%04d%02d%02d",
+                now_tm->tm_year + 1900,
+                now_tm->tm_mon + 1,
+                now_tm->tm_mday);
+
+        memcpy(&last_tm, now_tm, sizeof(struct tm));
+
+        rc = globus_symboltable_create_scope(&globus_l_gram_log_symboltable);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_l_gram_log_fp = stderr;
+            goto out;
+        }
+
+        rc = globus_symboltable_insert(
+                &globus_l_gram_log_symboltable,
+                "DATE",
+                date_str);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_l_gram_log_fp = stderr;
+            globus_symboltable_remove_scope(&globus_l_gram_log_symboltable);
+            goto out;
+        }
+
+        if (evaluated_dir != NULL)
+        {
+            free(evaluated_dir);
+            evaluated_dir = NULL;
+        }
+        rc = globus_gram_job_manager_rsl_eval_string(
                 &globus_l_gram_log_symboltable,
                 dir,
                 &evaluated_dir);
-    }
+        if (rc != GLOBUS_SUCCESS)
+        {
+            globus_l_gram_log_fp = stderr;
+            globus_symboltable_remove_scope(&globus_l_gram_log_symboltable);
+            goto out;
+        }
+        strcpy(path, evaluated_dir);
 
-    snprintf(
-            path,
-            sizeof(path),
-            "%s/gram_%04d%02d%02d.log",
-            evaluated_dir ? evaluated_dir : dir,
-            now_tm->tm_year + 1900,
-            now_tm->tm_mon + 1,
-            now_tm->tm_mday);
+        globus_symboltable_remove_scope(&globus_l_gram_log_symboltable);
 
-    if (strcmp(path, last_path) != 0)
-    {
-        strcpy(last_path, path);
         if (globus_l_gram_log_fp != NULL)
         {
             freopen(path, "a", globus_l_gram_log_fp);
@@ -231,8 +268,15 @@ globus_l_gram_logging_write(
         else
         {
             globus_l_gram_log_fp = fopen(path, "a");
-            globus_assert(globus_l_gram_log_fp != NULL);
-            setvbuf(globus_l_gram_log_fp, NULL, _IONBF, 0);
+            if (globus_l_gram_log_fp != NULL)
+            {
+                setvbuf(globus_l_gram_log_fp, NULL, _IONBF, 0);
+            }
+        }
+        if (globus_l_gram_log_fp == NULL)
+        {
+            globus_l_gram_log_fp = stderr;
+            goto out;
         }
 
         fd = fileno(globus_l_gram_log_fp);
@@ -243,6 +287,7 @@ globus_l_gram_logging_write(
         globus_assert(rc >= 0);
     }
 
+out:
     fwrite(buf, length, 1, globus_l_gram_log_fp);
 }
 /* globus_l_gram_logging_write() */

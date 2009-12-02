@@ -720,6 +720,7 @@ globus_l_gram_job_manager_proxy_expiration(
 
 int
 globus_gram_job_manager_call_authz_callout(
+    globus_gram_job_manager_config_t *  config,
     gss_ctx_id_t                        request_context,
     gss_ctx_id_t                        authz_context,
     const char *                        uniq_id,
@@ -731,6 +732,11 @@ globus_gram_job_manager_call_authz_callout(
     globus_object_t *                   error;
     char *                              filename;
     globus_callout_handle_t             authz_handle;
+
+    if (! config->enable_callout)
+    {
+        return GLOBUS_SUCCESS;
+    }
 
     result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
     if(result != GLOBUS_SUCCESS)
