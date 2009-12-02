@@ -39,7 +39,7 @@ static AUTHORITY_INFO_ACCESS *
 my_aia_get(X509_EXTENSION *ext) {
 	X509V3_EXT_METHOD *method = NULL;
 	void *ext_str = NULL;
-	unsigned char *p;
+	const unsigned char *p;
 	int len;
 
 	if (ext == NULL) {

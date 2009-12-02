@@ -167,7 +167,7 @@ verify_cert_hostname(X509 *cert, char *hostname) {
   X509_NAME             *subj;
   const char            *extstr;
   CONF_VALUE            *nval;
-  unsigned char         *data;
+  const unsigned char   *data;
   X509_EXTENSION        *ext;
   X509V3_EXT_METHOD     *meth;
   STACK_OF(CONF_VALUE)  *val;
