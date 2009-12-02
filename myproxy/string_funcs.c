@@ -374,8 +374,7 @@ make_path(char *path)
                 *p = '/';
                 return -1;
             }
-        }
-        if (!(sb.st_mode & S_IFDIR)) {
+        } else if (!(sb.st_mode & S_IFDIR)) {
             verror_put_string("%s exists and is not a directory", path);
             *p = '/';
             return -1;
