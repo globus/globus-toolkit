@@ -6,6 +6,9 @@ Version History
 ---------------
 v5.0 XX Xxx 2009
   - add Globus Usage Metrics to the myproxy-server
+  - in myproxy-server, atomically update credential files and avoid
+    unnecessary file copies; NOTE API CHANGE: myproxy_creds_store()
+    now moves file to the repository, rather than copying it
   - add myproxy-server.config request_size_limit parameter to control
     myproxy-server network limits, and fix network limit handling to
     apply only to myproxy-server (not clients), so clients can handle

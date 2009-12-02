@@ -482,19 +482,15 @@ write_data_file(const struct myproxy_creds *creds,
     return_code = 0;
     
   error:
-    if (data_fd != -1)
-    {
-        close(data_fd);
-        
-        if (return_code == -1)
-        {
+    if (data_fd != -1) {
+        if (data_stream != NULL) {
+            fclose(data_stream); /* this does close(data_fd) */
+        } else {
+            close(data_fd);
+        }
+        if (return_code == -1) {
             unlink(data_file_path);
         }
-    }
-
-    if (data_stream != NULL)
-    {
-        fclose(data_stream);
     }
     
     return return_code;
@@ -806,6 +802,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     char *creds_path = NULL;
     char *data_path = NULL;
     char *lock_path = NULL;
+    char *path_prefix = NULL, *path_end = NULL;
     mode_t data_file_mode = FILE_MODE;
     mode_t creds_file_mode = FILE_MODE;
     int return_code = -1;
@@ -830,9 +827,26 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     }
 
     /* credential */
-    if (copy_file(creds->location, creds_path, creds_file_mode) == -1) {
-	verror_put_string ("Error writing credential file");
-	goto clean_up;
+    path_prefix = strdup(creds->location);
+    path_end = strrchr(path_prefix, '/');
+    if (path_end) {
+        *path_end = '\0';
+    }
+    if (strncmp(path_prefix, creds_path, strlen(path_prefix)) == 0) {
+        /* If we're in the same directory (and thus on the same
+           filesystem), we can do an atomic rename. */
+        if (rename(creds->location, creds_path) < 0) {
+            verror_put_string("rename(%s,%s) failed", creds->location,
+                              creds_path);
+            verror_put_errno(errno);
+            goto clean_up;
+        }
+    } else {
+        if (copy_file(creds->location, creds_path, creds_file_mode) == -1) {
+            verror_put_string ("Error writing credential file");
+            goto clean_up;
+        }
+        ssl_proxy_file_destroy(creds->location);
     }
 
     /* administrative locks */
@@ -1984,3 +1998,16 @@ myproxy_clean_crls()
     return return_value;
 }
 
+char *
+myproxy_creds_path_template()
+{
+    if (storage_dir) {
+        char *path;
+        
+        path = malloc(strlen(storage_dir)+12);
+        sprintf(path, "%s/tmp.XXXXXX", storage_dir);
+        return path;
+    }
+
+    return strdup("/tmp/myproxy.XXXXXX");
+}

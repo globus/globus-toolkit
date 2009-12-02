@@ -57,6 +57,9 @@ typedef struct myproxy_certs myproxy_certs_t;
  * the myproxy_creds structure.  The passphrase in the myproxy_creds
  * structure will be crypt()'ed before it is written.
  *
+ * On success, the credentials will be moved from creds->location to
+ * the repository, so they will no longer exist at creds->location.
+ *
  * Returns -1 on error, 0 on success.
  */
 int myproxy_creds_store(const struct myproxy_creds *creds);
@@ -290,6 +293,19 @@ int myproxy_clean_crls();
  * Returns 0 on success, -1 on error (setting verror).
  */
 int myproxy_creds_verify(const struct myproxy_creds *);
+
+/*
+ * myproxy_creds_path_template()
+ *
+ * Returns a malloc'ed buffer containing a file name template suitable
+ * for passing to mkstemp() for storing credentials.
+ * If a credential storage directory is available for use
+ * (see the myproxy_*_storage_dir methods),
+ * the file will be located in that directory.
+ * Otherwise, it will be in /tmp.
+ * The caller should free() the string.
+ */
+char *myproxy_creds_path_template();
 
 #endif
 

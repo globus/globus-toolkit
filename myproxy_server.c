@@ -1179,7 +1179,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
                myproxy_response_t *response,
                int max_cred_lifetime) 
 {
-    char delegfile[64] = { 0 };
+    char delegfile[MAXPATHLEN] = { 0 };
 
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile),
 				  creds->passphrase) < 0) {
@@ -1200,7 +1200,7 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
                      myproxy_response_t     *response,
                      int                     max_cred_lifetime)
 {
-    char delegfile[64] = { 0 };
+    char delegfile[MAXPATHLEN] = { 0 };
 
     if (myproxy_accept_credentials(attrs,
                                    delegfile,
@@ -1270,10 +1270,7 @@ void check_and_store_credentials(const char              path[],
 
 cleanup:
     /* Clean up temporary delegation */
-    if (path[0] && ssl_proxy_file_destroy(path) != SSL_SUCCESS) {
-        myproxy_log_perror("Removal of temporary credentials file %s failed",
-                           path);
-    }
+    if (path[0]) ssl_proxy_file_destroy(path);
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
