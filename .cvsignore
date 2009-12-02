@@ -4,6 +4,7 @@
 BUILD
 Makefile
 Makefile.in
+a.out.dSYM
 aclocal.m4
 autom4te.cache
 config.cache
