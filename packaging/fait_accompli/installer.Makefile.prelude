@@ -36,6 +36,7 @@ prewsgram: gpt globus-resource-management-sdk-thr globus-resource-management-ser
 gridftp: gpt globus-data-management-sdk-thr globus-data-management-server-thr globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
 rls: gpt globus-rls-server
 drs: gpt common globus_rls_client wsjava gt4-delegation gt4-replicator
+udt: gpt globus_xio_udt_ref_driver-thr
 
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
