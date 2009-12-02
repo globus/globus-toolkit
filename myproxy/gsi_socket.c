@@ -1570,7 +1570,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     int			return_value = GSI_SOCKET_ERROR;
     unsigned char	*output_buffer = NULL;
     int			output_buffer_len;
-    char		filename[L_tmpnam] = { 0 };
+    char        *filename = NULL;
     int			fd = -1;
 
 
@@ -1580,19 +1580,18 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     }
     
     /* Now store the credentials */
-    if (tmpnam(filename) == NULL)
-    {
-	self->error_number = errno;
-	self->error_string = strdup("tmpnam() failed");
-	goto error;
+    filename = myproxy_creds_path_template();
+    if (filename == NULL) {     /* should never happen */
+        verror_put_string("myproxy_creds_path_template() failed");
+        goto error;
     }
-    
-    fd = open(filename, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
+
+    fd = mkstemp(filename);
     if (fd == -1)
     {
-	verror_put_string("Error creating %s", filename);
-	verror_put_errno(errno);
-	goto error;
+        verror_put_string("Error creating temporary file (%s)", filename);
+        verror_put_errno(errno);
+        goto error;
     }
 
     if (write(fd, output_buffer, output_buffer_len) == -1)
@@ -1604,7 +1603,11 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     
     if (delegated_credentials != NULL)
     {
-	strncpy(delegated_credentials, filename, delegated_credentials_len);
+        if (my_strncpy(delegated_credentials, filename,
+                       delegated_credentials_len) < 0) {
+            verror_put_string("credential path too long");
+            goto error;
+        }
     }
     
     /* Success */
@@ -1616,6 +1619,11 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	ssl_free_buffer(output_buffer);
     }
     if (fd >= 0) close(fd);
+    if (return_value != GSI_SOCKET_SUCCESS && fd >= 0)
+    {
+        ssl_proxy_file_destroy(filename);
+    }
+    if (filename) free(filename);
 
     return return_value;
 }
@@ -1631,12 +1639,11 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     size_t                     input_buffer_length;
     unsigned char             *fmsg;
     int                        i;
-    char                       filename[L_tmpnam] = { 0 };
+    char                      *filename = NULL;
     char                      *certstart;
     int                        rval, 
                                fd                 = 0;
     int                        size;
-    int                        removetmp          = 0;
 
 
     if (self == NULL)
@@ -1672,23 +1679,19 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     }
 
     /* Now store the credentials */
-    if (tmpnam(filename) == NULL)
-    {
-      self->error_number = errno;
-      self->error_string = strdup("tmpnam() failed");
-      goto error;
+    filename = myproxy_creds_path_template();
+    if (filename == NULL) {     /* should never happen */
+        verror_put_string("myproxy_creds_path_template() failed");
+        goto error;
     }
 
-    /* Open the output file. */
-    if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY,
-                 S_IRUSR | S_IWUSR)) < 0) 
+    fd = mkstemp(filename);
+    if (fd == -1)
     {
-      self->error_string =
-	  strdup("open() failed in GSI_SOCKET_credentials_accept_ext");
-      goto error;
+        verror_put_string("Error creating temporary file (%s)", filename);
+        verror_put_errno(errno);
+        goto error;
     }
-
-    removetmp = 1;
 
     size = strlen( (char *)input_buffer );
 
@@ -1712,11 +1715,13 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       goto error;
     }
 
-    strncpy(credentials, filename, credentials_len );
+    if (my_strncpy(credentials, filename, credentials_len) < 0) {
+        verror_put_string("credential path too long");
+        goto error;
+    }
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
-    removetmp = 0;
 
   error:
     if (input_buffer != NULL)
@@ -1739,10 +1744,12 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       close( fd );
     }
 
-    if( removetmp )
+    if (return_value != GSI_SOCKET_SUCCESS && fd >= 0)
     {
-      ssl_proxy_file_destroy(filename);
+        ssl_proxy_file_destroy(filename);
     }
+
+    if (filename) free(filename);
 
     return return_value;
 }
