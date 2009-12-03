@@ -1401,7 +1401,6 @@ myproxy_creds_lock(const struct myproxy_creds *creds, const char *reason)
     char *data_path = NULL;
     char *lock_path = NULL;
     int return_code = -1;
-    FILE *lockfile = NULL;
     
     if ((creds == NULL) || (creds->username == NULL) || (reason == NULL)) {
         verror_put_errno(EINVAL);
