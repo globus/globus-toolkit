@@ -626,6 +626,7 @@ generate_certificate( X509_REQ                 *request,
       myproxy_debug("Successfully added extensions.");
   } else {			/* add some defaults */
       add_ext(ctxp, cert, NID_key_usage, "critical,Digital Signature, Key Encipherment, Data Encipherment");
+      add_ext(ctxp, cert, NID_ext_key_usage, "clientAuth");
       add_ext(ctxp, cert, NID_basic_constraints, "critical,CA:FALSE");
       add_ext(ctxp, cert, NID_subject_key_identifier, "hash");
   }
