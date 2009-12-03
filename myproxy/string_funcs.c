@@ -187,10 +187,11 @@ copy_file(const char *source,
     int src_fd = -1;
     int dst_fd = -1;
     int src_flags = O_RDONLY;
-    int dst_flags = O_CREAT | O_EXCL | O_WRONLY;
     char buffer[2048];
     int bytes_read;
     int return_code = -1;
+    char *tmpfilename = NULL;
+    int bufsiz;
     
     assert(source != NULL);
     assert(dest != NULL);
@@ -204,14 +205,20 @@ copy_file(const char *source,
         goto error;
     }
 
-    unlink(dest);
-    dst_fd = open(dest, dst_flags, mode);
-    
+    bufsiz = strlen(dest)+15;
+    tmpfilename = malloc(bufsiz);
+    snprintf(tmpfilename, bufsiz, "%s.temp.XXXXXX", dest);
+
+    dst_fd = mkstemp(tmpfilename);
     if (dst_fd == -1)
     {
         verror_put_errno(errno);
-        verror_put_string("opening %s for writing", dest);
+        verror_put_string("opening %s for writing", tmpfilename);
         goto error;
+    }
+
+    if (mode != 0600) { /* mkstemp creates file with 0600 */
+        fchmod(dst_fd, mode);
     }
 
     do 
@@ -237,7 +244,18 @@ copy_file(const char *source,
       }
     }
     while (bytes_read > 0);
-  
+
+    close(src_fd);
+    src_fd = -1;
+    close(dst_fd);
+    dst_fd = -1;
+
+    if (rename(tmpfilename, dest) < 0) {
+        verror_put_string("rename(%s,%s) failed", tmpfilename, dest);
+        verror_put_errno(errno);
+        goto error;
+    }
+
     /* Success */
     return_code = 0;
         
@@ -252,10 +270,12 @@ copy_file(const char *source,
 
         if (return_code == -1)
         {
-            unlink(dest);
+            unlink(tmpfilename);
         }
     }
     
+    if (tmpfilename) free(tmpfilename);
+
     return return_code;
 }
 
