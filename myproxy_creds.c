@@ -414,28 +414,28 @@ write_data_file(const struct myproxy_creds *creds,
 
     int data_fd = -1;
     FILE *data_stream = NULL;
-    int data_file_open_flags = O_CREAT | O_EXCL | O_WRONLY;
+    char *tmpfilename = NULL;
+    int bufsiz;
     int return_code = -1;
 
     if (data_file_path == NULL) {
         goto error;
     }
 
-    /* Unlink the file if it exists so we are sure to create it
-       with the correct mode. */
-    unlink(data_file_path);
+    bufsiz = strlen(data_file_path)+15;
+    tmpfilename = malloc(bufsiz);
+    snprintf(tmpfilename, bufsiz, "%s.temp.XXXXXX", data_file_path);
 
-    /*
-     * Open with open() first to minimize any race condition with
-     * file permissions.
-     */
-    data_fd = open(data_file_path, data_file_open_flags, data_file_mode);
-    
+    data_fd = mkstemp(tmpfilename);
     if (data_fd == -1)
     {
         verror_put_errno(errno);
-        verror_put_string("opening storage file %s", data_file_path);
+        verror_put_string("opening %s for writing", tmpfilename);
         goto error;
+    }
+
+    if (data_file_mode != 0600) { /* mkstemp creates file with 0600 */
+        fchmod(data_fd, data_file_mode);
     }
 
     /* Now open as stream for easier IO */
@@ -475,9 +475,15 @@ write_data_file(const struct myproxy_creds *creds,
 
     fprintf (data_stream, "END_OPTIONS\n");
 
+    fclose(data_stream);
+    data_fd = -1;
 
-    fflush(data_stream);
-    
+    if (rename(tmpfilename, data_file_path) < 0) {
+        verror_put_string("rename(%s,%s) failed", tmpfilename, data_file_path);
+        verror_put_errno(errno);
+        goto error;
+    }
+
     /* Success */
     return_code = 0;
     
@@ -488,9 +494,12 @@ write_data_file(const struct myproxy_creds *creds,
         } else {
             close(data_fd);
         }
+    }
+    if (tmpfilename) {
         if (return_code == -1) {
-            unlink(data_file_path);
+            unlink(tmpfilename);
         }
+        free(tmpfilename);
     }
     
     return return_code;
@@ -734,6 +743,68 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
+static int
+write_lock_file(const char *filename, const char *reason)
+{
+    int lock_fd = -1;
+    FILE *lock_stream = NULL;
+    char *tmpfilename = NULL;
+    int bufsiz;
+    int return_code = -1;
+
+    if (filename == NULL) {
+        goto error;
+    }
+
+    bufsiz = strlen(filename)+15;
+    tmpfilename = malloc(bufsiz);
+    snprintf(tmpfilename, bufsiz, "%s.temp.XXXXXX", filename);
+
+    lock_fd = mkstemp(tmpfilename);
+    if (lock_fd == -1) {
+        verror_put_errno(errno);
+        verror_put_string("opening %s for writing", tmpfilename);
+        goto error;
+    }
+
+    /* Now open as stream for easier IO */
+    lock_stream = fdopen(lock_fd, "w");
+    if (lock_stream == NULL) {
+        verror_put_errno(errno);
+        verror_put_string("reopening lock file %s", filename);
+        goto error;
+    }
+
+    fprintf(lock_stream, "%s", reason);
+    fclose(lock_stream);
+    lock_stream = NULL;
+    lock_fd = -1;
+
+    if (rename(tmpfilename, filename) < 0) {
+        verror_put_string("rename(%s,%s) failed", tmpfilename, filename);
+        verror_put_errno(errno);
+        goto error;
+    }
+
+    /* Success */
+    return_code = 0;
+
+ error:
+    if (lock_stream) {
+        fclose(lock_stream);
+    } else if (lock_fd >= 0) {
+        close(lock_fd);
+    }
+    if (tmpfilename) {
+        if (return_code == -1) {
+            unlink(tmpfilename);
+        }
+        free(tmpfilename);
+    }
+
+    return return_code;
+}
+
 /*
 ** Check trusted certificates directory, create if needed.
 */
@@ -851,16 +922,12 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 
     /* administrative locks */
     if (creds->lockmsg) {
-	FILE *lockfile;
-	lockfile = fopen(lock_path, "w");
-	if (!lockfile) {
-	    verror_put_string("Error writing lockfile");
-	    goto clean_up;
-	}
-	fprintf(lockfile, "%s", creds->lockmsg);
-	fclose(lockfile);
+        if (write_lock_file(lock_path, creds->lockmsg) < 0) {
+            verror_put_string("Error writing lockfile");
+            goto clean_up;
+        }
     } else {
-	unlink(lock_path);
+        unlink(lock_path);
     }
 	
     /* Success */
@@ -877,6 +944,7 @@ clean_up:
     if (creds_path) free(creds_path);
     if (data_path) free(data_path);
     if (lock_path) free(lock_path);
+    if (path_prefix) free(path_prefix);
 
 error:
     return return_code;
@@ -1345,14 +1413,10 @@ myproxy_creds_lock(const struct myproxy_creds *creds, const char *reason)
         goto error;
     }
 
-    lockfile = fopen(lock_path, "w");
-    if (!lockfile) {
-	verror_put_errno(errno);
-	verror_put_string("Error opening lockfile for writing");
-	goto error;
+    if (write_lock_file(lock_path, reason) < 0) {
+        verror_put_string("Error writing lockfile");
+        goto error;
     }
-    fprintf(lockfile, "%s", reason);
-    fclose(lockfile);
 
     /* Success */
     return_code = 0;
