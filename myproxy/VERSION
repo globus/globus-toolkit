@@ -14,6 +14,7 @@ v5.0 XX Xxx 2009
     apply only to myproxy-server (not clients), so clients can handle
     large X509_CERT_DIR contents
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6889)
+  - include extendedKeyUsage=clientAuth in EECs by default per GFD.125
   - add myproxy-logon/myproxy-get-trustroots -b option to allow
     bootstrapping CA trust even when X509_CERT_DIR exists
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6886)
