@@ -88,16 +88,15 @@ AC_SUBST(SYSLIBS)
 dnl
 dnl Check for globus_usage_stats_send_array
 dnl
-AC_CHECK_LIB(globus_usage_$GLOBUS_FLAVOR_NAME,
-             globus_usage_stats_send_array,
-[            LIBS="$LIBS -lglobus_usage_$GLOBUS_FLAVOR_NAME -lglobus_xio_$GLOBUS_FLAVOR_NAME"],
-             AC_DEFINE(NO_GLOBUS_USAGE))
+AC_SEARCH_LIBS(globus_usage_stats_send_array,
+               globus_usage globus_usage_$GLOBUS_FLAVOR_NAME, ,
+               AC_DEFINE(NO_GLOBUS_USAGE))
 dnl
 dnl Check for globus_gsi_proxy_handle_set_extensions
 dnl
-AC_CHECK_LIB(globus_gsi_proxy_core_$GLOBUS_FLAVOR_NAME,
-             globus_gsi_proxy_handle_set_extensions,
-             AC_DEFINE(HAVE_GLOBUS_GSI_PROXY_HANDLE_SET_EXTENSIONS))
+AC_SEARCH_LIBS(globus_gsi_proxy_handle_set_extensions,
+               globus_gsi_proxy_core globus_gsi_proxy_core_$GLOBUS_FLAVOR_NAME, 
+               AC_DEFINE(HAVE_GLOBUS_GSI_PROXY_HANDLE_SET_EXTENSIONS))
 dnl
 dnl Check for OCSP
 dnl

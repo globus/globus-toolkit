@@ -5,7 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.1 XX Xxx 2010
-  - ...
+  - Fix configure script check for non-flavored globus_usage and
+    globus_gsi_proxy_core libraries for Fedora/EPEL RPM compatibility
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6897)
 
 v5.0 4 Dec 2009
   - add Globus Usage Metrics to the myproxy-server
