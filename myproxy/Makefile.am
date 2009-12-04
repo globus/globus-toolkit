@@ -197,7 +197,7 @@ myproxy_admin_change_pass_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PG
 
 pkgdata_DATA = README INSTALL myproxy-server.config \
                LICENSE LICENSE.sasl LICENSE.netbsd \
-               LICENSE.safefile LICENSE.pubcookie \
+               LICENSE.safefile LICENSE.pubcookie LICENSE.globus \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron myproxy-crl.cron myproxy-get-trustroots.cron \
@@ -208,7 +208,7 @@ pkgdata_DATA = README INSTALL myproxy-server.config \
                myproxy-cert-checker myproxy-certreq-checker
 
 EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
-               LICENSE.safefile LICENSE.pubcookie \
+               LICENSE.safefile LICENSE.pubcookie LICENSE.globus \
                VERSION PROTOCOL \
                myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
