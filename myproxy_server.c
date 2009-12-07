@@ -823,6 +823,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
        due to a timing issue */
     send_response(attrs, server_response, client.name, 1 /* ignore net errors */);
 
+    if (server_response->trusted_certs) {
+        context->usage.trustroots_sent = 1;
+    }
+
     /* Log request */
     myproxy_log("Client %s disconnected", client.name);
 
