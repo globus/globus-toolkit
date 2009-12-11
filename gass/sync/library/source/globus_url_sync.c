@@ -264,10 +264,32 @@ globus_url_sync(
     }
 
     /* Copy URL structs to char* buffers */
-    globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
-    globus_i_url_sync_log_debug("source: %s\n", source_str);
-    globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
-    globus_i_url_sync_log_debug("destination: %s\n", destination_str);
+	switch(source_url->scheme_type) {
+		case GLOBUS_URL_SCHEME_GSIFTP:
+			globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
+			globus_i_url_sync_log_debug("source: %s\n", source_str);
+			break;
+		case GLOBUS_URL_SCHEME_FILE:
+			globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
+			globus_i_url_sync_log_debug("source: %s ('file' not currrently supported)\n", source_str);
+			/* fall through */
+		default:
+			return globus_error_put(
+				GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("source scheme"));
+	}
+	switch (destination_url->scheme_type) {
+		case GLOBUS_URL_SCHEME_GSIFTP:
+			globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
+			globus_i_url_sync_log_debug("destination: %s\n", destination_str);
+			break;
+		case GLOBUS_URL_SCHEME_FILE:		
+			globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
+			globus_i_url_sync_log_debug("destination: %s ('file' not currrently supported)\n", destination_str);
+			/* fall through */
+	default:
+			return globus_error_put(
+				GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("destination scheme"));
+	}
 
     /* Populate handle with caller's settings */
     globus_i_url_sync_handle_lock(handle);
@@ -673,60 +695,67 @@ globus_l_url_sync_url2str(
 
     pstr = buf;
 
-    /* Copy scheme */
-    size = strlen(url->scheme);
-    if (len <= size)
-        return NULL;
-    strncpy(pstr, url->scheme, len);
-    pstr += size;
-    len -= size;
-
-    /* Copy "://" */
-    size = strlen("://");
-    if (len <= size)
-        return NULL;
-    strncpy(pstr, "://", len);
-    pstr += size;
-    len -= size;
-
-    /* Copy Host */
-    size = strlen(url->host);
-    if (len <= size)
-        return NULL;
-    strncpy(pstr, url->host, len);
-    pstr += size;
-    len -= size;
-
-    /* Copy Port */
-    /*
-    size = 6;
-    if (len <= size)
-        return NULL;
-    itoa(url->port, pstr, 10);
-    size = strlen(pstr);
-    pstr += size;
-    len -= size;
-    */
-
-    /* Copy "/" */
-    /*
-    size = strlen("/");
-    if (len <= size)
-        return NULL;
-    strncpy(pstr, "/", len);
-    pstr += size;
-    len -= size;
-    */
-    
-    /* Copy Path */
-    size = strlen(url->url_path);
-    if (len <= size)
-        return NULL;
-    strncpy(pstr, url->url_path, len);
-    pstr += size;
-    len -= size;
-
+	/* Copy scheme and "://" */
+	if (url->scheme != NULL) {
+		size = strlen(url->scheme)+3;
+		if (len <= size)
+			return NULL;
+		globus_libc_snprintf(pstr, len, "%s://", url->scheme);
+		pstr += size;
+		len -= size;
+	} else {
+		return NULL;
+	}
+	
+	/* Copy Host */
+	if (strcmp(url->scheme, "gsiftp") == 0) {
+		if (url->host != NULL) {
+			size = strlen(url->host);
+			if (len <= size)
+				return NULL;
+			strncpy(pstr, url->host, len);
+			pstr += size;
+			len -= size;
+			
+			/* Copy ":" and Port */
+			if (url->port != 0) {
+				size = 7;
+				if (len <= size)
+					return NULL;
+				globus_libc_snprintf(pstr, len, ":%d", url->port);
+				size = strlen(pstr);
+				pstr += size;
+				len -= size;
+			}
+		} else {
+			return NULL;
+		}	
+	}
+	
+	/* Copy Path */
+	if (url->url_path != NULL) {
+		char *prefix = "";
+		
+		/* If path is relative, start it with "/~". */
+		if ((strncmp(url->url_path, "//", 2) != 0) && 
+			(strncmp(url->url_path, "/~", 2) != 0)) {
+			if ((strncmp(url->url_path, "~", 1) == 0)) {
+				prefix = "/";
+			} else if ((strncmp(url->url_path, "/", 1) == 0)) {
+				prefix = "/~";
+			}
+		}
+		size = strlen(url->url_path) + strlen(prefix);
+		if (len <= size)
+			return NULL;
+		globus_libc_snprintf(pstr, len, "%s%s", prefix, url->url_path);
+		pstr += size;
+		len -= size;
+	} else {
+		return NULL;
+	}
+	
     return buf;
-}
+} /* globus_l_url_sync_url2str */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
