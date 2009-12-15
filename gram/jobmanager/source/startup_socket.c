@@ -1623,6 +1623,8 @@ globus_l_gram_startup_socket_callback(
                         -rc,
                         "Request start failed",
                         globus_gram_protocol_error_string(rc));
+                globus_gram_job_manager_request_free(request);
+                request = NULL;
             }
         }
 

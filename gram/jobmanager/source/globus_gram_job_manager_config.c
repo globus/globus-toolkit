@@ -329,6 +329,10 @@ globus_gram_job_manager_config_init(
             }
             config->usage_targets = strdup(argv[++i]);
         }
+        else if (strcmp(argv[i], "-enable-callout") == 0)
+        {
+            config->enable_callout = GLOBUS_TRUE;
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -365,6 +369,7 @@ globus_gram_job_manager_config_init(
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
                     "\t-usagestats-targets <host:port>[!<default | all>],...\n"
+                    "\t-enable-callout\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"

@@ -29,7 +29,14 @@
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
 
-static int globus_l_gram_swap_out_delay = 60;
+/* This value (in seconds) is the length of time after a job hits a waiting
+ * for SEG state before freeing its memory
+ */
+static int globus_l_gram_swap_out_delay = 10;
+/*
+ * This value (in seconds) is the length of time after all jobs have been
+ * completed that the job manager will terminate
+ */
 static int globus_l_gram_grace_period_delay = 60;
 
 typedef struct globus_gram_job_id_ref_s
@@ -478,12 +485,17 @@ globus_gram_job_manager_log(
  * Add a job request to a reference-counting hashtable
  *
  * Adds the job request to the reference-counting hashtable with an initial
- * reference count of 1. Calls to globus_gram_job_manager_add_reference() and
+ * reference count of 0. Calls to globus_gram_job_manager_add_reference() and
  * globus_gram_job_manager_remove_reference() will increase and decrease the
  * reference count. Callbacks and job status queries, etc should call those
- * to dereference the job's unique key to a globus_gram_jobmanager_request_t
- * structure and then release that reference. The final reference should be
- * released when the job terminates or fails.
+ * to dereference the job's unique key to a pointer to a
+ * globus_gram_jobmanager_request_t structure and then release that reference
+ * when the callback has been completely processed.
+ * If at any time the reference count equals 0, it becomes a candidate to be
+ * swapped out of memory. This can happen when the job is being processed,
+ * after a submit to LRM but while waiting for the SEG to change
+ * state. When the job is completed and the reference count equals 0, the
+ * job reference stub is removed.
  *
  * @param manager
  *     Job manager state
@@ -537,8 +549,23 @@ globus_gram_job_manager_add_request(
         goto stop;
     }
 
-    ref = malloc(sizeof(globus_gram_job_manager_ref_t));
+    ref = globus_hashtable_lookup(&manager->request_hash, (void *) key);
+    if (ref != NULL)
+    {
+        if (ref->request != NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
 
+            goto ref_already_exists;
+        }
+        else
+        {
+            ref->request = request;
+            goto ref_already_exists;
+        }
+    }
+
+    ref = malloc(sizeof(globus_gram_job_manager_ref_t));
     if (ref == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -565,6 +592,8 @@ globus_gram_job_manager_add_request(
     ref->cleanup_timer = GLOBUS_NULL_HANDLE;
     ref->job_state = request->status;
     ref->failure_code = request->failure_code;
+    ref->exit_code = request->exit_code;
+    ref->status_count = 0;
 
     ref->key = strdup(key);
     if (ref->key == NULL)
@@ -593,6 +622,54 @@ globus_gram_job_manager_add_request(
     ref->request = request;
     ref->reference_count = 0;
 
+    rc = globus_hashtable_insert(
+            &manager->request_hash,
+            ref->key,
+            ref);
+
+ref_already_exists:
+    if(rc == GLOBUS_SUCCESS)
+    {
+        manager->usagetracker->count_current_jobs++;
+
+        if(manager->usagetracker->count_peak_jobs < 
+            manager->usagetracker->count_current_jobs)
+        {
+            manager->usagetracker->count_peak_jobs = 
+                manager->usagetracker->count_current_jobs;
+        }
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        if (globus_hashtable_lookup(
+                &manager->request_hash,
+                ref->key) == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        }
+        else
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+        }
+
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.add_request.end "
+                "level=ERROR "
+                "gramid=%s "
+                "status=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                key,
+                -rc,
+                "Error inserting request into hashtable",
+                globus_gram_protocol_error_string(rc));
+
+        goto insert_failed;
+    }
     if (manager->grace_period_timer != GLOBUS_NULL_HANDLE)
     {
         globus_callback_unregister(
@@ -622,44 +699,6 @@ globus_gram_job_manager_add_request(
             goto grace_period_expired;
         }
         manager->grace_period_timer = GLOBUS_NULL_HANDLE;
-    }
-    rc = globus_hashtable_insert(
-            &manager->request_hash,
-            ref->key,
-            ref);
-
-    if(rc == GLOBUS_SUCCESS)
-    {
-        manager->usagetracker->count_current_jobs++;
-
-        if(manager->usagetracker->count_peak_jobs < 
-            manager->usagetracker->count_current_jobs)
-        {
-            manager->usagetracker->count_peak_jobs = 
-                manager->usagetracker->count_current_jobs;
-        }
-    }
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.add_request.end "
-                "level=ERROR "
-                "gramid=%s "
-                "status=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                key,
-                -rc,
-                "Error inserting request into hashtable",
-                globus_gram_protocol_error_string(rc));
-
-        goto insert_failed;
     }
     if (rc != GLOBUS_SUCCESS)
     {
@@ -800,20 +839,18 @@ globus_gram_job_manager_remove_reference(
 
         if (ref->reference_count == 0)
         {
-            /* Shouldn't need to lock the request here---nothing else
+            /* Don't need to lock the request here---nothing else
              * refers to it
              */
             request = ref->request;
+
+            /* If the request is complete we can destroy it
+             */
             if (request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
                 request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE ||
-                (request->jobmanager_state == 
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP &&
-                 manager->stop == GLOBUS_TRUE))
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
             {
-                request->manager->usagetracker->count_current_jobs--;
-
                 globus_gram_job_manager_log(
                         manager,
                         GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
@@ -867,14 +904,26 @@ globus_gram_job_manager_remove_reference(
                 free(ref->key);
                 free(ref);
             }
-            else if (request->jobmanager_state ==
+            /* If we're waiting for a SEG event or stopped in a way that we
+             * know the job is completed, we can swap the job out
+             */
+            else if ((request->jobmanager_state ==
                         GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2 &&
-                    request->manager->seg_started)
+                    request->config->seg_module &&
+                    request->manager->seg_started &&
+                    request->jobmanager_state !=
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_STOP) ||
+                     (request->jobmanager_state == 
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_STOP &&
+                        (manager->stop == GLOBUS_TRUE ||
+                         manager->seg_started == GLOBUS_FALSE || 
+                         request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
+                  request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)))
             {
                 globus_reltime_t        delay;
                 globus_result_t         result;
 
-                /* short for testing */
+                /* We can swap out if we waiting for SEG events */
                 GlobusTimeReltimeSet(delay, globus_l_gram_swap_out_delay, 0);
                 globus_gram_job_manager_log(
                         manager,
@@ -1436,7 +1485,8 @@ globus_gram_job_manager_set_status(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
     globus_gram_protocol_job_state_t    state,
-    int                                 failure_code)
+    int                                 failure_code,
+    int                                 exit_code)
 {
     globus_gram_job_manager_ref_t *     ref;
     int                                 rc = GLOBUS_SUCCESS;
@@ -1483,6 +1533,7 @@ globus_gram_job_manager_set_status(
 
     ref->job_state = state;
     ref->failure_code = failure_code;
+    ref->exit_code = exit_code;
 
     globus_gram_job_manager_log(
             manager,
@@ -1528,7 +1579,8 @@ globus_gram_job_manager_get_status(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
     globus_gram_protocol_job_state_t *  state,
-    int *                               failure_code)
+    int *                               failure_code,
+    int *                               exit_code)
 {
     int                                 rc = GLOBUS_SUCCESS;
 
@@ -1544,8 +1596,10 @@ globus_gram_job_manager_get_status(
         goto not_found;
     }
 
+    ref->status_count++;
     *state = ref->job_state;
     *failure_code = ref->failure_code;
+    *exit_code = ref->exit_code;
 
 not_found:
     GlobusGramJobManagerUnlock(manager);
@@ -2202,6 +2256,7 @@ globus_l_gram_ref_swap_out(
     if (ref->reference_count == 0)
     {
         request = ref->request;
+        request->manager->usagetracker->count_current_jobs--;
 
         globus_gram_job_manager_request_log(
                 request,
@@ -2304,6 +2359,8 @@ globus_l_gram_add_reference_locked(
                 goto request_init_failed;
             }
             ref->request->jobmanager_state = ref->request->restart_state;
+            ref->request->job_stats.status_count += ref->status_count;
+            ref->status_count = 0;
         }
         if (request)
         {

@@ -321,6 +321,11 @@ typedef struct
      * jobs for the same LRM with different configurations
      */
     char *                              service_tag;
+    /**
+     * Boolean flag indicating whether to enable GSI callouts
+     * on GRAM operations or not. Default to no.
+     */
+    globus_bool_t                       enable_callout;
 }
 globus_gram_job_manager_config_t;
 
@@ -455,7 +460,7 @@ globus_gram_job_manager_t;
 /**
  * Job Manager Request
  */
-typedef struct
+typedef struct globus_gram_job_manager_request_s
 {
     /** Link to LRM-specific configuration */
     globus_gram_job_manager_config_t *  config;
@@ -718,8 +723,8 @@ typedef struct globus_gram_job_manager_ref_s
     globus_gram_job_manager_t *         manager;
     /* Pointer to the request */
     globus_gram_jobmanager_request_t *  request;
-    /* Count of callbacks, queries, etc that have access to this now.
-     * When 0, the request is eligible for removal
+    /* Count of callbacks, queries, etc that refer to this job.
+     * When 0, the request is eligible for removal from memory.
      */
     int                                 reference_count;
     /* Timer to delay cleaning up unreferenced requests */
@@ -728,6 +733,12 @@ typedef struct globus_gram_job_manager_ref_s
     globus_gram_protocol_job_state_t    job_state;
     /* Current job failure code, for status updates without having to reload */
     int                                 failure_code;
+    /* Job exit code */
+    int                                 exit_code;
+    /* Number of times status query was processed while the job is swapped
+     * out
+     */
+    int                                 status_count;
 }
 globus_gram_job_manager_ref_t;
 
@@ -1021,10 +1032,18 @@ globus_gram_job_manager_gsi_relocate_proxy(
 
 int
 globus_gram_job_manager_call_authz_callout(
+    globus_gram_job_manager_config_t *  config,
     gss_ctx_id_t                        request_context,
     gss_ctx_id_t                        authz_context,
     const char *                        uniq_id,
     const globus_rsl_t *                rsl,
+    const char *                        auth_type);
+
+int
+globus_gram_job_manager_authz_query(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_protocol_handle_t       handle,
+    const char *                        uri,
     const char *                        auth_type);
 
 /* globus_gram_job_manager_query.c */
@@ -1147,7 +1166,7 @@ globus_gram_job_manager_rsl_evaluate_value(
 int
 globus_gram_job_manager_rsl_eval_string(
     globus_symboltable_t *              symbol_table,
-    char *                              string,
+    const char *                        string,
     char **                             value_string);
 
 int
@@ -1391,14 +1410,16 @@ globus_gram_job_manager_set_status(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
     globus_gram_protocol_job_state_t    state,
-    int                                 failure_code);
+    int                                 failure_code,
+    int                                 exit_code);
 
 int
 globus_gram_job_manager_get_status(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
     globus_gram_protocol_job_state_t *  state,
-    int *                               failure_code);
+    int *                               failure_code,
+    int *                               exit_code);
 
 void
 globus_gram_job_manager_stop_all_jobs(

@@ -996,7 +996,7 @@ out:
 int
 globus_gram_job_manager_rsl_eval_string(
     globus_symboltable_t *              symbol_table,
-    char *                              string,
+    const char *                        string,
     char **                             value_string)
 {
     globus_rsl_value_t *                value;
@@ -1005,7 +1005,7 @@ globus_gram_job_manager_rsl_eval_string(
     *value_string = NULL;
 
     rc = globus_gram_job_manager_rsl_parse_value(
-            string,
+            (char *) string,
             &value);
 
     if(rc != GLOBUS_SUCCESS)

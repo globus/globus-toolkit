@@ -611,11 +611,12 @@ globus_l_gram_deliver_event(
             "gramid=%s "
             "jobid=\"%s\" "
             "state=%d "
-            "jmstate=%d\n",
+            "jmstate=%s\n",
             request->job_contact_path,
             event->job_id,
             event->event_type,
-            request->jobmanager_state);
+            globus_i_gram_job_manager_state_strings[
+                request->jobmanager_state]);
 
     /* Keep the state file's timestamp up to date so that
      * anything scrubbing the state files of old and dead
@@ -638,7 +639,7 @@ globus_l_gram_deliver_event(
                 "gramid=%s "
                 "jobid=\"%s\" "
                 "state=%d "
-                "jmstate=%d "
+                "jmstate=%s "
                 "status=%d "
                 "msg=\"%s\" "
                 "reason=\"%s\" "
@@ -646,7 +647,8 @@ globus_l_gram_deliver_event(
                 request->job_contact_path,
                 event->job_id,
                 event->event_type,
-                request->jobmanager_state,
+                globus_i_gram_job_manager_state_strings[
+                        request->jobmanager_state],
                 -rc,
                 "Fifo enqueue failed",
                 globus_gram_protocol_error_string(rc));
@@ -688,13 +690,13 @@ globus_l_gram_deliver_event(
             "gramid=%s "
             "jobid=\"%s\" "
             "state=%d "
-            "jmstate=%d "
+            "jmstate=%s "
             "status=%d "
             "\n",
             request->job_contact_path,
             event->job_id,
             event->event_type,
-            request->jobmanager_state,
+            globus_i_gram_job_manager_state_strings[request->jobmanager_state],
             0);
 
 event_enqueue_failed:

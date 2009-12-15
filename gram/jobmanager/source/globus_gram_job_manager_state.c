@@ -1460,6 +1460,16 @@ globus_gram_job_manager_reply(
                         request ? request->job_contact_path : "",
                         0);
             }
+
+            if (request && !manager->config->enable_callout)
+            {
+                /* Save a some memory by freeing this while the job runs */
+                gss_delete_sec_context(
+                        &minor_status,
+                        &request->response_context,
+                        GSS_C_NO_BUFFER);
+                request->response_context = GSS_C_NO_CONTEXT;
+            }
         }
         else
         {
