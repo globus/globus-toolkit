@@ -887,7 +887,9 @@ globus_l_gram_job_manager_state_machine(
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-        if(request->two_phase_commit != 0 && request->commit_extend != 0)
+        if (request->two_phase_commit != 0 &&
+            request->commit_extend != 0 &&
+            request->failure_code != GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT)
         {
             GlobusTimeReltimeSet(delay_time,
                                  request->commit_extend,
@@ -904,10 +906,13 @@ globus_l_gram_job_manager_state_machine(
                 event_registered = GLOBUS_TRUE;
             }
         }
-        else if(request->two_phase_commit == 0 || !request->client_contacts)
+        else if (request->two_phase_commit == 0 ||
+                 !request->client_contacts ||
+                 request->failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT)
         {
             /* Nothing to do here if we are not doing the two-phase
-             * commit protocol or if we have no client callbacks
+             * commit protocol or if we have no client callbacks or this is
+             * clean up from a failed two-phase commit
              */
             if(request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
@@ -1459,6 +1464,16 @@ globus_gram_job_manager_reply(
                         "\n",
                         request ? request->job_contact_path : "",
                         0);
+            }
+
+            if (request && !manager->config->enable_callout)
+            {
+                /* Save a some memory by freeing this while the job runs */
+                gss_delete_sec_context(
+                        &minor_status,
+                        &request->response_context,
+                        GSS_C_NO_BUFFER);
+                request->response_context = GSS_C_NO_CONTEXT;
             }
         }
         else

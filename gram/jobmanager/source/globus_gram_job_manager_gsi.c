@@ -720,6 +720,7 @@ globus_l_gram_job_manager_proxy_expiration(
 
 int
 globus_gram_job_manager_call_authz_callout(
+    globus_gram_job_manager_config_t *  config,
     gss_ctx_id_t                        request_context,
     gss_ctx_id_t                        authz_context,
     const char *                        uniq_id,
@@ -731,6 +732,11 @@ globus_gram_job_manager_call_authz_callout(
     globus_object_t *                   error;
     char *                              filename;
     globus_callout_handle_t             authz_handle;
+
+    if (! config->enable_callout)
+    {
+        return GLOBUS_SUCCESS;
+    }
 
     result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
     if(result != GLOBUS_SUCCESS)
@@ -824,3 +830,60 @@ conf_filename_failed:
     return rc;
 }
 /* globus_gram_job_manager_call_authz_callout() */
+
+int
+globus_gram_job_manager_authz_query(
+    globus_gram_job_manager_t *         manager,
+    globus_gram_protocol_handle_t       handle,
+    const char *                        uri,
+    const char *                        auth_type)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    gss_ctx_id_t                        context;
+    globus_gram_jobmanager_request_t *  request;
+
+    if (! manager->config->enable_callout)
+    {
+        goto skip_authz;
+    }
+
+    if ((rc = globus_gram_protocol_get_sec_context(
+                handle,
+                &context)) != GLOBUS_SUCCESS)
+    {
+        goto get_sec_context_failed;
+    }
+
+    rc = globus_gram_job_manager_add_reference(
+            manager,
+            uri,
+            "query authz",
+            &request);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto add_reference_failed;
+    }
+
+    rc = globus_gram_job_manager_call_authz_callout(
+            request->config,
+            request->response_context,
+            context,
+            request->uniq_id,
+            request->rsl,
+            auth_type);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto authz_failed;
+    }
+
+authz_failed:
+    globus_gram_job_manager_remove_reference(
+            manager,
+            request->job_contact_path,
+            "query authz");
+add_reference_failed:
+get_sec_context_failed:
+skip_authz:
+    return rc;
+}
+/* globus_gram_job_manager_authz_query() */
