@@ -1033,6 +1033,8 @@ globus_l_sge_parse_events(
 	/* Batch accounting: resources consumed by the job  */
 	if (strstr(fields[1], "acct") == fields[1]) 
 	{
+            char * job_id;
+	    int failed;
 	    /* From the SGE 'reporting' man page: 
 	     * 
 	     * failed: 
@@ -1048,37 +1050,66 @@ globus_l_sge_parse_events(
 	     */
 
 	    /* Lookup the exit status of the job. */
-	    rc = sscanf(fields[13], "%d", &exit_status);
+	    rc = sscanf(fields[13], "%d", &failed);
+	    rc = sscanf(fields[14], "%d", &exit_status);
+
+            job_id = globus_common_create_string(
+                    "%s.%s",
+                    fields[7], nfields > 37 ? fields[37] : "0");
 
 	    /* Return a job failure event if the exit status is non-zero. */
-	    if ( rc >= 0 && exit_status > 0 )
+	    if ( failed != 0)
 	    {
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
 			("New event: job %s has failed with exit status %d.\n", 
-			 fields[7], exit_status));
-		rc = globus_scheduler_event_failed(stamp, fields[7], exit_status);
+			 job_id, exit_status));
+		rc = globus_scheduler_event_failed(stamp, job_id, failed);
 	    }
+	    else
+	    {
+		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
+			("New event: job %s has done with exit status %d.\n", 
+			 job_id, exit_status));
+		rc = globus_scheduler_event_done(stamp, job_id, exit_status);
+	    }
+            free(job_id);
 	}
 	else if (strstr(fields[1], "job_log") == fields[1])
 	{ 
+            char * job_id;
+
 	    /* Job state change. */
 	    if (strstr(fields[3], "pending") == fields[3])
 	    {
+                job_id = globus_common_create_string(
+                        "%s.%s", fields[4], fields[5]);
+
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
-			("New event: job %s now pending at t=%d\n", fields[4],stamp));
-		rc = globus_scheduler_event_pending(stamp, fields[4]);
+			("New event: job %s now pending at t=%d\n",
+                            job_id, stamp));
+		rc = globus_scheduler_event_pending(stamp, job_id);
+                free(job_id);
 	    }
 	    else if (strstr(fields[3], "delivered") == fields[3])
 	    {
+                job_id = globus_common_create_string(
+                        "%s.%s", fields[4], fields[5]);
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
-			("New event: job %s now active at t=%d\n", fields[4],stamp));
-		rc = globus_scheduler_event_active(stamp, fields[4]);
+			("New event: job %s now active at t=%d\n",
+                            job_id, stamp));
+		rc = globus_scheduler_event_active(stamp, job_id);
+                free(job_id);
 	    }
 	    else if (strstr(fields[3], "deleted") == fields[3])
 	    {
+                job_id = globus_common_create_string(
+                        "%s.%s", fields[4], fields[5]);
 		SEG_SGE_DEBUG(SEG_SGE_DEBUG_INFO,
-			("New event: job %s now completed at t=%d\n", fields[4],stamp));
-		rc = globus_scheduler_event_done(stamp, fields[4], 0);
+			("New event: job %s now completed at t=%d\n",
+                        job_id,
+                        stamp));
+		rc = globus_scheduler_event_done(stamp, job_id, 0);
+                free(job_id);
 	    }
 	}
 
