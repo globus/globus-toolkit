@@ -20,12 +20,14 @@ use Globus::Core::Paths;
 use IO::File;
 use Config;
 
+use strict;
+
 package Globus::GRAM::JobManager::sge;
 
-@ISA = qw(Globus::GRAM::JobManager);
+our @ISA = qw(Globus::GRAM::JobManager);
 
 
-my ($qsub, $qstat, $qdel, $qselect, $qhost, $qconf, $qacct,
+my ($qsub, $qstat, $qdel,
     $mpirun, $sun_mprun,$mpi_pe, $supported_job_types,
     $cat,
     $SGE_ROOT, $SGE_CELL,
@@ -36,10 +38,6 @@ BEGIN
     $qsub        = '@QSUB@';
     $qstat       = '@QSTAT@';
     $qdel        = '@QDEL@';
-    $qselect     = '@QSELECT@';
-    $qhost       = '@QHOST@';
-    $qconf       = '@QCONF@';
-    $qacct       = '@QACCT@';
     #
     $mpirun      = '@MPIRUN@';
     $sun_mprun   = '@SUN_MPRUN@';
@@ -75,10 +73,20 @@ sub submit
     my $errfile = "";
     my $queue;
     my $job_id;
-    my @arguments;
+    my @arguments = ();
     my $email_when = "";
-    my %library_vars;
     my @environment; 
+    my $qsub_err_file;
+    my $args;
+    my @new_env;
+    my $chos;
+    my $max_memory;
+    my $cpu_h;
+    my $cpu_m;
+    my $cpu_time;
+    my $wall_time;
+    my $wall_h;
+    my $wall_m;
 
     $self->log("Entering SGE submit");
 
@@ -309,10 +317,25 @@ sub submit
       #####
       # It's a single job and we use job arrays
       #
-      $sge_job_script->print("#\$ -o "
-                             . $description->stdout() . ".\$TASK_ID\n");
-      $sge_job_script->print("#\$ -e "
-                             . $description->stderr() . ".\$TASK_ID\n");
+      if ($description->stdout() ne '/dev/null')
+      {
+          $sge_job_script->print("#\$ -o "
+                                 . $description->stdout() . ".\$TASK_ID\n");
+      }
+      else
+      {
+          $sge_job_script->print("#\$ -o /dev/null\n");
+      }
+
+      if ($description->stderr() ne '/dev/null')
+      {
+          $sge_job_script->print("#\$ -e "
+                                 . $description->stderr() . ".\$TASK_ID\n");
+      }
+      else
+      {
+          $sge_job_script->print("#\$ -e /dev/null\n");
+      }
     }
     else
     {
@@ -324,14 +347,6 @@ sub submit
     #####
     # Constructing the environment variable
     #
-
-    $library_vars{LD_LIBRARY_PATH} = 0;
-    if($Config{osname} eq 'irix')
-    {
-        $library_vars{LD_LIBRARYN32_PATH} = 0;
-        $library_vars{LD_LIBRARY64_PATH} = 0;
-    }
-
 
     @environment = $description->environment();
 
@@ -368,11 +383,6 @@ sub submit
         if(!ref($tuple) || scalar(@$tuple) != 2)
         {
             return Globus::GRAM::Error::RSL_ENVIRONMENT();
-        }
-        if(exists($library_vars{$tuple->[0]}))
-        {
-            $tuple->[1] .= ":$library_string";
-            $library_vars{$tuple->[0]} = 1;
         }
 
         push(@new_env, $tuple->[0] . "=" . $tuple->[1]);
@@ -412,16 +422,6 @@ sub submit
         }
 
     }
-
-    foreach (keys %library_vars)
-    {
-        if($library_vars{$_} == 0)
-        {
-            push(@new_env, $_ . "=" . $library_path);
-            $sge_job_script->print("$_=$library_path;\n" . "export $_;\n");
-        }
-    }
-
 
     #####
     # Load SGE settings
@@ -561,11 +561,6 @@ sub submit
     $self->log("SGE job script successfully built! :-)");
     $sge_job_script->close();
 
-    if($description->logfile() ne "")
-    {
-        $errfile = "2>>" . $description->logfile();
-    }
-
     #####
     # Submitting a job
     #
@@ -580,7 +575,8 @@ sub submit
       $ENV{CHOS}=$chos;
     }
 
-    chomp($job_id = `$qsub $sge_job_script_name`);
+    $qsub_err_file = $self->job_dir() . "/qsub.err";
+    chomp($job_id = `$qsub $sge_job_script_name 2> $qsub_err_file`);
 
     if($? == 0)
     {
@@ -590,19 +586,44 @@ sub submit
         $job_id = (split(/\s+/, $job_id))[2];
 
         # in the case we used job arrays
-        if ($job_id =~ m/\./)
+        if ($job_id =~ m/(\d+)\.(\d+)-(\d+)/)
         {
-            $job_id = $`;
+            my $task_root = $1;
+            my $task_min = $2;
+            my $task_max = $3;
+            my $i;
+
+            $job_id = "";
+
+            $job_id = "$task_root.$task_min";
+            for ($i = int($task_min) + 1; $i <= $task_max; $i++)
+            {
+                $job_id .= ",$task_root.$i"
+            }
+        }
+        else
+        {
+            $job_id .= ".0";
         }
 	return {JOB_ID => $job_id,
 	        JOB_STATE => Globus::GRAM::JobState::PENDING };
     }
     else
     {
+      my $stderr = '';
       $self->log("  ERROR: job submission failed");
+      local(*ERR);
+      open(ERR, "<$qsub_err_file");
+      while(<ERR>)
+      {
+          $stderr .= $_;
+      }
+      $stderr =~ s/\n/\\n/g;
+      $self->log("qsub stderr: $stderr");
+
       if ($description->project())
       {
-        $self->log("  check if the project specified does exist");
+        $self->log("check if the project specified does exist");
       }
     }
 
@@ -629,6 +650,9 @@ sub poll
     my $job_err = $description->stderr();
 
     $self->log("polling job $job_id");
+
+    # strip off task list
+    $job_id =~ s/\..*//;
 
     my ($tries)=0;
     my ($notexist);
@@ -723,9 +747,10 @@ sub cancel
     my $description = $self->{JobDescription};
     my $job_id = $description->jobid();
 
-    $ENV{"SGE_ROOT"} = $SGE_ROOT;
-
     $self->log("cancel job $job_id");
+
+    # strip off task list
+    $job_id =~ s/\..*//;
 
     system("$qdel $job_id >/dev/null 2>/dev/null");
 
