@@ -18,7 +18,7 @@ Utilities and objects for processing the DNS cache table.
 
 import socket
 
-class DNSCache():
+class DNSCache(object):
     """
     DNS Cache
     """

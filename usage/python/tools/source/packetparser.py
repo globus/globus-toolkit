@@ -32,6 +32,7 @@ import rftpacket
 import drspacket
 import mdsaggregatorpacket
 import ogsadaipacket
+import myproxypacket
 import gram5packet
 
 __packet_classifier = \
@@ -49,6 +50,7 @@ __packet_classifier = \
     (8,0): mpigpacket.MPIGPacket,
     (9,0): drspacket.DRSPacket,
     (10,1): ogsadaipacket.OGSADAIPacket,
+    (11,0): myproxypacket.MyProxyPacket,
     (20,0): gram5packet.GRAM5JMPacket,
     (20,1): gram5packet.GRAM5JobPacket
 }

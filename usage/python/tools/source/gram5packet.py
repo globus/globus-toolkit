@@ -69,6 +69,22 @@ class GRAM5Packet(CUsagePacket):
         CUsagePacket.upload_many(dbclass, cursor, packets)
         
     def get_job_manager_id(self, cursor):
+        """
+        Determine the job manager key which matches the host, version,
+        LRM, and configuration in this packet. If this job manager instance
+        is not defined in the table, attempt to insert it into the
+        gram5_job_managers table and return that id.
+
+        Arguments:
+        self -- A gram5packet.GRAM5Packet object
+        cursor -- An SQL cursor to use if we need to insert this job manager
+        into the table
+
+        Returns:
+        An integer key to the gram5_job_managers table or None if the job
+        manager is not defined or it can't be parsed. As a side effect, this
+        key may be newly defined and cached.
+        """
         host_id = self.get_host_id()
         version_id = self.get_version_id(cursor)
         lrm_id = self.get_lrm_id(cursor)
@@ -95,6 +111,22 @@ class GRAM5Packet(CUsagePacket):
         return job_manager_id
 
     def get_job_manager_instance_id(self, cursor):
+        """
+        Determine the job manager instance key which matches the job manager
+        start type, host and configuration in this packet. If this job manager
+        instance is not defined in the table, attempt to insert it into the
+        gram5_job_manager_instances table and return that id.
+
+        Arguments:
+        self -- A gram5packet.GRAM5Packet object
+        cursor -- An SQL cursor to use if we need to insert this job manager
+        instance into the table
+
+        Returns:
+        An integer key to the gram5_job_managers table or None if the job
+        manager is not defined or it can't be parsed. As a side effect, this
+        key may be newly defined and cached.
+        """
         job_manager_id = self.get_job_manager_id(cursor)
         uuid = self.data.get('B')
         start_time = GRAM5Packet.db_class.TimestampFromTicks(
@@ -116,6 +148,22 @@ class GRAM5Packet(CUsagePacket):
         return job_manager_instance_id
 
     def get_job_manager_instance_id_by_uuid(self, cursor):
+        """
+        Determine the job manager instance key which matches the job manager
+        UUID and start time. If this instance is not defined in the table,
+        attempt to insert it into the
+        gram5_job_manager_instances table and return that id.
+
+        Arguments:
+        self -- A gram5packet.GRAM5Packet object
+        cursor -- An SQL cursor to use if we need to insert this job manager
+        instance into the table
+
+        Returns:
+        An integer key to the gram5_job_manager_instances table or None if the
+        job manager is not defined or it can't be parsed. As a side effect,
+        this key may be newly defined and cached.
+        """
         uuid = self.data.get('B')
         start_time = None
         if self.data.get('A') != None:
@@ -160,6 +208,22 @@ class GRAM5Packet(CUsagePacket):
                 self.data.get("HOSTNAME"))
 
     def get_lrm_id(self, cursor):
+        """
+        Determine the LRM key which matches the LRM 
+        in this packet. If this LRM is not defined in the cache,
+        attempt to insert it into the gram5_lrms table and return that id.
+
+        Arguments:
+        self -- A gram5packet.GRAM5Packet object
+        cursor -- An SQL cursor to use if we need to insert this hostname into
+        the table
+
+        Returns:
+        An integer key to the dns_cache table or None if the version is
+        not defined or can't be parsed. As a side effect, this
+        key may be newly defined and cached.
+
+        """
         lrm_id = None
         lrm = self.data.get("E")
 
@@ -458,8 +522,8 @@ class GRAM5Packet(CUsagePacket):
             SELECT id, jobtype
             FROM gram5_job_types""")
         for row in cursor:
-            [id, jobtype] = row
-            GRAM5Packet.job_type_ids[jobtype] = id
+            [jobtypeid, jobtype] = row
+            GRAM5Packet.job_type_ids[jobtype] = jobtypeid
 
     @staticmethod
     def __init_clients(cursor):
@@ -484,9 +548,9 @@ class GRAM5Packet(CUsagePacket):
             SELECT id, host_id, dn
             FROM gram5_client""")
         for row in cursor:
-            [id, host_id, dn] = row
-            values = (host_id, dn)
-            GRAM5Packet.clients[values] = id
+            [clientid, host_id, clientdn] = row
+            values = (host_id, clientdn)
+            GRAM5Packet.clients[values] = clientid
 
     @staticmethod
     def __init_executables(cursor):
@@ -511,11 +575,22 @@ class GRAM5Packet(CUsagePacket):
             SELECT id, executable, arguments
             FROM gram5_executable""")
         for row in cursor:
-            [id, executable, arguments] = row
-            values = (id, executable, arguments)
-            GRAM5Packet.executables[values] = id
+            [exeid, executable, arguments] = row
+            values = (exeid, executable, arguments)
+            GRAM5Packet.executables[values] = exeid
 
     def get_lifetime(self):
+        """
+        Compute the lifetime of the job manager instance as the delta between
+        the job manager start time and the packet send time.
+
+        Arguments:
+        self -- The packet containing timestamp data
+
+        Returns:
+        A string of the form "X seconds" containing the difference between
+        those times as floats.
+        """
         start_time = float(self.data.get('A'))
         send_time = self.send_time_ticks
         return "%f seconds" % (send_time - start_time)
@@ -549,8 +624,8 @@ class GRAM5Packet(CUsagePacket):
 
         attribute_list = []
 
-        for (name, id) in GRAM5Packet.__rsl_attributes.items():
-            if (bitfield & (2**int(id))) != 0:
+        for (name, rslid) in GRAM5Packet.__rsl_attributes.items():
+            if (bitfield & (2**int(rslid))) != 0:
                 attribute_list.append(name)
         attribute_list.sort()
 
@@ -724,13 +799,13 @@ class GRAM5JobPacket(GRAM5Packet):
             active_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
                     float(self.data.get("f")))
         if self.data.get('g') is not None and float(self.data.get('g')) > 1:
-             failed_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            failed_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
                     float(self.data.get("g")))
         if self.data.get('h') is not None and float(self.data.get('h')) > 1:
-             file_stage_out_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            file_stage_out_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
                     float(self.data.get("h")))
         if self.data.get('i') is not None and float(self.data.get('i')) > 1:
-             done_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            done_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
                     float(self.data.get("i")))
         return (
             self.get_job_id(GRAM5Packet.cursor),
@@ -766,7 +841,7 @@ class GRAM5JobPacket(GRAM5Packet):
         executable_id = self.get_executable_id(cursor)
         rsl_bitfield = self.get_rsl_bitfield(cursor)
         gram5_job_file_info = self.get_file_info(cursor)
-        jobtype = self.get_job_type(cursor);
+        jobtype = self.get_job_type(cursor)
 
         values = (
             job_manager_id,
@@ -805,7 +880,7 @@ class GRAM5JobPacket(GRAM5Packet):
         user_dn = self.data.get('9')
 
         if client_ip is not None:
-            [address, port] = client_ip.split(':')
+            address = client_ip.split(':')[0]
             host_id = GRAM5Packet.dns_cache.get_host_id(address)
 
         values = (host_id, user_dn)
@@ -933,13 +1008,28 @@ class GRAM5JobPacket(GRAM5Packet):
         return file_info_id
 
     def get_job_type(self, cursor):
+        """
+        Determine the job type key which matches the job type used in this
+        packet. If this job type is not defined in the table, attempt to insert
+        it into the gram5_job_types table and return that id.
+
+        Arguments:
+        self -- A gram5packet.GRAM5Packet object
+        cursor -- An SQL cursor to use if we need to insert this job type into
+        the table
+
+        Returns:
+        An integer key to the gram5_job_types table or None if the job type
+        is not defined or can't be parsed. As a side effect, this
+        key may be newly defined and cached.
+        """
         job_type_id = None
 
         job_type = self.data.get('H')
 
         values = (job_type,)
 
-        job_type_id = GRAM5Packet.job_type_ids.get(job_type);
+        job_type_id = GRAM5Packet.job_type_ids.get(job_type)
 
         if job_type_id == None:
             cursor.execute('''

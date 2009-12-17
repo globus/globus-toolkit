@@ -839,3 +839,23 @@ COPY gram5_error_codes(error_code, name) FROM STDIN;
 167	GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_USER_NAME
 168	GLOBUS_GRAM_PROTOCOL_ERROR_LAST
 \.
+
+CREATE TABLE myproxy_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time TIMESTAMP,
+    ip_address INET,
+    hostname VARCHAR(64) NOT NULL,
+    myproxy_major_version SMALLINT,
+    myproxy_minor_version SMALLINT,
+    task_code SMALLINT, -- 0=Get, 1=Put, 2=Info, 3=Destroy, 4=ChPasswd, 5=StoreEntCred, 6=RetrEntCred, 7=GetTrustRoots
+    task_return_code BOOLEAN,
+    req_lifetime INTERVAL, -- the LIFETIME= value in the protocol request
+    cred_lifetime INTERVAL, -- the actual lifetime of the credential
+    info_bits BIT VARYING(32), -- Bits 1=PAM, 2=SASL, 3=Credential passphrase, 4=trusted retriever (this is a certificate-based authentication), 5=trusted renewer (this is the certificate authorization in the authorization challenge), 6=pubcookie_used, 7=trustroots_requested, 8=trustroots_requested, 9=ca_used_for_GET
+    client_ip INET,
+    user_name VARCHAR(128),
+    user_dn VARCHAR(128),
+    PRIMARY KEY (id)
+);

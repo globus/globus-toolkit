@@ -23,6 +23,7 @@ usage_modules = \
     packetparser.py \
     rftpacket.py \
     rlspacket.py \
+    myproxypacket.py \
     usageconfig.py \
     usagepacket.py
 usage_manual = globus-usage-collector.8 globus-usage-uploader.8
