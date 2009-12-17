@@ -22,6 +22,7 @@
 #include <sys/wait.h>
 
 #define USE_SOCKET_PAIR 1
+#define GLOBUS_L_XIO_POPEN_WAITPID_DELAY 500
 
 GlobusDebugDefine(GLOBUS_XIO_POPEN);
 
@@ -111,9 +112,19 @@ typedef struct xio_l_popen_handle_s
     globus_mutex_t                      lock; /* only used to protect below */
     globus_off_t                        file_position;
     pid_t                               pid;
+    int                                 wait_count;
+    int                                 kill_state;
     globus_xio_popen_preexec_func_t     fork_cb;
     globus_xio_operation_t              close_op;
 } xio_l_popen_handle_t;
+
+enum
+{
+    GLOBUS_L_XIO_POPEN_NONE,
+    GLOBUS_L_XIO_POPEN_TERM,
+    GLOBUS_L_XIO_POPEN_KILL
+};
+
 
 #define GlobusXIOPOpenPosition(handle)                                \
     globus_l_xio_popen_update_position(handle, 0, SEEK_CUR)
@@ -447,6 +458,8 @@ globus_l_xio_popen_child(
     close(errfds[0]);
     close(errfds[1]);
 
+    setsid();
+
     if(attr->pass_env)
     {
         rc = execv(attr->program_name, attr->argv);
@@ -678,7 +691,7 @@ globus_l_xio_popen_close_oneshot(
 
     GlobusXIOPOpenDebugEnter();
     handle = (xio_l_popen_handle_t *) arg;
-
+            
     globus_l_popen_waitpid(handle, WNOHANG);
 
     GlobusXIOPOpenDebugExit();
@@ -744,13 +757,34 @@ globus_l_popen_waitpid(
     }
     else
     {
-        GlobusTimeReltimeSet(delay, 0, 100);
-
-         globus_callback_register_oneshot(
+        handle->wait_count++;
+        
+        switch(handle->kill_state)
+        {
+            case GLOBUS_L_XIO_POPEN_NONE:
+                if(handle->wait_count > 2000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                {
+                    handle->kill_state = GLOBUS_L_XIO_POPEN_TERM;
+                    kill(-handle->pid, SIGTERM);
+                }
+                break;
+            case GLOBUS_L_XIO_POPEN_TERM:
+                if(handle->wait_count > 12000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                {
+                    handle->kill_state = GLOBUS_L_XIO_POPEN_KILL;
+                    kill(-handle->pid, SIGKILL);
+                }
+                break;
+            default:
+                break;
+        }
+        
+        GlobusTimeReltimeSet(delay, 0, GLOBUS_L_XIO_POPEN_WAITPID_DELAY);
+        globus_callback_register_oneshot(
             NULL,
             &delay,
             globus_l_xio_popen_close_oneshot,
-            handle);
+            handle);         
     }
 
     GlobusXIOPOpenDebugExit();
@@ -776,7 +810,6 @@ globus_l_xio_popen_close(
     handle->close_op = op;
     globus_xio_system_file_destroy(handle->in_system);
    
-    /* XXX Gotta deal with kill */ 
     globus_xio_system_file_close(handle->infd);
 
 #if !defined(USE_SOCKET_PAIR)
