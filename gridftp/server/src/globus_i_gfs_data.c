@@ -3058,16 +3058,6 @@ globus_l_gfs_data_abort_kickout(
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    if(op->session_handle->dsi->trev_func != NULL &&
-        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
-    {
-        event_info.type = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
-        event_info.event_arg = op->event_arg;
-        op->session_handle->dsi->trev_func(
-            &event_info,
-            op->session_handle->session_arg);
-    }
-
     globus_mutex_lock(&op->session_handle->mutex);
     {
         switch(op->state)
@@ -3100,6 +3090,19 @@ globus_l_gfs_data_abort_kickout(
     {
         globus_l_gfs_data_end_transfer_kickout(op);
     }
+    else
+    {
+        if(op->session_handle->dsi->trev_func != NULL &&
+            op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
+        {
+            event_info.type = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
+            event_info.event_arg = op->event_arg;
+            op->session_handle->dsi->trev_func(
+                &event_info,
+                op->session_handle->session_arg);
+        }
+    }
+
 
     GlobusGFSDebugExit();
 }
