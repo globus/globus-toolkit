@@ -3059,9 +3059,7 @@ globus_l_gfs_data_abort_kickout(
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
     if(op->session_handle->dsi->trev_func != NULL &&
-        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT
-        /* && op->data_handle->is_mine XXX don't think this matters here */
-        )
+        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
     {
         event_info.type = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
         event_info.event_arg = op->event_arg;
@@ -6777,8 +6775,7 @@ globus_gridftp_server_begin_transfer(
                     /* if the connects fail tell the dsi to abort */
                     op->cached_res = result;
                     if(op->session_handle->dsi->trev_func != NULL &&
-                        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
-                        !op->data_handle->is_mine)
+                        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
                     {
                         pass_abort = GLOBUS_TRUE;
                         op->ref++;
@@ -6806,8 +6803,7 @@ globus_gridftp_server_begin_transfer(
                 after we know they have requested events */
             case GLOBUS_L_GFS_DATA_ABORTING:
                 if(op->session_handle->dsi->trev_func != NULL &&
-                    op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
-                    !op->data_handle->is_mine)
+                    op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
                 {
                     pass_abort = GLOBUS_TRUE;
                     op->ref++;

@@ -1454,7 +1454,7 @@ main(
             "Error: unable to drop supplemental group privileges.\n");
         return 1;
     }
-    
+    setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1); 
     /* activte globus stuff */    
     if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||

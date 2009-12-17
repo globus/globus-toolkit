@@ -1840,7 +1840,7 @@ globus_l_gfs_file_open_write_cb(
     }
 
     globus_gridftp_server_begin_transfer(
-        monitor->op, 0, monitor);
+        monitor->op, GLOBUS_GFS_EVENT_TRANSFER_ABORT, monitor);
     
     globus_mutex_lock(&monitor->lock);
     {
@@ -2387,7 +2387,7 @@ globus_l_gfs_file_open_read_cb(
     }
     
     globus_gridftp_server_begin_transfer(
-        monitor->op, 0, monitor);
+        monitor->op, GLOBUS_GFS_EVENT_TRANSFER_ABORT, monitor);
     
     globus_mutex_lock(&monitor->lock);
     monitor->first_read = GLOBUS_TRUE;
@@ -2500,15 +2500,17 @@ globus_l_gfs_file_event(
     switch(event_info->type)
     {
         case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-            /* currently this will just prevent any further reads
-              or writes from being registered.  should probably
-              cancel/flush pending/current reads and writes somehow */
             globus_mutex_lock(&monitor->lock);
             {
                 monitor->aborted = GLOBUS_TRUE;
             }
             globus_mutex_unlock(&monitor->lock);
-            fprintf(stderr, "globus_l_gfs_file_event: aborted.\n");
+            
+            globus_xio_handle_cancel_operations(
+                monitor->file_handle,
+                GLOBUS_XIO_CANCEL_OPEN | 
+                GLOBUS_XIO_CANCEL_READ |
+                GLOBUS_XIO_CANCEL_WRITE);
             break;
             
         default:
