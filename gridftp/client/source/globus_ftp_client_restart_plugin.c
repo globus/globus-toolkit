@@ -114,7 +114,6 @@ typedef struct
     globus_callback_handle_t            ticker_handle;
     globus_bool_t                       ticker_set;
     globus_bool_t                       xfer_running;
-    globus_bool_t                       ticker_get;
     globus_ftp_client_handle_t *        ticker_ftp_handle;
 
     globus_off_t *                      ticker_nbyte_a;
@@ -762,7 +761,6 @@ globus_l_ftp_client_restart_plugin_get(
     d->source_url = globus_libc_strdup(url);
     globus_ftp_client_operationattr_copy(&d->source_attr, attr);
 
-    d->ticker_get = GLOBUS_TRUE;
     l_begin_xfer(handle, d);
 }
 /* globus_l_ftp_client_restart_plugin_get() */
@@ -813,7 +811,11 @@ globus_l_ftp_client_restart_plugin_third_party_transfer(
     d->dest_url = globus_libc_strdup(dest_url);
     globus_ftp_client_operationattr_copy(&d->dest_attr, dest_attr);
 
-    l_begin_xfer(handle, d);
+    if(d->source_attr->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
+        d->dest_attr->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+    {
+        l_begin_xfer(handle, d);
+    }
 }
 /* globus_l_ftp_client_restart_plugin_third_party_transfer() */
 
@@ -999,7 +1001,7 @@ globus_l_ftp_client_restart_plugin_data(
 
     d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
 
-    if(!d->xfer_running || !d->ticker_get)
+    if(!d->xfer_running)
     {
         return;
     }
@@ -1541,7 +1543,6 @@ globus_l_ftp_client_restart_plugin_genericify(
     }
 
     d->operation = GLOBUS_FTP_CLIENT_IDLE;
-    d->ticker_get = GLOBUS_FALSE;
     d->abort_pending = GLOBUS_FALSE;
 }
 /* globus_l_ftp_client_restart_plugin_genericify() */
