@@ -636,6 +636,11 @@ globus_l_gsc_cmd_cwd_cb(
     }
     else
     {
+        /*
+        * ignore permission checks for CWD.  We will use the success of the stat
+        * to indicate validity, since this is merely a virtual operation.
+        * specifically, allows this to function with linux filesystem ACL
+        
         if(!(S_IXOTH & stat_info->mode && S_IROTH & stat_info->mode) &&
             !(stat_info->uid == uid && 
                 S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode) &&
@@ -646,6 +651,7 @@ globus_l_gsc_cmd_cwd_cb(
             msg = globus_common_create_string(_FSMSL("%s: Permission denied"), path);
         }
         else
+        */
         {
             if(op->server_handle->cwd != NULL)
             {
