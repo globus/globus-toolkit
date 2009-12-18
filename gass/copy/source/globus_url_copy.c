@@ -1477,6 +1477,7 @@ main(int argc, char **argv)
     int                                     i;
     globus_callback_handle_t                dumpfile_handle;
 
+    setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1);
     err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
     if( err != GLOBUS_SUCCESS )
     {
