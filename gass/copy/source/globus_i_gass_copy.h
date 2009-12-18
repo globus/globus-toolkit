@@ -174,6 +174,7 @@ typedef struct globus_i_gass_copy_state_target_s
 	    globus_bool_t                       completed;
 	    int					n_channels;
 	    int					n_reads_posted;
+	    globus_object_t *                   data_err;
 	} ftp;
 
         /**

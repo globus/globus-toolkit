@@ -3373,11 +3373,20 @@ globus_l_gass_copy_ftp_get_done_callback(
     if ((copy_handle->status == GLOBUS_GASS_COPY_STATUS_CANCEL) ||
         (copy_handle->status == GLOBUS_GASS_COPY_STATUS_FAILURE))
     {
+        /* prefer this error over a data error */
+        if(copy_handle->err && 
+            copy_handle->err == copy_handle->state->source.data.ftp.data_err)
+        {
+            globus_object_free(copy_handle->err);
+            copy_handle->err = NULL;
+            copy_handle->state->source.data.ftp.data_err = NULL;
+            globus_i_gass_copy_set_error(copy_handle, error);
+        }
+        
         cancel_info = (globus_i_gass_copy_cancel_t *)
             globus_libc_malloc(sizeof(globus_i_gass_copy_cancel_t));
         cancel_info->handle = copy_handle;
         cancel_info->canceling_source = GLOBUS_TRUE;
-
         globus_l_gass_copy_generic_cancel(cancel_info);
         globus_libc_free(cancel_info);
     }
@@ -3430,6 +3439,16 @@ globus_l_gass_copy_ftp_put_done_callback(
     if ((copy_handle->status == GLOBUS_GASS_COPY_STATUS_CANCEL) ||
         (copy_handle->status == GLOBUS_GASS_COPY_STATUS_FAILURE))
     {
+        /* prefer this error over a data error */
+        if(copy_handle->err && 
+            copy_handle->err == copy_handle->state->dest.data.ftp.data_err)
+        {
+            globus_object_free(copy_handle->err);
+            copy_handle->err = NULL;
+            copy_handle->state->dest.data.ftp.data_err = NULL;
+            globus_i_gass_copy_set_error(copy_handle, error);
+        }
+
         cancel_info = (globus_i_gass_copy_cancel_t *)
             globus_libc_malloc(sizeof(globus_i_gass_copy_cancel_t));
         cancel_info->handle = copy_handle;
@@ -3659,6 +3678,7 @@ globus_l_gass_copy_ftp_read_callback(
 		globus_i_gass_copy_set_error(copy_handle, error);
 		state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 		copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+                state->source.data.ftp.data_err = copy_handle->err;
 	    }
 	    else
 	    {
@@ -3798,7 +3818,6 @@ globus_l_gass_copy_io_read_callback(
     globus_libc_fprintf(stderr,
             "io_read_callback(): %d bytes READ\n", nbytes);
 #endif
-
     /* fake an eof if we are done with the partial */
     if(result == GLOBUS_SUCCESS && handle->partial_bytes_remaining == 0)
     {
@@ -4313,7 +4332,7 @@ globus_l_gass_copy_ftp_write_callback(
     }
     else /* there was an error */
     {
-	{
+	{	    
 	    if(!state->cancel) /* cancel has not been set already */
 	    {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -4322,6 +4341,7 @@ globus_l_gass_copy_ftp_write_callback(
 		globus_i_gass_copy_set_error(copy_handle, error);
 		state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 		copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+                state->dest.data.ftp.data_err = copy_handle->err;
 	    }
 	    else
 	    {
@@ -4330,6 +4350,7 @@ globus_l_gass_copy_ftp_write_callback(
 		globus_mutex_unlock(&(state->dest.mutex));
 		return;
 	    }
+
 
 	}
     } /* else (there was an error) */
@@ -6195,7 +6216,7 @@ globus_l_gass_copy_generic_cancel(
 	globus_libc_fprintf(stderr, "starting _gass_copy_generic_cancel()\n");
 #endif
     globus_mutex_lock(&(state->mutex));
-
+    
     if (cancel_info->canceling_source)
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -6244,7 +6265,10 @@ globus_l_gass_copy_generic_cancel(
         state = handle->state;
         handle->state = GLOBUS_NULL;
     }
-    
+    else
+    {
+        globus_gass_copy_cancel(handle, NULL, NULL);
+    }
     globus_mutex_unlock(&(state->mutex));
     
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
