@@ -795,6 +795,11 @@ BUNDLE gram5-lsf
         globus_gram_job_manager_setup_lsf
         globus_scheduler_event_generator_lsf_test
 
+BUNDLE gram5-sge
+        globus_scheduler_event_generator_sge
+        globus_scheduler_event_generator_sge_setup
+        globus_gram_job_manager_setup_sge
+
 BUNDLE gt4-gram-test
         globus_wsrf_gram_scheduler_test
         globus_wsrf_gram_service_java_test_unit
