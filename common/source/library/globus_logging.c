@@ -265,9 +265,33 @@ globus_logging_vwrite(
             }
             nbytes = vsnprintf((char *) &handle->buffer[handle->used_length], 
                 remain, fmt, ap);
+            if(nbytes > remain)
+            {
+                char                    suffix[64];
+                
+                snprintf(
+                    suffix, 
+                    sizeof(suffix), 
+                    " *** TRUNCATED %d bytes\n", 
+                    nbytes - remain + sizeof(suffix));
+                
+                memcpy(
+                    &handle->buffer[handle->buffer_length - sizeof(suffix)], 
+                    suffix,
+                    sizeof(suffix));
+                    
+                nbytes = remain - sizeof(suffix) + strlen(suffix);
+            }
+            else if(nbytes < 0)
+            {
+                nbytes = 0;
+            }
             handle->used_length += nbytes;
+            remain -= nbytes;
+
             if(type & GLOBUS_LOGGING_INLINE || 
-                handle->type_mask & GLOBUS_LOGGING_INLINE)
+                handle->type_mask & GLOBUS_LOGGING_INLINE ||
+                remain < GLOBUS_L_LOGGING_MAX_MESSAGE)
             {
                 globus_l_logging_flush(handle);
             }
@@ -373,6 +397,7 @@ globus_logging_stdio_header_func(
     char *                              tmp;
     time_t                              tm;
     globus_size_t                       str_len;
+    int                                 nbytes;
 
     tm = time(NULL);
     tmp = globus_libc_ctime_r(&tm, str, sizeof(str));
@@ -381,7 +406,16 @@ globus_logging_stdio_header_func(
     {
         str[str_len - 1] = '\0';
     }
-    (*len) = snprintf(buf, *len, "[%d] %s :: ", globus_l_logging_pid, str);
+    nbytes = snprintf(buf, *len, "[%d] %s :: ", globus_l_logging_pid, str);
+
+    if(nbytes < 0)
+    {
+        *len = 0;
+    }
+    else if(nbytes < *len)
+    {
+        *len = nbytes;
+    }
 }
 
 void
@@ -391,19 +425,28 @@ globus_logging_ng_header_func(
 {
     struct timeval                      tv;
     struct tm                           tm;
+    int                                 nbytes;
 
     if(gettimeofday(&tv, NULL) == 0)
     {
         globus_libc_gmtime_r(&tv.tv_sec, &tm);
-        (*len) = snprintf(buf, *len, "ts=%04d-%02d-%02dT%02d:%02d:%02d.%06dZ id=%d ", 
+        nbytes = snprintf(buf, *len, "ts=%04d-%02d-%02dT%02d:%02d:%02d.%06dZ id=%d ", 
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
             tm.tm_hour, tm.tm_min, tm.tm_sec , (int) tv.tv_usec, 
             globus_l_logging_pid);
     }
     else
     {
-        (*len) = snprintf(buf, *len, "ts=0000-00-00T00:00:00.000000Z id=%d ", 
+        nbytes = snprintf(buf, *len, "ts=0000-00-00T00:00:00.000000Z id=%d ", 
             globus_l_logging_pid);
+    }
+    if(nbytes < 0)
+    {
+        *len = 0;
+    }
+    if(nbytes < *len)
+    {
+        *len = nbytes;
     }
 }
 
