@@ -22,14 +22,14 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 # Use Sun's jdk on both RHEL4 and RHEL5 for consistency.
 BuildRequires:  jdk >= 2000:1.6.0_07-fcs
 BuildRequires:  jpackage-utils
-BuildRequires: hadoop-fuse
-BuildRequires: hadoop-sources
+BuildRequires: hadoop-0.20-fuse
+BuildRequires: hadoop-0.20-libhdfs
 BuildRequires: gpt
 BuildRequires: vdt_globus_essentials
 BuildRequires: vdt_globus_data_server
 BuildRequires: vdt_globus_sdk
 
-Requires:  hadoop-fuse
+Requires:  hadoop-0.20-libhdfs
 Requires:  vdt_globus_data_server
 Requires:  xinetd
 
