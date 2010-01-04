@@ -383,8 +383,10 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 
     free(self);
 
+#if 0 /* http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6909 */
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
+#endif
 }
 
 
