@@ -64,6 +64,8 @@ LibSources= \
 	string_funcs.h \
 	verror.c \
 	verror.h \
+	vomsclient.c \
+	vomsclient.h \
 	vparse.c \
 	vparse.h
 

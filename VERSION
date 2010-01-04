@@ -10,6 +10,8 @@ v5.1 XX Xxx 2010
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6897)
   - Fix myproxy-logon -T segfault after "removed bad CRL file" message
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6909)
+  - add server-side support for including VOMS attributes in credentials
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6882)
 
 v5.0 4 Dec 2009
   - add Globus Usage Metrics to the myproxy-server

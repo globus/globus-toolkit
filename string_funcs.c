@@ -853,3 +853,38 @@ free_array_list(char ***listp)
     *listp = NULL;
 }
 
+int
+join_array(char **target, char *array[], const char *sep)
+{
+    int result = 1;
+    int i;
+
+    if ((target == NULL)
+        || (array == NULL)
+        || (sep == NULL) ) {
+        goto error;
+    }
+    if (array[0] == NULL) {
+        goto error;
+    }
+
+    if (my_append(target, array[0], NULL) < 0) {
+        goto error;
+    }
+    for (i = 1; array[i] != NULL; i++) {
+        if (my_append(target, sep, array[i], NULL) < 0) {
+            goto error;
+        }
+    }
+
+    result = 0;
+
+  error:
+    if ((result == 1) && (*target != NULL)) {
+        free(*target);
+        *target = NULL;
+    }
+
+    return result;
+}
+

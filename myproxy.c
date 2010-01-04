@@ -1077,6 +1077,53 @@ myproxy_serialize_request_ex(const myproxy_request_t *request, char **data)
         return -1;
     }
 
+    /* voname */
+    if (request->voname) {
+        char *tok = NULL, *vonameDup = NULL;
+        vonameDup = strdup(request->voname);
+        if (vonameDup == NULL) {
+            return -1;
+        }
+        for (tok = strtok(vonameDup, "\n"); 
+             tok != NULL;
+             tok = strtok(NULL, "\n")) {
+            len = my_append(data, MYPROXY_VONAME_STRING, tok, "\n", NULL);
+            if (len < 0) {
+                break;
+            }
+        }
+        if (vonameDup) {
+            free(vonameDup);
+        }
+        if (len < 0) {
+            return -1;
+        }
+    }
+
+    /* vomses */
+    if (request->vomses) {
+        char *tok = NULL, *vomsesDup = NULL;
+        vomsesDup = strdup(request->vomses);
+        if (vomsesDup == NULL) {
+            return -1;
+        }
+        for (tok = strtok(vomsesDup, "\n"); 
+             tok != NULL;
+             tok = strtok(NULL, "\n")) {
+            len = my_append(data, MYPROXY_VOMSES_STRING, tok, "\n", NULL);
+            if (len < 0) {
+                break;
+            }
+        }
+        if (vomsesDup) {
+            free(vomsesDup);
+        }
+        if (len < 0) {
+            return -1;
+        }
+        myproxy_debug("vomses: %s\n", *data);
+    }
+
     return len+1;
 }
 
@@ -1385,6 +1432,50 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	    verror_prepend_string("Error parsing TRUSTED_CERTS in client request");
 	    goto error;
 	}
+    }
+
+    /* voname */
+    len = convert_message(data,
+                          MYPROXY_VONAME_STRING,
+                          CONVERT_MESSAGE_ALLOW_MULTIPLE,
+                          &buf);
+
+    if (len == -2) { /* -2 indicates string not found */
+        request->voname = NULL;
+    } else {
+        if (len <= -1) {
+            verror_prepend_string("Error parsing VONAME in client request");
+            goto error;
+        } else {
+            request->voname = strdup(buf);
+            if (request->voname == NULL) {
+                verror_put_errno(errno);
+                goto error;
+            }
+        }
+    }
+
+    /* vomses */
+    len = convert_message(data,
+                          MYPROXY_VOMSES_STRING,
+                          CONVERT_MESSAGE_ALLOW_MULTIPLE,
+                          &buf);
+
+    if (len == -2) /* -2 indicates string not found */
+        request->vomses = NULL;
+    else
+    if (len <= -1)
+    {
+        verror_prepend_string("Error parsing VOMSES in client request");
+        goto error;
+    }
+    else
+    {
+        request->vomses = strdup(buf);
+        if (request->vomses == NULL) {
+            verror_put_errno(errno);
+            goto error;
+        }
     }
 
     /* Success */
@@ -2430,6 +2521,10 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
 	  free(request->keyretrieve);
        if (request->trusted_retrievers != NULL)
 	  free(request->trusted_retrievers);
+       if (request->voname != NULL)
+	  free(request->voname);
+       if (request->vomses != NULL)
+	  free(request->vomses);
        free(request);
     }
     

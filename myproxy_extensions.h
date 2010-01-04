@@ -22,6 +22,7 @@ int myproxy_set_extensions_from_file(const char filename[]);
 int myproxy_set_extensions_from_callout(const char path[],
                                         const char username[],
                                         const char location[]);
+int myproxy_add_extension(X509_EXTENSION *extension);
 int myproxy_get_extensions(STACK_OF(X509_EXTENSION) **extensions);
 int myproxy_free_extensions(); /* Call this to cleanup! */
 

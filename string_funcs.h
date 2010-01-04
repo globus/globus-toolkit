@@ -185,5 +185,7 @@ add_entry(char **entries, const char *entry);
 void
 free_array_list(char ***listp);
 
+int
+join_array(char **target, char *array[], const char *sep);
 
 #endif /* _STRING_FUNCS_H */
