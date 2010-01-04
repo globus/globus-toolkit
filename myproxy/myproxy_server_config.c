@@ -701,6 +701,11 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "usage_stats_target") == 0) {
 	context->usage_stats_target = strdup(tokens[1]);
     }
+#ifdef HAVE_VOMS
+    else if (strcmp(directive, "voms_userconf") == 0) {
+        context->voms_userconf = strdup(tokens[1]);
+    }
+#endif
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);

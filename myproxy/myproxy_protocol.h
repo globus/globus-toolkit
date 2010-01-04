@@ -56,6 +56,8 @@ typedef struct
     char 		         *keyretrieve;
     char                         *trusted_retrievers;
     int                          want_trusted_certs; /* 1=yes, 0=no */
+    char                         *voname;
+    char                         *vomses; 
 } myproxy_request_t;
 
 /* A server response object */

@@ -735,6 +735,14 @@ handle_client(myproxy_socket_attrs_t *attrs,
                 myproxy_log_verror(); verror_clear();
             }
         }
+#ifdef HAVE_VOMS
+        if (client_request->voname != NULL) {
+            get_voms_proxy(attrs, client_creds, client_request,
+                           server_response, 
+                           context);
+        }
+        else
+#endif
 	    get_proxy(attrs, client_creds, client_request, server_response,
 		      context->max_proxy_lifetime);
 	  }
@@ -837,6 +845,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     /* free stuff up */
 	myproxy_creds_free(client_creds);
     myproxy_free(attrs, client_request, server_response);
+    myproxy_free_extensions();
 
     if (client.fqans) {
        char **p;

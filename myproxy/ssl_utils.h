@@ -347,6 +347,15 @@ int ssl_creds_from_buffer(unsigned char *buffer, int buffer_length,
                           SSL_CREDENTIALS **creds);
 
 /*
+ * ssl_creds_certificate_is_proxy()
+ * 
+ * Returns 1 if certificate is proxy(RFC 3820, GT3, GT2) certificate.
+ *         0 if certificate is not proxy.
+ *        -1 on error.
+ */
+int ssl_creds_certificate_is_proxy(SSL_CREDENTIALS *creds);
+
+/*
  * ssl_sign()
  * 
  * Sign data with private key passed in SSL_CREDENTIALS. Memory for the

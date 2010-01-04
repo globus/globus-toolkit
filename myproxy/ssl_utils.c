@@ -809,6 +809,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
      * Put pass phrase where the callback function can find it.
      */
     _ssl_pass_phrase = pass_phrase;
+    ERR_clear_error();
 
     bio = bio_from_buffer(buffer, buffer_len);
 
@@ -1791,6 +1792,33 @@ ssl_creds_from_buffer(unsigned char *buffer, int buffer_length,
 
    BIO_free(bio);
    return SSL_SUCCESS;
+}
+
+int
+ssl_creds_certificate_is_proxy(SSL_CREDENTIALS *creds)
+{
+    int return_status = -1;
+    globus_result_t local_result;
+    globus_gsi_cert_utils_cert_type_t cert_type;
+
+    my_init();
+
+    local_result = globus_gsi_cert_utils_get_cert_type(creds->certificate,
+                                                       &cert_type);
+    if (local_result != GLOBUS_SUCCESS) {
+        verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+        globus_error_to_verror(local_result);
+        goto error;
+    }
+
+    if (GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
+        return_status = 1; /* certificate is proxy */
+    } else {
+        return_status = 0; /* certificate is not proxy */
+    }
+ 
+  error:
+    return return_status;
 }
 
 int

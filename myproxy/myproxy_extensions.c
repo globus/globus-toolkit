@@ -115,6 +115,21 @@ int myproxy_free_extensions()
 {
     if (extensions) {
         sk_X509_EXTENSION_free(extensions);
+        extensions = NULL;
+    }
+    return 0;
+}
+
+int
+myproxy_add_extension(X509_EXTENSION *extension)
+{
+    if (extension == NULL) {
+        verror_put_string("NULL extension is passed");
+        return -1;
+    }
+    if (X509v3_add_ext(&extensions, extension, -1) == NULL) {
+        verror_put_string("Couldn't add extension.");
+        return -1;
     }
     return 0;
 }
