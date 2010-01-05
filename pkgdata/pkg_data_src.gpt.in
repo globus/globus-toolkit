@@ -17,6 +17,11 @@ MyProxy Credential Management Service
 <Simple_Version Major="3"/>
 </Version>
 </Dependency>
+<Dependency Name="globus_usage" >
+<Version>
+<Simple_Version Major="1"/>
+</Version>
+</Dependency>
 </Source_Dependencies>
 
 <Source_Dependencies Type="lib_link">
@@ -40,6 +45,11 @@ MyProxy Credential Management Service
 <Dependency Name="globus_gss_assist" >
 <Version>
 <Simple_Version Major="3"/>
+</Version>
+</Dependency>
+<Dependency Name="globus_usage" >
+<Version>
+<Simple_Version Major="1"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
