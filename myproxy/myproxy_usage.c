@@ -24,7 +24,7 @@
 
 #include "myproxy_common.h"
 
-#ifndef NO_GLOBUS_USAGE
+#ifdef HAVE_GLOBUS_USAGE
 
 static globus_list_t *myproxy_usage_handle_list = NULL;
 
@@ -47,7 +47,8 @@ typedef enum myproxy_usage_tag_e
     MYPROXY_USAGE_CLIENTIP       = 'I',
     MYPROXY_USAGE_USERNAME       = 'u',
     MYPROXY_USAGE_USERDN         = 'U'
-    /* !! ADD to ALL_TAGLIST above when adding here */
+    /* !! ADD to ALL_TAGLIST above, and to the invocation of
+          globus_usage_stats_send() below when adding here. */
 } myproxy_usage_tag_t;
 
 typedef struct myproxy_usage_ent_s
@@ -382,15 +383,31 @@ myproxy_log_usage_stats(
                 ptr++;
             }
         }
-        
+
+#ifdef HAVE_GLOBUS_USAGE_SEND_ARRAY
         result = globus_usage_stats_send_array(
             usage_ent->handle, i, keys, values);
+#else
+        if (i)
+            result = globus_usage_stats_send(
+                usage_ent->handle, i,
+                i>0?keys[0]:NULL, i>0?values[0]:NULL,
+                i>1?keys[1]:NULL, i>1?values[1]:NULL,
+                i>2?keys[2]:NULL, i>2?values[2]:NULL,
+                i>3?keys[3]:NULL, i>3?values[3]:NULL,
+                i>4?keys[4]:NULL, i>4?values[4]:NULL,
+                i>5?keys[5]:NULL, i>5?values[5]:NULL,
+                i>6?keys[6]:NULL, i>6?values[6]:NULL,
+                i>7?keys[7]:NULL, i>7?values[7]:NULL,
+                i>8?keys[8]:NULL, i>8?values[8]:NULL,
+                i>9?keys[9]:NULL, i>9?values[9]:NULL);
+#endif
         
     }
     
     return;
 }
-#endif /* NO_GLOBUS_USAGE */
+#endif /* HAVE_GLOBUS_USAGE */
 
 void
 myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
@@ -401,7 +418,7 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
                            myproxy_response_t *response,
                            int success_flag)
 {
-#ifndef NO_GLOBUS_USAGE
+#ifdef HAVE_GLOBUS_USAGE
     char info_bits[32];
     char *alloced_userdn = NULL;
     char *userdn = NULL;
@@ -442,5 +459,5 @@ myproxy_send_usage_metrics(myproxy_socket_attrs_t *attrs,
 
     if (alloced_userdn)
         free(alloced_userdn);
-#endif /* NO_GLOBUS_USAGE */
+#endif /* HAVE_GLOBUS_USAGE */
 }
