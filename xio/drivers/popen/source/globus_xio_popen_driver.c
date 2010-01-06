@@ -114,6 +114,7 @@ typedef struct xio_l_popen_handle_s
     pid_t                               pid;
     int                                 wait_count;
     int                                 kill_state;
+    globus_bool_t                       canceled;
     globus_xio_popen_preexec_func_t     fork_cb;
     globus_xio_operation_t              close_op;
 } xio_l_popen_handle_t;
@@ -780,26 +781,30 @@ globus_l_popen_waitpid(
     }
     else
     {
+        
         handle->wait_count++;
         
-        switch(handle->kill_state)
+        if(handle->canceled)
         {
-            case GLOBUS_L_XIO_POPEN_NONE:
-                if(handle->wait_count > 5000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
-                {
-                    handle->kill_state = GLOBUS_L_XIO_POPEN_TERM;
-                    kill(-handle->pid, SIGTERM);
-                }
-                break;
-            case GLOBUS_L_XIO_POPEN_TERM:
-                if(handle->wait_count > 15000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
-                {
-                    handle->kill_state = GLOBUS_L_XIO_POPEN_KILL;
-                    kill(-handle->pid, SIGKILL);
-                }
-                break;
-            default:
-                break;
+            switch(handle->kill_state)
+            {
+                case GLOBUS_L_XIO_POPEN_NONE:
+                    if(handle->wait_count > 5000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                    {
+                        handle->kill_state = GLOBUS_L_XIO_POPEN_TERM;
+                        kill(-handle->pid, SIGTERM);
+                    }
+                    break;
+                case GLOBUS_L_XIO_POPEN_TERM:
+                    if(handle->wait_count > 15000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                    {
+                        handle->kill_state = GLOBUS_L_XIO_POPEN_KILL;
+                        kill(-handle->pid, SIGKILL);
+                    }
+                    break;
+                default:
+                    break;
+            } 
         }
         
         GlobusTimeReltimeSet(delay, 0, GLOBUS_L_XIO_POPEN_WAITPID_DELAY);
@@ -861,14 +866,20 @@ globus_l_xio_popen_system_read_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
+    xio_l_popen_handle_t *              handle;
     GlobusXIOName(globus_l_xio_popen_system_read_cb);
     
     GlobusXIOPOpenDebugEnter();
     
     op = (globus_xio_operation_t) user_arg;
     
+    handle = (xio_l_popen_handle_t *) 
+        globus_xio_operation_get_driver_specific(op);
+        
+    handle->canceled = globus_xio_operation_is_canceled(op);
+    
     globus_l_xio_popen_update_position(
-        (xio_l_popen_handle_t *) globus_xio_operation_get_driver_specific(op),
+        handle,
         nbytes,
         SEEK_CUR);
         
@@ -943,14 +954,20 @@ globus_l_xio_popen_system_write_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
+    xio_l_popen_handle_t *              handle;
     GlobusXIOName(globus_l_xio_popen_system_write_cb);
     
     GlobusXIOPOpenDebugEnter();
     
     op = (globus_xio_operation_t) user_arg;
     
+    handle = (xio_l_popen_handle_t *) 
+        globus_xio_operation_get_driver_specific(op);
+        
+    handle->canceled = globus_xio_operation_is_canceled(op);
+
     globus_l_xio_popen_update_position(
-        (xio_l_popen_handle_t *) globus_xio_operation_get_driver_specific(op),
+        handle,
         nbytes,
         SEEK_CUR);
         
