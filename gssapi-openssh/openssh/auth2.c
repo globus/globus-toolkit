@@ -70,10 +70,8 @@ extern Authmethod method_passwd;
 extern Authmethod method_kbdint;
 extern Authmethod method_hostbased;
 #ifdef GSSAPI
-extern Authmethod method_external;
 extern Authmethod method_gsskeyex;
 extern Authmethod method_gssapi;
-extern Authmethod method_gssapi_compat;
 #endif
 #ifdef JPAKE
 extern Authmethod method_jpake;
@@ -87,9 +85,7 @@ Authmethod *authmethods[] = {
 	&method_pubkey,
 #ifdef GSSAPI
 	&method_gsskeyex,
-	&method_external,
 	&method_gssapi,
-	&method_gssapi_compat,
 #endif
 #ifdef JPAKE
 	&method_jpake,
@@ -238,8 +234,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #ifdef GSSAPI
 	if (user[0] == '\0') {
 	    debug("received empty username for %s", method);
-	    if (strcmp(method, "external-keyx") == 0 ||
-		strcmp(method, "gssapi-keyex") == 0) {
+	    if (strcmp(method, "gssapi-keyex") == 0) {
 		char *lname = NULL;
 		PRIVSEP(ssh_gssapi_localname(&lname));
 		if (lname && lname[0] != '\0') {
