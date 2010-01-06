@@ -170,6 +170,7 @@ char *ssh_gssapi_server_mechanisms(void);
 int ssh_gssapi_oid_table_ok();
 
 int ssh_gssapi_update_creds(ssh_gssapi_ccache *store);
+void ssh_gssapi_get_client_info(char **userdn, char **mech);
 #endif /* GSSAPI */
 
 #endif /* _SSH_GSS_H */

@@ -119,6 +119,7 @@
 #include "monitor_wrap.h"
 #include "roaming.h"
 #include "version.h"
+#include "ssh-globus-usage.h"
 
 #ifdef USE_SECURITY_SESSION_API
 #include <Security/AuthSession.h>
@@ -1487,6 +1488,13 @@ main(int ac, char **av)
 
 	/* Fill in default values for those options not explicitly set. */
 	fill_default_server_options(&options);
+
+#ifdef HAVE_GLOBUS_USAGE
+	if (ssh_usage_stats_init(options.disable_usage_stats,
+			options.usage_stats_targets) != GLOBUS_SUCCESS) {
+		fatal("Error initializing Globus Usage Metrics");
+	}
+#endif /* HAVE_GLOBUS_USAGE */
 
 	/* challenge-response is implemented via keyboard interactive */
 	if (options.challenge_response_authentication)

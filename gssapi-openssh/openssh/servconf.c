@@ -143,6 +143,8 @@ initialize_server_options(ServerOptions *options)
 	options->tcp_rcv_buf_poll = -1;
 	options->hpn_disabled = -1;
 	options->hpn_buffer_size = -1;
+	options->disable_usage_stats = 0;
+	options->usage_stats_targets = NULL;
 }
 
 void
@@ -342,7 +344,6 @@ fill_default_server_options(ServerOptions *options)
 		options->compression = 0;
 	}
 #endif
-
 }
 
 /* Keyword tokens. */
@@ -383,6 +384,7 @@ typedef enum {
 	sUsePrivilegeSeparation, sAllowAgentForwarding,
 	sZeroKnowledgePasswordAuthentication,
 	sNoneEnabled, sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
+	sDisUsageStats, sUsageStatsTarg,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -528,6 +530,8 @@ static struct {
 	{ "hpndisabled", sHPNDisabled },
 	{ "hpnbuffersize", sHPNBufferSize },
 	{ "tcprcvbufpoll", sTcpRcvBufPoll },
+	{ "disable_usage_stats", sDisUsageStats, SSHCFG_GLOBAL},
+	{ "usage_stats_target", sUsageStatsTarg, SSHCFG_GLOBAL},
 	{ NULL, sBadOption, 0 }
 };
 
@@ -1460,6 +1464,39 @@ process_server_config_line(ServerOptions *options, char *line,
 			    filename, linenum);
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
+		break;
+
+	case sDisUsageStats:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing value.",
+			    filename, linenum);
+		if (!strcasecmp(arg, "true") ||
+		    !strcasecmp(arg, "enabled") ||
+		    !strcasecmp(arg, "yes") ||
+		    !strcasecmp(arg, "on") ||
+		    !strcasecmp(arg, "1"))
+			options->disable_usage_stats = 1;
+		else if (!strcasecmp(arg, "false") ||
+			 !strcasecmp(arg, "disabled") ||
+			 !strcasecmp(arg, "no") ||
+			 !strcasecmp(arg, "off") ||
+			 !strcasecmp(arg, "0"))
+			options->disable_usage_stats = 0;
+		else
+			fatal("Incorrect value for disable_usage_stats");
+		break;
+
+	case sUsageStatsTarg:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing value.",
+			    filename, linenum);
+		options->usage_stats_targets = xstrdup(arg);
 		break;
 
 	case sDeprecated:

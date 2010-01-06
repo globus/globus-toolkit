@@ -71,6 +71,9 @@
 #endif
 #include "monitor_wrap.h"
 
+#include "version.h"
+#include "ssh-globus-usage.h"
+
 /* import */
 extern ServerOptions options;
 extern int use_privsep;
@@ -292,6 +295,21 @@ auth_log(Authctxt *authctxt, int authenticated, char *method, char *info)
 	if (authenticated == 0 && !authctxt->postponed)
 		audit_event(audit_classify_auth(method));
 #endif
+	if (authenticated) {
+		char *userdn = NULL;
+		char *mech_name = NULL;
+		ssh_gssapi_get_client_info(&userdn, &mech_name);
+		debug("REPORTING (%s) (%s) (%s) (%s) (%s) (%s) (%s)",
+			 SSH_RELEASE, SSLeay_version(SSLEAY_VERSION),
+			 method, mech_name?mech_name:"NULL", get_remote_ipaddr(),
+			 (authctxt->user && authctxt->user[0])?
+				authctxt->user : "unknown",
+			userdn?userdn:"NULL");
+		ssh_globus_send_usage_metrics(SSH_RELEASE,
+					SSLeay_version(SSLEAY_VERSION),
+					method, mech_name, get_remote_ipaddr(),
+					authctxt->user, userdn);
+	}
 }
 
 /*
