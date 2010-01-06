@@ -712,7 +712,11 @@ globus_l_popen_waitpid(
     rc = waitpid(handle->pid, &status, opts);
     if(rc > 0)
     {
-        if(status != 0 && !handle->ignore_program_errors)
+        /* if program exited normally, but with a nonzero code OR
+         * program exited by signal, and we didn't signal it */
+        if(((WIFEXITED(status) && WEXITSTATUS(status) != 0) || 
+            (WIFSIGNALED(status) && handle->kill_state != GLOBUS_L_XIO_POPEN_NONE))
+            && !handle->ignore_program_errors)
         {
             /* read programs stderr and dump it to an error result */
             globus_size_t                   nbytes = 0;
@@ -726,17 +730,36 @@ globus_l_popen_waitpid(
                 handle->err_system, 0, &iovec, 1, 0, &nbytes);
             
             buf[nbytes] = 0;
-            
-            result = globus_error_put(
-                globus_error_construct_error(
-                    GLOBUS_XIO_MODULE,
-                    GLOBUS_NULL,
-                    GLOBUS_XIO_ERROR_SYSTEM_ERROR,
-                    __FILE__,
-                    _xio_name,
-                    __LINE__,
-                    _XIOSL("popened program returned an error:\n%s"),
-                    buf));
+
+            if(WIFEXITED(status))
+            {
+                result = globus_error_put(
+                    globus_error_construct_error(
+                        GLOBUS_XIO_MODULE,
+                        GLOBUS_NULL,
+                        GLOBUS_XIO_ERROR_SYSTEM_ERROR,
+                        __FILE__,
+                        _xio_name,
+                        __LINE__,
+                        _XIOSL("popened program exited with an error "
+                               "(exit code: %d):\n%s"),
+                        WEXITSTATUS(status), 
+                        buf));
+            }
+            else
+            {
+                result = globus_error_put(
+                    globus_error_construct_error(
+                        GLOBUS_XIO_MODULE,
+                        GLOBUS_NULL,
+                        GLOBUS_XIO_ERROR_SYSTEM_ERROR,
+                        __FILE__,
+                        _xio_name,
+                        __LINE__,
+                        _XIOSL("popened program was terminated by a signal"
+                               "(sig: %d)"),
+                        WTERMSIG(status)));
+            }
         }
 
         globus_xio_system_file_close(handle->errfd);
@@ -762,7 +785,7 @@ globus_l_popen_waitpid(
         switch(handle->kill_state)
         {
             case GLOBUS_L_XIO_POPEN_NONE:
-                if(handle->wait_count > 2000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                if(handle->wait_count > 3000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
                 {
                     handle->kill_state = GLOBUS_L_XIO_POPEN_TERM;
                     kill(-handle->pid, SIGTERM);
