@@ -19,7 +19,7 @@ MyProxy Credential Management Service
 </Dependency>
 <Dependency Name="globus_usage" >
 <Version>
-<Simple_Version Major="1"/>
+<Simple_Version Major="0"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
@@ -49,7 +49,7 @@ MyProxy Credential Management Service
 </Dependency>
 <Dependency Name="globus_usage" >
 <Version>
-<Simple_Version Major="1"/>
+<Simple_Version Major="0"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
