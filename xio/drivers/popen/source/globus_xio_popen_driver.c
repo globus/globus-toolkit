@@ -785,14 +785,14 @@ globus_l_popen_waitpid(
         switch(handle->kill_state)
         {
             case GLOBUS_L_XIO_POPEN_NONE:
-                if(handle->wait_count > 3000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                if(handle->wait_count > 5000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
                 {
                     handle->kill_state = GLOBUS_L_XIO_POPEN_TERM;
                     kill(-handle->pid, SIGTERM);
                 }
                 break;
             case GLOBUS_L_XIO_POPEN_TERM:
-                if(handle->wait_count > 12000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
+                if(handle->wait_count > 15000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
                 {
                     handle->kill_state = GLOBUS_L_XIO_POPEN_KILL;
                     kill(-handle->pid, SIGKILL);
