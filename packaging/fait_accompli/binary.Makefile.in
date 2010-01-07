@@ -17,7 +17,7 @@ distclean: clean
 common: gpt globus_core globus_libtool globus_common globus_common_setup
 i18n: gpt common globus-internationalization 
 prews: prewsmds gridftp prewsgram
-prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
+prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk gram5-fork
 gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk 
 rls: gpt globus-rls-server
 
@@ -210,6 +210,8 @@ globus_scheduler_event_generator_pbs: gpt globus_core globus_common globus_sched
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_pbs-*/*.tar.gz
 globus_scheduler_event_generator_sge: gpt globus_core globus_common globus_scheduler_event_generator
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_sge-*/*.tar.gz
+globus_scheduler_event_generator_fork: gpt globus_core globus_common globus_scheduler_event_generator
+	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_fork-*/*.tar.gz
 globus_gridftp_server: gpt globus_xio globus_usage globus_gridftp_server_control globus_ftp_control globus_authz
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_gridftp_server-*/*.tar.gz
 globus_scheduler_event_generator_pbs_test: gpt
@@ -224,6 +226,8 @@ globus_scheduler_event_generator_pbs_setup: gpt
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_pbs_setup-*/*.tar.gz
 globus_scheduler_event_generator_sge_setup: gpt
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_sge_setup-*/*.tar.gz
+globus_scheduler_event_generator_fork_setup: gpt
+	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_fork_setup-*/*.tar.gz
 globus_authz_test: gpt globus_common globus_callout globus_gss_assist gaa_core globus_authz gaa_gss_generic
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_authz_test-*/*.tar.gz
 globus_gram_job_manager_setup_fork: gpt
@@ -246,6 +250,8 @@ globus_gram_job_manager_setup_pbs: gpt
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_gram_job_manager_setup_pbs-*/*.tar.gz
 globus_gram_job_manager_setup_sge: gpt
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_gram_job_manager_setup_sge-*/*.tar.gz
+globus_gram_job_manager_setup_fork: gpt
+	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_gram_job_manager_setup_fork-*/*.tar.gz
 globus_scheduler_event_generator_lsf_test: gpt
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_scheduler_event_generator_lsf_test-*/*.tar.gz
 globus_simple_ca: gpt

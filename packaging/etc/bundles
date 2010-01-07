@@ -800,6 +800,12 @@ BUNDLE gram5-sge
         globus_scheduler_event_generator_sge_setup
         globus_gram_job_manager_setup_sge
 
+BUNDLE gram5-fork
+        globus_scheduler_event_generator_fork
+        globus_scheduler_event_generator_fork_setup
+        globus_scheduler_event_generator_fork_test
+        globus_fork_starter
+
 BUNDLE gt4-gram-test
         globus_wsrf_gram_scheduler_test
         globus_wsrf_gram_service_java_test_unit
