@@ -455,7 +455,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 
 /* Privileged */
 int
-ssh_gssapi_userok(char *user, struct passwd *pw)
+ssh_gssapi_userok(char *user, struct passwd *pw, int gssapi_keyex)
 {
 	OM_uint32 lmin;
 

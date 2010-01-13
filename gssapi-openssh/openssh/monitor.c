@@ -2053,12 +2053,15 @@ int
 mm_answer_gss_userok(int sock, Buffer *m)
 {
 	int authenticated;
+	int gssapi_keyex;
 
 	if (!options.gss_authentication && !options.gss_keyex)
 		fatal("In GSSAPI monitor when GSSAPI is disabled");
 
+	gssapi_keyex = buffer_get_int(m);
+
 	authenticated = authctxt->valid && 
-	    ssh_gssapi_userok(authctxt->user, authctxt->pw);
+	    ssh_gssapi_userok(authctxt->user, authctxt->pw, gssapi_keyex);
 
 	buffer_clear(m);
 	buffer_put_int(m, authenticated);
@@ -2066,7 +2069,10 @@ mm_answer_gss_userok(int sock, Buffer *m)
 	debug3("%s: sending result %d", __func__, authenticated);
 	mm_request_send(sock, MONITOR_ANS_GSSUSEROK, m);
 
-	auth_method = "gssapi-with-mic";
+	if (gssapi_keyex)
+		auth_method = "gssapi-keyex";
+	else
+		auth_method = "gssapi-with-mic";
 
 	/* Monitor loop will terminate if authenticated */
 	return (authenticated);

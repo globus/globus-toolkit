@@ -89,7 +89,8 @@ userauth_gsskeyex(Authctxt *authctxt)
 						   &gssbuf2, &mic)))) {
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
             authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user,
-                                                      authctxt->pw));
+                                                      authctxt->pw,
+                                                      1 /* gssapi-keyex */));
 	    }
 	}
 	
@@ -327,7 +328,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	/* user should be set if valid but we double-check here */
 	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
 	    authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user,
-                                                  authctxt->pw));
+                                       authctxt->pw, 0 /* !gssapi-keyex */));
 	} else {
 	    authenticated = 0;
 	}
@@ -369,7 +370,8 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
             authenticated =
-                PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw));
+                PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw,
+                                              0 /* !gssapi-keyex */));
 	    } else {
             authenticated = 0;
 	    }

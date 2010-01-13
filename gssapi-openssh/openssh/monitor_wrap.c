@@ -1248,12 +1248,13 @@ mm_ssh_gssapi_checkmic(Gssctxt *ctx, gss_buffer_t gssbuf, gss_buffer_t gssmic)
 }
 
 int
-mm_ssh_gssapi_userok(char *user, struct passwd *pw)
+mm_ssh_gssapi_userok(char *user, struct passwd *pw, int gssapi_keyex)
 {
 	Buffer m;
 	int authenticated = 0;
 
 	buffer_init(&m);
+	buffer_put_int(&m, gssapi_keyex);
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSUSEROK, &m);
 	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSUSEROK,
