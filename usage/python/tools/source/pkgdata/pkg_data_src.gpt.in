@@ -20,7 +20,7 @@
         </Source_Dependencies>
 
         <Source_Setup_Dependency PkgType="pgm">
-          <Setup_Dependency Name="globus_usage_tools_setup_name">
+          <Setup_Dependency Name="globus_usage_tools_setup_executed">
             <Version>
               <Simple_Version Major="0"/>
             </Version>
