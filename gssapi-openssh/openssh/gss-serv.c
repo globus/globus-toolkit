@@ -611,7 +611,9 @@ ssh_gssapi_update_creds(ssh_gssapi_ccache *store) {
 void
 ssh_gssapi_get_client_info(char **userdn, char **mech) {
 	*userdn = gssapi_client.displayname.value;
-	*mech = gssapi_client.mech->name;
+
+	if (gssapi_client.mech)
+		*mech = gssapi_client.mech->name;
 }
 
 #endif
