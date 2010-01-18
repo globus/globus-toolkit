@@ -408,6 +408,11 @@ globus_gram_job_manager_gsi_get_subject(
     export_name.value = NULL;
     export_name.length = 0;
 
+    globus_gram_job_manager_log(
+        NULL,
+        GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+        "event=gram_gsi_get_subject.start "
+        "level=TRACE \n");
     major_status = gss_inquire_cred(
             &minor_status,
             GSS_C_NO_CREDENTIAL,
@@ -447,6 +452,41 @@ failed_display_name:
             &name);
 failed_inquire_cred:
     *subject_namep = subject_name;
+    if (rc != GLOBUS_SUCCESS)
+    {
+        char *errmsg = NULL, *errmsg_escaped = NULL;
+        if (major_status != GSS_S_COMPLETE)
+        {
+            globus_gss_assist_display_status_str(
+                &errmsg,
+                "Error getting subject",
+                major_status,
+                minor_status,
+                0);
+
+            errmsg_escaped = globus_gram_prepare_log_string(errmsg);
+        }
+        globus_gram_job_manager_log(
+            NULL,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram_gsi_get_subject.end "
+            "level=ERROR "
+            "status=%d "
+            "reason=\"%s\" "
+            "\n",
+            -rc,
+            errmsg_escaped
+                ? errmsg_escaped :
+                globus_gram_protocol_error_string(rc));
+        if (errmsg)
+        {
+            free(errmsg);
+        }
+        if (errmsg_escaped)
+        {
+            free(errmsg_escaped);
+        }
+    }
     return rc;
 }
 /* globus_gram_job_manager_gsi_get_subject() */
