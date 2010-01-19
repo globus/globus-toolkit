@@ -2204,6 +2204,24 @@ sub write_valgrind_supp {
    ...
 }
 {
+   GSI_SOCKET_check_creds
+   Memcheck:Leak
+   ...
+   fun:globus_gss_assist_acquire_cred
+   fun:GSI_SOCKET_check_creds
+   ...
+}
+{
+   globus_gss_assist_init_sec_context
+   Memcheck:Leak
+   ...
+   fun:globus_gss_assist_init_sec_context
+   fun:GSI_SOCKET_authentication_init
+   fun:myproxy_authenticate_init
+   fun:myproxy_bootstrap_client
+   ...
+}
+{
    globus_module_activate
    Memcheck:Leak
    ...
