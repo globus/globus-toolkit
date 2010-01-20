@@ -318,6 +318,7 @@ globus_gram_protocol_allow_attach(
 
 	goto remove_listener_exit;
     }
+    listener->listen_registered = GLOBUS_TRUE;
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     (*url) = globus_libc_malloc(17 + strlen(hostnamebuf));
 
@@ -960,6 +961,7 @@ globus_l_gram_protocol_listen_callback(
     globus_io_attr_t                    accept_attrs;
     
     listener = callback_arg;
+    listener->listen_registered = GLOBUS_FALSE;
 
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
     if(globus_i_gram_protocol_shutdown_called || !listener->allow_attach)
@@ -1017,12 +1019,27 @@ globus_l_gram_protocol_listen_callback(
     }
     globus_io_tcpattr_destroy(&accept_attrs);
 
-    /* If this fails, not much we can do. Disallow attach will
-     * be called eventually to clean this listener up.
-     */
-    globus_io_tcp_register_listen(handle,
-                                  globus_l_gram_protocol_listen_callback,
-				  listener);
+    if ((!globus_i_gram_protocol_shutdown_called) &&
+        listener->allow_attach &&
+        listener->listen_registered == GLOBUS_FALSE &&
+        listener->connection_count < globus_i_gram_protocol_max_concurrency)
+    {
+        /* If this fails, not much we can do. Disallow attach will
+         * be called eventually to clean this listener up.
+         */
+        result = globus_io_tcp_register_listen(
+                listener->handle,
+                globus_l_gram_protocol_listen_callback,
+                listener);
+        if (result == GLOBUS_SUCCESS)
+        {
+            listener->listen_registered = GLOBUS_TRUE;
+        }
+    }
+    else
+    {
+        listener->listen_registered = GLOBUS_FALSE;
+    }
 
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     return;
@@ -1043,6 +1060,28 @@ globus_l_gram_protocol_listen_callback(
     globus_libc_free(connection);
 
   error_exit:
+    if((!globus_i_gram_protocol_shutdown_called) &&
+            listener->allow_attach &&
+            (!listener->listen_registered) &&
+            listener->connection_count < globus_i_gram_protocol_max_concurrency)
+    {
+        result = globus_io_tcp_register_listen(
+                listener->handle,
+                globus_l_gram_protocol_listen_callback,
+                listener);
+        if (result == GLOBUS_SUCCESS)
+        {
+            listener->listen_registered = GLOBUS_TRUE;
+        }
+        else
+        {
+            listener->listen_registered = GLOBUS_FALSE;
+        }
+    }
+    else
+    {
+        listener->listen_registered = GLOBUS_FALSE;
+    }
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
 }
 /* globus_l_gram_protocol_listen_callback() */
@@ -1473,7 +1512,7 @@ globus_l_gram_protocol_write_request_callback(
                                GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
     connection->replybufsize = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
 
-    if(connection->replybufsize == NULL)
+    if(connection->replybuf == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto error_exit;
@@ -1831,8 +1870,21 @@ globus_l_gram_protocol_connection_close_callback(
 	    if(connection->listener->connection_count == 0)
 	    {
 		globus_cond_signal(&connection->listener->cond);
-
 	    }
+            if((!globus_i_gram_protocol_shutdown_called) &&
+                    connection->listener->allow_attach &&
+                    (!connection->listener->listen_registered) &&
+                    connection->listener->connection_count < globus_i_gram_protocol_max_concurrency)
+            {
+                result = globus_io_tcp_register_listen(
+                        connection->listener->handle,
+                        globus_l_gram_protocol_listen_callback,
+                        connection->listener);
+                if (result == GLOBUS_SUCCESS)
+                {
+                    connection->listener->listen_registered = GLOBUS_TRUE;
+                }
+            }
 	}
 	else
 	{

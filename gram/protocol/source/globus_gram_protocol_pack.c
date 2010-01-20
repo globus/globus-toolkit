@@ -735,18 +735,18 @@ globus_gram_protocol_unpack_job_request_reply_with_extensions(
     entry = globus_hashtable_lookup(
             extensions,
             "job-manager-url");
-    if (entry == NULL)
+    /* This may not be present if the job failed before replying, such as
+     * unparsable or invalid RSL
+     */
+    if (entry != NULL)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+        *job_contact = strdup(entry->value);
+        if (*job_contact == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
-        goto verify_error;
-    }
-    *job_contact = strdup(entry->value);
-    if (*job_contact == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto copy_contact_failed;
+            goto copy_contact_failed;
+        }
     }
 
     rc = GLOBUS_SUCCESS;
