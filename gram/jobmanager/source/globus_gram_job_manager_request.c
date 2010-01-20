@@ -208,7 +208,8 @@ globus_gram_job_manager_request_init(
     gss_ctx_id_t                        response_ctx,
     globus_bool_t                       reinit,
     char **                             old_job_contact,
-    globus_gram_jobmanager_request_t ** old_job_request)
+    globus_gram_jobmanager_request_t ** old_job_request,
+    char **                             gt3_failure_message)
 {
     globus_gram_jobmanager_request_t *  r;
     uint64_t                            uniq1, uniq2;
@@ -861,6 +862,29 @@ rsl_parse_failed:
 symboltable_populate_failed:
 symboltable_create_scope_failed:
         globus_symboltable_destroy(&r->symbol_table);
+        if (r->gt3_failure_message)
+        {
+            if (gt3_failure_message != NULL)
+            {
+                *gt3_failure_message = r->gt3_failure_message;
+            }
+            else
+            {
+                free(r->gt3_failure_message);
+            }
+        }
+        if (r->gt3_failure_type)
+        {
+            free(r->gt3_failure_type);
+        }
+        if (r->gt3_failure_source)
+        {
+            free(r->gt3_failure_source);
+        }
+        if (r->gt3_failure_destination)
+        {
+            free(r->gt3_failure_destination);
+        }
 symboltable_init_failed:
         free(r);
         r = NULL;
@@ -900,6 +924,9 @@ request_malloc_failed:
  *     one if the return value is GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE. Set
  *     to NULL otherwise. If non-null, the caller must release a reference
  *     when done processing this.
+ * @param gt3_failure_message
+ *     Pointer to be set to an extended failure message to explain why the
+ *     initialization failed.
  *
  * @retval GLOBUS_SUCCESS
  *     Success
@@ -943,7 +970,8 @@ globus_gram_job_manager_request_load(
     int *                               job_state_mask,
     char **                             old_job_contact,
     globus_gram_jobmanager_request_t ** old_job_request,
-    globus_bool_t *                     version_only)
+    globus_bool_t *                     version_only,
+    char **                             gt3_failure_message)
 {
     int                                 rc;
     char *                              rsl;
@@ -984,7 +1012,8 @@ globus_gram_job_manager_request_load(
                 *context,
                 GLOBUS_FALSE,
                 old_job_contact,
-                old_job_request);
+                old_job_request,
+                gt3_failure_message);
     }
     if (rc != GLOBUS_SUCCESS)
     {
@@ -1121,7 +1150,8 @@ bad_request:
             response_code,
             job_contact,
             response_fd,
-            request->response_context);
+            request->response_context,
+            NULL);
     if (rc == GLOBUS_SUCCESS && rc2 == GLOBUS_SUCCESS)
     {
         globus_reltime_t                delay;
@@ -1259,6 +1289,22 @@ globus_gram_job_manager_request_free(
         request->job_state_lock_fd != request->manager->lock_fd)
     {
         close(request->job_state_lock_fd);
+    }
+    if (request->gt3_failure_type)
+    {
+        free(request->gt3_failure_type);
+    }
+    if (request->gt3_failure_message)
+    {
+        free(request->gt3_failure_message);
+    }
+    if (request->gt3_failure_source)
+    {
+        free(request->gt3_failure_source);
+    }
+    if (request->gt3_failure_destination)
+    {
+        free(request->gt3_failure_destination);
     }
     globus_mutex_destroy(&request->mutex);
     globus_cond_destroy(&request->cond);
