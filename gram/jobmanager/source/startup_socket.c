@@ -1046,6 +1046,7 @@ globus_l_gram_startup_socket_callback(
     gss_name_t                          name;
     gss_buffer_desc                     output_name;
     struct linger                       linger;
+    char *                              gt3_failure_message = NULL;
 
     cred_buffer.value = cred_buffer_value;
 
@@ -1362,7 +1363,8 @@ globus_l_gram_startup_socket_callback(
                 &job_state_mask,
                 &old_job_contact,
                 &old_job_request,
-                &version_only);
+                &version_only,
+                &gt3_failure_message);
         if (rc != GLOBUS_SUCCESS)
         {
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE &&
@@ -1430,7 +1432,13 @@ globus_l_gram_startup_socket_callback(
                         ? old_job_request->job_contact
                         : old_job_contact,
                     response_fd,
-                    context);
+                    context,
+                    gt3_failure_message);
+
+            if (gt3_failure_message)
+            {
+                free(gt3_failure_message);
+            }
 
             done = GLOBUS_TRUE;
             rc = globus_gram_job_manager_gsi_update_credential(
@@ -1554,7 +1562,8 @@ globus_l_gram_startup_socket_callback(
                     rc,
                     NULL,
                     response_fd,
-                    context);
+                    context,
+                    NULL);
 
             done = GLOBUS_TRUE;
             goto update_cred_failed;

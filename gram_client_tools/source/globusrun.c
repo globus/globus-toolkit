@@ -1847,7 +1847,7 @@ globus_l_submit_callback(
     globus_gram_client_job_info_t *     info)
 {
     globus_i_globusrun_gram_monitor_t * monitor = user_callback_arg;
-    globus_gram_protocol_extension_t *  entry;
+    globus_gram_protocol_extension_t *  entry = NULL;
 
     globus_mutex_lock(&monitor->mutex);
     monitor->submit_done = GLOBUS_TRUE;
@@ -1860,8 +1860,18 @@ globus_l_submit_callback(
     {
         const char * err = globus_gram_protocol_error_string(
                 info->protocol_error_code);
+
+        if (info->extensions != NULL)
+        {
+            entry = globus_hashtable_lookup(
+                    &info->extensions,
+                    "gt3-failure-message");
+        }
+
         monitor->failure_code = info->protocol_error_code;
-        monitor->failure_message = globus_libc_strdup(err);
+        monitor->failure_message = (entry && entry->value)
+                ? strdup(entry->value)
+                : strdup(err);
     }
     else if (info->job_state > monitor->job_state)
     {

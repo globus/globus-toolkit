@@ -44,14 +44,6 @@
 #include <string.h>
 #include <ctype.h>
 
-/**
- * Verbose debugging.
- *
- * Set this to GLOBUS_TRUE to get information about the status of the file
- * parsing and rsl validation in the job manager log file.
- */
-static globus_bool_t globus_l_gram_job_manager_verbose_debugging = GLOBUS_FALSE;
-
 static
 int
 globus_l_gram_job_manager_read_validation_file(
@@ -101,13 +93,6 @@ void
 globus_l_gram_job_manager_validation_record_free(
     globus_gram_job_manager_validation_record_t *
                                         record);
-
-static
-void
-globus_l_gram_job_manager_validate_log(
-    globus_gram_job_manager_t *         manager,
-    const char *                        fmt,
-    ...);
 
 static
 int
@@ -183,33 +168,55 @@ globus_gram_job_manager_validation_init(
                 scheduler_validation_filename);
     }
 
-    if(globus_l_gram_job_manager_verbose_debugging)
+    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
     {
         tmp_list = manager->validation_records;
 
         while(!globus_list_empty(tmp_list))
         {
+            char * description_escaped = NULL;
+            char * default_escaped = NULL;
+            char * enum_escaped = NULL;
+
             record = globus_list_first(tmp_list);
             tmp_list = globus_list_rest(tmp_list);
 
-            if(globus_l_gram_job_manager_verbose_debugging)
+            description_escaped = globus_gram_prepare_log_string(
+                    record->description);
+            default_escaped = globus_gram_prepare_log_string(
+                    record->default_value);
+            enum_escaped = globus_gram_prepare_log_string(
+                    record->enumerated_values);
+
+            globus_gram_job_manager_log(
+                    manager,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.validation_record.info "
+                    "level=DEBUG "
+                    "attribute=%s "
+                    "description=\"%s\" "
+                    "required_when=%d "
+                    "default_when=%d "
+                    "default_value=\"%s\" "
+                    "enumerated_values=\"%s\" "
+                    "\n",
+                    record->attribute,
+                    description_escaped,
+                    record->required_when,
+                    record->default_when,
+                    default_escaped,
+                    enum_escaped);
+            if (description_escaped)
             {
-                globus_l_gram_job_manager_validate_log(
-                        manager,
-                        "JMI: Validation Record:\n"
-                        "attribute = '%s'\n"
-                        "description = '%s'\n"
-                        "required_when = '%d'\n"
-                        "default_when = '%d'\n"
-                        "default_values = '%s'\n"
-                        "enumerated_values = '%s'\n\n",
-                        record->attribute,
-                        record->description ? record->description : "",
-                        record->required_when,
-                        record->default_when,
-                        record->default_value ? record->default_value : "",
-                        record->enumerated_values ?
-                                record->enumerated_values : "");
+                free(description_escaped);
+            }
+            if (default_escaped)
+            {
+                free(default_escaped);
+            }
+            if (enum_escaped)
+            {
+                free(enum_escaped);
             }
         }
     }
@@ -626,9 +633,16 @@ globus_l_gram_job_manager_read_validation_file(
         }
         else
         {
-            globus_l_gram_job_manager_validate_log(
+            globus_gram_job_manager_log(
                     manager,
-                    "Ignoring Unknown attribute in %s: '%s: %s'\n",
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.validation_record.info "
+                    "level=WARN "
+                    "msg=\"Unknown attribute in validation file\" "
+                    "path=\"%s\" "
+                    "attribute=\"%s\" "
+                    "value=\"%s\" "
+                    "\n",
                     validation_filename,
                     attribute,
                     value);
@@ -829,6 +843,21 @@ globus_l_gram_job_manager_check_rsl_attributes(
     globus_gram_job_manager_validation_record_t *
                                         record;
     globus_rsl_value_t *                value;
+    int                                 rc = GLOBUS_SUCCESS;
+    static const char *                 operation_types[] =
+    {
+        "??",
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "??",
+        "&",
+        "|",
+        "+"
+    };
 
     operands = globus_rsl_boolean_get_operand_list(rsl);
 
@@ -840,12 +869,63 @@ globus_l_gram_job_manager_check_rsl_attributes(
         relation = globus_list_first(operands);
         operands = globus_list_rest(operands);
 
-        if(!globus_rsl_is_relation_eq(relation))
+        if (!globus_rsl_is_relation(relation))
         {
-            globus_l_gram_job_manager_validate_log(
-                request->manager,
-                "JMI: RSL contains something besides an \"=\" relation\n");
+            int operator = globus_rsl_boolean_get_operator(relation);
+            if (operator > 10 || operator < 0)
+            {
+                operator = 0;
+            }
 
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.validate_rsl.end "
+                    "level=ERROR "
+                    "msg=\"Required RSL relation, got boolean\" "
+                    "operator=%s "
+                    "status=%d "
+                    "\n",
+                    operation_types[operator],
+                    -GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL);
+            if (request->gt3_failure_message == NULL)
+            {
+                request->gt3_failure_message = globus_common_create_string(
+                        "Required RSL relation, got boolean %s",
+                        operation_types[operator]);
+            }
+        }
+        else if (!globus_rsl_is_relation_eq(relation))
+        {
+            int operator = globus_rsl_relation_get_operator(relation);
+
+            if (operator > 10 || operator < 0)
+            {
+                operator = 0;
+            }
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.validate_rsl.end "
+                    "level=ERROR "
+                    "msg=\"Unsupported RSL operation\" "
+                    "attribute=%s "
+                    "operator=%s "
+                    "status=%d "
+                    "\n",
+                    globus_rsl_relation_get_attribute(relation),
+                    operation_types[operator],
+                    -GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL);
+
+            if (request->gt3_failure_message == NULL)
+            {
+                request->gt3_failure_message = globus_common_create_string(
+                        "the job manager does not support the RSL operator "
+                        "\"%s\" for the %s attribute",
+                        operation_types[operator],
+                        globus_rsl_relation_get_attribute(relation));
+            }
             return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
         }
         attribute = globus_rsl_relation_get_attribute(relation);
@@ -857,10 +937,24 @@ globus_l_gram_job_manager_check_rsl_attributes(
 
         if(!node)
         {
-            globus_l_gram_job_manager_validate_log(
-                request->manager,
-                "RSL attribute '%s' is not in the validation file!\n",
-                attribute);
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.validate_rsl.end "
+                    "level=ERROR "
+                    "msg=\"Unsupported RSL attribute\" "
+                    "attribute=%s "
+                    "status=%d "
+                    "\n",
+                    globus_rsl_relation_get_attribute(relation),
+                    -GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL);
+
+            if (request->gt3_failure_message == NULL)
+            {
+                request->gt3_failure_message = globus_common_create_string(
+                        "the RSL attribute \"%s\" is not supported by the LRM adapter",
+                        globus_rsl_relation_get_attribute(relation));
+            }
             return GLOBUS_GRAM_PROTOCOL_ERROR_PARAMETER_NOT_SUPPORTED;
         }
 
@@ -869,21 +963,45 @@ globus_l_gram_job_manager_check_rsl_attributes(
         /* Check valid_when */
         if((record->valid_when & when) == 0)
         {
-            globus_l_gram_job_manager_validate_log(
-                request->manager,
-                "RSL attribute '%s' is not valid when %d\n",
-                attribute,
-                when);
+            const char * whenstr = "unknown operation";
 
             switch(when)
             {
               case GLOBUS_GRAM_VALIDATE_JOB_SUBMIT:
-                return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SUBMIT_ATTRIBUTE;
+                whenstr = "submit";
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SUBMIT_ATTRIBUTE;
+                break;
               case GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART:
-                return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_RESTART_ATTRIBUTE;
+                whenstr = "restart";
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_RESTART_ATTRIBUTE;
+                break;
               case GLOBUS_GRAM_VALIDATE_STDIO_UPDATE:
-                return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDIO_UPDATE_ATTRIBUTE;
+                whenstr = "stdio_update";
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDIO_UPDATE_ATTRIBUTE;
+                break;
             }
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.validate_rsl.end "
+                    "level=ERROR "
+                    "msg=\"Invalid RSL attribute for operation\" "
+                    "attribute=%s "
+                    "operation=%s "
+                    "status=%d "
+                    "\n",
+                    globus_rsl_relation_get_attribute(relation),
+                    when,
+                    -rc);
+            if (request->gt3_failure_message == NULL)
+            {
+                request->gt3_failure_message = globus_common_create_string(
+                        "Invalid RSL attribute \"%s\" for %s",
+                        globus_rsl_relation_get_attribute(relation),
+                        whenstr);
+            }
+            return rc;
         }
         /* Check enumerated values if applicable */
         if(record->enumerated_values)
@@ -903,13 +1021,26 @@ globus_l_gram_job_manager_check_rsl_attributes(
             }
             if(strstr(record->enumerated_values, value_str) == GLOBUS_NULL)
             {
-                globus_l_gram_job_manager_validate_log(
-                    request->manager,
-                    "RSL attribute %s's value is not in the enumerated set\n",
-                    attribute);
-
-                return globus_l_gram_job_manager_validation_value_error(
+                rc = globus_l_gram_job_manager_validation_value_error(
                             attribute);
+
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.validate_rsl.end "
+                        "level=ERROR "
+                        "msg=\"RSL attribute value not in enumeration\" "
+                        "attribute=%s "
+                        "value=%s "
+                        "enumeration=\"%s\" "
+                        "status=%d "
+                        "\n",
+                        record->attribute,
+                        value_str,
+                        record->enumerated_values,
+                        -rc);
+
+                return rc;
             }
         }
     }
@@ -945,6 +1076,7 @@ globus_l_gram_job_manager_insert_default_rsl(
     globus_rsl_t *                      new_relation;
     char *                              new_relation_str;
     globus_list_t *                     validation_records;
+    int                                 rc = GLOBUS_SUCCESS;
 
     attributes = globus_rsl_boolean_get_operand_list_ref(rsl);
 
@@ -966,10 +1098,17 @@ globus_l_gram_job_manager_insert_default_rsl(
                         record->attribute,
                         record->default_value);
 
-                globus_l_gram_job_manager_validate_log(
-                    request->manager,
-                    "Adding default RSL of %s\n",
-                    new_relation_str);
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                        "event=gram.validate_rsl.info "
+                        "level=DEBUG "
+                        "msg=\"Inserting default RSL for attribute\" "
+                        "attribute=%s "
+                        "default=\"%s\" "
+                        "\n",
+                        record->attribute,
+                        record->default_value);
 
                 new_relation = globus_rsl_parse(new_relation_str);
 
@@ -984,17 +1123,24 @@ globus_l_gram_job_manager_insert_default_rsl(
                         *attributes,
                         record->attribute))
             {
-                globus_l_gram_job_manager_validate_log(
-                        request->manager,
-                        "invalid RSL: required attribute %s is missing\n",
+                rc = globus_l_gram_job_manager_missing_value_error(
+                            record->attribute);
+
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.validate_rsl.end "
+                        "level=ERROR "
+                        "msg=\"RSL missing required attribute\" "
+                        "attribute=%s "
+                        "\n",
                         record->attribute);
 
-                return globus_l_gram_job_manager_missing_value_error(
-                            record->attribute);
+                return rc;
             }
         }
     }
-    return GLOBUS_SUCCESS;
+    return rc;
 }
 /* globus_l_gram_job_manager_insert_default_rsl() */
 
@@ -1094,23 +1240,6 @@ globus_l_gram_job_manager_validation_record_free(
     free(record);
 }
 /* globus_l_gram_job_manager_validation_record_free() */
-
-static
-void
-globus_l_gram_job_manager_validate_log(
-    globus_gram_job_manager_t *         manager,
-    const char *                        fmt,
-    ...)
-{
-#ifdef BUILD_DEBUG
-    va_list                             ap;
-
-    va_start(ap, fmt);
-    /*vfprintf(manager->jobmanager_log_fp, fmt, ap);*/
-    va_end(ap);
-#endif
-}
-/* globus_l_gram_job_manager_validate_log() */
 
 #define HANDLE_RSL_ERROR(param,error) \
     if(globus_l_gram_job_manager_validation_string_match( \

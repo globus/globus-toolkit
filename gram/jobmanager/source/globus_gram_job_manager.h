@@ -794,7 +794,8 @@ globus_gram_job_manager_request_init(
     gss_ctx_id_t                        response_ctx,
     globus_bool_t                       reinit,
     char **                             old_job_contact,
-    globus_gram_jobmanager_request_t ** old_job_request);
+    globus_gram_jobmanager_request_t ** old_job_request,
+    char **                             gt3_failure_message);
 
 void
 globus_gram_job_manager_request_destroy(
@@ -852,7 +853,8 @@ globus_gram_job_manager_request_load(
     int *                               job_state_mask,
     char **                             old_job_contact,
     globus_gram_jobmanager_request_t ** old_job_request,
-    globus_bool_t *                     version_only);
+    globus_bool_t *                     version_only,
+    char **                             gt3_failure_message);
 
 int
 globus_gram_job_manager_request_start(
@@ -969,7 +971,8 @@ globus_gram_job_manager_reply(
     int                                 response_code,
     const char *                        job_contact,
     int                                 response_fd,
-    gss_ctx_id_t                        response_context);
+    gss_ctx_id_t                        response_context,
+    const char *                        gt3_failure_message);
 
 int
 globus_gram_job_manager_validate_username(

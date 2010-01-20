@@ -1270,6 +1270,10 @@ error_out:
  *     Job contact
  * @param response_fd
  *     Descriptor to send response to
+ * @param response_context
+ *     GSSAPI context to use to wrap the response message
+ * @param gt3_failure_message
+ *     Error information to include in a GRAM extension
  */
 int
 globus_gram_job_manager_reply(
@@ -1278,7 +1282,8 @@ globus_gram_job_manager_reply(
     int                                 response_code,
     const char *                        job_contact,
     int                                 response_fd,
-    gss_ctx_id_t                        response_context)
+    gss_ctx_id_t                        response_context,
+    const char *                        gt3_failure_message)
 {
     int                                 rc;
     globus_byte_t *                     reply = NULL;
@@ -1366,6 +1371,31 @@ globus_gram_job_manager_reply(
         goto extension_insert_failed;
     }
     extension = NULL;
+
+    if (gt3_failure_message != NULL)
+    {
+        extension = globus_gram_protocol_create_extension(
+                "gt3-failure-message",
+                "%s",
+                gt3_failure_message);
+
+        if (extension == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto extension_create_failed;
+        }
+        rc = globus_hashtable_insert(
+                &extensions,
+                extension->attribute,
+                extension);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto extension_insert_failed;
+        }
+    }
 
     /* Response to initial job request. */
     rc = globus_gram_protocol_pack_job_request_reply_with_extensions(

@@ -2439,6 +2439,7 @@ globus_l_gram_restart_job(
             GSS_C_NO_CONTEXT,
             GLOBUS_TRUE,
             NULL,
+            NULL,
             NULL);
     free(restart_rsl);
 malloc_restart_rsl_failed:

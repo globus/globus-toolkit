@@ -4002,15 +4002,17 @@ globus_l_gram_client_register_callback(
         switch(monitor->type)
         {
           case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
-            rc = globus_gram_protocol_unpack_job_request_reply(
+            rc = globus_gram_protocol_unpack_job_request_reply_with_extensions(
                     message,
                     msgsize,
                     &monitor->info->protocol_error_code,
-                    &monitor->info->job_contact);
+                    &monitor->info->job_contact,
+                    &monitor->info->extensions);
             if(rc != GLOBUS_SUCCESS)
             {
                 monitor->info->protocol_error_code = rc;
             }
+
             break;
 
           case GLOBUS_GRAM_CLIENT_PING:
