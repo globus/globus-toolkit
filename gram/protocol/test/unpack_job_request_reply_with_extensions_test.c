@@ -263,8 +263,7 @@ int test_missing_attribute()
     char *                              lines[] =
     {
         "protocol-version: 2\r\n",
-        "status: 2\r\n",
-        "failure-code: 0\r\n"
+        "status: 2\r\n"
     };
     int                                 status;
     char *                              job_contact;
@@ -272,10 +271,8 @@ int test_missing_attribute()
     for (i = 0; i < ARRAY_LEN(lines); i++)
     {
         message = globus_common_create_string(
-                "%s%s%s",
-                lines[i % ARRAY_LEN(lines)],
-                lines[(i+1) % ARRAY_LEN(lines)],
-                lines[(i+2) % ARRAY_LEN(lines)]);
+                "%s",
+                lines[i % ARRAY_LEN(lines)]);
 
         test_assert(message != NULL,
                 ("Error creating message (out of memory?)\n"));
