@@ -52,6 +52,16 @@ globus_l_gram_create_stack(
     globus_xio_stack_t *                stack,
     globus_xio_driver_t *               driver);
 
+static
+void
+globus_l_waitpid_callback(
+    void *                              user_arg);
+
+static
+globus_mutex_t                          globus_l_waitpid_callback_lock;
+static
+globus_callback_handle_t                globus_l_waitpid_callback_handle =
+        GLOBUS_NULL_HANDLE;
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -72,6 +82,7 @@ main(
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
     globus_list_t *                     requests = NULL;
     OM_uint32                           major_status, minor_status;
+    pid_t                               forked_starter = 0;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -230,19 +241,20 @@ main(
             if (!started_without_client)
             {
                 /* We've acquired the manager socket */
-                rc = fork();
+                forked_starter = fork();
             }
             else
             {
-                rc = 1;
+                /* Fake PID */
+                forked_starter = 1;
             }
 
-            if (rc < 0)
+            if (forked_starter < 0)
             {
                 fprintf(stderr, "fork failed: %s", strerror(errno));
                 exit(1);
             }
-            else if (rc > 0)
+            else if (forked_starter > 0)
             {
                 /* We are the parent process, which means we hold 
                  * the manager lock file and have an open socket for
@@ -252,6 +264,12 @@ main(
                  * we'll act like the single job manager and let the
                  * forked processes pass the job fds to me.
                  */
+
+                /* Clean fake PID so that we don't try to wait for init(8) */
+                if (forked_starter == 1)
+                {
+                    forked_starter = 0;
+                }
                 rc = globus_gram_job_manager_gsi_write_credential(
                         cred,
                         manager.cred_path);
@@ -390,8 +408,29 @@ main(
             }
         }
     }
-    GlobusGramJobManagerLock(&manager);
 
+    globus_mutex_init(&globus_l_waitpid_callback_lock, NULL);
+
+    /*
+     * Register periodic event to clean up zombie if we forked a child
+     * process
+     */
+    if (forked_starter != 0)
+    {
+        globus_reltime_t                delay, period;
+
+        GlobusTimeReltimeSet(delay, 0, 0);
+        GlobusTimeReltimeSet(period, 10, 0);
+
+        globus_callback_register_periodic(
+                &globus_l_waitpid_callback_handle,
+                &delay,
+                &period,
+                globus_l_waitpid_callback,
+                &forked_starter);
+    }
+
+    GlobusGramJobManagerLock(&manager);
     if (manager.socket_fd != -1 &&
         globus_hashtable_empty(&manager.request_hash) &&
         manager.grace_period_timer == GLOBUS_NULL_HANDLE)
@@ -399,15 +438,28 @@ main(
         globus_gram_job_manager_set_grace_period_timer(&manager);
     }
 
+
     /* For the active job manager, this will block until all jobs have
-     * terminated. For any other job manager, the hashtable is empty so this
-     * falls right through.
+     * terminated. For any other job manager, the monitor.done is set to
+     * GLOBUS_TRUE and this falls right through.
      */
     while (! manager.done)
     {
         GlobusGramJobManagerWait(&manager);
     }
     GlobusGramJobManagerUnlock(&manager);
+
+    globus_mutex_lock(&globus_l_waitpid_callback_lock);
+    if (globus_l_waitpid_callback_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(
+                globus_l_waitpid_callback_handle,
+                NULL,
+                NULL,
+                0);
+        globus_l_waitpid_callback_handle = GLOBUS_NULL_HANDLE;
+    }
+    globus_mutex_unlock(&globus_l_waitpid_callback_lock);
 
 
     globus_gram_job_manager_log(
@@ -594,4 +646,29 @@ driver_load_failed:
 }
 /* globus_l_gram_create_stack() */
 
+
+static
+void
+globus_l_waitpid_callback(
+    void *                              user_arg)
+{
+    pid_t                               childpid = *(pid_t *) user_arg;
+    int                                 statint;
+
+    globus_mutex_lock(&globus_l_waitpid_callback_lock);
+    if (waitpid(childpid, &statint, WNOHANG) > 0)
+    {
+        *(pid_t *) user_arg = 0;
+
+        globus_callback_unregister(
+                globus_l_waitpid_callback_handle,
+                NULL,
+                NULL,
+                0);
+        globus_l_waitpid_callback_handle = GLOBUS_NULL_HANDLE;
+    }
+
+    globus_mutex_unlock(&globus_l_waitpid_callback_lock);
+}
+/* globus_l_waitpid_callback() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
