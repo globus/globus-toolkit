@@ -2,7 +2,8 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager">
-    <Aging_Version Age="5" Major="10" Minor="19"/>
+
+    <Aging_Version Age="5" Major="10" Minor="20"/>
     <Description>GRAM Jobmanager</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
