@@ -1853,7 +1853,6 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
 {
     char * symbol_name;
     char * symbol_value;
-    char * copy_symbol_value;
     char * tmp_string_value;
     globus_list_t * tmp_rsl_value_list;
     globus_rsl_value_t * tmp_rsl_value_ptr;
