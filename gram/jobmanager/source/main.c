@@ -37,6 +37,8 @@
 #include "globus_gass_cache.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
+#include <sys/wait.h>
+
 static
 int
 globus_l_gram_job_manager_activate(void);
