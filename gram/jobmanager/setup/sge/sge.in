@@ -417,8 +417,8 @@ sub submit
         }
         else
         {
-            $sge_job_script->print($tuple->[0] . "=" . $tuple->[1]
-                                   . "; export " . $tuple->[0] . "\n");
+            $sge_job_script->print($tuple->[0] . '="' . $tuple->[1]
+                                   . '"; export ' . $tuple->[0] . "\n");
         }
 
     }
