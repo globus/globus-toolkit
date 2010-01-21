@@ -72,6 +72,9 @@ sub submit
     my $sge_job_script_name;
     my $errfile = "";
     my $queue;
+    my $executable;
+    my $directory;
+    my $stdin;
     my $job_id;
     my @arguments = ();
     my $email_when = "";
@@ -104,29 +107,59 @@ sub submit
     #####
     # check directory
     #
-    if( $description->directory eq "")
+    $directory = $description->directory();
+    if ( $directory eq '')
     {
 	return Globus::GRAM::Error::RSL_DIRECTORY();
     }
-    chdir $description->directory() or
+    if ( $directory !~ m|^/| )
+    {
+        $directory = $ENV{HOME} . '/' . $directory;
+    }
+    if ( ! -d $directory)
+    {
 	return Globus::GRAM::Error::BAD_DIRECTORY();
+    }
 
     #####
     # check executable
     #
-    if( $description->executable eq "")
+    $executable = $description->executable();
+
+    if( $executable eq '')
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
-    }   # Discard "exists", "executable" tests; no absolute path!   GKJ
-    elsif( $description->stdin() eq "")
+    }
+    if ($executable !~ m|^/|)
+    {
+        $executable = $directory . '/' . $executable;
+    }
+
+    if (! -e $description->executable())
+    {
+        return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
+    }
+    elsif (! -x $description->executable())
+    {
+        return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+    }
+    #####
+    # check stdin
+    $stdin = $description->stdin();
+
+    if( $stdin eq '')
     {
 	return Globus::GRAM::Error::RSL_STDIN;
     }
-    elsif(! -r $description->stdin())
+
+    if ($stdin !~ m|^/|)
+    {
+        $stdin = $directory . '/' . $stdin;
+    }
+    if(! -r $stdin)
     {
 	return Globus::GRAM::Error::STDIN_NOT_FOUND();
     }
-
 
     #####
     # RSL attributes max_cpu_time/max_wall_time (given in minutes)
@@ -360,6 +393,10 @@ sub submit
     my $use_osg_grid = 1;
     my $use_dynamic_wn_tmp = 1;
     map {
+        if ((!ref($_)) || scalar(@$_) != 2)
+        {
+            return Globus::GRAM::Error::RSL_ENVIRONMENT();
+        }
         if ($_->[0] eq "OSG_GRID") {
             $osg_grid =  $_->[1]; 
         } elsif ($_->[0] eq "OSG_DONT_USE_OSG_GRID_FOR_GL") {
@@ -417,8 +454,8 @@ sub submit
         }
         else
         {
-            $sge_job_script->print($tuple->[0] . '="' . $tuple->[1]
-                                   . '"; export ' . $tuple->[0] . "\n");
+            $sge_job_script->print($tuple->[0] . "=" . $tuple->[1]
+                                   . "; export " . $tuple->[0] . "\n");
         }
 
     }
@@ -433,7 +470,7 @@ sub submit
     # 
     #
     $sge_job_script->print("# Change to directory requested by user\n");
-    $sge_job_script->print('cd ' . $description->directory() . "\n");
+    $sge_job_script->print('cd ' . $directory . "\n");
 
 
     #####
@@ -510,8 +547,8 @@ sub submit
             # Using Sun's MPI.
             #
             $sge_job_script->print("$sun_mprun -np ". $description->count() ." "
-                                   . $description->executable() . " $args < "
-                                   . $description->stdin() . "\n");
+                                   . $executable . " $args < "
+                                   . $stdin . "\n");
         }
         else
         {
@@ -519,8 +556,8 @@ sub submit
             # Using non-Sun's MPI.
             #
             $sge_job_script->print("$mpirun " # " -np ". $description->count() . " "
-                                   . $description->executable() . " $args < "
-                                   . $description->stdin() . "\n");
+                                   . $executable . " $args < "
+                                   . $stdin . "\n");
         }
     }
     elsif($description->jobtype() eq "multiple")
@@ -531,8 +568,8 @@ sub submit
         $self->log("  forking multiple requests");
         for(my $i = 0; $i < $description->count(); $i++)
         {
-            $sge_job_script->print($description->executable() . " $args < "
-                                   . $description->stdin() . "&\n");
+            $sge_job_script->print($executable . " $args < "
+                                   . $stdin . "&\n");
         }
         $sge_job_script->print("wait\n");
     }
@@ -543,16 +580,16 @@ sub submit
         #
         $self->log("  using job arrays with count " . $description->count());
         $sge_job_script->print("#\$ -t 1-" . $description->count() . "\n");
-        $sge_job_script->print($description->executable() . " $args < "
-                               . $description->stdin() . "\n");
+        $sge_job_script->print($executable . " $args < "
+                               . $stdin . "\n");
     }
     else
     {
         #####
         # Single execution job
         #
-        $sge_job_script->print($description->executable() . " $args < "
-                               . $description->stdin() . "\n");
+        $sge_job_script->print($executable . " $args < "
+                               . $stdin . "\n");
     }
 
     #####
