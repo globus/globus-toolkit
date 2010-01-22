@@ -536,8 +536,8 @@ get_AC_SEQ(struct vomsdata *vd, unsigned char **aclist, int *aclist_length)
         if (ac == NULL) {
             myproxy_debug("NULL AC got.");
         } else {
-            if (! sk_AC_insert(acseq->acs, ac, -1) ) {
-                verror_put_string("sk_AC_insert failed");
+            if (! sk_AC_push(acseq->acs, ac) ) {
+                verror_put_string("sk_AC_push failed");
             }
         }
     }
