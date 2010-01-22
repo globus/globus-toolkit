@@ -1010,12 +1010,22 @@ usage metrics altogether:
 - Host name of reporting server
 .Sm on
 .Pp
-If no tags are specified in a host spec, or the special string "default"
-is specified, the tags VvMm are assumed. A site could choose to allow a
+If no tags are specified in a host spec, or the special string
+.Dq default
+is specified, the tags
+.Dq VvMm
+are assumed. A site could choose to allow a
 different set of data to be reported by specifying a different tag set. The
-last  3  tags  I, u and U above are more meant for a local collector that a
+last 3 tags
+.Dq I ,
+.Dq u
+and
+.Dq U
+above are more meant for a local collector that a
 site might like to deploy since they could be construed as private information.
-The special string "all" denotes all tags.
+The special string
+.Dq all
+denotes all tags.
 .El
 .Pp
 By default, Usage Metrics reporting is sent to
