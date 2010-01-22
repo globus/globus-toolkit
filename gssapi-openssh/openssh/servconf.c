@@ -530,8 +530,8 @@ static struct {
 	{ "hpndisabled", sHPNDisabled },
 	{ "hpnbuffersize", sHPNBufferSize },
 	{ "tcprcvbufpoll", sTcpRcvBufPoll },
-	{ "disable_usage_stats", sDisUsageStats, SSHCFG_GLOBAL},
-	{ "usage_stats_target", sUsageStatsTarg, SSHCFG_GLOBAL},
+	{ "disableusagestats", sDisUsageStats, SSHCFG_GLOBAL},
+	{ "usagestatstargets", sUsageStatsTarg, SSHCFG_GLOBAL},
 	{ NULL, sBadOption, 0 }
 };
 

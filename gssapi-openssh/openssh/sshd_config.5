@@ -335,6 +335,16 @@ See
 in
 .Xr ssh_config 5
 for more information on patterns.
+.It Cm DisableUsageStats
+This keyword can be followed by one of the keywords "true", "enabled", "yes",
+"on" or "1" to disable reporting of usage metrics. Or it can be set to "false",
+"disabled", "no", "off", "0" to enable reporting of usage metrics, which is the
+default. Setting the
+.Cm GLOBUS_USAGE_OPTOUT
+environment variable to "1" will also disable the reporting of usage metrics.
+Disabling reporting of usage metrics will cause the
+.Cm UsageStatsTargets
+setting to be ignored.
 .It Cm ForceCommand
 Forces the execution of the command specified by
 .Cm ForceCommand ,
@@ -925,6 +935,111 @@ This avoids infinitely hanging sessions.
 .Pp
 To disable TCP keepalive messages, the value should be set to
 .Dq no .
+.It Cm UsageStatsTargets
+This option can be used to specify the target collector hosts to which usage
+metrics should be reported. This setting will be ignored if
+.Cm DisableUsageStats
+is enabled. Multiple targets can be specified separated by comma(s), but no
+space(s). Each target specification is of the format
+.Pa host:port[!tags].
+Tags control what data elements are reported. The following list specifies
+the tags for the corresponding data elements.
+.Pp
+.Bl -item -offset indent -compact
+.It
+.Cm V
+.Sm off
+- OpenSSH version, reported by default.
+.Sm on
+.It
+.Cm v
+.Sm off
+- SSL version, reported by default.
+.Sm on
+.It
+.Cm M
+.Sm off
+- User authentication method used such as "gssapi-keyex", "gssapi-with-mic", etc. Reported by default.
+.Sm on
+.It
+.Cm m
+.Sm off
+- User authentication mechanism used such as "GSI", "Kerberos", etc. Reported by default.
+.Sm on
+.It
+.Cm I
+.Sm off
+- Client IP address. Not reported by default.
+.Sm on
+.It
+.Cm u
+.Sm off
+- User name. Not reported by default.
+.Sm on
+.It
+.Cm U
+.Sm off
+- User DN. Not reported by default.
+.Sm on
+.Pp
+In addition to the above selected information, the following data are
+reported to ALL the specified/default target collectors. There's no way to
+exclude these from being reported other than by disabling the reporting of
+usage metrics altogether:
+.Pp
+.It
+.Cm Component code
+.Sm off
+- 12 for GSI OpenSSH
+.Sm on
+.It
+.Cm Component Data Format version
+.Sm off
+- 0 currently
+.Sm on
+.It
+.Cm IP Address
+.Sm off
+- IP address of reporting server
+.Sm on
+.It
+.Cm Timestamp
+.It
+.Cm Hostname
+.Sm off
+- Host name of reporting server
+.Sm on
+.Pp
+If no tags are specified in a host spec, or the special string "default"
+is specified, the tags VvtrlLB are assumed. A site could choose to allow a
+different set of data to be reported by specifying a different tag set. The
+last  3  tags  I, u and U above are more meant for a local collector that a
+site might like to deploy since they could be construed as private information.
+The special string "all" denotes all tags.
+.El
+.Pp
+By default, Usage Metrics reporting is sent to
+.Dq usage-stats.cilogon.org:4810 .
+This can be made explicit by specifying
+.Dq default
+(all by itself) for the
+target specification as in:
+.Pp
+.Bl -item -offset indent -compact
+.It
+.Cm UsageStatsTargets
+.Sm off
+default
+.Sm on
+.El
+.Pp
+If
+.Cm UsageStatsTargets
+is not specified, a comma-separated list of targets
+(without any tags specified) if specified in the environment variable
+.Cm GLOBUS_USAGE_TARGETS
+will be used.
+.Pp
 .It Cm UseDNS
 Specifies whether
 .Xr sshd 8
