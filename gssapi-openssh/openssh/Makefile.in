@@ -421,7 +421,11 @@ gpt-install-files: gpt-install-docs
 	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
 	ln -s ./ssh.d/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
 	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
-	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1;
+	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	ln -s ./ssh.d/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	ln -s ./ssh.d/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5;
 	# end man
 	# start cat
 	docdir=cat; \
@@ -445,7 +449,11 @@ gpt-install-files: gpt-install-docs
 	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
 	ln -s ./ssh.d/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
 	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
-	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1;
+	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	ln -s ./ssh.d/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	ln -s ./ssh.d/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5;
 	# end cat
 
 gpt-install-docs:
@@ -523,6 +531,8 @@ uninstall:
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-rand-helper.8
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
