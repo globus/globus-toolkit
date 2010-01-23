@@ -534,7 +534,7 @@ get_AC_SEQ(struct vomsdata *vd, unsigned char **aclist, int *aclist_length)
     for (j = 0; vd->data[j] != NULL; j++) {
         AC *ac = VOMS_GetAC( vd->data[j] );
         if (ac == NULL) {
-            myproxy_debug("NULL AC got.");
+            verror_put_string("VOMS_GetAC failed.");
         } else {
             if (! sk_AC_push(acseq->acs, ac) ) {
                 verror_put_string("sk_AC_push failed");
