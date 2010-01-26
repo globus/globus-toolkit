@@ -733,6 +733,9 @@ regex_compare(const char *regex,
 #ifndef NO_REGEX_SUPPORT
     char 		*buf;
     char		*bufp;
+    int			escaped = 0;
+
+myproxy_debug("GIVEN>>>>>>>>>>>>>(%s)", regex?:"NULL");
 
     /*
      * First we convert the regular expression from the human-readable
@@ -757,6 +760,7 @@ regex_compare(const char *regex,
 
     while (*regex)
     {
+
 	switch(*regex)
 	{
 
@@ -771,14 +775,32 @@ regex_compare(const char *regex,
 	    *bufp++ = '.';
 	    break;
 
-	    /* '.' needs to be escaped to '\.' */
-	case '.':
-	    *bufp++ = '\\';
-	    *bufp++ = '.';
+	   /* '\' might be escaping the succeeding meta-character */
+	case '\\':
+	    *bufp++ = *regex;
+	    escaped = !escaped;
 	    break;
+
+	   /* Need to escape other metacharacters if not already done
+	      manually by the user */
+	case '.':
+	case '[':
+	case ']':
+	case '(':
+	case ')':
+	case '{':
+	case '}':
+	case '^':
+	case '$':
+	case '+':
+	case '|':
+	    if (!escaped)
+	        *bufp++ = '\\';
+	/* fallthru to default */
 
 	default:
 	    *bufp++ = *regex;
+	    escaped = 0;
 	}
 
 	regex++;
@@ -786,6 +808,7 @@ regex_compare(const char *regex,
 
     *bufp++ = '$';
     *bufp++ = '\0';
+myproxy_debug("NEW>>>>>>>>>>>>>(%s)", buf);
 
 #ifdef HAVE_REGCOMP
     {
