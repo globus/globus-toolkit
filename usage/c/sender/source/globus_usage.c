@@ -96,8 +96,8 @@ typedef struct globus_usage_stats_handle_s
     globus_xio_handle_t                 xio_handle;
     globus_list_t *                     xio_desc_list;
     const char *                        optout;
-    int                                 header_length;
-    int                                 data_length;
+    size_t                              header_length;
+    size_t                              data_length;
     unsigned char                       data[PACKET_SIZE];
 } globus_i_usage_stats_handle_t;
 
@@ -520,9 +520,9 @@ globus_usage_stats_send_array(
         {
             const char *                key;
             const char *                value;
-            int                         length; 
-            int                         val_len;
-            int                         val_start;
+            size_t                      length; 
+            size_t                      val_len;
+            const unsigned char *       val_start;
             key = key_array[i];
             value = value_array[i];
             
@@ -644,9 +644,9 @@ globus_usage_stats_vsend(
         {
             const char *                key = va_arg(ap, char *);
             const char *                value = va_arg(ap, char *);
-            int                         length;
-            int                         val_len;
-            int                         val_start;
+            size_t                      length;
+            size_t                      val_len;
+            const unsigned char *       val_start;
             
             val_len = strlen(value);
             length = strlen(key) + val_len;
