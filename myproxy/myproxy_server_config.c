@@ -735,7 +735,7 @@ regex_compare(const char *regex,
     char		*bufp;
     int			escaped = 0;
 
-myproxy_debug("GIVEN>>>>>>>>>>>>>(%s)", regex?:"NULL");
+    myproxy_debug("REGEX (%s), STRING (%s)(%s)", regex?:"NULL", string?:"NULL");
 
     /*
      * First we convert the regular expression from the human-readable
@@ -808,7 +808,7 @@ myproxy_debug("GIVEN>>>>>>>>>>>>>(%s)", regex?:"NULL");
 
     *bufp++ = '$';
     *bufp++ = '\0';
-myproxy_debug("NEW>>>>>>>>>>>>>(%s)", buf);
+    myproxy_debug("TRANSLATED ERE (%s)", buf);
 
 #ifdef HAVE_REGCOMP
     {
