@@ -976,7 +976,6 @@ globus_l_gram_job_manager_signal(
         break;
 
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST:
-    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END:
         if(request->two_phase_commit == 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT;
@@ -1011,24 +1010,93 @@ globus_l_gram_job_manager_signal(
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
         }
         else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
-        {
-            request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED;
-        }
-        else if(request->jobmanager_state ==
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)
-        {
-            request->jobmanager_state =
-            GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
-        }
-        else if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1 ||
                 request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2)
         {
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
+        }
+        else
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Two-phase commit signal in invalid jobmanager state",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
+        if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+        {
+            GlobusTimeReltimeSet(delay, 0, 0);
+            result = globus_callback_adjust_oneshot(
+                    request->poll_timer,
+                    &delay);
+        }
+        else
+        {
+            globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    NULL);
+        }
+        break;
+
+    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END:
+        if(request->two_phase_commit == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Two-phase commit signal when job doesn't have two_phase timeout",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
+        else if(request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
+                request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED;
+        }
+        else if(request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
         }
         else
         {
