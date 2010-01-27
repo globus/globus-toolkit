@@ -29,7 +29,7 @@ typedef struct
     char * job_contact;
     globus_mutex_t mutex;
     globus_cond_t cond;
-    enum { no_commit, no_commit_end, commit} mode;
+    enum { no_commit, no_commit_end, commit, late_commit_end } mode;
     int job_status;
     int failure_code;
     int timeout;
@@ -59,6 +59,10 @@ globus_l_get_mode(monitor_t * monitor, char * arg)
     {
         monitor->mode = commit;
     }
+    else if (! strcmp(arg, "late-commit-end"))
+    {
+        monitor->mode = late_commit_end;
+    }
     else
     {
         ret = GLOBUS_FALSE;
@@ -78,7 +82,7 @@ int main(int argc, char *argv[])
         globus_libc_fprintf(stderr,
                 "Usage: %s RM-CONTACT MODE SAVE_STATE TIMEOUT\n"
                 "    RM-CONTACT: resource manager contact\n"
-                "    MODE: no-commit|no-commit-end|commit\n"
+                "    MODE: no-commit|no-commit-end|commit|late-commit-end\n"
                 "    TIMEOUT: two-phase timeout in seconds\n",
                 argv[0]);
         goto error_exit;
@@ -182,6 +186,11 @@ int main(int argc, char *argv[])
     {
         rc = 0;
         goto disallow_exit;
+    }
+    else if (monitor.mode == late_commit_end)
+    {
+        rc = 0;
+        sleep(monitor.timeout + 1);
     }
 
     rc = globus_gram_client_job_signal(

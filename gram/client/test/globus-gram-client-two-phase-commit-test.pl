@@ -108,6 +108,8 @@ push(@tests,
         "two_phase_test('$ENV{CONTACT_STRING}','no-commit-end','10');");
 push(@tests,
         "two_phase_test('$ENV{CONTACT_STRING}','commit', '10');");
+push(@tests,
+        "two_phase_test('$ENV{CONTACT_STRING}','late-commit-end', '10');");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
