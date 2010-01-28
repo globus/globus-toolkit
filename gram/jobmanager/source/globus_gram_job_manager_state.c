@@ -1826,7 +1826,9 @@ globus_l_gram_job_manager_set_restart_state(
         changed = GLOBUS_TRUE;
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
+        request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
+        request->unsent_status_change = GLOBUS_TRUE;
         changed = GLOBUS_TRUE;
         break;
     }
