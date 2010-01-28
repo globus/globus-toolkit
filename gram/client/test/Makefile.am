@@ -6,6 +6,7 @@ SUBDIRS= \
 
 Scripts = \
 	TESTS.pl \
+        failed-job-two-phase-commit.pl \
 	globus-gram-client-activate-test.pl \
 	globus-gram-client-callback-contact-test.pl \
 	globus-gram-client-cancel-test.pl \
@@ -33,6 +34,7 @@ test_DATA=$(Data)
 test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
 
 test_PROGRAMS= \
+        failed-job-two-phase-commit \
 	globus-gram-client-activate-test \
 	globus-gram-client-callback-contact-test \
 	globus-gram-client-test \
@@ -58,6 +60,9 @@ EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
 INCLUDES = $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)
+failed_job_two_phase_commit_SOURCES = failed_job_two_phase_commit.c
+failed_job_two_phase_commit_LDFLAGS = $(GPT_LDFLAGS)
+
 globus_gram_client_register_callback_test_SOURCES = globus_gram_client_register_callback_test.c
 globus_gram_client_register_callback_test_LDFLAGS = $(GPT_LDFLAGS)
 
