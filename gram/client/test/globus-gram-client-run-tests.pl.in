@@ -19,6 +19,7 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
                         . "/globus-personal-gatekeeper";
 
 @tests = qw(
+    failed-job-two-phase-commit.pl
     globus-gram-client-activate-test.pl
     globus-gram-client-callback-contact-test.pl
     globus-gram-client-cancel-test.pl

@@ -50,7 +50,7 @@ main(int argc, char *argv[])
 
     if (argc < 2 || ((monitor.timeout = atoi(argv[2])) < 0))
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "Usage: %s RM-CONTACT\n"
                 "    RM-CONTACT: resource manager contact\n",
                 argv[0]);
@@ -61,7 +61,7 @@ main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure activating GLOBUS_GRAM_CLIENT_MODULE: %s\n",
                 globus_gram_client_error_string(rc));
         goto error_exit;
@@ -70,7 +70,7 @@ main(int argc, char *argv[])
     rsl = globus_common_create_string(format, monitor.timeout);
     if (rsl == NULL)
     {
-        globus_libc_fprintf(stderr, "failure allocating rsl string\n");
+        fprintf(stderr, "failure allocating rsl string\n");
         goto deactivate_exit;
     }
 
@@ -86,7 +86,7 @@ main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS || monitor.callback_contact == NULL)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure allowing callbacks\n");
         rc = -1;
         goto destroy_monitor_exit;
@@ -105,21 +105,21 @@ main(int argc, char *argv[])
 
     if (monitor.job_contact != NULL)
     {
-        globus_libc_printf("%s\n", monitor.job_contact);
+        printf("%s\n", monitor.job_contact);
     }
 
     if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
         if (rc == GLOBUS_SUCCESS)
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "job manager did not return "
                     "GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT\n");
             rc = -1;
         }
         else
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "failure submitting job request [%d]: %s\n",
                     rc,
                     globus_gram_client_error_string(rc));
@@ -138,7 +138,7 @@ main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure sending commit signal: %s\n",
                 globus_gram_client_error_string(rc));
         goto disallow_exit;
@@ -158,7 +158,7 @@ main(int argc, char *argv[])
     rsl = globus_common_create_string(restart_format, monitor.job_contact);
     if (rsl == NULL)
     {
-        globus_libc_fprintf(stderr, "failure allocating rsl string\n");
+        fprintf(stderr, "failure allocating rsl string\n");
         goto deactivate_exit;
     }
     free(monitor.job_contact);
@@ -175,20 +175,20 @@ main(int argc, char *argv[])
 
     if (monitor.job_contact != NULL)
     {
-        globus_libc_printf("%s\n", monitor.job_contact);
+        printf("%s\n", monitor.job_contact);
     }
     if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
         if (rc == GLOBUS_SUCCESS)
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "job manager did not return "
                     "GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT\n");
             rc = -1;
         }
         else
         {
-            globus_libc_fprintf(stderr,
+            fprintf(stderr,
                     "failure submitting job request [%d]: %s\n",
                     rc,
                     globus_gram_client_error_string(rc));
@@ -206,7 +206,7 @@ main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure sending commit signal: %s\n",
                 globus_gram_client_error_string(rc));
         goto disallow_exit;
@@ -228,7 +228,7 @@ main(int argc, char *argv[])
 
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr,
+        fprintf(stderr,
                 "failure sending commit end signal: %s\n",
                 globus_gram_client_error_string(rc));
         goto disallow_exit;
@@ -269,7 +269,6 @@ globus_l_state_callback(
     monitor_t * monitor = callback_arg;
 
     globus_mutex_lock(&monitor->mutex);
-    printf("callback\n state: %d\n", state);
     if (! strcmp(monitor->job_contact, job_contact))
     {
         monitor->job_status = state;

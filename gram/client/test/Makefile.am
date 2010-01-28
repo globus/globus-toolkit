@@ -6,6 +6,7 @@ SUBDIRS= \
 
 Scripts = \
 	TESTS.pl \
+        failed-job-two-phase-commit.pl \
 	globus-gram-client-activate-test.pl \
 	globus-gram-client-callback-contact-test.pl \
 	globus-gram-client-cancel-test.pl \
