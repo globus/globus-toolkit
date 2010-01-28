@@ -1370,17 +1370,17 @@ globus_l_gram_startup_socket_callback(
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE &&
                 old_job_request)
             {
-                if (old_job_request->status ==
-                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED )
-                {
-                    rc = old_job_request->failure_code;
-                }
-                else if (old_job_request->two_phase_commit != 0) 
+                if (old_job_request->two_phase_commit != 0) 
                 {
                     /*
                      * Condor-G expects waiting for commit message on restarts.
                      */
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
+                }
+                else if (old_job_request->status ==
+                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED )
+                {
+                    rc = old_job_request->failure_code;
                 }
                 else
                 {
@@ -1450,7 +1450,8 @@ globus_l_gram_startup_socket_callback(
             if (old_job_request)
             {
                 /* This occurs when a client tries to restart a job that
-                 * we found during the load_all when this process started.
+                 * we found during the load_all when this process started, or
+                 * one which had a two-phase end time out.
                  *
                  * We'll return information to the client about the job and
                  * make sure the job manager knows about the client
@@ -1487,6 +1488,8 @@ globus_l_gram_startup_socket_callback(
                     old_job_request->jobmanager_state =
                         GLOBUS_GRAM_JOB_MANAGER_STATE_START;
 
+                    old_job_request->unsent_status_change = GLOBUS_TRUE;
+
                     /* If the job is in another state, we'll assume that it's
                      * already being handled by the state machine
                      */
@@ -1506,7 +1509,7 @@ globus_l_gram_startup_socket_callback(
                     }
                     old_job_request->jm_restart = strdup(old_job_request->job_contact);
 
-                    /* In GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED,
+                    /* In GLOBUS_GRAM_JOB_MANAGER_STATE_START,
                      * the state machine jumps to the current restart state
                      * based on the value in the state file.
                      */
