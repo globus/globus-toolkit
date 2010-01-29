@@ -30,6 +30,7 @@
 #include "version.h"
 #include "openssl/crypto.h"
 #include "openssl/err.h"
+#include "openssl/ssl.h"
 
 static int
 globus_l_openssl_activate(void);
