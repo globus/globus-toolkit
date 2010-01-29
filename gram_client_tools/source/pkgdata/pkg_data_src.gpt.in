@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gram_client_tools" Format_Version="0.02">
 
-    <Aging_Version Major="7" Minor="4" Age="5"/>
+    <Aging_Version Major="7" Minor="5" Age="5"/>
     <Description>Job Management Tools (globusrun)</Description>
     <Functional_Group >ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -82,11 +82,6 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_runtime">
-            <Dependency Name="globus_core" Package="pgm">
-                <Version>
-                    <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>
             <Dependency Name="globus_common" Package="pgm">
                 <Version>
                     <Simple_Version Major="3"/>

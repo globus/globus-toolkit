@@ -43,10 +43,6 @@ CVS Information:
 #include <fcntl.h>
 #include <signal.h>
 
-#if !defined(PATH_MAX) && defined(MAXPATHLEN)
-#   define PATH_MAX MAXPATHLEN
-#endif
-
 #include "globus_gram_client.h"
 #include "globus_gram_protocol.h"
 #include "globus_gass_server_ez.h"
