@@ -152,7 +152,7 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
  *
  * Create/Destroy/Modify a GSI Proxy Handle.
  *
- * Within the Globus GSI Proxy Libary, all proxy operations require a
+ * Within the Globus GSI Proxy Library, all proxy operations require a
  * handle parameter. Currently, only one proxy operation may be in
  * progress at once per proxy handle.
  *
