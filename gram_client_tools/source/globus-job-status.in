@@ -17,7 +17,11 @@
 # 
 
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer ; then
+. ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
+else
+. ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
+fi
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 
