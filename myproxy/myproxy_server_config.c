@@ -1102,7 +1102,7 @@ check_config(myproxy_server_context_t *context)
 		    rval = -1;
 		}
 		if (!context->ca_ldap_uid_attribute) {
-		    verror_put_string("ca_ldap_server requires ca_ldap_searchbase");
+		    verror_put_string("ca_ldap_server requires ca_ldap_uid_attribute");
 		    rval = -1;
 		}
 	    }
