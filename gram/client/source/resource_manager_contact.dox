@@ -33,6 +33,6 @@ Manager Contact:
 - host:/service:subject
 - host:port/service:subject
 
-Note: Any of the above forms may be preceeded by an optional
+Note: Any of the above forms may be preceded by an optional
 "<b>https</b><b>://</b>".
 */
