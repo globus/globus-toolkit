@@ -442,7 +442,7 @@ int i2d_PROXYCERTINFO(
  * the PROXYCERTINFO 
  * @param length the length of the buffer
  *
- * @return the resultingin PROXYCERTINFO in internal form
+ * @return the resulting PROXYCERTINFO in internal form
  */                                             
 PROXYCERTINFO * d2i_PROXYCERTINFO(
     PROXYCERTINFO **                    cert_info,
