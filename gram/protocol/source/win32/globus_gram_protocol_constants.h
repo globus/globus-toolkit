@@ -56,7 +56,7 @@ signal is an RSL containing new @a stdout, @a stderr, @a stdout_position,
  */,
     GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_SIZE=8/**< Signal the job manager to verify  that streamed I/O has been completely
 received. The argument to this signal contains the number of bytes of stdout
-and stderr received, seperated by a space. The reply to this signal
+and stderr received, separated by a space. The reply to this signal
 will be a SUCCESS message if these matched the amount sent by the
 job manager. Otherwise, an error reply indicating
 GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE is returned.
