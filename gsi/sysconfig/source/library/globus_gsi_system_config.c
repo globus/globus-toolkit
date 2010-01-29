@@ -1540,7 +1540,7 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
  * trusted certificates will be searched for in that directory.  This
  * variable allows the end user to specify the location of trusted
  * certificates.
- * <li> <b>"x509_cert_dir" registry key</b> - If
+ * <li> <b>x509_cert_dir registry key</b> - If
  * this registry key is set on windows, the directory it points to should
  * contain the trusted certificates.  The path to the registry key is
  * software\\Globus\\GSI
@@ -1548,7 +1548,7 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
  * directory exists, and the previous methods of determining the trusted
  * certs directory failed, this directory will be used.  
  * <li> <b>Host Trusted Cert Dir</b> - This location is intended
- * to be independant of the globus installation ($GLOBUS_LOCATION), and 
+ * to be independent of the globus installation ($GLOBUS_LOCATION), and 
  * is generally only writeable by the host system administrator.  
  * <li> <b>Globus Install Trusted Cert Dir</b> - this
  * is $GLOBUS_LOCATION\\share\\certificates.  
@@ -5036,7 +5036,7 @@ globus_gsi_sysconfig_check_certfile_unix(
  * directory exists, and the previous methods of determining the trusted
  * certs directory failed, this directory will be used.  
  * <li> <b>/etc/grid-security/certificates</b> - This location is intended
- * to be independant of the globus installation ($GLOBUS_LOCATION), and 
+ * to be independent of the globus installation ($GLOBUS_LOCATION), and 
  * is generally only writeable by the host system administrator.  
  * <li> <b>$GLOBUS_LOCATION/share/certificates</b>
  * </ol>
