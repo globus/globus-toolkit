@@ -1708,7 +1708,18 @@ globus_l_globusrun_status_job(
 
     if (err != GLOBUS_SUCCESS)
     {
-	if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER)
+        /* In GRAM2, if we could not connect to the job manager, we assumed
+         * it had terminated and that the job has completed. 
+         *
+         * In GRAM5, we might be able to contact a job manager, but it might
+         * have no more information about a particular job that terminated.
+         * In that case, we treat it the same as the above case. We
+         * check that we ahve the version extension to determine whether this
+         * is a GRAM2 or GRAM5 service.
+         */
+	if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER ||
+            (globus_hashtable_lookup(&info.extensions, "version") != 0 &&
+            failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND))
 	{
             err = GLOBUS_SUCCESS;
 	    printf("DONE\n");

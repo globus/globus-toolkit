@@ -3916,10 +3916,13 @@ globus_l_gram_client_monitor_callback(
                 break;
             }
 
-            monitor->info->protocol_error_code = rc;
             monitor->info->job_state = globus_l_gram_info_get_int(
                     &monitor->info->extensions,
                     "status");
+
+            monitor->info->protocol_error_code = globus_l_gram_info_get_int(
+                    &monitor->info->extensions,
+                    "failure-code");
             break;
         case GLOBUS_GRAM_CLIENT_JOBMANAGER_VERSION:
             rc = globus_gram_protocol_unpack_message(
