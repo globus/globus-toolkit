@@ -19,14 +19,8 @@ Scripts = \
         unpack-job-request-reply-with-extensions-test.pl \
         unpack-status-reply-with-extensions-test.pl
 
-Data = \
-	dc31a685.0 \
-	dc31a685.signing_policy \
-	testcred.pem
 
 pkgtest_SCRIPTS=$(Scripts) globus-gram-protocol-run-tests.pl
-
-pkgtest_DATA=$(Data)
 
 pkgtest_PROGRAMS= \
 	globus-gram-protocol-allow-attach-test \
@@ -41,7 +35,7 @@ pkgtest_PROGRAMS= \
         unpack-job-request-reply-with-extensions-test \
         unpack-status-reply-with-extensions-test
 
-EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in $(Data)
+EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in
 
 INCLUDES = $(GPT_INCLUDES)
 

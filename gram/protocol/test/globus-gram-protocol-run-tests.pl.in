@@ -1,10 +1,13 @@
 #! /usr/bin/env perl
 
+BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+
 use strict;
 use Test::Harness;
 use Cwd;
 require 5.005;
 use vars qw(@tests);
+use Globus::Testing::Utilities;
 
 my $test_result=1;
 
@@ -30,9 +33,7 @@ chdir "$globus_location/test/@PACKAGE@";
 
 if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
 {
-    $ENV{X509_CERT_DIR} = cwd();
-    $ENV{X509_USER_PROXY} = "testcred.pem";
-    system('chmod go-rw testcred.pem'); 
+    Globus::Testing::Utilities::testcred_setup();
 }
 
 $test_result = eval { runtests(@tests); };
