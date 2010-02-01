@@ -473,6 +473,7 @@ sub submit
             $_ = <READER>;
             close(READER);
             chomp($_);
+            waitpid($starter_pid, 0); 
             ($res, $value) = split(/:/, $_, 2);
 
             if ($res eq 'SUCCESS')
