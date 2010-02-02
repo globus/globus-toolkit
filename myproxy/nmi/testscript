@@ -16,42 +16,47 @@ if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     LIBPATH=$LD_LIBRARY_PATH
     export LIBPATH
 fi
-echo ==================================================
-echo Environment variables:
-env
-echo ==================================================
-echo Directory contents:
-ls -Rl
-echo ==================================================
 valgrind=""
-if test -d /prereq/valgrind-3.5.0/bin; then
-    echo /prereq/valgrind-3.5.0/bin exists
+if test -d /prereq/valgrind-3.5.0/bin -a "x$NMI_PLATFORM" != "xx86_64_macos_10.5
+"; then
     PATH=/prereq/valgrind-3.5.0/bin:$PATH
     export PATH
     valgrind="-valgrind"
-    echo valgrind-3.5.0 found.
-else
-    echo valgrind not found.
 fi
 function BuildGT
 {
+    echo ==================================================
+    echo Environment variables:
+    env
+    echo ==================================================
+    echo Directory contents:
+    ls -Rl
     export GLOBUS_LOCATION
     echo ==================================================
     echo Installing $installer to $GLOBUS_LOCATION
     tar xfz $installer
-    cd gt*-installer
+    mv gt*-installer $installerdir
+    cd $installerdir
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make globus_usage gsi-myproxy install
     cd ..
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT408"; then
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
     installer="gt4.0.8-all-source-installer.tar.gz"
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt4"
+    installerdir="$_CONDOR_SCRATCH_DIR/gt4-src"
+    BuildGT
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
+    installer="gt5.0.0-all-source-installer.tar.gz"
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
+    installerdir="$_CONDOR_SCRATCH_DIR/gt5-src"
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installer="nightly.tar.gz"
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt-nightly"
+    installerdir="$_CONDOR_SCRATCH_DIR/gt-nightly-src"
     BuildGT
 fi
 function BuildMyProxyCVS
@@ -81,8 +86,12 @@ function BuildMyProxyCVS
     gpt-build -verbose myproxy-*.tar.gz $flavor
     cd ..
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT408"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT4"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt4
+    BuildMyProxyCVS
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT5"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
     BuildMyProxyCVS
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGTNightly"; then
@@ -106,8 +115,12 @@ function TestMyProxyCVS
     myproxy-test-replicate
     cd ..
 }
-if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT408"; then
-    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT4"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt4
+    TestMyProxyCVS
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT5"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
     TestMyProxyCVS
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGTNightly"; then
@@ -115,11 +128,17 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGTNightly"; t
     TestMyProxyCVS
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xValgrindCheck"; then
-    cat myproxy/valgrind.log.* 1> valgrind.log 2>/dev/null || true
-    if test -s valgrind.log ; then
-        cat valgrind.log
-        exit 1
+    if test -n "$valgrind"; then
+        cat myproxy/valgrind.log.* 1> valgrind.log 2>/dev/null || true
+        if test -s valgrind.log ; then
+            echo valgrind errors:
+            cat valgrind.log
+            exit 1
+        else
+            echo No valgrind errors found.
+        fi
+    else
+        echo valgrind was not used.
     fi
 fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
-
