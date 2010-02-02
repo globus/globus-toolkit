@@ -746,7 +746,7 @@ regex_compare(const char *regex,
     char		*bufp;
     int			escaped = 0;
 
-    myproxy_debug("REGEX (%s), STRING (%s)(%s)", regex?:"NULL", string?:"NULL");
+    myproxy_debug("REGEX (%s), STRING (%s)", regex?:"NULL", string?:"NULL");
 
     /*
      * First we convert the regular expression from the human-readable
