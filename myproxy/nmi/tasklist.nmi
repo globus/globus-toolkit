@@ -1,7 +1,7 @@
-BuildGT408 12h
-BuildGTNightly 12h
-BuildMyProxyCVSGT408 1h
-BuildMyProxyCVSGTNightly 1h
-TestMyProxyCVSGT408 1h
-TestMyProxyCVSGTNightly 1h
-ValgrindCheck 1h
+BuildGT408
+BuildGTNightly
+BuildMyProxyCVSGT4
+BuildMyProxyCVSGT5
+TestMyProxyCVSGT4
+TestMyProxyCVSGT5
+ValgrindCheck
