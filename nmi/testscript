@@ -109,11 +109,11 @@ function TestMyProxyCVS
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT408"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
     TestMyProxyCVS
-done
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGTNightly"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
     TestMyProxyCVS
-done
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xValgrindCheck"; then
     cat myproxy/valgrind.log.* 1> valgrind.log 2>/dev/null || true
     if test -s valgrind.log ; then
@@ -121,7 +121,5 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xValgrindCheck"; then
         exit 1
     fi
 fi
-    
-done
 ) 2>&1 # we want stdout & stderr mixed in the output file
 
