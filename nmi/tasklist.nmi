@@ -1,7 +1,10 @@
 BuildGT4
-BuildGT5
 BuildMyProxyCVSGT4
-BuildMyProxyCVSGT5
 TestMyProxyCVSGT4
+BuildGT5
+BuildMyProxyCVSGT5
 TestMyProxyCVSGT5
+BuildGTNightly
+BuildMyProxyCVSGTNightly
+TestMyProxyCVSGTNightly
 ValgrindCheck
