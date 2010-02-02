@@ -221,6 +221,18 @@ int resolve_via_ldap    ( char * username, char ** dn,
     myproxy_debug("LDAP version set to V.3");
   }
 
+  if ( server_context->ca_ldap_start_tls ) {
+      rc = ldap_start_tls_s(ld, NULL, NULL);
+      if ( rc != LDAP_SUCCESS ) {
+          verror_put_string("ldap_start_tls_s() failed");
+          verror_put_string("ldap_start_tls_s(): %s", ldap_err2string( rc ) );
+          return_value = 1;
+          goto end;
+      } else {
+          myproxy_debug("LDAP StartTLS completed");
+      }
+  }
+
   if ( server_context->ca_ldap_connect_passphrase != NULL ) {
     cred.bv_val = server_context->ca_ldap_connect_passphrase;
     cred.bv_len = sizeof(server_context->ca_ldap_connect_passphrase) - 1;
