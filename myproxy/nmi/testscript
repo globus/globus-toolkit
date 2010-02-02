@@ -17,8 +17,7 @@ if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     export LIBPATH
 fi
 valgrind=""
-if test -d /prereq/valgrind-3.5.0/bin -a "x$NMI_PLATFORM" != "xx86_64_macos_10.5
-"; then
+if test -d /prereq/valgrind-3.5.0/bin -a "x$NMI_PLATFORM" != "xx86_64_macos_10.5"; then
     PATH=/prereq/valgrind-3.5.0/bin:$PATH
     export PATH
     valgrind="-valgrind"
