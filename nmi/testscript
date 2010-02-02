@@ -1,30 +1,13 @@
 #!/bin/sh
 set -e # exit on any error
-GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
 LOGNAME=$USER
-export GLOBUS_LOCATION LOGNAME
+export LOGNAME
 (
 if test -n "${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}"; then
     PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib/pkgconfig"
     OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/include"
     OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/include"
     OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib"
-    OPENSSL_LIBS="-lssl -lcrypto"
-    export PKG_CONFIG_PATH
-    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
-elif test -n "${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}"; then
-    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/lib/pkgconfig"
-    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/include"
-    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/include"
-    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/lib"
-    OPENSSL_LIBS="-lssl -lcrypto"
-    export PKG_CONFIG_PATH
-    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
-elif test -n "${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}"; then
-    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/lib/pkgconfig"
-    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/include"
-    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/include"
-    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/lib"
     OPENSSL_LIBS="-lssl -lcrypto"
     export PKG_CONFIG_PATH
     export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
@@ -50,13 +33,32 @@ if test -d /prereq/valgrind-3.5.0/bin; then
 else
     echo valgrind not found.
 fi
-for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
+function BuildGT
+{
+    export GLOBUS_LOCATION
     echo ==================================================
-    echo Installing Globus Toolkit \($installer\)...
+    echo Installing $installer to $GLOBUS_LOCATION
     tar xfz $installer
     cd gt*-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make globus_usage gsi-myproxy install
+    cd ..
+}
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT408"; then
+    installer="gt4.0.8-all-source-installer.tar.gz"
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
+    BuildGT
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
+    installer="nightly.tar.gz"
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
+    BuildGT
+fi
+function BuildMyProxyCVS
+{
+    export GLOBUS_LOCATION
+    echo ==================================================
+    echo Installing MyProxy CVS to $GLOBUS_LOCATION
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     echo ==================================================
     echo Environment variables:
@@ -66,7 +68,7 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     echo GPT flavor is $flavor.
     echo ==================================================
     echo Installing autotools...
-    cd ../autotools
+    cd autotools
     ./install-autotools $GLOBUS_LOCATION
     echo ==================================================
     echo Building MyProxy...
@@ -75,9 +77,25 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     ./configure --with-flavor=$flavor
     make dist
     gpt-uninstall myproxy
+    rm -rf BUILD
     gpt-build -verbose myproxy-*.tar.gz $flavor
+    cd ..
+}
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT408"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
+    BuildMyProxyCVS
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGTNightly"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
+    BuildMyProxyCVS
+fi
+function TestMyProxyCVS
+{
+    . $GLOBUS_LOCATION/etc/globus-user-env.sh
+    export GLOBUS_LOCATION
     echo ==================================================
-    echo Testing MyProxy...
+    echo Testing MyProxy in $GLOBUS_LOCATION
+    cd myproxy
     X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
     export X509_CERT_DIR
     mkdir $X509_CERT_DIR
@@ -87,7 +105,23 @@ for installer in `ls gt*-all-source-installer.tar.gz *nightly.tar.gz`; do
     myproxy-test -startserver $valgrind
     myproxy-test-replicate
     cd ..
-    rm -rf gt*-installer
-    rm -rf $GLOBUS_LOCATION
+}
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT408"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-4.0.8
+    TestMyProxyCVS
+done
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGTNightly"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
+    TestMyProxyCVS
+done
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xValgrindCheck"; then
+    cat myproxy/valgrind.log.* 1> valgrind.log 2>/dev/null || true
+    if test -s valgrind.log ; then
+        cat valgrind.log
+        exit 1
+    fi
+fi
+    
 done
 ) 2>&1 # we want stdout & stderr mixed in the output file
+
