@@ -107,6 +107,7 @@ static struct config_directives our_conf[] = {
 	{"ca_ldap_connect_passphrase", 1, 1},
 	{"ca_ldap_uid_attribute", 1, 1},
 	{"ca_ldap_dn_attribute", 1, 1},
+	{"ca_ldap_start_tls", 1, 1},
 	{"pubcookie_granting_cert", 1, 1},
 	{"pubcookie_app_server_key", 1, 1},
 	{"accepted_credentials_mapfile", 1, 1},
@@ -270,6 +271,7 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->ca_ldap_connect_passphrase);
     free_ptr(&context->ca_ldap_uid_attribute);
     free_ptr(&context->ca_ldap_dn_attribute);
+    context->ca_ldap_start_tls = 0;
     free_ptr(&context->pubcookie_cert);
     free_ptr(&context->pubcookie_key);
     free_ptr(&context->accepted_credentials_mapfile);
@@ -599,6 +601,15 @@ line_parse_callback(void *context_arg,
     }
     else if (strcmp(directive, "ca_ldap_dn_attribute") == 0) {
 	context->ca_ldap_dn_attribute = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_start_tls") == 0) {
+        if ((strcasecmp(tokens[1], "true")) ||
+            (strcasecmp(tokens[1], "enabled")) ||
+            (strcasecmp(tokens[1], "yes")) ||
+            (strcasecmp(tokens[1], "on")) ||
+            (strcmp(tokens[1], "1"))) {
+            context->ca_ldap_start_tls = 1;
+        }
     }
 
     /* pubcookie stuff */
