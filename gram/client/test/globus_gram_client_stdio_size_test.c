@@ -195,6 +195,10 @@ int main(int argc, char *argv[])
                     "job manager returned %d (%s) when I expected it to still "
                     "be streaming output\n",
                     rc, globus_gram_client_error_string(rc));
+            if (rc == GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING;
+            }
             goto still_streaming_check_failed;
         }
     }
