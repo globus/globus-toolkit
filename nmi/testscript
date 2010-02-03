@@ -22,7 +22,7 @@ if test -d /prereq/valgrind-3.5.0/bin -a "x$NMI_PLATFORM" != "xx86_64_macos_10.5
     export PATH
     valgrind="-valgrind"
 fi
-function BuildGT
+BuildGT()
 {
     echo ==================================================
     echo Environment variables:
@@ -58,7 +58,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installerdir="$_CONDOR_SCRATCH_DIR/gt-nightly-src"
     BuildGT
 fi
-function BuildMyProxyCVS
+BuildMyProxyCVS()
 {
     export GLOBUS_LOCATION
     echo ==================================================
@@ -97,7 +97,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGTNightly"; 
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
     BuildMyProxyCVS
 fi
-function TestMyProxyCVS
+TestMyProxyCVS()
 {
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     export GLOBUS_LOCATION
