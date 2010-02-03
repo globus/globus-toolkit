@@ -71,6 +71,7 @@ int main(
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.status_request[0] = "status";
+    monitor.status_request[1] = NULL;
     monitor.job_status[1] = GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE;
     monitor.failure_code[1] = 0;
     monitor.job_failure_code[1] = 0;
@@ -234,6 +235,15 @@ client_callback(
     monitor = (monitor_t *) arg;
 
     globus_mutex_lock(&monitor->mutex);
+
+    if (errorcode != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "Failed connecting to service because %s.\n",
+                globus_gram_protocol_error_string(errorcode));
+        monitor->error++;
+        goto failed;
+    }
     rc = globus_gram_protocol_unpack_status_reply(
 	    message,
 	    msgsize,
@@ -247,6 +257,7 @@ client_callback(
 		globus_gram_protocol_error_string(rc));
 	monitor->error++;
     }
+failed:
     monitor->done = GLOBUS_TRUE;
 
     globus_cond_signal(&monitor->cond);
