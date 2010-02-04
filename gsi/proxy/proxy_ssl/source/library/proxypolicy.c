@@ -22,6 +22,7 @@
 
 #include "proxypolicy.h"
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
 /**
  * @name Get a method for ASN1 conversion
  */
@@ -50,6 +51,7 @@ ASN1_METHOD * PROXYPOLICY_asn1_meth()
 }
 /* PROXYPOLICY_asn1_meth() */
 /* @} */
+#endif
 
 /**
  * @name New

@@ -33,6 +33,7 @@
 
 #include "proxycertinfo.h"
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
 /**
  * @name ASN1_METHOD
  */
@@ -62,6 +63,7 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
 }
 /* PROXYCERTINFO_asn1_meth() */
 /*@}*/
+#endif
 
 
 /**
