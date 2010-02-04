@@ -122,7 +122,7 @@ gss_display_name(
         {
             int                         name_length;
             GENERAL_NAME *              name;
-            char *                      dns;
+            unsigned char *             dns;
             int                         i;
 
             name_length = sk_GENERAL_NAME_num(input_name->subjectAltNames);
@@ -133,7 +133,7 @@ gss_display_name(
                 if (name->type == GEN_DNS)
                 {
                     dns = ASN1_STRING_data(name->d.dNSName);
-                    output_name->value = globus_common_create_string("/CN=%s", dns);
+                    output_name->value = globus_common_create_string("/CN=%s", (char *) dns);
                     output_name->length = strlen(output_name->value);
                     break;
                 }
