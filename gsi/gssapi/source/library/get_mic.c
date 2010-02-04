@@ -146,7 +146,11 @@ GSS_CALLCONV gss_get_mic(
     
     mac_sec = context->gss_ssl->s3->write_mac_secret;
     seq = context->gss_ssl->s3->write_sequence;
+    #if OPENSSL_VERSION_NUMBER < 0x10000000L
     hash = context->gss_ssl->write_hash;
+    #else
+    hash = context->gss_ssl->write_hash->digest;
+    #endif
 
     md_size = EVP_MD_size(hash);
     message_token->value = (char *) malloc(GSS_SSL_MESSAGE_DIGEST_PADDING 

@@ -995,7 +995,7 @@ globus_i_gsi_gss_handshake(
     if (!GSS_ERROR(major_status)) {
         if (rc > 0)
         {
-            SSL_CIPHER *                current_cipher;
+            const SSL_CIPHER *              current_cipher;
             major_status = GSS_S_COMPLETE; 
 
             /*
@@ -2453,7 +2453,7 @@ globus_i_gsi_gssapi_get_hostname(
 
                     goto out;
                 }
-                strncpy(name->service_name, data, p-data);
+                strncpy(name->service_name, (char *) data, p-data);
                 name->service_name[p-data] = 0;
 
                 name->host_name = malloc(length - (p-data));
@@ -2464,7 +2464,7 @@ globus_i_gsi_gssapi_get_hostname(
 
                     goto free_service_name_out;
                 }
-                strncpy(name->host_name, p+1, length - (p+1-data));
+                strncpy(name->host_name, (char *) p+1, length - (p+1-data));
                 name->host_name[length - (p+1-data)] = 0;
             }
             else
@@ -2491,7 +2491,7 @@ globus_i_gsi_gssapi_get_hostname(
                     goto free_service_name_out;
                 }
 
-                strncpy(name->host_name, data, length);
+                strncpy(name->host_name, (char *) data, length);
                 name->host_name[length] = 0;
             }
             break;
