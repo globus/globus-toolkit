@@ -1279,7 +1279,11 @@ globus_gsi_cred_get_policies(
         goto exit;
     }
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L 
     if((*policies = sk_new_null()) == NULL)
+#else
+    if((*policies = sk_OPENSSL_STRING_new_null()) == NULL)
+#endif
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
@@ -1358,7 +1362,11 @@ globus_gsi_cred_get_policies(
             goto error_exit;
         }
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L 
         if(sk_push(*policies, final_policy_string) == 0)
+#else
+        if(sk_OPENSSL_STRING_push(*policies, (OPENSSL_STRING)final_policy_string) == 0)
+#endif
         {
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
@@ -1390,7 +1398,11 @@ globus_gsi_cred_get_policies(
 
     if(*policies != NULL)
     {
+#if OPENSSL_VERSION_NUMBER < 0x10000000L 
         sk_pop_free(*policies, free);
+#else
+        sk_OPENSSL_STRING_pop_free(*policies, free);
+#endif
     }
     *policies = NULL;
     
