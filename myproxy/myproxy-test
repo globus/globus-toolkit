@@ -5,55 +5,10 @@
 
 # Assumes myproxy-server running as root on the local machine if
 # MYPROXY_SERVER not set.
-# Requires a valid proxy credential with lifetime of atleast 3 hours.
+# Requires a valid proxy credential with lifetime of at least 3 hours.
 # Assumes myproxy-server.config has default policy.
 #
-# Test cases are:
-#   1. Store a credential (myproxy-init).
-#   2. Get info on the stored credential (myproxy-info).
-#   3. Retrieve stored credential (myproxy-logon).
-#   4. Verify myproxy-logon fails on bad passphrase.
-#   5. Change passphrase (myproxy-change-pass-phrase).
-#   6. Retrieve with new passphrase.
-#   7. Verify old passphrase no longer accepted.
-#   8. Verify renewal fails by default.
-#   9. Remove credential from repository (myproxy-destroy).
-#  10. Verify credential is removed (myproxy_info).
-#  11. Store credentials with retrieval policies.
-#  12. Verify retrieval policies (one accept, one deny).
-#  13. Store renewable credentials.
-#  14. Get info on stored renewable credentials (myproxy-info -d).
-#  15. Verify renewal policies (one accept, one deny).
-#  16. Verify correct lifetime of retrieved credentials.
-#  17. Store credential (myproxy-store -v -t 1)
-#  18. Get info on the stored credential (myproxy-info)
-#  19. Create proxy from stored credential (myproxy-logon).
-#  20. Retrieve stored credential (myproxy-retrieve)
-#  21. Verify passphrase checking (myproxy-logon).
-#  22. Verify passphrase checking (myproxy-retrieve).
-#  23. Verify renewal fails by default (myproxy-logon).
-#  24. Verify renewal fails by default (myproxy-retrieve).
-#  25. Remove credential from repository (myproxy-destroy).
-#  26. Verify credential is removed (myproxy_info).
-#  27. Store credentials with retrieval policies (myproxy-store).
-#  28. Verify retrieval policies (one accept, one deny) (myproxy-logon).
-#  29. Verify retrieval policies (one accept, one deny) (myproxy-retrieve).
-#  30. Store renewable credentials.
-#  31. Get info on stored renewable credentials (myproxy-info -d).
-#  32. Verify renewal policies.
-#  33. Verify correct lifetime of retrieved credentials.
-#  34. Store credentials with retrieve key policies.
-#  35. Get info for stored retrieve key credentials.
-#  36. Verify myproxy-retrieve key retrieval policies.
-#  37. Store credentials with retrievable_by_cert policy.
-#  38. Verify retrievable_by_cert policies.
-#  39. Verify limited proxy retrieves a limited proxy.
-#  40. Verify renewed limited proxy is still limited.
-#
-# CoG test cases are:
-#   1. CoG anonget of myproxy-init stored credential.
-#   2. CoG get of myproxy-init stored credential.
-#   3. (pending) Store a credential (CoG myproxy put).
+# Some tests only run if -startserver is given.
 
 use File::Temp qw(tempdir);
 use IPC::Open3;
@@ -174,14 +129,12 @@ $ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 
 #
 # make an independent proxy for a separate identity
-# (skip this for now. some problem with GT 4.2.1 and independent proxies.
-#  would like to use this for testing with allow_self_authorization false.)
 #
-# $iproxyloc = "$tmpdir/iproxy.pem";
-# system("$grid_proxy_init -out $iproxyloc -independent -hours 0");
-# chomp($iproxysubject = `$grid_proxy_info -file $iproxyloc -identity`);
-# die "grid-proxy-info -file $iproxyloc -identity failed, stopped"
-#     if (!defined($cert_subject) || $cert_subject eq "");
+$iproxyloc = "$tmpdir/iproxy.pem";
+&runcmd("$grid_proxy_init -out $iproxyloc -independent -hours 0");
+chomp($iproxysubject = `$grid_proxy_info -file $iproxyloc -identity`);
+die "grid-proxy-info -file $iproxyloc -identity failed, stopped"
+    if (!defined($iproxysubject) || $iproxysubject eq "");
 
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
@@ -218,7 +171,7 @@ if ($startserver) {
     print CONF "default_trusted_retrievers \"none\"\n";
     print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
     print CONF "accepted_credentials_mapapp $bintrue\n" if (-x $bintrue);
-    print CONF "allow_self_authorization true\n"; # temporary workaround
+    print CONF "allow_self_authorization true\n"; # for renewal testing
     print CONF "check_multiple_credentials true\n";
     print CONF "disable_usage_stats \"false\"\n";
     print CONF "usage_stats_target \"default\"\n";
@@ -582,6 +535,8 @@ print "MyProxy Test 15 (verify renewal policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
 	&verifyproxy("$tmpdir/myproxy-test.$$");
+} elsif ($output =~ /self-authz not allowed/) {
+    $exitstatus = 0;            # default policy will give this response
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
@@ -935,6 +890,10 @@ if ($exitstatus == 0) {
 	&runtest("myproxy-store -v -x -R '$cert_subject' -k 'mine' -t 1 -d -y \$X509_USER_PROXY -c \$X509_USER_PROXY", undef);
 }
 if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-store -v -c $iproxyloc -y $iproxyloc -x -R '$cert_subject' -k 'independent' -t 1", undef);
+}
+if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -978,6 +937,17 @@ print "MyProxy Test 32 (verify renewal policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
 	&verifyproxy("$tmpdir/myproxy-test.$$");
+} elsif ($output =~ /self-authz not allowed/) {
+    $exitstatus = 0;            # default policy will give this response
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+        &runtest("myproxy-logon -k 'independent' -a $iproxyloc -t 1 -o $tmpdir/myproxy-test.$$ -v",
+                 undef);
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("$tmpdir/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
@@ -996,6 +966,7 @@ if ($exitstatus == 0) {
 
 &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
+&runtest("env X509_USER_PROXY=$iproxyloc myproxy-destroy -v -k 'independent'", undef);
 
 #
 # Test 33
@@ -1109,8 +1080,7 @@ unlink("$tmpdir/myproxy-test.$$.key.pem");
 print "MyProxy Test 37 (store credentials w/ retrievable_by_cert policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-init -v -x -Z '$cert_subject' -k 'mine' -c 1 -t 1 -d -S -n",
-		 $passphrase . "\n");
+        &runtest("myproxy-store -v -x -Z '$cert_subject' -k 'mine' -c $iproxyloc -y $iproxyloc -t 1", undef);
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1122,8 +1092,8 @@ if ($exitstatus == 0) {
 # Test 38
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -k 'mine' -t 1 -o $tmpdir/myproxy-test.$$ -v -d -n",
-	     undef);
+    &runtest("myproxy-logon -k 'mine' -t 1 -o $tmpdir/myproxy-test.$$ -v -n",
+             undef);
 print "MyProxy Test 38 (verify retrievable_by_cert policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
@@ -1143,7 +1113,7 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-&runtest("myproxy-destroy -v -k 'mine' -d", undef);
+&runtest("env X509_USER_PROXY=$iproxyloc myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
 
 #
@@ -1182,6 +1152,8 @@ print "MyProxy Test 40 (verify renewed limited proxy is still limited): ";
 if ($exitstatus == 0) {
 	($exitstatus, $output) =
 	    &verifyproxy("$tmpdir/myproxy-test.$$");
+} elsif ($output =~ /self-authz not allowed/) {
+    $exitstatus = 0;            # default policy will give this response
 }
 if ($exitstatus != 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;

@@ -14,6 +14,8 @@ v5.1 XX Xxx 2010
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6882)
   - add support for LDAP StartTLS
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6957)
+  - fix myproxy-test behavior when -startserver is not given
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6959)
 
 v5.0 4 Dec 2009
   - add Globus Usage Metrics to the myproxy-server
