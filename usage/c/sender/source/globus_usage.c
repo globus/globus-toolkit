@@ -247,7 +247,7 @@ globus_usage_stats_handle_init(
     new_handle->code = htons(code);
     new_handle->version = htons(version);
 
-    memset(new_handle->data, 0, 1472);
+    memset(new_handle->data, 0, PACKET_SIZE);
 
     memcpy(new_handle->data + new_handle->data_length, 
            (void *)&new_handle->code, 2);
