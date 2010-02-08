@@ -112,10 +112,10 @@ elif test "$GLOBUS_OFF_T" = "long long"; then
     GLOBUS_OFF_T_FORMAT="unknown"
 
     if test "$GLOBUS_OFF_T_FORMAT" = "unknown" ; then
-	LAC_TRY_FORMAT(GLOBUS_OFF_T, qd)
+	LAC_TRY_FORMAT(GLOBUS_OFF_T, lld)
     fi
     if test "$GLOBUS_OFF_T_FORMAT" = "unknown" ; then
-	LAC_TRY_FORMAT(GLOBUS_OFF_T, lld)
+	LAC_TRY_FORMAT(GLOBUS_OFF_T, qd)
     fi
     if test "$GLOBUS_OFF_T_FORMAT" = "unknown" ; then
         AC_MSG_RESULT(unkown)
