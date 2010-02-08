@@ -6,6 +6,8 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
+#include <openssl/evp.h>
+
 #define MYPROXY_SERVER_POLICY_TYPE_FQAN "FQAN:"
 #define MYPROXY_SERVER_POLICY_TYPE_SUBJECT "SUBJECT:"
 
