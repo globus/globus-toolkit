@@ -1387,6 +1387,34 @@ if ($startserver) { # only case we have direct access to repository
   print "MyProxy Test 43 (myproxy-admin-query): SKIPPED\n";
 }
 
+#
+# Test 44
+#
+chomp($gcc = `which gcc 2>/dev/null`);
+if (-x $gcc &&
+    defined($ENV{'GLOBUS_LOCATION'}) &&
+    -d "$ENV{'GLOBUS_LOCATION'}/include") {
+  &write_myproxy_header_test;
+  $includedirs = "-I$ENV{'GLOBUS_LOCATION'}/include";
+  opendir(DIRHANDLE, "$ENV{'GLOBUS_LOCATION'}/include")
+    || die "can't opendir $ENV{'GLOBUS_LOCATION'}/include: $!";
+  while (defined($filename = readdir(DIRHANDLE))) {
+	next if $filename =~ /^\.\.?$/;     # skip . and ..
+    $includedirs .= " -I$ENV{'GLOBUS_LOCATION'}/include/$filename";
+  }
+  closedir(DIRHANDLE);
+  ($exitstatus, $output) =
+    &runtest("$gcc $includedirs -o $tmpdir/myproxy-header $tmpdir/myproxy.c");
+  print "MyProxy Test 44 (myproxy.h): ";
+  if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+  } else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+  }
+} else {
+  print "MyProxy Test 44 (myproxy.h): SKIPPED\n";
+}
+
 
 #
 # COG tests
@@ -2016,6 +2044,16 @@ sub openport {
     $port++;
   }
   die "failed to find available port";
+}
+
+sub write_myproxy_header_test {
+  open(SRC, ">$tmpdir/myproxy.c") ||
+    die "failed to open $tmpdir/myproxy.c, stopped";
+  print SRC <<EOF;
+#include <myproxy.h>
+int main() { return 0; }
+EOF
+  close(SRC);
 }
 
 sub write_valgrind_supp {
