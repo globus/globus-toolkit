@@ -324,13 +324,13 @@ globus_l_gsc_activate()
     globus_hashtable_init(
         &globus_l_gsc_pwent_cache,
         128,
-        globus_hashtable_int_hash,
-        globus_hashtable_int_keyeq);
+        globus_hashtable_ulong_hash,
+        globus_hashtable_ulong_keyeq);
     globus_hashtable_init(
         &globus_l_gsc_grent_cache,
         128,
-        globus_hashtable_int_hash,
-        globus_hashtable_int_keyeq);
+        globus_hashtable_ulong_hash,
+        globus_hashtable_ulong_keyeq);
 
     return rc;
 }
