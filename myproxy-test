@@ -1400,7 +1400,9 @@ if (-x $gcc &&
     || die "can't opendir $ENV{'GLOBUS_LOCATION'}/include: $!";
   while (defined($filename = readdir(DIRHANDLE))) {
 	next if $filename =~ /^\.\.?$/;     # skip . and ..
-    $includedirs .= " -I$ENV{'GLOBUS_LOCATION'}/include/$filename";
+    if (-d "$ENV{'GLOBUS_LOCATION'}/include/$filename") {
+      $includedirs .= " -I$ENV{'GLOBUS_LOCATION'}/include/$filename";
+    }
   }
   closedir(DIRHANDLE);
   ($exitstatus, $output) =
