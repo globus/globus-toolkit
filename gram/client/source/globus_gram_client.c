@@ -1392,6 +1392,7 @@ globus_gram_client_job_request_with_info(
                                           &monitor);
     if(rc != GLOBUS_SUCCESS)
     {
+	monitor.info = NULL;
         globus_l_gram_client_monitor_destroy(&monitor);
 
         return rc;
@@ -1409,6 +1410,7 @@ globus_gram_client_job_request_with_info(
     }
     globus_mutex_unlock(&monitor.mutex);
 
+    monitor.info = NULL;
     globus_l_gram_client_monitor_destroy(&monitor);
 
     return rc;
@@ -2131,6 +2133,8 @@ error_exit:
  *    Invalid request
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
  *    No resources
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *    Null parameter
  */
 int
 globus_gram_client_register_job_status(
@@ -2143,6 +2147,12 @@ globus_gram_client_register_job_status(
     int					rc;
     globus_l_gram_client_monitor_t * 	monitor;
 
+    if (job_contact == NULL || register_callback == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto null_param;
+    }
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
     monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
@@ -2168,6 +2178,7 @@ globus_gram_client_register_job_status(
 	globus_l_gram_client_monitor_destroy(monitor);
 	globus_libc_free(monitor);
     }
+null_param:
     return rc;
 }
 /* globus_gram_client_register_job_status() */
@@ -2219,6 +2230,8 @@ globus_gram_client_register_job_status(
  *    Invalid request
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
  *    No resources
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *    Null parameter
  */
 int
 globus_gram_client_register_job_status_with_info(
@@ -2232,6 +2245,13 @@ globus_gram_client_register_job_status_with_info(
     globus_l_gram_client_monitor_t *    monitor;
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
+
+    if (job_contact == NULL || info_callback == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto null_param;
+    }
 
     monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
     if(!monitor)
@@ -2256,6 +2276,7 @@ globus_gram_client_register_job_status_with_info(
         globus_l_gram_client_monitor_destroy(monitor);
         free(monitor);
     }
+null_param:
     return rc;
 }
 /* globus_gram_client_register_job_status_with_info() */
@@ -2341,6 +2362,7 @@ globus_gram_client_job_status_with_info(
     globus_mutex_unlock(&monitor.mutex);
 
 error_exit:
+    monitor.info = NULL;
     globus_l_gram_client_monitor_destroy(&monitor);
 
     return rc;
@@ -4150,11 +4172,8 @@ globus_l_gram_client_monitor_destroy(
     globus_l_gram_client_monitor_t *    monitor)
 {
 
-    if (monitor->info->job_contact != NULL)
-    {
-        globus_gram_client_job_contact_free(monitor->info->job_contact);
-        monitor->info->job_contact = NULL;
-    }
+    globus_gram_client_job_info_destroy(monitor->info);
+    free(monitor->info);
 
     globus_mutex_destroy(&monitor->mutex);
     globus_cond_destroy(&monitor->cond);

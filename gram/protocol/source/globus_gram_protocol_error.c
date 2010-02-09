@@ -420,5 +420,6 @@ globus_i_gram_protocol_error_destroy(
     void *                              arg)
 {
     globus_hashtable_destroy_all(arg, globus_l_gram_protocol_errors_destroy);
+    free(arg);
 }
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

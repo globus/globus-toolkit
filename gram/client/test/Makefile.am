@@ -6,6 +6,7 @@ SUBDIRS= \
 
 Scripts = \
 	TESTS.pl \
+        failed-job-two-phase-commit.pl \
 	globus-gram-client-activate-test.pl \
 	globus-gram-client-callback-contact-test.pl \
 	globus-gram-client-cancel-test.pl \
@@ -21,6 +22,7 @@ Scripts = \
         globus-gram-client-stdio-size-test.pl \
 	globus-gram-client-register-ping-test.pl \
         globus-gram-client-two-phase-commit-test.pl \
+        job-status-with-info-test.pl \
         version-test.pl
 
 Data = \
@@ -33,6 +35,7 @@ test_DATA=$(Data)
 test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
 
 test_PROGRAMS= \
+        failed-job-two-phase-commit \
 	globus-gram-client-activate-test \
 	globus-gram-client-callback-contact-test \
 	globus-gram-client-test \
@@ -51,6 +54,7 @@ test_PROGRAMS= \
 	globus-gram-client-register-test \
 	globus-gram-client-register-ping-test \
         globus-gram-client-two-phase-commit-test \
+        job-status-with-info-test \
         version-test
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
@@ -58,6 +62,9 @@ EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
 INCLUDES = $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)
+failed_job_two_phase_commit_SOURCES = failed_job_two_phase_commit.c
+failed_job_two_phase_commit_LDFLAGS = $(GPT_LDFLAGS)
+
 globus_gram_client_register_callback_test_SOURCES = globus_gram_client_register_callback_test.c
 globus_gram_client_register_callback_test_LDFLAGS = $(GPT_LDFLAGS)
 
@@ -115,6 +122,9 @@ globus_gram_client_register_ping_test_LDFLAGS = $(GPT_LDFLAGS)
 
 version_test_SOURCES = version_test.c
 version_test_LDFLAGS = $(GPT_LDFLAGS)
+
+job_status_with_info_test_SOURCES = job_status_with_info_test.c
+job_status_with_info_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
