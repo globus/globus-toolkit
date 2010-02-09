@@ -33,6 +33,7 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
     globus-gram-client-two-phase-commit-test.pl
     globus-gram-client-register-ping-test.pl
     globus-gram-client-stdio-size-test.pl
+    job-status-with-info-test.pl
     version-test.pl
 );
 

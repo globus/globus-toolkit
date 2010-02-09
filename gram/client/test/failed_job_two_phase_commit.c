@@ -48,11 +48,12 @@ main(int argc, char *argv[])
     monitor_t monitor;
     char * rsl;
 
-    if (argc < 2 || ((monitor.timeout = atoi(argv[2])) < 0))
+    if (argc < 3 || ((monitor.timeout = atoi(argv[2])) < 0))
     {
         fprintf(stderr,
-                "Usage: %s RM-CONTACT\n"
-                "    RM-CONTACT: resource manager contact\n",
+                "Usage: %s RM-CONTACT TIMEOUT\n"
+                "    RM-CONTACT: resource manager contact\n"
+                "    TIMEOUT: two-phase commit timeout\n",
                 argv[0]);
         goto error_exit;
     }
