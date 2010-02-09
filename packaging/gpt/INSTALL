@@ -1,6 +1,0 @@
-To install GPT simply set the enviromental variable GPT_LOCATION to
-where you want it to be installed and run the script ./build_gpt.
-More installation help can be seen by running ./build_gpt -man.  Also
-the webpage
-
-http://www.gridpackagingtools.org/book/latest-stable/gpt-book.html#setup
