@@ -1079,7 +1079,7 @@ monitor_malloc_failed:
 null_param:
     return rc;
 }
-/* globus_gram_client_get_jobmanager_version() */
+/* globus_gram_client_register_get_jobmanager_version() */
 
 /**
  * @brief Send a job request to a GRAM service
