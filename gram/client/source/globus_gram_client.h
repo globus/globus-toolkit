@@ -437,6 +437,14 @@ globus_gram_client_get_jobmanager_version(
     const char *                        resource_manager_contact,
     globus_hashtable_t *                extensions);
 
+int 
+globus_gram_client_register_get_jobmanager_version(
+    const char *                        resource_manager_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        info_callback,
+    void *                              callback_arg);
+
 void
 globus_gram_client_debug(void);
 
