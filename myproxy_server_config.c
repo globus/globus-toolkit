@@ -508,7 +508,7 @@ line_parse_callback(void *context_arg,
 	context->certificate_issuer_key = strdup(tokens[1]);
     }
     else if (strcmp(directive, "certificate_issuer_hashalg") == 0) {
-        SSL_library_init();
+        OpenSSL_add_all_digests();
         context->certificate_hashalg = EVP_get_digestbyname(tokens[1]);
         if (context->certificate_hashalg == NULL) {
             verror_put_string("Unknown or unsupported certificate_issuer_hashalg (%s)", tokens[1]);
