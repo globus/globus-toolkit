@@ -14,6 +14,7 @@ bin_SCRIPTS = \
 	globus-job-status \
 	globus-job-clean \
 	globus-job-get-output \
+	globus-job-get-output-helper \
 	globus-job-submit \
 	globus-job-cancel
 
@@ -23,6 +24,7 @@ EXTRA_DIST = globus-job-run.in \
 	     globus-job-status.in \
 	     globus-job-clean.in \
 	     globus-job-get-output.in \
+	     globus-job-get-output-helper \
 	     version.h.in \
 	     dirt.sh
 
@@ -45,6 +47,7 @@ man1data_DATA = globus-job-cancel.1 \
 MANUAL_SOURCE = globus-job-cancel-manual.xml \
                 globus-job-clean-manual.xml \
                 globus-job-get-output-manual.xml \
+                globus-job-get-output-helper-manual.xml \
                 globus-job-run-manual.xml \
                 globus-job-status-manual.xml \
                 globus-job-submit-manual.xml \
