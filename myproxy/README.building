@@ -1,9 +1,13 @@
 First, you need to install GPT and the Globus Toolkit packages
 required for MyProxy.  Right now the best way to do that is to run
-"make gsi-myproxy install" in the gt4-all-source-installer directory.
-That will include all the Globus Toolkit packages needed by MyProxy.
 
-Alternatively, you can use a gt4 binary installer, in which case
+  $ ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+  $ make gsi-myproxy install 
+
+in the gt-all-source-installer directory.  That will include all the
+Globus Toolkit packages needed by MyProxy.
+
+Alternatively, you can use a GT binary installer, in which case
 you'll additionally need to install globus_core with the following
 command (replacing gcc32dbg with the flavor of your choice):
 
