@@ -63,13 +63,13 @@ globus_l_url_sync_ftpclient_complete_cb(
 /* Functions */
 
 /**
- * Existence check function.
+ * Comparison function.
  *
  * NOTE: This SHOULD be asynchronous but for now I made it synchronous to
  * simplify it.
  */
 globus_result_t
-globus_l_url_sync_compare_exists_func(
+globus_l_url_sync_compare_func(
     void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
@@ -77,29 +77,41 @@ globus_l_url_sync_compare_exists_func(
     void *                                      callback_arg)
 {
     globus_url_sync_comparison_result_t         comparison_result;
-    GlobusFuncName(globus_l_url_sync_compare_exists_func);
+    GlobusFuncName(globus_l_url_sync_compare_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
-
+	
     /* Stat the source */
     globus_l_url_sync_ftpclient_mlst(source);
-
+	
     /* Stat the destination */
     globus_l_url_sync_ftpclient_mlst(destination);
-
+	
     /* Compare existence */
-    if (source->stats.exists && destination->stats.exists)
-    {
-        comparison_result = GLOBUS_URL_SYNC_COMPARISON_SYNCHRONIZED;
+    if (source->stats.exists && destination->stats.exists){
+        /* Compare size */
+        if (source->stats.size == destination->stats.size) {
+	    /* Unless size-only has been specified, compare timestamp. */
+	    if (globus_i_url_sync_args_sizeonly) {
+	        /* *** this is a global, perhaps just for now *** */
+	        comparison_result = GLOBUS_URL_SYNC_COMPARISON_SYNCHRONIZED;
+	    } else {
+	        /* *** time zone of source and destination should be considered *** */
+	        comparison_result = 
+		  (difftime(timegm(&(source->stats.modify_tm)), 
+			    timegm(&(destination->stats.modify_tm))) == 0)?
+		  GLOBUS_URL_SYNC_COMPARISON_SYNCHRONIZED:
+		  GLOBUS_URL_SYNC_COMPARISON_RIGHT_OUT_OF_SYNC;
+	    }
+	} else {
+	    comparison_result = GLOBUS_URL_SYNC_COMPARISON_RIGHT_OUT_OF_SYNC;
+	}
+    } else {
+        comparison_result = 
+	  (source->stats.exists)?
+	  GLOBUS_URL_SYNC_COMPARISON_RIGHT_OUT_OF_SYNC:
+	  GLOBUS_URL_SYNC_COMPARISON_LEFT_OUT_OF_SYNC;
     }
-    else if (source->stats.exists)
-    {
-        comparison_result = GLOBUS_URL_SYNC_COMPARISON_RIGHT_OUT_OF_SYNC;
-    }
-    else
-    {
-        comparison_result = GLOBUS_URL_SYNC_COMPARISON_LEFT_OUT_OF_SYNC;
-    }
-
+	
     /* Not handling the ftpclient_mlst() results because... the ftp client
      * documentation seems to indicate that if a file does not exist, the
      * mlst operation may return an error. So an error is not really an error
@@ -108,7 +120,8 @@ globus_l_url_sync_compare_exists_func(
     callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
     return GLOBUS_SUCCESS;
 }
-/* globus_l_url_sync_compare_exists_func */
+/* globus_l_url_sync_compare_func */
+
 
 /**
  * A helper function for simplifying the MSLT operations.
@@ -253,7 +266,7 @@ globus_l_url_sync_ftpclient_complete_cb(
 globus_url_sync_comparator_t    globus_url_sync_comparator_exists =
 {
     GLOBUS_NULL,
-    globus_l_url_sync_compare_exists_func
+    globus_l_url_sync_compare_func
 };
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

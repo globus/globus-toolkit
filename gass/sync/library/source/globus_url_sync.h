@@ -448,6 +448,8 @@ globus_url_sync(
  */
 extern globus_url_sync_comparator_t globus_url_sync_comparator_exists;
 
+extern globus_bool_t globus_i_url_sync_args_sizeonly;
+
 EXTERN_C_END
 
 #endif	/* _GLOBUS_URL_SYNC_H */

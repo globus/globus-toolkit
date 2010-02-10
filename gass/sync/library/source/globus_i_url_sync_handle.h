@@ -310,4 +310,3 @@ EXTERN_C_END
 #endif	/* _GLOBUS_I_URL_SYNC_HANDLE_H */
 
 #endif  /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-        

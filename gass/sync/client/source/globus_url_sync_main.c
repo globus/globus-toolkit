@@ -150,7 +150,7 @@ main(int argc, char *argv[])
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
 
-    globus_url_sync_handle_init(&handle, &globus_url_sync_comparator_exists);
+	globus_url_sync_handle_init(&handle, &globus_url_sync_comparator_exists);
 
     GLOBUS_L_URL_SYNC_DEBUG_PRINTF("calling globus_url_sync\n");
 

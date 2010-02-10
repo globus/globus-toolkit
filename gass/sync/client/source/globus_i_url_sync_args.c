@@ -35,6 +35,7 @@ globus_url_t *          globus_i_url_sync_args_source;
 globus_url_t *          globus_i_url_sync_args_destination;
 globus_bool_t           globus_i_url_sync_args_verbose;
 globus_bool_t           globus_i_url_sync_args_debug;
+globus_bool_t           globus_i_url_sync_args_sizeonly;
 
 static globus_url_t     globus_l_url_sync_args_source;
 static globus_url_t     globus_l_url_sync_args_destination;
@@ -42,18 +43,22 @@ static globus_url_t     globus_l_url_sync_args_destination;
 static globus_args_option_descriptor_t args_options[2];
 static char *verbose_args[] = {"-v", "-verbose", GLOBUS_NULL};
 static char *debug_args[] = {"-d", "-debug", GLOBUS_NULL};
+static char *sizeonly_args[] = {"-s", "-size-only", GLOBUS_NULL};
 enum {
 	arg_verbose = 1,
 	arg_debug,
-	arg_num = arg_debug,
+	arg_sizeonly,
+	arg_num = arg_sizeonly,
 };
 static globus_args_option_descriptor_t verbose_def =
-	{arg_verbose, verbose_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+  {arg_verbose, verbose_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t debug_def =
-{arg_debug, debug_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+  {arg_debug, debug_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t sizeonly_def =
+  {arg_sizeonly, sizeonly_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 
 static char * usage_str= 
-"\nglobus_url_sync [-help | -usage] [-version] [-d | -v] <sourceURL> <destURL>\n\n";
+"\nglobus_url_sync [-help | -usage] [-version] [-d | -v] [-s] <sourceURL> <destURL>\n\n";
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
 "OPTIONS\n"
@@ -62,7 +67,9 @@ static char * help_str=
 "  -version\n"
 "\tPrint the version of this program\n"
 "  -d | -debug | -v | -verbose\n"
-"\tPrint additional detail.\n\n"
+"\tPrint additional detail.\n"
+"  -s | -size-only\n"
+"\tSkip files that match in size.\n\n"
 "URL scheme(s) supported:\n"
 "  gsiftp\n"
 "    For example:\n"
@@ -70,8 +77,6 @@ static char * help_str=
 "\t\t\t\t\t\"gsiftp://myhost.edu/~/file1\"\n"
 "\tFile name, relative path:\t\"gsiftp://myhost.edu/file1\"\n"
 "\tDirectory, absolute path:\t\"gsiftp://myhost.edu//tmp/dir1/\"\n"
-"  file\n"
-"    To be supported in the future.\n"
 "\n"
 ;
 
@@ -112,6 +117,7 @@ globus_i_url_sync_parse_args(
     /* Defaults */
     globus_i_url_sync_args_verbose  = GLOBUS_FALSE;
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
+    globus_i_url_sync_args_sizeonly = GLOBUS_FALSE;
 
     /* determine the program name */
 	program = strrchr(argv[0],'/');
@@ -123,6 +129,7 @@ globus_i_url_sync_parse_args(
 	
     args_options[0] = verbose_def;
     args_options[1] = debug_def;
+    args_options[2] = sizeonly_def;
     if (globus_args_scan(
 			&argc,
 			&argv,
@@ -150,6 +157,9 @@ globus_i_url_sync_parse_args(
 			case arg_debug:
 				globus_i_url_sync_args_debug = GLOBUS_TRUE;
 				break;
+			case arg_sizeonly:
+				globus_i_url_sync_args_sizeonly = GLOBUS_TRUE;
+				break;
 			default:
 				/* should not get here */
 				break;
@@ -174,7 +184,7 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_source = &globus_l_url_sync_args_source;
 	
     if (globus_i_url_sync_args_verbose)
-        globus_libc_fprintf(stderr, "Source: %s\n", globus_i_url_sync_args_source);
+      globus_libc_fprintf(stderr, "Source: %s\n", globus_l_url_sync_args_source);
 	
     result = globus_url_parse(argv[2], &globus_l_url_sync_args_destination);
     if (result != GLOBUS_URL_SUCCESS) {
@@ -186,7 +196,7 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_destination = &globus_l_url_sync_args_destination;
 	
     if (globus_i_url_sync_args_verbose)
-        globus_libc_fprintf(stderr, "Destination: %s\n", globus_i_url_sync_args_destination);
+      globus_libc_fprintf(stderr, "Destination: %s\n", globus_l_url_sync_args_destination);
 	
     return GLOBUS_SUCCESS;
 	
