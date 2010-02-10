@@ -515,7 +515,7 @@ line_parse_callback(void *context_arg,
             goto error;
         }
 		myproxy_debug("certificate_issuer_hashalg is %s\n",
-                      OBJ_nid2ln(context->certificate_hashalg->type));
+                      OBJ_nid2ln(((const EVP_MD *)context->certificate_hashalg)->type));
     }
     else if (strcmp(directive, "certificate_request_checker") == 0) {
 	context->certificate_request_checker = strdup(tokens[1]);

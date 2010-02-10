@@ -6,8 +6,6 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
-#include <openssl/evp.h>
-
 #define MYPROXY_SERVER_POLICY_TYPE_FQAN "FQAN:"
 #define MYPROXY_SERVER_POLICY_TYPE_SUBJECT "SUBJECT:"
 
@@ -53,7 +51,7 @@ typedef struct myproxy_server_context_s
   char *certificate_issuer_program; /* CA callout external program */
   char *certificate_issuer_cert;    /* CA certificate */
   char *certificate_issuer_key;     /* CA signing key */
-  const EVP_MD *certificate_hashalg; /* hash algorithm for issued EECs */
+  const void *certificate_hashalg; /* hash algorithm for issued EECs (EVP_MD *)*/
   char *certificate_request_checker; /* callout for checking certreqs */
   char *certificate_issuer_checker; /* callout for checking issued certs */
   char *certificate_openssl_engine_id;   /* Which OpenSSL engine to use */
