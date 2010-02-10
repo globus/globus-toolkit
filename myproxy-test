@@ -1406,7 +1406,7 @@ if (-x $gcc &&
   }
   closedir(DIRHANDLE);
   ($exitstatus, $output) =
-    &runtest("$gcc $includedirs -o $tmpdir/myproxy-header $tmpdir/myproxy.c");
+    &runcmd("$gcc $includedirs -o $tmpdir/myproxy-header $tmpdir/myproxy.c");
   print "MyProxy Test 44 (myproxy.h): ";
   if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
