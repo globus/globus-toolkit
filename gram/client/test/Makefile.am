@@ -23,6 +23,7 @@ Scripts = \
 	globus-gram-client-register-ping-test.pl \
         globus-gram-client-two-phase-commit-test.pl \
         job-status-with-info-test.pl \
+        register-version-test.pl \
         version-test.pl
 
 Data = \
@@ -55,6 +56,7 @@ test_PROGRAMS= \
 	globus-gram-client-register-ping-test \
         globus-gram-client-two-phase-commit-test \
         job-status-with-info-test \
+        register-version-test \
         version-test
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
@@ -119,6 +121,9 @@ globus_gram_client_two_phase_commit_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_register_ping_test_SOURCES = globus_gram_client_register_ping_test.c
 globus_gram_client_register_ping_test_LDFLAGS = $(GPT_LDFLAGS)
+
+register_version_test_SOURCES = register_version_test.c
+register_version_test_LDFLAGS = $(GPT_LDFLAGS)
 
 version_test_SOURCES = version_test.c
 version_test_LDFLAGS = $(GPT_LDFLAGS)

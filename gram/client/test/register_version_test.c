@@ -36,8 +36,40 @@ typedef struct
 }
 test_case;
 
+struct monitor_s
+{
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    globus_bool_t                       done;
+    globus_bool_t                       versions_present;
+    int                                 failure_code;
+}
+monitor;
+
+static
+void
+info_callback(
+    void *                              user_callback_arg,
+    const char *                        job_contact,
+    globus_gram_client_job_info_t *     job_info)
+{
+    struct monitor_s *                  m = user_callback_arg;
+
+    globus_mutex_lock(&m->mutex);
+    m->done = GLOBUS_TRUE;
+    if (globus_hashtable_lookup(&job_info->extensions, "version") != NULL &&
+        globus_hashtable_lookup(&job_info->extensions, "toolkit-version") != NULL)
+    {
+        m->versions_present = GLOBUS_TRUE;
+    }
+    m->failure_code = job_info->protocol_error_code;
+    globus_cond_signal(&m->cond);
+    globus_mutex_unlock(&m->mutex);
+}
+/* info_callback() */
+
 /* Check that passing null parameters to
- * globus_gram_client_get_jobmanager_version() don't cause crashes and
+ * globus_gram_client_register_get_jobmanager_version() don't cause crashes and
  * return reasonable error values.
  */
 static
@@ -45,25 +77,29 @@ int
 null_param_test(void)
 {
     int                                 rc;
-    globus_hashtable_t                  extensions;
 
-    rc = globus_gram_client_get_jobmanager_version(
+    rc = globus_gram_client_register_get_jobmanager_version(
             NULL,
-            &extensions);
+            NULL /*optional attr*/,
+            info_callback,
+            NULL /* optional callback_arg*/);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER,
-            ("globus_gram_client_get_jobmanager_version() didn't return expected error: %d (%s)",
+            ("globus_gram_client_register_get_jobmanager_version() didn't return expected error: %d (%s)",
             rc,
             globus_gram_protocol_error_string(rc)));
 
-    rc = globus_gram_client_get_jobmanager_version(
+    rc = globus_gram_client_register_get_jobmanager_version(
             rm_contact,
-            NULL);
+            NULL /*optional attr*/,
+            NULL,
+            NULL /* optional callback_arg*/);
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER,
-            ("globus_gram_client_get_jobmanager_version() didn't return expected error: %d (%s)",
+            ("globus_gram_client_register_get_jobmanager_version() didn't return expected error: %d (%s)",
             rc,
             globus_gram_protocol_error_string(rc)));
+
 
     rc = GLOBUS_SUCCESS;
 
@@ -80,18 +116,21 @@ int
 bad_contact_test(void)
 {
     int                                 rc;
-    globus_hashtable_t                  extensions;
 
-    rc = globus_gram_client_get_jobmanager_version(
+    monitor.done = monitor.versions_present = GLOBUS_FALSE;
+    monitor.failure_code = 0;
+
+    rc = globus_gram_client_register_get_jobmanager_version(
             "grid.example.org:2119",
-            &extensions);
+            NULL,
+            info_callback,
+            &monitor);
 
     test_assert(
             rc == GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER,
-            ("globus_gram_client_get_jobmanager_version() didn't return expected error: %d (%s)",
+            ("globus_gram_client_register_get_jobmanager_version() didn't fail as expected: %d (%s)",
             rc,
             globus_gram_protocol_error_string(rc)));
-
     rc = GLOBUS_SUCCESS;
 
     return rc;
@@ -108,26 +147,37 @@ int
 version_test(void)
 {
     int                                 rc;
-    globus_gram_protocol_extension_t *  extension;
-    globus_hashtable_t                  extensions;
 
-    rc = globus_gram_client_get_jobmanager_version(
+    monitor.done = monitor.versions_present = GLOBUS_FALSE;
+    monitor.failure_code = 0;
+
+    rc = globus_gram_client_register_get_jobmanager_version(
             rm_contact,
-            &extensions);
+            NULL,
+            info_callback,
+            &monitor);
     test_assert(
             rc == GLOBUS_SUCCESS,
-            ("globus_gram_client_get_jobmanager_version() failed: %d (%s)",
+            ("globus_gram_client_register_get_jobmanager_version() failed: %d (%s)",
             rc,
             globus_gram_protocol_error_string(rc)));
-    extension = globus_hashtable_lookup(&extensions, "toolkit-version");
+
+    globus_mutex_lock(&monitor.mutex);
+    while (!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
     test_assert(
-            extension != NULL,
-            ("toolkit-version attribute not present in response"));
-    extension = globus_hashtable_lookup(&extensions, "version");
+            monitor.failure_code == GLOBUS_SUCCESS,
+            ("globus_gram_client_register_get_jobmanager_version() callback indicated failure: %d (%s)",
+            rc,
+            globus_gram_protocol_error_string(rc)));
+
     test_assert(
-            extension != NULL,
-            ("version attribute not present in response"));
-    globus_gram_protocol_hash_destroy(&extensions);
+            monitor.versions_present == GLOBUS_TRUE,
+            ("globus_gram_client_register_get_jobmanager_version() callback didn't get version info"));
 
     return rc;
 }
@@ -155,6 +205,8 @@ int main(int argc, char *argv[])
     printf("1..%d\n", ARRAY_LEN(tests));
 
     globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+    globus_mutex_init(&monitor.mutex, NULL);
+    globus_cond_init(&monitor.cond, NULL);
     for (i = 0; i < ARRAY_LEN(tests); i++)
     {
         rc = tests[i].test_function();
