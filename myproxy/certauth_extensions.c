@@ -703,7 +703,8 @@ generate_certificate( X509_REQ                 *request,
 
   myproxy_debug("Signing internally generated certificate.");
 
-  if (!X509_sign(cert, cakey, server_context->certificate_hashalg ) ) {
+  if (!X509_sign(cert, cakey,
+                 (const EVP_MD *)server_context->certificate_hashalg ) ) {
     verror_put_string("Certificate/cakey sign failed.");
     ssl_error_to_verror();
     goto error;
