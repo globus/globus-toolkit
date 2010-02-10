@@ -105,6 +105,24 @@ typedef enum
 }
 globus_gram_job_manager_query_type_t;
 
+typedef enum 
+{
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_CANCEL,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_SIGNAL,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_SUBMIT,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_STAGE_OUT,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_STAGE_IN,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_POLL
+}
+globus_gram_script_priority_level_t;
+
+typedef struct
+{
+    globus_gram_script_priority_level_t priority_level;
+    uint64_t                            sequence;
+}
+globus_gram_script_priority_t;
+
 typedef struct
 {
     globus_gram_job_manager_staging_type_t
@@ -432,8 +450,8 @@ typedef struct globus_gram_job_manager_s
     /** Pid file path */
     char *                              pid_path;
 
-    /** Fifo of script contexts ready to run */
-    globus_fifo_t                       script_fifo;
+    /** Queue of script contexts ready to run */
+    globus_priority_q_t                 script_queue;
     /** Number of script slots available for running scripts */
     int                                 script_slots_available;
     /** Fifo of available script handles */

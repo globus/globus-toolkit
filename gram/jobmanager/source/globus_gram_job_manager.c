@@ -87,6 +87,13 @@ globus_l_gram_read_job_manager_cred(
     globus_gram_job_manager_t *         manager,
     const char *                        cred_path,
     gss_cred_id_t *                     cred);
+
+static
+int
+globus_l_gram_script_priority_cmp(
+    void *                              priority_1,
+    void *                              priority_2);
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -286,11 +293,13 @@ globus_gram_job_manager_init(
         goto malloc_pid_path_failed;
     }
 
-    rc = globus_fifo_init(&manager->script_fifo);
+    rc = globus_priority_q_init(
+            &manager->script_queue,
+            globus_l_gram_script_priority_cmp);
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto script_fifo_init_failed;
+        goto script_queue_init_failed;
     }
 
     /* Default number of scripts which can be run simultaneously */
@@ -332,8 +341,8 @@ globus_gram_job_manager_init(
 state_callback_fifo_init_failed:
         globus_fifo_destroy(&manager->script_handles);
 script_handles_fifo_init_failed:
-        globus_fifo_destroy(&manager->script_fifo);
-script_fifo_init_failed:
+        globus_fifo_destroy(&manager->script_queue);
+script_queue_init_failed:
         free(manager->pid_path);
         manager->pid_path = NULL;
 malloc_pid_path_failed:
@@ -409,7 +418,7 @@ globus_gram_job_manager_destroy(
     globus_hashtable_destroy(&manager->request_hash);
 
     globus_fifo_destroy(&manager->state_callback_fifo);
-    globus_fifo_destroy(&manager->script_fifo);
+    globus_priority_q_destroy(&manager->script_queue);
     globus_fifo_destroy(&manager->script_handles);
     
     if(manager->usagetracker)
@@ -2610,3 +2619,31 @@ job_id_copy_failed:
     return rc;
 }
 /* globus_gram_split_subjobs() */
+
+static
+int
+globus_l_gram_script_priority_cmp(
+    void *                              priority_1,
+    void *                              priority_2)
+{
+    globus_gram_script_priority_t      *p1 = priority_1, *p2 = priority_2;
+
+    if (p1->priority_level > p2->priority_level)
+    {
+        return 1;
+    }
+    else if (p1->priority_level < p2->priority_level)
+    {
+        return -1;
+    }
+    else if (p1->sequence > p2->sequence)
+    {
+        return 2;
+    }
+    else
+    {
+        assert(p1->sequence < p2->sequence);
+        return -2;
+    }
+}
+/* globus_l_gram_script_priority_cmp() */

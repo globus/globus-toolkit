@@ -25,6 +25,7 @@
 
 globus_xio_driver_t                     globus_i_gram_job_manager_popen_driver;
 globus_xio_stack_t                      globus_i_gram_job_manager_popen_stack;
+static uint64_t                         globus_l_gram_next_script_sequence = 0;
 
 typedef struct globus_gram_script_handle_s
 {
@@ -79,6 +80,7 @@ typedef struct
     struct iovec *                      iov;
     int                                 iovcnt;
     globus_gram_script_handle_t         handle;
+    globus_gram_script_priority_t       priority;
 }
 globus_gram_job_manager_script_context_t;
 
@@ -233,6 +235,37 @@ globus_l_gram_job_manager_script_run(
     script_context->callback_arg = callback_arg;
     script_context->request = request;
     script_context->starting_jobmanager_state = request->jobmanager_state;
+
+    if (strcmp(script_cmd, "poll") == 0)
+    {
+        script_context->priority.priority_level =
+            GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_POLL;
+    }
+    else if (strcmp(script_cmd, "cancel") == 0)
+    {
+        script_context->priority.priority_level =
+            GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_CANCEL;
+    }
+    else if (strcmp(script_cmd, "submit") == 0)
+    {
+        script_context->priority.priority_level =
+            GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_SUBMIT;
+    }
+    else if (strcmp(script_cmd, "stage_out") == 0)
+    {
+        script_context->priority.priority_level =
+            GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_STAGE_OUT;
+    }
+    else if (strcmp(script_cmd, "stage_in") == 0)
+    {
+        script_context->priority.priority_level =
+            GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_STAGE_IN;
+    }
+    else if (strcmp(script_cmd, "signal") == 0)
+    {
+        script_context->priority.priority_level =
+            GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_SIGNAL;
+    }
     rc = globus_l_gram_fifo_to_iovec(
             &fifo,
             &script_context->iov,
@@ -2109,7 +2142,11 @@ globus_l_gram_script_queue(
     int                                 rc;
 
     GlobusGramJobManagerLock(manager);
-    rc = globus_fifo_enqueue(&manager->script_fifo, context);
+    context->priority.sequence = globus_l_gram_next_script_sequence++;
+    rc = globus_priority_q_enqueue(
+            &manager->script_queue,
+            context,
+            &context->priority);
     if (rc != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -2151,7 +2188,7 @@ globus_l_gram_process_script_queue_locked(
     globus_result_t                     result;
     globus_reltime_t                    delay;
 
-    while ((!globus_fifo_empty(&manager->script_fifo)) &&
+    while ((!globus_priority_q_empty(&manager->script_queue)) &&
            (manager->script_slots_available > 0 ||
             !globus_fifo_empty(&manager->script_handles)))
     {
@@ -2160,7 +2197,7 @@ globus_l_gram_process_script_queue_locked(
          */
         if (head == NULL)
         {
-            head = globus_fifo_peek(&manager->script_fifo);
+            head = globus_priority_q_first(&manager->script_queue);
         }
 
         /* Prefer to reuse a handle to the script */
@@ -2250,7 +2287,7 @@ globus_l_gram_process_script_queue_locked(
 
             continue;
         }
-        globus_fifo_dequeue(&manager->script_fifo);
+        globus_priority_q_dequeue(&manager->script_queue);
         head = NULL;
     }
 
