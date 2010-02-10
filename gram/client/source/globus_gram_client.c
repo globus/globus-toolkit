@@ -948,6 +948,13 @@ globus_gram_client_get_jobmanager_version(
     int                                 rc;
     globus_l_gram_client_monitor_t      monitor;
 
+    if (resource_manager_contact == NULL || extensions == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto null_param;
+    }
+
     globus_l_gram_client_monitor_init(&monitor, NULL, NULL, NULL, NULL);
 
     rc = globus_l_gram_client_get_jobmanager_version(
@@ -975,9 +982,104 @@ globus_gram_client_get_jobmanager_version(
 
     globus_l_gram_client_monitor_destroy(&monitor);
 
+null_param:
     return rc;
 }
 /* globus_gram_client_get_jobmanager_version() */
+
+/**
+ * @brief Get version information from a job manager without blocking
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @details
+ * The @a globus_gram_client_register_get_jobmanager_version() function sends a
+ * message to a GRAM service which returns information about the job manager
+ * version to the function pointed to by the @a info_callback function. Note
+ * that job managers prior to GT5 do not support the version request and so
+ * will return a GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED error. This
+ * function blocks while processing this request.
+ *
+ * @param resource_manager_contact
+ *     A NULL-terminated character string containing a
+ *     @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ * @param info_callback
+ *     A pointer to a function to call when the version request has
+ *     completed or failed.
+ * @param callback_arg
+ *     A pointer to application-specific data which will be passed to the
+ *     function pointed to by @a info_callback as its @a user_callback_arg
+ *     parameter.
+ *
+ * @return
+ *     Upon success, @a globus_gram_client_register_get_jobmanager_version()
+ *     function returns GLOBUS_SUCCESS and begins processing the version
+ *     request to contact @a resource_manager_contact; when complete, the
+ *     @a info_callback function will be called.
+ *     If an error occurs, the integer error code will be
+ *     returned and the value pointed to by the @a extensions parameter is
+ *     undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_GATEKEEPER_CONTACT
+ *     Bad gatekeeper contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     NULL parameter
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Out of memory
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED
+ *     Protocol failed
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT
+ *    Invalid job contact
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *    Invalid request
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES
+ *    No resources
+ */
+int 
+globus_gram_client_register_get_jobmanager_version(
+    const char *                        resource_manager_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_info_callback_func_t
+                                        info_callback,
+    void *                              callback_arg)
+{
+    int                                 rc;
+    globus_l_gram_client_monitor_t *    monitor;
+
+    if (resource_manager_contact == NULL || info_callback == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto null_param;
+    }
+    monitor = malloc(sizeof(globus_l_gram_client_monitor_t));
+
+    if(!monitor)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto monitor_malloc_failed;
+    }
+    globus_l_gram_client_monitor_init(monitor, NULL, NULL,
+            info_callback, callback_arg);
+
+    rc = globus_l_gram_client_get_jobmanager_version(
+            resource_manager_contact,
+            attr,
+            monitor);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(monitor);
+        free(monitor);
+    }
+
+monitor_malloc_failed:
+null_param:
+    return rc;
+}
+/* globus_gram_client_register_get_jobmanager_version() */
 
 /**
  * @brief Send a job request to a GRAM service
@@ -3647,10 +3749,15 @@ globus_l_gram_client_get_jobmanager_version(
                  &attr,
                  (globus_byte_t *) query,
                  query_size,
-                 (monitor->callback != NULL)
+                 (monitor->callback != NULL || monitor->info_callback != NULL)
                      ? globus_l_gram_client_register_callback
                      : globus_l_gram_client_monitor_callback,
                  monitor);
+
+    if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+    }
     globus_mutex_unlock(&monitor->mutex);
 
     free(query);
