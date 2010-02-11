@@ -202,9 +202,20 @@ int
 myproxy_debug_set_level(int level)
 {
     int old_level = my_context.debug_level;
+    int gsi_level = 0;
+    char txt_level[12];
 
     my_context.debug_level = level;
 
+    if (getenv("GLOBUS_GSI_CRED_DEBUG_LEVEL") != NULL)
+	gsi_level = atoi(getenv("GLOBUS_GSI_CRED_DEBUG_LEVEL"));
+
+    if (gsi_level < level)
+    {
+	gsi_level = level;
+	snprintf(txt_level, 12, "%d", gsi_level);
+	setenv("GLOBUS_GSI_CRED_DEBUG_LEVEL", txt_level, 1);
+    }
     return old_level;
 }
 
