@@ -206,17 +206,6 @@ typedef struct globus_url_sync_endpoint_s
  */
 
 /**
- * Comparison result type.
- * @ingroup globus_url_sync_comparators
- */
-typedef enum
-{
-    GLOBUS_URL_SYNC_COMPARISON_LEFT_OUT_OF_SYNC     = -1,
-    GLOBUS_URL_SYNC_COMPARISON_SYNCHRONIZED         = 0,
-    GLOBUS_URL_SYNC_COMPARISON_RIGHT_OUT_OF_SYNC    = 1,
-} globus_url_sync_comparison_result_t;
-
-/**
  * Callback for the synchronization comparison function. This function is called
  * by the comparator module compare function and gives the result of the
  * comparison.
@@ -230,7 +219,9 @@ typedef enum
  * @param destination
  *        The destination endpoint
  * @param result
- *        The comparison result.
+ *        The comparison result. The result is <, >, == 0 depending on the
+ *        comparison(s) used in the evaluation to indicate that the attribute
+ *        or attributes of the files evaluated to <, >, or ==.
  * @param error
  *        An error object if the operation failed or NULL if the operation
  *        performed successfully.
@@ -240,7 +231,7 @@ typedef void
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         result,
+    int                                         result,
     globus_object_t *                           error);
 
 /**
@@ -307,15 +298,17 @@ typedef struct globus_url_sync_comparator_s
  * @param destination
  *        The destination endpoint
  * @param result
- *        The comparison result.
+ *        The comparison result. The result is <, >, == 0 depending on the
+ *        comparison(s) used in the evaluation to indicate that the property
+ *        or properties of the file evaluated to <, >, or ==.
  */
 typedef void (*globus_url_sync_result_callback_t) (
-    void *					user_arg,
+    void *                                      user_arg,
     globus_url_sync_handle_t                    handle,
-    globus_object_t *				error,
+    globus_object_t *                           error,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         result);
+    int                                         result);
 
 /**
  * Operation complete callback.
@@ -448,7 +441,62 @@ globus_url_sync(
  */
 extern globus_url_sync_comparator_t globus_url_sync_comparator_exists;
 
-extern globus_bool_t globus_i_url_sync_args_sizeonly;
+/**
+ * Comparator for size checks.
+ * @ingroup globus_url_sync_comparators
+ */
+extern globus_url_sync_comparator_t globus_url_sync_comparator_size;
+
+/**
+ * Comparator for last modified time checks.
+ * @ingroup globus_url_sync_comparators
+ */
+extern globus_url_sync_comparator_t globus_url_sync_comparator_modify;
+
+/**
+ * Allocates and initializes a new chained comparator. The chained comparator
+ * calls a sequence of comparators. If the currently selected comparator
+ * evaluates to 0, it continues with the next comparator. If the currently
+ * selected comparator evaluates to greater or less than 0, it immediates
+ * returns the current comparison result.
+ *
+ * @ingroup globus_url_sync_comparators
+ *
+ * @param chain
+ *        The chained comparator.
+ */
+void
+globus_url_sync_chained_comparator_init(
+    globus_url_sync_comparator_t *					chain);
+
+/**
+ * Destroys a chained comparator.
+ *
+ * @ingroup globus_url_sync_comparators
+ *
+ * @param chain
+ *        The chained comparator.
+ */
+void
+globus_url_sync_chained_comparator_destroy(
+    globus_url_sync_comparator_t *					chain);
+
+/**
+ * Adds a comparator to the FRONT of the chain. If add is call in the order
+ * add(a), add(b), add(c), the comparators will be executed in the order of
+ * c->b->a.
+ *
+ * @ingroup globus_url_sync_comparators
+ *
+ * @param comparator
+ *        The chained comparator.
+ * @param next
+ *        The next comparator to be added to the chain.
+ */
+void
+globus_url_sync_chained_comparator_add(
+    globus_url_sync_comparator_t *					chain,
+    globus_url_sync_comparator_t *					next);
 
 EXTERN_C_END
 

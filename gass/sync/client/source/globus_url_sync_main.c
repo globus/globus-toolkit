@@ -67,7 +67,7 @@ static void             globus_l_url_sync_main_result_cb(
     globus_object_t *				error,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         result);
+    int                                         result);
 
 static
 void
@@ -114,6 +114,7 @@ main(int argc, char *argv[])
     globus_url_sync_handle_t                handle;
     int                                     i;
     globus_l_url_sync_main_monitor_t        monitor;
+	globus_url_sync_comparator_t            chained_comparator;
     GlobusFuncName(main);
 
     /* Parse arguments */
@@ -150,7 +151,32 @@ main(int argc, char *argv[])
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
 
-	globus_url_sync_handle_init(&handle, &globus_url_sync_comparator_exists);
+	/* Initialize chain of comparators */
+	globus_url_sync_chained_comparator_init(&chained_comparator);
+
+	if (globus_i_url_sync_args_modify)
+	{
+		/* ...modify */
+		globus_url_sync_chained_comparator_add(
+				&chained_comparator,
+				&globus_url_sync_comparator_modify);
+	}
+
+	if (globus_i_url_sync_args_size)
+	{
+		/* ...size */
+		globus_url_sync_chained_comparator_add(
+				&chained_comparator,
+				&globus_url_sync_comparator_size);
+	}
+
+	/* ...exists, always checked */
+	globus_url_sync_chained_comparator_add(
+			&chained_comparator,
+			&globus_url_sync_comparator_exists);
+
+	/* Initialize sync handle */
+	globus_url_sync_handle_init(&handle, &chained_comparator);
 
     GLOBUS_L_URL_SYNC_DEBUG_PRINTF("calling globus_url_sync\n");
 
@@ -186,6 +212,7 @@ main(int argc, char *argv[])
     }
 
     globus_url_sync_handle_destroy(&handle);
+	globus_url_sync_chained_comparator_destroy(&chained_comparator);
 
     /* Destroy monitor */
     globus_mutex_destroy(&monitor.mutex);
@@ -418,7 +445,7 @@ globus_l_url_sync_main_result_cb(
     globus_object_t *				error,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         result)
+    int                                         result)
 {
     GlobusFuncName(globus_l_url_sync_main_result_cb);
     GLOBUS_L_URL_SYNC_DEBUG_ENTER();
@@ -429,12 +456,21 @@ globus_l_url_sync_main_result_cb(
     globus_assert(destination);
     globus_assert(destination->url);
 
-    globus_libc_printf("%d {%s%s} %s %s\n",
-            (int) result,
-            (error) ? "error=" : "",
-            (error) ? globus_object_printable_to_string(error) : "",
-            source->url,
-            destination->url);
+	if (globus_i_url_sync_args_verbose || globus_i_url_sync_args_debug)
+	{
+		/* Verbose results format */
+		globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
+				result,
+				(error) ? "error=" : "",
+				(error) ? globus_object_printable_to_string(error) : "",
+				source->url,
+				destination->url);
+	}
+	else if (result)
+	{
+		/* globus-url-copy format */
+		globus_libc_printf("\"%s\" \"%s\"\n", source->url, destination->url);
+	}
 }
 /* globus_l_url_sync_main_result_cb */
 

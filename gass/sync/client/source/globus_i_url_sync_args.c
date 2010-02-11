@@ -31,11 +31,12 @@
 #include <ctype.h>
 #include <stdio.h>
 
-globus_url_t *          globus_i_url_sync_args_source;
-globus_url_t *          globus_i_url_sync_args_destination;
-globus_bool_t           globus_i_url_sync_args_verbose;
-globus_bool_t           globus_i_url_sync_args_debug;
-globus_bool_t           globus_i_url_sync_args_sizeonly;
+globus_url_t *          globus_i_url_sync_args_source		= GLOBUS_NULL;
+globus_url_t *          globus_i_url_sync_args_destination	= GLOBUS_NULL;
+globus_bool_t           globus_i_url_sync_args_verbose		= GLOBUS_FALSE;
+globus_bool_t           globus_i_url_sync_args_debug		= GLOBUS_FALSE;
+globus_bool_t			globus_i_url_sync_args_modify		= GLOBUS_FALSE;
+globus_bool_t			globus_i_url_sync_args_size			= GLOBUS_FALSE;
 
 static globus_url_t     globus_l_url_sync_args_source;
 static globus_url_t     globus_l_url_sync_args_destination;
@@ -43,22 +44,26 @@ static globus_url_t     globus_l_url_sync_args_destination;
 static globus_args_option_descriptor_t args_options[2];
 static char *verbose_args[] = {"-v", "-verbose", GLOBUS_NULL};
 static char *debug_args[] = {"-d", "-debug", GLOBUS_NULL};
-static char *sizeonly_args[] = {"-s", "-size-only", GLOBUS_NULL};
+static char *modify_args[] = {"-m", "-modify", GLOBUS_NULL};
+static char *size_args[] = {"-s", "-size", GLOBUS_NULL};
 enum {
 	arg_verbose = 1,
 	arg_debug,
-	arg_sizeonly,
-	arg_num = arg_sizeonly,
+	arg_modify,
+	arg_size,
+	arg_num = arg_size,
 };
 static globus_args_option_descriptor_t verbose_def =
   {arg_verbose, verbose_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t debug_def =
   {arg_debug, debug_args, 0, GLOBUS_NULL, GLOBUS_NULL};
-static globus_args_option_descriptor_t sizeonly_def =
-  {arg_sizeonly, sizeonly_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t modify_def =
+  {arg_modify, modify_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t size_def =
+  {arg_size, size_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 
 static char * usage_str= 
-"\nglobus_url_sync [-help | -usage] [-version] [-d | -v] [-s] <sourceURL> <destURL>\n\n";
+"globus_url_sync [-help | -usage] [-version] [-d | -v] [-m] [-s] <sourceURL> <destURL>";
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
 "OPTIONS\n"
@@ -68,8 +73,10 @@ static char * help_str=
 "\tPrint the version of this program\n"
 "  -d | -debug | -v | -verbose\n"
 "\tPrint additional detail.\n"
-"  -s | -size-only\n"
-"\tSkip files that match in size.\n\n"
+"  -m | -modify\n"
+"\tCompare files by last modified timestamp.\n"
+"  -s | -size\n"
+"\tCompare files by size.\n\n"
 "URL scheme(s) supported:\n"
 "  gsiftp\n"
 "    For example:\n"
@@ -117,7 +124,8 @@ globus_i_url_sync_parse_args(
     /* Defaults */
     globus_i_url_sync_args_verbose  = GLOBUS_FALSE;
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
-    globus_i_url_sync_args_sizeonly = GLOBUS_FALSE;
+    globus_i_url_sync_args_modify   = GLOBUS_FALSE;
+    globus_i_url_sync_args_size     = GLOBUS_FALSE;
 
     /* determine the program name */
 	program = strrchr(argv[0],'/');
@@ -129,7 +137,8 @@ globus_i_url_sync_parse_args(
 	
     args_options[0] = verbose_def;
     args_options[1] = debug_def;
-    args_options[2] = sizeonly_def;
+    args_options[2] = modify_def;
+    args_options[3] = size_def;
     if (globus_args_scan(
 			&argc,
 			&argv,
@@ -157,8 +166,11 @@ globus_i_url_sync_parse_args(
 			case arg_debug:
 				globus_i_url_sync_args_debug = GLOBUS_TRUE;
 				break;
-			case arg_sizeonly:
-				globus_i_url_sync_args_sizeonly = GLOBUS_TRUE;
+			case arg_modify:
+				globus_i_url_sync_args_modify = GLOBUS_TRUE;
+				break;
+			case arg_size:
+				globus_i_url_sync_args_size = GLOBUS_TRUE;
 				break;
 			default:
 				/* should not get here */

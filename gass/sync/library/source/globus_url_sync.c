@@ -140,7 +140,7 @@ globus_l_url_sync_compare_func_top_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         result,
+    int         								compare_result,
     globus_object_t *                           error);
 
 /** The compare function callback. This cb is used for any recursively listed
@@ -153,7 +153,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         result,
+    int         								compare_result,
     globus_object_t *                           error);
 
 /* Declarations */
@@ -394,7 +394,7 @@ globus_l_url_sync_compare_func_top_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         compare_result,
+    int         								compare_result,
     globus_object_t *                           error)
 {
     globus_url_sync_handle_t                    handle;
@@ -605,7 +605,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_comparison_result_t         compare_result,
+    int         								compare_result,
     globus_object_t *                           error)
 {
     globus_url_sync_handle_t                    handle;
