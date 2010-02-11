@@ -731,7 +731,13 @@ globus_l_gfs_file_stat(
             goto error_alloc2;
         }
         
-        snprintf(dir_path, sizeof(dir_path), "%s/%s", basepath, filename);
+        snprintf(
+            dir_path, 
+            sizeof(dir_path), 
+            "%s/%s", 
+            (basepath[0] != '/' || basepath[1] != '\0') ? basepath : "", 
+            filename);
+            
         dir_path[MAXPATHLEN - 1] = '\0';
         
         for(i = 0;
