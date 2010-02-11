@@ -36,6 +36,7 @@ extern globus_bool_t            globus_i_url_sync_args_verbose;
 extern globus_bool_t            globus_i_url_sync_args_debug;
 extern globus_bool_t			globus_i_url_sync_args_modify;
 extern globus_bool_t			globus_i_url_sync_args_size;
+extern globus_bool_t			globus_i_url_sync_args_cache;
 
 globus_result_t globus_i_url_sync_parse_args(int argc, char *argv[]);
 

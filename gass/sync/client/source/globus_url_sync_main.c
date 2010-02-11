@@ -177,7 +177,8 @@ main(int argc, char *argv[])
 
 	/* Initialize sync handle */
 	globus_url_sync_handle_init(&handle, &chained_comparator);
-
+	globus_url_sync_handle_set_cache_connections(handle,
+			globus_i_url_sync_args_cache);
     GLOBUS_L_URL_SYNC_DEBUG_PRINTF("calling globus_url_sync\n");
 
     result = globus_url_sync(
@@ -465,6 +466,13 @@ globus_l_url_sync_main_result_cb(
 				(error) ? globus_object_printable_to_string(error) : "",
 				source->url,
 				destination->url);
+	}
+	else if (error)
+	{
+		/* print readable error message to stderr */
+		globus_libc_fprintf(stderr, "\"%s\" \"%s\" error=\"%s\"\n",
+				source->url, destination->url,
+				globus_object_printable_to_string(error));
 	}
 	else if (result)
 	{

@@ -401,6 +401,37 @@ globus_url_sync_handle_destroy(
     globus_url_sync_handle_t *              handle);
 
 /**
+ * Use connection caching when possible. The GriFTP client API supports
+ * connection caching on the control channel. If this flag is set, the url
+ * synch operations will use the connection caching option.
+ *
+ * @ingroup globus_url_sync_handle
+ *
+ * @param   handle
+ *          Pointer to an initialized handle.
+ * @param   cache_connections
+ * 			Value of the connection caching flag.
+ */
+void
+globus_url_sync_handle_set_cache_connections(
+    globus_url_sync_handle_t                handle,
+	globus_bool_t                           cache_connections);
+
+/**
+ * Probe flag for connection caching.
+ *
+ * @ingroup globus_url_sync_handle
+ *
+ * @param   handle
+ *          Pointer to an initialized handle.
+ * @retval  boolean
+ *          Value of the connection caching flag.
+ */
+globus_bool_t
+globus_url_sync_handle_get_cache_connections(
+    globus_url_sync_handle_t                handle);
+
+/**
  * @defgroup globus_url_sync_operations Synchronize Operations
  *
  * Synchronization operations are the primary operations of this module.

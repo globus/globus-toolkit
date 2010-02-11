@@ -51,6 +51,7 @@ typedef enum {
 typedef struct globus_l_url_sync_handle_s
 {
     globus_l_url_sync_handle_state_t        state;
+	globus_bool_t                           cache_connections;
     globus_url_sync_endpoint_t *            source;
     globus_url_sync_endpoint_t *            dest;
     globus_url_sync_complete_callback_t     complete_callback;
@@ -169,6 +170,23 @@ globus_i_url_sync_handle_activate(
 }
 
 /* Setters and Getters */
+
+globus_bool_t
+globus_url_sync_handle_get_cache_connections(
+    globus_url_sync_handle_t                handle)
+{
+	globus_assert(handle);
+	return handle->cache_connections;
+}
+
+void
+globus_url_sync_handle_set_cache_connections(
+    globus_url_sync_handle_t                handle,
+	globus_bool_t                           cache_connections)
+{
+	globus_assert(handle);
+	handle->cache_connections = cache_connections;
+}
 
 globus_url_sync_endpoint_t *
 globus_i_url_sync_handle_get_source(

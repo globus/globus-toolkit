@@ -348,6 +348,7 @@ globus_l_url_sync_ftpclient_mlst(
     globus_l_url_sync_monitor_t             monitor;
     globus_byte_t *                         buffer;
     globus_size_t                           buffer_length;
+	globus_ftp_client_operationattr_t       dummy;
     GlobusFuncName(globus_l_url_sync_ftp_mlst);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
 
@@ -360,11 +361,14 @@ globus_l_url_sync_ftpclient_mlst(
     buffer = GLOBUS_NULL;
     buffer_length = 0;
 
+	/* Create a dummy op attr to workaround gridftp bug in older clients */
+	globus_ftp_client_operationattr_init(&dummy);
+
     /* MSLT */
     result = globus_ftp_client_mlst(
             endpoint->ftp_handle,
             endpoint->url,
-            GLOBUS_NULL, /* operation attribute optional */
+            &dummy, /* operation attribute optional */
             &buffer,
             &buffer_length,
             globus_l_url_sync_ftpclient_complete_cb,
@@ -382,6 +386,9 @@ globus_l_url_sync_ftpclient_mlst(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
+
+	/* Destroy dummy op attr */
+	globus_ftp_client_operationattr_destroy(&dummy);
 
     /* Parse MSLT buffer */
     if (buffer_length)

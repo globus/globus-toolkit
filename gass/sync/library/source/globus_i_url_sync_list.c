@@ -257,7 +257,7 @@ globus_i_url_sync_list(
     result = globus_ftp_client_list(
         list_arg->ftp_handle,
         list_arg->url,
-        GLOBUS_NULL,
+        GLOBUS_NULL, /* operation attribute optional */
         globus_l_url_sync_list_ftp_complete_cb,
         list_arg);
 

@@ -318,12 +318,14 @@ globus_url_sync(
         globus_i_url_sync_endpoint_init(&source, source_str,
                 (globus_ftp_client_handle_t *)
                 globus_libc_malloc(sizeof(globus_ftp_client_handle_t)));
-        /* CAUSES EVENTUAL MEMORY VIOLATION *
-        ftp_attr = (globus_ftp_client_handleattr_t *)
-                globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
-        globus_ftp_client_handleattr_init(ftp_attr);
-        globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
-        * */
+		if (globus_url_sync_handle_get_cache_connections(handle))
+		{
+			/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
+			ftp_attr = (globus_ftp_client_handleattr_t *)
+				globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
+			globus_ftp_client_handleattr_init(ftp_attr);
+			globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
+		}
         globus_ftp_client_handle_init(source->ftp_handle, ftp_attr);
         globus_i_url_sync_handle_set_source(handle, source);
 
@@ -331,12 +333,14 @@ globus_url_sync(
         globus_i_url_sync_endpoint_init(&destination, destination_str,
                 (globus_ftp_client_handle_t *)
                 globus_libc_malloc(sizeof(globus_ftp_client_handle_t)));
-        /* CAUSES EVENTUAL MEMORY VIOLATION *
-        ftp_attr = (globus_ftp_client_handleattr_t *)
-                globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
-        globus_ftp_client_handleattr_init(ftp_attr);
-        globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
-        * */
+		if (globus_url_sync_handle_get_cache_connections(handle))
+		{
+			/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
+			ftp_attr = (globus_ftp_client_handleattr_t *)
+				globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
+			globus_ftp_client_handleattr_init(ftp_attr);
+			globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
+		}
         globus_ftp_client_handle_init(destination->ftp_handle, ftp_attr);
         globus_i_url_sync_handle_set_destination(handle, destination);
 
