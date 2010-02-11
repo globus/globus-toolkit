@@ -90,7 +90,7 @@ static
 int
 globus_l_url_sync_deactivate(void)
 {
-    globus_i_url_sync_log_write(GLOBUS_URL_SYNC_LOG_LEVEL_VERBOSE,
+	globus_i_url_sync_log_debug(
         "Deactivating: %s\n",
         globus_i_url_sync_module.module_name);
 
