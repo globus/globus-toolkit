@@ -473,6 +473,12 @@ globus_url_sync(
 extern globus_url_sync_comparator_t globus_url_sync_comparator_exists;
 
 /**
+ * Comparator for type checks.
+ * @ingroup globus_url_sync_comparators
+ */
+extern globus_url_sync_comparator_t globus_url_sync_comparator_filetype;
+
+/**
  * Comparator for size checks.
  * @ingroup globus_url_sync_comparators
  */

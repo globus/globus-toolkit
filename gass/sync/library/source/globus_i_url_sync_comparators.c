@@ -83,6 +83,15 @@ globus_l_url_sync_exists_func(
 
 static
 globus_result_t
+globus_l_url_sync_filetype_func(
+    void *                                      comparator_arg,
+    globus_url_sync_endpoint_t *                source,
+    globus_url_sync_endpoint_t *                destination,
+    globus_url_sync_compare_func_cb_t           callback_func,
+    void *                                      callback_arg);
+
+static
+globus_result_t
 globus_l_url_sync_size_func(
     void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
@@ -158,6 +167,46 @@ globus_l_url_sync_exists_func(
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_exists_func */
+
+/**
+ * File Type comparison function.
+ *
+ * NOTE: This SHOULD be asynchronous but for now I made it synchronous to
+ * simplify it.
+ */
+static
+globus_result_t
+globus_l_url_sync_filetype_func(
+    void *                                      comparator_arg,
+    globus_url_sync_endpoint_t *                source,
+    globus_url_sync_endpoint_t *                destination,
+    globus_url_sync_compare_func_cb_t           callback_func,
+    void *                                      callback_arg)
+{
+    int                                         comparison_result;
+    GlobusFuncName(globus_l_url_sync_filetype_func);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+	
+    /* Stat the source */
+	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
+    	globus_l_url_sync_ftpclient_mlst(source);
+	
+    /* Stat the destination */
+	if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
+    	globus_l_url_sync_ftpclient_mlst(destination);
+	
+    /* Compare existence */
+	comparison_result = source->stats.type - destination->stats.type;
+	
+    /* Not handling the ftpclient_mlst() results because... the ftp client
+     * documentation seems to indicate that if a file does not exist, the
+     * mlst operation may return an error. So an error is not really an error
+     * in some cases... Ideally this should be better handled or confirmed in
+     * the docs. */
+    callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
+    return GLOBUS_SUCCESS;
+}
+/* globus_l_url_sync_filetype_func */
 
 /**
  * Size comparison function.
@@ -515,6 +564,12 @@ globus_url_sync_comparator_t    globus_url_sync_comparator_exists =
 {
     GLOBUS_NULL,
     globus_l_url_sync_exists_func
+};
+
+globus_url_sync_comparator_t    globus_url_sync_comparator_filetype =
+{
+    GLOBUS_NULL,
+    globus_l_url_sync_filetype_func
 };
 
 globus_url_sync_comparator_t    globus_url_sync_comparator_size =
