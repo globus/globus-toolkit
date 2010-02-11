@@ -207,7 +207,7 @@ globus_i_url_sync_parse_args(
     }
     globus_i_url_sync_args_source = &globus_l_url_sync_args_source;
 	
-    if (globus_i_url_sync_args_verbose)
+    if (globus_i_url_sync_args_debug)
       globus_libc_fprintf(stderr, "Source: %s\n", globus_l_url_sync_args_source);
 	
     result = globus_url_parse(argv[2], &globus_l_url_sync_args_destination);
@@ -219,7 +219,7 @@ globus_i_url_sync_parse_args(
     }
     globus_i_url_sync_args_destination = &globus_l_url_sync_args_destination;
 	
-    if (globus_i_url_sync_args_verbose)
+    if (globus_i_url_sync_args_debug)
       globus_libc_fprintf(stderr, "Destination: %s\n", globus_l_url_sync_args_destination);
 	
     return GLOBUS_SUCCESS;
