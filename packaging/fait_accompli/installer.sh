@@ -38,6 +38,20 @@ if [ "X$BRANCH" != "X" ]; then
     INSTALLER=gt$BRANCH-all-source-installer
 fi
 
+if [ -d scripts ]; then
+   echo
+   echo "Step: Running Scripts..."
+   for SCRIPT in `ls scripts 2>/dev/null`; do
+       echo "Running $SCRIPT"
+       scripts/$SCRIPT 
+       if [ $? -ne 0 ]; then
+           echo There was trouble running scripts/$SCRIPT
+           exit 16
+       fi
+   done
+   echo
+fi
+
 if [ -d patches ]; then
    echo
    echo "Step: Patching..."
