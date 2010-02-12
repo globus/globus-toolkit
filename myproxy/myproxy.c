@@ -1794,7 +1794,7 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
 	
 	for (cert = response->trusted_certs; cert; cert = cert->next) {
 	    char *b64data;
-	    if (b64_encode(cert->contents, &b64data) < 0) {
+	    if (b64_encode(cert->contents, cert->size, &b64data) < 0) {
 		goto error;
 	    }
 	    /* myproxy_debug("got b64:\n%s\n", b64data); */
@@ -2253,9 +2253,10 @@ myproxy_deserialize_response(myproxy_response_t *response,
 				  &buf);
 	    if (len == -1) goto error;
 	    
-	    if (b64_decode(buf, &curr->contents) < 0) {
-		verror_put_string("b64 decode failed!");
-		goto error;
+        curr->size = b64_decode(buf, &curr->contents);
+        if (curr->size < 0) {
+            verror_put_string("b64 decode failed!");
+            goto error;
 	    }
 	    /* myproxy_debug("contents:\n%s\n", curr->contents); */
 	}
