@@ -329,6 +329,8 @@ globus_result_t globus_gsi_cred_read(
                 OPENSSL_free(subject);
                 goto exit;
             }
+            GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(1, (globus_i_gsi_cred_debug_fstream,
+				"Using Proxy file (%s)\n", proxy));
 
             goto exit;
 
@@ -450,6 +452,8 @@ globus_result_t globus_gsi_cred_read(
                 goto exit;
             }
 
+            GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(1, (globus_i_gsi_cred_debug_fstream,
+			"Using User cert file (%s), key file (%s)\n", cert, key));
             goto exit;
 
         case GLOBUS_HOST:
@@ -570,6 +574,8 @@ globus_result_t globus_gsi_cred_read(
                 goto exit;
             }
 
+            GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(1, (globus_i_gsi_cred_debug_fstream,
+			"Using Host cert file (%s), key file (%s)\n", cert, key));
             goto exit;
             
         case GLOBUS_SERVICE:
@@ -706,6 +712,8 @@ globus_result_t globus_gsi_cred_read(
                     goto exit;
                 }
 
+                GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(1, (globus_i_gsi_cred_debug_fstream,
+			"Using Service cert file (%s), key file (%s)\n", cert, key));
                 goto exit;
             }
             else
