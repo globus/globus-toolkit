@@ -407,15 +407,14 @@ make_path(char *path)
 }
 
 int
-b64_encode(const char *input, char **output)
+b64_encode(const char *input, long inlen, char **output)
 {
     BIO *mbio, *b64bio, *bio;
     char *outbuf;
-    long inlen, outlen;
+    long outlen;
 
     assert(input != NULL);
 
-    inlen = strlen(input);
     if (inlen == 0) {
         *output = strdup("");
         return 0;
@@ -477,7 +476,7 @@ b64_decode(const char *input, char **output)
     (*output)[outlen] = '\0';
     BIO_free_all(bio);
 
-    return 0;
+    return outlen;
 }
 
 #define TRUSTED_CERT_PATH "/.globus/certificates/"

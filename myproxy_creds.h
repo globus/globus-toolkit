@@ -45,6 +45,7 @@ typedef struct myproxy_creds myproxy_creds_t;
 struct myproxy_certs {
     char                 *filename;
     char                 *contents;
+    size_t               size;
     struct myproxy_certs *next;
 };
 

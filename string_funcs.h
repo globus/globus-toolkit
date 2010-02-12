@@ -106,14 +106,14 @@ make_path(char                                  *path);
  * Returns 0 on success, -1 on error, setting verror.
  */
 int
-b64_encode(const char *input, char **output);
+b64_encode(const char *input, long inlen, char **output);
 
 /*
  * b64_decode()
  *
  * Base64 decode a string.  Returns an allocated string.
  *
- * Returns 0 on success, -1 on error, setting verror.
+ * Returns string length on success, -1 on error, setting verror.
  */
 int
 b64_decode(const char *input, char **output);

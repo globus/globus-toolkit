@@ -1746,6 +1746,7 @@ myproxy_get_certs(const char cert_dir[])
 	}
 	memset(curr, 0, sizeof(myproxy_certs_t));
 	curr->filename = strdup(de->d_name);
+    curr->size = s.st_size;
 	if (buffer_from_file(path, (unsigned char **)&curr->contents,
 			     NULL) < 0) {
 	    goto failure;
@@ -1844,8 +1845,12 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
             verror_put_string("Error opening \"%s\"", tmp_path);
             goto error;
         }
-
-        fprintf(file, "%s", trusted_cert->contents);
+        if (fwrite(trusted_cert->contents, trusted_cert->size, 1, file) != 1) {
+            verror_put_errno(errno);
+            verror_put_string("Unable to write to %s", tmp_path);
+            fclose(file);
+            goto error;
+        }
         fclose(file);
         file = NULL;
         if (rename(tmp_path, file_path) < 0) {
