@@ -1077,12 +1077,17 @@ check_config(myproxy_server_context_t *context)
 	    verror_put_errno(errno);
 	    rval = -1;
 	}
-	if (context->certificate_serialfile &&
-	    access(context->certificate_serialfile, W_OK) < 0) {
-	    verror_put_string("certificate_serialfile %s not writeable",
-			      context->certificate_serialfile);
-	    verror_put_errno(errno);
-	    rval = -1;
+	if (context->certificate_serialfile) {
+        int fd;
+        fd = open(context->certificate_serialfile, O_RDWR|O_CREAT, 0600);
+        if (fd < 0) {
+            verror_put_string("certificate_serialfile %s not writeable",
+                              context->certificate_serialfile);
+            verror_put_errno(errno);
+            rval = -1;
+        } else {
+            close(fd);
+        }
 	}
     if (context->certificate_serial_skip <= 0) {
         verror_put_string("certificate_serial_skip (%s) <= 0",
