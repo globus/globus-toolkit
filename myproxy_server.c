@@ -271,13 +271,15 @@ main(int argc, char *argv[])
 	  my_failure("error in handle_client()");
        } 
     } else {    
+       /* Initialize the server before becoming a daemon to catch
+          errors before exit of parent process. */
+       listenfd = myproxy_init_server(socket_attrs);
        /* Run as a daemon */
         if (!debug) {
             if (become_daemon_step2() < 0) {
                 my_failure("Error forking daemon.  Exiting.\n");
             }
         }
-       listenfd = myproxy_init_server(socket_attrs);
        if (server_context->pidfile) write_pidfile(server_context->pidfile);
        if (server_context->portfile) {
            write_pfile(server_context->portfile, socket_attrs->psport);
