@@ -170,14 +170,6 @@ main(int argc, char *argv[])
 				&globus_url_sync_comparator_size);
 	}
 
-	if (globus_i_url_sync_args_filetype)
-	{
-		/* ...filetype */
-		globus_url_sync_chained_comparator_add(
-				&chained_comparator,
-				&globus_url_sync_comparator_filetype);
-	}
-
 	/* ...exists, always checked */
 	globus_url_sync_chained_comparator_add(
 			&chained_comparator,
@@ -296,8 +288,8 @@ main_TESTING(int argc, char *argv[])
     
     if (result != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr, "%s", globus_object_printable_to_string(
-            globus_error_get(result)));
+        globus_libc_fprintf(stderr, "%s\n",
+				globus_error_print_friendly(globus_error_get(result)));
         exit(EXIT_FAILURE);
     }
 
@@ -333,8 +325,8 @@ main_TESTING(int argc, char *argv[])
 
     if (result != GLOBUS_SUCCESS)
     {
-        globus_libc_fprintf(stderr, "%s", globus_object_printable_to_string(
-            globus_error_get(result)));
+        globus_libc_fprintf(stderr, "%s\n",
+				globus_error_print_friendly(globus_error_get(result)));
         exit(EXIT_FAILURE);
     }
 
@@ -382,7 +374,7 @@ main_ftpclient_complete_cb(
     if(error)
     {
         globus_libc_fprintf(stderr, "%s\n",
-            globus_object_printable_to_string(error));
+				globus_error_print_friendly(error));
     }
 
     /* Signal monitor */
@@ -427,7 +419,7 @@ globus_l_url_sync_main_complete_cb(
     if(error)
     {
         globus_libc_fprintf(stderr, "%s\n",
-            globus_object_printable_to_string(error));
+				globus_error_print_friendly(error));
     }
 
     /* Signal monitor */
@@ -451,7 +443,7 @@ void
 globus_l_url_sync_main_result_cb(
     void *					user_arg,
     globus_url_sync_handle_t                    handle,
-    globus_object_t *				error,
+    globus_object_t *                           error,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int                                         result)
@@ -470,17 +462,24 @@ globus_l_url_sync_main_result_cb(
 		/* Verbose results format */
 		globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
 				result,
-				(error) ? "error=" : "",
-				(error) ? globus_object_printable_to_string(error) : "",
+				(error) ? "ERROR=" : "",
+				(error) ? globus_error_get_short_desc(error) : "",
 				source->url,
 				destination->url);
+
+		/* Additional details for debug usage */
+		if (globus_i_url_sync_args_debug)
+		{
+			globus_libc_fprintf(stderr, "%s\n",
+					globus_error_print_friendly(error));
+		}
 	}
 	else if (error)
 	{
 		/* print readable error message to stderr */
-		globus_libc_fprintf(stderr, "\"%s\" \"%s\" error=\"%s\"\n",
-				source->url, destination->url,
-				globus_object_printable_to_string(error));
+		globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
+				globus_error_get_short_desc(error),
+				source->url, destination->url);
 	}
 	else if (result)
 	{

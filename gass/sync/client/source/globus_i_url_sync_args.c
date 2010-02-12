@@ -37,7 +37,6 @@ globus_bool_t           globus_i_url_sync_args_verbose		= GLOBUS_FALSE;
 globus_bool_t           globus_i_url_sync_args_debug		= GLOBUS_FALSE;
 globus_bool_t			globus_i_url_sync_args_modify		= GLOBUS_FALSE;
 globus_bool_t			globus_i_url_sync_args_size			= GLOBUS_FALSE;
-globus_bool_t			globus_i_url_sync_args_filetype		= GLOBUS_FALSE;
 globus_bool_t			globus_i_url_sync_args_cache		= GLOBUS_FALSE;
 
 static globus_url_t     globus_l_url_sync_args_source;
@@ -49,8 +48,7 @@ enum {
 	arg_cache,
 	arg_modify,
 	arg_size,
-	arg_type,
-	arg_num = arg_type,
+	arg_num = arg_size,
 };
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -59,7 +57,6 @@ static char *debug_args[] = {"-d", "-debug", GLOBUS_NULL};
 static char *cache_args[] = {"-c", "-cache", GLOBUS_NULL};
 static char *modify_args[] = {"-m", "-modify", GLOBUS_NULL};
 static char *size_args[] = {"-s", "-size", GLOBUS_NULL};
-static char *type_args[] = {"-t", "-filetype", GLOBUS_NULL};
 static globus_args_option_descriptor_t verbose_def =
   {arg_verbose, verbose_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t debug_def =
@@ -68,8 +65,6 @@ static globus_args_option_descriptor_t modify_def =
   {arg_modify, modify_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t size_def =
   {arg_size, size_args, 0, GLOBUS_NULL, GLOBUS_NULL};
-static globus_args_option_descriptor_t type_def =
-  {arg_type, type_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t cache_def =
   {arg_cache, cache_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 
@@ -90,8 +85,6 @@ static char * help_str=
 "\tCompare files by last modified timestamp.\n"
 "  -s | -size\n"
 "\tCompare files by size.\n"
-"  -t | -filetype\n"
-"\tCompare files by filetype.\n\n"
 "URL scheme(s) supported:\n"
 "  gsiftp\n"
 "    For example:\n"
@@ -141,7 +134,6 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
     globus_i_url_sync_args_modify   = GLOBUS_FALSE;
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
-    globus_i_url_sync_args_filetype = GLOBUS_FALSE;
 	globus_i_url_sync_args_cache	= GLOBUS_FALSE;
 
     /* determine the program name */
@@ -157,7 +149,6 @@ globus_i_url_sync_parse_args(
     args_options[2] = cache_def;
     args_options[3] = modify_def;
     args_options[4] = size_def;
-    args_options[5] = type_def;
     if (globus_args_scan(
 			&argc,
 			&argv,
@@ -193,9 +184,6 @@ globus_i_url_sync_parse_args(
 				break;
 			case arg_size:
 				globus_i_url_sync_args_size = GLOBUS_TRUE;
-				break;
-			case arg_type:
-				globus_i_url_sync_args_filetype = GLOBUS_TRUE;
 				break;
 			default:
 				/* should not get here */
