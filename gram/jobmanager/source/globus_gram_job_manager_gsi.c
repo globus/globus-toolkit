@@ -95,7 +95,8 @@ globus_gram_job_manager_import_sec_context(
         return GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     }
 
-    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
+    if (manager &&
+            manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
     {
         do
         {
