@@ -60,6 +60,13 @@ globus_l_waitpid_callback(
     void *                              user_arg);
 
 static
+void
+reply_and_exit(
+    globus_gram_job_manager_t *         manager,
+    int                                 rc,
+    char *                              gt3_failure_message);
+
+static
 globus_mutex_t                          globus_l_waitpid_callback_lock;
 static
 globus_callback_handle_t                globus_l_waitpid_callback_handle =
@@ -114,7 +121,7 @@ main(
     rc = globus_gram_job_manager_config_init(&config, argc, argv);
     if (rc != GLOBUS_SUCCESS)
     {
-        exit(1);
+        reply_and_exit(NULL, rc, NULL);
     }
     rc = globus_gram_job_manager_logging_init(&config);
     if (rc != GLOBUS_SUCCESS)
@@ -180,7 +187,7 @@ main(
     rc = globus_gram_job_manager_init(&manager, cred, &config);
     if(rc != GLOBUS_SUCCESS)
     {
-        exit(1);
+        reply_and_exit(NULL, rc, NULL);
     }
 
     /*
@@ -673,4 +680,39 @@ globus_l_waitpid_callback(
     globus_mutex_unlock(&globus_l_waitpid_callback_lock);
 }
 /* globus_l_waitpid_callback() */
+
+static
+void
+reply_and_exit(
+    globus_gram_job_manager_t *         manager,
+    int                                 rc,
+    char *                              gt3_failure_message)
+{
+    int                                 myrc;
+    int                                 context_fd;
+    gss_ctx_id_t                        response_context = GSS_C_NO_CONTEXT;
+    char *                              fd_env;
+
+    fd_env = getenv("GRID_SECURITY_CONTEXT_FD");
+    myrc = sscanf(fd_env ? fd_env : "-1", "%d", &context_fd);
+    if (myrc == 1 && context_fd >= 0)
+    {
+        myrc = globus_gram_job_manager_import_sec_context(
+                NULL,
+                context_fd,
+                &response_context);
+    }
+
+    globus_gram_job_manager_reply(
+            NULL,
+            manager,
+            rc,
+            NULL,
+            1,
+            response_context,
+            gt3_failure_message);
+    
+    exit(0);
+}
+/* reply_and_exit() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
