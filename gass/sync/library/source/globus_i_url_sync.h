@@ -109,6 +109,26 @@
 		__LINE__, \
 		"remote error: %s", param)
 
+#define GLOBUS_I_URL_SYNC_ERROR_FILETYPE() \
+	globus_error_construct_error(\
+		GLOBUS_URL_SYNC_MODULE,\
+		GLOBUS_NULL,\
+		GLOBUS_URL_SYNC_ERROR_FILETYPE, \
+		__FILE__, \
+		_globus_func_name, \
+		__LINE__, \
+		"file type mismatch")
+
+#define GLOBUS_I_URL_SYNC_ERROR_NOTFOUND() \
+	globus_error_construct_error(\
+		GLOBUS_URL_SYNC_MODULE,\
+		GLOBUS_NULL,\
+		GLOBUS_URL_SYNC_ERROR_NOTFOUND, \
+		__FILE__, \
+		_globus_func_name, \
+		__LINE__, \
+		"file not found")
+
 EXTERN_C_END
 
 #endif	/* _GLOBUS_I_URL_SYNC_H */

@@ -144,9 +144,10 @@ globus_l_url_sync_exists_func(
     void *                                      callback_arg)
 {
     int                                         comparison_result;
+	globus_object_t *                           error_object;
     GlobusFuncName(globus_l_url_sync_exists_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
-	
+
     /* Stat the source */
 	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
     	globus_l_url_sync_ftpclient_mlst(source);
@@ -157,13 +158,20 @@ globus_l_url_sync_exists_func(
 	
     /* Compare existence */
 	comparison_result = source->stats.exists - destination->stats.exists;
-	
+
+	/* Report an error if source file is not found */
+	if (!source->stats.exists)
+			error_object = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
+	else
+		error_object = GLOBUS_NULL;
+
     /* Not handling the ftpclient_mlst() results because... the ftp client
      * documentation seems to indicate that if a file does not exist, the
      * mlst operation may return an error. So an error is not really an error
      * in some cases... Ideally this should be better handled or confirmed in
      * the docs. */
-    callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
+    callback_func(
+			callback_arg, source, destination, comparison_result, error_object);
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_exists_func */
@@ -184,6 +192,7 @@ globus_l_url_sync_filetype_func(
     void *                                      callback_arg)
 {
     int                                         comparison_result;
+	globus_object_t *                           error_object;
     GlobusFuncName(globus_l_url_sync_filetype_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
 	
@@ -195,15 +204,22 @@ globus_l_url_sync_filetype_func(
 	if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
     	globus_l_url_sync_ftpclient_mlst(destination);
 	
-    /* Compare existence */
+    /* Compare file types */
 	comparison_result = source->stats.type - destination->stats.type;
-	
+
+	/* Report an error if file types do not match. */
+	if (comparison_result)
+		error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+	else
+		error_object = GLOBUS_NULL;
+
     /* Not handling the ftpclient_mlst() results because... the ftp client
      * documentation seems to indicate that if a file does not exist, the
      * mlst operation may return an error. So an error is not really an error
      * in some cases... Ideally this should be better handled or confirmed in
      * the docs. */
-    callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
+    callback_func(
+			callback_arg, source, destination, comparison_result, error_object);
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_filetype_func */

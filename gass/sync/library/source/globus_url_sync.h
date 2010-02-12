@@ -65,7 +65,9 @@ typedef enum
     GLOBUS_URL_SYNC_ERROR_NOT_IN_USE,
     GLOBUS_URL_SYNC_ERROR_COMPLETED,
     GLOBUS_URL_SYNC_ERROR_REMOTE,
-    GLOBUS_URL_SYNC_ERROR_PROTOCOL
+    GLOBUS_URL_SYNC_ERROR_PROTOCOL,
+    GLOBUS_URL_SYNC_ERROR_FILETYPE,
+    GLOBUS_URL_SYNC_ERROR_NOTFOUND
 } globus_url_sync_error_t;
 
 /**
@@ -467,13 +469,13 @@ globus_url_sync(
     void *                                  callback_arg);
 
 /**
- * Comparator for existence checks.
+ * Comparator for existence checks. Reports an error if source file not found.
  * @ingroup globus_url_sync_comparators
  */
 extern globus_url_sync_comparator_t globus_url_sync_comparator_exists;
 
 /**
- * Comparator for type checks.
+ * Comparator for type checks. Reports an error if file types do not match.
  * @ingroup globus_url_sync_comparators
  */
 extern globus_url_sync_comparator_t globus_url_sync_comparator_filetype;
