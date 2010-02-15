@@ -4724,6 +4724,7 @@ globus_gsi_sysconfig_dir_exists_unix(
      */
     RAND_add((void*)&stx,sizeof(stx),2);
 
+#ifndef TARGET_ARCH_CYGWIN
     if (stx.st_size == 0)
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
@@ -4732,6 +4733,7 @@ globus_gsi_sysconfig_dir_exists_unix(
             (_GSSL("File: %s"), filename));            
         goto exit;
     }
+#endif
 
     if(!(stx.st_mode & S_IFDIR))
     { 
