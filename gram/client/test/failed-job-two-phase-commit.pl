@@ -17,10 +17,8 @@
 # Ping a valid and invalid gatekeeper contact.
 
 use strict;
-use POSIX;
 use Test;
 use IO::File;
-use File::Path;
 
 my $test_exec = './failed-job-two-phase-commit';
 
