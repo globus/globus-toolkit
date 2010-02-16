@@ -16,10 +16,6 @@
 #
 
 use strict;
-use POSIX;
-use Test;
-use IO::File;
-use File::Path;
 
 my $test_exec = './job-status-with-info-test';
 
@@ -36,46 +32,14 @@ if ($ENV{CONTACT_STRING} eq "")
 
 @INC = (@INC, "$gpath/lib/perl");
 
-my @tests;
-my @todo;
-my $testno=1;
+my $valgrind = "";
 
-sub job_status_with_info_test
+if (exists $ENV{VALGRIND})
 {
-    my ($errors,$rc) = ("",0);
-    my $valgrind = "";
-
-    if (exists $ENV{VALGRIND})
+    $valgrind = "valgrind --log-file=VALGRIND-job_status_with_info_test.log";
+    if (exists $ENV{VALGRIND_OPTIONS})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_two_phase_commit_test" . $testno++ . ".log";
-        if (exists $ENV{VALGRIND_OPTIONS})
-        {
-            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
-        }
+        $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
     }
-    system("$valgrind $test_exec \"$ENV{CONTACT_STRING}\"");
-    $rc = $?>> 8;
-    if($rc != 0)
-    {
-        $errors .= "Test exited with $rc. ";
-    }
-    if($errors eq "")
-    {
-        ok('success', 'success');
-    }
-    else
-    {
-        ok($errors, 'success');
-    }
-
 }
-
-push(@tests, "job_status_with_info_test");
-
-# Now that the tests are defined, set up the Test to deal with them.
-#plan tests => scalar(@tests), todo => \@todo;
-
-foreach (@tests)
-{
-    eval "&$_";
-}
+system("$valgrind $test_exec '$ENV{CONTACT_STRING}'");

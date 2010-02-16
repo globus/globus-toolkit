@@ -84,7 +84,7 @@ test1()
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    resource_manager_contact,
-	    "&(executable=/bin/sleep)(arguments=90)",
+	    "&(executable=/bin/sleep)(arguments=10)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    GLOBUS_NULL,
 	    &job_contact);
@@ -199,7 +199,7 @@ test2()
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    resource_manager_contact,
-	    "&(executable=/bin/sleep)(arguments=90)",
+	    "&(executable=/bin/sleep)(arguments=10)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    callback_contact[0],
 	    &job_contact);
@@ -324,7 +324,7 @@ test3()
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    resource_manager_contact,
-	    "&(executable=/bin/sleep)(arguments=90)",
+	    "&(executable=/bin/sleep)(arguments=10)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    callback_contact,
 	    &job_contact);
