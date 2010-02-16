@@ -1601,7 +1601,7 @@ globus_gram_job_manager_read_request(
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
                 "event=gram.read_request.end "
                 "level=ERROR "
-                "status=%d"
+                "status=%d "
                 "reason=\"%s\" "
                 "\n",
                 -rc,
