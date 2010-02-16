@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    argv[1],
-	    "&(executable=/bin/sleep)(arguments=90)",
+	    "&(executable=/bin/sleep)(arguments=10)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    callback_contact,
 	    &job_contact);

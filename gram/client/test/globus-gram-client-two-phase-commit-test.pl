@@ -3,10 +3,8 @@
 # Ping a valid and invalid gatekeeper contact.
 
 use strict;
-use POSIX;
 use Test;
 use IO::File;
-use File::Path;
 
 my $test_exec = './globus-gram-client-two-phase-commit-test';
 
