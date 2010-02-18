@@ -27,9 +27,11 @@ extern "C" {
  */
 #define XMLSEC_BASE64_LINESIZE				64
 
-/**
- * Base64 Context
- */
+XMLSEC_EXPORT int		xmlSecBase64GetDefaultLineSize	(void);
+XMLSEC_EXPORT void		xmlSecBase64SetDefaultLineSize	(int columns);
+
+
+/* Base64 Context */
 typedef struct _xmlSecBase64Ctx 				xmlSecBase64Ctx, 
 								*xmlSecBase64CtxPtr;
 
@@ -49,9 +51,7 @@ XMLSEC_EXPORT int		xmlSecBase64CtxFinal		(xmlSecBase64CtxPtr ctx,
 								 xmlSecByte *out,
 								 xmlSecSize outSize);
 
-/**
- * Standalone routine to do base64 encode/decode "at once"
- */
+/* Standalone routines to do base64 encode/decode "at once" */
 XMLSEC_EXPORT xmlChar*		xmlSecBase64Encode		(const xmlSecByte *buf,
 								 xmlSecSize len,
 								 int columns);

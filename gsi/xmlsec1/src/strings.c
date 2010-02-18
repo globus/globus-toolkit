@@ -26,6 +26,8 @@ const xmlChar xmlSecXkmsNs[] 			= "http://www.w3.org/2002/03/xkms#";
 const xmlChar xmlSecXPathNs[] 			= "http://www.w3.org/TR/1999/REC-xpath-19991116";
 const xmlChar xmlSecXPath2Ns[] 			= "http://www.w3.org/2002/06/xmldsig-filter2";
 const xmlChar xmlSecXPointerNs[]		= "http://www.w3.org/2001/04/xmldsig-more/xptr";
+const xmlChar xmlSecSoap11Ns[]			= "http://schemas.xmlsoap.org/soap/envelope/";
+const xmlChar xmlSecSoap12Ns[]			= "http://www.w3.org/2002/06/soap-envelope";
 
 /*************************************************************************
  *
@@ -70,6 +72,15 @@ const xmlChar xmlSecTypeEncElement[]		= "http://www.w3.org/2001/04/xmlenc#Elemen
  *
  ************************************************************************/
 #ifndef XMLSEC_NO_XKMS
+const xmlChar xmlSecXkmsServerRequestResultName[]	= "result-response";
+const xmlChar xmlSecXkmsServerRequestStatusName[]	= "status-request";
+const xmlChar xmlSecXkmsServerRequestLocateName[]	= "locate-request";
+const xmlChar xmlSecXkmsServerRequestValidateName[]	= "validate-request";
+const xmlChar xmlSecXkmsServerRequestCompoundName[]	= "compound-request";
+
+const xmlChar xmlSecNodeResult[]		= "Result";
+const xmlChar xmlSecNodeStatusRequest[]		= "StatusRequest";
+const xmlChar xmlSecNodeStatusResult[]		= "StatusResult";
 const xmlChar xmlSecNodeLocateRequest[]		= "LocateRequest";
 const xmlChar xmlSecNodeLocateResult[]		= "LocateResult";
 const xmlChar xmlSecNodeValidateRequest[]	= "ValidateRequest";
@@ -89,6 +100,10 @@ const xmlChar xmlSecNodeTimeInstant[]		= "TimeInstant";
 const xmlChar xmlSecNodeRequestSignatureValue[]	= "RequestSignatureValue";
 const xmlChar xmlSecNodeUnverifiedKeyBinding[]	= "UnverifiedKeyBinding";
 const xmlChar xmlSecNodeValidityInterval[]	= "ValidityInterval";
+const xmlChar xmlSecNodeStatus[]                = "Status";
+const xmlChar xmlSecNodeValidReason[]           = "ValidReason";
+const xmlChar xmlSecNodeInvalidReason[]         = "InvalidReason";
+const xmlChar xmlSecNodeIndeterminateReason[]   = "IndeterminateReason";
 
 const xmlChar xmlSecAttrService[]		= "Service";
 const xmlChar xmlSecAttrNonce[]			= "Nonce";
@@ -103,10 +118,11 @@ const xmlChar xmlSecAttrRequestId[]		= "RequestId";
 const xmlChar xmlSecAttrNotBefore[]		= "NotBefore";
 const xmlChar xmlSecAttrNotOnOrAfter[]		= "NotOnOrAfter";
 const xmlChar xmlSecAttrTime[]			= "Time";
+const xmlChar xmlSecAttrStatusValue[]           = "StatusValue";
 
-const xmlChar xmlSecResponsePending[]		= "Pending";
-const xmlChar xmlSecResponseRepresent[]		= "Represent";
-const xmlChar xmlSecResponseRequestSignatureValue[] = "RequestSignatureValue";
+const xmlChar xmlSecResponseMechanismPending[]	= "Pending";
+const xmlChar xmlSecResponseMechanismRepresent[]= "Represent";
+const xmlChar xmlSecResponseMechanismRequestSignatureValue[] = "RequestSignatureValue";
 
 const xmlChar xmlSecRespondWithKeyName[]	= "KeyName";
 const xmlChar xmlSecRespondWithKeyValue[]	= "KeyValue";
@@ -128,21 +144,46 @@ const xmlChar xmlSecKeyUsageEncryption[]	= "Encryption";
 const xmlChar xmlSecKeyUsageSignature[]		= "Signature";
 const xmlChar xmlSecKeyUsageExchange[]		= "Exchange";
 
-const xmlChar xmlSecResultMajorCodeSuccess[]	= "Success";
-const xmlChar xmlSecResultMajorCodeVersionMismatch[]= "VersionMismatch";
-const xmlChar xmlSecResultMajorCodeSender[]	= "Sender";
-const xmlChar xmlSecResultMajorCodeReceiver[]	= "Receiver";
-const xmlChar xmlSecResultMajorCodeRepresent[]	= "Represent";
-const xmlChar xmlSecResultMajorCodePending[]	= "Pending";
-const xmlChar xmlSecResultMinorCodeNoMatch[]	= "NoMatch";
+const xmlChar xmlSecKeyBindingStatusValid[]	        = "Valid";
+const xmlChar xmlSecKeyBindingStatusInvalid[]	        = "Invalid";
+const xmlChar xmlSecKeyBindingStatusIndeterminate[]	= "Indeterminate";
+
+const xmlChar xmlSecKeyBindingReasonIssuerTrust[]       = "IssuerTrust";
+const xmlChar xmlSecKeyBindingReasonRevocationStatus[]  = "RevocationStatus";
+const xmlChar xmlSecKeyBindingReasonValidityInterval[]  = "ValidityInterval";
+const xmlChar xmlSecKeyBindingReasonSignature[]         = "Signature";
+
+const xmlChar xmlSecResultMajorCodeSuccess[]		= "Success";
+const xmlChar xmlSecResultMajorCodeVersionMismatch[]	= "VersionMismatch";
+const xmlChar xmlSecResultMajorCodeSender[]		= "Sender";
+const xmlChar xmlSecResultMajorCodeReceiver[]		= "Receiver";
+const xmlChar xmlSecResultMajorCodeRepresent[]		= "Represent";
+const xmlChar xmlSecResultMajorCodePending[]		= "Pending";
+
+const xmlChar xmlSecResultMinorCodeNoMatch[]		= "NoMatch";
 const xmlChar xmlSecResultMinorCodeTooManyResponses[]	= "TooManyResponses";
-const xmlChar xmlSecResultMinorCodeIncomplete[]	= "Incomplete";
-const xmlChar xmlSecResultMinorCodeFailure[]	= "Failure";
-const xmlChar xmlSecResultMinorCodeRefused[]	= "Refused";
+const xmlChar xmlSecResultMinorCodeIncomplete[]		= "Incomplete";
+const xmlChar xmlSecResultMinorCodeFailure[]		= "Failure";
+const xmlChar xmlSecResultMinorCodeRefused[]		= "Refused";
 const xmlChar xmlSecResultMinorCodeNoAuthentication[]	= "NoAuthentication";
 const xmlChar xmlSecResultMinorCodeMessageNotSupported[]= "MessageNotSupported";
 const xmlChar xmlSecResultMinorCodeUnknownResponseId[]	= "UnknownResponseId";
 const xmlChar xmlSecResultMinorCodeNotSynchronous[]	= "NotSynchronous";
+
+const xmlChar xmlSecXkmsSoapSubcodeValueMessageNotSupported[] = "MessageNotSupported";
+const xmlChar xmlSecXkmsSoapSubcodeValueBadMessage[]	= "BadMessage";
+
+const xmlChar xmlSecXkmsSoapFaultReasonLang[] 		    = "en";
+const xmlChar xmlSecXkmsSoapFaultReasonUnsupportedVersion[] = "Unsupported SOAP version";
+const xmlChar xmlSecXkmsSoapFaultReasonUnableToProcess[]    = "Unable to process %s";
+const xmlChar xmlSecXkmsSoapFaultReasonServiceUnavailable[] = "Service temporarily unable";
+const xmlChar xmlSecXkmsSoapFaultReasonMessageNotSupported[]= "%s message not supported";
+const xmlChar xmlSecXkmsSoapFaultReasonMessageInvalid[]     = "%s message invalid";
+
+const xmlChar xmlSecXkmsFormatStrPlain[]                = "plain";
+const xmlChar xmlSecXkmsFormatStrSoap11[]               = "soap-1.1";
+const xmlChar xmlSecXkmsFormatStrSoap12[]               = "soap-1.2";
+
 #endif /* XMLSEC_NO_XKMS */
 
 /*************************************************************************
@@ -216,6 +257,12 @@ const xmlChar xmlSecHrefC14N[]			= "http://www.w3.org/TR/2001/REC-xml-c14n-20010
 const xmlChar xmlSecNameC14NWithComments[]	= "c14n-with-comments";
 const xmlChar xmlSecHrefC14NWithComments[]	= "http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments";
 
+const xmlChar xmlSecNameC14N11[]		= "c14n11";
+const xmlChar xmlSecHrefC14N11[]		= "http://www.w3.org/2006/12/xml-c14n11";
+
+const xmlChar xmlSecNameC14N11WithComments[]	= "c14n11-with-comments";
+const xmlChar xmlSecHrefC14N11WithComments[]	= "http://www.w3.org/2006/12/xml-c14n11#WithComments";
+
 const xmlChar xmlSecNameExcC14N[]		= "exc-c14n";
 const xmlChar xmlSecHrefExcC14N[]		= "http://www.w3.org/2001/10/xml-exc-c14n#";
 
@@ -227,6 +274,7 @@ const xmlChar xmlSecNsExcC14NWithComments[]	= "http://www.w3.org/2001/10/xml-exc
 
 const xmlChar xmlSecNodeInclusiveNamespaces[]	= "InclusiveNamespaces";
 const xmlChar xmlSecAttrPrefixList[]		= "PrefixList";
+
 /*************************************************************************
  *
  * DES strings
@@ -244,6 +292,18 @@ const xmlChar xmlSecHrefKWDes3[]		= "http://www.w3.org/2001/04/xmlenc#kw-tripled
 
 /*************************************************************************
  *
+ * GOST2001 strings
+ *
+ ************************************************************************/
+const xmlChar xmlSecNameGOST2001KeyValue[]		= "gost2001";
+const xmlChar xmlSecNodeGOST2001KeyValue[]		= "gostr34102001-gostr3411";
+const xmlChar xmlSecHrefGOST2001KeyValue[]		= "http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411";
+
+const xmlChar xmlSecNameGost2001GostR3411_94[]		= "gostr34102001-gostr3411";
+const xmlChar xmlSecHrefGost2001GostR3411_94[]		= "http://www.w3.org/2001/04/xmldsig-more#gostr34102001-gostr3411";
+
+/*************************************************************************
+ *
  * DSA strings
  *
  ************************************************************************/
@@ -253,6 +313,7 @@ const xmlChar xmlSecHrefDSAKeyValue[]		= "http://www.w3.org/2000/09/xmldsig#DSAK
 const xmlChar xmlSecNodeDSAP[]			= "P";
 const xmlChar xmlSecNodeDSAQ[]			= "Q";
 const xmlChar xmlSecNodeDSAG[]			= "G";
+const xmlChar xmlSecNodeDSAJ[]			= "J";
 const xmlChar xmlSecNodeDSAX[]			= "X";
 const xmlChar xmlSecNodeDSAY[]			= "Y";
 const xmlChar xmlSecNodeDSASeed[]		= "Seed";
@@ -289,14 +350,26 @@ const xmlChar xmlSecHrefHMACKeyValue[]		= "http://www.aleksey.com/xmlsec/2002#HM
 
 const xmlChar xmlSecNodeHMACOutputLength[] 	= "HMACOutputLength";
 
-const xmlChar xmlSecNameHmacSha1[]		= "hmac-sha1";
-const xmlChar xmlSecHrefHmacSha1[]		= "http://www.w3.org/2000/09/xmldsig#hmac-sha1";
+const xmlChar xmlSecNameHmacMd5[]		= "hmac-md5";
+const xmlChar xmlSecHrefHmacMd5[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
 
 const xmlChar xmlSecNameHmacRipemd160[]		= "hmac-ripemd160";
 const xmlChar xmlSecHrefHmacRipemd160[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
-const xmlChar xmlSecNameHmacMd5[]		= "hmac-md5";
-const xmlChar xmlSecHrefHmacMd5[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
+const xmlChar xmlSecNameHmacSha1[]		= "hmac-sha1";
+const xmlChar xmlSecHrefHmacSha1[]		= "http://www.w3.org/2000/09/xmldsig#hmac-sha1";
+
+const xmlChar xmlSecNameHmacSha224[]		= "hmac-sha224";
+const xmlChar xmlSecHrefHmacSha224[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-sha224";
+
+const xmlChar xmlSecNameHmacSha256[]		= "hmac-sha256";
+const xmlChar xmlSecHrefHmacSha256[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256";
+
+const xmlChar xmlSecNameHmacSha384[]		= "hmac-sha384";
+const xmlChar xmlSecHrefHmacSha384[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384";
+
+const xmlChar xmlSecNameHmacSha512[]		= "hmac-sha512";
+const xmlChar xmlSecHrefHmacSha512[]		= "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512";
 
 /*************************************************************************
  *
@@ -320,6 +393,14 @@ const xmlChar xmlSecNodeKeyValue[]		= "KeyValue";
  *
  ************************************************************************/
 const xmlChar xmlSecNameMemBuf[]		= "membuf-transform";
+
+/*************************************************************************
+ *
+ * MD5 strings
+ *
+ ************************************************************************/
+const xmlChar xmlSecNameMd5[]			= "md5";
+const xmlChar xmlSecHrefMd5[]			= "http://www.w3.org/2001/04/xmldsig-more#md5";
 
 /*************************************************************************
  *
@@ -349,8 +430,26 @@ const xmlChar xmlSecNodeRSAModulus[]		= "Modulus";
 const xmlChar xmlSecNodeRSAExponent[]		= "Exponent";
 const xmlChar xmlSecNodeRSAPrivateExponent[] 	= "PrivateExponent";
 
+const xmlChar xmlSecNameRsaMd5[]		= "rsa-md5";
+const xmlChar xmlSecHrefRsaMd5[]		= "http://www.w3.org/2001/04/xmldsig-more#rsa-md5";
+
+const xmlChar xmlSecNameRsaRipemd160[]		= "rsa-ripemd160";
+const xmlChar xmlSecHrefRsaRipemd160[]		= "http://www.w3.org/2001/04/xmldsig-more#rsa-ripemd160";
+
 const xmlChar xmlSecNameRsaSha1[]		= "rsa-sha1";
 const xmlChar xmlSecHrefRsaSha1[]		= "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+
+const xmlChar xmlSecNameRsaSha224[]		= "rsa-sha224";
+const xmlChar xmlSecHrefRsaSha224[]		= "http://www.w3.org/2001/04/xmldsig-more#rsa-sha224";
+
+const xmlChar xmlSecNameRsaSha256[]		= "rsa-sha256";
+const xmlChar xmlSecHrefRsaSha256[]		= "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+
+const xmlChar xmlSecNameRsaSha384[]		= "rsa-sha384";
+const xmlChar xmlSecHrefRsaSha384[]		= "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384";
+
+const xmlChar xmlSecNameRsaSha512[]		= "rsa-sha512";
+const xmlChar xmlSecHrefRsaSha512[]		= "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512";
 
 const xmlChar xmlSecNameRsaPkcs1[]		= "rsa-1_5";
 const xmlChar xmlSecHrefRsaPkcs1[]		= "http://www.w3.org/2001/04/xmlenc#rsa-1_5";
@@ -361,11 +460,31 @@ const xmlChar xmlSecNodeRsaOAEPparams[]		= "OAEPparams";
 
 /*************************************************************************
  *
+ * GOSTR3411_94 strings
+ *
+ ************************************************************************/
+const xmlChar xmlSecNameGostR3411_94[]			= "gostr3411";
+const xmlChar xmlSecHrefGostR3411_94[]			= "http://www.w3.org/2001/04/xmldsig-more#gostr3411";
+
+/*************************************************************************
+ *
  * SHA1 strings
  *
  ************************************************************************/
 const xmlChar xmlSecNameSha1[]			= "sha1";
 const xmlChar xmlSecHrefSha1[]			= "http://www.w3.org/2000/09/xmldsig#sha1";
+
+const xmlChar xmlSecNameSha224[]		= "sha224";
+const xmlChar xmlSecHrefSha224[]		= "http://www.w3.org/2001/04/xmldsig-more#sha224";
+
+const xmlChar xmlSecNameSha256[]		= "sha256";
+const xmlChar xmlSecHrefSha256[]		= "http://www.w3.org/2001/04/xmlenc#sha256";
+
+const xmlChar xmlSecNameSha384[]		= "sha384";
+const xmlChar xmlSecHrefSha384[]		= "http://www.w3.org/2001/04/xmldsig-more#sha384";
+
+const xmlChar xmlSecNameSha512[]		= "sha512";
+const xmlChar xmlSecHrefSha512[]		= "http://www.w3.org/2001/04/xmlenc#sha512";
 
 /*************************************************************************
  *
@@ -431,6 +550,41 @@ const xmlChar xmlSecNodeXPointer[]		= "XPointer";
  ************************************************************************/
 const xmlChar xmlSecNameXslt[]			= "xslt";
 const xmlChar xmlSecHrefXslt[]			= "http://www.w3.org/TR/1999/REC-xslt-19991116";
+
+#ifndef XMLSEC_NO_SOAP
+/*************************************************************************
+ *
+ * SOAP 1.1/1.2 strings
+ *
+ ************************************************************************/
+const xmlChar xmlSecNodeEnvelope[]		= "Envelope";
+const xmlChar xmlSecNodeHeader[]		= "Header";
+const xmlChar xmlSecNodeBody[]		        = "Body";
+const xmlChar xmlSecNodeFault[]		        = "Fault";
+const xmlChar xmlSecNodeFaultCode[]		= "faultcode";
+const xmlChar xmlSecNodeFaultString[]	        = "faultstring";
+const xmlChar xmlSecNodeFaultActor[]	        = "faultactor";
+const xmlChar xmlSecNodeFaultDetail[]	        = "detail";
+const xmlChar xmlSecNodeCode[]			= "Code";
+const xmlChar xmlSecNodeReason[]		= "Reason";
+const xmlChar xmlSecNodeNode[]			= "Node";
+const xmlChar xmlSecNodeRole[]			= "Role";
+const xmlChar xmlSecNodeDetail[]		= "Detail";
+const xmlChar xmlSecNodeValue[]			= "Value";
+const xmlChar xmlSecNodeSubcode[]		= "Subcode";
+const xmlChar xmlSecNodeText[]			= "Text";
+
+
+const xmlChar xmlSecSoapFaultCodeVersionMismatch[] 	= "VersionMismatch";
+const xmlChar xmlSecSoapFaultCodeMustUnderstand[]	= "MustUnderstand";
+const xmlChar xmlSecSoapFaultCodeClient[]		= "Client";
+const xmlChar xmlSecSoapFaultCodeServer[]		= "Server";
+const xmlChar xmlSecSoapFaultCodeReceiver[]		= "Receiver";
+const xmlChar xmlSecSoapFaultCodeSender[]		= "Sender";
+const xmlChar xmlSecSoapFaultDataEncodningUnknown[]	= "DataEncodingUnknown";
+
+
+#endif /* XMLSEC_NO_SOAP */
 
 /*************************************************************************
  *

@@ -78,6 +78,7 @@ xmlSecAppCmdLineParamsListParse(xmlSecAppCmdLineParamPtr* params,
 				xmlSecAppCmdLineParamTopic topics,
 				const char** argv, int argc, int pos) {
     xmlSecAppCmdLineParamPtr param;
+    int ii;
     int ret;
     
     assert(params != NULL);
@@ -86,7 +87,7 @@ xmlSecAppCmdLineParamsListParse(xmlSecAppCmdLineParamPtr* params,
     while((pos < argc) && (argv[pos][0] == '-')) {
 	param = xmlSecAppCmdLineParamsListFind(params, topics, argv[pos]);
 	if(param == NULL) {
-	    fprintf(stderr, "Error: parameter \"%s\" is not valid.\n", argv[pos]);
+	    fprintf(stderr, "Error: parameter \"%s\" is not supported or the requested\nfeature might have been disabled during compilation.\n", argv[pos]);
 	    return(-1);
 	}
 	
@@ -97,6 +98,17 @@ xmlSecAppCmdLineParamsListParse(xmlSecAppCmdLineParamPtr* params,
 	}
 	pos = ret + 1;
     }
+    
+    /* check that all parameters at the end are filenames */
+    for(ii = pos; (ii < argc); ++ii) {
+	if(argv[ii][0] == '-') {
+	    fprintf(stderr, "Error: filename is expected instead of parameter \"%s\".\n", argv[ii]);
+	    return(-1);
+	    
+	}
+    }
+    
+    
     
     return(pos);
 }

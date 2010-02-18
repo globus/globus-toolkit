@@ -29,7 +29,7 @@ static xmlSecCryptoDLFunctionsPtr gXmlSecSkeletonFunctions = NULL;
  *
  * Gets the pointer to xmlsec-skeleton functions table.
  *
- * Returns the xmlsec-skeleton functions table or NULL if an error occurs.
+ * Returns: the xmlsec-skeleton functions table or NULL if an error occurs.
  */
 xmlSecCryptoDLFunctionsPtr
 xmlSecCryptoGetFunctions_skeleton(void) {
@@ -63,6 +63,10 @@ xmlSecCryptoGetFunctions_skeleton(void) {
 #ifndef XMLSEC_NO_DSA
     gXmlSecSkeletonFunctions->keyDataDsaGetKlass 	= xmlSecSkeletonKeyDataDsaGetKlass;
 #endif /* XMLSEC_NO_DSA */    
+
+#ifndef XMLSEC_NO_GOST
+    gXmlSecSkeletonFunctions->keyDataGost2001GetKlass 	= xmlSecSkeletonKeyDataGost2001GetKlass;
+#endif /* XMLSEC_NO_GOST */    
 
 #ifndef XMLSEC_NO_HMAC  
     gXmlSecSkeletonFunctions->keyDataHmacGetKlass 	= xmlSecSkeletonKeyDataHmacGetKlass;
@@ -105,6 +109,10 @@ xmlSecCryptoGetFunctions_skeleton(void) {
     gXmlSecSkeletonFunctions->transformDsaSha1GetKlass 		= xmlSecSkeletonTransformDsaSha1GetKlass;
 #endif /* XMLSEC_NO_DSA */
 
+#ifndef XMLSEC_NO_GOST
+    gXmlSecSkeletonFunctions->transformGost2001GostR3411_94GetKlass 		= xmlSecSkeletonTransformGost2001GostR3411_94GetKlass;
+#endif /* XMLSEC_GOST */
+
 #ifndef XMLSEC_NO_HMAC
     gXmlSecSkeletonFunctions->transformHmacSha1GetKlass 	= xmlSecSkeletonTransformHmacSha1GetKlass;
     gXmlSecSkeletonFunctions->transformHmacRipemd160GetKlass 	= xmlSecSkeletonTransformHmacRipemd160GetKlass;
@@ -125,6 +133,10 @@ xmlSecCryptoGetFunctions_skeleton(void) {
     gXmlSecSkeletonFunctions->transformSha1GetKlass 		= xmlSecSkeletonTransformSha1GetKlass;
 #endif /* XMLSEC_NO_SHA1 */
 
+#ifndef XMLSEC_NO_GOST    
+    gXmlSecSkeletonFunctions->transformGostR3411_94GetKlass 		= xmlSecSkeletonTransformGostR3411_94GetKlass;
+#endif /* XMLSEC_NO_GOST */
+
     /**
      * High level routines form xmlsec command line utility
      */ 
@@ -144,7 +156,7 @@ xmlSecCryptoGetFunctions_skeleton(void) {
 #endif /* XMLSEC_NO_X509 */
     gXmlSecSkeletonFunctions->cryptoAppKeyLoad 			= xmlSecSkeletonAppKeyLoad; 
     gXmlSecSkeletonFunctions->cryptoAppKeyLoadMemory		= xmlSecSkeletonAppKeyLoadMemory; 
-    gXmlSecSkeletonFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecSkeletonAppGetDefaultPwdCallback;
+    gXmlSecSkeletonFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecSkeletonAppGetDefaultPwdCallback();
 
     return(gXmlSecSkeletonFunctions);
 }
@@ -155,7 +167,7 @@ xmlSecCryptoGetFunctions_skeleton(void) {
  * 
  * XMLSec library specific crypto engine initialization. 
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecSkeletonInit (void)  {
@@ -188,7 +200,7 @@ xmlSecSkeletonInit (void)  {
  * 
  * XMLSec library specific crypto engine shutdown. 
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecSkeletonShutdown(void) {
@@ -202,7 +214,7 @@ xmlSecSkeletonShutdown(void) {
  *
  * Adds Skeleton specific key data stores in keys manager.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int
 xmlSecSkeletonKeysMngrInit(xmlSecKeysMngrPtr mngr) {

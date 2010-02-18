@@ -59,7 +59,7 @@ static void		xmlSecOpenSSLEvpKeyDataFinalize		(xmlSecKeyDataPtr data);
  *
  * Sets the value of key data.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecOpenSSLEvpKeyDataAdoptEvp(xmlSecKeyDataPtr data, EVP_PKEY* pKey) {
@@ -85,7 +85,7 @@ xmlSecOpenSSLEvpKeyDataAdoptEvp(xmlSecKeyDataPtr data, EVP_PKEY* pKey) {
  *
  * Gets the EVP_PKEY from the key data.
  *
- * Returns pointer to EVP_PKEY or NULL if an error occurs.
+ * Returns: pointer to EVP_PKEY or NULL if an error occurs.
  */
 EVP_PKEY* 
 xmlSecOpenSSLEvpKeyDataGetEvp(xmlSecKeyDataPtr data) {
@@ -174,7 +174,7 @@ xmlSecOpenSSLEvpKeyDataFinalize(xmlSecKeyDataPtr data) {
  *
  * Duplicates @pKey.
  *
- * Returns pointer to newly created EVP_PKEY object or NULL if an error occurs.
+ * Returns: pointer to newly created EVP_PKEY object or NULL if an error occurs.
  */
 EVP_PKEY* 
 xmlSecOpenSSLEvpKeyDup(EVP_PKEY* pKey) {
@@ -201,7 +201,7 @@ xmlSecOpenSSLEvpKeyDup(EVP_PKEY* pKey) {
  *
  * Creates xmlsec key object from OpenSSL key object.
  *
- * Returns pointer to newly created xmlsec key or NULL if an error occurs.
+ * Returns: pointer to newly created xmlsec key or NULL if an error occurs.
  */
 xmlSecKeyDataPtr
 xmlSecOpenSSLEvpKeyAdopt(EVP_PKEY *pKey) {
@@ -400,7 +400,7 @@ static xmlSecKeyDataKlass xmlSecOpenSSLKeyDataDsaKlass = {
  * 
  * The DSA key data klass.
  *
- * Returns pointer to DSA key data klass.
+ * Returns: pointer to DSA key data klass.
  */
 xmlSecKeyDataId 
 xmlSecOpenSSLKeyDataDsaGetKlass(void) {
@@ -414,7 +414,7 @@ xmlSecOpenSSLKeyDataDsaGetKlass(void) {
  *
  * Sets the value of DSA key data.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */ 
 int
 xmlSecOpenSSLKeyDataDsaAdoptDsa(xmlSecKeyDataPtr data, DSA* dsa) {
@@ -467,7 +467,7 @@ xmlSecOpenSSLKeyDataDsaAdoptDsa(xmlSecKeyDataPtr data, DSA* dsa) {
  *
  * Gets the OpenSSL DSA key from DSA key data.
  *
- * Returns pointer to OpenSSL DSA key or NULL if an error occurs.
+ * Returns: pointer to OpenSSL DSA key or NULL if an error occurs.
  */
 DSA* 
 xmlSecOpenSSLKeyDataDsaGetDsa(xmlSecKeyDataPtr data) {
@@ -488,7 +488,7 @@ xmlSecOpenSSLKeyDataDsaGetDsa(xmlSecKeyDataPtr data) {
  *
  * Sets the DSA key data value to OpenSSL EVP key.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecOpenSSLKeyDataDsaAdoptEvp(xmlSecKeyDataPtr data, EVP_PKEY* pKey) {
@@ -505,7 +505,7 @@ xmlSecOpenSSLKeyDataDsaAdoptEvp(xmlSecKeyDataPtr data, EVP_PKEY* pKey) {
  *
  * Gets the OpenSSL EVP key from DSA key data.
  *
- * Returns pointer to OpenSSL EVP key or NULL if an error occurs.
+ * Returns: pointer to OpenSSL EVP key or NULL if an error occurs.
  */
 EVP_PKEY* 
 xmlSecOpenSSLKeyDataDsaGetEvp(xmlSecKeyDataPtr data) {
@@ -676,6 +676,11 @@ xmlSecOpenSSLKeyDataDsaXmlRead(xmlSecKeyDataId id, xmlSecKeyPtr key,
 	return(-1);
     }
     cur = xmlSecGetNextElementNode(cur->next);
+
+    /* todo: add support for J */
+    if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeDSAJ, xmlSecDSigNs))) {
+	cur = xmlSecGetNextElementNode(cur->next);  
+    }
     
     /* todo: add support for seed */
     if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeDSASeed, xmlSecDSigNs))) {
@@ -930,6 +935,14 @@ xmlSecOpenSSLKeyDataDsaGetType(xmlSecKeyDataPtr data) {
        
         if(dsa->priv_key != NULL) {
 	    return(xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
+	} else if(dsa->engine != NULL) {
+	    /*
+	     * !!! HACK !!! Also see RSA key
+	     * We assume here that engine *always* has private key.
+	     * This might be incorrect but it seems that there is no
+	     * way to ask engine if given key is private or not.
+	     */
+	    return(xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
 	} else {
 	    return(xmlSecKeyDataTypePublic);
 	}
@@ -1080,7 +1093,7 @@ static xmlSecKeyDataKlass xmlSecOpenSSLKeyDataRsaKlass = {
  *
  * The OpenSSL RSA key data klass.
  *
- * Returns pointer to OpenSSL RSA key data klass.
+ * Returns: pointer to OpenSSL RSA key data klass.
  */
 xmlSecKeyDataId 
 xmlSecOpenSSLKeyDataRsaGetKlass(void) {
@@ -1094,7 +1107,7 @@ xmlSecOpenSSLKeyDataRsaGetKlass(void) {
  *
  * Sets the value of RSA key data.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */ 
 int
 xmlSecOpenSSLKeyDataRsaAdoptRsa(xmlSecKeyDataPtr data, RSA* rsa) {
@@ -1147,7 +1160,7 @@ xmlSecOpenSSLKeyDataRsaAdoptRsa(xmlSecKeyDataPtr data, RSA* rsa) {
  *
  * Gets the OpenSSL RSA key from RSA key data.
  *
- * Returns pointer to OpenSSL RSA key or NULL if an error occurs.
+ * Returns: pointer to OpenSSL RSA key or NULL if an error occurs.
  */
 RSA* 
 xmlSecOpenSSLKeyDataRsaGetRsa(xmlSecKeyDataPtr data) {
@@ -1168,7 +1181,7 @@ xmlSecOpenSSLKeyDataRsaGetRsa(xmlSecKeyDataPtr data) {
  *
  * Sets the RSA key data value to OpenSSL EVP key.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecOpenSSLKeyDataRsaAdoptEvp(xmlSecKeyDataPtr data, EVP_PKEY* pKey) {
@@ -1185,7 +1198,7 @@ xmlSecOpenSSLKeyDataRsaAdoptEvp(xmlSecKeyDataPtr data, EVP_PKEY* pKey) {
  *
  * Gets the OpenSSL EVP key from RSA key data.
  *
- * Returns pointer to OpenSSL EVP key or NULL if an error occurs.
+ * Returns: pointer to OpenSSL EVP key or NULL if an error occurs.
  */
 EVP_PKEY* 
 xmlSecOpenSSLKeyDataRsaGetEvp(xmlSecKeyDataPtr data) {
@@ -1492,6 +1505,14 @@ xmlSecOpenSSLKeyDataRsaGetType(xmlSecKeyDataPtr data) {
     rsa = xmlSecOpenSSLKeyDataRsaGetRsa(data);
     if((rsa != NULL) && (rsa->n != NULL) && (rsa->e != NULL)) {
 	if(rsa->d != NULL) {
+	    return(xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
+	} else if(rsa->engine != NULL) {
+	    /*
+	     * !!! HACK !!! Also see DSA key
+	     * We assume here that engine *always* has private key.
+	     * This might be incorrect but it seems that there is no
+	     * way to ask engine if given key is private or not.
+	     */
 	    return(xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
 	} else {
 	    return(xmlSecKeyDataTypePublic);

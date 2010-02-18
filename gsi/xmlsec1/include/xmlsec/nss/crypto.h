@@ -14,6 +14,10 @@
 extern "C" {
 #endif /* __cplusplus */ 
 
+#include <nspr.h>
+#include <nss.h>
+#include <pk11func.h>
+
 #include <xmlsec/xmlsec.h>
 #include <xmlsec/keys.h>
 #include <xmlsec/transforms.h>
@@ -38,6 +42,8 @@ XMLSEC_CRYPTO_EXPORT void		xmlSecNssErrorsDefaultCallback	(const char* file,
 									const char* errorSubject,
 									int reason, 
 									const char* msg);
+
+XMLSEC_CRYPTO_EXPORT PK11SlotInfo * xmlSecNssGetInternalKeySlot(void);
 
 /********************************************************************
  *
@@ -185,6 +191,10 @@ XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformDsaSha1GetKlass(void);
  *
  *******************************************************************/
 #ifndef XMLSEC_NO_HMAC
+
+XMLSEC_CRYPTO_EXPORT int               xmlSecNssHmacGetMinOutputLength(void);
+XMLSEC_CRYPTO_EXPORT void              xmlSecNssHmacSetMinOutputLength(int min_length);
+
 /** 
  * xmlSecNssKeyDataHmacId:
  * 
@@ -197,13 +207,13 @@ XMLSEC_CRYPTO_EXPORT int		xmlSecNssKeyDataHmacSet		(xmlSecKeyDataPtr data,
 									 const xmlSecByte* buf,
 									 xmlSecSize bufSize);
 /**
- * xmlSecNssTransformHmacSha1Id:
+ * xmlSecNssTransformHmacMd5Id:
  * 
- * The HMAC with SHA1 signature transform klass.
+ * The HMAC with MD5 signature transform klass.
  */
-#define xmlSecNssTransformHmacSha1Id \
-	xmlSecNssTransformHmacSha1GetKlass()
-XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformHmacSha1GetKlass(void);
+#define xmlSecNssTransformHmacMd5Id \
+	xmlSecNssTransformHmacMd5GetKlass()
+XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformHmacMd5GetKlass(void);
 
 /**
  * xmlSecNssTransformHmacRipemd160Id:
@@ -215,13 +225,13 @@ XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformHmacSha1GetKlass(void);
 XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformHmacRipemd160GetKlass(void);
 
 /**
- * xmlSecNssTransformHmacMd5Id:
+ * xmlSecNssTransformHmacSha1Id:
  * 
- * The HMAC with MD5 signature transform klass.
+ * The HMAC with SHA1 signature transform klass.
  */
-#define xmlSecNssTransformHmacMd5Id \
-	xmlSecNssTransformHmacMd5GetKlass()
-XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformHmacMd5GetKlass(void);
+#define xmlSecNssTransformHmacSha1Id \
+	xmlSecNssTransformHmacSha1GetKlass()
+XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformHmacSha1GetKlass(void);
 
 
 #endif /* XMLSEC_NO_HMAC */
@@ -260,6 +270,20 @@ XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformRsaSha1GetKlass(void);
 #define xmlSecNssTransformRsaPkcs1Id \
         xmlSecNssTransformRsaPkcs1GetKlass()
 XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformRsaPkcs1GetKlass(void);
+
+
+/* RSA OAEP is not supported by NSS yet */
+#ifdef TODO
+/**
+ * xmlSecNssTransformRsaOaepId:
+ * 
+ * The RSA OAEP key transport transform klass.
+ */
+
+#define xmlSecNssTransformRsaOaepId \
+        xmlSecNssTransformRsaOaepGetKlass()
+XMLSEC_CRYPTO_EXPORT xmlSecTransformId xmlSecNssTransformRsaOaepGetKlass(void);
+#endif /* TODO: RSA OAEP is not supported by NSS yet */
 
 #endif /* XMLSEC_NO_RSA */
 
