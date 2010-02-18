@@ -2,40 +2,12 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <title>xmlsec</title>
-<meta name="GENERATOR" content="Modular DocBook HTML Stylesheet Version 1.79">
+<meta name="GENERATOR" content="Modular DocBook HTML Stylesheet Version 1.76b+
+">
 <link rel="HOME" title="XML Security Library Reference Manual" href="index.html">
 <link rel="UP" title="XML Security Core Library API Reference." href="xmlsec-ref.html">
 <link rel="PREVIOUS" title="xmlenc" href="xmlsec-xmlenc.html">
 <link rel="NEXT" title="xmltree" href="xmlsec-xmltree.html">
-<style type="text/css">.synopsis, .classsynopsis {
-    background: #eeeeee;
-    border: solid 1px #aaaaaa;
-    padding: 0.5em;
-}
-.programlisting {
-    background: #eeeeff;
-    border: solid 1px #aaaaff;
-    padding: 0.5em;
-}
-.variablelist {
-    padding: 4px;
-    margin-left: 3em;
-}
-.navigation {
-    background: #ffeeee;
-    border: solid 1px #ffaaaa;
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-}
-.navigation a {
-    color: #770000;
-}
-.navigation a:visited {
-    color: #550000;
-}
-.navigation .title {
-    font-size: 200%;
-}</style>
 </head>
 <body><table witdh="100%" valign="top"><tr valign="top">
 <td valign="top" align="left" width="210">
@@ -73,94 +45,104 @@
 <td width="15"></td>
 <td><a href="http://www.openssl.org/"><img src="../images/openssl-logo.png" alt="OpenSSL" border="0"></a></td>
 </tr>
-<!--Links - start--><!--Links - end-->
 </table>
 </td>
-<td valign="top"><table width="100%" valign="top"><tr><td valign="top" align="left" id="xmlsecContent">
-<table width="100%" class="navigation" summary="Navigation header" cellpadding="2" cellspacing="2"><tr valign="middle">
-<td><a accesskey="p" href="xmlsec-xmlenc.html"><img src="left.png" width="24" height="24" border="0" alt="Prev"></a></td>
-<td><a accesskey="u" href="xmlsec-ref.html"><img src="up.png" width="24" height="24" border="0" alt="Up"></a></td>
-<td><a accesskey="h" href="index.html"><img src="home.png" width="24" height="24" border="0" alt="Home"></a></td>
-<th width="100%" align="center">XML Security Library Reference Manual</th>
-<td><a accesskey="n" href="xmlsec-xmltree.html"><img src="right.png" width="24" height="24" border="0" alt="Next"></a></td>
-</tr></table>
+<td valign="top"><table width="100%" valign="top">
+<tr><td valign="top" align="left" id="xmlsecContent">
+<div class="NAVHEADER"><table width="100%" border="0" bgcolor="#000000" cellpadding="1" cellspacing="0">
+<tr><th colspan="4" align="center"><font color="#FFFFFF" size="5">XML Security Library Reference Manual</font></th></tr>
+<tr>
+<td width="25%" bgcolor="#C00000" align="left"><a href="xmlsec-xmlenc.html"><font color="#FFFFFF" size="3"><b>&lt;&lt;&lt; Previous Page</b></font></a></td>
+<td width="25%" bgcolor="#0000C0" align="center"><font color="#FFFFFF" size="3"><b><a href="index.html"><font color="#FFFFFF" size="3"><b>Home</b></font></a></b></font></td>
+<td width="25%" bgcolor="#00C000" align="center"><font color="#FFFFFF" size="3"><b><a href="xmlsec-ref.html"><font color="#FFFFFF" size="3"><b>Up</b></font></a></b></font></td>
+<td width="25%" bgcolor="#C00000" align="right"><a href="xmlsec-xmltree.html"><font color="#FFFFFF" size="3"><b>Next Page &gt;&gt;&gt;</b></font></a></td>
+</tr>
+</table></div>
 <h1>
 <a name="XMLSEC-XMLSEC"></a>xmlsec</h1>
 <div class="REFNAMEDIV">
-<a name="AEN19039"></a><h2>Name</h2>xmlsec -- Utility functions.</div>
+<a name="AEN15990"></a><h2>Name</h2>xmlsec -- </div>
 <div class="REFSYNOPSISDIV">
-<a name="XMLSEC-XMLSEC.SYNOPSIS"></a><h2>Synopsis</h2>
-<pre class="SYNOPSIS">typedef             <font>xmlSecPtr</font>;
-#define             <a href="xmlsec-xmlsec.html#XMLSECSIZE">xmlSecSize</a>
-#define             <a href="xmlsec-xmlsec.html#XMLSECBYTE">xmlSecByte</a>
-<font>int</font>                 <a href="xmlsec-xmlsec.html#XMLSECINIT">xmlSecInit</a>                          (void);
-<font>int</font>                 <a href="xmlsec-xmlsec.html#XMLSECSHUTDOWN">xmlSecShutdown</a>                      (void);
-#define             <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONEXACT">xmlSecCheckVersionExact</a>             ()
-#define             <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSION">xmlSecCheckVersion</a>                  ()
-enum                <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONMODE">xmlSecCheckVersionMode</a>;
-<font>int</font>                 <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONEXT">xmlSecCheckVersionExt</a>               (<font>int</font> major,
-                                                         <font>int</font> minor,
-                                                         <font>int</font> subminor,
-                                                         <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONMODE">xmlSecCheckVersionMode</a> mode);
-#define             <a href="xmlsec-xmlsec.html#ATTRIBUTE-UNUSED--CAPS">ATTRIBUTE_UNUSED</a></pre>
+<a name="AEN15993"></a><h2>Synopsis</h2>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="SYNOPSIS">
+
+typedef     <font>xmlSecPtr</font>;
+#define     <a href="xmlsec-xmlsec.html#XMLSECSIZE">xmlSecSize</a>
+#define     <a href="xmlsec-xmlsec.html#XMLSECBYTE">xmlSecByte</a>
+int         <a href="xmlsec-xmlsec.html#XMLSECINIT">xmlSecInit</a>                      (void);
+int         <a href="xmlsec-xmlsec.html#XMLSECSHUTDOWN">xmlSecShutdown</a>                  (void);
+#define     <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONEXACT">xmlSecCheckVersionExact</a>         ()
+#define     <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSION">xmlSecCheckVersion</a>              ()
+enum        <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONMODE">xmlSecCheckVersionMode</a>;
+int         <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONEXT">xmlSecCheckVersionExt</a>           (int major,
+                                             int minor,
+                                             int subminor,
+                                             <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONMODE">xmlSecCheckVersionMode</a> mode);
+#define     <a href="xmlsec-xmlsec.html#ATTRIBUTE-UNUSED-CAPS">ATTRIBUTE_UNUSED</a></pre></td></tr></table>
 </div>
 <div class="REFSECT1">
-<a name="XMLSEC-XMLSEC.DESCRIPTION"></a><h2>Description</h2>
-<p>Utility functions.</p>
+<a name="AEN16007"></a><h2>Description</h2>
+<p></p>
 </div>
 <div class="REFSECT1">
-<a name="XMLSEC-XMLSEC.DETAILS"></a><h2>Details</h2>
+<a name="AEN16010"></a><h2>Details</h2>
 <div class="REFSECT2">
-<a name="XMLSECPTR"></a><h3>xmlSecPtr</h3>
-<pre class="PROGRAMLISTING">typedef void*					xmlSecPtr;</pre>
+<a name="AEN16012"></a><h3>
+<a name="XMLSECPTR"></a>xmlSecPtr</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">typedef void*					xmlSecPtr;</pre></td></tr></table>
 <p>Void pointer.</p>
 <p></p>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECSIZE"></a><h3>xmlSecSize</h3>
-<pre class="PROGRAMLISTING">#define             xmlSecSize</pre>
+<a name="AEN16018"></a><h3>
+<a name="XMLSECSIZE"></a>xmlSecSize</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">#define     xmlSecSize</pre></td></tr></table>
 <p>Size of something. Should be typedef instead of define
 but it will break ABI (todo).</p>
 <p></p>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECBYTE"></a><h3>xmlSecByte</h3>
-<pre class="PROGRAMLISTING">#define xmlSecByte				unsigned char</pre>
+<a name="AEN16024"></a><h3>
+<a name="XMLSECBYTE"></a>xmlSecByte</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">#define xmlSecByte				unsigned char</pre></td></tr></table>
 <p>One byte. Should be typedef instead of define
 but it will break ABI (todo).</p>
 <p></p>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECINIT"></a><h3>xmlSecInit ()</h3>
-<pre class="PROGRAMLISTING"><font>int</font>                 xmlSecInit                          (void);</pre>
+<a name="AEN16030"></a><h3>
+<a name="XMLSECINIT"></a>xmlSecInit ()</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">int         xmlSecInit                      (void);</pre></td></tr></table>
 <p>Initializes XML Security Library. The depended libraries
 (LibXML and LibXSLT) must be initialized before.</p>
 <p></p>
 <p></p>
-<table class="variablelist" border="0" cellspacing="0" cellpadding="4"><tbody><tr>
-<td align="LEFT" valign="TOP"><a name="AEN19097"><span style="white-space: nowrap"><span class="emphasis"><i class="EMPHASIS">Returns</i></span> :</span></a></td>
-<td align="LEFT" valign="TOP"><p> 0 on success or a negative value otherwise.</p></td>
+<table class="VARIABLELIST" border="0" cellspacing="0" cellpadding="4" width="100%" bgcolor="#FFD0D0"><tbody><tr>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16037"><span style="white-space: nowrap"><span class="emphasis"><i class="EMPHASIS">Returns</i></span> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>0 on success or a negative value otherwise.</p></td>
 </tr></tbody></table>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECSHUTDOWN"></a><h3>xmlSecShutdown ()</h3>
-<pre class="PROGRAMLISTING"><font>int</font>                 xmlSecShutdown                      (void);</pre>
+<a name="AEN16042"></a><h3>
+<a name="XMLSECSHUTDOWN"></a>xmlSecShutdown ()</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">int         xmlSecShutdown                  (void);</pre></td></tr></table>
 <p>Clean ups the XML Security Library.</p>
 <p></p>
 <p></p>
-<table class="variablelist" border="0" cellspacing="0" cellpadding="4"><tbody><tr>
-<td align="LEFT" valign="TOP"><a name="AEN19111"><span style="white-space: nowrap"><span class="emphasis"><i class="EMPHASIS">Returns</i></span> :</span></a></td>
-<td align="LEFT" valign="TOP"><p> 0 on success or a negative value otherwise.</p></td>
+<table class="VARIABLELIST" border="0" cellspacing="0" cellpadding="4" width="100%" bgcolor="#FFD0D0"><tbody><tr>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16049"><span style="white-space: nowrap"><span class="emphasis"><i class="EMPHASIS">Returns</i></span> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>0 on success or a negative value otherwise.</p></td>
 </tr></tbody></table>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECCHECKVERSIONEXACT"></a><h3>xmlSecCheckVersionExact()</h3>
-<pre class="PROGRAMLISTING">#define             xmlSecCheckVersionExact()</pre>
+<a name="AEN16054"></a><h3>
+<a name="XMLSECCHECKVERSIONEXACT"></a>xmlSecCheckVersionExact()</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">#define     xmlSecCheckVersionExact()</pre></td></tr></table>
 <p>Macro. Returns 1 if the loaded xmlsec library version exactly matches 
 the one used to compile the caller, 0 if it does not or a negative
 value if an error occurs.</p>
@@ -168,8 +150,9 @@ value if an error occurs.</p>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECCHECKVERSION"></a><h3>xmlSecCheckVersion()</h3>
-<pre class="PROGRAMLISTING">#define             xmlSecCheckVersion()</pre>
+<a name="AEN16060"></a><h3>
+<a name="XMLSECCHECKVERSION"></a>xmlSecCheckVersion()</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">#define     xmlSecCheckVersion()</pre></td></tr></table>
 <p>Macro. Returns 1 if the loaded xmlsec library version ABI compatible with
 the one used to compile the caller, 0 if it does not or a negative
 value if an error occurs.</p>
@@ -177,71 +160,88 @@ value if an error occurs.</p>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECCHECKVERSIONMODE"></a><h3>enum xmlSecCheckVersionMode</h3>
-<pre class="PROGRAMLISTING">typedef enum {
-    xmlSecCheckVersionExactMatch = 0,
+<a name="AEN16066"></a><h3>
+<a name="XMLSECCHECKVERSIONMODE"></a>enum xmlSecCheckVersionMode</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">typedef enum {
+    xmlSecCheckVersionExact = 0,
     xmlSecCheckVersionABICompatible
-} xmlSecCheckVersionMode;</pre>
+} xmlSecCheckVersionMode;</pre></td></tr></table>
 <p>The xmlsec library version mode.</p>
 <p></p>
 <p></p>
-<table class="variablelist" border="0" cellspacing="0" cellpadding="4"><tbody>
+<table class="VARIABLELIST" border="0" cellspacing="0" cellpadding="4" width="100%" bgcolor="#F0F0D0"><tbody>
 <tr>
-<td align="LEFT" valign="TOP"><a name="XMLSECCHECKVERSIONEXACTMATCH"><span style="white-space: nowrap"><tt class="LITERAL">xmlSecCheckVersionExactMatch</tt></span></a></td>
-<td align="LEFT" valign="TOP"><p>	the version should match exactly.</p></td>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16073"><span style="white-space: nowrap"><tt class="LITERAL">xmlSecCheckVersionExact</tt></span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>		the version should match exactly.</p></td>
 </tr>
 <tr>
-<td align="LEFT" valign="TOP"><a name="XMLSECCHECKVERSIONABICOMPATIBLE"><span style="white-space: nowrap"><tt class="LITERAL">xmlSecCheckVersionABICompatible</tt></span></a></td>
-<td align="LEFT" valign="TOP"><p>	the version should be ABI compatible.</p></td>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16078"><span style="white-space: nowrap"><tt class="LITERAL">xmlSecCheckVersionABICompatible</tt></span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>	the version should be ABI compatible.</p></td>
 </tr>
 </tbody></table>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="XMLSECCHECKVERSIONEXT"></a><h3>xmlSecCheckVersionExt ()</h3>
-<pre class="PROGRAMLISTING"><font>int</font>                 xmlSecCheckVersionExt               (<font>int</font> major,
-                                                         <font>int</font> minor,
-                                                         <font>int</font> subminor,
-                                                         <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONMODE">xmlSecCheckVersionMode</a> mode);</pre>
+<a name="AEN16083"></a><h3>
+<a name="XMLSECCHECKVERSIONEXT"></a>xmlSecCheckVersionExt ()</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">int         xmlSecCheckVersionExt           (int major,
+                                             int minor,
+                                             int subminor,
+                                             <a href="xmlsec-xmlsec.html#XMLSECCHECKVERSIONMODE">xmlSecCheckVersionMode</a> mode);</pre></td></tr></table>
 <p>Checks if the loaded version of xmlsec library could be used.</p>
 <p></p>
 <p></p>
-<table class="variablelist" border="0" cellspacing="0" cellpadding="4"><tbody>
+<table class="VARIABLELIST" border="0" cellspacing="0" cellpadding="4" width="100%" bgcolor="#FFD0D0"><tbody>
 <tr>
-<td align="LEFT" valign="TOP"><a name="AEN19161"><span style="white-space: nowrap"><code class="PARAMETER">major</code> :</span></a></td>
-<td align="LEFT" valign="TOP"><p>		the major version number.</p></td>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16091"><span style="white-space: nowrap"><tt class="PARAMETER"><i>major</i></tt> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>		the major version number.</p></td>
 </tr>
 <tr>
-<td align="LEFT" valign="TOP"><a name="AEN19166"><span style="white-space: nowrap"><code class="PARAMETER">minor</code> :</span></a></td>
-<td align="LEFT" valign="TOP"><p>		the minor version number.</p></td>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16096"><span style="white-space: nowrap"><tt class="PARAMETER"><i>minor</i></tt> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>		the minor version number.</p></td>
 </tr>
 <tr>
-<td align="LEFT" valign="TOP"><a name="AEN19171"><span style="white-space: nowrap"><code class="PARAMETER">subminor</code> :</span></a></td>
-<td align="LEFT" valign="TOP"><p>		the subminor version number.</p></td>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16101"><span style="white-space: nowrap"><tt class="PARAMETER"><i>subminor</i></tt> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>		the subminor version number.</p></td>
 </tr>
 <tr>
-<td align="LEFT" valign="TOP"><a name="AEN19176"><span style="white-space: nowrap"><code class="PARAMETER">mode</code> :</span></a></td>
-<td align="LEFT" valign="TOP"><p>		the version check mode.</p></td>
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16106"><span style="white-space: nowrap"><tt class="PARAMETER"><i>mode</i></tt> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>		the version check mode.</p></td>
 </tr>
 <tr>
-<td align="LEFT" valign="TOP"><a name="AEN19181"><span style="white-space: nowrap"><span class="emphasis"><i class="EMPHASIS">Returns</i></span> :</span></a></td>
-<td align="LEFT" valign="TOP"><p> 1 if the loaded xmlsec library version is OK to use
+<td align="RIGHT" valign="TOP" width="20%"><a name="AEN16111"><span style="white-space: nowrap"><span class="emphasis"><i class="EMPHASIS">Returns</i></span> :</span></a></td>
+<td align="LEFT" valign="TOP" width="80%"><p>1 if the loaded xmlsec library version is OK to use
 0 if it is not or a negative value if an error occurs.</p></td>
 </tr>
 </tbody></table>
 </div>
 <hr>
 <div class="REFSECT2">
-<a name="ATTRIBUTE-UNUSED--CAPS"></a><h3>ATTRIBUTE_UNUSED</h3>
-<pre class="PROGRAMLISTING">#define             ATTRIBUTE_UNUSED</pre>
+<a name="AEN16116"></a><h3>
+<a name="ATTRIBUTE-UNUSED-CAPS"></a>ATTRIBUTE_UNUSED</h3>
+<table border="0" bgcolor="#D6E8FF" width="100%" cellpadding="6"><tr><td><pre class="PROGRAMLISTING">#define     ATTRIBUTE_UNUSED</pre></td></tr></table>
 <p>Macro used to signal to GCC unused function parameters</p>
 <p></p>
 </div>
 </div>
-<table class="navigation" width="100%" summary="Navigation footer" cellpadding="2" cellspacing="2"><tr valign="middle">
-<td align="left"><a accesskey="p" href="xmlsec-xmlenc.html"><b>&lt;&lt;&lt; xmlenc</b></a></td>
-<td align="right"><a accesskey="n" href="xmlsec-xmltree.html"><b>xmltree &gt;&gt;&gt;</b></a></td>
-</tr></table>
-</td></tr></table></td>
+<div class="NAVFOOTER">
+<br clear="all"><br><table width="100%" border="0" bgcolor="#000000" cellpadding="1" cellspacing="0">
+<tr>
+<td width="25%" bgcolor="#C00000" align="left"><a href="xmlsec-xmlenc.html"><font color="#FFFFFF" size="3"><b>&lt;&lt;&lt; Previous Page</b></font></a></td>
+<td width="25%" bgcolor="#0000C0" align="center"><font color="#FFFFFF" size="3"><b><a href="index.html"><font color="#FFFFFF" size="3"><b>Home</b></font></a></b></font></td>
+<td width="25%" bgcolor="#00C000" align="center"><font color="#FFFFFF" size="3"><b><a href="xmlsec-ref.html"><font color="#FFFFFF" size="3"><b>Up</b></font></a></b></font></td>
+<td width="25%" bgcolor="#C00000" align="right"><a href="xmlsec-xmltree.html"><font color="#FFFFFF" size="3"><b>Next Page &gt;&gt;&gt;</b></font></a></td>
+</tr>
+<tr>
+<td colspan="2" align="left"><font color="#FFFFFF" size="3"><b>xmlenc</b></font></td>
+<td colspan="2" align="right"><font color="#FFFFFF" size="3"><b>xmltree</b></font></td>
+</tr>
+</table>
+</div>
+</td></tr>
+<tr><td>
+<br><br><p><a href="../bugs.html">Aleksey Sanin</a></p>
+</td></tr>
+</table></td>
 </tr></table></body>
 </html>

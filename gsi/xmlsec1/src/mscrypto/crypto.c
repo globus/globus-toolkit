@@ -6,7 +6,6 @@
  * 
  * Copyrigth (C) 2003 Cordys R&D BV, All rights reserved.
  * Copyright (C) 2003 Aleksey Sanin <aleksey@aleksey.com>
- * Copyright (c) 2005-2006 Cryptocom LTD (http://www.cryptocom.ru).  
  */
 #include "globals.h"
 
@@ -17,15 +16,14 @@
 #include <xmlsec/transforms.h>
 #include <xmlsec/errors.h>
 #include <xmlsec/dl.h>
-#include <xmlsec/xmltree.h>
 #include <xmlsec/private.h>
 
 #include <xmlsec/mscrypto/app.h>
 #include <xmlsec/mscrypto/crypto.h>
 #include <xmlsec/mscrypto/x509.h>
 
-#if defined(__MINGW32__)
-#  include "xmlsec-mingw.h"
+#if defined(_MSC_VER)
+#define snprintf _snprintf
 #endif
 
 static xmlSecCryptoDLFunctionsPtr gXmlSecMSCryptoFunctions = NULL;
@@ -35,7 +33,7 @@ static xmlSecCryptoDLFunctionsPtr gXmlSecMSCryptoFunctions = NULL;
  *
  * Gets MSCrypto specific functions table.
  *
- * Returns: xmlsec-mscrypto functions table.
+ * Returns xmlsec-mscrypto functions table.
  */
 xmlSecCryptoDLFunctionsPtr
 xmlSecCryptoGetFunctions_mscrypto(void) {
@@ -74,10 +72,6 @@ xmlSecCryptoGetFunctions_mscrypto(void) {
     gXmlSecMSCryptoFunctions->keyDataDsaGetKlass 		= xmlSecMSCryptoKeyDataDsaGetKlass;
 #endif /* XMLSEC_NO_DSA */
 
-#ifndef XMLSEC_NO_GOST
-    gXmlSecMSCryptoFunctions->keyDataGost2001GetKlass 		= xmlSecMSCryptoKeyDataGost2001GetKlass;
-#endif /* XMLSEC_NO_GOST*/
-
 #ifndef XMLSEC_NO_X509
     gXmlSecMSCryptoFunctions->keyDataX509GetKlass 		= xmlSecMSCryptoKeyDataX509GetKlass;
     gXmlSecMSCryptoFunctions->keyDataRawX509CertGetKlass	= xmlSecMSCryptoKeyDataRawX509CertGetKlass;
@@ -112,17 +106,9 @@ xmlSecCryptoGetFunctions_mscrypto(void) {
     gXmlSecMSCryptoFunctions->transformDsaSha1GetKlass 		= xmlSecMSCryptoTransformDsaSha1GetKlass;
 #endif /* XMLSEC_NO_DSA */
 
-#ifndef XMLSEC_NO_GOST
-    gXmlSecMSCryptoFunctions->transformGost2001GostR3411_94GetKlass 		= xmlSecMSCryptoTransformGost2001GostR3411_94GetKlass;
-#endif /* XMLSEC_NO_GOST */
-
 #ifndef XMLSEC_NO_SHA1    
     gXmlSecMSCryptoFunctions->transformSha1GetKlass 		= xmlSecMSCryptoTransformSha1GetKlass;
 #endif /* XMLSEC_NO_SHA1 */
-
-#ifndef XMLSEC_NO_GOST    
-    gXmlSecMSCryptoFunctions->transformGostR3411_94GetKlass 		= xmlSecMSCryptoTransformGostR3411_94GetKlass;
-#endif /* XMLSEC_NO_GOST */
 
     /**
      * High level routines form xmlsec command line utility
@@ -143,7 +129,7 @@ xmlSecCryptoGetFunctions_mscrypto(void) {
 #endif /* XMLSEC_NO_X509 */
     gXmlSecMSCryptoFunctions->cryptoAppKeyLoad 			= xmlSecMSCryptoAppKeyLoad; 
     gXmlSecMSCryptoFunctions->cryptoAppKeyLoadMemory		= xmlSecMSCryptoAppKeyLoadMemory; 
-    gXmlSecMSCryptoFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecMSCryptoAppGetDefaultPwdCallback();
+    gXmlSecMSCryptoFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecMSCryptoAppGetDefaultPwdCallback;
 
     return(gXmlSecMSCryptoFunctions);
 }
@@ -153,7 +139,7 @@ xmlSecCryptoGetFunctions_mscrypto(void) {
  * 
  * XMLSec library specific crypto engine initialization. 
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int 
 xmlSecMSCryptoInit (void)  {
@@ -187,7 +173,7 @@ xmlSecMSCryptoInit (void)  {
  * 
  * XMLSec library specific crypto engine shutdown. 
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int 
 xmlSecMSCryptoShutdown(void) {
@@ -201,7 +187,7 @@ xmlSecMSCryptoShutdown(void) {
  *
  * Adds MSCrypto specific key data stores in keys manager.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int 
 xmlSecMSCryptoKeysMngrInit(xmlSecKeysMngrPtr mngr) {
@@ -249,7 +235,7 @@ xmlSecMSCryptoKeysMngrInit(xmlSecKeysMngrPtr mngr) {
  * Generates @size random bytes and puts result in @buffer
  * (not implemented yet).
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecMSCryptoGenerateRandom(xmlSecBufferPtr buffer, size_t size) {	
@@ -309,7 +295,7 @@ xmlSecMSCryptoErrorsDefaultCallback(const char* file, int line, const char* func
 				int reason, const char* msg) {
     DWORD dwError;
     LPVOID lpMsgBuf;
-    xmlChar buf[500];
+    char buf[500];
 
     dwError = GetLastError();
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
@@ -322,13 +308,13 @@ xmlSecMSCryptoErrorsDefaultCallback(const char* file, int line, const char* func
 		  0,
 		  NULL);
     if((msg != NULL) && ((*msg) != '\0')) {
-        xmlSecStrPrintf(buf, sizeof(buf), BAD_CAST "%s;last error=%d (0x%08x);last error msg=%s", msg, dwError, dwError, (LPTSTR)lpMsgBuf);
+        snprintf(buf, sizeof(buf), "%s;last error=%d (0x%08x);last error msg=%s", msg, dwError, dwError, (LPTSTR)lpMsgBuf);
     } else {
-        xmlSecStrPrintf(buf, sizeof(buf), BAD_CAST "last error=%d (0x%08x);last error msg=%s", dwError, dwError, (LPTSTR)lpMsgBuf);
+        snprintf(buf, sizeof(buf), "last error=%d (0x%08x);last error msg=%s", dwError, dwError, (LPTSTR)lpMsgBuf);
     }
     xmlSecErrorsDefaultCallback(file, line, func, 
 		errorObject, errorSubject, 
-		reason, (char*)buf);
+		reason, buf);
 
     LocalFree(lpMsgBuf);
 }
@@ -337,25 +323,23 @@ xmlSecMSCryptoErrorsDefaultCallback(const char* file, int line, const char* func
  * xmlSecMSCryptoCertStrToName:
  * @dwCertEncodingType:		the encoding used.
  * @pszX500:			the string to convert.
- * @dwStrType:			the string type.
+ * @dsStrType:			the string type.
  * @len:			the result len.
  *
  * Converts input string to name by calling @CertStrToName function.
  *
- * Returns: a pointer to newly allocated string or NULL if an error occurs.
+ * Returns a pointer to newly allocated string or NULL if an error occurs.
  */
 BYTE* 
 xmlSecMSCryptoCertStrToName(DWORD dwCertEncodingType, LPCTSTR pszX500, DWORD dwStrType, DWORD* len) {
     BYTE* str = NULL; 
-    LPCTSTR ppszError = NULL;
-
+    
     xmlSecAssert2(pszX500 != NULL, NULL);
     xmlSecAssert2(len != NULL, NULL);
 
     if (!CertStrToName(dwCertEncodingType, pszX500, dwStrType, 
-			NULL, NULL, len, &ppszError)) {
+			NULL, NULL, len, NULL)) {
 	/* this might not be an error, string might just not exist */
-                DWORD dw = GetLastError();
 	return(NULL);
     }
 	
@@ -365,7 +349,7 @@ xmlSecMSCryptoCertStrToName(DWORD dwCertEncodingType, LPCTSTR pszX500, DWORD dwS
 		    NULL,
 		    NULL,
 		    XMLSEC_ERRORS_R_MALLOC_FAILED,
-		    "len=%ld", (*len));
+		    "len=%d", (*len));
 	return(NULL);
     }
     memset(str, 0, (*len) + 1);

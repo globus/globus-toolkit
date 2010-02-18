@@ -35,7 +35,7 @@ static xmlChar* gXmlSecOpenSSLTrustedCertsFolder = NULL;
  *
  * Gets the pointer to xmlsec-openssl functions table.
  *
- * Returns: the xmlsec-openssl functions table or NULL if an error occurs.
+ * Returns the xmlsec-openssl functions table or NULL if an error occurs.
  */
 xmlSecCryptoDLFunctionsPtr
 xmlSecCryptoGetFunctions_openssl(void) {
@@ -59,7 +59,9 @@ xmlSecCryptoGetFunctions_openssl(void) {
      * Key data ids
      */
 #ifndef XMLSEC_NO_AES    
+#ifndef XMLSEC_OPENSSL_096
     gXmlSecOpenSSLFunctions->keyDataAesGetKlass		= xmlSecOpenSSLKeyDataAesGetKlass;
+#endif /* XMLSEC_OPENSSL_096 */    
 #endif /* XMLSEC_NO_AES */
 
 #ifndef XMLSEC_NO_DES    
@@ -93,123 +95,45 @@ xmlSecCryptoGetFunctions_openssl(void) {
     /**
      * Crypto transforms ids
      */
-    /******************************* AES ********************************/
 #ifndef XMLSEC_NO_AES    
+#ifndef XMLSEC_OPENSSL_096
     gXmlSecOpenSSLFunctions->transformAes128CbcGetKlass 	= xmlSecOpenSSLTransformAes128CbcGetKlass;
     gXmlSecOpenSSLFunctions->transformAes192CbcGetKlass 	= xmlSecOpenSSLTransformAes192CbcGetKlass;
     gXmlSecOpenSSLFunctions->transformAes256CbcGetKlass 	= xmlSecOpenSSLTransformAes256CbcGetKlass;
     gXmlSecOpenSSLFunctions->transformKWAes128GetKlass 		= xmlSecOpenSSLTransformKWAes128GetKlass;
     gXmlSecOpenSSLFunctions->transformKWAes192GetKlass 		= xmlSecOpenSSLTransformKWAes192GetKlass;
     gXmlSecOpenSSLFunctions->transformKWAes256GetKlass 		= xmlSecOpenSSLTransformKWAes256GetKlass;
+#endif /* XMLSEC_OPENSSL_096 */    
 #endif /* XMLSEC_NO_AES */
 
-    /******************************* DES ********************************/
 #ifndef XMLSEC_NO_DES    
     gXmlSecOpenSSLFunctions->transformDes3CbcGetKlass 		= xmlSecOpenSSLTransformDes3CbcGetKlass;
     gXmlSecOpenSSLFunctions->transformKWDes3GetKlass 		= xmlSecOpenSSLTransformKWDes3GetKlass;
 #endif /* XMLSEC_NO_DES */
 
-
-    /******************************* DSA ********************************/
 #ifndef XMLSEC_NO_DSA
-#ifndef XMLSEC_NO_SHA1    
     gXmlSecOpenSSLFunctions->transformDsaSha1GetKlass 		= xmlSecOpenSSLTransformDsaSha1GetKlass;
-#endif /* XMLSEC_NO_SHA1 */
 #endif /* XMLSEC_NO_DSA */
 
-    /******************************* HMAC ********************************/
 #ifndef XMLSEC_NO_HMAC
-#ifndef XMLSEC_NO_MD5
-    gXmlSecOpenSSLFunctions->transformHmacMd5GetKlass 		= xmlSecOpenSSLTransformHmacMd5GetKlass;
-#endif /* XMLSEC_NO_MD5 */
-
-#ifndef XMLSEC_NO_RIPEMD160
-    gXmlSecOpenSSLFunctions->transformHmacRipemd160GetKlass 	= xmlSecOpenSSLTransformHmacRipemd160GetKlass;
-#endif /* XMLSEC_NO_RIPEMD160 */
-
-#ifndef XMLSEC_NO_SHA1    
     gXmlSecOpenSSLFunctions->transformHmacSha1GetKlass 		= xmlSecOpenSSLTransformHmacSha1GetKlass;
-#endif /* XMLSEC_NO_SHA1 */
-
-#ifndef XMLSEC_NO_SHA224
-    gXmlSecOpenSSLFunctions->transformHmacSha224GetKlass 	= xmlSecOpenSSLTransformHmacSha224GetKlass;
-#endif /* XMLSEC_NO_SHA224 */
-
-#ifndef XMLSEC_NO_SHA256
-    gXmlSecOpenSSLFunctions->transformHmacSha256GetKlass 	= xmlSecOpenSSLTransformHmacSha256GetKlass;
-#endif /* XMLSEC_NO_SHA256 */
-
-#ifndef XMLSEC_NO_SHA384
-    gXmlSecOpenSSLFunctions->transformHmacSha384GetKlass 	= xmlSecOpenSSLTransformHmacSha384GetKlass;
-#endif /* XMLSEC_NO_SHA384 */
-
-#ifndef XMLSEC_NO_SHA512
-    gXmlSecOpenSSLFunctions->transformHmacSha512GetKlass 	= xmlSecOpenSSLTransformHmacSha512GetKlass;
-#endif /* XMLSEC_NO_SHA512 */
-
-
+    gXmlSecOpenSSLFunctions->transformHmacRipemd160GetKlass 	= xmlSecOpenSSLTransformHmacRipemd160GetKlass;
+    gXmlSecOpenSSLFunctions->transformHmacMd5GetKlass 		= xmlSecOpenSSLTransformHmacMd5GetKlass;
 #endif /* XMLSEC_NO_HMAC */
 
-    /******************************* MD5 ********************************/
-#ifndef XMLSEC_NO_MD5
-    gXmlSecOpenSSLFunctions->transformMd5GetKlass 		= xmlSecOpenSSLTransformMd5GetKlass;
-#endif /* XMLSEC_NO_MD5 */
-
-    /******************************* RIPEMD160 ********************************/
 #ifndef XMLSEC_NO_RIPEMD160
     gXmlSecOpenSSLFunctions->transformRipemd160GetKlass 	= xmlSecOpenSSLTransformRipemd160GetKlass;
 #endif /* XMLSEC_NO_RIPEMD160 */
 
-    /******************************* RSA ********************************/
 #ifndef XMLSEC_NO_RSA
-#ifndef XMLSEC_NO_MD5
-    gXmlSecOpenSSLFunctions->transformRsaMd5GetKlass 		= xmlSecOpenSSLTransformRsaMd5GetKlass;
-#endif /* XMLSEC_NO_MD5 */
-
-#ifndef XMLSEC_NO_RIPEMD160
-    gXmlSecOpenSSLFunctions->transformRsaRipemd160GetKlass	= xmlSecOpenSSLTransformRsaRipemd160GetKlass;
-#endif /* XMLSEC_NO_RIPEMD160 */
-
-#ifndef XMLSEC_NO_SHA1    
     gXmlSecOpenSSLFunctions->transformRsaSha1GetKlass 		= xmlSecOpenSSLTransformRsaSha1GetKlass;
-#endif /* XMLSEC_NO_SHA1 */
-
-#ifndef XMLSEC_NO_SHA224    
-    gXmlSecOpenSSLFunctions->transformRsaSha224GetKlass		= xmlSecOpenSSLTransformRsaSha224GetKlass;
-#endif /* XMLSEC_NO_SHA224 */
-
-#ifndef XMLSEC_NO_SHA256    
-    gXmlSecOpenSSLFunctions->transformRsaSha256GetKlass		= xmlSecOpenSSLTransformRsaSha256GetKlass;
-#endif /* XMLSEC_NO_SHA256 */
-
-#ifndef XMLSEC_NO_SHA384    
-    gXmlSecOpenSSLFunctions->transformRsaSha384GetKlass 	= xmlSecOpenSSLTransformRsaSha384GetKlass;
-#endif /* XMLSEC_NO_SHA384 */
-
-#ifndef XMLSEC_NO_SHA512
-    gXmlSecOpenSSLFunctions->transformRsaSha512GetKlass 	= xmlSecOpenSSLTransformRsaSha512GetKlass;
-#endif /* XMLSEC_NO_SHA512 */
-
     gXmlSecOpenSSLFunctions->transformRsaPkcs1GetKlass 		= xmlSecOpenSSLTransformRsaPkcs1GetKlass;
     gXmlSecOpenSSLFunctions->transformRsaOaepGetKlass 		= xmlSecOpenSSLTransformRsaOaepGetKlass;
 #endif /* XMLSEC_NO_RSA */
 
-    /******************************* SHA ********************************/
 #ifndef XMLSEC_NO_SHA1    
     gXmlSecOpenSSLFunctions->transformSha1GetKlass 		= xmlSecOpenSSLTransformSha1GetKlass;
 #endif /* XMLSEC_NO_SHA1 */
-#ifndef XMLSEC_NO_SHA224
-    gXmlSecOpenSSLFunctions->transformSha224GetKlass 		= xmlSecOpenSSLTransformSha224GetKlass;
-#endif /* XMLSEC_NO_SHA224 */
-#ifndef XMLSEC_NO_SHA256
-    gXmlSecOpenSSLFunctions->transformSha256GetKlass 		= xmlSecOpenSSLTransformSha256GetKlass;
-#endif /* XMLSEC_NO_SHA256 */
-#ifndef XMLSEC_NO_SHA384
-    gXmlSecOpenSSLFunctions->transformSha384GetKlass 		= xmlSecOpenSSLTransformSha384GetKlass;
-#endif /* XMLSEC_NO_SHA384 */
-#ifndef XMLSEC_NO_SHA512
-    gXmlSecOpenSSLFunctions->transformSha512GetKlass 		= xmlSecOpenSSLTransformSha512GetKlass;
-#endif /* XMLSEC_NO_SHA512 */
 
     /**
      * High level routines form xmlsec command line utility
@@ -230,7 +154,7 @@ xmlSecCryptoGetFunctions_openssl(void) {
 #endif /* XMLSEC_NO_X509 */
     gXmlSecOpenSSLFunctions->cryptoAppKeyLoad 			= xmlSecOpenSSLAppKeyLoad; 
     gXmlSecOpenSSLFunctions->cryptoAppKeyLoadMemory		= xmlSecOpenSSLAppKeyLoadMemory; 
-    gXmlSecOpenSSLFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecOpenSSLAppGetDefaultPwdCallback();
+    gXmlSecOpenSSLFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecOpenSSLAppGetDefaultPwdCallback;
 
     return(gXmlSecOpenSSLFunctions);
 }
@@ -240,7 +164,7 @@ xmlSecCryptoGetFunctions_openssl(void) {
  * 
  * XMLSec library specific crypto engine initialization. 
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int 
 xmlSecOpenSSLInit (void)  {
@@ -281,7 +205,7 @@ xmlSecOpenSSLInit (void)  {
  * 
  * XMLSec library specific crypto engine shutdown. 
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int 
 xmlSecOpenSSLShutdown(void) {
@@ -295,7 +219,7 @@ xmlSecOpenSSLShutdown(void) {
  *
  * Adds OpenSSL specific key data stores in keys manager.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecOpenSSLKeysMngrInit(xmlSecKeysMngrPtr mngr) {
@@ -340,7 +264,7 @@ xmlSecOpenSSLKeysMngrInit(xmlSecKeysMngrPtr mngr) {
  *
  * Generates @size random bytes and puts result in @buffer.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecOpenSSLGenerateRandom(xmlSecBufferPtr buffer, xmlSecSize size) {	
@@ -430,11 +354,10 @@ xmlSecOpenSSLErrorsInit(void) {
 
 /**
  * xmlSecOpenSSLSetDefaultTrustedCertsFolder:
- * @path: 	the default trusted certs path.
- *
+ * 
  * Sets the default trusted certs folder.
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecOpenSSLSetDefaultTrustedCertsFolder(const xmlChar* path) {
@@ -463,7 +386,7 @@ xmlSecOpenSSLSetDefaultTrustedCertsFolder(const xmlChar* path) {
  * 
  * Gets the default trusted certs folder.
  *
- * Returns: the default trusted cert folder.
+ * Returns the default trusted cert folder.
  */
 const xmlChar*	
 xmlSecOpenSSLGetDefaultTrustedCertsFolder(void) {

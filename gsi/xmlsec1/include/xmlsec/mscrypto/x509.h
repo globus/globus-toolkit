@@ -19,9 +19,6 @@ extern "C" {
 #include <xmlsec/keys.h>
 #include <xmlsec/transforms.h>
 
-#include <windows.h>
-#include <wincrypt.h>
-
 /**
  * xmlSecMSCryptoKeyDataX509Id:
  * 
@@ -80,25 +77,6 @@ XMLSEC_CRYPTO_EXPORT int		xmlSecMSCryptoX509StoreAdoptCert 	(xmlSecKeyDataStoreP
 										 PCCERT_CONTEXT cert,
 										 xmlSecKeyDataType type);
 
-XMLSEC_CRYPTO_EXPORT int		xmlSecMSCryptoX509StoreAdoptKeyStore (
-										xmlSecKeyDataStorePtr store,
-										HCERTSTORE keyStore
-								) ;
-
-XMLSEC_CRYPTO_EXPORT int		xmlSecMSCryptoX509StoreAdoptTrustedStore (
-										xmlSecKeyDataStorePtr store,
-										HCERTSTORE trustedStore
-								) ;
-
-XMLSEC_CRYPTO_EXPORT int		xmlSecMSCryptoX509StoreAdoptUntrustedStore (
-										xmlSecKeyDataStorePtr store,
-										HCERTSTORE untrustedStore
-								) ;
-
-XMLSEC_CRYPTO_EXPORT void       xmlSecMSCryptoX509StoreEnableSystemTrustedCerts (
-                                        xmlSecKeyDataStorePtr store, 
-                                        int val
-                                ) ;
 
 #endif /* XMLSEC_NO_X509 */
 

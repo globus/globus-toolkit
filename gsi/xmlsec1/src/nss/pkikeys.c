@@ -122,7 +122,7 @@ xmlSecNSSPKIKeyDataCtxDup(xmlSecNssPKIKeyDataCtxPtr ctxDst,
 			NULL,
 			"SECKEY_CopyPrivateKey",
 			XMLSEC_ERRORS_R_CRYPTO_FAILED,
-				"error code=%d", PORT_GetError());
+			XMLSEC_ERRORS_NO_MESSAGE);
 	    return(-1);
 	}
     }
@@ -134,7 +134,7 @@ xmlSecNSSPKIKeyDataCtxDup(xmlSecNssPKIKeyDataCtxPtr ctxDst,
 			NULL,
 			"SECKEY_CopyPublicKey",
 			XMLSEC_ERRORS_R_CRYPTO_FAILED,
-				"error code=%d", PORT_GetError());
+			XMLSEC_ERRORS_NO_MESSAGE);
 	    return(-1);
 	}
     }
@@ -147,30 +147,9 @@ xmlSecNssPKIKeyDataAdoptKey(xmlSecKeyDataPtr data,
                             SECKEYPublicKey  *pubkey)
 {
     xmlSecNssPKIKeyDataCtxPtr ctx;
-	KeyType					pubType = nullKey ;
-	KeyType					priType = nullKey ;
     
     xmlSecAssert2(xmlSecKeyDataIsValid(data), -1);
     xmlSecAssert2(xmlSecKeyDataCheckSize(data, xmlSecNssPKIKeyDataSize), -1);
-
-	if( privkey != NULL ) {
-		priType = SECKEY_GetPrivateKeyType( privkey ) ;
-	}
-
-	if( pubkey != NULL ) {
-		pubType = SECKEY_GetPublicKeyType( pubkey ) ;
-	}
-
-	if( priType != nullKey && pubType != nullKey ) {
-		if( pubType != priType ) {
-			xmlSecError( XMLSEC_ERRORS_HERE ,
-				NULL ,
-				NULL ,
-				XMLSEC_ERRORS_R_CRYPTO_FAILED ,
-				"different type of private and public key" ) ;
-			return -1 ;
-		}
-	}
 
     ctx = xmlSecNssPKIKeyDataGetCtx(data);
     xmlSecAssert2(ctx != NULL, -1);
@@ -196,7 +175,7 @@ xmlSecNssPKIKeyDataAdoptKey(xmlSecKeyDataPtr data,
  * Build a KeyData object from the given Private Key and Public
  * Key handles.
  *
- * Returns: pointer to KeyData object or NULL if an error occurs.
+ * Returns pointer to KeyData object or NULL if an error occurs.
  */
 xmlSecKeyDataPtr
 xmlSecNssPKIAdoptKey(SECKEYPrivateKey *privkey,                        
@@ -204,30 +183,16 @@ xmlSecNssPKIAdoptKey(SECKEYPrivateKey *privkey,
 {
     xmlSecKeyDataPtr data = NULL;
     int ret;
-	KeyType					pubType = nullKey ;
-	KeyType					priType = nullKey ;
+    KeyType kt;
     
-	if( privkey != NULL ) {
-		priType = SECKEY_GetPrivateKeyType( privkey ) ;
-	}
-
-	if( pubkey != NULL ) {
-		pubType = SECKEY_GetPublicKeyType( pubkey ) ;
-	}
-
-	if( priType != nullKey && pubType != nullKey ) {
-		if( pubType != priType ) {
-			xmlSecError( XMLSEC_ERRORS_HERE ,
-				NULL ,
-				NULL ,
-				XMLSEC_ERRORS_R_CRYPTO_FAILED ,
-				"different type of private and public key" ) ;
-			return( NULL ) ;
-		}
-	}
-   
-	pubType = priType != nullKey ? priType : pubType ;
-    switch(pubType) {	
+    if (pubkey != NULL) {
+	kt = SECKEY_GetPublicKeyType(pubkey);
+    } else {
+	kt = SECKEY_GetPrivateKeyType(privkey);
+	pubkey = SECKEY_ConvertToPublicKey(privkey);
+    }
+    
+    switch(kt) {	
 #ifndef XMLSEC_NO_RSA    
     case rsaKey:
 	data = xmlSecKeyDataCreate(xmlSecNssKeyDataRsaId);
@@ -259,7 +224,7 @@ xmlSecNssPKIAdoptKey(SECKEYPrivateKey *privkey,
 		    NULL,
 		    NULL,
 		    XMLSEC_ERRORS_R_INVALID_TYPE,
-		    "PKI key type %d not supported", pubType);
+		    "PKI key type %d not supported", kt);
 	return(NULL);
     }
 
@@ -283,7 +248,7 @@ xmlSecNssPKIAdoptKey(SECKEYPrivateKey *privkey,
  *
  * Gets the Public Key from the key data.
  *
- * Returns: pointer to SECKEYPublicKey or NULL if an error occurs.
+ * Returns pointer to SECKEYPublicKey or NULL if an error occurs.
  * Caller is responsible for freeing the key when done
  */
 SECKEYPublicKey *
@@ -308,7 +273,7 @@ xmlSecNssPKIKeyDataGetPubKey(xmlSecKeyDataPtr data) {
  *
  * Gets the Private Key from the key data.
  *
- * Returns: pointer to SECKEYPrivateKey or NULL if an error occurs.
+ * Returns pointer to SECKEYPrivateKey or NULL if an error occurs.
  * Caller is responsible for freeing the key when done
  */
 SECKEYPrivateKey*
@@ -333,7 +298,7 @@ xmlSecNssPKIKeyDataGetPrivKey(xmlSecKeyDataPtr data) {
  *
  * Gets the Key Type from the key data.
  *
- * Returns: Key Type 
+ * Returns Key Type 
  */
 KeyType
 xmlSecNssPKIKeyDataGetKeyType(xmlSecKeyDataPtr data) {
@@ -361,7 +326,7 @@ xmlSecNssPKIKeyDataGetKeyType(xmlSecKeyDataPtr data) {
  *
  * Duplicates the keydata from src to dst
  *
- * Returns: -1 on error, 0 on success
+ * Returns -1 on error, 0 on success
  */
 int
 xmlSecNssPKIKeyDataDuplicate(xmlSecKeyDataPtr dst, xmlSecKeyDataPtr src) {
@@ -531,7 +496,7 @@ static xmlSecKeyDataKlass xmlSecNssKeyDataDsaKlass = {
  * 
  * The DSA key data klass.
  *
- * Returns: pointer to DSA key data klass.
+ * Returns pointer to DSA key data klass.
  */
 xmlSecKeyDataId 
 xmlSecNssKeyDataDsaGetKlass(void) {
@@ -605,7 +570,7 @@ xmlSecNssKeyDataDsaXmlRead(xmlSecKeyDataId id, xmlSecKeyPtr key,
 		    xmlSecErrorsSafeString(xmlSecKeyDataKlassGetName(id)),
 		    "PORT_NewArena",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "error code=%d", PORT_GetError());
+		    XMLSEC_ERRORS_NO_MESSAGE);
 	ret = -1;
 	goto done;
     }
@@ -617,7 +582,7 @@ xmlSecNssKeyDataDsaXmlRead(xmlSecKeyDataId id, xmlSecKeyPtr key,
 		    xmlSecErrorsSafeString(xmlSecKeyDataKlassGetName(id)),
 		    "PORT_ArenaZAlloc",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "error code=%d", PORT_GetError());
+		    XMLSEC_ERRORS_NO_MESSAGE);
 	PORT_FreeArena(arena, PR_FALSE);
 	ret = -1;
 	goto done;
@@ -726,11 +691,6 @@ xmlSecNssKeyDataDsaXmlRead(xmlSecKeyDataId id, xmlSecKeyPtr key,
     }
     cur = xmlSecGetNextElementNode(cur->next);
     
-    /* todo: add support for J */
-    if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeDSAJ, xmlSecDSigNs))) {
-	cur = xmlSecGetNextElementNode(cur->next);  
-    }
-
     /* todo: add support for seed */
     if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeDSASeed, xmlSecDSigNs))) {
 	cur = xmlSecGetNextElementNode(cur->next);  
@@ -1162,7 +1122,7 @@ static xmlSecKeyDataKlass xmlSecNssKeyDataRsaKlass = {
  *
  * The RSA key data klass.
  *
- * Returns: pointer to RSA key data klass.
+ * Returns pointer to RSA key data klass.
  */
 xmlSecKeyDataId 
 xmlSecNssKeyDataRsaGetKlass(void) {
@@ -1233,7 +1193,7 @@ xmlSecNssKeyDataRsaXmlRead(xmlSecKeyDataId id, xmlSecKeyPtr key,
                     xmlSecErrorsSafeString(xmlSecKeyDataKlassGetName(id)),
                     "PORT_NewArena",
                     XMLSEC_ERRORS_R_CRYPTO_FAILED,
-                    "error code=%d", PORT_GetError());
+                    XMLSEC_ERRORS_NO_MESSAGE);
         ret = -1;
         goto done;
     }
@@ -1245,7 +1205,7 @@ xmlSecNssKeyDataRsaXmlRead(xmlSecKeyDataId id, xmlSecKeyPtr key,
                     xmlSecErrorsSafeString(xmlSecKeyDataKlassGetName(id)),
                     "PORT_ArenaZAlloc",
                     XMLSEC_ERRORS_R_CRYPTO_FAILED,
-                    "error code=%d", PORT_GetError());
+                    XMLSEC_ERRORS_NO_MESSAGE);
 	PORT_FreeArena(arena, PR_FALSE);
         ret = -1;
         goto done;
@@ -1465,7 +1425,7 @@ xmlSecNssKeyDataRsaGenerate(xmlSecKeyDataPtr data, xmlSecSize sizeBits, xmlSecKe
 		    xmlSecErrorsSafeString(xmlSecKeyDataGetName(data)),
 		    "PK11_GenerateKeyPair",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "error code=%d", PORT_GetError());
+		    XMLSEC_ERRORS_NO_MESSAGE);
         
 	goto done;
     }
@@ -1507,7 +1467,7 @@ xmlSecNssKeyDataRsaGetType(xmlSecKeyDataPtr data) {
     
     ctx = xmlSecNssPKIKeyDataGetCtx(data);
     xmlSecAssert2(ctx != NULL, -1);
-    xmlSecAssert2(ctx->pubkey == NULL || SECKEY_GetPublicKeyType(ctx->pubkey) == rsaKey, -1);
+    xmlSecAssert2(SECKEY_GetPublicKeyType(ctx->pubkey) == rsaKey, -1);
     if (ctx->privkey != NULL) {
 	return(xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
     } else {

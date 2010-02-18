@@ -30,7 +30,7 @@
  * Initializes XML Security Library. The depended libraries
  * (LibXML and LibXSLT) must be initialized before.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecInit(void) {
@@ -75,18 +75,8 @@ xmlSecInit(void) {
 		    XMLSEC_ERRORS_NO_MESSAGE);
 	return(-1);
     }
-    if(xmlSecXkmsServerRequestIdsInit() < 0) {
-	xmlSecError(XMLSEC_ERRORS_HERE,
-		    NULL,
-		    "xmlSecXkmsServerRequestIdsInit",
-		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		    XMLSEC_ERRORS_NO_MESSAGE);
-	return(-1);
-    }
 #endif /* XMLSEC_NO_XKMS */
 
-    /* we use rand() function to generate id attributes */
-    srand(time(NULL));
     return(0);
 }
 
@@ -95,14 +85,13 @@ xmlSecInit(void) {
  *
  * Clean ups the XML Security Library.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecShutdown(void) {
     int res = 0;    
 
 #ifndef XMLSEC_NO_XKMS    
-    xmlSecXkmsServerRequestIdsShutdown();
     xmlSecXkmsRespondWithIdsShutdown();
 #endif /* XMLSEC_NO_XKMS */
 
@@ -134,7 +123,7 @@ xmlSecShutdown(void) {
  *
  * Checks if the loaded version of xmlsec library could be used.
  *
- * Returns: 1 if the loaded xmlsec library version is OK to use
+ * Returns 1 if the loaded xmlsec library version is OK to use
  * 0 if it is not or a negative value if an error occurs.
  */
 int 
@@ -151,7 +140,7 @@ xmlSecCheckVersionExt(int major, int minor, int subminor, xmlSecCheckVersionMode
     }
     
     switch(mode) {
-    case xmlSecCheckVersionExactMatch:
+    case xmlSecCheckVersionExact:
 	if((minor != XMLSEC_VERSION_MINOR) || (subminor != XMLSEC_VERSION_SUBMINOR)) {
 	    xmlSecError(XMLSEC_ERRORS_HERE, 
 			NULL,

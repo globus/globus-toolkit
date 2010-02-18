@@ -15,10 +15,6 @@ extern "C" {
 
 #ifndef XMLSEC_NO_X509
 
-#include <nspr.h>
-#include <nss.h>
-#include <cert.h>
-
 #include <xmlsec/xmlsec.h>
 #include <xmlsec/keys.h>
 #include <xmlsec/transforms.h>

@@ -66,13 +66,6 @@ XMLSEC_EXPORT xmlSecKeyDataId			xmlSecKeyDataDesGetKlass	(void);
 #define xmlSecKeyDataDsaId			xmlSecKeyDataDsaGetKlass()
 XMLSEC_EXPORT xmlSecKeyDataId			xmlSecKeyDataDsaGetKlass	(void);		
 /** 
- * xmlSecKeyDataGost2001Id:
- * 
- * The GOST2001 key klass.
- */
-#define xmlSecKeyDataGost2001Id			xmlSecKeyDataGost2001GetKlass()
-XMLSEC_EXPORT xmlSecKeyDataId			xmlSecKeyDataGost2001GetKlass	(void);		
-/** 
  * xmlSecKeyDataHmacId:
  * 
  * The DHMAC key klass.
@@ -182,29 +175,6 @@ XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformKWDes3GetKlass	(void);
  */
 #define xmlSecTransformDsaSha1Id		xmlSecTransformDsaSha1GetKlass()
 XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformDsaSha1GetKlass	(void);	
-
-/**
- * xmlSecTransformGost2001GostR3411_94Id:
- * 
- * The GOST2001-GOSTR3411_94 signature transform klass.
- */
-#define xmlSecTransformGost2001GostR3411_94Id		xmlSecTransformGost2001GostR3411_94GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformGost2001GostR3411_94GetKlass	(void);	
-
-/**
- * xmlSecTransformHmacMd5Id:
- * 
- * The HMAC with MD5 signature transform klass.
- */
-#define xmlSecTransformHmacMd5Id		xmlSecTransformHmacMd5GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacMd5GetKlass	(void);	
-/**
- * xmlSecTransformHmacRipemd160Id:
- * 
- * The HMAC with RipeMD160 signature transform klass.
- */
-#define xmlSecTransformHmacRipemd160Id		xmlSecTransformHmacRipemd160GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacRipemd160GetKlass(void);
 /**
  * xmlSecTransformHmacSha1Id:
  * 
@@ -213,40 +183,19 @@ XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacRipemd160GetKlass(void);
 #define xmlSecTransformHmacSha1Id		xmlSecTransformHmacSha1GetKlass()
 XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacSha1GetKlass	(void);	
 /**
- * xmlSecTransformHmacSha224Id:
+ * xmlSecTransformHmacRipemd160Id:
  * 
- * The HMAC with SHA224 signature transform klass.
+ * The HMAC with RipeMD160 signature transform klass.
  */
-#define xmlSecTransformHmacSha224Id		xmlSecTransformHmacSha224GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacSha224GetKlass	(void);	
+#define xmlSecTransformHmacRipemd160Id		xmlSecTransformHmacRipemd160GetKlass()
+XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacRipemd160GetKlass(void);
 /**
- * xmlSecTransformHmacSha256Id:
+ * xmlSecTransformHmacMd5Id:
  * 
- * The HMAC with SHA256 signature transform klass.
+ * The HMAC with MD5 signature transform klass.
  */
-#define xmlSecTransformHmacSha256Id		xmlSecTransformHmacSha256GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacSha256GetKlass	(void);	
-/**
- * xmlSecTransformHmacSha384Id:
- * 
- * The HMAC with SHA384 signature transform klass.
- */
-#define xmlSecTransformHmacSha384Id		xmlSecTransformHmacSha384GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacSha384GetKlass	(void);	
-/**
- * xmlSecTransformHmacSha512Id:
- * 
- * The HMAC with SHA512 signature transform klass.
- */
-#define xmlSecTransformHmacSha512Id		xmlSecTransformHmacSha512GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacSha512GetKlass	(void);	
-/**
- * xmlSecTransformMd5Id:
- * 
- * The MD5 digest transform klass.
- */
-#define xmlSecTransformMd5Id			xmlSecTransformMd5GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformMd5GetKlass(void);
+#define xmlSecTransformHmacMd5Id		xmlSecTransformHmacMd5GetKlass()
+XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformHmacMd5GetKlass	(void);	
 /**
  * xmlSecTransformRipemd160Id:
  * 
@@ -255,55 +204,12 @@ XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformMd5GetKlass(void);
 #define xmlSecTransformRipemd160Id		xmlSecTransformRipemd160GetKlass()
 XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRipemd160GetKlass(void);
 /**
- * xmlSecTransformRsaMd5Id:
- * 
- * The RSA-MD5 signature transform klass.
- */
-#define xmlSecTransformRsaMd5Id			xmlSecTransformRsaMd5GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaMd5GetKlass	(void);	
-/**
- * xmlSecTransformRsaRipemd160Id:
- * 
- * The RSA-RIPEMD160 signature transform klass.
- */
-#define xmlSecTransformRsaRipemd160Id		xmlSecTransformRsaRipemd160GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaRipemd160GetKlass	(void);	
-/**
  * xmlSecTransformRsaSha1Id:
  * 
  * The RSA-SHA1 signature transform klass.
  */
 #define xmlSecTransformRsaSha1Id		xmlSecTransformRsaSha1GetKlass()
 XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaSha1GetKlass	(void);	
-/**
- * xmlSecTransformRsaSha224Id:
- * 
- * The RSA-SHA224 signature transform klass.
- */
-#define xmlSecTransformRsaSha224Id		xmlSecTransformRsaSha224GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaSha224GetKlass	(void);	
-/**
- * xmlSecTransformRsaSha256Id:
- * 
- * The RSA-SHA256 signature transform klass.
- */
-#define xmlSecTransformRsaSha256Id		xmlSecTransformRsaSha256GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaSha256GetKlass	(void);	
-/**
- * xmlSecTransformRsaSha384Id:
- * 
- * The RSA-SHA384 signature transform klass.
- */
-#define xmlSecTransformRsaSha384Id		xmlSecTransformRsaSha384GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaSha384GetKlass	(void);	
-/**
- * xmlSecTransformRsaSha512Id:
- * 
- * The RSA-SHA512 signature transform klass.
- */
-#define xmlSecTransformRsaSha512Id		xmlSecTransformRsaSha512GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaSha512GetKlass	(void);	
-
 /**
  * xmlSecTransformRsaPkcs1Id:
  * 
@@ -319,47 +225,12 @@ XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaPkcs1GetKlass	(void);
 #define xmlSecTransformRsaOaepId		xmlSecTransformRsaOaepGetKlass()
 XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformRsaOaepGetKlass	(void);	
 /**
- * xmlSecTransformGostR3411_94Id:
- * 
- * The GOSTR3411_94 digest transform klass.
- */
-#define xmlSecTransformGostR3411_94Id			xmlSecTransformGostR3411_94GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformGostR3411_94GetKlass	(void);
-/**
  * xmlSecTransformSha1Id:
  * 
  * The SHA1 digest transform klass.
  */
 #define xmlSecTransformSha1Id			xmlSecTransformSha1GetKlass()
 XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformSha1GetKlass	(void);
-/**
- * xmlSecTransformSha224Id:
- * 
- * The SHA224 digest transform klass.
- */
-#define xmlSecTransformSha224Id			xmlSecTransformSha224GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformSha224GetKlass	(void);
-/**
- * xmlSecTransformSha256Id:
- * 
- * The SHA256 digest transform klass.
- */
-#define xmlSecTransformSha256Id			xmlSecTransformSha256GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformSha256GetKlass	(void);
-/**
- * xmlSecTransformSha384Id:
- * 
- * The SHA384 digest transform klass.
- */
-#define xmlSecTransformSha384Id			xmlSecTransformSha384GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformSha384GetKlass	(void);
-/**
- * xmlSecTransformSha512Id:
- * 
- * The SHA512 digest transform klass.
- */
-#define xmlSecTransformSha512Id			xmlSecTransformSha512GetKlass()
-XMLSEC_EXPORT xmlSecTransformId			xmlSecTransformSha512GetKlass	(void);
 
 /*********************************************************************
  *
@@ -380,18 +251,7 @@ XMLSEC_EXPORT int				xmlSecCryptoAppKeysMngrCertLoad	(xmlSecKeysMngrPtr mngr,
 										 const char *filename, 
 										 xmlSecKeyDataFormat format,
 										 xmlSecKeyDataType type);
-XMLSEC_EXPORT int				xmlSecCryptoAppKeysMngrCertLoadMemory(xmlSecKeysMngrPtr mngr,
-										 const xmlSecByte* data,
-										 xmlSecSize dataSize,
-										 xmlSecKeyDataFormat format,
-										 xmlSecKeyDataType type);
 XMLSEC_EXPORT xmlSecKeyPtr			xmlSecCryptoAppKeyLoad		(const char *filename, 
-										 xmlSecKeyDataFormat format,
-										 const char *pwd,
-										 void* pwdCallback,
-										 void* pwdCallbackCtx);
-XMLSEC_EXPORT xmlSecKeyPtr			xmlSecCryptoAppKeyLoadMemory	(const xmlSecByte* data,
-										 xmlSecSize dataSize,
 										 xmlSecKeyDataFormat format,
 										 const char *pwd,
 										 void* pwdCallback,
@@ -400,17 +260,8 @@ XMLSEC_EXPORT xmlSecKeyPtr			xmlSecCryptoAppPkcs12Load	(const char* filename,
 										 const char* pwd,
 										 void* pwdCallback, 
 										 void* pwdCallbackCtx);	
-XMLSEC_EXPORT xmlSecKeyPtr			xmlSecCryptoAppPkcs12LoadMemory	(const xmlSecByte* data,
-										 xmlSecSize dataSize,
-										 const char *pwd,
-										 void* pwdCallback,
-										 void* pwdCallbackCtx);
 XMLSEC_EXPORT int				xmlSecCryptoAppKeyCertLoad	(xmlSecKeyPtr key,
 										 const char* filename,
-										 xmlSecKeyDataFormat format);
-XMLSEC_EXPORT int				xmlSecCryptoAppKeyCertLoadMemory(xmlSecKeyPtr key,
-										 const xmlSecByte* data,
-										 xmlSecSize dataSize,
 										 xmlSecKeyDataFormat format);
 XMLSEC_EXPORT void*				xmlSecCryptoAppGetDefaultPwdCallback(void);
 

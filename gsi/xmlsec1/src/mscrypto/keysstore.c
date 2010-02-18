@@ -39,10 +39,6 @@
 #include <xmlsec/mscrypto/x509.h>
 #include <xmlsec/mscrypto/certkeys.h>
 
-#if defined(__MINGW32__)
-#  include "xmlsec-mingw.h"
-#endif
-
 #define XMLSEC_MSCRYPTO_APP_DEFAULT_CERT_STORE_NAME	"MY"
 
 /****************************************************************************
@@ -88,7 +84,7 @@ static xmlSecKeyStoreKlass xmlSecMSCryptoKeysStoreKlass = {
  * 
  * The MSCrypto list based keys store klass.
  *
- * Returns: MSCrypto list based keys store klass.
+ * Returns MSCrypto list based keys store klass.
  */
 xmlSecKeyStoreId 
 xmlSecMSCryptoKeysStoreGetKlass(void) {
@@ -102,7 +98,7 @@ xmlSecMSCryptoKeysStoreGetKlass(void) {
  * 
  * Adds @key to the @store. 
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecMSCryptoKeysStoreAdoptKey(xmlSecKeyStorePtr store, xmlSecKeyPtr key) {
@@ -126,7 +122,7 @@ xmlSecMSCryptoKeysStoreAdoptKey(xmlSecKeyStorePtr store, xmlSecKeyPtr key) {
  * 
  * Reads keys from an XML file.
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecMSCryptoKeysStoreLoad(xmlSecKeyStorePtr store, const char *uri, 
@@ -252,7 +248,7 @@ xmlSecMSCryptoKeysStoreLoad(xmlSecKeyStorePtr store, const char *uri,
  * 
  * Writes keys from @store to an XML file.
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecMSCryptoKeysStoreSave(xmlSecKeyStorePtr store, const char *filename, xmlSecKeyDataType type) {
@@ -308,6 +304,7 @@ xmlSecMSCryptoKeysStoreFindCert(xmlSecKeyStorePtr store, const xmlChar* name,
     const char* storeName;
     HCERTSTORE hStoreHandle = NULL;
     PCCERT_CONTEXT pCertContext = NULL;
+    int ret;
 
     xmlSecAssert2(xmlSecKeyStoreCheckId(store, xmlSecMSCryptoKeysStoreId), NULL);
     xmlSecAssert2(name != NULL, NULL);
@@ -317,7 +314,7 @@ xmlSecMSCryptoKeysStoreFindCert(xmlSecKeyStorePtr store, const xmlChar* name,
     if(storeName == NULL) {
 	storeName = XMLSEC_MSCRYPTO_APP_DEFAULT_CERT_STORE_NAME;
     }
-
+	    
     hStoreHandle = CertOpenSystemStore(0, storeName);
     if (NULL == hStoreHandle) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
@@ -409,68 +406,7 @@ xmlSecMSCryptoKeysStoreFindCert(xmlSecKeyStorePtr store, const xmlChar* name,
 				NULL);
 	    xmlFree(bdata);
 	}
-    }
-
-    /*
-     * Try ro find certificate with name="Friendly Name"
-     */
-    if (NULL == pCertContext) {
-      DWORD dwPropSize;
-      PBYTE pbFriendlyName;
-      PCCERT_CONTEXT pCertCtxIter = NULL;
-      size_t len = xmlStrlen(name) + 1;     
-      wchar_t * lpFName;
-	
-      lpFName = (wchar_t *)xmlMalloc(sizeof(wchar_t) * len);
-      if(lpFName == NULL) {
-	    xmlSecError(XMLSEC_ERRORS_HERE,
-			xmlSecErrorsSafeString(xmlSecKeyStoreGetName(store)),
-			NULL,
-			XMLSEC_ERRORS_R_MALLOC_FAILED,
-		    	XMLSEC_ERRORS_NO_MESSAGE);
-	    CertCloseStore(hStoreHandle, 0);
-	    return(NULL);
-      }
-      MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, name, -1, lpFName, len);
-      
-      while (pCertCtxIter = CertEnumCertificatesInStore(hStoreHandle, pCertCtxIter)) {
-	if (TRUE != CertGetCertificateContextProperty(pCertCtxIter,
-						      CERT_FRIENDLY_NAME_PROP_ID,
-						      NULL,
-						      &dwPropSize)) {
-	  continue;
-	}
-
-	pbFriendlyName = xmlMalloc(dwPropSize);
-	if(pbFriendlyName == NULL) {
-	    xmlSecError(XMLSEC_ERRORS_HERE,
-			xmlSecErrorsSafeString(xmlSecKeyStoreGetName(store)),
-			NULL,
-			XMLSEC_ERRORS_R_MALLOC_FAILED,
-		    	XMLSEC_ERRORS_NO_MESSAGE);
-	    xmlFree(lpFName);
-	    CertCloseStore(hStoreHandle, 0);
-	    return(NULL);
-	}
-	if (TRUE != CertGetCertificateContextProperty(pCertCtxIter,
-						      CERT_FRIENDLY_NAME_PROP_ID,
-						      pbFriendlyName,
-						      &dwPropSize)) {
-	  xmlFree(pbFriendlyName);
-	  continue;
-	}
-
-	/* Compare FriendlyName to name */
-	if (!wcscmp(lpFName, (const wchar_t *)pbFriendlyName)) {
-	  pCertContext = pCertCtxIter;
-	  xmlFree(pbFriendlyName);
-	  break;
-	}
-	xmlFree(pbFriendlyName);
-      }
-
-      xmlFree(lpFName);
-    }
+    }   
 
     /* We could do the following here: 
      * It would be nice if we could locate the cert with issuer name and

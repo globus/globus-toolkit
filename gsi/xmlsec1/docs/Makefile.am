@@ -6,7 +6,6 @@ TARGET_DIR=@XMLSEC_DOCDIR@
 
 EXTRA_DIST=\
 	images \
-	xmlsec.xsl \
 	$(NULL)
 
 # just do nothing
@@ -28,9 +27,9 @@ docs-format:
 	@(echo "Formatting html documents"; \
 	for i in `find . -name "*.html" -print`; \
 	do \
+	    echo "Processing $$i"; \
 	    top_folder=`echo $$i | sed 's#/[^/]*$$#/#' | sed 's#\./##' | \
 			sed 's#[^/]*/#../#g'`; \
-	    echo "Processing $$i ($$top_folder)"; \
 	    xsltproc --html --stringparam topfolder "$$top_folder" \
 		     --output $$i.tmp ./xmlsec.xsl $$i; \
 	    if [ $$? != 0 ]; \
@@ -42,7 +41,7 @@ docs-format:
 	done)
 
 dist-hook:
-	@$(CP) -p $(srcdir)/*.html $(distdir)
+	@cp -p $(srcdir)/*.html $(distdir)
 
 install-data-local: 
 	$(mkinstalldirs) $(DESTDIR)$(TARGET_DIR)
@@ -51,8 +50,8 @@ install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(TARGET_DIR)/api/images
 	-@INSTALL@ -m 0644 $(srcdir)/*.html $(DESTDIR)$(TARGET_DIR)
 	-@INSTALL@ -m 0644 $(srcdir)/images/*.gif $(srcdir)/images/*.png $(DESTDIR)$(TARGET_DIR)/images
-	-@INSTALL@ -m 0644 $(srcdir)/api/*.html $(srcdir)/api/*.png $(srcdir)/api/*.sgml $(DESTDIR)$(TARGET_DIR)/api
+	-@INSTALL@ -m 0644 $(srcdir)/api/*.html $(srcdir)/api/*.sgml $(DESTDIR)$(TARGET_DIR)/api
 	-@INSTALL@ -m 0644 $(srcdir)/api/images/*.png $(DESTDIR)$(TARGET_DIR)/api/images
 
-uninstall-local:
-	@rm -rf $(DESTDIR)$(TARGET_DIR)
+uninstall:
+	@rm -rf $(TARGET_DIR)

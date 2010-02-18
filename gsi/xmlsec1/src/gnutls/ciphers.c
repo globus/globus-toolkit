@@ -446,9 +446,6 @@ xmlSecGnuTLSBlockCipherCheckId(xmlSecTransformPtr transform) {
 static int 
 xmlSecGnuTLSBlockCipherInitialize(xmlSecTransformPtr transform) {
     xmlSecGnuTLSBlockCipherCtxPtr ctx;
-#ifndef XMLSEC_GNUTLS_OLD
-    gpg_err_code_t ret;
-#endif /* XMLSEC_GNUTLS_OLD */
     
     xmlSecAssert2(xmlSecGnuTLSBlockCipherCheckId(transform), -1);
     xmlSecAssert2(xmlSecTransformCheckSize(transform, xmlSecGnuTLSBlockCipherSize), -1);
@@ -490,14 +487,9 @@ xmlSecGnuTLSBlockCipherInitialize(xmlSecTransformPtr transform) {
 		    XMLSEC_ERRORS_NO_MESSAGE);
 	return(-1);
     }        
-
-#ifndef XMLSEC_GNUTLS_OLD
-    ret = gcry_cipher_open(&ctx->cipherCtx, ctx->cipher, ctx->mode, GCRY_CIPHER_SECURE); /* we are paranoid */
-    if(ret != GPG_ERR_NO_ERROR) {
-#else /* XMLSEC_GNUTLS_OLD */ 
+    
     ctx->cipherCtx = gcry_cipher_open(ctx->cipher, ctx->mode, GCRY_CIPHER_SECURE); /* we are paranoid */
     if(ctx->cipherCtx == NULL) {
-#endif /* XMLSEC_GNUTLS_OLD */
 	xmlSecError(XMLSEC_ERRORS_HERE, 
 		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 		    "gcry_cipher_open",
@@ -730,7 +722,7 @@ static xmlSecTransformKlass xmlSecGnuTLSAes128CbcKlass = {
  * 
  * AES 128 CBC encryption transform klass.
  * 
- * Returns: pointer to AES 128 CBC encryption transform.
+ * Returns pointer to AES 128 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecGnuTLSTransformAes128CbcGetKlass(void) {
@@ -769,7 +761,7 @@ static xmlSecTransformKlass xmlSecGnuTLSAes192CbcKlass = {
  * 
  * AES 192 CBC encryption transform klass.
  * 
- * Returns: pointer to AES 192 CBC encryption transform.
+ * Returns pointer to AES 192 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecGnuTLSTransformAes192CbcGetKlass(void) {
@@ -808,7 +800,7 @@ static xmlSecTransformKlass xmlSecGnuTLSAes256CbcKlass = {
  * 
  * AES 256 CBC encryption transform klass.
  * 
- * Returns: pointer to AES 256 CBC encryption transform.
+ * Returns pointer to AES 256 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecGnuTLSTransformAes256CbcGetKlass(void) {
@@ -850,7 +842,7 @@ static xmlSecTransformKlass xmlSecGnuTLSDes3CbcKlass = {
  *
  * Triple DES CBC encryption transform klass.
  * 
- * Returns: pointer to Triple DES encryption transform.
+ * Returns pointer to Triple DES encryption transform.
  */
 xmlSecTransformId 
 xmlSecGnuTLSTransformDes3CbcGetKlass(void) {

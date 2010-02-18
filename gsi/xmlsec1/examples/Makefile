@@ -6,11 +6,10 @@ PROGRAMS = \
 	verify1 verify2 verify3 verify4 \
 	encrypt1 encrypt2 encrypt3 \
 	decrypt1 decrypt2 decrypt3 \
-	xmldsigverify \
-	xkms-server
+	xmldsigverify
 
 CC	= gcc
-CFLAGS	+= -g $(shell xmlsec1-config --cflags) -DUNIX_SOCKETS
+CFLAGS	+= -g $(shell xmlsec1-config --cflags)
 LDFLAGS	+= -g $(shell xmlsec1-config --libs)
 
 all: $(PROGRAMS)

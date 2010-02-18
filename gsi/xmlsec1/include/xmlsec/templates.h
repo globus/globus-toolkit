@@ -29,11 +29,6 @@ XMLSEC_EXPORT xmlNodePtr xmlSecTmplSignatureCreate		(xmlDocPtr doc,
 								 xmlSecTransformId c14nMethodId,
 								 xmlSecTransformId signMethodId,
 								 const xmlChar *id);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplSignatureCreateNsPref       (xmlDocPtr doc,
-                                                                xmlSecTransformId c14nMethodId,
-                                                                xmlSecTransformId signMethodId,
-                                                                const xmlChar *id,
-                                                                const xmlChar *nsPrefix);
 XMLSEC_EXPORT xmlNodePtr xmlSecTmplSignatureEnsureKeyInfo	(xmlNodePtr signNode,
 								 const xmlChar *id);
 XMLSEC_EXPORT xmlNodePtr xmlSecTmplSignatureAddReference	(xmlNodePtr signNode,
@@ -115,20 +110,7 @@ XMLSEC_EXPORT xmlNodePtr xmlSecTmplKeyInfoAddEncryptedKey	(xmlNodePtr keyInfoNod
 								 const xmlChar *id,
 								 const xmlChar *type,
 								 const xmlChar *recipient);
-
-/***********************************************************************
- *
- * <dsig:X509Data> node
- *
- **********************************************************************/ 
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509DataAddIssuerSerial	(xmlNodePtr x509DataNode);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509IssuerSerialAddIssuerName(xmlNodePtr x509IssuerSerialNode, const xmlChar* issuerName);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509IssuerSerialAddSerialNumber(xmlNodePtr x509IssuerSerialNode, const xmlChar* serial);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509DataAddSubjectName	(xmlNodePtr x509DataNode);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509DataAddSKI		(xmlNodePtr x509DataNode);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509DataAddCertificate	(xmlNodePtr x509DataNode);
-XMLSEC_EXPORT xmlNodePtr xmlSecTmplX509DataAddCRL		(xmlNodePtr x509DataNode);
-
+    
 /***********************************************************************
  *
  * <dsig:Transform> node

@@ -33,7 +33,6 @@ $(XMLSEC_HTML): xmlsec1.1
 xmlsec1.1:
 	@rm -f xmlsec1.1
 	help2man --help-option=--help-all --no-info \
-		  --name="sign, verify, encrypt and decrypt XML documents" \
 		  --version-option=--version \
 		  $(XMLSEC_PROGRAM) > xmlsec1.1
 
@@ -41,7 +40,6 @@ xmlsec1-config.1:
 	@chmod 766 $(XMLSEC_CONFIG_PROGRAM)
 	@rm -f xmlsec1-config.1
 	help2man --help-option=--help --no-info \
-		  --name="detail installed version of xmlsec library" \
 		  --version-option=--version \
 		  $(XMLSEC_CONFIG_PROGRAM) > xmlsec1-config.1
 

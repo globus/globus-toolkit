@@ -26,39 +26,7 @@
 #include <xmlsec/nss/app.h>
 #include <xmlsec/nss/crypto.h>
 
-/* sizes in bits */
-#define XMLSEC_NSS_MIN_HMAC_SIZE		80
-#define XMLSEC_NSS_MAX_HMAC_SIZE		(128 * 8)
-
-/**************************************************************************
- *
- * Configuration
- *
- *****************************************************************************/
-static int g_xmlsec_nss_hmac_min_length = XMLSEC_NSS_MIN_HMAC_SIZE;
-
-/**
- * xmlSecNssHmacGetMinOutputLength: 
- * 
- * Gets the value of min HMAC length.
- * 
- * Returns: the min HMAC output length
- */
-int xmlSecNssHmacGetMinOutputLength(void)
-{
-    return g_xmlsec_nss_hmac_min_length;
-}
-
-/**
- * xmlSecNssHmacSetMinOutputLength: 
- * @min_length: the new min length 
- * 
- * Sets the min HMAC output length
- */
-void xmlSecNssHmacSetMinOutputLength(int min_length)
-{
-    g_xmlsec_nss_hmac_min_length = min_length;
-}
+#define XMLSEC_NSS_MAX_HMAC_SIZE		128
 
 /**************************************************************************
  *
@@ -69,7 +37,7 @@ typedef struct _xmlSecNssHmacCtx		xmlSecNssHmacCtx, *xmlSecNssHmacCtxPtr;
 struct _xmlSecNssHmacCtx {
     CK_MECHANISM_TYPE	digestType;
     PK11Context*	digestCtx;
-    xmlSecByte 		dgst[XMLSEC_NSS_MAX_HMAC_SIZE / 8];
+    xmlSecByte 		dgst[XMLSEC_NSS_MAX_HMAC_SIZE];
     xmlSecSize		dgstSize;	/* dgst size in bits */
 };	    
 
@@ -194,27 +162,14 @@ xmlSecNssHmacNodeRead(xmlSecTransformPtr transform, xmlNodePtr node, xmlSecTrans
 	    ctx->dgstSize = atoi((char*)content);	    
 	    xmlFree(content);
 	}
-
-	/* Ensure that HMAC length is greater than min specified.
-	   Otherwise, an attacker can set this lenght to 0 or very 
-	   small value
-	*/
-	if((int)ctx->dgstSize < xmlSecNssHmacGetMinOutputLength()) {
- 	   xmlSecError(XMLSEC_ERRORS_HERE,
-		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
-		    xmlSecErrorsSafeString(xmlSecNodeGetName(cur)),
-		    XMLSEC_ERRORS_R_INVALID_NODE_ATTRIBUTE,
-		    "HMAC output length is too small");
-	   return(-1);
-	}
-
+	/* todo: error if dgstSize == 0 ?*/
 	cur = xmlSecGetNextElementNode(cur->next);
     }
     
     if(cur != NULL) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
-		    xmlSecErrorsSafeString(xmlSecNodeGetName(cur)),
+		    xmlSecNodeGetName(cur),
 		    XMLSEC_ERRORS_R_INVALID_NODE,
 		    "no nodes expected");
 	return(-1);
@@ -303,7 +258,7 @@ xmlSecNssHmacSetKey(xmlSecTransformPtr transform, xmlSecKeyPtr key) {
 		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 		    "PK11_ImportSymKey",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "error code=%d", PORT_GetError());
+		    XMLSEC_ERRORS_NO_MESSAGE);
         PK11_FreeSlot(slot);
 	return(-1);
     }
@@ -314,7 +269,7 @@ xmlSecNssHmacSetKey(xmlSecTransformPtr transform, xmlSecKeyPtr key) {
 		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 		    "PK11_CreateContextBySymKey",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "error code=%d", PORT_GetError());
+		    XMLSEC_ERRORS_NO_MESSAGE);
 	PK11_FreeSymKey(symKey);
         PK11_FreeSlot(slot);
 	return(-1);
@@ -413,7 +368,7 @@ xmlSecNssHmacExecute(xmlSecTransformPtr transform, int last, xmlSecTransformCtxP
 			xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 			"PK11_DigestBegin",
 			XMLSEC_ERRORS_R_CRYPTO_FAILED,
-			"error code=%d", PORT_GetError());
+			XMLSEC_ERRORS_NO_MESSAGE);
 	    return(-1);
 	}
 	transform->status = xmlSecTransformStatusWorking;
@@ -430,7 +385,7 @@ xmlSecNssHmacExecute(xmlSecTransformPtr transform, int last, xmlSecTransformCtxP
 			    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 			    "PK11_DigestOp",
 			    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-			    "error code=%d", PORT_GetError());
+			    XMLSEC_ERRORS_NO_MESSAGE);
 		return(-1);
 	    }
 	    
@@ -453,7 +408,7 @@ xmlSecNssHmacExecute(xmlSecTransformPtr transform, int last, xmlSecTransformCtxP
 			    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 			    "PK11_DigestFinal",
 			    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-			    "error code=%d", PORT_GetError());
+			    XMLSEC_ERRORS_NO_MESSAGE);
 		return(-1);
 	    }
 	    xmlSecAssert2(dgstSize > 0, -1);
@@ -536,7 +491,7 @@ static xmlSecTransformKlass xmlSecNssHmacSha1Klass = {
  *
  * The HMAC-SHA1 transform klass.
  *
- * Returns: the HMAC-SHA1 transform klass.
+ * Returns the HMAC-SHA1 transform klass.
  */
 xmlSecTransformId 
 xmlSecNssTransformHmacSha1GetKlass(void) {
@@ -578,7 +533,7 @@ static xmlSecTransformKlass xmlSecNssHmacRipemd160Klass = {
  *
  * The HMAC-RIPEMD160 transform klass.
  *
- * Returns: the HMAC-RIPEMD160 transform klass.
+ * Returns the HMAC-RIPEMD160 transform klass.
  */
 xmlSecTransformId 
 xmlSecNssTransformHmacRipemd160GetKlass(void) {
@@ -620,7 +575,7 @@ static xmlSecTransformKlass xmlSecNssHmacMd5Klass = {
  *
  * The HMAC-MD5 transform klass.
  *
- * Returns: the HMAC-MD5 transform klass.
+ * Returns the HMAC-MD5 transform klass.
  */
 xmlSecTransformId 
 xmlSecNssTransformHmacMd5GetKlass(void) {

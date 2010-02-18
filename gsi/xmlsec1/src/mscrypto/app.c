@@ -25,10 +25,6 @@
 #include <xmlsec/mscrypto/keysstore.h>
 #include <xmlsec/mscrypto/x509.h>
 
-#if defined(__MINGW32__)
-#  include "xmlsec-mingw.h"
-#endif
-
 /* I don't see any other way then to use a global var to get the 
  * config info to the mscrypto keysstore :(  WK 
  */
@@ -42,7 +38,7 @@ static char *gXmlSecMSCryptoAppCertStoreName = NULL;
  * by XMLSec command line utility and called before 
  * @xmlSecInit function.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecMSCryptoAppInit(const char* config) {
@@ -75,7 +71,7 @@ xmlSecMSCryptoAppInit(const char* config) {
  * by XMLSec command line utility and called after 
  * @xmlSecShutdown function.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecMSCryptoAppShutdown(void) {
@@ -92,7 +88,7 @@ xmlSecMSCryptoAppShutdown(void) {
  *
  * Gets the MS Crypto certs store name set by @xmlSecMSCryptoAppInit function.
  *
- * Returns: the MS Crypto certs name used by xmlsec-mscrypto.
+ * Returns the MS Crypto certs name used by xmlsec-mscrypto.
  */
 const char*
 xmlSecMSCryptoAppGetCertStoreName(void) {
@@ -113,7 +109,7 @@ xmlSecMSCryptoAppGetCertStoreName(void) {
  *
  * Reads key from the a file.
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 xmlSecKeyPtr
 xmlSecMSCryptoAppKeyLoad(const char *filename, xmlSecKeyDataFormat format,
@@ -198,7 +194,7 @@ xmlSecMSCryptoAppKeyLoad(const char *filename, xmlSecKeyDataFormat format,
  *
  * Reads key from the a file.
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 xmlSecKeyPtr	
 xmlSecMSCryptoAppKeyLoadMemory(const xmlSecByte* data, xmlSecSize dataSize, xmlSecKeyDataFormat format,
@@ -342,7 +338,7 @@ done:
  *
  * Reads the certificate from $@filename and adds it to key.
  * 
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 
 int		
@@ -402,7 +398,7 @@ xmlSecMSCryptoAppKeyCertLoad(xmlSecKeyPtr key, const char* filename,
  *
  * Reads the certificate from $@data and adds it to key.
  * 
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int		
 xmlSecMSCryptoAppKeyCertLoadMemory(xmlSecKeyPtr key, const xmlSecByte* data, xmlSecSize dataSize, 
@@ -474,7 +470,7 @@ xmlSecMSCryptoAppKeyCertLoadMemory(xmlSecKeyPtr key, const xmlSecByte* data, xml
  *
  * Reads key and all associated certificates from the PKCS12 file
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 xmlSecKeyPtr	
 xmlSecMSCryptoAppPkcs12Load(const char *filename, 
@@ -546,7 +542,7 @@ xmlSecMSCryptoAppPkcs12Load(const char *filename,
  *
  * Reads key and all associated certificates from the PKCS12 binary
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 xmlSecKeyPtr	
 xmlSecMSCryptoAppPkcs12LoadMemory(const xmlSecByte* data,
@@ -556,13 +552,15 @@ xmlSecMSCryptoAppPkcs12LoadMemory(const xmlSecByte* data,
 				  void* pwdCallbackCtx ATTRIBUTE_UNUSED) {
     int ret, len;
     CRYPT_DATA_BLOB pfx;
-    HCERTSTORE hCertStore = NULL;
-    PCCERT_CONTEXT tmpcert = NULL;
+    HCERTSTORE hCertStore;
+    PCCERT_CONTEXT tmpcert;
     PCCERT_CONTEXT pCert = NULL;
     WCHAR* wcPwd = NULL;
     xmlSecKeyDataPtr x509Data = NULL;
     xmlSecKeyDataPtr keyData = NULL;
     xmlSecKeyPtr key = NULL;
+    DWORD dwData, dwDataLen;
+    BOOL bres;
 
     xmlSecAssert2(data != NULL, NULL);
     xmlSecAssert2(dataSize > 1, NULL);
@@ -577,7 +575,7 @@ xmlSecMSCryptoAppPkcs12LoadMemory(const xmlSecByte* data,
 		    NULL,
 		    "PFXIsPFXBlob",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "size=%ld",
+		    "size=%d",
 		    pfx.cbData);
 	goto done;
     }
@@ -648,18 +646,7 @@ xmlSecMSCryptoAppPkcs12LoadMemory(const xmlSecByte* data,
 
 	/* Find the certificate that has the private key */
 	if((TRUE == CertGetCertificateContextProperty(pCert, CERT_KEY_SPEC_PROP_ID, &dwData, &dwDataLen)) && (dwData > 0)) {
-	    tmpcert = CertDuplicateCertificateContext(pCert);
-	    if(tmpcert == NULL) {
-		xmlSecError(XMLSEC_ERRORS_HERE,
-			    NULL,
-			    "CertDuplicateCertificateContext",
-			    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-			    "data=%s",
-			    xmlSecErrorsSafeString(xmlSecKeyDataGetName(x509Data)));
-		goto done;
-	    }
-
-	    keyData = xmlSecMSCryptoCertAdopt(tmpcert, xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
+	    keyData = xmlSecMSCryptoCertAdopt(pCert, xmlSecKeyDataTypePrivate | xmlSecKeyDataTypePublic);
 	    if(keyData == NULL) {
 		xmlSecError(XMLSEC_ERRORS_HERE,
 			    NULL,
@@ -668,7 +655,6 @@ xmlSecMSCryptoAppPkcs12LoadMemory(const xmlSecByte* data,
 			    XMLSEC_ERRORS_NO_MESSAGE);
 		goto done;
 	    }
-        tmpcert = NULL;
 	
 	    tmpcert = CertDuplicateCertificateContext(pCert);
 	    if(tmpcert == NULL) {
@@ -796,7 +782,7 @@ done:
  * Reads cert from @filename and adds to the list of trusted or known
  * untrusted certs in @store (not implemented yet).
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecMSCryptoAppKeysMngrCertLoad(xmlSecKeysMngrPtr mngr, const char *filename, 
@@ -860,7 +846,7 @@ xmlSecMSCryptoAppKeysMngrCertLoad(xmlSecKeysMngrPtr mngr, const char *filename,
  * Reads cert from @data and adds to the list of trusted or known
  * untrusted certs in @store.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 int
 xmlSecMSCryptoAppKeysMngrCertLoadMemory(xmlSecKeysMngrPtr mngr, const xmlSecByte* data,
@@ -923,123 +909,6 @@ xmlSecMSCryptoAppKeysMngrCertLoadMemory(xmlSecKeysMngrPtr mngr, const xmlSecByte
     return(0);
 }
 
-/** 
- * xmlSecMSCryptoAppDefaultKeysMngrAdoptKeyStore: 
- * @mngr: 		        the keys manager.
- * @keyStore:           the pointer to keys store.
- *
- * Adds @keyStore to the list of key stores in the keys manager @mngr.
- *
- * Returns: 0 on success or a negative value if an error occurs.
- */
-int 
-xmlSecMSCryptoAppDefaultKeysMngrAdoptKeyStore(xmlSecKeysMngrPtr mngr, HCERTSTORE keyStore)
-{
-	xmlSecKeyDataStorePtr x509Store ;
-
-	xmlSecAssert2( mngr != NULL, -1 ) ;
-	xmlSecAssert2( keyStore != NULL, -1 ) ;
-
-    x509Store = xmlSecKeysMngrGetDataStore( mngr, xmlSecMSCryptoX509StoreId) ;
-	if( x509Store == NULL ) {
-		xmlSecError( XMLSEC_ERRORS_HERE ,
-			NULL ,
-			"xmlSecKeysMngrGetDataStore" ,
-			XMLSEC_ERRORS_R_XMLSEC_FAILED ,
-			XMLSEC_ERRORS_NO_MESSAGE ) ;
-		return(-1) ;
-	}
-
-	if( xmlSecMSCryptoX509StoreAdoptKeyStore( x509Store, keyStore ) < 0 ) {
-		xmlSecError( XMLSEC_ERRORS_HERE ,
-			xmlSecErrorsSafeString( xmlSecKeyDataStoreGetName( x509Store ) ) ,
-			"xmlSecMSCryptoX509StoreAdoptKeyStore" ,
-			XMLSEC_ERRORS_R_XMLSEC_FAILED ,
-			XMLSEC_ERRORS_NO_MESSAGE ) ;
-		return(-1) ;
-	}
-
-	return (0) ;
-}
-
-/** 
- * xmlSecMSCryptoAppDefaultKeysMngrAdoptTrustedStore: 
- * @mngr: 		        the keys manager.
- * @trustedStore:       the pointer to certs store.
- *
- * Adds @trustedStore to the list of trusted cert stores in the keys manager @mngr.
- *
- * Returns: 0 on success or a negative value if an error occurs.
- */
-int
-xmlSecMSCryptoAppDefaultKeysMngrAdoptTrustedStore(xmlSecKeysMngrPtr mngr, HCERTSTORE trustedStore)
-{
-	xmlSecKeyDataStorePtr x509Store ;
-
-	xmlSecAssert2( mngr != NULL, -1 ) ;
-	xmlSecAssert2( trustedStore != NULL, -1 ) ;
-
-    x509Store = xmlSecKeysMngrGetDataStore( mngr, xmlSecMSCryptoX509StoreId ) ;
-	if( x509Store == NULL ) {
-		xmlSecError( XMLSEC_ERRORS_HERE ,
-			NULL ,
-			"xmlSecKeysMngrGetDataStore" ,
-			XMLSEC_ERRORS_R_XMLSEC_FAILED ,
-			XMLSEC_ERRORS_NO_MESSAGE ) ;
-		return(-1) ;
-	}
-
-	if( xmlSecMSCryptoX509StoreAdoptTrustedStore( x509Store, trustedStore ) < 0 ) {
-		xmlSecError( XMLSEC_ERRORS_HERE ,
-			xmlSecErrorsSafeString( xmlSecKeyDataStoreGetName( x509Store ) ) ,
-			"xmlSecMSCryptoX509StoreAdoptKeyStore" ,
-			XMLSEC_ERRORS_R_XMLSEC_FAILED ,
-			XMLSEC_ERRORS_NO_MESSAGE ) ;
-		return(-1) ;
-	}
-
-	return(0);
-}
-
-/** 
- * xmlSecMSCryptoAppDefaultKeysMngrAdoptUntrustedStore: 
- * @mngr: 		        the keys manager.
- * @untrustedStore:     the pointer to certs store.
- *
- * Adds @trustedStore to the list of un-trusted cert stores in the keys manager @mngr.
- *
- * Returns: 0 on success or a negative value if an error occurs.
- */
-int
-xmlSecMSCryptoAppDefaultKeysMngrAdoptUntrustedStore(xmlSecKeysMngrPtr mngr, HCERTSTORE untrustedStore)
-{
-	xmlSecKeyDataStorePtr x509Store ;
-
-	xmlSecAssert2( mngr != NULL, -1 ) ;
-	xmlSecAssert2( untrustedStore != NULL, -1 ) ;
-
-    x509Store = xmlSecKeysMngrGetDataStore( mngr, xmlSecMSCryptoX509StoreId);
-	if( x509Store == NULL ) {
-		xmlSecError( XMLSEC_ERRORS_HERE ,
-			NULL ,
-			"xmlSecKeysMngrGetDataStore" ,
-			XMLSEC_ERRORS_R_XMLSEC_FAILED ,
-			XMLSEC_ERRORS_NO_MESSAGE ) ;
-		return(-1);
-	}
-
-	if( xmlSecMSCryptoX509StoreAdoptUntrustedStore( x509Store, untrustedStore ) < 0) {
-		xmlSecError( XMLSEC_ERRORS_HERE ,
-			xmlSecErrorsSafeString( xmlSecKeyDataStoreGetName( x509Store ) ) ,
-			"xmlSecMSCryptoX509StoreAdoptKeyStore" ,
-			XMLSEC_ERRORS_R_XMLSEC_FAILED ,
-			XMLSEC_ERRORS_NO_MESSAGE ) ;
-		return(-1);
-	}
-
-	return(0) ;
-}
-
 #endif /* XMLSEC_NO_X509 */
 
 /**
@@ -1049,7 +918,7 @@ xmlSecMSCryptoAppDefaultKeysMngrAdoptUntrustedStore(xmlSecKeysMngrPtr mngr, HCER
  * Initializes @mngr with simple keys store #xmlSecSimpleKeysStoreId
  * and a default MSCrypto crypto key data stores.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 int
 xmlSecMSCryptoAppDefaultKeysMngrInit(xmlSecKeysMngrPtr mngr) {
@@ -1085,12 +954,12 @@ xmlSecMSCryptoAppDefaultKeysMngrInit(xmlSecKeysMngrPtr mngr) {
 
     ret = xmlSecMSCryptoKeysMngrInit(mngr);    
     if(ret < 0) {
-        xmlSecError(XMLSEC_ERRORS_HERE,
-		        NULL,
-		        "xmlSecMSCryptoKeysMngrInit",
-		        XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		        XMLSEC_ERRORS_NO_MESSAGE);
-        return(-1); 
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    NULL,
+		    "xmlSecMSCryptoKeysMngrInit",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1); 
     }
     
     mngr->getKey = xmlSecKeysMngrGetKey;
@@ -1105,7 +974,7 @@ xmlSecMSCryptoAppDefaultKeysMngrInit(xmlSecKeysMngrPtr mngr) {
  * Adds @key to the keys manager @mngr created with #xmlSecMSCryptoAppDefaultKeysMngrInit
  * function.
  *  
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 int 
 xmlSecMSCryptoAppDefaultKeysMngrAdoptKey(xmlSecKeysMngrPtr mngr, xmlSecKeyPtr key) {
@@ -1146,7 +1015,7 @@ xmlSecMSCryptoAppDefaultKeysMngrAdoptKey(xmlSecKeysMngrPtr mngr, xmlSecKeyPtr ke
  * Loads XML keys file from @uri to the keys manager @mngr created 
  * with #xmlSecMSCryptoAppDefaultKeysMngrInit function.
  *  
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 int 
 xmlSecMSCryptoAppDefaultKeysMngrLoad(xmlSecKeysMngrPtr mngr, const char* uri) {
@@ -1182,12 +1051,12 @@ xmlSecMSCryptoAppDefaultKeysMngrLoad(xmlSecKeysMngrPtr mngr, const char* uri) {
 /**
  * xmlSecMSCryptoAppDefaultKeysMngrSave:
  * @mngr: 		the pointer to keys manager.
- * @filename:   the destination filename.
+ * @filename:		the destination filename.
  * @type:		the type of keys to save (public/private/symmetric).
  *
  * Saves keys from @mngr to  XML keys file.
  *  
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 int 
 xmlSecMSCryptoAppDefaultKeysMngrSave(xmlSecKeysMngrPtr mngr, const char* filename, xmlSecKeyDataType type) {
@@ -1199,78 +1068,24 @@ xmlSecMSCryptoAppDefaultKeysMngrSave(xmlSecKeysMngrPtr mngr, const char* filenam
     
     store = xmlSecKeysMngrGetKeysStore(mngr);
     if(store == NULL) {
-        xmlSecError(XMLSEC_ERRORS_HERE,
-		        NULL,
-		        "xmlSecKeysMngrGetKeysStore",
-		        XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		        XMLSEC_ERRORS_NO_MESSAGE);
-        return(-1);
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    NULL,
+		    "xmlSecKeysMngrGetKeysStore",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
     }
     
     ret = xmlSecMSCryptoKeysStoreSave(store, filename, type);
     if(ret < 0) {
-        xmlSecError(XMLSEC_ERRORS_HERE,
-		        NULL,
-		        "xmlSecMSCryptoKeysStoreSave",
-		        XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		        "filename%s", xmlSecErrorsSafeString(filename));
-        return(-1);
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    NULL,
+		    "xmlSecMSCryptoKeysStoreSave",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    "filename%s", xmlSecErrorsSafeString(filename));
+	return(-1);
     }
     
-    return(0);
-}
-
-/**
- * xmlSecMSCryptoAppDefaultKeysMngrPrivateKeyLoad:
- * @mngr: 		the pointer to keys manager.
- * @hKey:       the key handle.
- *  
- * Adds private key @hKey to the keys manager @mngr.
- * 
- * Returns: 0 on success or a negative value otherwise.
- */ 
-int
-xmlSecMSCryptoAppDefaultKeysMngrPrivateKeyLoad(xmlSecKeysMngrPtr mngr, HCRYPTKEY hKey) {
-    xmlSecAssert2(mngr != NULL, -1);
-    xmlSecAssert2(hKey != 0, -1);
-
-    /* TODO */
-    return(0);
-}
-
-/**
- * xmlSecMSCryptoAppDefaultKeysMngrPublicKeyLoad:
- * @mngr: 		the pointer to keys manager.
- * @hKey:       the key handle.
- *  
- * Adds public key @hKey to the keys manager @mngr.
- * 
- * Returns: 0 on success or a negative value otherwise.
- */ 
-int 
-xmlSecMSCryptoAppDefaultKeysMngrPublicKeyLoad(xmlSecKeysMngrPtr mngr, HCRYPTKEY hKey) {
-    xmlSecAssert2(mngr != NULL, -1);
-    xmlSecAssert2(hKey != 0, -1);
-
-    /* TODO */
-    return(0);
-}
-
-/**
- * xmlSecMSCryptoAppDefaultKeysMngrSymKeyLoad:
- * @mngr: 		the pointer to keys manager.
- * @hKey:       the key handle.
- *  
- * Adds symmetric key @hKey to the keys manager @mngr.
- * 
- * Returns: 0 on success or a negative value otherwise.
- */ 
-int 
-xmlSecMSCryptoAppDefaultKeysMngrSymKeyLoad(xmlSecKeysMngrPtr mngr, HCRYPTKEY hKey) {
-    xmlSecAssert2(mngr != NULL, -1);
-    xmlSecAssert2(hKey != 0, -1);
-
-    /* TODO */
     return(0);
 }
 
@@ -1279,7 +1094,7 @@ xmlSecMSCryptoAppDefaultKeysMngrSymKeyLoad(xmlSecKeysMngrPtr mngr, HCRYPTKEY hKe
  *
  * Gets default password callback.
  *
- * Returns: default password callback.
+ * Returns default password callback.
  */
 void*
 xmlSecMSCryptoAppGetDefaultPwdCallback(void) {

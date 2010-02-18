@@ -4,7 +4,6 @@ prefix="@prefix@"
 package="@PACKAGE@"
 exec_prefix="@exec_prefix@"
 exec_prefix_set=no
-package_libdir="@libdir@"
 
 usage()
 {
@@ -13,15 +12,16 @@ Usage: $package-config [OPTION]...
 
 Known values for OPTION are:
 
-  --prefix=DIR		change XMLSEC prefix
-  --exec-prefix=DIR	change XMLSEC executable prefix
+  --prefix=DIR		change XMLSEC prefix [default $prefix]
+  --exec-prefix=DIR	change XMLSEC executable prefix [default $exec_prefix]
   --libs		print library linking information
   --cflags		print pre-processor and compiler flags
   --crypto		print the default crypto library name
   --help		display this help and exit
   --version		output version information
   --crypto=LIB		configure with XMLSEC crypto library (one of the
-			following: none default openssl gnutls nss) 
+			following: none default @XMLSEC_CRYPTO_LIST@) 
+			[default "@XMLSEC_CRYPTO@"]
 EOF
 
     exit $1
@@ -168,7 +168,7 @@ gnutls)
     ;;
 
 nss)
-    if test "@XMLSEC_NO_NSS@" = "0"; then
+    if test "@XMLSEC_NO_NSS@" = "no"; then
         the_crypto_flags="@NSS_CFLAGS@ -DXMLSEC_CRYPTO=\\\"nss\\\""
 	the_crypto_libs="@NSS_LIBS@"
         the_xmlsec_crypto_lib="-l@NSS_CRYPTO_LIB@"
@@ -189,7 +189,7 @@ esac
 # Assemble all the settings together
 #
 the_flags="$the_flags @XMLSEC_CORE_CFLAGS@ $the_xml_flags $the_xslt_flags $the_crypto_flags"
-the_libs="$the_libs -L${package_libdir} @XMLSEC_CORE_LIBS@ $the_xmlsec_crypto_lib -lxmlsec1 $the_xml_libs $the_xslt_libs $the_crypto_libs"
+the_libs="$the_libs -L${exec_prefix}/lib @XMLSEC_CORE_LIBS@ $the_xmlsec_crypto_lib -lxmlsec1 $the_xml_libs $the_xslt_libs $the_crypto_libs"
 
 if $cflags; then
     all_flags="$the_flags"

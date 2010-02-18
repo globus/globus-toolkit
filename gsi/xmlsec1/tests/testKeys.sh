@@ -7,6 +7,7 @@ file_format=$4
 
 pub_key_format=$file_format
 cert_format=$file_format
+crypto_config=$topfolder
 priv_key_option="--pkcs12"
 priv_key_format="p12"
 
@@ -18,13 +19,8 @@ timestamp=`date +%Y%m%d_%H%M%S`
 tmpfile=$TMPFOLDER/testKeys.$timestamp-$$.tmp
 logfile=$TMPFOLDER/testKeys.$timestamp-$$.log
 script="$0"
+keysfile=$topfolder/keys.xml
 nssdbfolder=$topfolder/nssdb
-
-# prepate crypto config folder
-crypto_config=$TMPFOLDER/xmlsec-crypto-config
-keysfile=$crypto_config/keys.xml
-mkdir -p $crypto_config
-rm -rf $crypto_config/*
 
 valgrind_suppression="--suppressions=$topfolder/openssl.supp --suppressions=$topfolder/nss.supp"
 valgrind_options="--leak-check=yes --show-reachable=yes --num-callers=32 -v"
@@ -57,22 +53,8 @@ printRes() {
 }
 
 execKeysTest() {    
-    req_key_data=$1
-    key_name=$2
-    alg_name=$3
-
-    if [ -n "$req_key_data" ] ; then
-	printf "    Checking $req_key_data key data presense                      "
-        echo "$xmlsec_app check-key-data $req_key_data" >> $logfile
-	$xmlsec_app check-key-data $req_key_data >> $logfile 2>> $logfile
-	res=$?
-	if [ $res = 0 ]; then
-    	    echo "   OK"	    
-	else
-	    echo " Skip"
-	    return
-	fi
-    fi
+    key_name=$1
+    alg_name=$2
 
     printf "    Creating new key: $alg_name                           "
 
@@ -95,37 +77,16 @@ echo "--- LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $logfile
 # remove old keys file and copy NSS DB files if needed
 rm -rf $keysfile
 if [ "z$crypto" = "znss" ] ; then
-    cp -f $nssdbfolder/*.db $crypto_config
+    cp -f $nssdbfolder/* $topfolder
 fi
 
-execKeysTest \
-	"hmac" \
-	"test-hmac-sha1" \
-	"hmac-192"
-execKeysTest \
-	"rsa " \
-	"test-rsa      " \
-	"rsa-1024"
-execKeysTest \
-	"dsa " \
-	"test-dsa      " \
-	"dsa-1024"
-execKeysTest \
-	"des " \
-	"test-des      " \
-    	"des-192 "
-execKeysTest \
-	"aes " \
-	"test-aes128   " \
-	"aes-128 "
-execKeysTest \
-	"aes " \
-	"test-aes192   " \
-	"aes-192 "
-execKeysTest \
-	"aes " \
-	"test-aes256   " \
-	"aes-256 "
+execKeysTest "test-hmac-sha1" 	"hmac-192"
+execKeysTest "test-rsa      " 	"rsa-1024"
+execKeysTest "test-dsa      " 	"dsa-1024"
+execKeysTest "test-des      " 	"des-192 "
+execKeysTest "test-aes128   " 	"aes-128 "
+execKeysTest "test-aes192   " 	"aes-192 "
+execKeysTest "test-aes256   " 	"aes-256 "
 
 echo "--- testKeys finished ---" >> $logfile
 echo "--- testKeys finished ---"

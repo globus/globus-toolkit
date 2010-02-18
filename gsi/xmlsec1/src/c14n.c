@@ -41,15 +41,11 @@
 
 #define xmlSecTransformC14NCheckId(transform) \
     (xmlSecTransformInclC14NCheckId((transform)) || \
-     xmlSecTransformInclC14N11CheckId((transform)) || \
      xmlSecTransformExclC14NCheckId((transform)) || \
      xmlSecTransformCheckId((transform), xmlSecTransformRemoveXmlTagsC14NId))
 #define xmlSecTransformInclC14NCheckId(transform) \
     (xmlSecTransformCheckId((transform), xmlSecTransformInclC14NId) || \
      xmlSecTransformCheckId((transform), xmlSecTransformInclC14NWithCommentsId))
-#define xmlSecTransformInclC14N11CheckId(transform) \
-    (xmlSecTransformCheckId((transform), xmlSecTransformInclC14N11Id) || \
-     xmlSecTransformCheckId((transform), xmlSecTransformInclC14N11WithCommentsId))
 #define xmlSecTransformExclC14NCheckId(transform) \
     (xmlSecTransformCheckId((transform), xmlSecTransformExclC14NId) || \
      xmlSecTransformCheckId((transform), xmlSecTransformExclC14NWithCommentsId) )
@@ -420,27 +416,19 @@ xmlSecTransformC14NExecute(xmlSecTransformId id, xmlSecNodeSetPtr nodes, xmlChar
     if(id == xmlSecTransformInclC14NId) {    
     	ret = xmlC14NExecute(nodes->doc, 
 			(xmlC14NIsVisibleCallback)xmlSecNodeSetContains, 
-			nodes, XML_C14N_1_0, NULL, 0, buf);
+			nodes, 0, NULL, 0, buf);
     } else if(id == xmlSecTransformInclC14NWithCommentsId) {
 	 ret = xmlC14NExecute(nodes->doc, 
 			(xmlC14NIsVisibleCallback)xmlSecNodeSetContains, 
-			nodes, XML_C14N_1_0, NULL, 1, buf); 
-    } else if(id == xmlSecTransformInclC14N11Id) {    
-    	ret = xmlC14NExecute(nodes->doc, 
-			(xmlC14NIsVisibleCallback)xmlSecNodeSetContains, 
-			nodes, XML_C14N_1_1, NULL, 0, buf);
-    } else if(id == xmlSecTransformInclC14N11WithCommentsId) {
-	 ret = xmlC14NExecute(nodes->doc, 
-			(xmlC14NIsVisibleCallback)xmlSecNodeSetContains, 
-			nodes, XML_C14N_1_1, NULL, 1, buf); 
+			nodes, 0, NULL, 1, buf); 
     } else if(id == xmlSecTransformExclC14NId) {
 	ret = xmlC14NExecute(nodes->doc, 
 			(xmlC14NIsVisibleCallback)xmlSecNodeSetContains, 
-			nodes, XML_C14N_EXCLUSIVE_1_0, nsList, 0, buf);
+			nodes, 1, nsList, 0, buf);
     } else if(id == xmlSecTransformExclC14NWithCommentsId) {
 	ret = xmlC14NExecute(nodes->doc, 
 			(xmlC14NIsVisibleCallback)xmlSecNodeSetContains, 
-			nodes, XML_C14N_EXCLUSIVE_1_0, nsList, 1, buf);
+			nodes, 1, nsList, 1, buf);
     } else if(id == xmlSecTransformRemoveXmlTagsC14NId) { 
     	ret = xmlSecNodeSetDumpTextNodes(nodes, buf);
     } else {
@@ -465,11 +453,6 @@ xmlSecTransformC14NExecute(xmlSecTransformId id, xmlSecNodeSetPtr nodes, xmlChar
     return(0);
 }
 
-/***************************************************************************
- *
- * C14N
- *
- ***************************************************************************/
 static xmlSecTransformKlass xmlSecTransformInclC14NKlass = {
     /* klass/object sizes */
     sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
@@ -505,18 +488,13 @@ static xmlSecTransformKlass xmlSecTransformInclC14NKlass = {
  * (http://www.w3.org/TR/xmldsig-core/#sec-c14nAlg and 
  * http://www.w3.org/TR/2001/REC-xml-c14n-20010315).
  *
- * Returns: c14n transform id.
+ * Returns c14n transform id.
  */
 xmlSecTransformId 
 xmlSecTransformInclC14NGetKlass(void) {
     return(&xmlSecTransformInclC14NKlass);
 }
  
-/***************************************************************************
- *
- * C14N With Comments
- *
- ***************************************************************************/
 static xmlSecTransformKlass xmlSecTransformInclC14NWithCommentsKlass = {
     /* klass/object sizes */
     sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
@@ -553,110 +531,13 @@ static xmlSecTransformKlass xmlSecTransformInclC14NWithCommentsKlass = {
  * (http://www.w3.org/TR/xmldsig-core/#sec-c14nAlg and 
  * http://www.w3.org/TR/2001/REC-xml-c14n-20010315).
  *
- * Returns: c14n with comments transform id.
+ * Returns c14n with comments transform id.
  */
 xmlSecTransformId 
 xmlSecTransformInclC14NWithCommentsGetKlass(void) {
     return(&xmlSecTransformInclC14NWithCommentsKlass);
 }
 
-/***************************************************************************
- *
- * C14N v1.1
- *
- ***************************************************************************/
-static xmlSecTransformKlass xmlSecTransformInclC14N11Klass = {
-    /* klass/object sizes */
-    sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
-    xmlSecTransformC14NSize,			/* xmlSecSize objSize */
-
-    xmlSecNameC14N11,				/* const xmlChar* name; */
-    xmlSecHrefC14N11, 				/* const xmlChar* href; */
-    xmlSecTransformUsageC14NMethod | xmlSecTransformUsageDSigTransform,	
-						/* xmlSecAlgorithmUsage usage; */
-
-    xmlSecTransformC14NInitialize, 		/* xmlSecTransformInitializeMethod initialize; */
-    xmlSecTransformC14NFinalize,		/* xmlSecTransformFinalizeMethod finalize; */
-    NULL,					/* xmlSecTransformNodeReadMethod readNode; */
-    NULL,					/* xmlSecTransformNodeWriteMethod writeNode; */
-    NULL,					/* xmlSecTransformSetKeyReqMethod setKeyReq; */
-    NULL,					/* xmlSecTransformSetKeyMethod setKey; */
-    NULL,					/* xmlSecTransformValidateMethod validate; */
-    xmlSecTransformDefaultGetDataType,		/* xmlSecTransformGetDataTypeMethod getDataType; */
-    NULL,					/* xmlSecTransformPushBinMethod pushBin; */
-    xmlSecTransformC14NPopBin,			/* xmlSecTransformPopBinMethod popBin; */
-    xmlSecTransformC14NPushXml,			/* xmlSecTransformPushXmlMethod pushXml; */
-    NULL,					/* xmlSecTransformPopXmlMethod popXml; */
-    NULL,					/* xmlSecTransformExecuteMethod execute; */
-
-    NULL,					/* void* reserved0; */
-    NULL,					/* void* reserved1; */
-};
-
-/**
- * xmlSecTransformInclC14N11GetKlass:
- *
- * C14N version 1.1 (http://www.w3.org/TR/xml-c14n11)
- *
- * Returns: c14n v1.1 transform id.
- */
-xmlSecTransformId 
-xmlSecTransformInclC14N11GetKlass(void) {
-    return(&xmlSecTransformInclC14N11Klass);
-}
- 
-/***************************************************************************
- *
- * C14N v1.1 With Comments
- *
- ***************************************************************************/
-static xmlSecTransformKlass xmlSecTransformInclC14N11WithCommentsKlass = {
-    /* klass/object sizes */
-    sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
-    xmlSecTransformC14NSize,			/* xmlSecSize objSize */
-
-    /* same as xmlSecTransformId */    
-    xmlSecNameC14N11WithComments,		/* const xmlChar* name; */
-    xmlSecHrefC14N11WithComments, 		/* const xmlChar* href; */
-    xmlSecTransformUsageC14NMethod | xmlSecTransformUsageDSigTransform,	
-						/* xmlSecAlgorithmUsage usage; */
-
-    xmlSecTransformC14NInitialize, 		/* xmlSecTransformInitializeMethod initialize; */
-    xmlSecTransformC14NFinalize,		/* xmlSecTransformFinalizeMethod finalize; */
-    NULL,					/* xmlSecTransformNodeReadMethod read; */
-    NULL,					/* xmlSecTransformNodeWriteMethod writeNode; */
-    NULL,					/* xmlSecTransformSetKeyReqMethod setKeyReq; */
-    NULL,					/* xmlSecTransformSetKeyMethod setKey; */
-    NULL,					/* xmlSecTransformValidateMethod validate; */
-    xmlSecTransformDefaultGetDataType,		/* xmlSecTransformGetDataTypeMethod getDataType; */
-    NULL,					/* xmlSecTransformPushBinMethod pushBin; */
-    xmlSecTransformC14NPopBin,			/* xmlSecTransformPopBinMethod popBin; */
-    xmlSecTransformC14NPushXml,			/* xmlSecTransformPushXmlMethod pushXml; */
-    NULL,					/* xmlSecTransformPopXmlMethod popXml; */
-    NULL,					/* xmlSecTransformExecuteMethod execute; */
-
-    NULL,					/* void* reserved0; */
-    NULL,					/* void* reserved1; */
-};
-
-/**
- * xmlSecTransformInclC14N11WithCommentsGetKlass:
- *
- * C14N version 1.1 (http://www.w3.org/TR/xml-c14n11) with comments
- *
- * Returns: c14n v1.1 with comments transform id.
- */
-xmlSecTransformId 
-xmlSecTransformInclC14N11WithCommentsGetKlass(void) {
-    return(&xmlSecTransformInclC14N11WithCommentsKlass);
-}
-
-
-/***************************************************************************
- *
- * Excl C14N
- *
- ***************************************************************************/
 static xmlSecTransformKlass xmlSecTransformExclC14NKlass = {
     /* klass/object sizes */
     sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
@@ -691,18 +572,13 @@ static xmlSecTransformKlass xmlSecTransformExclC14NKlass = {
  * Exclusive canoncicalization that ommits comments transform klass
  * (http://www.w3.org/TR/xml-exc-c14n/).
  * 
- * Returns: exclusive c14n transform id.
+ * Returns exclusive c14n transform id.
  */
 xmlSecTransformId 
 xmlSecTransformExclC14NGetKlass(void) {
     return(&xmlSecTransformExclC14NKlass);
 }
 
-/***************************************************************************
- * 
- * Excl C14N With Comments
- *
- ***************************************************************************/
 static xmlSecTransformKlass xmlSecTransformExclC14NWithCommentsKlass = {
     /* klass/object sizes */
     sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
@@ -737,18 +613,13 @@ static xmlSecTransformKlass xmlSecTransformExclC14NWithCommentsKlass = {
  * Exclusive canoncicalization that includes comments transform klass
  * (http://www.w3.org/TR/xml-exc-c14n/).
  * 
- * Returns: exclusive c14n with comments transform id.
+ * Returns exclusive c14n with comments transform id.
  */
 xmlSecTransformId 
 xmlSecTransformExclC14NWithCommentsGetKlass(void) {
     return(&xmlSecTransformExclC14NWithCommentsKlass);
 }
 
-/***************************************************************************
- *
- * Remove XML tags C14N
- *
- ***************************************************************************/
 static xmlSecTransformKlass xmlSecTransformRemoveXmlTagsC14NKlass = {
     /* klass/object sizes */
     sizeof(xmlSecTransformKlass),		/* xmlSecSize klassSize */
@@ -792,7 +663,7 @@ static xmlSecTransformKlass xmlSecTransformRemoveXmlTagsC14NKlass = {
  * and any of its descendant elements as well as any descendant comments and 
  * processing instructions. The output of this transform is an octet stream.
  *
- * Returns: "remove xml tags" transform id.
+ * Returns "remove xml tags" transform id.
  */
 xmlSecTransformId 
 xmlSecTransformRemoveXmlTagsC14NGetKlass(void) {
