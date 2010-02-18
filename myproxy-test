@@ -2248,6 +2248,16 @@ sub write_valgrind_supp {
    fun:__nss_lookup_function
    ...
 }
+{
+   InitProxyCertInfoExtension
+   Memcheck:Leak
+   ...
+   fun:OBJ_txt2obj
+   fun:InitProxyCertInfoExtension
+   ...
+   fun:VOMS_Init
+   ...
+}
 EOF
     close(SUPP);
 }
