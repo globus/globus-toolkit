@@ -1,6 +1,6 @@
 Summary: Library providing support for "XML Signature" and "XML Encryption" standards
 Name: xmlsec1
-Version: 1.2.1
+Version: 1.2.14
 Release: 1
 License: MIT
 Group: Development/Libraries
@@ -10,12 +10,16 @@ Packager: Aleksey Sanin <aleksey@aleksey.com>
 Source: ftp://ftp.aleksey.com/pub/xmlsec/releases/xmlsec1-%{version}.tar.gz
 BuildRoot: %{_tmppath}/xmlsec1-%{version}-root
 URL: http://www.aleksey.com/xmlsec
-Requires: libxml2 >= 2.4.24
+Requires: libxml2 >= 2.7.4
 Requires: libxslt >= 1.0.20
-BuildRequires: libxml2-devel >= 2.4.24
+Requires: ltdl
+BuildRequires: libxml2-devel >= 2.7.4
 BuildRequires: libxslt-devel >= 1.0.20
 Prefix: %{_prefix}
 Docdir: %{_docdir}
+
+%define _unpackaged_files_terminate_build  0 
+%define _missing_doc_files_terminate_build 0
 
 %description
 XML Security Library is a C library based on LibXML2  and OpenSSL. 
@@ -26,7 +30,7 @@ standards "XML Digital Signature" and "XML Encryption".
 Summary: Libraries, includes, etc. to develop applications with XML Digital Signatures and XML Encryption support.
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
-Requires: libxml2-devel >= 2.4.24
+Requires: libxml2-devel >= 2.7.4
 Requires: libxslt-devel >= 1.0.20
 Requires: openssl-devel >= 0.9.6
 Requires: zlib-devel 
@@ -39,7 +43,7 @@ Signatures and XML Encryption support.
 Summary: OpenSSL crypto plugin for XML Security Library
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
-Requires: libxml2 >= 2.4.24
+Requires: libxml2 >= 2.7.4
 Requires: libxslt >= 1.0.20
 Requires: openssl >= 0.9.6
 BuildRequires: openssl-devel >= 0.9.6
@@ -54,7 +58,7 @@ Group: Development/Libraries
 Requires: xmlsec1 = %{version}
 Requires: xmlsec1-devel = %{version}
 Requires: xmlsec1-openssl = %{version}
-Requires: libxml2-devel >= 2.4.24
+Requires: libxml2-devel >= 2.7.4
 Requires: libxslt-devel >= 1.0.20
 Requires: openssl >= 0.9.6
 Requires: openssl-devel >= 0.9.6
@@ -66,7 +70,7 @@ Libraries, includes, etc. for developing XML Security applications with OpenSSL
 Summary: NSS crypto plugin for XML Security Library
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
-Requires: libxml2 >= 2.4.24
+Requires: libxml2 >= 2.7.4
 Requires: libxslt >= 1.0.20
 Requires: mozilla-nss >= 1.4
 BuildRequires: mozilla-nss-devel >= 1.4
@@ -81,7 +85,7 @@ Group: Development/Libraries
 Requires: xmlsec1 = %{version}
 Requires: xmlsec1-devel = %{version}
 Requires: xmlsec1-nss = %{version}
-Requires: libxml2-devel >= 2.4.24
+Requires: libxml2-devel >= 2.7.4
 Requires: libxslt-devel >= 1.0.20
 Requires: mozilla-nss-devel >= 1.4
 
@@ -143,10 +147,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %{prefix}/bin/xmlsec1-config
 %{prefix}/include/xmlsec1/xmlsec/*.h
+%{prefix}/include/xmlsec1/xmlsec/private/*.h
 %{prefix}/lib/libxmlsec1.*a
 %{prefix}/lib/pkgconfig/xmlsec1.pc
 %{prefix}/lib/xmlsec1Conf.sh
 %{prefix}/share/doc/xmlsec1/* 
+%{prefix}/share/aclocal/xmlsec1.m4
 %doc AUTHORS HACKING ChangeLog NEWS README Copyright
 %doc %{_mandir}/man1/xmlsec1-config.1*
 

@@ -84,7 +84,7 @@ static xmlSecKeyStoreKlass xmlSecNssKeysStoreKlass = {
  * 
  * The Nss list based keys store klass.
  *
- * Returns Nss list based keys store klass.
+ * Returns: Nss list based keys store klass.
  */
 xmlSecKeyStoreId 
 xmlSecNssKeysStoreGetKlass(void) {
@@ -98,7 +98,7 @@ xmlSecNssKeysStoreGetKlass(void) {
  * 
  * Adds @key to the @store. 
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecNssKeysStoreAdoptKey(xmlSecKeyStorePtr store, xmlSecKeyPtr key) {
@@ -122,7 +122,7 @@ xmlSecNssKeysStoreAdoptKey(xmlSecKeyStorePtr store, xmlSecKeyPtr key) {
  * 
  * Reads keys from an XML file.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecNssKeysStoreLoad(xmlSecKeyStorePtr store, const char *uri, 
@@ -248,7 +248,7 @@ xmlSecNssKeysStoreLoad(xmlSecKeyStorePtr store, const char *uri,
  * 
  * Writes keys from @store to an XML file.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecNssKeysStoreSave(xmlSecKeyStorePtr store, const char *filename, xmlSecKeyDataType type) {
@@ -479,26 +479,6 @@ done:
     }
     if (key != NULL) {
 	xmlSecKeyDestroy(key);
-    }
-
-    /* now that we have a key, make sure it is valid and let the simple
-     * store adopt it */
-    if (retval) {
-	if (xmlSecKeyIsValid(retval)) {
-	    ret = xmlSecSimpleKeysStoreAdoptKey(*ss, retval);
-	    if (ret < 0) {
-		xmlSecError(XMLSEC_ERRORS_HERE,
-			    xmlSecErrorsSafeString(xmlSecKeyStoreGetName(store)),
-			    "xmlSecSimpleKeysStoreAdoptKey",
-			    XMLSEC_ERRORS_R_XMLSEC_FAILED,
-			    XMLSEC_ERRORS_NO_MESSAGE);
-		xmlSecKeyDestroy(retval);
-		retval = NULL;
-	    }
-        } else {
-	    xmlSecKeyDestroy(retval);
-	    retval = NULL;
-	}
     }
 
     return (retval);

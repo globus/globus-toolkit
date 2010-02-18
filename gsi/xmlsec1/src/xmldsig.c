@@ -58,7 +58,7 @@ static const xmlChar*		xmlSecDSigIds[] = { xmlSecAttrId, NULL };
  * The caller is responsible for destroying returend object by calling 
  * #xmlSecDSigCtxDestroy function.
  *
- * Returns pointer to newly allocated context object or NULL if an error
+ * Returns: pointer to newly allocated context object or NULL if an error
  * occurs.
  */
 xmlSecDSigCtxPtr	
@@ -113,7 +113,7 @@ xmlSecDSigCtxDestroy(xmlSecDSigCtxPtr dsigCtx) {
  * The caller is responsible for cleaing up returend object by calling 
  * #xmlSecDSigCtxFinalize function.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecDSigCtxInitialize(xmlSecDSigCtxPtr dsigCtx, xmlSecKeysMngrPtr keysMngr) {
@@ -204,7 +204,7 @@ xmlSecDSigCtxFinalize(xmlSecDSigCtxPtr dsigCtx) {
  *
  * Enables @transformId for <dsig:Reference/> elements processing.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecDSigCtxEnableReferenceTransform(xmlSecDSigCtxPtr dsigCtx, xmlSecTransformId transformId) {
@@ -245,7 +245,7 @@ xmlSecDSigCtxEnableReferenceTransform(xmlSecDSigCtxPtr dsigCtx, xmlSecTransformI
  *
  * Enables @transformId for <dsig:SignedInfo/> element processing.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecDSigCtxEnableSignatureTransform(xmlSecDSigCtxPtr dsigCtx, xmlSecTransformId transformId) {
@@ -264,7 +264,7 @@ xmlSecDSigCtxEnableSignatureTransform(xmlSecDSigCtxPtr dsigCtx, xmlSecTransformI
  * just before signature claculation (valid if and only if 
  * #XMLSEC_DSIG_FLAGS_STORE_SIGNATURE context flag is set.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 xmlSecBufferPtr 
 xmlSecDSigCtxGetPreSignBuffer(xmlSecDSigCtxPtr dsigCtx) {
@@ -281,7 +281,7 @@ xmlSecDSigCtxGetPreSignBuffer(xmlSecDSigCtxPtr dsigCtx) {
  *
  * Signs the data as described in @tmpl node.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecDSigCtxSign(xmlSecDSigCtxPtr dsigCtx, xmlNodePtr tmpl) {
@@ -344,7 +344,7 @@ xmlSecDSigCtxSign(xmlSecDSigCtxPtr dsigCtx, xmlNodePtr tmpl) {
  * Vaidates signature in the @node. The verification result is returned
  * in #status member of the @dsigCtx object.
  *
- * Returns 0 on success (check #status member of @dsigCtx to get 
+ * Returns: 0 on success (check #status member of @dsigCtx to get 
  * signature verification result) or a negative value if an error occurs.
  */
 int 
@@ -711,12 +711,12 @@ xmlSecDSigCtxProcessSignedInfoNode(xmlSecDSigCtxPtr dsigCtx, xmlNodePtr node) {
     } else {
     	xmlSecError(XMLSEC_ERRORS_HERE,
 		    NULL,
-		    xmlSecErrorsSafeString(xmlSecNodeGetName(cur)),
+		    "CanonicalizationMethod",
 		    XMLSEC_ERRORS_R_INVALID_NODE,
 		    "expected=%s",
 		    xmlSecErrorsSafeString(xmlSecNodeCanonicalizationMethod));
 	return(-1);
-    }	
+    }
     
     /* insert membuf if requested */
     if((dsigCtx->flags & XMLSEC_DSIG_FLAGS_STORE_SIGNATURE) != 0) {
@@ -734,7 +734,7 @@ xmlSecDSigCtxProcessSignedInfoNode(xmlSecDSigCtxPtr dsigCtx, xmlNodePtr node) {
     }
         
     /* next node is required SignatureMethod. */
-    cur = xmlSecGetNextElementNode(cur->next);
+    cur = xmlSecGetNextElementNode( ((cur != NULL) ? cur->next : node->children) );
     if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeSignatureMethod, xmlSecDSigNs))) {
 	dsigCtx->signMethod = xmlSecTransformCtxNodeRead(&(dsigCtx->transformCtx), 
 					cur, xmlSecTransformUsageSignatureMethod);
@@ -1167,9 +1167,9 @@ xmlSecDSigCtxDebugXmlDump(xmlSecDSigCtxPtr dsigCtx, FILE* output) {
     fprintf(output, "<Flags>%08x</Flags>\n", dsigCtx->flags);
     fprintf(output, "<Flags2>%08x</Flags2>\n", dsigCtx->flags2);
 
-    if(dsigCtx->id != NULL) {
-	fprintf(output, "<Id>%s</Id>\n", dsigCtx->id);
-    }
+    fprintf(output, "<Id>");
+    xmlSecPrintXmlString(output, dsigCtx->id);
+    fprintf(output, "</Id>\n");
 
     fprintf(output, "<KeyInfoReadCtx>\n");
     xmlSecKeyInfoCtxDebugXmlDump(&(dsigCtx->keyInfoReadCtx), output);
@@ -1244,7 +1244,7 @@ xmlSecDSigCtxDebugXmlDump(xmlSecDSigCtxPtr dsigCtx, FILE* output) {
  * for destroying the returned context by calling #xmlSecDSigReferenceCtxDestroy
  * function.
  *
- * Returns pointer to newly created context or NULL if an error occurs.
+ * Returns: pointer to newly created context or NULL if an error occurs.
  */
 xmlSecDSigReferenceCtxPtr	
 xmlSecDSigReferenceCtxCreate(xmlSecDSigCtxPtr dsigCtx, xmlSecDSigReferenceOrigin origin) {
@@ -1301,7 +1301,7 @@ xmlSecDSigReferenceCtxDestroy(xmlSecDSigReferenceCtxPtr dsigRefCtx) {
  * for cleaning up the returned context by calling #xmlSecDSigReferenceCtxFinalize
  * function.
  *
- * Returns 0 on succes or aa negative value otherwise.
+ * Returns: 0 on succes or aa negative value otherwise.
  */
 int 
 xmlSecDSigReferenceCtxInitialize(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlSecDSigCtxPtr dsigCtx,
@@ -1381,7 +1381,7 @@ xmlSecDSigReferenceCtxFinalize(xmlSecDSigReferenceCtxPtr dsigRefCtx) {
  * #XMLSEC_DSIG_FLAGS_STORE_MANIFEST_REFERENCES flas of signature context
  * is set).
  *
- * Returns pointer to the buffer or NULL if an error occurs.
+ * Returns: pointer to the buffer or NULL if an error occurs.
  */
 xmlSecBufferPtr 
 xmlSecDSigReferenceCtxGetPreDigestBuffer(xmlSecDSigReferenceCtxPtr dsigRefCtx) {
@@ -1409,7 +1409,7 @@ xmlSecDSigReferenceCtxGetPreDigestBuffer(xmlSecDSigReferenceCtxPtr dsigRefCtx) {
  * Manifest. An optional ID attribute permits a Reference to be referenced 
  * from elsewhere.
  *
- * Returns 0 on succes or aa negative value otherwise.
+ * Returns: 0 on succes or aa negative value otherwise.
  */
 int 
 xmlSecDSigReferenceCtxProcessNode(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlNodePtr node) {
@@ -1446,7 +1446,7 @@ xmlSecDSigReferenceCtxProcessNode(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlNodeP
     }
 
     /* first is optional Transforms node */
-    cur = xmlSecGetNextElementNode(node->children);
+    cur  = xmlSecGetNextElementNode(node->children);
     if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeTransforms, xmlSecDSigNs))) {
 	ret = xmlSecTransformCtxNodesListRead(transformCtx, 
 					cur, xmlSecTransformUsageDSigTransform);
@@ -1459,7 +1459,8 @@ xmlSecDSigReferenceCtxProcessNode(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlNodeP
 			xmlSecErrorsSafeString(xmlSecNodeGetName(cur)));
 	    return(-1);
 	}	
-        cur = xmlSecGetNextElementNode(cur->next);
+        
+	cur = xmlSecGetNextElementNode(cur->next);
     }
 
     /* insert membuf if requested */
@@ -1496,6 +1497,8 @@ xmlSecDSigReferenceCtxProcessNode(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlNodeP
 			xmlSecErrorsSafeString(xmlSecNodeGetName(cur)));
 	    return(-1);	
 	}	
+	
+	cur = xmlSecGetNextElementNode(cur->next);     
     } else if(dsigRefCtx->dsigCtx->defSignMethodId != xmlSecTransformIdUnknown) {
 	/* the dsig spec does require DigestMethod node
 	 * to be present but in some case it application might decide to
@@ -1522,8 +1525,10 @@ xmlSecDSigReferenceCtxProcessNode(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlNodeP
     dsigRefCtx->digestMethod->operation = dsigRefCtx->dsigCtx->operation;
 
     /* last node is required DigestValue */
-    cur = xmlSecGetNextElementNode(cur->next);     
-    if((cur == NULL) || (!xmlSecCheckNodeName(cur, xmlSecNodeDigestValue, xmlSecDSigNs))) {
+    if((cur != NULL) && (xmlSecCheckNodeName(cur, xmlSecNodeDigestValue, xmlSecDSigNs))) {
+	digestValueNode = cur;
+	cur = xmlSecGetNextElementNode(cur->next);     
+    } else {
     	xmlSecError(XMLSEC_ERRORS_HERE,
 		    NULL,
 		    xmlSecErrorsSafeString(xmlSecNodeGetName(cur)),
@@ -1532,8 +1537,6 @@ xmlSecDSigReferenceCtxProcessNode(xmlSecDSigReferenceCtxPtr dsigRefCtx, xmlNodeP
 		    xmlSecErrorsSafeString(xmlSecNodeDigestValue));
 	return(-1);
     }
-    digestValueNode = cur;
-    cur = xmlSecGetNextElementNode(cur->next);     
 
     /* if we have something else then it's an error */
     if(cur != NULL) {
@@ -1713,15 +1716,17 @@ xmlSecDSigReferenceCtxDebugXmlDump(xmlSecDSigReferenceCtxPtr dsigRefCtx, FILE* o
 	    break;
     }
 
-    if(dsigRefCtx->id != NULL) {
-	fprintf(output, "<Id>%s</Id>\n", dsigRefCtx->id);
-    }
-    if(dsigRefCtx->uri != NULL) {
-	fprintf(output, "<URI>%s</URI>\n", dsigRefCtx->uri);
-    }
-    if(dsigRefCtx->type != NULL) {
-	fprintf(output, "<Type>%s</Type>\n", dsigRefCtx->type);
-    }
+    fprintf(output, "<Id>");
+    xmlSecPrintXmlString(output, dsigRefCtx->id);
+    fprintf(output, "</Id>\n");
+
+    fprintf(output, "<URI>");
+    xmlSecPrintXmlString(output, dsigRefCtx->uri);
+    fprintf(output, "</URI>\n");
+
+    fprintf(output, "<Type>");
+    xmlSecPrintXmlString(output, dsigRefCtx->type);
+    fprintf(output, "</Type>\n");
 
     fprintf(output, "<ReferenceTransformCtx>\n");
     xmlSecTransformCtxDebugXmlDump(&(dsigRefCtx->transformCtx), output);
@@ -1778,7 +1783,7 @@ static xmlSecPtrListKlass xmlSecDSigReferenceCtxListKlass = {
  *
  * The <dsig:Reference/> element processing contexts list klass.
  *
- * Returns <dsig:Reference/> element processing context list klass.
+ * Returns: <dsig:Reference/> element processing context list klass.
  */
 xmlSecPtrListId 
 xmlSecDSigReferenceCtxListGetKlass(void) {

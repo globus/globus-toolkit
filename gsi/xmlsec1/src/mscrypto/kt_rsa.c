@@ -99,7 +99,7 @@ static xmlSecTransformKlass xmlSecMSCryptoRsaPkcs1Klass = {
  *
  * The RSA-PKCS1 key transport transform klass.
  *
- * Returns RSA-PKCS1 key transport transform klass.
+ * Returns: RSA-PKCS1 key transport transform klass.
  */
 xmlSecTransformId 
 xmlSecMSCryptoTransformRsaPkcs1GetKlass(void) {
@@ -239,7 +239,6 @@ xmlSecMSCryptoRsaPkcs1Process(xmlSecTransformPtr transform, xmlSecTransformCtxPt
     xmlSecSize inSize, outSize;
     xmlSecSize keySize;
     int ret;
-    unsigned int outlen;
     HCRYPTKEY hKey = 0;
     DWORD dwInLen;
     DWORD dwBufLen;
@@ -364,7 +363,7 @@ xmlSecMSCryptoRsaPkcs1Process(xmlSecTransformPtr transform, xmlSecTransformCtxPt
 	    outBuf[i] = inBuf[inSize - (i + 1)];
 	}
 
-	if (0 == (hKey = xmlSecMSCryptoKeyDataGetKey(ctx->data, xmlSecKeyDataTypePrivate))) {
+	if (0 == (hKey = xmlSecMSCryptoKeyDataGetDecryptKey(ctx->data))) {
 	    xmlSecError(XMLSEC_ERRORS_HERE,
                         NULL,
                         "xmlSecMSCryptoKeyDataGetKey",

@@ -453,7 +453,6 @@ xmlSecOpenSSLEvpBlockCipherCheckId(xmlSecTransformPtr transform) {
 #endif /* XMLSEC_NO_DES */
 
 #ifndef XMLSEC_NO_AES
-#ifndef XMLSEC_OPENSSL_096
     if(xmlSecTransformCheckId(transform, xmlSecOpenSSLTransformAes128CbcId) ||
        xmlSecTransformCheckId(transform, xmlSecOpenSSLTransformAes192CbcId) ||
        xmlSecTransformCheckId(transform, xmlSecOpenSSLTransformAes256CbcId)) {
@@ -461,7 +460,6 @@ xmlSecOpenSSLEvpBlockCipherCheckId(xmlSecTransformPtr transform) {
        return(1);
     }
 #endif /* XMLSEC_NO_AES */
-#endif /* XMLSEC_OPENSSL_096 */
     
     return(0);
 }
@@ -486,7 +484,6 @@ xmlSecOpenSSLEvpBlockCipherInitialize(xmlSecTransformPtr transform) {
 #endif /* XMLSEC_NO_DES */
 
 #ifndef XMLSEC_NO_AES
-#ifndef XMLSEC_OPENSSL_096
     if(transform->id == xmlSecOpenSSLTransformAes128CbcId) {
 	ctx->cipher 	= EVP_aes_128_cbc();	
 	ctx->keyId 	= xmlSecOpenSSLKeyDataAesId;
@@ -498,7 +495,6 @@ xmlSecOpenSSLEvpBlockCipherInitialize(xmlSecTransformPtr transform) {
 	ctx->keyId 	= xmlSecOpenSSLKeyDataAesId;
     } else 
 #endif /* XMLSEC_NO_AES */
-#endif /* XMLSEC_OPENSSL_096 */
 
     if(1) {
 	xmlSecError(XMLSEC_ERRORS_HERE, 
@@ -693,7 +689,6 @@ xmlSecOpenSSLEvpBlockCipherExecute(xmlSecTransformPtr transform, int last, xmlSe
 
 
 #ifndef XMLSEC_NO_AES
-#ifndef XMLSEC_OPENSSL_096
 /*********************************************************************
  *
  * AES CBC cipher transforms
@@ -731,7 +726,7 @@ static xmlSecTransformKlass xmlSecOpenSSLAes128CbcKlass = {
  * 
  * AES 128 CBC encryption transform klass.
  * 
- * Returns pointer to AES 128 CBC encryption transform.
+ * Returns: pointer to AES 128 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecOpenSSLTransformAes128CbcGetKlass(void) {
@@ -770,7 +765,7 @@ static xmlSecTransformKlass xmlSecOpenSSLAes192CbcKlass = {
  * 
  * AES 192 CBC encryption transform klass.
  * 
- * Returns pointer to AES 192 CBC encryption transform.
+ * Returns: pointer to AES 192 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecOpenSSLTransformAes192CbcGetKlass(void) {
@@ -809,7 +804,7 @@ static xmlSecTransformKlass xmlSecOpenSSLAes256CbcKlass = {
  * 
  * AES 256 CBC encryption transform klass.
  * 
- * Returns pointer to AES 256 CBC encryption transform.
+ * Returns: pointer to AES 256 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecOpenSSLTransformAes256CbcGetKlass(void) {
@@ -817,7 +812,6 @@ xmlSecOpenSSLTransformAes256CbcGetKlass(void) {
 }
 
 #endif /* XMLSEC_NO_AES */
-#endif /* XMLSEC_OPENSSL_096 */
 
 #ifndef XMLSEC_NO_DES
 static xmlSecTransformKlass xmlSecOpenSSLDes3CbcKlass = {
@@ -852,7 +846,7 @@ static xmlSecTransformKlass xmlSecOpenSSLDes3CbcKlass = {
  *
  * Triple DES CBC encryption transform klass.
  * 
- * Returns pointer to Triple DES encryption transform.
+ * Returns: pointer to Triple DES encryption transform.
  */
 xmlSecTransformId 
 xmlSecOpenSSLTransformDes3CbcGetKlass(void) {

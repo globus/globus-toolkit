@@ -23,14 +23,11 @@
 #include <xmlsec/errors.h>
 #include <xmlsec/dl.h>
 #include <xmlsec/private.h>
+#include <xmlsec/xmltree.h>
 
 #include <xmlsec/nss/app.h>
 #include <xmlsec/nss/crypto.h>
 #include <xmlsec/nss/x509.h>
-
-#if defined(_MSC_VER)
-#define snprintf _snprintf
-#endif
 
 static xmlSecCryptoDLFunctionsPtr gXmlSecNssFunctions = NULL;
 
@@ -39,7 +36,7 @@ static xmlSecCryptoDLFunctionsPtr gXmlSecNssFunctions = NULL;
  *
  * Gets the pointer to xmlsec-nss functions table.
  *
- * Returns the xmlsec-nss functions table or NULL if an error occurs.
+ * Returns: the xmlsec-nss functions table or NULL if an error occurs.
  */
 xmlSecCryptoDLFunctionsPtr
 xmlSecCryptoGetFunctions_nss(void) {
@@ -124,6 +121,12 @@ xmlSecCryptoGetFunctions_nss(void) {
 #ifndef XMLSEC_NO_RSA
     gXmlSecNssFunctions->transformRsaSha1GetKlass 	= xmlSecNssTransformRsaSha1GetKlass;
     gXmlSecNssFunctions->transformRsaPkcs1GetKlass 	= xmlSecNssTransformRsaPkcs1GetKlass;
+
+/* RSA OAEP is not supported by NSS yet */
+#ifdef TODO
+    gXmlSecNssFunctions->transformRsaOaepGetKlass 	= xmlSecNssTransformRsaOaepGetKlass;
+#endif /* TODO: RSA OAEP is not supported by NSS yet */
+
 #endif /* XMLSEC_NO_RSA */
 
 #ifndef XMLSEC_NO_SHA1    
@@ -149,7 +152,7 @@ xmlSecCryptoGetFunctions_nss(void) {
 #endif /* XMLSEC_NO_X509 */
     gXmlSecNssFunctions->cryptoAppKeyLoad 		= xmlSecNssAppKeyLoad; 
     gXmlSecNssFunctions->cryptoAppKeyLoadMemory		= xmlSecNssAppKeyLoadMemory; 
-    gXmlSecNssFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecNssAppGetDefaultPwdCallback;
+    gXmlSecNssFunctions->cryptoAppDefaultPwdCallback	= (void*)xmlSecNssAppGetDefaultPwdCallback();
 
     return(gXmlSecNssFunctions);
 }
@@ -159,7 +162,7 @@ xmlSecCryptoGetFunctions_nss(void) {
  * 
  * XMLSec library specific crypto engine initialization. 
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecNssInit (void)  {
@@ -194,7 +197,7 @@ xmlSecNssInit (void)  {
  * 
  * XMLSec library specific crypto engine shutdown. 
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int 
 xmlSecNssShutdown(void) {
@@ -207,7 +210,7 @@ xmlSecNssShutdown(void) {
  *
  * Adds NSS specific key data stores in keys manager.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int
 xmlSecNssKeysMngrInit(xmlSecKeysMngrPtr mngr) {
@@ -247,13 +250,63 @@ xmlSecNssKeysMngrInit(xmlSecKeysMngrPtr mngr) {
 }
 
 /**
+ * xmlSecNssGetInternalKeySlot:
+ * 
+ * Gets internal NSS key slot.
+ * 
+ * Returns: internal key slot and initializes it if needed.
+ */
+PK11SlotInfo * 
+xmlSecNssGetInternalKeySlot()
+{
+    PK11SlotInfo *slot = NULL;
+    SECStatus rv;
+        
+    slot = PK11_GetInternalKeySlot();
+    if (slot == NULL) {
+	    xmlSecError(XMLSEC_ERRORS_HERE,
+		        NULL,
+		        "PK11_GetInternalKeySlot",
+		        XMLSEC_ERRORS_R_CRYPTO_FAILED,
+                "error code=%d", PORT_GetError());
+    	return NULL;
+    }
+
+    if (PK11_NeedUserInit(slot)) {
+        rv = PK11_InitPin(slot, NULL, NULL);
+        if (rv != SECSuccess) {
+     	    xmlSecError(XMLSEC_ERRORS_HERE,
+		            NULL,
+		            "PK11_Authenticate",
+		            XMLSEC_ERRORS_R_CRYPTO_FAILED,
+		            XMLSEC_ERRORS_NO_MESSAGE);
+            return NULL;
+        }
+    }
+
+    if(PK11_IsLoggedIn(slot, NULL) != PR_TRUE) {
+        rv = PK11_Authenticate(slot, PR_TRUE, NULL);
+        if (rv != SECSuccess) {
+    	    xmlSecError(XMLSEC_ERRORS_HERE,
+		            NULL,
+		            "PK11_Authenticate",
+		            XMLSEC_ERRORS_R_CRYPTO_FAILED,
+		            XMLSEC_ERRORS_NO_MESSAGE);
+            return NULL;
+        }
+    }
+
+    return(slot);
+}
+
+/**
  * xmlSecNssGenerateRandom:
  * @buffer:		the destination buffer.
  * @size:		the numer of bytes to generate.
  *
  * Generates @size random bytes and puts result in @buffer.
  *
- * Returns 0 on success or a negative value otherwise.
+ * Returns: 0 on success or a negative value otherwise.
  */
 int
 xmlSecNssGenerateRandom(xmlSecBufferPtr buffer, xmlSecSize size) {	
@@ -302,12 +355,12 @@ void
 xmlSecNssErrorsDefaultCallback(const char* file, int line, const char* func,
 				const char* errorObject, const char* errorSubject,
 				int reason, const char* msg) {
-    char buf[500];
+    xmlChar buf[500];
     int err;
 
     err = PORT_GetError();
-    snprintf(buf, sizeof(buf), "%s;last nss error=%d (0x%08X)", msg, err, err);
+    xmlSecStrPrintf(buf, sizeof(buf), BAD_CAST "%s;last nss error=%d (0x%08X)", msg, err, err);
     xmlSecErrorsDefaultCallback(file, line, func, 
 		errorObject, errorSubject, 
-		reason, buf);
+		reason, (char*)buf);
 }

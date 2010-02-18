@@ -23,7 +23,39 @@
 #include <xmlsec/gnutls/app.h>
 #include <xmlsec/gnutls/crypto.h>
 
-#define XMLSEC_GNUTLS_MAX_HMAC_SIZE		128
+/* sizes in bits */
+#define XMLSEC_GNUTLS_MIN_HMAC_SIZE		80
+#define XMLSEC_GNUTLS_MAX_HMAC_SIZE		(128 * 8)
+
+/**************************************************************************
+ *
+ * Configuration
+ *
+ *****************************************************************************/
+static int g_xmlsec_gnutls_hmac_min_length = XMLSEC_GNUTLS_MIN_HMAC_SIZE;
+
+/**
+ * xmlSecGnuTLSHmacGetMinOutputLength: 
+ * 
+ * Gets the value of min HMAC length.
+ * 
+ * Returns: the min HMAC output length
+ */
+int xmlSecGnuTLSHmacGetMinOutputLength(void)
+{
+    return g_xmlsec_gnutls_hmac_min_length;
+}
+
+/**
+ * xmlSecGnuTLSHmacSetMinOutputLength: 
+ * @min_length: the new min length 
+ * 
+ * Sets the min HMAC output length
+ */
+void xmlSecGnuTLSHmacSetMinOutputLength(int min_length)
+{
+    g_xmlsec_gnutls_hmac_min_length = min_length;
+}
 
 /**************************************************************************
  *
@@ -34,7 +66,7 @@ typedef struct _xmlSecGnuTLSHmacCtx		xmlSecGnuTLSHmacCtx, *xmlSecGnuTLSHmacCtxPt
 struct _xmlSecGnuTLSHmacCtx {
     int			digest;
     GcryMDHd		digestCtx;
-    xmlSecByte	 	dgst[XMLSEC_GNUTLS_MAX_HMAC_SIZE];
+    xmlSecByte	 	dgst[XMLSEC_GNUTLS_MAX_HMAC_SIZE / 8];
     xmlSecSize		dgstSize;	/* dgst size in bits */
 };	    
 
@@ -74,6 +106,9 @@ static int 	xmlSecGnuTLSHmacExecute			(xmlSecTransformPtr transform,
 static int 
 xmlSecGnuTLSHmacInitialize(xmlSecTransformPtr transform) {
     xmlSecGnuTLSHmacCtxPtr ctx;
+#ifndef XMLSEC_GNUTLS_OLD
+    gpg_err_code_t ret;
+#endif /* XMLSEC_GNUTLS_OLD */
 
     xmlSecAssert2(xmlSecGnuTLSHmacCheckId(transform), -1);
     xmlSecAssert2(xmlSecTransformCheckSize(transform, xmlSecGnuTLSHmacSize), -1);
@@ -97,8 +132,13 @@ xmlSecGnuTLSHmacInitialize(xmlSecTransformPtr transform) {
 	return(-1);
     }
     
+#ifndef XMLSEC_GNUTLS_OLD
+    ret = gcry_md_open(&ctx->digestCtx, ctx->digest, GCRY_MD_FLAG_HMAC | GCRY_MD_FLAG_SECURE); /* we are paranoid */
+    if(ret != GPG_ERR_NO_ERROR) {
+#else /* XMLSEC_GNUTLS_OLD */
     ctx->digestCtx = gcry_md_open(ctx->digest, GCRY_MD_FLAG_HMAC | GCRY_MD_FLAG_SECURE); /* we are paranoid */
     if(ctx->digestCtx == NULL) {
+#endif /* XMLSEC_GNUTLS_OLD */
 	xmlSecError(XMLSEC_ERRORS_HERE, 
 		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
 		    "gcry_md_open",
@@ -170,14 +210,27 @@ xmlSecGnuTLSHmacNodeRead(xmlSecTransformPtr transform, xmlNodePtr node, xmlSecTr
 	    ctx->dgstSize = atoi((char*)content);	    
 	    xmlFree(content);
 	}
-	/* todo: error if dgstSize == 0 ?*/
+	
+	/* Ensure that HMAC length is greater than min specified.
+	   Otherwise, an attacker can set this lenght to 0 or very 
+	   small value
+	*/
+	if((int)ctx->dgstSize < xmlSecGnuTLSHmacGetMinOutputLength()) {
+ 	   xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
+		    xmlSecErrorsSafeString(xmlSecNodeGetName(cur)),
+		    XMLSEC_ERRORS_R_INVALID_NODE_ATTRIBUTE,
+		    "HMAC output length is too small");
+	   return(-1);
+	}
+
 	cur = xmlSecGetNextElementNode(cur->next);
     }
     
     if(cur != NULL) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
-		    xmlSecNodeGetName(cur),
+		    xmlSecErrorsSafeString(xmlSecNodeGetName(cur)),
 		    XMLSEC_ERRORS_R_INVALID_NODE,
 		    "no nodes expected");
 	return(-1);
@@ -453,7 +506,7 @@ static xmlSecTransformKlass xmlSecGnuTLSHmacSha1Klass = {
  *
  * The HMAC-SHA1 transform klass.
  *
- * Returns the HMAC-SHA1 transform klass.
+ * Returns: the HMAC-SHA1 transform klass.
  */
 xmlSecTransformId 
 xmlSecGnuTLSTransformHmacSha1GetKlass(void) {
@@ -495,7 +548,7 @@ static xmlSecTransformKlass xmlSecGnuTLSHmacRipemd160Klass = {
  *
  * The HMAC-RIPEMD160 transform klass.
  *
- * Returns the HMAC-RIPEMD160 transform klass.
+ * Returns: the HMAC-RIPEMD160 transform klass.
  */
 xmlSecTransformId 
 xmlSecGnuTLSTransformHmacRipemd160GetKlass(void) {
@@ -537,7 +590,7 @@ static xmlSecTransformKlass xmlSecGnuTLSHmacMd5Klass = {
  *
  * The HMAC-MD5 transform klass.
  *
- * Returns the HMAC-MD5 transform klass.
+ * Returns: the HMAC-MD5 transform klass.
  */
 xmlSecTransformId 
 xmlSecGnuTLSTransformHmacMd5GetKlass(void) {

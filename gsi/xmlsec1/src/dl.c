@@ -9,12 +9,11 @@
  */
 #include "globals.h"
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>  
+#include <time.h>
 
 #include <libxml/tree.h>
 
@@ -26,16 +25,20 @@
 #include <xmlsec/keysmngr.h>
 #include <xmlsec/transforms.h>
 #include <xmlsec/private.h>
+#include <xmlsec/xmltree.h>
 #include <xmlsec/errors.h>
 #include <xmlsec/dl.h>
 
 #ifndef XMLSEC_NO_CRYPTO_DYNAMIC_LOADING
 
-#include "xmlsec-ltdl.h"
 
-#if defined(_MSC_VER)
-#define snprintf _snprintf
-#endif
+#ifdef XMLSEC_DL_LIBLTDL
+#include <ltdl.h>
+#endif /* XMLSEC_DL_LIBLTDL */
+
+#ifdef XMLSEC_DL_WIN32
+#include <windows.h>
+#endif /* XMLSEC_DL_WIN32 */
 
 /***********************************************************************
  *
@@ -50,7 +53,13 @@ struct _xmlSecCryptoDLLibrary {
     xmlChar* 	getFunctionsName;
     xmlSecCryptoDLFunctionsPtr functions;
 
-    xmlsec_lt_dlhandle handle;
+#ifdef XMLSEC_DL_LIBLTDL
+    lt_dlhandle handle;
+#endif /* XMLSEC_DL_LIBLTDL */
+
+#ifdef XMLSEC_DL_WIN32
+    HINSTANCE   handle;
+#endif /* XMLSEC_DL_WIN32 */
 };
 
 static xmlSecCryptoDLLibraryPtr	xmlSecCryptoDLLibraryCreate		(const xmlChar* name);
@@ -127,11 +136,11 @@ xmlSecCryptoDLLibraryCreate(const xmlChar* name) {
 	return(NULL);
     }
 
-
-    lib->handle = xmlsec_lt_dlopen((char*)lib->filename);
+#ifdef XMLSEC_DL_LIBLTDL
+    lib->handle = lt_dlopenext((char*)lib->filename);
     if(lib->handle == NULL) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
-		    "xmlsec_lt_dlopen",
+		    "lt_dlopenext",
 		    NULL,
 		    XMLSEC_ERRORS_R_IO_FAILED,
 		    "filename=%s",
@@ -140,11 +149,10 @@ xmlSecCryptoDLLibraryCreate(const xmlChar* name) {
 	return(NULL);
     }
 
-    
-    getFunctions = (xmlSecCryptoGetFunctionsCallback)xmlsec_lt_dlsym(lib->handle, (char*)lib->getFunctionsName);
+    getFunctions = (xmlSecCryptoGetFunctionsCallback)lt_dlsym(lib->handle, (char*)lib->getFunctionsName);
     if(getFunctions == NULL) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
-		    "xmlsec_lt_dlsym",
+		    "lt_dlsym",
 		    NULL,
 		    XMLSEC_ERRORS_R_IO_FAILED,
 		    "function=%s",
@@ -152,6 +160,33 @@ xmlSecCryptoDLLibraryCreate(const xmlChar* name) {
 	xmlSecCryptoDLLibraryDestroy(lib);
 	return(NULL);
     }
+#endif /* XMLSEC_DL_LIBLTDL */
+
+#ifdef XMLSEC_DL_WIN32
+    lib->handle = LoadLibraryA((char*)lib->filename);
+    if(lib->handle == NULL) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    "LoadLibraryA",
+		    NULL,
+		    XMLSEC_ERRORS_R_IO_FAILED,
+		    "filename=%s",
+		    xmlSecErrorsSafeString(lib->filename));
+	xmlSecCryptoDLLibraryDestroy(lib);
+	return(NULL);
+    }
+
+    getFunctions = (xmlSecCryptoGetFunctionsCallback)GetProcAddress(lib->handle, (char*)lib->getFunctionsName);
+    if(getFunctions == NULL) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    "GetProcAddressA",
+		    NULL,
+		    XMLSEC_ERRORS_R_IO_FAILED,
+		    "function=%s",
+		    xmlSecErrorsSafeString(lib->getFunctionsName));
+	xmlSecCryptoDLLibraryDestroy(lib);
+	return(NULL);
+    }
+#endif /* XMLSEC_DL_WIN32 */
 
     if(getFunctions == NULL) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
@@ -195,18 +230,35 @@ xmlSecCryptoDLLibraryDestroy(xmlSecCryptoDLLibraryPtr lib) {
 	xmlFree(lib->getFunctionsName);
     }
 
+#ifdef XMLSEC_DL_LIBLTDL
     if(lib->handle != NULL) {	
 	int ret;
-
-	ret = xmlsec_lt_dlclose(lib->handle);
+	
+	ret = lt_dlclose(lib->handle);
 	if(ret != 0) {
 	    xmlSecError(XMLSEC_ERRORS_HERE,
-		        "xmlsec_lt_dlclose",
+			"lt_dlclose",
 			NULL,
-		        XMLSEC_ERRORS_R_IO_FAILED,
-                        XMLSEC_ERRORS_NO_MESSAGE);
+			XMLSEC_ERRORS_R_IO_FAILED,
+			XMLSEC_ERRORS_NO_MESSAGE);
 	}
     }
+#endif /* XMLSEC_DL_LIBLTDL */
+
+#ifdef XMLSEC_DL_WIN32
+    if(lib->handle != NULL) {	
+	BOOL res;
+
+	res = FreeLibrary(lib->handle);
+	if(!res) {
+	    xmlSecError(XMLSEC_ERRORS_HERE,
+			"FreeLibrary",
+			NULL,
+			XMLSEC_ERRORS_R_IO_FAILED,
+			XMLSEC_ERRORS_NO_MESSAGE);
+	}
+	}
+#endif /* XMLSEC_DL_WIN32*/
 
     memset(lib, 0, sizeof(xmlSecCryptoDLLibrary));
     xmlFree(lib);
@@ -222,12 +274,12 @@ xmlSecCryptoDLLibraryDuplicate(xmlSecCryptoDLLibraryPtr lib) {
 
 static xmlChar*	
 xmlSecCryptoDLLibraryConstructFilename(const xmlChar* name) {
-    static xmlChar tmpl[] = "lib%s-%s" LTDL_SHLIB_EXT;
+    static xmlChar tmpl[] = "lib%s-%s";
     xmlChar* res;
     int len;
-    
+
     xmlSecAssert2(name != NULL, NULL);
-    
+
     /* TODO */
     len = xmlStrlen(BAD_CAST PACKAGE) + xmlStrlen(name) + xmlStrlen(tmpl) + 1;
     res = (xmlChar*)xmlMalloc(len + 1);
@@ -239,7 +291,7 @@ xmlSecCryptoDLLibraryConstructFilename(const xmlChar* name) {
 		    "size=%d", len + 1); 
 	return(NULL);
     }
-    snprintf(BAD_CAST res, len, BAD_CAST tmpl, PACKAGE, name);
+    xmlSecStrPrintf(res, len, tmpl, PACKAGE, name);
     
     return(res);
 }
@@ -262,7 +314,7 @@ xmlSecCryptoDLLibraryConstructGetFunctionsName(const xmlChar* name) {
 		    "size=%d", len + 1); 
 	return(NULL);
     }
-    snprintf(BAD_CAST res, len, BAD_CAST tmpl, name);
+    xmlSecStrPrintf(res, len, tmpl, name);
     
     return(res);
 }
@@ -298,35 +350,13 @@ xmlSecCryptoDLLibrariesListFindByName(xmlSecPtrListPtr list, const xmlChar* name
 static xmlSecCryptoDLFunctionsPtr gXmlSecCryptoDLFunctions = NULL;
 static xmlSecPtrList gXmlSecCryptoDLLibraries;
 
-static xmlsec_lt_ptr xmlSecCryptoDLMalloc(size_t size) {
-    xmlsec_lt_ptr res;
-
-    res = (xmlsec_lt_ptr)xmlMalloc(size);
-    if(res == NULL) {
-	xmlSecError(XMLSEC_ERRORS_HERE,
-		    NULL,
-		    NULL,
-		    XMLSEC_ERRORS_R_MALLOC_FAILED,
-		    "size=%d", size);
-        return(NULL);
-    }
-    memset(res, 0, size);
-    return(res);
-}
-
-static void xmlSecCryptoDLFree(xmlsec_lt_ptr ptr) {
-    if(ptr != NULL) {
-	xmlFree(ptr);
-    }
-}
-
 /**
  * xmlSecCryptoDLInit:
  * 
  * Initializes dynamic loading engine. This is an internal function
  * and should not be called by application directly.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecCryptoDLInit(void) {
@@ -342,20 +372,18 @@ xmlSecCryptoDLInit(void) {
         return(-1);
     }
 
-    ret = xmlsec_lt_dlinit ();
+#ifdef XMLSEC_DL_LIBLTDL
+    ret = lt_dlinit ();
     if(ret != 0) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    NULL,
-		    "xmlsec_lt_dlinit",
+		    "lt_dlinit",
 		    XMLSEC_ERRORS_R_IO_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);
         return(-1);
     }
-    /* TODO: LTDL_SET_PRELOADED_SYMBOLS(); */
-    
-    /* use xmlMalloc/xmlFree */
-    xmlsec_lt_dlmalloc	= xmlSecCryptoDLMalloc;
-    xmlsec_lt_dlfree	= xmlSecCryptoDLFree;
+#endif /* XMLSEC_DL_LIBLTDL */
+
     return(0);
 }
 
@@ -366,22 +394,25 @@ xmlSecCryptoDLInit(void) {
  * Shutdowns dynamic loading engine. This is an internal function
  * and should not be called by application directly.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecCryptoDLShutdown(void) {
     int ret;
-    
+
     xmlSecPtrListFinalize(&gXmlSecCryptoDLLibraries);
 
-    ret = xmlsec_lt_dlexit ();
+#ifdef XMLSEC_DL_LIBLTDL
+    ret = lt_dlexit ();
     if(ret != 0) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    NULL,
-		    "xmlsec_lt_dlexit",
+		    "lt_dlexit",
 		    XMLSEC_ERRORS_R_IO_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);
     }
+#endif /* XMLSEC_DL_LIBLTDL */
+
     return(0);
 }
 
@@ -393,7 +424,7 @@ xmlSecCryptoDLShutdown(void) {
  * application MUST NOT call #xmlSecCryptoDLLoadLibrary, #xmlSecCryptoDLGetLibraryFunctions,
  * and #xmlSecCryptoDLUnloadLibrary functions from multiple threads.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecCryptoDLLoadLibrary(const xmlChar* crypto) {
@@ -432,7 +463,7 @@ xmlSecCryptoDLLoadLibrary(const xmlChar* crypto) {
  * table. This function is NOT thread safe, application MUST NOT call #xmlSecCryptoDLLoadLibrary, 
  * #xmlSecCryptoDLGetLibraryFunctions, and #xmlSecCryptoDLUnloadLibrary functions from multiple threads.
  *
- * Returns the table or NULL if an error occurs.
+ * Returns: the table or NULL if an error occurs.
  */
 xmlSecCryptoDLFunctionsPtr 
 xmlSecCryptoDLGetLibraryFunctions(const xmlChar* crypto) {
@@ -486,7 +517,7 @@ xmlSecCryptoDLGetLibraryFunctions(const xmlChar* crypto) {
  * application MUST NOT call #xmlSecCryptoDLLoadLibrary, #xmlSecCryptoDLGetLibraryFunctions,
  * and #xmlSecCryptoDLUnloadLibrary functions from multiple threads.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecCryptoDLUnloadLibrary(const xmlChar* crypto) {
@@ -526,7 +557,7 @@ xmlSecCryptoDLUnloadLibrary(const xmlChar* crypto) {
  *
  * Sets global crypto functions/transforms/keys data/keys store table.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecCryptoDLSetFunctions(xmlSecCryptoDLFunctionsPtr functions) {
@@ -542,7 +573,7 @@ xmlSecCryptoDLSetFunctions(xmlSecCryptoDLFunctionsPtr functions) {
  *
  * Gets global crypto functions/transforms/keys data/keys store table.
  *
- * Returns the table.
+ * Returns: the table.
  */
 xmlSecCryptoDLFunctionsPtr 
 xmlSecCryptoDLGetFunctions(void) {
@@ -557,7 +588,7 @@ xmlSecCryptoDLGetFunctions(void) {
  * 
  * Registers the key data and transforms klasses from @functions table in xmlsec. 
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecCryptoDLFunctionsRegisterKeyDataAndTransforms(struct _xmlSecCryptoDLFunctions* functions) {
@@ -585,6 +616,14 @@ xmlSecCryptoDLFunctionsRegisterKeyDataAndTransforms(struct _xmlSecCryptoDLFuncti
     if((functions->keyDataDsaGetKlass != NULL) && (xmlSecKeyDataIdsRegister(functions->keyDataDsaGetKlass()) < 0)) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    xmlSecErrorsSafeString(xmlSecKeyDataKlassGetName(functions->keyDataDsaGetKlass())),
+		    "xmlSecKeyDataIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }
+    if((functions->keyDataGost2001GetKlass != NULL) && (xmlSecKeyDataIdsRegister(functions->keyDataGost2001GetKlass()) < 0)) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecKeyDataKlassGetName(functions->keyDataGost2001GetKlass())),
 		    "xmlSecKeyDataIdsRegister",
 		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);
@@ -699,27 +738,18 @@ xmlSecCryptoDLFunctionsRegisterKeyDataAndTransforms(struct _xmlSecCryptoDLFuncti
 	return(-1);
     }    
 
+    if((functions->transformGost2001GostR3411_94GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformGost2001GostR3411_94GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformGost2001GostR3411_94GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
     if((functions->transformDsaSha1GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformDsaSha1GetKlass()) < 0) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformDsaSha1GetKlass())),
-		    "xmlSecTransformIdsRegister",
-		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		    XMLSEC_ERRORS_NO_MESSAGE);
-	return(-1);
-    }    
-
-    if((functions->transformHmacSha1GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacSha1GetKlass()) < 0) {
-	xmlSecError(XMLSEC_ERRORS_HERE,
-		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacSha1GetKlass())),
-		    "xmlSecTransformIdsRegister",
-		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		    XMLSEC_ERRORS_NO_MESSAGE);
-	return(-1);
-    }    
-
-    if((functions->transformHmacRipemd160GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacRipemd160GetKlass()) < 0) {
-	xmlSecError(XMLSEC_ERRORS_HERE,
-		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacRipemd160GetKlass())),
 		    "xmlSecTransformIdsRegister",
 		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);
@@ -735,9 +765,90 @@ xmlSecCryptoDLFunctionsRegisterKeyDataAndTransforms(struct _xmlSecCryptoDLFuncti
 	return(-1);
     }    
 
+    if((functions->transformHmacRipemd160GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacRipemd160GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacRipemd160GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformHmacSha1GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacSha1GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacSha1GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformHmacSha224GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacSha224GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacSha224GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformHmacSha256GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacSha256GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacSha256GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformHmacSha384GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacSha384GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacSha384GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformHmacSha512GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformHmacSha512GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformHmacSha512GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }
+
+    if((functions->transformMd5GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformMd5GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformMd5GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
     if((functions->transformRipemd160GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRipemd160GetKlass()) < 0) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRipemd160GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformRsaMd5GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaMd5GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRsaMd5GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformRsaRipemd160GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaRipemd160GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRsaRipemd160GetKlass())),
 		    "xmlSecTransformIdsRegister",
 		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);
@@ -752,6 +863,42 @@ xmlSecCryptoDLFunctionsRegisterKeyDataAndTransforms(struct _xmlSecCryptoDLFuncti
 		    XMLSEC_ERRORS_NO_MESSAGE);
 	return(-1);
     }    
+
+    if((functions->transformRsaSha224GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaSha224GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRsaSha224GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformRsaSha256GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaSha256GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRsaSha256GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformRsaSha384GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaSha384GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRsaSha384GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformRsaSha512GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaSha512GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformRsaSha512GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }
 
     if((functions->transformRsaPkcs1GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformRsaPkcs1GetKlass()) < 0) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
@@ -771,9 +918,54 @@ xmlSecCryptoDLFunctionsRegisterKeyDataAndTransforms(struct _xmlSecCryptoDLFuncti
 	return(-1);
     }    
 
+    if((functions->transformGostR3411_94GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformGostR3411_94GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformGostR3411_94GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
     if((functions->transformSha1GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformSha1GetKlass()) < 0) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
 		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformSha1GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformSha224GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformSha224GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformSha224GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformSha256GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformSha256GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformSha256GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformSha384GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformSha384GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformSha384GetKlass())),
+		    "xmlSecTransformIdsRegister",
+		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
+		    XMLSEC_ERRORS_NO_MESSAGE);
+	return(-1);
+    }    
+
+    if((functions->transformSha512GetKlass != NULL) && xmlSecTransformIdsRegister(functions->transformSha512GetKlass()) < 0) {
+	xmlSecError(XMLSEC_ERRORS_HERE,
+		    xmlSecErrorsSafeString(xmlSecTransformKlassGetName(functions->transformSha512GetKlass())),
 		    "xmlSecTransformIdsRegister",
 		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);

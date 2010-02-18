@@ -40,11 +40,12 @@ var verMicroXmlSec;
 var withCrypto = "openssl";
 var withDefaultCrypto = "openssl";
 var withOpenSSL = 0;
-var withOpenSSL096 = 0;
+var withOpenSSLVersion = "";
 var withNss = 0;
 var withMSCrypto = 0;
 var withLibXSLT = 1;
 var withIconv = 1;
+var withNT4 = 0;
 
 /* Win32 build options. */
 var buildDebug = 0;
@@ -95,9 +96,11 @@ function usage()
 	txt += "either 'yes' or 'no'.\n\n";
 	txt += "XmlSec Library options, default value given in parentheses:\n\n";
 	txt += "  crypto:     Crypto engines list, first is default: \"openssl\",\n";
-	txt += "              \"openssl_096\", \"nss\", \"mscrypto\" (\"" + withCrypto + "\");\n"
+	txt += "              \"openssl=096\", \"openssl=097\", \"openssl=098\", \n";
+	txt += "              \"nss\", \"mscrypto\" (\"" + withCrypto + "\");\n"
  	txt += "  xslt:       LibXSLT is used (" + (withLibXSLT? "yes" : "no")  + ")\n";	
  	txt += "  iconv:      Use the iconv library (" + (withIconv? "yes" : "no")  + ")\n";	
+ 	txt += "  nt4:        Enable NT 4.0 support (" + (withNT4? "yes" : "no")  + ")\n";	
 	txt += "\nWin32 build options, default value given in parentheses:\n\n";
 	txt += "  debug:      Build unoptimised debug executables (" + (buildDebug? "yes" : "no")  + ")\n";
 	txt += "  static:     Link libxmlsec statically to xmlsec (" + (buildStatic? "yes" : "no")  + ")\n";
@@ -154,11 +157,12 @@ function discoverVersion()
 	vf.WriteLine("WITH_CRYPTO=" + withCrypto);	
 	vf.WriteLine("WITH_DEFAULT_CRYPTO=" + withDefaultCrypto);	
 	vf.WriteLine("WITH_OPENSSL=" + withOpenSSL);	
-	vf.WriteLine("WITH_OPENSSL_096=" + withOpenSSL096);	
+	vf.WriteLine("WITH_OPENSSL_VERSION=" + withOpenSSLVersion);	
 	vf.WriteLine("WITH_NSS=" + withNss);	
 	vf.WriteLine("WITH_MSCRYPTO=" + withMSCrypto);	
 	vf.WriteLine("WITH_LIBXSLT=" + (withLibXSLT ? "1" : "0"));
 	vf.WriteLine("WITH_ICONV=" + (withIconv ? "1" : "0"));
+	vf.WriteLine("WITH_NT4=" + (withNT4 ? "1" : "0"));
 	vf.WriteLine("DEBUG=" + (buildDebug? "1" : "0"));
 	vf.WriteLine("STATIC=" + (buildStatic? "1" : "0"));
 	vf.WriteLine("WITH_DL=" + (buildWithDLSupport ? "1" : "0"));
@@ -210,35 +214,16 @@ function genReadme(bname, ver, file)
 	f.WriteLine("  This is " + bname + ", version " + ver + ", binary package for the native Win32/IA32");
 	f.WriteLine("platform.");
 	f.WriteBlankLines(1);
-	f.WriteLine("  The directory named 'include' contains the header files. Place its");
-	f.WriteLine("contents somewhere where it can be found by the compiler.");
-	f.WriteLine("  The directory which answers to the name 'lib' contains the static and");
-	f.WriteLine("dynamic libraries. Place them somewhere where they can be found by the");
-	f.WriteLine("linker. The files whose names end with '_a.lib' are aimed for static");
-	f.WriteLine("linking, the other files are lib/dll pairs.");
-	f.WriteLine("  The directory called 'util' contains various programs which count as a");
-	f.WriteLine("part of " + bname + ".");
+	f.WriteLine("  The files in this package do not require any special installation");
+	f.WriteLine("steps. Extract the contents of the archive whereever you wish and");
+	f.WriteLine("make sure that your tools which use " + bname + " can find it.");
 	f.WriteBlankLines(1);
-	f.WriteLine("  If you plan to develop your own programme, in C, which uses " + bname + ", then");
-	f.WriteLine("you should know what to do with the files in the binary package. If you don't,");
-	f.WriteLine("know this, then please, please do some research on how to use a");
-	f.WriteLine("third-party library in a C programme. The topic belongs to the very basics"); 
-	f.WriteLine("and you will not be able to do much without that knowledge.");
-	f.WriteBlankLines(1);
-	f.WriteLine("  If you wish to use " + bname + " solely through the supplied utilities,");
-	f.WriteLine("such as xmlsec executable, then all you need to do is place the");
-	f.WriteLine("contents of the 'lib' and 'util' directories from the binary package in a"); 
-	f.WriteLine("directory on your disc which is mentioned in your PATH environment"); 
-	f.WriteLine("variable. You can use an existing directory which is allready in the"); 
-	f.WriteLine("path, such as 'C:\WINDOWS', or 'C:\WINNT'. You can also create a new"); 
-	f.WriteLine("directory for " + bname + " and place the files there, but be sure to modify"); 
-	f.WriteLine("the PATH environment variable and add that new directory to its list.");
-	f.WriteBlankLines(1);
-	f.WriteLine("  If you use other software which needs " + bname + ", then please consult the"); 
-	f.WriteLine("documentation of that software and see if it mentions something about");
-	f.WriteLine("how it uses " + bname + " and how it expects it to be installed. If you find");
-	f.WriteLine("nothing, then the default installation, as described in the previous"); 
-	f.WriteLine("paragraph, should be suficient.");
+	f.WriteLine("  For example, if you want to run the supplied utilities from the command");
+	f.WriteLine("line, you can, if you wish, add the 'bin' subdirectory to the PATH");
+	f.WriteLine("environment variable.");
+	f.WriteLine("  If you want to make programmes in C which use " + bname + ", you'll");
+	f.WriteLine("likely know how to use the contents of this package. If you don't, please");
+	f.WriteLine("refer to your compiler's documentation."); 
 	f.WriteBlankLines(1);
 	f.WriteLine("  If there is something you cannot keep for yourself, such as a problem,");
 	f.WriteLine("a cheer of joy, a comment or a suggestion, feel free to contact me using");
@@ -267,6 +252,8 @@ for (i = 0; (i < WScript.Arguments.length) && (error == 0); i++) {
 			withLibXSLT = strToBool(arg.substring(opt.length + 1, arg.length));
 		else if (opt == "iconv")
 			withIconv = strToBool(arg.substring(opt.length + 1, arg.length));
+		else if (opt == "nt4")
+			withNT4 = strToBool(arg.substring(opt.length + 1, arg.length));
 		else if (opt == "debug")
 			buildDebug = strToBool(arg.substring(opt.length + 1, arg.length));
 		else if (opt == "static")
@@ -311,31 +298,44 @@ if (error != 0) {
 }
 
 // Discover crypto support
-var crlist, j;
+var crlist, j, curcrypto;
 crlist = withCrypto.split(",");			
 withCrypto = "";
+withDefaultCrypto = "";
 for (j = 0; j < crlist.length; j++) {		
-	if (crlist[j] == "openssl")
+	if (crlist[j] == "openssl") {
+		curcrypto="openssl";
 		withOpenSSL = 1;
-	else if (crlist[j] == "openssl_096")
-		withOpenSSL096 = 1;
-	else if (crlist[j] == "nss")
+		withOpenSSLVersion = "XMLSEC_OPENSSL_098"; /* default */
+	} else if (crlist[j] == "openssl=096") {
+		curcrypto="openssl";
+		withOpenSSL = 1;
+		withOpenSSLVersion = "XMLSEC_OPENSSL_096";
+	} else if (crlist[j] == "openssl=097") {
+		curcrypto="openssl";
+		withOpenSSL = 1;
+		withOpenSSLVersion = "XMLSEC_OPENSSL_097";
+	} else if (crlist[j] == "openssl=098") {
+		curcrypto="openssl";
+		withOpenSSL = 1;
+		withOpenSSLVersion = "XMLSEC_OPENSSL_098";
+	} else if (crlist[j] == "nss") {
+		curcrypto="nss";
 		withNss = 1;
-	else if (crlist[j] == "mscrypto")
+	} else if (crlist[j] == "mscrypto") {
+		curcrypto="mscrypto";
 		withMSCrypto = 1;
-	else {
+	} else {
 		WScript.Echo("Unknown crypto engine \"" + crlist[j] + "\" is found. Aborting.");
 		WScript.Quit(error);
 	}
-	withCrypto = withCrypto + " " + crlist[j];
+	if (j == 0) {
+		withDefaultCrypto = curcrypto;
+		withCrypto = curcrypto;
+	} else {
+		withCrypto = withCrypto + " " + curcrypto;
+	}
 }
-if ((withOpenSSL == 1) && (withOpenSSL096 == 1)) {
-	WScript.Echo("Only one of \"openssl\" and \"openssl_096\" could be specified. Aborting.");
-	WScript.Quit(error);
-}
-withDefaultCrypto = crlist[0];
-if (withDefaultCrypto == "openssl_096")
-	withDefaultCrypto = "openssl";
 
 // Discover the version.
 discoverVersion();
@@ -362,14 +362,15 @@ WScript.Echo("Created Makefile.");
 // Display the final configuration.
 var txtOut = "\nXMLSEC configuration\n";
 txtOut += "----------------------------\n";
-txtOut += "        Use Crypto: " + withCrypto + "\n";
-txtOut += "Use Default Crypto: " + withDefaultCrypto + "\n";
+txtOut += "         Use Crypto: " + withCrypto + "\n";
+txtOut += " Use Default Crypto: " + withDefaultCrypto + "\n";
 txtOut += "       Use OpenSSL: " + boolToStr(withOpenSSL) + "\n";
-txtOut += "   Use OpenSSL 096: " + boolToStr(withOpenSSL096) + "\n";
-txtOut += "           Use NSS: " + boolToStr(withNss) + "\n";
-txtOut += "      Use MSCrypto: " + boolToStr(withMSCrypto) + "\n";
-txtOut += "       Use LibXSLT: " + boolToStr(withLibXSLT) + "\n";
-txtOut += "         Use iconv: " + boolToStr(withIconv) + "\n";
+txtOut += "Use OpenSSL Version: " + boolToStr(withOpenSSLVersion) + "\n";
+txtOut += "            Use NSS: " + boolToStr(withNss) + "\n";
+txtOut += "       Use MSCrypto: " + boolToStr(withMSCrypto) + "\n";
+txtOut += "        Use LibXSLT: " + boolToStr(withLibXSLT) + "\n";
+txtOut += "          Use iconv: " + boolToStr(withIconv) + "\n";
+txtOut += "     NT 4.0 support: " + boolToStr(withNT4) + "\n";
 txtOut += "\n";
 txtOut += "Win32 build configuration\n";
 txtOut += "-------------------------\n";

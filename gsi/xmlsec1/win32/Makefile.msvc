@@ -35,7 +35,7 @@ AUTOCONF = .\configure.txt
 #WITH_CRYPTO=openssl
 #WITH_DEFAULT_CRYPTO=openssl
 #WITH_OPENSSL=1
-#WITH_OPENSSL_096=0
+#WITH_OPENSSL_VERSION=
 #WITH_NSS=0
 #WITH_MSCRYPTO=0
 #WITH_LIBXSLT=1
@@ -141,6 +141,7 @@ XMLSEC_OBJS = \
 	$(XMLSEC_INTDIR)\membuf.obj \
 	$(XMLSEC_INTDIR)\nodeset.obj \
 	$(XMLSEC_INTDIR)\parser.obj \
+	$(XMLSEC_INTDIR)\soap.obj \
 	$(XMLSEC_INTDIR)\strings.obj \
 	$(XMLSEC_INTDIR)\templates.obj \
 	$(XMLSEC_INTDIR)\transforms.obj \
@@ -170,6 +171,7 @@ XMLSEC_OBJS_A = \
 	$(XMLSEC_INTDIR_A)\membuf.obj \
 	$(XMLSEC_INTDIR_A)\nodeset.obj \
 	$(XMLSEC_INTDIR_A)\parser.obj \
+	$(XMLSEC_INTDIR_A)\soap.obj \
 	$(XMLSEC_INTDIR_A)\strings.obj \
 	$(XMLSEC_INTDIR_A)\templates.obj \
 	$(XMLSEC_INTDIR_A)\transforms.obj \
@@ -181,11 +183,6 @@ XMLSEC_OBJS_A = \
 	$(XMLSEC_INTDIR_A)\xmltree.obj \
 	$(XMLSEC_INTDIR_A)\xpath.obj \
 	$(XMLSEC_INTDIR_A)\xslt.obj 
-
-!if "$(WITH_DL)" == "1"
-XMLSEC_OBJS 	= $(XMLSEC_OBJS) $(XMLSEC_INTDIR)\xmlsec-ltdl.obj
-XMLSEC_OBJS_A 	= $(XMLSEC_OBJS_A) $(XMLSEC_INTDIR_A)\xmlsec-ltdl.obj
-!endif 
 
 XMLSEC_OPENSSL_OBJS = \
 	$(XMLSEC_OPENSSL_INTDIR)\app.obj\
@@ -233,7 +230,7 @@ XMLSEC_NSS_OBJS = \
 	$(XMLSEC_NSS_INTDIR)\x509.obj\
 	$(XMLSEC_NSS_INTDIR)\x509vfy.obj\
 	$(XMLSEC_NSS_INTDIR)\keysstore.obj\
-	$(XMLSEC_NSS_INTDIR)\kt_rsa.obj\
+	$(XMLSEC_NSS_INTDIR)\keytrans.obj\
 	$(XMLSEC_NSS_INTDIR)\kw_des.obj\
 	$(XMLSEC_NSS_INTDIR)\kw_aes.obj\
 	$(XMLSEC_NSS_INTDIR)\strings.obj
@@ -301,9 +298,6 @@ CFLAGS 			= $(CFLAGS) /D "HAVE_STDIO_H" /D "HAVE_STDLIB_H"
 CFLAGS 			= $(CFLAGS) /D "HAVE_STRING_H" /D "HAVE_CTYPE_H"
 CFLAGS 			= $(CFLAGS) /D "HAVE_MALLOC_H" /D "HAVE_MEMORY_H"
 
-# TODO: XKMS is not really implemented yet
-CFLAGS 			= $(CFLAGS) /D "XMLSEC_NO_XKMS"
-
 # Optimisation and debug symbols.
 !if "$(DEBUG)" == "1"
 CFLAGS 			= $(CFLAGS) /D "_DEBUG" /Od /Z7
@@ -317,9 +311,14 @@ CFLAGS 			= $(CFLAGS) /D "NDEBUG" /O2
 CFLAGS 			= $(CFLAGS) /DXMLSEC_NO_XSLT=1
 !endif
 
+!if "$(WITH_NT4)" == "1"
+CFLAGS 			= $(CFLAGS) /DXMLSEC_MSCRYPTO_NT4=1
+!else 
+!endif
+
 APP_CFLAGS		= /D "XMLSEC_CRYPTO=\"$(XMLSEC_CRYPTO)\""
 !if "$(WITH_DL)" == "1"
-CFLAGS 			= $(CFLAGS) /D LTDL_OBJDIR=\"\" /D LTDL_SHLIB_EXT=\".dll\"
+CFLAGS			= $(CFLAGS) /D "XMLSEC_DL_WIN32"
 APP_CFLAGS		= $(APP_CFLAGS) /D "XMLSEC_CRYPTO_DYNAMIC_LOADING"
 !else
 CFLAGS 			= $(CFLAGS) /D "XMLSEC_NO_CRYPTO_DYNAMIC_LOADING"
@@ -328,10 +327,10 @@ APP_CFLAGS		= $(APP_CFLAGS) $(XMLSEC_CRYPTO_CFLAGS)
 APP_CFLAGS		= $(APP_CFLAGS) /D "XMLSEC_NO_TMPL_TEST"
 !endif
 
-!if "$(WITH_OPENSSL_096)" == "1"
-XMLSEC_OPENSSL_CFLAGS   = /D "XMLSEC_OPENSSL_096"  /D "XMLSEC_CRYPTO_OPENSSL" /D "XMLSEC_CRYPTO=\"openssl\""
-!else
+!if "$(WITH_OPENSSL_VERSION)" == ""
 XMLSEC_OPENSSL_CFLAGS   = /D "XMLSEC_CRYPTO_OPENSSL" /D "XMLSEC_CRYPTO=\"openssl\""
+!else
+XMLSEC_OPENSSL_CFLAGS   = /D "$(WITH_OPENSSL_VERSION)" /D "XMLSEC_CRYPTO_OPENSSL" /D "XMLSEC_CRYPTO=\"openssl\""
 !endif
 XMLSEC_NSS_CFLAGS   	= /D "XMLSEC_CRYPTO_NSS" /D "XMLSEC_CRYPTO=\"nss\""
 XMLSEC_MSCRYPTO_CFLAGS  = /D "XMLSEC_CRYPTO_MSCRYPTO" /D "XMLSEC_CRYPTO=\"mscrypto\""
@@ -385,7 +384,7 @@ XMLSEC_MSCRYPTO_ALIBS   = kernel32.lib user32.lib gdi32.lib Crypt32.lib Advapi32
 
 
 # The archiver and its options.
-AR = lib.exe
+AR = link.exe /lib
 ARFLAGS = /nologo
 
 
@@ -393,16 +392,6 @@ ARFLAGS = /nologo
 # xmlsec-<default-crypto> options
 #
 !if "$(WITH_DEFAULT_CRYPTO)" == "openssl" 
-XMLSEC_CRYPTO          	= "openssl"
-XMLSEC_CRYPTO_CFLAGS   	= $(XMLSEC_OPENSSL_CFLAGS)
-XMLSEC_CRYPTO_SOLIBS  	= $(XMLSEC_OPENSSL_SOLIBS)
-XMLSEC_CRYPTO_ALIBS    	= $(XMLSEC_OPENSSL_ALIBS)
-XMLSEC_CRYPTO_SO        = $(XMLSEC_OPENSSL_SO)
-XMLSEC_CRYPTO_IMP	= $(XMLSEC_OPENSSL_IMP)
-XMLSEC_CRYPTO_A		= $(XMLSEC_OPENSSL_A)
-!endif
-
-!if "$(WITH_DEFAULT_CRYPTO)" == "openssl_096"
 XMLSEC_CRYPTO          	= "openssl"
 XMLSEC_CRYPTO_CFLAGS   	= $(XMLSEC_OPENSSL_CFLAGS)
 XMLSEC_CRYPTO_SOLIBS  	= $(XMLSEC_OPENSSL_SOLIBS)
@@ -444,8 +433,6 @@ xmlseca :  $(XMLSEC_APPS_INTDIR_A) $(BINDIR)\$(XMLSEC_A) $(WITH_DEFAULT_CRYPTO)
 
 openssl: $(BINDIR)\$(XMLSEC_OPENSSL_SO) $(BINDIR)\$(XMLSEC_OPENSSL_A)
 
-openssl_096: $(BINDIR)\$(XMLSEC_OPENSSL_SO) $(BINDIR)\$(XMLSEC_OPENSSL_A)
-
 nss: $(BINDIR)\$(XMLSEC_NSS_SO) $(BINDIR)\$(XMLSEC_NSS_A)
 
 mscrypto: $(BINDIR)\$(XMLSEC_MSCRYPTO_SO) $(BINDIR)\$(XMLSEC_MSCRYPTO_A)
@@ -457,22 +444,29 @@ check : check-keys check-dsig check-enc
 check-keys : $(BINDIR)\$(APP_NAME)
 	cd ..
 	if not exist win32\tmp mkdir win32\tmp
-	set TMPFOLDER=win32\tmp
+	set TMPFOLDER=win32/tmp
 	sh ./tests/testKeys.sh default ./tests win32/$(BINDIR)/$(APP_NAME) der
 	cd win32
 
 check-dsig : $(BINDIR)\$(APP_NAME)	
 	cd ..
 	if not exist win32\tmp mkdir win32\tmp
-	set TMPFOLDER=win32\tmp
+	set TMPFOLDER=win32/tmp
 	sh ./tests/testDSig.sh default ./tests win32/$(BINDIR)/$(APP_NAME) der
 	cd win32
 
 check-enc : $(BINDIR)\$(APP_NAME)
 	cd ..
 	if not exist win32\tmp mkdir win32\tmp
-	set TMPFOLDER=win32\tmp
+	set TMPFOLDER=win32/tmp
 	sh ./tests/testEnc.sh default ./tests win32/$(BINDIR)/$(APP_NAME) der
+	cd win32
+
+check-xkms : $(BINDIR)\$(APP_NAME)
+	cd ..
+	if not exist win32\tmp mkdir win32\tmp
+	set TMPFOLDER=win32\tmp
+	sh ./tests/testXKMS.sh default ./tests win32/$(BINDIR)/$(APP_NAME) der
 	cd win32
 		
 clean :
@@ -536,7 +530,7 @@ uninstall :
 BDVERSION = $(XMLSEC_VERSION_MAJOR).$(XMLSEC_VERSION_MINOR).$(XMLSEC_VERSION_SUBMINOR)
 BDPREFIX = $(XMLSEC_BASENAME)-$(BDVERSION).win32
 bindist : all
-	$(MAKE) /nologo PREFIX=$(BDPREFIX) BINPREFIX=$(BDPREFIX)\util install
+	$(MAKE) /nologo PREFIX=$(BDPREFIX) SOPREFIX=$(BDPREFIX)\bin install
 	cscript //NoLogo configure.js genreadme $(XMLSEC_BASENAME) $(BDVERSION) $(BDPREFIX)\readme.txt
 
 # Makes the compiler output directory.

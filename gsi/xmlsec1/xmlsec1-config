@@ -4,6 +4,7 @@ prefix="/usr"
 package="xmlsec1"
 exec_prefix="${prefix}"
 exec_prefix_set=no
+package_libdir="${exec_prefix}/lib"
 
 usage()
 {
@@ -12,16 +13,15 @@ Usage: $package-config [OPTION]...
 
 Known values for OPTION are:
 
-  --prefix=DIR		change XMLSEC prefix [default $prefix]
-  --exec-prefix=DIR	change XMLSEC executable prefix [default $exec_prefix]
+  --prefix=DIR		change XMLSEC prefix
+  --exec-prefix=DIR	change XMLSEC executable prefix
   --libs		print library linking information
   --cflags		print pre-processor and compiler flags
   --crypto		print the default crypto library name
   --help		display this help and exit
   --version		output version information
   --crypto=LIB		configure with XMLSEC crypto library (one of the
-			following: none default  openssl nss) 
-			[default "openssl"]
+			following: none default openssl gnutls nss) 
 EOF
 
     exit $1
@@ -79,7 +79,7 @@ do
 	;;
 
     --version)
-	echo 1.2.1
+	echo 1.2.14
 	exit 0
 	;;
     
@@ -140,15 +140,15 @@ none)
     ;;
 
 default) 
-    the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1  -DXMLSEC_CRYPTO=\\\"openssl\\\""
-    the_crypto_libs="-lcrypto"
+    the_crypto_flags="  -DXMLSEC_OPENSSL_098=1 -DXMLSEC_CRYPTO_OPENSSL=1 -DXMLSEC_CRYPTO=\\\"openssl\\\""
+    the_crypto_libs="-lssl -lcrypto  "
     the_xmlsec_crypto_lib="-lxmlsec1-openssl"
     ;;
     
 openssl)
     if test "0" = "0"; then
-        the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1  -DXMLSEC_CRYPTO=\\\"openssl\\\""
-	the_crypto_libs="-lcrypto"
+        the_crypto_flags="  -DXMLSEC_OPENSSL_098=1 -DXMLSEC_CRYPTO_OPENSSL=1 -DXMLSEC_CRYPTO=\\\"openssl\\\""
+	the_crypto_libs="-lssl -lcrypto  "
         the_xmlsec_crypto_lib="-lxmlsec1-openssl"
     else
         echo "Error: the \"$crypto\" cryptographic library is not supported"
@@ -157,9 +157,9 @@ openssl)
     ;;
 
 gnutls)
-    if test "1" = "0"; then
-        the_crypto_flags="-DXMLSEC_CRYPTO_GNUTLS=1 -DXMLSEC_CRYPTO=\\\"gnutls\\\""
-	the_crypto_libs=""
+    if test "0" = "0"; then
+        the_crypto_flags="  -DXMLSEC_CRYPTO_GNUTLS=1 -DXMLSEC_CRYPTO=\\\"gnutls\\\""
+	the_crypto_libs="-lgnutls  "
         the_xmlsec_crypto_lib="-lxmlsec1-gnutls"
     else
         echo "Error: the \"$crypto\" cryptographic library is not supported"
@@ -168,9 +168,9 @@ gnutls)
     ;;
 
 nss)
-    if test "0" = "no"; then
-        the_crypto_flags="-DXMLSEC_CRYPTO_NSS=1 -I/usr/include/mozilla-1.4/nss -I/usr/include/mozilla-1.4/nspr -DXMLSEC_CRYPTO=\\\"nss\\\""
-	the_crypto_libs="-lnss3 -lsmime3 -lnspr4 -lplds4 -lplc4"
+    if test "0" = "0"; then
+        the_crypto_flags="-I/usr/include/nspr -I/usr/include/nss   -DXMLSEC_CRYPTO_NSS=1 -DXMLSEC_CRYPTO=\\\"nss\\\""
+	the_crypto_libs="-lnss3 -lnssutil3 -lsmime3 -lssl3 -lplds4 -lplc4 -lnspr4 -lpthread -ldl  "
         the_xmlsec_crypto_lib="-lxmlsec1-nss"
     else
         echo "Error: the \"$crypto\" cryptographic library is not supported"
@@ -188,8 +188,8 @@ esac
 #
 # Assemble all the settings together
 #
-the_flags="$the_flags  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_XKMS=1 -I${prefix}/include/xmlsec1   $the_xml_flags $the_xslt_flags $the_crypto_flags"
-the_libs="$the_libs -L${exec_prefix}/lib -lxmlsec1  -ldl  $the_xmlsec_crypto_lib -lxmlsec1 $the_xml_libs $the_xslt_libs $the_crypto_libs"
+the_flags="$the_flags  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_GOST=1 -DXMLSEC_NO_XKMS=1 -DXMLSEC_DL_LIBLTDL=1, -I${prefix}/include/xmlsec1   $the_xml_flags $the_xslt_flags $the_crypto_flags"
+the_libs="$the_libs -L${package_libdir} -lxmlsec1 -lltdl  $the_xmlsec_crypto_lib -lxmlsec1 $the_xml_libs $the_xslt_libs $the_crypto_libs"
 
 if $cflags; then
     all_flags="$the_flags"

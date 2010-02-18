@@ -1,3 +1,12 @@
+#
+# To remove "bad" chars, run the following command
+#
+# for i in `grep -l $'\xA0' *` ; do \
+#	echo $i ;  \
+#	sed 's/\xA0/ /g' $i > $i.tmp ; \
+#	mv $i.tmp $i ; \
+# done
+#
 NULL=
 TOP=../..
 MODULE=xmlsec
@@ -16,8 +25,8 @@ EXTRA_DIST = \
 #
 DOC_SOURCE_DIR=./code
 DOC_SOURCE_FILES=\
-	$(shell find $(SOURCE_DIR) -name '*.c' -print )  \
-	 $(shell find $(INCLUDE_DIR) -name '*.h' -a ! -name "symbols.h" -print )
+	$(shell find $(SOURCE_DIR) -name '*.c' -a ! -name "xkms*" -print )  \
+	$(shell find $(INCLUDE_DIR) -name '*.h' -a ! -name "symbols.h" -a ! -name "xkms*" -print )
 
 EXAMPLES_SOURCE_DIR=../../examples
 EXAMPLES_SOURCE_FILES=\
@@ -169,7 +178,7 @@ example_sources:
 	done);
 
 dist-hook:
-	@cp -p $(srcdir)/*.html $(srcdir)/*.sgml $(distdir)
+	@cp -p $(srcdir)/*.html $(srcdir)/*.png $(srcdir)/*.sgml $(distdir)
 
 clean: clean-sources
 	-@rm -rf $(DOC_SOURCE_DIR)

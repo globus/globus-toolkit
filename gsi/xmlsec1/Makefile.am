@@ -2,7 +2,7 @@ NULL =
 
 SAFE_VERSION	= @XMLSEC_VERSION_SAFE@
 SUBDIRS 	= include src apps man docs
-TEST_APP 	= apps/xmlsec1
+TEST_APP 	= apps/xmlsec1$(EXEEXT)
 DEFAULT_CRYPTO	= @XMLSEC_CRYPTO@
 
 bin_SCRIPTS 	= xmlsec1-config
@@ -10,6 +10,10 @@ pkgconfig_DATA 	= xmlsec1.pc @XMLSEC_CRYPTO_PC_FILES_LIST@
 pkgconfigdir 	= $(libdir)/pkgconfig
 confexecdir	= $(libdir)
 confexec_DATA 	= xmlsec1Conf.sh
+m4datadir	= $(datadir)/aclocal
+m4data_DATA	= xmlsec1.m4
+
+ACLOCAL_AMFLAGS	= -I m4
 
 DISTCLEANFILES = \
 	xmlsec1Conf.sh \
@@ -23,6 +27,7 @@ DISTCLEANFILES = \
 	$NULL
 
 EXTRA_DIST = \
+	m4 \
 	examples \
 	scripts \
 	tests \
@@ -39,28 +44,28 @@ EXTRA_DIST = \
 	xmlsec1.pc @XMLSEC_CRYPTO_PC_FILES_LIST@ \
 	xmlsec1-config \
 	xmlsec1.spec \
+	xmlsec1.m4 \
 	$(NULL)
 
 EXTRA_CLEAN = \
 	examples \
 	$(NULL)
 
-ABS_BUILDDIR=$(shell pwd)
+ABS_SRCDIR=@abs_srcdir@
+ABS_BUILDDIR=@abs_builddir@
 if XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING
 PRECHECK_COMMANDS = \
-	ABS_BUILDDIR=$(ABS_BUILDDIR) && \
-	cd $(top_srcdir) \
+	cd $(ABS_SRCDIR) \
 	$(NULL)
 CHECK_CRYPTO_LIST = \
 	"default" \
 	$(NULL)
 else
 PRECHECK_COMMANDS= \
-	ABS_BUILDDIR=$(ABS_BUILDDIR) && \
 	for i in $(XMLSEC_CRYPTO_LIST) ; do \
 	    export LD_LIBRARY_PATH="$(ABS_BUILDDIR)/src/$$i/.libs:$$LD_LIBRARY_PATH" ; \
 	done && \
-	cd $(top_srcdir) \
+	cd $(ABS_SRCDIR) \
 	$(NULL)	
 CHECK_CRYPTO_LIST = \
 	$(XMLSEC_CRYPTO_LIST) \
@@ -78,15 +83,14 @@ docs-man:
 
 check: check-all check-info 
 
-check-all: $(TEST_APP) reset-nss-db
+check-all: $(TEST_APP) 
 	@($(PRECHECK_COMMANDS) && \
 	for i in $(CHECK_CRYPTO_LIST) ; do \
 	    echo "=================== Checking xmlsec-$$i =================================" && \
-	    $(SHELL) ./tests/testKeys.sh $$i ./tests $$ABS_BUILDDIR/$(TEST_APP) der && \
-	    $(SHELL) ./tests/testDSig.sh $$i ./tests $$ABS_BUILDDIR/$(top_builddir)/$(TEST_APP) der && \
-	    $(SHELL) ./tests/testEnc.sh $$i ./tests $$ABS_BUILDDIR/$(TEST_APP) der ; \
+	    $(SHELL) ./tests/testKeys.sh $$i $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der && \
+	    $(SHELL) ./tests/testDSig.sh $$i $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der && \
+	    $(SHELL) ./tests/testEnc.sh  $$i $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der ; \
 	done; )
-
 
 check-info:
 	@echo "-------------------------- ATTENTION -----------------------------------"
@@ -98,26 +102,21 @@ check-info:
 	@echo "--- when you use OpenSSL 0.9.6 (see the FAQ for details)             ---"
 	@echo "-------------------------- ATTENTION -----------------------------------"
 
-reset-nss-db:
-	@(ABS_BUILDDIR=`pwd` && cd $(top_srcdir) && \
-	if [ "z$(DEFAULT_CRYPTO)" = "znss" ] ; \
-	then \
-	    echo "Removing old nss db and replacing with a new one" && \
-	    rm -rf ./tests/cert*.db ./tests/key*.db ./tests/secmod*.db && \
-	    cp ./tests/nssdb/*.db ./tests; \
-	fi)
-
-check-km: $(TEST_APP) reset-nss-db
+check-km: $(TEST_APP)
 	@($(PRECHECK_COMMANDS) && \
-	$(SHELL) ./tests/testKeys.sh default ./tests $$ABS_BUILDDIR/$(TEST_APP) der)
+	$(SHELL) ./tests/testKeys.sh default $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der)
 
-check-dsig: $(TEST_APP) reset-nss-db
+check-dsig: $(TEST_APP) 	
 	@($(PRECHECK_COMMANDS) && \
-	$(SHELL) ./tests/testDSig.sh default ./tests $$ABS_BUILDDIR/$(top_builddir)/$(TEST_APP) der)
+	$(SHELL) ./tests/testDSig.sh default $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der)
 
-check-enc: $(TEST_APP) reset-nss-db
+check-xkms: $(TEST_APP) 	
 	@($(PRECHECK_COMMANDS) && \
-	$(SHELL) ./tests/testEnc.sh default ./tests $$ABS_BUILDDIR/$(TEST_APP) der)
+	$(SHELL) ./tests/testXKMS.sh default $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der)
+
+check-enc: $(TEST_APP) 
+	@($(PRECHECK_COMMANDS) && \
+	$(SHELL) ./tests/testEnc.sh  default $(ABS_SRCDIR)/tests $(ABS_BUILDDIR)/$(TEST_APP) der)
 
 memcheck-res:
 	@grep -i lost /tmp/*.log | sed 's/==.*== *//' | sort -u
@@ -131,17 +130,13 @@ perfcheck: $(TEST_APP)
 	@(export PERF_TEST=10 && $(MAKE) check)
 
 dist-hook:
-	@(rm -rf `find $(distdir) -name CVS`)
 
 cleantar:
-	@(rm -f xmlsec*.tar.gz COPYING.LIB)
+	@($(RM) -f xmlsec*.tar.gz COPYING.LIB)
 
 rpm: cleantar
 	@(unset CDPATH && $(MAKE) dist && rpmbuild -ta $(distdir).tar.gz)
 
-tag-release:
-	@cvs tag -F xmlsec-$(SAFE_VERSION) > /dev/null
-
-rpm-release: clean cleantar rpm tag-release
+rpm-release: clean cleantar rpm 
 	
 

@@ -273,7 +273,7 @@ static xmlSecKeyDataKlass xmlSecOpenSSLKeyDataX509Klass = {
  * 
  * The OpenSSL X509 key data klass (http://www.w3.org/TR/xmldsig-core/#sec-X509Data).
  *
- * Returns the X509 data klass.
+ * Returns: the X509 data klass.
  */
 xmlSecKeyDataId 
 xmlSecOpenSSLKeyDataX509GetKlass(void) {
@@ -286,7 +286,7 @@ xmlSecOpenSSLKeyDataX509GetKlass(void) {
  *
  * Gets the certificate from which the key was extracted. 
  *
- * Returns the key's certificate or NULL if key data was not used for key
+ * Returns: the key's certificate or NULL if key data was not used for key
  * extraction or an error occurs.
  */
 X509* 	
@@ -308,7 +308,7 @@ xmlSecOpenSSLKeyDataX509GetKeyCert(xmlSecKeyDataPtr data) {
  *
  * Sets the key's certificate in @data.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecOpenSSLKeyDataX509AdoptKeyCert(xmlSecKeyDataPtr data, X509* cert) {
@@ -334,7 +334,7 @@ xmlSecOpenSSLKeyDataX509AdoptKeyCert(xmlSecKeyDataPtr data, X509* cert) {
  *
  * Adds certificate to the X509 key data.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecOpenSSLKeyDataX509AdoptCert(xmlSecKeyDataPtr data, X509* cert) {
@@ -379,7 +379,7 @@ xmlSecOpenSSLKeyDataX509AdoptCert(xmlSecKeyDataPtr data, X509* cert) {
  * 
  * Gets a certificate from X509 key data.
  *
- * Returns the pointer to certificate or NULL if @pos is larger than the 
+ * Returns: the pointer to certificate or NULL if @pos is larger than the 
  * number of certificates in @data or an error occurs.
  */
 X509* 
@@ -402,7 +402,7 @@ xmlSecOpenSSLKeyDataX509GetCert(xmlSecKeyDataPtr data, xmlSecSize pos) {
  *
  * Gets the number of certificates in @data.
  *
- * Returns te number of certificates in @data.
+ * Returns: te number of certificates in @data.
  */
 xmlSecSize 	
 xmlSecOpenSSLKeyDataX509GetCertsSize(xmlSecKeyDataPtr data) {
@@ -423,7 +423,7 @@ xmlSecOpenSSLKeyDataX509GetCertsSize(xmlSecKeyDataPtr data) {
  *
  * Adds CRL to the X509 key data.
  *
- * Returns 0 on success or a negative value if an error occurs.
+ * Returns: 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecOpenSSLKeyDataX509AdoptCrl(xmlSecKeyDataPtr data, X509_CRL* crl) {
@@ -468,7 +468,7 @@ xmlSecOpenSSLKeyDataX509AdoptCrl(xmlSecKeyDataPtr data, X509_CRL* crl) {
  * 
  * Gets a CRL from X509 key data.
  *
- * Returns the pointer to CRL or NULL if @pos is larger than the 
+ * Returns: the pointer to CRL or NULL if @pos is larger than the 
  * number of CRLs in @data or an error occurs.
  */
 X509_CRL* 
@@ -492,7 +492,7 @@ xmlSecOpenSSLKeyDataX509GetCrl(xmlSecKeyDataPtr data, xmlSecSize pos) {
  *
  * Gets the number of CRLs in @data.
  *
- * Returns te number of CRLs in @data.
+ * Returns: te number of CRLs in @data.
  */
 xmlSecSize 
 xmlSecOpenSSLKeyDataX509GetCrlsSize(xmlSecKeyDataPtr data) {
@@ -1084,7 +1084,6 @@ xmlSecOpenSSLX509SubjectNameNodeRead(xmlSecKeyDataPtr data, xmlNodePtr node, xml
 
     cert = xmlSecOpenSSLX509StoreFindCert(x509Store, subject, NULL, NULL, NULL, keyInfoCtx);
     if(cert == NULL){
-	xmlFree(subject);
 
 	if((keyInfoCtx->flags & XMLSEC_KEYINFO_FLAGS_X509DATA_STOP_ON_UNKNOWN_CERT) != 0) {
 	    xmlSecError(XMLSEC_ERRORS_HERE,
@@ -1093,8 +1092,11 @@ xmlSecOpenSSLX509SubjectNameNodeRead(xmlSecKeyDataPtr data, xmlNodePtr node, xml
 			XMLSEC_ERRORS_R_CERT_NOT_FOUND,
 			"subject=%s", 
 			xmlSecErrorsSafeString(subject));
+    	    xmlFree(subject);
 	    return(-1);
 	}
+
+	xmlFree(subject);	
 	return(0);
     }
 
@@ -1105,6 +1107,7 @@ xmlSecOpenSSLX509SubjectNameNodeRead(xmlSecKeyDataPtr data, xmlNodePtr node, xml
 		    "X509_dup",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
 		    XMLSEC_ERRORS_NO_MESSAGE);
+
 	xmlFree(subject);
 	return(-1);
     }
@@ -1154,7 +1157,7 @@ xmlSecOpenSSLX509SubjectNameNodeWrite(X509* cert, xmlNodePtr node, xmlSecKeyInfo
 	xmlFree(buf);
 	return(-1);
     }
-    xmlNodeSetContent(cur, buf);
+    xmlSecNodeEncodeAndSetContent(cur, buf);
     xmlFree(buf);
     return(0);
 }
@@ -1257,8 +1260,6 @@ xmlSecOpenSSLX509IssuerSerialNodeRead(xmlSecKeyDataPtr data, xmlNodePtr node, xm
 
     cert = xmlSecOpenSSLX509StoreFindCert(x509Store, NULL, issuerName, issuerSerial, NULL, keyInfoCtx);
     if(cert == NULL){
-	xmlFree(issuerSerial);
-	xmlFree(issuerName);
 
 	if((keyInfoCtx->flags & XMLSEC_KEYINFO_FLAGS_X509DATA_STOP_ON_UNKNOWN_CERT) != 0) {
 	    xmlSecError(XMLSEC_ERRORS_HERE,
@@ -1268,8 +1269,12 @@ xmlSecOpenSSLX509IssuerSerialNodeRead(xmlSecKeyDataPtr data, xmlNodePtr node, xm
 			"issuerName=%s;issuerSerial=%s",
 		        xmlSecErrorsSafeString(issuerName), 
 			xmlSecErrorsSafeString(issuerSerial));
+    	    xmlFree(issuerSerial);
+	    xmlFree(issuerName);
 	    return(-1);
 	}
+	xmlFree(issuerSerial);
+	xmlFree(issuerName);
 	return(0);    
     }
 
@@ -1357,7 +1362,7 @@ xmlSecOpenSSLX509IssuerSerialNodeWrite(X509* cert, xmlNodePtr node, xmlSecKeyInf
 		    XMLSEC_ERRORS_NO_MESSAGE);
 	return(-1);
     }
-    xmlNodeSetContent(issuerNameNode, buf);
+    xmlSecNodeEncodeAndSetContent(issuerNameNode, buf);
     xmlFree(buf);
 
     buf = xmlSecOpenSSLASN1IntegerWrite(X509_get_serialNumber(cert));
@@ -1369,7 +1374,7 @@ xmlSecOpenSSLX509IssuerSerialNodeWrite(X509* cert, xmlNodePtr node, xmlSecKeyInf
 		    XMLSEC_ERRORS_NO_MESSAGE);
 	return(-1);
     }
-    xmlNodeSetContent(issuerNumberNode, buf);
+    xmlSecNodeEncodeAndSetContent(issuerNumberNode, buf);
     xmlFree(buf);
 
     return(0);
@@ -1488,7 +1493,7 @@ xmlSecOpenSSLX509SKINodeWrite(X509* cert, xmlNodePtr node, xmlSecKeyInfoCtxPtr k
 	xmlFree(buf);
 	return(-1);
     }
-    xmlNodeSetContent(cur, buf);
+    xmlSecNodeEncodeAndSetContent(cur, buf);
     xmlFree(buf);
 
     return(0);
@@ -1817,7 +1822,7 @@ xmlSecOpenSSLX509CertGetTime(ASN1_TIME* t, time_t* res) {
  * 
  * Extracts public key from the @cert.
  *
- * Returns public key value or NULL if an error occurs.
+ * Returns: public key value or NULL if an error occurs.
  */
 xmlSecKeyDataPtr	
 xmlSecOpenSSLX509CertGetKey(X509* cert) {
@@ -2264,20 +2269,25 @@ xmlSecOpenSSLX509CertDebugXmlDump(X509* cert, FILE* output) {
     xmlSecAssert(cert != NULL);
     xmlSecAssert(output != NULL);
     
-    fprintf(output, "=== X509 Certificate\n");
-    fprintf(output, "==== Subject Name: %s\n", 
-	 X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf))); 
-    fprintf(output, "==== Issuer Name: %s\n", 
-	 X509_NAME_oneline(X509_get_issuer_name(cert), buf, sizeof(buf))); 
-    fprintf(output, "==== Issuer Serial: ");
+    fprintf(output, "<SubjectName>");
+    xmlSecPrintXmlString(output, 
+	BAD_CAST X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf))
+    );
+    fprintf(output, "</SubjectName>\n");
+    
+    
+    fprintf(output, "<IssuerName>");
+    xmlSecPrintXmlString(output, 
+	BAD_CAST X509_NAME_oneline(X509_get_issuer_name(cert), buf, sizeof(buf))); 
+    fprintf(output, "</IssuerName>\n");
+
+    fprintf(output, "<SerialNumber>");
     bn = ASN1_INTEGER_to_BN(X509_get_serialNumber(cert),NULL);
     if(bn != NULL) {
 	BN_print_fp(output, bn);
 	BN_free(bn);
-	fprintf(output, "\n");
-    } else {
-	fprintf(output, "unknown\n");
     }
+    fprintf(output, "</SerialNumber>\n");
 }
 
 
@@ -2336,7 +2346,7 @@ static xmlSecKeyDataKlass xmlSecOpenSSLKeyDataRawX509CertKlass = {
  * 
  * The raw X509 certificates key data klass.
  *
- * Returns raw X509 certificates key data klass.
+ * Returns: raw X509 certificates key data klass.
  */
 xmlSecKeyDataId 
 xmlSecOpenSSLKeyDataRawX509CertGetKlass(void) {

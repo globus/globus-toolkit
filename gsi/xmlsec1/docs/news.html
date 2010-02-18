@@ -39,20 +39,154 @@
 <td width="15"></td>
 <td><a href="http://www.openssl.org/"><img src="images/openssl-logo.png" alt="OpenSSL" border="0"></a></td>
 </tr>
+<!--Links - start--><!--Links - end-->
 </table>
 </td>
-<td valign="top"><table width="100%" valign="top">
-<tr><td valign="top" align="left" id="xmlsecContent">
+<td valign="top"><table width="100%" valign="top"><tr><td valign="top" align="left" id="xmlsecContent">
 <div align="Center">                                   
       <h1>XML Security Library News</h1>
       </div>
 <ul>
-<li>October 14 2003<br>
+<li>December 5 2009<br>
+	Changes in <a href="download.html">XML Security Library 1.2.14</a> release:
+	<ul>
+<li>XMLSec library is switched from built-in LTDL library to the system 
+	LTDL library on Linux/Unix and native calls on Windows to fix 
+	<a href="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2009-3736">security 
+	issue</a> in LTDL.</li>
+	<li>Fixed minor bugs (see <a href="http://git.gnome.org/cgit/xmlsec/log/">log</a> 
+	for complete list).</li>
+	</ul>
+</li>
+
+<li>September 12 2009<br>
+	Changes in <a href="download.html">XML Security Library 1.2.13</a> release:
+	<ul>
+<li>
+<a href="http://xmlsoft.org/">LibXML2</a> version 2.7.4 is now required</li>
+	<li>Implemented support for <a href="http://www.w3.org/TR/xml-c14n11/">C14N version 1.1</a>
+</li>
+	<li>Increase default minimum hmac size to 80 bits</li>
+	<li>Added support for --with-libxml-src and --with-libxslt-src ./configure options</li>
+	<li>Fixed XML dump output</li>
+	</ul>
+</li>
+
+<li>July 14 2009<br>
+	The new <a href="download.html">XML Security Library 1.2.12</a> release
+	includes the following changes (see ChangeLog for the complete list of changes):
+	<ul>
+<li>Fixed HMAC vulnerability with small values of HMAC length 
+	(<a href="http://www.kb.cert.org/vuls/id/466161">CERT VU #466161</a>).</li>
+	<li>Added support for the GOST implemented by Russian Crypto Pro CSP 
+	(patch from Dennis Prochko)</li>
+	<li>Added an option to return the replaced node (based on the patch from Frank Gross)</li>
+	<li>Added new function xmlSecNodeEncodeAndSetContent for encoding
+	special chars in the node content.</li>
+	<li>Added configurable Base64 line length.</li>
+	<li>Bug fixes.</li>
+	</ul>
+</li>
+<li>November 6 2007<br>
+	The new <a href="download.html">XML Security Library 1.2.11</a> release
+	includes the following changes:
+	<ul>
+<li>Mingw port (Roumen Petrov).</li>
+	<li>Better support for non micorsoft CSP's (Wouter and Ed Shallow).</li>
+	<li>Bug fixes.</li>
+	</ul>
+</li>
+<br><li>June 12 2006<br>
+	The new <a href="download.html">XML Security Library 1.2.10</a> release
+	includes the following changes:
+	<ul>
+<li>GOST algorithms support (Dmitry Belyavsky)</li>
+	<li>Ability to disable system trusted certs in xmlsec-mscrypto 
+	(Dmitry Belyavsky)</li>
+	<li>New functions for adding X509IssuerName and X509SerialNumber 
+	nodes to the template (Dmitry Belyavsky)
+	</li>
+<li>Better packaging support for Fedora and Debian (Daniel Veillard, John Belmonte)</li>
+	<li>Cleanups from Coverity tool reports</li>
+	<li>Bug fixes</li>
+	</ul>
+</li>
+<br><li>July 12 2005<br>
+	The new <a href="download.html">XML Security Library 1.2.9</a> release
+	includes few bug fixes and adds support for the recently released 
+	<a href="http://www.openssl.org">OpenSSL 0.9.8</a> including several 
+	new algorithms for <a href="xmldsig.html">xmlsec-openssl</a>:
+	<ul>
+<li>SHA224/SHA256/SHA384/SHA512</li>
+	    <li>HMAC-SHA224/SHA256/SHA384/SHA512</li>
+	    <li>RSA-MD5/RIPEMD160/SHA224/SHA256/SHA384/SHA512</li>
+	</ul>
+</li>
+<br><li>March 30 2005<br>
+	The new <a href="download.html">XML Security Library 1.2.8</a> release
+	merges OpenOffice.org changes to xmlsec-mscrypto and xmlsec-nss into
+	main xmlsec source tree.
+</li>
+<br><li>February 23 2005<br>
+	The new <a href="download.html">XML Security Library 1.2.7</a> release
+	includes several bug fixes and minor enchancements:
+	<ul>
+<li>(core) added xmlSecSimpleKeysStoreGetKeys() function;</li>
+	<li>(core) added functions to create &lt;X509Data/&gt; node children
+	     in the signature template;</li>
+	<li>(core) fixed xmlSecGenerateID() function;</li>
+	<li>(core) fixed dynamic linking initialization/shutdown when custom memory 
+	    allocation functions are used;</li>
+	<li>(core) fixed encrypted text parsing and xmlParseInNodeContext() function;</li>
+	<li>(openssl) fixed parsing quoted values in the certificate subject;</li>
+	<li>(mscrypto) negative numbers support in xmlSecBnFromString()/xmlSecBnToString() functions.</li>
+	</ul>
+</li>
+
+<br><li>August 25 2004<br>
+	The new <a href="download.html">XML Security Library 1.2.6</a> 
+	fixes several minor bugs and adds support for loading keys and
+	certificates from memory.
+</li>
+
+<br><li>July 27 2004<br>
+	Created a <a href="related.html#books">list of books</a> about
+	cryptography and security that covers most of the topics needed
+	for using XML Security Library.
+</li>
+
+<br><li>April 15 2004<br>
+	The new <a href="download.html">XML Security Library 1.2.5</a> 
+	includes a simple XKMS server implementation and fixes a nasty
+	bug with encrypting/decrypting nodes with an empty content.
+</li>
+
+<br><li>January 27 2004<br>
+	The new <a href="download.html">XML Security Library 1.2.4</a> 
+	release fixes many configuration and installation problems 
+	found by John.
+</li>
+
+<br><li>January 6 2004<br>
+	The new <a href="download.html">XML Security Library 1.2.3</a> 
+	release upgrades xmlsec-gnutls code to support latest gnutls
+	library version (1.0.4) and fixes several configuration and 
+	installation problems.
+</li>
+
+<br><li>November 11 2003<br>
+	The new <a href="download.html">XML Security Library 1.2.2</a> 
+	release includes several improvements in ./configure script
+	(Daniel, Roumen) and a bug fix for certificates serial number
+	processing in xmlsec-mscrypto.
+</li>
+
+<br><li>October 14 2003<br>
 	The new <a href="download.html">XML Security Library 1.2.1</a> 
 	release includes a special "hack" for supporting ID attributes
 	with invalid values in Visa 3D; fixed processing of root element 
 	node siblings (bug #124245); template functions for creating 
-	&lt;enc:KeyReference/&gt; and &lt;enc:DataReference/&gt
+	&lt;enc:KeyReference/&gt; and &lt;enc:DataReference/&amp;gt
         nodes (Wouter); new "XMLSEC_DOCDIR" environment variable 
 	for ./configure script; updated README files for xmlsec-crypto
 	libraries.
@@ -354,7 +488,7 @@ Online XML  Digital Signature Verifier</a>
 from           <a href="http://lists.w3.org/Archives/Public/w3c-ietf-xmldsig/2002AprJun/0006.html">
   Manoj K. Srivastava.</a><br><br>
 </li>
-          <li>March 31 2002 <br>
+          <li>March 31 2002<br>
    Some major changes and a time for new release: <a href="download.html">
  XML Security Library 0.0.2</a>
  . Now XML Security Library supports <b>all</b> MUST/SHOULD/MAY <a href="xmldsig-interop.html">
@@ -362,8 +496,7 @@ from           <a href="http://lists.w3.org/Archives/Public/w3c-ietf-xmldsig/200
    from XMLDSig standard!<br>
     - Added X509 certificates and certificate chains support<br>
     - The detailed signature generation/verification results are made available 
- to the application (see <a href="api-0.0.x/examples/example-dsig3.html">example 3</a>
-  )<br>
+ to the application<br>
    - RetrievalMethod, Manifests and <a href="http://www.ietf.org/internet-drafts/draft-eastlake-xmldsig-uri-02.txt">
    additional algorithms</a>
    are added<br>
@@ -385,10 +518,6 @@ from           <a href="http://lists.w3.org/Archives/Public/w3c-ietf-xmldsig/200
 me  your comments/suggestions. </li>
                                        
       </ul>
-</td></tr>
-<tr><td>
-<br><br><p><a href="bugs.html">Aleksey Sanin</a></p>
-</td></tr>
-</table></td>
+</td></tr></table></td>
 </tr></table></body>
 </html>
