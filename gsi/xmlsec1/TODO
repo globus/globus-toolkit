@@ -1,6 +1,0 @@
-- Unify password callback (one of parameters: filename)
-- get key usage from certs
-- extend keys manager to return more info when key is found or not found
-(what cheks were performed, etc.)
-
-    
