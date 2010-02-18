@@ -2,6 +2,8 @@
 set -e # exit on any error
 LOGNAME=$USER
 export LOGNAME
+VOMS_LOCATION="$_CONDOR_SCRATCH_DIR/voms"
+MYPROXY_CONFIG_OPTS=""
 (
 if test -n "${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}"; then
     PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8k_shared_ROOT}/lib/pkgconfig"
@@ -21,6 +23,23 @@ if test -d /prereq/valgrind-3.5.0/bin -a "x$NMI_PLATFORM" != "xx86_64_macos_10.5
     PATH=/prereq/valgrind-3.5.0/bin:$PATH
     export PATH
     valgrind="-valgrind"
+fi
+voms=""
+if test -r "${VOMS_LOCATION}/lib/libvomsc.so"; then
+    voms="--with-voms=${VOMS_LOCATION}"
+fi
+if test -d /prereq/java-1.5.0_08/bin; then
+    JAVA_HOME=/prereq/java-1.5.0_08
+    PATH=/prereq/java-1.5.0_08/bin:$PATH
+    export JAVA_HOME PATH
+fi
+if test -n "${JAVA_HOME}"; then
+    jglobus="cog-jglobus-1.8.0"
+    COG_INSTALL_PATH=`pwd`/$jglobus
+    export COG_INSTALL_PATH
+    if test ! -d $COG_INSTALL_PATH; then
+	tar xfz $jglobus-bin.tar.gz
+    fi
 fi
 BuildGT()
 {
@@ -58,6 +77,19 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installerdir="$_CONDOR_SCRATCH_DIR/gt-nightly-src"
     BuildGT
 fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildVOMS"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
+    export GLOBUS_LOCATION
+    . $GLOBUS_LOCATION/etc/globus-user-env.sh
+    echo ==================================================
+    echo Building VOMS to $VOMS_LOCATION
+    cd org.glite.security.voms
+    ./configure --prefix=$VOMS_LOCATION \
+      --disable-java --disable-docs --with-api-only
+    make
+    make install
+    cd ..
+fi
 BuildMyProxyCVS()
 {
     export GLOBUS_LOCATION
@@ -78,11 +110,15 @@ BuildMyProxyCVS()
     echo Building MyProxy...
     cd ../myproxy
     ./bootstrap
-    ./configure --with-flavor=$flavor
+    ./configure --with-flavor=$flavor $MYPROXY_CONFIG_OPTS
     make dist
     gpt-uninstall myproxy
     rm -rf BUILD
-    gpt-build -verbose myproxy-*.tar.gz $flavor
+    if test -n "${MYPROXY_CONFIG_OPTS}"; then
+	make install
+    else
+	gpt-build -verbose myproxy-*.tar.gz $flavor
+    fi
     cd ..
 }
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT4"; then
@@ -95,6 +131,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT5"; then
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGTNightly"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
+    MYPROXY_CONFIG_OPTS=$voms
     BuildMyProxyCVS
 fi
 TestMyProxyCVS()
