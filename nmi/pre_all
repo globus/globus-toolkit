@@ -1,3 +1,0 @@
-#!/bin/sh
-cp myproxy/nmi/tasklist.nmi .
-exit 0

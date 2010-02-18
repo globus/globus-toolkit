@@ -1,0 +1,3 @@
+method = scp
+scp_file = /home/jbasney/org.glite.security.voms
+recursive = true
