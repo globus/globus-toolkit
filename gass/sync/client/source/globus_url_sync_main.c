@@ -170,12 +170,7 @@ main(int argc, char *argv[])
 				&globus_url_sync_comparator_size);
 	}
 
-	/* ...filetype, always checked */
-	globus_url_sync_chained_comparator_add(
-			&chained_comparator,
-			&globus_url_sync_comparator_filetype);
-
-	/* ...exists, always checked */
+	/* ...exists, always checked, including filetype checking */
 	globus_url_sync_chained_comparator_add(
 			&chained_comparator,
 			&globus_url_sync_comparator_exists);
