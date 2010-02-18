@@ -40,7 +40,7 @@ extern "C" {
  *
  * xmlsec-crypto libraryinitialization method. 
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int 			(*xmlSecCryptoInitMethod)		(void);
 /**
@@ -48,7 +48,7 @@ typedef int 			(*xmlSecCryptoInitMethod)		(void);
  * 
  * xmlsec-crypto library shutdown method. 
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int 			(*xmlSecCryptoShutdownMethod)		(void);
 /**
@@ -57,7 +57,7 @@ typedef int 			(*xmlSecCryptoShutdownMethod)		(void);
  *
  * Initializes @mngr with xmlsec-crypto library specific data.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 typedef int			(*xmlSecCryptoKeysMngrInitMethod)	(xmlSecKeysMngrPtr mngr);
 
@@ -71,7 +71,7 @@ typedef int			(*xmlSecCryptoKeysMngrInitMethod)	(xmlSecKeysMngrPtr mngr);
  *
  * Gets the key data klass.
  *
- * Returns: pointer to key data klass or NULL if an error occurs 
+ * Returns pointer to key data klass or NULL if an error occurs 
  * (the xmlsec-crypto library is not loaded or this key data klass is not
  * implemented).
  */ 
@@ -87,7 +87,7 @@ typedef xmlSecKeyDataId		(*xmlSecCryptoKeyDataGetKlassMethod)	(void);
  *
  * Gets the key data store klass.
  *
- * Returns: pointer to key data store klass or NULL if an error occurs 
+ * Returns pointer to key data store klass or NULL if an error occurs 
  * (the xmlsec-crypto library is not loaded or this key data store klass is not
  * implemented).
  */ 
@@ -103,7 +103,7 @@ typedef xmlSecKeyDataStoreId	(*xmlSecCryptoKeyDataStoreGetKlassMethod)(void);
  *
  * Gets the transform klass.
  *
- * Returns: pointer to transform klass or NULL if an error occurs 
+ * Returns pointer to transform klass or NULL if an error occurs 
  * (the xmlsec-crypto library is not loaded or this transform is not
  * implemented).
  */ 
@@ -122,7 +122,7 @@ typedef xmlSecTransformId	(*xmlSecCryptoTransformGetKlassMethod)	(void);
  * by XMLSec command line utility and called before 
  * @xmlSecInit function.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int			(*xmlSecCryptoAppInitMethod)		(const char* config);
 /**
@@ -132,7 +132,7 @@ typedef int			(*xmlSecCryptoAppInitMethod)		(const char* config);
  * by XMLSec command line utility and called after 
  * @xmlSecShutdown function.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int			(*xmlSecCryptoAppShutdownMethod)	(void);
 /**
@@ -142,7 +142,7 @@ typedef int			(*xmlSecCryptoAppShutdownMethod)	(void);
  * Initializes @mngr with simple keys store #xmlSecSimpleKeysStoreId
  * and a default crypto key data stores.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 typedef int			(*xmlSecCryptoAppDefaultKeysMngrInitMethod)	
 									(xmlSecKeysMngrPtr mngr);
@@ -154,7 +154,7 @@ typedef int			(*xmlSecCryptoAppDefaultKeysMngrInitMethod)
  * Adds @key to the keys manager @mngr created with #xmlSecCryptoAppDefaultKeysMngrInit
  * function.
  *  
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 typedef int			(*xmlSecCryptoAppDefaultKeysMngrAdoptKeyMethod)	
 									(xmlSecKeysMngrPtr mngr,
@@ -167,7 +167,7 @@ typedef int			(*xmlSecCryptoAppDefaultKeysMngrAdoptKeyMethod)
  * Loads XML keys file from @uri to the keys manager @mngr created 
  * with #xmlSecCryptoAppDefaultKeysMngrInit function.
  *  
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 typedef int			(*xmlSecCryptoAppDefaultKeysMngrLoadMethod)
 									(xmlSecKeysMngrPtr mngr,
@@ -180,7 +180,7 @@ typedef int			(*xmlSecCryptoAppDefaultKeysMngrLoadMethod)
  *
  * Saves keys from @mngr to  XML keys file.
  *  
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */ 
 typedef int			(*xmlSecCryptoAppDefaultKeysMngrSaveMethod)
 									(xmlSecKeysMngrPtr mngr,
@@ -197,7 +197,7 @@ typedef int			(*xmlSecCryptoAppDefaultKeysMngrSaveMethod)
  * Reads cert from @filename and adds to the list of trusted or known
  * untrusted certs in @store.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int			(*xmlSecCryptoAppKeysMngrCertLoadMethod)(xmlSecKeysMngrPtr mngr,
     									 const char *filename, 
@@ -215,7 +215,7 @@ typedef int			(*xmlSecCryptoAppKeysMngrCertLoadMethod)(xmlSecKeysMngrPtr mngr,
  * Reads cert from @data and adds to the list of trusted or known
  * untrusted certs in @store.
  *
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int			(*xmlSecCryptoAppKeysMngrCertLoadMemoryMethod)(xmlSecKeysMngrPtr mngr,
 									 const xmlSecByte* data,
@@ -232,7 +232,7 @@ typedef int			(*xmlSecCryptoAppKeysMngrCertLoadMemoryMethod)(xmlSecKeysMngrPtr m
  *
  * Reads key from the a file.
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 typedef xmlSecKeyPtr		(*xmlSecCryptoAppKeyLoadMethod)		(const char *filename, 
 									 xmlSecKeyDataFormat format,
@@ -251,7 +251,7 @@ typedef xmlSecKeyPtr		(*xmlSecCryptoAppKeyLoadMethod)		(const char *filename,
  *
  * Reads key from the binary data buffer.
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 typedef xmlSecKeyPtr		(*xmlSecCryptoAppKeyLoadMemoryMethod)	(const xmlSecByte* data,
 									 xmlSecSize dataSize, 
@@ -272,7 +272,7 @@ typedef xmlSecKeyPtr		(*xmlSecCryptoAppKeyLoadMemoryMethod)	(const xmlSecByte* d
  * For uniformity, call xmlSecCryptoAppKeyLoad instead of this function. Pass
  * in format=xmlSecKeyDataFormatPkcs12.
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 typedef xmlSecKeyPtr		(*xmlSecCryptoAppPkcs12LoadMethod)	(const char* filename, 
 									 const char* pwd,
@@ -290,7 +290,7 @@ typedef xmlSecKeyPtr		(*xmlSecCryptoAppPkcs12LoadMethod)	(const char* filename,
  * For uniformity, call xmlSecCryptoAppKeyLoad instead of this function. Pass
  * in format=xmlSecKeyDataFormatPkcs12.
  *
- * Returns: pointer to the key or NULL if an error occurs.
+ * Returns pointer to the key or NULL if an error occurs.
  */
 typedef xmlSecKeyPtr		(*xmlSecCryptoAppPkcs12LoadMemoryMethod)(const xmlSecByte* data,
 									 xmlSecSize dataSize, 
@@ -305,7 +305,7 @@ typedef xmlSecKeyPtr		(*xmlSecCryptoAppPkcs12LoadMemoryMethod)(const xmlSecByte*
  *
  * Reads the certificate from $@filename and adds it to key.
  * 
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int			(*xmlSecCryptoAppKeyCertLoadMethod)	(xmlSecKeyPtr key,
 									 const char* filename,
@@ -320,7 +320,7 @@ typedef int			(*xmlSecCryptoAppKeyCertLoadMethod)	(xmlSecKeyPtr key,
  *
  * Reads the certificate from binary @data buffer and adds it to key.
  * 
- * Returns: 0 on success or a negative value otherwise.
+ * Returns 0 on success or a negative value otherwise.
  */
 typedef int			(*xmlSecCryptoAppKeyCertLoadMemoryMethod)(xmlSecKeyPtr key,
 									 const xmlSecByte* data,
@@ -334,7 +334,6 @@ typedef int			(*xmlSecCryptoAppKeyCertLoadMemoryMethod)(xmlSecKeyPtr key,
  * @keyDataAesGetKlass:		the method to get pointer to AES key data klass.
  * @keyDataDesGetKlass:		the method to get pointer to DES key data klass.
  * @keyDataDsaGetKlass:		the method to get pointer to DSA key data klass.
- * @keyDataGost2001GetKlass:	the method to get pointer to GOST 2001 key data klass.
  * @keyDataHmacGetKlass:	the method to get pointer to HMAC key data klass.
  * @keyDataRsaGetKlass:		the method to get pointer to RSA key data klass.
  * @keyDataX509GetKlass:	the method to get pointer to X509 key data klass.
@@ -349,31 +348,14 @@ typedef int			(*xmlSecCryptoAppKeyCertLoadMemoryMethod)(xmlSecKeyPtr key,
  * @transformDes3CbcGetKlass:	the method to get pointer to Triple DES encryption transform.
  * @transformKWDes3GetKlass:	the method to get pointer to Triple DES key wrapper transform.
  * @transformDsaSha1GetKlass:	the method to get pointer to DSA-SHA1 signature transform.
- * @transformGost2001GostR3411_94GetKlass: the method to get pointer to GOST2001 transform.
- * @transformHmacMd5GetKlass:	the method to get pointer to HMAC-MD5 transform.
- * @transformHmacRipemd160GetKlass: the method to get pointer to HMAC-RIPEMD160 transform.
  * @transformHmacSha1GetKlass:	the method to get pointer to HMAC-SHA1 transform.
- * @transformHmacSha224GetKlass: the method to get pointer to HMAC-SHA224 transform.
- * @transformHmacSha256GetKlass: the method to get pointer to HMAC-SHA256 transform.
- * @transformHmacSha384GetKlass: the method to get pointer to HMAC-SHA384 transform.
- * @transformHmacSha512GetKlass: the method to get pointer to HMAC-SHA512 transform.
- * @transformMd5GetKlass:	the method to get pointer to MD5 digest transform.
+ * @transformHmacRipemd160GetKlass: the method to get pointer to HMAC-RIPEMD160 transform.
+ * @transformHmacMd5GetKlass:	the method to get pointer to HMAC-MD5 transform.
  * @transformRipemd160GetKlass:	the method to get pointer to RIPEMD160 digest transform.
- * @transformRsaMd5GetKlass:	the method to get pointer to RSA-MD5 signature transform.
- * @transformRsaRipemd160GetKlass: the method to get pointer to RSA-RIPEMD160 signature transform.
  * @transformRsaSha1GetKlass:	the method to get pointer to RSA-SHA1 signature transform.
- * @transformRsaSha224GetKlass:	the method to get pointer to RSA-SHA224 signature transform.
- * @transformRsaSha256GetKlass:	the method to get pointer to RSA-SHA256 signature transform.
- * @transformRsaSha384GetKlass:	the method to get pointer to RSA-SHA384 signature transform.
- * @transformRsaSha512GetKlass:	the method to get pointer to RSA-SHA512 signature transform.
  * @transformRsaPkcs1GetKlass:	the method to get pointer to RSA-PKCS1_5 key transport transform.
  * @transformRsaOaepGetKlass:	the method to get pointer to RSA-OAEP key transport transform.
- * @transformGostR3411_94GetKlass: the method to get pointer to GOST R3411 transform.
  * @transformSha1GetKlass:	the method to get pointer to SHA1 digest transform.
- * @transformSha224GetKlass:	the method to get pointer to SHA224 digest transform.
- * @transformSha256GetKlass:	the method to get pointer to SHA256 digest transform.
- * @transformSha384GetKlass:	the method to get pointer to SHA384 digest transform.
- * @transformSha512GetKlass:	the method to get pointer to SHA512 digest transform.
  * @cryptoAppInit:		the default crypto engine initialization method.
  * @cryptoAppShutdown:		the default crypto engine shutdown method.
  * @cryptoAppDefaultKeysMngrInit: 	the default keys manager init method.
@@ -406,7 +388,6 @@ struct _xmlSecCryptoDLFunctions {
     xmlSecCryptoKeyDataGetKlassMethod		 keyDataAesGetKlass;
     xmlSecCryptoKeyDataGetKlassMethod		 keyDataDesGetKlass;
     xmlSecCryptoKeyDataGetKlassMethod		 keyDataDsaGetKlass;
-    xmlSecCryptoKeyDataGetKlassMethod		 keyDataGost2001GetKlass;
     xmlSecCryptoKeyDataGetKlassMethod		 keyDataHmacGetKlass;
     xmlSecCryptoKeyDataGetKlassMethod		 keyDataRsaGetKlass;
     xmlSecCryptoKeyDataGetKlassMethod		 keyDataX509GetKlass;
@@ -429,32 +410,15 @@ struct _xmlSecCryptoDLFunctions {
     xmlSecCryptoTransformGetKlassMethod		 transformDes3CbcGetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformKWDes3GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformDsaSha1GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformGost2001GostR3411_94GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformHmacMd5GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformHmacRipemd160GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformHmacSha1GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformHmacSha224GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformHmacSha256GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformHmacSha384GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformHmacSha512GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformMd5GetKlass;
+    xmlSecCryptoTransformGetKlassMethod		 transformHmacRipemd160GetKlass;
+    xmlSecCryptoTransformGetKlassMethod		 transformHmacMd5GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformRipemd160GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformRsaMd5GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformRsaRipemd160GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformRsaSha1GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformRsaSha224GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformRsaSha256GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformRsaSha384GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformRsaSha512GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformRsaPkcs1GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformRsaOaepGetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformGostR3411_94GetKlass;
     xmlSecCryptoTransformGetKlassMethod		 transformSha1GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformSha224GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformSha256GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformSha384GetKlass;
-    xmlSecCryptoTransformGetKlassMethod		 transformSha512GetKlass;
-    
+     
     /**
      * High level routines form xmlsec command line utility
      */ 
@@ -474,22 +438,6 @@ struct _xmlSecCryptoDLFunctions {
     xmlSecCryptoAppKeyCertLoadMemoryMethod	 cryptoAppKeyCertLoadMemory;
     void*					 cryptoAppDefaultPwdCallback;
 };
-
-#include <libxml/xmlstring.h>
-
-/**
- * xmlSecStrPrintf:
- *
- * Prints a string (see @xmlStrPrintf).
- */
-#define xmlSecStrPrintf 	xmlStrPrintf
-
-/**
- * xmlSecStrVPrintf:
- *
- * Prints a string (see @xmlStrVPrintf).
- */
-#define xmlSecStrVPrintf 	xmlStrVPrintf
 
 #ifdef __cplusplus
 }

@@ -18,11 +18,13 @@
 #include <libxml/tree.h>
 
 #include <xmlsec/xmlsec.h>
-#include <xmlsec/xmltree.h>
-#include <xmlsec/private.h>
 #include <xmlsec/errors.h>
 
 #define XMLSEC_ERRORS_BUFFER_SIZE	1024
+
+#if defined(_MSC_VER)
+#define snprintf _snprintf
+#endif
 
 typedef struct _xmlSecErrorDescription			xmlSecErrorDescription, *xmlSecErrorDescriptionPtr;
 struct _xmlSecErrorDescription {
@@ -174,7 +176,7 @@ xmlSecErrorsDefaultCallbackEnableOutput(int enabled) {
  * 
  * Gets the known error code at position @pos.
  *
- * Returns: the known error code or 0 if @pos is greater than 
+ * Returns the known error code or 0 if @pos is greater than 
  * total number of known error codes.
  */
 int 
@@ -192,7 +194,7 @@ xmlSecErrorsGetCode(xmlSecSize pos) {
  *
  * Gets the known error message at position @pos.
  *
- * Returns: the known error message or NULL if @pos is greater than 
+ * Returns the known error message or NULL if @pos is greater than 
  * total number of known error codes.
  */
 const char* 
@@ -225,18 +227,22 @@ xmlSecError(const char* file, int line, const char* func,
   	    int reason, const char* msg, ...) {
 	    
     if(xmlSecErrorsClbk != NULL) {
-	xmlChar error_msg[XMLSEC_ERRORS_BUFFER_SIZE];
+	char error_msg[XMLSEC_ERRORS_BUFFER_SIZE];
 	
 	if(msg != NULL) {
 	    va_list va;
 
 	    va_start(va, msg);
-  	    xmlSecStrVPrintf(error_msg, sizeof(error_msg), BAD_CAST msg, va);
+#if defined(WIN32) && !defined(__CYGWIN__)
+  	    _vsnprintf(error_msg, sizeof(error_msg), msg, va);
+#else  /* WIN32 */
+  	    vsnprintf(error_msg, sizeof(error_msg), msg, va);
+#endif /* WIN32 */
 	    error_msg[sizeof(error_msg) - 1] = '\0';
 	    va_end(va);	
 	} else {
 	    error_msg[0] = '\0';	    
 	}
-	xmlSecErrorsClbk(file, line, func, errorObject, errorSubject, reason, (char*)error_msg);
+	xmlSecErrorsClbk(file, line, func, errorObject, errorSubject, reason, error_msg);
     }	
 }

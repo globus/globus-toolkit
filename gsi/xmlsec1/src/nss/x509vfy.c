@@ -100,7 +100,7 @@ static CERTCertificate*		xmlSecNssX509FindCert(xmlChar *subjectName,
  * 
  * The NSS X509 certificates key data store klass.
  *
- * Returns: pointer to NSS X509 certificates key data store klass.
+ * Returns pointer to NSS X509 certificates key data store klass.
  */
 xmlSecKeyDataStoreId 
 xmlSecNssX509StoreGetKlass(void) {
@@ -118,7 +118,7 @@ xmlSecNssX509StoreGetKlass(void) {
  *
  * Searches @store for a certificate that matches given criteria.
  *
- * Returns: pointer to found certificate or NULL if certificate is not found
+ * Returns pointer to found certificate or NULL if certificate is not found
  * or an error occurs.
  */
 CERTCertificate *
@@ -144,7 +144,7 @@ xmlSecNssX509StoreFindCert(xmlSecKeyDataStorePtr store, xmlChar *subjectName,
  *
  * Verifies @certs list.
  *
- * Returns: pointer to the first verified certificate from @certs.
+ * Returns pointer to the first verified certificate from @certs.
  */ 
 CERTCertificate * 	
 xmlSecNssX509StoreVerify(xmlSecKeyDataStorePtr store, CERTCertList* certs,
@@ -245,9 +245,8 @@ xmlSecNssX509StoreVerify(xmlSecKeyDataStorePtr store, CERTCertList* certs,
                         xmlSecErrorsSafeString(xmlSecKeyDataStoreGetName(store)),
                         NULL,
                         XMLSEC_ERRORS_R_CERT_VERIFY_FAILED,
-						"cert with subject name %s could not be verified, errcode %d",
-						cert->subjectName,
-			PORT_GetError());
+                        "cert with subject name %s could not be verified",
+                        cert->subjectName);
 	    break;
     }
    
@@ -262,7 +261,7 @@ xmlSecNssX509StoreVerify(xmlSecKeyDataStorePtr store, CERTCertList* certs,
  *
  * Adds trusted (root) or untrusted certificate to the store.
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int
 xmlSecNssX509StoreAdoptCert(xmlSecKeyDataStorePtr store, CERTCertificate* cert, xmlSecKeyDataType type ATTRIBUTE_UNUSED) {
@@ -282,7 +281,7 @@ xmlSecNssX509StoreAdoptCert(xmlSecKeyDataStorePtr store, CERTCertificate* cert, 
                         xmlSecErrorsSafeString(xmlSecKeyDataStoreGetName(store)),
                         "CERT_NewCertList",
                         XMLSEC_ERRORS_R_CRYPTO_FAILED,
-						"error code=%d", PORT_GetError());
+                        XMLSEC_ERRORS_NO_MESSAGE);
             return(-1);
         }
     }
@@ -293,7 +292,7 @@ xmlSecNssX509StoreAdoptCert(xmlSecKeyDataStorePtr store, CERTCertificate* cert, 
                     xmlSecErrorsSafeString(xmlSecKeyDataStoreGetName(store)),
                     "CERT_AddCertToListTail",
                     XMLSEC_ERRORS_R_CRYPTO_FAILED,
-					"error code=%d", PORT_GetError());
+                    XMLSEC_ERRORS_NO_MESSAGE);
         return(-1);
     }
 
@@ -335,6 +334,10 @@ xmlSecNssX509StoreFinalize(xmlSecKeyDataStorePtr store) {
  * Low-level x509 functions
  *
  *****************************************************************************/
+
+/**
+ * xmlSecNssX509FindCert:
+ */
 static CERTCertificate*		
 xmlSecNssX509FindCert(xmlChar *subjectName, xmlChar *issuerName, 
 		      xmlChar *issuerSerial, xmlChar *ski) {
@@ -383,7 +386,7 @@ xmlSecNssX509FindCert(xmlChar *subjectName, xmlChar *issuerName,
                         NULL,
                         "SEC_ASN1EncodeItem",
                         XMLSEC_ERRORS_R_XMLSEC_FAILED,
-						"error code=%d", PORT_GetError());
+                        XMLSEC_ERRORS_NO_MESSAGE);
 	    goto done;
 	}
 
@@ -432,7 +435,7 @@ xmlSecNssX509FindCert(xmlChar *subjectName, xmlChar *issuerName,
                         NULL,
                         "SEC_ASN1EncodeItem",
                         XMLSEC_ERRORS_R_XMLSEC_FAILED,
-						"error code=%d", PORT_GetError());
+                        XMLSEC_ERRORS_NO_MESSAGE);
 	    goto done;
 	}
 
@@ -486,6 +489,9 @@ done:
     return(cert);
 }
 
+/**
+ * xmlSecNssX509NameRead:
+ */       
 static xmlSecByte *
 xmlSecNssX509NameRead(xmlSecByte *str, int len) {
     xmlSecByte name[256];
@@ -598,6 +604,11 @@ done:
     return (NULL);
 }
 
+
+
+/**
+ * xmlSecNssX509NameStringRead:
+ */
 static int 
 xmlSecNssX509NameStringRead(xmlSecByte **str, int *strLen, 
 			    xmlSecByte *res, int resLen,

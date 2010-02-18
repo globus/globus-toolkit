@@ -254,10 +254,7 @@ verify_request(xmlSecKeysMngrPtr mngr) {
     /** 
      * Load doc 
      */
-    doc = xmlReadMemory(xmlBufferContent(buffer), xmlBufferLength(buffer),
-			NULL, NULL,
-			XML_PARSE_NOENT | XML_PARSE_NOCDATA | 
-			XML_PARSE_PEDANTIC | XML_PARSE_NOCDATA);
+    doc = xmlParseMemory(xmlBufferContent(buffer), xmlBufferLength(buffer));
     if (doc == NULL) {
 	fprintf(stdout, "Error: unable to parse xml document (syntax error)\n");
 	goto done;
@@ -286,11 +283,9 @@ verify_request(xmlSecKeysMngrPtr mngr) {
     }
     
     /* we would like to store and print out everything */
-    /* actually we would not because it opens a security hole
     dsigCtx->flags = XMLSEC_DSIG_FLAGS_STORE_SIGNEDINFO_REFERENCES |
 		     XMLSEC_DSIG_FLAGS_STORE_MANIFEST_REFERENCES |
 		     XMLSEC_DSIG_FLAGS_STORE_SIGNATURE;
-    */
 
     /* Verify signature */
     if(xmlSecDSigCtxVerify(dsigCtx, node) < 0) {

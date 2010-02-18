@@ -516,14 +516,14 @@ static xmlSecTransformKlass xmlSecTransformXPathKlass = {
  * intersects the result with the previous nodes set. See 
  * http://www.w3.org/TR/xmldsig-core/#sec-XPath for more details.
  *
- * Returns: XPath transform id.
+ * Returns XPath transform id.
  */
 xmlSecTransformId 
 xmlSecTransformXPathGetKlass(void) {
     return(&xmlSecTransformXPathKlass);
 }
 
-static const char xpathPattern[] = "(//. | //@* | //namespace::*)[boolean(%s)]";
+static const char xpathPattern[] = "(//. | //@* | //namespace::*)[%s]";
 static int 
 xmlSecTransformXPathNodeRead(xmlSecTransformPtr transform, xmlNodePtr node, xmlSecTransformCtxPtr transformCtx) {
     xmlSecPtrListPtr dataList;
@@ -660,7 +660,7 @@ static xmlSecTransformKlass xmlSecTransformXPath2Klass = {
  * 
  * The XPath2 transform (http://www.w3.org/TR/xmldsig-filter2/).
  *
- * Returns: XPath2 transform klass.
+ * Returns XPath2 transform klass.
  */
 xmlSecTransformId 
 xmlSecTransformXPath2GetKlass(void) {
@@ -806,7 +806,7 @@ static xmlSecTransformKlass xmlSecTransformXPointerKlass = {
  * The XPointer transform klass 
  * (http://www.ietf.org/internet-drafts/draft-eastlake-xmldsig-uri-02.txt).
  *
- * Returns: XPointer transform klass.
+ * Returns XPointer transform klass.
  */
 xmlSecTransformId 
 xmlSecTransformXPointerGetKlass(void) {
@@ -822,7 +822,7 @@ xmlSecTransformXPointerGetKlass(void) {
  *
  * Sets the XPointer expression for an XPointer @transform.
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecTransformXPointerSetExpr(xmlSecTransformPtr transform, const xmlChar* expr, 
@@ -1024,10 +1024,10 @@ static xmlSecTransformKlass xmlSecTransformVisa3DHackKlass = {
  * 
  * The Visa3DHack transform klass. The only reason why we need this 
  * is Visa3D protocol. It doesn't follow XML/XPointer/XMLDSig specs and allows 
- * invalid XPointer expressions in the URI attribute. Since we couldn't evaluate 
- * such expressions thru XPath/XPointer engine, we need to have this hack here. 
+ * something like "#12345" in the URI attribute. Since we couldn't evaluate such 
+ * expressions thru XPath/XPointer engine, we need to have this hack here.
  *
- * Returns: Visa3DHack transform klass.
+ * Returns Visa3DHack transform klass.
  */
 xmlSecTransformId 
 xmlSecTransformVisa3DHackGetKlass(void) {
@@ -1041,7 +1041,7 @@ xmlSecTransformVisa3DHackGetKlass(void) {
  *
  * Sets the ID value for an Visa3DHack @transform.
  *
- * Returns: 0 on success or a negative value if an error occurs.
+ * Returns 0 on success or a negative value if an error occurs.
  */
 int 
 xmlSecTransformVisa3DHackSetID(xmlSecTransformPtr transform, const xmlChar* id) {

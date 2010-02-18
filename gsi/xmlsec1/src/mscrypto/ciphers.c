@@ -21,10 +21,6 @@
 
 #include <xmlsec/mscrypto/crypto.h>
 
-#if defined(__MINGW32__)
-#  include "xmlsec-mingw.h"
-#endif
-
 #ifndef MS_ENH_RSA_AES_PROV_PROTO
 #define MS_ENH_RSA_AES_PROV_PROTO "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)"
 #endif /* MS_ENH_RSA_AES_PROV_PROTO */
@@ -256,7 +252,7 @@ xmlSecMSCryptoBlockCipherCtxUpdate(xmlSecMSCryptoBlockCipherCtxPtr ctx,
 		    xmlSecErrorsSafeString(cipherName),
 		    "CryptEn/Decrypt",
 		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		    "size=%ld", dwCLen);
+		    "size=%d", dwCLen);
 	return(-1);
     }
 
@@ -401,7 +397,7 @@ xmlSecMSCryptoBlockCipherCtxFinal(xmlSecMSCryptoBlockCipherCtxPtr ctx,
 		    xmlSecErrorsSafeString(cipherName),
 		    "CryptEn/Decrypt",
 		    XMLSEC_ERRORS_R_XMLSEC_FAILED,
-		    "size=%ld", dwCLen);
+		    "size=%d", dwCLen);
 	return(-1);
     }
 
@@ -556,22 +552,6 @@ xmlSecMSCryptoBlockCipherInitialize(xmlSecTransformPtr transform) {
 
 		return(-1);
 	    }
-	} else if (dwError == NTE_BAD_KEYSET) {
-	  /* This error can indicate that a newly installed provider 
-	   * does not have a usable key container yet. It needs to be
-	   * created, and then we have to try again CryptAcquireContext.
-	   * This is also referenced in 
-	   * http://www.microsoft.com/mind/0697/crypto.asp (inituser)
-	   */
-	    if(!CryptAcquireContext(&ctx->cryptProvider, NULL, ctx->providerName,
-				    ctx->providerType, CRYPT_NEWKEYSET)) {
-	        xmlSecError(XMLSEC_ERRORS_HERE, 
-		    xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
-		    "CryptAcquireContext",
-		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    XMLSEC_ERRORS_NO_MESSAGE);
-		return(-1);
-	    }
 	} else {
 	    xmlSecError(XMLSEC_ERRORS_HERE, 
 			xmlSecErrorsSafeString(xmlSecTransformGetName(transform)),
@@ -652,7 +632,10 @@ xmlSecMSCryptoBlockCipherSetKey(xmlSecTransformPtr transform, xmlSecKeyPtr key) 
     xmlSecMSCryptoBlockCipherCtxPtr ctx;
     xmlSecBufferPtr buffer;
     BYTE* bufData;
-
+    size_t keySize;
+    HCRYPTPROV hProv = 0;
+    HCRYPTKEY hPubPrivKey = 0;
+    
     xmlSecAssert2(xmlSecMSCryptoBlockCipherCheckId(transform), -1);
     xmlSecAssert2((transform->operation == xmlSecTransformOperationEncrypt) || (transform->operation == xmlSecTransformOperationDecrypt), -1);
     xmlSecAssert2(xmlSecTransformCheckSize(transform, xmlSecMSCryptoBlockCipherSize), -1);
@@ -834,7 +817,7 @@ static xmlSecTransformKlass xmlSecMSCryptoAes128CbcKlass = {
  * 
  * AES 128 CBC encryption transform klass.
  * 
- * Returns: pointer to AES 128 CBC encryption transform.
+ * Returns pointer to AES 128 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecMSCryptoTransformAes128CbcGetKlass(void) {
@@ -873,7 +856,7 @@ static xmlSecTransformKlass xmlSecMSCryptoAes192CbcKlass = {
  * 
  * AES 192 CBC encryption transform klass.
  * 
- * Returns: pointer to AES 192 CBC encryption transform.
+ * Returns pointer to AES 192 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecMSCryptoTransformAes192CbcGetKlass(void) {
@@ -912,7 +895,7 @@ static xmlSecTransformKlass xmlSecMSCryptoAes256CbcKlass = {
  * 
  * AES 256 CBC encryption transform klass.
  * 
- * Returns: pointer to AES 256 CBC encryption transform.
+ * Returns pointer to AES 256 CBC encryption transform.
  */ 
 xmlSecTransformId 
 xmlSecMSCryptoTransformAes256CbcGetKlass(void) {
@@ -955,7 +938,7 @@ static xmlSecTransformKlass xmlSecMSCryptoDes3CbcKlass = {
  *
  * Triple DES CBC encryption transform klass.
  * 
- * Returns: pointer to Triple DES encryption transform.
+ * Returns pointer to Triple DES encryption transform.
  */
 xmlSecTransformId 
 xmlSecMSCryptoTransformDes3CbcGetKlass(void) {
@@ -1037,7 +1020,7 @@ xmlSecMSCryptoCreatePrivateExponentOneKey(HCRYPTPROV hProv, HCRYPTKEY *hPrivateK
 		    NULL,
 		    "CryptExportKey",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "len=%ld", keyBlobLen);
+		    "len=%d", keyBlobLen);
 	goto done;
     }
     pubKeyStruc = (PUBLICKEYSTRUC*)keyBlob;
@@ -1067,7 +1050,7 @@ xmlSecMSCryptoCreatePrivateExponentOneKey(HCRYPTPROV hProv, HCRYPTKEY *hPrivateK
 		    NULL,
 		    "CryptExportKey",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "rsaPubKey->magic=0x%08lx", rsaPubKey->magic);
+		    "rsaPubKey->magic=0x%08x", rsaPubKey->magic);
 	goto done;
     }
     bitLen = rsaPubKey->bitlen;
@@ -1093,7 +1076,7 @@ xmlSecMSCryptoCreatePrivateExponentOneKey(HCRYPTPROV hProv, HCRYPTKEY *hPrivateK
 		    NULL,
 		    "CryptExportKey",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "len=%ld", keyBlobLen);
+		    "len=%d", keyBlobLen);
 	goto done;
     }
     ptr = (BYTE*)(keyBlob + sizeof(PUBLICKEYSTRUC) + sizeof(RSAPUBKEY)); 
@@ -1225,7 +1208,7 @@ xmlSecMSCryptoImportPlainSessionBlob(HCRYPTPROV hProv, HCRYPTKEY hPrivateKey,
 		    NULL,
 		    NULL,
 		    XMLSEC_ERRORS_R_INVALID_SIZE,
-		    "dwKeyMaterial=%ld;dwProvSessionKeySize=%ld", 
+		    "dwKeyMaterial=%d;dwProvSessionKeySize=%d", 
 		    dwKeyMaterial, dwProvSessionKeySize);
 	goto done;
     }
@@ -1258,7 +1241,7 @@ xmlSecMSCryptoImportPlainSessionBlob(HCRYPTPROV hProv, HCRYPTKEY hPrivateKey,
 		    NULL,
 		    NULL,
 		    XMLSEC_ERRORS_R_INVALID_SIZE,
-		    "dwKeyMaterial=%ld;dwPublicKeySize=%ld", 
+		    "dwKeyMaterial=%d;dwPublicKeySize=%d", 
 		    dwKeyMaterial, dwPublicKeySize);
 	goto done;
     }
@@ -1298,7 +1281,7 @@ xmlSecMSCryptoImportPlainSessionBlob(HCRYPTPROV hProv, HCRYPTKEY hPrivateKey,
     /* Copy private key algorithm to buffer */
     algId		    = (ALG_ID*)(keyBlob + sizeof(PUBLICKEYSTRUC));
     (*algId)		    = dwPrivKeyAlg;
-
+    
     /* Place the key material in reverse order */
     pbPtr		    = (BYTE*)(keyBlob + sizeof(PUBLICKEYSTRUC) + sizeof(ALG_ID));
     for (n = 0; n < dwKeyMaterial; n++) {
@@ -1315,7 +1298,7 @@ xmlSecMSCryptoImportPlainSessionBlob(HCRYPTPROV hProv, HCRYPTKEY hPrivateKey,
 		    NULL,
 		    "CryptGenRandom",
 		    XMLSEC_ERRORS_R_CRYPTO_FAILED,
-		    "rndBlobSize=%ld", rndBlobSize);
+		    "rndBlobSize=%d", rndBlobSize);
 	goto done;
     }
     /* aleksey: why are we doing this? */

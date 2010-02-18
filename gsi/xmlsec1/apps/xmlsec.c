@@ -52,7 +52,7 @@ static const char bugs[] =
     "Report bugs to http://www.aleksey.com/xmlsec/bugs.html\n";
 
 static const char helpCommands1[] =     
-    "Usage: xmlsec <command> [<options>] [<files>]\n"
+    "Usage: xmlsec <command> [<options>] [<file>]\n"
     "\n"
     "xmlsec is a command line tool for signing, verifying, encrypting and\n"
     "decrypting XML documents. The allowed <command> values are:\n"
@@ -75,7 +75,8 @@ static const char helpCommands2[] =
     "  --decrypt   "	"\tdecrypt data from XML document\n"
 #endif /* XMLSEC_NO_XMLENC */
 #ifndef XMLSEC_NO_XKMS
-    "  --xkms-server-request ""\tprocess data as XKMS server request\n"
+    "  --xkis-server-locate  " "\tprocess data as XKMS/XKISS Locate request\n"
+    "  --xkis-server-validate" "\tprocess data as XKMS/XKISS Validate request\n"
 #endif /* XMLSEC_NO_XKMS */
     ;
 
@@ -112,25 +113,21 @@ static const char helpDecrypt[] =
     "Usage: xmlsec decrypt [<options>] <file>\n"
     "Decrypts XML Encryption data in the <file>\n";
 
-static const char helpXkmsServerRequest[] =  
-    "Usage: xmlsec xkms-server-request [<options>] <file>\n"
-    "Processes the <file> as XKMS server request and outputs the response\n";
+static const char helpXkissServerLocate[] =  
+    "Usage: xmlsec xkiss-server-locate [<options>] <file>\n"
+    "Processes the <file> as XKMS/XKISS Locate request and outputs the response\n";
+
+static const char helpXkissServerValidate[] =  
+    "Usage: xmlsec xkms-server-validate [<options>] <file>\n"
+    "Processes the <file> as XKMS/XKISS Validate request and outputs the response\n";
 
 static const char helpListKeyData[] =     
     "Usage: xmlsec list-key-data\n"
     "Prints the list of known key data klasses\n";
 
-static const char helpCheckKeyData[] =     
-    "Usage: xmlsec check-key-data <key-data-name> [<key-data-name> ... ]\n"
-    "Checks the given key-data against the list of known key-data klasses\n";
-
 static const char helpListTransforms[] =     
     "Usage: xmlsec list-transforms\n"
     "Prints the list of known transform klasses\n";
-
-static const char helpCheckTransforms[] =     
-    "Usage: xmlsec check-transforms <transform-name> [<transform-name> ... ]\n"
-    "Checks the given transforms against the list of known transform klasses\n";
 
 #define xmlSecAppCmdLineTopicGeneral		0x0001
 #define xmlSecAppCmdLineTopicDSigCommon		0x0002
@@ -167,9 +164,8 @@ static xmlSecAppCmdLineParam cryptoParam = {
     "--crypto",
     NULL,
     "--crypto <name>"
-    "\n\tthe name of the crypto engine to use from the following"
-    "\n\tlist: openssl, gnutls, nss, mscrypto (if no crypto engine is"
-    "\n\tspecified then the default one is used)",
+    "\n\tthe name of the crypto engine to use (if not specified, the default"
+    "\n\tcrypto engine is used)",
     xmlSecAppCmdLineParamTypeString,
     xmlSecAppCmdLineParamFlagNone,
     NULL
@@ -280,7 +276,7 @@ static xmlSecAppCmdLineParam pkcs8PemParam = {
     xmlSecAppCmdLineTopicKeysMngr,
     "--pkcs8-pem",
     "--privkey-p8-pem",
-    "--pkcs8-pem[:<name>] <file>[,<cafile>[,<cafile>[...]]]"
+    "--pkcs-pem[:<name>] <file>[,<cafile>[,<cafile>[...]]]"
     "\n\tload private key from PKCS8 PEM file and PEM certificates"
     "\n\tthat verify this key",
     xmlSecAppCmdLineParamTypeStringList,
@@ -643,73 +639,6 @@ static xmlSecAppCmdLineParam xmlDataParam = {
 
 /****************************************************************
  *
- * XKMS params
- *
- ***************************************************************/
-#ifndef XMLSEC_NO_XKMS
-static xmlSecAppCmdLineParam xkmsServiceParam = { 
-    xmlSecAppCmdLineTopicXkmsCommon,
-    "--xkms-service",
-    NULL,
-    "--xkms-service <uri>"
-    "\n\tsets XKMS \"Service\" <uri>",
-    xmlSecAppCmdLineParamTypeString,
-    xmlSecAppCmdLineParamFlagNone,
-    NULL
-};
-
-static xmlSecAppCmdLineParam xkmsFormatParam = { 
-    xmlSecAppCmdLineTopicXkmsCommon,
-    "--xkms-format",
-    NULL,
-    "--xkms-format <format>"
-    "\n\tsets the XKMS request/response format to one of the following values:"
-    "\n\t  \"plain\" (default), \"soap-1.1\" or \"soap-1.2\"",
-    xmlSecAppCmdLineParamTypeString,
-    xmlSecAppCmdLineParamFlagNone,
-    NULL
-};
-
-static xmlSecAppCmdLineParam xkmsStopUnknownResponseMechanismParam = { 
-    xmlSecAppCmdLineTopicXkmsCommon, /* todo: server */
-    "--xkms-stop-on-unknown-response-mechanism",
-    NULL,
-    "--xkms-stop-on-unknown-response-mechanism"
-    "\n\tstop processing XKMS server request if unknown ResponseMechanism"
-    "\n\tvalue was found",
-    xmlSecAppCmdLineParamTypeFlag,
-    xmlSecAppCmdLineParamFlagNone,
-    NULL
-};
-
-static xmlSecAppCmdLineParam xkmsStopUnknownRespondWithParam = { 
-    xmlSecAppCmdLineTopicXkmsCommon, /* todo: server */
-    "--xkms-stop-on-unknown-respond-with",
-    NULL,
-    "--xkms-stop-on-unknown-respond-with"
-    "\n\tstop processing XKMS server request if unknown RespondWith"
-    "\n\tvalue was found",
-    xmlSecAppCmdLineParamTypeFlag,
-    xmlSecAppCmdLineParamFlagNone,
-    NULL
-};
-
-static xmlSecAppCmdLineParam xkmsStopUnknownKeyUsageParam = { 
-    xmlSecAppCmdLineTopicXkmsCommon, /* todo: server */
-    "--xkms-stop-on-unknown-key-usage",
-    NULL,
-    "--xkms-stop-on-unknown-key-usage"
-    "\n\tstop processing XKMS server request if unknown KeyUsage"
-    "\n\tvalue was found",
-    xmlSecAppCmdLineParamTypeFlag,
-    xmlSecAppCmdLineParamFlagNone,
-    NULL
-};
-
-#endif /* XMLSEC_NO_XKMS */
-
-/****************************************************************
- *
  * X509 params
  *
  ***************************************************************/
@@ -809,7 +738,7 @@ static xmlSecAppCmdLineParam depthParam = {
     NULL,    
     "--depth <number>"
     "\n\tmaximum certificates chain depth",
-    xmlSecAppCmdLineParamTypeNumber,
+    xmlSecAppCmdLineParamTypeTime,
     xmlSecAppCmdLineParamFlagNone,
     NULL
 };
@@ -842,15 +771,6 @@ static xmlSecAppCmdLineParamPtr parameters[] = {
     &xmlDataParam,
     &enabledCipherRefUrisParam,
 #endif /* XMLSEC_NO_XMLENC */
-
-    /* xkms params */
-#ifndef XMLSEC_NO_XKMS
-    &xkmsServiceParam,
-    &xkmsFormatParam,
-    &xkmsStopUnknownResponseMechanismParam,
-    &xkmsStopUnknownRespondWithParam,
-    &xkmsStopUnknownKeyUsageParam,
-#endif /* XMLSEC_NO_XKMS */
              
     /* common dsig and enc parameters */
     &sessionKeyParam,    
@@ -915,9 +835,7 @@ typedef enum {
     xmlSecAppCommandUnknown = 0,
     xmlSecAppCommandHelp,
     xmlSecAppCommandListKeyData,
-    xmlSecAppCommandCheckKeyData,
     xmlSecAppCommandListTransforms,    
-    xmlSecAppCommandCheckTransforms,    
     xmlSecAppCommandVersion,
     xmlSecAppCommandKeys,
     xmlSecAppCommandSign,
@@ -926,7 +844,8 @@ typedef enum {
     xmlSecAppCommandEncrypt,
     xmlSecAppCommandDecrypt,
     xmlSecAppCommandEncryptTmpl,
-    xmlSecAppCommandXkmsServerRequest
+    xmlSecAppCommandXkissServerLocate,
+    xmlSecAppCommandXkissServerValidate
 } xmlSecAppCommand;
 
 typedef struct _xmlSecAppXmlData				xmlSecAppXmlData,
@@ -975,15 +894,14 @@ static void			xmlSecAppPrintEncCtx		(xmlSecEncCtxPtr encCtx);
 #endif /* XMLSEC_NO_XMLENC */
 
 #ifndef XMLSEC_NO_XKMS
-static int			xmlSecAppXkmsServerProcess	(const char* filename);
-static int			xmlSecAppPrepareXkmsServerCtx	(xmlSecXkmsServerCtxPtr xkmsServerCtx);
-static void			xmlSecAppPrintXkmsServerCtx	(xmlSecXkmsServerCtxPtr xkmsServerCtx);
+static int			xmlSecAppXkissServerLocate	(const char* filename);
+static int			xmlSecAppXkissServerValidate	(const char* filename);
+static int			xmlSecAppPrepareXkissServerCtx	(xmlSecXkissServerCtxPtr xkissServerCtx);
+static void			xmlSecAppPrintXkissServerCtx	(xmlSecXkissServerCtxPtr xkissServerCtx);
 #endif /* XMLSEC_NO_XKMS */
 
 static void			xmlSecAppListKeyData		(void);
-static int			xmlSecAppCheckKeyData	    (const char * name);
 static void			xmlSecAppListTransforms		(void);
-static int			xmlSecAppCheckTransform	    (const char * name);
 
 static xmlSecTransformUriType	xmlSecAppGetUriType		(const char* string);
 static FILE* 			xmlSecAppOpenFile		(const char* filename);
@@ -1050,7 +968,8 @@ int main(int argc, const char **argv) {
 	case xmlSecAppCommandVerify:
 	case xmlSecAppCommandEncrypt:
 	case xmlSecAppCommandDecrypt:
-	case xmlSecAppCommandXkmsServerRequest:
+	case xmlSecAppCommandXkissServerLocate:
+	case xmlSecAppCommandXkissServerValidate:
 	    if(pos >= argc) {
 		fprintf(stderr, "Error: <file> parameter is requried for this command\n");
 		xmlSecAppPrintUsage();
@@ -1095,28 +1014,8 @@ int main(int argc, const char **argv) {
 	case xmlSecAppCommandListKeyData:
 	    xmlSecAppListKeyData();
 	    break;
-	case xmlSecAppCommandCheckKeyData:
-	    for(i = pos; i < argc; ++i) {
-            if(xmlSecAppCheckKeyData(argv[i]) < 0) {
-                fprintf(stderr, "Error: key data \"%s\" not found\n", argv[i]);
-                goto fail;
-            } else {
-                fprintf(stdout, "Key data \"%s\" found\n", argv[i]);
-            }
-	    }
-	    break;
 	case xmlSecAppCommandListTransforms:
 	    xmlSecAppListTransforms();
-	    break;	    
-	case xmlSecAppCommandCheckTransforms:
-	    for(i = pos; i < argc; ++i) {
-            if(xmlSecAppCheckTransform(argv[i]) < 0) {
-                fprintf(stderr, "Error: transform \"%s\" not found\n", argv[i]);
-                goto fail;
-            } else {
-                fprintf(stdout, "Transforms \"%s\" found\n", argv[i]);
-            }
-	    }
 	    break;	    
 	case xmlSecAppCommandKeys:
 	    for(i = pos; i < argc; ++i) {
@@ -1181,10 +1080,18 @@ int main(int argc, const char **argv) {
 #endif /* XMLSEC_NO_XMLENC */
 
 #ifndef XMLSEC_NO_XKMS
-	case xmlSecAppCommandXkmsServerRequest:
+	case xmlSecAppCommandXkissServerLocate:
 	    for(i = pos; i < argc; ++i) {
-    	        if(xmlSecAppXkmsServerProcess(argv[i]) < 0) {
-		    fprintf(stderr, "Error: failed to process XKMS server request from file \"%s\"\n", argv[i]);
+    	        if(xmlSecAppXkissServerLocate(argv[i]) < 0) {
+		    fprintf(stderr, "Error: failed to process XKISS Locate request from file \"%s\"\n", argv[i]);
+		    goto fail;
+		}
+	    }
+	    break;
+	case xmlSecAppCommandXkissServerValidate:
+	    for(i = pos; i < argc; ++i) {
+    	        if(xmlSecAppXkissServerValidate(argv[i]) < 0) {
+		    fprintf(stderr, "Error: failed to process XKISS Validate request from file \"%s\"\n", argv[i]);
 		    goto fail;
 		}
 	    }
@@ -1202,7 +1109,7 @@ int main(int argc, const char **argv) {
        (xmlSecAppCmdLineParamGetInt(&repeatParam, 1) > 0)) {
        
 	repeats = xmlSecAppCmdLineParamGetInt(&repeatParam, 1);
-        fprintf(stderr, "Executed %d tests in %ld msec\n", repeats, (1000 * total_time) / CLOCKS_PER_SEC);    
+        fprintf(stderr, "Executed %d tests in %ld msec\n", repeats, total_time / (CLOCKS_PER_SEC / 1000));    
     }
 
     goto success;
@@ -1880,12 +1787,9 @@ xmlSecAppPrintEncCtx(xmlSecEncCtxPtr encCtx) {
 
 #ifndef XMLSEC_NO_XKMS
 static int 
-xmlSecAppXkmsServerProcess(const char* filename) {
+xmlSecAppXkissServerLocate(const char* filename) {
     xmlSecAppXmlDataPtr data = NULL;
-    xmlDocPtr doc = NULL;
-    xmlNodePtr result;
-    xmlSecXkmsServerCtx xkmsServerCtx;
-    xmlSecXkmsServerFormat format = xmlSecXkmsServerFormatPlain;
+    xmlSecXkissServerCtx xkissServerCtx;
     clock_t start_time;
     int res = -1;
 
@@ -1893,53 +1797,32 @@ xmlSecAppXkmsServerProcess(const char* filename) {
 	return(-1);
     }
 
-    if(xmlSecXkmsServerCtxInitialize(&xkmsServerCtx, gKeysMngr) < 0) {
-	fprintf(stderr, "Error: XKMS server context initialization failed\n");
+    if(xmlSecXkissServerCtxInitialize(&xkissServerCtx, gKeysMngr) < 0) {
+	fprintf(stderr, "Error: XKISS server context initialization failed\n");
 	return(-1);
     }
-    if(xmlSecAppPrepareXkmsServerCtx(&xkmsServerCtx) < 0) {
-	fprintf(stderr, "Error: XKMS server context preparation failed\n");
+    if(xmlSecAppPrepareXkissServerCtx(&xkissServerCtx) < 0) {
+	fprintf(stderr, "Error: XKISS server context preparation failed\n");
 	goto done;
     }
 
-    /* get the input format */
-    if(xmlSecAppCmdLineParamGetString(&xkmsFormatParam) != NULL) {
-	format = xmlSecXkmsServerFormatFromString(BAD_CAST xmlSecAppCmdLineParamGetString(&xkmsFormatParam));
-	if(format == xmlSecXkmsServerFormatUnknown) {
-	    fprintf(stderr, "Error: unknown format \"%s\"\n", 
-		    xmlSecAppCmdLineParamGetString(&xkmsFormatParam));
-	    return(-1);    
-	}
-    }
-
-    /* parse template and select start node, there are multiple options
-     * for start node thus we don't provide the default start node name */
-    data = xmlSecAppXmlDataCreate(filename, NULL, NULL);
+    /* parse template and select start node */
+    data = xmlSecAppXmlDataCreate(filename, xmlSecNodeLocateRequest, xmlSecXkmsNs);
     if(data == NULL) {
-	fprintf(stderr, "Error: failed to load request from file \"%s\"\n", filename);
-	goto done;
-    }
-
-    /* prepare result document */
-    doc = xmlNewDoc(BAD_CAST "1.0");
-    if(doc == NULL) {
-	fprintf(stderr, "Error: failed to create doc\n");
+	fprintf(stderr, "Error: failed to load template \"%s\"\n", filename);
 	goto done;
     }
 
     start_time = clock();          
-    result = xmlSecXkmsServerCtxProcess(&xkmsServerCtx, data->startNode, format, doc);
-    if(result == NULL) {
-	fprintf(stderr, "Error: failed to process xkms server request\n");
+    if((xmlSecXkissServerCtxLocate(&xkissServerCtx, data->startNode) < 0) || (xkissServerCtx.result == NULL)) {
+	fprintf(stderr, "Error: failed to process locate request\n");
 	goto done;
     }
     total_time += clock() - start_time;    
-
-        
+    
     /* print out result only once per execution */
-    xmlDocSetRootElement(doc, result);
     if(repeats <= 1) {
-	if(xmlSecAppWriteResult(doc, NULL) < 0) {
+	if(xmlSecAppWriteResult(xkissServerCtx.result, NULL) < 0) {
 	    goto done;
 	}
     }
@@ -1949,13 +1832,66 @@ xmlSecAppXkmsServerProcess(const char* filename) {
 done:
     /* print debug info if requested */
     if(repeats <= 1) { 
-        xmlSecAppPrintXkmsServerCtx(&xkmsServerCtx);
+        xmlSecAppPrintXkissServerCtx(&xkissServerCtx);
     }
-    xmlSecXkmsServerCtxFinalize(&xkmsServerCtx);
+    xmlSecXkissServerCtxFinalize(&xkissServerCtx);
 
-    if(doc != NULL) {
-	xmlFreeDoc(doc);
+    if(data != NULL) {
+	xmlSecAppXmlDataDestroy(data);
     }
+    return(res);
+}
+
+static int 
+xmlSecAppXkissServerValidate(const char* filename) {
+    xmlSecAppXmlDataPtr data = NULL;
+    xmlSecXkissServerCtx xkissServerCtx;
+    clock_t start_time;
+    int res = -1;
+
+    if(filename == NULL) {
+	return(-1);
+    }
+
+    if(xmlSecXkissServerCtxInitialize(&xkissServerCtx, gKeysMngr) < 0) {
+	fprintf(stderr, "Error: XKISS server context initialization failed\n");
+	return(-1);
+    }
+    if(xmlSecAppPrepareXkissServerCtx(&xkissServerCtx) < 0) {
+	fprintf(stderr, "Error: XKISS server context preparation failed\n");
+	goto done;
+    }
+
+    /* parse template and select start node */
+    data = xmlSecAppXmlDataCreate(filename, xmlSecNodeValidateRequest, xmlSecXkmsNs);
+    if(data == NULL) {
+	fprintf(stderr, "Error: failed to load document \"%s\"\n", filename);
+	goto done;
+    }
+
+    start_time = clock();          
+    if((xmlSecXkissServerCtxValidate(&xkissServerCtx, data->startNode) < 0) || (xkissServerCtx.result == NULL)) {
+	fprintf(stderr, "Error: failed to process locate request\n");
+	goto done;
+    }
+    total_time += clock() - start_time;    
+    
+    /* print out result only once per execution */
+    if(repeats <= 1) {
+	if(xmlSecAppWriteResult(xkissServerCtx.result, NULL) < 0) {
+	    goto done;
+	}
+    }
+
+    res = 0;    
+
+done:
+    /* print debug info if requested */
+    if(repeats <= 1) { 
+        xmlSecAppPrintXkissServerCtx(&xkissServerCtx);
+    }
+    xmlSecXkissServerCtxFinalize(&xkissServerCtx);
+
     if(data != NULL) {
 	xmlSecAppXmlDataDestroy(data);
     }
@@ -1963,52 +1899,34 @@ done:
 }
 
 static int
-xmlSecAppPrepareXkmsServerCtx(xmlSecXkmsServerCtxPtr xkmsServerCtx) {    
-    if(xkmsServerCtx == NULL) {
-	fprintf(stderr, "Error: XKMS context is null\n");
+xmlSecAppPrepareXkissServerCtx(xmlSecXkissServerCtxPtr xkissServerCtx) {    
+    if(xkissServerCtx == NULL) {
+	fprintf(stderr, "Error: XKISS  context is null\n");
 	return(-1);
     }
 
     /* set key info params */
-    if(xmlSecAppPrepareKeyInfoReadCtx(&(xkmsServerCtx->keyInfoReadCtx)) < 0) {
+    if(xmlSecAppPrepareKeyInfoReadCtx(&(xkissServerCtx->keyInfoReadCtx)) < 0) {
 	fprintf(stderr, "Error: failed to prepare key info context\n");
 	return(-1);
     }
 
-    if(xmlSecAppCmdLineParamGetString(&xkmsServiceParam) != NULL) {
-	xkmsServerCtx->expectedService = xmlStrdup(BAD_CAST xmlSecAppCmdLineParamGetString(&xkmsServiceParam));
-	if(xkmsServerCtx->expectedService == NULL) {
-	    fprintf(stderr, "Error: failed to duplicate string \"%s\"\n", 
-		    xmlSecAppCmdLineParamGetString(&xkmsServiceParam));
-	    return(-1);    
-	}
-    }
-    
-    if(xmlSecAppCmdLineParamIsSet(&xkmsStopUnknownResponseMechanismParam)) {
-	xkmsServerCtx->flags |= XMLSEC_XKMS_SERVER_FLAGS_STOP_ON_UNKNOWN_RESPONSE_MECHANISM;
-    }
-    if(xmlSecAppCmdLineParamIsSet(&xkmsStopUnknownRespondWithParam)) {
-	xkmsServerCtx->flags |= XMLSEC_XKMS_SERVER_FLAGS_STOP_ON_UNKNOWN_RESPOND_WITH;
-    }
-    if(xmlSecAppCmdLineParamIsSet(&xkmsStopUnknownKeyUsageParam)) {
-	xkmsServerCtx->flags |= XMLSEC_XKMS_SERVER_FLAGS_STOP_ON_UNKNOWN_KEY_USAGE;
-    }
     return(0);
 }
 
 static void 
-xmlSecAppPrintXkmsServerCtx(xmlSecXkmsServerCtxPtr xkmsServerCtx) {
-    if(xkmsServerCtx == NULL) {
+xmlSecAppPrintXkissServerCtx(xmlSecXkissServerCtxPtr xkissServerCtx) {
+    if(xkissServerCtx == NULL) {
 	return;
     }
     
     /* print debug info if requested */
     if((print_debug != 0) || xmlSecAppCmdLineParamIsSet(&printDebugParam)) {
-	xmlSecXkmsServerCtxDebugDump(xkmsServerCtx, stdout);
+	xmlSecXkissServerCtxDebugDump(xkissServerCtx, stdout);
     }
     
     if(xmlSecAppCmdLineParamIsSet(&printXmlDebugParam)) {	   
-	xmlSecXkmsServerCtxDebugXmlDump(xkmsServerCtx, stdout);
+	xmlSecXkissServerCtxDebugXmlDump(xkissServerCtx, stdout);
     }
 }
 
@@ -2020,26 +1938,10 @@ xmlSecAppListKeyData(void) {
     xmlSecKeyDataIdListDebugDump(xmlSecKeyDataIdsGet(), stdout);
 }
 
-static int 
-xmlSecAppCheckKeyData(const char * name) {
-    if(xmlSecKeyDataIdListFindByName(xmlSecKeyDataIdsGet(), BAD_CAST name, xmlSecKeyDataUsageAny) == xmlSecKeyDataIdUnknown) {
-        return -1;
-    }
-    return 0;
-}
-
 static void 
 xmlSecAppListTransforms(void) {
     fprintf(stdout, "Registered transform klasses:\n");
     xmlSecTransformIdListDebugDump(xmlSecTransformIdsGet(), stdout);
-}
-
-static int 
-xmlSecAppCheckTransform(const char * name) {
-    if(xmlSecTransformIdListFindByName(xmlSecTransformIdsGet(), BAD_CAST name, xmlSecTransformUsageAny) == xmlSecTransformIdUnknown) {
-        return -1;
-    }
-    return 0;
 }
 
 static int 
@@ -2732,19 +2634,9 @@ xmlSecAppParseCommand(const char* cmd, xmlSecAppCmdLineParamTopic* cmdLineTopics
 	return(xmlSecAppCommandListKeyData);
     } else 
 
-    if((strcmp(cmd, "check-key-data") == 0) || (strcmp(cmd, "--check-key-data") == 0)) {
-	(*cmdLineTopics) = 0;
-	return(xmlSecAppCommandCheckKeyData);
-    } else 
-
     if((strcmp(cmd, "list-transforms") == 0) || (strcmp(cmd, "--list-transforms") == 0)) {
 	(*cmdLineTopics) = 0;
 	return(xmlSecAppCommandListTransforms);
-    } else 
-
-    if((strcmp(cmd, "check-transforms") == 0) || (strcmp(cmd, "--check-transforms") == 0)) {
-	(*cmdLineTopics) = 0;
-	return(xmlSecAppCommandCheckTransforms);
     } else 
     
     if((strcmp(cmd, "keys") == 0) || (strcmp(cmd, "--keys") == 0)) {
@@ -2817,12 +2709,19 @@ xmlSecAppParseCommand(const char* cmd, xmlSecAppCmdLineParamTopic* cmdLineTopics
 #endif /* XMLSEC_NO_XMLENC */
 
 #ifndef XMLSEC_NO_XKMS
-    if(strcmp(cmd, "--xkms-server-request") == 0) {
+    if((strcmp(cmd, "xkiss-server-locate") == 0) || (strcmp(cmd, "--xkiss-server-locate") == 0)) {
 	(*cmdLineTopics) = xmlSecAppCmdLineTopicGeneral |
 			xmlSecAppCmdLineTopicXkmsCommon |
 			xmlSecAppCmdLineTopicKeysMngr |
 			xmlSecAppCmdLineTopicX509Certs;
-	return(xmlSecAppCommandXkmsServerRequest);
+	return(xmlSecAppCommandXkissServerLocate);
+    } else 
+    if((strcmp(cmd, "xkiss-server-validate") == 0) || (strcmp(cmd, "--xkiss-server-validate") == 0)) {
+	(*cmdLineTopics) = xmlSecAppCmdLineTopicGeneral |
+			xmlSecAppCmdLineTopicXkmsCommon |
+			xmlSecAppCmdLineTopicKeysMngr |
+			xmlSecAppCmdLineTopicX509Certs;
+	return(xmlSecAppCommandXkissServerValidate);
     } else
 #endif /* XMLSEC_NO_XKMS */
 
@@ -2845,14 +2744,8 @@ xmlSecAppPrintHelp(xmlSecAppCommand command, xmlSecAppCmdLineParamTopic topics) 
     case xmlSecAppCommandListKeyData:
 	fprintf(stdout, "%s\n", helpListKeyData);
         break;
-    case xmlSecAppCommandCheckKeyData:
-	fprintf(stdout, "%s\n", helpCheckKeyData);
-        break;
     case xmlSecAppCommandListTransforms:
 	fprintf(stdout, "%s\n", helpListTransforms);
-        break;
-    case xmlSecAppCommandCheckTransforms:
-	fprintf(stdout, "%s\n", helpCheckTransforms);
         break;
     case xmlSecAppCommandKeys:
 	fprintf(stdout, "%s\n", helpKeys);
@@ -2875,8 +2768,11 @@ xmlSecAppPrintHelp(xmlSecAppCommand command, xmlSecAppCmdLineParamTopic topics) 
     case xmlSecAppCommandEncryptTmpl:
 	fprintf(stdout, "%s\n", helpEncryptTmpl);
         break;
-    case xmlSecAppCommandXkmsServerRequest:
-	fprintf(stdout, "%s\n", helpXkmsServerRequest);
+    case xmlSecAppCommandXkissServerLocate:
+	fprintf(stdout, "%s\n", helpXkissServerLocate);
+        break;
+    case xmlSecAppCommandXkissServerValidate:
+	fprintf(stdout, "%s\n", helpXkissServerValidate);
         break;
     }
     if(topics != 0) {
@@ -2917,7 +2813,7 @@ xmlSecAppOpenFile(const char* filename) {
     if((filename == NULL) || (strcmp(filename, "-") == 0)) {
 	return(stdout);
     }
-    file = fopen(filename, "wb");
+    file = fopen(filename, "w");
     if(file == NULL) {
 	fprintf(stderr, "Error: failed to open file \"%s\"\n", filename);
 	return(NULL);

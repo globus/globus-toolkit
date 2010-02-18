@@ -14,9 +14,6 @@
 extern "C" {
 #endif /* __cplusplus */ 
 
-#include <nspr.h>
-#include <nss.h>
-
 #include <xmlsec/xmlsec.h>
 #include <xmlsec/keys.h>
 #include <xmlsec/keysmngr.h>

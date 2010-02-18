@@ -1,16 +1,13 @@
 NULL =
 
 EXTRA_DIST = \
+	globals.h \
 	README \
 	$(NULL)
 
-lib_LTLIBRARIES = \
-	libxmlsec1-skeleton.la \
-	$(NULL)
-
-libxmlsec1_skeleton_la_CPPFLAGS = \
+INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
-	-I../../include \
+	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	$(XMLSEC_DEFINES) \
 	$(XMLSEC_SKELETON_DEFINES) \
@@ -19,15 +16,14 @@ libxmlsec1_skeleton_la_CPPFLAGS = \
 	$(LIBXML_CFLAGS) \
 	$(NULL)
 
+lib_LTLIBRARIES = \
+	libxmlsec1-skeleton.la \
+	$(NULL)
+
 libxmlsec1_skeleton_la_SOURCES =\
 	app.c \
 	crypto.c \
-	globals.h \
 	$(NULL)
-
-if SHAREDLIB_HACK
-libxmlsec1_skeleton_la_SOURCES += ../strings.c
-endif
 
 libxmlsec1_skeleton_la_LIBADD = \
 	../libxmlsec1.la \
@@ -35,11 +31,7 @@ libxmlsec1_skeleton_la_LIBADD = \
 	$(LIBXSLT_LIBS) \
 	$(LIBXML_LIBS) \
 	$(NULL)
-
-libxmlsec1_skeleton_la_DEPENDENCIES = \
-	$(NULL)
-
+        
 libxmlsec1_skeleton_la_LDFLAGS = \
-	@XMLSEC_CRYPTO_EXTRA_LDFLAGS@ \
 	-version-info @XMLSEC_VERSION_INFO@ \
 	$(NULL)

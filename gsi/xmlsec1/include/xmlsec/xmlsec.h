@@ -76,7 +76,7 @@ typedef struct _xmlSecEncCtx 			xmlSecEncCtx, *xmlSecEncCtxPtr;
 #endif /* XMLSEC_NO_XMLENC */
 
 #ifndef XMLSEC_NO_XKMS
-typedef struct _xmlSecXkmsServerCtx		xmlSecXkmsServerCtx, *xmlSecXkmsServerCtxPtr; 
+typedef struct _xmlSecXkissServerCtx		xmlSecXkissServerCtx, *xmlSecXkissServerCtxPtr; 
 #endif /* XMLSEC_NO_XKMS */
 
 XMLSEC_EXPORT int	xmlSecInit		(void);
@@ -97,7 +97,7 @@ XMLSEC_EXPORT int	xmlSecShutdown		(void);
  * value if an error occurs.
  */
 #define xmlSecCheckVersionExact()	\
-    xmlSecCheckVersionExt(XMLSEC_VERSION_MAJOR, XMLSEC_VERSION_MINOR, XMLSEC_VERSION_SUBMINOR, xmlSecCheckVersionExactMatch)
+    xmlSecCheckVersionExt(XMLSEC_VERSION_MAJOR, XMLSEC_VERSION_MINOR, XMLSEC_VERSION_SUBMINOR, xmlSecCheckVersionExact)
 
 /** 
  * xmlSecCheckVersion:
@@ -111,13 +111,13 @@ XMLSEC_EXPORT int	xmlSecShutdown		(void);
 
 /**
  * xmlSecCheckVersionMode:
- * @xmlSecCheckVersionExactMatch:	the version should match exactly.
+ * @xmlSecCheckVersionExact:		the version should match exactly.
  * @xmlSecCheckVersionABICompatible:	the version should be ABI compatible.
  *
  * The xmlsec library version mode.
  */
 typedef enum {
-    xmlSecCheckVersionExactMatch = 0,
+    xmlSecCheckVersionExact = 0,
     xmlSecCheckVersionABICompatible
 } xmlSecCheckVersionMode;
 

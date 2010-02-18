@@ -17,9 +17,6 @@ extern "C" {
 
 #include <libxml/tree.h> 
 
-#include <nspr.h>
-#include <nss.h>
-
 #include <xmlsec/xmlsec.h>
 
 XMLSEC_CRYPTO_EXPORT SECItem*	xmlSecNssNodeGetBigNumValue	(PRArenaPool *arena, 
