@@ -92,7 +92,11 @@ GSS_CALLCONV gss_wrap_size_limit(
     if (conf_req_flag == 0 
         && qop_req == GSS_C_QOP_GLOBUS_GSSAPI_OPENSSL_BIG)
     {
+        #if OPENSSL_VERSION_NUMBER < 0x10000000L
         overhead = 17 + EVP_MD_size(context->gss_ssl->write_hash); 
+        #else
+        overhead = 17 + EVP_MD_size(context->gss_ssl->write_hash->digest); 
+        #endif
         max = req_output_size - overhead;
         *max_input_size = max;
 

@@ -160,7 +160,7 @@ GSS_CALLCONV gss_unwrap(
         input_value += GSS_SSL3_WRITE_SEQUENCE_SIZE; 
 
         /* get data length */
-        N2L((char *) input_value, data_buf->length);  
+        N2L(input_value, data_buf->length);  
         input_value += 4;
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
