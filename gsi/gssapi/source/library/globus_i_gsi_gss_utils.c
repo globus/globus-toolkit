@@ -37,7 +37,7 @@ static char *rcsid = "$Id$";
 #include <string.h>
 #include <stdlib.h>
 
-#include "ssl_locl.h"
+#include "globus_ssl_locl.h"
 
 #ifdef WIN32
 #define strcasecmp stricmp
@@ -270,7 +270,7 @@ globus_i_gsi_gss_create_and_fill_context(
             goto exit;
         }
         
-        memset(context, (int)NULL, sizeof(gss_ctx_id_desc));
+        memset(context, 0, sizeof(gss_ctx_id_desc));
         *context_handle_P = context;
         context->ctx_flags = 0;
     }
@@ -295,7 +295,7 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_context;
     }
 
-    memset(context->peer_cred_handle, (int) NULL, sizeof(gss_cred_id_desc));
+    memset(context->peer_cred_handle, 0, sizeof(gss_cred_id_desc));
     
     local_result = globus_gsi_cred_handle_init(
         &context->peer_cred_handle->cred_handle, NULL);
@@ -564,14 +564,14 @@ globus_i_gsi_gss_create_and_fill_context(
     {
         char buff[256];
         int i;
-        STACK *sk;
+        STACK_OF(SSL_CIPHER) *sk;
         
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
             2, "Ciphers available:\n");
-        sk=(STACK *)SSL_get_ciphers(context->gss_ssl);
-        for (i=0; i<sk_num(sk); i++)
+        sk=SSL_get_ciphers(context->gss_ssl);
+        for (i=0; i<sk_SSL_CIPHER_num(sk); i++)
         {
-            SSL_CIPHER_description((SSL_CIPHER *)sk_value(sk,i),
+            SSL_CIPHER_description(sk_SSL_CIPHER_value(sk,i),
                                    buff,256);
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gssapi_debug_fstream, buff));
@@ -995,7 +995,7 @@ globus_i_gsi_gss_handshake(
     if (!GSS_ERROR(major_status)) {
         if (rc > 0)
         {
-            SSL_CIPHER *                current_cipher;
+            const SSL_CIPHER *              current_cipher;
             major_status = GSS_S_COMPLETE; 
 
             /*
@@ -1418,110 +1418,6 @@ globus_i_gsi_gss_cred_read(
         globus_gsi_cred_handle_destroy(local_cred_handle);
     }
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return major_status;
-}
-/* @} */
-
-/**
- * @name Credential Set
- * @ingroup globus_i_gsi_gss_utils
- */
-/* @{ */
-/**
- * Credential Set
- *
- * @param minor_status
- * @param cred_usage
- * @param cred_handle
- * @param ucert
- * @param upkey,
- * @param cert_chain
- *
- * @return
- */
-OM_uint32
-globus_i_gsi_gss_cred_set(
-    OM_uint32 *                         minor_status,
-    const gss_cred_usage_t              cred_usage,
-    gss_cred_id_t *                     cred_handle,
-    X509 *                              ucert,
-    EVP_PKEY *                          upkey,
-    STACK_OF(X509) *                    cert_chain)
-{
-    OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           local_minor_status;
-    globus_result_t                     local_result;
-    globus_gsi_cred_handle_t            local_cred_handle;
-    static char *                       _function_name_ =
-        "globus_i_gsi_gss_cred_set";
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
-
-    *minor_status = GLOBUS_SUCCESS;
-
-    local_result = globus_gsi_cred_handle_init(&local_cred_handle, NULL);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        local_cred_handle = NULL;
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-
-    local_result = globus_gsi_cred_set_cert(local_cred_handle, ucert);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-    
-    local_result = globus_gsi_cred_set_key(local_cred_handle, upkey);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-
-    local_result = globus_gsi_cred_set_cert_chain(local_cred_handle, 
-                                                  cert_chain);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-
-    major_status = globus_i_gsi_gss_create_cred(&local_minor_status,
-                                                cred_usage,
-                                                cred_handle, 
-                                                &local_cred_handle);
-    if(GSS_ERROR(major_status))
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-    
- exit:
-
-    if(local_cred_handle != NULL)
-    {
-        globus_gsi_cred_handle_destroy(local_cred_handle);
-    }
-    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
@@ -1961,6 +1857,9 @@ globus_i_gsi_gss_SSL_read_bio(
         ssl_handle->session,
         &ssl_handle->s3->tmp.new_sym_enc,
         &ssl_handle->s3->tmp.new_hash,
+#if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
+        NULL, NULL,
+#endif
         (SSL_COMP **) &ssl_handle->s3->tmp.new_compression);
     if (!ssl_result)
     {
@@ -1989,6 +1888,9 @@ globus_i_gsi_gss_SSL_read_bio(
         ssl_handle->session,
         &ssl_handle->s3->tmp.new_sym_enc,
         &ssl_handle->s3->tmp.new_hash,
+#if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
+        NULL, NULL,
+#endif
         (SSL_COMP **) &ssl_handle->s3->tmp.new_compression);
     if (!ssl_result)
     {
@@ -2325,6 +2227,11 @@ globus_i_gsi_gssapi_init_ssl_context(
             for(index = 0; index < sk_X509_num(client_cert_chain); ++index)
             {
                 tmp_cert = X509_dup(sk_X509_value(client_cert_chain, index));
+                #if OPENSSL_VERSION_NUMBER >= 0x10000000L
+                SSL_CTX_add_extra_chain_cert(
+                        cred_handle->ssl_context,
+                        tmp_cert);
+                #else
                 if(!X509_STORE_add_cert(
                        SSL_CTX_get_cert_store(cred_handle->ssl_context),
                        tmp_cert))
@@ -2350,6 +2257,7 @@ globus_i_gsi_gssapi_init_ssl_context(
                 }
                 /* need to free to reduce ref count */
                 X509_free(tmp_cert);
+                #endif
             }
         }
     }
@@ -2545,7 +2453,7 @@ globus_i_gsi_gssapi_get_hostname(
 
                     goto out;
                 }
-                strncpy(name->service_name, data, p-data);
+                strncpy(name->service_name, (char *) data, p-data);
                 name->service_name[p-data] = 0;
 
                 name->host_name = malloc(length - (p-data));
@@ -2556,7 +2464,7 @@ globus_i_gsi_gssapi_get_hostname(
 
                     goto free_service_name_out;
                 }
-                strncpy(name->host_name, p+1, length - (p+1-data));
+                strncpy(name->host_name, (char *) p+1, length - (p+1-data));
                 name->host_name[length - (p+1-data)] = 0;
             }
             else
@@ -2583,7 +2491,7 @@ globus_i_gsi_gssapi_get_hostname(
                     goto free_service_name_out;
                 }
 
-                strncpy(name->host_name, data, length);
+                strncpy(name->host_name, (char *) data, length);
                 name->host_name[length] = 0;
             }
             break;

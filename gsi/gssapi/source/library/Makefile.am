@@ -46,7 +46,7 @@ Sources_GSS_EXTENSIONS = \
 	set_sec_context_option.c
 
 Sources_OPENSSL_INTERNALS = \
-	ssl_locl.h
+	globus_ssl_locl.h
 
 flavorinclude_HEADERS = \
 	gssapi.h

@@ -254,15 +254,6 @@ globus_i_gsi_gss_cred_read(
     const X509_NAME *                   desired_subject);
 
 OM_uint32
-globus_i_gsi_gss_cred_set(
-    OM_uint32 *                         minor_status,
-    const gss_cred_usage_t              cred_usage,
-    gss_cred_id_t *                     cred_handle,
-    X509 *                              ucert,
-    EVP_PKEY *                          upkey,
-    STACK_OF(X509) *                    cert_chain);
-
-OM_uint32
 globus_i_gsi_gss_create_cred(
     OM_uint32 *                         minor_status,
     const gss_cred_usage_t              cred_usage,

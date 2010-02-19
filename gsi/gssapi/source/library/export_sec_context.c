@@ -179,7 +179,7 @@ GSS_CALLCONV gss_export_sec_context(
         goto unlock_mutex;
     }
 
-    L2N(peer_cert_count, (char *)int_buffer);
+    L2N(peer_cert_count, int_buffer);
     BIO_write(bp, (char *)int_buffer, 4);
     
     local_result = globus_gsi_callback_get_cert_chain(

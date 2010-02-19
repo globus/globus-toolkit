@@ -158,6 +158,10 @@ typedef struct globus_l_gsi_cred_handle_s *
  *
  * @see globus_gsi_cred_handle_init
  */
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
+#define STACK STACK_OF(OPENSSL_STRING)
+#endif
+
 typedef struct globus_l_gsi_cred_handle_attrs_s *
                                         globus_gsi_cred_handle_attrs_t;
 

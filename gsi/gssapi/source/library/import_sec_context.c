@@ -33,15 +33,9 @@ static char *rcsid = "$Id$";
 #include "openssl/crypto.h"
 #include "openssl/rand.h"
 #include "openssl/ssl2.h"
-#include "ssl_locl.h"
+#include "openssl/ssl3.h"
+#include "globus_ssl_locl.h"
 #include <string.h>
-
-/*
- * inorder to define a number of low level ssl routines
- * we need to include non installed header
- * #include <ssl_locl.h>
- * We will define the four routines here. 
- */
 
 /**
  * @name Import Security Context
