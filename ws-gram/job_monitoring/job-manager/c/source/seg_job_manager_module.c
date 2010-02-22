@@ -28,6 +28,7 @@
     GlobusDebugPrintf(SEG_JOB_MANAGER, level, message)
 
 #define JOB_MANAGER_SEG_SCHEDULER "JOB_MANAGER_SEG_SCHEDULER"
+#define JOB_MANAGER_SEG_LOG_PATH  "JOB_MANAGER_SEG_LOG_PATH"
 
 const size_t                        GLOBUS_JOB_MANAGER_READ_BUFFER_SIZE = 4096;
 /**
@@ -215,18 +216,27 @@ globus_l_job_manager_module_activate(void)
         goto get_scheduler_failed;
     }
 
-    sprintf(log_path_key, "%s_log_path", scheduler);
-    result = globus_common_get_attribute_from_config_file(
-            NULL,
-            "etc/globus-job-manager-seg.conf",
-            log_path_key,
-            &logfile_state->log_dir);
-    if (result != GLOBUS_SUCCESS)
+    if (getenv(JOB_MANAGER_SEG_LOG_PATH))
     {
-        SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_WARN,
-                ("unable to find log file in configuration\n"));
-        goto get_path_key_failed;
+        logfile_state->log_dir = strdup(getenv(JOB_MANAGER_SEG_LOG_PATH));
     }
+    else
+    {
+        const char * globus_location = getenv("GLOBUS_LOCATION");
+
+        logfile_state->log_dir = globus_common_create_string(
+                "%s/var/globus-job-manager-seg-%s",
+                globus_location ? globus_location : "",
+                scheduler);
+    }
+
+    if (logfile_state->log_dir == NULL)
+    {
+        SEG_JOB_MANAGER_DEBUG(SEG_JOB_MANAGER_DEBUG_ERROR,
+            ("Error: out of memory\n"));
+        goto get_path_failed;
+    }
+
     /* Convert timestamp to filename */
     rc = globus_l_job_manager_find_logfile(logfile_state);
 
@@ -275,7 +285,7 @@ fopen_failed:
     }
 bad_log_path:
     free(logfile_state->log_dir);
-get_path_key_failed:
+get_path_failed:
 get_scheduler_failed:
 get_timestamp_failed:
 gmtime_failed:
