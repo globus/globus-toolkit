@@ -78,8 +78,8 @@ globus_gram_job_manager_contact_add(
     int                                 job_state_mask)
 {
     globus_gram_job_manager_contact_t * callback;
-    int                                 rc;
-
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_list_t *                     tmp_list;
 
     globus_gram_job_manager_request_log(
             request,
@@ -93,6 +93,26 @@ globus_gram_job_manager_contact_add(
             request->job_contact_path,
             contact,
             job_state_mask);
+
+    /*
+     * If the contact is already registered, update the job_state_mask
+     * to be the set of states in the old or new job state masks.
+     * This means that if a contact is registered multiple times, it will
+     * receive only one callback for each job state change that it is
+     * registered for.
+     */
+    tmp_list = request->client_contacts;
+    while(!globus_list_empty(tmp_list))
+    {
+        callback = globus_list_first(tmp_list);
+        if(strcmp(contact, callback->contact) == 0)
+        {
+            callback->job_state_mask |= job_state_mask;
+            goto done;
+        }
+
+        tmp_list = globus_list_rest(tmp_list);
+    }
 
     callback = malloc(sizeof(globus_gram_job_manager_contact_t));
     if(callback == NULL)
@@ -170,6 +190,7 @@ globus_gram_job_manager_contact_add(
                 -GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED);
         goto list_insert_failed;
     }
+done:
     globus_gram_job_manager_request_log(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
@@ -184,7 +205,7 @@ globus_gram_job_manager_contact_add(
             job_state_mask,
             0);
 
-    return GLOBUS_SUCCESS;
+    return rc;
 
 list_insert_failed:
     free(callback->contact);
