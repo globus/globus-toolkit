@@ -113,3 +113,19 @@ class PacketFile(object):
         self.packet_file.write(sender)
         self.packet_file.write(struct.pack("!h", len(packet)))
         self.packet_file.write(packet)
+
+    def close(self):
+        """
+        Close the currently opened file
+
+        Arguments:
+        self -- PacketFile object opened for writing
+
+        Return:
+        None
+        """
+        if self.mode != "a" and self.mode != "w":
+            return None
+        elif self.packet_file is not None:
+            self.packet_file.close()
+            self.packet_file = None

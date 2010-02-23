@@ -33,12 +33,12 @@ The following command-line options are available:
 
 import sys
 import SocketServer
-import time
-import struct
 import os
 import getopt
 import socket
 import signal
+import thread
+import time
 
 sys.path.append(
     os.path.join(os.environ['GLOBUS_LOCATION'], 'lib', 'python', 'usage'))
@@ -56,15 +56,32 @@ execfile(
 
 
 packetfile = packetfile.PacketFile(usageconfig.data_directory, "a")
+packetfile_lock = thread.allocate_lock()
 
 pidfile_path = None
+receiver = None
 def termhandler(signum, frame):
     if pidfile_path != None:
         os.remove(pidfile_path)
+    if receiver != None:
+        receiver.shutdown()
     sys.exit(0)
 
-# Set the signal handler and a 5-second alarm
+def packetcloser():
+    last_close = int(time.time() / 60 / 60) * 60 * 60
+    while True:
+        checktime = int(time.time() / 60 / 60) * 60 * 60
+        if checktime >= (last_close + 60 * 60):
+            last_close = checktime
+            packetfile_lock.acquire()
+            packetfile.close()
+            packetfile_lock.release()
+        nextcheck = checktime + 60 * 60
+        time.sleep(nextcheck - time.time())
+        
+
 signal.signal(signal.SIGTERM, termhandler)
+closer = thread.start_new_thread(packetcloser, ())
 
 class Receiver(SocketServer.BaseRequestHandler):
     """
@@ -81,7 +98,9 @@ class Receiver(SocketServer.BaseRequestHandler):
         Handle UDP packet
         """
         addr = socket.inet_aton(self.client_address[0])
+        packetfile_lock.acquire()
         packetfile.write_packet(addr, self.request[0])
+        packetfile_lock.release()
 
 def usage(exe):
     """
@@ -103,6 +122,7 @@ def main(argv):
 
     """
     global pidfile_path
+    global receiver
 
     background = 0
     pid = -1
