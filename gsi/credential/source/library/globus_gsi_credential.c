@@ -981,10 +981,9 @@ globus_gsi_cred_read_proxy_bio(
             sk_X509_push(certs, tmp_cert);
         }
         else if (strcmp(name, PEM_STRING_RSA) == 0 ||
-                 strcmp(name, PEM_STRING_DSA) == 0)
+                 strcmp(name, PEM_STRING_DSA) == 0 ||
+                 strcmp(name, PEM_STRING_PKCS8INF) == 0)
         {
-            int keytype = -1;
-
             if (!PEM_get_EVP_CIPHER_INFO(header, &cipher))
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1004,25 +1003,7 @@ globus_gsi_cred_read_proxy_bio(
                 goto exit;
             }
 
-            if (strcmp(name, PEM_STRING_RSA) == 0)
-            {
-                keytype = EVP_PKEY_RSA;
-            }
-            else if (strcmp(name, PEM_STRING_DSA) == 0)
-            {
-                keytype = EVP_PKEY_DSA;
-            }
-            else
-            {
-                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                    (_GCRSL("Couldn't read key from bio")));
-
-                goto exit;
-            }
-
-            handle->key = d2i_PrivateKey(keytype, &handle->key, &data, len);
+            handle->key = d2i_AutoPrivateKey(&handle->key, &data, len);
             if (handle->key == NULL)
             {
                 GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
