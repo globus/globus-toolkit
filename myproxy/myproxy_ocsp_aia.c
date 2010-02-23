@@ -37,7 +37,7 @@
 
 static AUTHORITY_INFO_ACCESS *
 my_aia_get(X509_EXTENSION *ext) {
-	X509V3_EXT_METHOD *method = NULL;
+	const X509V3_EXT_METHOD *method = NULL;
 	void *ext_str = NULL;
 	const unsigned char *p;
 	int len;
@@ -70,7 +70,7 @@ my_aia_get(X509_EXTENSION *ext) {
 
 static void
 my_aia_free(X509_EXTENSION *ext, AUTHORITY_INFO_ACCESS* aia) {
-	X509V3_EXT_METHOD *method = NULL;
+	const X509V3_EXT_METHOD *method = NULL;
 
 	if (ext == NULL) {
 		verror_put_string("my_aia_free: ext is NULL");
