@@ -109,6 +109,11 @@ globus_l_gss_assist_gridmap_lookup(
     char *                              identity_buffer,
     unsigned int                        identity_buffer_length);
   
+static
+globus_result_t
+globus_l_gss_assist_line_length(
+    FILE *                              fp,
+    size_t *                            len);
 
 #endif
 
@@ -571,10 +576,32 @@ globus_i_gss_assist_gridmap_find_dn(
 
     do
     {
-	char 				line[1024];
+        size_t                          line_len;
+        char *                          line;
 
-	if (fgets(line, sizeof(line), gmap_stream) == NULL)
+        result = globus_l_gss_assist_line_length(gmap_stream, &line_len);
+        if (result != GLOBUS_SUCCESS || line_len == 0)
         {
+            break;
+        }
+
+        line = malloc(++line_len);
+        if (line == NULL)
+        {
+            result = globus_error_put(globus_error_wrap_errno_error(
+                GLOBUS_GSI_GSS_ASSIST_MODULE,
+                errno,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
+                _GASL("Could not allocate enough memory")));
+            break;
+        }
+
+        if (fgets(line, line_len, gmap_stream) == NULL)
+        {
+            free(line);
 	    break;		/* EOF or error */
         }
 
@@ -584,6 +611,7 @@ globus_i_gss_assist_gridmap_find_dn(
             GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
+            free(line);
             continue;		/* Parse error */
         }
 
@@ -596,7 +624,7 @@ globus_i_gss_assist_gridmap_find_dn(
 	{
 	    globus_i_gss_assist_gridmap_line_free(gline_tmp);
 	}
-
+        free(line);
     } while (!found);
 
     fclose(gmap_stream);
@@ -701,25 +729,50 @@ globus_i_gss_assist_gridmap_find_local_user(
 
     do
     {
-	char 				line[1024];
-        char                            save_line[1024];
+        size_t                          line_len;
+        char *                          line;
+        char *                          save_line;
+
+        result = globus_l_gss_assist_line_length(gmap_stream, &line_len);
+        if (result != GLOBUS_SUCCESS || line_len == 0)
+        {
+            break;
+        }
         
-	if (fgets(line, sizeof(line), gmap_stream) == NULL)
+        line = malloc(++line_len);
+        if (line == NULL)
+        {
+            result = globus_error_put(globus_error_wrap_errno_error(
+                GLOBUS_GSI_GSS_ASSIST_MODULE,
+                errno,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
+                _GASL("Could not allocate enough memory")));
+            break;
+        }
+        
+        if (fgets(line, line_len, gmap_stream) == NULL)
         {
 	    break;		/* EOF or error */
         }
 
-        strncpy(save_line, line, sizeof(save_line));
+        save_line = strdup(line);
         
 	result = globus_i_gss_assist_gridmap_parse_line(line, &gline_tmp);
         if(result != GLOBUS_SUCCESS)
         {
+            free(line);
+            free(save_line);
 	    continue;		/* Parse error */
         }
 
 	if (gline_tmp == NULL)
 	{
 	    /* Empty line */
+            free(line);
+            free(save_line);
 	    continue;
 	}
 
@@ -746,7 +799,8 @@ globus_i_gss_assist_gridmap_find_local_user(
 	{
 	    globus_i_gss_assist_gridmap_line_free(gline_tmp);
 	}
-
+        free(line);
+        free(save_line);
     } while (!found);
     
     if(nondefault_line != NULL)
@@ -1310,7 +1364,8 @@ globus_gss_assist_lookup_all_globusid(
     char **                                     dns[],
     int *                                       dn_count)
 {
-    char                                        line[1024];
+    char *                                      line;
+    size_t                                      line_len;
     int                                         i;
     int                                         max_ndx = 512;
     int                                         ndx = 0;
@@ -1364,8 +1419,34 @@ globus_gss_assist_lookup_all_globusid(
     ndx = 0;
     l_dns = (char **)globus_malloc(sizeof(char *) * max_ndx);
 
-    while(fgets(line, sizeof(line), gmap_stream) != NULL)
+    while (!feof(gmap_stream))
     {
+        res = globus_l_gss_assist_line_length(gmap_stream, &line_len);
+        if (res != GLOBUS_SUCCESS || line_len == 0)
+        {
+            break;
+        }
+
+        line = malloc(++line_len);
+        if (line == NULL)
+        {
+            res = globus_error_put(globus_error_wrap_errno_error(
+                GLOBUS_GSI_GSS_ASSIST_MODULE,
+                errno,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
+                _GASL("Could not allocate enough memory")));
+            break;
+        }
+
+        if (fgets(line, line_len, gmap_stream) == NULL)
+    {
+            free(line);
+            break;
+        }
+
         res = globus_i_gss_assist_gridmap_parse_line(line, &gline);
 
         if(res == GLOBUS_SUCCESS &&
@@ -1388,6 +1469,7 @@ globus_gss_assist_lookup_all_globusid(
                 }
             }
         }
+        free(line);
     }
     l_dns[ndx] = NULL;
     *dns = l_dns;
@@ -1708,4 +1790,82 @@ globus_l_gss_assist_gridmap_lookup(
  error:
     return result;
 }
+
+/**
+ * Determine length of the next line on the file stream
+ *
+ * Scans the input stream to determine the length of the next line
+ * ending with \n or the length until the end of the file. The
+ * value is returned in the integer pointed to by @a len. If the file
+ * pointer is currently at end-of-file, *len will be set to 0.
+ * 
+ * @param fp
+ *     File pointer to inspect
+ * @param len
+ *     Pointer to be set to the length
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP
+ *     Error with gridmap
+ */
+static
+globus_result_t
+globus_l_gss_assist_line_length(
+    FILE *                              fp,
+    size_t *                            len)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    fpos_t                              pos;
+    int                                 line_len;
+    int                                 rc;
+    static char *                       _function_name_ =
+        "globus_l_gss_assist_line_length";
+
+    *len = 0;
+
+    rc = fgetpos(fp, &pos);
+    if (rc < 0)
+    {
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
+            (_GASL("Couldn't determine position in file.")));
+        goto fgetpos_failed;
+    }
+
+    rc = fscanf(fp, "%*[^\n]%*1[\n]%n", &line_len);
+    if (rc < 0 && !feof(fp))
+    {
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
+            (_GASL("Couldn't determine end of line in file.")));
+        goto fscanf_failed;
+    }
+    else if (feof(fp))
+    {
+        /* Assume end-of-file without newline */
+        clearerr(fp);
+        line_len = ftell(fp);
+    }
+
+    rc = fsetpos(fp, &pos);
+    if (rc < 0)
+    {
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
+            (_GASL("Couldn't set position in file.")));
+        goto fsetpos_failed;
+    }
+
+    *len = line_len;
+
+fsetpos_failed:
+fscanf_failed:
+fgetpos_failed:
+    return result;
+}
+/* globus_l_gss_assist_line_length() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
