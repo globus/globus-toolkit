@@ -37,6 +37,7 @@ import os
 import getopt
 import socket
 import signal
+import thread
 
 sys.path.append(
     os.path.join(os.environ['GLOBUS_LOCATION'], 'lib', 'python', 'usage'))
@@ -76,13 +77,29 @@ class Receiver(SocketServer.BaseRequestHandler):
 
     def __init__(self, request, client_address, base_server):
         SocketServer.BaseRequestHandler.__init__(self, request, client_address, base_server)
+        self.packet_lock = thread.allocate_lock()
+        self.closer = thread.start_new_thread(Receiver.close_writer, (self,))
+        self.last_close = int(time.time() / 60 / 60) * 60 * 60
 
+    def close_writer(self):
+        while true:
+            checktime = int(time.time() / 60 / 60) * 60 * 60
+            if checktime > (self.last_close + 60 * 60):
+                self.last_close = checktime
+                self.packet_lock.acquire()
+                packetfile.close()
+                self.packet_lock.release()
+                nextcheck = checktime + 60 * 60
+                sleep(time.time() - nextcheck);
+        
     def handle(self):
         """
         Handle UDP packet
         """
         addr = socket.inet_aton(self.client_address[0])
+        self.packet_lock.acquire()
         packetfile.write_packet(addr, self.request[0])
+        self.packet_lock.release()
 
 def usage(exe):
     """
