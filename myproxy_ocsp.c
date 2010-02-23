@@ -169,7 +169,7 @@ verify_cert_hostname(X509 *cert, char *hostname) {
   CONF_VALUE            *nval;
   const unsigned char   *data;
   X509_EXTENSION        *ext;
-  X509V3_EXT_METHOD     *meth;
+  const X509V3_EXT_METHOD     *meth;
   STACK_OF(CONF_VALUE)  *val;
 
   if ((extcount = X509_get_ext_count(cert)) > 0) {

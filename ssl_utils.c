@@ -27,7 +27,7 @@ struct _ssl_credentials
 {
     X509		*certificate;
     EVP_PKEY		*private_key;
-    STACK		*certificate_chain;
+    STACK_OF(X509)	*certificate_chain;
 
     globus_gsi_proxy_handle_t	proxy_req;
 };
@@ -217,11 +217,11 @@ bio_to_buffer(BIO				*bio,
  * Free the given certificate chain and all it contents.
  */
 static void
-ssl_cert_chain_free(STACK			*cert_chain)
+ssl_cert_chain_free(STACK_OF(X509)			*cert_chain)
 {
     if (cert_chain != NULL)
     {
-	sk_pop_free(cert_chain, (void (*)(void *))X509_free);
+	sk_X509_pop_free(cert_chain, X509_free);
     }
 }
 
@@ -256,7 +256,7 @@ ssl_credentials_free_contents(SSL_CREDENTIALS	*creds)
 static int
 creds_from_bio(BIO *bio, SSL_CREDENTIALS **creds)
 {
-   STACK               *cert_chain = NULL;
+   STACK_OF(X509)      *cert_chain = NULL;
    X509                *cert = NULL;
    unsigned char       number_of_certs;
    int                 cert_index;
@@ -286,7 +286,7 @@ creds_from_bio(BIO *bio, SSL_CREDENTIALS **creds)
    }
 
    /* Now read the certificate chain */
-   cert_chain = sk_new_null();
+   cert_chain = sk_X509_new_null();
    for (cert_index = 1; cert_index < number_of_certs; cert_index++) {
       X509  *x509;
 
@@ -298,7 +298,7 @@ creds_from_bio(BIO *bio, SSL_CREDENTIALS **creds)
          goto end;
       }
 
-      if (sk_push(cert_chain, (char *) x509) == SSL_ERROR) {
+      if (sk_X509_push(cert_chain, x509) == SSL_ERROR) {
          verror_put_string("Failed unpacking chain from buffer"
                            "(building a new chain)");
          ssl_error_to_verror();
@@ -344,7 +344,7 @@ creds_to_bio(SSL_CREDENTIALS *chain, BIO **bio)
        return SSL_ERROR;
     }
 
-    number_of_certs = sk_num(chain->certificate_chain) + 1;
+    number_of_certs = sk_X509_num(chain->certificate_chain) + 1;
 
     if (BIO_write(output_bio, &number_of_certs,sizeof(number_of_certs)) == SSL_ERROR) {
        verror_put_string("Failed dumping chain to buffer"
@@ -360,10 +360,10 @@ creds_to_bio(SSL_CREDENTIALS *chain, BIO **bio)
        goto end;
     }
 
-    for (index = 0; index < sk_num(chain->certificate_chain); index++) {
+    for (index = 0; index < sk_X509_num(chain->certificate_chain); index++) {
        X509  *cert;
 
-       cert = (X509 *) sk_value(chain->certificate_chain, index);
+       cert = (X509 *) sk_X509_value(chain->certificate_chain, index);
        if (i2d_X509_bio(output_bio, cert) == SSL_ERROR) {
           verror_put_string("Failed dumping chain to buffer "
                             "(write of cert chain failed)");
@@ -538,7 +538,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     FILE		*cert_file = NULL;
     X509		*cert = NULL;
     int			return_status = SSL_ERROR;
-    STACK		*cert_chain = NULL;
+    STACK_OF(X509)	*cert_chain = NULL;
     
     assert(creds != NULL);
     assert(path != NULL);
@@ -571,7 +571,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     /* Ok, now read the certificate chain */
 
     /* Create empty stack */
-    cert_chain = sk_new_null();
+    cert_chain = sk_X509_new_null();
     
     while (1)
     {
@@ -596,8 +596,8 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 	}
 
 	/* Add to chain */
-	if (sk_insert(cert_chain, (char *) cert,
-		      sk_num(cert_chain)) == SSL_ERROR)
+	if (sk_X509_insert(cert_chain, cert,
+		      sk_X509_num(cert_chain)) == SSL_ERROR)
 	{
 	    verror_put_string("Error parsing certificate chain");
 	    ssl_error_to_verror();
@@ -797,7 +797,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     BIO			*bio = NULL;
     X509		*cert = NULL;
     EVP_PKEY		*key = NULL;
-    STACK		*cert_chain = NULL;
+    STACK_OF(X509)	*cert_chain = NULL;
     int			return_status = SSL_ERROR;
 
     assert(creds != NULL);
@@ -858,7 +858,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     /* Ok, now read the certificate chain */
 
     /* Create empty stack */
-    cert_chain = sk_new_null();
+    cert_chain = sk_X509_new_null();
     
     while (1)
     {
@@ -884,8 +884,8 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 	}
 
 	/* Add to chain */
-	if (sk_insert(cert_chain, (char *) certificate,
-		      sk_num(cert_chain)) == SSL_ERROR)
+	if (sk_X509_insert(cert_chain, certificate,
+		      sk_X509_num(cert_chain)) == SSL_ERROR)
 	{
 	    verror_put_string("Error parsing certificate chain from proxy");
 	    ssl_error_to_verror();
@@ -1057,12 +1057,12 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
     {
 	
 	for (cert_chain_index = 0;
-	     cert_chain_index < sk_num(creds->certificate_chain);
+	     cert_chain_index < sk_X509_num(creds->certificate_chain);
 	     cert_chain_index++)
 	{
 	    X509				*cert;
 	
-	    cert = (X509 *) sk_value(creds->certificate_chain,
+	    cert = (X509 *) sk_X509_value(creds->certificate_chain,
 				     cert_chain_index);
 	
 	    if (PEM_write_bio_X509(bio, cert) == SSL_ERROR)
@@ -1514,7 +1514,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	verror_put_string("BIO_new() failed");
 	goto error;
     }
-    number_of_certs = sk_num(creds->certificate_chain) + 2;
+    number_of_certs = sk_X509_num(creds->certificate_chain) + 2;
     if (BIO_write(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR)
     {
 	verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
@@ -1539,11 +1539,11 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     }
 
     /* ...and any other certificates in the chain. */
-    for (index = 0; index < sk_num(creds->certificate_chain); index++)
+    for (index = 0; index < sk_X509_num(creds->certificate_chain); index++)
     {
 	X509		*cert;
 	
-	cert = (X509 *) sk_value(creds->certificate_chain, index);
+	cert = (X509 *) sk_X509_value(creds->certificate_chain, index);
 	
 	if (i2d_X509_bio(bio, cert) == SSL_ERROR)
 	{
@@ -1744,10 +1744,10 @@ ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject)
       return SSL_ERROR;
    }
 
-   sk_unshift(creds->certificate_chain, (char *)creds->certificate);
+   sk_X509_unshift(creds->certificate_chain, creds->certificate);
    globus_gsi_cert_utils_get_base_name(client_subject,
 				       creds->certificate_chain);
-   sk_shift(creds->certificate_chain);
+   sk_X509_shift(creds->certificate_chain);
 
    X509_NAME_oneline(client_subject, client, sizeof(client));
    *subject = strdup(client);
@@ -1982,8 +1982,8 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    if (!GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
        cert = chain->certificate;
    } else {
-       for (i = 0; i < sk_num(chain->certificate_chain); i++) {
-           cert = (X509 *)sk_value(chain->certificate_chain, i);
+       for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
+           cert = (X509 *)sk_X509_value(chain->certificate_chain, i);
            if (globus_gsi_cert_utils_get_cert_type(cert, &cert_type)
                != GLOBUS_SUCCESS) {
                verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
@@ -2039,8 +2039,8 @@ ssl_limited_proxy_chain(SSL_CREDENTIALS *chain)
     if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type)) {
         return 1;
     }
-    for (i = 0; i < sk_num(chain->certificate_chain); i++) {
-        cert = (X509 *)sk_value(chain->certificate_chain, i);
+    for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
+        cert = (X509 *)sk_X509_value(chain->certificate_chain, i);
         if (globus_gsi_cert_utils_get_cert_type(cert, &cert_type)
             != GLOBUS_SUCCESS) {
             verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");

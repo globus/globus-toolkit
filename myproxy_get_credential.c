@@ -570,8 +570,10 @@ write_key( char       *path,
            const char *buffer )
 {
     int          fd = 0;
-    static char  BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
-    static char  ENDKEY[]   = "-----END RSA PRIVATE KEY-----";
+    static char  BEGINKEY1[] = "-----BEGIN RSA PRIVATE KEY-----";
+    static char  BEGINKEY2[] = "-----BEGIN PRIVATE KEY-----";
+    static char  ENDKEY1[]   = "-----END RSA PRIVATE KEY-----";
+    static char  ENDKEY2[]   = "-----END PRIVATE KEY-----";
     char        *keystart,
                 *keyend;
     int          retval     = -1;
@@ -598,18 +600,25 @@ write_key( char       *path,
     }
 
     /* Write the key. */
-    if ((keystart = strstr(buffer, BEGINKEY)) == NULL)
+    if ((keystart = strstr(buffer, BEGINKEY1)) == NULL
+	&& (keystart = strstr(buffer, BEGINKEY2)) == NULL)
     {
-      fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", BEGINKEY);
+      fprintf(stderr, "CREDKEY doesn't contain '%s' nor '%s'.\n", BEGINKEY1,
+					BEGINKEY2);
       goto error;
     }
 
-    if ((keyend = strstr(keystart, ENDKEY)) == NULL)
+    if ((keyend = strstr(keystart, ENDKEY1)) != NULL)
+	keyend += strlen(ENDKEY1);
+    else if ((keyend = strstr(keystart, ENDKEY2)) != NULL)
+	keyend += strlen(ENDKEY2);
+    else
     {
-      fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", ENDKEY);
+      fprintf(stderr, "CREDKEY doesn't contain '%s' nor '%s'.\n", ENDKEY1,
+					ENDKEY2);
       goto error;
     }
-    keyend += strlen(ENDKEY);
+
     size = keyend-keystart;
 
     if( buffer2file( keystart, size, fd ) != 0 )
