@@ -33,8 +33,6 @@ The following command-line options are available:
 
 import sys
 import SocketServer
-import time
-import struct
 import os
 import getopt
 import socket
@@ -58,9 +56,12 @@ execfile(
 packetfile = packetfile.PacketFile(usageconfig.data_directory, "a")
 
 pidfile_path = None
+receiver = None
 def termhandler(signum, frame):
     if pidfile_path != None:
         os.remove(pidfile_path)
+    if receiver != None:
+        receiver.shutdown()
     sys.exit(0)
 
 # Set the signal handler and a 5-second alarm
@@ -103,6 +104,7 @@ def main(argv):
 
     """
     global pidfile_path
+    global receiver
 
     background = 0
     pid = -1
