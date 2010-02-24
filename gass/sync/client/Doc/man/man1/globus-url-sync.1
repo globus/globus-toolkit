@@ -1,0 +1,53 @@
+.TH globus-url-sync 1 "23 Feb 2010"
+.SH NAME
+globus-url-sync \- URL Synchronization
+.SH SYNOPSIS
+.B globus-url-sync
+[-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] [-t] <sourceURL> <destURL>
+.SH SUMMARY
+The program
+.B globus-url-sync
+compares two endpoints, using GridFTP, and prints a list of GSI file transfers that should be performed using 
+.B globus-url-copy.
+.SH OPTIONS
+.TP
+.B -help | -usage
+Print help text.
+.TP
+.B -version
+Print the version of this program.
+.TP
+.B -d | -debug | -v | -verbose
+Print additional detail.
+.TP
+.B -c| -cache
+Use GridFTP client connection caching.
+.TP
+.B -m | -modify
+Compare files by last modified timestamp.
+.TP
+.B -s | -size
+Compare files by size.
+.SH DESCRIPTION
+The current implementation of
+.B globus-url-sync
+supports very basic features for directory synchronization.  It includes comparators 
+for existence checks, file size checks, modification timestamp checks, but not 
+checksum comparison.
+
+URL scheme(s) supported:
+.sp
+.B gsiftp
+.nf
+    For example:
+      File name, absolute path: "gsiftp://myhost.edu//tmp/file1"
+                                "gsiftp://myhost.edu/~/file1"
+      File name, relative path: "gsiftp://myhost.edu/file1"
+      Directory, absolute path: "gsiftp://myhost.edu//tmp/dir1/"
+.fi
+.SH BUGS
+This is an early version of 
+.B globus-url-sync.
+In the event that unexpected results are returned, please re-run the command with the 
+.B -verbose 
+option.
