@@ -14,6 +14,7 @@ Scripts = \
 
 Data = grid-mapfile \
        gridmap.empty \
+       gridmap.long_line \
        gridmap.multiple-dns \
        gridmap.multiple_lines \
        gridmap.no-local-uid \

@@ -20,6 +20,8 @@ int main(int argc, char * argv[])
 {
     char *                              local_user;
     
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    
     if(globus_gss_assist_gridmap("/DC=org/DC=doegrids/OU=People/UserID=328453245/EMAIL=john@doe.com/EmailAddress=john@doe.com", &local_user))
     {
         exit(-1);
@@ -33,5 +35,6 @@ int main(int argc, char * argv[])
     {
         exit(-1);
     }    
+    globus_module_deactivate_all();
     return 0;
 }
