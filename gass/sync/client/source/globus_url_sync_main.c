@@ -483,6 +483,7 @@ globus_l_url_sync_main_result_cb(
 	}
 	else if (result)
 	{
+	  if (source->stats.type != globus_url_sync_endpoint_type_dir)
 		/* globus-url-copy format */
 		globus_libc_printf("\"%s\" \"%s\"\n", source->url, destination->url);
 	}

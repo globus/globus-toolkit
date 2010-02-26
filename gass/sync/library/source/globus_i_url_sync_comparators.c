@@ -135,7 +135,6 @@ globus_l_url_sync_exists_func(
     void *                                      callback_arg)
 {
     int 		comparison_result = -1;
-    int			len = 0;
     globus_object_t *   error_object = GLOBUS_NULL;
     globus_result_t	result = GLOBUS_SUCCESS;
 
@@ -148,8 +147,12 @@ globus_l_url_sync_exists_func(
 	
     if (result != GLOBUS_SUCCESS)
     {
-        /* *** use the real return code(s) which are not currently known *** */
-        printf("exists_func: result = %d\n", result);
+//      globus_object_t * err = globus_error_get(result);
+//	int response_code = globus_error_ftp_error_get_code(err);
+//	fprintf(stderr, "%s, response = %d, result = %d\n", 
+//		globus_error_print_chain(err), response_code, result);
+
+	/* *** use the real return code(s) which are not currently known *** */
 	switch (result)
 	  {
 	  case 18:
@@ -172,27 +175,17 @@ globus_l_url_sync_exists_func(
 	} 
 	else 
 	{
-	    /* check for a type mismatch indicated by the destination url */
-	    if ((len = strlen(destination->url)) &&
-		(source->stats.type == globus_url_sync_endpoint_type_file &&
-		 destination->url[len-1] == '/')) 
+	    /* Stat the destination */
+	    if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
+	        globus_l_url_sync_ftpclient_mlst(destination);
+	      
+	    /* Compare existence */
+	    comparison_result = source->stats.exists - destination->stats.exists;
+	      
+	    if (destination->stats.exists &&
+		(source->stats.type != destination->stats.type)) 
 	    {
 	        error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
-	    } 
-	    else 
-	    {
-	        /* Stat the destination */
-	        if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
-		    globus_l_url_sync_ftpclient_mlst(destination);
-	      
-		/* Compare existence */
-		comparison_result = source->stats.exists - destination->stats.exists;
-	      
-		if (destination->stats.exists &&
-		    (source->stats.type != destination->stats.type)) 
-		{
-		    error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
-		}
 	    }
 	}
     }

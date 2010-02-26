@@ -426,9 +426,11 @@ globus_l_url_sync_compare_func_top_cb(
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.
      */
-    if (!compare_result &&
-            source->stats.type == globus_url_sync_endpoint_type_dir &&
-            destination->stats.type == globus_url_sync_endpoint_type_dir)
+//    if (!compare_result &&
+//            source->stats.type == globus_url_sync_endpoint_type_dir &&
+//            destination->stats.type == globus_url_sync_endpoint_type_dir)
+      if (!error &&
+	  source->stats.type == globus_url_sync_endpoint_type_dir)
     {
         globus_result_t result;
         globus_i_url_sync_log_debug("Need to perform a directory listing");
@@ -640,9 +642,11 @@ globus_l_url_sync_compare_func_recurse_cb(
      */
     /* TODO: we should ONLY do a recursive listing IF the sync handle has an
      *  option set by the user instructing us to do the listings recursively. */
-    if (!compare_result &&
-            source->stats.type == globus_url_sync_endpoint_type_dir &&
-            destination->stats.type == globus_url_sync_endpoint_type_dir)
+//    if (!compare_result &&
+//            source->stats.type == globus_url_sync_endpoint_type_dir &&
+//            destination->stats.type == globus_url_sync_endpoint_type_dir)
+    if (!error &&
+	source->stats.type == globus_url_sync_endpoint_type_dir)
     {
         globus_l_url_sync_arg_t *           child;
         globus_result_t                     result;

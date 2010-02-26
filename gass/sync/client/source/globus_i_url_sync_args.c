@@ -54,7 +54,7 @@ enum {
 static globus_args_option_descriptor_t args_options[arg_num];
 static char *verbose_args[] = {"-v", "-verbose", GLOBUS_NULL};
 static char *debug_args[] = {"-d", "-debug", GLOBUS_NULL};
-static char *cache_args[] = {"-c", "-cache", GLOBUS_NULL};
+static char *cache_args[] = {"-c", "-use-connection-cache", GLOBUS_NULL};
 static char *modify_args[] = {"-m", "-modify", GLOBUS_NULL};
 static char *size_args[] = {"-s", "-size", GLOBUS_NULL};
 static globus_args_option_descriptor_t verbose_def =
@@ -79,7 +79,7 @@ static char * help_str=
 "\tPrint the version of this program\n"
 "  -d | -debug | -v | -verbose\n"
 "\tPrint additional detail.\n"
-"  -c | -cache\n"
+"  -c | -use-connection-cache\n"
 "\tUse GridFTP client connection caching.\n"
 "  -m | -modify\n"
 "\tCompare files by last modified timestamp.\n"
@@ -134,7 +134,7 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
     globus_i_url_sync_args_modify   = GLOBUS_FALSE;
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
-	globus_i_url_sync_args_cache	= GLOBUS_FALSE;
+    globus_i_url_sync_args_cache    = GLOBUS_FALSE;
 
     /* determine the program name */
 	program = strrchr(argv[0],'/');
