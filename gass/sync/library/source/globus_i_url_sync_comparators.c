@@ -147,10 +147,10 @@ globus_l_url_sync_exists_func(
 	
     if (result != GLOBUS_SUCCESS)
     {
-//      globus_object_t * err = globus_error_get(result);
-//	int response_code = globus_error_ftp_error_get_code(err);
-//	fprintf(stderr, "%s, response = %d, result = %d\n", 
-//		globus_error_print_chain(err), response_code, result);
+        globus_object_t * err = globus_error_get(result);
+	int response_code = globus_error_ftp_error_get_code(err);
+	globus_i_url_sync_log_debug("response = %d, result = %d, %s\n", 
+		    response_code, result, globus_error_print_chain(err));
 
 	/* *** use the real return code(s) which are not currently known *** */
 	switch (result)
@@ -159,6 +159,7 @@ globus_l_url_sync_exists_func(
             /* gridftp authentication error */
 	    error_object = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
 	    break;
+	  case 11:
 	  case 12:
 	    error_object = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
 	    break;
@@ -403,8 +404,8 @@ globus_l_url_sync_ftpclient_mlst(
     buffer = GLOBUS_NULL;
     buffer_length = 0;
 
-	/* Create a dummy op attr to workaround gridftp bug in older clients */
-	globus_ftp_client_operationattr_init(&dummy);
+    /* Create a dummy op attr to workaround gridftp bug in older clients */
+    globus_ftp_client_operationattr_init(&dummy);
 
     /* MSLT */
     result = globus_ftp_client_mlst(

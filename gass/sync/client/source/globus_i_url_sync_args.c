@@ -35,9 +35,9 @@ globus_url_t *          globus_i_url_sync_args_source		= GLOBUS_NULL;
 globus_url_t *          globus_i_url_sync_args_destination	= GLOBUS_NULL;
 globus_bool_t           globus_i_url_sync_args_verbose		= GLOBUS_FALSE;
 globus_bool_t           globus_i_url_sync_args_debug		= GLOBUS_FALSE;
-globus_bool_t			globus_i_url_sync_args_modify		= GLOBUS_FALSE;
-globus_bool_t			globus_i_url_sync_args_size			= GLOBUS_FALSE;
-globus_bool_t			globus_i_url_sync_args_cache		= GLOBUS_FALSE;
+globus_bool_t		globus_i_url_sync_args_modify		= GLOBUS_FALSE;
+globus_bool_t		globus_i_url_sync_args_size		= GLOBUS_FALSE;
+globus_bool_t		globus_i_url_sync_args_cache		= GLOBUS_FALSE;
 
 static globus_url_t     globus_l_url_sync_args_source;
 static globus_url_t     globus_l_url_sync_args_destination;
@@ -45,7 +45,9 @@ static globus_url_t     globus_l_url_sync_args_destination;
 enum {
 	arg_verbose = 1,
 	arg_debug,
+#ifdef CACHE_SUPPORTED
 	arg_cache,
+#endif
 	arg_modify,
 	arg_size,
 	arg_num = arg_size,
@@ -65,11 +67,17 @@ static globus_args_option_descriptor_t modify_def =
   {arg_modify, modify_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t size_def =
   {arg_size, size_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+#ifdef CACHE_SUPPORTED
 static globus_args_option_descriptor_t cache_def =
   {arg_cache, cache_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+#endif
 
 static char * usage_str= 
-"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] [-t] <sourceURL> <destURL>";
+#ifdef CACHE_SUPPORTED
+"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] <sourceURL> <destURL>";
+#else
+"globus_url_sync [-help | -usage] [-version] [-d | -v] [-m] [-s] <sourceURL> <destURL>";
+#endif
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
 "OPTIONS\n"
@@ -79,8 +87,10 @@ static char * help_str=
 "\tPrint the version of this program\n"
 "  -d | -debug | -v | -verbose\n"
 "\tPrint additional detail.\n"
+#ifdef CACHE_SUPPORTED
 "  -c | -use-connection-cache\n"
 "\tUse GridFTP client connection caching.\n"
+#endif
 "  -m | -modify\n"
 "\tCompare files by last modified timestamp.\n"
 "  -s | -size\n"
@@ -134,7 +144,9 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
     globus_i_url_sync_args_modify   = GLOBUS_FALSE;
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
+#ifdef CACHE_SUPPORTED
     globus_i_url_sync_args_cache    = GLOBUS_FALSE;
+#endif
 
     /* determine the program name */
 	program = strrchr(argv[0],'/');
@@ -146,9 +158,11 @@ globus_i_url_sync_parse_args(
 	
     args_options[0] = verbose_def;
     args_options[1] = debug_def;
-    args_options[2] = cache_def;
-    args_options[3] = modify_def;
-    args_options[4] = size_def;
+    args_options[2] = modify_def;
+    args_options[3] = size_def;
+#ifdef CACHE_SUPPORTED
+    args_options[4] = cache_def;
+#endif
     if (globus_args_scan(
 			&argc,
 			&argv,
@@ -176,9 +190,11 @@ globus_i_url_sync_parse_args(
 			case arg_debug:
 				globus_i_url_sync_args_debug = GLOBUS_TRUE;
 				break;
+#ifdef CACHE_SUPPORTED
 			case arg_cache:
 				globus_i_url_sync_args_cache = GLOBUS_TRUE;
 				break;
+#endif
 			case arg_modify:
 				globus_i_url_sync_args_modify = GLOBUS_TRUE;
 				break;

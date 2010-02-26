@@ -44,13 +44,14 @@ o Empty directories, anywhere in the source directory hierarchy, are not
   currently handled, and will not be mentioned in the list of files to be
   transferred using globus-url-copy.
 
+o Performance may be slow until it's been optimized to take advantage of
+  some new GridFTP features.
+
 o The -modify option:
   - Timezones are not taken into account.
   - Timestamps are matched exactly, so files on systems that are not
     time-synchronized will never match.
   - In the future an inexact matching feature may be added.
-
-o The -use-connection-cache option has not been tested.
 
 o Authentication errors may be erroneously be reported as though a file
   is missing.
