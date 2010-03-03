@@ -430,6 +430,27 @@ globus_i_gsi_gss_create_and_fill_context(
         free(certdir);
         certdir = NULL;
     }
+    #if (OPENSSL_VERSION_NUMBER >= 0x009080dfL)
+    {
+        /*
+         * OpenSSL 0.9.8m and 1.0.0 introduce changes to how
+         * ssl3_output_cert_chain creates the certificate chain to send.
+         *
+         * The new code uses X509_verify_cert(), which fails if
+         * a certificate does not have a X509_V_ERR_KEYUSAGE_NO_CERTSIGN but
+         * signs a proxy. As a result, the entire certificate chain is not
+         * sent during the handshake.
+         *
+         * This code causes the issuer checks to use
+         * globus_gsi_callback_check_issued() to handle that error if
+         * the certificate in question is a proxy.
+         */
+        X509_STORE * store;
+
+        store = SSL_CTX_get_cert_store(context->cred_handle->ssl_context);
+        store->check_issued = globus_gsi_callback_check_issued;
+    }
+    #endif
 
     context->gss_ssl = SSL_new(context->cred_handle->ssl_context);
 
