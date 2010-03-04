@@ -119,7 +119,7 @@ typedef struct globus_gss_assist_ex_st
  * gss_assist_accept_sec_context, gss_assist_get_unwrap
  * and gss_assist_wrap_send
  * Arg depends on the method being used,
- * FILE * for a fd, socket * for the nexus version
+ * FILE * for a fd.
  * You may provide your own versions as well. 
  * The _ex versions accept a globus_gss_assist_ex structure
  * which has in addition the arg, some flags. 
@@ -147,30 +147,6 @@ globus_gss_assist_token_send_fd_without_length(
     void *                              arg, 
     void *                              buf, 
     size_t                              size);
-
-extern int
-globus_gss_assist_token_get_nexus(
-    void *                              arg, 
-    void **                             bufp, 
-    size_t *                            sizep);
-
-extern int
-globus_gss_assist_token_send_nexus(
-    void *                              arg, 
-    void *                              bufp, 
-    size_t                              sizep);
-
-extern int
-globus_gss_assist_token_send_nexus_ex(
-    void *                              arg, 
-    void *                              bufp, 
-    size_t                              sizep);
-
-extern int
-globus_gss_assist_token_send_nexus_without_length(
-    void *                              arg, 
-    void *                              bufp, 
-    size_t                              sizep);
 
 /* 
  * globus_gss_assist_acquire_cred, assist with the gss_acquire_cred
