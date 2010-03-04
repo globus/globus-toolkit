@@ -85,7 +85,9 @@ CVS Information:
 #include <termios.h>
 #endif
 
-#if defined(TARGET_ARCH_AIX)
+#if defined(HAVE_SOCKLEN_T)
+#define netlen_t socklen_t
+#elif defined(TARGET_ARCH_AIX)
 #define netlen_t size_t
 #else
 #define netlen_t int
@@ -1088,21 +1090,26 @@ main(int xargc,
     }
 
     {
-        char hostname[255];
+        char hostname[255] = "";
         char *globusid;
         struct hostent *hp;
         char *fqdn;
         char * contact_string;
       
-        gethostname(hostname, sizeof(hostname)-1);
-      
-        if ((hp = gethostbyname(hostname)))
+        fqdn = getenv("GLOBUS_HOSTNAME");
+
+        if (fqdn == NULL)
         {
-            fqdn = (char *) hp->h_name;
-        }
-        else
-        {
-            fqdn = (hostname ? hostname : "HOSTNAME");
+            gethostname(hostname, sizeof(hostname)-1);
+          
+            if ((hp = gethostbyname(hostname)))
+            {
+                fqdn = (char *) hp->h_name;
+            }
+            else
+            {
+                fqdn = (hostname[0] != 0 ? hostname : "HOSTNAME");
+            }
         }
       
         globusid = get_globusid();
