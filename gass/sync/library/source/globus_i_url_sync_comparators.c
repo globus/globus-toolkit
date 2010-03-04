@@ -430,9 +430,6 @@ globus_l_url_sync_ftpclient_mlst(
     }
     globus_mutex_unlock(&monitor.mutex);
 
-	/* Destroy dummy op attr */
-	globus_ftp_client_operationattr_destroy(&dummy);
-
     /* Parse MSLT buffer */
     if (buffer_length)
     {
