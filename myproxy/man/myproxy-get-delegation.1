@@ -173,13 +173,21 @@ Only write output messages on error.
 Authenticate only.  Don't retrieve credentials.
 .TP
 .BI -m " voms, "  --voms " voms"
-Include VOMS attributes in the retrieved credential.
-The VOMS server name must be provided,
+Add VOMS attributes to the credential by running
+.B voms-proxy-init
+on the client-side after retrieving the credential from the
+.BR myproxy-server (8).
+The VOMS VO name must be provided,
 as required by
 .BR "voms-proxy-init -voms" .
 The
 .B voms-proxy-init
-command must be installed and configured to use this option.
+command must also be installed and configured to use this option.
+For example, the
+.B VOMS_USERCONF
+environment variable may need to be set for 
+.B voms-proxy-init
+to run correctly.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH ENVIRONMENT
