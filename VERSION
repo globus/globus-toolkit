@@ -29,7 +29,7 @@ v5.1 XX Xxx 2010
     usage collection can be disabled by setting
     "GLOBUS_USAGE_OPTOUT=1" in the environment of the myproxy-server
   - fix myproxy.h header dependencies
-  - changes for compatibility with OpenSSL 1.0.0
+  - changes for compatibility with OpenSSL 1.0.0-beta5
 
 v5.0 4 Dec 2009
   - add Globus Usage Metrics to the myproxy-server
