@@ -738,7 +738,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
             }
         }
 #ifdef HAVE_VOMS
-        if (client_request->voname != NULL) {
+        if (client_request->voname != NULL &&
+	    context->allow_voms_attribute_requests) {
             get_voms_proxy(attrs, client_creds, client_request,
                            server_response, 
                            context);

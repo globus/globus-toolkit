@@ -10,7 +10,9 @@ v5.1 XX Xxx 2010
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6897)
   - fix myproxy-logon -T segfault after "removed bad CRL file" message
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6909)
-  - add server-side support for including VOMS attributes in credentials
+  - add server-side support for including VOMS attributes in
+    retrieved credentials (from the repository); requires setting
+    "allow_voms_attribute_requests true" in myproxy-server.config
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6882)
   - add support for LDAP StartTLS
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6957)
