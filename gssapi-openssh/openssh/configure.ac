@@ -2188,6 +2188,9 @@ int main(void) {
 	]
 )
 
+# Make OpenSSL header check nonfatal in GPT package 
+# because it happens a lot on MacOS.
+openssl_check_nonfatal=1 
 AC_ARG_WITH(openssl-header-check,
 	[  --without-openssl-header-check Disable OpenSSL version consistency check],
 	[  if test "x$withval" = "xno" ; then
