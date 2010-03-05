@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh" >
 
-  <Aging_Version Major="4" Minor="7" Age="0" />
+  <Aging_Version Major="5" Minor="0" Age="0" />
   <Description>GSI-Enabled OpenSSH</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
@@ -12,7 +12,7 @@
 
     <With_Flavors build="yes" />
 
-    <Version_Label>GSI-OpenSSH 4.7 / OpenSSH 5.2p1 / HPN13v6</Version_Label>
+    <Version_Label>GSI-OpenSSH 5.0 / OpenSSH 5.3p1 / HPN13v6</Version_Label>
 
     <Source_Dependencies Type="compile">
       <Dependency Name="globus_openssl">
@@ -25,6 +25,11 @@
         <Version>
           <Simple_Version Major="2"></Simple_Version>
           <Simple_Version Major="3"></Simple_Version>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_usage" >
+        <Version>
+          <Simple_Version Major="0"/>
         </Version>
       </Dependency>
     </Source_Dependencies>
@@ -40,6 +45,11 @@
         <Version>
           <Simple_Version Major="2"></Simple_Version>
           <Simple_Version Major="3"></Simple_Version>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_usage" >
+        <Version>
+          <Simple_Version Major="0"/>
         </Version>
       </Dependency>
     </Source_Dependencies>

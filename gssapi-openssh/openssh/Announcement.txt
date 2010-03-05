@@ -1,4 +1,4 @@
-GSI-OpenSSH 4.7, based on OpenSSH 5.2p1, is now available from:
+GSI-OpenSSH 5.0, based on OpenSSH 5.3p1, is now available from:
 
 http://grid.ncsa.uiuc.edu/ssh/download.html
 
@@ -13,34 +13,27 @@ http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
 
 Major changes:
 
-  * Configure $GLOBUS_LOCATION/etc/ssh/ssh_config to enable only
-    GSSAPI authentication methods on the client-side, so other methods
-    (such as password or public key) aren't attempted when GSI
-    authentication fails. We expect users to select a standard ssh
-    client (rather than gsissh) for those methods. The server still
-    supports all methods by default to support both GSI and non-GSI
-    clients.
+  * Incorporate usage reporting functionality from the Globus Metrics
+    project to help us collect generic statistics about your use of
+    GSI-OpenSSH. Additional details are available at
+    <http://grid.ncsa.uiuc.edu/ssh/privacy.html>.
 
-  * Updated to 20090726 patch from Simon Wilkinson
-    (http://www.sxw.org.uk/computing/patches/openssh.html) which adds
-    support for cascading credentials.
+  * Drop support for the pre-RFC4462 external-keyx and gssapi
+    authentication methods.
+
+  * Update to OpenSSH 5.3p1.
+
+  * Support cascading credentials for GSI.
     https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6785
 
-  * Add support for PAM user switching when "PermitPAMUserChange yes"
-    is set in $GLOBUS_LOCATION/etc/ssh/sshd_config.
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6839
+  * Disable OpenSSL version consistency check by default (i.e.,
+    --without-openssl-header-check) because it routinely fails on MacOS.
 
-  * Update to HPN13V6
-    (http://www.psc.edu/networking/projects/hpn-ssh/) excluding
-    multi-threaded AES-CTR support due to unresolved problem that
-    causes the cipher to hang.
+  * Update to 20100124 patch from Simon Wilkinson.
+    http://www.sxw.org.uk/computing/patches/openssh.html
 
-  * No longer provide the gsi_openssh_compat package which installed
-    ssh, scp, and sftp symlinks in $GLOBUS_LOCATION/bin, as these
-    commands are now provided by default on common Unix systems.
-
-  * Fix link error on MacOSX 10.6.0.
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6853
+  * Fix support for --with-privsep-path configure option.
+    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6970
 
 SHA1 checksums:
 
