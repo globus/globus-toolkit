@@ -21,6 +21,15 @@ v5.1 XX Xxx 2010
   - fix parsing of certificate_issuer_hashalg (broken since v4.8)
   - treat trustroot file contents as binary data rather than text
     in myproxy-logon -T / myproxy-get-trustroots
+  - fix escaping of POSIX extended regular expression meta-characters
+    in myproxy-server authorization policies
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6903)
+  - added support for GT 4.0.8 metrics library, for backward
+    compatibility, and require linking with globus_usage library;
+    usage collection can be disabled by setting
+    "GLOBUS_USAGE_OPTOUT=1" in the environment of the myproxy-server
+  - fix myproxy.h header dependencies
+  - changes for compatibility with OpenSSL 1.0.0
 
 v5.0 4 Dec 2009
   - add Globus Usage Metrics to the myproxy-server
