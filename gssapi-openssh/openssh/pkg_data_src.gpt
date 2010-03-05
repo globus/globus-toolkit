@@ -62,7 +62,7 @@
       </Setup_Dependency>
       <Setup_Dependency Name="gsi_openssh_setup">
         <Version>
-          <Version_Range Upper_Major="4" Upper_Minor="7" Lower_Major="4" Lower_Minor="7" />
+          <Version_Range Upper_Major="5" Upper_Minor="0" Lower_Major="5" Lower_Minor="0" />
         </Version>
       </Setup_Dependency>
     </Source_Setup_Dependency>
