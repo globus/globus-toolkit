@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.80 2008/09/06 12:24:13 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.81 2009/05/27 06:34:36 andreas Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
@@ -53,8 +53,6 @@
 #ifdef GSSAPI
 #include "ssh-gss.h"
 #endif
-
-#define KEX_COOKIE_LEN	16
 
 #if OPENSSL_VERSION_NUMBER >= 0x00907000L
 # if defined(HAVE_EVP_SHA256)

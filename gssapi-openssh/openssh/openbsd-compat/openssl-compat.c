@@ -49,6 +49,15 @@ ssh_EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *evp)
 }
 #endif
 
+#ifdef OPENSSL_EVP_DIGESTUPDATE_VOID
+int
+ssh_EVP_DigestUpdate(EVP_MD_CTX *ctx, const void *d, unsigned int cnt)
+{
+	EVP_DigestUpdate(ctx, d, cnt);
+	return 1;
+}
+#endif
+
 #ifdef	USE_OPENSSL_ENGINE
 void
 ssh_SSLeay_add_all_algorithms(void)

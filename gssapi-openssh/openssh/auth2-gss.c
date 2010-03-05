@@ -53,20 +53,6 @@ static void input_gssapi_mic(int type, u_int32_t plen, void *ctxt);
 static void input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt);
 static void input_gssapi_errtok(int, u_int32_t, void *);
 
-static int gssapi_with_mic = 1;	/* flag to toggle "gssapi-with-mic" vs.
-				   "gssapi" */
-
-static int
-userauth_external(Authctxt *authctxt)
-{
-        packet_check_eom();
-
-	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
-		return(PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw)));
-	}
-	return 0;
-}
-
 /* 
  * The 'gssapi_keyex' userauth mechanism.
  */
@@ -103,7 +89,8 @@ userauth_gsskeyex(Authctxt *authctxt)
 						   &gssbuf2, &mic)))) {
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
             authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user,
-                                                      authctxt->pw));
+                                                      authctxt->pw,
+                                                      1 /* gssapi-keyex */));
 	    }
 	}
 	
@@ -229,9 +216,7 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 		}
 		authctxt->postponed = 0;
 		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
-		userauth_finish(authctxt, 0,
-				gssapi_with_mic ? "gssapi-with-mic" :
-				                  "gssapi");
+		userauth_finish(authctxt, 0, "gssapi-with-mic");
 	} else {
 		if (send_tok.length != 0) {
 			packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
@@ -240,7 +225,7 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 		}
 		if (maj_status == GSS_S_COMPLETE) {
 			dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
-			if (flags & GSS_C_INTEG_FLAG && gssapi_with_mic)
+			if (flags & GSS_C_INTEG_FLAG)
 				dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_MIC,
 				    &input_gssapi_mic);
 			else
@@ -343,7 +328,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	/* user should be set if valid but we double-check here */
 	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
 	    authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user,
-                                                  authctxt->pw));
+                                       authctxt->pw, 0 /* !gssapi-keyex */));
 	} else {
 	    authenticated = 0;
 	}
@@ -353,22 +338,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_MIC, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
-	userauth_finish(authctxt, authenticated,
-			gssapi_with_mic ? "gssapi-with-mic" : "gssapi");
-}
-
-static int
-userauth_gssapi_with_mic(Authctxt *authctxt)
-{
-    gssapi_with_mic = 1;
-    return userauth_gssapi(authctxt);
-}
-
-static int
-userauth_gssapi_without_mic(Authctxt *authctxt)
-{
-    gssapi_with_mic = 0;
-    return userauth_gssapi(authctxt);
+	userauth_finish(authctxt, authenticated, "gssapi-with-mic");
 }
 
 static void
@@ -400,7 +370,8 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
             authenticated =
-                PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw));
+                PRIVSEP(ssh_gssapi_userok(authctxt->user, authctxt->pw,
+                                              0 /* !gssapi-keyex */));
 	    } else {
             authenticated = 0;
 	    }
@@ -435,12 +406,6 @@ static void ssh_gssapi_userauth_error(Gssctxt *ctxt) {
 	}
 }
 
-Authmethod method_external = {
-	"external-keyx",
-	userauth_external,
-	&options.gss_authentication
-};
-	
 Authmethod method_gsskeyex = {
 	"gssapi-keyex",
 	userauth_gsskeyex,
@@ -449,13 +414,7 @@ Authmethod method_gsskeyex = {
 
 Authmethod method_gssapi = {
 	"gssapi-with-mic",
-	userauth_gssapi_with_mic,
-	&options.gss_authentication
-};
-
-Authmethod method_gssapi_compat = {
-	"gssapi",
-	userauth_gssapi_without_mic,
+	userauth_gssapi,
 	&options.gss_authentication
 };
 

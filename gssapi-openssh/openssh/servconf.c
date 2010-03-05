@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.194 2009/01/22 10:02:34 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.195 2009/04/14 21:10:54 jj Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -143,6 +143,8 @@ initialize_server_options(ServerOptions *options)
 	options->tcp_rcv_buf_poll = -1;
 	options->hpn_disabled = -1;
 	options->hpn_buffer_size = -1;
+	options->disable_usage_stats = 0;
+	options->usage_stats_targets = NULL;
 }
 
 void
@@ -342,7 +344,6 @@ fill_default_server_options(ServerOptions *options)
 		options->compression = 0;
 	}
 #endif
-
 }
 
 /* Keyword tokens. */
@@ -383,6 +384,7 @@ typedef enum {
 	sUsePrivilegeSeparation, sAllowAgentForwarding,
 	sZeroKnowledgePasswordAuthentication,
 	sNoneEnabled, sTcpRcvBufPoll, sHPNDisabled, sHPNBufferSize,
+	sDisUsageStats, sUsageStatsTarg,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -422,7 +424,7 @@ static struct {
 	{ "hostbasedusesnamefrompacketonly", sHostbasedUsesNameFromPacketOnly, SSHCFG_GLOBAL },
 	{ "rsaauthentication", sRSAAuthentication, SSHCFG_ALL },
 	{ "pubkeyauthentication", sPubkeyAuthentication, SSHCFG_ALL },
-	{ "dsaauthentication", sPubkeyAuthentication, SSHCFG_GLOBAL },	/* alias */
+	{ "dsaauthentication", sPubkeyAuthentication, SSHCFG_GLOBAL }, /* alias */
 #ifdef KRB5
 	{ "kerberosauthentication", sKerberosAuthentication, SSHCFG_ALL },
 	{ "kerberosorlocalpasswd", sKerberosOrLocalPasswd, SSHCFG_GLOBAL },
@@ -517,10 +519,10 @@ static struct {
 	{ "clientalivecountmax", sClientAliveCountMax, SSHCFG_GLOBAL },
 	{ "authorizedkeysfile", sAuthorizedKeysFile, SSHCFG_GLOBAL },
 	{ "authorizedkeysfile2", sAuthorizedKeysFile2, SSHCFG_GLOBAL },
-	{ "useprivilegeseparation", sUsePrivilegeSeparation, SSHCFG_GLOBAL },
+	{ "useprivilegeseparation", sUsePrivilegeSeparation, SSHCFG_GLOBAL},
 	{ "acceptenv", sAcceptEnv, SSHCFG_GLOBAL },
 	{ "permittunnel", sPermitTunnel, SSHCFG_GLOBAL },
- 	{ "match", sMatch, SSHCFG_ALL },
+	{ "match", sMatch, SSHCFG_ALL },
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
 	{ "chrootdirectory", sChrootDirectory, SSHCFG_ALL },
@@ -528,6 +530,8 @@ static struct {
 	{ "hpndisabled", sHPNDisabled },
 	{ "hpnbuffersize", sHPNBufferSize },
 	{ "tcprcvbufpoll", sTcpRcvBufPoll },
+	{ "disableusagestats", sDisUsageStats, SSHCFG_GLOBAL},
+	{ "usagestatstargets", sUsageStatsTarg, SSHCFG_GLOBAL},
 	{ NULL, sBadOption, 0 }
 };
 
@@ -1462,6 +1466,39 @@ process_server_config_line(ServerOptions *options, char *line,
 			*charptr = xstrdup(arg);
 		break;
 
+	case sDisUsageStats:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing value.",
+			    filename, linenum);
+		if (!strcasecmp(arg, "true") ||
+		    !strcasecmp(arg, "enabled") ||
+		    !strcasecmp(arg, "yes") ||
+		    !strcasecmp(arg, "on") ||
+		    !strcasecmp(arg, "1"))
+			options->disable_usage_stats = 1;
+		else if (!strcasecmp(arg, "false") ||
+			 !strcasecmp(arg, "disabled") ||
+			 !strcasecmp(arg, "no") ||
+			 !strcasecmp(arg, "off") ||
+			 !strcasecmp(arg, "0"))
+			options->disable_usage_stats = 0;
+		else
+			fatal("Incorrect value for disable_usage_stats");
+		break;
+
+	case sUsageStatsTarg:
+		charptr = &options->chroot_directory;
+
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing value.",
+			    filename, linenum);
+		options->usage_stats_targets = xstrdup(arg);
+		break;
+
 	case sDeprecated:
 		logit("%s line %d: Deprecated option %s",
 		    filename, linenum, arg);
@@ -1544,7 +1581,7 @@ parse_server_match_config(ServerOptions *options, const char *user,
 /*
  * Copy any supported values that are set.
  *
- * If the preauth flag is set, we do not bother copying the the string or
+ * If the preauth flag is set, we do not bother copying the string or
  * array values that are not used pre-authentication, because any that we
  * do use must be explictly sent in mm_getpwnamallow().
  */

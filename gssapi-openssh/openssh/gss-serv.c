@@ -455,7 +455,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 
 /* Privileged */
 int
-ssh_gssapi_userok(char *user, struct passwd *pw)
+ssh_gssapi_userok(char *user, struct passwd *pw, int gssapi_keyex)
 {
 	OM_uint32 lmin;
 
@@ -531,10 +531,11 @@ void
 ssh_gssapi_rekey_creds() {
 	int ok;
 #ifdef USE_PAM
-    int ret;
+	int ret;
 	pam_handle_t *pamh = NULL;
 	struct pam_conv pamconv = {ssh_gssapi_simple_conv, NULL};
 	char *envstr;
+	char **p;char **pw;
 #endif
 
 	if (gssapi_client.store.filename == NULL && 
@@ -563,6 +564,18 @@ ssh_gssapi_rekey_creds() {
  	    &pamconv, &pamh);
 	if (ret)
 		return;
+
+	/* Put ssh pam stack env variables in this new pam stack env 
+	 * Using pam-pkinit, KRB5CCNAME is set during do_pam_session
+	 * this addition enables pam-pkinit to access KRB5CCNAME if used 
+	 * in sshd-rekey stack too
+	 */
+	pw = p = fetch_pam_environment();
+	while ( *pw != NULL ) {
+	        pam_putenv(pamh,*pw);
+		pw++;
+	}
+	free_pam_environment(p);
 
 	xasprintf(&envstr, "%s=%s", gssapi_client.store.envvar, 
 	    gssapi_client.store.envval);
@@ -593,6 +606,14 @@ ssh_gssapi_update_creds(ssh_gssapi_ccache *store) {
 	restore_uid();
 
 	return ok;
+}
+
+void
+ssh_gssapi_get_client_info(char **userdn, char **mech) {
+	*userdn = gssapi_client.displayname.value;
+
+	if (gssapi_client.mech)
+		*mech = gssapi_client.mech->name;
 }
 
 #endif

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.170 2008/11/04 08:22:13 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.171 2009/03/05 07:18:19 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -68,6 +68,7 @@
 #include "msg.h"
 #include "pathnames.h"
 #include "uidswap.h"
+#include "schnorr.h"
 #include "jpake.h"
 
 #ifdef GSSAPI
@@ -297,10 +298,7 @@ int	userauth_jpake(Authctxt *);
 void	userauth_jpake_cleanup(Authctxt *);
 
 #ifdef GSSAPI
-int	userauth_external(Authctxt *authctxt);
 int	userauth_gssapi(Authctxt *authctxt);
-int	userauth_gssapi_with_mic(Authctxt *authctxt);
-int	userauth_gssapi_without_mic(Authctxt *authctxt);
 void	input_gssapi_response(int type, u_int32_t, void *);
 void	input_gssapi_token(int type, u_int32_t, void *);
 void	input_gssapi_hash(int type, u_int32_t, void *);
@@ -327,17 +325,7 @@ Authmethod authmethods[] = {
 		NULL,
 		&options.gss_authentication,
 		NULL},
-	{"external-keyx",
-		userauth_external,
-		NULL,
-		&options.gss_authentication,
-		NULL},
 	{"gssapi-with-mic",
-		userauth_gssapi,
-		NULL,
-		&options.gss_authentication,
-		NULL},
-	{"gssapi",
 		userauth_gssapi,
 		NULL,
 		&options.gss_authentication,
@@ -896,39 +884,6 @@ const gss_OID_desc * const              gss_mech_globus_gssapi_openssl;
 	   oid->length) == 0))
 #endif
 
-int
-userauth_external(Authctxt *authctxt)
-{
-    static int attempt = 0;
-        
-    if (attempt++ >= 1)
-        return 0;
-                                
-	/* The client MUST NOT try this method if initial key exchange
-	   was not performed using a GSSAPI-based key exchange
-	   method. */
-	if (gss_kex_context == NULL) {
-		debug2("gsskex not performed, skipping external-keyx");
-		return 0;
-	}
-
-    debug2("userauth_external");
-    packet_start(SSH2_MSG_USERAUTH_REQUEST);
-#ifdef GSI
-    if (options.implicit && is_gsi_oid(gss_kex_context->oid)) {
-        packet_put_cstring("");
-	} else {
-#endif
-    packet_put_cstring(authctxt->server_user);
-#ifdef GSI
-	}
-#endif
-    packet_put_cstring(authctxt->service);
-    packet_put_cstring(authctxt->method->name);
-    packet_send();
-    packet_write_wait();
-    return 1;
-}                                                                                                
 int
 userauth_gsskeyex(Authctxt *authctxt)
 {

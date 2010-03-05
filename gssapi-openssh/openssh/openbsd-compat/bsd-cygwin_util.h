@@ -35,7 +35,6 @@
 #ifdef HAVE_CYGWIN
 
 #undef ERROR
-#define is_winnt       (GetVersion() < 0x80000000)
 
 #include <windows.h>
 #include <sys/cygwin.h>
@@ -43,9 +42,7 @@
 
 int binary_open(const char *, int , ...);
 int binary_pipe(int fd[2]);
-int check_nt_auth(int, struct passwd *);
 int check_ntsec(const char *);
-void register_9x_service(void);
 char **fetch_windows_environment(void);
 void free_windows_environment(char **);
 

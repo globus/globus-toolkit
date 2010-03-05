@@ -151,10 +151,17 @@ fi
 
 
 # Rename config files; postinstall script will copy them if necessary
-for cfgfile in ssh_config sshd_config ssh_prng_cmds
+for cfgfile in ssh_config sshd_config
 do
 	mv $FAKE_ROOT/$sysconfdir/$cfgfile $FAKE_ROOT/$sysconfdir/$cfgfile.default
 done
+
+# AIX 5.3 and newer have /dev/random and don't create ssh_prng_cmds
+if [ -f $FAKE_ROOT/$sysconfdir/ssh_prng_cmds ]
+then
+	mv FAKE_ROOT/$sysconfdir/ssh_prng_cmds \
+		$FAKE_ROOT/$sysconfdir/ssh_prng_cmds.default
+fi
 
 #
 # Generate lpp control files.

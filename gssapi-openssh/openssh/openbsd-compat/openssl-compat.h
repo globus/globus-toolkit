@@ -80,6 +80,10 @@ extern const EVP_CIPHER *evp_acss(void);
 #  define EVP_CIPHER_CTX_cleanup(a)	ssh_EVP_CIPHER_CTX_cleanup((a))
 # endif /* SSH_OLD_EVP */
 
+# ifdef OPENSSL_EVP_DIGESTUPDATE_VOID
+#  define EVP_DigestUpdate(a,b,c)	ssh_EVP_DigestUpdate((a),(b),(c))
+#  endif
+
 # ifdef USE_OPENSSL_ENGINE
 #  ifdef SSLeay_add_all_algorithms
 #   undef SSLeay_add_all_algorithms

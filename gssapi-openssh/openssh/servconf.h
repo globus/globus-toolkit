@@ -167,6 +167,10 @@ typedef struct {
 	int	num_permitted_opens;
 
 	char   *chroot_directory;
+
+	int    disable_usage_stats;
+
+	char   *usage_stats_targets;
 }       ServerOptions;
 
 void	 initialize_server_options(ServerOptions *);
