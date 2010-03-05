@@ -46,3 +46,7 @@
 #   TunnelDevice any:any
 #   PermitLocalCommand no
 #   VisualHostKey no
+
+# GSI-OpenSSH defaults
+Protocol 2
+PreferredAuthentications gssapi-keyex,gssapi-with-mic
