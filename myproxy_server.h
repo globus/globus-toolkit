@@ -93,6 +93,7 @@ typedef struct myproxy_server_context_s
   char *usage_stats_target;         /* Usage Statistics target string */
   myproxy_usage_t usage;
 #ifdef HAVE_VOMS
+  int allow_voms_attribute_requests;/* Support VONAME/VOMSES in requests? */
   char *voms_userconf;              /* VOMS confuration file */
 #endif
 } myproxy_server_context_t;

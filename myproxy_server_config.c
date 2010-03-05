@@ -127,6 +127,10 @@ static struct config_directives our_conf[] = {
 	{"proxy_extapp", 1, 1},
 	{"disable_usage_stats", 1, 1},
 	{"usage_stats_target", 1, 1},
+#ifdef HAVE_VOMS
+	{"voms_userconf", 1, 1},
+	{"allow_voms_attribute_requests", 1, 1},
+#endif
 /* Terminating entity */
 	{NULL, 0, 0}
 };
@@ -287,6 +291,10 @@ clear_server_context(myproxy_server_context_t *context)
     context->disable_usage_stats = 0;
     free_ptr(&context->usage_stats_target);
     memset(&context->usage, 0, sizeof(context->usage));
+#ifdef HAVE_VOMS
+    free_ptr(&context->voms_userconf);
+    context->allow_voms_attribute_requests = 0;
+#endif
 }
 
 void
@@ -716,6 +724,15 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "voms_userconf") == 0) {
         context->voms_userconf = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "allow_voms_attribute_requests") == 0) {
+        if ((!strcasecmp(tokens[1], "true")) ||
+            (!strcasecmp(tokens[1], "enabled")) ||
+            (!strcasecmp(tokens[1], "yes")) ||
+            (!strcasecmp(tokens[1], "on")) ||
+            (!strcmp(tokens[1], "1"))) {
+            context->allow_voms_attribute_requests = 1;
+        }
+    }
 #endif
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
@@ -954,6 +971,15 @@ check_config(myproxy_server_context_t *context)
         myproxy_debug("disable_usage_stats is enabled.");
         myproxy_debug("server will not report usage metrics");
     }
+#ifdef HAVE_VOMS
+    if (context->allow_voms_attribute_requests) {
+      myproxy_debug("allow_voms_attribute_requests is set.");
+      myproxy_debug("VOMS attributes will be included on request.");
+    } else {
+      myproxy_debug("allow_voms_attribute_requests is not set.");
+      myproxy_debug("VOMS attribute requests will be ignored.");
+    }
+#endif    
     if (context->trusted_retriever_dns &&
         !strcmp(context->trusted_retriever_dns[0], "*")) {
         if (!context->default_trusted_retriever_dns) {

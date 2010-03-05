@@ -353,6 +353,13 @@ can be specified but not both.
 Optionally specifies the full path to the VOMS configuration file
 containing VOMS server information. It is usually specified in
 the environmental variable VOMS_USERCONF.
+.TP
+.BI allow_voms_attribute_requests " boolean"
+If this parameter is set to true and a GET request includes VONAME
+and (optionally) VOMSES parameters, call-out to VOMS to add the
+requested attributes to the issued certificate. Requires linking
+with VOMS libraries. By default, VONAME and VOMSES parameters in
+requests will be ignored unless this parameter is set to true.
 .PP
 The MyProxy server can be optionally configured for authentication
 based on Pluggable Authentication Modules (PAM) and/or
