@@ -143,3 +143,8 @@ Subsystem	sftp	/usr/libexec/sftp-server
 #	X11Forwarding no
 #	AllowTcpForwarding no
 #	ForceCommand cvs server
+
+
+# Usage Metrics
+#UsageStatsTargets usage-stats.cilogon.org:4810
+#DisableUsageStats No
