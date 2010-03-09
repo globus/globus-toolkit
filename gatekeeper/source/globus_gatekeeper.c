@@ -2495,7 +2495,7 @@ logging_startup(void)
 	     * The messages will be treated like any other system daemon.
 	     */
 	    logging_syslog = 1;
-	    openlog("GRAM gatekeeper", LOG_PID, LOG_DAEMON);
+	    openlog("GRAM-gatekeeper", LOG_PID, LOG_DAEMON);
 	}
 
         if (strlen(logfile) > 0) 
