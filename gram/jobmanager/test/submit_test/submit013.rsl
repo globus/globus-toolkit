@@ -1,3 +1,0 @@
-&(executable = /bin/sh)
- (gass_cache=$(HOME) # "/.globus/.gass_cache")
- (arguments  = -c 'if [ -d "$GLOBUS_GASS_CACHE_DEFAULT" ]; then echo 1; else echo 0; fi')
