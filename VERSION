@@ -1,10 +1,10 @@
-This is MyProxy v5.1 XX Xxx 2010.
+This is MyProxy v5.1 9 Mar 2010.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v5.1 XX Xxx 2010
+v5.1 9 Mar 2010
   - fix configure script check for non-flavored globus_usage and
     globus_gsi_proxy_core libraries for Fedora/EPEL RPM compatibility
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6897)
