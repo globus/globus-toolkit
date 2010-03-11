@@ -24,8 +24,10 @@
 #   RSAAuthentication yes
 #   PasswordAuthentication yes
 #   HostbasedAuthentication no
-#   GSSAPIAuthentication no
-#   GSSAPIDelegateCredentials no
+#   GSSAPIAuthentication yes
+#   GSSAPIDelegateCredentials yes
+#   GSSAPIKeyExchange yes
+#   GSSAPITrustDNS yes
 #   BatchMode no
 #   CheckHostIP yes
 #   AddressFamily any
