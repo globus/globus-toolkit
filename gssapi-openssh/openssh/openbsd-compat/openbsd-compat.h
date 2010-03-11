@@ -200,6 +200,14 @@ int vasprintf(char **, const char *, va_list);
 int vsnprintf(char *, size_t, const char *, va_list);
 #endif
 
+#ifndef HAVE_USER_FROM_UID
+char *user_from_uid(uid_t, int);
+#endif
+
+#ifndef HAVE_GROUP_FROM_GID
+char *group_from_gid(gid_t, int);
+#endif
+
 void *xmmap(size_t size);
 char *xcrypt(const char *password, const char *salt);
 char *shadow_pw(struct passwd *pw);
