@@ -149,6 +149,9 @@ function add(str) {
     } else if(match(words[w],"^Dt$")) {
       id=wtail()
       next
+    } else if(match(words[w],"^Ux$")) {
+      add("UNIX")
+      skip=1
     } else if(match(words[w],"^Ox$")) {
       add("OpenBSD")
       skip=1

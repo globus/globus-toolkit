@@ -757,4 +757,12 @@ struct winsize {
 # define SSH_IOBUFSZ 8192
 #endif
 
+#ifndef _NSIG
+# ifdef NSIG
+#  define _NSIG NSIG
+# else
+#  define _NSIG 128
+# endif
+#endif
+
 #endif /* _DEFINES_H */
