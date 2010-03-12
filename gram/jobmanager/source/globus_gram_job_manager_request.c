@@ -756,7 +756,10 @@ globus_gram_job_manager_request_init(
         goto seg_event_queue_init_failed;
     }
 
-    rc = globus_gram_job_manager_state_file_write(r);
+    if (r->jm_restart == NULL)
+    {
+        rc = globus_gram_job_manager_state_file_write(r);
+    }
     
     if (rc != GLOBUS_SUCCESS)
     {

@@ -139,8 +139,10 @@ globus_gram_job_manager_init_seg(
             globus_gram_job_manager_log(
                     manager,
                     GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.seg.end level=ERROR error=%d "
-                    "module=%s reason=\"Error loading job_manager SEG "
+                    "event=gram.seg.end level=ERROR "
+                    "error=%d "
+                    "module=%s "
+                    "reason=\"Error loading job_manager SEG "
                     "module\"\n",
                     rc,
                     manager->config->seg_module);
@@ -790,6 +792,7 @@ globus_l_gram_fork_poll_callback(
     /* Queue events in the request-specific SEG event queue */
     for (l = events; l != NULL; l = globus_list_rest(l))
     {
+
         event = globus_list_first(l);
 
         GlobusGramJobManagerLock(manager);
@@ -802,7 +805,7 @@ globus_l_gram_fork_poll_callback(
 
         if (rc == GLOBUS_SUCCESS)
         {
-            rc = globus_l_gram_deliver_event(   
+            rc = globus_l_gram_deliver_event(
                     request,
                     event);
 

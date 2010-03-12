@@ -452,6 +452,10 @@ typedef struct globus_gram_job_manager_s
     int                                 seg_pause_count;
     /** All jobs are being stopped. Don't allow new ones in */
     globus_bool_t                       stop;
+    /** List of jobs that still need to be restarted, but haven't yet */
+    globus_list_t *                     pending_restarts;
+    /** Periodic callback handle to process jobs in the pending_restarts list */
+    globus_callback_handle_t            pending_restart_handle;
     /** Usage stats tracking data */
     globus_i_gram_usage_tracker_t *     usagetracker;
 }
@@ -877,8 +881,7 @@ globus_gram_rewrite_output_as_staging(
 
 int
 globus_gram_job_manager_request_load_all(
-    globus_gram_job_manager_t *         manager,
-    globus_list_t **                    requests);
+    globus_gram_job_manager_t *         manager);
 
 int
 globus_i_gram_request_stdio_update(
@@ -987,6 +990,10 @@ globus_gram_job_manager_state_machine_register(
 int
 globus_i_gram_remote_io_url_update(
     globus_gram_jobmanager_request_t *  request);
+
+void
+globus_gram_job_manager_state_machine_callback(
+    void *                              user_arg);
 
 /* globus_gram_job_manager_gsi.c */
 int
