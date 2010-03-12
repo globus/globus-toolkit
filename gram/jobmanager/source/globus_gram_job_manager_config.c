@@ -61,7 +61,7 @@ globus_gram_job_manager_config_init(
     int                                 i;
     int                                 rc = 0;
     char                                hostname[MAXHOSTNAMELEN];
-    char *                              conf_path;
+    char *                              conf_path = NULL;
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
@@ -285,6 +285,7 @@ globus_gram_job_manager_config_init(
                 && (i+1 < argc))
         {
             char *                  log_level_string = strdup(argv[++i]);
+            char *                  log_level_string_save = log_level_string;
             char *                  level_string = NULL;
 
             while ((level_string = strsep(&log_level_string, "|")) != NULL)
@@ -314,6 +315,7 @@ globus_gram_job_manager_config_init(
                     config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE;
                 }
             }
+            free(log_level_string_save);
         }
         else if (strcmp(argv[i], "-disable-usagestats") == 0)
         {
@@ -628,6 +630,14 @@ globus_gram_job_manager_config_destroy(
     if (config->hostname)
     {
         free(config->hostname);
+    }
+    if (config->service_tag)
+    {
+        free(config->service_tag);
+    }
+    if (config->usage_targets)
+    {
+        free(config->usage_targets);
     }
 }
 /* globus_gram_job_manager_config_destroy() */

@@ -623,12 +623,22 @@ globus_gram_job_manager_gsi_update_credential(
 
     if (request)
     {
-        rc = globus_gram_job_manager_gsi_write_credential(
-                credential,
-                request->x509_user_proxy);
-        if (rc != 0)
+        char * filename;
+
+        filename = globus_common_create_string(
+                "%s/x509_user_proxy",
+                request->job_dir);
+
+        if (filename)
         {
-            goto write_job_cred_failed;
+            rc = globus_gram_job_manager_gsi_write_credential(
+                    credential,
+                    filename);
+            free(filename);
+            if (rc != 0)
+            {
+                goto write_job_cred_failed;
+            }
         }
     }
 

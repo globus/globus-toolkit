@@ -1552,9 +1552,9 @@ globus_l_gram_enqueue_description(
 
     rc = globus_l_gram_enqueue_string(
             fifo,
-            "$ENV{X509_USER_PROXY} = '%s';\n"
+            "$ENV{X509_USER_PROXY} = '%s/x509_user_proxy';\n"
             "$ENV{GLOBUS_GRAM_JOB_CONTACT} = '%s';\n",
-            request->x509_user_proxy,
+            request->job_dir,
             request->job_contact);
 
     rc = globus_l_gram_enqueue_string(

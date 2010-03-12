@@ -518,7 +518,7 @@ globus_gram_job_manager_startup_socket_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_FAILED_ALLOW_ATTACH;
 
         errstr = globus_error_print_friendly(globus_error_peek(result));
-        errstr_escaped = globus_gram_prepare_log_string(errstr_escaped);
+        errstr_escaped = globus_gram_prepare_log_string(errstr);
 
         globus_gram_job_manager_log(
                 manager,

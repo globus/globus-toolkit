@@ -101,16 +101,14 @@ int
 globus_l_gram_remote_io_url_file_create(
     globus_gram_jobmanager_request_t *  request,
     const char *                        remote_io_url,
-    const char *                        job_dir,
-    char **                             remote_io_url_filep);
+    const char *                        job_dir);
 
 static
 int
 globus_l_gram_export_cred(
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       cred,
-    const char *                        job_directory,
-    char **                             proxy_filename);
+    const char *                        job_directory);
 
 static
 int
@@ -247,7 +245,6 @@ globus_gram_job_manager_request_init(
     /* Won't be set until job has been submitted to the LRM */
     r->job_id_string = NULL;
     r->original_job_id_string = NULL;
-    r->poll_frequency = 10;
     r->commit_extend = 0;
     r->scratchdir = NULL;
     r->creation_time = time(NULL);
@@ -561,7 +558,6 @@ globus_gram_job_manager_request_init(
     {
     case GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE:
         r->remote_io_url = NULL;
-        r->remote_io_url_file = NULL;
         break;
     case GLOBUS_SUCCESS:
         if (tmp_string != NULL)
@@ -583,8 +579,7 @@ globus_gram_job_manager_request_init(
     rc = globus_l_gram_remote_io_url_file_create(
             r,
             r->remote_io_url,
-            r->job_dir,
-            &r->remote_io_url_file);
+            r->job_dir);
 
     if (rc != GLOBUS_SUCCESS)
     {
@@ -725,8 +720,7 @@ globus_gram_job_manager_request_init(
     rc = globus_l_gram_export_cred(
             r,
             delegated_credential,
-            r->job_dir,
-            &r->x509_user_proxy);
+            r->job_dir);
     if (rc != GLOBUS_SUCCESS)
     {
         goto failed_export_cred;
@@ -769,11 +763,6 @@ seg_event_queue_init_failed:
         }
 history_file_set_failed:
 failed_populate_environment:
-        if (r->x509_user_proxy)
-        {
-            free(r->x509_user_proxy);
-            r->x509_user_proxy = NULL;
-        }
 failed_export_cred:
 pending_queries_init_failed:
 staging_list_create_failed:
@@ -786,10 +775,19 @@ open_stderr_failed:
 rewrite_stderr_failed:
 open_stdout_failed:
 rewrite_stdout_failed:
-        if (r->remote_io_url_file)
+        if (r->remote_io_url)
         {
-            remove(r->remote_io_url_file);
-            free(r->remote_io_url_file);
+            char * remote_io_url_file;
+
+            remote_io_url_file = globus_common_create_string(
+                "%s/remote_io_file",
+                r->job_dir);
+
+            if (remote_io_url_file != NULL)
+            {
+                remove(remote_io_url_file);
+                free(remote_io_url_file);
+            }
         }
 make_remote_io_url_file_failed:
         if (r->remote_io_url)
@@ -1268,14 +1266,6 @@ globus_gram_job_manager_request_free(
     if (request->remote_io_url)
     {
         free(request->remote_io_url);
-    }
-    if (request->remote_io_url_file)
-    {
-        free(request->remote_io_url_file);
-    }
-    if (request->x509_user_proxy)
-    {
-        free(request->x509_user_proxy);
     }
     if (request->job_state_file)
     {
@@ -2448,27 +2438,50 @@ globus_l_gram_populate_environment(
         }
     }
 
-    if (request->remote_io_url_file)
+    if (request->remote_io_url)
     {
-        rc = globus_l_gram_add_environment(
-                request->rsl,
-                "GLOBUS_REMOTE_IO_URL",
-                request->remote_io_url_file);
-        if (rc != GLOBUS_SUCCESS)
+        char * remote_io_url_file;
+
+        remote_io_url_file = globus_common_create_string(
+            "%s/remote_io_file",
+            request->job_dir);
+
+        if (remote_io_url_file)
         {
-            goto add_remote_io_url_file;
+            rc = globus_l_gram_add_environment(
+                    request->rsl,
+                    "GLOBUS_REMOTE_IO_URL",
+                    remote_io_url_file);
+            free(remote_io_url_file);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto add_remote_io_url_file;
+            }
         }
     }
 
-    if (request->x509_user_proxy)
     {
-        rc = globus_l_gram_add_environment(
-                request->rsl,
-                "X509_USER_PROXY",
-                request->x509_user_proxy);
-        if (rc != GLOBUS_SUCCESS)
+        char * proxy_file;
+
+        proxy_file = globus_common_create_string(
+                "%s/x509_user_proxy",
+                request->job_dir);
+
+        if ((proxy_file != NULL) && (access(proxy_file, R_OK) == 0))
         {
-            goto add_x509_user_proxy_failed;
+            rc = globus_l_gram_add_environment(
+                    request->rsl,
+                    "X509_USER_PROXY",
+                    proxy_file);
+            free(proxy_file);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto add_x509_user_proxy_failed;
+            }
+        }
+        else if (proxy_file)
+        {
+            free(proxy_file);
         }
     }
     if (request->config->extra_envvars)
@@ -3272,8 +3285,6 @@ rsl_eval_failed:
  *     Request to log messages for
  * @param remote_io_url
  *     Value to write to the remote_io_url file
- * @param remote_io_url_filep
- *     Pointer to be set to the remote_io_url_file path upon success.
  *
  * @retval GLOBUS_SUCCESS
  *     Success.
@@ -3287,10 +3298,10 @@ int
 globus_l_gram_remote_io_url_file_create(
     globus_gram_jobmanager_request_t *  request,
     const char *                        remote_io_url,
-    const char *                        job_dir,
-    char **                             remote_io_url_filep)
+    const char *                        job_dir)
 {
     int                                 rc = GLOBUS_SUCCESS;
+    char *                              path = NULL;
     FILE *                              fp;
 
     globus_gram_job_manager_request_log(
@@ -3306,14 +3317,13 @@ globus_l_gram_remote_io_url_file_create(
 
     if (!remote_io_url)
     {
-        *remote_io_url_filep = NULL;
         goto out;
     }
 
-    *remote_io_url_filep = globus_common_create_string(
+    path = globus_common_create_string(
                 "%s/remote_io_file",
                 job_dir);
-    if (remote_io_url_filep == NULL)
+    if (path == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
@@ -3336,7 +3346,7 @@ globus_l_gram_remote_io_url_file_create(
                 strerror(errno));
         goto set_remote_io_url_file_failed;
     }
-    fp = fopen(*remote_io_url_filep, "w");
+    fp = fopen(path, "w");
     if (fp == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
@@ -3356,7 +3366,7 @@ globus_l_gram_remote_io_url_file_create(
                 "\n",
                 request->job_contact_path,
                 remote_io_url,
-                *remote_io_url_filep,
+                path,
                 -rc,
                 "Error opening file",
                 errno,
@@ -3385,7 +3395,7 @@ globus_l_gram_remote_io_url_file_create(
                 "\n",
                 request->job_contact_path,
                 remote_io_url,
-                *remote_io_url_filep,
+                path,
                 -rc,
                 "Error writing remote_io file",
                 errno,
@@ -3407,15 +3417,17 @@ globus_l_gram_remote_io_url_file_create(
             "\n",
             request->job_contact_path,
             remote_io_url,
-            *remote_io_url_filep);
+            path);
 
 write_failed:
     fclose(fp);
     if (rc != GLOBUS_SUCCESS)
     {
+    }
 fopen_failed:
-        free(*remote_io_url_filep);
-        *remote_io_url_filep = NULL;
+    if (path)
+    {
+        free(path);
     }
 set_remote_io_url_file_failed:
 out:
@@ -3428,8 +3440,7 @@ int
 globus_l_gram_export_cred(
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       cred,
-    const char *                        job_directory,
-    char **                             proxy_filename)
+    const char *                        job_directory)
 {
     OM_uint32                           major_status, minor_status;
     char *                              filename = NULL;
@@ -3479,31 +3490,27 @@ globus_l_gram_export_cred(
     if (file < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-        goto fopen_failed;
+        goto open_failed;
     }
 
     rc = write(file, buffer.value, buffer.length);
     if (rc < buffer.length)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-        goto fwrite_failed;
+        goto write_failed;
     }
     rc = GLOBUS_SUCCESS;
 
-fwrite_failed:
+write_failed:
     close(file);
-fopen_failed:
-    if (rc != GLOBUS_SUCCESS)
-    {
-        free(filename);
-        filename = NULL;
-    }
+open_failed:
+    free(filename);
+    filename = NULL;
 malloc_filename_failed:
     gss_release_buffer(&minor_status, &buffer);
 jm_restart_done:
 export_cred_failed:
 no_cred:
-    *proxy_filename = filename;
 
     return rc;
 }

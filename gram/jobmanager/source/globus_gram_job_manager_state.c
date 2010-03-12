@@ -456,7 +456,7 @@ globus_l_gram_job_manager_state_machine(
                 /* Register next poll of job state */
                 GlobusTimeReltimeSet(
                         delay_time,
-                        request->poll_frequency, 0);
+                        request->manager->poll_frequency, 0);
 
                 rc = globus_gram_job_manager_state_machine_register(
                         request->manager,
@@ -2118,9 +2118,17 @@ globus_i_gram_remote_io_url_update(
     globus_gram_jobmanager_request_t *  request)
 {
     FILE *                              fp;
+    char *                              path = NULL;
     int                                 rc = GLOBUS_SUCCESS;
 
-    fp = fopen(request->remote_io_url_file, "w");
+    path = globus_common_create_string("%s/remote_io_file", request->job_dir);
+    if (path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_REMOTE_IO_URL;
+
+        goto create_string_Failed;
+    }
+    fp = fopen(path, "w");
     if (fp == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_REMOTE_IO_URL;
@@ -2145,6 +2153,12 @@ fprintf_failed:
 
 fclose_failed:
 fopen_failed:
+create_string_Failed:
+    if (path)
+    {
+        free(path);
+    }
+
     return rc;
 }
 /* globus_i_gram_remote_io_url_update() */

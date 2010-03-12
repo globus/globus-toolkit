@@ -127,6 +127,7 @@ globus_gram_job_manager_init(
     manager->usagetracker = NULL;
     manager->config = config;
     manager->stop = GLOBUS_FALSE;
+    manager->poll_frequency = 10;
 
     rc = globus_mutex_init(&manager->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
@@ -400,17 +401,37 @@ globus_gram_job_manager_destroy(
     globus_gram_protocol_callback_disallow(manager->url_base);
     free(manager->url_base);
     manager->url_base = NULL;
-
+    if (manager->pid_path)
+    {
+        free(manager->pid_path);
+    }
+    if (manager->cred_path)
+    {
+        free(manager->cred_path);
+    }
+    if (manager->lock_path)
+    {
+        free(manager->lock_path);
+    }
+    if (manager->socket_path)
+    {
+        free(manager->socket_path);
+    }
+    if (manager->usagetracker && manager->usagetracker->jm_id)
+    {
+        free(manager->usagetracker->jm_id);
+    }
 
     globus_gram_job_manager_validation_destroy(
             manager->validation_records);
     manager->validation_records = NULL;
     
     globus_hashtable_destroy(&manager->request_hash);
-
+    globus_hashtable_destroy(&manager->job_id_hash);
     globus_fifo_destroy(&manager->state_callback_fifo);
     globus_fifo_destroy(&manager->script_fifo);
     globus_fifo_destroy(&manager->script_handles);
+    globus_fifo_destroy(&manager->seg_event_queue);
     
     if(manager->usagetracker)
     {
@@ -2187,6 +2208,8 @@ globus_l_gram_ref_swap_out(
     globus_gram_jobmanager_request_t *  request;
     int                                 rc;
 
+    request = ref->request;
+
     globus_gram_job_manager_request_log(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
@@ -2255,7 +2278,6 @@ globus_l_gram_ref_swap_out(
     }
     if (ref->reference_count == 0)
     {
-        request = ref->request;
         request->manager->usagetracker->count_current_jobs--;
 
         globus_gram_job_manager_request_log(

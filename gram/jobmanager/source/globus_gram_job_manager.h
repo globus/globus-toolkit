@@ -450,6 +450,13 @@ typedef struct globus_gram_job_manager_s
     globus_bool_t                       done;
     globus_fifo_t                       seg_event_queue;
     int                                 seg_pause_count;
+    /**
+     * Poll Frequency
+     *
+     * How often should a check of the job status be done.
+     */
+    unsigned int                        poll_frequency;
+
     /** All jobs are being stopped. Don't allow new ones in */
     globus_bool_t                       stop;
     /** Usage stats tracking data */
@@ -557,13 +564,6 @@ typedef struct globus_gram_job_manager_request_s
     char *                              original_job_id_string;
     
     /**
-     * Poll Frequency
-     *
-     * How often should a check of the job status and output files be done.
-     */
-    unsigned int                        poll_frequency;
-
-    /**
      * Dry Run
      *
      * If this is GLOBUS_TRUE, do not actually submit the job to the scheduler,
@@ -632,10 +632,6 @@ typedef struct globus_gram_job_manager_request_s
     char *                              scratchdir;
     /** remote_io_url value */
     char *                              remote_io_url;
-    /** file to write remote_io_url to */
-    char *                              remote_io_url_file;
-    /** Job-specific proxy file */
-    char *                              x509_user_proxy;
     /** Job-specific persistence lock descriptor */
     int                                 job_state_lock_fd;
     /** Thread safety */
