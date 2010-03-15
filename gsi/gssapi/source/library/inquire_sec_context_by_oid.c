@@ -314,7 +314,7 @@ unlock_exit:
 exit:
     if (asn1_desired_obj != NULL)
     {
-        ANS1_OBJECT_free(asn1_desired_obj);
+        ASN1_OBJECT_free(asn1_desired_obj);
     }
     if(cert_chain != NULL)
     {
