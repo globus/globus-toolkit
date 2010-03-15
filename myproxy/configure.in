@@ -72,6 +72,7 @@ dnl
 AC_CHECK_DECLS([facilitynames], [], [],
   [[
         #define SYSLOG_NAMES
+        #include <stdio.h>
         #include <syslog.h>
   ]])
 dnl
