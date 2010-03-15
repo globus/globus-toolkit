@@ -322,6 +322,8 @@ decode_facility(const char *name)
     for (c = facilitynames; c->c_name; c++)
         if (!strcasecmp(name, c->c_name))
             return (c->c_val);
+#else
+    myproxy_log("warning: operating system facilitynames declaration not found. syslog_facility can support only numeric values.");
 #endif
 
     myproxy_log("warning: unknown syslog_facility (%s) in myproxy-server.config. defaulting to LOG_DAEMON.", name);

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.70 $)
+AC_REVISION($Revision: 1.71 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -72,6 +72,7 @@ dnl
 AC_CHECK_DECLS([facilitynames], [], [],
   [[
         #define SYSLOG_NAMES
+        #include <stdio.h>
         #include <syslog.h>
   ]])
 dnl
