@@ -97,7 +97,7 @@ $ make dist
    myproxy.ncsa.uiuc.edu:
 
     $ scp README LICENSE VERSION myproxy-*.tar.gz* \
-       ftp.globus.org:/disks/ftp.globus.org/pub/myproxy
+       cvs.globus.org:/disks/ftp.globus.org/pub/myproxy
     $ scp README LICENSE VERSION myproxy-*.tar.gz* \
       osage.ncsa.uiuc.edu:/afs/ncsa/web/grid.ncsa.uiuc.edu/htdocs/myproxy/dl
 
