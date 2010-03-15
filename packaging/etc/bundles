@@ -162,7 +162,7 @@ BUNDLE globus-data-management-server
         globus_gridftp_server_control
         globus_usage
         globus_gridftp_server
-    globus_gridftp_sshftp_setup
+        globus_gridftp_sshftp_setup
         globus_xioperf
 
 BUNDLE globus-data-management-sdk
@@ -192,9 +192,11 @@ BUNDLE globus-data-management-sdk
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
-    globus_xio_gridftp_driver
+        globus_xio_gridftp_driver
 	globus_gass_copy
-    globus_gridftp_sshftp_setup
+	globus_url_sync
+	globus_url_sync_lib
+        globus_gridftp_sshftp_setup
 
 BUNDLE globus-data-management-client
 	globus_core
@@ -225,9 +227,10 @@ BUNDLE globus-data-management-client
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
-    globus_xio_gridftp_driver
-    globus_gass_copy
-    globus_gridftp_sshftp_setup
+        globus_xio_gridftp_driver
+        globus_gass_copy
+	globus_url_sync
+        globus_gridftp_sshftp_setup
 
 BUNDLE	gram-gridftp-test
 	globus_test
@@ -244,10 +247,10 @@ BUNDLE	gram-gridftp-test
 	globus_openssl_error_test
 	globus_proxy_ssl_test
 	globus_authz_test
-    globus_xio_test
+        globus_xio_test
 	gaa_simple_test
-    globus_proxy_utils_test
-    globus_gram_job_manager_auditing_test
+        globus_proxy_utils_test
+        globus_gram_job_manager_auditing_test
 
 BUNDLE	prews-test
 	globus_test
@@ -356,6 +359,7 @@ BUNDLE gt2-unthreaded
 	globus_gass_cache
 	globus_gass_cache_program
 	globus_gass_copy
+	globus_url_sync
 	globus_gass_server_ez
 	globus_gass_transfer
 	globus_gatekeeper
@@ -412,6 +416,7 @@ BUNDLE gt2-threaded THREADED
         globus_gram_client
         globus_gass_transfer
         globus_gass_copy
+        globus_url_sync
         globus_gass_cache
         globus_gass_server_ez
 	globus_gsi_callback

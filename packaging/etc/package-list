@@ -40,6 +40,8 @@ globus_gass_copy	gass/copy/source	gpt
 globus_gass_copy_test	gass/copy/test	gpt
 globus_gass_server_ez	gass/server_ez/source	gpt
 globus_gass_transfer	gass/transfer/source	gpt
+globus_url_sync	gass/sync/client/source	gpt
+globus_url_sync_lib	gass/sync/library/source	gpt
 globus_gatekeeper	gatekeeper/source	gpt
 globus_gatekeeper_setup	gatekeeper/setup	gpt
 globus_gram_client	gram/client/source	gpt
