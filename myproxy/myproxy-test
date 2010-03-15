@@ -196,7 +196,7 @@ if ($startserver) {
     if (!defined($serverpid) || $serverpid eq "") {
       print STDERR "failed to start myproxy-server:\n";
       system("$servercmd -d");	# show output on terminal
-      if (-e $valgrindlog) {
+      if (defined($valgrindlog) && -e $valgrindlog) {
         print STDERR "valgrind log follows:\n";
         system("cat $valgrindlog");
       }
