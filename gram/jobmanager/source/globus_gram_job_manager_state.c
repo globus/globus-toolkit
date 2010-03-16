@@ -2305,6 +2305,12 @@ globus_gram_job_manager_state_machine_register(
         delay = &nodelay;
     }
 
+    /* GRAM-128: Scalable reloading of requests at job manager restart.
+     * It's possible now that the job manager has put this job id in the
+     * pending_restarts list. When we add this reference, if it is in that
+     * list, the state machine will be registered for this job. Hence the
+     * conditional register (request->poll_timer == GLOBUS_NULL_HANDLE) below.
+     */
     rc = globus_gram_job_manager_add_reference(
             manager,
             request->job_contact_path,
@@ -2315,15 +2321,18 @@ globus_gram_job_manager_state_machine_register(
         goto failed_add_reference;
     }
 
-    result = globus_callback_register_oneshot(
-            &request->poll_timer,
-            delay,
-            globus_gram_job_manager_state_machine_callback,
-            request);
-    if (result != GLOBUS_SUCCESS)
+    if (request->poll_timer == GLOBUS_NULL_HANDLE)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto oneshot_failed;
+        result = globus_callback_register_oneshot(
+                &request->poll_timer,
+                delay,
+                globus_gram_job_manager_state_machine_callback,
+                request);
+        if (result != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto oneshot_failed;
+        }
     }
 
     if (rc != GLOBUS_SUCCESS)

@@ -713,7 +713,19 @@ globus_l_gram_process_pending_restarts(
     char                                gramid[64];
     int                                 i;
     int                                 rc;
+    int                                 restarted=0;
     globus_gram_jobmanager_request_t *  request;
+
+    GlobusGramJobManagerLock(manager);
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.process_pending_restarts.start "
+            "level=DEBUG "
+            "pending_restarts=%d "
+            "\n",
+            globus_list_size(manager->pending_restarts));
+    GlobusGramJobManagerUnlock(manager);
 
     for (i = 0; i < 20; i++)
     {
@@ -745,6 +757,7 @@ globus_l_gram_process_pending_restarts(
          */
         if (rc == GLOBUS_SUCCESS)
         {
+            restarted++;
             /* XXX: What if this fails? */
             rc = globus_gram_job_manager_remove_reference(
                     manager,
@@ -753,6 +766,16 @@ globus_l_gram_process_pending_restarts(
         }
     }
     GlobusGramJobManagerLock(manager);
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.process_pending_restarts.end "
+            "level=DEBUG "
+            "processed=%d "
+            "pending_restarts=%d "
+            "\n",
+            restarted,
+            globus_list_size(manager->pending_restarts));
     if (manager->pending_restarts == NULL)
     {
         globus_callback_unregister(

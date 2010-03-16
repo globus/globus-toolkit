@@ -423,6 +423,7 @@ globus_gram_job_manager_destroy(
     manager->validation_records = NULL;
     
     globus_hashtable_destroy(&manager->request_hash);
+    globus_hashtable_destroy(&manager->job_id_hash);
 
     globus_fifo_destroy(&manager->state_callback_fifo);
     globus_fifo_destroy(&manager->script_fifo);
@@ -1502,7 +1503,7 @@ globus_gram_job_manager_add_reference_by_jobid(
     globus_gram_job_manager_log(
             manager,
             GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.add_reference.start "
+            "event=gram.add_reference_by_jobid.start "
             "level=TRACE "
             "jobid=\"%s\" "
             "reason=\"%s\" "
@@ -1522,7 +1523,7 @@ globus_gram_job_manager_add_reference_by_jobid(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.add_reference.end "
+                "event=gram.add_reference_by_jobid.end "
                 "level=WARN "
                 "jobid=\"%s\" "
                 "status=%d "
@@ -1543,7 +1544,7 @@ globus_gram_job_manager_add_reference_by_jobid(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
-                "event=gram.add_reference.end "
+                "event=gram.add_reference_by_jobid.end "
                 "level=INFO "
                 "jobid=\"%s\" "
                 "status=%d "
@@ -1569,7 +1570,7 @@ globus_gram_job_manager_add_reference_by_jobid(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.add_reference.end "
+                "event=gram.add_reference_by_jobid.end "
                 "level=ERROR "
                 "jobid=\"%s\" "
                 "status=%d "
@@ -1643,7 +1644,7 @@ remove_reference:
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.add_reference.end "
+                "event=gram.add_reference_by_jobid.end "
                 "level=TRACE "
                 "jobid=\"%s\" "
                 "status=%d "
@@ -2927,10 +2928,10 @@ globus_gram_split_subjobs(
 insert_failed:
 strdup_failed:
         globus_list_destroy_all(*subjobs, free);
-        free(job_id_string_copy);
-job_id_copy_failed:
         *subjobs = NULL;
     }
+    free(job_id_string_copy);
+job_id_copy_failed:
     return rc;
 }
 /* globus_gram_split_subjobs() */

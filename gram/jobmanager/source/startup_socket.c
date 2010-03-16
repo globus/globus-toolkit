@@ -1544,7 +1544,10 @@ globus_l_gram_startup_socket_callback(
                         name,
                         &output_name,
                         NULL);
-                request->job_stats.user_dn = strdup(output_name.value);
+                if (request->job_stats.user_dn == NULL)
+                {
+                    request->job_stats.user_dn = strdup(output_name.value);
+                }
                 gss_release_name(&minor_status, &name);
                 gss_release_buffer(&minor_status, &output_name);
             }

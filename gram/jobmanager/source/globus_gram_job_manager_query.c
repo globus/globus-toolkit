@@ -431,7 +431,7 @@ globus_l_gram_job_manager_query_reply(
     int                                 code;
     globus_size_t                       replysize;
     globus_byte_t *                     reply             = GLOBUS_NULL;
-    globus_hashtable_t                  extensions;
+    globus_hashtable_t                  extensions = NULL;
 
     rc = query_failure_code;
 
@@ -505,6 +505,10 @@ globus_l_gram_job_manager_query_reply(
     if(reply)
     {
         free(reply);
+    }
+    if (extensions)
+    {
+        globus_gram_protocol_hash_destroy(&extensions);
     }
 }
 /* globus_l_gram_job_manager_query_reply() */

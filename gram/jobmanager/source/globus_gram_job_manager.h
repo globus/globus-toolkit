@@ -1149,7 +1149,7 @@ globus_gram_job_manager_rsl_eval_one_attribute(
 
 int
 globus_gram_job_manager_rsl_remove_attribute(
-    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     char *                              attribute);
 
 globus_rsl_t *
