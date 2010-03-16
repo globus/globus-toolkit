@@ -312,6 +312,10 @@ unlock_exit:
     globus_mutex_unlock(&context->mutex);
 
 exit:
+    if (asn1_desired_obj != NULL)
+    {
+        ASN1_OBJECT_free(asn1_desired_obj);
+    }
     if(cert_chain != NULL)
     {
         sk_X509_pop_free(cert_chain, X509_free);

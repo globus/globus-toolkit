@@ -595,7 +595,7 @@ globus_i_gsi_gss_create_and_fill_context(
             SSL_CIPHER_description(sk_SSL_CIPHER_value(sk,i),
                                    buff,256);
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-                3, (globus_i_gsi_gssapi_debug_fstream, buff));
+                3, (globus_i_gsi_gssapi_debug_fstream, "%s", buff));
         }
     }
 
