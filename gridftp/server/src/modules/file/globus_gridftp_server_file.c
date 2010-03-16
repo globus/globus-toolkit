@@ -1192,7 +1192,7 @@ globus_l_gfs_file_cksm_read_cb(
 
 error_register:
 error_read:
-    globus_xio_close(handle, NULL);
+    globus_xio_register_close(handle, NULL, NULL, NULL);
     handle = NULL;
     globus_gridftp_server_finished_command(monitor->op, result, NULL);    
     globus_free(monitor);
@@ -1272,7 +1272,7 @@ globus_l_gfs_file_open_cksm_cb(
 error_register:
 error_seek:
 error_open:
-    globus_xio_close(handle, NULL);
+    globus_xio_register_close(handle, NULL, NULL, NULL);
     handle = NULL;
     if(monitor->internal_cb)
     {
@@ -1390,7 +1390,7 @@ globus_l_gfs_file_cksm(
     return GLOBUS_SUCCESS;
 
 error_register:
-    globus_xio_close(file_handle, NULL);
+    globus_xio_register_close(file_handle, NULL, NULL, NULL);
     file_handle = NULL;
     globus_free(monitor);
     
@@ -1987,7 +1987,7 @@ globus_l_gfs_file_open(
     return GLOBUS_SUCCESS;
 
 error_register:
-    globus_xio_close(*file_handle, NULL);
+    globus_xio_register_close(*file_handle, NULL, NULL, NULL);
     *file_handle = NULL;
 error_create:
 error_push:
