@@ -211,6 +211,7 @@ globus_symboltable_destroy(
 
         err = globus_hashtable_destroy (old_scope);
         assert (!err);
+        globus_libc_free(old_scope);
     }
     globus_free(s_table);
 
