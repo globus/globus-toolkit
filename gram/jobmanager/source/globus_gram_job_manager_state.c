@@ -857,6 +857,12 @@ globus_l_gram_job_manager_state_machine(
         if(request->unsent_status_change)
         {
             globus_gram_job_manager_state_file_write(request);
+
+            if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT)
+            {
+                globus_gram_job_manager_contact_state_callback(request);
+                request->unsent_status_change = GLOBUS_FALSE;
+            }
         }
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT)

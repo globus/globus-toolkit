@@ -1023,13 +1023,18 @@ globus_l_gram_job_manager_signal(
         }
         else
         {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
-
+            /* GRAM-103: Ease two phase end commit timeout
+             * In some cases, Condor-G decides to restart a job where
+             * the job manager is already running. When this happens,
+             * the job can be in pretty much any job manager state. We'll
+             * ignore any error here, and assume things are working just
+             * fine in the state machine.
+             */
             globus_gram_job_manager_request_log(
                     request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
                     "event=gram.signal.end "
-                    "level=WARN "
+                    "level=DEBUG "
                     "gramid=%s "
                     "signal=\"%s\" "
                     "jmstate=%s "
@@ -1041,7 +1046,7 @@ globus_l_gram_job_manager_signal(
                     args,
                     globus_i_gram_job_manager_state_strings[
                             request->jobmanager_state],
-                    "Two-phase commit signal in invalid jobmanager state",
+                    "Unneccessary two-phase commit signal",
                     -rc,
                     globus_gram_protocol_error_string(rc));
             break;
