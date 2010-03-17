@@ -1382,7 +1382,7 @@ globus_l_gfs_file_cksm(
         result = GlobusGFSErrorWrapFailed("globus_xio_register_open", result);
         goto error_register;
     }
-    
+
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);
     
@@ -1920,6 +1920,7 @@ globus_l_gfs_file_open(
     globus_result_t                     result;
     globus_xio_attr_t                   attr;
     globus_xio_stack_t                  stack;
+    char *                              perms;
     GlobusGFSName(globus_l_gfs_file_open);
     GlobusGFSFileDebugEnter();
 
@@ -1965,6 +1966,34 @@ globus_l_gfs_file_open(
         result = GlobusGFSErrorWrapFailed("globus_xio_handle_create", result);
         goto error_create;
     }
+    perms = globus_gfs_config_get_string("perms");
+    if(perms != NULL)
+    {
+        int                             rc;
+        int                             p;
+
+        rc = sscanf(perms, "%o", &p);
+        if(rc != 1)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "Failed to get default permissions to: %s\n", perms);
+        }
+        else
+        {
+            result = globus_xio_attr_cntl(
+                attr,
+                globus_l_gfs_file_driver,
+                GLOBUS_XIO_FILE_SET_MODE,
+                p);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN,
+                    "Failed to get default permissions to: %s\n", perms);
+            }
+        }
+    }
     
     result = globus_xio_register_open(
         *file_handle,
@@ -1979,6 +2008,7 @@ globus_l_gfs_file_open(
         result = GlobusGFSErrorWrapFailed("globus_xio_register_open", result);
         goto error_register;
     }
+    
     
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);

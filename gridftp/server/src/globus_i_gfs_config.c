@@ -77,6 +77,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "by the chdir_to option.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"chdir_to", "chdir_to", NULL, "chdir-to", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Directory to chdir to after starting.  Will use / if not set.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"perms", "perms", NULL, "perms", NULL, GLOBUS_L_GFS_CONFIG_STRING, -1, NULL,
+    "Set the default file permissions", NULL, NULL,GLOBUS_FALSE, NULL},
  {"fork", "fork", NULL, "fork", "f", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Server will fork for each new connection.  Disabling this option is only recommended "
     "when debugging. Note that non-forked servers running as 'root' will only "
@@ -335,12 +337,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* original argv */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     NULL /* original argc */, NULL, NULL, GLOBUS_FALSE, NULL},
- {"file_stack", "file_stack", NULL, "file_stack", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "set file stack.  EXPERIMENTAL.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"net_stack_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
-   NULL, NULL, NULL,GLOBUS_FALSE, NULL},
- {"fs_stack_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
-   NULL, NULL, NULL,GLOBUS_FALSE, NULL},
 
 
 /* service container stuff */
