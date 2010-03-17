@@ -1021,6 +1021,32 @@ globus_l_gram_job_manager_signal(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
         }
+        else if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.signal.info "
+                    "level=DEBUG "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Unneccessary two-phase commit signal",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
         else
         {
             /* GRAM-103: Ease two phase end commit timeout
@@ -1033,7 +1059,7 @@ globus_l_gram_job_manager_signal(
             globus_gram_job_manager_request_log(
                     request,
                     GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-                    "event=gram.signal.end "
+                    "event=gram.signal.info "
                     "level=DEBUG "
                     "gramid=%s "
                     "signal=\"%s\" "
