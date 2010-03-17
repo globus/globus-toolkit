@@ -3262,8 +3262,24 @@ globus_gsc_959_command_remove(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        list = (globus_list_t *) globus_hashtable_remove(
-            &server_handle->cmd_table, command_name);
+
+        if(strncmp("SITE ", command_name, 5) == 0 && strlen(command_name) > 5)
+        {
+            char * tmp_ptr;
+            char * cmd_name;
+
+            tmp_ptr = (char *)&command_name[5];
+            while(*tmp_ptr == ' ') tmp_ptr++;
+            cmd_name = tmp_ptr;
+
+            list = (globus_list_t *) globus_hashtable_remove(
+                &server_handle->site_cmd_table, cmd_name);
+        }
+        else
+        {
+            list = (globus_list_t *) globus_hashtable_remove(
+                &server_handle->cmd_table, command_name);
+        }
 
         if(list == NULL)
         {
