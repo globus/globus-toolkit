@@ -2313,9 +2313,15 @@ globus_gram_job_manager_state_machine_register(
 
     /* GRAM-128: Scalable reloading of requests at job manager restart.
      * It's possible now that the job manager has put this job id in the
-     * pending_restarts list. When we add this reference, if it is in that
-     * list, the state machine will be registered for this job. Hence the
-     * conditional register (request->poll_timer == GLOBUS_NULL_HANDLE) below.
+     * pending_restarts list. When we add the reference here, if it is in that
+     * list, the state machine will be registered for this job automatically,
+     * with another new reference. So, we'll check if
+     * (request->poll_timer == GLOBUS_NULL_HANDLE) below. If that is true,
+     * then it wasn't in that list and we can procede as we always had done;
+     * otherwise, we'll need to remove the reference we just added.
+     * 
+     * See also globus_l_gram_process_pending_restarts() for the other case
+     * where we might expect to add a reference to a partially-reloaded job.
      */
     rc = globus_gram_job_manager_add_reference(
             manager,
@@ -2340,9 +2346,24 @@ globus_gram_job_manager_state_machine_register(
             goto oneshot_failed;
         }
     }
+    else
+    {
+        /* GRAM-128: Scalable reloading of requests at job manager restart.
+         * If we get here, then the add_reference call added the state machine
+         * callback already. We need to remove this duplicate reference to
+         * avoid leaving the job in memory forever.
+         */
+        globus_gram_job_manager_remove_reference(
+                manager,
+                request->job_contact_path,
+                "state machine");
+    }
 
     if (rc != GLOBUS_SUCCESS)
     {
+        /* Too bad, the state machine couldn't get registered. At least we
+         * can drop the reference count to potentially free some memory.
+         */
 oneshot_failed:
         globus_gram_job_manager_remove_reference(
                 manager,
