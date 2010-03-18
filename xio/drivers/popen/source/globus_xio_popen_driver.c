@@ -556,7 +556,7 @@ globus_l_xio_popen_open(
     
 #   if defined(USE_SOCKET_PAIR)
     {
-        rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, s_fds);
+        rc = socketpair(AF_UNIX, SOCK_STREAM, 0, s_fds);
         if(rc != 0)
         {
             result = GlobusXIOErrorSystemError("socketpair", errno);
