@@ -1153,17 +1153,23 @@ globus_l_gram_job_manager_state_machine(
         }
 
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT;
-        rc = globus_gram_job_manager_script_stage_out(request);
+
+        if ((!globus_list_empty(request->stage_stream_todo)) ||
+            (!globus_list_empty(request->stage_out_todo)))
+        {
+            rc = globus_gram_job_manager_script_stage_out(request);
         
-        if(rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code = rc;
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-        }
-        else
-        {
-            event_registered = GLOBUS_TRUE;
+            if(rc != GLOBUS_SUCCESS)
+            {
+                request->failure_code = rc;
+                request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+            }
+            else
+            {
+                event_registered = GLOBUS_TRUE;
+                request->unsent_status_change = GLOBUS_TRUE;
+            }
         }
         break;
 
