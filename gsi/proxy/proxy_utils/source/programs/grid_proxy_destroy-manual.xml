@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+    <!ENTITY cmdname "grid-proxy-destroy">
+    <!ENTITY cmd "<command>grid-proxy-destroy</command>">
+]>
+
+<refentry id="grid-proxy-destroy" xreflabel="grid-proxy-destroy">
+  <refmeta>
+    <refentrytitle>&cmdname;</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+  <refnamediv>
+    <refname>&cmdname;</refname>
+    <refpurpose>Destroy the default proxy certificate</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <cmdsynopsis>
+        &cmd;
+      <arg>-help</arg>
+      <arg>-usage</arg>
+      <arg>-version</arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+        &cmd;
+        <arg>-debug</arg>
+        <arg>-dryrun</arg>
+        <arg>-default</arg>
+        <arg>-all</arg>
+        <arg>--</arg>
+        <arg rep="repeat">FILENAME</arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+  <refsect1>
+    <title>Description</title>
+    <para>
+        The &cmd; program removes X.509 proxy files from the local filesystem.
+        It overwrites the data in the files and removes the files from the 
+        filesystem. By default, it removes the current user's default proxy
+        (either
+        <filename>/tmp/x509up_u<replaceable>UID</replaceable></filename> where
+        <replaceable>UID</replaceable> is the current POSIX user id, or
+        the file pointed to by the <envar>X509_USER_PROXY</envar> environment
+        variable) unless a list of proxy file paths are included as part of
+        the command line.
+    </para>
+    <para>
+        Use the <literal>--</literal> command-line option to separate a
+        list of proxy paths from command line options if the proxy file
+        begins with the <literal>-</literal> character.
+    </para>
+    <para>
+        The full list of command-line options to &cmd; are:
+        <variablelist>
+            <varlistentry>
+                <term><option>-help</option></term>
+                <term><option>-usage</option></term>
+                <listitem><simpara>Display the command-line options to
+                &cmd;.</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-version</option></term>
+                <listitem><simpara>Display the version number of the &cmd;
+                command</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-debug</option></term>
+                <listitem><simpara>Display verbose error
+                messages.</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-dryrun</option></term>
+                <listitem><simpara>Do not remove the proxy, but display the
+                path of the files that would have been removed, or the
+                directory where they would have been removed from if the
+                <option>-all</option> command-line option is used.</simpara>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-default</option></term>
+                <listitem><simpara>Remove the default proxy in addition to
+                the files included on the command-line. Only needed if 
+                other paths are included on the command-line.</simpara>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-all</option></term>
+                <listitem><simpara>Remove the default proxy and all delegated
+                proxies in the temporary file directory.</simpara></listitem>
+            </varlistentry>
+        </variablelist>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Environment Variables</title>
+
+    <para>
+    The following environment variables affect the execution of &cmd;:
+    <variablelist>
+        <varlistentry>
+            <term><envar>X509_USER_PROXY</envar></term>
+            <listitem><simpara>Path to the default user
+            proxy.</simpara></listitem>
+        </varlistentry>
+    </variablelist>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para><citerefentry><refentrytitle>grid-proxy-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+    <citerefentry><refentrytitle>grid-proxy-info</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>

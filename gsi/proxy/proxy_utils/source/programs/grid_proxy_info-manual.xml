@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+<!ENTITY cmdname "grid-proxy-info">
+<!ENTITY cmd "<command>grid-proxy-info</command>">
+]>
+<refentry id="grid-proxy-info" xreflabel="grid-proxy-info">
+    <refmeta>
+        <refentrytitle>&cmdname;</refentrytitle>
+        <manvolnum>1</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>&cmdname;</refname>
+        <refpurpose>Display information about a proxy certificate</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+      &cmd;
+      <arg>-help</arg>
+      <arg>-usage</arg>
+      <arg>-version</arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+        &cmd;
+        <group>
+            <arg>-subject</arg>
+            <arg>-s</arg>
+        </group>
+        <sbr/>
+        <group>
+            <arg>-issuer</arg>
+            <arg>-i</arg>
+        </group>
+        <sbr/>
+        <arg>-identity</arg>
+        <arg>-type</arg>
+        <arg>-timeleft</arg>
+        <arg>-strength</arg>
+        <arg>-all</arg>
+        <arg>-text</arg>
+        <arg>-path</arg>
+        <arg>-rfc2253</arg>
+        <sbr/>
+        <group>
+            <group choice="req">
+                <arg choice="plain">-exists</arg>
+                <arg choice="plain">-e</arg>
+            </group>
+            <sbr/>
+            <group>
+                <arg>-valid <replaceable>HOURS</replaceable>:<replaceable>MINUTES</replaceable></arg>
+                <arg>-v <replaceable>HOURS</replaceable>:<replaceable>MINUTES</replaceable></arg>
+            </group>
+            <sbr/>
+            <group>
+                <arg>-hours <replaceable>HOURS</replaceable></arg>
+                <arg>-h <replaceable>HOURS</replaceable></arg>
+            </group>
+            <sbr/>
+            <group>
+                <arg>-bits <replaceable>BITS</replaceable></arg>
+                <arg>-b <replaceable>BITS</replaceable></arg>
+            </group>
+        </group>
+    </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The &cmd; program extracts information from an X.509 proxy
+            certificates, and optionally displays or returns an exit code based
+            on that information.
+        </para>
+        <para>
+            The default mode of operation is to print the following facts
+            about the current user's default proxy: 
+            subject, issuer, identity, type, strength, path, and time left.
+            If the command-line option <option>-exists</option> or
+            <option>-e</option> is included in the command-line, nothing
+            is printed unless one of the print options is specified. Instead,
+            &cmd; determines if a valid proxy exists and, if so, exits with the
+            exit code <literal>0</literal>; if a proxy does not exist or 
+            is not valid, &cmd; exits with the exit code <literal>1</literal>.
+            Additional validity criteria can be added by using the
+            <option>-valid</option>, <option>-v</option>,
+            <option>-hours</option>, <option>-h</option>,
+            <option>-bits</option>, or <option>-b</option> command-line
+            options. If used, these options must occur
+            <emphasis>after</emphasis> the <option>-e</option> or
+            <option>-exists</option> command-line options. Those options are
+            only valid if one of the <option>-e</option> or
+            <option>-exists</option> command-line options is used.
+        </para>
+
+        <para>
+        The complete set of command-line options to &cmd; are:
+
+        <variablelist>
+            <varlistentry>
+                <term><option>-help</option></term>
+                <term><option>-usage</option></term>
+                <listitem><simpara>Display the command-line options to
+                &cmd;.</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-version</option></term>
+                <listitem><simpara>Display the version number of the &cmd;
+                command</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-debug</option></term>
+                <listitem><simpara>Display verbose error
+                messages.</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-file <replaceable>PROXYFILE</replaceable></option></term>
+                <term><option>-f <replaceable>PROXYFILE</replaceable></option></term>
+                <listitem><simpara>Read the proxy located in the file
+                <replaceable>PROXYFILE</replaceable> instead of using the
+                default proxy.</simpara></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-subject</option></term>
+                <term><option>-s</option></term>
+                <listitem><simpara>Display the proxy certificate's subject
+                distinguished name.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-issuer</option></term>
+                <term><option>-i</option></term>
+                <listitem><simpara>Display the proxy certificate issuer's
+                distinguished name.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-identity</option></term>
+                <listitem><simpara>Display the proxy certificate's identity.
+                For non-independent proxies, the identity is the subject of
+                the certificate which issued the first proxy in the proxy
+                chain.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-type</option></term>
+                <listitem><simpara>Display the type of proxy certificate. The
+                type string includes the format ("legacy", "draft", or RFC 3280
+                compliant), identity type ("impersonation" or "independent"),
+                and policy ("limited" or "full"). See
+                <citerefentry><refentrytitle>grid-proxy-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+                for information about how to create different types of
+                proxies.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-timeleft</option></term>
+                <listitem><simpara>Display the number of seconds remaining
+                until the proxy certificate expires.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-strength</option></term>
+                <listitem><simpara>Display the strength (in bits) of the key
+                associated with the proxy certificate.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-all</option></term>
+                <listitem><simpara>Display the default information for the
+                proxy when also using the <option>-e</option> or
+                <option>-exists</option> command-line
+                option.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-text</option></term>
+                <listitem><simpara>Display the proxy certificate contents
+                to standard output, including policy information, issuer,
+                public key, and modulus.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-path</option></term>
+                <listitem><simpara>Display the path to the file containing
+                the default proxy certificate.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-rfc2253</option></term>
+                <listitem><simpara>Display distinguished names for the subject,
+                issuer, and identity using the string representation described
+                in RFC 2253, instead of the legacy format.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-exists</option></term>
+                <term><option>-e</option></term>
+                <listitem><simpara>Perform an existence and validity check for
+                the proxy. If a valid proxy exists and matches the criteria
+                described by other command-line options (if any), exit with 0; 
+                otherwise, exit with 1. This option must be before
+                other validity check predicate in the command-line
+                options. If this option is specified, the output of the default
+                facts about the proxy is disabled. Use the
+                <option>-all</option> option to have the information displayed
+                as well as the exit code set.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-valid <replaceable>HOURS</replaceable>:<replaceable>MINUTES</replaceable></option></term>
+                <term><option>-v <replaceable>HOURS</replaceable>:<replaceable>MINUTES</replaceable></option></term>
+                <term><option>-hours <replaceable>HOURS</replaceable></option></term>
+                <term><option>-h <replaceable>HOURS</replaceable></option></term>
+                <listitem><simpara>Check that the proxy certificate is valid
+                for at least <replaceable>HOURS</replaceable> hours and
+                <replaceable>MINUTES</replaceable> minutes. If it is not, 
+                &cmd; will exit with exit code <literal>1</literal>.</simpara></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-bits <replaceable>BITS</replaceable></option></term>
+                <term><option>-b <replaceable>BITS</replaceable></option></term>
+                <listitem><simpara>Check that the proxy certificate key
+                strength is at least <replaceable>BITS</replaceable>
+                bits.</simpara></listitem>
+            </varlistentry>
+        </variablelist>
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>Environment Variables</title>
+
+        <para>The following environment variables affect the execution of
+        &cmd;:
+        
+        <variablelist>
+            <varlistentry>
+                <term><envar>X509_USER_PROXY</envar></term>
+                <listitem><simpara>Path to the default user
+                proxy.</simpara></listitem>
+            </varlistentry>
+        </variablelist>
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>See Also</title>
+        <para><citerefentry><refentrytitle>grid-proxy-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+        <citerefentry><refentrytitle>grid-proxy-destroy</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+        </para>
+      </refsect1>
+</refentry>
