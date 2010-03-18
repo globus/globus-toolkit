@@ -389,6 +389,7 @@ globus_l_gram_job_manager_state_machine(
         globus_gram_job_manager_history_file_create(request);
         request->job_history_status = request->status;
 
+        request->restart_state = request->jobmanager_state;
         globus_gram_job_manager_state_file_write(request);
         request->jobmanager_state =
             GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
@@ -407,6 +408,7 @@ globus_l_gram_job_manager_state_machine(
         }
         if(request->unsent_status_change)
         {
+            request->restart_state = request->jobmanager_state;
             globus_gram_job_manager_state_file_write(request);
         }
 
@@ -856,6 +858,7 @@ globus_l_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
         if(request->unsent_status_change)
         {
+            request->restart_state = request->jobmanager_state;
             globus_gram_job_manager_state_file_write(request);
 
             if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT)
@@ -1066,6 +1069,7 @@ globus_l_gram_job_manager_state_machine(
         if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
             request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
         {
+            request->restart_state = request->jobmanager_state;
             globus_gram_job_manager_auditing_file_write(request);
         }
 
@@ -1102,6 +1106,7 @@ globus_l_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
         globus_l_gram_job_manager_cancel_queries(request);
 
+        request->restart_state = request->jobmanager_state;
         globus_gram_job_manager_auditing_file_write(request);
         event_registered = GLOBUS_TRUE;
 
