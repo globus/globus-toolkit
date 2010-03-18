@@ -50,7 +50,7 @@ static char *  LONG_USAGE = \
 "    -debug                    Display debugging information\n" \
 "    -dryrun                   Prints what files would have been destroyed\n" \
 "    -default                  Destroys file at default proxy location\n" \
-"    -all                      Destroys any user (default) and delegated "
+"    -all                      Destroys any user (default) and delegated\n"
 "                              proxies that are found\n" \
 "    --                        End processing of options\n" \
 "    file1 file2 ...           Destroys files listed\n" \
