@@ -150,9 +150,4 @@ If the following variables affect the execution of &cmd;.
 </para>
 </refsect1>
 
-<refsect1><title>BUGS</title>
-<para>
-The <option>-f</option> and <option>-follow</option> don't work in GRAM5.
-</para>
-</refsect1>
 </refentry>
