@@ -14,7 +14,7 @@ use IPC::Open3;
 
 chomp($grid_cert_request = `which grid-cert-request 2>/dev/null`);
 if (!(-x $grid_cert_request)) {
-    print STDERR "Error: grid_cert_request not found.\n";
+    print STDERR "Error: grid-cert-request not found.\n";
     exit 1;
 }
 chomp($grid_ca_sign = `which grid-ca-sign 2>/dev/null`);
