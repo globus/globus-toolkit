@@ -284,6 +284,19 @@ globus_gram_job_manager_seg_handle_event(
 
     event = globus_fifo_dequeue(&request->seg_event_queue);
 
+    if (event->timestamp > request->seg_last_timestamp)
+    {
+        /*
+         * GRAM-145: GRAM5 Job Manager fails to save SEG timestamps in job
+         * state files
+         *
+         * We'll update the SEG timestamp here so that if the job manager
+         * is restarted it (potentially) ignore events that have already been
+         * noticed in the job state file.
+         */
+        request->seg_last_timestamp = event->timestamp;
+    }
+
     globus_gram_job_manager_request_log(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,

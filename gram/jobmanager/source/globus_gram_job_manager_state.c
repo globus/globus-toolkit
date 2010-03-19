@@ -325,6 +325,18 @@ globus_l_gram_job_manager_state_machine(
         }
 
         globus_gram_job_manager_seg_pause(request->manager);
+        /*
+         * GRAM-145: GRAM5 Job Manager fails to save SEG timestamps in job
+         * state files
+         *
+         * The request state file needs to contain of the earliest time a SEG
+         * event occurred for this job. The default value of seg_last_timestamp
+         * is 0 which means that the job doesn't care about how far back
+         * in time the SEG looks. We set it to the time the job is submitted so
+         * that if a restart occurs, the job manager will be able to go back
+         * as far as necessary for any of the jobs which are reloaded.
+         */
+        request->seg_last_timestamp = time(NULL);
 
         rc = globus_gram_job_manager_script_submit(request);
 
