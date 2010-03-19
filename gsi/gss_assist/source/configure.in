@@ -19,6 +19,27 @@ GLOBUS_FINALIZE
 
 LAC_DOXYGEN(["../"])
 
+xml_catalog_path="notset"
+AC_ARG_WITH(
+    xml-catalog,
+    [  --with-xml-catalog=PATH       Path to XML catalog],
+    [xml_catalog_path="$withval"],
+    [xml_catalog_path="notset"])
+
+AC_PATH_PROG(XSLTPROC, "xsltproc")
+AC_PATH_PROG(XMLLINT, "xmllint")
+
+if test "x$xml_catalog_path" != x"notset"; then
+    if test ! -f "$xml_catalog_path"; then
+        AC_MSG_ERROR([Invalid XML catalog path])
+    else
+        XML_CATALOG_PATH=$xml_catalog_path
+        AC_SUBST(XML_CATALOG_PATH)
+    fi
+fi
+
+AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
@@ -32,4 +53,3 @@ AC_OUTPUT(
         doxygen/Doxyfile-internal
         version.h
 )
-
