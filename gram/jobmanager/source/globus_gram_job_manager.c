@@ -929,6 +929,10 @@ globus_gram_job_manager_remove_reference(
     const char *                        reason)
 {
     int                                 rc;
+    char                                gramid[64];
+
+    strncpy(gramid, key, sizeof(gramid));
+    gramid[sizeof(gramid)-1] = 0;
 
     globus_gram_job_manager_log(
             manager,
@@ -960,7 +964,7 @@ globus_gram_job_manager_remove_reference(
             "%s%s%s "
             "\n",
             (rc == GLOBUS_SUCCESS) ? "TRACE" : "WARN",
-            key,
+            gramid,
             -rc,
             rc == GLOBUS_SUCCESS
                 ? ""

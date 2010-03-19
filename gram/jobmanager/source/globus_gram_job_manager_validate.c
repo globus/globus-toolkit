@@ -204,8 +204,8 @@ globus_gram_job_manager_validation_init(
                     description_escaped,
                     record->required_when,
                     record->default_when,
-                    default_escaped,
-                    enum_escaped);
+                    (default_escaped != NULL) ? default_escaped : "",
+                    (enum_escaped != NULL) ? enum_escaped : "");
             if (description_escaped)
             {
                 free(description_escaped);
