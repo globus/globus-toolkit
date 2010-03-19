@@ -975,8 +975,11 @@ globus_gram_client_get_jobmanager_version(
     }
     rc = monitor.info->protocol_error_code;
 
-    *extensions = monitor.info->extensions;
-    monitor.info->extensions = NULL;
+    if (rc == GLOBUS_SUCCESS)
+    {
+        *extensions = monitor.info->extensions;
+        monitor.info->extensions = NULL;
+    }
 
     globus_mutex_unlock(&monitor.mutex);
 
@@ -3724,8 +3727,10 @@ globus_l_gram_client_get_jobmanager_version(
     rc = globus_l_gram_client_setup_gatekeeper_attr( 
         &attr,
         (iattr != NULL) ? iattr->credential : GSS_C_NO_CREDENTIAL,
-        GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
-        dn );
+        (iattr != NULL)
+            ? iattr->delegation_mode
+            : GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
+        dn);
 
     if (rc != GLOBUS_SUCCESS)
     {
