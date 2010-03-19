@@ -43,8 +43,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_FILE);
 
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_FILE);
 
-#define GLOBUS_L_GFS_FILE_CKSM_BS 1024*1024
-
 typedef void
 (*globus_l_gfs_file_cksm_cb_t)(
     globus_result_t                     result,
@@ -1354,7 +1352,7 @@ globus_l_gfs_file_cksm(
         goto error_create;
     }
 
-    block_size = GLOBUS_L_GFS_FILE_CKSM_BS;
+    globus_gridftp_server_get_block_size(op, &block_size);
 
     monitor = (globus_l_gfs_file_cksm_monitor_t *) globus_calloc(
         1, sizeof(globus_l_gfs_file_cksm_monitor_t) + block_size);
@@ -1969,17 +1967,11 @@ globus_l_gfs_file_open(
     perms = globus_gfs_config_get_string("perms");
     if(perms != NULL)
     {
-        int                             rc;
-        int                             p;
-
-        rc = sscanf(perms, "%o", &p);
-        if(rc != 1)
-        {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_WARN,
-                "Failed to get default permissions to: %s\n", perms);
-        }
-        else
+        int                             p = 0;
+        
+        p = strtoul(perms, NULL, 8);
+        if(p != 0 || 
+            (perms[0] == '0' && perms[1] == '\0'))
         {
             result = globus_xio_attr_cntl(
                 attr,
@@ -1990,8 +1982,14 @@ globus_l_gfs_file_open(
             {
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_WARN,
-                    "Failed to get default permissions to: %s\n", perms);
+                    "Failed to set default permissions to: %s\n", perms);
             }
+        }
+        else
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "Invalid default permissions: %s\n", perms);
         }
     }
     

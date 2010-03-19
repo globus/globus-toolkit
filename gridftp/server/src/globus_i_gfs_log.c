@@ -433,8 +433,18 @@ globus_i_gfs_log_open()
                     globus_i_gfs_config_string("log_filemode")) != NULL)
                 {
                     int                     mode = 0;
-                    mode = strtoul(log_filemode, NULL, 0);
-                    chmod(logfilename, mode);
+                    mode = strtoul(log_filemode, NULL, 8);
+                    if(mode != 0 || 
+                        (log_filemode[0] == '0' && log_filemode[1] == '\0'))
+                    {
+                        chmod(logfilename, mode);
+                    }
+                    else
+                    {
+                        globus_libc_fprintf(globus_l_gfs_log_file,
+                            "WARNING: Not setting log file permissions. "
+                            "Invalid log_filemode.\n");
+                    }
                 }
             }
         }
@@ -481,8 +491,18 @@ globus_i_gfs_log_open()
             if((log_filemode = globus_i_gfs_config_string("log_filemode")) != 0)
             {
                 int                     mode = 0;
-                mode = strtoul(log_filemode, NULL, 0);
-                chmod(logfilename, mode);
+                mode = strtoul(log_filemode, NULL, 8);
+                if(mode != 0 || 
+                    (log_filemode[0] == '0' && log_filemode[1] == '\0'))
+                {
+                    chmod(logfilename, mode);
+                }
+                else
+                {
+                    globus_libc_fprintf(globus_l_gfs_log_file,
+                        "WARNING: Not setting log file permissions. "
+                        "Invalid log_filemode.\n");
+                }
             }
         }
     }
