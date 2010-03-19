@@ -868,6 +868,13 @@ globus_gram_job_manager_add_reference(
         {
             globus_gram_job_manager_seg_pause(manager);
         }
+        if (request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_START &&
+            request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
+        }
+
         result = globus_callback_register_oneshot(
                 &request->poll_timer,
                 NULL,
@@ -2672,21 +2679,6 @@ globus_l_gram_add_reference_locked(
                         globus_gram_protocol_error_string(rc));
 
                 goto request_init_failed;
-            }
-            if (ref->request->restart_state ==
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
-                ref->request->restart_state ==
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2 ||
-                ref->request->restart_state ==
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1 ||
-                ref->request->restart_state ==
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
-            {
-                ref->request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
-            }
-            else
-            {
-                ref->request->jobmanager_state = ref->request->restart_state;
             }
             ref->request->job_stats.status_count += ref->status_count;
             ref->status_count = 0;
