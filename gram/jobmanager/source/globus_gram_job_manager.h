@@ -743,6 +743,13 @@ typedef struct globus_gram_job_manager_ref_s
      * out
      */
     int                                 status_count;
+    /*
+     * True if the job has been loaded from the state file at recovery 
+     * time, but hasn't yet had its state machine started. In that case,
+     * we have to go to the TWO_PHASE_COMMITTED state unless the job has
+     * completed execution.
+     */
+    globus_bool_t                       loaded_only;
 }
 globus_gram_job_manager_ref_t;
 

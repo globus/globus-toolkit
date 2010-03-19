@@ -743,6 +743,7 @@ globus_l_gram_job_manager_add_ref_stub(
     (*ref)->failure_code = request->failure_code;
     (*ref)->exit_code = request->exit_code;
     (*ref)->status_count = 0;
+    (*ref)->loaded_only = GLOBUS_FALSE;
 
     (*ref)->key = strdup(key);
     if ((*ref)->key == NULL)
@@ -867,16 +868,6 @@ globus_gram_job_manager_add_reference(
             request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
         {
             globus_gram_job_manager_seg_pause(manager);
-            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
-        }
-        if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_START)
-        {
-            if (request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_START &&
-                request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
-            {
-                request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
-            }
         }
 
         result = globus_callback_register_oneshot(
@@ -2343,6 +2334,10 @@ globus_gram_job_manager_request_load_all(
                         key);
                 key = NULL;
             }
+            /* Indicate that it will need some special handling when its
+             * first reference is added
+             */
+            ref->loaded_only = GLOBUS_TRUE;
 
             if (request)
             {
@@ -2684,6 +2679,23 @@ globus_l_gram_add_reference_locked(
 
                 goto request_init_failed;
             }
+            if (ref->request->restart_state ==
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
+                ref->request->restart_state ==
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2 ||
+                ref->request->restart_state ==
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1 ||
+                ref->request->restart_state ==
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)         
+            {
+                ref->request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;         
+            }         
+            else if (!ref->loaded_only)
+            {
+                ref->request->jobmanager_state = ref->request->restart_state;
+            }        
+            ref->loaded_only = GLOBUS_FALSE;
+            
             ref->request->job_stats.status_count += ref->status_count;
             ref->status_count = 0;
         }
