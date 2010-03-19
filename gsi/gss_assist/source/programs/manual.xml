@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+<!ELEMENT xi:include (xi:fallback?) >
+<!ATTLIST xi:include
+xmlns:xi            CDATA       #FIXED       "http://www.w3.org/2001/XInclude"
+href                CDATA       #REQUIRED
+parse               (xml|text)  "xml"
+xpointer            CDATA       #IMPLIED
+encoding            CDATA       #IMPLIED
+accept              CDATA       #IMPLIED
+accept-charset      CDATA       #IMPLIED
+accept-language     CDATA       #IMPLIED >
+<!ELEMENT xi:fallback ANY >
+<!ATTLIST xi:fallback
+xmlns:xi            CDATA       #FIXED "http://www.w3.org/2001/XInclude" >
+<!ENTITY % local.preface.class    "| xi:include" >
+<!ENTITY % local.part.class       "| xi:include" >
+<!ENTITY % local.chapter.class    "| xi:include" >
+<!ENTITY % local.divcomponent.mix "| xi:include" >
+<!ENTITY % local.para.char.mix    "| xi:include" >
+<!ENTITY % local.info.class       "| xi:include" >
+]
+>
+<!-- Canonical version of this document lives in 
+$Header$
+-->
+
+
+<reference id="gram5-cmd">
+<title>Globus Commands</title>
+
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
+    href="grid-mapfile-add-entry-manual.xml"></xi:include>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
+    href="grid-mapfile-delete-entry-manual.xml"></xi:include>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
+    href="grid-mapfile-check-consistency-manual.xml"></xi:include>
+
+</reference>

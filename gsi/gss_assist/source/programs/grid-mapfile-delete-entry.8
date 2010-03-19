@@ -1,0 +1,189 @@
+'\" t
+.\"     Title: grid-mapfile-delete-entry
+.\"    Author: University of Chicago
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 03/19/2010
+.\"    Manual: Globus Commands
+.\"    Source: Globus Toolkit 5.0.1
+.\"  Language: English
+.\"
+.TH "GRID\-MAPFILE\-DELET" "8" "03/19/2010" "Globus Toolkit 5.0.1" "Globus Commands"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+grid-mapfile-delete-entry \- Remove entries from a gridmap file
+.SH "SYNOPSIS"
+.HP \w'\fBgrid\-mapfile\-delete\-entry\fR\ 'u
+\fBgrid\-mapfile\-delete\-entry\fR [\-help] [\-usage] [\-version] [\-versions]
+.HP \w'\fBgrid\-mapfile\-delete\-entry\fR\ 'u
+\fBgrid\-mapfile\-delete\-entry\fR {\-dn\ \fIDISTINGUISHED\-NAME\fR} {\-ln\ \fILOCAL\-NAME\fR...}
+.br
+[[\-d] | [\-dryrun]]
+.br
+[[\-mapfile\ \fIMAPFILE\fR] | [\-f\ \fIMAPFILE\fR]]
+.SH "DESCRIPTION"
+.PP
+The
+\fBgrid\-mapfile\-delete\-entry\fR
+program deletes mappings from a gridmap file\&. If both the
+\fB\-dn\fR
+and
+\fB\-ln\fR> options are specified,
+\fBgrid\-mapfile\-delete\-entry\fR
+removes entries which meet both criteria (remove entries mapping
+\fIDISTINGUISHED\-NAME\fR
+to
+\fILOCAL\-NAME\fR
+for each
+\fILOCAL\-NAME\fR
+specified)\&. If only
+\fB\-dn\fR
+or
+\fB\-ln\fR
+is specified
+\fIall\fR
+entries for that
+\fIDISTINGUISHED\-NAME\fR
+or
+\fILOCAL\-NAME\fR
+are removed\&.
+.PP
+By default,
+\fBgrid\-mapfile\-delete\-entry\fR
+will modify the gridmap file named by the
+\fBGRIDMAP\fR
+environment variable if present, or the file
+/etc/grid\-security/grid\-mapfile
+if not\&. This can be changed by the use of the
+\fB\-mapfile\fR
+or
+\fB\-f\fR
+command\-line options\&.
+.PP
+Prior to modifying a gridmap file,
+\fBgrid\-mapfile\-delete\-entry\fR
+saves its current contents to a file with the string
+\&.old
+appended to the original file name\&.
+.PP
+The full set of command\-line options to
+\fBgrid\-mapfile\-delete\-entry\fR
+are:
+.PP
+\fB\-help\fR, \fB\-usage\fR
+.RS 4
+Display the command\-line options to
+\fBgrid\-mapfile\-delete\-entry\fR\&.
+.RE
+.PP
+\fB\-version\fR, \fB\-versions\fR
+.RS 4
+Display the version number of the
+\fBgrid\-mapfile\-delete\-entry\fR
+command\&. The second form includes more details\&.
+.RE
+.PP
+\fB\-dn \fR\fB\fIDISTINGUISHED\-NAME\fR\fR
+.RS 4
+The X\&.509 distinguished name to remove from the gridmap file\&. If the
+\fB\-ln\fR
+option is not specified, remove all entries for this name; otherwise, remove entries that match both this name and the local name\&. The name should be in OpenSSL\'s
+oneline
+format\&.
+.RE
+.PP
+\fB\-ln \fR\fB\fILOCAL\-NAME\fR\fR\fB\&.\&.\&.\fR
+.RS 4
+The POSIX user name to remove from the gridmap file\&. Include multiple
+\fILOCAL\-NAME\fR
+strings after the
+\fB\-ln\fR
+command\-line option to remove multiple names from the gridmap\&. If the
+\fB\-dn\fR
+option is not specifeid, remove all entries for these names; otherwise, remove entries that match the
+\fIDISTINGUISHED\-NAME\fR
+and any of the
+\fILOCAL\-NAME\fR
+values\&.
+.RE
+.PP
+\fB\-d\fR, \fB\-dryrun\fR
+.RS 4
+Display diagnostics about what would be removed from the gridmap file, but don\'t actually modify the file\&.
+.RE
+.PP
+\fB\-mapfile \fR\fB\fIMAPFILE\fR\fR, \fB\-f \fR\fB\fIMAPFILE\fR\fR
+.RS 4
+Modify the gridmap file named by
+\fIMAPFILE\fR
+instead of the default\&.
+.RE
+.SH "EXAMPLES"
+.PP
+Remove all mappings for a distinguished name:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+% \fBgrid\-mapfile\-delete\-entry\fR \fB"/DC=org/DC=example/DC=grid/CN=Joe User"\fR
+Modifying /etc/grid\-security/grid\-mapfile \&.\&.\&.
+Deleting entry: "/DC=org/DC=example/DC=grid/CN=Joe User" juser,juser2
+(1) entry deleted
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Remove the mapping between a distinguished name and a single local username:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+% \fBgrid\-mapfile\-delete\-entry\fR \fB"/DC=org/DC=example/DC=grid/CN=Joe User"\fR \fB\-ln juser2\fR
+Modifying /etc/grid\-security/grid\-mapfile \&.\&.\&.
+Current entry: "/DC=org/DC=example/DC=grid/CN=Joe User" juser
+(1) mapping removed: (juser2), (0) not present and ignored
+(0) entries deleted
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.SH "ENVIRONMENT VARIABLES"
+.PP
+The following environment variables affect the execution of
+\fBgrid\-mapfile\-delete\-entry\fR:
+.PP
+\fBGRIDMAP\fR
+.RS 4
+Path to the default gridmap to modify\&.
+.RE
+.SH "FILES"
+.PP
+The following files affect the execution of
+\fBgrid\-mapfile\-delete\-entry\fR:
+.PP
+/etc/grid\-security/grid\-mapfile
+.RS 4
+Path to the default gridmap to modify if
+\fBGRIDMAP\fR
+environment variable is not set\&.
+.RE
+.SH "SEE ALSO"
+.PP
+
+\fBgrid-mapfile-add-entry\fR(8),
+\fBgrid-mapfile-check-consistency\fR(8)
+.SH "AUTHOR"
+.PP
+\fBUniversity of Chicago\fR
