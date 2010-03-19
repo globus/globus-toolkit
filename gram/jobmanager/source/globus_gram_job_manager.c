@@ -867,12 +867,16 @@ globus_gram_job_manager_add_reference(
             request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
         {
             globus_gram_job_manager_seg_pause(manager);
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
         }
-        if (request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_START &&
-            request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
+        if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_START)
         {
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
+            if (request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_START &&
+                request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
+            {
+                request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
+            }
         }
 
         result = globus_callback_register_oneshot(
