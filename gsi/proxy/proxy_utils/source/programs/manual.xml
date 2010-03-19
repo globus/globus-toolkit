@@ -28,7 +28,7 @@ $Header$
 
 
 <reference id="gram5-cmd">
-<title>GSIC Proxy Commands</title>
+<title>Globus Commands</title>
 
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="grid_proxy_init-manual.xml"></xi:include>
