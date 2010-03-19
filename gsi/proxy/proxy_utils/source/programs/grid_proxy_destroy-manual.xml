@@ -6,10 +6,16 @@
 ]>
 
 <refentry id="grid-proxy-destroy" xreflabel="grid-proxy-destroy">
+<refentryinfo>
+    <corpauthor>University of Chicago</corpauthor>
+</refentryinfo>
   <refmeta>
     <refentrytitle>&cmdname;</refentrytitle>
     <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">Globus Toolkit</refmiscinfo>
+    <refmiscinfo class="version"><replaceable role="entity">version</replaceable></refmiscinfo>
   </refmeta>
+
   <refnamediv>
     <refname>&cmdname;</refname>
     <refpurpose>Destroy the default proxy certificate</refpurpose>

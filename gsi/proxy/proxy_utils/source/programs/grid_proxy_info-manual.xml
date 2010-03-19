@@ -4,9 +4,14 @@
 <!ENTITY cmd "<command>grid-proxy-info</command>">
 ]>
 <refentry id="grid-proxy-info" xreflabel="grid-proxy-info">
+    <refentryinfo>
+        <corpauthor>University of Chicago</corpauthor>
+    </refentryinfo>
     <refmeta>
         <refentrytitle>&cmdname;</refentrytitle>
         <manvolnum>1</manvolnum>
+        <refmiscinfo class="source">Globus Toolkit</refmiscinfo>
+        <refmiscinfo class="version"><replaceable role="entity">version</replaceable></refmiscinfo>
     </refmeta>
     <refnamediv>
         <refname>&cmdname;</refname>
