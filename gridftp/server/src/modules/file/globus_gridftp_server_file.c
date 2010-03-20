@@ -403,6 +403,26 @@ globus_l_gfs_file_cksm_verify(
     GlobusGFSFileDebugExit();
 }
 
+static 
+globus_bool_t
+globus_l_gfs_file_timeout_cb(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    GlobusGFSName(globus_l_gfs_file_timeout_cb);
+
+    GlobusGFSFileDebugEnter();
+
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_WARN,
+        "A file access timeout has occurred.\n");
+   
+    GlobusGFSFileDebugExit();
+
+    return GLOBUS_TRUE;
+}
+
 static
 void
 globus_l_gfs_file_close_cb(
@@ -1303,6 +1323,7 @@ globus_l_gfs_file_cksm(
     globus_xio_handle_t                 file_handle;
     globus_l_gfs_file_cksm_monitor_t *  monitor;
     globus_size_t                       block_size;
+    int                                 timeout;
     GlobusGFSName(globus_l_gfs_file_cksm);
     GlobusGFSFileDebugEnter();
     
@@ -1328,6 +1349,28 @@ globus_l_gfs_file_cksm(
     {
         result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
         goto error_cntl;
+    }
+
+    timeout = globus_gfs_config_get_int("file_timeout");
+    if(timeout > 0)
+    {
+        globus_reltime_t                delay;
+
+        GlobusTimeReltimeSet(delay, timeout, 0);
+        result = globus_xio_attr_cntl(
+            attr,
+            NULL,
+            GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
+            globus_l_gfs_file_timeout_cb,
+            &delay,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "Unable to set file access timeout of %d seconds\n", 
+                timeout);
+        }
     }
     
     result = globus_xio_stack_init(&stack, NULL);
@@ -1919,6 +1962,7 @@ globus_l_gfs_file_open(
     globus_xio_attr_t                   attr;
     globus_xio_stack_t                  stack;
     char *                              perms;
+    int                                 timeout;
     GlobusGFSName(globus_l_gfs_file_open);
     GlobusGFSFileDebugEnter();
 
@@ -1931,9 +1975,6 @@ globus_l_gfs_file_open(
         goto error_attr;
     }
     
-    /* XXX should probably have an option to specify create mode.
-     * for now, just the default (u+rw)
-     */     
     result = globus_xio_attr_cntl(
         attr,
         globus_l_gfs_file_driver,
@@ -1944,6 +1985,61 @@ globus_l_gfs_file_open(
         result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
         goto error_cntl;
     }
+
+    if(open_flags & GLOBUS_XIO_FILE_CREAT)
+    {
+        perms = globus_gfs_config_get_string("perms");
+        if(perms != NULL)
+        {
+            int                             p = 0;
+            
+            p = strtoul(perms, NULL, 8);
+            if(p > 0 || 
+                (perms[0] == '0' && perms[1] == '\0'))
+            {
+                result = globus_xio_attr_cntl(
+                    attr,
+                    globus_l_gfs_file_driver,
+                    GLOBUS_XIO_FILE_SET_MODE,
+                    p);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_WARN,
+                        "Failed to set default permissions to: %s\n", perms);
+                }
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN,
+                    "Invalid default permissions: %s\n", perms);
+            }
+        }
+    }
+
+    timeout = globus_gfs_config_get_int("file_timeout");
+    if(timeout > 0)
+    {
+        globus_reltime_t                delay;
+
+        GlobusTimeReltimeSet(delay, timeout, 0);
+        result = globus_xio_attr_cntl(
+            attr,
+            NULL,
+            GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
+            globus_l_gfs_file_timeout_cb,
+            &delay,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "Unable to set file access timeout of %d seconds\n", 
+                timeout);
+        }
+    }
+    
     
     result = globus_xio_stack_init(&stack, NULL);
     if(result != GLOBUS_SUCCESS)
@@ -1963,34 +2059,6 @@ globus_l_gfs_file_open(
     {
         result = GlobusGFSErrorWrapFailed("globus_xio_handle_create", result);
         goto error_create;
-    }
-    perms = globus_gfs_config_get_string("perms");
-    if(perms != NULL)
-    {
-        int                             p = 0;
-        
-        p = strtoul(perms, NULL, 8);
-        if(p != 0 || 
-            (perms[0] == '0' && perms[1] == '\0'))
-        {
-            result = globus_xio_attr_cntl(
-                attr,
-                globus_l_gfs_file_driver,
-                GLOBUS_XIO_FILE_SET_MODE,
-                p);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_WARN,
-                    "Failed to set default permissions to: %s\n", perms);
-            }
-        }
-        else
-        {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_WARN,
-                "Invalid default permissions: %s\n", perms);
-        }
     }
     
     result = globus_xio_register_open(
@@ -2584,23 +2652,24 @@ globus_l_gfs_file_destroy(
     void *                              user_arg)
 {
     gfs_l_file_session_t *              session_h;
-/*
     session_h = (gfs_l_file_session_t *) user_arg;
 
-    if(session_h->sbj != NULL)
+    if(session_h)
     {
-        globus_free(session_h->sbj);
+        if(session_h->sbj != NULL)
+        {
+            globus_free(session_h->sbj);
+        }
+        if(session_h->username != NULL)
+        {
+            globus_free(session_h->username);
+        }
+        if(session_h->pw != NULL)
+        {
+            globus_free(session_h->pw);
+        }
+        globus_free(session_h);
     }
-    if(session_h->username != NULL)
-    {
-        globus_free(session_h->sbj);
-    }
-    if(session_h->pw != NULL)
-    {
-        globus_free(session_h->sbj);
-    }
-    globus_free(session_h);
-*/
 }
 
 static

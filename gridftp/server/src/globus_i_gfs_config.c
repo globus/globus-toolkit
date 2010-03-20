@@ -149,8 +149,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_level", "log_level", NULL, "log-level", "d", GLOBUS_L_GFS_CONFIG_STRING, 0, "ERROR",
-    "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, DUMP, ALL'. "
-    "Example: error,warn,info. You may also specify a numeric level of 1-255.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, TRANSFER, DUMP, ALL'. "
+    "TRANSFER includes the same statistics that are sent to the seperate transfer "
+    "log when -log-transfer is used.  Example: error,warn,info. You may also specify a numeric "
+    "level of 1-255.  The default level is ERROR.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_module", "log_module", NULL, "log-module", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "globus_logging module that will be loaded. If not set, the default 'stdio' module will "
     "be used, and the logfile options apply.  Builtin modules are 'stdio' and 'syslog'.  Log module options "
@@ -245,6 +247,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "such as 0644.  The default is 0644.  Note: If umask is set it will affect "
     "this setting -- i.e. if the umask is 0002 and this setting is 0666, the "
     "resulting files will be created with permissions of 0664. ", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"file_timeout", "file_timeout", NULL, "file-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "Timeout in seconds for all disk accesses.  A value of 0 disables the timeout.", NULL, NULL,GLOBUS_FALSE, NULL},
 {NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"port", "port", NULL, "port", "p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which a frontend will listend for client control channel connections, "

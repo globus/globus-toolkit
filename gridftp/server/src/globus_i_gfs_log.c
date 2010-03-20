@@ -29,6 +29,7 @@ static globus_list_t *                  globus_l_gfs_log_usage_handle_list = NUL
 static FILE *                           globus_l_gfs_log_file = NULL;
 static FILE *                           globus_l_gfs_transfer_log_file = NULL;
 static globus_bool_t                    globus_l_gfs_log_events = GLOBUS_FALSE;
+static int                              globus_l_gfs_log_mask = 0;
 
 #define GLOBUS_L_GFS_USAGE_ID 0
 #define GLOBUS_L_GFS_USAGE_VER 0
@@ -92,9 +93,9 @@ globus_l_gfs_log_matchlevel(
     {
         out = GLOBUS_GFS_LOG_INFO;
     }
-    else if(strcasecmp(tag, "STATUS") == 0)
+    else if(strcasecmp(tag, "TRANSFER") == 0)
     {
-        out = GLOBUS_GFS_LOG_STATUS;
+        out = GLOBUS_GFS_LOG_TRANSFER;
     }
     else if(strcasecmp(tag, "DUMP") == 0)
     {
@@ -261,6 +262,7 @@ globus_i_gfs_log_open()
     globus_result_t                     result;
     globus_reltime_t                    flush_interval;
     globus_size_t                       buffer;
+    int                                 rc;
     GlobusGFSName(globus_i_gfs_log_open);
     GlobusGFSDebugEnter();
 
@@ -307,7 +309,6 @@ globus_i_gfs_log_open()
         char *                          opts;
         char *                          end;
         globus_off_t                    tmp_off;
-        int                             rc;
 
         end = module_str + strlen(module_str);
         ptr = strchr(module_str, ':');
@@ -433,17 +434,20 @@ globus_i_gfs_log_open()
                     globus_i_gfs_config_string("log_filemode")) != NULL)
                 {
                     int                     mode = 0;
+                    
+                    rc = -1;
                     mode = strtoul(log_filemode, NULL, 8);
-                    if(mode != 0 || 
+                    if(mode > 0 || 
                         (log_filemode[0] == '0' && log_filemode[1] == '\0'))
                     {
-                        chmod(logfilename, mode);
+                        rc = chmod(logfilename, mode);
                     }
-                    else
+                    
+                    if(rc != 0)
                     {
                         globus_libc_fprintf(globus_l_gfs_log_file,
                             "WARNING: Not setting log file permissions. "
-                            "Invalid log_filemode.\n");
+                            "Invalid log_filemode: %s\n", log_filemode);
                     }
                 }
             }
@@ -462,6 +466,8 @@ globus_i_gfs_log_open()
         }
     }
 
+    globus_l_gfs_log_mask = log_mask;
+    
     if(!((log_mod == &globus_logging_stdio_module ||
         log_mod == &globus_logging_stdio_ng_module) && log_arg == NULL))
     {
@@ -488,23 +494,32 @@ globus_i_gfs_log_open()
         else
         {
             setvbuf(globus_l_gfs_transfer_log_file, NULL, _IOLBF, 0);
-            if((log_filemode = globus_i_gfs_config_string("log_filemode")) != 0)
+            if((log_filemode = 
+                globus_i_gfs_config_string("log_filemode")) != NULL)
             {
                 int                     mode = 0;
+
+                rc = -1;
                 mode = strtoul(log_filemode, NULL, 8);
-                if(mode != 0 || 
+                if(mode > 0 || 
                     (log_filemode[0] == '0' && log_filemode[1] == '\0'))
                 {
-                    chmod(logfilename, mode);
+                    rc = chmod(logfilename, mode);
                 }
-                else
+                
+                if(rc != 0)
                 {
-                    globus_libc_fprintf(globus_l_gfs_log_file,
+                    globus_libc_fprintf(globus_l_gfs_transfer_log_file,
                         "WARNING: Not setting log file permissions. "
-                        "Invalid log_filemode.\n");
+                        "Invalid log_filemode: %s\n", log_filemode);
                 }
             }
         }
+    }
+    else if(log_mask & GLOBUS_GFS_LOG_TRANSFER)
+    {
+        /* let the rest of the code know we want transfer logging */
+        globus_gfs_config_set_ptr("log_transfer", "");
     }
 
     if(!globus_i_gfs_config_bool("disable_usage_stats"))
@@ -654,7 +669,7 @@ globus_gfs_log_event(
     char *                              startend;
     char *                              status;
     char *                              message = NULL;
-    GlobusGFSName(globus_gfs_log_message);
+    GlobusGFSName(globus_gfs_log_event);
     GlobusGFSDebugEnter();
 
     if(globus_l_gfs_log_handle != NULL && globus_l_gfs_log_events)
@@ -796,7 +811,8 @@ globus_i_gfs_log_transfer(
     GlobusGFSName(globus_i_gfs_log_transfer);
     GlobusGFSDebugEnter();
 
-    if(globus_l_gfs_transfer_log_file == NULL)
+    if(globus_l_gfs_transfer_log_file == NULL && 
+        !(globus_l_gfs_log_mask & GLOBUS_GFS_LOG_TRANSFER))
     {
         goto err;
     }
@@ -820,23 +836,6 @@ globus_i_gfs_log_transfer(
     if(tcp_bs == 0)
     {
         win_size = 0;
-/*      int                             sock;
-        int                             opt_len;
-        int                             opt_dir;
-
-        if(strcmp(type, "RETR") == 0 || strcmp(type, "ERET") == 0)
-        {
-            opt_dir = SO_SNDBUF;
-            sock = STDOUT_FILENO;
-        }
-        else
-        {
-            opt_dir = SO_RCVBUF;
-            sock = STDIN_FILENO;
-        }
-        opt_len = sizeof(win_size);
-        getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, &opt_len);
-*/
     }
     else
     {
@@ -891,7 +890,15 @@ globus_i_gfs_log_transfer(
         type,
         code);
 
-    fwrite(out_buf, 1, strlen(out_buf), globus_l_gfs_transfer_log_file);
+    if(globus_l_gfs_transfer_log_file != NULL)
+    {
+        fwrite(out_buf, 1, strlen(out_buf), globus_l_gfs_transfer_log_file);
+    }
+    if(globus_l_gfs_log_mask & GLOBUS_GFS_LOG_TRANSFER)
+    {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_TRANSFER, "Transfer stats: %s", out_buf);
+    }
 
     GlobusGFSDebugExit();
     return;
