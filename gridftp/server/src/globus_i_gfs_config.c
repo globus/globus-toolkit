@@ -173,7 +173,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "log_single is set, logs will be written to stderr unless the execution mode is detached or inetd, "
     "in which case logging will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_transfer", "log_transfer", NULL, "log-transfer", "Z", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Log netlogger style info for each transfer into this file.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Log netlogger style info for each transfer into this file.  You may also use the "
+    "log-level of TRANSFER to include this info in the standard log.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_filemode", "log_filemode", NULL, "log-filemode", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "File access permissions of log files. Should be an octal number such as "
     "0644.", NULL, NULL,GLOBUS_FALSE, NULL},
