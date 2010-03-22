@@ -590,6 +590,31 @@ globus_gram_job_manager_state_file_read(
 
         return rc;
     }
+    if (statbuf.st_uid != getuid())
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.state_file_read.end "
+                "level=ERROR "
+                "gramid=%s "
+                "path=%s "
+                "msg=\"%s\" "
+                "status=%d "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                request->job_state_file,
+                "State file not owned by me",
+                -rc,
+                errno,
+                strerror(errno));
+
+        return rc;
+    }
     file_len = (size_t) statbuf.st_size;
     buffer = malloc(file_len+1);
     if (buffer == NULL)

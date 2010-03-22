@@ -325,6 +325,18 @@ globus_l_gram_job_manager_state_machine(
         }
 
         globus_gram_job_manager_seg_pause(request->manager);
+        /*
+         * GRAM-145: GRAM5 Job Manager fails to save SEG timestamps in job
+         * state files
+         *
+         * The request state file needs to contain of the earliest time a SEG
+         * event occurred for this job. The default value of seg_last_timestamp
+         * is 0 which means that the job doesn't care about how far back
+         * in time the SEG looks. We set it to the time the job is submitted so
+         * that if a restart occurs, the job manager will be able to go back
+         * as far as necessary for any of the jobs which are reloaded.
+         */
+        request->seg_last_timestamp = time(NULL);
 
         rc = globus_gram_job_manager_script_submit(request);
 
@@ -389,6 +401,7 @@ globus_l_gram_job_manager_state_machine(
         globus_gram_job_manager_history_file_create(request);
         request->job_history_status = request->status;
 
+        request->restart_state = request->jobmanager_state;
         globus_gram_job_manager_state_file_write(request);
         request->jobmanager_state =
             GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
@@ -407,6 +420,7 @@ globus_l_gram_job_manager_state_machine(
         }
         if(request->unsent_status_change)
         {
+            request->restart_state = request->jobmanager_state;
             globus_gram_job_manager_state_file_write(request);
         }
 
@@ -856,7 +870,14 @@ globus_l_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
         if(request->unsent_status_change)
         {
+            request->restart_state = request->jobmanager_state;
             globus_gram_job_manager_state_file_write(request);
+
+            if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT)
+            {
+                globus_gram_job_manager_contact_state_callback(request);
+                request->unsent_status_change = GLOBUS_FALSE;
+            }
         }
         if(request->jobmanager_state ==
                 GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT)
@@ -1060,6 +1081,7 @@ globus_l_gram_job_manager_state_machine(
         if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
             request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
         {
+            request->restart_state = request->jobmanager_state;
             globus_gram_job_manager_auditing_file_write(request);
         }
 
@@ -1096,6 +1118,7 @@ globus_l_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
         globus_l_gram_job_manager_cancel_queries(request);
 
+        request->restart_state = request->jobmanager_state;
         globus_gram_job_manager_auditing_file_write(request);
         event_registered = GLOBUS_TRUE;
 
@@ -1147,17 +1170,23 @@ globus_l_gram_job_manager_state_machine(
         }
 
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT;
-        rc = globus_gram_job_manager_script_stage_out(request);
+
+        if ((!globus_list_empty(request->stage_stream_todo)) ||
+            (!globus_list_empty(request->stage_out_todo)))
+        {
+            rc = globus_gram_job_manager_script_stage_out(request);
         
-        if(rc != GLOBUS_SUCCESS)
-        {
-            request->failure_code = rc;
-            request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-        }
-        else
-        {
-            event_registered = GLOBUS_TRUE;
+            if(rc != GLOBUS_SUCCESS)
+            {
+                request->failure_code = rc;
+                request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+            }
+            else
+            {
+                event_registered = GLOBUS_TRUE;
+                request->unsent_status_change = GLOBUS_TRUE;
+            }
         }
         break;
 
@@ -2305,6 +2334,18 @@ globus_gram_job_manager_state_machine_register(
         delay = &nodelay;
     }
 
+    /* GRAM-128: Scalable reloading of requests at job manager restart.
+     * It's possible now that the job manager has put this job id in the
+     * pending_restarts list. When we add the reference here, if it is in that
+     * list, the state machine will be registered for this job automatically,
+     * with another new reference. So, we'll check if
+     * (request->poll_timer == GLOBUS_NULL_HANDLE) below. If that is true,
+     * then it wasn't in that list and we can procede as we always had done;
+     * otherwise, we'll need to remove the reference we just added.
+     * 
+     * See also globus_l_gram_process_pending_restarts() for the other case
+     * where we might expect to add a reference to a partially-reloaded job.
+     */
     rc = globus_gram_job_manager_add_reference(
             manager,
             request->job_contact_path,
@@ -2315,19 +2356,37 @@ globus_gram_job_manager_state_machine_register(
         goto failed_add_reference;
     }
 
-    result = globus_callback_register_oneshot(
-            &request->poll_timer,
-            delay,
-            globus_gram_job_manager_state_machine_callback,
-            request);
-    if (result != GLOBUS_SUCCESS)
+    if (request->poll_timer == GLOBUS_NULL_HANDLE)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto oneshot_failed;
+        result = globus_callback_register_oneshot(
+                &request->poll_timer,
+                delay,
+                globus_gram_job_manager_state_machine_callback,
+                request);
+        if (result != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto oneshot_failed;
+        }
+    }
+    else
+    {
+        /* GRAM-128: Scalable reloading of requests at job manager restart.
+         * If we get here, then the add_reference call added the state machine
+         * callback already. We need to remove this duplicate reference to
+         * avoid leaving the job in memory forever.
+         */
+        globus_gram_job_manager_remove_reference(
+                manager,
+                request->job_contact_path,
+                "state machine");
     }
 
     if (rc != GLOBUS_SUCCESS)
     {
+        /* Too bad, the state machine couldn't get registered. At least we
+         * can drop the reference count to potentially free some memory.
+         */
 oneshot_failed:
         globus_gram_job_manager_remove_reference(
                 manager,

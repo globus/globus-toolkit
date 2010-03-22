@@ -105,6 +105,24 @@ typedef enum
 }
 globus_gram_job_manager_query_type_t;
 
+typedef enum 
+{
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_CANCEL,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_SIGNAL,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_SUBMIT,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_STAGE_OUT,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_STAGE_IN,
+    GLOBUS_GRAM_SCRIPT_PRIORITY_LEVEL_POLL
+}
+globus_gram_script_priority_level_t;
+
+typedef struct
+{
+    globus_gram_script_priority_level_t priority_level;
+    uint64_t                            sequence;
+}
+globus_gram_script_priority_t;
+
 typedef struct
 {
     globus_gram_job_manager_staging_type_t
@@ -432,8 +450,8 @@ typedef struct globus_gram_job_manager_s
     /** Pid file path */
     char *                              pid_path;
 
-    /** Fifo of script contexts ready to run */
-    globus_fifo_t                       script_fifo;
+    /** Queue of script contexts ready to run */
+    globus_priority_q_t                 script_queue;
     /** Number of script slots available for running scripts */
     int                                 script_slots_available;
     /** Fifo of available script handles */
@@ -452,6 +470,10 @@ typedef struct globus_gram_job_manager_s
     int                                 seg_pause_count;
     /** All jobs are being stopped. Don't allow new ones in */
     globus_bool_t                       stop;
+    /** List of jobs that still need to be restarted, but haven't yet */
+    globus_list_t *                     pending_restarts;
+    /** Periodic callback handle to process jobs in the pending_restarts list */
+    globus_callback_handle_t            pending_restart_handle;
     /** Usage stats tracking data */
     globus_i_gram_usage_tracker_t *     usagetracker;
 }
@@ -739,6 +761,13 @@ typedef struct globus_gram_job_manager_ref_s
      * out
      */
     int                                 status_count;
+    /*
+     * True if the job has been loaded from the state file at recovery 
+     * time, but hasn't yet had its state machine started. In that case,
+     * we have to go to the TWO_PHASE_COMMITTED state unless the job has
+     * completed execution.
+     */
+    globus_bool_t                       loaded_only;
 }
 globus_gram_job_manager_ref_t;
 
@@ -877,8 +906,7 @@ globus_gram_rewrite_output_as_staging(
 
 int
 globus_gram_job_manager_request_load_all(
-    globus_gram_job_manager_t *         manager,
-    globus_list_t **                    requests);
+    globus_gram_job_manager_t *         manager);
 
 int
 globus_i_gram_request_stdio_update(
@@ -987,6 +1015,10 @@ globus_gram_job_manager_state_machine_register(
 int
 globus_i_gram_remote_io_url_update(
     globus_gram_jobmanager_request_t *  request);
+
+void
+globus_gram_job_manager_state_machine_callback(
+    void *                              user_arg);
 
 /* globus_gram_job_manager_gsi.c */
 int
@@ -1142,7 +1174,7 @@ globus_gram_job_manager_rsl_eval_one_attribute(
 
 int
 globus_gram_job_manager_rsl_remove_attribute(
-    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     char *                              attribute);
 
 globus_rsl_t *
