@@ -41,13 +41,14 @@ $cmdname = basename($0);
 
 require "getopts.pl";
 
-if (!&Getopts('huc:p:s:l:t:aAxXr:R:ndk:K:Z:E:') || $opt_h || $opt_u) {
+if (!&Getopts('huvc:p:s:l:t:aAxXr:R:ndk:K:Z:E:') || $opt_h || $opt_u) {
     print STDERR <<"EOF";
 Syntax: $0 [-c cn] [-l username] ...
         $0 [-usage|-help]
    Options
        -h                Displays usage
        -u
+       -v                Display debugging messages
        -c <cn>           Common Name for new credential
        -s <directory>    Credential storage directory
        -l <username>     Credential username
@@ -89,6 +90,9 @@ $certfile = "${tmp_dir_name}/${prefix}cert.pem";
 $reqfile = "${tmp_dir_name}/${prefix}cert_request.pem";
 $keyfile = "${tmp_dir_name}/${prefix}key.pem";
 
+if ($opt_v) {
+  print "temporary directory is: $tmp_dir_name\n";
+}
 
 @args = ("grid-cert-request", "-cn", $opt_c, "-prefix", $prefix, "-dir",
          $tmp_dir_name,  "-force");
@@ -100,6 +104,10 @@ push(@args, "-nopassphrase") if ($opt_n);
 @args = ("grid-ca-sign", "-in", $reqfile, "-out", $certfile, "-force");
 if ($opt_p) {
   push(@args, "-passin"); push(@args, $opt_p);
+}
+
+if ($opt_v) {
+  print "running command:\n@args\n";
 }
 
 if (system(@args)) {
@@ -156,6 +164,10 @@ if ($opt_K) {
     push(@args, "-K"); push(@args, $opt_K);
 }
 
+if ($opt_v) {
+  print "running command:\n@args\n";
+}
+
 if (system(@args)) {
     print STDERR "myproxy-admin-load-credential failed.\n";
     &cleanup();
@@ -192,6 +204,9 @@ sub wipefile {
 
 sub runcmd {
   @args = @_;
+  if ($opt_v) {
+    print "running command:\n@args\n";
+  }
   $pid = open3(*Writer, *Reader, '', @args);
   close(Writer);
   @output = <Reader>;
@@ -202,5 +217,7 @@ sub runcmd {
     print STDERR $args[0], " failed:\n";
     print STDERR $output;
     exit 1;
+  } elsif ($opt_v) {
+    print "command output:\n$output\n";
   }
 }
