@@ -161,6 +161,12 @@ globus_gram_prepare_log_string(
             outstr[i++] = 'n';
             instr++;
         }
+        else if (*instr == '\r')
+        {
+            outstr[i++] = '\\';
+            outstr[i++] = 'r';
+            instr++;
+        }
         else if (*instr == '\\')
         {
             outstr[i++] = '\\';

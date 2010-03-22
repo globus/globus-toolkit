@@ -431,7 +431,7 @@ globus_l_gram_job_manager_query_reply(
     int                                 code;
     globus_size_t                       replysize;
     globus_byte_t *                     reply             = GLOBUS_NULL;
-    globus_hashtable_t                  extensions;
+    globus_hashtable_t                  extensions = NULL;
 
     rc = query_failure_code;
 
@@ -505,6 +505,10 @@ globus_l_gram_job_manager_query_reply(
     if(reply)
     {
         free(reply);
+    }
+    if (extensions)
+    {
+        globus_gram_protocol_hash_destroy(&extensions);
     }
 }
 /* globus_l_gram_job_manager_query_reply() */
@@ -1017,15 +1021,16 @@ globus_l_gram_job_manager_signal(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
         }
-        else
+        else if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
 
             globus_gram_job_manager_request_log(
                     request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                    "event=gram.signal.end "
-                    "level=WARN "
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.signal.info "
+                    "level=DEBUG "
                     "gramid=%s "
                     "signal=\"%s\" "
                     "jmstate=%s "
@@ -1037,7 +1042,37 @@ globus_l_gram_job_manager_signal(
                     args,
                     globus_i_gram_job_manager_state_strings[
                             request->jobmanager_state],
-                    "Two-phase commit signal in invalid jobmanager state",
+                    "Unneccessary two-phase commit signal",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
+        else
+        {
+            /* GRAM-103: Ease two phase end commit timeout
+             * In some cases, Condor-G decides to restart a job where
+             * the job manager is already running. When this happens,
+             * the job can be in pretty much any job manager state. We'll
+             * ignore any error here, and assume things are working just
+             * fine in the state machine.
+             */
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    "event=gram.signal.info "
+                    "level=DEBUG "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Unneccessary two-phase commit signal",
                     -rc,
                     globus_gram_protocol_error_string(rc));
             break;

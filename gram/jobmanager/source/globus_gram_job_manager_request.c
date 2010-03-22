@@ -548,7 +548,7 @@ globus_gram_job_manager_request_init(
         }
 
         globus_gram_job_manager_rsl_remove_attribute(
-                r,
+                r->rsl,
                 GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
     }
 
@@ -756,7 +756,10 @@ globus_gram_job_manager_request_init(
         goto seg_event_queue_init_failed;
     }
 
-    rc = globus_gram_job_manager_state_file_write(r);
+    if (r->jm_restart == NULL)
+    {
+        rc = globus_gram_job_manager_state_file_write(r);
+    }
     
     if (rc != GLOBUS_SUCCESS)
     {
@@ -2081,7 +2084,7 @@ globus_l_gram_restart(
 
     /* Remove the restart parameter from the RSL spec. */
     globus_gram_job_manager_rsl_remove_attribute(
-            request,
+            request->rsl,
             GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 
     if (globus_gram_job_manager_request_exists(
@@ -2149,8 +2152,7 @@ globus_l_gram_restart(
     }
 
     restart_rsl = request->rsl;
-
-    request->rsl = original_rsl;
+    request->rsl = NULL;
 
     rc = globus_gram_job_manager_rsl_attribute_get_boolean_value(
             restart_rsl,
@@ -2177,7 +2179,7 @@ globus_l_gram_restart(
          * new client wants it, they can put it in their RSL
          */
         globus_gram_job_manager_rsl_remove_attribute(
-                    request,
+                    original_rsl,
                     GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
     }
 
@@ -2225,9 +2227,17 @@ globus_l_gram_restart(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
     request->job_stats.restart_count++;
-old_jm_alive:
 failed_check_position:
+    if (original_rsl)
+    {
+        globus_rsl_free_recursive(original_rsl);
+    }
+    if (restart_rsl)
+    {
+        globus_rsl_free_recursive(restart_rsl);
+    }
 parse_original_rsl_failed:
+old_jm_alive:
 state_file_read_failed:
 post_validate_eval_failed:
 rsl_validate_failed:

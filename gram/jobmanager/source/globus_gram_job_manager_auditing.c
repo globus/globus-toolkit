@@ -353,7 +353,7 @@ globus_l_gram_audit_write_string(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
     }
-    rc = fprintf(f, delim);
+    rc = fprintf(f, "%s", delim);
     return rc >= 0 ? GLOBUS_SUCCESS : GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
 }
 /* globus_l_gram_audit_write_string() */

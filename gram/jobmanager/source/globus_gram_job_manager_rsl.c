@@ -753,30 +753,30 @@ globus_gram_job_manager_rsl_env_add(
 /**
  * Remove an RSL attribute from and RSL tree.
  *
- * @param request
- *        The request containing the RSL tree to modify
+ * @param rsl
+ *        The RSL parse tree to modify
  * @param attribute
  *        The name of the attribute to remove from the RSL. The
  *        attribute and it's values will be freed.
  *
  * @retval GLOBUS_SUCCESS
- *         The RSL attribute is no longer present in the request.
+ *         Success
  * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
- *         The RSL is not a boolean tree containing attributes.
+ *         Bad RSL
  */
 int
 globus_gram_job_manager_rsl_remove_attribute(
-    globus_gram_jobmanager_request_t *  request,
+    globus_rsl_t *                      rsl,
     char *                              attribute)
 {
     globus_list_t **                    operand_ref;
     globus_list_t *                     node;
 
-    if(! globus_rsl_is_boolean_and(request->rsl))
+    if(! globus_rsl_is_boolean_and(rsl))
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
-    operand_ref = globus_rsl_boolean_get_operand_list_ref(request->rsl);
+    operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
     node = globus_list_search_pred(*operand_ref,
                                    globus_l_gram_job_manager_rsl_match,
                                    attribute);
