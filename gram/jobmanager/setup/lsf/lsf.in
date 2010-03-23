@@ -48,6 +48,7 @@ sub submit
     my $job_id;
     my @arguments;
     my $email_when = '';
+    my $args = '';
 
     $self->log('Entering lsf submit');
 
