@@ -99,7 +99,7 @@ globus_l_ftp_client_target_delete(
 
 static char *                           globus_l_ftp_client_ssh_client_program = NULL;
 
-void
+char *
 globus_i_ftp_client_find_ssh_client_program()
 {
     char *                              gl;
@@ -112,7 +112,7 @@ globus_i_ftp_client_find_ssh_client_program()
     if(result == GLOBUS_SUCCESS)
     {
         path = globus_common_create_string("%s/.globus/%s",
-            hd, SSH_EXEC_SCRIPT);
+            hd, GLOBUS_L_FTP_CLIENT_SSH_EXEC_SCRIPT);
         free(hd);
         result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
         if(result == GLOBUS_SUCCESS)
@@ -132,7 +132,7 @@ globus_i_ftp_client_find_ssh_client_program()
         if(result == GLOBUS_SUCCESS)
         {
             path = globus_common_create_string("%s/libexec/%s",
-                gl, SSH_EXEC_SCRIPT);
+                gl, GLOBUS_L_FTP_CLIENT_SSH_EXEC_SCRIPT);
             free(gl);
             result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
             if(result == GLOBUS_SUCCESS)
@@ -150,7 +150,7 @@ globus_i_ftp_client_find_ssh_client_program()
     if(globus_l_ftp_client_ssh_client_program == NULL)
     {
         path = globus_common_create_string(
-            "/etc/grid-security/%s", SSH_EXEC_SCRIPT);
+            "/etc/grid-security/%s", GLOBUS_L_FTP_CLIENT_SSH_EXEC_SCRIPT);
         result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
         if(result == GLOBUS_SUCCESS)
         {
@@ -161,6 +161,8 @@ globus_i_ftp_client_find_ssh_client_program()
             free(path);
         }
     }
+    
+    return globus_l_ftp_client_ssh_client_program;
 }
 
 /**
@@ -1639,20 +1641,20 @@ globus_l_ftp_client_url_parse(
     }
     else if(url->scheme_type == GLOBUS_URL_SCHEME_SSHFTP)
     {
-        if(!ftp_client_i_popen_ready)
-        {
-            err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("popen driver not installed");  
-            return err;
-        }
         if(globus_l_ftp_client_ssh_client_program == NULL)
         {
             err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("SSH client script not installed");
             return err;
         }
-    	if(url->port == 0)
-	    {
-	        url->port = 22;	/* IANA-defined SSH port*/
-	    }
+        if(!ftp_client_i_popen_ready)
+        {
+            err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("popen driver not installed");  
+            return err;
+        }
+        if(url->port == 0)
+        {
+            url->port = 22;	/* IANA-defined SSH port*/
+        }
     }
     else
     {

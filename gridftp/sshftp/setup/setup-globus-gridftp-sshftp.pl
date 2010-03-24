@@ -109,6 +109,10 @@ if  [ "X" = "X\$remote_program" ]; then
     remote_program="(( test -f \$remote_default1 && \$remote_default1 ) || \$remote_default2 )"
 fi
 
+if [ "X" != "X\$GLOBUS_SSHFTP_PRINT_ON_CONNECT" ]; then
+    echo "Connecting to \$1 ..." >/dev/tty
+fi
+
 $sshprog \$port_str \$remote_host \$remote_program
 EOF
 

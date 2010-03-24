@@ -33,7 +33,7 @@
 #include "globus_error_string.h"
 #include "globus_xio.h"
 
-#define SSH_EXEC_SCRIPT "gridftp-ssh"
+#define GLOBUS_L_FTP_CLIENT_SSH_EXEC_SCRIPT "gridftp-ssh"
 
 #define GLOBUS_L_FTP_CLIENT_CLIENTINFO_APPNAME "libglobus_ftp_client"
 
@@ -469,7 +469,7 @@ globus_i_ftp_client_feature_set(
     globus_ftp_client_probed_feature_t           feature,
     globus_ftp_client_tristate_t                 value);
 
-void
+char *
 globus_i_ftp_client_find_ssh_client_program();
 
 /**

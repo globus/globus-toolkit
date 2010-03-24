@@ -149,9 +149,10 @@ globus_l_ftp_client_activate(void)
     globus_i_ftp_client_debug_printf(1,
         (stderr, "globus_l_ftp_client_activate() exiting\n"));
 
+    if(globus_i_ftp_client_find_ssh_client_program() != NULL)
     {
-        globus_result_t res;
-
+        globus_result_t             res;
+        
         res = globus_xio_driver_load("popen", &ftp_client_i_popen_driver);
         if(res == GLOBUS_SUCCESS)
         {
@@ -159,7 +160,6 @@ globus_l_ftp_client_activate(void)
             globus_xio_stack_push_driver(
                 ftp_client_i_popen_stack, ftp_client_i_popen_driver);
             ftp_client_i_popen_ready = GLOBUS_TRUE;
-            globus_i_ftp_client_find_ssh_client_program();
         }
     }
 

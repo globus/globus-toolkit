@@ -834,6 +834,8 @@ static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t g_verbose_flag = GLOBUS_FALSE;
 static globus_bool_t g_quiet_flag = GLOBUS_TRUE;
+static globus_bool_t g_all_quiet = GLOBUS_FALSE;
+static globus_bool_t g_ssh_print_connect = GLOBUS_FALSE;
 static char *  g_ext = NULL;
 static char ** g_ext_args = NULL;
 static int      g_ext_arg_count = 0;
@@ -1147,41 +1149,52 @@ globus_l_guc_dequeue_pair(
     
     pair = (globus_l_guc_src_dst_pair_t *) globus_fifo_dequeue(q);
     
-    if(!guc_l_aliases)
+    if(guc_l_aliases)
     {
-        return pair;
+        /*
+        src_alias = (globus_l_guc_alias_t *) 
+            globus_hashtable_lookup(&guc_l_alias_table, (void *) "source");
+        dst_alias = (globus_l_guc_alias_t *) 
+            globus_hashtable_lookup(&guc_l_alias_table, (void *) "destination");
+        */
+        src_alias = guc_l_src_alias_ent;
+        dst_alias = guc_l_dst_alias_ent;
+        
+        if(src_alias && src_alias->entries > 0)
+        {
+            new_src = globus_l_guc_url_replace_host(
+                pair->src_url, src_alias->hostname[handle_id % src_alias->entries]);
+            if(new_src != NULL)
+            {
+                globus_free(pair->src_url);
+                pair->src_url = new_src;
+            }
+        }
+    
+        if(dst_alias && dst_alias->entries > 0)
+        {
+            new_dst = globus_l_guc_url_replace_host(
+                pair->dst_url, dst_alias->hostname[handle_id % dst_alias->entries]);
+            if(new_dst != NULL)
+            {
+                globus_free(pair->dst_url);
+                pair->dst_url = new_dst;
+            }
+        }
     }
     
-    /*
-    src_alias = (globus_l_guc_alias_t *) 
-        globus_hashtable_lookup(&guc_l_alias_table, (void *) "source");
-    dst_alias = (globus_l_guc_alias_t *) 
-        globus_hashtable_lookup(&guc_l_alias_table, (void *) "destination");
-    */
-    src_alias = guc_l_src_alias_ent;
-    dst_alias = guc_l_dst_alias_ent;
-    
-    if(src_alias && src_alias->entries > 0)
+    if(!g_ssh_print_connect && !g_all_quiet &&
+        strncmp(pair->src_url, "sshftp://", 9) == 0 &&
+        strncmp(pair->dst_url, "sshftp://", 9) == 0)
     {
-        new_src = globus_l_guc_url_replace_host(
-            pair->src_url, src_alias->hostname[handle_id % src_alias->entries]);
-        if(new_src != NULL)
+        g_ssh_print_connect = GLOBUS_TRUE;
+
+        if(isatty(STDIN_FILENO))
         {
-            globus_free(pair->src_url);
-            pair->src_url = new_src;
+            globus_libc_setenv("GLOBUS_SSHFTP_PRINT_ON_CONNECT", "1", 1);
         }
     }
 
-    if(dst_alias && dst_alias->entries > 0)
-    {
-        new_dst = globus_l_guc_url_replace_host(
-            pair->dst_url, dst_alias->hostname[handle_id % dst_alias->entries]);
-        if(new_dst != NULL)
-        {
-            globus_free(pair->dst_url);
-            pair->dst_url = new_dst;
-        }
-    }
     return pair;
 
 }
@@ -3263,6 +3276,7 @@ globus_l_guc_parse_arguments(
             break;
         case arg_q:
             g_quiet_flag = GLOBUS_TRUE;
+            g_all_quiet = GLOBUS_TRUE;
             break;
         case arg_v:
             g_quiet_flag = GLOBUS_FALSE;

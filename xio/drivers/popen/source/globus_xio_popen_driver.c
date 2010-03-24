@@ -459,7 +459,9 @@ globus_l_xio_popen_child(
     close(errfds[0]);
     close(errfds[1]);
 
+    /* if necessary, make optional 
     setsid();
+    */
 
     if(attr->pass_env)
     {
@@ -792,14 +794,14 @@ globus_l_popen_waitpid(
                     if(handle->wait_count > 5000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
                     {
                         handle->kill_state = GLOBUS_L_XIO_POPEN_TERM;
-                        kill(-handle->pid, SIGTERM);
+                        kill(handle->pid, SIGTERM);
                     }
                     break;
                 case GLOBUS_L_XIO_POPEN_TERM:
                     if(handle->wait_count > 15000 / GLOBUS_L_XIO_POPEN_WAITPID_DELAY)
                     {
                         handle->kill_state = GLOBUS_L_XIO_POPEN_KILL;
-                        kill(-handle->pid, SIGKILL);
+                        kill(handle->pid, SIGKILL);
                     }
                     break;
                 default:
