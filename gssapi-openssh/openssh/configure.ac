@@ -2377,62 +2377,41 @@ AC_ARG_WITH(pam,
 			   test "x$ac_cv_header_pam_pam_appl_h" != "xyes" ; then
 				AC_MSG_ERROR([PAM headers not found])
 			fi
-
-			saved_LIBS="$LIBS"
-			AC_CHECK_LIB(dl, dlopen, , )
-			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
-			AC_CHECK_FUNCS(pam_getenvlist)
-			AC_CHECK_FUNCS(pam_putenv)
-			LIBS="$saved_LIBS"
-
 			PAM_MSG="yes"
-
-			SSHDLIBS="$SSHDLIBS -lpam"
-			AC_DEFINE(USE_PAM, 1,
-				[Define if you want to enable PAM support])
-
-			if test $ac_cv_lib_dl_dlopen = yes; then
-				case "$LIBS" in
-				*-ldl*)
-					# libdl already in LIBS
-					;;
-				*)
-					SSHDLIBS="$SSHDLIBS -ldl"
-					;;
-				esac
-			fi
 		fi
 	],
 	[
 		if test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
 		   test "x$ac_cv_header_pam_pam_appl_h" = "xyes"; then
-
-			saved_LIBS="$LIBS"
-			AC_CHECK_LIB(dl, dlopen, , )
-			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
-			AC_CHECK_FUNCS(pam_getenvlist)
-			AC_CHECK_FUNCS(pam_putenv)
-			LIBS="$saved_LIBS"
-
 			PAM_MSG="yes"
-
-			SSHDLIBS="$SSHDLIBS -lpam"
-			AC_DEFINE(USE_PAM, 1,
-				[Define if you want to enable PAM support])
-
-			if test $ac_cv_lib_dl_dlopen = yes; then
-				case "$LIBS" in
-				*-ldl*)
-					# libdl already in LIBS
-					;;
-				*)
-					SSHDLIBS="$SSHDLIBS -ldl"
-					;;
-				esac
-			fi
 		fi
 	]
 )
+
+# Enable PAM support if requested/available
+if test "x$PAM_MSG" = "xyes" ; then
+	saved_LIBS="$LIBS"
+	AC_CHECK_LIB(dl, dlopen, , )
+	AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
+	AC_CHECK_FUNCS(pam_getenvlist)
+	AC_CHECK_FUNCS(pam_putenv)
+	LIBS="$saved_LIBS"
+
+	SSHDLIBS="$SSHDLIBS -lpam"
+	AC_DEFINE(USE_PAM, 1,
+		[Define if you want to enable PAM support])
+
+	if test $ac_cv_lib_dl_dlopen = yes; then
+		case "$LIBS" in
+		*-ldl*)
+			# libdl already in LIBS
+			;;
+		*)
+			SSHDLIBS="$SSHDLIBS -ldl"
+			;;
+		esac
+	fi
+fi
 
 # Check for older PAM
 if test "x$PAM_MSG" = "xyes" ; then
