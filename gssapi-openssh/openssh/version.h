@@ -18,7 +18,7 @@
 #define MGLUE_VERSION	""
 #endif
 
-#define GPT_VERSION	" GSI_GSSAPI_GPT_5.0"
+#define GPT_VERSION	" GSI_GSSAPI_GPT_5.1"
 
 #define SSH_VERSION	"OpenSSH_5.3"
 

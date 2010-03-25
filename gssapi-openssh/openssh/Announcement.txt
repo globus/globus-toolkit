@@ -1,4 +1,4 @@
-GSI-OpenSSH 5.0, based on OpenSSH 5.3p1, is now available from:
+GSI-OpenSSH 5.1, based on OpenSSH 5.3p1, is now available from:
 
   http://grid.ncsa.uiuc.edu/ssh/download.html
 
@@ -11,44 +11,12 @@ Please use Bugzilla to report GSI-OpenSSH bugs:
 
   http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
 
-Notes:
-
-  * Starting in this release, GSI-OpenSSH must be linked with the
-    globus_usage library. If your GSI-OpenSSH install fails because
-    the globus_usage library is not installed in $GLOBUS_LOCATION,
-    please use the Globus Toolkit installer to add the missing
-    library, with the command "make globus_usage install".
-
-  * We'll be releasing a GSI patch for OpenSSH 5.4p1 soon.
-
 Major changes:
 
-  * Incorporate usage reporting functionality from the Globus Metrics
-    project to help us collect generic statistics about your use of
-    GSI-OpenSSH. Additional details are available at
-    <http://grid.ncsa.uiuc.edu/ssh/privacy.html>.
+  * Link with PAM libraries by default if they are available
+    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6989
 
-  * Drop support for the pre-RFC4462 external-keyx and gssapi
-    authentication methods.
-
-  * Update to OpenSSH 5.3p1.
-
-  * Support cascading credentials for GSI.
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6785
-
-  * Disable OpenSSL version consistency check by default (i.e.,
-    --without-openssl-header-check) because it routinely fails on MacOS.
-
-  * Update to 20100124 patch from Simon Wilkinson.
-    http://www.sxw.org.uk/computing/patches/openssh.html
-
-  * Fix support for --with-privsep-path configure option.
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6970
+  * Fix bug in GSI-OpenSSH 5.0 that disabled usage reporting
+    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6988
 
 Checksums:
-
-  SHA1(gsi_openssh_bundle-5.0-src.tar.gz)
-    73e4b04780094d1d539a151d71d070b8a861f929
-
-  MD5(gsi_openssh_bundle-5.0-src.tar.gz)
-    17c0a1e87536d94c549e5b144cf66786
