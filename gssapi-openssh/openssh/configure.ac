@@ -1087,19 +1087,6 @@ AC_SEARCH_LIBS(login, util bsd, [AC_DEFINE(HAVE_LOGIN, 1,
 	[Define if your libraries define login()])])
 AC_CHECK_FUNCS(fmt_scaled logout updwtmp logwtmp)
 
-dnl
-dnl Check for globus_usage_stats_send
-dnl
-AC_SEARCH_LIBS(globus_usage_stats_send,
-               globus_usage globus_usage_${globus_flavor_type},
-               AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
-dnl
-dnl Check for globus_usage_stats_send_array
-dnl
-AC_SEARCH_LIBS(globus_usage_stats_send_array,
-               globus_usage globus_usage_${globus_flavor_type},
-               AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1, [Have Globus Usage send_array]))
-
 AC_FUNC_STRFTIME
 
 # Check for ALTDIRFUNC glob() extension
@@ -1335,6 +1322,20 @@ if test "x$gsi_path" != "xno" ; then
 else
 	INSTALL_GSISSH=""
 fi
+
+dnl
+dnl Check for globus_usage_stats_send
+dnl
+AC_SEARCH_LIBS(globus_usage_stats_send,
+               globus_usage globus_usage_${globus_flavor_type},
+               AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
+dnl
+dnl Check for globus_usage_stats_send_array
+dnl
+AC_SEARCH_LIBS(globus_usage_stats_send_array,
+               globus_usage globus_usage_${globus_flavor_type},
+               AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1, [Have Globus Usage send_array]))
+
 # End Globus/GSI section
 
 AC_MSG_CHECKING([for /proc/pid/fd directory])
@@ -2403,20 +2404,21 @@ AC_ARG_WITH(pam,
 		fi
 	],
 	[
-		saved_LIBS="$LIBS"
-		AC_CHECK_LIB(dl, dlopen, , )
-		AC_CHECK_LIB(pam, pam_set_item, , )
-		AC_CHECK_FUNCS(pam_getenvlist)
-		AC_CHECK_FUNCS(pam_putenv)
-		LIBS="$saved_LIBS"
+		if test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
+		   test "x$ac_cv_header_pam_pam_appl_h" = "xyes"; then
 
-		if (test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
-		   test "x$ac_cv_header_pam_pam_appl_h" = "xyes") &&
-		   test "x$ac_cv_lib_pam_pam_set_item" = "xyes" ; then
+			saved_LIBS="$LIBS"
+			AC_CHECK_LIB(dl, dlopen, , )
+			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
+			AC_CHECK_FUNCS(pam_getenvlist)
+			AC_CHECK_FUNCS(pam_putenv)
+			LIBS="$saved_LIBS"
 
 			PAM_MSG="yes"
 
-			LIBPAM="-lpam"
+			SSHDLIBS="$SSHDLIBS -lpam"
+			AC_DEFINE(USE_PAM, 1,
+				[Define if you want to enable PAM support])
 
 			if test $ac_cv_lib_dl_dlopen = yes; then
 				case "$LIBS" in
@@ -2424,11 +2426,10 @@ AC_ARG_WITH(pam,
 					# libdl already in LIBS
 					;;
 				*)
-					LIBPAM="$LIBPAM -ldl"
+					SSHDLIBS="$SSHDLIBS -ldl"
 					;;
 				esac
 			fi
-			AC_SUBST(LIBPAM)
 		fi
 	]
 )
