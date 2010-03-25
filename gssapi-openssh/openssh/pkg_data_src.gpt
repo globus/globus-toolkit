@@ -27,6 +27,11 @@
           <Simple_Version Major="3"></Simple_Version>
         </Version>
       </Dependency>
+      <Dependency Name="globus_usage">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_link">
@@ -40,6 +45,11 @@
         <Version>
           <Simple_Version Major="2"></Simple_Version>
           <Simple_Version Major="3"></Simple_Version>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_usage">
+        <Version>
+          <Simple_Version Major="0"/>
         </Version>
       </Dependency>
     </Source_Dependencies>
