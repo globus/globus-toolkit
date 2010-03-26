@@ -71,7 +71,7 @@ Protocol 2
 #KerberosGetAFSToken no
 
 # Session hooks: if allowed, specify the commands to execute
-#AllowSessionHooks yes
+#AllowSessionHooks no
 #SessionHookStartupCmd /bin/true
 #SessionHookShutdownCmd /bin/true
 
@@ -91,7 +91,7 @@ Protocol 2
 # If you just want the PAM account and session checks to run without
 # PAM authentication, then enable this but set PasswordAuthentication
 # and ChallengeResponseAuthentication to 'no'.
-#UsePAM yes
+#UsePAM no
 
 # Set to 'yes' to allow the PAM stack to change the user name during
 # calls to authentication
