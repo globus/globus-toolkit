@@ -595,7 +595,7 @@ globus_i_gsi_gss_create_and_fill_context(
             SSL_CIPHER_description(sk_SSL_CIPHER_value(sk,i),
                                    buff,256);
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-                3, (globus_i_gsi_gssapi_debug_fstream, "%s", buff));
+                3, (globus_i_gsi_gssapi_debug_fstream, buff));
         }
     }
 
@@ -2248,11 +2248,6 @@ globus_i_gsi_gssapi_init_ssl_context(
             for(index = 0; index < sk_X509_num(client_cert_chain); ++index)
             {
                 tmp_cert = X509_dup(sk_X509_value(client_cert_chain, index));
-                #if OPENSSL_VERSION_NUMBER >= 0x10000000L
-                SSL_CTX_add_extra_chain_cert(
-                        cred_handle->ssl_context,
-                        tmp_cert);
-                #else
                 if(!X509_STORE_add_cert(
                        SSL_CTX_get_cert_store(cred_handle->ssl_context),
                        tmp_cert))
@@ -2278,7 +2273,6 @@ globus_i_gsi_gssapi_init_ssl_context(
                 }
                 /* need to free to reduce ref count */
                 X509_free(tmp_cert);
-                #endif
             }
         }
     }
