@@ -234,6 +234,10 @@ fill_default_server_options(ServerOptions *options)
 		options->kerberos_or_local_passwd = 1;
 	if (options->kerberos_ticket_cleanup == -1)
 		options->kerberos_ticket_cleanup = 1;
+#ifdef  SESSION_HOOKS
+    if (options->session_hooks_allow == -1)
+        options->session_hooks_allow = 0;
+#endif
 	if (options->kerberos_get_afs_token == -1)
 		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)

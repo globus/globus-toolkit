@@ -69,7 +69,7 @@
 #KerberosGetAFSToken no
 
 # Session hooks: if allowed, specify the commands to execute
-#AllowSessionHooks yes
+#AllowSessionHooks no
 #SessionHookStartupCmd /bin/true
 #SessionHookShutdownCmd /bin/true
 
