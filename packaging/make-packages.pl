@@ -32,7 +32,7 @@ my @cleanup_dirs = ('log-output', '$bundle_ouput/BUILD');
 
 # tree_name => [ cvs directory, module, checkout-dir tag ]
 my %cvs_archives = (
-     'gt' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix, "HEAD" ],
+     'gt' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix, "globus_5_0_branch" ],
       );
 
 my %virtual_packages = ("trusted_ca_setup" => 1,
