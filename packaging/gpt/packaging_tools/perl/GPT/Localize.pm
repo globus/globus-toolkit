@@ -158,6 +158,10 @@ sub probe_for_tools {
           my $result = `$d/tar --version`;
           $me->{'gtar_location'} = "$d/tar" if $result =~ m!GNU\s+tar!;
         }
+        if (-f "$d/gnutar" ) {
+          my $result = `$d/gnutar --version`;
+          $me->{'gtar_location'} = "$d/gnutar" if $result =~ m!GNU\s+tar!;
+        }
       }
     }
 
