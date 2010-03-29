@@ -975,6 +975,9 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
             lac_CFLAGS="$lac_CFLAGS -m64"
             lac_LDFLAGS="$lac_LDFLAGS -m64"
+        else
+            lac_CFLAGS="$lac_CFLAGS -m32"
+            lac_LDFLAGS="$lac_LDFLAGS -m32"
         fi
 
         if test "$GLOBUS_CC" = "mpicc"; then
