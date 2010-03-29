@@ -118,36 +118,36 @@ globus_l_gss_assist_line_length(
 #endif
 
 /**
- * @name Gridmap
- */
-/* @{ */
-/**
+ * @brief Look up the default mapping for a Grid identity in a gridmap file
  * @ingroup globus_gsi_gss_assist
  * 
- * Routines callable from globus based code to 
- * map a globusID to a local unix user
+ * @details
+ * The globus_gss_assist_gridmap() function parses the default gridmap file
+ * and modifies its @a useridp parameter to point to a copy of the string
+ * containing the default local identity that the grid identity is mapped to.
+ * If successful, the caller is responsible for freeing the string pointed
+ * to by @a useridp.
  *
- * GRIDMAP environment variable pointing at the
- * map file. Defaults to ~/.gridmap 
- *
- * A gridmap file is required if being run as root. 
- * if being run as a user,it is not required, and defaults to 
- * the current user who is running the command. 
- *
- * This is the same file used by the gssapi_cleartext
- * but will be used with other gssapi implementations which 
- * do not use the gridmap file. 
+ * By default, @a globus_gss_assist_gridmap() looks for the default gridmap
+ * file defined by the value of the GRIDMAP environment variable. If that
+ * is not set, it falls back to $HOME/.gridmap.
  *
  * @param globusidp
- *        the GSSAPI name from the client who requested
- *        authentication
+ *     The GSSAPI name string of the identity who requested authorization
  * @param useridp
- *        the resulting user ID name for the local system
+ *     A pointer to a string to be set to the default user ID for the local
+ *     system. No validation is done to check that such a user exists.
  *
  * @return 
- *        0 on success
- *        -1 if bad arguments
- *        1 on error
+ *     On success, globus_gss_assist_gridmap() returns 0 and modifies the
+ *     the string pointed to by the @a useridp parameter. If an error occurs,
+ *     a non-zero value is returned and the value pointed to by @a useridp
+ *     is undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval 1
+ *     Error
  */
 int 
 globus_gss_assist_gridmap(
@@ -248,28 +248,36 @@ globus_gss_assist_gridmap(
 
         return 1;
     }
-} 
+}
 /* globus_gss_assist_gridmap() */
-/* @} */
 
 /**
- * @name User OK
- */
-/* @{ */
-/**
+ * @brief Gridmap entry existence check
  * @ingroup globus_gsi_gss_assist
- * Check to see if a particular globusid is authorized to access
- * the given local user account.
+ *
+ * @details
+ * The @a globus_gss_assist_userok() function parses the default gridmap file
+ * and checks whether any mapping exists for the grid identity passed as the
+ * @a globusid parameter and the local user identity passed as the @ userid
+ * parameter.
+ *
+ * By default, @a globus_gss_assist_userok() looks for the default gridmap
+ * file defined by the value of the GRIDMAP environment variable. If that
+ * is not set, it falls back to $HOME/.gridmap.
  *
  * @param globusid
- *        the globus id in string form - this should be the user's subject
+ *     The GSSAPI name string of the identity who requested authorization
  * @param userid
- *        the local account that access is sought for
+ *     The local account name that access is sought for.
  *
  * @return
- *        0 on success (authorization allowed)
- *        -1 if bad arguments
- *        1 on error
+ *     If @a globus_gss_assist_userok() is able to find a mapping between
+ *     @a globusid and @a userid, it returns 0; otherwise it returns 1.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval 1
+ *     Error
  */
 int
 globus_gss_assist_userok(
@@ -363,37 +371,42 @@ globus_gss_assist_userok(
 
         return 1;
     }
-} 
+}
 /* globus_gss_assist_userok() */
-/* @} */
 
 /**
- * @name Map Local User
- */
-/* @{ */
-/**
+ * @brief Look up the default Grid identity associated with a local user name
  * @ingroup globus_gsi_gss_assist
- * Routine for returning the default globus ID associated with
- * a local user name. This is somewhat of a hack since there is
- * not a guarenteed one-to-one mapping. What we do is look for
- * the first entry in the gridmap file that has the local
- * user as the default login. If the user is not a default on any 
- * entry, we find the first entry in which the user exists as a 
- * secondary mapping.
+ *
+ * @details
+ * The @a globus_gss_assist_map_local_user() function parses the 
+ * gridmap file to determine a if the user name passed as the @a local_user 
+ * parameter is the default local user for a Grid ID in the gridmap file. If
+ * so, it modifies @a globusidp to point to a copy of that ID. Otherwise, it
+ * searches the gridmap file for a Grid ID that has a non-default mapping for
+ * @a local_user and modifies @a globusidp to point to a copy of that ID.
+ * If successful, the caller is responsible for freeing the string pointed to
+ * by the @a globusidp pointer.
+ *
+ * By default, @a globus_gss_assist_map_local_user() looks for the default
+ * gridmap file defined by the value of the GRIDMAP environment variable. If
+ * that is not set, it falls back to $HOME/.gridmap.
  *
  * @param local_user
- *        the local username to find the DN for
+ *     The local username to find a Grid ID for
  * @param globusidp
- *        the first DN found that reverse maps from the local_user
+ *     A Grid ID that maps from the local_user.
  *
  * @return
- *        0 on success, otherwise an error object identifier is returned.
- *        use globus_error_get to get the error object from the id.  The
- *        resulting error object must be freed using globus_object_free
- *        when it is no longer needed.
+ *     On success, @a globus_gss_assist_map_local_user() returns 0 and
+ *     modifies @a globusidp to point to a Grid ID that maps to @a local_user;
+ *     otherwise, @a globus_gss_assist_map_local_user() returns 1 and the
+ *     value pointed to by @a globusidp is undefined.
  *
- * @see globus_error_get
- * @see globus_object_free
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval 1
+ *     Error
  */
 int 
 globus_gss_assist_map_local_user(
@@ -494,7 +507,6 @@ globus_gss_assist_map_local_user(
     }
 } 
 /* globus_gss_assist_map_local_user() */
-/* @} */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -1340,23 +1352,49 @@ globus_i_gss_assist_xdigit_to_value(
 
 
 /**
- * @ingroup globus_i_gsi_gss_assist
- * Look up all globus ids associated with a given user id.
+ * @brief Look up all Grid IDs associated with a local user ID
+ * @ingroup globus_gsi_gss_assist
+ *
+ * @details
+ * The @a globus_gss_assist_lookup_all_globusid() function parses a 
+ * gridmap file and finds all Grid IDs that map to a local user ID.
+ * The @a dns parameter is modified to point to an array of Grid ID
+ * strings from the gridmap file, and the @a dn_count parameter is
+ * modified to point to the number of Grid ID strings in the array.
+ * The caller is responsible for freeing the array using the macro
+ * @a GlobusGssAssistFreeDNArray().
+ *
+ * By default, @a globus_gss_assist_lookup_all_globusid() looks for the default
+ * gridmap file defined by the value of the GRIDMAP environment variable. If
+ * that is not set, it falls back to $HOME/.gridmap.
  *
  * @param username
- *        The local username on which we are preforming the lookup.
- *
+ *     The local username to look up in the gridmap file.
  * @param dns
- *        a pointer to an array of strings.  On entrance it should be
- *        unitialized.  Upon return from this function it will point
- *        to an array of strings.  The user should use the macro
- *        GlobusGssAssistFreeDNArray to clean up this memory.
- *
+ *     A pointer to an array of strings. This function modifies this
+ *     to point to a newly allocated array of strings. The
+ *     caller must use the macro @a GlobusGssAssistFreeDNArray() to free
+ *     this memory.
  * @param dn_count
- *        The number of globus_ids returned in dns.
+ *     A pointer to an integer that is modified to contain the number of 
+ *     entries in the array returned via the @a dns parameter.
  *
  * @return
- *        the value in the xdigit, or -1 if error
+ *     On success, @a globus_gss_assist_lookup_all_globusid() returns
+ *     GLOBUS_SUCCESS and modifies its @a dns and @a dn_count parameters as
+ *     described above. If an error occurs,
+ *     @a globus_gss_assist_lookup_all_globusid() returns a globus_result_t
+ *     that can be resolved to an error object and the values
+ *     pointed to by @a dns and @a dn_count are undefined.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS
+ *     Error with arguments
+ * @retval GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP
+ *     Invalid path to gridmap
+ * @retval GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO
+ *     System error
  */
 globus_result_t
 globus_gss_assist_lookup_all_globusid(
@@ -1492,6 +1530,71 @@ globus_gss_assist_lookup_all_globusid(
 /* globus_gss_assist_lookup_all_globusid() */
 
 
+/**
+ * @brief Authorize the peer of a security context to use a service
+ * @ingroup globus_gsi_gss_assist
+ *
+ * @details
+ * The globus_gss_assist_map_and_authorize() function attempts to authorize
+ * the peer of a security context to use a particular service. If
+ * the @a desired_identity parameter is non-NULL, the authorization will
+ * succeed only if the peer is authorized for that identity. Otherwise,
+ * any valid authorized local user name will be used. If authorized, the
+ * local user name will be copied to the string pointed to by the
+ * @a identity_buffer parameter, which must be at least as long as the
+ * value passed as the @a identity_buffer_length parameter.
+ *
+ * If authorization callouts are defined in the callout configuration
+ * file, @a globus_gss_assist_map_and_authorize() will invoke both the
+ * GLOBUS_GENERIC_MAPPING_TYPE callout and the GLOBUS_GENERIC_AUTHZ_TYPE
+ * callout; otherwise the default gridmap file will be used for mapping
+ * and no service-specific authorization will be done.
+ *
+ * If @a globus_gss_assist_map_and_authorize() uses a gridmap file, it
+ * first looks for a file defined by the value of the GRIDMAP environment
+ * variable. If that is not set, it falls back to $HOME/.gridmap.
+ *
+ * @param context
+ *     Security context to inspect for peer identity information.
+ * @param service
+ *     A NULL-terminated string containing the name of the service that
+ *     an authorization decision is being made for.
+ * @param desired_identity
+ *     Optional. If non-NULL, perform an authorization to act as the 
+ *     local user named by this NULL-terminated string.
+ * @param identity_buffer
+ *     A pointer to a string buffer into which will be copied the
+ *     local user name that the peer of the context is authorized to
+ *     act as.
+ * @param identity_buffer_length
+ *     Length of the @a identity_buffer array.
+ *
+ * @return
+ *     On success, @a globus_gss_assist_map_and_authorize() returns
+ *     GLOBUS_SUCCESS and copies the authorized local identity to the
+ *     @a identity_buffer parameter. If an error occurs,
+ *     @a globus_gss_assist_map_and_authorize() returns a globus_result_t
+ *     that can be resolved to an error object.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_CALLOUT_CONFIG
+ *     Invalid authorization configuration file
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE     
+ *     Hash table operation failed.
+ * @retval GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR
+ *     The callout itself returned a error.
+ * @retval GLOBUS_CALLOUT_ERROR_WITH_DL
+ *     Dynamic library operation failed.
+ * @retval GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ *     Out of memory
+ * @retval GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR
+ *     A GSSAPI function returned an error
+ * @retval GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED
+ *     Gridmap lookup failure
+ * @retval GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL
+ *     Caller provided insufficient buffer space for local identity
+ */
 globus_result_t
 globus_gss_assist_map_and_authorize(
     gss_ctx_id_t                        context,

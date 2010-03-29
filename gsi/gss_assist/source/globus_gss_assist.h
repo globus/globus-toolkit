@@ -368,6 +368,20 @@ globus_gss_assist_map_and_authorize(
 
 
 
+/**
+ * @brief Free array of distinguished names
+ * @ingroup globus_gsi_gss_assist
+ * @hideinitializer
+ *
+ * @details
+ * Free the contents of a name array created during a successful call to
+ * globus_gss_assist_lookup_all_globusid()
+ *
+ * @param dn_a
+ *     Array of names to free.
+ *
+ * @retval void
+ */
 #define GlobusGssAssistFreeDNArray(dn_a)                    \
 {                                                           \
     int __ctr = 0;                                          \
