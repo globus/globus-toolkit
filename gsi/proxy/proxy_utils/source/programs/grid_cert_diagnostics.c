@@ -1,8 +1,25 @@
+/*
+ * Copyright 1999-2010 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "globus_common.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_credential.h"
 #include "globus_gss_assist.h"
 #include "openssl/bn.h"
+#include <regex.h>
 
 char *
 indent_string(const char * str)
@@ -57,6 +74,8 @@ int main(int argc, char * argv[])
     globus_bool_t                       personal = GLOBUS_FALSE;
     char *                              local_user = NULL;
     int                                 ch;
+    FILE *                              ntpdate;
+    char                                ntpbuffer[256];
     globus_module_descriptor_t *        modules[] =
     {
         GLOBUS_COMMON_MODULE,
@@ -217,7 +236,7 @@ int main(int argc, char * argv[])
                     globus_error_print_friendly(globus_error_peek(result))));
         goto out;
     }
-    result = globus_gsi_callback_set_check_policy_for_self_signed_certs(callback_data, GLOBUS_TRUE);
+    result = globus_gsi_callback_set_check_policy_for_self_signed_certs(callback_data, GLOBUS_FALSE);
     if (result != GLOBUS_SUCCESS)
     {
         printf("Internal error: setting check self-signed policy\n%s\n",
@@ -226,10 +245,77 @@ int main(int argc, char * argv[])
         goto out;
     }
 
+    printf("\nChecking clock synchronization\n"
+            "=============================\n");
+    printf("Running ntpdate -u -q 0.pool.ntp.org... ");
+    ntpdate = popen("ntpdate -u -q 0.pool.ntp.org", "r");
+    if (ntpdate == NULL)
+    {
+        printf("failed\n");
+    }
+    else
+    {
+        regex_t offset_regex;
+        globus_bool_t matched_good = GLOBUS_FALSE;
+        double offset;
+        double matched_good_offset;
+
+        if (regcomp(&offset_regex, "offset ([+.0-9-]+)", REG_EXTENDED) < 0)
+        {
+            printf("failed\n");
+            goto close_ntpdate;
+        }
+        while (fgets(ntpbuffer, sizeof(ntpbuffer)-1, ntpdate) != NULL)
+        {
+            regmatch_t offset_match[2];
+
+            if (regexec(&offset_regex,
+                        ntpbuffer,
+                        sizeof(offset_match)/sizeof(offset_match[0]),
+                        offset_match,
+                        0) != REG_NOMATCH)
+            {
+                offset = strtod(&ntpbuffer[offset_match[1].rm_so], NULL);
+
+                if (offset < 1.0 && offset > -1.0)
+                {
+                    matched_good = GLOBUS_TRUE;
+                    matched_good_offset = offset;
+                }
+                else
+                {
+                    printf("WARNING: clock skew %f seconds\n", offset);
+                    goto free_regex;
+                }
+            }
+        }
+free_regex:
+        regfree(&offset_regex);
+close_ntpdate:
+        rc = pclose(ntpdate);
+        if (rc != 0)
+        {
+            printf("WARNING: ntpdate failed\n");
+        }
+        else if (matched_good)
+        {
+            printf("ok (clock skew %f second)\n", offset);
+        }
+        else if (offset > 1 || offset < -1)
+        {
+            printf("ERROR: ntp skew greater than 1 second\n");
+            goto out;
+        }
+        else
+        {
+            printf("WARNING: unable to parse ntpdate output\n");
+        }
+    }
+
     if (personal)
     {
         printf("\nChecking Default Credentials\n"
-               "==============================\n");
+               "============================\n");
         printf("Determining certificate and key file names... ");
         result = GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(&cert, &key);
         if (result != GLOBUS_SUCCESS)
