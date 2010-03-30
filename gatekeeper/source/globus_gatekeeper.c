@@ -163,14 +163,6 @@ static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
 static gss_cred_id_t delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 
-/*
- * local definition of restrictions oid
- *
- */
-
-extern
-const gss_OID_desc * const gss_restrictions_extension;
-
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -201,9 +193,6 @@ const gss_OID_desc * const gss_restrictions_extension;
 #define FAILED_NOLOGIN              4
 #define FAILED_AUTHENTICATION       5
 #define FAILED_PING                 6
-
-#undef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static char     tmpbuf[1024];
 #define notice2(i,a,b) {sprintf(tmpbuf, a,b); notice(i,tmpbuf);}
@@ -329,19 +318,6 @@ terminate(int s)
     notice2(LOG_NOTICE,"Gatekeeper received signal:%d",s);
     if (listener_fd > 0)
     {
-
-#if 0
-/* may need to add code for unicos MLS to get socket closed */
-#     if defined(TARGET_ARCH_CRAYT3E)
-        {
-            if(gatekeeper_uid == 0)
-            {
-                close_unicos_socket(listener_fd);
-            }
-        }
-#     endif
-#endif
-
         if (close(listener_fd) == -1)
         {
             notice3(LOG_ERR, "Shutdown of %d: %.100s",
@@ -351,7 +327,7 @@ terminate(int s)
         listener_fd = -1;
     }
     failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
-        }
+}
 /******************************************************************************
 Function:       reaper()
 Description:    Wait for any child processes that have terminated.
@@ -1357,10 +1333,6 @@ static void doit()
     int                                 token_status = 0;
     OM_uint32                           ret_flags = 0;
     gss_buffer_desc                     context_token = GSS_C_EMPTY_BUFFER;
-#if 0
-    gss_buffer_desc                     option_token = GSS_C_EMPTY_BUFFER;
-    gss_OID_set_desc                    extension_oids;
-#endif
     FILE *                              context_tmpfile = NULL;
 
     /* Authorization variables */
@@ -1455,40 +1427,6 @@ static void doit()
                 "Not accepting connections at this time");
     }
 
-    /* We will use the assist functions here since we 
-     * don't need any special processing
-     */
-
-#if 0
-    extension_oids.elements = (gss_OID) gss_restrictions_extension;
-    extension_oids.count = 1;
-    
-    option_token.value = (void *) &extension_oids;
-
-    /* don't use this code until we require CAS for the gatekeeper */
-    major_status = gss_set_sec_context_option(
-        &minor_status,
-        &context_handle,
-        (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
-        &option_token);
-
-    if (major_status != GSS_S_COMPLETE && major_status != GSS_S_EXT_COMPAT)
-    {
-        if (logging_usrlog) 
-        {
-            globus_gss_assist_display_status(usrlog_fp,
-                                             "GSS authentication failure ",
-                                             major_status,
-                                             minor_status,
-                                             token_status);
-        }
-
-        failure4(FAILED_AUTHENTICATION,
-                 "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-                 major_status,minor_status,token_status);
-    }
-#endif
-    
     /* 
      * We will not accept limited proxies for authentication, as
      * they may have been stolen. This enforces part of the 
@@ -1894,32 +1832,6 @@ static void doit()
      */
     if (got_ping_request)
     {
-#if 0
-        char *     proxyfile;
-        int        fd, i;
-        size_t     len, bufsize;
-
-        /*
-         * DEE this is no longer needed as the delegated cred is
-         * returned, and proxy is still in memory
-         * failure will cleanup the delegated cred. 
-         */
-        if ( ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
-             && ((fd = open(proxyfile, O_RDWR, 0600) >= 0))  )
-        {
-            len = lseek(fd, 0, SEEK_END);
-            lseek(fd, 0, SEEK_SET);
-            bufsize = sizeof(tmpbuf);
-            for (i=0; i<bufsize; i++)
-                tmpbuf[i] = 0;
-
-            for (i=0; i<len; )
-                i += write(fd, tmpbuf, MIN(bufsize, len-i));
-
-            close(fd);
-            unlink(proxyfile);
-        }
-#endif
         failure(FAILED_PING, "ping successful");
     }
 
