@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2010 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -175,7 +175,8 @@ const gss_OID_desc * const gss_restrictions_extension;
                        Define module specific variables
 ******************************************************************************/
 #define MAXARGS 256
-#define DEFAULT_PORT 754
+#define DEFAULT_SERVICENAME "gsigatekeeper"
+#define DEFAULT_PORT 2119
 #define MAX_MESSAGE_LENGTH 100000
 #ifndef GRAM_K5_EXE
 #       define GRAM_K5_EXE "globus-k5"
@@ -246,7 +247,7 @@ static char *   libexecdir = NULL;
 static char *   libexecdirr = GLOBUS_LIBEXECDIR;
 static char *   service_name = NULL;
 static char *   grid_services = "etc/grid-services";
-static char *   gridmap = "etc/gridmap";
+static char *   gridmap = NULL;
 static char *   globuskmap = "etc/globuskmap";
 static char *   globuscertdir = "cert";
 static char *   globuskeydir = "key";
@@ -559,12 +560,12 @@ main(int xargc,
 #endif
 
     /* 
-     * Don't allow logins of /etc/nologins is defined. 
+     * Don't allow logins of /etc/nologin exists. 
      * Silently ignore them, as the sysadmin
      * must have other problems.
      */
 
-    if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
+    if (access("/etc/nologin", F_OK) == 0)
     {
         exit (1);
     }
@@ -574,10 +575,20 @@ main(int xargc,
     gatekeeper_uid = getuid();
     if (gatekeeper_uid == 0)
     {
+        struct servent * servent;
         /*
-         * If root, use DEFAULT_PORT
+         * If root, use standard service port
          */
-        daemon_port = DEFAULT_PORT;
+        servent = getservbyname(DEFAULT_SERVICENAME, "tcp");
+
+        if (servent == NULL)
+        {
+            daemon_port = DEFAULT_PORT;
+        }
+        else
+        {
+            daemon_port = servent->s_port;
+        }
     }
     else
     {
@@ -964,7 +975,10 @@ main(int xargc,
         setenv("GLOBUS_LOCATION",gatekeeperhome,1);
     }
         
-    setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
+    if (gridmap != NULL)
+    {
+        setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
+    }
 
     if (x509_cert_dir)
     {
