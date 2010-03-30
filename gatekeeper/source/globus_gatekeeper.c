@@ -195,7 +195,6 @@ static char *   acctfile;
 static volatile int	logrotate;
 static pid_t    gatekeeper_pid;
 static unsigned reqnr;
-static char     test_dat_file[1024];
 static int      gatekeeper_test;
 static int      gatekeeper_uid;
 static int      daemon_port;
@@ -206,8 +205,6 @@ static int      foreground;
 static int      krb5flag;
 static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
-static char *   job_manager_exe = "globus-job-manager";
-static char *   jm_conf_path = NULL;
 static char *   libexecdir = NULL;
 static char *   libexecdirr = GLOBUS_LIBEXECDIR;
 static char *   service_name = NULL;
@@ -574,7 +571,6 @@ main(int xargc,
         (void) open("/dev/null",O_WRONLY);
     }
 
-    *test_dat_file = '\0';
     /*
      * Parse the command line arguments
      */
@@ -689,28 +685,6 @@ main(int xargc,
                  && (i + 1 < argc))
         {
             grid_services = argv[i+1];
-            i++;
-        }
-        /* The jmconf and -jm are left here during the 
-         * cutover to the 1.1 so as to not have to change
-         * the deploy scripts just yet. 
-         */
-        else if ((strcmp(argv[i], "-jmconf") == 0)
-                 && (i + 1 < argc))
-        {
-            jm_conf_path =  argv[i+1];
-            i++;
-        }
-        else if ((strcmp(argv[i], "-jm") == 0)
-                 && (i + 1 < argc))
-        {
-            job_manager_exe =  argv[i+1];
-            i++;
-        }
-        else if ((strcmp(argv[i], "-t") == 0)
-                 && (i + 1 < argc))
-        {
-            strncpy(test_dat_file, argv[i+1],sizeof(test_dat_file));
             i++;
         }
         else if (strcmp(argv[i], "-test") == 0)
@@ -1959,18 +1933,8 @@ static void doit()
         unsetenv("GLOBUSKEYDIR"); /* unset it */
         unsetenv("X509_USER_KEY"); /* unset it */
         unsetenv("X509_USER_CERT"); /* unset it */
-
-	/* SLANG - can't unset this, otherwise jobmanager won't know where to look. */
-	/* unsetenv("X509_USER_PROXY"); */ /* unset it  */
     }
 
-    /* for tranition, if gatekeeper has the path, set it
-     * for the grid_services to use 
-     */
-    if (jm_conf_path && !strncmp(service_name,"jobmanager",10))
-    {
-        setenv("JM_CONF_PATH",jm_conf_path,1);
-    } 
     /* 
      * If the gssapi_ssleay did delegation, promote the
      * delegated proxy file to the user proxy file
