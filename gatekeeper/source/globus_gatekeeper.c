@@ -14,28 +14,22 @@
  * limitations under the License.
  */
 
-/******************************************************************************
-gram_gatekeeper.c
- 
-Description:
-    Resource Managemant gatekeeper.
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
+/**
+ * @file gram_gatekeeper.c Resource Managemant gatekeeper
+ *
+ * CVS Information:
+ *
+ *  $Source$
+ *  $Date$
+ *  $Revision$
+ *  $Author$
+ *
+ * This source file has been modified by Brent Milne (BMilne@lbl.gov)
+ * with extensions for UNICOS.
+ * September 1998
+ */
 
- This source file has been modified by Brent Milne (BMilne@lbl.gov)
- with extensions for UNICOS.
- September 1998
- 
-******************************************************************************/
-
-/******************************************************************************
-                             Include header files
-******************************************************************************/
+/* Include header files */
 #if defined(_AIX32) && !defined(_ALL_SOURCE)
 #define _ALL_SOURCE
 #endif
@@ -59,10 +53,6 @@ CVS Information:
 #include <netdb.h>
 #include <netinet/in.h>
 
-#if defined (HAVE_NETINET_TCP_H)
-#   include <netinet/tcp.h>
-#endif
-
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -70,16 +60,9 @@ CVS Information:
 #include <sys/signal.h>
 #include <sys/wait.h>
 
-#ifdef HAVE_MALLOC_H
-#   include <malloc.h>
-#endif
 
 #include "globus_gss_assist.h"
 #include "gssapi.h"
-
-#ifndef _HAVE_GSI_EXTENDED_GSSAPI
-#include "globus_gss_ext_compat.h"
-#endif
 
 #if defined(TARGET_ARCH_SOLARIS)
 #include <termios.h>
@@ -111,10 +94,6 @@ CVS Information:
 #include <proj.h>
 #endif
 
-#if !defined(MAXPATHLEN) 
-#   define MAXPATHLEN PATH_MAX
-#endif
-
 #ifndef HAVE_SETENV
 extern int setenv();
 #endif
@@ -124,6 +103,7 @@ extern void unsetenv();
 #endif
 
 #include "globus_gatekeeper_utils.h"
+#include "globus_gsi_system_config.h"
 
 /******************************************************************************
                                Type definitions
@@ -181,10 +161,6 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #endif
 #ifndef LOGFILE
 #define LOGFILE ""
-#endif
-
-#ifndef PATH_MAX
-#define PATH_MAX MAXPATHLEN
 #endif
 
 #define FAILED_AUTHORIZATION        1
@@ -328,16 +304,13 @@ terminate(int s)
     }
     failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
 }
-/******************************************************************************
-Function:       reaper()
-Description:    Wait for any child processes that have terminated.
-Parameters:
-Returns:
-******************************************************************************/
+
+/**
+ * @brief Wait for any child processes that have terminated
+ */
 void 
 reaper(int s)
 {
-    int pid;
 #   ifdef HAS_WAIT_UNION_WAIT
     union wait status;
 #   else
@@ -347,9 +320,9 @@ reaper(int s)
     if (launch_method == DONT_FORK) return;
 
 #   ifdef HAS_WAIT3
-    while ((pid = wait3(&status, WNOHANG, NULL)) > 0) ;
+    while (wait3(&status, WNOHANG, NULL) > 0) ;
 #   else
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) ;
+    while (waitpid(-1, &status, WNOHANG) > 0) ;
 #   endif
 } /* reaper() */
 
@@ -519,7 +492,6 @@ main(int xargc,
     int    rc;
     netlen_t   namelen;
     struct sockaddr_in name;
-    struct stat         statbuf;
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
@@ -540,7 +512,6 @@ main(int xargc,
      * Silently ignore them, as the sysadmin
      * must have other problems.
      */
-
     if (access("/etc/nologin", F_OK) == 0)
     {
         exit (1);
@@ -588,34 +559,7 @@ main(int xargc,
          * gatekeeperhome (-home path) when not run from inetd. 
          * otherwise it is NULL
          */
-#if defined(TARGET_ARCH_LINUX) || defined(TARGET_ARCH_SOLARIS)
-        /*
-         * There is a memory corruption bug in the getcwd in
-         * glibc-2.1.1 and earlier
-         *
-         * Solaris 2.5.1 does not have a correct implementation
-         * of getcwd either.
-         *
-         */
-        {
-            char tmppath[PATH_MAX];
-
-            if(getwd(tmppath))
-            {
-                gatekeeperhome = strdup(tmppath);
-            }
-        }
-#else
-        {
-            char *tmppath = NULL;
-            int size = 1;
-            while ( (tmppath = getcwd (NULL, size)) == NULL )
-            {
-                size++;
-            }
-            gatekeeperhome = tmppath;
-        }
-#endif
+        GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&gatekeeperhome);
         run_from_inetd = 0;
     }
     else
