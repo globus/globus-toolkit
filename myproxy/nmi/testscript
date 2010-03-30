@@ -58,6 +58,11 @@ BuildGT()
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make globus_usage gsi-myproxy install
     cd ..
+    echo ==================================================
+    echo Installing autotools...
+    cd autotools
+    ./install-autotools $GLOBUS_LOCATION
+    cd ..
 }
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
     installer="gt4.0.8-all-source-installer.tar.gz"
@@ -66,7 +71,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
-    installer="gt5.0.0-all-source-installer.tar.gz"
+    installer="gt5.0.1-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
     installerdir="$_CONDOR_SCRATCH_DIR/gt5-src"
     BuildGT
@@ -103,12 +108,8 @@ BuildMyProxyCVS()
     flavor=`gpt-query -name=myproxy | perl -n -e 'if (/myproxy-(.*)-pgm/){print "$1\n";}'|head -1`
     echo GPT flavor is $flavor.
     echo ==================================================
-    echo Installing autotools...
-    cd autotools
-    ./install-autotools $GLOBUS_LOCATION
-    echo ==================================================
     echo Building MyProxy...
-    cd ../myproxy
+    cd myproxy
     ./bootstrap
     ./configure --with-flavor=$flavor $MYPROXY_CONFIG_OPTS
     make dist
