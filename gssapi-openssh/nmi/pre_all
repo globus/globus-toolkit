@@ -1,0 +1,3 @@
+#!/bin/sh
+cp gssapi-openssh/nmi/tasklist.nmi .
+exit 0
