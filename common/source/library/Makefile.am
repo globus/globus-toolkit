@@ -63,8 +63,6 @@ Sources= \
 	globus_thread_common.h \
 	globus_thread_$(GLOBUS_THREADS).c \
 	globus_thread_$(GLOBUS_THREADS).h \
-	globus_thread_external.c \
-	globus_thread_external.h \
 	globus_thread_pool.c \
 	globus_thread_pool.h \
 	globus_thread_rw_mutex.c \
@@ -154,11 +152,7 @@ EXTRA_DIST = \
 	globus_thread_none.c \
 	globus_thread_none.h \
 	globus_thread_pthreads.c \
-	globus_thread_pthreads.h \
-	globus_thread_solaristhreads.c \
-	globus_thread_solaristhreads.h \
-	globus_thread_sproc.c \
-	globus_thread_sproc.h
+	globus_thread_pthreads.h
 
 EXTRA_HEADERS = \
         globus_netos_dir.h

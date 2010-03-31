@@ -47,17 +47,8 @@ if test "$lac_cv_threads_vars_set" != "yes" ; then
         no)
             LAC_THREADS_NONE
             ;;
-        solaristhreads)
-            LAC_THREADS_SOLARISTHREADS
-            ;;
         pthreads)
             LAC_THREADS_PTHREADS
-            ;;
-        sproc)
-            LAC_THREADS_SPROC
-            ;;
-        external)
-            LAC_THREADS_EXTERNAL
             ;;
         *)
             AC_MSG_ERROR([--with-threads=$lac_cv_threads_type is not a valid thread package])
@@ -89,134 +80,6 @@ lac_threads_LIBS=""
 LAC_THREADS_ADD_DEFINE(BUILD_LITE)
 ])
 
-
-dnl LAC_THREADS_SOLARISTHREADS
-AC_DEFUN([LAC_THREADS_SOLARISTHREADS],
-[
-if test "$lac_cv_threads_type" = "solaristhreads" -o "$lac_cv_threads_type" = "yes" ; then
-
-AC_MSG_CHECKING(for solaristhreads)
-
-    case "$host" in
-        *solaris2* )
-            found_inc="no"
-            found_lib="no"
-
-            LAC_FIND_USER_INCLUDE(thread,$lac_thread_include_path,
-                [found_inc="yes"
-                 lac_thread_include_path="$ac_find_inc_dir"
-                ])
-
-            LAC_FIND_USER_LIB(thread,$lac_thread_library_path,
-                [found_lib="yes"
-                 lac_thread_library_path="$ac_find_lib_dir"
-                 lac_thread_library_file="$ac_find_lib_file"
-                ])
-
-            if test "$found_inc" = "yes" -a "$found_lib" = "yes" ; then
-                lac_cv_threads_type="solaristhreads"
-                LAC_THREADS_ADD_DEFINE(HAVE_SOLARISTHREADS)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-                lac_cv_threads_CFLAGS="$lac_cv_threads_CFLAGS -D_REENTRANT"
-                lac_cv_threads_LIBS="-lthread"
-            else
-                 AC_MSG_ERROR([solaris thread package not found!!])
-                 exit 1
-
-            fi
-        ;;
-        *)
-                 AC_MSG_ERROR([solaris thread package not supported on this platform])
-                 exit 1
-        ;;
-    esac
-    AC_MSG_RESULT($found_lib)
-fi
-])
-
-dnl LAC_THREADS_EXTERNAL
-AC_DEFUN([LAC_THREADS_EXTERNAL],
-[
-if test "$lac_cv_threads_type" = "external"; then
-dnl These are forced to yes, relying on the user to set the
-dnl --with-thread-library appropriately
-    found_inc="yes"
-    found_lib="yes"
-
-    lac_cv_threads_type="external"
-    LAC_THREADS_ADD_DEFINE(HAVE_EXTERNALTHREADS)
-    lac_cv_threads_LIBS="$lac_thread_library_path"
-    lac_cv_threads_CFLAGS="-I$lac_thread_include_path -D_REENTRANT"
-    
-    case "$host" in
-        mips-sgi-irix6* )
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)     
-            LAC_THREADS_ADD_DEFINE(_SGI_MP_SOURCE)      
-        ;;
-        *-ibm-aix4* )
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-        ;;
-        *solaris2* )
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)     
-        ;;
-        *86-*-linux* )
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)     
-        ;;
-        *ia64-*linux* )
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)     
-        ;;
-        * )
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)     
-        ;;
-    esac
-fi
-])
-
-
-dnl LAC_THREADS_SPROC
-AC_DEFUN([LAC_THREADS_SPROC],
-[
-if test "$lac_cv_threads_type" = "sproc" -o "$lac_cv_threads_type" = "yes" ; then
-
-AC_MSG_CHECKING(for sproc)
-
-   case "$host" in 
-        *irix*)
-        found_inc="no"
-
-            LAC_FIND_USER_INCLUDE(sys/prctl,$lac_thread_include_path,
-                [found_inc="yes"
-                 lac_thread_include_path="$ac_find_inc_dir"
-                ])
-
-            if test "$found_inc" = "yes" ; then
-                lac_cv_threads_type="sproc"
-                LAC_THREADS_ADD_DEFINE(HAVE_SPROC)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-                LAC_THREADS_ADD_DEFINE(_SGI_MP_SOURCE)
-                lac_cv_threads_LIBS="-lmutex"
-            else
-                 AC_MSG_ERROR([sproc package not found!!])
-                 exit 1
-            fi
-        ;;
-        *)
-                 AC_MSG_ERROR([sproc package not supported on this platform])
-                 exit 1
-        ;;
-
-    esac
-fi
-    AC_MSG_RESULT($found_inc)
-])
 
 dnl LAC_THREADS_PTHREADS
 AC_DEFUN([LAC_THREADS_PTHREADS],
@@ -415,10 +278,7 @@ AC_DEFUN([LAC_THREADS_DEFINE],
 for lac_def in $lac_cv_threads_defines
 do
     case $lac_def in
-        LAC_THREADS_DEFINE_ONE(HAVE_SOLARISTHREADS)
         LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD)
-        LAC_THREADS_DEFINE_ONE(HAVE_SPROC)
-        LAC_THREADS_DEFINE_ONE(HAVE_EXTERNALTHREADS)
         LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_DRAFT_4)
         LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_DRAFT_6)
         LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_DRAFT_8)
