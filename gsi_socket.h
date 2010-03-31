@@ -42,7 +42,7 @@ void GSI_SOCKET_destroy(GSI_SOCKET *gsi_socket);
  * GSI_SOCKET_get_error_string()
  *
  * Fills in buffer with a NUL-terminated string (possibly multi-lined)
- * describing  * the last error the occurred with this GSI_SOCKET.
+ * describing the last error the occurred with this GSI_SOCKET.
  * bufferlen should be the size of buffer. It returns the number of
  * characters actually put into buffer (not including the trailing
  * NUL).
