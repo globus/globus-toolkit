@@ -375,6 +375,11 @@ main(int argc, char *argv[])
      * we then exec the program with the rest of the parameters.
      */
 
+    if (newargv[0] == NULL)
+    {
+        fprintf(stderr, "Missing command to execute\n");
+        exit(EXIT_FAILURE);
+    }
     newpath = strdup(newargv[0]);
 
     cp = strrchr(newpath, '/');
