@@ -20,12 +20,14 @@ require Grid::GPT::Setup;
 my $metadata =
     new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup");
 
+use Globus::Core::Paths;
+
 my $globusdir	= $ENV{GLOBUS_LOCATION};
-my $setupdir	= "$globusdir/setup/globus";
-my $sysconfdir	= "$globusdir/etc";
-my $libexecdir	= "$globusdir/libexec";
-my $bindir	= "$globusdir/bin";
-my $sbindir	= "$globusdir/sbin";
+my $setupdir	= "$Globus::Core::Paths::setupdir";
+my $sysconfdir	= "$Globus::Core::Paths::sysconfdir";
+my $libexecdir	= "$Globus::Core::Paths::libexecdir";
+my $bindir	= "$Globus::Core::Paths::bindir";
+my $sbindir	= "$Globus::Core::Paths::sbindir";
 my $state_dir   = "$globusdir/tmp/gram_job_state";
 my $help	= 0;
 my $auditing_dir = '';   
@@ -149,12 +151,12 @@ sub setup_audit_dir
 
 sub setup_job_manager_conf
 {
-    my ($gatekeeper_port, $gatekeeper_subject);
+    my ($gatekeeper_port, $gatekeeper_subject) = (0, "unknown");
     my ($hostname, $cpu, $manufacturer, $os_name, $os_version);
     my ($toolkit_version);
     my $jm_conf	= "${sysconfdir}/globus-job-manager.conf";
     my $conf_file;
-    my $toolkit_version = `${globusdir}/bin/globus-version` || "unknown";
+    my $toolkit_version = `${bindir}/globus-version` || "unknown";
 
     chomp($toolkit_version);
 
@@ -193,15 +195,31 @@ sub get_gatekeeper_info
     my ($gatekeeper_conf_filename) = $_[0];
     my ($host_cert_line, $host_cert_file, $subject, $port) = ();
 
-    print "Reading gatekeeper configuration file...\n";
-    if ( ! -f "$gatekeeper_conf_filename" )
+    $port = 0;
+    if (-f "$gatekeeper_conf_filename")
     {
-       die "File \"$gatekeeper_conf_filename\" not found.\n";
-    }
+        print "Reading gatekeeper configuration file...\n";
 
-    chomp($host_cert_line = `grep x509_user_cert $gatekeeper_conf_filename`);
-    $host_cert_file = (split(/x509_user_cert/, $host_cert_line))[1];
-    $host_cert_file =~ s/^\s+//; #strip leading whitespace
+        chomp($host_cert_line = `grep x509_user_cert $gatekeeper_conf_filename`);
+        $host_cert_file = (split(/x509_user_cert/, $host_cert_line))[1];
+        $host_cert_file =~ s/^\s+//; #strip leading whitespace
+
+        my $port = 0;
+        if ( open(GK_CONF, $gatekeeper_conf_filename) )
+        {
+          $port =(m/^(\s*)-port\s+([0-9]+)/)[1] while(! $port && ($_=<GK_CONF>));
+          close GK_CONF;
+        }
+    }
+    elsif (-r '/etc/grid-security/hostcert.pem')
+    {
+        print "No gatekeeper configuration file, checking default cert...\n";
+        $host_cert_file = "/etc/grid-security/hostcert.pem";
+    }
+    else
+    {
+        print "Unable to determine gatekeeper certificate name\n";
+    }
 
     if ( ! -r "$host_cert_file" )
     {
@@ -209,7 +227,7 @@ sub get_gatekeeper_info
 Warning: Host cert file: $host_cert_file not found.  Re-run
          setup-globus-gram-job-manager after installing host cert file.
 EOF
-       $subject="unavailable at time of install";
+       $subject="unknown";
     }
     else
     {
@@ -217,19 +235,16 @@ EOF
              `${bindir}/grid-cert-info -subject -file $host_cert_file`);
        if ( $? != 0 )
        {
-	  die "Failed getting subject from host certificate: $host_cert_file.";
+	print STDERR <<EOF;
+Warning: Host cert file: $host_cert_file does not contain a certificate.
+         Re-run setup-globus-gram-job-manager after installing host cert file.
+EOF
+	  $subject = "unknown";
        }
        else
        {
 	  $subject =~ s/^\s+//; #strip leading whitespace
        }
-    }
-
-    my $port = 0;
-    if ( open(GK_CONF, $gatekeeper_conf_filename) )
-    {
-      $port =(m/^(\s*)-port\s+([0-9]+)/)[1] while(! $port && ($_=<GK_CONF>));
-      close GK_CONF;
     }
 
     return ($subject, $port);
@@ -241,7 +256,7 @@ sub get_system_info
 
     print "Determining system information...\n";
     chomp($hostname = `${bindir}/globus-hostname`);
-    ($cpu, $manufacturer) = (split(/-/, `${sbindir}/config.guess`))[0,1];
+    ($cpu, $manufacturer) = (split(/-/, `${libexecdir}/config.guess`))[0,1];
     $uname_cmd = &lookup_shell_command("GLOBUS_SH_UNAME");
 
     chomp($os_name=`$uname_cmd -s`);
@@ -264,7 +279,7 @@ sub lookup_shell_command
 
     $cmdvar = $_[0];
 
-    chomp($cmd = `$bindir/globus-sh-exec -e echo \\\$$cmdvar`);
+    chomp($cmd = `${bindir}/globus-sh-exec -e echo \\\$$cmdvar`);
 
     return $cmd;
 }
