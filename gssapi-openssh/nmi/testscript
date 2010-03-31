@@ -23,13 +23,6 @@ if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     LIBPATH=$LD_LIBRARY_PATH
     export LIBPATH
 fi
-echo ==================================================
-echo Environment variables:
-env
-echo ==================================================
-echo Directory contents:
-ls -Rl
-echo ==================================================
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildZLib"; then
     if test ! -d $ZLIB_LOCATION; then
         echo Building zlib-1.2.3...
@@ -43,6 +36,9 @@ fi
 BuildGT()
 {
     export GLOBUS_LOCATION
+    echo ==================================================
+    echo Environment variables:
+    env
     echo ==================================================
     echo Installing $installer to $GLOBUS_LOCATION
     tar xfz $installer
@@ -61,19 +57,19 @@ BuildGT()
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
     installer="gt4.0.8-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt4"
-    installerdir="$_CONDOR_SCRATCH_DIR/gt4-src"
+    installerdir="gt4-src"
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
     installer="gt5.0.1-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
-    installerdir="$_CONDOR_SCRATCH_DIR/gt5-src"
+    installerdir="gt5-src"
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installer="nightly.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt-nightly"
-    installerdir="$_CONDOR_SCRATCH_DIR/gt-nightly-src"
+    installerdir="gt-nightly-src"
     BuildGT
 fi
 BuildGSISSHTrunk()
@@ -138,15 +134,14 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGTNightly";
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT4"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt4
-    BuildGSISSHTrunk
+    BuildGSISSHGPT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT5"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
-    BuildGSISSHTrunk
+    BuildGSISSHGPT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGTNightly"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
-    BuildGSISSHTrunk
+    BuildGSISSHGPT
 fi
-done
 ) 2>&1 # we want stdout & stderr mixed in the output file
