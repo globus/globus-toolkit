@@ -46,9 +46,6 @@ BuildGT()
     echo ==================================================
     echo Environment variables:
     env
-    echo ==================================================
-    echo Directory contents:
-    ls -Rl
     export GLOBUS_LOCATION
     echo ==================================================
     echo Installing $installer to $GLOBUS_LOCATION
