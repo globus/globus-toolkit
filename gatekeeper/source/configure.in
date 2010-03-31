@@ -72,6 +72,9 @@ if test "x$xml_catalog_path" != x"notset"; then
     fi
 fi
 
+eval SYSCONFDIR="$sysconfdir"
+AC_DEFINE_UNQUOTED(SYSCONFDIR, "$SYSCONFDIR", [Read-only single machine data])
+
 AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
 
 GLOBUS_FINALIZE

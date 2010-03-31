@@ -1,27 +1,19 @@
-'\" t
 .\"     Title: globus-gatekeeper
-.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 12/01/2009
-.\"    Manual: University of Chicago
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
+.\"      Date: 03/30/2010
+.\"    Manual: Globus Toolkit
 .\"    Source: University of Chicago
-.\"  Language: English
 .\"
-.TH "GLOBUS\-GATEKEEPER" "8" "12/01/2009" "University of Chicago" "University of Chicago"
-.\" -----------------------------------------------------------------
-.\" * set default formatting
-.\" -----------------------------------------------------------------
+.TH "GLOBUS\-GATEKEEPER" "8" "03/30/2010" "University of Chicago" "Globus Toolkit"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
-.\" -----------------------------------------------------------------
-.\" * MAIN CONTENT STARTS HERE *
-.\" -----------------------------------------------------------------
 .SH "NAME"
 globus-gatekeeper \- Authorize and execute a grid service on behalf of a user
 .SH "SYNOPSIS"
-.HP \w'\fBglobus\-gatekeeper\fR\ 'u
+.HP 18
 \fBglobus\-gatekeeper\fR [\-help]
 .br
 [\-conf\ \fIPARAMETER_FILE\fR]
@@ -67,7 +59,7 @@ program is a meta\-server similar to
 \fBinetd\fR
 or
 \fBxinetd\fR
-that starts other services after authenticating the TCP connection using GSSAPI\&.
+that starts other services after authenticating a TCP connection using GSSAPI and mapping the client\'s credential to a local account\&.
 .PP
 The most common use for the
 \fBglobus\-gatekeeper\fR
@@ -75,7 +67,9 @@ program is to start instances of the
 \fBglobus-job-manager\fR(8)
 service\&. A single
 \fBglobus\-gatekeeper\fR
-deployment can handle multiple different service configurations by having entries in the grid\-services directory\&.
+deployment can handle multiple different service configurations by having entries in the
+\fI/etc/grid\-services\fR
+directory\&.
 .PP
 Typically, users interact with the
 \fBglobus\-gatekeeper\fR
@@ -138,7 +132,7 @@ Listen for connections on the TCP/IP port
 \fIPORT\fR\&. This option has no effect if the
 \fBglobus\-gatekeeper\fR
 is started via inetd or a similar service\&. If not specified and the gatekeeper is running as root, the default of
-754
+2119
 is used\&. Otherwise, the gatekeeper defaults to an ephemeral port\&.
 .RE
 .PP
@@ -147,27 +141,34 @@ is used\&. Otherwise, the gatekeeper defaults to an ephemeral port\&.
 Sets the gatekeeper deployment directory to
 \fIPATH\fR\&. This is used to interpret relative paths for accounting files, libexecdir, certificate paths, and also to set the
 \fBGLOBUS_LOCATION\fR
-environment variable in the service environment\&. If not specified, the gatekeeper uses its working directory\&.
+environment variable in the service environment\&. If not specified, the gatekeeper looks for service executables in
+\fI/usr/sbin\fR, configuration in
+\fI/etc\fR, and writes logs and accounting files to
+\fI/var/log\fR\&.
 .RE
 .PP
 \-l \fILOGFILE\fR, \-logfile \fILOGFILE\fR
 .RS 4
-Write status log entries to
-\fILOGFILE\fR
+Write log entries to
+\fILOGFILE\fR\&.
 .RE
 .PP
-\-acctfile \fIACCTFILE\fR
+\fB\-acctfile \fR\fB\fIACCTFILE\fR\fR
 .RS 4
 Set the path to write accounting records to
-\fIACCTFILE\fR\&. If not set, no accounting records will be written\&.
+\fIACCTFILE\fR\&. If not set, records will be written to the log file\&.
 .RE
 .PP
 \-e \fILIBEXECDIR\fR
 .RS 4
 Look for service executables in
-\fILIBEXECDIR\fR\&. If not specified, the default of
-\fIHOME\fR/libexec
-is used\&.
+\fILIBEXECDIR\fR\&. If not specified, the
+\fIsbin\fR
+subdirectory of the parameter to
+\fB\-home\fR
+is used, or
+\fI/usr/sbin\fR
+if that is not set\&.
 .RE
 .PP
 \-launch_method fork_and_exit|fork_and_wait|dont_fork
@@ -185,11 +186,7 @@ system call\&.
 \-grid_services \fISERVICEDIR\fR
 .RS 4
 Look for service descriptions in
-\fISERVICEDIR\fR\&. If this is a relative path, it is interpreted relative to the
-\fIHOME\fR
-value\&. If this is not specified, the default of
-\fIHOME\fR/etc/grid\-services
-is used\&.
+\fISERVICEDIR\fR\&.
 .RE
 .PP
 \-globusid \fIGLOBUSID\fR
@@ -204,9 +201,7 @@ environment variable to
 .RS 4
 Use the file at
 \fIGRIDMAP\fR
-to map GSSAPI names to POSIX user names\&. If not specified, the default of
-\fIHOME\fR/etc/grid\-mapfile
-is used\&.
+to map GSSAPI names to POSIX user names\&.
 .RE
 .PP
 \-x509_cert_dir \fITRUSTED_CERT_DIR\fR
@@ -216,11 +211,6 @@ Use the directory
 to locate trusted CA X\&.509 certificates\&. The gatekeeper sets the environment variable
 \fBX509_CERT_DIR\fR
 to this value\&.
-.RE
-.PP
-\-x509_cert_file \fITRUSTED_CERT_FILE\fR
-.RS 4
-OBSOLETE GSI OPTION
 .RE
 .PP
 \-x509_user_cert \fICERT_PATH\fR
@@ -249,19 +239,21 @@ environment variable to this value\&.
 .PP
 \-k
 .RS 4
-Assume authentication with Kerberos 5 GSSAPI instead of X\&.509 GSSAPI\&.
+Use the
+\fBglobus\-k5\fR
+command to acquire Kerberos 5 credentials before starting the service\&.
 .RE
 .PP
 \-globuskmap \fIKMAP\fR
 .RS 4
-Assume authentication with Kerberos 5 GSSAPI instead of X\&.509 GSSAPI and use
+Use
 \fIKMAP\fR
-as the path to the kerberos principal to POSIX user mapping file\&.
+as the path to the Grid credential to kerberos initialization mapping file\&.
 .RE
 .SH "ENVIRONMENT"
 .PP
 If the following variables affect the execution of
-\fBglobus\-gatekeeper\fR
+\fBglobus\-gatekeeper\fR:
 .PP
 X509_CERT_DIR
 .RS 4
@@ -282,21 +274,44 @@ X509_USER_KEY
 .RS 4
 Path to file containing an X\&.509 user key\&.
 .RE
+.PP
+GLOBUS_LOCATION
+.RS 4
+Default path to gatekeeper service files\&.
+.RE
 .SH "FILES"
 .PP
 .PP
-\fB$GLOBUS_LOCATION\fR/etc/globus\-gatekeeper\&.conf
-.RS 4
-Default path to gatekeeper configuration file\&.
-.RE
-.PP
-\fB$GLOBUS_LOCATION\fR/etc/grid\-services/\fISERVICENAME\fR
+\fI/etc/grid\-services/\fR\fI\fISERVICENAME\fR\fR
 .RS 4
 Service configuration for
 \fISERVICENAME\fR\&.
 .RE
+.PP
+\fI/etc/grid\-security/grid\-mapfile\fR
+.RS 4
+Default file mapping Grid identities to POSIX identities\&.
+.RE
+.PP
+\fI/etc/globuskmap\fR
+.RS 4
+Default file mapping Grid identities to Kerberos 5 principals\&.
+.RE
+.PP
+\fI/etc/globus\-nologin\fR
+.RS 4
+File to disable the
+\fBglobus\-gatekeeper\fR
+program\&.
+.RE
+.PP
+\fI/var/log/globus\-gatekeeper\&.log\fR
+.RS 4
+Default gatekeeper log\&.
+.RE
 .SH "SEE ALSO"
 .PP
 
+\fBglobus-k5\fR(8),
 \fBglobusrun\fR(1),
 \fBglobus-job-manager\fR(8)

@@ -153,9 +153,6 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #ifndef GRAM_K5_EXE
 #       define GRAM_K5_EXE "globus-k5"
 #endif
-#ifndef GLOBUS_LIBEXECDIR
-#  define GLOBUS_LIBEXECDIR "libexec"
-#endif
 #ifndef GLOBUS_GATEKEEPER_HOME
 #       define GLOBUS_GATEKEEPER_HOME "/etc"
 #endif
@@ -206,16 +203,13 @@ static int      krb5flag;
 static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
 static char *   libexecdir = NULL;
-static char *   libexecdirr = GLOBUS_LIBEXECDIR;
+static char *   logdir = NULL;
 static char *   service_name = NULL;
 static char *   grid_services = "etc/grid-services";
 static char *   gridmap = NULL;
-static char *   globuskmap = "etc/globuskmap";
-static char *   globuscertdir = "cert";
-static char *   globuskeydir = "key";
+static char *   globuskmap = "/etc/globuskmap";
 static char *   globusnologin ="globus-nologin";
 static char *   x509_cert_dir = NULL;
-static char *   x509_cert_file = NULL;
 static char *   x509_user_proxy = NULL;
 static char *   x509_user_cert = NULL;
 static char *   x509_user_key = NULL;
@@ -352,7 +346,7 @@ new_acct_file(void)
 	if (strcmp(acctfile, logfile) != 0)
 	{
 	    static int seqnr;
-            char *acctpath = genfilename(gatekeeperhome, acctfile, NULL);
+            char *acctpath = genfilename(logdir, acctfile, NULL);
 	    char *oldpath = malloc(strlen(acctpath) + 64);
 	    time_t clock = time((time_t *) 0);
 	    struct tm *tmp = localtime(&clock);
@@ -392,7 +386,7 @@ new_acct_file(void)
     if (acctfile && *acctfile)
     {
 	const char *acct_fd_var = "GATEKEEPER_ACCT_FD";
-	char *acctpath = genfilename(gatekeeperhome, acctfile, NULL);
+	char *acctpath = genfilename(logdir, acctfile, NULL);
 
 	acct_fd = open(acctpath, O_WRONLY | O_APPEND | O_CREAT, 0644);
 
@@ -552,19 +546,13 @@ main(int xargc,
     namelen = sizeof(name);
     if (getpeername(0, (struct sockaddr *) &name, &namelen) < 0)
     {
-        /* set current working directory as default for 
-         * gatekeeperhome (-home path) when not run from inetd. 
-         * otherwise it is NULL
-         */
-        GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&gatekeeperhome);
         run_from_inetd = 0;
     }
     else
     {
         run_from_inetd = 1;
-        gatekeeperhome = GLOBUS_GATEKEEPER_HOME;
         /* 
-         * cant have stdout pointing at socket, some of the
+         * can't have stdout pointing at socket, some of the
          * old-old gssapi code writes to stdout so point at stderr
          */
         close(1);
@@ -671,14 +659,14 @@ main(int xargc,
         else if ((strcmp(argv[i], "-home") == 0)
                  && (i + 1 < argc))
         {
-            /* Also known as the ${deploy_prefix} */
+            /* Also known as $GLOBUS_LOCATION */
             gatekeeperhome = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-e") == 0)
                  && (i + 1 < argc))
         {
-            libexecdirr = argv[i+1];
+            libexecdir = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-grid_services") == 0)
@@ -704,18 +692,6 @@ main(int xargc,
             gridmap = argv[i+1];
             i++;
         }
-        else if ((strcmp(argv[i], "-globuskeydir") == 0)
-                 && (i + 1 < argc))
-        {
-            globuskeydir = argv[i+1];
-            i++;
-        }
-        else if ((strcmp(argv[i], "-globuscertdir") == 0)
-                 && (i + 1 < argc))
-        {
-            globuscertdir = argv[i+1];
-            i++;
-        }
         
         /* set environment variables used by gssapi_ssleay */
 
@@ -723,12 +699,6 @@ main(int xargc,
                  && (i + 1 < argc))
         {
             x509_cert_dir = argv[i+1];
-            i++;
-        }
-        else if ((strcmp(argv[i], "-x509_cert_file") == 0)
-                 && (i + 1 < argc))
-        {
-            x509_cert_file = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-x509_user_proxy") == 0)
@@ -808,31 +778,48 @@ main(int xargc,
 	}
         else
         {
-
-            fprintf(stderr, "Unknown argument %s\n", argv[i]);
-            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n ",
+            if (strcmp(argv[i], "-help") != 0)
+            {
+                fprintf(stderr, "Unknown argument %s\n", argv[i]);
+            }
+            fprintf(stderr, "Usage: %s\n%s\n",
                     argv[0], 
-                    "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port] ",
-                    "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path] ",
-                    "[-launch_method fork_and_exit|fork_and_wait|dont_fork] "
-                    "[-grid_services file] ",
-                    "[-globusid globusid] [-gridmap file] ",
-                    "[-x509_cert_dir path] [-x509_cert_file file]",
-                    "[-x509_user_cert file] [-x509_user_key file]",
-                    "[-x509_user_proxy file]",
-                    "[-k] [-globuskmap file]",
-                    "[-test]}"
+                    "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port]\n"
+                    "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path]\n"
+                    "[-launch_method fork_and_exit|fork_and_wait|dont_fork]\n"
+                    "[-grid_services file]\n"
+                    "[-globusid globusid] [-gridmap file]\n"
+                    "[-x509_cert_dir path]\n"
+                    "[-x509_user_cert file] [-x509_user_key file]\n"
+                    "[-x509_user_proxy file]\n"
+                    "[-k] [-globuskmap file]\n"
+                    "}"
                 );
             exit(1);
         }
     }
 
-    /* 
-     * define libexec relative to home
-     * if needed
-     */
+    if (gatekeeperhome)
+    {
+        setenv("GLOBUS_LOCATION", gatekeeperhome, 1);
+        logdir = genfilename(gatekeeperhome, "var", NULL);
+    }
+    else if ((gatekeeperhome = getenv("GLOBUS_LOCATION")) != NULL)
+    {
+        logdir = genfilename(gatekeeperhome, "var", NULL);
+    }
+    else
+    {
+        gatekeeperhome = "/usr";
+        logdir = "/var/log";
+    }
 
-    libexecdir = genfilename(gatekeeperhome, libexecdirr, NULL);
+    if (libexecdir == NULL)
+    {
+        libexecdir = malloc(strlen(gatekeeperhome) + strlen("/sbin") + 1);
+        sprintf(libexecdir, "%s/sbin", gatekeeperhome);
+    }
+
 
     /*
      * Dont use default env proxy cert for gatekeeper if run as root
@@ -847,69 +834,43 @@ main(int xargc,
     if (gatekeeper_test)
     {
         fprintf(stderr,"Testing gatekeeper\n");
-        if (getuid()) 
-        {
-            fprintf(stderr,"Local user id (uid)      : %d\n",gatekeeper_uid);
-        }
-        else
-        {
-            fprintf(stderr,"Local user id (uid)      : root\n");
-        }
-        fprintf(stderr,"Home directory           : %s\n", 
-                (gatekeeperhome) ? gatekeeperhome : "(not defined)");
+        fprintf(stderr,"Local user id (uid)          : %d\n", gatekeeper_uid);
+        fprintf(stderr,"GLOBUS_LOCATION directory    : %s\n", 
+                gatekeeperhome ? gatekeeperhome : "(not defined)");
         fprintf(stderr,"Libexec directory        : %s\n",
-                (libexecdir) ? libexecdir : "(not defined)");
+                libexecdir ? libexecdir : "(not defined)");
+        fprintf(stderr,"log directory            : %s\n",
+                logdir ? logdir : "(not defined)");
 
         run_from_inetd = 0;
         foreground = 1;
     }
 
-    if (gatekeeperhome)
-    {
-        setenv("GLOBUS_LOCATION",gatekeeperhome,1);
-    }
-        
     if (gridmap != NULL)
     {
-        setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
+        setenv("GRIDMAP", gridmap, 1);
     }
 
     if (x509_cert_dir)
     {
-        setenv("X509_CERT_DIR",
-               genfilename(gatekeeperhome,x509_cert_dir,NULL),
-               1);
-    }
-    if (x509_cert_file)
-    {
-        setenv("X509_CERT_FILE",
-               genfilename(gatekeeperhome,x509_cert_file,NULL),
-               1);
+        setenv("X509_CERT_DIR", x509_cert_dir, 1);
     }
     if (x509_user_proxy)
     {
-        setenv("X509_USER_PROXY",
-               genfilename(gatekeeperhome,x509_user_proxy,NULL),
-               1);
+        setenv("X509_USER_PROXY", x509_user_proxy, 1);
     }
 
     if (x509_user_cert)
     {
-        setenv("X509_USER_CERT",
-               genfilename(gatekeeperhome,x509_user_cert,NULL),
-               1);
+        setenv("X509_USER_CERT", x509_user_cert, 1);
     }
     if (x509_user_key)
     {
-        setenv("X509_USER_KEY", 
-               genfilename(gatekeeperhome,x509_user_key,NULL),
-               1);
+        setenv("X509_USER_KEY", x509_user_key, 1);
     }
     if (krb5flag) 
     {
-        setenv("GLOBUSKMAP",
-               genfilename(gatekeeperhome,globuskmap,NULL),
-               1);
+        setenv("GLOBUSKMAP", globuskmap, 1);
     }
 
     if (run_from_inetd)
@@ -1238,7 +1199,7 @@ static void doit()
     char *                              gram_k5_path; 
     struct sockaddr_in                  peer;
     netlen_t                            peerlen;
-    char *                              peernum;
+    char *                              peernum = "";
     char *                              x509_delegate;
     size_t                              length;
     char *                              http_message;
@@ -1331,15 +1292,14 @@ static void doit()
      * if globus nologin is set, error message and exit
      */
         
-    if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
-             &statbuf) == 0)
+    if (getenv("GLOBUS_LOCATION") != NULL &&
+        access(genfilename(gatekeeperhome,"etc",globusnologin), F_OK) == 0)
     {
         failure(FAILED_NOLOGIN, 
                 "Not accepting connections at this time");
     }
 
-    if (stat(genfilename(gatekeeperhome,"var",globusnologin),
-             &statbuf) == 0)
+    if (access("/etc/globus-nologin", F_OK) == 0)
     {
         failure(FAILED_NOLOGIN, 
                 "Not accepting connections at this time");
@@ -1632,7 +1592,7 @@ static void doit()
     }
 
     if ((rc = globus_gatekeeper_util_globusxmap(
-		genfilename(gatekeeperhome,grid_services,service_name), 
+		genfilename(getenv("GLOBUS_LOCATION") ? gatekeeperhome : "",grid_services,service_name), 
 		NULL, 
 		&service_line)) != 0)
       {
@@ -1875,9 +1835,7 @@ static void doit()
             }
         }
 #       endif
-        if (stat(gram_k5_path, &statbuf) != 0)
-            failure2(FAILED_SERVER, "Cannot stat %s",gram_k5_path);
-        if (!(statbuf.st_mode & 0111))
+        if (access(gram_k5_path, X_OK) != 0)
             failure2(FAILED_SERVER, "Cannot execute %s", gram_k5_path);
         *args = gram_k5_path;
     }
@@ -2221,7 +2179,7 @@ net_accept(int skt)
 	    if (logging_usrlog)
 	    {
 		static int seqnr;
-		char *logpath = genfilename(gatekeeperhome, logfile, NULL);
+		char *logpath = genfilename(logdir, logfile, NULL);
 		char *oldpath = malloc(strlen(logpath) + 64);
 
 		sprintf(oldpath, "%s.%04d%02d%02d%02d%02d%02d.%d", logpath,
@@ -2351,7 +2309,7 @@ logging_startup(void)
 		logging_usrlog = 0;
 	    }
 
-            logfilename = genfilename(gatekeeperhome, logfile, NULL);
+            logfilename = genfilename(logdir, logfile, NULL);
 
             if ((usrlog_fp = fopen(logfilename, "a")) == NULL)
             {
