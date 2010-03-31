@@ -30,6 +30,17 @@ struct _gsi_socket
  */
 
 
+static int
+GSI_SOCKET_set_error_string(GSI_SOCKET *self,
+                            char *buffer)
+{
+    if (self->error_string) {
+        free(self->error_string);
+    }
+    self->error_string = strdup(buffer);
+    return GSI_SOCKET_SUCCESS;
+}
+
 /*
  * append_gss_status()
  *
@@ -314,7 +325,10 @@ GSI_SOCKET_set_error_from_verror(GSI_SOCKET *self)
     
     if (string != NULL)
     {
-	self->error_string = strdup(string);
+        if (self->error_string) {
+            free(self->error_string);
+        }
+        self->error_string = strdup(string);
     }
     
     self->error_number = verror_get_errno();
@@ -648,7 +662,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 
     if (self->gss_context != GSS_C_NO_CONTEXT)
     {
-	self->error_string = strdup("GSI_SOCKET already authenticated");
+	GSI_SOCKET_set_error_string(self, "GSI_SOCKET already authenticated");
 	goto error;
     }
 
@@ -681,17 +695,17 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     req_flags |= GSS_C_INTEG_FLAG;
 
     if ((sock = dup(self->sock)) < 0) {
-	self->error_string = strdup("dup() of socket fd failed");
+	GSI_SOCKET_set_error_string(self, "dup() of socket fd failed");
 	self->error_number = errno;
 	goto error;
     }
     if ((fp = fdopen(sock, "r")) == NULL) {
-	self->error_string = strdup("fdopen() of socket failed");
+	GSI_SOCKET_set_error_string(self, "fdopen() of socket failed");
 	self->error_number = errno;
 	goto error;
     }
     if (setvbuf(fp, NULL, _IONBF, 0) != 0) {
-	self->error_string = strdup("setvbuf() for socket failed");
+	GSI_SOCKET_set_error_string(self, "setvbuf() for socket failed");
 	self->error_number = errno;
 	goto error;
     }
@@ -717,8 +731,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     /* Verify that all service requests were honored. */
     req_flags &= ~(GSS_C_ANON_FLAG); /* GSI GSSAPI doesn't set this flag */
     if ((req_flags & ret_flags) != req_flags) {
-      self->error_string =
-	strdup("requested GSSAPI service not supported");
+      GSI_SOCKET_set_error_string(self,
+                                  "requested GSSAPI service not supported");
       goto error;
     }
 
@@ -733,14 +747,14 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 					     &server_gss_name,
 					     NULL, NULL, NULL, NULL, NULL);
     if (self->major_status != GSS_S_COMPLETE) {
-	self->error_string = strdup("gss_inquire_context() failed");
+	GSI_SOCKET_set_error_string(self, "gss_inquire_context() failed");
 	goto error;
     }
 
     self->major_status = gss_display_name(&self->minor_status,
 					  server_gss_name, &gss_buffer, NULL);
     if (self->major_status != GSS_S_COMPLETE) {
-	self->error_string = strdup("gss_display_name() failed");
+	GSI_SOCKET_set_error_string(self, "gss_display_name() failed");
 	goto error;
     }
 
@@ -767,7 +781,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	    char error_string[550];
 	    sprintf(error_string, "failed to import GSS name \"%.500s\"",
 		    accepted_peer_names[i]);
-	    self->error_string = strdup(error_string);
+	    GSI_SOCKET_set_error_string(self, error_string);
 	    goto error;
 	}
 	self->major_status = gss_compare_name(&self->minor_status,
@@ -779,7 +793,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	    sprintf(error_string,
 		    "gss_compare_name(\"%.500s\",\"%.500s\") failed",
 		    self->peer_name, accepted_peer_names[i]);
-	    self->error_string = strdup(error_string);
+	    GSI_SOCKET_set_error_string(self, error_string);
 	    goto error;
 	}
 
@@ -793,7 +807,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	}
     }
     if (!rc) {		/* no match with acceptable target names */
-	self->error_string = strdup("authenticated peer name does not match");
+	GSI_SOCKET_set_error_string(self, "authenticated peer name does not match");
 	return_value = GSI_SOCKET_UNAUTHORIZED;
 	goto error;
     }
@@ -833,7 +847,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     }
 
     if (self->gss_context != GSS_C_NO_CONTEXT) {
-	self->error_string = strdup("GSI_SOCKET already authenticated");
+	GSI_SOCKET_set_error_string(self, "GSI_SOCKET already authenticated");
 	goto error;
     }
 
@@ -862,17 +876,17 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     gss_flags |= GSS_C_INTEG_FLAG;
 
     if ((sock = dup(self->sock)) < 0) {
-	self->error_string = strdup("dup() of socket fd failed");
+	GSI_SOCKET_set_error_string(self, "dup() of socket fd failed");
 	self->error_number = errno;
 	goto error;
     }
     if ((fp = fdopen(sock, "r")) == NULL) {
-	self->error_string = strdup("fdopen() of socket failed");
+	GSI_SOCKET_set_error_string(self, "fdopen() of socket failed");
 	self->error_number = errno;
 	goto error;
     }
     if (setvbuf(fp, NULL, _IONBF, 0) != 0) {
-	self->error_string = strdup("setvbuf() for socket failed");
+    GSI_SOCKET_set_error_string(self, "setvbuf() for socket failed");
 	self->error_number = errno;
 	goto error;
     }
@@ -936,7 +950,7 @@ GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
     
     if (self->peer_name == NULL)
     {
-	self->error_string = strdup("Client not authenticated");
+	GSI_SOCKET_set_error_string(self, "Client not authenticated");
 	goto error;
     }
     
@@ -966,7 +980,7 @@ GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
     if (getpeername(self->sock, (struct sockaddr *) &addr,
 		    &addr_len) < 0) {
 	self->error_number = errno;
-	self->error_string = strdup("Could not get peer address");
+	GSI_SOCKET_set_error_string(self, "Could not get peer address");
 	return NULL;
     }
 
@@ -975,7 +989,7 @@ GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
 			 addr.sin_family);
     if ((info == NULL) || (info->h_name == NULL)) {
 	self->error_number = errno;
-	self->error_string = strdup("Could not get peer hostname");
+	GSI_SOCKET_set_error_string(self, "Could not get peer hostname");
 	return NULL;
     }
 
@@ -986,7 +1000,7 @@ GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
 	    char buf[MAXHOSTNAMELEN];
 	    if (gethostname(buf, sizeof(buf)) < 0) {
 		self->error_number = errno;
-		self->error_string = strdup("gethostname() failed");
+		GSI_SOCKET_set_error_string(self, "gethostname() failed");
 		return NULL;
 	    }
 	    info = gethostbyname(buf);
@@ -1038,11 +1052,12 @@ GSI_SOCKET_get_peer_fqans(GSI_SOCKET *self, char ***fqans)
    struct voms **voms_cert  = NULL;
    char **fqan = NULL;
    int voms_err;
-   char *err_msg;
+   char *err_msg, *err_str;
 
    voms_data = VOMS_Init(NULL, NULL);
    if (voms_data == NULL) {
-      self->error_string = strdup("Failed to read VOMS attributes, VOMS_Init() failed");
+      GSI_SOCKET_set_error_string(self,
+                    "Failed to read VOMS attributes, VOMS_Init() failed");
       return GSI_SOCKET_ERROR;
    }
 
@@ -1055,10 +1070,12 @@ GSI_SOCKET_get_peer_fqans(GSI_SOCKET *self, char ***fqans)
 	 goto end;
       } else {
          err_msg = VOMS_ErrorMessage(voms_data, voms_err, NULL, 0);
-         self->error_string = (char *)malloc(strlen(err_msg)+50);
-         snprintf(self->error_string, strlen(err_msg)+50,
+         err_str = (char *)malloc(strlen(err_msg)+50);
+         snprintf(err_str, strlen(err_msg)+50,
                   "Failed to read VOMS attributes: %s", err_msg);
+         GSI_SOCKET_set_error_string(self, err_str);
 	 free(err_msg);
+     free(err_str);
 	 ret = GSI_SOCKET_ERROR;
 	 goto end;
       }
@@ -1114,7 +1131,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	if (return_value == -1)
 	{
 	    self->error_number = errno;
-	    self->error_string = strdup("failed to write token");
+	    GSI_SOCKET_set_error_string(self, "failed to write token");
 	    goto error;
 	}
     }
@@ -1142,7 +1159,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	}
 	
 	if (!conf_state) {
-	  self->error_string = strdup("GSI_SOCKET failed to encrypt");
+	  GSI_SOCKET_set_error_string(self, "GSI_SOCKET failed to encrypt");
 	  goto error;
 	}
 	
@@ -1152,7 +1169,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	if (return_value == -1)
 	{
 	    self->error_number = errno;
-	    self->error_string = strdup("failed to write token");
+	    GSI_SOCKET_set_error_string(self, "failed to write token");
 	    gss_release_buffer(&self->minor_status, &wrapped_buffer);
 	    goto error;
 	}
@@ -1202,14 +1219,14 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 	if (bytes_read == -1)
 	{
 	    self->error_number = errno;
-	    self->error_string = strdup("failed to read token");
+	    GSI_SOCKET_set_error_string(self, "failed to read token");
 	    goto error;
 	}
 
     if (bytes_read == 0)
     {
 	    self->error_number = errno;
-	    self->error_string = strdup("connection closed");
+	    GSI_SOCKET_set_error_string(self, "connection closed");
 	    goto error;
     }
 
@@ -1247,7 +1264,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     if (bytes_read == 0)
     {
 	    self->error_number = errno;
-	    self->error_string = strdup("connection closed");
+	    GSI_SOCKET_set_error_string(self, "connection closed");
 	    goto error;
     }
 
@@ -1322,7 +1339,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
-	self->error_string = strdup("GSI_SOCKET not authenticated");
+	GSI_SOCKET_set_error_string(self, "GSI_SOCKET not authenticated");
 	goto error;
     }
 
@@ -1367,7 +1384,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
                                 input_buffer_length,
                                 response);
         myproxy_free(NULL, NULL, response);
-        self->error_string = strdup("server-side error: check server logs");
+        GSI_SOCKET_set_error_string(self, "server-side error: check server logs");
         goto error;
     }
 
@@ -1472,7 +1489,7 @@ GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
     
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
-	self->error_string = strdup("GSI_SOCKET not authenticated");
+	GSI_SOCKET_set_error_string(self, "GSI_SOCKET not authenticated");
 	return GSI_SOCKET_ERROR;
     }
 
@@ -1508,7 +1525,8 @@ GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
                                 input_buffer_len,
                                 response);
         myproxy_free(NULL, NULL, response);
-        self->error_string = strdup("server-side error: check server logs");
+        GSI_SOCKET_set_error_string(self,
+                                    "server-side error: check server logs");
         goto error;
     }
 
@@ -1655,7 +1673,7 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
 
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
-      self->error_string = strdup("GSI_SOCKET not authenticated");
+      GSI_SOCKET_set_error_string(self, "GSI_SOCKET not authenticated");
       goto error;
     }
 
@@ -1771,7 +1789,7 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
 
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
-      self->error_string = strdup("GSI_SOCKET not authenticated");
+      GSI_SOCKET_set_error_string(self, "GSI_SOCKET not authenticated");
       goto error;
     }
 
@@ -1816,7 +1834,7 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
 
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
-      self->error_string = strdup("GSI_SOCKET not authenticated");
+      GSI_SOCKET_set_error_string(self, "GSI_SOCKET not authenticated");
       goto error;
     }
 
