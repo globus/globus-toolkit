@@ -174,6 +174,7 @@ typedef enum
     globus_url_sync_endpoint_type_dir,
 } globus_url_sync_endpoint_type_t;
 
+
 /**
  * Endpoint statistics. File oriented statistics for the endpoint.
  *
@@ -195,10 +196,26 @@ typedef struct globus_url_sync_endpoint_stats_s
  */
 typedef struct globus_url_sync_endpoint_s
 {
-    char *                                  url;
-    globus_ftp_client_handle_t *            ftp_handle;
-    globus_url_sync_endpoint_stats_t        stats;
+    char *                              url;
+    globus_ftp_client_handle_t *        ftp_handle;
+    globus_url_sync_endpoint_stats_t    stats;
 } globus_url_sync_endpoint_t;
+
+/**
+ * @ingroup globus_i_url_sync
+ *
+ * Maintains state for the sync argument.
+ */
+typedef struct globus_l_url_sync_arg_s
+{
+    globus_url_sync_handle_t                handle;
+    globus_list_t *                         entries;
+    globus_url_sync_endpoint_t *            source;
+    globus_url_sync_endpoint_t *            destination;
+    globus_url_sync_endpoint_t *            compare_source;
+    globus_url_sync_endpoint_t *            compare_destination;
+    struct globus_l_url_sync_arg_s *        parent;
+} globus_l_url_sync_arg_t;
 
 /**
  * @defgroup globus_url_sync_comparators Synchronize Comparators

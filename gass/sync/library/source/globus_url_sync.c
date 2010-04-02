@@ -43,7 +43,7 @@
 
 /* Constants */
 
-static const int globus_l_url_sync_BUFLEN           = GLOBUS_URL_SYNC_DIR_ENTRY_LENGTH_MAX + 1;
+static const int globus_l_url_sync_BUFLEN = GLOBUS_URL_SYNC_DIR_ENTRY_LENGTH_MAX + 1;
 
 /* Types */
 
@@ -52,16 +52,6 @@ static const int globus_l_url_sync_BUFLEN           = GLOBUS_URL_SYNC_DIR_ENTRY_
  *
  * Maintains state for the sync argument.
  */
-typedef struct globus_l_url_sync_arg_s
-{
-    globus_url_sync_handle_t                handle;
-    globus_list_t *                         entries;
-    globus_url_sync_endpoint_t *            source;
-    globus_url_sync_endpoint_t *            destination;
-    globus_url_sync_endpoint_t *            compare_source;
-    globus_url_sync_endpoint_t *            compare_destination;
-    struct globus_l_url_sync_arg_s *        parent;
-} globus_l_url_sync_arg_t;
 
 static
 globus_l_url_sync_arg_t *
@@ -119,7 +109,54 @@ globus_l_url_sync_make_new_endpoint(
     /* Free the new url, and return new endpoint */
     globus_libc_free(new_url);
     return new_endpoint;
-}
+} /* globus_l_url_sync_make_new_endpoint */
+
+/** Makes a new source endpoint object by parsing mlst results and
+    concatenating the base url with the child. */
+static
+globus_url_sync_endpoint_t *
+globus_l_url_sync_make_src_endpoint(
+				    const globus_url_sync_endpoint_t *      base,
+				    const char *                            mlst_results,
+				    char * child)
+{
+  globus_url_sync_endpoint_t *            new_endpoint;
+  char *                                  new_url;
+  unsigned int                            base_len, child_len;
+  
+  globus_assert(base);
+  globus_assert(base->url);
+  globus_assert(child);
+  
+  base_len = globus_libc_strlen(base->url);
+  globus_assert(base_len);
+  
+  new_endpoint = globus_libc_malloc(sizeof(globus_url_sync_endpoint_t));
+  
+  memset(new_endpoint, 0, sizeof(globus_url_sync_endpoint_t));
+  globus_assert(new_endpoint);
+  
+  parse_mlst_buffer(new_endpoint, (char *)mlst_results, child);
+  child_len = globus_libc_strlen(child);
+  globus_assert(child_len);
+  
+  /* Allocate new url and pad with room for '/' and '\0' */
+  new_url = globus_libc_malloc(sizeof(char) * (base_len + 1 + child_len + 1));
+  globus_assert(new_url);
+  
+  /* Concat urls to form new url */
+  strcpy(new_url, base->url);
+  *(new_url+base_len) = '/';
+  strcpy((new_url+base_len+1), child);
+  
+  /* Init new endpoint */
+  new_endpoint->url = strdup(new_url);
+  new_endpoint->ftp_handle = base->ftp_handle;
+  
+  /* Free the new url, and return new endpoint */
+  globus_libc_free(new_url);
+  return new_endpoint;
+} /* globus_l_url_sync_make_src_endpoint */
 
 static
 void
@@ -231,36 +268,41 @@ globus_url_sync(
     char                                    source_str[globus_l_url_sync_BUFLEN];
     char                                    destination_str[globus_l_url_sync_BUFLEN];
     GlobusFuncName(globus_url_sync);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     if(handle == GLOBUS_NULL)
     {
-	return globus_error_put(
+	result = globus_error_put(
 		GLOBUS_I_URL_SYNC_ERROR_NULL_PARAMETER("handle"));
+	goto exit;
     }
 
     if(source_url == GLOBUS_NULL)
     {
-	return globus_error_put(
+	result = globus_error_put(
 		GLOBUS_I_URL_SYNC_ERROR_NULL_PARAMETER("source"));
+	goto exit;
     }
 
     if(destination_url == GLOBUS_NULL)
     {
-	return globus_error_put(
+	result = globus_error_put(
 		GLOBUS_I_URL_SYNC_ERROR_NULL_PARAMETER("dest"));
+	goto exit;
     }
 
     if(complete_callback == GLOBUS_NULL)
     {
-	return globus_error_put(
+	result = globus_error_put(
 		GLOBUS_I_URL_SYNC_ERROR_NULL_PARAMETER("complete_callback"));
+	goto exit;
     }
 
     if(result_callback == GLOBUS_NULL)
     {
-	return globus_error_put(
+	result = globus_error_put(
 		GLOBUS_I_URL_SYNC_ERROR_NULL_PARAMETER("result_callback"));
+	goto exit;
     }
 
     /* Copy URL structs to char* buffers */
@@ -274,8 +316,9 @@ globus_url_sync(
 			globus_i_url_sync_log_debug("source: %s ('file' not currrently supported)\n", source_str);
 			/* fall through */
 		default:
-			return globus_error_put(
+			result = globus_error_put(
 				GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("source scheme"));
+			goto exit;
 	}
 	switch (destination_url->scheme_type) {
 		case GLOBUS_URL_SCHEME_GSIFTP:
@@ -287,8 +330,9 @@ globus_url_sync(
 			globus_i_url_sync_log_debug("destination: %s ('file' not currrently supported)\n", destination_str);
 			/* fall through */
 	default:
-			return globus_error_put(
+			result = globus_error_put(
 				GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("destination scheme"));
+			goto exit;
 	}
 
     /* Populate handle with caller's settings */
@@ -299,8 +343,9 @@ globus_url_sync(
             globus_i_url_sync_handle_unlock(handle);
             globus_i_url_sync_log_write(GLOBUS_URL_SYNC_LOG_LEVEL_ERROR,
                     "handle (%p) is already in use\n", handle);
-            return globus_error_put(
+            result = globus_error_put(
                     GLOBUS_I_URL_SYNC_ERROR_HANDLE_IN_USE());
+	    goto exit;
         }
 
         if (globus_i_url_sync_handle_activate(handle))
@@ -308,8 +353,9 @@ globus_url_sync(
             globus_i_url_sync_handle_unlock(handle);
             globus_i_url_sync_log_write(GLOBUS_URL_SYNC_LOG_LEVEL_ERROR,
                     "handle (%p) could not be activated\n", handle);
-            return globus_error_put(
+            result = globus_error_put(
                     GLOBUS_I_URL_SYNC_ERROR_HANDLE_IN_USE());
+	    goto exit;
         }
 
         ftp_attr = GLOBUS_NULL;
@@ -318,30 +364,39 @@ globus_url_sync(
         globus_i_url_sync_endpoint_init(&source, source_str,
                 (globus_ftp_client_handle_t *)
                 globus_libc_malloc(sizeof(globus_ftp_client_handle_t)));
-		if (globus_url_sync_handle_get_cache_connections(handle))
-		{
-			/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
-			ftp_attr = (globus_ftp_client_handleattr_t *)
-				globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
-			globus_ftp_client_handleattr_init(ftp_attr);
-			globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
-		}
-        globus_ftp_client_handle_init(source->ftp_handle, ftp_attr);
+	if (globus_url_sync_handle_get_cache_connections(handle))
+	{
+		/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
+		ftp_attr = 
+		  (globus_ftp_client_handleattr_t *)
+		  globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
+		globus_ftp_client_handleattr_init(ftp_attr);
+		globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
+		globus_ftp_client_handle_init(source->ftp_handle, ftp_attr);
+		globus_ftp_client_handleattr_destroy(ftp_attr);
+	} else {
+		globus_ftp_client_handle_init(source->ftp_handle, ftp_attr);
+	}
+
         globus_i_url_sync_handle_set_source(handle, source);
 
         /* Initialize destination endpoint */
         globus_i_url_sync_endpoint_init(&destination, destination_str,
                 (globus_ftp_client_handle_t *)
                 globus_libc_malloc(sizeof(globus_ftp_client_handle_t)));
-		if (globus_url_sync_handle_get_cache_connections(handle))
-		{
-			/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
-			ftp_attr = (globus_ftp_client_handleattr_t *)
-				globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
-			globus_ftp_client_handleattr_init(ftp_attr);
-			globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
-		}
-        globus_ftp_client_handle_init(destination->ftp_handle, ftp_attr);
+	if (globus_url_sync_handle_get_cache_connections(handle))
+	{
+		/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
+		ftp_attr = 
+		  (globus_ftp_client_handleattr_t *)
+		  globus_libc_malloc(sizeof(globus_ftp_client_handleattr_t));
+		globus_ftp_client_handleattr_init(ftp_attr);
+		globus_ftp_client_handleattr_set_cache_all(ftp_attr, GLOBUS_TRUE);
+		globus_ftp_client_handle_init(destination->ftp_handle, ftp_attr);
+		globus_ftp_client_handleattr_destroy(ftp_attr);
+	} else {
+		globus_ftp_client_handle_init(destination->ftp_handle, ftp_attr);
+	}
         globus_i_url_sync_handle_set_destination(handle, destination);
 
         /* Initialize callback and arg */
@@ -359,6 +414,8 @@ globus_url_sync(
         globus_i_url_sync_log_error(globus_error_peek(result));
     }
 
+ exit:
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return result;
 }
 /* globus_url_sync */
@@ -373,7 +430,7 @@ globus_l_url_sync(
     globus_result_t                         result;
     globus_url_sync_comparator_t *          comparator;
     GlobusFuncName(globus_l_url_sync);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     /* Get comparator */
     comparator = globus_i_url_sync_handle_get_comparator(handle);
@@ -386,6 +443,7 @@ globus_l_url_sync(
             globus_l_url_sync_compare_func_top_cb,
             (void*) handle);
 
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return result;
 }
 /* globus_l_url_sync */
@@ -407,7 +465,7 @@ globus_l_url_sync_compare_func_top_cb(
     void *                                      callback_arg;
     globus_l_url_sync_arg_t *                   sync_arg;
     GlobusFuncName(globus_l_url_sync_compare_func_top_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     /* Get the callbacks and user argument from the handle */
     globus_assert(arg);
@@ -470,6 +528,7 @@ globus_l_url_sync_compare_func_top_cb(
          * inactive.
          */
     }
+      GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
 }
 /* globus_l_url_sync_compare_func_top_cb */
 
@@ -488,7 +547,7 @@ globus_l_url_sync_list_complete_cb(
     globus_l_url_sync_arg_t *               sync_arg;
     globus_bool_t                           done;
     GlobusFuncName(globus_l_url_sync_list_complete_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
 
     sync_arg = (globus_l_url_sync_arg_t*) user_arg;
     globus_assert(sync_arg);
@@ -510,6 +569,7 @@ globus_l_url_sync_list_complete_cb(
         globus_url_sync_handle_t        handle;
         globus_url_sync_comparator_t *  comparator;
         char *                          entry;
+	char child[GLOBUS_I_URL_SYNC_FILENAME_BUFLEN];
 
         /* Get handle */
         handle = sync_arg->handle;
@@ -525,17 +585,18 @@ globus_l_url_sync_list_complete_cb(
 
             /* Make new endpoints */
             sync_arg->compare_source =
-                    globus_l_url_sync_make_new_endpoint(sync_arg->source, entry);
+	      globus_l_url_sync_make_src_endpoint(sync_arg->source, entry, child);
+
             sync_arg->compare_destination =
-                    globus_l_url_sync_make_new_endpoint(sync_arg->destination, entry);
+                    globus_l_url_sync_make_new_endpoint(sync_arg->destination, child);
 
             /* Compare source and destination */
             result = comparator->compare_func(
-                    comparator->comparator_arg,
-                    sync_arg->compare_source,
-                    sync_arg->compare_destination,
-                    globus_l_url_sync_compare_func_recurse_cb,
-                    (void*) sync_arg);
+                         comparator->comparator_arg,
+			 sync_arg->compare_source,
+			 sync_arg->compare_destination,
+			 globus_l_url_sync_compare_func_recurse_cb,
+			 (void*) sync_arg);
 
             /* If failed, then clean up the compare source and dest */
             if (result != GLOBUS_SUCCESS)
@@ -600,6 +661,7 @@ globus_l_url_sync_list_complete_cb(
             user_callback(user_arg, handle, GLOBUS_NULL);
         }
     }
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(ftp_handle, "");
 }
 /* globus_l_url_sync_list_complete_cb */
 
@@ -619,7 +681,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     void *                                      callback_arg;
     globus_l_url_sync_arg_t *                   sync_arg;
     GlobusFuncName(globus_l_url_sync_compare_func_recurse_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     /* Get the callbacks and user argument from the handle */
     globus_assert(arg);
@@ -687,6 +749,7 @@ globus_l_url_sync_compare_func_recurse_cb(
         sync_arg->compare_destination = GLOBUS_NULL;
         globus_l_url_sync_list_complete_cb(sync_arg, GLOBUS_NULL, GLOBUS_NULL);
     }
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
 }
 /* globus_l_url_sync_compare_func_recurse_cb */
 
@@ -703,65 +766,65 @@ globus_l_url_sync_url2str(
 
     pstr = buf;
 
-	/* Copy scheme and "://" */
-	if (url->scheme != NULL) {
-		size = strlen(url->scheme)+3;
+    /* Copy scheme and "://" */
+    if (url->scheme != NULL) {
+        size = strlen(url->scheme)+3;
+	if (len <= size)
+	    return NULL;
+	globus_libc_snprintf(pstr, len, "%s://", url->scheme);
+	pstr += size;
+	len -= size;
+    } else {
+        return NULL;
+    }
+	
+    /* Copy Host */
+    if (strcmp(url->scheme, "gsiftp") == 0) {
+        if (url->host != NULL) {
+	    size = strlen(url->host);
+	    if (len <= size)
+	        return NULL;
+	    strncpy(pstr, url->host, len);
+	    pstr += size;
+	    len -= size;
+	    
+	    /* Copy ":" and Port */
+	    if (url->port != 0) {
+	        size = 7;
 		if (len <= size)
-			return NULL;
-		globus_libc_snprintf(pstr, len, "%s://", url->scheme);
+		    return NULL;
+		globus_libc_snprintf(pstr, len, ":%d", url->port);
+		size = strlen(pstr);
 		pstr += size;
 		len -= size;
+	    }
 	} else {
-		return NULL;
-	}
+	    return NULL;
+	}	
+    }
 	
-	/* Copy Host */
-	if (strcmp(url->scheme, "gsiftp") == 0) {
-		if (url->host != NULL) {
-			size = strlen(url->host);
-			if (len <= size)
-				return NULL;
-			strncpy(pstr, url->host, len);
-			pstr += size;
-			len -= size;
-			
-			/* Copy ":" and Port */
-			if (url->port != 0) {
-				size = 7;
-				if (len <= size)
-					return NULL;
-				globus_libc_snprintf(pstr, len, ":%d", url->port);
-				size = strlen(pstr);
-				pstr += size;
-				len -= size;
-			}
-		} else {
-			return NULL;
-		}	
-	}
-	
-	/* Copy Path */
-	if (url->url_path != NULL) {
-		char *prefix = "";
+    /* Copy Path */
+    if (url->url_path != NULL) {
+        char *prefix = "";
 		
-		/* If path is relative, start it with "/~". */
-		if ((strncmp(url->url_path, "//", 2) != 0) && 
-			(strncmp(url->url_path, "/~", 2) != 0)) {
-			if ((strncmp(url->url_path, "~", 1) == 0)) {
-				prefix = "/";
-			} else if ((strncmp(url->url_path, "/", 1) == 0)) {
-				prefix = "/~";
-			}
-		}
-		size = strlen(url->url_path) + strlen(prefix);
-		if (len <= size)
-			return NULL;
-		globus_libc_snprintf(pstr, len, "%s%s", prefix, url->url_path);
-		pstr += size;
-		len -= size;
-	} else {
-		return NULL;
+	/* If path is relative, start it with "/~". */
+	if ((strncmp(url->url_path, "//", 2) != 0) && 
+	    (strncmp(url->url_path, "/~", 2) != 0)) {
+	    if ((strncmp(url->url_path, "~", 1) == 0)) {
+	        prefix = "/";
+	    } else if ((strncmp(url->url_path, "/", 1) == 0)) {
+	        prefix = "/~";
+	    }
 	}
+	size = strlen(url->url_path) + strlen(prefix);
+	if (len <= size)
+	    return NULL;
+	globus_libc_snprintf(pstr, len, "%s%s", prefix, url->url_path);
+	pstr += size;
+	len -= size;
+    } else {
+        return NULL;
+    }
 	
     return buf;
 } /* globus_l_url_sync_url2str */

@@ -38,7 +38,6 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-
 /*
  * Macros
  */
@@ -46,10 +45,9 @@
 /** Is the buffer CRLF? */
 #define globus_l_url_sync_list_is_crlf(buf)     (*(buf)=='\r' && *((buf)+1)=='\n')
 /** Is the buffer self (".")? */
-#define globus_l_url_sync_list_is_self(buf)     (*(buf)=='.' && *((buf)+1)=='\0')
+#define globus_l_url_sync_list_is_self(buf)     ((strncmp(&buf[5],"cdir",4))==0)
 /** Is the buffer parent ("..")? */
-#define globus_l_url_sync_list_is_parent(buf)   (*(buf)=='.' && *((buf)+1)=='.' && *((buf)+2)=='\0')
-
+#define globus_l_url_sync_list_is_parent(buf)   ((strncmp(&buf[5],"pdir",4))==0)
 
 /*
  * Constants
@@ -57,7 +55,8 @@
 
 static const int globus_l_url_sync_list_CRLF_LENGTH     = 2;
 static const int globus_l_url_sync_list_BUFLEN          = GLOBUS_URL_SYNC_DIR_ENTRY_LENGTH_MAX + 1;
-
+const char *        GLOBUS_L_URL_SYNC_MSLT_TYPE_FILE    = "file";
+const char *        GLOBUS_L_URL_SYNC_MSLT_TYPE_DIR     = "dir";
 
 /*
  * Types
@@ -98,6 +97,66 @@ typedef struct
 /*
  * Functions
  */
+
+/**
+ * Helper function to be used to parse MLST-format results.
+ *
+ * @ingroup globus_i_url_sync_list
+ * 
+ * @param endpoint
+ *
+ * @param buffer
+ *
+ * @param name
+ *   *** name is assumed to be large enough to hold filename, 
+ *       e.g. GLOBUS_I_URL_SYNC_FILENAME_BUFLEN bytes *** 
+ **/
+
+void
+parse_mlst_buffer(
+		  globus_url_sync_endpoint_t * endpoint,
+		  globus_byte_t * buffer,
+		  char * name)
+{
+    char            type[16];
+    unsigned long   size;
+    struct tm       time_tm;
+    type[0] = '\0';
+    name[0] = '\0';
+    size = 0;
+    memset(&time_tm, 0, sizeof(struct tm));
+	
+    globus_assert(buffer);
+    globus_i_url_sync_log_debug("buffer: %s\n", buffer);
+	
+    sscanf((char *)buffer,
+		   "Type=%[^;];Modify=%4d%2d%2d%2d%2d%2d;Size=%lu;%*s%s",
+		   type,
+		   &(time_tm.tm_year),
+		   &(time_tm.tm_mon),
+		   &(time_tm.tm_mday),
+		   &(time_tm.tm_hour),
+		   &(time_tm.tm_min),
+		   &(time_tm.tm_sec),
+		   &size,
+		   name);
+    time_tm.tm_mon--;
+    time_tm.tm_year -= 1900;
+	
+    globus_i_url_sync_log_debug(
+			"Name: %s, Type: %s, Size: %lu, Modify: %s\n", name, type,
+			size, asctime(&time_tm));
+	
+    /* Copy to endpoint statistics */
+    endpoint->stats.exists = GLOBUS_TRUE;
+    endpoint->stats.type = 
+	strcmp(GLOBUS_L_URL_SYNC_MSLT_TYPE_DIR, type) ?
+          globus_url_sync_endpoint_type_file :
+          globus_url_sync_endpoint_type_dir;
+    endpoint->stats.size = size;
+    endpoint->stats.modify_tm = time_tm;
+	
+} /* parse_mlst_buffer */
 
 /**
  * @ingroup globus_i_url_sync_list
@@ -204,7 +263,7 @@ globus_l_url_sync_list_ftp_read_cb(
  * @ingroup globus_i_url_sync_list
  *
  * GridFTP Client operation complete callback. The function frees internal
- * resources used by the list operation helper and calls the user callback.
+endpoi* resources used by the list operation helper and calls the user callback.
  *
  * @param   user_arg
  *          The user argument. Must be a globus_l_url_sync_list_arg_t.
@@ -227,7 +286,6 @@ globus_l_url_sync_list_ftp_complete_cb(
  * Implementation
  */
 
-
 globus_result_t
 globus_i_url_sync_list(
     const char *                            url,
@@ -239,8 +297,9 @@ globus_i_url_sync_list(
 {
     globus_l_url_sync_list_arg_t *          list_arg;
     globus_result_t                         result;
+    globus_ftp_client_operationattr_t	    attr;
     GlobusFuncName(globus_i_url_sync_list);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
 
     /* This is not a public API, so asserts will be used to check parameters.
      * FTP handle is optional. */
@@ -248,16 +307,18 @@ globus_i_url_sync_list(
     globus_assert(entries);
     globus_assert(complete_callback);
 
+    globus_ftp_client_operationattr_init(&attr);
+
     /* Construct list argument */
     list_arg = globus_l_url_sync_list_arg_cons(
             url, ftp_handle, entries, complete_callback, callback_arg);
     globus_assert(list_arg);
 
     /* FTP List */
-    result = globus_ftp_client_list(
+    result = globus_ftp_client_machine_list(
         list_arg->ftp_handle,
         list_arg->url,
-        GLOBUS_NULL, /* operation attribute optional */
+        &attr, 				/* operation attribute optional */
         globus_l_url_sync_list_ftp_complete_cb,
         list_arg);
 
@@ -286,7 +347,8 @@ globus_i_url_sync_list(
 
     /* Completed */
     globus_i_url_sync_log_debug(
-            "globus_url_sync completed (result: %d)\n", result);
+            "globus_i_url_sync_list completed (result: %d)\n", result);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
     return result;
 }
 /* globus_i_url_sync_list */
@@ -310,17 +372,18 @@ globus_l_url_sync_list_ftp_read_cb(
     globus_result_t                         result;
     int                                     buffer_pos;
     GlobusFuncName(globus_l_url_sync_list_ftp_read_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
-    globus_i_url_sync_log_debug("%d bytes read\n", length);
 
     if (error)
     {
+	GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
         globus_i_url_sync_log_error(error);
-        return;
+        goto exit;
     }
 
     list_arg = (globus_l_url_sync_list_arg_t*) user_arg;
     globus_assert(list_arg);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(list_arg->ftp_handle, list_arg->url);
+    globus_i_url_sync_log_debug("%d bytes read\n", length);
 
     /* Copy entries to buffer and add them to the list of entries */
     buffer_pos = 0;
@@ -334,7 +397,7 @@ globus_l_url_sync_list_ftp_read_cb(
                 /* Terminate current entry position and reset */
                 list_arg->entry[list_arg->entry_pos] = '\0';
                 list_arg->entry_pos = 0;
-                globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
+		globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
             }
             buffer_pos += globus_l_url_sync_list_CRLF_LENGTH;
         }
@@ -349,11 +412,11 @@ globus_l_url_sync_list_ftp_read_cb(
     if (eof)
     {
         globus_i_url_sync_log_debug("end of file (EOF) reached\n");
-        return;
+        goto exit;
     }
 
     /* Register read operation */
-    result = globus_ftp_client_register_read(ftp_handle, buffer, length,
+    result = globus_ftp_client_register_read(list_arg->ftp_handle, buffer, length,
             globus_l_url_sync_list_ftp_read_cb, user_arg);
 
     /* Report error and abort, if failed */
@@ -362,6 +425,8 @@ globus_l_url_sync_list_ftp_read_cb(
         globus_i_url_sync_log_error(globus_error_get(result));
         globus_ftp_client_abort(ftp_handle);
     }
+exit:
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
 }
 /* globus_l_url_sync_ftp_list_read_cb */
 
@@ -378,7 +443,6 @@ globus_l_url_sync_list_ftp_complete_cb(
 {
     globus_l_url_sync_list_arg_t *          list_arg;
     GlobusFuncName(globus_l_url_sync_list_ftp_complete_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
 
     if (error)
     {
@@ -386,11 +450,14 @@ globus_l_url_sync_list_ftp_complete_cb(
     }
 
     list_arg = (globus_l_url_sync_list_arg_t*) user_arg;
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(list_arg->ftp_handle, list_arg->url);
     globus_assert(list_arg);
     list_arg->complete_callback(list_arg->callback_arg, ftp_handle, error);
 
     /* Cleanup */
     globus_l_url_sync_list_arg_destroy(list_arg);
+
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
 }
 /* globus_l_url_sync_list_ftp_complete_cb */
 
@@ -491,7 +558,8 @@ globus_l_url_sync_list_arg_add_entry(
     globus_i_url_sync_log_debug("dir entry: %s\n", entry);
 
     /* Skip if self or parent entry */
-    if (globus_l_url_sync_list_is_self(entry) || globus_l_url_sync_list_is_parent(entry))
+    if (globus_l_url_sync_list_is_self(entry) ||
+		globus_l_url_sync_list_is_parent(entry))
         return;
 
     /* Make copy */

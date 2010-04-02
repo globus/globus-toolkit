@@ -43,14 +43,12 @@ static globus_url_t     globus_l_url_sync_args_source;
 static globus_url_t     globus_l_url_sync_args_destination;
 
 enum {
-	arg_verbose = 1,
-	arg_debug,
-#ifdef CACHE_SUPPORTED
-	arg_cache,
-#endif
-	arg_modify,
-	arg_size,
-	arg_num = arg_size,
+    arg_verbose = 1,
+    arg_debug,
+    arg_cache,
+    arg_modify,
+    arg_size,
+    arg_num = arg_size,
 };
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -67,17 +65,12 @@ static globus_args_option_descriptor_t modify_def =
   {arg_modify, modify_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t size_def =
   {arg_size, size_args, 0, GLOBUS_NULL, GLOBUS_NULL};
-#ifdef CACHE_SUPPORTED
 static globus_args_option_descriptor_t cache_def =
   {arg_cache, cache_args, 0, GLOBUS_NULL, GLOBUS_NULL};
-#endif
 
 static char * usage_str= 
-#ifdef CACHE_SUPPORTED
 "globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] <sourceURL> <destURL>";
-#else
-"globus_url_sync [-help | -usage] [-version] [-d | -v] [-m] [-s] <sourceURL> <destURL>";
-#endif
+
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
 "OPTIONS\n"
@@ -87,10 +80,8 @@ static char * help_str=
 "\tPrint the version of this program\n"
 "  -d | -debug | -v | -verbose\n"
 "\tPrint additional detail.\n"
-#ifdef CACHE_SUPPORTED
 "  -c | -use-connection-cache\n"
 "\tUse GridFTP client connection caching.\n"
-#endif
 "  -m | -modify\n"
 "\tCompare files by last modified timestamp.\n"
 "  -s | -size\n"
@@ -144,9 +135,7 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
     globus_i_url_sync_args_modify   = GLOBUS_FALSE;
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
-#ifdef CACHE_SUPPORTED
     globus_i_url_sync_args_cache    = GLOBUS_FALSE;
-#endif
 
     /* determine the program name */
 	program = strrchr(argv[0],'/');
@@ -160,56 +149,53 @@ globus_i_url_sync_parse_args(
     args_options[1] = debug_def;
     args_options[2] = modify_def;
     args_options[3] = size_def;
-#ifdef CACHE_SUPPORTED
     args_options[4] = cache_def;
-#endif
     if (globus_args_scan(
-			&argc,
-			&argv,
-			arg_num,
-			args_options,
-			program,
-			&local_version,
-			usage_str,
-			help_str,
-			&options_found,
-			NULL) < 0) {
+		&argc,
+		&argv,
+		arg_num,
+		args_options,
+		program,
+		&local_version,
+		usage_str,
+		help_str,
+		&options_found,
+		NULL) < 0) 
+    {
         /* error on argument line */
         return GLOBUS_FAILURE;
     }
     for (list = options_found;
 		 !globus_list_empty(list);
 		 list = globus_list_rest(list)) 
-	{
-		instance = globus_list_first(list);
+      {
+	instance = globus_list_first(list);
 		
-        switch(instance->id_number) {
-			case arg_verbose:
-				globus_i_url_sync_args_verbose = GLOBUS_TRUE;
-				break;
-			case arg_debug:
-				globus_i_url_sync_args_debug = GLOBUS_TRUE;
-				break;
-#ifdef CACHE_SUPPORTED
-			case arg_cache:
-				globus_i_url_sync_args_cache = GLOBUS_TRUE;
-				break;
-#endif
-			case arg_modify:
-				globus_i_url_sync_args_modify = GLOBUS_TRUE;
-				break;
-			case arg_size:
-				globus_i_url_sync_args_size = GLOBUS_TRUE;
-				break;
-			default:
-				/* should not get here */
-				break;
-		}
+	switch(instance->id_number) {
+	  case arg_verbose:
+	    globus_i_url_sync_args_verbose = GLOBUS_TRUE;
+	    break;
+	  case arg_debug:
+	    globus_i_url_sync_args_debug = GLOBUS_TRUE;
+	    break;
+	  case arg_cache:
+	    globus_i_url_sync_args_cache = GLOBUS_TRUE;
+	    break;
+	  case arg_modify:
+	    globus_i_url_sync_args_modify = GLOBUS_TRUE;
+	    break;
+	  case arg_size:
+	    globus_i_url_sync_args_size = GLOBUS_TRUE;
+	    break;
+	  default:
+	    /* should not get here */
+	    break;
 	}
+      }
 	
-	globus_args_option_instance_list_free(&options_found);
+    globus_args_option_instance_list_free(&options_found);
 	
-	/* argc should be equal to 3; argv[1] is source and argv[2] is destination */
+    /* argc should be equal to 3; argv[1] is source and argv[2] is destination */
 	
     /* Get source, destination */
     if (argc != 3) {
@@ -225,7 +211,7 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_source = &globus_l_url_sync_args_source;
 	
     if (globus_i_url_sync_args_debug)
-      globus_libc_fprintf(stderr, "Source: %s\n", globus_l_url_sync_args_source);
+        globus_libc_fprintf(stderr, "Source: %s\n", globus_l_url_sync_args_source);
 	
     result = globus_url_parse(argv[2], &globus_l_url_sync_args_destination);
     if (result != GLOBUS_URL_SUCCESS) {
@@ -242,7 +228,7 @@ globus_i_url_sync_parse_args(
     return GLOBUS_SUCCESS;
 	
 usage:
-	globus_l_url_sync_usage(program);
+    globus_l_url_sync_usage(program);
     return GLOBUS_FAILURE;
 }
 /* globus_i_url_sync_parse_args */

@@ -47,6 +47,24 @@
  * operation for listing entries of a directory.
  */
 
+/* Helper function to be used to parse MLST-format results.
+ *
+ * @ingroup globus_i_url_sync_list
+ * 
+ * @param endpoint
+ *
+ * @param buffer
+ *
+ * @param name
+ *   *** name is assumed to be large enough to hold filename, e.g. 1024 bytes ***
+ */
+
+void
+parse_mlst_buffer(
+    globus_url_sync_endpoint_t * endpoint,
+    globus_byte_t * buffer,
+    char * name);
+
 /**
  * List operation complete callback.
  *

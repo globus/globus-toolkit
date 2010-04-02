@@ -39,13 +39,22 @@
 #   endif
 #endif
 
-#define GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER()                 \
+#define GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(n, s)		    \
 	globus_i_url_sync_log_write(                        \
 		GLOBUS_URL_SYNC_LOG_LEVEL_DEBUG,            \
-		"%s : %s (%d) : enter\n",                   \
+		"%s : %s (%d) : enter (%x, %s)\n",                   \
 		__FILE__,                                   \
 		_globus_func_name,                          \
-		__LINE__)
+		__LINE__				\
+		, n, s)
+#define GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(n, s)		    \
+	globus_i_url_sync_log_write(                        \
+		GLOBUS_URL_SYNC_LOG_LEVEL_DEBUG,            \
+		"%s : %s (%d) : exit (%x, %s)\n",                    \
+		__FILE__,                                   \
+		_globus_func_name,                          \
+		__LINE__	\
+		, n, s)
 
 #define globus_i_url_sync_log_debug(...)                    \
 	globus_i_url_sync_log_write(                        \
