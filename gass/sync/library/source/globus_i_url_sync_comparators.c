@@ -34,11 +34,6 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-/* Consts */
-
-const char *        GLOBUS_L_URL_SYNC_MSLT_TYPE_FILE    = "file";
-const char *        GLOBUS_L_URL_SYNC_MSLT_TYPE_DIR     = "dir";
-
 /* Types */
 
 /** Monitor structured user locally to synchronize the asynch FTP calls. */
@@ -139,11 +134,11 @@ globus_l_url_sync_exists_func(
     globus_result_t	result = GLOBUS_SUCCESS;
 
     GlobusFuncName(globus_l_url_sync_exists_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
     
     /* Stat the source */
     if (source->stats.type == globus_url_sync_endpoint_type_unknown)
-      result = globus_l_url_sync_ftpclient_mlst(source);
+	result = globus_l_url_sync_ftpclient_mlst(source);
 	
     if (result != GLOBUS_SUCCESS)
     {
@@ -198,6 +193,7 @@ globus_l_url_sync_exists_func(
      * the docs. */
     callback_func(
 		  callback_arg, source, destination, comparison_result, error_object);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_exists_func */
@@ -219,7 +215,7 @@ globus_l_url_sync_size_func(
 {
     int                                         comparison_result;
     GlobusFuncName(globus_l_url_sync_size_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
 	
     /* Stat the source */
 	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
@@ -238,6 +234,7 @@ globus_l_url_sync_size_func(
      * in some cases... Ideally this should be better handled or confirmed in
      * the docs. */
     callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_size_func */
@@ -259,7 +256,7 @@ globus_l_url_sync_modify_func(
 {
     int                                         comparison_result;
     GlobusFuncName(globus_l_url_sync_modify_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
 	
     /* Stat the source */
 	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
@@ -280,6 +277,7 @@ globus_l_url_sync_modify_func(
      * in some cases... Ideally this should be better handled or confirmed in
      * the docs. */
     callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_modify_func */
@@ -299,7 +297,7 @@ globus_l_url_sync_chain_func(
 {
 	globus_l_url_sync_chain_func_cb_arg_t *		chain_cb_arg;
     GlobusFuncName(globus_l_url_sync_chain_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
 
 	/* Create create callback argument for the chain cb's */
 	chain_cb_arg = (globus_l_url_sync_chain_func_cb_arg_t *)
@@ -318,6 +316,7 @@ globus_l_url_sync_chain_func(
 			0,
 			GLOBUS_NULL);
 
+	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_chain_func */
@@ -338,9 +337,9 @@ globus_url_sync_compare_chain_func_cb_t (
     globus_object_t *                           error)
 {
 	globus_l_url_sync_chain_func_cb_arg_t *		chain_cb_arg;
-	globus_url_sync_comparator_t *				next_comparator;
+	globus_url_sync_comparator_t *			next_comparator;
     GlobusFuncName(globus_url_sync_compare_chain_func_cb_t);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
 	globus_assert(arg);
 
@@ -359,11 +358,12 @@ globus_url_sync_compare_chain_func_cb_t (
 		chain_cb_arg->cb_func(
 				chain_cb_arg->cb_arg, source, destination, result, error);
 		globus_libc_free(chain_cb_arg);
+	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(chain_cb_arg->cb_func, "callback");
 	}
 	else
 	{
 		/* Initiate next comparison in the list. */
-        next_comparator = (globus_url_sync_comparator_t *)
+		next_comparator = (globus_url_sync_comparator_t *)
 			globus_list_first(chain_cb_arg->list);
 		chain_cb_arg->list = globus_list_rest(chain_cb_arg->list);
 
@@ -374,10 +374,10 @@ globus_url_sync_compare_chain_func_cb_t (
 				destination,
 				globus_url_sync_compare_chain_func_cb_t,
 				chain_cb_arg);
+	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(next_comparator->compare_func, "compare_func");
 	}
 
 } /* globus_url_sync_compare_chain_func_cb_t */
-
 
 /**
  * A helper function for simplifying the MSLT operations.
@@ -391,9 +391,10 @@ globus_l_url_sync_ftpclient_mlst(
     globus_l_url_sync_monitor_t             monitor;
     globus_byte_t *                         buffer;
     globus_size_t                           buffer_length;
-	globus_ftp_client_operationattr_t       dummy;
+    globus_ftp_client_operationattr_t       dummy;
+    char			            name[GLOBUS_I_URL_SYNC_FILENAME_BUFLEN];
     GlobusFuncName(globus_l_url_sync_ftp_mlst);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(endpoint->ftp_handle, endpoint->url);
 
     /* Initialize monitor */
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
@@ -433,45 +434,7 @@ globus_l_url_sync_ftpclient_mlst(
     /* Parse MSLT buffer */
     if (buffer_length)
     {
-        char            type[16];
-        unsigned long   size;
-        char            name[1024];
-        struct tm       time_tm;
-        type[0] = '\0';
-        name[0] = '\0';
-        size = 0;
-        memset(&time_tm, 0, sizeof(struct tm));
-
-        globus_assert(buffer);
-        globus_i_url_sync_log_debug("buffer: %s\n", buffer);
-
-        sscanf((char*)buffer,
-                "Type=%[^;];Modify=%4d%2d%2d%2d%2d%2d;Size=%lu;%*s%s",
-                type,
-                &(time_tm.tm_year),
-                &(time_tm.tm_mon),
-                &(time_tm.tm_mday),
-                &(time_tm.tm_hour),
-                &(time_tm.tm_min),
-                &(time_tm.tm_sec),
-                &size,
-                name);
-        time_tm.tm_mon--;
-        time_tm.tm_year -= 1900;
-
-        globus_i_url_sync_log_debug(
-                "Name: %s, Type: %s, Size: %lu, Modify: %s\n", name, type,
-                size, asctime(&time_tm));
-
-        /* Copy to endpoint statistics */
-        endpoint->stats.exists = GLOBUS_TRUE;
-        endpoint->stats.type = 
-                strcmp(GLOBUS_L_URL_SYNC_MSLT_TYPE_DIR, type) ?
-                    globus_url_sync_endpoint_type_file :
-                    globus_url_sync_endpoint_type_dir;
-        endpoint->stats.size = size;
-        endpoint->stats.modify_tm = time_tm;
-
+      parse_mlst_buffer(endpoint, buffer, name);
         globus_libc_free(buffer);
     }
     else
@@ -484,6 +447,7 @@ globus_l_url_sync_ftpclient_mlst(
   cleanexit:
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(endpoint->ftp_handle, endpoint->url);
     return result;
 }
 /* globus_l_url_sync_ftpclient_mlst */
@@ -500,7 +464,7 @@ globus_l_url_sync_ftpclient_complete_cb(
 {
     globus_l_url_sync_monitor_t *           monitor;
     GlobusFuncName(globus_l_url_sync_ftpclient_complete_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER();
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     monitor = (globus_l_url_sync_monitor_t *) user_arg;
 
@@ -516,6 +480,7 @@ globus_l_url_sync_ftpclient_complete_cb(
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
 }
 /* globus_l_url_sync_ftpclient_complete_cb */
 

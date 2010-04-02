@@ -41,7 +41,13 @@
 #define GLOBUS_L_URL_SYNC_DEBUG_ENTER()             \
     if (globus_i_url_sync_args_debug)               \
     {                                               \
-        globus_libc_fprintf(stderr, "%s (%d) %s: ENTERED\n", \
+        globus_libc_fprintf(stderr, "%s (%d) %s: enter\n", \
+            __FILE__, __LINE__, _globus_func_name); \
+    }
+#define GLOBUS_L_URL_SYNC_DEBUG_EXIT()             \
+    if (globus_i_url_sync_args_debug)               \
+    {                                               \
+        globus_libc_fprintf(stderr, "%s (%d) %s: exit\n", \
             __FILE__, __LINE__, _globus_func_name); \
     }
 
@@ -371,7 +377,7 @@ main_ftpclient_complete_cb(
 {
     globus_l_url_sync_main_monitor_t *      monitor;
 
-    if(error)
+    if (error)
     {
         globus_libc_fprintf(stderr, "%s\n",
 				globus_error_print_friendly(error));
@@ -416,7 +422,7 @@ globus_l_url_sync_main_complete_cb(
     GlobusFuncName(globus_l_url_sync_main_complete_cb);
     GLOBUS_L_URL_SYNC_DEBUG_ENTER();
 
-    if(error)
+    if (error)
     {
         globus_libc_fprintf(stderr, "%s\n",
 				globus_error_print_friendly(error));
@@ -431,6 +437,7 @@ globus_l_url_sync_main_complete_cb(
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
+    GLOBUS_L_URL_SYNC_DEBUG_EXIT();
 }
 /* globus_l_url_sync_main_complete_cb */
 
@@ -457,36 +464,37 @@ globus_l_url_sync_main_result_cb(
     globus_assert(destination);
     globus_assert(destination->url);
 
-	if (globus_i_url_sync_args_verbose || globus_i_url_sync_args_debug)
-	{
-		/* Verbose results format */
-		globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
+    if (globus_i_url_sync_args_verbose || globus_i_url_sync_args_debug)
+    {
+        /* Verbose results format */
+        globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
 				result,
 				(error) ? "ERROR=" : "",
 				(error) ? globus_error_get_short_desc(error) : "",
 				source->url,
 				destination->url);
 
-		/* Additional details for debug usage */
-		if (globus_i_url_sync_args_debug)
-		{
-			globus_libc_fprintf(stderr, "%s\n",
-					globus_error_print_friendly(error));
-		}
-	}
-	else if (error)
+	/* Additional details for debug usage */
+	if (globus_i_url_sync_args_debug)
 	{
-		/* print readable error message to stderr */
-		globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
-				globus_error_get_short_desc(error),
-				source->url, destination->url);
+	    globus_libc_fprintf(stderr, "%s\n",
+				globus_error_print_friendly(error));
 	}
-	else if (result)
-	{
-	  if (source->stats.type != globus_url_sync_endpoint_type_dir)
-		/* globus-url-copy format */
-		globus_libc_printf("\"%s\" \"%s\"\n", source->url, destination->url);
-	}
+    }
+    else if (error)
+    {
+        /* print readable error message to stderr */
+        globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
+			    globus_error_get_short_desc(error),
+			    source->url, destination->url);
+    }
+    else if (result)
+    {
+        if (source->stats.type != globus_url_sync_endpoint_type_dir)
+	    /* globus-url-copy format */
+	    globus_libc_printf("\"%s\" \"%s\"\n", source->url, destination->url);
+    }
+    GLOBUS_L_URL_SYNC_DEBUG_EXIT();
 }
 /* globus_l_url_sync_main_result_cb */
 
@@ -526,7 +534,7 @@ globus_l_url_sync_ftpclient_nlst_read_cb(
                 globus_l_url_sync_ftpclient_nlst_read_cb, GLOBUS_NULL);
 
         /* Report error and abort, if failed */
-        if(result != GLOBUS_SUCCESS)
+        if (result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr, "%s\n",
                 globus_object_printable_to_string(globus_error_get(result)));
@@ -537,8 +545,8 @@ globus_l_url_sync_ftpclient_nlst_read_cb(
     else
     {
         globus_libc_fprintf(stdout, 
-                "globus_l_url_sync_ftpclient_nlst_read_cb: \
-eof reached (%d bytes remain)\n", (int) length);
+          "globus_l_url_sync_ftpclient_nlst_read_cb: eof reached (%d bytes remain)\n",
+	  (int) length);
         globus_libc_snprintf(buf, length, "%s", buffer);
         globus_libc_fprintf(stdout, "%s\n", buf);
     }
