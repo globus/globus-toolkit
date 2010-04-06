@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Format_Version="0.01" Name="udt">
+
+    <Aging_Version Major="4" Minor="0" Age="0"/>
+    <Description>
+        UDT4.0 
+    </Description>
+    <Functional_Group>UDT</Functional_Group>
+    <Version_Stability Release="groovy" />
+
+    <src_pkg>
+
+        <Build_Environment >
+            <cflags ></cflags>
+            <external_includes ></external_includes>
+            <pkg_libs >-ludt_$GLOBUS_FLAVOR_NAME</pkg_libs>
+            <external_libs ></external_libs>
+        </Build_Environment>
+
+        <With_Flavors build="yes" />
+        <Version_Label>4.0</Version_Label>
+
+        <Build_Instructions>
+            <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
+            <Build_Step Macro_Args="libs='udt'">RUN_FLAVOR_MAKEFILES_GPTMACRO</Build_Step>
+            <Build_Step>CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO</Build_Step>
+            <Build_Step>MAKE_GPTMACRO</Build_Step>
+            <Build_Step>MAKE_GPTMACRO DESTDIR_GPTMACRO install</Build_Step>
+            <Build_Step>RUN_FLAVOR_INSTALL_GPTMACRO</Build_Step>
+        </Build_Instructions>
+
+    </src_pkg>
+
+</gpt_package_metadata>
