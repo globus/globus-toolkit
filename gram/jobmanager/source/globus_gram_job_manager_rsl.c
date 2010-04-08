@@ -751,6 +751,153 @@ globus_gram_job_manager_rsl_env_add(
 /* globus_gram_job_manager_rsl_env_add() */
 
 /**
+ * Add a file cleanup value to the job RSL.
+ *
+ * This function adds a single file to remove at job completion to the job RSL.
+ * If there is no file_clean_up relation in the RSL, then one is added. The
+ * file path is copied into the RSL, so the original
+ * values passed in may be static strings or pointers to data which is
+ * freed or overwritten once this function returns.
+ *
+ * @param rsl
+ *        A pointer to the RSL tree to update. This should point to the
+ *        root of the rsl tree (the boolean &) on the invocation of the
+ *        function, but will point to various relations in the RSL as
+ *        it calls itself recursively.
+ * @param path
+ *        A pointer to a string containing the path to be added to
+ *        the RSL list of files to remove. No checking is done to see if this
+ *        file is already defined in the RSL or exists. This will be duplicated
+ *        and inserted into the RSL.
+ * 
+ * @retval GLOBUS_SUCCESS
+ *         Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *         Malloc failed
+ */
+int
+globus_gram_job_manager_rsl_file_clean_up_add(
+    globus_rsl_t *                      rsl,
+    const char *                        path)
+{
+    globus_list_t **                    operand_ref;
+    globus_list_t *                     node;
+    globus_rsl_t *                      relation;
+    globus_rsl_value_t *                value_sequence;
+    char *                              attr_copy;
+    int                                 rc;
+    char *                              path_copy;
+    globus_rsl_value_t *                path_literal;
+    globus_list_t **                    file_clean_up_end;
+
+    operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
+    node = globus_list_search_pred(
+            *operand_ref,
+            globus_l_gram_job_manager_rsl_match,
+            (void *) GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM);
+
+    if (!node)
+    {
+        /* No file_clean_up in RSL, add a new empty one */
+        attr_copy = strdup(GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM);
+        if (attr_copy == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto attr_copy_failed;
+        }
+
+        value_sequence = globus_rsl_value_make_sequence(NULL);
+        if (value_sequence == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto make_value_sequence_failed;
+        }
+
+        relation = globus_rsl_make_relation(
+                GLOBUS_RSL_EQ,
+                attr_copy,
+                value_sequence);
+        if (relation == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto make_value_relation_failed;
+        }
+
+        rc = globus_list_insert(operand_ref, relation);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto filestageout_insert_failed;
+        }
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+filestageout_insert_failed:
+            globus_rsl_free(relation);
+make_value_relation_failed:
+            globus_rsl_value_free(value_sequence);
+make_value_sequence_failed:
+            free(attr_copy);
+attr_copy_failed:
+            goto bad_relation;
+        }
+    }
+    else
+    {
+        relation = globus_list_first(node);
+        value_sequence = globus_rsl_relation_get_value_sequence(relation);
+    }
+
+    /*
+     * Now we're going to create a value sequence to append to the relation's
+     * value sequence
+     */
+    path_copy = strdup(path);
+    if (path_copy == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto path_copy_failed;
+    }
+    path_literal = globus_rsl_value_make_literal(path_copy);
+    if (path_literal == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto source_literal_failed;
+    }
+
+    file_clean_up_end = globus_rsl_value_sequence_get_list_ref(value_sequence);
+    globus_assert(file_clean_up_end != NULL);
+    rc = globus_list_insert(
+            file_clean_up_end,
+            path_literal);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto add_path_literal_failed;
+    }
+
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+add_path_literal_failed:
+        globus_rsl_value_free(path_literal);
+source_literal_failed:
+        free(path_copy);
+    }
+path_copy_failed:
+bad_relation:
+    return rc;
+}
+/* globus_gram_job_manager_rsl_file_clean_up_add() */
+
+/**
  * Remove an RSL attribute from and RSL tree.
  *
  * @param rsl

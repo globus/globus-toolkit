@@ -59,22 +59,6 @@ sub new
     my $stderr = $description->stderr();
     my $globus_condor_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-condor.conf";
 
-    if (-r $globus_condor_conf)
-    {
-        local(*FH);
-
-        if (open(FH, "<$globus_condor_conf"))
-        {
-            while(<FH>) {
-                chomp;
-                if (m/log_path=(.*)$/) {
-                    $self->{condor_logfile} = $1;
-                    last;
-                }
-            }
-            close(FH);
-        }
-    }
     if (! exists($self->{condor_logfile}))
     {
         if(! exists($ENV{GLOBUS_SPOOL_DIR}))
@@ -85,22 +69,14 @@ sub new
         {
             $log_dir = $ENV{GLOBUS_SPOOL_DIR};
         }
-        $self->{condor_logfile} = "$log_dir/gram_condor_log";
+        $self->{condor_logfile} = "$log_dir/condor." . $description->uniq_id();
     }
     if(! -e $self->{condor_logfile}) 
     {
-        # We make sure that the log file exists with the correct 
-        # permissions. If we just let Condor create it, it will
-        # have 664 permissions, and when another user submits a job
-        # they will be unable to write to the log file. We create the 
-        # file in append mode to avoid a race condition, in case
-        # multiple instantiations of this script open and write
-        # to the log file. 
         if ( open(CONDOR_LOG_FILE, '>>' . $self->{condor_logfile}) ) 
         {
             close(CONDOR_LOG_FILE);
         }
-        chmod(0666, $self->{condor_logfile});
     }
 
     if($description->jobtype() eq 'multiple' && $description->count > 1)
@@ -474,14 +450,14 @@ sub submit
 	$response_line =(grep(/submitted to cluster/, @response_text))[0];
 	$job_id = (split(/\./, (split(/\s+/, $response_line))[5]))[0];
 
+        $self->respond({EXTRA_FILE_CLEAN_UP => $self->{condor_logfile}});
+
 	if($job_id ne '')
 	{
 	    $status = Globus::GRAM::JobState::PENDING;
 
-            if ($description->emit_condor_processes()) {
-                $job_id = join(',', map { sprintf("%03d.%03d.%03d",
-                        $job_id, $_, 0) } (0..($description->count()-1)));
-            }
+            $job_id = join(',', map { sprintf("%03d.%03d.%03d",
+                    $job_id, $_, 0) } (0..($description->count()-1)));
 	    return {JOB_STATE => Globus::GRAM::JobState::PENDING,
 		    JOB_ID    => $job_id};
 	}
@@ -505,112 +481,108 @@ sub poll
     my $description = $self->{JobDescription};
     my $state;
     my $job_id = $description->job_id();
-    my ($cluster, $proc, $subproc) = ($job_id, 0, 0);
+    my @job_ids = split(/,/, $description->job_id());
+    my ($cluster, $rest) = split(/\./, $job_ids[0], 2);
     my $num_done;
     my $num_run;
     my $num_evict;
     my $num_abort;
+    local(*CONDOR_LOG_FILE);
 
     $self->log("polling job " . $description->jobid());
 
-    if (! $description->emit_condor_processes()) {
-        local(*CONDOR_LOG_FILE);
-
-        if ( open(CONDOR_LOG_FILE, '<' . $self->{condor_logfile}) )
+    if ( open(CONDOR_LOG_FILE, '<' . $self->{condor_logfile}) )
+    {
+        while (<CONDOR_LOG_FILE>)
         {
-            while (<CONDOR_LOG_FILE>)
-            {
-                if (/<c>/) {
-                    if (defined($record)) {
-                        if ($record->{Cluster} == $cluster)
+            if (/<c>/) {
+                if (defined($record)) {
+                    if ($record->{Cluster} == $cluster)
+                    {
+                        # record Matches our job id
+                        if ($record->{EventTypeNumber} == 1)
                         {
-                            # record Matches our job id
-                            if ($record->{EventTypeNumber} == 1)
-                            {
-                                # execute event
-                                $num_run++;
-                            } elsif ($record->{EventTypeNumber} == 4) {
-                                $num_evict++;
-                            } elsif ($record->{EventTypeNumber} == 5) {
-                                $num_done++;
-                            } elsif ($record->{EventTypeNumber} == 9) {
-                                $num_abort++;
-                            }
+                            # execute event
+                            $num_run++;
+                        } elsif ($record->{EventTypeNumber} == 4) {
+                            $num_evict++;
+                        } elsif ($record->{EventTypeNumber} == 5) {
+                            $num_done++;
+                        } elsif ($record->{EventTypeNumber} == 9) {
+                            $num_abort++;
                         }
-                    } 
-                    $record = {};
-                } elsif (/<a n="([^"]+)">/) { #"/) {
-                    my $attr = $1;
-
-                    if (/<s>([^<]+)<\/s>/) {
-                        $record->{$attr} = $1;
-                    } elsif (/<i>([^<]+)<\/i>/) {
-                        $record->{$attr} = int($1);
-                    } elsif (/<b v="([tf])"\/>/) {
-                        $record->{$attr} = ($1 eq 't');
-                    } elsif (/<r>([^<]+)<\/r>/) {
-                        $record->{$attr} = $1;
                     }
-                } elsif (/<\/c>/) {
+                }
+                $record = {};
+            } elsif (/<a n="([^"]+)">/) { #"/) {
+                my $attr = $1;
+
+                if (/<s>([^<]+)<\/s>/) {
+                    $record->{$attr} = $1;
+                } elsif (/<i>([^<]+)<\/i>/) {
+                    $record->{$attr} = int($1);
+                } elsif (/<b v="([tf])"\/>/) {
+                    $record->{$attr} = ($1 eq 't');
+                } elsif (/<r>([^<]+)<\/r>/) {
+                    $record->{$attr} = $1;
+                }
+            } elsif (/<\/c>/) {
+            }
+        }
+
+        if (defined($record)) {
+            if ($record->{Cluster} == $cluster)
+            {
+                # record Matches our job id
+                if ($record->{EventTypeNumber} == 1)
+                {
+                    # execute event
+                    $num_run++;
+                } elsif ($record->{EventTypeNumber} == 4) {
+                    $num_evict++;
+                } elsif ($record->{EventTypeNumber} == 5) {
+                    $num_done++;
+                } elsif ($record->{EventTypeNumber} == 9) {
+                    $num_abort++;
                 }
             }
+        } 
+        @status = grep(/^[0-9]* \(0*${job_id}/, <CONDOR_LOG_FILE>);
+        close(CONDOR_LOG_FILE);
+    }
+    else
+    {
+        $self->nfssync( $description->stdout(), 0 )
+            if $description->stdout() ne '';
+        $self->nfssync( $description->stderr(), 0 )
+            if $description->stderr() ne '';
+        return { JOB_STATE => Globus::GRAM::JobState::DONE };
+    }
 
-            if (defined($record)) {
-                if ($record->{Cluster} == $cluster)
-                {
-                    # record Matches our job id
-                    if ($record->{EventTypeNumber} == 1)
-                    {
-                        # execute event
-                        $num_run++;
-                    } elsif ($record->{EventTypeNumber} == 4) {
-                        $num_evict++;
-                    } elsif ($record->{EventTypeNumber} == 5) {
-                        $num_done++;
-                    } elsif ($record->{EventTypeNumber} == 9) {
-                        $num_abort++;
-                    }
-                }
-            } 
-            @status = grep(/^[0-9]* \(0*${job_id}/, <CONDOR_LOG_FILE>);
-            close(CONDOR_LOG_FILE);
-        }
-        else
-        {
-            $self->nfssync( $description->stdout(), 0 )
-                if $description->stdout() ne '';
-            $self->nfssync( $description->stderr(), 0 )
-                if $description->stderr() ne '';
-            return { JOB_STATE => Globus::GRAM::JobState::DONE };
-        }
+    if($num_abort > 0)
+    {
+        $state = Globus::GRAM::JobState::FAILED;
+    }
+    elsif($num_done == $description->count())
+    {
+        $self->nfssync( $description->stdout(), 0 )
+            if $description->stdout() ne '';
+        $self->nfssync( $description->stderr(), 0 )
+            if $description->stderr() ne '';
 
-        if($num_abort > 0)
-        {
-            $state = Globus::GRAM::JobState::FAILED;
-        }
-        elsif($num_done == $description->count())
-        {
-            $self->nfssync( $description->stdout(), 0 )
-                if $description->stdout() ne '';
-            $self->nfssync( $description->stderr(), 0 )
-                if $description->stderr() ne '';
-
-            $state = Globus::GRAM::JobState::DONE;
-        }
-        elsif($num_run == 0)
-        {
-            $state = Globus::GRAM::JobState::PENDING;
-        }
-        elsif($num_run > $num_evict)
-        {
-            $state = Globus::GRAM::JobState::ACTIVE;
-        }
-        else
-        {
-            $state = Globus::GRAM::JobState::SUSPENDED;
-        }
-    } else {
         $state = Globus::GRAM::JobState::DONE;
+    }
+    elsif($num_run == 0)
+    {
+        $state = Globus::GRAM::JobState::PENDING;
+    }
+    elsif($num_run > $num_evict)
+    {
+        $state = Globus::GRAM::JobState::ACTIVE;
+    }
+    else
+    {
+        $state = Globus::GRAM::JobState::SUSPENDED;
     }
 
     if($self->{STDIO_MERGER}) {

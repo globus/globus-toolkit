@@ -1296,6 +1296,22 @@ globus_l_gram_job_manager_default_done(
                     value);
         }
     }
+    else if (strcmp(variable, "GRAM_SCRIPT_EXTRA_FILE_CLEAN_UP") == 0)
+    {
+        rc = globus_gram_job_manager_rsl_file_clean_up_add(
+                request->rsl,
+                value);
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                "event=gram.script.info "
+                "level=DEBUG "
+                "extra_cleanup_file=\"%s\" "
+                "add_status=%d "
+                "\n",
+                value,
+                rc);
+    }
     else if(request->jobmanager_state == starting_jobmanager_state)
     {
         globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);

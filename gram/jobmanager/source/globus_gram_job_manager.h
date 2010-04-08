@@ -1161,6 +1161,11 @@ globus_gram_job_manager_rsl_need_restart(
     globus_gram_jobmanager_request_t *  request);
 
 int
+globus_gram_job_manager_rsl_file_clean_up_add(
+    globus_rsl_t *                      ast_node,
+    const char *                        path);
+
+int
 globus_gram_job_manager_rsl_env_add(
     globus_rsl_t *                      ast_node,
     const char *                        var,
