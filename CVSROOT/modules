@@ -101,3 +101,5 @@ all -a \
 	autotools\
         gp\
         ws
+
+common_source common/source
