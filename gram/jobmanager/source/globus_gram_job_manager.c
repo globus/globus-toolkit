@@ -1209,7 +1209,8 @@ globus_gram_job_manager_register_job_id(
             request->job_contact_path,
             job_id);
 
-    if (manager->config->seg_module != NULL)
+    if (manager->config->seg_module != NULL || 
+        strcmp(manager->config->jobmanager_type, "condor") == 0)
     {
         /* If we're using the SEG, split on /,/ so that seg events can be
          * matched to the relevant job requests

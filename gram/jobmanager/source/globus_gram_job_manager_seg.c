@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2009 University of Chicago
+ * Copyright 1999-2010 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@
 
 #include <sys/types.h>
 #include <utime.h>
+#include <sys/mman.h>
+#include <regex.h>
+
 
 
 typedef struct globus_gram_seg_resume_s
@@ -51,6 +54,20 @@ void
 globus_l_seg_resume_callback(
     void *                              user_arg);
 
+
+static
+int
+globus_l_condor_parse_log(
+    const char *                        data,
+    time_t                              last_poll_time,
+    time_t                              poll_time,
+    globus_list_t **                    events);
+
+static
+void
+globus_l_gram_condor_poll_callback(
+    void *                              user_arg);
+
 globus_result_t
 globus_gram_job_manager_init_seg(
     globus_gram_job_manager_t *         manager)
@@ -77,6 +94,46 @@ globus_gram_job_manager_init_seg(
                 &delay,
                 &delay,
                 globus_l_gram_fork_poll_callback,
+                manager);
+        if (result != GLOBUS_SUCCESS)
+        {
+            char *                      errstr;
+            char *                      errstr_escaped;
+            errstr = globus_error_print_friendly(globus_error_peek(result));
+
+            errstr_escaped = globus_gram_prepare_log_string(
+                    errstr);
+
+            globus_gram_job_manager_log(
+                    manager,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.seg.end level=WARN status=%d "
+                    "reason=\"%s\"\n",
+                    -1,
+                    errstr_escaped ? errstr_escaped : "");
+
+            if (errstr_escaped)
+            {
+                free(errstr_escaped);
+            }
+            if (errstr)
+            {
+                free(errstr);
+            }
+            goto failed_periodic;
+        }
+    }
+    else if (strcmp(manager->config->jobmanager_type, "condor") == 0)
+    {
+        globus_reltime_t                delay;
+
+        GlobusTimeReltimeSet(delay, 1, 0);
+
+        result = globus_callback_register_periodic(
+                &manager->fork_callback_handle,
+                &delay,
+                &delay,
+                globus_l_gram_condor_poll_callback,
                 manager);
         if (result != GLOBUS_SUCCESS)
         {
@@ -837,3 +894,459 @@ destroy_event:
     globus_list_free(events);
 }
 /* globus_l_gram_fork_poll_callback() */
+
+static
+void
+globus_l_gram_condor_poll_callback(
+    void *                              user_arg)
+{
+    int                                 rc;
+    time_t                              last_poll_time;
+    time_t                              poll_time;
+    globus_gram_job_manager_t *         manager = user_arg;
+    globus_gram_job_manager_ref_t *     ref;
+    globus_list_t *                     l;
+    globus_scheduler_event_t *          event;
+    globus_list_t *                     events = NULL;
+    globus_gram_jobmanager_request_t *  request;
+    DIR *                               dir;
+    struct dirent *                     dentry;
+    char                                jobid[64];
+    struct stat                         st;
+    char *                              file_path;
+    int                                 condor_log_fd;
+    char *                              condor_log_data;
+    uint64_t                            uniq1, uniq2;
+
+    GlobusGramJobManagerLock(manager);
+    poll_time = time(NULL);
+    last_poll_time = manager->seg_last_timestamp;
+    manager->seg_last_timestamp = poll_time;
+
+    dir = opendir(manager->config->job_state_file_dir);
+    GlobusGramJobManagerUnlock(manager);
+
+    if (dir == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        goto done;
+    }
+    
+    do
+    {
+        errno = 0;
+
+        if ((dentry = readdir(dir)) != NULL)
+        {
+            if (strncmp(dentry->d_name, "condor.", 7) != 0)
+            {
+                goto next;
+            }
+            sscanf(dentry->d_name+7, "%"PRIu64".%"PRIu64, &uniq1, &uniq2);
+            sprintf(jobid, "/%"PRIu64"/%"PRIu64"/", uniq1, uniq2);
+
+            ref = globus_hashtable_lookup(&manager->request_hash, jobid);
+            if (ref == NULL)
+            {
+                goto next;
+            }
+            file_path = globus_common_create_string(
+                    "%s/%s", 
+                    manager->config->job_state_file_dir, 
+                    dentry->d_name);
+            if (file_path == NULL)
+            {
+                goto next;
+            }
+            condor_log_fd = open(file_path, O_RDONLY);
+            if (condor_log_fd < 0)
+            {
+                goto free_log_path;
+            }
+            rc = fstat(condor_log_fd, &st);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto close_log;
+            }
+            if (st.st_uid != getuid())
+            {
+                goto close_log;
+            }
+            if (st.st_mtime < last_poll_time)
+            {
+                goto close_log;
+            }
+
+            condor_log_data = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_SHARED,
+                    condor_log_fd, 0);
+
+            if (condor_log_data == MAP_FAILED)
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "rc=%d\nstr=%s\n", errno, strerror(errno));
+                goto close_log;
+            }
+
+            rc = globus_l_condor_parse_log(
+                    condor_log_data,
+                    last_poll_time,
+                    poll_time,
+                    &events);
+            munmap(condor_log_data, (size_t) st.st_size);
+close_log:
+            close(condor_log_fd);
+free_log_path:
+            free(file_path);
+next:
+            ;
+        }
+
+    } while (dentry != NULL);
+    closedir(dir);
+
+    /* Queue events in the request-specific SEG event queue */
+    for (l = events; l != NULL; l = globus_list_rest(l))
+    {
+        event = globus_list_first(l);
+
+        GlobusGramJobManagerLock(manager);
+        rc = globus_gram_job_manager_add_reference_by_jobid(
+                manager,
+                event->job_id,
+                "SEG event",
+                &request);
+        GlobusGramJobManagerUnlock(manager);
+
+        if (rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_l_gram_deliver_event(
+                    request,
+                    event);
+
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto destroy_event;
+            }
+        }
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+destroy_event:
+            globus_scheduler_event_destroy(event);
+        }
+    }
+    globus_list_free(events);
+done:
+    ;
+}
+/* globus_i_gram_condor_poll_callback() */
+
+static
+int
+globus_l_condor_parse_log(
+    const char *                        data,
+    time_t                              last_poll_time,
+    time_t                              poll_time,
+    globus_list_t **                    events)
+{
+    static int                          once = 0;
+    static regex_t                      outer_re, inner_re;
+    regmatch_t                          matches[8];
+    const char *                        p;
+    int                                 event_type_number;
+    const char *                        event_time;
+    int                                 cluster;
+    int                                 proc;
+    int                                 subproc;
+    globus_bool_t                       terminated_normally;
+    int                                 return_value = 0;
+    struct tm                           event_tm;
+    time_t                              event_stamp;
+    int                                 rc;
+    globus_scheduler_event_t *          event;
+
+    enum condor_attr_e
+    {
+        DONTCARE,
+        EVENT_TYPE_NUMBER,
+        EVENT_TIME,
+        CLUSTER,
+        PROC,
+        SUBPROC,
+        TERMINATED_NORMALLY,
+        RETURN_VALUE
+    } condor_attr;
+    typedef enum
+    {
+        CONDOR_STRING,
+        CONDOR_INTEGER,
+        CONDOR_BOOLEAN,
+        CONDOR_REAL
+    } condor_parse_type_t;
+    union
+    {
+        condor_parse_type_t type;
+
+        struct
+        {
+            condor_parse_type_t type;
+            const char * s;
+            size_t len;
+        } s;
+
+        struct
+        {
+            condor_parse_type_t type;
+            int i;
+        } i;
+
+        struct
+        {
+            condor_parse_type_t type;
+            globus_bool_t b;
+        } b;
+
+        struct
+        {
+            condor_parse_type_t type;
+            float r;
+        } r;
+    } pu;
+
+    if (!once)
+    {
+        once = 1;
+
+        rc = regcomp(&outer_re,
+            "(<c>((<[^/]|</[^c]>|[^<])*)</c>)",
+            REG_EXTENDED);
+
+        assert (rc == 0);
+
+        rc = regcomp(&inner_re,
+            "^([[:space:]]*"
+            "<a n=\"([[:alpha:]]+)\">[[:space:]]*"
+            "(<(b) v=\"([tf])\"/>|<([sir])>([^<]*)</[sir]>)"
+            "</a>[[:space:]]*)",
+            REG_EXTENDED);
+
+        assert(rc == 0);
+    }
+
+    p = data;
+
+    while ((rc = regexec(
+                &outer_re, p, (int) (sizeof(matches)/sizeof(matches[0])),
+                matches, 0)) == 0)
+    {
+        const char * e = p + matches[1].rm_eo;
+        p = p + matches[2].rm_so;
+
+        while ((rc = regexec(&inner_re, p,
+                    (int) (sizeof(matches)/sizeof(matches[0])),
+                    matches, 0)) == 0)
+        {
+            size_t matchlen;
+            const char * match;
+            /* Regular expression match indices as xpath strings
+             * 1: a
+             * 2: a/@n
+             * 3: a/b|a/s/|a/i|a/r
+             * 4: a/b
+             * 5: a/b/@v
+             * 6: a/s/local-name()|a/i/local-name()|a/r/local-name()
+             * 7: a/s/text()|a/i/text()|a/r/text()
+             */
+
+            matchlen = (size_t) (matches[2].rm_eo - matches[2].rm_so);
+            match = p + matches[2].rm_so;
+            if (strncmp(match, "EventTypeNumber", matchlen) == 0)
+            {
+                condor_attr = EVENT_TYPE_NUMBER;
+            }
+            else if (strncmp(match, "EventTime", matchlen) == 0)
+            {
+                condor_attr = EVENT_TIME;
+            }
+            else if (strncmp(match, "Cluster", matchlen) == 0)
+            {
+                condor_attr = CLUSTER;
+            }
+            else if (strncmp(match, "Proc", matchlen) == 0)
+            {
+                condor_attr = PROC;
+            }
+            else if (strncmp(match, "Subproc", matchlen) == 0)
+            {
+                condor_attr = SUBPROC;
+            }
+            else if (strncmp(match, "TerminatedNormally", matchlen) == 0)
+            {
+                condor_attr = TERMINATED_NORMALLY;
+            }
+            else if (strncmp(match, "ReturnValue", matchlen) == 0)
+            {
+                condor_attr = RETURN_VALUE;
+            }
+            else
+            {
+                condor_attr = DONTCARE;
+            }
+
+            matchlen = (size_t) (matches[4].rm_eo - matches[4].rm_so);
+            match = p + matches[4].rm_so;
+            if (matches[4].rm_so != -1)
+            {
+                if (strncmp(match, "b", matchlen) == 0)
+                {
+                    pu.type = CONDOR_BOOLEAN;
+
+                    matchlen = (size_t) (matches[5].rm_eo - matches[5].rm_so);
+                    match = p + matches[5].rm_so;
+
+                    if (strncmp(match, "t", matchlen) == 0)
+                    {
+                        pu.b.b = GLOBUS_TRUE;
+                    }
+                    else
+                    {
+                        pu.b.b = GLOBUS_FALSE;
+                    }
+                }
+            }
+
+            matchlen = (size_t) (matches[6].rm_eo - matches[6].rm_so);
+            match = p + matches[6].rm_so;
+            if (matches[6].rm_so != -1)
+            {
+                if (strncmp(match, "s", matchlen) == 0)
+                {
+                    pu.type = CONDOR_STRING;
+                    pu.s.s = p + matches[7].rm_so;
+                    pu.s.len = (size_t) (matches[7].rm_eo - matches[7].rm_so);
+                }
+                else if (strncmp(match, "i", matchlen) == 0)
+                {
+                    pu.type = CONDOR_INTEGER;
+                    pu.i.i = atoi(p + matches[7].rm_so);
+                }
+                else if (strncmp(match, "r", matchlen) == 0)
+                {
+                    pu.type = CONDOR_REAL;
+                    sscanf(p + matches[7].rm_so, "%f", &pu.r.r);
+                }
+            }
+            switch (condor_attr)
+            {
+            case EVENT_TYPE_NUMBER:
+                globus_assert (pu.type == CONDOR_INTEGER);
+                event_type_number = pu.i.i;
+                break;
+            case EVENT_TIME:
+                globus_assert (pu.type == CONDOR_STRING);
+                event_time = pu.s.s;
+
+                sscanf(event_time, "%04d-%02d-%02dT%2d:%2d:%2d",
+                    &event_tm.tm_year,
+                    &event_tm.tm_mon,
+                    &event_tm.tm_mday,
+                    &event_tm.tm_hour,
+                    &event_tm.tm_min,
+                    &event_tm.tm_sec);
+
+                event_tm.tm_year -= 1900;
+                event_tm.tm_mon -= 1;
+                event_tm.tm_isdst = -1;
+
+                event_stamp = mktime(&event_tm);
+
+                break;
+            case CLUSTER:
+                globus_assert (pu.type == CONDOR_INTEGER);
+                cluster = pu.i.i;
+                break;
+            case PROC:
+                globus_assert (pu.type == CONDOR_INTEGER);
+                proc = pu.i.i;
+                break;
+            case SUBPROC:
+                globus_assert (pu.type == CONDOR_INTEGER);
+                subproc = pu.i.i;
+                break;
+            case TERMINATED_NORMALLY:
+                globus_assert (pu.type == CONDOR_BOOLEAN);
+                terminated_normally = pu.b.b;
+                break;
+            case RETURN_VALUE:
+                globus_assert (pu.type == CONDOR_INTEGER);
+                return_value = pu.i.i;
+                break;
+            case DONTCARE:
+            default:
+                break;
+            }
+            p = p + matches[1].rm_eo;
+        }
+        p = e;
+
+        if (event_stamp < last_poll_time || event_stamp >= poll_time)
+        {
+            continue;
+        }
+
+
+        switch (event_type_number)
+        {
+        case 0: /* SubmitEvent */
+            event = calloc(1, sizeof(globus_scheduler_event_t));
+            event->event_type = GLOBUS_SCHEDULER_EVENT_PENDING;
+            event->job_id = globus_common_create_string("%03d.%03d.%03d",
+                cluster, proc, subproc);
+            event->timestamp = event_stamp;
+
+            globus_list_insert(events, event);
+            break;
+        case 1: /* ExecuteEvent */
+            event = calloc(1, sizeof(globus_scheduler_event_t));
+            event->event_type = GLOBUS_SCHEDULER_EVENT_ACTIVE;
+            event->job_id = globus_common_create_string("%03d.%03d.%03d",
+                cluster, proc, subproc);
+            event->timestamp = event_stamp;
+
+            globus_list_insert(events, event);
+            break;
+
+        case 5: /* JobTerminatedEvent */
+            if (terminated_normally)
+            {
+                event = calloc(1, sizeof(globus_scheduler_event_t));
+                event->event_type = GLOBUS_SCHEDULER_EVENT_DONE;
+                event->job_id = globus_common_create_string("%03d.%03d.%03d",
+                    cluster, proc, subproc);
+                event->timestamp = event_stamp;
+                event->exit_code = return_value;
+
+                globus_list_insert(events, event);
+            }
+            else
+            {
+        case 9: /* JobAbortedEvent */
+                event = calloc(1, sizeof(globus_scheduler_event_t));
+                event->event_type = GLOBUS_SCHEDULER_EVENT_FAILED;
+                event->job_id = globus_common_create_string("%03d.%03d.%03d",
+                    cluster, proc, subproc);
+                event->timestamp = event_stamp;
+                event->failure_code = return_value;
+
+                globus_list_insert(events, event);
+            }
+            break;
+        }
+    }
+
+    return 0;
+}
+/* globus_l_condor_parse_log() */
