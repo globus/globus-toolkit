@@ -937,7 +937,6 @@ globus_l_gram_condor_poll_callback(
     globus_gram_job_manager_t *         manager = user_arg;
     globus_scheduler_event_t *          event;
     globus_fifo_t                       events;
-    globus_gram_jobmanager_request_t *  request;
     glob_t                              globdata;
     struct stat                         st;
     static char *                       pattern = NULL;
@@ -1098,7 +1097,7 @@ globus_l_gram_condor_poll_callback(
                     "errno=%d "
                     "reason=%s\n",
                     "Error mapping condor log into memory",
-                    globdata.gl_pathv[i]
+                    globdata.gl_pathv[i],
                     errno,
                     strerror(errno));
             goto close_log;
