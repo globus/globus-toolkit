@@ -737,11 +737,35 @@ globus_result_t globus_l_gfs_hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs
             snprintf(err_msg, MSG_SIZE, "Created file buffer %s.\n", hdfs_handle->tmp_file_pattern);
             globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
             char * tmp_write = globus_calloc(hdfs_handle->block_size, sizeof(globus_byte_t));
+            if (tmp_write == NULL) {
+                globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Could not allocate memory for dumping file buffer.\n");
+            }
+            /* Write into the file to create its initial size */
             for (i=0; i<cnt; i++)
                 write(filedes, tmp_write, sizeof(globus_byte_t)*hdfs_handle->block_size);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Pre-filled file buffer with empty data.\n");
             globus_free(tmp_write);
-            globus_byte_t * file_buffer = mmap(0, hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t), PROT_READ | PROT_WRITE, MAP_PRIVATE, filedes, 0);
+            globus_byte_t * file_buffer = mmap(0, hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t), PROT_READ | PROT_WRITE, MAP_SHARED, filedes, 0);
+            if (file_buffer == (globus_byte_t *)-1) {
+                if (errno == ENOMEM) {
+                    snprintf(err_msg, MSG_SIZE, "Error mmapping the file buffer (%ld bytes): errno=ENOMEM\n", hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t));
+                    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+                } else {
+                    snprintf(err_msg, MSG_SIZE, "Error mmapping the file buffer: errno=%d\n", errno);
+                    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+                }
+                /*
+                 * Regardless of the error, remove the file buffer.
+                 */
+                remove_file_buffer(hdfs_handle);
+                /*
+                 * Is this the proper way to exit from here?
+                 */
+                rc = GlobusGFSErrorGeneric("Failed to mmap() the file buffer.");
+                return rc;
+            }
             memcpy(file_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Memory buffers copied to disk buffer.\n");
             globus_free(hdfs_handle->buffer);
             hdfs_handle->buffer = file_buffer;
             hdfs_handle->using_file_buffer = 1;
