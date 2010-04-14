@@ -2546,6 +2546,77 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
     }
 }
 
+int
+myproxy_request_add_voname(myproxy_request_t *client_request,
+                           const char *voname)
+{
+
+    int return_status = -1;
+
+    if (client_request == NULL) {
+        verror_put_string("NULL client_request passed.");
+        goto error;
+    }
+    if (voname == NULL) {
+        verror_put_string("NULL voname passed.");
+        goto error;
+    }
+
+    if (client_request->voname == NULL) {
+        client_request->voname = strdup(voname);
+        if (client_request->voname == NULL) {
+            verror_put_string("strdup() failed");
+            goto error;
+        }
+    } else {
+        if (my_append(&(client_request->voname), "\n", voname, NULL) < 0) {
+            verror_put_string("my_append faild");
+            goto error;
+        }
+    }
+
+    return_status = 0;
+
+  error:
+    return return_status;
+}
+
+int
+myproxy_request_add_vomses(myproxy_request_t *client_request,
+                           const char *vomses)
+{
+
+    int return_status = -1;
+
+    if (client_request == NULL) {
+        verror_put_string("NULL client_request passed.");
+        goto error;
+    }
+    if (vomses == NULL) {
+        verror_put_string("NULL vomses passed.");
+        goto error;
+    }
+
+    if (client_request->vomses == NULL) {
+        client_request->vomses = strdup(vomses);
+        if (client_request->vomses == NULL) {
+            verror_put_string("strdup() failed");
+            goto error;
+        }
+    } else {
+        if (my_append(&(client_request->vomses), "\n", vomses, NULL) < 0) {
+            verror_put_string("my_append faild");
+            goto error;
+        }
+    }
+
+    return_status = 0;
+
+  error:
+    return return_status;
+}
+
+
 /*--------- Helper functions ------------*/
 /*
  * convert_message()
