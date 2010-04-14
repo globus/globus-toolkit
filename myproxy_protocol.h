@@ -352,4 +352,24 @@ int myproxy_bootstrap_client(myproxy_socket_attrs_t *attrs,
                              int bootstrap_if_no_cert_dir,
                              int bootstrap_even_if_cert_dir_exists);
 
+/*
+ * myproxy_request_add_voname()
+ *
+ * Adds VONAME parameter to client request.
+ * returns 0 if succesful, otherwise -1
+ *
+ */
+int myproxy_request_add_voname(myproxy_request_t *client_request, 
+                               const char *voname);
+
+/*
+ * myproxy_request_add_vomses()
+ *
+ * Adds VOMSES parameter to client request.
+ * returns 0 if succesful, otherwise -1
+ *
+ */
+int myproxy_request_add_vomses(myproxy_request_t *client_request, 
+                               const char *vomses);
+
 #endif /* __MYPROXY_PROTOCOL_H */
