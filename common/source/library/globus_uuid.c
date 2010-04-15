@@ -25,7 +25,7 @@ typedef unsigned char uint8_t;
 #endif
 #include "globus_uuid.h"
 #include "globus_hashtable.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>

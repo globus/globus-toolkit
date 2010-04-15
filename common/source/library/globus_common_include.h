@@ -279,30 +279,6 @@ extern uint32_t inet_addr(const char * cp);
 #endif
 #endif
 
-#ifdef HAVE_PTHREAD
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_pthreads.h"
-#endif
-
-#ifdef HAVE_SOLARISTHREADS
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_solaristhreads.h"
-#endif
-
-#ifdef HAVE_EXTERNALTHREADS
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_external.h"
-#endif
-
-#ifdef HAVE_SPROC
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_sproc.h"
-#endif
-
-#ifdef HAVE_WINDOWS_THREADS
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_windows.h"
-#endif
-
-#ifdef BUILD_LITE
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_none.h"
-#endif
-
 #if !defined(TARGET_ARCH_WIN32)
     typedef size_t                                      globus_size_t;
     typedef ssize_t                                     globus_ssize_t;

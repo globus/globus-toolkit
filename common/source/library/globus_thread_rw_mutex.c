@@ -18,8 +18,6 @@
 #include "globus_thread_rw_mutex.h"
 #include "globus_libc.h"
 
-#ifndef BUILD_LITE
-
 typedef struct globus_i_rw_mutex_waiter_s
 {
     globus_cond_t                       cond;
@@ -367,5 +365,3 @@ globus_rw_cond_timedwait(
 
     return rc;
 }
-
-#endif

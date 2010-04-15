@@ -24,11 +24,11 @@ Description:
 
 CVS Information:
 
-  $Source: 
-  $Date: 
-  $Revision: 
-  $State: 
-  $Author: Michael Lebman
+  $Source$
+  $Date$
+  $Revision$
+  $State$
+  $Author$
 ******************************************************************************/
 
 #include "globus_common_include.h"
@@ -37,8 +37,25 @@ CVS Information:
 #include "globus_i_thread.h"
 #include "globus_libc.h"
 #include "globus_common.h"
-//#include "globus_time.h"
 
+
+#define SINGLE_NOTIFICATION_EVENT 0
+#define BROADCAST_EVENT 1
+
+/* We will wrap the user's function call in an internal
+ * function call that matches the prototype specified by Windows:
+ *   typedef unsigned int ( __stdcall *globus_thread_func_t)(void *user_arg); 
+ *
+ * Unfortunately, we cannot pass any return value from the user's
+ * function back to the system when the thread ends because of the
+ * incompatability between the return types (unsigned int vs.
+ * void *)
+ */
+typedef struct UserFunctionInfo
+{
+	globus_thread_func_t userFunction;
+	void * userArg;
+} UserFunctionInfo;
 
 // Global data
 globus_list_t * internalThreadList= GLOBUS_NULL;

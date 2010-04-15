@@ -16,7 +16,7 @@
 
 #include "globus_extension.h"
 #include "globus_debug.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 #include "globus_thread_rmutex.h"
 #include "globus_libc.h"
 

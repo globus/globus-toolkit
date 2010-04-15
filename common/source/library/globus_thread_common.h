@@ -23,14 +23,6 @@
  * $Author$<br />
  */
 
-/******************************************************************************
-globus_common_thread
-
-Description:
-
-CVS Information:
-******************************************************************************/
-
 #ifndef GLOBUS_THREAD_COMMON_H
 #define GLOBUS_THREAD_COMMON_H
 
@@ -40,20 +32,13 @@ CVS Information:
 
 EXTERN_C_BEGIN
 
-
 extern globus_module_descriptor_t       globus_i_thread_common_module;
 
 #define GLOBUS_THREAD_COMMON_MODULE     (&globus_i_thread_common_module)
 
-/******************************************************************************
-			     Include header files
-******************************************************************************/
-
 typedef int                                   globus_thread_callback_index_t;
 
-/**************************************************************************
-*  function prototypes
-**************************************************************************/
+/* function prototypes */
 typedef
 void
 (*globus_thread_blocking_func_t)(
@@ -155,5 +140,3 @@ void thread_print(char * s, ...);
 EXTERN_C_END
 
 #endif
-
-

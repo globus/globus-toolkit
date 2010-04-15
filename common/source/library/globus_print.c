@@ -106,19 +106,13 @@ void globus_dump_stack()
     char filename[1024];
     int count;
     
-#ifdef BUILD_LITE
     globus_l_callback_main_thread = getpid();
-#endif
 
     sprintf(s, "/proc/%d/exe", globus_l_callback_main_thread);
     count = readlink(s, filename, 1024);
     filename[count] = 0;
 
-#ifdef BUILD_LITE
-    sprintf(s, "(echo 'set pagination off\nfile %s\nattach %d\nwhere\nquit' | gdb -n -batch -x /dev/stdin) 1>&2", filename, globus_l_callback_main_thread);
-#else
     sprintf(s, "(echo 'set pagination off\nfile %s\nattach %d\nthread apply all where\nquit' | gdb -n -batch -x /dev/stdin) 1>&2", filename, globus_l_callback_main_thread);
-#endif
     system(s);
 }
 
@@ -131,8 +125,10 @@ void globus_dump_stack()
 static void
 globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
 {
+    globus_thread_t self = globus_thread_self();
+
     globus_libc_sprintf(fmt, "t%lu:p%lu%s%s%s%s%s%s",
-			(unsigned long) globus_thread_self(),
+			(unsigned long) self.none,
 			(unsigned long) globus_libc_getpid(),
 			(s1 ? ": " : ""),
 			(s1 ? s1 : ""),

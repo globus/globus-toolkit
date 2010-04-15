@@ -20,6 +20,11 @@
 #include "globus_error.h"
 #include "globus_error_generic.h"
 
+extern globus_module_descriptor_t globus_i_callback_module_nonthreaded;
+extern globus_module_descriptor_t globus_i_callback_module_threaded;
+
+#define GLOBUS_CALLBACK_NONTHREADED_MODULE (&globus_i_callback_module_nonthreaded)
+#define GLOBUS_CALLBACK_THREADED_MODULE (&globus_i_callback_module_threaded)
 /* common error objects */
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(func)           \

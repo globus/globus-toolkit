@@ -51,21 +51,11 @@ AC_CHECK_HEADERS(sys/sysctl.h)
 AC_CHECK_HEADERS(net/if.h)
 AC_CHECK_HEADERS(signal.h)
 AC_CHECK_HEADERS(syslog.h)
+AC_CHECK_HEADERS(winsock2.h)
 
 dnl these are Net+OS headers
 AC_CHECK_HEADERS(sockapi.h)
 AC_CHECK_HEADERS(tx_api.h)
-
-dnl Broken IRIX 6.5.3 headers
-case $target in
-    *irix*6.*)
-        AC_DEFINE(HAVE_NETINET_TCP_H)
-        ac_cv_header_netinet_tcp_h=1
-	;;
-    *)
-       AC_CHECK_HEADERS(netinet/tcp.h)
-       ;;
-esac
 
 AC_HEADER_SYS_WAIT
 dnl

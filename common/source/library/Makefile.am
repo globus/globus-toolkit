@@ -3,7 +3,9 @@ include $(top_srcdir)/globus_automake_pre
 Sources= \
 	globus_args.c \
 	globus_args.h \
-	globus_callback_$(GLOBUS_CALLBACK_BUILD).c \
+	globus_callback.c \
+	globus_callback_nothreads.c \
+	globus_callback_threads.c \
 	globus_callback.h \
 	globus_options.c \
 	globus_options.h \
@@ -61,8 +63,8 @@ Sources= \
 	globus_symboltable.h \
 	globus_thread_common.c \
 	globus_thread_common.h \
-	globus_thread_$(GLOBUS_THREADS).c \
-	globus_thread_$(GLOBUS_THREADS).h \
+	globus_thread.c \
+	globus_thread.h \
 	globus_thread_pool.c \
 	globus_thread_pool.h \
 	globus_thread_rw_mutex.c \
@@ -94,6 +96,7 @@ Sources= \
     opendir.c \
     readdir.c \
     rewinddir.c \
+    globus_thread_none.c \
     globus_netos_libc.h
 
 flavorinclude_HEADERS = \
@@ -133,12 +136,23 @@ flavorinclude_HEADERS = \
 	globus_thread_rmutex.h \
 	globus_extension.h \
 	globus_common.h \
-	globus_thread_$(GLOBUS_THREADS).h \
 	globus_common_include.h \
+        globus_thread.h \
 	globus_uuid.h
 
 
-lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la 
+pthreads_sources = globus_thread_pthreads.h globus_thread_pthreads.c
+windowsthreads_sources = globus_thread_windows.h globus_thread_windows.c
+
+thread_libs = 
+if BUILD_PTHREADS
+thread_libs += libglobus_thread_pthread.la
+endif
+if BUILD_WINDOWS_THREADS
+thread_libs += libglobus_thread_windows.la
+endif
+
+lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la $(thread_libs)
 
 INCLUDES = @GPT_INCLUDES@
 
@@ -146,13 +160,23 @@ libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAS = @GPT_LDFLAGS@
 
+if BUILD_PTHREADS
+libglobus_thread_pthread_la_LIBADD = libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_LIB_LINKS@ @PTHREAD_LIBS@
+libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c globus_thread_pthreads.h
+libglobus_thread_pthread_la_LDFLAGS = @GPT_LDFLAGS@ -module
+endif
+
+if BUILD_WINDOWS_THREADS
+libglobus_thread_windows_la_LIBADD = libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_LIB_LINKS@
+libglobus_thread_windows_la_SOURCES = globus_thread_windows.c globus_thread_windows.h
+libglobus_thread_windows_la_LDFLAGS = @GPT_LDFLAGS@ -module
+endif
+
 EXTRA_DIST = \
 	globus_callback_nothreads.c \
 	globus_callback_threads.c \
-	globus_thread_none.c \
-	globus_thread_none.h \
-	globus_thread_pthreads.c \
-	globus_thread_pthreads.h
+        $(pthreads_sources) \
+        $(windowsthreads_sources)
 
 EXTRA_HEADERS = \
         globus_netos_dir.h

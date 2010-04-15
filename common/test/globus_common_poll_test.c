@@ -689,9 +689,7 @@ time_starve_test()
         globus_bool_t   expired = GLOBUS_FALSE;
         int             save_errno;
 
-#ifdef BUILD_LITE
        while(!expired) 
-#endif
         {
             save_errno = globus_cond_timedwait(
                                   &cond,
@@ -984,9 +982,7 @@ cpu_hog_restart_test()
     verbose_printf(1, "Waiting %d seconds....\n", secs);
     globus_mutex_lock(&mutex);
     {
-#       ifdef BUILD_LITE
         while(!expired) 
-#       endif
         {
             save_errno = globus_cond_timedwait(
                                   &cond,
@@ -1129,6 +1125,7 @@ random_stress_test()
                 globus_cond_wait(&random_stress_cond,
                                  &random_stress_mutex);
             }
+            random_stress_done = GLOBUS_FALSE;
         }
         globus_mutex_unlock(&random_stress_mutex);
     }
@@ -1165,7 +1162,7 @@ random_stress_count_handler(
     {
         if(!random_stress_registered)
         {
-            verbose_printf(0, "***ERROR*** random_stress_count_handler() : callback should not be registered\n");
+            verbose_printf(0, "***ERROR*** random_stress_count_handler() : callback should be registered\n");
             random_stress_success = GLOBUS_FALSE;
         }
         else if(*x == 50)

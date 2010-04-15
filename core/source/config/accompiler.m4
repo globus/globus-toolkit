@@ -73,8 +73,6 @@ AC_ARG_WITH(threads,
         [lac_cv_threads_type="$withval"],
         [lac_cv_threads_type=${lac_cv_threads_type='no'}])
 
-LAC_THREADS_ARGS
-
 AC_ARG_ENABLE(debug,
         [  --enable-debug                compile in debugging features],
         [lac_cv_debug="$enableval"],
@@ -1088,12 +1086,11 @@ AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
 dnl Note that if RANLIB is set appropriately
 dnl This line should do nothing
-AC_PATH_PROGS(lac_cv_RANLIB, $lac_cv_RANLIB ranlib true, true)
+AC_PATH_PROGS(lac_cv_RANLIB, $RANLIB ranlib true, true)
 
 dnl Only set AR if it has not been explicitly set earlier
-AR="$lac_cv_AR"
 if test "x$lac_cv_AR" = "x"; then
-    AC_PATH_PROGS(lac_cv_AR, [ar], ar)
+    AC_PATH_PROGS(lac_cv_AR, $AR ar, ar)
 fi
 AC_CACHE_VAL(lac_cv_ARFLAGS, lac_cv_ARFLAGS="ruv")
 NM="$lac_NM"
