@@ -2268,7 +2268,7 @@ globus_l_gram_file_cleanup(
 {
     globus_rsl_t *                      relation;
     globus_rsl_value_t *                value_sequence;
-    globus_list_t **                    value_list;
+    globus_list_t *                     value_list;
     globus_rsl_value_t *                value;
     char *                              path;
 
@@ -2287,17 +2287,23 @@ globus_l_gram_file_cleanup(
         goto no_sequence;
     }
 
-    value_list = globus_rsl_value_sequence_get_list_ref(value_sequence);
-    while (!globus_list_empty(*value_list))
+    /*
+     * GRAM-155: Leak in file_clean_up
+     * Old code removed list elements and freed path in the loop, but
+     * neglected to free value. Now all the data is freed in the
+     * globus_rsl_free_recursive() call at the end.
+     */
+    value_list = globus_rsl_value_sequence_get_value_list(value_sequence);
+    while (!globus_list_empty(value_list))
     {
-        value = globus_list_remove(value_list, *value_list);
+        value = globus_list_first(value_list);
+        value_list = globus_list_rest(value_list);
 
         path = globus_rsl_value_literal_get_string(value);
 
         if (path)
         {
             unlink(path);
-            free(path);
         }
     }
 
