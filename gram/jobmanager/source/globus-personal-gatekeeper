@@ -182,7 +182,7 @@ killem ()
                 cd
 		statedir="${local_tmpdir}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
                 if [ -r ${dir}/jobmanager.conf ]; then
-                    host=`${bindir}/globus-hostname`
+                    host=`${bindir}/globus-hostname | ${GLOBUS_SH_CUT-cut} -d. -f1`
                     args=`cat "${dir}/jobmanager.conf"`
                     service_tag="`eval get_jm_arg_value -service-tag $args`"
                     if [ "$service_tag" = "" ]; then
@@ -305,9 +305,9 @@ jmtype=fork
 port=
 docleanup=false
 startnew=false
-host=`${bindir}/globus-hostname`
+host=`${bindir}/globus-hostname| ${GLOBUS_SH_CUT-cut} -d. -f1`
 file_location="$HOME/.globus/."
-file_prefix="personal-gatekeeper.$host"
+file_prefix="gram.$host"
 log=never
 seg=0
 startargs=''

@@ -1081,6 +1081,11 @@ globus_gram_job_manager_authz_query(
     const char *                        uri,
     const char *                        auth_type);
 
+int
+globus_gram_gsi_get_dn_hash(
+    gss_cred_id_t                       cred,
+    unsigned long *                     hash);
+
 /* globus_gram_job_manager_query.c */
 void
 globus_gram_job_manager_query_callback(
