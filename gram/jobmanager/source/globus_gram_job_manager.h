@@ -344,6 +344,14 @@ typedef struct
      * on GRAM operations or not. Default to no.
      */
     globus_bool_t                       enable_callout;
+
+    /**
+     * Boolean flag indicating whether to include the DN hash
+     * as part of the job manager tag string. Make this true if you
+     * have multiple DNs mapped to the same local user so each gets
+     * a separate job space with the appropriate credential.
+     */
+    globus_bool_t                       tag_with_dn_hash;
 }
 globus_gram_job_manager_config_t;
 
@@ -1080,6 +1088,11 @@ globus_gram_job_manager_authz_query(
     globus_gram_protocol_handle_t       handle,
     const char *                        uri,
     const char *                        auth_type);
+
+int
+globus_gram_gsi_get_dn_hash(
+    gss_cred_id_t                       cred,
+    unsigned long *                     hash);
 
 /* globus_gram_job_manager_query.c */
 void

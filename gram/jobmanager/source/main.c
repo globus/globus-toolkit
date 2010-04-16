@@ -175,6 +175,27 @@ main(
         exit(1);
     }
 
+    if (config.tag_with_dn_hash && cred != GSS_C_NO_CREDENTIAL)
+    {
+        unsigned long hash;
+        char * newtag;
+
+        rc = globus_gram_gsi_get_dn_hash(
+                cred,
+                &hash);
+        if (rc == GLOBUS_SUCCESS)
+        {
+            newtag = globus_common_create_string("%s%s%lx",
+                    strcmp(config.service_tag, "untagged") == 0
+                            ? "" : config.service_tag,
+                    strcmp(config.service_tag, "untagged") == 0
+                            ? "" : ".",
+                    hash);
+            free(config.service_tag);
+            config.service_tag = newtag;
+        }
+    }
+
     /*
      * Remove delegated proxy from disk.
      */
