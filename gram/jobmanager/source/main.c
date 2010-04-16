@@ -175,7 +175,7 @@ main(
         exit(1);
     }
 
-    if (config.tag_with_dn_hash && cred != GSS_C_NO_CREDENTIAL)
+    if (cred != GSS_C_NO_CREDENTIAL)
     {
         unsigned long hash;
         char * newtag;

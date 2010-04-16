@@ -278,11 +278,6 @@ globus_gram_job_manager_config_init(
         {
             config->service_tag = strdup(argv[++i]);
         }
-        else if (strcmp(argv[i], "-tag-with-dn-hash") == 0
-                && (i+1 < argc))
-        {
-            config->tag_with_dn_hash = GLOBUS_TRUE;
-        }
         else if (strcmp(argv[i], "-enable-syslog") == 0)
         {
             config->syslog_enabled = GLOBUS_TRUE;
