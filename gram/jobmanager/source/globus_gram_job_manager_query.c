@@ -240,8 +240,8 @@ globus_gram_job_manager_query_callback(
                 manager,
                 contact,
                 &status,
-                &exit_code,
-                &job_failure_code);
+                &job_failure_code,
+                &exit_code);
         if (rc != GLOBUS_SUCCESS)
         {
             globus_gram_job_manager_log(
