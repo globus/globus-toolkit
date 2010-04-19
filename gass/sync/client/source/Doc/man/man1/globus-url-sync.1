@@ -8,7 +8,12 @@ globus-url-sync \- URL Synchronization
 The program
 .B globus-url-sync
 compares two endpoints, using GridFTP, and prints a list of GSI file transfers that should be performed using 
-.B globus-url-copy.
+.B globus-url-copy
+with options 
+.B -r
+and
+.B -cd,
+e.g. "globus-url-copy -r -cd".
 .SH OPTIONS
 .TP
 .B -help | -usage
@@ -22,8 +27,9 @@ Print additional detail.
 .TP
 .B  -c | -connection-caching-off
 Disable GridFTP client connection caching.
+.TP
 .B  -f | -full-file-pathname
-Output full file pathnames (when recursive directory copy is not in use)."
+Output full file pathnames (when recursive directory copy is not in use).
 .TP
 .B -m | -modify
 Compare files by last modified timestamp.
@@ -76,15 +82,6 @@ In the event that unexpected results are returned, please re-run the command wit
 option.
 .P
 .B Known limitations:
-.P
-If the source directory hierarchy contains directories not present in the destination directory hierarchy, 
-.B globus-url-copy 
-must be invoked with the 
-.B -cd 
-(create directory) option.
-.P 1
-Empty directories, anywhere in the source directory hierarchy, are not currently handled, and will not be mentioned in the list of files to be transferred using 
-.B globus-url-copy.
 .P 1
 Performance may be slow until it's been optimized to take advantage of
 some new GridFTP features.
