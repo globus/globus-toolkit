@@ -22,6 +22,8 @@ Print additional detail.
 .TP
 .B  -c | -connection-caching-off
 Disable GridFTP client connection caching.
+.B  -f | -full-file-pathname
+Output full file pathnames (when recursive directory copy is not in use)."
 .TP
 .B -m | -modify
 Compare files by last modified timestamp.
@@ -44,6 +46,27 @@ URL scheme(s) supported:
                                 "gsiftp://myhost.edu/~/file1"
       File name, relative path: "gsiftp://myhost.edu/file1"
       Directory, absolute path: "gsiftp://myhost.edu//tmp/dir1/"
+.fi
+.sp
+.B sshftp
+.nf
+    For example:
+      File name, absolute path: "sshftp://myhost.edu//tmp/file1"
+                                "sshftp://myhost.edu/~/file1"
+      File name, relative path: "sshftp://myhost.edu/file1"
+      Directory, absolute path: "sshftp://myhost.edu//tmp/dir1/"
+.fi
+.SH Suggested Usage (shell script)
+.nf
+    #!/bin/bash
+
+    globus-url-sync $1 $2 |
+    while read line 
+    do
+      globus-url-copy -r -cd $line
+    done
+
+    exit 0
 .fi
 .SH BUGS
 This is an early version of 

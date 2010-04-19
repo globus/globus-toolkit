@@ -171,6 +171,15 @@ globus_l_url_sync_exists_func(
 	} 
 	else 
 	{
+	    /* If source is directory, make sure both URLs end with "/". */
+	    if (source->stats.type == globus_url_sync_endpoint_type_dir)
+	    {
+	        if (source->url[strlen(source->url)-1] != '/')
+		    strcat(source->url, "/");
+		if (destination->url[strlen(destination->url)-1] != '/')
+		    strcat(destination->url, "/");
+	    }
+
 	    /* Stat the destination */
 	    if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
 	        globus_l_url_sync_ftpclient_mlst(destination);
@@ -179,10 +188,8 @@ globus_l_url_sync_exists_func(
 	    comparison_result = source->stats.exists - destination->stats.exists;
 	      
 	    if (destination->stats.exists &&
-		(source->stats.type != destination->stats.type)) 
-	    {
+		source->stats.type != destination->stats.type)
 	        error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
-	    }
 	}
     }
 					

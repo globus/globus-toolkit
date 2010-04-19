@@ -99,8 +99,12 @@ globus_l_url_sync_make_new_endpoint(
 
     /* Concat urls to form new url */
     strcpy(new_url, base->url);
-    *(new_url+base_len) = '/';
-    strcpy((new_url+base_len+1), child);
+    if (*(new_url+base_len-1) != '/')
+    {
+        *(new_url+(base_len)) = '/';
+	base_len++;
+    }
+    strcpy((new_url+base_len), child);
 
     /* Init new endpoint */
     globus_i_url_sync_endpoint_init(&new_endpoint, new_url, base->ftp_handle);
@@ -120,42 +124,46 @@ globus_l_url_sync_make_src_endpoint(
 				    const char *                            mlst_results,
 				    char * child)
 {
-  globus_url_sync_endpoint_t *            new_endpoint;
-  char *                                  new_url;
-  unsigned int                            base_len, child_len;
+    globus_url_sync_endpoint_t *            new_endpoint;
+    char *                                  new_url;
+    unsigned int                            base_len, child_len;
   
-  globus_assert(base);
-  globus_assert(base->url);
-  globus_assert(child);
+    globus_assert(base);
+    globus_assert(base->url);
+    globus_assert(child);
   
-  base_len = globus_libc_strlen(base->url);
-  globus_assert(base_len);
+    base_len = globus_libc_strlen(base->url);
+    globus_assert(base_len);
   
-  new_endpoint = globus_libc_malloc(sizeof(globus_url_sync_endpoint_t));
+    new_endpoint = globus_libc_malloc(sizeof(globus_url_sync_endpoint_t));
   
-  memset(new_endpoint, 0, sizeof(globus_url_sync_endpoint_t));
-  globus_assert(new_endpoint);
+    memset(new_endpoint, 0, sizeof(globus_url_sync_endpoint_t));
+    globus_assert(new_endpoint);
   
-  parse_mlst_buffer(new_endpoint, (char *)mlst_results, child);
-  child_len = globus_libc_strlen(child);
-  globus_assert(child_len);
+    parse_mlst_buffer(new_endpoint, (char *)mlst_results, child);
+    child_len = globus_libc_strlen(child);
+    globus_assert(child_len);
   
-  /* Allocate new url and pad with room for '/' and '\0' */
-  new_url = globus_libc_malloc(sizeof(char) * (base_len + 1 + child_len + 1));
-  globus_assert(new_url);
+    /* Allocate new url and pad with room for '/' and '\0' */
+    new_url = globus_libc_malloc(sizeof(char) * (base_len + 1 + child_len + 1));
+    globus_assert(new_url);
   
-  /* Concat urls to form new url */
-  strcpy(new_url, base->url);
-  *(new_url+base_len) = '/';
-  strcpy((new_url+base_len+1), child);
+    /* Concat urls to form new url */
+    strcpy(new_url, base->url);
+    if (*(new_url+base_len-1) != '/')
+    {
+        *(new_url+(base_len)) = '/';
+	base_len++;
+    }
+    strcpy((new_url+base_len), child);
   
-  /* Init new endpoint */
-  new_endpoint->url = strdup(new_url);
-  new_endpoint->ftp_handle = base->ftp_handle;
+    /* Init new endpoint */
+    new_endpoint->url = strdup(new_url);
+    new_endpoint->ftp_handle = base->ftp_handle;
   
-  /* Free the new url, and return new endpoint */
-  globus_libc_free(new_url);
-  return new_endpoint;
+    /* Free the new url, and return new endpoint */
+    globus_libc_free(new_url);
+    return new_endpoint;
 } /* globus_l_url_sync_make_src_endpoint */
 
 static
@@ -177,7 +185,7 @@ globus_l_url_sync_compare_func_top_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    int         								compare_result,
+    int         				compare_result,
     globus_object_t *                           error);
 
 /** The compare function callback. This cb is used for any recursively listed
@@ -190,7 +198,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    int         								compare_result,
+    int         				compare_result,
     globus_object_t *                           error);
 
 /* Declarations */
@@ -308,6 +316,7 @@ globus_url_sync(
     /* Copy URL structs to char* buffers */
 	switch(source_url->scheme_type) {
 		case GLOBUS_URL_SCHEME_GSIFTP:
+		case GLOBUS_URL_SCHEME_SSHFTP:
 			globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
 			globus_i_url_sync_log_debug("source: %s\n", source_str);
 			break;
@@ -322,6 +331,7 @@ globus_url_sync(
 	}
 	switch (destination_url->scheme_type) {
 		case GLOBUS_URL_SCHEME_GSIFTP:
+		case GLOBUS_URL_SCHEME_SSHFTP:
 			globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
 			globus_i_url_sync_log_debug("destination: %s\n", destination_str);
 			break;
@@ -484,11 +494,12 @@ globus_l_url_sync_compare_func_top_cb(
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.
      */
-//    if (!compare_result &&
-//            source->stats.type == globus_url_sync_endpoint_type_dir &&
-//            destination->stats.type == globus_url_sync_endpoint_type_dir)
-      if (!error &&
-	  source->stats.type == globus_url_sync_endpoint_type_dir)
+    if (((!compare_result) &&
+	 source->stats.type == globus_url_sync_endpoint_type_dir &&
+	 destination->stats.type == globus_url_sync_endpoint_type_dir) ||
+	(globus_url_sync_handle_get_recursion(handle) &&
+	 (!error) &&
+	 source->stats.type == globus_url_sync_endpoint_type_dir))
     {
         globus_result_t result;
         globus_i_url_sync_log_debug("Need to perform a directory listing");
@@ -704,11 +715,12 @@ globus_l_url_sync_compare_func_recurse_cb(
      */
     /* TODO: we should ONLY do a recursive listing IF the sync handle has an
      *  option set by the user instructing us to do the listings recursively. */
-//    if (!compare_result &&
-//            source->stats.type == globus_url_sync_endpoint_type_dir &&
-//            destination->stats.type == globus_url_sync_endpoint_type_dir)
-    if (!error &&
-	source->stats.type == globus_url_sync_endpoint_type_dir)
+    if (((!compare_result) &&
+	 source->stats.type == globus_url_sync_endpoint_type_dir &&
+	 destination->stats.type == globus_url_sync_endpoint_type_dir) ||
+	(globus_url_sync_handle_get_recursion(handle) &&
+	 (!error) &&
+	 source->stats.type == globus_url_sync_endpoint_type_dir))
     {
         globus_l_url_sync_arg_t *           child;
         globus_result_t                     result;
@@ -779,7 +791,8 @@ globus_l_url_sync_url2str(
     }
 	
     /* Copy Host */
-    if (strcmp(url->scheme, "gsiftp") == 0) {
+    if (strcmp(url->scheme, "gsiftp") == 0 ||
+		strcmp(url->scheme, "sshftp") {
         if (url->host != NULL) {
 	    size = strlen(url->host);
 	    if (len <= size)
