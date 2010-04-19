@@ -792,7 +792,7 @@ globus_l_url_sync_url2str(
 	
     /* Copy Host */
     if (strcmp(url->scheme, "gsiftp") == 0 ||
-	strcmp(url->scheme, "sshftp")) {
+	strcmp(url->scheme, "sshftp") == 0) {
         if (url->host != NULL) {
 	    size = strlen(url->host);
 	    if (len <= size)
