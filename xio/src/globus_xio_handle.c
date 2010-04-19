@@ -338,7 +338,7 @@ globus_l_xio_handle_pre_close(
     op->blocking = blocking;
     if(blocking)
     {
-        op->blocked_thread = GlobusXIOThreadSelf();
+        GlobusXIOCurrentBlockedThread(op->blocked_thread);
     }
     
     switch(handle->state)
@@ -2997,7 +2997,7 @@ globus_xio_open(
     op->user_arg = info;
     op->entry[0].prev_ndx = -1; /* for first pass there is no return */
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
     
     /* initialize the handle */
     handle->ref++; /* for operation */
@@ -3151,7 +3151,7 @@ globus_xio_read(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
     
     info->op = op;
     
@@ -3279,7 +3279,7 @@ globus_xio_readv(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
     
     info->op = op;
     
@@ -3412,7 +3412,7 @@ globus_xio_write(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
 
     info->op = op;
 
@@ -3540,7 +3540,7 @@ globus_xio_writev(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
 
     info->op = op;
 

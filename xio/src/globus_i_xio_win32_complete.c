@@ -5,9 +5,10 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
-#include "globus_i_xio_win32.h"
+#include "globus_config.h"
+#ifdef TARGET_ARCH_WIN32
 
-#ifdef BUILD_LITE
+#include "globus_i_xio_win32.h"
 
 #define GlobusLWin32PollQueueInit()                                         \
 {                                                                           \
@@ -137,6 +138,10 @@ globus_i_xio_win32_complete_activate(void)
     
     GlobusXIOSystemDebugEnter();
     
+    if (!globus_i_am_only_thread())
+    {
+        goto skip_activate;
+    }
     GlobusLWin32PollQueueInit();
     win32_mutex_init(&globus_l_xio_win32_poll_lock, 0);
     globus_l_xio_win32_poll_event_sleeping = GLOBUS_FALSE;
@@ -164,6 +169,7 @@ globus_i_xio_win32_complete_activate(void)
     globus_callback_add_wakeup_handler(
         globus_l_xio_win32_wakeup_handler, 0);
     
+skip_activate:
     GlobusXIOSystemDebugExit();
     
     return GLOBUS_SUCCESS;
@@ -215,6 +221,11 @@ globus_i_xio_win32_complete_deactivate(void)
     
     GlobusXIOSystemDebugEnter();
 
+    if (!globus_i_am_only_thread())
+    {
+        goto skip_deactivate;
+    }
+
     globus_mutex_init(&info.mutex, NULL);
     globus_cond_init(&info.cond, NULL);
     
@@ -258,6 +269,7 @@ globus_i_xio_win32_complete_deactivate(void)
         globus_l_xio_win32_poll_free = next;
     }
     
+skip_deactivate:
     GlobusXIOSystemDebugExit();
     
     return GLOBUS_SUCCESS;
@@ -274,6 +286,15 @@ globus_i_xio_win32_complete(
 
     GlobusXIOSystemDebugEnter();
     
+    if (! globus_i_am_only_thread())
+    {
+        return globus_callback_register_oneshot(
+            0,
+            0,
+            callback,
+            user_arg);
+    }
+
     win32_mutex_lock(&globus_l_xio_win32_poll_lock);
     {
         if(globus_l_xio_win32_poll_free)
@@ -313,31 +334,4 @@ globus_i_xio_win32_complete(
 error_malloc:
     return result;
 }
-
-#else
-
-int
-globus_i_xio_win32_complete_activate(void)
-{
-    return GLOBUS_SUCCESS;
-}
-
-int
-globus_i_xio_win32_complete_deactivate(void)
-{
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_i_xio_win32_complete(
-    globus_callback_func_t              callback,
-    void *                              user_arg)
-{
-    return globus_callback_register_oneshot(
-        0,
-        0,
-        callback,
-        user_arg);
-}
-
-#endif
+#endif /* TARGET_ARCH_WIN32 */

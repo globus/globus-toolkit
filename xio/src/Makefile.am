@@ -17,6 +17,11 @@ Sources= \
 	globus_xio_util.c                           \
 	globus_xio_wrapblock.c                      \
 	globus_xio_system_select.c                  \
+	globus_xio_system_win32.c                   \
+	globus_i_xio_win32_complete.c               \
+	globus_i_xio_win32_file.c \
+	globus_i_xio_win32_mode.c \
+	globus_i_xio_win32_socket.c \
 	globus_i_xio_system_common.c                \
 	globus_xio_load.c
 

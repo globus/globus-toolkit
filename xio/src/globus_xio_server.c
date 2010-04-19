@@ -1284,7 +1284,7 @@ globus_xio_server_accept(
     xio_op->_op_server = xio_server;
     xio_op->stack_size = xio_server->stack_size;
     xio_op->blocking = GLOBUS_TRUE;
-    xio_op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(xio_op->blocked_thread);
     
     res = globus_l_xio_server_register_accept(xio_op);
     if(res != GLOBUS_SUCCESS)

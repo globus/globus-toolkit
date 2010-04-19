@@ -17,6 +17,7 @@
 
 #include "config.h"
 #include "globus_common.h"
+#ifndef TARGET_ARCH_WIN32
 #include "globus_xio_system.h"
 #include "globus_i_xio_system_common.h"
 #include "globus_xio_driver.h"
@@ -2578,3 +2579,4 @@ error_close:
     return globus_l_xio_system_close(socket);
 #endif
 }
+#endif /*TARGET_ARCH_WIN32*/

@@ -5,6 +5,8 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
+#include "globus_config.h"
+#ifdef TARGET_ARCH_WIN32
 #include "globus_i_xio_win32.h"
 
 /**
@@ -1258,3 +1260,4 @@ error_close:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
+#endif /* TARGET_ARCH_WIN32 */

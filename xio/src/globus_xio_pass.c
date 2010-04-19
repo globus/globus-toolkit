@@ -216,7 +216,7 @@ globus_xio_driver_finished_open(
          * finish until the stack unwinds
          */
         if(op->blocking && 
-            globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+            GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
         {
             GlobusXIODebugDelayedFinish();
             op->finished_delayed = GLOBUS_TRUE;
@@ -578,7 +578,7 @@ globus_xio_driver_finished_close(
          * finish until the stack unwinds
          */
         if(op->blocking && 
-            globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+            GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
         {
             GlobusXIODebugDelayedFinish();
             op->finished_delayed = GLOBUS_TRUE;
@@ -817,7 +817,7 @@ globus_xio_driver_finished_write(
              * finish until the stack unwinds
              */
             if(op->blocking && 
-                globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+                GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
             {
                 GlobusXIODebugDelayedFinish();
                 op->finished_delayed = GLOBUS_TRUE;
@@ -1216,7 +1216,7 @@ globus_xio_driver_finished_read(
              * finish until the stack unwinds
              */
             if(op->blocking && 
-                globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+                GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
             {
                 GlobusXIODebugDelayedFinish();
                 op->finished_delayed = GLOBUS_TRUE;
@@ -1630,7 +1630,7 @@ globus_xio_driver_finished_accept(
          * finish until the stack unwinds
          */
         if(op->blocking && 
-            globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+            GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
         {
             GlobusXIODebugDelayedFinish();
             op->finished_delayed = GLOBUS_TRUE;
