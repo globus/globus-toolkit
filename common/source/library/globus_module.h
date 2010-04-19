@@ -207,5 +207,3 @@ EXTERN_C_END
 #endif
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
-
-

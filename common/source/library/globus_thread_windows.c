@@ -922,7 +922,6 @@ globus_l_winthread_cond_timedwait(
     if ( milliseconds != INFINITE )
     {
         globus_abstime_t now;
-        globus_thread_t t = globus_thread_self();
 
         globus_reltime_t relativeTime;
         GlobusTimeAbstimeGetCurrent(now);

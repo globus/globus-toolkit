@@ -19,7 +19,6 @@
 
 #include "globus_common_include.h"
 
-
 enum 
 {
     GLOBUS_OPTIONS_HELP = 1,

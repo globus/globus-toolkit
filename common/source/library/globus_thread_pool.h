@@ -32,6 +32,7 @@ void
 globus_i_thread_start(
     globus_thread_func_t                func,
     void *                              user_arg);
+
 int
 globus_thread_pool_key_create(  
     globus_thread_key_t *                 key,     
@@ -47,5 +48,3 @@ extern globus_module_descriptor_t       globus_i_thread_pool_module;
 EXTERN_C_END
 
 #endif
-
-

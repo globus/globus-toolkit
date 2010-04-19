@@ -449,7 +449,7 @@ globus_l_thread_none_kill(
     {
         return ESRCH;
     }
-    rc = kill(getpid(), sig);
+    rc = raise(sig);
     if (rc != 0)
     {
         rc = errno;
@@ -485,7 +485,11 @@ static globus_thread_impl_t globus_l_thread_none_impl =
     globus_l_thread_none_key_setspecific,
     globus_l_thread_none_yield,
     globus_l_thread_none_thread_exit,
+#   if HAVE_SIGPROCMASK
     sigprocmask,
+#   else
+    NULL,
+#   endif
     globus_l_thread_none_kill,
     NULL,
     NULL,

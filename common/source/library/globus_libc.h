@@ -227,11 +227,13 @@ globus_libc_gmtime_r(
     const time_t *timep, 
     struct tm *result);
 
+#if !defined(TARGET_ARCH_WIN32)
 int globus_libc_getpwnam_r(char *name,
 			   struct passwd *pwd,
 			   char *buffer,
 			   int bufsize,
 			   struct passwd **result);
+#endif
 
 int
 globus_libc_strncasecmp(
@@ -243,6 +245,7 @@ int globus_libc_setenv(register const char *name,
 		       register const char *value,
 		       int rewrite);
 void globus_libc_unsetenv(register const char *name);
+
 char *globus_libc_getenv(register const char *name);
 
 char *globus_libc_system_error_string(int the_error);
@@ -362,12 +365,13 @@ getnameinfo(
     char *                              serv,
     size_t                              servlen,
     int                                 flags);
-
+#ifndef NI_NUMERICHOST
 #define NI_NUMERICHOST 1
 #define NI_NUMERICSERV 2
 #define NI_NOFQDN      4
 #define NI_NAMEREQD    8
 #define NI_DGRAM       16
+#endif
 #endif
 
 

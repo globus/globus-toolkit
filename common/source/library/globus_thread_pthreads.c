@@ -40,16 +40,12 @@ CVS Information:
 #if HAVE_PTHREAD
 #include <pthread.h>
 
-extern globus_mutex_t globus_libc_mutex;
-
 typedef struct globus_i_thread_s
 {
     globus_thread_func_t                user_func;
     void *                              user_arg;
     struct globus_i_thread_s *          next_free;
 } globus_i_thread_t;
-
-
 
 /*
  * globus_l_thread_self()
@@ -103,10 +99,6 @@ int
 globus_l_pthread_pre_activate( void )
 {
   int rc;
-
-
-    rc = globus_mutex_init(&globus_libc_mutex, NULL);
-    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: globus_mutex_init() failed\n"));
 
 #ifndef WIN32
     rc = globus_i_thread_ignore_sigpipe();
@@ -826,6 +818,7 @@ globus_l_pthread_cond_broadcast(
     }
 } /* globus_cond_broadcast() */
 
+#ifndef TARGET_ARCH_WIN32
 static
 int
 globus_l_pthread_thread_sigmask(
@@ -847,6 +840,7 @@ globus_l_pthread_thread_kill(
 {
     return pthread_kill(thread.pthread, sig);
 }
+#endif
 
 static
 int
@@ -918,8 +912,13 @@ static globus_thread_impl_t globus_l_pthread_impl =
     globus_l_pthread_thread_setspecific,
     globus_l_pthread_thread_yield,
     globus_l_pthread_thread_exit,
+#ifndef TARGET_ARCH_WIN32
     globus_l_pthread_thread_sigmask,
     globus_l_pthread_thread_kill,
+#else
+    NULL,
+    NULL,
+#endif
     globus_l_pthread_thread_setcancelstate,
     globus_l_pthread_thread_testcancel,
     globus_l_pthread_thread_cancel,

@@ -80,11 +80,13 @@ globus_l_libc_copy_hostent_data_to_buffer(
     char *                              buffer,
     size_t                              buflen);
 
+#if !defined(TARGET_ARCH_WIN32)
 static void
 globus_l_libc_copy_pwd_data_to_buffer(
     struct passwd *                     pwd,
     char *                              buffer,
     size_t                              buflen);
+#endif
 
 /******************************************************************************
 Function: globus_libc_lock()
