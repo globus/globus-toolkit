@@ -1421,6 +1421,7 @@ globus_gram_job_manager_reply(
 
             goto extension_insert_failed;
         }
+        extension = NULL;
     }
 
     /* Response to initial job request. */
