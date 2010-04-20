@@ -428,7 +428,11 @@ process_mux_new_session(u_int rid, Channel *c, Buffer *m, Buffer *r)
 	if (!isatty(new_fd[2]))
 		set_nonblock(new_fd[2]);
 
-	window = CHAN_SES_WINDOW_DEFAULT;
+	if (options.hpn_disabled) 
+	  window = CHAN_SES_WINDOW_DEFAULT;
+	else
+	  window = options.hpn_buffer_size;
+
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (cctx->want_tty) {
 		window >>= 1;

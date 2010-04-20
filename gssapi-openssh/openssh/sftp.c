@@ -77,6 +77,12 @@ FILE* infile;
 /* Are we in batchfile mode? */
 int batchmode = 0;
 
+/* Size of buffer used when copying files */
+size_t copy_buffer_len = 32768;
+
+/* Number of concurrent outstanding requests */
+size_t num_requests = 256;
+
 /* PID of ssh transport process */
 static pid_t sshpid = -1;
 
