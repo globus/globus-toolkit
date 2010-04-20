@@ -544,7 +544,6 @@ globus_l_url_sync_compare_func_top_cb(
 /* globus_l_url_sync_compare_func_top_cb */
 
 
-
 /*
  * The operation complete callback for the ftp client list operation.
  */
@@ -580,7 +579,7 @@ globus_l_url_sync_list_complete_cb(
         globus_url_sync_handle_t        handle;
         globus_url_sync_comparator_t *  comparator;
         char *                          entry;
-	char child[GLOBUS_I_URL_SYNC_FILENAME_BUFLEN];
+        char child[GLOBUS_I_URL_SYNC_FILENAME_BUFLEN];
 
         /* Get handle */
         handle = sync_arg->handle;
@@ -596,7 +595,7 @@ globus_l_url_sync_list_complete_cb(
 
             /* Make new endpoints */
             sync_arg->compare_source =
-	      globus_l_url_sync_make_src_endpoint(sync_arg->source, entry, child);
+                    globus_l_url_sync_make_src_endpoint(sync_arg->source, entry, child);
 
             sync_arg->compare_destination =
                     globus_l_url_sync_make_new_endpoint(sync_arg->destination, child);
@@ -713,14 +712,14 @@ globus_l_url_sync_compare_func_recurse_cb(
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.
      */
-    /* TODO: we should ONLY do a recursive listing IF the sync handle has an
+    /*  We should ONLY do a recursive listing IF the sync handle has an
      *  option set by the user instructing us to do the listings recursively. */
     if (((!compare_result) &&
 	 source->stats.type == globus_url_sync_endpoint_type_dir &&
-	 destination->stats.type == globus_url_sync_endpoint_type_dir) ||
-	(globus_url_sync_handle_get_recursion(handle) &&
-	 (!error) &&
-	 source->stats.type == globus_url_sync_endpoint_type_dir))
+	 (destination->stats.type == globus_url_sync_endpoint_type_dir)) ||
+	((!error) &&
+	 source->stats.type == globus_url_sync_endpoint_type_dir &&
+	 globus_url_sync_handle_get_recursion(handle)))
     {
         globus_l_url_sync_arg_t *           child;
         globus_result_t                     result;
