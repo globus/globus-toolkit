@@ -3,7 +3,7 @@
 globus-url-sync \- URL Synchronization
 .SH SYNOPSIS
 .B globus-url-sync
-[-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] [-t] <sourceURL> <destURL>
+[-help | -usage] [-version] [-d | -v] [-c] [-r] [-m] [-s] [-t] <sourceURL> <destURL>
 .SH SUMMARY
 The program
 .B globus-url-sync
@@ -28,8 +28,8 @@ Print additional detail.
 .B  -c | -connection-caching-off
 Disable GridFTP client connection caching.
 .TP
-.B  -f | -full-file-pathname
-Output full file pathnames (when recursive directory copy is not in use).
+.B" -r | -recursive-dir-copy\n"
+Output directory names when whole directory is to be copied.
 .TP
 .B -m | -modify
 Compare files by last modified timestamp.
