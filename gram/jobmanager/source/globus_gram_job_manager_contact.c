@@ -34,6 +34,7 @@ typedef struct globus_gram_job_callback_context_s
     unsigned char *                     message;
     globus_size_t                       message_length;
     int                                 active;
+    globus_bool_t                       restart_state_when_done;
 }
 globus_gram_job_callback_context_t;
 
@@ -269,9 +270,26 @@ globus_gram_job_manager_contact_list_free(
 }
 /* globus_gram_job_manager_contact_list_free() */
 
+/**
+ * @brief Send a job state callback to registered clients
+ * @details
+ *     Start processing a job state callback for the given request, sending
+ *     its current job state to all clients which are registered with a
+ *     mask that includes the current state. If the
+ *     @a restart_state_machine_when_done parameter is GLOBUS_TRUE, then
+ *     the state machine will be reregistered after the callback has been
+ *     sent and its reply parsed. Otherwise, the state machine is assumed
+ *     to not care about when this completes.
+ *
+ * @param request
+ *     Job request to send state changes about
+ * @param restart_state_machine_when_done
+ *     Flag indicating whether to restart the state machine when complete
+ */
 void
 globus_gram_job_manager_contact_state_callback(
-    globus_gram_jobmanager_request_t *  request)
+    globus_gram_jobmanager_request_t *  request,
+    globus_bool_t                       restart_state_machine_when_done)
 {
     int                                 rc;
     globus_list_t *                     tmp_list;
@@ -291,9 +309,11 @@ globus_gram_job_manager_contact_state_callback(
             "level=DEBUG "
             "gramid=%s "
             "state=%d "
+            "restart_when_done=%s "
             "\n",
             request->job_contact_path,
-            state);
+            state,
+            restart_state_machine_when_done ? "true" : "false");
 
     globus_gram_job_callback_context_t *context = NULL;
 
@@ -315,6 +335,17 @@ globus_gram_job_manager_contact_state_callback(
                 state,
                 0,
                 "Empty callback contact list");
+
+        if (restart_state_machine_when_done)
+        {
+            globus_reltime_t delay;
+
+            GlobusTimeReltimeSet(delay, request->two_phase_commit, 0);
+            rc = globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    &delay);
+        }
         return;
     }
 
@@ -373,6 +404,7 @@ globus_gram_job_manager_contact_state_callback(
     context->message = NULL;
     context->message_length = 0;
     context->active = 0;
+    context->restart_state_when_done = restart_state_machine_when_done;
 
     rc = globus_hashtable_init(
             &extensions,
@@ -981,6 +1013,17 @@ queue_failed:
             free(tmp);
         }
 nothing_to_send:
+        if (restart_state_machine_when_done)
+        {
+            globus_reltime_t delay;
+
+            GlobusTimeReltimeSet(delay, request->two_phase_commit, 0);
+
+            rc = globus_gram_job_manager_state_machine_register(
+                    request->manager,
+                    request,
+                    &delay);
+        }
         free(context->message);
 
         globus_gram_job_manager_remove_reference(
@@ -1395,6 +1438,7 @@ globus_l_gram_callback_reply(
     globus_gram_jobmanager_request_t *  request;
     globus_gram_job_manager_t *         manager;
     globus_list_t *                     references = NULL;
+    globus_list_t *                     references_to_restart = NULL;
     int                                 rc = GLOBUS_SUCCESS;
 
     context = arg;
@@ -1407,9 +1451,16 @@ globus_l_gram_callback_reply(
 
     if (context->active == 0 && globus_list_empty(context->contacts))
     {
+        if (context->restart_state_when_done)
+        {
+            globus_list_insert(&references_to_restart, request);
+        }
+        else
+        {
+            globus_list_insert(&references, request);
+        }
         free(context->message);
         free(context);
-        globus_list_insert(&references, request->job_contact_path);
     }
 
     while (manager->state_callback_slots > 0 &&
@@ -1447,20 +1498,47 @@ globus_l_gram_callback_reply(
         }
         if (context->active == 0 && globus_list_empty(context->contacts))
         {
+            if (context->restart_state_when_done)
+            {
+                globus_list_insert(&references_to_restart, request);
+            }
+            else
+            {
+                globus_list_insert(&references, request);
+            }
             free(context->message);
             free(context);
-            globus_list_insert(&references, request->job_contact_path);
         }
     }
     GlobusGramJobManagerUnlock(manager);
 
     while (!globus_list_empty(references))
     {
-        char * key = globus_list_remove(&references, references);
+        request = globus_list_remove(&references, references);
 
         globus_gram_job_manager_remove_reference(
                manager,
-               key,
+               request->job_contact_path,
+               "Job state callbacks");
+    }
+    while (!globus_list_empty(references_to_restart))
+    {
+        globus_reltime_t                delay;
+
+        request = globus_list_remove(
+                &references_to_restart,
+                references_to_restart);
+
+        GlobusTimeReltimeSet(delay, request->two_phase_commit, 0);
+
+        rc = globus_gram_job_manager_state_machine_register(
+                request->manager,
+                request,
+                &delay);
+
+        globus_gram_job_manager_remove_reference(
+               manager,
+               request->job_contact_path,
                "Job state callbacks");
     }
 }
