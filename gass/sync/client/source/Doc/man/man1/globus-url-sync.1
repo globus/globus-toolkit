@@ -1,4 +1,4 @@
-.TH globus-url-sync 1 "23 Feb 2010"
+.TH globus-url-sync 1 "21 April 2010"
 .SH NAME
 globus-url-sync \- URL Synchronization
 .SH SYNOPSIS
@@ -7,7 +7,8 @@ globus-url-sync \- URL Synchronization
 .SH SUMMARY
 The program
 .B globus-url-sync
-compares two endpoints, using GridFTP, and prints a list of GSI file transfers that should be performed using 
+compares two endpoints, using GridFTP, and prints a list of GSI file transfers 
+that should be performed using 
 .B globus-url-copy
 with options 
 .B -r
@@ -26,10 +27,14 @@ Print the version of this program.
 Print additional detail.
 .TP
 .B -c | -connection-caching-off
-Disable GridFTP client connection caching.
+Disable GridFTP client connection caching, which is enabled by default.
 .TP
 .B -r | -recursive-dir-copy\n
-Output directory names when whole directory is to be copied.
+Output directory names, when an entire directory is to be copied recursively.
+This option may be used to improve performance, particularly when the 
+destination is being populated for the first time.  This option should also 
+be used when an empty directory is to be copied, as the default configuration, 
+which lists complete file pathnames, will not list a pathname of an empty directory.
 .TP
 .B -m | -modify
 Compare files by last modified timestamp.

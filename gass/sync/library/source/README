@@ -26,23 +26,19 @@ Install globus-url-sync, from source:
 Note: 
 ----
 
-o GSI user credentials are needed too run globus-url-sync.
+o GSI user credentials are needed to run globus-url-sync.
 
 o Also, a GridFTP server must be running on both the source and the 
   destination endpoints.
+
+o globus-url-copy should be invoked with the "-r" and the "-cd" options,
+  so that directories can be copied recursively (for "globus-url-sync -r"),
+  and so that directories at the destination can be created.
 
 o See globus-url-sync -help for available options.
 
 Known limitations:
 -----------------
-
-o If the source directory hierarchy contains directories not present in
-  the destination directory hierarchy, globus-url-copy must be invoked
-  with the -cd (create directory) option.
-
-o Empty directories, anywhere in the source directory hierarchy, are not
-  currently handled, and will not be mentioned in the list of files to be
-  transferred using globus-url-copy.
 
 o Performance may be slow until it's been optimized to take advantage of
   some new GridFTP features.
