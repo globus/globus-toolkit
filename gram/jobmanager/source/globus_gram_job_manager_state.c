@@ -275,7 +275,9 @@ globus_l_gram_job_manager_state_machine(
 
             if(!request->dry_run)
             {
-                globus_gram_job_manager_contact_state_callback(request);
+                globus_gram_job_manager_contact_state_callback(
+                        request,
+                        GLOBUS_FALSE);
             }
 
             rc = globus_gram_job_manager_script_stage_in(request);
@@ -453,7 +455,7 @@ globus_l_gram_job_manager_state_machine(
             /* Send job state callbacks if necessary */
             if(request->unsent_status_change)
             {
-                globus_gram_job_manager_contact_state_callback(request);
+                globus_gram_job_manager_contact_state_callback(request, GLOBUS_FALSE);
                 request->unsent_status_change = GLOBUS_FALSE;
             }
 
@@ -875,7 +877,9 @@ globus_l_gram_job_manager_state_machine(
 
             if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT)
             {
-                globus_gram_job_manager_contact_state_callback(request);
+                globus_gram_job_manager_contact_state_callback(
+                        request,
+                        GLOBUS_FALSE);
                 request->unsent_status_change = GLOBUS_FALSE;
             }
         }
@@ -1059,7 +1063,7 @@ globus_l_gram_job_manager_state_machine(
          * between the time the job request reply is sent and the 
          * job manager has noticed stop or failed
          */
-        globus_gram_job_manager_contact_state_callback(request);
+        globus_gram_job_manager_contact_state_callback(request, GLOBUS_FALSE);
 
         globus_gram_job_manager_state_file_write(request);
 
@@ -1238,30 +1242,22 @@ globus_l_gram_job_manager_state_machine(
                 request->job_history_status = request->status;
             }
 
-            globus_gram_job_manager_contact_state_callback(request);
-            request->unsent_status_change = GLOBUS_FALSE;
-        }
-
-        /*
-         * If there are no client callbacks then skip the two phase end
-         * commit delay, since there is nobody listening to the state
-         * changes to send the commit.
-         */
-
-        if(request->two_phase_commit != 0 && request->client_contacts)
-        {
-            GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
-
-            rc = globus_gram_job_manager_state_machine_register(
-                    request->manager,
+            /*
+             * If we are doing two-phase_commit, then we will have the 
+             * state machine restarted after the job state callback message
+             * is done being processed.
+             */
+            globus_gram_job_manager_contact_state_callback(
                     request,
-                    &delay_time);
+                    (request->two_phase_commit != 0));
+            request->unsent_status_change = GLOBUS_FALSE;
 
-            if (rc == GLOBUS_SUCCESS)
+            if (request->two_phase_commit != 0)
             {
                 event_registered = GLOBUS_TRUE;
             }
         }
+
         break;
     }
 
@@ -1372,6 +1368,7 @@ globus_gram_job_manager_reply(
 
             goto extension_insert_failed;
         }
+        extension = NULL;
     }
 
     extension = globus_gram_protocol_create_extension(
