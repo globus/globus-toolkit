@@ -992,7 +992,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
                     "status=%d "
                     "\n",
                     globus_rsl_relation_get_attribute(relation),
-                    when,
+                    whenstr,
                     -rc);
             if (request->gt3_failure_message == NULL)
             {
