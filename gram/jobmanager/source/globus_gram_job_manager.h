@@ -967,7 +967,8 @@ globus_gram_job_manager_contact_list_free(
 
 void
 globus_gram_job_manager_contact_state_callback(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_jobmanager_request_t *  request,
+    globus_bool_t                       restart_state_machine);
 
 int
 globus_gram_job_manager_write_callback_contacts(
