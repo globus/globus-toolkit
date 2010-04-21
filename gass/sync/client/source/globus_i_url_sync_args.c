@@ -38,6 +38,7 @@ globus_bool_t	globus_i_url_sync_args_debug		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_modify		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_size		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_cache		= GLOBUS_TRUE;
+globus_bool_t	globus_i_url_sync_args_recurse		= GLOBUS_TRUE;
 
 static globus_url_t     globus_l_url_sync_args_source;
 static globus_url_t     globus_l_url_sync_args_destination;
@@ -46,6 +47,7 @@ enum {
     arg_verbose = 1,
     arg_debug,
     arg_cache_off,
+    arg_recurse,
     arg_modify,
     arg_size,
     arg_num = arg_size,
@@ -55,6 +57,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
 static char *verbose_args[] = {"-v", "-verbose", GLOBUS_NULL};
 static char *debug_args[] = {"-d", "-debug", GLOBUS_NULL};
 static char *cache_off_args[] = {"-c", "-connection-caching-off", GLOBUS_NULL};
+static char *recurse_args[] = {"-r", "-recursive-dir-copy", GLOBUS_NULL};
 static char *modify_args[] = {"-m", "-modify", GLOBUS_NULL};
 static char *size_args[] = {"-s", "-size", GLOBUS_NULL};
 static globus_args_option_descriptor_t verbose_def =
@@ -67,9 +70,11 @@ static globus_args_option_descriptor_t size_def =
   {arg_size, size_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t cache_off_def =
   {arg_cache_off, cache_off_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t recurse_def =
+  {arg_recurse, recurse_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 
 static char * usage_str= 
-"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] <sourceURL> <destURL>";
+"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-r] [-m] [-s] <sourceURL> <destURL>";
 
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
@@ -82,6 +87,8 @@ static char * help_str=
 "\tPrint additional detail.\n"
 "  -c | -connection-caching-off\n"
 "\tDisable GridFTP client connection caching.\n"
+"  -r | -recursive-dir-copy\n"
+"\tOutput directory names when whole directory is to be copied.\n"
 "  -m | -modify\n"
 "\tCompare files by last modified timestamp.\n"
 "  -s | -size\n"
@@ -93,6 +100,12 @@ static char * help_str=
 "\t\t\t\t\t\"gsiftp://myhost.edu/~/file1\"\n"
 "\tFile name, relative path:\t\"gsiftp://myhost.edu/file1\"\n"
 "\tDirectory, absolute path:\t\"gsiftp://myhost.edu//tmp/dir1/\"\n"
+"  sshftp\n"
+"    For example:\n"
+"\tFile name, absolute path:\t\"sshftp://myhost.edu//tmp/file1\"\n"
+"\t\t\t\t\t\"sshftp://myhost.edu/~/file1\"\n"
+"\tFile name, relative path:\t\"sshftp://myhost.edu/file1\"\n"
+"\tDirectory, absolute path:\t\"sshftp://myhost.edu//tmp/dir1/\"\n"
 "\n"
 ;
 
@@ -135,7 +148,8 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
     globus_i_url_sync_args_modify   = GLOBUS_FALSE;
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
-    globus_i_url_sync_args_cache	= GLOBUS_TRUE;
+    globus_i_url_sync_args_cache    = GLOBUS_TRUE;
+    globus_i_url_sync_args_recurse  = GLOBUS_TRUE;
 
     /* determine the program name */
 	program = strrchr(argv[0],'/');
@@ -150,6 +164,7 @@ globus_i_url_sync_parse_args(
     args_options[2] = modify_def;
     args_options[3] = size_def;
     args_options[4] = cache_off_def;
+    args_options[5] = recurse_def;
     if (globus_args_scan(
 		&argc,
 		&argv,
@@ -180,6 +195,9 @@ globus_i_url_sync_parse_args(
 	    break;
 	  case arg_cache_off:
 	    globus_i_url_sync_args_cache = GLOBUS_FALSE;
+	    break;
+	  case arg_recurse:
+	    globus_i_url_sync_args_recurse = GLOBUS_FALSE;
 	    break;
 	  case arg_modify:
 	    globus_i_url_sync_args_modify = GLOBUS_TRUE;

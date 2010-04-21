@@ -85,8 +85,8 @@ typedef void (*globus_i_url_sync_list_complete_callback_t) (
 
 /**
  * Creates a list of directory entries for a given URL. This function reuses a
- * FTP client handle if the URL is of scheme "gsiftp". At present this function
- * only supports listings of FTP remote directories.
+ * FTP client handle if the URL is of scheme "gsiftp" or "sshftp". 
+ * At present this function only supports listings of FTP remote directories.
  *
  * @ingroup globus_i_url_sync_list
  *

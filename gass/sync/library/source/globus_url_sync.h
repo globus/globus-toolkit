@@ -434,7 +434,7 @@ globus_url_sync_handle_destroy(
 void
 globus_url_sync_handle_set_cache_connections(
     globus_url_sync_handle_t                handle,
-	globus_bool_t                           cache_connections);
+    globus_bool_t                           cache_connections);
 
 /**
  * Probe flag for connection caching.
@@ -448,6 +448,39 @@ globus_url_sync_handle_set_cache_connections(
  */
 globus_bool_t
 globus_url_sync_handle_get_cache_connections(
+    globus_url_sync_handle_t                handle);
+
+/**
+ * Once a destination directory is found not to exist, avoid recursion
+ * when listing a directory, when possible. 
+ *
+ * "globus-url-copy -r" copies directories recursively.
+ * If this flag is set, however, recursion will take place.
+ *
+ * @ingroup globus_url_sync_handle
+ *
+ * @param   handle
+ *          Pointer to an initialized handle.
+ * @param   recursion
+ * 	    Value of the recursion flag.
+ */
+void
+globus_url_sync_handle_set_recursion(
+    globus_url_sync_handle_t                handle,
+    globus_bool_t                           recursion);
+
+/**
+ * Probe resursion flag.
+ *
+ * @ingroup globus_url_sync_handle
+ *
+ * @param   handle
+ *          Pointer to an initialized handle.
+ * @retval  boolean
+ *          Value of the recursion flag.
+ */
+globus_bool_t
+globus_url_sync_handle_get_recursion(
     globus_url_sync_handle_t                handle);
 
 /**

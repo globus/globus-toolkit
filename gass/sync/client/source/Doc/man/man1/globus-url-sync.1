@@ -3,12 +3,17 @@
 globus-url-sync \- URL Synchronization
 .SH SYNOPSIS
 .B globus-url-sync
-[-help | -usage] [-version] [-d | -v] [-c] [-m] [-s] [-t] <sourceURL> <destURL>
+[-help | -usage] [-version] [-d | -v] [-c] [-r] [-m] [-s] [-t] <sourceURL> <destURL>
 .SH SUMMARY
 The program
 .B globus-url-sync
 compares two endpoints, using GridFTP, and prints a list of GSI file transfers that should be performed using 
-.B globus-url-copy.
+.B globus-url-copy
+with options 
+.B -r
+and
+.B -cd,
+e.g. "globus-url-copy -r -cd".
 .SH OPTIONS
 .TP
 .B -help | -usage
@@ -20,8 +25,11 @@ Print the version of this program.
 .B -d | -debug | -v | -verbose
 Print additional detail.
 .TP
-.B  -c | -connection-caching-off
+.B -c | -connection-caching-off
 Disable GridFTP client connection caching.
+.TP
+.B -r | -recursive-dir-copy\n
+Output directory names when whole directory is to be copied.
 .TP
 .B -m | -modify
 Compare files by last modified timestamp.
@@ -45,6 +53,27 @@ URL scheme(s) supported:
       File name, relative path: "gsiftp://myhost.edu/file1"
       Directory, absolute path: "gsiftp://myhost.edu//tmp/dir1/"
 .fi
+.sp
+.B sshftp
+.nf
+    For example:
+      File name, absolute path: "sshftp://myhost.edu//tmp/file1"
+                                "sshftp://myhost.edu/~/file1"
+      File name, relative path: "sshftp://myhost.edu/file1"
+      Directory, absolute path: "sshftp://myhost.edu//tmp/dir1/"
+.fi
+.SH Suggested Usage (shell script)
+.nf
+    #!/bin/bash
+
+    globus-url-sync $1 $2 |
+    while read line 
+    do
+      globus-url-copy -r -cd $line
+    done
+
+    exit 0
+.fi
 .SH BUGS
 This is an early version of 
 .B globus-url-sync.
@@ -53,15 +82,6 @@ In the event that unexpected results are returned, please re-run the command wit
 option.
 .P
 .B Known limitations:
-.P
-If the source directory hierarchy contains directories not present in the destination directory hierarchy, 
-.B globus-url-copy 
-must be invoked with the 
-.B -cd 
-(create directory) option.
-.P 1
-Empty directories, anywhere in the source directory hierarchy, are not currently handled, and will not be mentioned in the list of files to be transferred using 
-.B globus-url-copy.
 .P 1
 Performance may be slow until it's been optimized to take advantage of
 some new GridFTP features.

@@ -52,6 +52,7 @@ typedef struct globus_l_url_sync_handle_s
 {
     globus_l_url_sync_handle_state_t        state;
     globus_bool_t                           cache_connections;
+    globus_bool_t                           recursion;
     globus_url_sync_endpoint_t *            source;
     globus_url_sync_endpoint_t *            dest;
     globus_url_sync_complete_callback_t     complete_callback;
@@ -182,10 +183,27 @@ globus_url_sync_handle_get_cache_connections(
 void
 globus_url_sync_handle_set_cache_connections(
     globus_url_sync_handle_t                handle,
-	globus_bool_t                           cache_connections)
+    globus_bool_t                           cache_connections)
 {
-	globus_assert(handle);
-	handle->cache_connections = cache_connections;
+    globus_assert(handle);
+    handle->cache_connections = cache_connections;
+}
+
+globus_bool_t
+globus_url_sync_handle_get_recursion(
+    globus_url_sync_handle_t                handle)
+{
+    globus_assert(handle);
+    return handle->recursion;
+}
+
+void
+globus_url_sync_handle_set_recursion(
+    globus_url_sync_handle_t                handle,
+    globus_bool_t                           recursion)
+{
+    globus_assert(handle);
+    handle->recursion = recursion;
 }
 
 globus_url_sync_endpoint_t *
@@ -321,7 +339,9 @@ globus_i_url_sync_endpoint_init(
     memset(*endpoint_out, 0, sizeof(globus_url_sync_endpoint_t));
     globus_assert(*endpoint_out);
     globus_assert(url);
-    (*endpoint_out)->url = strdup(url);
+    /* allow room for a trailing "/", in case it's needed */
+    (*endpoint_out)->url = globus_libc_malloc(strlen(url)+2);
+    strcpy((*endpoint_out)->url, url);
     (*endpoint_out)->ftp_handle = ftp_handle;
     return GLOBUS_SUCCESS;
 }
