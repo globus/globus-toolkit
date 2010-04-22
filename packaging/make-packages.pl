@@ -446,8 +446,8 @@ sub create_makefile_installer
          }
 	 my $versionnumber = "$package_version_hash{$pack}{'major'}.$package_version_hash{$pack}{'minor'}";
          open(PAC, ">$top_dir/pacman_cache/$pack.pacman");
-         print PAC "packageName($pack)\n";
-         print PAC "version($versionnumber);\n";
+         print PAC "packageName('$pack')\n";
+         print PAC "version('$versionnumber');\n";
 
          my $extras="";
 
