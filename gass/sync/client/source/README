@@ -23,6 +23,21 @@ Install globus-url-sync, from source:
 	./bootstrap
 	$GLOBUS_LOCATION/sbin/gpt-build -verbose -force gcc64dbgpthr
 
+
+Example shell script:
+------- ----- ------
+
+    #!/bin/bash
+
+    globus-url-sync $1 $2 |
+    while read line 
+    do
+      globus-url-copy -r -cd $line
+    done
+
+    exit 0
+
+
 Note: 
 ----
 
