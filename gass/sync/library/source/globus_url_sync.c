@@ -158,11 +158,9 @@ globus_l_url_sync_make_src_endpoint(
     strcpy((new_url+base_len), child);
   
     /* Init new endpoint */
-    new_endpoint->url = strdup(new_url);
+    new_endpoint->url = new_url;
     new_endpoint->ftp_handle = base->ftp_handle;
   
-    /* Free the new url, and return new endpoint */
-    globus_libc_free(new_url);
     return new_endpoint;
 } /* globus_l_url_sync_make_src_endpoint */
 
