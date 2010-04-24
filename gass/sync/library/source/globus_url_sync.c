@@ -777,7 +777,7 @@ globus_l_url_sync_url2str(
 
     /* Copy scheme and "://" */
     if (url->scheme != NULL) {
-        size = strlen(url->scheme)+3;
+        size = globus_libc_strlen(url->scheme)+3;
 	if (len <= size)
 	    return NULL;
 	globus_libc_snprintf(pstr, len, "%s://", url->scheme);
@@ -787,31 +787,45 @@ globus_l_url_sync_url2str(
         return NULL;
     }
 	
-    /* Copy Host */
-    if (strcmp(url->scheme, "gsiftp") == 0 ||
-	strcmp(url->scheme, "sshftp") == 0) {
-        if (url->host != NULL) {
-	    size = strlen(url->host);
+    if (url->host != NULL) {
+        /* Copy username and password */
+        if (url->user != NULL) {
+	    size = globus_libc_strlen(url->user) + 1;
 	    if (len <= size)
 	        return NULL;
-	    strncpy(pstr, url->host, len);
-	    pstr += size;
-	    len -= size;
-	    
-	    /* Copy ":" and Port */
-	    if (url->port != 0) {
-	        size = 7;
+	    if (url->password != NULL) {
+	        size += globus_libc_strlen(url->password) + 1;
 		if (len <= size)
 		    return NULL;
-		globus_libc_snprintf(pstr, len, ":%d", url->port);
-		size = strlen(pstr);
-		pstr += size;
-		len -= size;
+		globus_libc_snprintf(pstr, len, "%s:%s@", url->user, url->password);
+	    } else {
+	        globus_libc_snprintf(pstr, len, "%s@", url->user);
 	    }
-	} else {
+	    pstr += size;
+	    len -= size;
+	}
+
+	/* Copy Host */
+        size = globus_libc_strlen(url->host);
+	if (len <= size)
 	    return NULL;
-	}	
-    }
+	strncpy(pstr, url->host, len);
+	pstr += size;
+	len -= size;
+	    
+	/* Copy ":" and Port */
+	if (url->port != 0) {
+	    size = 7;
+	    if (len <= size)
+	        return NULL;
+	    globus_libc_snprintf(pstr, len, ":%d", url->port);
+	    size = globus_libc_strlen(pstr);
+	    pstr += size;
+	    len -= size;
+	}
+    } else {
+        return NULL;
+    }	
 	
     /* Copy Path */
     if (url->url_path != NULL) {
@@ -826,7 +840,7 @@ globus_l_url_sync_url2str(
 	        prefix = "/~";
 	    }
 	}
-	size = strlen(url->url_path) + strlen(prefix);
+	size = globus_libc_strlen(url->url_path) + globus_libc_strlen(prefix);
 	if (len <= size)
 	    return NULL;
 	globus_libc_snprintf(pstr, len, "%s%s", prefix, url->url_path);
