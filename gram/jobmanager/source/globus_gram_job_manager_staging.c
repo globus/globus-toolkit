@@ -66,12 +66,14 @@ globus_gram_job_manager_staging_create_list(
     globus_rsl_value_t *                to;
     globus_list_t *                     list;
     globus_list_t *                     pairs;
+    globus_rsl_value_t                  from_cached_stdout;
+    globus_rsl_value_t                  from_cached_stderr;
+    globus_bool_t                       single_stdout, single_stderr;
     char *                              can_stage_list[] =
     {
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM,
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM,
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM,
-        "filestreamout",
         NULL
     };
     int                                 errors_list[] =
@@ -79,7 +81,6 @@ globus_gram_job_manager_staging_create_list(
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN,
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED,
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT,
-        GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT,
         0
     };
 
@@ -123,6 +124,48 @@ globus_gram_job_manager_staging_create_list(
                 goto failed_adding_exit;
                 
             }
+        }
+    }
+
+    list = globus_rsl_param_get_values(request->rsl,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
+
+    from_cached_stdout.type = GLOBUS_RSL_VALUE_LITERAL;
+    from_cached_stdout.value.literal.string = request->cached_stdout;
+
+    single_stdout = (globus_list_size(list) == 1);
+    while (!globus_list_empty(list))
+    {
+        to = globus_list_first(list);
+        list = globus_list_rest(list);
+
+        rc = globus_l_gram_job_manager_staging_add_pair(
+                request,
+                &from_cached_stdout,
+                to,
+                "filestreamout");
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_adding_exit;
+        }
+    }
+    from_cached_stderr.type = GLOBUS_RSL_VALUE_LITERAL;
+    from_cached_stderr.value.literal.string = request->cached_stderr;
+
+    single_stderr = (globus_list_size(list) == 1);
+    while (!globus_list_empty(list))
+    {
+        to = globus_list_first(list);
+        list = globus_list_rest(list);
+
+        rc = globus_l_gram_job_manager_staging_add_pair(
+                request,
+                &from_cached_stderr,
+                to,
+                "filestreamout");
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_adding_exit;
         }
     }
 

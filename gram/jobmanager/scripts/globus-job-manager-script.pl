@@ -112,6 +112,7 @@ if ($command eq 'interactive')
             {
                 &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
             }
+            print DEBUG "$input\n";
             $job_description = new Globus::GRAM::JobDescription($jd);
             $manager = new $manager_class($job_description) or
                 &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
@@ -179,8 +180,8 @@ sub run_command
                 }
             }
         }
-        $manager->rewrite_urls();
     }
+    $manager->rewrite_urls();
     $result = $manager->$cmd();
 
     if(UNIVERSAL::isa($result, 'Globus::GRAM::Error'))

@@ -466,6 +466,7 @@ sub rewrite_urls
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $url;
     my $filename;
+    my $filestreamout = [];
 
     foreach ('stdin', 'executable')
     {
@@ -480,6 +481,24 @@ sub rewrite_urls
 	    }
 	}
     }
+    foreach my $which ('stdout', 'stderr')
+    {
+        my @destinations = $description->$which();
+        my $cached_destination = $self->job_dir() . "/$which";
+
+        if (scalar(@destinations) == 1 && $destinations[0] !~ m|://|)
+        {
+            next;
+        }
+        foreach my $dest (@destinations)
+        {
+            my $pair = [$cached_destination, $dest];
+
+            push(@{$filestreamout}, $pair);
+        }
+        $description->add($which, $cached_destination);
+    }
+    $description->add('filestreamout', $filestreamout);
     return {};
 }
 
