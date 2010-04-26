@@ -23,6 +23,14 @@ Install globus-url-sync, from source:
 	./bootstrap
 	$GLOBUS_LOCATION/sbin/gpt-build -verbose -force gcc64dbgpthr
 
+Piping from globus-url-sync to globus_url_copy
+------ ---- --------------- -- ---------------
+
+For example:
+
+  globus-url-sync -r -s gsiftp://host.edu//tmp/dir1 gsiftp://host.edu//tmp/dir2 | globus-url-copy -cd -r -f -
+
+Or, a customized shell script can be used.
 
 Example shell script:
 ------- ----- ------
