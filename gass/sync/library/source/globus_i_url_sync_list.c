@@ -416,8 +416,12 @@ globus_l_url_sync_list_ftp_read_cb(
     }
 
     /* Register read operation */
-    result = globus_ftp_client_register_read(list_arg->ftp_handle, buffer, length,
-            globus_l_url_sync_list_ftp_read_cb, user_arg);
+	result = globus_ftp_client_register_read(
+             list_arg->ftp_handle,
+             list_arg->buffer,
+             list_arg->buffer_length,
+             globus_l_url_sync_list_ftp_read_cb,
+             list_arg);
 
     /* Report error and abort, if failed */
     if(result != GLOBUS_SUCCESS)
