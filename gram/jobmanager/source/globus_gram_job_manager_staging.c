@@ -54,6 +54,11 @@ globus_l_gram_staging_list_read_state(
     globus_gram_job_manager_staging_type_t
                                         staging_type,
     globus_list_t **                    staging_list);
+
+static
+void
+globus_l_gram_staging_list_free(
+    globus_list_t **                    staging_list);
 #endif
 
 int
@@ -172,6 +177,74 @@ globus_gram_job_manager_staging_create_list(
     return GLOBUS_SUCCESS;
 failed_adding_exit:
     globus_gram_job_manager_staging_free_all(request);
+    return rc;
+}
+/* globus_gram_job_manager_staging_create_list() */
+
+int
+globus_gram_job_manager_streaming_list_replace(
+    globus_gram_jobmanager_request_t *  request)
+{
+    int                                 rc;
+    globus_rsl_value_t *                to;
+    globus_list_t *                     list;
+    globus_list_t *                     old_list;
+    globus_rsl_value_t                  from_cached_stdout;
+    globus_rsl_value_t                  from_cached_stderr;
+    globus_bool_t                       single_stdout, single_stderr;
+
+    old_list = request->stage_stream_todo;
+    request->stage_stream_todo = NULL;
+
+    list = globus_rsl_param_get_values(request->rsl,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
+
+    from_cached_stdout.type = GLOBUS_RSL_VALUE_LITERAL;
+    from_cached_stdout.value.literal.string = request->cached_stdout;
+
+    single_stdout = (globus_list_size(list) == 1);
+    while (!globus_list_empty(list))
+    {
+        to = globus_list_first(list);
+        list = globus_list_rest(list);
+
+        rc = globus_l_gram_job_manager_staging_add_pair(
+                request,
+                &from_cached_stdout,
+                to,
+                "filestreamout");
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_adding_exit;
+        }
+    }
+    from_cached_stderr.type = GLOBUS_RSL_VALUE_LITERAL;
+    from_cached_stderr.value.literal.string = request->cached_stderr;
+
+    single_stderr = (globus_list_size(list) == 1);
+    while (!globus_list_empty(list))
+    {
+        to = globus_list_first(list);
+        list = globus_list_rest(list);
+
+        rc = globus_l_gram_job_manager_staging_add_pair(
+                request,
+                &from_cached_stderr,
+                to,
+                "filestreamout");
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto failed_adding_exit;
+        }
+    }
+
+    globus_l_gram_staging_list_free(&old_list);
+failed_adding_exit:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_staging_list_free(&request->stage_stream_todo);
+        request->stage_stream_todo = old_list;
+    }
     return rc;
 }
 /* globus_gram_job_manager_staging_create_list() */
@@ -731,46 +804,32 @@ globus_l_gram_job_manager_staging_match(
 }
 /* globus_l_gram_job_manager_staging_match() */
 
+static
+void
+globus_l_gram_staging_list_free(
+    globus_list_t **                    staging_list)
+{
+    globus_gram_job_manager_staging_info_t *
+                                        info;
+    while (!globus_list_empty(*staging_list))
+    {
+        info = globus_list_remove(staging_list, *staging_list);
+        globus_rsl_value_free_recursive(info->from);
+        globus_rsl_value_free_recursive(info->to);
+        free(info->evaled_from);
+        free(info->evaled_to);
+        free(info);
+    }
+}
+
 void
 globus_gram_job_manager_staging_free_all(
     globus_gram_jobmanager_request_t *  request)
 {
-    globus_gram_job_manager_staging_info_t *
-                                        info;
-
-    while(!globus_list_empty(request->stage_in_todo))
-    {
-        info = globus_list_remove(&request->stage_in_todo,
-                                  request->stage_in_todo);
-
-        globus_rsl_value_free_recursive(info->from);
-        globus_rsl_value_free_recursive(info->to);
-        free(info->evaled_from);
-        free(info->evaled_to);
-        free(info);
-    }
-    while(!globus_list_empty(request->stage_in_shared_todo))
-    {
-        info = globus_list_remove(&request->stage_in_shared_todo,
-                                  request->stage_in_shared_todo);
-
-        globus_rsl_value_free_recursive(info->from);
-        globus_rsl_value_free_recursive(info->to);
-        free(info->evaled_from);
-        free(info->evaled_to);
-        free(info);
-    }
-    while(!globus_list_empty(request->stage_out_todo))
-    {
-        info = globus_list_remove(&request->stage_out_todo,
-                                  request->stage_out_todo);
-
-        globus_rsl_value_free_recursive(info->from);
-        globus_rsl_value_free_recursive(info->to);
-        free(info->evaled_from);
-        free(info->evaled_to);
-        free(info);
-    }
+    globus_l_gram_staging_list_free(&request->stage_in_todo);
+    globus_l_gram_staging_list_free(&request->stage_in_shared_todo);
+    globus_l_gram_staging_list_free(&request->stage_out_todo);
+    globus_l_gram_staging_list_free(&request->stage_stream_todo);
 }
 /* globus_gram_job_manager_staging_free_all() */
 

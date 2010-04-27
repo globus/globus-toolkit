@@ -216,7 +216,6 @@ globus_gram_job_manager_request_init(
     int                                 rc;
     const char *                        tmp_string;
     int                                 count;
-    int                                 tmpfd;
     int                                 proxy_timeout;
 
     if (old_job_contact)
@@ -714,8 +713,6 @@ cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
 bad_proxy_timeout:
-open_stderr_failed:
-open_stdout_failed:
         if (r->remote_io_url_file)
         {
             remove(r->remote_io_url_file);
@@ -2221,24 +2218,6 @@ globus_i_gram_request_stdio_update(
         }
     }
 
-    rc = globus_gram_rewrite_output_as_staging(
-            request,
-            update_rsl,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_rewrite_stdout;
-    }
-            
-    rc = globus_gram_rewrite_output_as_staging(
-            request,
-            update_rsl,
-            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_rewrite_stderr;
-    }
-            
     tmp_rsl = globus_gram_job_manager_rsl_merge(
         request->rsl,
         update_rsl);
@@ -2248,8 +2227,14 @@ globus_i_gram_request_stdio_update(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
         goto failed_rsl_merge;
     }
-
     request->rsl = tmp_rsl;
+
+    rc = globus_gram_job_manager_streaming_list_replace(request);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto staging_list_replace_failed;
+    }
+
     rc = globus_gram_job_manager_rsl_attribute_get_string_value(
             request->rsl,
             GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
@@ -2287,9 +2272,11 @@ globus_i_gram_request_stdio_update(
         rc = globus_i_gram_remote_io_url_update(request);
     }
 
+
+    /* Replace filestream todo list */
+
+staging_list_replace_failed:
 get_remote_io_url_failed:
-failed_rewrite_stderr:
-failed_rewrite_stdout:
 failed_rsl_merge:
 failed_check_position:
     return rc;

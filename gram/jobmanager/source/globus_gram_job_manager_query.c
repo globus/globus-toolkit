@@ -31,6 +31,7 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_system_config_constants.h"
 #include "globus_gram_jobmanager_callout_error.h"
+#include "globus_rsl_assist.h"
 #include "version.h"
 
 #include <string.h>
@@ -111,6 +112,12 @@ static
 const char *
 globus_l_gram_get_job_contact_from_uri(
     const char *                        uri);
+
+static
+int
+globus_l_gram_stdio_update_signal(
+    globus_gram_jobmanager_request_t *  request,
+    char *                              update_rsl_spec);
 
 void
 globus_gram_job_manager_query_callback(
@@ -847,10 +854,6 @@ globus_l_gram_job_manager_signal(
 
     switch(signal)
     {
-    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL:
-    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND:
-    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME:
-    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_PRIORITY:
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE:
         if(!after_signal || strlen(after_signal) == 0)
         {
@@ -872,6 +875,86 @@ globus_l_gram_job_manager_signal(
                     globus_i_gram_job_manager_state_strings[
                             request->jobmanager_state],
                     "Missing signal argument",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
+        if(!globus_l_gram_job_manager_query_valid(request))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Invalid query",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
+        rc = globus_l_gram_stdio_update_signal(request, after_signal);
+        break;
+    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL:
+    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND:
+    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME:
+    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_PRIORITY:
+        if(!after_signal || strlen(after_signal) == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Missing signal argument",
+                    -rc,
+                    globus_gram_protocol_error_string(rc));
+            break;
+        }
+        if(!globus_l_gram_job_manager_query_valid(request))
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.signal.end "
+                    "level=WARN "
+                    "gramid=%s "
+                    "signal=\"%s\" "
+                    "jmstate=%s "
+                    "msg=\"%s\" "
+                    "status=%d "
+                    "reason=\"%s\" "
+                    "\n",
+                    request->job_contact_path,
+                    args,
+                    globus_i_gram_job_manager_state_strings[
+                            request->jobmanager_state],
+                    "Invalid query",
                     -rc,
                     globus_gram_protocol_error_string(rc));
             break;
@@ -910,38 +993,6 @@ globus_l_gram_job_manager_signal(
                         globus_gram_protocol_error_string(rc));
                 break;
             }
-        }
-
-        if(!globus_l_gram_job_manager_query_valid(request))
-        {
-            if(query->signal_arg)
-            {
-                free(query->signal_arg);
-            }
-            free(query);
-
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
-
-            globus_gram_job_manager_request_log(
-                    request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                    "event=gram.signal.end "
-                    "level=WARN "
-                    "gramid=%s "
-                    "signal=\"%s\" "
-                    "jmstate=%s "
-                    "msg=\"%s\" "
-                    "status=%d "
-                    "reason=\"%s\" "
-                    "\n",
-                    request->job_contact_path,
-                    args,
-                    globus_i_gram_job_manager_state_strings[
-                            request->jobmanager_state],
-                    "Invalid query",
-                    -rc,
-                    globus_gram_protocol_error_string(rc));
-            break;
         }
 
         globus_fifo_enqueue(&request->pending_queries, query);
@@ -1868,3 +1919,113 @@ globus_l_gram_get_job_contact_from_uri(
     }
 }
 /* globus_l_gram_get_job_contact_from_uri() */
+
+static
+int
+globus_l_gram_stdio_update_signal(
+    globus_gram_jobmanager_request_t *  request,
+    char *                              update_rsl_spec)
+{
+    globus_rsl_t *                      rsl;
+    int                                 rc = GLOBUS_SUCCESS;
+
+
+    rsl = globus_rsl_parse(update_rsl_spec);
+
+    if(!rsl)
+    {
+        char * tmp_str;
+
+        tmp_str = globus_gram_prepare_log_string(update_rsl_spec);
+
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram.state_machine.info "
+            "level=ERROR "
+            "gramid=%s "
+            "query_type=%s "
+            "rsl=\"%s\" "
+            "msg=%s "
+            "status=%d "
+            "reason=\"%s\" "
+            "\n",
+            request->job_contact_path,
+            "stdio_update",
+            tmp_str ? tmp_str : "",
+            "Error parsing query rsl",
+            -rc,
+            globus_gram_protocol_error_string(rc));
+
+        if (tmp_str)
+        {
+            free(tmp_str);
+        }
+        goto error_out;
+    }
+    rc = globus_rsl_assist_attributes_canonicalize(rsl);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        char * tmp_str;
+
+        tmp_str = globus_gram_prepare_log_string(update_rsl_spec);
+
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram.state_machine.end"
+            "level=ERROR "
+            "query_type=%s "
+            "gramid=%s "
+            "rsl=\"%s\" "
+            "msg=\"%s\" "
+            "status=%d "
+            "reason=\"%s\" "
+            "\n",
+            "stdio_update",
+            request->job_contact_path,
+            tmp_str ? tmp_str : "",
+            "Error canonicalizing RSL",
+            -rc,
+            globus_gram_protocol_error_string(rc));
+
+        if (tmp_str)
+        {
+            free(tmp_str);
+        }
+
+        goto free_rsl_out;
+    }
+
+    rc = globus_gram_job_manager_validate_rsl(
+            request,
+            rsl,
+            GLOBUS_GRAM_VALIDATE_STDIO_UPDATE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_rsl_out;
+    }
+
+    rc = globus_rsl_eval(rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+
+        goto free_rsl_out;
+    }
+
+    rc = globus_i_gram_request_stdio_update(
+            request,
+            rsl);
+free_rsl_out:
+    globus_rsl_free_recursive(rsl);
+error_out:
+    return rc;
+}
+/* globus_l_gram_stdio_update_signal() */
