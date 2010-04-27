@@ -62,18 +62,6 @@ URL scheme(s) supported:
       File name, relative path: "sshftp://myhost.edu/file1"
       Directory, absolute path: "sshftp://myhost.edu//tmp/dir1/"
 .fi
-.SH Suggested Usage (shell script)
-.nf
-    #!/bin/bash
-
-    globus-url-sync $1 $2 |
-    while read line 
-    do
-      globus-url-copy -r -cd $line
-    done
-
-    exit 0
-.fi
 .SH BUGS
 This is an early version of 
 .B globus-url-sync.
