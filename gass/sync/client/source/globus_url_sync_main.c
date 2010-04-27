@@ -471,7 +471,7 @@ globus_l_url_sync_main_result_cb(
     if (globus_i_url_sync_args_verbose || globus_i_url_sync_args_debug)
     {
         /* Verbose results format */
-        globus_libc_printf("%d {%s%s} %s %s\n",
+        globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
 				result,
 				(error) ? "ERROR=" : "",
 				(error) ? globus_error_get_short_desc(error) : "",
@@ -488,7 +488,7 @@ globus_l_url_sync_main_result_cb(
     else if (error)
     {
         /* print readable error message to stderr */
-        globus_libc_fprintf(stderr, "ERROR=%s; %s %s\n",
+        globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
 			    globus_error_get_short_desc(error),
 			    source->url, destination->url);
     }
@@ -497,7 +497,7 @@ globus_l_url_sync_main_result_cb(
         if (source->stats.type != globus_url_sync_endpoint_type_dir ||
 	    !globus_url_sync_handle_get_recursion(handle))
 	    /* globus-url-copy format */
-	    globus_libc_printf("%s %s\n", source->url, destination->url);
+	    globus_libc_printf("\"%s\" \"%s\"\n", source->url, destination->url);
     }
     GLOBUS_L_URL_SYNC_DEBUG_EXIT();
 }
