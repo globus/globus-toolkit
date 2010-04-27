@@ -2273,7 +2273,7 @@ globus_i_gram_request_stdio_update(
     }
 
 
-    /* Replace filestream todo list */
+    globus_gram_job_manager_state_file_write(request);
 
 staging_list_replace_failed:
 get_remote_io_url_failed:

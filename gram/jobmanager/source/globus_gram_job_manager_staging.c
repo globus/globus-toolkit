@@ -761,7 +761,18 @@ globus_l_gram_job_manager_staging_add_pair(
         globus_list_insert(&request->stage_out_todo, info);
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
-        globus_list_insert(&request->stage_stream_todo, info);
+        if (strcmp(info->evaled_to, "/dev/null") == 0)
+        {
+            globus_rsl_value_free_recursive(info->from);
+            globus_rsl_value_free_recursive(info->to);
+            free(info->evaled_from);
+            free(info->evaled_to);
+            free(info);
+        }
+        else
+        {
+            globus_list_insert(&request->stage_stream_todo, info);
+        }
         break;
     }
 

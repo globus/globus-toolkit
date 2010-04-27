@@ -1329,6 +1329,10 @@ globus_l_gram_job_manager_signal(
                         globus_gram_protocol_error_string(rc));
                 break;
             }
+            if (local_stdout == NULL || strstr(local_stdout, "://"))
+            {
+                local_stdout = request->cached_stdout;
+            }
             rc = globus_gram_job_manager_rsl_attribute_get_string_value(
                 request->rsl,
                 GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
@@ -1356,6 +1360,10 @@ globus_l_gram_job_manager_signal(
                         -rc,
                         globus_gram_protocol_error_string(rc));
                 break;
+            }
+            if (local_stderr == NULL || strstr(local_stderr, "://"))
+            {
+                local_stderr = request->cached_stderr;
             }
             if (!globus_list_empty(request->stage_stream_todo))
             {
