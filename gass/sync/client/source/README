@@ -35,7 +35,7 @@ For example:
 Note: 
 ----
 
-o GSI user credentials are needed too run globus-url-sync.
+o GSI user credentials are needed to run globus-url-sync.
 
 o Also, a GridFTP server must be running on both the source and the 
   destination endpoints.
