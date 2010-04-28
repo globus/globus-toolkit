@@ -181,7 +181,6 @@ sub run_command
             }
         }
     }
-    $manager->rewrite_urls();
     $result = $manager->$cmd();
 
     if(UNIVERSAL::isa($result, 'Globus::GRAM::Error'))

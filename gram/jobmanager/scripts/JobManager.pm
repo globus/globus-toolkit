@@ -95,6 +95,7 @@ sub new
     if ($@) {
         $self->log("Couldn't create job dir");
     }
+    $self->rewrite_urls();
 
     return $self;
 }
@@ -690,7 +691,7 @@ sub stage_out
     if (exists($self->{STDIO_MERGER}) && ref($self->{STDIO_MERGER}))
     {
         my $merger = $self->{STDIO_MERGER};
-        $merger->poll();
+        $merger->poll(1);
     }
 
     $self->log("stage_out(enter)");

@@ -141,7 +141,21 @@ globus_gram_job_manager_staging_create_list(
     single_stdout = (globus_list_size(list) == 1);
     while (!globus_list_empty(list))
     {
+        char * evaled_to;
         to = globus_list_first(list);
+
+        rc = globus_gram_job_manager_rsl_evaluate_value(
+                &request->symbol_table,
+                to,
+                &evaled_to);
+        if (rc == GLOBUS_SUCCESS
+            && strstr(evaled_to, "://") == NULL
+            && single_stdout)
+        {
+            free(evaled_to);
+            break;
+        }
+        free(evaled_to);
         list = globus_list_rest(list);
 
         rc = globus_l_gram_job_manager_staging_add_pair(
@@ -156,12 +170,28 @@ globus_gram_job_manager_staging_create_list(
     }
     from_cached_stderr.type = GLOBUS_RSL_VALUE_LITERAL;
     from_cached_stderr.value.literal.string = request->cached_stderr;
+    list = globus_rsl_param_get_values(request->rsl,
+            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
 
     single_stderr = (globus_list_size(list) == 1);
     while (!globus_list_empty(list))
     {
+        char * evaled_to;
         to = globus_list_first(list);
         list = globus_list_rest(list);
+
+        rc = globus_gram_job_manager_rsl_evaluate_value(
+                &request->symbol_table,
+                to,
+                &evaled_to);
+        if (rc == GLOBUS_SUCCESS
+            && strstr(evaled_to, "://") == NULL
+            && single_stderr)
+        {
+            free(evaled_to);
+            break;
+        }
+        free(evaled_to);
 
         rc = globus_l_gram_job_manager_staging_add_pair(
                 request,
