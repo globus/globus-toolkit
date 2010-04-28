@@ -50,6 +50,8 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
     globus-gram-client-stdio-size-test.pl
     job-status-with-info-test.pl
     register-version-test.pl
+    restart-to-new-url-test.pl
+    stdio-update-test.pl
     version-test.pl
 );
 
