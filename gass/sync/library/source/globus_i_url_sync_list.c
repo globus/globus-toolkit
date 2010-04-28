@@ -389,24 +389,19 @@ globus_l_url_sync_list_ftp_read_cb(
     buffer_pos = 0;
     while (buffer_pos <= length)
     {
+        list_arg->entry[(list_arg->entry_pos)++] = buffer[buffer_pos++];
         /* At CRLF, add dir_entry (if any) and skip CRLF chars */
-        if(globus_l_url_sync_list_is_crlf(buffer+buffer_pos))
+        if ((list_arg->entry_pos > 1) &&
+	    globus_l_url_sync_list_is_crlf(&list_arg->entry[(list_arg->entry_pos)-2]))
         {
-            if (list_arg->entry_pos)
-            {
-                /* Terminate current entry position and reset */
-                list_arg->entry[list_arg->entry_pos] = '\0';
-                list_arg->entry_pos = 0;
-		globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
-            }
-            buffer_pos += globus_l_url_sync_list_CRLF_LENGTH;
-        }
-        else
-        {
-            list_arg->entry[(list_arg->entry_pos)++] = buffer[buffer_pos++];
-        }
+	    /* Terminate current entry position and reset */
+	  list_arg->entry[(list_arg->entry_pos)-2] = '\0';
+	  list_arg->entry_pos = 0;
+	  globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
+	}
     }
-    list_arg->entry_pos--; /* rewind last increment */
+    if (list_arg->entry_pos > 0)
+        list_arg->entry_pos--; /* rewind last increment */
 
     /* Check for EOF */
     if (eof)
@@ -492,8 +487,11 @@ globus_l_url_sync_list_arg_cons(
     list_arg->entries   = entries;
 
     /* Copy url */
-    list_arg->url = globus_libc_strdup(url);
+    list_arg->url = (char *)globus_libc_malloc(
+			sizeof(char)*(globus_l_url_sync_list_BUFLEN+1));
     globus_assert(list_arg->url);
+    strncpy(list_arg->url, url, sizeof(char)*(globus_l_url_sync_list_BUFLEN));
+
 
     /* Allocate buffer */
     list_arg->buffer = (globus_byte_t*) globus_libc_malloc(
@@ -566,9 +564,11 @@ globus_l_url_sync_list_arg_add_entry(
 		globus_l_url_sync_list_is_parent(entry))
         return;
 
-    /* Make copy */
-    new_entry = globus_libc_strdup(entry);
+    /* Allocate entry */
+    new_entry = (char*) globus_libc_malloc(
+		   sizeof(char) * (globus_l_url_sync_list_BUFLEN+1));
     globus_assert(new_entry);
+    strncpy(new_entry, entry, sizeof(char)*(globus_l_url_sync_list_BUFLEN));
 
     /* Add entry to list */
     *(list_arg->entries) = globus_list_cons(new_entry, *(list_arg->entries));
