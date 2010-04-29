@@ -1056,6 +1056,10 @@ globus_l_gram_job_manager_state_machine(
                 request->unsent_status_change = GLOBUS_TRUE;
             }
         }
+        else
+        {
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:

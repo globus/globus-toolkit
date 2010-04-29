@@ -1114,6 +1114,9 @@ globus_gram_job_manager_staging_create_list(
     globus_gram_jobmanager_request_t *  request);
 
 int
+globus_gram_job_manager_streaming_list_replace(
+    globus_gram_jobmanager_request_t *  request);
+int
 globus_gram_job_manager_staging_remove(
     globus_gram_jobmanager_request_t *  request,
     globus_gram_job_manager_staging_type_t
