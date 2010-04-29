@@ -130,7 +130,7 @@ parse_mlst_buffer(
     globus_i_url_sync_log_debug("buffer: %s\n", buffer);
 	
     sscanf((char *)buffer,
-		   "Type=%[^;];Modify=%4d%2d%2d%2d%2d%2d;Size=%lu;%*s%s",
+		   "Type=%[^;];Modify=%4d%2d%2d%2d%2d%2d;Size=%lu;%*s %[^;]",
 		   type,
 		   &(time_tm.tm_year),
 		   &(time_tm.tm_mon),
@@ -417,7 +417,7 @@ globus_l_url_sync_list_ftp_read_cb(
              list_arg->buffer_length,
              globus_l_url_sync_list_ftp_read_cb,
              list_arg);
-
+	
     /* Report error and abort, if failed */
     if(result != GLOBUS_SUCCESS)
     {
