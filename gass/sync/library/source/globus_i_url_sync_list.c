@@ -130,7 +130,7 @@ parse_mlst_buffer(
     globus_i_url_sync_log_debug("buffer: %s\n", buffer);
 	
     sscanf((char *)buffer,
-		   "Type=%[^;];Modify=%4d%2d%2d%2d%2d%2d;Size=%lu;%*s%s",
+		   "Type=%[^;];Modify=%4d%2d%2d%2d%2d%2d;Size=%lu;%*s %[^;]",
 		   type,
 		   &(time_tm.tm_year),
 		   &(time_tm.tm_mon),
