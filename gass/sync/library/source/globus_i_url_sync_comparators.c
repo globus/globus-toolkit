@@ -170,26 +170,54 @@ globus_l_url_sync_exists_func(
 	    error_object = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
 	} 
 	else 
-	{
-	    /* If source is directory, make sure both URLs end with "/". */
+        {
+	    int dir_ending = 
+	      (destination->url[strlen(destination->url)-1] == '/')? GLOBUS_TRUE: GLOBUS_FALSE;
+
+	    /* If source is directory, make sure URL ends with "/". */
 	    if (source->stats.type == globus_url_sync_endpoint_type_dir)
 	    {
 	        if (source->url[strlen(source->url)-1] != '/')
 		    strcat(source->url, "/");
-		if (destination->url[strlen(destination->url)-1] != '/')
-		    strcat(destination->url, "/");
 	    }
-
+	    
 	    /* Stat the destination */
 	    if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
 	        globus_l_url_sync_ftpclient_mlst(destination);
-	      
+       
 	    /* Compare existence */
 	    comparison_result = source->stats.exists - destination->stats.exists;
-	      
-	    if (destination->stats.exists &&
-		source->stats.type != destination->stats.type)
-	        error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+       
+	    if (destination->stats.exists)
+	    {
+	        if (source->stats.type != destination->stats.type)
+		  error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+		else 
+		{
+		    if (source->stats.type == globus_url_sync_endpoint_type_dir)
+		    {
+		        if (!dir_ending) 
+			    strcat(destination->url, "/");
+		    } else {
+		        if (dir_ending) {
+			    error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+			}
+		    }
+		}
+	    }
+	    else
+	    {
+	        if (source->stats.type == globus_url_sync_endpoint_type_dir)
+		{
+		    if (!dir_ending)
+		        strcat(destination->url, "/");
+		}
+		else 
+		{
+		    if (dir_ending)
+			    error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+		}
+	    }
 	}
     }
 					
@@ -443,13 +471,7 @@ globus_l_url_sync_ftpclient_mlst(
     {
         parse_mlst_buffer(endpoint, buffer, name);
     }
-    else
-    {
-        /* Put the error object and assigns the corresponding result */
-        result = globus_error_put(
-                GLOBUS_I_URL_SYNC_ERROR_REMOTE("FTP client MLST operation failed"));
-    }
-
+    
   cleanexit:
     if (buffer != GLOBUS_NULL)
         globus_libc_free(buffer);
