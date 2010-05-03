@@ -14,12 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Get version of a job manager
 
 use strict;
 
-my $test_exec = './job-status-with-info-test';
+my $test_exec = './register-version-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
+my $valgrind = '';
 
 if (!defined($gpath))
 {
@@ -32,14 +34,13 @@ if ($ENV{CONTACT_STRING} eq "")
 
 @INC = (@INC, "$gpath/lib/perl");
 
-my $valgrind = "";
-
 if (exists $ENV{VALGRIND})
 {
-    $valgrind = "valgrind --log-file=VALGRIND-job_status_with_info_test.log";
+    $valgrind = "valgrind --log-file=VALGRIND-register-version-test.log";
     if (exists $ENV{VALGRIND_OPTIONS})
     {
         $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
     }
 }
+
 system("$valgrind $test_exec '$ENV{CONTACT_STRING}'");

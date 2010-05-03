@@ -23,6 +23,9 @@ Scripts = \
 	globus-gram-client-register-ping-test.pl \
         globus-gram-client-two-phase-commit-test.pl \
         job-status-with-info-test.pl \
+        register-version-test.pl \
+        restart-to-new-url-test.pl \
+        stdio-update-test.pl \
         version-test.pl
 
 Data = \
@@ -55,6 +58,9 @@ test_PROGRAMS= \
 	globus-gram-client-register-ping-test \
         globus-gram-client-two-phase-commit-test \
         job-status-with-info-test \
+        register-version-test \
+        restart-to-new-url-test \
+        stdio-update-test \
         version-test
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
@@ -120,11 +126,20 @@ globus_gram_client_two_phase_commit_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_gram_client_register_ping_test_SOURCES = globus_gram_client_register_ping_test.c
 globus_gram_client_register_ping_test_LDFLAGS = $(GPT_LDFLAGS)
 
+register_version_test_SOURCES = register_version_test.c
+register_version_test_LDFLAGS = $(GPT_LDFLAGS)
+
 version_test_SOURCES = version_test.c
 version_test_LDFLAGS = $(GPT_LDFLAGS)
 
 job_status_with_info_test_SOURCES = job_status_with_info_test.c
 job_status_with_info_test_LDFLAGS = $(GPT_LDFLAGS)
+
+restart_to_new_url_test_SOURCES = restart_to_new_url_test.c
+restart_to_new_url_test_LDFLAGS = $(GPT_LDFLAGS)
+
+stdio_update_test_SOURCES = stdio_update_test.c
+stdio_update_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
