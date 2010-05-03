@@ -235,10 +235,10 @@ int resolve_via_ldap    ( char * username, char ** dn,
 
   if ( server_context->ca_ldap_connect_passphrase != NULL ) {
     cred.bv_val = server_context->ca_ldap_connect_passphrase;
-    cred.bv_len = sizeof(server_context->ca_ldap_connect_passphrase) - 1;
+    cred.bv_len = strlen(server_context->ca_ldap_connect_passphrase);
   } else {
     cred.bv_val = "";
-    cred.bv_len = sizeof("") - 1;
+    cred.bv_len = 0;
   }
 
   if ( server_context->ca_ldap_connect_dn != NULL ) {
