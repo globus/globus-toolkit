@@ -54,6 +54,19 @@ globus_l_gram_staging_list_read_state(
     globus_gram_job_manager_staging_type_t
                                         staging_type,
     globus_list_t **                    staging_list);
+
+static
+void
+globus_l_gram_staging_list_free(
+    globus_list_t **                    staging_list);
+
+static
+int
+globus_l_staging_replace_stream(
+    globus_gram_jobmanager_request_t *  request,
+    char *                              parameter,
+    char *                              cached_destination);
+
 #endif
 
 int
@@ -71,7 +84,6 @@ globus_gram_job_manager_staging_create_list(
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM,
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM,
         GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM,
-        "filestreamout",
         NULL
     };
     int                                 errors_list[] =
@@ -79,7 +91,6 @@ globus_gram_job_manager_staging_create_list(
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN,
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED,
         GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT,
-        GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT,
         0
     };
 
@@ -126,12 +137,298 @@ globus_gram_job_manager_staging_create_list(
         }
     }
 
-    return GLOBUS_SUCCESS;
+    rc = globus_gram_job_manager_streaming_list_replace(request);
+
 failed_adding_exit:
-    globus_gram_job_manager_staging_free_all(request);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_staging_free_all(request);
+    }
     return rc;
 }
 /* globus_gram_job_manager_staging_create_list() */
+
+int
+globus_gram_job_manager_streaming_list_replace(
+    globus_gram_jobmanager_request_t *  request)
+{
+    globus_list_t *                     old_list;
+    int                                 rc;
+
+    /* We'll restore to the old list if this fails */
+    old_list = request->stage_stream_todo;
+    request->stage_stream_todo = NULL;
+
+    rc = globus_l_staging_replace_stream(
+            request,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
+            request->cached_stdout);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto bad_stdout;
+    }
+
+    rc = globus_l_staging_replace_stream(
+            request,
+            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
+            request->cached_stderr);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto bad_stderr;
+    }
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        globus_l_gram_staging_list_free(&old_list);
+        old_list = NULL;
+    }
+    else
+    {
+bad_stderr:
+bad_stdout:
+        globus_l_gram_staging_list_free(&request->stage_stream_todo);
+        request->stage_stream_todo = old_list;
+    }
+    return rc;
+}
+/* globus_gram_job_manager_staging_create_list() */
+
+static
+int
+globus_l_staging_replace_stream(
+    globus_gram_jobmanager_request_t *  request,
+    char *                              parameter,
+    char *                              cached_destination)
+{
+    static const char                   gass_cache_scheme[] = "x-gass-cache://";
+    globus_list_t *                     list;
+    globus_rsl_value_t                  *to;
+    char                                *evaled_to;
+    globus_rsl_value_t                  from_cached;
+    globus_bool_t                       single;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    list = globus_rsl_param_get_values(
+            request->rsl,
+            parameter);
+
+    from_cached.type = GLOBUS_RSL_VALUE_LITERAL;
+    from_cached.value.literal.string = cached_destination;
+
+    /* The stdout and stderr attributes can occur in two forms:
+     * - stdout = destination
+     * - stdout = (destination [tag]) ..
+     *
+     * If the first value in the list sequence is a sequence, we'll process
+     * it as the second form; otherwise, the first form.
+     *
+     * In either form, if there is only one destination, and it's a local file
+     * or x-gass-cache URL, we can safely write directly to that file.
+     * Otherwise, we'll have to write to the job dir/stdout file and copy it
+     * during the STAGE_OUT state.
+     */
+    if (! globus_rsl_value_is_sequence(globus_list_first(list)))
+    {
+
+        /*
+         * In the first form, we regard anything besides a single literal or a
+         * concatenation (which will resolve to a literal after evaluation) as
+         * an error. 
+         */
+        if (globus_list_size(list) != 1)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+
+            goto bad_value;
+        }
+
+        to = globus_list_first(list);
+
+        /* Normalize to a string */
+        rc = globus_gram_job_manager_rsl_evaluate_value(
+                &request->symbol_table,
+                to,
+                &evaled_to);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+            goto bad_value;
+        }
+
+        /* Check for a URL that isn't x-gass-cache */
+        if ((strstr(evaled_to, "://") != NULL) &&
+            (strncmp(evaled_to, gass_cache_scheme, sizeof(gass_cache_scheme)-1)
+                    != 0))
+        {
+            rc = globus_l_gram_job_manager_staging_add_pair(
+                    request,
+                    &from_cached,
+                    to,
+                    "filestreamout");
+            free(evaled_to);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto bad_value;
+            }
+        }
+        else
+        {
+            /*
+             * x-gass-cache URL or local file path. Don't need it in the
+             * staging list, but check that it exists
+             */
+            if (strstr(evaled_to, "://") == NULL)
+            {
+                int tmpfd;
+
+                tmpfd = open(evaled_to, O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
+                if (tmpfd < 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
+                    free(evaled_to);
+                    goto bad_value;
+                }
+            }
+            free(evaled_to);
+        }
+    }
+    else
+    {
+        /* Second form above. The list may be multiple values, each with
+         * optional tag (which is only valid for x-gass-cache URLs).
+         *
+         * If there is only one and it's x-gass-cache or local file, then
+         * don't add it to the stream todo list. Otherwise, add them all.
+         * 
+         * If any value is a non-sequence, or a sequence of non-x-gass-cache
+         * URL with a tag, flag as an error
+         */
+        single = globus_list_size(list);
+
+        while (!globus_list_empty(list))
+        {
+            char                            *evaled_to;
+            globus_rsl_value_t              *tag = NULL;
+            globus_list_t                   *sequence_list;
+
+            to = globus_list_first(list);
+            list = globus_list_rest(list);
+
+            if (!globus_rsl_value_is_sequence(to))
+            {
+                /* Bare value instead of a sequence */
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+                goto bad_value;
+            }
+
+            sequence_list = globus_rsl_value_sequence_get_value_list(to);
+            /*
+             * First element of the list is the destination, the second is the
+             * (optional) tag. Both (if present) must be something that 
+             * evaluates to a string and not a sequence.
+             */
+            to = globus_list_first(sequence_list);
+            sequence_list = globus_list_rest(sequence_list);
+            if (!globus_list_empty(sequence_list))
+            {
+                tag = globus_list_first(sequence_list);
+            }
+
+            if (globus_rsl_value_is_sequence(to) || 
+                ((tag != NULL) && globus_rsl_value_is_sequence(tag)))
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+
+                goto bad_value;
+            }
+
+            rc = globus_gram_job_manager_rsl_evaluate_value(
+                    &request->symbol_table,
+                    to,
+                    &evaled_to);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto bad_value;
+            }
+
+            /* If it evaluates to a string, and is not an x-gass-cache URL,
+             * then tag must be NULL
+             */
+            if (strncmp(evaled_to,
+                        gass_cache_scheme,
+                        sizeof(gass_cache_scheme)-1) != 0 &&
+                tag != NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+                free(evaled_to);
+                goto bad_value;
+            }
+
+            /* If there is more than one output destination, or this one is
+             * a non-x-gass-cache URL, then add it to the staging list
+             */
+            if ((!single) ||
+                    (strstr(evaled_to, "://") != NULL &&
+                     strncmp(evaled_to, gass_cache_scheme,
+                            sizeof(gass_cache_scheme)-1) != 0))
+            {
+                rc = globus_l_gram_job_manager_staging_add_pair(
+                        request,
+                        &from_cached,
+                        to,
+                        "filestreamout");
+                free(evaled_to);
+                evaled_to = NULL;
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    goto bad_value;
+                }
+            }
+            else if (strstr(evaled_to, "://") == NULL)
+            {
+                int tmpfd;
+
+                tmpfd = open(evaled_to, O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
+                if (tmpfd < 0)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
+                    free(evaled_to);
+                    goto bad_value;
+                }
+            }
+            if (evaled_to)
+            {
+                free(evaled_to);
+            }
+        }
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+bad_value:
+        /* Normalize error types to match the RSL attribute that we are
+         * processing
+         */
+        if (strcmp(parameter, GLOBUS_GRAM_PROTOCOL_STDERR_PARAM) == 0)
+        {
+            switch (rc)
+            {
+                case GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT:
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
+                    break;
+                case GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT:
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    return rc;
+}
+/* globus_gram_job_manager_staging_create_list() */
+
 
 int
 globus_gram_job_manager_staging_remove(
@@ -645,7 +942,18 @@ globus_l_gram_job_manager_staging_add_pair(
         globus_list_insert(&request->stage_out_todo, info);
         break;
       case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
-        globus_list_insert(&request->stage_stream_todo, info);
+        if (strcmp(info->evaled_to, "/dev/null") == 0)
+        {
+            globus_rsl_value_free_recursive(info->from);
+            globus_rsl_value_free_recursive(info->to);
+            free(info->evaled_from);
+            free(info->evaled_to);
+            free(info);
+        }
+        else
+        {
+            globus_list_insert(&request->stage_stream_todo, info);
+        }
         break;
     }
 
@@ -688,46 +996,32 @@ globus_l_gram_job_manager_staging_match(
 }
 /* globus_l_gram_job_manager_staging_match() */
 
+static
+void
+globus_l_gram_staging_list_free(
+    globus_list_t **                    staging_list)
+{
+    globus_gram_job_manager_staging_info_t *
+                                        info;
+    while (!globus_list_empty(*staging_list))
+    {
+        info = globus_list_remove(staging_list, *staging_list);
+        globus_rsl_value_free_recursive(info->from);
+        globus_rsl_value_free_recursive(info->to);
+        free(info->evaled_from);
+        free(info->evaled_to);
+        free(info);
+    }
+}
+
 void
 globus_gram_job_manager_staging_free_all(
     globus_gram_jobmanager_request_t *  request)
 {
-    globus_gram_job_manager_staging_info_t *
-                                        info;
-
-    while(!globus_list_empty(request->stage_in_todo))
-    {
-        info = globus_list_remove(&request->stage_in_todo,
-                                  request->stage_in_todo);
-
-        globus_rsl_value_free_recursive(info->from);
-        globus_rsl_value_free_recursive(info->to);
-        free(info->evaled_from);
-        free(info->evaled_to);
-        free(info);
-    }
-    while(!globus_list_empty(request->stage_in_shared_todo))
-    {
-        info = globus_list_remove(&request->stage_in_shared_todo,
-                                  request->stage_in_shared_todo);
-
-        globus_rsl_value_free_recursive(info->from);
-        globus_rsl_value_free_recursive(info->to);
-        free(info->evaled_from);
-        free(info->evaled_to);
-        free(info);
-    }
-    while(!globus_list_empty(request->stage_out_todo))
-    {
-        info = globus_list_remove(&request->stage_out_todo,
-                                  request->stage_out_todo);
-
-        globus_rsl_value_free_recursive(info->from);
-        globus_rsl_value_free_recursive(info->to);
-        free(info->evaled_from);
-        free(info->evaled_to);
-        free(info);
-    }
+    globus_l_gram_staging_list_free(&request->stage_in_todo);
+    globus_l_gram_staging_list_free(&request->stage_in_shared_todo);
+    globus_l_gram_staging_list_free(&request->stage_out_todo);
+    globus_l_gram_staging_list_free(&request->stage_stream_todo);
 }
 /* globus_gram_job_manager_staging_free_all() */
 

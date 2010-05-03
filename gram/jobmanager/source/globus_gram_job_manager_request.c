@@ -216,7 +216,6 @@ globus_gram_job_manager_request_init(
     int                                 rc;
     const char *                        tmp_string;
     int                                 count;
-    int                                 tmpfd;
     int                                 proxy_timeout;
 
     if (old_job_contact)
@@ -591,80 +590,9 @@ globus_gram_job_manager_request_init(
         goto make_remote_io_url_file_failed;
     }
 
-    if (globus_gram_job_manager_rsl_attribute_exists(
-            r->rsl,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM))
-    {
-        const char * tmp;
-
-        rc = globus_gram_rewrite_output_as_staging(
-                r,
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto rewrite_stdout_failed;
-        }
-
-        /* This might be the original RSL stdout value, or an entry in
-         * the job directory
-         */
-        rc = globus_gram_job_manager_rsl_attribute_get_string_value(
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-                &tmp);
-
-        /* Only error result from above is undefined attribute, but we know it
-         * is defined, so it can't occur
-         */
-        globus_assert(rc == GLOBUS_SUCCESS);
-
-        tmpfd = open(tmp, O_CREAT|O_WRONLY|O_APPEND, S_IRUSR|S_IWUSR);
-        if (tmpfd < 0)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
-            goto open_stdout_failed;
-        }
-        close(tmpfd);
-    }
-
-    if (globus_gram_job_manager_rsl_attribute_exists(
-            r->rsl,
-            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM))
-    {
-        const char * tmp;
-
-        rc = globus_gram_rewrite_output_as_staging(
-                r,
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto rewrite_stderr_failed;
-        }
-
-        /* This might be the original RSL stderr value, or an entry in
-         * the job directory
-         */
-        rc = globus_gram_job_manager_rsl_attribute_get_string_value(
-                r->rsl,
-                GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
-                &tmp);
-
-        /* Only error result from above is undefined attribute, but we know it
-         * is defined, so it can't occur
-         */
-        globus_assert(rc == GLOBUS_SUCCESS);
-
-
-        tmpfd = open(tmp, O_CREAT|O_WRONLY|O_APPEND, S_IRUSR|S_IWUSR);
-        if (tmpfd < 0)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
-            goto open_stderr_failed;
-        }
-        close(tmpfd);
-    }
+    /* TODO: Check that stdout and stderr, if a local files, can be written
+     * to
+     */
 
     rc = globus_gram_job_manager_rsl_attribute_get_int_value(
             r->rsl,
@@ -785,10 +713,6 @@ cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
 bad_proxy_timeout:
-open_stderr_failed:
-rewrite_stderr_failed:
-open_stdout_failed:
-rewrite_stdout_failed:
         if (r->remote_io_url_file)
         {
             remove(r->remote_io_url_file);
@@ -2048,6 +1972,9 @@ globus_l_gram_restart(
     globus_rsl_t *                      restartcontacts;
     globus_bool_t                       restart_contacts = GLOBUS_FALSE;
 
+    /* Evaluate the restart RSL, so that we can merge it with the original
+     * job RLS
+     */
     rc = globus_rsl_eval(request->rsl, &request->symbol_table);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -2105,9 +2032,8 @@ globus_l_gram_restart(
     if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
     {
         /* Something is handling this request already. We'll check if it is
-         * this process. If so, we'll try to act like this is a stdio update
-         * on it. If it's in the STOP state, we'll tweak it back to the
-         * restart_state to get it going again.
+         * this process. If so, we'll merge the RSLs (as if we had done a
+         * stdio update.
          */
         rc = globus_gram_job_manager_add_reference(
                 request->manager,
@@ -2173,7 +2099,7 @@ globus_l_gram_restart(
         globus_rsl_free_recursive(restartcontacts);
     }
 
-    if (restartcontacts == GLOBUS_FALSE)
+    if (restart_contacts == GLOBUS_FALSE)
     {
         /* Remove the two-phase commit from the original RSL; if the
          * new client wants it, they can put it in their RSL
@@ -2292,24 +2218,6 @@ globus_i_gram_request_stdio_update(
         }
     }
 
-    rc = globus_gram_rewrite_output_as_staging(
-            request,
-            update_rsl,
-            GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_rewrite_stdout;
-    }
-            
-    rc = globus_gram_rewrite_output_as_staging(
-            request,
-            update_rsl,
-            GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto failed_rewrite_stderr;
-    }
-            
     tmp_rsl = globus_gram_job_manager_rsl_merge(
         request->rsl,
         update_rsl);
@@ -2319,8 +2227,14 @@ globus_i_gram_request_stdio_update(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
         goto failed_rsl_merge;
     }
-
     request->rsl = tmp_rsl;
+
+    rc = globus_gram_job_manager_streaming_list_replace(request);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto staging_list_replace_failed;
+    }
+
     rc = globus_gram_job_manager_rsl_attribute_get_string_value(
             request->rsl,
             GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
@@ -2358,9 +2272,11 @@ globus_i_gram_request_stdio_update(
         rc = globus_i_gram_remote_io_url_update(request);
     }
 
+
+    globus_gram_job_manager_state_file_write(request);
+
+staging_list_replace_failed:
 get_remote_io_url_failed:
-failed_rewrite_stderr:
-failed_rewrite_stdout:
 failed_rsl_merge:
 failed_check_position:
     return rc;
