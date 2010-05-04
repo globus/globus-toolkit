@@ -357,6 +357,9 @@ globus_i_url_sync_endpoint_destroy(
     globus_assert(endpoint);
     globus_assert(endpoint->url);
     globus_libc_free(endpoint->url);
+	if (endpoint->mlst_buffer != GLOBUS_NULL) {
+		globus_libc_free(endpoint->mlst_buffer);
+	}
     globus_libc_free(endpoint);
     return GLOBUS_SUCCESS;
 }
