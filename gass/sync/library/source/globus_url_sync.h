@@ -198,6 +198,8 @@ typedef struct globus_url_sync_endpoint_s
 {
     char *                              url;
     globus_ftp_client_handle_t *        ftp_handle;
+	globus_byte_t *                     mlst_buffer;
+    globus_size_t                       mlst_buffer_length;
     globus_url_sync_endpoint_stats_t    stats;
 } globus_url_sync_endpoint_t;
 

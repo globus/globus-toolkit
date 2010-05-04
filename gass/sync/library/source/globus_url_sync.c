@@ -121,7 +121,7 @@ static
 globus_url_sync_endpoint_t *
 globus_l_url_sync_make_src_endpoint(
 				    const globus_url_sync_endpoint_t *      base,
-				    const char *                            mlst_results,
+				    globus_byte_t *                         mlst_results,
 				    char * child)
 {
     globus_url_sync_endpoint_t *            new_endpoint;
@@ -140,7 +140,7 @@ globus_l_url_sync_make_src_endpoint(
     memset(new_endpoint, 0, sizeof(globus_url_sync_endpoint_t));
     globus_assert(new_endpoint);
   
-    parse_mlst_buffer(new_endpoint, (char *)mlst_results, child);
+    parse_mlst_buffer(new_endpoint, mlst_results, child);
     child_len = globus_libc_strlen(child);
     globus_assert(child_len);
   
@@ -576,7 +576,7 @@ globus_l_url_sync_list_complete_cb(
         globus_result_t                 result;
         globus_url_sync_handle_t        handle;
         globus_url_sync_comparator_t *  comparator;
-        char *                          entry;
+        globus_byte_t *                 entry;
         char child[GLOBUS_I_URL_SYNC_FILENAME_BUFLEN];
 
         /* Get handle */
@@ -584,7 +584,7 @@ globus_l_url_sync_list_complete_cb(
 
         do {
             /* Remove head */
-            entry = (char *) globus_list_remove(
+            entry = (globus_byte_t *) globus_list_remove(
                     &(sync_arg->entries), sync_arg->entries);
             globus_assert(entry);
 
@@ -597,14 +597,20 @@ globus_l_url_sync_list_complete_cb(
 
             sync_arg->compare_destination =
                     globus_l_url_sync_make_new_endpoint(sync_arg->destination, child);
+			
+	    if ((sync_arg->destination)->stats.exists == GLOBUS_FALSE)
+	        /* the base directory does not exist and there's no need to
+		   check the existence of each of the files */
+	        (sync_arg->compare_destination)->stats.type = 
+		  	(sync_arg->compare_source)->stats.type;
 
-            /* Compare source and destination */
-            result = comparator->compare_func(
+	    /* Compare source and destination */
+	    result = comparator->compare_func(
                          comparator->comparator_arg,
-			 sync_arg->compare_source,
-			 sync_arg->compare_destination,
-			 globus_l_url_sync_compare_func_recurse_cb,
-			 (void*) sync_arg);
+                         sync_arg->compare_source,
+                         sync_arg->compare_destination,
+                         globus_l_url_sync_compare_func_recurse_cb, 
+                         (void *)sync_arg);
 
             /* If failed, then clean up the compare source and dest */
             if (result != GLOBUS_SUCCESS)

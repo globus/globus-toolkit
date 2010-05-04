@@ -137,8 +137,8 @@ globus_l_url_sync_exists_func(
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
     
     /* Stat the source */
-    if (source->stats.type == globus_url_sync_endpoint_type_unknown)
-	result = globus_l_url_sync_ftpclient_mlst(source);
+	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
+		result = globus_l_url_sync_ftpclient_mlst(source);
 	
     if (result != GLOBUS_SUCCESS)
     {
@@ -235,9 +235,6 @@ globus_l_url_sync_exists_func(
 
 /**
  * Size comparison function.
- *
- * NOTE: This SHOULD be asynchronous but for now I made it synchronous to
- * simplify it.
  */
 static
 globus_result_t
@@ -252,22 +249,8 @@ globus_l_url_sync_size_func(
     GlobusFuncName(globus_l_url_sync_size_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
 	
-    /* Stat the source */
-	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
-    	globus_l_url_sync_ftpclient_mlst(source);
-	
-    /* Stat the destination */
-	if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
-    	globus_l_url_sync_ftpclient_mlst(destination);
-	
-    /* Compare existence */
 	comparison_result = source->stats.size - destination->stats.size;
 	
-    /* Not handling the ftpclient_mlst() results because... the ftp client
-     * documentation seems to indicate that if a file does not exist, the
-     * mlst operation may return an error. So an error is not really an error
-     * in some cases... Ideally this should be better handled or confirmed in
-     * the docs. */
     callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
@@ -276,9 +259,6 @@ globus_l_url_sync_size_func(
 
 /**
  * Modify comparison function.
- *
- * NOTE: This SHOULD be asynchronous but for now I made it synchronous to
- * simplify it.
  */
 static
 globus_result_t
@@ -293,24 +273,10 @@ globus_l_url_sync_modify_func(
     GlobusFuncName(globus_l_url_sync_modify_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
 	
-    /* Stat the source */
-	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
-    	globus_l_url_sync_ftpclient_mlst(source);
-	
-    /* Stat the destination */
-	if (destination->stats.type == globus_url_sync_endpoint_type_unknown)
-    	globus_l_url_sync_ftpclient_mlst(destination);
-	
-    /* Compare existence */
 	comparison_result = (int) difftime(
 			mktime(&(source->stats.modify_tm)),
 			mktime(&(destination->stats.modify_tm)));
 	
-    /* Not handling the ftpclient_mlst() results because... the ftp client
-     * documentation seems to indicate that if a file does not exist, the
-     * mlst operation may return an error. So an error is not really an error
-     * in some cases... Ideally this should be better handled or confirmed in
-     * the docs. */
     callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
@@ -448,8 +414,8 @@ globus_l_url_sync_ftpclient_mlst(
             endpoint->ftp_handle,
             endpoint->url,
             &dummy, /* operation attribute optional */
-            &buffer,
-            &buffer_length,
+            &endpoint->mlst_buffer,
+            &endpoint->mlst_buffer_length,
             globus_l_url_sync_ftpclient_complete_cb,
             &monitor);
 
@@ -467,14 +433,12 @@ globus_l_url_sync_ftpclient_mlst(
     globus_mutex_unlock(&monitor.mutex);
 
     /* Parse MSLT buffer */
-    if (buffer_length)
+    if (endpoint->mlst_buffer_length)
     {
-        parse_mlst_buffer(endpoint, buffer, name);
+        parse_mlst_buffer(endpoint, endpoint->mlst_buffer, name);
     }
     
   cleanexit:
-    if (buffer != GLOBUS_NULL)
-        globus_libc_free(buffer);
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(endpoint->ftp_handle, endpoint->url);
