@@ -28,15 +28,26 @@ typedef struct
 }
 test_case_t;
 
+void
+test_l_old_listener_callback(
+    void *                              callback_arg,
+    globus_gass_transfer_listener_t     listener);
+
+void
+test_l_new_listener_callback(
+    void *                              callback_arg,
+    globus_gass_transfer_listener_t     listener);
 typedef struct
 {
     globus_mutex_t                      mutex;
     globus_cond_t                       cond;
     int                                 status;
     int                                 failure_code;
+    globus_gass_transfer_listener_t     old_listener;
     globus_gass_transfer_request_t      old_request;
     globus_byte_t                       old_output[64];
     globus_size_t                       old_output_len;
+    globus_gass_transfer_listener_t     new_listener;
     globus_gass_transfer_request_t      new_request;
     globus_byte_t                       new_output[64];
     globus_size_t                       new_output_len;
@@ -119,6 +130,7 @@ test_l_old_accept_callback(
     globus_gass_transfer_request_t      request)
 {
     test_monitor_t                      *monitor = callback_arg;
+    int                                 rc;
 
     globus_mutex_lock(&monitor->mutex);
     monitor->old_request = request;
@@ -128,13 +140,17 @@ test_l_old_accept_callback(
         request,
         GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN);
 
-    globus_gass_transfer_receive_bytes(
+    rc = globus_gass_transfer_receive_bytes(
         request,
         monitor->old_output,
         sizeof(monitor->old_output),
         1,
         test_l_data_callback,
         monitor);
+    rc = globus_gass_transfer_register_listen(
+            monitor->old_listener,
+            test_l_old_listener_callback,
+            monitor);
 }
 
 static
@@ -144,22 +160,28 @@ test_l_new_accept_callback(
     globus_gass_transfer_request_t      request)
 {
     test_monitor_t                      *monitor = callback_arg;
+    int                                 rc;
 
     globus_mutex_lock(&monitor->mutex);
     monitor->new_request = request;
     globus_mutex_unlock(&monitor->mutex);
 
-    globus_gass_transfer_authorize(
+
+    rc = globus_gass_transfer_authorize(
         request,
         GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN);
 
-    globus_gass_transfer_receive_bytes(
+    rc = globus_gass_transfer_receive_bytes(
         request,
         monitor->new_output,
         sizeof(monitor->new_output),
         1,
         test_l_data_callback,
         monitor);
+    rc = globus_gass_transfer_register_listen(
+            monitor->new_listener,
+            test_l_new_listener_callback,
+            monitor);
 }
 
 void
@@ -167,20 +189,23 @@ test_l_old_listener_callback(
     void *                              callback_arg,
     globus_gass_transfer_listener_t     listener)
 {
-    test_monitor_t                      *monitor = callback_arg;
     int                                 rc;
     globus_gass_transfer_request_t      request;
+    globus_gass_transfer_requestattr_t  attr;
+
+    globus_gass_transfer_requestattr_init(&attr, "https");
+    globus_gass_transfer_secure_requestattr_set_authorization(
+            &attr,
+            GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF,
+            "https");
 
     rc = globus_gass_transfer_register_accept(
             &request,
-            NULL,
+            &attr,
             listener,
             test_l_old_accept_callback,
             callback_arg);
-    rc = globus_gass_transfer_register_listen(
-            listener,
-            test_l_old_listener_callback,
-            &monitor);
+    globus_gass_transfer_requestattr_destroy(&attr);
 }
 /* test_l_old_listener_callback() */
 
@@ -189,23 +214,25 @@ test_l_new_listener_callback(
     void *                              callback_arg,
     globus_gass_transfer_listener_t     listener)
 {
-    test_monitor_t                      *monitor = callback_arg;
     int                                 rc;
     globus_gass_transfer_request_t      request;
+    globus_gass_transfer_requestattr_t  attr;
+
+    globus_gass_transfer_requestattr_init(&attr, "https");
+    globus_gass_transfer_secure_requestattr_set_authorization(
+            &attr,
+            GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF,
+            "https");
 
     rc = globus_gass_transfer_register_accept(
             &request,
-            NULL,
+            &attr,
             listener,
             test_l_new_accept_callback,
             callback_arg);
-    rc = globus_gass_transfer_register_listen(
-            listener,
-            test_l_new_listener_callback,
-            &monitor);
+    globus_gass_transfer_requestattr_destroy(&attr);
 }
 /* test_l_new_listener_callback() */
-
 static
 void
 test_l_gram_callback(
@@ -233,7 +260,6 @@ test_l_gram_callback(
 int
 test_restart_to_new_url(void)
 {
-    globus_gass_transfer_listener_t     old_listener, new_listener;
     char                                *old_listener_url, *new_listener_url;
     char                                *old_job_contact, *new_job_contact;
     int                                 rc;
@@ -267,33 +293,35 @@ test_restart_to_new_url(void)
      * second via a restart job request
      */
     rc = globus_gass_transfer_create_listener(
-            &old_listener,
+            &monitor.old_listener,
             NULL,
             "https");
     test_assert(rc == GLOBUS_SUCCESS);
-    test_assert(old_listener != GLOBUS_NULL_HANDLE);
+    test_assert(monitor.old_listener != GLOBUS_NULL_HANDLE);
 
-    old_listener_url = globus_gass_transfer_listener_get_base_url(old_listener);
+    old_listener_url = globus_gass_transfer_listener_get_base_url(
+            monitor.old_listener);
     test_assert(old_listener_url != NULL);
 
     rc = globus_gass_transfer_register_listen(
-            old_listener,
+            monitor.old_listener,
             test_l_old_listener_callback,
             &monitor);
     test_assert(rc == GLOBUS_SUCCESS);
 
     rc = globus_gass_transfer_create_listener(
-            &new_listener,
+            &monitor.new_listener,
             NULL,
             "https");
     test_assert(rc == GLOBUS_SUCCESS);
-    test_assert(new_listener != GLOBUS_NULL_HANDLE);
+    test_assert(monitor.new_listener != GLOBUS_NULL_HANDLE);
 
-    new_listener_url = globus_gass_transfer_listener_get_base_url(new_listener);
+    new_listener_url = globus_gass_transfer_listener_get_base_url(
+            monitor.new_listener);
     test_assert(new_listener_url != NULL);
 
     rc = globus_gass_transfer_register_listen(
-            new_listener,
+            monitor.new_listener,
             test_l_new_listener_callback,
             &monitor);
     test_assert(rc == GLOBUS_SUCCESS);
