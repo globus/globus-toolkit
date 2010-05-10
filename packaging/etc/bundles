@@ -8,7 +8,6 @@ BUNDLE globus-resource-management-server
 	globus_common_setup
 	globus_libtool
         globus_callout
-	globus_gatekeeper_setup
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
 	globus_openssl
@@ -47,7 +46,6 @@ BUNDLE globus-resource-management-server
 	globus_gram_job_manager
         globus_scheduler_event_generator
         globus_scheduler_event_generator_job_manager
-        globus_scheduler_event_generator_job_manager_setup
         globus_gram_job_manager_auditing_setup_scripts
         globus_gram_job_manager_auditing
         globus_gram_job_manager_auditing_test
@@ -360,7 +358,6 @@ BUNDLE gt2-unthreaded
 	globus_gass_server_ez
 	globus_gass_transfer
 	globus_gatekeeper
-	globus_gatekeeper_setup
 	globus_gram_client
 	globus_gram_client_tools
 	globus_gram_job_manager_scripts
@@ -499,7 +496,6 @@ BUNDLE globus-common-libs
 BUNDLE globus-gram
         globus_gass_cache_program
         globus_rsl_assist
-        globus_gatekeeper_setup
         globus_gram_job_manager_setup
         globus_gram_job_manager_callout_error
 	globus_gram_job_manager_scripts
