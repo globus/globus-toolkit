@@ -67,6 +67,10 @@ void
 globus_l_gram_condor_poll_callback(
     void *                              user_arg);
 
+static
+time_t
+globus_l_timegm(struct tm *tm);
+
 globus_result_t
 globus_gram_job_manager_init_seg(
     globus_gram_job_manager_t *         manager)
@@ -203,7 +207,6 @@ globus_gram_job_manager_init_seg(
                     rc,
                     manager->config->seg_module);
         }
-
     }
     manager->seg_started = GLOBUS_TRUE;
 failed_activate:
@@ -1368,19 +1371,12 @@ globus_l_condor_parse_log(
                 globus_assert (pu.type == CONDOR_STRING);
                 event_time = pu.s.s;
 
-                sscanf(event_time, "%04d-%02d-%02dT%2d:%2d:%2d",
-                    &event_tm.tm_year,
-                    &event_tm.tm_mon,
-                    &event_tm.tm_mday,
-                    &event_tm.tm_hour,
-                    &event_tm.tm_min,
-                    &event_tm.tm_sec);
+                globus_strptime(
+                        event_time,
+                        "%Y-%m-%dT%H:%M:%S",
+                        &event_tm); 
 
-                event_tm.tm_year -= 1900;
-                event_tm.tm_mon -= 1;
-                event_tm.tm_isdst = -1;
-
-                event_stamp = mktime(&event_tm);
+                event_stamp = globus_l_timegm(&event_tm);
 
                 break;
             case CLUSTER:
@@ -1468,3 +1464,29 @@ globus_l_condor_parse_log(
     return 0;
 }
 /* globus_l_condor_parse_log() */
+
+/* Note that this is not thread safe */
+static
+time_t
+globus_l_timegm(struct tm *tm)
+{
+    time_t result;
+    char * tz;
+
+    tz = getenv("TZ");
+    setenv("TZ", "", 1);
+    tzset();
+    result = mktime(tm);
+    if (tz)
+    {
+        setenv("TZ", tz, 1);
+    }
+    else
+    {
+        unsetenv("TZ");
+    }
+    tzset();
+
+    return result;
+}
+/* globus_l_timegm() */
