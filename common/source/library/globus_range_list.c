@@ -439,6 +439,10 @@ globus_range_list_insert(
         {
             if(offset < ent->offset)
             {
+                if(ent->length != GLOBUS_RANGE_LIST_MAX)
+                {
+                    ent->length += ent->offset - offset;
+                }
                 ent->offset = offset;
             }
             if(end_offset == GLOBUS_RANGE_LIST_MAX || 
