@@ -42,10 +42,12 @@ globus_job_manager_SOURCES = main.c
 globus_job_manager_lock_test_SOURCES = lock_test.c
 
 # Compiler flags
-INCLUDES = $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES) $(XML_CPPFLAGS)
+
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
-	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la \
+        $(GPT_PGM_LINKS) $(XML_LIBS)
 
 man1datadir=$(mandir)/man1
 man1data_DATA = globus-personal-gatekeeper.1
