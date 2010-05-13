@@ -42,11 +42,6 @@
                   <Simple_Version Major="1" />
                </Version>
             </Dependency>
-            <Dependency Name="globus_xmlsec1" >
-               <Version >
-                  <Simple_Version Major="1" />
-               </Version>
-            </Dependency>
          </Source_Dependencies>
 <Build_Environment >
 <cflags >@GPT_PKG_CFLAGS@</cflags>
