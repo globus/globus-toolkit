@@ -60,8 +60,9 @@ globus_gram_job_manager_config_init(
 {
     int                                 i;
     int                                 rc = 0;
+    char *                              tmp;
     char                                hostname[MAXHOSTNAMELEN];
-    char *                              conf_path;
+    char *                              conf_path = NULL;
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
@@ -143,12 +144,19 @@ globus_gram_job_manager_config_init(
     config->log_levels = GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL
                        | GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
 
-    /* Default to sending usage stats to the globus.org service. This can be
-     * disabled by using -disable-usagestats in the configuration or
-     * by setting a different usagestats target by using 
-     * -usagestats-targets in the configuration
+    /* Default to using GLOBUS_USAGE_TARGETS environment variable.
+     * If not set, use the Globus usage stats service
+     * Eitehr can be overridden by using -disable-usagestats or setting
+     * -usagestats-targets in the configuration file
      */
-    config->usage_targets = strdup("usage-stats.globus.org:4810");
+    if ((tmp = getenv("GLOBUS_USAGE_TARGETS")) != NULL)
+    {
+        config->usage_targets = strdup(tmp);
+    }
+    else
+    {
+        config->usage_targets = strdup("usage-stats.globus.org:4810");
+    }
     /*
      * Parse the command line arguments
      */

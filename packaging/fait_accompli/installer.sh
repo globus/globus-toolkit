@@ -5,9 +5,10 @@ INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
 TARFILES=netlogger-c-4.0.2.tar.gz
+CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
 
 #GT5 bundles
-BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs
+BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,cas_callout
 
 PACKAGES=globus_rls_client_jni,myproxy,globus_openssl_backup
 
@@ -35,6 +36,20 @@ if [ "X$BRANCH" != "X" ]; then
     cp -R tmp-branch/* source-trees/
     rm -rf tmp-branch
     INSTALLER=gt$BRANCH-all-source-installer
+fi
+
+if [ -d scripts ]; then
+   echo
+   echo "Step: Running Scripts..."
+   for SCRIPT in `ls scripts 2>/dev/null`; do
+       echo "Running $SCRIPT"
+       scripts/$SCRIPT 
+       if [ $? -ne 0 ]; then
+           echo There was trouble running scripts/$SCRIPT
+           exit 16
+       fi
+   done
+   echo
 fi
 
 if [ -d patches ]; then
@@ -77,6 +92,9 @@ sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/READ
 
 # untar GPT into the installer dir
 tar -C $INSTALLER -xzf $GPT
+
+# copy quickstart into the installer dir
+cp -r quickstart $INSTALLER
 
 # Symlink over the bootstrapped CVS dirs.
 # Must use -h in tar command to dereference them

@@ -16,7 +16,6 @@ gaa_debug	gsi/gaa/gaa_debug/source	gpt
 gaa_gss_generic	gsi/gaa_callbacks/gaa_gss_generic/source	gpt
 gaa_plugin	gsi/gaa/gaa_plugin/source	gpt
 gaa_simple	gsi/gaa_callbacks/gaa_simple/source	gpt
-globus_xmlsec1	gsi/xmlsec1	gpt
 gaa_simple_test	gsi/gaa_callbacks/gaa_simple/test	gpt
 gaa_util	gsi/gaa_util/source	gpt
 globus_authz	gsi/authz/source	gpt
@@ -41,7 +40,6 @@ globus_gass_copy_test	gass/copy/test	gpt
 globus_gass_server_ez	gass/server_ez/source	gpt
 globus_gass_transfer	gass/transfer/source	gpt
 globus_gatekeeper	gatekeeper/source	gpt
-globus_gatekeeper_setup	gatekeeper/setup	gpt
 globus_gram_client	gram/client/source	gpt
 globus_gram_client_test	gram/client/test	gpt
 globus_gram_client_tools	gram_client_tools/source	gpt
@@ -367,7 +365,6 @@ globus_wsrf_replicator_common_schema        ws-replica/replicator/common/schema	
 globus_wsrf_replicator_service_java         ws-replica/replicator/service/java/source	tar
 
 globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-manager/c/source gpt
-globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
 globus_crft_util                    ws-transfer/reliable/client/c/crft_util/source gpt
 globus_crft_test	 	ws-transfer/reliable/client/c/crft_util/test
@@ -386,10 +383,10 @@ globus_c_wsrf_index_bindings                ws-mds/index/c/bindings  gpt
 globus_wsrf_mds_gkrellm                     ws-mds/gkrellm/source	tar
 globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema	tar
 
-myproxy		myproxy	gpt	null	MYPROXY_5_0
+myproxy		myproxy	gpt	null	HEAD
 
-gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null OPENSSH_GSI_GPT_4_7
-gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null OPENSSH_GSI_GPT_4_7
+gsi_openssh	gssapi-openssh/openssh	make_gpt_dist null GPT-branch
+gsi_openssh_setup  gssapi-openssh/setup	make_gpt_dist null HEAD
 
 gridshib_schema gridshib/gt/common/schema tar null HEAD
 gridshib_common	gridshib/gt/common/java/source tar null HEAD

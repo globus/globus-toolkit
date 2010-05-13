@@ -139,8 +139,10 @@ globus_gram_job_manager_init_seg(
             globus_gram_job_manager_log(
                     manager,
                     GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.seg.end level=ERROR error=%d "
-                    "module=%s reason=\"Error loading job_manager SEG "
+                    "event=gram.seg.end level=ERROR "
+                    "error=%d "
+                    "module=%s "
+                    "reason=\"Error loading job_manager SEG "
                     "module\"\n",
                     rc,
                     manager->config->seg_module);
@@ -281,6 +283,19 @@ globus_gram_job_manager_seg_handle_event(
     globus_bool_t                       found_subjob_id;
 
     event = globus_fifo_dequeue(&request->seg_event_queue);
+
+    if (event->timestamp > request->seg_last_timestamp)
+    {
+        /*
+         * GRAM-145: GRAM5 Job Manager fails to save SEG timestamps in job
+         * state files
+         *
+         * We'll update the SEG timestamp here so that if the job manager
+         * is restarted it (potentially) ignore events that have already been
+         * noticed in the job state file.
+         */
+        request->seg_last_timestamp = event->timestamp;
+    }
 
     globus_gram_job_manager_request_log(
             request,
@@ -790,6 +805,7 @@ globus_l_gram_fork_poll_callback(
     /* Queue events in the request-specific SEG event queue */
     for (l = events; l != NULL; l = globus_list_rest(l))
     {
+
         event = globus_list_first(l);
 
         GlobusGramJobManagerLock(manager);
@@ -802,7 +818,7 @@ globus_l_gram_fork_poll_callback(
 
         if (rc == GLOBUS_SUCCESS)
         {
-            rc = globus_l_gram_deliver_event(   
+            rc = globus_l_gram_deliver_event(
                     request,
                     event);
 

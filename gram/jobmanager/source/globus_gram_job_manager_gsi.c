@@ -22,6 +22,7 @@
 #include "globus_gram_jobmanager_callout_error.h"
 
 #include <string.h>
+#include <openssl/evp.h>
 
 static
 void
@@ -95,7 +96,8 @@ globus_gram_job_manager_import_sec_context(
         return GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     }
 
-    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
+    if (manager &&
+            manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
     {
         do
         {
@@ -408,6 +410,11 @@ globus_gram_job_manager_gsi_get_subject(
     export_name.value = NULL;
     export_name.length = 0;
 
+    globus_gram_job_manager_log(
+        NULL,
+        GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+        "event=gram_gsi_get_subject.start "
+        "level=TRACE \n");
     major_status = gss_inquire_cred(
             &minor_status,
             GSS_C_NO_CREDENTIAL,
@@ -447,6 +454,41 @@ failed_display_name:
             &name);
 failed_inquire_cred:
     *subject_namep = subject_name;
+    if (rc != GLOBUS_SUCCESS)
+    {
+        char *errmsg = NULL, *errmsg_escaped = NULL;
+        if (major_status != GSS_S_COMPLETE)
+        {
+            globus_gss_assist_display_status_str(
+                &errmsg,
+                "Error getting subject",
+                major_status,
+                minor_status,
+                0);
+
+            errmsg_escaped = globus_gram_prepare_log_string(errmsg);
+        }
+        globus_gram_job_manager_log(
+            NULL,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+            "event=gram_gsi_get_subject.end "
+            "level=ERROR "
+            "status=%d "
+            "reason=\"%s\" "
+            "\n",
+            -rc,
+            errmsg_escaped
+                ? errmsg_escaped :
+                globus_gram_protocol_error_string(rc));
+        if (errmsg)
+        {
+            free(errmsg);
+        }
+        if (errmsg_escaped)
+        {
+            free(errmsg_escaped);
+        }
+    }
     return rc;
 }
 /* globus_gram_job_manager_gsi_get_subject() */
@@ -887,3 +929,134 @@ skip_authz:
     return rc;
 }
 /* globus_gram_job_manager_authz_query() */
+
+/**
+ * @brief Look up the identity of a GSSAPI credential and generate a hash
+ * @ingroup globus_gram_gsi
+ *
+ * @details
+ * The @a globus_gram_gsi_get_dn_hash() function inspects the credential 
+ * named by @a cred parameter to determine the identity of the credential.
+ * It then computes the default hash on that name and assigns a copy of
+ * that value to the @a hash parameter. The caller is responsible for freeing
+ * that value.
+ * 
+ * @param cred
+ *     GSSAPI credential to inspect
+ * @param hash
+ *     Pointer to be set to the hash of the identity of @a cred.
+ *
+ * @return 
+ *     On success, @a globus_gram_gsi_get_dn_hash() returns GLOBUS_SUCCESS
+ *     and modifies the @a hash parameter to point to a copy of the string
+ *     representation of the hash. If an error occurs, @a
+ *     globus_gram_gsi_get_dn_hash() returns a non-zero error code and the
+ *     the value of @a hash is undefined.
+ */
+int
+globus_gram_gsi_get_dn_hash(
+    gss_cred_id_t                       cred,
+    unsigned long *                     hash)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    OM_uint32                           major, minor;
+    gss_name_t                          name;
+    gss_buffer_desc                     namebuf;
+    unsigned char                       md[EVP_MAX_MD_SIZE+1];
+    const EVP_MD *                      evp_md;
+    EVP_MD_CTX                          evp_ctx;
+    unsigned int                        mdlen;
+    unsigned long                       hash_value;
+
+    if (hash == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto out;
+    }
+    *hash = 0L;
+    if (cred == GSS_C_NO_CREDENTIAL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+
+        goto out;
+    }
+
+    major = gss_inquire_cred(
+            &minor,
+            cred,
+            &name,
+            NULL,
+            NULL,
+            NULL);
+
+    if (major != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+
+        goto out;
+    }
+
+    major = gss_display_name(
+            &minor,
+            name,
+            &namebuf,
+            NULL);
+    if (major != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+
+        goto free_name_out;
+    }
+
+    evp_md = EVP_get_digestbyname("sha1");
+    if (evp_md == NULL)
+    {
+        evp_md = EVP_get_digestbyname("md5");
+    }
+    if (evp_md == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_namebuf_out;
+    }
+
+    EVP_MD_CTX_init(&evp_ctx);
+
+    if (EVP_DigestInit_ex(&evp_ctx, evp_md, NULL) != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_namebuf_out;
+    }
+
+    if (EVP_DigestUpdate(&evp_ctx, namebuf.value, namebuf.length) != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_digest_out;
+    }
+
+    if (EVP_DigestFinal_ex(&evp_ctx, md, &mdlen) != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_digest_out;
+    }
+    hash_value = (((unsigned long)md[0]) |
+                  ((unsigned long)md[1] << 8L) |
+                  ((unsigned long)md[2] << 16L) |
+                  ((unsigned long)md[3] << 24L)) & 0xffffffffL;
+
+    *hash = hash_value;
+
+free_digest_out:
+    EVP_MD_CTX_cleanup(&evp_ctx);
+free_namebuf_out:
+    gss_release_buffer(&minor, &namebuf);
+free_name_out:
+    gss_release_name(&minor, &name);
+out:
+    return rc;
+}
+/* globus_gram_gsi_get_dn_hash() */

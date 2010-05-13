@@ -8,7 +8,6 @@ BUNDLE globus-resource-management-server
 	globus_common_setup
 	globus_libtool
         globus_callout
-	globus_gatekeeper_setup
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
 	globus_openssl
@@ -47,7 +46,6 @@ BUNDLE globus-resource-management-server
 	globus_gram_job_manager
         globus_scheduler_event_generator
         globus_scheduler_event_generator_job_manager
-        globus_scheduler_event_generator_job_manager_setup
         globus_gram_job_manager_auditing_setup_scripts
         globus_gram_job_manager_auditing
         globus_gram_job_manager_auditing_test
@@ -147,7 +145,6 @@ BUNDLE globus-data-management-server
 	gssapi_error
 	globus_ftp_control
         globus_libxml2
-        globus_xmlsec1
         gaa_util
 	gaa_core
 	gaa_plugin
@@ -156,14 +153,11 @@ BUNDLE globus-data-management-server
 	globus_authz
 	globus_authz_null_callout
 	gaa_gss_generic
-	gaa_simple
-	globus_authz_gaa_callout
-	globus_gaa_authz_callout_setup
 	globus_gridmap_callout_error
         globus_gridftp_server_control
         globus_usage
         globus_gridftp_server
-    globus_gridftp_sshftp_setup
+	globus_gridftp_sshftp_setup
         globus_xioperf
 
 BUNDLE globus-data-management-sdk
@@ -193,9 +187,9 @@ BUNDLE globus-data-management-sdk
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
-    globus_xio_gridftp_driver
+	globus_xio_gridftp_driver
 	globus_gass_copy
-    globus_gridftp_sshftp_setup
+	globus_gridftp_sshftp_setup
 
 BUNDLE globus-data-management-client
 	globus_core
@@ -226,9 +220,9 @@ BUNDLE globus-data-management-client
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
-    globus_xio_gridftp_driver
-    globus_gass_copy
-    globus_gridftp_sshftp_setup
+	globus_xio_gridftp_driver
+	globus_gass_copy
+	globus_gridftp_sshftp_setup
 
 BUNDLE	gram-gridftp-test
 	globus_test
@@ -245,10 +239,9 @@ BUNDLE	gram-gridftp-test
 	globus_openssl_error_test
 	globus_proxy_ssl_test
 	globus_authz_test
-    globus_xio_test
-	gaa_simple_test
-    globus_proxy_utils_test
-    globus_gram_job_manager_auditing_test
+	globus_xio_test
+	globus_proxy_utils_test
+	globus_gram_job_manager_auditing_test
 
 BUNDLE	prews-test
 	globus_test
@@ -266,7 +259,6 @@ BUNDLE	prews-test
 	globus_proxy_ssl_test
 	globus_authz_test
         globus_xio_test
-	gaa_simple_test
         globus_proxy_utils_test
         globus_gram_job_manager_auditing_test
 
@@ -341,11 +333,9 @@ BUNDLE gt2-unthreaded
 	gaa_debug
 	gaa_gss_generic
 	gaa_plugin
-	gaa_simple
 	gaa_util
 	globus_authz
 	globus_authz_callout_error
-	globus_authz_gaa_callout
 	globus_authz_null_callout
 	globus_callout
 	globus_common
@@ -353,14 +343,12 @@ BUNDLE gt2-unthreaded
 	globus_core
 	globus_ftp_client
 	globus_ftp_control
-	globus_gaa_authz_callout_setup
 	globus_gass_cache
 	globus_gass_cache_program
 	globus_gass_copy
 	globus_gass_server_ez
 	globus_gass_transfer
 	globus_gatekeeper
-	globus_gatekeeper_setup
 	globus_gram_client
 	globus_gram_client_tools
 	globus_gram_job_manager_scripts
@@ -392,7 +380,6 @@ BUNDLE gt2-unthreaded
 	globus_simple_ca_setup
 	globus_user_env
 	globus_xio
-	globus_xmlsec1
 	gssapi_error
         globus_gridftp_server_control
         globus_usage
@@ -499,7 +486,6 @@ BUNDLE globus-common-libs
 BUNDLE globus-gram
         globus_gass_cache_program
         globus_rsl_assist
-        globus_gatekeeper_setup
         globus_gram_job_manager_setup
         globus_gram_job_manager_callout_error
 	globus_gram_job_manager_scripts
@@ -510,15 +496,12 @@ BUNDLE globus-gram
 
 BUNDLE globus-gridftp
         globus_libxml2
-        globus_xmlsec1
         gaa_core
         gaa_util
         gaa_plugin
-        gaa_simple
         globus_xio_popen_driver
         globus_xio_pipe_driver
         globus_xio_rate_driver
-        globus_gaa_authz_callout_setup
         gaa_gss_generic
         globus_authz_callout_error
         globus_authz
@@ -527,7 +510,6 @@ BUNDLE globus-gridftp
         globus_gridftp_server_control
         globus_usage
         globus_gridftp_server
-        globus_authz_gaa_callout
         globus_gridmap_callout_error
         globus_gridftp_sshftp_setup
         globus_xio_gridftp_multicast
@@ -903,4 +885,8 @@ BUNDLE globus-java-xacml-authz
 	globus_java_authz_xacml_test
 	globus_java_authz_xacml_samples
 	
-
+BUNDLE cas_callout
+	gaa_simple
+	gaa_simple_test
+	globus_authz_gaa_callout
+	globus_gaa_authz_callout_setup

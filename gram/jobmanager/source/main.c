@@ -37,6 +37,8 @@
 #include "globus_gass_cache.h"
 #include "globus_gram_jobmanager_callout_error.h"
 
+#include <sys/wait.h>
+
 static
 int
 globus_l_gram_job_manager_activate(void);
@@ -52,6 +54,28 @@ globus_l_gram_create_stack(
     globus_xio_stack_t *                stack,
     globus_xio_driver_t *               driver);
 
+static
+void
+globus_l_waitpid_callback(
+    void *                              user_arg);
+
+static
+void
+reply_and_exit(
+    globus_gram_job_manager_t *         manager,
+    int                                 rc,
+    char *                              gt3_failure_message);
+
+static
+void
+globus_l_gram_process_pending_restarts(
+    void *                              arg);
+
+static
+globus_mutex_t                          globus_l_waitpid_callback_lock;
+static
+globus_callback_handle_t                globus_l_waitpid_callback_handle =
+        GLOBUS_NULL_HANDLE;
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -62,7 +86,6 @@ main(
     int                                 rc;
     globus_gram_job_manager_config_t    config;
     globus_gram_job_manager_t           manager;
-    globus_gram_jobmanager_request_t *  request = NULL;
     char *                              sleeptime_str;
     long                                sleeptime;
     globus_bool_t                       started_without_client = GLOBUS_FALSE;
@@ -70,8 +93,8 @@ main(
     int                                 http_body_fd;
     int                                 context_fd;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
-    globus_list_t *                     requests = NULL;
     OM_uint32                           major_status, minor_status;
+    pid_t                               forked_starter = 0;
 
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -101,7 +124,7 @@ main(
     rc = globus_gram_job_manager_config_init(&config, argc, argv);
     if (rc != GLOBUS_SUCCESS)
     {
-        exit(1);
+        reply_and_exit(NULL, rc, NULL);
     }
     rc = globus_gram_job_manager_logging_init(&config);
     if (rc != GLOBUS_SUCCESS)
@@ -152,6 +175,27 @@ main(
         exit(1);
     }
 
+    if (cred != GSS_C_NO_CREDENTIAL)
+    {
+        unsigned long hash;
+        char * newtag;
+
+        rc = globus_gram_gsi_get_dn_hash(
+                cred,
+                &hash);
+        if (rc == GLOBUS_SUCCESS)
+        {
+            newtag = globus_common_create_string("%s%s%lx",
+                    strcmp(config.service_tag, "untagged") == 0
+                            ? "" : config.service_tag,
+                    strcmp(config.service_tag, "untagged") == 0
+                            ? "" : ".",
+                    hash);
+            free(config.service_tag);
+            config.service_tag = newtag;
+        }
+    }
+
     /*
      * Remove delegated proxy from disk.
      */
@@ -167,7 +211,7 @@ main(
     rc = globus_gram_job_manager_init(&manager, cred, &config);
     if(rc != GLOBUS_SUCCESS)
     {
-        exit(1);
+        reply_and_exit(NULL, rc, NULL);
     }
 
     /*
@@ -230,19 +274,20 @@ main(
             if (!started_without_client)
             {
                 /* We've acquired the manager socket */
-                rc = fork();
+                forked_starter = fork();
             }
             else
             {
-                rc = 1;
+                /* Fake PID */
+                forked_starter = 1;
             }
 
-            if (rc < 0)
+            if (forked_starter < 0)
             {
                 fprintf(stderr, "fork failed: %s", strerror(errno));
                 exit(1);
             }
-            else if (rc > 0)
+            else if (forked_starter > 0)
             {
                 /* We are the parent process, which means we hold 
                  * the manager lock file and have an open socket for
@@ -252,6 +297,12 @@ main(
                  * we'll act like the single job manager and let the
                  * forked processes pass the job fds to me.
                  */
+
+                /* Clean fake PID so that we don't try to wait for init(8) */
+                if (forked_starter == 1)
+                {
+                    forked_starter = 0;
+                }
                 rc = globus_gram_job_manager_gsi_write_credential(
                         cred,
                         manager.cred_path);
@@ -299,8 +350,7 @@ main(
 
             /* Load existing jobs. The show must go on if this fails */
             (void) globus_gram_job_manager_request_load_all(
-                    &manager,
-                    &requests);
+                    &manager);
 
             /* At this point, seg_last_timestamp is the earliest last timestamp 
              * for any pre-existing jobs. If that is 0, then we don't have any
@@ -318,50 +368,35 @@ main(
             {
                 rc = globus_gram_job_manager_init_seg(&manager);
 
+                /* TODO: If SEG load fails and load_all added some to the 
+                 * job_id hash, they will need to be pushed into the state
+                 * machine so that polling fallback can happen.
+                 */
                 if (rc != GLOBUS_SUCCESS)
                 {
                     config.seg_module = NULL;
                 }
             }
-            /* Restart job requests */
-            while (!globus_list_empty(requests))
+            /* GRAM-128:
+             * Register a periodic event to process the GRAM jobs that were
+             * reloaded from their job state files at job manager start time.
+             * This will acquire and then release a reference to each job,
+             * which, behind the scenes, will kick of the state machine
+             * for that job if needed.
+             */
+            if (!globus_list_empty(manager.pending_restarts))
             {
-                request = globus_list_first(requests);
-                requests = globus_list_rest(requests);
+                globus_reltime_t        restart_period;
 
-                request->unsent_status_change = GLOBUS_TRUE;
+                GlobusTimeReltimeSet(restart_period, 1, 0);
 
-                /* Add it to the request table */
-                rc = globus_gram_job_manager_add_request(
-                    &manager,
-                    request->job_contact_path,
-                    request);
-
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    /* Ignore this error */
-                    globus_gram_job_manager_request_free(request);
-                    free(request);
-                    request = NULL;
-                    continue;
-                }
-
-                /* Some states will cause us to act like the job was just
-                 * submitted, so the seg will be restarted in the state
-                 * machine
-                 */
-                if (request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1 ||
-                    request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2 ||
-                    request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
-                    request->restart_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
-                {
-                    globus_gram_job_manager_seg_pause(&manager);
-                }
-                /* Kick off the state machine */
-                rc = globus_gram_job_manager_state_machine_register(
-                        &manager,
-                        request,
-                        NULL);
+                rc = globus_callback_register_periodic(
+                        &manager.pending_restart_handle,
+                        NULL,
+                        &restart_period,
+                        globus_l_gram_process_pending_restarts,
+                        &manager);
+                        
             }
         }
         else if (!started_without_client)
@@ -390,8 +425,29 @@ main(
             }
         }
     }
-    GlobusGramJobManagerLock(&manager);
 
+    globus_mutex_init(&globus_l_waitpid_callback_lock, NULL);
+
+    /*
+     * Register periodic event to clean up zombie if we forked a child
+     * process
+     */
+    if (forked_starter != 0)
+    {
+        globus_reltime_t                delay, period;
+
+        GlobusTimeReltimeSet(delay, 0, 0);
+        GlobusTimeReltimeSet(period, 10, 0);
+
+        globus_callback_register_periodic(
+                &globus_l_waitpid_callback_handle,
+                &delay,
+                &period,
+                globus_l_waitpid_callback,
+                &forked_starter);
+    }
+
+    GlobusGramJobManagerLock(&manager);
     if (manager.socket_fd != -1 &&
         globus_hashtable_empty(&manager.request_hash) &&
         manager.grace_period_timer == GLOBUS_NULL_HANDLE)
@@ -399,15 +455,28 @@ main(
         globus_gram_job_manager_set_grace_period_timer(&manager);
     }
 
+
     /* For the active job manager, this will block until all jobs have
-     * terminated. For any other job manager, the hashtable is empty so this
-     * falls right through.
+     * terminated. For any other job manager, the monitor.done is set to
+     * GLOBUS_TRUE and this falls right through.
      */
     while (! manager.done)
     {
         GlobusGramJobManagerWait(&manager);
     }
     GlobusGramJobManagerUnlock(&manager);
+
+    globus_mutex_lock(&globus_l_waitpid_callback_lock);
+    if (globus_l_waitpid_callback_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(
+                globus_l_waitpid_callback_handle,
+                NULL,
+                NULL,
+                0);
+        globus_l_waitpid_callback_handle = GLOBUS_NULL_HANDLE;
+    }
+    globus_mutex_unlock(&globus_l_waitpid_callback_lock);
 
 
     globus_gram_job_manager_log(
@@ -594,4 +663,151 @@ driver_load_failed:
 }
 /* globus_l_gram_create_stack() */
 
+
+static
+void
+globus_l_waitpid_callback(
+    void *                              user_arg)
+{
+    pid_t                               childpid = *(pid_t *) user_arg;
+    int                                 statint;
+
+    globus_mutex_lock(&globus_l_waitpid_callback_lock);
+    if (waitpid(childpid, &statint, WNOHANG) > 0)
+    {
+        *(pid_t *) user_arg = 0;
+
+        globus_callback_unregister(
+                globus_l_waitpid_callback_handle,
+                NULL,
+                NULL,
+                0);
+        globus_l_waitpid_callback_handle = GLOBUS_NULL_HANDLE;
+    }
+
+    globus_mutex_unlock(&globus_l_waitpid_callback_lock);
+}
+/* globus_l_waitpid_callback() */
+
+static
+void
+reply_and_exit(
+    globus_gram_job_manager_t *         manager,
+    int                                 rc,
+    char *                              gt3_failure_message)
+{
+    int                                 myrc;
+    int                                 context_fd;
+    gss_ctx_id_t                        response_context = GSS_C_NO_CONTEXT;
+    char *                              fd_env;
+
+    fd_env = getenv("GRID_SECURITY_CONTEXT_FD");
+    myrc = sscanf(fd_env ? fd_env : "-1", "%d", &context_fd);
+    if (myrc == 1 && context_fd >= 0)
+    {
+        myrc = globus_gram_job_manager_import_sec_context(
+                NULL,
+                context_fd,
+                &response_context);
+    }
+
+    globus_gram_job_manager_reply(
+            NULL,
+            manager,
+            rc,
+            NULL,
+            1,
+            response_context,
+            gt3_failure_message);
+    
+    exit(0);
+}
+/* reply_and_exit() */
+
+static
+void
+globus_l_gram_process_pending_restarts(
+    void *                              arg)
+{
+    globus_gram_job_manager_t *         manager = arg;
+    void *                              key;
+    char                                gramid[64];
+    int                                 i;
+    int                                 rc;
+    int                                 restarted=0;
+    globus_gram_jobmanager_request_t *  request;
+
+    GlobusGramJobManagerLock(manager);
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.process_pending_restarts.start "
+            "level=DEBUG "
+            "pending_restarts=%d "
+            "\n",
+            globus_list_size(manager->pending_restarts));
+    GlobusGramJobManagerUnlock(manager);
+
+    for (i = 0; i < 20; i++)
+    {
+        GlobusGramJobManagerLock(manager);
+        if (manager->pending_restarts == NULL)
+        {
+            GlobusGramJobManagerUnlock(manager);
+            break;
+        }
+
+        key = globus_list_first(manager->pending_restarts);
+        globus_assert(key != NULL);
+        strncpy(gramid, key, sizeof(gramid));
+
+        GlobusGramJobManagerUnlock(manager);
+
+        /* 
+         * This call below will remove the job from the list when it
+         * reloads it and start the state machine. 
+         */
+        rc = globus_gram_job_manager_add_reference(
+                manager,
+                gramid,
+                "restart job",
+                &request);
+
+        /* If this fails, then removing the reference will allow it
+         * to potentially hit negative counts
+         */
+        if (rc == GLOBUS_SUCCESS)
+        {
+            restarted++;
+            /* XXX: What if this fails? */
+            rc = globus_gram_job_manager_remove_reference(
+                    manager,
+                    gramid,
+                    "restart job");
+        }
+    }
+    GlobusGramJobManagerLock(manager);
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.process_pending_restarts.end "
+            "level=DEBUG "
+            "processed=%d "
+            "pending_restarts=%d "
+            "\n",
+            restarted,
+            globus_list_size(manager->pending_restarts));
+    if (manager->pending_restarts == NULL)
+    {
+        globus_callback_unregister(
+                manager->pending_restart_handle,
+                NULL,
+                NULL,
+                NULL);
+        manager->pending_restart_handle = GLOBUS_NULL_HANDLE;
+        GlobusGramJobManagerUnlock(manager);
+        return;
+    }
+    GlobusGramJobManagerUnlock(manager);
+}
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
