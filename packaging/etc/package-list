@@ -16,7 +16,6 @@ gaa_debug	gsi/gaa/gaa_debug/source	gpt
 gaa_gss_generic	gsi/gaa_callbacks/gaa_gss_generic/source	gpt
 gaa_plugin	gsi/gaa/gaa_plugin/source	gpt
 gaa_simple	gsi/gaa_callbacks/gaa_simple/source	gpt
-globus_xmlsec1	gsi/xmlsec1	gpt
 gaa_simple_test	gsi/gaa_callbacks/gaa_simple/test	gpt
 gaa_util	gsi/gaa_util/source	gpt
 globus_authz	gsi/authz/source	gpt
