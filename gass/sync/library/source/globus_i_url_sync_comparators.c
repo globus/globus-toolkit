@@ -47,9 +47,9 @@ typedef struct
 /** Callback arg structure used in the chained comparison. */
 typedef struct
 {
-	globus_list_t *							list;
-	globus_url_sync_compare_func_cb_t		cb_func;
-	void *									cb_arg;
+    globus_list_t *				list;
+    globus_url_sync_compare_func_cb_t		cb_func;
+    void *					cb_arg;
 }
 globus_l_url_sync_chain_func_cb_arg_t;
 
@@ -310,7 +310,7 @@ globus_l_url_sync_chain_func(
     /* Hand off execution to the cb function. By passing a '0' as the result
      * parameter, it ensures that the callback will attempt to call the next
      * comparator in the chain, if there is at least one in the chain. */
-    globus_url_sync_compare_chain_func_cb_t(
+    globus_url_sync_compare_chain_func_cb(
 			chain_cb_arg,
 			source,
 			destination,
@@ -339,7 +339,7 @@ globus_url_sync_compare_chain_func_cb(
 {
     globus_l_url_sync_chain_func_cb_arg_t *		chain_cb_arg;
     globus_url_sync_comparator_t *			next_comparator;
-    GlobusFuncName(globus_url_sync_compare_chain_func_cb_t);
+    GlobusFuncName(globus_url_sync_compare_chain_func_cb);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     globus_assert(arg);
@@ -373,12 +373,12 @@ globus_url_sync_compare_chain_func_cb(
 				next_comparator->comparator_arg,
 				source,
 				destination,
-				globus_url_sync_compare_chain_func_cb_t,
+				globus_url_sync_compare_chain_func_cb,
 				chain_cb_arg);
 	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(next_comparator->compare_func, "compare_func");
     }
 
-} /* globus_url_sync_compare_chain_func_cb*/
+} /* globus_url_sync_compare_chain_func_cb */
 
 /**
  * A helper function for simplifying the MSLT operations.
