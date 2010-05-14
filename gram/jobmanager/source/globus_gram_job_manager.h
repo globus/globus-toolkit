@@ -743,7 +743,9 @@ typedef struct globus_gram_job_manager_ref_s
     char *                              key;
     /* Pointer to manager */
     globus_gram_job_manager_t *         manager;
-    /* Pointer to the request */
+    /* Pointer to the request, may be NULL if the request is swapped out of
+     * memory because there is no active reference to it
+     */
     globus_gram_jobmanager_request_t *  request;
     /* Count of callbacks, queries, etc that refer to this job.
      * When 0, the request is eligible for removal from memory.
@@ -768,6 +770,11 @@ typedef struct globus_gram_job_manager_ref_s
      * completed execution.
      */
     globus_bool_t                       loaded_only;
+    /**
+     * Timestamp of the last SEG event we've completely processed. Initially
+     * set to the time of the job submission.
+     */
+    time_t                              seg_last_timestamp;
 }
 globus_gram_job_manager_ref_t;
 

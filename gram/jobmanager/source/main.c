@@ -364,7 +364,8 @@ main(
             /* Start off the SEG if we need it.
              */
             if (config.seg_module != NULL || 
-                strcmp(config.jobmanager_type, "fork") == 0)
+                strcmp(config.jobmanager_type, "fork") == 0 ||
+                strcmp(config.jobmanager_type, "condor") == 0)
             {
                 rc = globus_gram_job_manager_init_seg(&manager);
 
