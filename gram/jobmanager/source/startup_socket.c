@@ -1328,15 +1328,16 @@ globus_l_gram_startup_socket_callback(
                     "context_fd=%d "
                     "response_fd=%d "
                     "acksock=%d "
+                    "msg=\"%s\" "
                     "reason=\"%s\" "
                     "\n",
                     manager->socket_fd,
                     -rc,
-                    "Error importing credential",
                     http_body_fd,
                     context_fd,
                     response_fd,
                     acksock,
+                    "Error importing credential",
                     errstr_escaped ? errstr_escaped : "");
 
             if (errstr)

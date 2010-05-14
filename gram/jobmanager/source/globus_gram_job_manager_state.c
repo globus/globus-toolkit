@@ -512,7 +512,8 @@ globus_l_gram_job_manager_state_machine(
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 
         if (request->config->seg_module == NULL &&
-            strcmp(request->config->jobmanager_type, "fork") != 0)
+            strcmp(request->config->jobmanager_type, "fork") != 0 &&
+            strcmp(request->config->jobmanager_type, "condor") != 0)
         {
             rc = globus_gram_job_manager_script_poll(request);
         }
@@ -842,7 +843,8 @@ globus_l_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
         }
-        if(globus_gram_job_manager_rsl_need_file_cleanup(request))
+        if(globus_gram_job_manager_rsl_need_file_cleanup(request) ||
+            strcmp(request->config->jobmanager_type, "condor") == 0)
         {
             globus_l_gram_file_cleanup(request);
         }
@@ -2172,13 +2174,24 @@ globus_l_gram_file_cleanup(
 
         if (path)
         {
-            unlink(path);
+            remove(path);
         }
     }
 
 no_sequence:
     globus_rsl_free_recursive(relation);
 not_found:
+    /*
+     * GRAM-130: Individual Condor Logs per Job
+     */
+    if (strcmp(request->config->jobmanager_type, "condor") == 0)
+    {
+        char * condor_log = globus_common_create_string(
+                "%s/condor.%s",
+                request->config->job_state_file_dir,
+                request->uniq_id);
+        remove(condor_log);
+    }
     return;
 }
 /* globus_l_gram_file_cleanup() */
