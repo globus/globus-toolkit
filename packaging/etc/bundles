@@ -890,3 +890,9 @@ BUNDLE cas_callout
 	gaa_simple_test
 	globus_authz_gaa_callout
 	globus_gaa_authz_callout_setup
+
+BUNDLE usagestats_server
+        globus_usage_tools
+        globus_usage_tools_setup
+        globus_usage_tools_test
+
