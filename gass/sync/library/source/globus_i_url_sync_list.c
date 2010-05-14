@@ -113,7 +113,7 @@ typedef struct
  **/
 
 void
-parse_mlst_buffer(
+globus_url_sync_l_parse_mlst_buffer(
 		  globus_url_sync_endpoint_t * endpoint,
 		  globus_byte_t * buffer,
 		  char * name)
@@ -156,7 +156,7 @@ parse_mlst_buffer(
     endpoint->stats.size = size;
     endpoint->stats.modify_tm = time_tm;
 	
-} /* parse_mlst_buffer */
+} /* globus_url_sync_l_parse_mlst_buffer */
 
 /**
  * @ingroup globus_i_url_sync_list

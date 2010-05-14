@@ -140,7 +140,7 @@ globus_l_url_sync_make_src_endpoint(
     memset(new_endpoint, 0, sizeof(globus_url_sync_endpoint_t));
     globus_assert(new_endpoint);
   
-    parse_mlst_buffer(new_endpoint, mlst_results, child);
+    globus_url_sync_l_parse_mlst_buffer(new_endpoint, mlst_results, child);
     child_len = globus_libc_strlen(child);
     globus_assert(child_len);
   
@@ -167,7 +167,7 @@ globus_l_url_sync_make_src_endpoint(
 static
 void
 globus_l_url_sync_arg_destroy(
-    globus_l_url_sync_arg_t *               arg)
+    globus_l_url_sync_arg_t *       arg)
 {
     globus_assert(arg);
     globus_i_url_sync_list_free_entries(arg->entries);
@@ -180,11 +180,11 @@ globus_l_url_sync_arg_destroy(
 static
 void
 globus_l_url_sync_compare_func_top_cb(
-    void *                                      arg,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    int         				compare_result,
-    globus_object_t *                           error);
+    void *                          arg,
+    globus_url_sync_endpoint_t *    source,
+    globus_url_sync_endpoint_t *    destination,
+    int			         			compare_result,
+    globus_object_t *               error);
 
 /** The compare function callback. This cb is used for any recursively listed
  *  and compared files throughout the directory hierarchy below the top-level
@@ -193,11 +193,11 @@ globus_l_url_sync_compare_func_top_cb(
 static
 void
 globus_l_url_sync_compare_func_recurse_cb(
-    void *                                      arg,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    int         				compare_result,
-    globus_object_t *                           error);
+    void *                          arg,
+    globus_url_sync_endpoint_t *    source,
+    globus_url_sync_endpoint_t *    destination,
+    int         					compare_result,
+    globus_object_t *               error);
 
 /* Declarations */
 

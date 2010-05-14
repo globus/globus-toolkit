@@ -104,7 +104,7 @@ globus_l_url_sync_chain_func(
     void *                                      callback_arg);
 
 void
-globus_url_sync_compare_chain_func_cb_t (
+globus_url_sync_compare_chain_func_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
@@ -330,7 +330,7 @@ globus_l_url_sync_chain_func(
  * Otherwise, it looks for the next comparator in the chain, and calls it.
  */
 void
-globus_url_sync_compare_chain_func_cb_t (
+globus_url_sync_compare_chain_func_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
@@ -378,7 +378,7 @@ globus_url_sync_compare_chain_func_cb_t (
 	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(next_comparator->compare_func, "compare_func");
     }
 
-} /* globus_url_sync_compare_chain_func_cb_t */
+} /* globus_url_sync_compare_chain_func_cb*/
 
 /**
  * A helper function for simplifying the MSLT operations.
@@ -435,7 +435,7 @@ globus_l_url_sync_ftpclient_mlst(
     /* Parse MSLT buffer */
     if (endpoint->mlst_buffer_length)
     {
-        parse_mlst_buffer(endpoint, endpoint->mlst_buffer, name);
+        globus_url_sync_l_parse_mlst_buffer(endpoint, endpoint->mlst_buffer, name);
     }
     
   cleanexit:

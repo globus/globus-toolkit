@@ -60,7 +60,7 @@
  */
 
 void
-parse_mlst_buffer(
+globus_url_sync_l_parse_mlst_buffer(
     globus_url_sync_endpoint_t * endpoint,
     globus_byte_t * buffer,
     char * name);
