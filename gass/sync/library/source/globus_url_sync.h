@@ -216,6 +216,7 @@ typedef struct globus_l_url_sync_arg_s
     globus_url_sync_endpoint_t *            destination;
     globus_url_sync_endpoint_t *            compare_source;
     globus_url_sync_endpoint_t *            compare_destination;
+	globus_object_t *                       error;
     struct globus_l_url_sync_arg_s *        parent;
 } globus_l_url_sync_arg_t;
 
