@@ -247,11 +247,7 @@ test_l_gram_callback(
     globus_mutex_lock(&monitor->mutex);
     monitor->failure_code = errorcode;
     monitor->status = state;
-    if (monitor->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
-        monitor->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-    {
-        globus_cond_signal(&monitor->cond);
-    }
+    globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
 
 }
@@ -410,7 +406,6 @@ test_restart_to_new_url(void)
     /* Wait for job to complete. After it's done, check to see which
      * destination got stdout
      */
-    globus_mutex_lock(&monitor.mutex);
     while (monitor.status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
            monitor.status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {

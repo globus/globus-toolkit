@@ -15,67 +15,31 @@ dnl     flags should be specified in accompiler.m4.
 dnl     Also setup lac_threads_* variables that mirror the lac_cv_threads_*
 dnl     variables.
 
-dnl LAC_THREADS_ARGS()
-AC_DEFUN([LAC_THREADS_ARGS],
-[
-AC_BEFORE([$0], [LAC_THREADS])
-
-])
-
-
 dnl LAC_THREADS()
 AC_DEFUN([LAC_THREADS],
 [
-
-LAC_THREADS_NONE
 LAC_THREADS_PTHREADS
 LAC_THREADS_WINDOWS
-
-lac_threads_defines=$lac_cv_threads_defines
-
-LAC_THREADS_DEFINE
-
 ])
-
-
-AC_DEFUN([LAC_THREADS_NONE],
-[
-lac_threads_defines=""
-])
-
 
 dnl LAC_THREADS_PTHREADS
 AC_DEFUN([LAC_THREADS_PTHREADS],
 [
-AC_MSG_CHECKING(for pthreads)
-
     found_inc="no"
     found_lib="no"
     found_compat_lib="no"
 
-    LAC_FIND_USER_INCLUDE(pthread,$lac_thread_include_path /usr/local/fsu-pthreads,
-                [found_inc="yes"
-                 lac_thread_include_path="$ac_find_inc_dir"
-                ])
+    pthread_cflags=""
+    pthread_libs=""
+    pthread_ldflags=""
+
+    LAC_FIND_USER_INCLUDE(pthread,$lac_thread_include_path, [found_inc="yes"])
 
     if test "$found_lib" = "no"; then
         LAC_FIND_USER_LIB(pthread,$lac_thread_library_path,
                 [found_lib="yes"
                  lib_type="pthread"
-                 lac_thread_library_path="$ac_find_lib_dir"
-                 lac_thread_library_file="$ac_find_lib_file"
                 ])
-    fi
-
-    if test "$found_lib" = "no"; then
-        LAC_FIND_USER_LIB(pthreads,$lac_thread_library_path,
-                [found_lib="yes"
-                 lib_type="pthread"
-
-                 lac_thread_library_path="$ac_find_lib_dir"
-                 lac_thread_library_file="$ac_find_lib_file"
-                ])
-                 
     fi
 
     if test "$found_lib" = "no"; then
@@ -92,115 +56,72 @@ AC_MSG_CHECKING(for pthreads)
             ) 
             CFLAGS=$ac_save_CFLAGS 
             ]
-        ) 
-        if test $myapp_cv_gcc_pthread = yes ; then 
+        )
+        if test "$myapp_cv_gcc_pthread" = "yes" ; then 
            lib_type="bsd_pthread" 
-           found_lib="yes"
         fi 
     fi
 
+    if test "$found_lib" = "no"; then
+        AC_MSG_NOTICE([pthread package not found])
+    fi
+
     if test "$found_inc" = "yes" && test "$found_lib" = "yes"; then
-        LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD)
         case "$lib_type" in
           pthread )
             case "$host" in
-              mips-sgi-irix6* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
-                LAC_THREADS_ADD_DEFINE(_SGI_MP_SOURCE)  
-              ;;
               *-hp-hpux11* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-                LAC_THREADS_ADD_DEFINE(_REENTRANT)
+                pthread_libs="-L$ac_find_lib_dir -lpthread -lm"
+                pthread_cflags="-I$ac_find_inc_dir -D_REENTRANT"
               ;;
               *solaris2* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
-                LAC_THREADS_ADD_DEFINE(_POSIX_PTHREAD_SEMANTICS) 
-                LAC_THREADS_ADD_DEFINE(_REENTRANT)
+                pthread_libs="-L$ac_find_lib_dir -lpthread -lposix4"
+                pthread_cflags="-I$ac_find_inc_dir -D_REENTRANT"
               ;;
               *86-*-linux* | *darwin* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
+                pthread_libs="-lpthread"
               ;;
               * )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
+                pthread_cflags="-I$ac_find_inc_dir"
+                pthread_libs="-L$ac_find_lib_dir -lpthread"
               ;;
             esac
           ;;
           bsd_pthread )
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-            LAC_THREADS_ADD_DEFINE(_REENTRANT)
+            pthread_cflags="-I$ac_find_inc_dir -pthread -D_REENTRANT"
+            pthread_ldflags="-pthread"
           ;;
         esac
+        build_pthreads=yes
     fi
-
-AC_MSG_RESULT($found_lib)
-
+    AC_SUBST([PTHREAD_CFLAGS], ["$pthread_cflags"])
+    AC_SUBST([PTHREAD_LDFLAGS], ["$pthread_ldflags"])
+    AC_SUBST([PTHREAD_LIBS], ["$pthread_libs"])
+    AM_CONDITIONAL([BUILD_PTHREADS], [test "$build_pthreads" = "yes"])
 ])
+
 
 dnl LAC_THREADS_WINDOWS
 AC_DEFUN([LAC_THREADS_WINDOWS],
 [
-AC_MSG_CHECKING([for windows threads])
-winthreads=no
-case "$host" in
-    *cygwin*|*mingw*)
-        LAC_THREADS_ADD_DEFINE(HAVE_WINDOWS_THREADS)
-        lac_cv_threads_CFLAGS="-DWINVER=0x0502"
-        winthreads=yes
-    ;;
-    *mingw*)
-        LAC_THREADS_ADD_DEFINE(HAVE_WINDOWS_THREADS)
-        lac_cv_threads_CFLAGS="-DWINVER=0x0502"
-        winthreads=yes
-    ;;
-esac
-AC_MSG_RESULT([$winthreads])
-])
+    found_inc="no"
+    found_lib="no"
+    found_compat_lib="no"
 
-dnl LAC_THREADS_ADD_DEFINE(SYMBOL)
-dnl If you add a define for a new SYMBOL, you need to add that symbol
-dnl to LAC_THREADS_DEFINE.
-AC_DEFUN([LAC_THREADS_ADD_DEFINE],
-[
-    lac_cv_threads_defines="$lac_cv_threads_defines $1"
-])
+    windowsthreads_cflags=""
+    windowsthreads_libs=""
+    windowsthreads_ldflags=""
 
-dnl LAC_THREADS_DEFINE()
-AC_DEFUN([LAC_THREADS_DEFINE],
-[
-for lac_def in $lac_cv_threads_defines
-do
-    case $lac_def in
-        LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD)
-        LAC_THREADS_DEFINE_ONE(HAVE_WINDOWS_THREADS)
-        LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_PREEMPTIVE)
-        LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_SCHED)
-        LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_INIT_FUNC)
-        LAC_THREADS_DEFINE_ONE(HAVE_THREAD_SAFE_STDIO)
-        LAC_THREADS_DEFINE_ONE(HAVE_THREAD_SAFE_SELECT) 
-        LAC_THREADS_DEFINE_ONE(_SGI_MP_SOURCE)  
-        LAC_THREADS_DEFINE_ONE(__USE_FIXED_PROTOTYPES__)
-        LAC_THREADS_DEFINE_ONE(_REENTRANT)
-        LAC_THREADS_DEFINE_ONE(_POSIX_PTHREAD_SEMANTICS) 
-        * )
-            AC_MSG_ERROR([Internal error: acthreads.m4:LAC THREADS_DEFINE is missing a definition for "$lac_def"])
-        ;;
+    case "$host" in
+        *cygwin* | *mingw* [)]
+            build_windows_threads="yes"
+            ;;
     esac
-done
+
+    AM_CONDITIONAL([BUILD_WINDOWS_THREADS], [test "$build_windows_threads" = "yes"])
 ])
 
-AC_DEFUN([LAC_THREADS_DEFINE_ONE], [$1 ) AC_DEFINE($1) ;;])
+
 
 dnl include_file, path
 AC_DEFUN([LAC_FIND_USER_INCLUDE],[
@@ -290,4 +211,3 @@ else
   ifelse([$4],,,[$4])
 fi
 ])
-

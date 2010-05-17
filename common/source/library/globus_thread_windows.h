@@ -24,13 +24,12 @@ Description:
 
 CVS Information:
 
-  $Source: 
-  $Date: 
-  $Revision: 
-  $State: 
-  $Author: Michael Lebman
+  $Source$
+  $Date$
+  $Revision$
+  $State$
+  $Author$
 ******************************************************************************/
-
 
 #if !defined GLOBUS_INCLUDE_GLOBUS_THREAD
 #define GLOBUS_INCLUDE_GLOBUS_THREAD
@@ -40,46 +39,19 @@ CVS Information:
 #include "globus_time.h"
 #include "globus_list.h"
 
-/* define's */
 #define GLOBUS_NULL_POINTER_PARAMETER -1
 #define globus_thread_once_t int
 #define GLOBUS_THREAD_ONCE_INIT 0
 #define GLOBUS_THREAD_ONCE_CALLED 1
-#define SINGLE_NOTIFICATION_EVENT 0
-#define BROADCAST_EVENT 1
 
 
-/* typedef's */
-/* Windows wants the function pointer that is passed to _beginthreadex
- * to have the following definition:
-
-     typedef unsigned int ( __stdcall *globus_thread_func_t)(void *user_arg); 
-
- * Our API already documents the function pointer definition
- * as follows:
- */
 typedef void * (*globus_thread_func_t)(void *user_arg); 
-
-/* Consequently, we will wrap the user's function call in an internal
- * function call that matches the prototype specified by Windows.
- * Unfortunately, we cannot pass any return value from the user's
- * function back to the system when the thread ends because of the
- * incompatability between the return types (unsigned int vs.
- * void *)
-*/
-
-typedef struct UserFunctionInfo
-{
-	globus_thread_func_t userFunction;
-	void * userArg;
-} UserFunctionInfo;
-
 typedef void (*globus_thread_key_destructor_func_t)(void *); 
 
 typedef struct globus_thread_key_s
 {
-	DWORD TLSIndex;
-	globus_thread_key_destructor_func_t destructorFunction;
+    DWORD TLSIndex;
+    globus_thread_key_destructor_func_t destructorFunction;
 } globus_thread_key_t;
 
 typedef struct globus_i_thread_t

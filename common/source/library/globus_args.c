@@ -22,7 +22,7 @@
 #include "globus_args.h"
 #include "globus_libc.h"
 #include "globus_fifo.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 #include "globus_common.h"
 
 #define globus_l_args_malloc(type,n)  (type *) globus_malloc(n * sizeof(type))
@@ -41,7 +41,7 @@ globus_l_args_create_msg( char **         msg_storage,
     if (msg_storage)
 	*msg_storage = message;
     else
-	globus_libc_fprintf( stderr, message );
+	globus_libc_fprintf( stderr, "%s", message );
 
     return GLOBUS_SUCCESS;
 }
@@ -89,13 +89,13 @@ globus_l_args_create_error_msg( char **        error_msg,
 
     len = strlen(p);
     strncpy( &p[len], oneline_usage, usage_len );
-    sprintf( &p[len+usage_len], error_epilogue );
+    sprintf( &p[len+usage_len], "%s", error_epilogue );
 
     if (error_msg)
 	*error_msg = p;
     else
     {
-	globus_libc_fprintf( stderr, p );
+	globus_libc_fprintf( stderr, "%s", p );
 	free(p);
     }
 

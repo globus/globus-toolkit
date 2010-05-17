@@ -19,9 +19,7 @@
 #define GLOBUS_INCLUDE_GLOBUS_RW_MUTEX 1
 
 #include "globus_common_include.h"
-#include GLOBUS_THREAD_INCLUDE
-
-#ifndef BUILD_LITE
+#include "globus_thread.h"
 
 EXTERN_C_BEGIN
 
@@ -84,23 +82,4 @@ globus_rw_cond_timedwait(
     globus_abstime_t *                  abstime);
 
 EXTERN_C_END
-
-#else
-
-typedef int globus_rw_mutex_t;
-typedef int globus_rw_mutexattr_t;
-
-#define globus_rw_mutex_init(M,A) (*(M) = 0, 0)
-#define globus_rw_mutex_readlock(M) (*(M) = 1, 0)
-#define globus_rw_mutex_writelock(M) (*(M) = 1, 0)
-#define globus_rw_mutex_readunlock(M) (*(M) = 0, 0)
-#define globus_rw_mutex_writeunlock(M) (*(M) = 0, 0)
-#define globus_rw_mutex_destroy(M) (*(M) = 0, 0)
-
-#define globus_rw_cond_wait(C,M) globus_cond_wait((C),(M))
-#define globus_rw_cond_timedwait(C,M,A) globus_cond_timedwait((C),(M),(A))
-
 #endif
-
-#endif
-

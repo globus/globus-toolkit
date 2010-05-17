@@ -229,14 +229,48 @@ test_l_gram_callback(
 
     globus_mutex_lock(&monitor->mutex);
     monitor->failure_code = errorcode;
-    monitor->status = state;
-    if (monitor->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
-        monitor->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+    switch (monitor->status)
     {
-        globus_cond_signal(&monitor->cond);
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED:
+            monitor->status = state;
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
+            if (state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED)
+            {
+                monitor->status = state;
+            }
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
+            if (state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+                state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN)
+            {
+                monitor->status = state;
+            }
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
+            if (state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+                state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING &&
+                state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN)
+            {
+                monitor->status = state;
+            }
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
+            if (state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+                state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING &&
+                state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN &&
+                state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
+            {
+                monitor->status = state;
+            }
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL:
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED:
+            break;
     }
+    globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
-
 }
 /* test_l_gram_callback() */
 
@@ -327,7 +361,13 @@ test_stdio_update(void)
     rc = globus_gram_client_job_request(
             contact_string,
             old_rsl,
-            GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED|
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN|
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING|
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE|
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT|
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE|
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED,
             callback_contact,
             &old_job_contact);
     test_assert_gram_rc_equals(rc, GLOBUS_SUCCESS);
@@ -354,7 +394,6 @@ test_stdio_update(void)
     /* Wait for job to complete. After it's done, check to see which
      * destination got stdout
      */
-    globus_mutex_lock(&monitor.mutex);
     while (monitor.status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
            monitor.status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {

@@ -527,7 +527,7 @@ globus_l_gass_cache_log(
     char hname[MAXHOSTNAMELEN];
     char time_buff[26];
     time_t ttime;
-    long mytid;
+    globus_thread_t mytid;
 
     /* Note : I use the local time to log. This might not be the best */
     time(&ttime);
@@ -542,13 +542,13 @@ globus_l_gass_cache_log(
     /* remove the \n */
     time_buff[24]='\0';
     globus_libc_gethostname(hname,sizeof(hname));
-    mytid = (long) globus_thread_self();
+    mytid = globus_thread_self();
 
     globus_libc_fprintf(f,"GASSCACHE: %s %s PID:%ld TID:%ld : ",
 	    time_buff,
 	    hname,
 	    (long)getpid(),
-	    mytid);
+	    (long) mytid.dummy);
 
     va_start(args, str);
     globus_libc_vfprintf(f, str, args);
@@ -679,13 +679,14 @@ globus_l_gass_cache_linktest(globus_i_gass_cache_t  *cache)
     int          fd;
     int          rc;
     struct stat  stx;
+    globus_thread_t t = globus_thread_self();
 
     rc = DIRECTORY_TYPE_NOLINK;
 
     globus_libc_sprintf(dir, "%s/dir-%ld-%ld",
                         cache->cache_directory_path,
                         (long) globus_libc_getpid(),
-                        (long) globus_thread_self() );
+                        (long) t.dummy );
     
     globus_libc_sprintf(file, "%s/file", dir );
     globus_libc_sprintf(link1, "%s/link", dir );
@@ -693,7 +694,7 @@ globus_l_gass_cache_linktest(globus_i_gass_cache_t  *cache)
     globus_libc_sprintf(link2, "%s/link-%ld-%ld",
 	    cache->cache_directory_path,
 	    (long) globus_libc_getpid(),
-	    (long) globus_thread_self() );
+	    (long) t.dummy );
 
     /* create test dir and file */
     rmdir(dir);
@@ -1162,6 +1163,7 @@ globus_l_gass_cache_build_uniqname( char **uniq )
 {
     char	hostname[MAXHOSTNAMELEN];
     char	uniq_string[UNIQ_NAME_MAX];
+    globus_thread_t t = globus_thread_self();
 
     /* !!! need to handle multi threaded !!! */
     globus_libc_gethostname( hostname, sizeof(hostname) );
@@ -1170,7 +1172,7 @@ globus_l_gass_cache_build_uniqname( char **uniq )
 			UNIQ_NAME_FORMAT,
 			hostname,
 			(long) globus_libc_getpid(),
-			(long) globus_thread_self() );
+			(long) t.dummy );
 
     /* Assign to the uniq passed in.. */
     *uniq = strdup( uniq_string );

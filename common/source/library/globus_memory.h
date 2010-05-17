@@ -35,7 +35,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common_include.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 
 EXTERN_C_BEGIN
 

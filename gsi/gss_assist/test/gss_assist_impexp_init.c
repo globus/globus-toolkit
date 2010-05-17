@@ -47,6 +47,7 @@ int main(int argc, char * argv[])
     FILE *                              context_infile = NULL;
     unsigned char                       int_buf[4];
 
+    globus_module_activate(GLOBUS_GSS_ASSIST_MODULE);
     verbose_env = getenv("GSS_ASSIST_VERBOSE_TEST");
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -376,5 +377,6 @@ int main(int argc, char * argv[])
         perror("closing stream socket");
         exit(1);
     }
+    globus_module_deactivate(GLOBUS_GSS_ASSIST_MODULE);
     exit(0);
 }

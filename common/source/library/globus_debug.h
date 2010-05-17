@@ -40,16 +40,7 @@ globus_debug_init(
     const char *                        level_names,
     globus_debug_handle_t *             handle);
 
-#ifdef BUILD_LITE
-#ifndef WIN32
-#define GlobusDebugThreadId() getpid()
-#else
-/* win32 always has threads (eg, under xio) */
-#define GlobusDebugThreadId() GetCurrentThreadId()
-#endif
-#else
 #define GlobusDebugThreadId() globus_thread_self()
-#endif
 
 /* call in same file as module_activate func (before (de)activate funcs) */
 #define GlobusDebugDefine(module_name)                                      \
@@ -66,7 +57,7 @@ globus_debug_init(
         {                                                                   \
             char buf[4096]; /* XXX better not use a fmt bigger than this */ \
             sprintf(                                                        \
-                buf, "%lu::%s", (unsigned long) GlobusDebugThreadId(), fmt);\
+                buf, "%lu::%s", (unsigned long) globus_thread_self().dummy, fmt);\
             vfprintf(globus_i_##module_name##_debug_handle.file, buf, ap);  \
         }                                                                   \
         else                                                                \
@@ -88,8 +79,9 @@ globus_debug_init(
         va_start(ap, fmt);                                                  \
         if(globus_i_##module_name##_debug_handle.thread_ids)                \
         {                                                                   \
+            globus_thread_t __self = GlobusDebugThreadId();                 \
             sprintf(buf, "%lu:%lu.%.9lu::%s",                               \
-                (unsigned long) GlobusDebugThreadId(),                      \
+                (unsigned long) __self.dummy,                               \
                 (unsigned long) current_time.tv_sec,                        \
                 (unsigned long) current_time.tv_nsec,                       \
                 fmt);                                                       \

@@ -338,7 +338,7 @@ globus_l_xio_handle_pre_close(
     op->blocking = blocking;
     if(blocking)
     {
-        op->blocked_thread = GlobusXIOThreadSelf();
+        GlobusXIOCurrentBlockedThread(op->blocked_thread);
     }
     
     switch(handle->state)
@@ -367,7 +367,11 @@ globus_l_xio_handle_pre_close(
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING);
             op->state = GLOBUS_XIO_OP_STATE_FINISH_WAITING;
+
             handle->ref++; /* for the opperation */
+            GlobusXIODebugPrintf(
+                    GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                    (_XIOSL("[globus_l_xio_handle_pre_close] :: handle ref at %d.\n"), handle->ref));
             
             globus_i_xio_register_oneshot(
                 handle,
@@ -457,6 +461,9 @@ globus_l_xio_handle_pre_close(
 
   err:
     handle->ref++;
+    GlobusXIODebugPrintf(
+            GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            (_XIOSL("[globus_l_xio_handle_pre_close] :: handle ref at %d.\n"), handle->ref));
         /* so destroy handle can't be true (will be removed in next call) */
     op->ref = 0;
     globus_i_xio_op_destroy(op, &destroy_handle);
@@ -1922,6 +1929,9 @@ globus_l_xio_register_close(
                 &handle->close_timeout_period);
         }
         handle->ref++; /* for the opperation */
+        GlobusXIODebugPrintf(
+                GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                (_XIOSL("[globus_l_xio_register_close] :: handle ref at %d.\n"), handle->ref));
     }
     globus_mutex_unlock(&handle->context->mutex);
 
@@ -2191,6 +2201,9 @@ globus_xio_register_open(
     op->entry[0].prev_ndx = -1; /* for first pass there is no return */
 
     handle->ref++; /* for operation */
+    GlobusXIODebugPrintf(
+            GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            (_XIOSL("[globus_xio_register_open] :: handle ref at %d.\n"), handle->ref));
     handle->open_op = op;
 
     if(attr != NULL)
@@ -2997,10 +3010,13 @@ globus_xio_open(
     op->user_arg = info;
     op->entry[0].prev_ndx = -1; /* for first pass there is no return */
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
     
     /* initialize the handle */
     handle->ref++; /* for operation */
+    GlobusXIODebugPrintf(
+            GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            (_XIOSL("[globus_xio_open] :: handle ref at %d.\n"), handle->ref));
     /* this is set for the cancel */
     handle->open_op = op;
 
@@ -3151,7 +3167,7 @@ globus_xio_read(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
     
     info->op = op;
     
@@ -3279,7 +3295,7 @@ globus_xio_readv(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
     
     info->op = op;
     
@@ -3412,7 +3428,7 @@ globus_xio_write(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
 
     info->op = op;
 
@@ -3540,7 +3556,7 @@ globus_xio_writev(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-    op->blocked_thread = GlobusXIOThreadSelf();
+    GlobusXIOCurrentBlockedThread(op->blocked_thread);
 
     info->op = op;
 

@@ -233,5 +233,3 @@ globus_args_bytestr_to_num(
 EXTERN_C_END
 
 #endif /* ifndef GLOBUS_ARGS_H */
-
-

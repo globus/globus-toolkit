@@ -680,6 +680,10 @@ globus_xio_data_descriptor_init(
         {
             op->type = GLOBUS_XIO_OPERATION_TYPE_DD;
             handle->ref++;
+            GlobusXIODebugPrintf(
+                    GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                    (_XIOSL("[globus_xio_data_descriptor_init] :: handle ref at %d.\n"), handle->ref));
+
             op->_op_handle = handle;
             op->ref = 1;
             op->is_user_dd = GLOBUS_TRUE;

@@ -143,36 +143,8 @@ globus_error_base_set_cause (
     globus_object_t *                   causal_error);
 
 
+#include "globus_thread.h"
 
-#if 0
-/**********************************************************************
- * Error Callback API
- **********************************************************************/
-
-typedef void
-(*globus_error_callback_func_t)(
-    globus_module_descriptor_t *        source,
-    globus_object_t *                   error,
-    void *                              user_data);
-
-extern void
-globus_error_callback_register(
-    globus_module_descriptor_t *        source,
-    globus_error_callback_func_t        callback,
-    void *                              user_data,
-    long *                              registered_id);
-
-extern void
-globus_error_callback_unregister(
-    long                                registered_id);
-
-extern void
-globus_error_signal_fault (
-    globus_module_descriptor_t *        source,
-    globus_object_t *                   error);
-#endif /* 0 */
-
-#include GLOBUS_THREAD_INCLUDE
 extern globus_bool_t globus_i_error_verbose;
 extern globus_thread_key_t globus_i_error_verbose_key;
 

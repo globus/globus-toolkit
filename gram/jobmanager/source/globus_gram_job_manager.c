@@ -253,7 +253,6 @@ globus_gram_job_manager_init(
         goto allow_attach_failed;
     }
 
-    GlobusGramJobManagerLock(manager);
     if (cred != GSS_C_NO_CREDENTIAL)
     {
         manager->cred_expiration_time = 1;

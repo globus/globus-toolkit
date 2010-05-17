@@ -32,60 +32,58 @@ CVS Information:
 ******************************************************************************/
 
 /******************************************************************************
-			     Include header files
+                             Include header files
 ******************************************************************************/
 #include "globus_common_include.h"
-#include "globus_thread_none.h"
+#include "globus_thread.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
 #include "version.h"
 #include "globus_time.h"
 #include "globus_libc.h"
-#include "globus_common.h"
+#include "globus_handle_table.h"
 
-/******************************************************************************
-			       Define macros
-******************************************************************************/
-
-
-/******************************************************************************
-                    Module activation function prototypes
-******************************************************************************/
+/* Module activation function prototypes */
 static int
-globus_l_thread_activate(void);
+globus_l_thread_none_activate(void);
 
 static int
-globus_l_thread_deactivate(void);
+globus_l_thread_none_deactivate(void);
 
+static
+void *
+globus_l_thread_none_get_impl(void);
 
-/******************************************************************************
-                              Module definition
-******************************************************************************/
-globus_module_descriptor_t             globus_i_thread_module =
+static
+void *
+globus_l_thread_none_keys[512];
+
+static
+int
+globus_l_thread_none_next_key = 0;
+
+/* Module definition */
+globus_module_descriptor_t
+globus_i_thread_none_module =
 {
     "globus_thread_none",
-    globus_l_thread_activate,
-    globus_l_thread_deactivate,
+    globus_l_thread_none_activate,
+    globus_l_thread_none_deactivate,
     GLOBUS_NULL,
-    GLOBUS_NULL,
+    globus_l_thread_none_get_impl,
     &local_version
 };
 
-
-
-/******************************************************************************
-			      Function prototypes
-******************************************************************************/
-
-/*
+/**
  * globus_i_thread_pre_activate()
  *
  * Since globus_module depends on threads and globus_thread depends on
  * globus_module, we need this bootstrapping function.
  * 
  */
+static
 int
-globus_i_thread_pre_activate()
+globus_l_thread_none_pre_activate(void)
 {
 #ifndef WIN32
     return globus_i_thread_ignore_sigpipe();
@@ -94,429 +92,419 @@ globus_i_thread_pre_activate()
 #endif
 }
 
-/*
- * globus_l_thread_activate()
- */
-static int
-globus_l_thread_activate()
+static
+int
+globus_l_thread_none_activate(void)
 {
     return globus_module_activate(GLOBUS_THREAD_COMMON_MODULE);
 }
-/* globus_l_thread_activate() */
+/* globus_l_thread_none_activate() */
 
 
-/*
- * globus_l_thread_deactivate()
- */
-static int
-globus_l_thread_deactivate()
+static
+int
+globus_l_thread_none_deactivate()
 {
     return globus_module_deactivate(GLOBUS_THREAD_COMMON_MODULE);
 }
-/* globus_l_thread_deactivate() */
+/* globus_l_thread_none_deactivate() */
 
 
-/*
- * globus_thread_preemptive_threads
- *
+/**
  * Return GLOBUS_TRUE (non-zero) if we are using preemptive threads.
  */
+static
 globus_bool_t
-globus_thread_preemptive_threads(void)
+globus_l_thread_none_preemptive_threads(void)
 {
-    return GLOBUS_FALSE;/* globus_macro_thread_is_preemptive();*/
+    return GLOBUS_FALSE;
 }
-/* globus_thread_preemptive_threads() */
+/* globus_thread_none_preemptive_threads() */
 
 
 /*
- * globus_thread_key_create()
+ * globus_thread_none_key_create()
  */
-#undef globus_thread_key_create
+static
 int
-globus_thread_key_create(
-    globus_thread_key_t *		key,
-    globus_thread_key_destructor_func_t	func)
+globus_l_thread_none_key_create(
+    globus_thread_key_t *               key,
+    globus_thread_key_destructor_func_t func)
 {
-    int rc;
+    key->none = globus_l_thread_none_next_key++;
+    globus_l_thread_none_keys[key->none] = NULL;
 
-    rc = globus_macro_thread_key_create(key, func);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globusthread_key_create() failed\n"));
-    return (rc);
+    return 0;
 }
 /* globus_key_create() */
 
 
 /*
- * globus_thread_setspecific()
+ * globus_thread_none_key_setspecific()
  */
-#undef globus_thread_setspecific
+static
 int
-globus_thread_setspecific(
-    globus_thread_key_t			key,
-    void *				value)
+globus_l_thread_none_key_setspecific(
+    globus_thread_key_t                 key,
+    void *                              value)
 {
-    int rc;
+    globus_l_thread_none_keys[key.none] = value;
 
-    rc = globus_macro_thread_setspecific(key, value);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_thread_setspecific() failed\n"));
-    return (rc);
+    return 0;
 }
-/* globus_thread_setspecific() */
+/* globus_thread_none_setspecific() */
 
-#undef globus_thread_key_delete
+static
 int
-globus_thread_key_delete(
-    globus_thread_key_t key)
+globus_l_thread_none_key_delete(
+    globus_thread_key_t                 key)
 {
-    return globus_macro_thread_key_delete(key);
-} /* globus_thread_key_delete() */
+    return 0;
+} /* globus_thread_none_key_delete() */
 
 /*
- * globus_thread_getspecific()
+ * globus_thread_none_getspecific()
  */
-#undef globus_thread_getspecific
+static
 void *
-globus_thread_getspecific(
-    globus_thread_key_t			key)
+globus_l_thread_none_key_getspecific(
+    globus_thread_key_t                 key)
 {
-    void *value;
-
-    value = globus_macro_thread_getspecific(key);
-    return (value);
+    return globus_l_thread_none_keys[key.none];
 }
-/* globus_thread_getspecific() */
-
-
+/* globus_thread_none_getspecific() */
 
 /*
- * globus_thread_once()
+ * globus_thread_none_once()
  */
-#undef globus_thread_once
+static
 int
-globus_thread_once(
-    globus_thread_once_t *		once_control,
-    void				(*init_routine)(void))
+globus_l_thread_none_once(
+    globus_thread_once_t *              once_control,
+    void                                (*init_routine)(void))
 {
-    return (globus_macro_thread_once(once_control, init_routine));
-}
-/* globus_thread_once() */
-
-
-/*
- * globus_thread_self()
- */
-#undef globus_thread_self
-globus_thread_t
-globus_thread_self(void)
-{
-    return(globus_macro_thread_self());
-}
-/* globus_thread_self() */
-
-
-/*
- * globus_thread_equal()
- */
-#undef globus_thread_equal
-int
-globus_thread_equal(
-    globus_thread_t			thread1,
-    globus_thread_t			thread2)
-{
-    return (globus_macro_thread_equal(thread1, thread2));
-}
-/* globus_thread_equal() */
-
-
-/*
- * globus_thread_create()
- */
-#undef globus_thread_create
-int
-globus_thread_create(
-    globus_thread_t *			thread,
-    globus_threadattr_t *		attr,
-    globus_thread_func_t		func,
-    void *				user_arg)
-{
-    return (globus_macro_thread_create(thread, attr, func, user_arg));
-}
-
-/*
- * globus_thread_yield()
- */
-#undef globus_thread_yield
-void
-globus_thread_yield(void)
-{
-    globus_macro_thread_yield();
-}
-/* globus_thread_yield() */
-
-
-/*
- * globus_mutex_init()
- */
-#undef globus_mutex_init
-int
-globus_mutex_init(
-    globus_mutex_t *			mut,
-    globus_mutexattr_t *		attr)
-{
-    int rc;
-
-    rc = globus_macro_mutex_init(mut, attr);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_init() failed\n"));
-    return (rc);
-}
-/* globus_mutex_init() */
-
-
-/*
- *  globus_mutex_destroy()
- */
-#undef globus_mutex_destroy
-int
-globus_mutex_destroy(
-    globus_mutex_t *			mut)
-{
-    int rc;
-
-    rc = globus_macro_mutex_destroy(mut);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_destroy() failed\n"));
-    return (rc);
-}
-/* globus_mutex_destroy() */
-
-
-/* 
- *  globus_mutex_lock()
- */
-#undef globus_mutex_lock
-int
-globus_mutex_lock(
-    globus_mutex_t *			mut)
-{
-    int rc;
-
-    rc = globus_macro_mutex_lock(mut);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_lock() failed\n"));
-    return (rc);
-}
-/* globus_mutex_lock() */
-
-
-/*
- *  globus_mutex_unlock()
- */
-#undef globus_mutex_unlock
-int
-globus_mutex_unlock(
-    globus_mutex_t *			mut)
-{
-    int rc;
-
-    rc = globus_macro_mutex_unlock(mut);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_unlock() failed\n"));
-    return (rc);
-}
-/* globus_mutex_unlock() */
-
-
-/*
- *  globus_mutex_trylock()
- */
-#undef globus_mutex_trylock
-int
-globus_mutex_trylock(
-    globus_mutex_t *			mut)
-{
-    int rc;
-
-    rc = globus_macro_mutex_trylock(mut);
-    /*
-     * trylock is allowed to return non-0 value, so don't call
-     * globus_i_thread_test_rc() on the return code
-     */
-#   if 0
+    if (once_control == NULL || init_routine == NULL)
     {
-	/* 
-	 * This could probably be checked in all cases except EBUSY, though.
-	 */
-	globus_i_thread_test_rc(rc, "NEXUS: globus_mutex_trylock() failed\n");
+        return EINVAL;
     }
-#   endif
-    return (rc);
+    if (once_control->none == 0)
+    {
+        once_control->none = 1;
+        (*init_routine)();
+    }
+    return 0;
 }
-/* globus_mutex_trylock() */
+/* globus_thread_none_once() */
 
 
 /*
- * globus_condattr_init()
+ * globus_thread_none_self()
  */
-#undef globus_condattr_init
-int globus_condattr_init(globus_condattr_t *attr)
+static
+globus_thread_t
+globus_l_thread_none_self(void)
 {
-    int rc;
-    rc = globus_macro_condattr_init(attr);
-    return (rc);
+    static globus_thread_t self;
+
+    self.none = 0;
+
+    return self;
 }
+/* globus_thread_none_self() */
+
 
 /*
- * globus_condattr_destroy()
+ * globus_thread_none_equal()
  */
-#undef globus_condattr_destroy
-int globus_condattr_destroy(globus_condattr_t *attr)
+static
+int
+globus_l_thread_none_equal(
+    globus_thread_t                     thread1,
+    globus_thread_t                     thread2)
 {
-    int rc;
-    rc = globus_macro_condattr_destroy(attr);
-    return (rc);
+    return (thread1.none == thread2.none);
+}
+/* globus_thread_none_equal() */
+
+static
+globus_bool_t
+globus_l_thread_none_i_am_only_thread(void)
+{
+    return GLOBUS_TRUE;
 }
 
 /*
- * globus_condattr_setspace()
+ * globus_thread_none_create()
  */
-#undef globus_condattr_setspace
-int globus_condattr_setspace(
+static
+int
+globus_l_thread_none_thread_create(
+    globus_thread_t *                   thread,
+    globus_threadattr_t *               attr,
+    globus_thread_func_t                func,
+    void *                              user_arg)
+{
+    thread->none = -1;
+
+    return EAGAIN;
+}
+
+static
+void
+globus_l_thread_none_yield(void)
+{
+    globus_poll_nonblocking();
+}
+/* globus_thread_none_yield() */
+
+/*
+ * globus_none_condattr_init()
+ */
+static
+int
+globus_l_thread_none_condattr_init(
+    globus_condattr_t *                 attr)
+{
+    globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
+    attr->none = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    return 0;
+}
+
+/*
+ * globus_none_condattr_destroy()
+ */
+static
+int
+globus_l_thread_none_condattr_destroy(
+    globus_condattr_t *                 attr)
+{
+    globus_callback_space_destroy(attr->none);
+    attr->none = 0;
+
+    return 0;
+}
+
+/*
+ * globus_none_condattr_setspace()
+ */
+static
+int
+globus_l_thread_none_condattr_setspace(
     globus_condattr_t *                 attr,
     int                                 space)
 {
-    int rc;
-    rc = globus_macro_condattr_setspace(attr, space);
-    return (rc);
+    if (globus_callback_space_reference(space))
+    {
+        return GLOBUS_FAILURE;
+    }
+    else
+    {
+        globus_callback_space_destroy(attr->none);
+        attr->none = space;
+        return 0;
+    }
 }
 
 /*
- * globus_condattr_getspace()
+ * globus_none_condattr_getspace()
  */
-#undef globus_condattr_getspace
-int globus_condattr_getspace(
+static
+int
+globus_l_thread_none_condattr_getspace(
     globus_condattr_t *                 attr,
     int *                               space)
 {
-    int rc;
-    rc = globus_macro_condattr_getspace(attr, space);
-    return (rc);
+    *space = attr->none;
+
+    return 0;
 }
 
 /*
- * globus_cond_init()
+ * globus_none_cond_init()
  */
-#undef globus_cond_init
+static
 int
-globus_cond_init(
-    globus_cond_t *			cv,
-    globus_condattr_t *			attr)
+globus_l_thread_none_cond_init(
+    globus_cond_t *                     cv,
+    globus_condattr_t *                 attr)
 {
-    int rc;
-
-    rc = globus_macro_cond_init(cv, attr);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_init() failed\n"));
-    return (rc);
+    if (attr != NULL)
+    {
+        cv->none = attr->none;
+    }
+    else
+    {
+        cv->none = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    return globus_callback_space_reference(cv->none);
 }
-/* globus_cond_init() */
+/* globus_none_cond_init() */
 
 
 /*
- *  globus_cond_destroy()
+ *  globus_none_cond_destroy()
  */
-#undef globus_cond_destroy
+static
 int
-globus_cond_destroy(
-    globus_cond_t *			cv)
+globus_l_thread_none_cond_destroy(
+    globus_cond_t *                     cv)
 {
-    int rc;
+    globus_callback_space_destroy(cv->none);
+    cv->none = GLOBUS_NULL_HANDLE;
 
-    rc = globus_macro_cond_destroy(cv);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_destroy() failed\n"));
-    return (rc);
+    return 0;
 }
-/* globus_cond_destroy() */
+/* globus_none_cond_destroy() */
 
 
 /*
- *  globus_cond_wait()
+ *  globus_none_cond_wait()
  */
-#undef globus_cond_wait
+static
 int
-globus_cond_wait(
-    globus_cond_t *			cv,
-    globus_mutex_t *			mut)
+globus_l_thread_none_cond_wait(
+    globus_cond_t *                     cv,
+    globus_mutex_t *                    mut)
 {
-    int rc;
+    mut->none = 0;
+    globus_thread_blocking_space_will_block(cv->none);
+    globus_callback_space_poll(&globus_i_abstime_infinity, cv->none);
+    mut->none = 1;
 
-    rc = globus_macro_cond_wait(cv, mut);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_wait() failed\n"));
-    return (rc);
+    return 0;
 }
-/* globus_cond_wait() */
+/* globus_none_cond_wait() */
 
 /*
- *  globus_cond_timedwait()
+ *  globus_none_cond_timedwait()
  */
-#undef globus_cond_timedwait
+static
 int
-globus_cond_timedwait(
-    globus_cond_t *			cv,
-    globus_mutex_t *			mut,
+globus_l_thread_none_cond_timedwait(
+    globus_cond_t *                     cv,
+    globus_mutex_t *                    mut,
     globus_abstime_t *                  abstime)
 {
-    int rc;
 
-    rc = globus_macro_cond_timedwait(cv, mut, abstime);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_wait() failed\n"));
-    return (rc);
+    mut->none = 0;
+    globus_thread_blocking_space_will_block(cv->none);
+    globus_callback_space_poll(abstime, cv->none);
+    mut->none = 1;
+
+    if (time(NULL) >= abstime->tv_sec)
+    {
+        return ETIMEDOUT;
+    }
+    else
+    {
+        return 0;
+    }
 }
-/* globus_cond_timedwait() */
+/* globus_none_cond_timedwait() */
 
 
 /*
- *  globus_cond_signal()
+ *  globus_none_cond_signal()
  */
-#undef globus_cond_signal
+static
 int
-globus_cond_signal(
-    globus_cond_t *			cv)
+globus_l_thread_none_cond_signal(
+    globus_cond_t *                     cv)
 {
-    int rc;
-
-    rc = globus_macro_cond_signal(cv);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_signal() failed\n"));
-    return (rc);
+    globus_callback_signal_poll();
+    return 0;
 }
-/* globus_cond_signal () */
+/* globus_none_cond_signal () */
 
+static
+void
+globus_l_thread_none_thread_exit(
+    void *                              value)
+{
+    exit(0);
+}
+/* globus_l_thread_none_thread_exit() */
 
 /*
- *  globus_cond_broadcast()
+ *  globus_none_cond_broadcast()
  */
-#undef globus_cond_broadcast
+static
 int
-globus_cond_broadcast(
-    globus_cond_t *			cv)
+globus_l_thread_none_cond_broadcast(
+    globus_cond_t *                     cv)
 {
-    int rc;
-
-    rc = globus_macro_cond_broadcast(cv);
-    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_broadcast() failed\n"));
-    return (rc);
+    globus_callback_signal_poll();
+    return 0;
 }
-/* globus_cond_broadcast() */
+/* globus_none_cond_broadcast() */
 
-void
-globus_thread_prefork(void)
+static
+int
+globus_l_thread_none_kill(
+    globus_thread_t                     thread,
+    int                                 sig)
 {
+    int                                 rc;
+    if (thread.none != 0)
+    {
+        return ESRCH;
+    }
+    rc = raise(sig);
+    if (rc != 0)
+    {
+        rc = errno;
+    }
+    return rc;
 }
+/* globus_l_thread_none_kill() */
 
-void
-globus_thread_postfork(void)
+static globus_thread_impl_t globus_l_thread_none_impl =
 {
-}
+    NULL /* mutex_init */,
+    NULL /* mutex_destroy */,
+    NULL /* mutex_lock */,
+    NULL /* mutex_unlock */,
+    NULL /* mutex_trylock */,
+    globus_l_thread_none_cond_init,
+    globus_l_thread_none_cond_destroy,
+    globus_l_thread_none_cond_wait,
+    globus_l_thread_none_cond_timedwait,
+    globus_l_thread_none_cond_signal,
+    globus_l_thread_none_cond_broadcast,
+    NULL /* mutexattr_init */,
+    NULL /* mutexattr_destroy */,
+    globus_l_thread_none_condattr_init,
+    globus_l_thread_none_condattr_destroy,
+    globus_l_thread_none_condattr_setspace,
+    globus_l_thread_none_condattr_getspace,
+    globus_l_thread_none_thread_create,
+    globus_l_thread_none_key_create,
+    globus_l_thread_none_key_delete,
+    globus_l_thread_none_once,
+    globus_l_thread_none_key_getspecific,
+    globus_l_thread_none_key_setspecific,
+    globus_l_thread_none_yield,
+    globus_l_thread_none_thread_exit,
+#   if HAVE_SIGPROCMASK
+    sigprocmask,
+#   else
+    NULL,
+#   endif
+    globus_l_thread_none_kill,
+    NULL,
+    NULL,
+    NULL,
+    globus_l_thread_none_self,
+    globus_l_thread_none_equal,
+    globus_l_thread_none_preemptive_threads,
+    globus_l_thread_none_i_am_only_thread,
+    NULL,
+    globus_l_thread_none_pre_activate
+};
 
-void
-globus_i_thread_id(globus_thread_t *Thread_ID)
+static
+void *
+globus_l_thread_none_get_impl(void)
 {
-    *Thread_ID = 0;
+    return &globus_l_thread_none_impl;
 }
-

@@ -189,5 +189,3 @@ globus_url_string_hex_encode(
 
 EXTERN_C_END
 #endif
-
-

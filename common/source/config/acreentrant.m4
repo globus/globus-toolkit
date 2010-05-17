@@ -6,16 +6,8 @@ dnl and copy things into the user buffers as neccessary.
 
 AC_DEFUN([CHECK_REENTRANT_FUNCS],[
 
-case "$host_os" in
-    osf5.*)
-        check_gethostbyaddr_r=no
-        check_gethostbyname_r=no
-        ;;
-    *)
-        check_gethostbyaddr_r=yes
-        check_gethostbyname_r=yes
-        ;;
-esac
+check_gethostbyaddr_r=yes
+check_gethostbyname_r=yes
 
 
 if test $GLOBUS_THREADS != "none" -a ${check_gethostbyaddr_r} = "yes" ; then

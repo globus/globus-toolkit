@@ -5,6 +5,8 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
+#include "globus_config.h"
+#ifdef TARGET_ARCH_WIN32
 #include "globus_i_xio_win32.h"
 
 /* all taken from DDK */
@@ -33,12 +35,6 @@ typedef struct
 {
     ULONG                               Mode;
 } FILE_MODE_INFORMATION;
-
-enum
-{
-    FILE_SYNCHRONOUS_IO_ALERT           = 0x00000010,
-    FILE_SYNCHRONOUS_IO_NONALERT        = 0x00000020
-};
 
 typedef NTSTATUS
 (__stdcall *globus_i_xio_win32_mode_nqif_t)(
@@ -100,3 +96,4 @@ globus_i_xio_win32_mode_is_overlapped(
         return GLOBUS_FALSE;
     }
 }
+#endif /* TARGET_ARCH_WIN32 */

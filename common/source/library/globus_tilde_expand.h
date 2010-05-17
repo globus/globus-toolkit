@@ -76,5 +76,3 @@ globus_tilde_expand(
 EXTERN_C_END
  
 #endif
-
-

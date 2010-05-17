@@ -99,4 +99,3 @@ globus_state_make_graph(
     char *                              user_desc);
 
 #endif
-

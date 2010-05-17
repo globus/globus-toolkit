@@ -188,11 +188,12 @@ globus_l_openssl_locking_cb(
 static unsigned long
 globus_l_openssl_thread_id(void)
 {
-#ifndef TARGET_ARCH_WIN32
-    return (unsigned long) globus_thread_self();
-#else
-    return (unsigned long) globus_thread_get_threadID_as_long();
-#endif
+    globus_thread_t self = globus_thread_self();
+    unsigned long rc;
+
+    memcpy(&rc, &self, sizeof(unsigned long));
+
+    return rc;
 }
 /* globus_l_openssl_thread_id() */
 
