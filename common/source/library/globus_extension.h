@@ -61,7 +61,7 @@ enum
 #endif
 
 /**
- * loads the shared library 'lib<extension_name>_<flavor>.so' from
+ * loads the shared library 'lib<b>extension_name</b>_<b>flavor</b>.so' from
  * $GLOBUS_LOCATION/lib (or other location in LD_LIBRARY_PATH
  * and activates the module defined within.
  * 
@@ -72,24 +72,24 @@ enum
  * activate those directly without needing to load the library.
  * 
  * Search order:
- *  - <extension_name> in mappings hash  XXX not implemented
+ *  - <b>extension_name</b> in mappings hash  XXX not implemented
  *      - mapped name in builtin hash    XXX not implemented
  *      - mapped name in dll hash        XXX not implemented
  *      - load mapped name               XXX not implemented
- *  - <extension_name> in builtin hash
- *  - <extension_name> in dll hash
+ *  - <b>extension_name</b> in builtin hash
+ *  - <b>extension_name</b> in dll hash
  *  - load library
- *      if(strchr(<extension_name, '/'))
- *        - concatenate / + dirname(<entension_name>) +
- *              /lib + basename(<entension_name>) + _<flavor>.so
+ *      if(strchr(<b>extension_name</b>, '/'))
+ *        - concatenate / + dirname(<b>extension_name</b>) +
+ *              /lib + basename(<b>extension_name</b>) + _<flavor>.so
  *          to $GLOBUS_LOCATION/lib and
  *              each search path in mappings file XXX not implemented
- *          (eg, for <extension_name> == wsrf/services/CounterService, load
+ *          (eg, for <b>extension_name</b> == wsrf/services/CounterService, load
  *            $GLOBUS_LOCATION/lib/wsrf/services/libCounterService_gcc32dbg.so)
- *        - lib + basename(<entension_name>) + _<flavor>.so
+ *        - lib + basename(<b>entension_name</b>) + _<b>flavor</b>.so
  *          subject to LD_LIBRARY_PATH
  *      else
- *        - load lib<extension_name>_<build_flavor>
+ *        - load lib<b>extension_name</b>_<b>build_flavor</b>
  *          subject to LD_LIBRARY_PATH
  */
 int

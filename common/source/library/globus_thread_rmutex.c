@@ -17,6 +17,28 @@
 
 #include "globus_thread_rmutex.h"
 
+/**
+ * @name Recursive Mutex
+ */
+/* @{ */
+
+/**
+ * @brief Initialize a recursive mutex
+ * @ingroup globus_mutex
+ *
+ * @details
+ *     The globus_rmutex_init() function initializes a recursive mutex,
+ *     that is, one which may be locked multiple times by a single thread
+ *     without causing deadlock.
+ * @param rmutex
+ *     A pointer to the mutex to initialize
+ * @param rattr
+ *     IGNORED
+ *
+ * @return
+ *     On success, globus_rmutex_init() initializes the mutex and returns
+ *     GLOBUS_SUCCESS; otherwise, it returns a non-zero error code.
+ */
 int
 globus_rmutex_init(
     globus_rmutex_t *                   rmutex,
@@ -49,6 +71,26 @@ err_init:
     return rc;
 }
 
+/**
+ * @brief Lock a recursive mutex
+ * @ingroup globus_mutex
+ *
+ * @details
+ *     The globus_rmutex_lock() function acquires the lock controlled by
+ *     @a rmutex. This may be called multiple times in a single thread without 
+ *     causing deadlock, provided that a call to globus_rmutex_unlock() is
+ *     called the same number of times as globus_rmutex_lock(). Once acquired,
+ *     all other threads calling this function will be blocked until the
+ *     mutex is completely unlocked.
+ * 
+ * @param rmutex
+ *     A pointer to the mutex to lock
+ *
+ * @return
+ *     On success, globus_rmutex_init() increases the lock level for the
+ *     mutex, blocks other threads trying to acquire the same mutex, and
+ *     returns GLOBUS_SUCCESS; otherwise, it returns a non-zero error code.
+ */
 int
 globus_rmutex_lock(
     globus_rmutex_t *                   rmutex)
@@ -80,6 +122,21 @@ globus_rmutex_lock(
     return 0;
 }
 
+/**
+ * @brief Unlock a recursive mutex
+ * @ingroup globus_mutex
+ *
+ * @details
+ *     The globus_rmutex_unlock() function decrements the lock count for
+ *     the lock pointed to by @a rmutex. If the lock count is reduced to
+ *     zero, it also unblocks a thread which is trying to acquire the lock
+ *     if there is one.
+ *
+ * @param rmutex
+ *     Mutex to unlock
+ *
+ * @return GLOBUS_SUCCESS
+ */
 int
 globus_rmutex_unlock(
     globus_rmutex_t *                   rmutex)
@@ -110,6 +167,19 @@ globus_rmutex_unlock(
     return 0;
 }
 
+/**
+ * @brief Destroy a recursive mutex
+ * @ingroup globus_mutex
+ *
+ * @details
+ *     The globus_rmutex_destroy() function destroys a recursive mutex
+ *     If the mutex is currently locked, behavior is undefined.
+ *
+ * @param rmutex
+ *     Mutex to unlock
+ *
+ * @return GLOBUS_SUCCESS
+ */
 int
 globus_rmutex_destroy(
     globus_rmutex_t *                   rmutex)
@@ -119,3 +189,4 @@ globus_rmutex_destroy(
     
     return 0;
 }
+/* @} */

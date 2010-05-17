@@ -15,7 +15,7 @@
  */
 
 /**
- * @file globus_thread_none.h Globus Threading Abstraction
+ * @file globus_thread.c Globus Threading Abstraction
  *
  * @details
  *
@@ -71,7 +71,7 @@ globus_module_descriptor_t              globus_i_thread_module =
  * any Globus modules.
  *
  * The Globus thread system provides primitives for mutual exclusion
- * (globus_mutex_t, globus_thread_rmutex_t, globus_rw_mutex_t), event
+ * (globus_mutex_t, globus_rmutex_t, globus_rw_mutex_t), event
  * synchronization (globus_cond_t), one-time execution (globus_once_t), and
  * threading (globus_thread_t). 
  *
@@ -220,7 +220,7 @@ globus_i_thread_pre_activate(void)
  *     The Globus runtime includes three portable, related mutual exclusion
  *     primitives that can be used in applications and libraries. These are
  *     - globus_mutex_t: a non-recursive, non-shared lock
- *     - globus_thread_rmutex_t: a recursive non-shared lock
+ *     - globus_rmutex_t: a recursive non-shared lock
  *     - globus_rw_mutex_t: a reader-writer lock
  */
 
@@ -1108,6 +1108,42 @@ globus_thread_key_delete(
 }
 /* globus_thread_key_delete() */
 
+/**
+ * @defgroup globus_thread_once One-time execution
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_once_t provides a way for applications and libraries
+ *     to execute some code exactly one time, independent of the number of 
+ *     threads which attempt to execute it. To use this, statically initialize
+ *     a globus_thread_once_t control with the value GLOBUS_THREAD_ONCE_INIT,
+ *     and pass a pointer to a function to execute once, along with the control,
+ *     to globus_thread_once().
+ */
+
+/**
+ * @brief Execute a function one time
+ * @ingroup globus_thread_once
+ * @details
+ *     The globus_thread_once() function will execute the function pointed to
+ *     by its @a init_routine parameter one time for each unique
+ *     globus_thread_once_t object passed to it, independent of the number
+ *     of threads calling it. The @a once value must be a static value
+ *     initialized to GLOBUS_THREAD_ONCE_INIT.
+ *
+ * @param once
+ *     A pointer to the value used to govern whether the function passed via
+ *     the @a init_routine parameter has executed.
+ * @param init_routine
+ *     Function to execute one time. It is called with no parameters.
+ * 
+ * @return
+ *     On success, globus_thread_once() guarantees that the function 
+ *     pointed to by @a init_routine has run, and that subsequent calls to
+ *     globus_thread_once() with the same value of @a once will not execute
+ *     that function, and returns GLOBUS_SUCCESS. If an error occurs, 
+ *     globus_thread_once() returns an implementation-specific non-zero error
+ *     value.
+ */
 extern
 int
 globus_thread_once(
@@ -1136,6 +1172,20 @@ globus_thread_once(
 }
 /* globus_thread_once() */
 
+/**
+ * @brief Get a thread-specific data value
+ * @ingroup globus_thread_key
+ * @details
+ *     The globus_thread_getspecific() function returns the value associated
+ *     with the thread-specific data key passed as its first parameter. This
+ *     function returns NULL if the value has not been set by the current
+ *     thread. The return value is undefined if the key is not valid.
+ * @param key
+ *     Thread-specific data key to look up.
+ * @return
+ *     The value passed to a previous call to globus_thread_setspecific() in
+ *     the current thread for this key.
+ */
 extern
 void *
 globus_thread_getspecific(
@@ -1158,6 +1208,25 @@ globus_thread_getspecific(
 }
 /* globus_thread_getspecific() */
 
+/**
+ * @brief Set a thread-specific data value
+ * @ingroup globus_thread_key
+ * @details
+ *     The globus_thread_setspecific() function associates a thread-specific
+ *     value with a data key. If the key had a previous value set in the
+ *     current thread, it is replaced, but the destructor function is not
+ *     called for the old value.
+ * @param key
+ *     Thread-specific data key to store.
+ * @param value
+ *     A pointer to data to store as the thread-specific data for this thread.
+ * @return
+ *     On success, globus_thread_setspecific() stores value in the
+ *     thread-specific data for the specified key and returns GLOBUS_SUCCESS.
+ *     If an error occurs, globus_thread_setspecific() returns an
+ *     implementation-specific non-zero error code and does not modify the
+ *     key's value for this thread.
+ */
 extern
 int
 globus_thread_setspecific(
@@ -1182,6 +1251,14 @@ globus_thread_setspecific(
 }
 /* globus_thread_setspecific() */
 
+/**
+ * @brief Yield execution to another thread
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_yield() function yields execution to other threads
+ *     which are ready for execution. The current thread may continue to
+ *     execute if there are no other threads in the system's ready queue.
+ */
 extern
 void
 globus_thread_yield(void)
@@ -1200,6 +1277,12 @@ globus_thread_yield(void)
 }
 /* globus_thread_yield() */
 
+/**
+ * @brief Terminate the current thread
+ * @ingroup globus_thread
+ *     The globus_thread_exit() terminates the current thread with the value
+ *     passed to it. This function does not return.
+ */
 extern
 void
 globus_thread_exit(
@@ -1216,9 +1299,40 @@ globus_thread_exit(
     {
         globus_l_thread_impl->thread_exit(value);
     }
+    exit(value);
 }
 /* globus_thread_exit() */
 
+/**
+ * @brief Modify the current thread's signal mask
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_sigmask() function modifies the current thread's
+ *     signal mask and returns the old value of the signal mask in the value
+ *     pointed to by the @a old_mask parameter. The @a how parameter can be
+ *     one of SIG_BLOCK, SIG_UNBLOCK, or SIG_SETMASK to control how the
+ *     signal mask is modified.
+ * 
+ * @param how
+ *     Flag indicating how to interpret @a new_mask if it is non-NULL. If 
+ *     @a how is SIG_BLOCK, then all signals in @a new_mask are blocked, as
+ *     well as any which were previously blocked. If
+ *     @a how is SIG_UNBLOCK, then all signals in which were previously blocked
+ *     in @a new_mask are unblocked. If @a how is SIG_SETMASK, then the old
+ *     signal mask is replaced with the value of @a new_mask.
+ * @param new_mask
+ *     Set of signals to block or unblock, based on the @a how parameter.
+ * @param old_mask
+ *     A pointer to be set to the old signal mask associated with the current
+ *     thread.
+ *
+ * @return
+ *     On success, globus_thread_sigmask() modifies the signal mask,
+ *     modifies the value pointed to by @a old_mask with the signal mask
+ *     prior to this function's execution and returns GLOBUS_SUCCESS. If an
+ *     error occurs, globus_thread_sigmask() returns an implementation-specific
+ *     non-zero error value.
+ */
 extern
 int
 globus_thread_sigmask(
@@ -1244,6 +1358,27 @@ globus_thread_sigmask(
 }
 /* globus_thread_sigmask() */
 
+/**
+ * @brief Send a signal to a thread
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_kill() function sends the signal specified by the
+ *     @a sig number to the thread whose ID matches the @a thread parameter.
+ *     Depending on the signal mask of that thread, this may result in
+ *     a signal being delivered or not, and depending on the process's
+ *     signal actions, a signal handler, termination, or no operation will
+ *     occur in that thread.
+ *
+ * @param thread
+ *     The thread identifier of the thread to signal.
+ * @param sig
+ *     The signal to send to the thread.
+ * @return
+ *     On success, globus_thread_kill() queues the signal for delivery to the
+ *     specified thread and returns GLOBUS_SUCCESS. If an error occurs, 
+ *     globus_thread_kill() returns an implementation-specific non-zero error
+ *     value.
+ */
 extern
 int
 globus_thread_kill(
@@ -1268,6 +1403,14 @@ globus_thread_kill(
 }
 /* globus_thread_kill() */
 
+/**
+ * @brief Determine the current thread's ID
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_self() function returns the thread identifier of the
+ *     current thread. This value is unique among all threads which are running
+ *     at any given time.
+ */
 extern
 globus_thread_t
 globus_thread_self(void)
@@ -1292,6 +1435,20 @@ globus_thread_self(void)
 }
 /* globus_thread_self() */
 
+/**
+ * @brief Check whether thread identifiers match
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_equal() function checks whether the thread identifiers
+ *     passed as the @a thread1 and @a thread2 parameters refer to the same
+ *     thread. If so, globus_thread_equal() returns GLOBUS_TRUE; otherwise
+ *     GLOBUS_FALSE.
+ *
+ * @param thread1
+ *     Thread identifier to compare.
+ * @param thread2
+ *     Thread identifier to compare.
+ */
 extern
 globus_bool_t
 globus_thread_equal(
@@ -1316,6 +1473,14 @@ globus_thread_equal(
 }
 /* globus_thread_equal() */
 
+/**
+ * @brief Indicate whether the active thread model supports preemption
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_preemptive_threads() function returns GLOBUS_TRUE
+ *     if the current thread model supports thread preemption; othwerise
+ *     it returns GLOBUS_FALSE.
+ */
 extern
 globus_bool_t
 globus_thread_preemptive_threads(void)
@@ -1338,6 +1503,16 @@ globus_thread_preemptive_threads(void)
 }
 /* globus_thread_preemptive_threads() */
 
+/**
+ * @brief Determine if threads are supported
+ * @ingroup globus_thread
+ * @details
+ *     The globus_i_am_only_thread() function returns GLOBUS_TRUE if the
+ *     current thread model is the "none" thread model; GLOBUS_FALSE otherwise.
+ *     If running with the "none" thread model, there will only
+ *     be one Globus thread available and the globus_thread_create() function
+ *     will always fail.
+ */
 extern
 globus_bool_t
 globus_i_am_only_thread(void)
@@ -1358,7 +1533,37 @@ globus_i_am_only_thread(void)
 
     return result;
 }
+/* globus_i_am_only_thread() */
 
+/**
+ * @brief Execute a function with thread cleanup in case of cancellation
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_cancellable_func() function provides an interface to
+ *     POSIX thread cancellation points that does not rely on preprocessor
+ *     macros. It is roughly equivalent to 
+ * @code
+ * pthread_cleanup_push(cleanup_func, cleanup_arg);
+ * (*func)(arg);
+ * pthread_cleanup_pop(execute_cleanup)
+ * @endcode
+ *
+ * @param func
+ *     Pointer to a function which may be cancelled.
+ * @param arg
+ *     Parameter to the @a func function.
+ * @param cleanup_func
+ *     Pointer to a function to execute if thread cancellation occurs during
+ *     @a func.
+ * @param cleanup_arg
+ *     Parameter to the @a cleanup_func function.
+ * @param execute_cleanup
+ *     Flag indicating whether the function pointed to by @a cleanup_func
+ *     should be executed after @a func completes even if it is not cancelled.
+ *
+ * @return
+ *     globus_thread_cancellable_func() returns the value returned by @a func.
+ */
 extern
 void *
 globus_thread_cancellable_func(
@@ -1384,7 +1589,27 @@ globus_thread_cancellable_func(
         return NULL;
     }
 }
+/* globus_thread_cancellable_func() */
 
+/**
+ * @brief Cancel a thread
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_cancel() function cancels the thread with the
+ *     identifier @a thr if it is still executing. If it is running with a 
+ *     cancellation cleanup stack, the functions in that stack are executed.
+ *     The target thread's cancel state determines when the cancellation is
+ *     delivered.
+ *
+ * @param thr
+ *     The id of the thread to cancel
+ *
+ * @return
+ *     On success, the globus_thread_cancel() function delivers the
+ *     cancellation to the target thread and returns GLOBUS_SUCCESS. If an
+ *     error occurs, globus_thread_cancel() returns an implementation-specific
+ *     non-zero error value.
+ */
 extern
 int
 globus_thread_cancel(globus_thread_t thr)
@@ -1405,7 +1630,18 @@ globus_thread_cancel(globus_thread_t thr)
 
     return rc;
 }
+/* globus_thread_cancel() */
 
+/**
+ * @brief Thread cancellation point
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_testcancel() function acts as a cancellation point
+ *     for the current thread. If a thread has called globus_thread_cancel()
+ *     and cancellation is enabled, this will cause the thread to be cancelled
+ *     and any functions on the thread's cleanup stack to be executed. This
+ *     function will not return if the thread is cancelled.
+ */
 extern
 void
 globus_thread_testcancel(void)
@@ -1423,6 +1659,31 @@ globus_thread_testcancel(void)
     }
 }
 
+/**
+ * @brief Set the thread's cancellable state
+ * @ingroup globus_thread
+ * @details
+ *     The globus_thread_setcancelstate() function sets the current
+ *     cancellation state to either GLOBUS_THREAD_CANCEL_DISABLE or
+ *     GLOBUS_THREAD_CANCEL_ENABLE, do control whether globus_thread_cancel()
+ *     is able to cancel this thread.
+ *
+ * @param state
+ *     The desired cancellation state. If the value is
+ *     GLOBUS_THREAD_CANCEL_DISABLE, then cancellation will be disabled for
+ *     this thread. If the value is GLOBUS_THREAD_CANCEL_ENABLE, then
+ *     cancellation will be enabled for this thread.
+ * @param oldstate
+ *     A pointer to a value which will be set to the value of the thread's 
+ *     cancellation state when this function call began. This may be NULL if
+ *     the caller is not interested in the previous value.
+ * @return
+ *     On success, the globus_thread_setcancelstate() function modifies the
+ *     thread cancellation state, modifies oldstate (if non-NULL) to the value
+ *     of its previous state, and returns GLOBUS_SUCCESS. If an error occurs,
+ *     globus_thread_setcancelstate() returns an implementation-specific
+ *     non-zero error value.
+ */
 extern
 int
 globus_thread_setcancelstate(

@@ -22,6 +22,12 @@
 
 EXTERN_C_BEGIN
 
+/**
+ * @brief Recursive Mutex
+ * @ingroup globus_mutex
+ * 
+ * @see globus_rmutex_init(), globus_rmutex_destroy(), globus_rmutex_lock(), globus_rmutex_unlock()
+ */
 typedef struct
 {
     globus_mutex_t			mutex;
@@ -31,6 +37,10 @@ typedef struct
     int                                 waiting;
 } globus_rmutex_t;
 
+/**
+ * @brief Recursive mutex attribute
+ * @ingroup globus_mutex
+ */
 typedef int                             globus_rmutexattr_t;
 
 int

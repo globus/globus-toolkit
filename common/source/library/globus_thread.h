@@ -52,10 +52,13 @@ EXTERN_C_BEGIN
  * structures.
  */
 #define GLOBUS_THREAD_MODEL_NONE "none"
-#define GLOBUS_THREAD_MODEL_PTHREADS "pthreads"
+#define GLOBUS_THREAD_MODEL_PTHREADS "pthread"
 #define GLOBUS_THREAD_MODEL_WINDOWS "windows"
 
-/* Type definitions */
+/**
+ * @brief Thread ID
+ * @ingroup globus_thread
+ */
 typedef union
 {
     int none;
@@ -69,6 +72,10 @@ typedef union
 }
 globus_thread_t;
 
+/**
+ * @brief Thread attributes
+ * @ingroup globus_thread
+ */
 typedef union
 {
     int none;
@@ -84,6 +91,10 @@ globus_threadattr_t;
 
 typedef void * (*globus_thread_func_t)(void *);
 
+/**
+ * @brief Mutex 
+ * @ingroup globus_mutex
+ */
 typedef union
 {
     int none;
@@ -97,6 +108,10 @@ typedef union
 }
 globus_mutex_t;
 
+/**
+ * @brief Condition variable
+ * @ingroup globus_cond
+ */
 typedef union
 {
     int none;
@@ -120,6 +135,10 @@ typedef union
 }
 globus_cond_t;
 
+/**
+ * @brief Mutex attribute
+ * @ingroup globus_mutex
+ */
 typedef union
 {
     int none;
@@ -136,6 +155,10 @@ typedef union
 }
 globus_mutexattr_t;
 
+/**
+ * @brief Condition variable attribute
+ * @ingroup globus_cond
+ */
 typedef union
 {
     int none;
@@ -156,8 +179,16 @@ typedef union
 }
 globus_condattr_t;
 
+/**
+ * @brief Thread-specific data destructor
+ * @ingroup globus_thread
+ */
 typedef void (* globus_thread_key_destructor_func_t)(void * value);
 
+/**
+ * @brief Thread-specific data key
+ * @ingroup globus_thread
+ */
 typedef struct
 {
     int none;
@@ -175,6 +206,10 @@ typedef struct
 }
 globus_thread_key_t;
 
+/**
+ * @brief Thread once structure
+ * @ingroup globus_thread_once
+ */
 typedef struct
 {
     int none;
@@ -188,8 +223,12 @@ typedef struct
 }
 globus_thread_once_t;
 
-/* Thread package macros */
-
+/**
+ * @def GLOBUS_THREAD_ONCE_INIT
+ * @brief Thread once initializer value
+ * @ingroup globus_thread_once
+ * @hideinitializer
+ */
 #if HAVE_PTHREAD
 #   if HAVE_WINDOWS_THREADS
 #       define GLOBUS_THREAD_ONCE_INIT { 0, PTHREAD_ONCE_INIT, 0, 0 }
@@ -202,7 +241,6 @@ globus_thread_once_t;
 #define GLOBUS_THREAD_ONCE_INIT { 0, 0 }
 #endif
 
-/* Function prototypes */
 extern
 int
 globus_thread_set_model(
@@ -388,7 +426,17 @@ globus_thread_setcancelstate(
     int                                 state,
     int *                               oldstate);
 
+/**
+ * @brief Disable thread cancellation value
+ * @ingroup globus_thread
+ * @see globus_thread_setcancelstate()
+ */
 #define GLOBUS_THREAD_CANCEL_DISABLE 0
+/**
+ * @brief Enable thread cancellation value
+ * @ingroup globus_thread
+ * @see globus_thread_setcancelstate()
+ */
 #define GLOBUS_THREAD_CANCEL_ENABLE 1
 
 /* Module definition */
@@ -399,6 +447,11 @@ globus_i_thread_pre_activate();
 extern
 globus_module_descriptor_t       globus_i_thread_module;
 
+/**
+ * @brief Thread Module
+ * @ingroup globus_thread
+ * @hideinitializer
+ */
 #define GLOBUS_THREAD_MODULE (&globus_i_thread_module)
 
 typedef struct
