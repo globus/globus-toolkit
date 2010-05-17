@@ -149,15 +149,11 @@ public class VomsCredentialPIP implements VomsConstants {
 
         boolean parameterSet = false;
         while (iter.hasNext()) {
-            X509Certificate certRev[] = (X509Certificate[])iter.next();
-            int size = certRev.length;
-            X509Certificate cert[] = new X509Certificate[size];
-            for (int i=0; i<size; i++) {
-                cert[i] = certRev[size-i-1];
-            }
-            logger.debug("Certificate reversed");
 
-            VOMSValidator validator = new VOMSValidator(cert);
+	    // Patch accepted to not reverse the certificate order.
+            X509Certificate certRev[] = (X509Certificate[])iter.next();  
+            
+            VOMSValidator validator = new VOMSValidator(certRev);
                         
             if (validate) {
                 logger.debug("Validating");
