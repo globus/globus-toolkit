@@ -59,6 +59,7 @@ globus_l_url_sync_arg_cons(
     globus_url_sync_handle_t                handle,
     globus_url_sync_endpoint_t *            source,
     globus_url_sync_endpoint_t *            destination,
+	globus_object_t *                       error,
     globus_l_url_sync_arg_t *               parent)
 {
     globus_l_url_sync_arg_t *               arg;
@@ -69,6 +70,7 @@ globus_l_url_sync_arg_cons(
     arg->entries            = NULL;
     arg->source             = source;
     arg->destination        = destination;
+	arg->error				= error;
     arg->parent             = parent;
 
     return arg;
@@ -183,7 +185,7 @@ globus_l_url_sync_compare_func_top_cb(
     void *                          arg,
     globus_url_sync_endpoint_t *    source,
     globus_url_sync_endpoint_t *    destination,
-    int			         			compare_result,
+    int	  			    compare_result,
     globus_object_t *               error);
 
 /** The compare function callback. This cb is used for any recursively listed
@@ -196,7 +198,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     void *                          arg,
     globus_url_sync_endpoint_t *    source,
     globus_url_sync_endpoint_t *    destination,
-    int         					compare_result,
+    int         		    compare_result,
     globus_object_t *               error);
 
 /* Declarations */
@@ -250,7 +252,9 @@ globus_l_url_sync(
     globus_url_sync_endpoint_t *            destination);
 
 
-static void     globus_l_url_sync_list_complete_cb(
+static 
+void     
+globus_l_url_sync_list_complete_cb(
     void *                                  user_arg,
     globus_ftp_client_handle_t *            ftp_handle,
     globus_object_t *                       error);
@@ -312,36 +316,38 @@ globus_url_sync(
     }
 
     /* Copy URL structs to char* buffers */
-	switch(source_url->scheme_type) {
-		case GLOBUS_URL_SCHEME_GSIFTP:
-		case GLOBUS_URL_SCHEME_SSHFTP:
-			globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
-			globus_i_url_sync_log_debug("source: %s\n", source_str);
-			break;
-		case GLOBUS_URL_SCHEME_FILE:
-			globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
-			globus_i_url_sync_log_debug("source: %s ('file' not currrently supported)\n", source_str);
-			/* fall through */
-		default:
-			result = globus_error_put(
-				GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("source scheme"));
-			goto exit;
-	}
-	switch (destination_url->scheme_type) {
-		case GLOBUS_URL_SCHEME_GSIFTP:
-		case GLOBUS_URL_SCHEME_SSHFTP:
-			globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
-			globus_i_url_sync_log_debug("destination: %s\n", destination_str);
-			break;
-		case GLOBUS_URL_SCHEME_FILE:		
-			globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
-			globus_i_url_sync_log_debug("destination: %s ('file' not currrently supported)\n", destination_str);
-			/* fall through */
-	default:
-			result = globus_error_put(
-				GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("destination scheme"));
-			goto exit;
-	}
+    switch(source_url->scheme_type) 
+      {
+	  case GLOBUS_URL_SCHEME_GSIFTP:
+	  case GLOBUS_URL_SCHEME_SSHFTP:
+	      globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
+	      globus_i_url_sync_log_debug("source: %s\n", source_str);
+	      break;
+	  case GLOBUS_URL_SCHEME_FILE:
+	    globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
+	    globus_i_url_sync_log_debug("source: %s ('file' not currrently supported)\n", source_str);
+	    /* fall through */
+	  default:
+	    result = globus_error_put(
+		     GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("source scheme"));
+	    goto exit;
+      }
+    switch (destination_url->scheme_type) 
+      {
+	  case GLOBUS_URL_SCHEME_GSIFTP:
+	  case GLOBUS_URL_SCHEME_SSHFTP:
+	      globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
+	      globus_i_url_sync_log_debug("destination: %s\n", destination_str);
+	      break;
+	  case GLOBUS_URL_SCHEME_FILE:		
+	      globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
+	      globus_i_url_sync_log_debug("destination: %s ('file' not currrently supported)\n", destination_str);
+	      /* fall through */
+	  default:
+	      result = globus_error_put(
+		       GLOBUS_I_URL_SYNC_ERROR_INVALID_PARAMETER("destination scheme"));
+	      goto exit;
+      }
 
     /* Populate handle with caller's settings */
     globus_i_url_sync_handle_lock(handle);
@@ -507,6 +513,7 @@ globus_l_url_sync_compare_func_top_cb(
                 handle,
                 source,
                 destination,
+				error,
                 GLOBUS_NULL);
 
         /* List of Source */
@@ -541,24 +548,17 @@ globus_l_url_sync_compare_func_top_cb(
 }
 /* globus_l_url_sync_compare_func_top_cb */
 
-
-/*
- * The operation complete callback for the ftp client list operation.
- */
-static
+static 
 void
-globus_l_url_sync_list_complete_cb(
-    void *                                  user_arg,
-    globus_ftp_client_handle_t *            ftp_handle,
-    globus_object_t *                       error)
+globus_url_sync_i_list_dir_cb(
+			      void * user_arg)
 {
-    globus_l_url_sync_arg_t *               sync_arg;
-    globus_bool_t                           done;
-    GlobusFuncName(globus_l_url_sync_list_complete_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
+    globus_l_url_sync_arg_t * sync_arg = (globus_l_url_sync_arg_t*) user_arg;
+    globus_bool_t             done;
+    globus_object_t *         error = sync_arg->error;
 
-    sync_arg = (globus_l_url_sync_arg_t*) user_arg;
-    globus_assert(sync_arg);
+    GlobusFuncName(globus_url_sync_i_list_dir_cb);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
     if (error)
     {
@@ -671,11 +671,31 @@ globus_l_url_sync_list_complete_cb(
             }
             globus_i_url_sync_handle_unlock(handle);
 
-            /* Might be better to invoke this from a one-shot */
             user_callback(user_arg, handle, GLOBUS_NULL);
         }
     }
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(ftp_handle, "");
+	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
+} /* globus_url_sync_i_list_dir_cb */
+/*
+ * The operation complete callback for the ftp client list operation.
+ */
+static
+void
+globus_l_url_sync_list_complete_cb(
+    void *                                  user_arg,
+    globus_ftp_client_handle_t *            ftp_handle,
+    globus_object_t *                       error)
+{
+    GlobusFuncName(globus_l_url_sync_list_complete_cb);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "ftp_handle");
+
+    globus_callback_register_oneshot(
+		     NULL,
+		     NULL,
+		     globus_url_sync_i_list_dir_cb,
+		     user_arg);
+
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(ftp_handle, "ftp_handle");
 }
 /* globus_l_url_sync_list_complete_cb */
 
@@ -734,6 +754,7 @@ globus_l_url_sync_compare_func_recurse_cb(
                 handle,
                 source,
                 destination,
+				error,
                 sync_arg);
 
         /* List of Source */
