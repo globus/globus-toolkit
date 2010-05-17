@@ -30,10 +30,10 @@ distclean: clean
 
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_libtool globus_common globus_common_setup
-i18n: gpt common globus-internationalization globus-internationalization-thr
+i18n: gpt common globus-internationalization
 prews: gridftp prewsgram
-prewsgram: gpt globus-resource-management-sdk-thr globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
-gridftp: gpt globus-data-management-sdk-thr globus-data-management-server-thr globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
+prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
+gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
 rls: gpt globus-rls-server
 drs: gpt common globus_rls_client wsjava gt4-delegation gt4-replicator
 
@@ -55,18 +55,12 @@ gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
 # Openssl redirector to globus_system_openssl or globus_openssl_backup
 globus_openssl: @globus_openssl@
 globus_openssl-compile: @globus_openssl@-compile
-globus_openssl-thr: @globus_openssl@-thr
-globus_openssl-thr-compile: @globus_openssl@-thr-compile
 globus_openssl-only: @globus_openssl@-only
-globus_openssl-only-thr: @globus_openssl@-only-thr
 globus_binary_openssl:
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_openssl-*/*.tar.gz
 
 # Netlogger incubator
 netlogger_c: gpt globus_core globus_common
 	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees/netlogger-c-4.0.2 ${FLAVOR}
-
-netlogger_c-thr: gpt globus_core-thr globus_common-thr
-	${GPT_LOCATION}/sbin/gpt-build  ${BUILD_OPTS} -srcdir=source-trees-thr/netlogger-c-4.0.2 ${FLAVOR}${THR}
 
 # Bundle dependencies, expressed in packages.

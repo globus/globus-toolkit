@@ -13,8 +13,7 @@ while (<FH>)
    # A bunch of the source rules only make sense for source.
    # Skip 'em.  The undef setting on package will also keep us
    # from printing out a line if they're followed by a gpt-build command.
-   if (/-only:/ || /-thr:/ || /-thr-runtime:/ ||
-       /-thr-compile:/) { $package = undef; next;}
+   if (/-only:/) { $package = undef; next;}
 
    # When we hit a source package line (like foo_pkg: gpt globus_core)
    # or globus-data-bundle: package1 package2
@@ -22,8 +21,6 @@ while (<FH>)
    {
       $package = $1;
       $deps = $2;
-      # There are no binary -thr packages
-      $deps =~ s/([a-zA-Z_\-0-9]+)-thr/\1/g;
       # -compile doesn't mean anything in binaries
       if ( $package =~ /compile/ )
           { $deps =~ s/([a-zA-Z_\-0-9]+)-compile/\1/g; }
