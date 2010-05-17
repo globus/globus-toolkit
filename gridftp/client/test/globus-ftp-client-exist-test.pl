@@ -77,12 +77,12 @@ else
     }
 
     push(@test_dirs, $emptydir);
-    push(@test_dirs, '/no-such-file');
+    push(@test_dirs, '/etc/no-such-file');
     push(@test_dirs, '/etc');
     push(@test_dirs, '/');
     push(@test_dirs, '/etc/group');
 
-    foreach('/etc/group', '/', '/etc', '/no-such-file', $emptydir)
+    foreach('/etc/group', '/', '/etc', '/etc/no-such-file', $emptydir)
     {
         my $exists_rc = stat($_) ? 0 : 1;
         

@@ -142,8 +142,8 @@ sub bad_url_src
     
     clean_remote_file($dest_host, $dest_file);
 }
-push(@tests, "bad_url_src('$proto$source_host/no-such-file-here');");
-push(@tests, "bad_url_src('$proto$source_host:4/no-such-file-here');");
+push(@tests, "bad_url_src('$proto$source_host/etc/no-such-file-here');");
+push(@tests, "bad_url_src('$proto$source_host:4/etc/no-such-file-here');");
 
 =head2
 
@@ -163,7 +163,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/etc/no-such-file-here";
     $errors = run_command($command, 1);
     if($errors eq "")
     {

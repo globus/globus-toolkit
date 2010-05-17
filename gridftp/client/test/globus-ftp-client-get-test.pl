@@ -120,7 +120,7 @@ sub bad_url
     my ($errors,$rc) = ("",0);
     my ($bogus_url) = new Globus::URL("$proto$source_host$source_file");
 
-    $bogus_url->{path} = "/no-such-file-here";
+    $bogus_url->{path} = "/etc/no-such-file-here";
     my $command = "$test_exec -s ".$bogus_url->to_string();
     $errors = run_command($command, 1);
     if($errors eq "")

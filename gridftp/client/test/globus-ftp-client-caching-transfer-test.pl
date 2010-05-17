@@ -93,7 +93,7 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/no-such-file-here -d $proto$dest_host$dest_file";
+    my $command = "$test_exec -s $proto$source_host/etc/no-such-file-here -d $proto$dest_host$dest_file";
     $errors = run_command($command, 2);
     if($errors eq "")
     {
@@ -116,7 +116,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/etc/no-such-file-here";
     $errors = run_command($command, 2);
     if($errors eq "")
     {
