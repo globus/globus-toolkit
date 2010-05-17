@@ -1141,8 +1141,6 @@ globus_l_gfs_hdfs_recv(
 
     int num_replicas = 0;
     char * replica_map = getenv("GRIDFTP_HDFS_REPLICA_MAP");
-    fprintf(stderr, "Found replica map file %s\n", replica_map);
-    fflush(stderr);
     if (replica_map != NULL) {
 	char *map_line = (char *)malloc(sizeof(char) * 256);
         int line_length = 256;
@@ -1154,11 +1152,7 @@ globus_l_gfs_hdfs_recv(
             snprintf(err_msg, MSG_SIZE, "Could not open %s for reading.\n", replica_map);
 	    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
 	} else {
-	    fprintf(stderr, "Opened replica map file %s for reading\n", replica_map);
-	    fflush(stderr);
 	    while ( (bytes_read = getline(&map_line, &line_length, replica_map_fd)) > -1) {
-		fprintf(stderr, "Read replica map line %s", map_line);
-		fflush(stderr);
 		map_line_index = map_line;
 		filename_index = hdfs_handle->pathname;
 		/* Skip comment lines
@@ -1169,12 +1163,8 @@ globus_l_gfs_hdfs_recv(
 		     */
 		    for (; *map_line_index && *map_line_index == ' ';
 			map_line_index++);
-		    fprintf(stderr, "1: map_line_index=%s\n", map_line_index);
-		    fflush(stderr);
 		    for(; *map_line_index && *map_line_index == *filename_index;
 			map_line_index++, filename_index++);
-		    fprintf(stderr, "2: map_line_index=%s, filename_index=%s\n", map_line_index, filename_index);
-		    fflush(stderr);
 
 		    /*
 		     * If we've reached the end of the pattern, then we've found
@@ -1183,11 +1173,7 @@ globus_l_gfs_hdfs_recv(
 		     */
 		    if (*map_line_index && (*map_line_index == ' ' || *map_line_index == '=' || *map_line_index == '\t')) {
 			for (; *map_line_index && *map_line_index != ' ' && *map_line_index != '='; map_line_index++);
-			fprintf(stderr, "3: map_line_index=%s\n", map_line_index);
-			fflush(stderr);
 			sscanf(map_line_index, "%d", &num_replicas);
-			fprintf(stderr, "Found match: %d replicas\n", num_replicas);
-			fflush(stderr);
 		    }
 		}
 	    }
@@ -1204,8 +1190,6 @@ globus_l_gfs_hdfs_recv(
 	snprintf(err_msg, MSG_SIZE, "Open file %s with %d replicas.\n", hdfs_handle->pathname, num_replicas);
     }
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
-    fprintf(stderr, err_msg);
-    fflush(stderr);
     if (hdfsExists(hdfs_handle->fs, hdfs_handle->pathname) == 0)
     {
         hdfsFileInfo *fileInfo;
