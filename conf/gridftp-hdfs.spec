@@ -9,10 +9,11 @@ URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
 # TODO:  Check if this svn tag is the same as the source tarball available
 # for download.  That might simplify this a bit.
 # svn co svn://t2.unl.edu/brian/gridftp_hdfs
+# cd gridftp_hdfs
 # ln -s /usr/share/libtool/ltmain.sh
-# autoreconf
-# automake -a
-# autoreconf
+# aclocal
+# automake -a -c
+# autoconf
 # ./configure
 # make dist
 Source0:        %{name}-%{version}.tar.gz

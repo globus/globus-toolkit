@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-AC_INIT([gridftp-hdfs], [0.1.0], [osg-hadoop@opensciencegrid.org])
+AC_INIT([gridftp-hdfs], [0.2.0], [osg-hadoop@opensciencegrid.org])
 
-AM_INIT_AUTOMAKE([gridftp-hdfs], [0.1.0])
+AM_INIT_AUTOMAKE([gridftp-hdfs], [0.2.0])
 
 AC_CONFIG_SRCDIR([src/globus_gridftp_server_hdfs.c])
 #AC_CONFIG_HEADER([config.h])
