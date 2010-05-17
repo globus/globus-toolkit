@@ -59,6 +59,7 @@ globus_l_url_sync_arg_cons(
     globus_url_sync_handle_t                handle,
     globus_url_sync_endpoint_t *            source,
     globus_url_sync_endpoint_t *            destination,
+	globus_object_t *                       error,
     globus_l_url_sync_arg_t *               parent)
 {
     globus_l_url_sync_arg_t *               arg;
@@ -69,6 +70,7 @@ globus_l_url_sync_arg_cons(
     arg->entries            = NULL;
     arg->source             = source;
     arg->destination        = destination;
+	arg->error				= error;
     arg->parent             = parent;
 
     return arg;
@@ -511,6 +513,7 @@ globus_l_url_sync_compare_func_top_cb(
                 handle,
                 source,
                 destination,
+				error,
                 GLOBUS_NULL);
 
         /* List of Source */
@@ -751,6 +754,7 @@ globus_l_url_sync_compare_func_recurse_cb(
                 handle,
                 source,
                 destination,
+				error,
                 sync_arg);
 
         /* List of Source */
