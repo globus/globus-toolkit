@@ -20,8 +20,6 @@ Source0:        %{name}-%{version}.tar.gz
 Source1:        gridftp-hdfs-local.conf
 Source2:        replica-map.conf
 Source3:        gridftp-hdfs.logrotate
-Patch0:         gridftp-hdfs-0.1.0-misc.patch
-Patch1:         gridftp-hdfs-0.1.0-filebufferdebug.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 # RHEL4 doesn't have java-devel, so we build with Sun's jdk instead.
