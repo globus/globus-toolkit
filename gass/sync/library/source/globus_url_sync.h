@@ -198,7 +198,7 @@ typedef struct globus_url_sync_endpoint_s
 {
     char *                              url;
     globus_ftp_client_handle_t *        ftp_handle;
-	globus_byte_t *                     mlst_buffer;
+    globus_byte_t *                     mlst_buffer;
     globus_size_t                       mlst_buffer_length;
     globus_url_sync_endpoint_stats_t    stats;
 } globus_url_sync_endpoint_t;
@@ -216,7 +216,7 @@ typedef struct globus_l_url_sync_arg_s
     globus_url_sync_endpoint_t *            destination;
     globus_url_sync_endpoint_t *            compare_source;
     globus_url_sync_endpoint_t *            compare_destination;
-	globus_object_t *                       error;
+    globus_object_t *                       error;
     struct globus_l_url_sync_arg_s *        parent;
 } globus_l_url_sync_arg_t;
 
@@ -281,11 +281,10 @@ typedef void
  */
 typedef globus_result_t
 (*globus_url_sync_compare_func_t) (
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg);
+    int *                                       result,
+    globus_object_t *                           error);
 
 /**
  * The synchronization comparator. Synchronization functions use the comparator
@@ -485,6 +484,14 @@ globus_url_sync_handle_set_recursion(
 globus_bool_t
 globus_url_sync_handle_get_recursion(
     globus_url_sync_handle_t                handle);
+
+globus_result_t
+globus_l_url_sync_chain_func(
+    void *                                      comparator_arg,
+    globus_url_sync_endpoint_t *                source,
+    globus_url_sync_endpoint_t *                destination,
+    globus_url_sync_compare_func_cb_t           callback_func,
+    void *                                      callback_arg);
 
 /**
  * @defgroup globus_url_sync_operations Synchronize Operations

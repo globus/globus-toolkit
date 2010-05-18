@@ -70,96 +70,72 @@ globus_l_url_sync_ftpclient_complete_cb(
 static
 globus_result_t
 globus_l_url_sync_exists_func(
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg);
+    int *					result,
+    globus_object_t *				error);
 
 static
 globus_result_t
 globus_l_url_sync_size_func(
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg);
+    int *					result,
+    globus_object_t *		       		error);
 
 static
 globus_result_t
 globus_l_url_sync_modify_func(
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg);
-
-static
-globus_result_t
-globus_l_url_sync_chain_func(
-    void *                                      comparator_arg,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg);
-
-void
-globus_url_sync_compare_chain_func_cb(
-    void *                                      arg,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    int                                         result,
-    globus_object_t *                           error);
-
+    int *					result,
+    globus_object_t *				error);
 
 /* Functions */
 
 /**
  * Existence comparison function, including filetype checking.
  *
- * NOTE: This SHOULD be asynchronous but for now I made it synchronous to
- * simplify it.
  */
 static
 globus_result_t
 globus_l_url_sync_exists_func(
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg)
+    int *					result,
+    globus_object_t *				error)
 {
-    int 		comparison_result = -1;
-    globus_object_t *   error_object = GLOBUS_NULL;
-    globus_result_t	result = GLOBUS_SUCCESS;
+    globus_result_t	res = GLOBUS_SUCCESS;
 
     GlobusFuncName(globus_l_url_sync_exists_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
     
+    *result = -1;
+
     /* Stat the source */
 	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
-		result = globus_l_url_sync_ftpclient_mlst(source);
+		res = globus_l_url_sync_ftpclient_mlst(source);
 	
-    if (result != GLOBUS_SUCCESS)
+    if (res != GLOBUS_SUCCESS)
     {
-        globus_object_t * err = globus_error_get(result);
+        globus_object_t * err = globus_error_get(res);
 	int response_code = globus_error_ftp_error_get_code(err);
 	globus_i_url_sync_log_debug("response = %d, result = %d, %s\n", 
-		    response_code, result, globus_error_print_chain(err));
+		    response_code, res, globus_error_print_chain(err));
 
 	/* *** use the real return code(s) which are not currently known *** */
-	switch (result)
+	switch (res)
 	  {
 	  case 18:
             /* gridftp authentication error */
-	    error_object = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
+	    error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
 	    break;
 	  case 11:
 	  case 12:
-	    error_object = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
+	    error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
 	    break;
 	  default:
-	    error_object = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
+	    error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
 	  } 
     }
     else 
@@ -167,7 +143,7 @@ globus_l_url_sync_exists_func(
         /* Report an error if source file is not found */
         if (!source->stats.exists) 
 	{
-	    error_object = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
+	    error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
 	} 
 	else 
         {
@@ -186,12 +162,12 @@ globus_l_url_sync_exists_func(
 	        globus_l_url_sync_ftpclient_mlst(destination);
        
 	    /* Compare existence */
-	    comparison_result = source->stats.exists - destination->stats.exists;
+	    *result = source->stats.exists - destination->stats.exists;
        
 	    if (destination->stats.exists)
 	    {
 	        if (source->stats.type != destination->stats.type)
-		  error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+		  error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
 		else 
 		{
 		    if (source->stats.type == globus_url_sync_endpoint_type_dir)
@@ -200,7 +176,7 @@ globus_l_url_sync_exists_func(
 			    strcat(destination->url, "/");
 		    } else {
 		        if (dir_ending) {
-			    error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+			    error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
 			}
 		    }
 		}
@@ -215,7 +191,7 @@ globus_l_url_sync_exists_func(
 		else 
 		{
 		    if (dir_ending)
-			    error_object = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+			    error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
 		}
 	    }
 	}
@@ -226,9 +202,8 @@ globus_l_url_sync_exists_func(
      * mlst operation may return an error. So an error is not really an error
      * in some cases... Ideally this should be better handled or confirmed in
      * the docs. */
-    callback_func(
-		  callback_arg, source, destination, comparison_result, error_object);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
+
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_exists_func */
@@ -239,20 +214,17 @@ globus_l_url_sync_exists_func(
 static
 globus_result_t
 globus_l_url_sync_size_func(
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg)
+    int *					result,
+    globus_object_t *				error)
 {
-    int                                         comparison_result;
     GlobusFuncName(globus_l_url_sync_size_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 	
-	comparison_result = source->stats.size - destination->stats.size;
+    *result = source->stats.size - destination->stats.size;
 	
-    callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_size_func */
@@ -263,22 +235,19 @@ globus_l_url_sync_size_func(
 static
 globus_result_t
 globus_l_url_sync_modify_func(
-    void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg)
+    int *					result,
+    globus_object_t *				error)
 {
-    int                                         comparison_result;
     GlobusFuncName(globus_l_url_sync_modify_func);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 	
-	comparison_result = (int) difftime(
-			mktime(&(source->stats.modify_tm)),
-			mktime(&(destination->stats.modify_tm)));
-	
-    callback_func(callback_arg, source, destination, comparison_result, GLOBUS_NULL);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
+    *result = (int) difftime(
+		mktime(&(source->stats.modify_tm)),
+		mktime(&(destination->stats.modify_tm)));
+
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_modify_func */
@@ -287,98 +256,57 @@ globus_l_url_sync_modify_func(
  * Chained comparison function. Sets up the callback argument then immediately
  * hands execution to its own callback which does the rest of the work.
  */
-static
 globus_result_t
 globus_l_url_sync_chain_func(
     void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
+    globus_url_sync_compare_func_cb_t          callback_func,
     void *                                      callback_arg)
 {
-    globus_l_url_sync_chain_func_cb_arg_t *		chain_cb_arg;
+    globus_url_sync_comparator_t *		next_comparator;
+    int						result = 0;
+    globus_object_t *                           error = GLOBUS_NULL;
+    globus_list_t *				list = comparator_arg;
+
     GlobusFuncName(globus_l_url_sync_chain_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(callback_func, "callback");
 
-    /* Create create callback argument for the chain cb's */
-    chain_cb_arg = (globus_l_url_sync_chain_func_cb_arg_t *)
-		    globus_libc_malloc(sizeof (globus_l_url_sync_chain_func_cb_arg_t));
-    chain_cb_arg->list      =  (globus_list_t *) comparator_arg;
-    chain_cb_arg->cb_func   =  callback_func;
-    chain_cb_arg->cb_arg    =  callback_arg;
-
-    /* Hand off execution to the cb function. By passing a '0' as the result
-     * parameter, it ensures that the callback will attempt to call the next
-     * comparator in the chain, if there is at least one in the chain. */
-    globus_url_sync_compare_chain_func_cb(
-			chain_cb_arg,
-			source,
-			destination,
-			0,
-			GLOBUS_NULL);
-
+    while (1) {
+        if (globus_list_empty(list) || result!=0 || error)
+	{
+	    /* Call the user callback function when the evaluations in this chain
+	     * reach a conclussion:
+	     *  a. either there are no more comparisons left to perform,
+	     *  b. or a comparison indicated source/dest are out of synch,
+	     *  c. or an error has occurred.
+	     *
+	     * Call the user callback, then free the temporary callback arg
+	     * structure.
+	     */
+	    callback_func(callback_arg, source, destination, result, error);
+	    break;
+	}
+	else
+	{
+	    /* Initiate next comparison in the list. */
+	    next_comparator =
+	      (globus_url_sync_comparator_t *)globus_list_first(list);
+	    list = globus_list_rest(list);
+			
+	    /* Call next compare func */
+	    next_comparator->compare_func(source,
+					  destination,
+					  &result,
+					  error);
+	}	
+    }
+    
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(callback_func, "callback");
     return GLOBUS_SUCCESS;
 }
 /* globus_l_url_sync_chain_func */
 
-/**
- * Chain function callback. This callback is passed to all of the comparison
- * functions in the chain of comparators. If the results returned by the last
- * compare func indicates that the files are out of synch or if there was an
- * error, it returns the last comparison result and error to the user callback.
- * Otherwise, it looks for the next comparator in the chain, and calls it.
- */
-void
-globus_url_sync_compare_chain_func_cb(
-    void *                                      arg,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    int                                         result,
-    globus_object_t *                           error)
-{
-    globus_l_url_sync_chain_func_cb_arg_t *		chain_cb_arg;
-    globus_url_sync_comparator_t *			next_comparator;
-    GlobusFuncName(globus_url_sync_compare_chain_func_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
-
-    globus_assert(arg);
-
-    chain_cb_arg = (globus_l_url_sync_chain_func_cb_arg_t *) arg;
-    if (globus_list_empty(chain_cb_arg->list) || result!=0 || error)
-    {
-        /* Call the user callback function when the evaluations in this chain
-	 * reach a conclussion:
-	 *  a. either there are no more comparisons left to perform,
-	 *  b. or a comparison indicated source/dest are out of synch,
-	 *  c. or an error has occurred.
-	 *
-	 * Call the user callback, then free the temporary callback arg
-	 * structure.
-	 */
-        chain_cb_arg->cb_func(
-		 chain_cb_arg->cb_arg, source, destination, result, error);
-	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(chain_cb_arg->cb_func, "callback");
-	globus_libc_free(chain_cb_arg);
-    }
-    else
-    {
-        /* Initiate next comparison in the list. */
-        next_comparator = (globus_url_sync_comparator_t *)
-	  globus_list_first(chain_cb_arg->list);
-	chain_cb_arg->list = globus_list_rest(chain_cb_arg->list);
-
-	/* Call next compare func */
-	next_comparator->compare_func(
-				next_comparator->comparator_arg,
-				source,
-				destination,
-				globus_url_sync_compare_chain_func_cb,
-				chain_cb_arg);
-	GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(next_comparator->compare_func, "compare_func");
-    }
-
-} /* globus_url_sync_compare_chain_func_cb */
 
 /**
  * A helper function for simplifying the MSLT operations.
@@ -483,18 +411,20 @@ void
 globus_url_sync_chained_comparator_init(
     globus_url_sync_comparator_t *					chain)
 {
-	chain->comparator_arg  =  GLOBUS_NULL;
-	chain->compare_func    =  globus_l_url_sync_chain_func;
+    chain->comparator_arg  =  GLOBUS_NULL;
+    chain->compare_func    =  (globus_url_sync_compare_func_t)GLOBUS_NULL;
+    /* unused, because chain is started with "globus_l_url_sync_chain_func",
+       which takes the user callback as a parameter. */
 }
 
 void
 globus_url_sync_chained_comparator_destroy(
     globus_url_sync_comparator_t *					chain)
 {
-	globus_assert(chain);
+    globus_assert(chain);
 
-	if (chain->comparator_arg)
-		globus_list_free(chain->comparator_arg);
+    if (chain->comparator_arg)
+        globus_list_free(chain->comparator_arg);
 }
 
 void
@@ -502,9 +432,9 @@ globus_url_sync_chained_comparator_add(
     globus_url_sync_comparator_t *					chain,
     globus_url_sync_comparator_t *					next)
 {
-	globus_assert(chain);
-	chain->comparator_arg = globus_list_cons(
-			next, (globus_list_t *) chain->comparator_arg);
+    globus_assert(chain);
+    chain->comparator_arg = globus_list_cons(
+		next, (globus_list_t *) chain->comparator_arg);
 }
 
 

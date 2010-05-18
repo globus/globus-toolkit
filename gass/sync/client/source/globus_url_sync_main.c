@@ -120,7 +120,7 @@ main(int argc, char *argv[])
     globus_url_sync_handle_t                handle;
     int                                     i;
     globus_l_url_sync_main_monitor_t        monitor;
-	globus_url_sync_comparator_t            chained_comparator;
+    globus_url_sync_comparator_t            chained_comparator;
     GlobusFuncName(main);
 
     /* Parse arguments */
@@ -452,7 +452,6 @@ globus_l_url_sync_main_complete_cb(
 static
 void
 globus_l_url_sync_main_result_cb(
-    void *					user_arg,
     globus_url_sync_handle_t                    handle,
     globus_object_t *                           error,
     globus_url_sync_endpoint_t *                source,
