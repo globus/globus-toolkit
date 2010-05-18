@@ -60,20 +60,25 @@ typedef struct
     globus_bool_t                           done;
 } globus_l_url_sync_main_monitor_t;
 
-static void             globus_l_url_sync_cleanup(int m);
+static 
+void             
+globus_l_url_sync_cleanup(int m);
 
-static void             globus_l_url_sync_main_complete_cb(
+static 
+void             
+globus_l_url_sync_main_complete_cb(
     void *                                  user_arg,
     globus_url_sync_handle_t                handle,
     globus_object_t *                       error);
 
-static void             globus_l_url_sync_main_result_cb(
-    void *					user_arg,
-    globus_url_sync_handle_t                    handle,
-    globus_object_t *				error,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    int                                         result);
+static 
+void             
+globus_l_url_sync_main_result_cb(
+    globus_url_sync_handle_t                handle,
+    globus_object_t *					    error,
+    globus_url_sync_endpoint_t *            source,
+    globus_url_sync_endpoint_t *            destination,
+    int                                     result);
 
 static
 void
@@ -95,7 +100,7 @@ globus_l_url_sync_ftpclient_nlst_read_cb(
 
 /* Constants */
 
-static const int                                   BUFLEN = 1024;
+static const int                            BUFLEN = 1024;
 
 /* Static Variables */
 
