@@ -493,7 +493,7 @@ globus_l_url_sync_compare_func_top_cb(
     globus_i_url_sync_handle_unlock(handle);
 
     /* Return results to user */
-    result_callback(callback_arg, handle, error, source, destination, compare_result);
+    result_callback(handle, error, source, destination, compare_result);
 
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.
@@ -731,7 +731,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     globus_i_url_sync_handle_unlock(handle);
 
     /* Return results to user */
-    result_callback(callback_arg, handle, error, source, destination, compare_result);
+    result_callback(handle, error, source, destination, compare_result);
 
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.

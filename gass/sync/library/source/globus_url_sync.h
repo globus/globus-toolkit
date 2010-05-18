@@ -324,7 +324,6 @@ typedef struct globus_url_sync_comparator_s
  *        or properties of the file evaluated to <, >, or ==.
  */
 typedef void (*globus_url_sync_result_callback_t) (
-    void *                                      user_arg,
     globus_url_sync_handle_t                    handle,
     globus_object_t *                           error,
     globus_url_sync_endpoint_t *                source,
