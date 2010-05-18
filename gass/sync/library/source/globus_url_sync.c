@@ -59,7 +59,7 @@ globus_l_url_sync_arg_cons(
     globus_url_sync_handle_t                handle,
     globus_url_sync_endpoint_t *            source,
     globus_url_sync_endpoint_t *            destination,
-	globus_object_t *                       error,
+    globus_object_t *                       error,
     globus_l_url_sync_arg_t *               parent)
 {
     globus_l_url_sync_arg_t *               arg;
@@ -450,7 +450,7 @@ globus_l_url_sync(
     comparator = globus_i_url_sync_handle_get_comparator(handle);
 
     /* Compare source and destination */
-    result = comparator->compare_func(
+    result = globus_l_url_sync_chain_func(
             comparator->comparator_arg,
             source,
             destination,
@@ -470,7 +470,7 @@ globus_l_url_sync_compare_func_top_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    int         								compare_result,
+    int						compare_result,
     globus_object_t *                           error)
 {
     globus_url_sync_handle_t                    handle;
@@ -493,7 +493,7 @@ globus_l_url_sync_compare_func_top_cb(
     globus_i_url_sync_handle_unlock(handle);
 
     /* Return results to user */
-    result_callback(callback_arg, handle, error, source, destination, compare_result);
+    result_callback(handle, error, source, destination, compare_result);
 
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.
@@ -605,7 +605,7 @@ globus_url_sync_i_list_dir_cb(
 		  	(sync_arg->compare_source)->stats.type;
 
 	    /* Compare source and destination */
-	    result = comparator->compare_func(
+	    result = globus_l_url_sync_chain_func(
                          comparator->comparator_arg,
                          sync_arg->compare_source,
                          sync_arg->compare_destination,
@@ -731,7 +731,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     globus_i_url_sync_handle_unlock(handle);
 
     /* Return results to user */
-    result_callback(callback_arg, handle, error, source, destination, compare_result);
+    result_callback(handle, error, source, destination, compare_result);
 
     /* If source and destination are both directories and both exist, then we
      * need to check the synchronization of the contents.
