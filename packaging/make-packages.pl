@@ -425,7 +425,7 @@ sub create_makefile_installer
 
          open(PAC, ">$top_dir/pacman_cache/$pack.pacman");
          print PAC "packageName($pack)\n";
-         print PAC "version($package_version_hash{$pack});\n";
+         print PAC "version('$package_version_hash{$pack}{version}');\n";
 
          my $extras="";
 
@@ -472,7 +472,7 @@ sub create_makefile_installer
 
          print INS "\n";
          print PAC "cd ('\$GLOBUS_LOCATION')\n";
-         print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}.tar.gz')\n";
+         print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}{version}.tar.gz')\n";
          print PAC "cd ()\n";
          close PAC;
 
@@ -532,7 +532,10 @@ sub import_package_dependencies
         $pkg->read_metadata_file("$metadatafile");
 
         $package_version_hash{$pack}{'major'} = $pkg->{'Version'}->{'major'};
+        $package_version_hash{$pack}{'minor'} = $pkg->{'Version'}->{'minor'};
         $package_version_hash{$pack}{'age'} = $pkg->{'Version'}->{'age'};
+        $package_version_hash{$pack}{'version'} = $pkg->{'Version'}->{'major'} 
+                    . "." . $pkg->{'Version'}->{'minor'};
 
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
         {
