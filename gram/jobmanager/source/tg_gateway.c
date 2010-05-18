@@ -12,13 +12,14 @@ ia.
 
 #include "globus_common.h"
 #include "gssapi.h"
+#include "globus_gram_protocol.h"
+
+#if HAVE_LIBXML2
 #include "libxml/parser.h"
 #include "libxml/xpath.h"
 #include "libxml/xpathInternals.h"
 #include "libxml/tree.h"
 #include "openssl/x509.h"
-#include "globus_gram_protocol.h"
-
 
 static gss_OID_desc  globus_l_saml_oid_desc = 
         {11, (void *) "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01\x01\x0C" };
@@ -33,12 +34,14 @@ globus_l_tg_saml_assertion_is_self_issued(
     return GLOBUS_TRUE;
 }
 /* globus_l_tg_saml_assertion_is_self_issued() */
+#endif /* HAVE_LIBXML2 */
 
 int
 globus_i_gram_get_tg_gateway_user(
     gss_ctx_id_t                        context,
     char **                             gateway_user)
 {
+#if HAVE_LIBXML2
     OM_uint32                           maj_stat, min_stat;
     gss_buffer_set_t                    data_set;
     ASN1_UTF8STRING *                   asn1_str;
@@ -201,5 +204,9 @@ empty_data_set:
     gss_release_buffer_set(&min_stat, &data_set);
 inquire_failed:
     return rc;
+#else
+    *gateway_user = NULL;
+    return GLOBUS_SUCCESS;
+#endif /* HAVE_LIBXML2 */
 }
 /* globus_i_gram_get_tg_gateway_user() */

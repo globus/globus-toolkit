@@ -91,12 +91,6 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_libxml2">
-                <Version>
-                    <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
-            
             <Dependency Name="globus_usage">
                 <Version>
                     <Simple_Version Major="1"/>
@@ -173,11 +167,6 @@
             <Dependency Name="globus_scheduler_event_generator">
                 <Version>
                     <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-            <Dependency Name="globus_libxml2">
-                <Version>
-                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
