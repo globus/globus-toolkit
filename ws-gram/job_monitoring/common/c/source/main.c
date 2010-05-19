@@ -90,6 +90,8 @@ main(int argc, char *argv[])
     time_t timestamp = 0;
     globus_result_t result;
 
+    globus_thread_set_model(GLOBUS_THREAD_MODEL_NONE);
+
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
 
     if (rc != 0)
