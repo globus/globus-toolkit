@@ -613,6 +613,7 @@ globus_gram_job_manager_gsi_update_credential(
     {
         manager->cred_expiration_time = credential_expiration_time;
         rc = globus_gram_job_manager_gsi_write_credential(
+                request,
                 credential,
                 manager->cred_path);
         if (rc != 0)
@@ -625,6 +626,7 @@ globus_gram_job_manager_gsi_update_credential(
     if (request)
     {
         rc = globus_gram_job_manager_gsi_write_credential(
+                request,
                 credential,
                 request->x509_user_proxy);
         if (rc != 0)
@@ -684,6 +686,7 @@ inquire_cred_failed:
  */
 int
 globus_gram_job_manager_gsi_write_credential(
+    globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential,
     const char *                        path)
 {
@@ -692,6 +695,9 @@ globus_gram_job_manager_gsi_write_credential(
     gss_buffer_desc                     credential_buffer;
     int                                 rc;
     int                                 fd;
+    char *                              gt3_error_message = NULL;
+    int                                 written;
+    int                                 save_errno;
 
     major_status = gss_export_cred(&minor_status,
                                    credential,
@@ -701,6 +707,13 @@ globus_gram_job_manager_gsi_write_credential(
     if(GSS_ERROR(major_status))
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        (void) globus_gss_assist_display_status_str(
+            &gt3_error_message,
+            "credential export failed",
+            major_status,
+            minor_status,
+            0);
+
         goto export_failed;
     }
 
@@ -711,18 +724,67 @@ globus_gram_job_manager_gsi_write_credential(
     if(fd == -1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        save_errno = errno;
+
+        gt3_error_message = globus_common_create_string(
+                "open credential file for writing failed: %s: %s (%d)",
+                path,
+                strerror(save_errno),
+                save_errno);
 
         goto job_proxy_open_failed;
     }
-    rc = write(fd, credential_buffer.value, (size_t) credential_buffer.length);
-    if(rc < credential_buffer.length)
+    written = 0;
+
+    do
+    {
+        rc = write(
+                fd,
+                ((char *) credential_buffer.value) + written,
+                (size_t) credential_buffer.length - written);
+        if(rc < 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            save_errno = errno;
+            gt3_error_message = globus_common_create_string(
+                    "writing credential file failed: %s: %s (%d)",
+                    path,
+                    strerror(save_errno),
+                    save_errno);
+
+            goto job_proxy_write_failed;
+        }
+        else if (rc == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            gt3_error_message = globus_common_create_string(
+                    "writing credential file failed: %s: %s",
+                    path,
+                    "short write");
+            goto job_proxy_write_failed;
+            
+        }
+        else
+        {
+            written += rc;
+        }
+
+    } while (written < credential_buffer.length);
+
+    rc = close(fd);
+    if (rc != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
 
-        goto job_proxy_write_failed;
+        save_errno = errno;
+        gt3_error_message = globus_common_create_string(
+                "writing credential file failed: %s: %s (%d)",
+                path,
+                strerror(save_errno),
+                save_errno);
+        goto job_proxy_close_failed;
     }
     rc = 0;
-    close(fd);
     fd = -1;
 
 job_proxy_write_failed:
@@ -731,9 +793,18 @@ job_proxy_write_failed:
         close(fd);
         fd = -1;
     }
+job_proxy_close_failed:
 job_proxy_open_failed:
     (void) gss_release_buffer(&minor_status, &credential_buffer);
 export_failed:
+    if (request != NULL && request->gt3_failure_message == NULL)
+    {
+        request->gt3_failure_message = gt3_error_message;
+    }
+    else if (gt3_error_message)
+    {
+        free(gt3_error_message);
+    }
 
     return rc;
 }

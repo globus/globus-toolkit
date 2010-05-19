@@ -1163,14 +1163,22 @@ sub setup_softenv
         $self->log("default software environment requested");
 
         #load default software environment
-        print $job_script_fh ". $softenv_load\n";
+        $rc = print $job_script_fh ". $softenv_load\n";
+        if (!$rc)
+        {
+            return "print failed: $job_script_fh: $!";
+        }
     }
     else
     {
         $self->log("custom software environment requested");
 
         local(*SOFTENV);
-        open(SOFTENV, '>' . $softenv_script_name);
+        $rc = open(SOFTENV, '>' . $softenv_script_name);
+        if (!$rc)
+        {
+            return "open failed: $softenv_script_name: $!";
+        }
 
         foreach my $softenv (@softenv)
         {
@@ -1179,13 +1187,17 @@ sub setup_softenv
 
         close(SOFTENV);
 
-        print $job_script_fh "$soft_msc $softenv_script_name\n";
-        print $job_script_fh ". $softenv_script_name.cache.sh\n";
-        print $job_script_fh "rm $softenv_script_name"
-                           . " $softenv_script_name.cache.sh\n";
+        $rc = print $job_script_fh "$soft_msc $softenv_script_name\n"
+                                 . ". $softenv_script_name.cache.sh\n"
+                                 . "rm $softenv_script_name"
+                                 . " $softenv_script_name.cache.sh\n";
+        if (!$rc)
+        {
+            return "print failed: $job_script_fh: $!";
+        }
     }
 
-    return 1;
+    return 0;
 }
 
 1;

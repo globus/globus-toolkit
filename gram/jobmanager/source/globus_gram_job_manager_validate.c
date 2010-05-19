@@ -168,7 +168,7 @@ globus_gram_job_manager_validation_init(
                 scheduler_validation_filename);
     }
 
-    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
+    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
     {
         tmp_list = manager->validation_records;
 
@@ -190,9 +190,9 @@ globus_gram_job_manager_validation_init(
 
             globus_gram_job_manager_log(
                     manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
                     "event=gram.validation_record.info "
-                    "level=DEBUG "
+                    "level=TRACE "
                     "attribute=%s "
                     "description=\"%s\" "
                     "required_when=%d "
@@ -1100,9 +1100,9 @@ globus_l_gram_job_manager_insert_default_rsl(
 
                 globus_gram_job_manager_request_log(
                         request,
-                        GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
                         "event=gram.validate_rsl.info "
-                        "level=DEBUG "
+                        "level=TRACE "
                         "msg=\"Inserting default RSL for attribute\" "
                         "attribute=%s "
                         "default=\"%s\" "

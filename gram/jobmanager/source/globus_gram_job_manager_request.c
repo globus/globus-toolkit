@@ -3362,6 +3362,9 @@ globus_l_gram_export_cred(
     int                                 file;
     gss_buffer_desc                     buffer;
     int                                 rc = GLOBUS_SUCCESS;
+    char *                              gt3_failure_message = NULL;
+    int                                 save_errno;
+    int                                 written;
 
     if (cred == GSS_C_NO_CREDENTIAL && !request->jm_restart)
     {
@@ -3380,6 +3383,14 @@ globus_l_gram_export_cred(
         if (GSS_ERROR(major_status))
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+            (void) globus_gss_assist_display_status_str(
+                    &gt3_failure_message,
+                    "Export proxy failed",
+                    major_status,
+                    minor_status,
+                    0);
+
             goto export_cred_failed;
         }
     }
@@ -3405,19 +3416,62 @@ globus_l_gram_export_cred(
     if (file < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+        save_errno = errno;
+        gt3_failure_message = globus_common_create_string(
+                "Error opening proxy file for writing: %s: %s (%d)",
+                filename,
+                strerror(save_errno),
+                save_errno);
         goto fopen_failed;
     }
 
-    rc = write(file, buffer.value, buffer.length);
-    if (rc < buffer.length)
+    written = 0;
+    do
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-        goto fwrite_failed;
+        rc = write(
+                file, 
+                ((char *) buffer.value) + written,
+                buffer.length - written);
+        if (rc < 0)
+        {
+            save_errno = errno;
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            gt3_failure_message = globus_common_create_string(
+                    "Error writing proxy file: %s: %s (%d)",
+                    filename,
+                    strerror(save_errno),
+                    save_errno);
+            goto fwrite_failed;
+        }
+        else if (rc == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            gt3_failure_message = globus_common_create_string(
+                    "Error writing proxy file: %s: %s",
+                    filename,
+                    "short write");
+            goto fwrite_failed;
+        }
+        else
+        {
+            written += rc;
+        }
     }
+    while (written < buffer.length);
     rc = GLOBUS_SUCCESS;
 
 fwrite_failed:
-    close(file);
+    rc = close(file);
+    if (rc != 0)
+    {
+        save_errno = errno;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+        gt3_failure_message = globus_common_create_string(
+                "Error writing proxy file: %s: %s (%d)",
+                filename,
+                strerror(save_errno),
+                save_errno);
+    }
 fopen_failed:
     if (rc != GLOBUS_SUCCESS)
     {
@@ -3428,6 +3482,14 @@ malloc_filename_failed:
     gss_release_buffer(&minor_status, &buffer);
 jm_restart_done:
 export_cred_failed:
+    if (request->gt3_failure_message == NULL)
+    {
+        request->gt3_failure_message = gt3_failure_message;
+    }
+    else
+    {
+        free(gt3_failure_message);
+    }
 no_cred:
     *proxy_filename = filename;
 
@@ -3517,11 +3579,37 @@ globus_l_gram_make_job_dir(
                 }
                 if ((rc = stat(out_file, &statbuf)) < 0)
                 {
-                    mkdir(out_file, S_IRWXU);
+                    /* Path component does not exist, try to make it */
+
+                    errno = 0;
+                    rc = mkdir(out_file, S_IRWXU);
+                    if (rc == -1 && errno != EEXIST)
+                    {
+                        /* Error creating directory */
+                        if (request->gt3_failure_message == NULL)
+                        {
+                            request->gt3_failure_message =
+                                    globus_common_create_string(
+                                        "mkdir failed: %s: %s",
+                                        out_file,
+                                        strerror(errno));
+                        }
+                    }
                 }
                 if ((rc = stat(out_file, &statbuf)) < 0)
                 {
+                    int save_errno = errno;
+
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+
+                    if (request->gt3_failure_message == NULL)
+                    {
+                        request->gt3_failure_message =
+                                globus_common_create_string(
+                                        "stat failed: %s: %s",
+                                        out_file,
+                                        strerror(save_errno));
+                    }
 
                     globus_gram_job_manager_request_log(
                             request,
@@ -3539,8 +3627,8 @@ globus_l_gram_make_job_dir(
                             -rc,
                             out_file,
                             "Error creating directory",
-                            errno,
-                            strerror(errno));
+                            save_errno,
+                            strerror(save_errno));
 
                     goto error_exit;
                 }
