@@ -304,6 +304,7 @@ main(
                     forked_starter = 0;
                 }
                 rc = globus_gram_job_manager_gsi_write_credential(
+                        NULL,
                         cred,
                         manager.cred_path);
 
