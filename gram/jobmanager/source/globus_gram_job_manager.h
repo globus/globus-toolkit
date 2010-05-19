@@ -1058,6 +1058,7 @@ globus_gram_job_manager_gsi_update_credential(
 
 int
 globus_gram_job_manager_gsi_write_credential(
+    globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential,
     const char *                        path);
 

@@ -790,4 +790,14 @@ sub cancel
     return Globus::GRAM::Error::JOB_CANCEL_FAILED();
 }
 
+sub respond_with_failure_extension
+{
+    my $self = shift;
+    my $msg = shift;
+    my $rc = shift;
+
+    $self->respond({GT3_FAILURE_MESSAGE => $msg });
+    return $rc;
+}
+
 1;
