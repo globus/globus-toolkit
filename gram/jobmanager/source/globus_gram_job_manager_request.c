@@ -3517,11 +3517,37 @@ globus_l_gram_make_job_dir(
                 }
                 if ((rc = stat(out_file, &statbuf)) < 0)
                 {
-                    mkdir(out_file, S_IRWXU);
+                    /* Path component does not exist, try to make it */
+
+                    errno = 0;
+                    rc = mkdir(out_file, S_IRWXU);
+                    if (rc == -1 && errno != EEXIST)
+                    {
+                        /* Error creating directory */
+                        if (request->gt3_failure_message == NULL)
+                        {
+                            request->gt3_failure_message =
+                                    globus_common_create_string(
+                                        "mkdir failed: %s: %s",
+                                        out_file,
+                                        strerror(errno));
+                        }
+                    }
                 }
                 if ((rc = stat(out_file, &statbuf)) < 0)
                 {
+                    int save_errno = errno;
+
                     rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+
+                    if (request->gt3_failure_message == NULL)
+                    {
+                        request->gt3_failure_message =
+                                globus_common_create_string(
+                                        "stat failed: %s: %s",
+                                        out_file,
+                                        strerror(save_errno));
+                    }
 
                     globus_gram_job_manager_request_log(
                             request,
@@ -3539,8 +3565,8 @@ globus_l_gram_make_job_dir(
                             -rc,
                             out_file,
                             "Error creating directory",
-                            errno,
-                            strerror(errno));
+                            save_errno,
+                            strerror(save_errno));
 
                     goto error_exit;
                 }

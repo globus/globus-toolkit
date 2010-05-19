@@ -105,6 +105,7 @@ sub submit
     my $error_filename;
     my $requirements = '';
     my $rank = '';
+    my $script_text = "";
     my @arguments;
     my $argument_string;
     my @response_text;
@@ -263,13 +264,18 @@ sub submit
 
     local(*SCRIPT_FILE);
 
-    open(SCRIPT_FILE, ">$script_filename") 
-        or return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED;
+    if (!open(SCRIPT_FILE, ">$script_filename"))
+    {
+        my $errstr = "$!";
 
-    print SCRIPT_FILE "#\n# description file for condor submission\n#\n";
-    print SCRIPT_FILE "Universe = $universe\n";
-    print SCRIPT_FILE "Notification = Never\n";
-    print SCRIPT_FILE "Executable = " . $description->executable . "\n";
+        $self->respond({GT3_FAILURE_MESSAGE => "open failed: $script_filename: $errstr"});
+        return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED;
+    }
+
+    $script_text .= "#\n# description file for condor submission\n#\n";
+    $script_text .= "Universe = $universe\n";
+    $script_text .= "Notification = Never\n";
+    $script_text .= "Executable = " . $description->executable . "\n";
 
     $requirements  = "OpSys == \"" . $description->condor_os() . "\" ";
     $requirements .= " && Arch == \"" . $description->condor_arch() . "\" ";
@@ -279,36 +285,36 @@ sub submit
 	$rank = "rank = Memory\n";
     }
 
-    print SCRIPT_FILE "Requirements = $requirements\n";
+    $script_text .= "Requirements = $requirements\n";
     if($rank ne '')
     {
-	print SCRIPT_FILE "$rank\n";
+	$script_text .= "$rank\n";
     }
 
     if ($ENV{X509_USER_PROXY} ne "") {
-        print SCRIPT_FILE "X509UserProxy = $ENV{X509_USER_PROXY}\n";
+        $script_text .= "X509UserProxy = $ENV{X509_USER_PROXY}\n";
     }
-    print SCRIPT_FILE "Environment = $environment_string\n";
-    print SCRIPT_FILE "Arguments = $argument_string\n";
-    print SCRIPT_FILE "InitialDir = " . $description->directory() . "\n";
-    print SCRIPT_FILE "Input = " . $description->stdin() . "\n";
-    print SCRIPT_FILE "Log = " . $self->{condor_logfile} . "\n";
-    print SCRIPT_FILE "log_xml = True\n";
-    print SCRIPT_FILE "#Extra attributes specified by client\n";
-    print SCRIPT_FILE "$submit_attrs_string\n";
+    $script_text .= "Environment = $environment_string\n";
+    $script_text .= "Arguments = $argument_string\n";
+    $script_text .= "InitialDir = " . $description->directory() . "\n";
+    $script_text .= "Input = " . $description->stdin() . "\n";
+    $script_text .= "Log = " . $self->{condor_logfile} . "\n";
+    $script_text .= "log_xml = True\n";
+    $script_text .= "#Extra attributes specified by client\n";
+    $script_text .= "$submit_attrs_string\n";
 
     my $shouldtransferfiles = $description->shouldtransferfiles();
     if (defined($shouldtransferfiles))
     {
         $self->log("Adding \"should_transfer_files = $shouldtransferfiles\"\n");
-        print SCRIPT_FILE "should_transfer_files = $shouldtransferfiles\n";
+        $script_text .= "should_transfer_files = $shouldtransferfiles\n";
     }
 
     my $WhenToTransferOutput = $description->whentotransferoutput();
     if (defined($WhenToTransferOutput))
     {
         $self->log("Adding \"WhenToTransferOutput = $WhenToTransferOutput\"\n");
-        print SCRIPT_FILE "WhenToTransferOutput = $WhenToTransferOutput\n";
+        $script_text .= "WhenToTransferOutput = $WhenToTransferOutput\n";
     }
 
     my $transfer_input_files = $description->transferinputfiles();
@@ -316,7 +322,7 @@ sub submit
     {
         $self->log("Adding explicitly \"transfer_input_files = "
                   ."$transfer_input_files\"\n");
-        print SCRIPT_FILE "transfer_input_files = $transfer_input_files\n";
+        $script_text .= "transfer_input_files = $transfer_input_files\n";
     }
     else
     {
@@ -330,7 +336,7 @@ sub submit
             }
             $file_list_string =~ s/, $//;
             $self->log("Adding \"transfer_input_files = $file_list_string\"\n");
-            print SCRIPT_FILE "transfer_input_files = $file_list_string\n";
+            $script_text .= "transfer_input_files = $file_list_string\n";
         }
     }
 
@@ -339,7 +345,7 @@ sub submit
     {
         $self->log("Adding explicitly \"transfer_output_files = "
                   ."$transfer_output_files\"\n");
-        print SCRIPT_FILE "transfer_output_files = $transfer_output_files\n";
+        $script_text .= "transfer_output_files = $transfer_output_files\n";
     }
     else
     {
@@ -354,34 +360,48 @@ sub submit
             $file_list_string =~ s/, $//;
             $self->log("Adding \"transfer_output_files = "
                       ."$file_list_string\"\n");
-            print SCRIPT_FILE "transfer_output_files = $file_list_string\n";
+            $script_text .= "transfer_output_files = $file_list_string\n";
         }
     }
 
     if ($universe eq 'parallel')
     {
-        print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
-        print SCRIPT_FILE "Output = " . $description->stderr() . "\n";
-        print SCRIPT_FILE "machine_count = " . $description->count() . "\n";
-        print SCRIPT_FILE "queue\n";
+        $script_text .= "Output = " . $description->stdout() . "\n";
+        $script_text .= "Output = " . $description->stderr() . "\n";
+        $script_text .= "machine_count = " . $description->count() . "\n";
+        $script_text .= "queue\n";
     }
     else
     {
         for (my $i = 0; $i < $description->count(); $i++) {
             if ($multi_output) {
-                print SCRIPT_FILE "Output = " .
+                $script_text .= "Output = " .
                         $self->{STDIO_MERGER}->add_file('out') . "\n";
-                print SCRIPT_FILE "Error = " .
+                $script_text .= "Error = " .
                         $self->{STDIO_MERGER}->add_file('err') . "\n";
             } else {
-                print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
-                print SCRIPT_FILE "Error = " . $description->stderr() . "\n";
+                $script_text .= "Output = " . $description->stdout() . "\n";
+                $script_text .= "Error = " . $description->stderr() . "\n";
             }
-            print SCRIPT_FILE "queue 1\n";
+            $script_text .= "queue 1\n";
         }
     }
 
-    close(SCRIPT_FILE);
+    if (! print SCRIPT_FILE $script_text)
+    {
+        my $errstr = "$!";
+
+        $self->respond({GT3_FAILURE_MESSAGE => "write failed: $script_filename: $errstr"});
+        return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED;
+    }
+
+    if (! close(SCRIPT_FILE))
+    {
+        my $errstr = "$!";
+
+        $self->respond({GT3_FAILURE_MESSAGE => "close failed: $script_filename: $errstr"});
+        return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED;
+    }
 
     $self->log("About to submit condor job");
     local(*FH);
