@@ -371,63 +371,70 @@ globus_l_url_sync_list_ftp_read_cb(
     globus_l_url_sync_list_arg_t *          list_arg;
     globus_result_t                         result;
     int                                     buffer_pos;
+
     GlobusFuncName(globus_l_url_sync_list_ftp_read_cb);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
 
     if (error)
     {
-	GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
         globus_i_url_sync_log_error(error);
-        goto exit;
     }
-
-    list_arg = (globus_l_url_sync_list_arg_t*) user_arg;
-    globus_assert(list_arg);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(list_arg->ftp_handle, list_arg->url);
-    globus_i_url_sync_log_debug("%d bytes read\n", length);
-
-    /* Copy entries to buffer and add them to the list of entries */
-    buffer_pos = 0;
-    while (buffer_pos <= length)
+    else
     {
-        list_arg->entry[(list_arg->entry_pos)++] = buffer[buffer_pos++];
-        /* At CRLF, add dir_entry (if any) and skip CRLF chars */
-        if ((list_arg->entry_pos > 1) &&
-	    globus_l_url_sync_list_is_crlf(&list_arg->entry[(list_arg->entry_pos)-2]))
-        {
-	    /* Terminate current entry position and reset */
-	  list_arg->entry[(list_arg->entry_pos)-2] = '\0';
-	  list_arg->entry_pos = 0;
-	  globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
+        list_arg = (globus_l_url_sync_list_arg_t *) user_arg;
+	globus_assert(list_arg);
+	GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(list_arg->ftp_handle, list_arg->url);
+	globus_i_url_sync_log_debug("%d bytes read\n", length);
+
+	/* Copy entries to buffer and add them to the list of entries */
+	for (buffer_pos = 0; (buffer_pos < length); buffer_pos++)
+	{
+	    /* CR and/or LF terminate entry */
+	    if (buffer[buffer_pos] == '\r' || buffer[buffer_pos] == '\n')
+	    {
+	        /* Terminate current entry position and reset */
+	        list_arg->entry[list_arg->entry_pos] = '\0';
+		list_arg->entry_pos = 0;
+		if (globus_libc_strlen(list_arg->entry) != 0)
+	            globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
+	    }
+	    else
+	    {
+	        list_arg->entry[list_arg->entry_pos++] = buffer[buffer_pos];
+	    }
+	} /* for each position in buffer */
+
+	/* Check for EOF */
+	if (eof)
+	{
+	    if (list_arg->entry_pos != 0)
+	    {
+	        list_arg->entry[list_arg->entry_pos] = '\0';
+		globus_l_url_sync_list_arg_add_entry(list_arg, list_arg->entry);
+	    }
+	    globus_i_url_sync_log_debug("end of file (EOF) reached\n");
 	}
-    }
-    if (list_arg->entry_pos > 0)
-        list_arg->entry_pos--; /* rewind last increment */
-
-    /* Check for EOF */
-    if (eof)
-    {
-        globus_i_url_sync_log_debug("end of file (EOF) reached\n");
-        goto exit;
-    }
-
-    /* Register read operation */
-	result = globus_ftp_client_register_read(
-             list_arg->ftp_handle,
-             list_arg->buffer,
-             list_arg->buffer_length,
-             globus_l_url_sync_list_ftp_read_cb,
-             list_arg);
+	else
+	{
+	    /* Register read operation */
+	    result = globus_ftp_client_register_read(
+	     			list_arg->ftp_handle,
+				list_arg->buffer,
+				list_arg->buffer_length,
+				globus_l_url_sync_list_ftp_read_cb,
+				list_arg);
 	
-    /* Report error and abort, if failed */
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_i_url_sync_log_error(globus_error_get(result));
-        globus_ftp_client_abort(ftp_handle);
-    }
-exit:
+	    /* Report error and abort, if failed */
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        globus_i_url_sync_log_error(globus_error_get(result));
+		globus_ftp_client_abort(ftp_handle);
+	    }
+	} /* no eof */
+    } /* no error */
+
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
-}
-/* globus_l_url_sync_ftp_list_read_cb */
+} /* globus_l_url_sync_ftp_list_read_cb */
 
 
 /*
