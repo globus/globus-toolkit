@@ -14,38 +14,59 @@
  * limitations under the License.
  */
 
-/******************************************************************************
- * globus_rsl_assist.c
+/**
+ * @mainpage RSL Helper Functions
  *
- * Description:
- *   The rsl_assist library provide a set of functions to help working with
- *   an RSL.
- *   It also contains some function to access the MDS; those function will be
- *   moved to a new library "mds_assist" in future release of GLOBUS.
- *   
+ * @ref globus_rsl_assist
+ */
+
+/**
+ * @defgroup globus_rsl_assist RSL Helper Functions
+ *
+ * @details
+ *   The rsl_assist library provide a set of functions to canonicalize
+ *   RSL parse trees or strings.
+ */
+
+/**
+ * @file globus_rsl_assist.c RSL Help Functions
+ *
  * CVS Information:
- *
  *   $Source$
  *   $Date$
  *   $Revision$
  *   $Author$
- *****************************************************************************/
+ *
+ * @ref globus_rsl_assist
+ */
 #include "globus_common.h"
 #include "globus_rsl_assist.h"
 
 #include <string.h>
 
-/*
- * Function: globus_rsl_assist_attributes_canonicalize()
+/**
+ * @brief Canonicalize all attribute names in an RSL parse tree
+ * @ingroup globus_rsl_assist
  *
- * Given an RSL tree (parsed RSL), walk the tree finding all attributes of
- * RSL relations (i.e. (var=value) pairs) and canonicalize them by calling the
- * ..._string_canonicalize function.
+ * @details
+ * The globus_rsl_assist_attributes_canonicalize() function performs an
+ * in-place canonicalization of the RSL parse tree pointed to by its
+ * @a rsl parameter. All relation attribute names will be changed so that
+ * they lower-case, with all internal underscore characters removed.
  *
- * Returns:
- *     GLOBUS_SUCCESS or GLOBUS_FAILURE.  If GLOBUS_SUCCESS is returned then
- * any and all attributes contained in the passed in RSL tree will have been
- * canonicalized.
+ * @param rsl
+ *     Pointer to the RSL parse tree to canonicalize.
+ *
+ * @return
+ *     If globus_rsl_assist_attributes_canonicalize() is successful, it will
+ *     ensure that all attribute names in the given RSL will be in canonical
+ *     form and return GLOBUS_SUCCESS. If an error occurs, it will return
+ *     GLOBUS_FAILURE.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_FAILURE
+ *     Failure
  */
 int
 globus_rsl_assist_attributes_canonicalize(globus_rsl_t * rsl)
@@ -117,13 +138,20 @@ globus_rsl_assist_attributes_canonicalize(globus_rsl_t * rsl)
 } /* globus_rsl_assist_attributes_canonicalize() */
 
 
-/*
- * Function: globus_rsl_assist_string_canonicalize()
+/**
+ * @brief Canonicalize an attribute name
+ * @ingroup globus_rsl_assist
  *
- * Canonizing a string in this implementation means to remove any
- * underscores and moving all characters to lowercase.
+ * @details
+ * The globus_rsl_assist_string_canonicalize() function modifies the
+ * NULL-terminated string pointed to by its @a ptr parameter so that it
+ * is in canonical form. The canonical form is all lower-case with all
+ * underscore characters removed.
  *
- * Returns: void
+ * @param ptr
+ *     Pointer to the RSL string to modify in place.
+ *
+ * @return void
  */
 void
 globus_rsl_assist_string_canonicalize(char * ptr)
