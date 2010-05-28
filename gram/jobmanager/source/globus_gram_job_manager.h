@@ -906,12 +906,6 @@ globus_gram_job_manager_destroy_directory(
     const char *                        directory);
 
 int
-globus_gram_rewrite_output_as_staging(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t *                      rsl,
-    const char *                        attribute);
-
-int
 globus_gram_job_manager_request_load_all(
     globus_gram_job_manager_t *         manager);
 

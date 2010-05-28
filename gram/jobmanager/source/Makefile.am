@@ -8,7 +8,7 @@ validationdir = $(datadir)/$(PACKAGE)
 
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
-libexec_PROGRAMS = globus-job-manager globus-job-manager-lock-test
+libexec_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
 libexec_SCRIPTS = globus-personal-gatekeeper-version.sh
 
 bin_SCRIPTS = globus-personal-gatekeeper
@@ -46,6 +46,10 @@ INCLUDES = $(GPT_INCLUDES)
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+
+globus_gram_streamer_LDFLAGS = $(GPT_LDFLAGS)
+globus_gram_streamer_LDADD = \
+	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la -lglobus_gass_transfer_$(GLOBUS_FLAVOR_NAME) $(GPT_PGM_LINKS)
 
 man1datadir=$(mandir)/man1
 man1data_DATA = globus-personal-gatekeeper.1

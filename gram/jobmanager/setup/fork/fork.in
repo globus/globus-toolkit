@@ -91,6 +91,7 @@ sub submit
     my @environment;
     my @arguments;
     my $fork_starter = "$ENV{GLOBUS_LOCATION}/libexec/globus-fork-starter";
+    my $streamer = "$Globus::Core::Paths::libexecdir/globus-gram-streamer";
     my $fork_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-fork.conf";
     my $log_path = '/dev/null';
     my $is_grid_monitor = 0;
@@ -463,6 +464,102 @@ sub submit
                     push(@job_id, $pid);
                 }
             }
+            if ($is_grid_monitor)
+            {
+                # Create an extra process to stream output for grid monitor
+
+                # obtain plain old pipe into temporary variables
+                local $^F = 2; # assure close-on-exec for pipe FDs
+                select((select(WRITER),$|=1)[$[]);
+
+                if( ($pid=fork()) == 0)
+                {
+                    close(JOB_READER);
+
+                    # forked child
+                    %ENV = %CHILD_ENV;
+
+                    close(STDIN);
+                    close(STDOUT);
+                    close(STDERR);
+
+                    chdir $self->job_dir();
+
+                    open(STDIN, '<' . $description->stdin());
+                    open(STDOUT, '>gram_streamer_out');
+                    open(STDERR, '>gram_streamer_error');
+                    select STDERR; $| = 1;      # make unbuffered
+                    select STDOUT; $| = 1;      # make unbuffered
+
+                    
+                    # the below should never fail since we just forked
+                    setpgrp(0,$$);
+
+                    @cmdline = ($streamer, '-s', $description->state_file());
+                    foreach my $p (@job_id)
+                    {
+                        push(@cmdline, '-p', $p);
+                    }
+
+                    if ( ! exec (@cmdline) )
+                    {
+                        my $err = "$!\n";
+                        $SIG{PIPE} = 'IGNORE';
+                        print JOB_WRITER "$err";
+                        close(JOB_WRITER);
+                        exit(1);
+                    }
+                }
+                else
+                {
+                    my $error_code = '';
+
+                    if ($pid == undef)
+                    {
+                        $self->log("fork failed\n");
+                        $failure_code = "fork: $!";
+                    }
+                    close(JOB_WRITER);
+                    
+                    $_ = <JOB_READER>;
+                    close(JOB_READER);
+
+                    if($_ ne '')
+                    {
+                        chomp($_);
+                        $self->log("exec failed\n");
+                        $failure_code = "exec: $_";
+                    }
+
+                    if ($failure_code ne '')
+                    {
+                        # fork or exec failed. kill rest of job and return an error
+                        $failure_code =~ s/\n/\\n/g;
+                        foreach(@job_id)
+                        {
+                            $pgid = getpgrp($_);
+
+                            $pgid == -1 ? kill($signo{TERM}, $_) :
+                                kill(-$signo{TERM}, $pgid);
+
+                            sleep(5);
+
+                            $pgid == -1 ? kill($signo{KILL}, $_) :
+                                kill(-$signo{KILL}, $pgid);
+
+                        }
+
+                        local(*ERR);
+                        open(ERR, '>' . $description->stderr());
+                        print ERR "$failure_code\n";
+                        close(ERR);
+
+                        print WRITER "FAIL:$failure_code\n";
+                        exit(1);
+                    }
+                    push(@job_id, $pid);
+                }
+            }
             print WRITER "SUCCESS:" . join(',', @job_id) . "\n";
             exit(0);
         }
@@ -558,6 +655,90 @@ sub cancel
     }
 
     return { JOB_STATE => Globus::GRAM::JobState::FAILED };
+}
+
+sub stage_out
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $is_grid_monitor = 0;
+    my $job_dir = $self->job_dir();
+    my $rc;
+    my $line;
+    my @fields;
+    my @stream_out;
+
+    $self->log("Fork stage out");
+    # Check if this is the Condor-G grid monitor
+    my $exec = $description->executable();
+    my $file_out = `/usr/bin/file $exec`;
+    if ( $file_out =~ /script/ || $file_out =~ /text/ ||
+	 $file_out =~ m|/usr/bin/env| ) {
+	open( EXEC, "<$exec" ) or
+	    return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+	while( <EXEC> ) {
+	    if ( /Sends results from the grid_manager_monitor_agent back to a/ ) {
+		$is_grid_monitor = 1;
+	    }
+	}
+	close( EXEC );
+    }
+
+    if ($is_grid_monitor)
+    {
+        $self->log("Fork stage out is grid monitor");
+        local(*STREAMER_ERROR, *STREAMER_OUTPUT);
+
+        $rc = open(STREAMER_ERROR, "<$job_dir/gram_streamer_error");
+        if (!$rc)
+        {
+            $self->log("Error opening gram_streamer_error: $!");
+        }
+        chomp($line = <STREAMER_ERROR>);
+        if ($line eq '')
+        {
+            $self->log("No error from streamer");
+        }
+        else
+        {
+            $self->log("Error from streamer $line");
+            @fields = split(':', $line, 2);
+
+            $self->respond({GT3_FAILURE_MESSAGE => "$fields[0]" });
+            return new Globus::GRAM::Error($fields[1]);
+        }
+        close(STREAMER_ERROR);
+
+        @stream_out = $description->file_stream_out();
+        $rc = open(STREAMER_OUTPUT, "<$job_dir/gram_streamer_out");
+        if (!$rc)
+        {
+            $self->log("Error opening gram_streamer_output: $!");
+        }
+        else
+        {
+            while ($line = <STREAMER_OUTPUT>)
+            {
+                chomp($line);
+                $self->log("Streamer output: $line");
+                my ($from, $to) = split(' ', $line);
+                
+                for (my $i = 0; $i < scalar(@stream_out); $i++)
+                {
+                    my $pair = $stream_out[$i];
+                    if ($pair->[0] eq $from && $pair->[1] eq $to)
+                    {
+                        splice(@stream_out, $i, 1);
+                        last;
+                    }
+                }
+
+                $self->respond({'STAGED_STREAM' => "$from $to"});
+            }
+            $description->add('filestreamout', @stream_out);
+        }
+    }
+    return $self->SUPER::stage_out();
 }
 
 sub escape_for_starter

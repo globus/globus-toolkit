@@ -104,13 +104,17 @@ debug=:
 
 verify_setup ()
 {
+    hours=""
     ${debug} "verifying setup..."
 
     bindir="${GLOBUS_LOCATION}/bin"
     sbindir="${GLOBUS_LOCATION}/sbin"
     libexecdir="${GLOBUS_LOCATION}/libexec"
 
-    ${bindir}/grid-proxy-info -exists -hours 1
+    if test "$1" != 'kill'; then
+        hours="-hours 1"
+    fi
+    ${bindir}/grid-proxy-info -exists $hours
     
     if [ $? -ne 0 ]; then
         echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
@@ -318,12 +322,12 @@ valgrind=0
 while [ -n "$1" ]; do
     case "$1" in
     -kill)
-    verify_setup
+    verify_setup kill
     killem "$2"
     exit 0
     ;;
     -killall)
-    verify_setup
+    verify_setup kill
     killem ""
     exit 0
     ;;

@@ -271,7 +271,8 @@ globus_gram_job_manager_config_init(
         }
         else if (strcmp(argv[i], "-disable-streaming") == 0)
         {
-            config->streaming_disabled = GLOBUS_TRUE;
+            /* Ignore this request, as we don't do streaming any more */
+            config->streaming_disabled = GLOBUS_FALSE;
         }
         else if (strcmp(argv[i], "-service-tag") == 0
                 && (i+1 < argc))

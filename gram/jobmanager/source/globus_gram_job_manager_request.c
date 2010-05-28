@@ -1183,7 +1183,10 @@ globus_gram_job_manager_request_free(
     {
         free(request->cache_tag);
     }
-    globus_symboltable_destroy(&request->symbol_table);
+    if (request->symbol_table != NULL)
+    {
+        globus_symboltable_destroy(&request->symbol_table);
+    }
     if (request->rsl_spec)
     {
         free(request->rsl_spec);
@@ -1246,7 +1249,10 @@ globus_gram_job_manager_request_free(
     {
         free(request->job_contact_path);
     }
-    globus_fifo_destroy(&request->pending_queries);
+    if (request->pending_queries)
+    {
+        globus_fifo_destroy(&request->pending_queries);
+    }
     if (request->job_history_file)
     {
         free(request->job_history_file);
@@ -1263,15 +1269,21 @@ globus_gram_job_manager_request_free(
     {
         free(request->gateway_user);
     }
-    globus_gass_cache_close(&request->cache_handle);
+    if (request->cache_handle)
+    {
+        globus_gass_cache_close(&request->cache_handle);
+    }
     if (request->response_context != GSS_C_NO_CONTEXT)
     {
         OM_uint32 minor_status;
         gss_delete_sec_context(&minor_status, &request->response_context, NULL);
     }
-    globus_fifo_destroy_all(
-            &request->seg_event_queue,
-            globus_l_gram_event_destroy);
+    if (request->seg_event_queue)
+    {
+        globus_fifo_destroy_all(
+                &request->seg_event_queue,
+                globus_l_gram_event_destroy);
+    }
     if (request->job_stats.client_address != NULL)
     {
         free(request->job_stats.client_address);
@@ -1381,12 +1393,15 @@ globus_gram_job_manager_request_set_status_time(
             request->job_contact_path,
             status);
 
-    globus_gram_job_manager_set_status(
-            request->manager,
-            request->job_contact_path,
-            request->status,
-            request->failure_code,
-            request->exit_code);
+    if (request->manager != NULL)
+    {
+        globus_gram_job_manager_set_status(
+                request->manager,
+                request->job_contact_path,
+                request->status,
+                request->failure_code,
+                request->exit_code);
+    }
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_request_set_status() */
@@ -3575,201 +3590,6 @@ out:
     return rc;
 }
 /* globus_l_gram_make_job_dir() */
-
-/**
- * Modify RSL so that streaming stdout/err values are moved to file_stage_out
- *
- * Removes the @a attribute from @a rsl and analyzes its value. If
- * it consists of a single local file path, that file is returned to 
- * @a rsl as the @a attribute value. Otherwise, @a attribute is replaced with
- * the path to a file in the job directory and the old @a attribute contents
- * are put into the file_stage_out attribute of @a rsl.
- *
- * @param request
- *     Job request
- * @param rsl
- *     RSL to modify
- * @param attribtue
- *     RSL attribute to rewrite (stdout or stderr)
- *
- * @retval GLOBUS_SUCCESS
- *     Success
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
- *     Invalid RSL
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *     Malloc failed
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE
- *     Error adding to cache
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT
- *     Invalid stdout attribute
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR
- *     Invalid stderr attribute
- */
-int
-globus_gram_rewrite_output_as_staging(
-    globus_gram_jobmanager_request_t *  request,
-    globus_rsl_t *                      rsl,
-    const char *                        attribute)
-{
-    globus_list_t *                     value_list;
-    globus_rsl_t *                      relation;
-    globus_rsl_value_t *                value;
-    globus_url_t                        url;
-    char *                              path = NULL;
-    globus_list_t *                     destinations = NULL;
-    char *                              destination_url;
-    int                                 rc;
-
-    /* Removes stdout or stderr from RSL */
-    relation = globus_gram_job_manager_rsl_extract_relation(
-            request->rsl,
-            attribute);
-    if (relation == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-        goto no_relation;
-    }
-    value_list = globus_rsl_value_sequence_get_value_list(
-            globus_rsl_relation_get_value_sequence(
-                    relation));
-    if (value_list == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-        goto no_values;
-    }
-    value = globus_list_first(value_list);
-
-    rc = globus_l_gram_get_output_destinations(
-            request,
-            value_list,
-            &destinations);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL &&
-                strcmp(attribute, GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM) == 0)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
-        }
-        else if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL &&
-                strcmp(attribute, GLOBUS_GRAM_PROTOCOL_STDERR_PARAM) == 0)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
-        }
-        goto bad_rsl;
-    }
-
-    if (globus_list_size(destinations) == 1 &&
-        strncmp(globus_list_first(destinations), "file://", 7) == 0)
-    {
-        /* If there is only a single output destination and it is
-         * a file:// URL, we'll write to that directly. 
-         */
-        destination_url = globus_list_remove(&destinations, destinations);
-
-        rc = globus_url_parse(destination_url, &url);
-        free(destination_url);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto single_parse_destination_failed;
-        }
-
-        rc = globus_gram_rsl_add_output(
-                request,
-                request->rsl,
-                globus_rsl_relation_get_attribute(relation),
-                url.url_path);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto single_add_output_failed;
-        }
-        globus_url_destroy(&url);
-    }
-    else
-    {
-        /* Replace (stdout = (destination [tag])...
-         * with (stdout = $jobdir/stdout) then add 
-         * (file_stage_out_stdio = ($jobdir/stdout destination)...)
-         */
-        path = globus_common_create_string(
-                "%s/%s",
-                request->job_dir,
-                globus_rsl_relation_get_attribute(relation));
-        if (path == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto multiple_path_malloc_failed;
-        }
-        rc = globus_gram_rsl_add_output(
-                request,
-                request->rsl,
-                globus_rsl_relation_get_attribute(relation),
-                path);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto multiple_add_output_failed;
-        }
-
-        while (!globus_list_empty(destinations))
-        {
-            destination_url = globus_list_remove(&destinations, destinations);
-            rc = globus_gram_rsl_add_stream_out(
-                    request,
-                    request->rsl,
-                    path,
-                    destination_url);
-            free(destination_url);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                /* We may end up adding things to file_stage_out here if
-                 * we fail the nth time through the loop, but it's not
-                 * worth the effort to track these. We are going to fail
-                 * this job anyhow.
-                 */
-                goto multiple_add_stream_out_failed;
-            }
-        }
-        free(path);
-    }
-
-    globus_rsl_free_recursive(relation);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        int rc_2;
-
-single_add_output_failed:
-        globus_url_destroy(&url);
-single_parse_destination_failed:
-multiple_add_stream_out_failed:
-multiple_add_output_failed:
-        if (path)
-        {
-            free(path);
-        }
-multiple_path_malloc_failed:
-bad_rsl:
-no_values:
-        /* Restore old stdout */
-        rc_2 = globus_list_insert(
-                globus_rsl_boolean_get_operand_list_ref(
-                        rsl),
-                relation);
-        if (rc_2 != GLOBUS_SUCCESS)
-        {
-            /* Don't leak it, anyhow */
-            globus_rsl_free_recursive(relation);
-        }
-        globus_list_destroy_all(destinations, free);
-
-    }
-no_relation:
-    return rc;
-}
-/* globus_gram_rewrite_output_as_staging() */
 
 /**
  * Get the list of output destinations from an RSL value list

@@ -888,7 +888,8 @@ skip_single_check:
         goto free_cache_tag;
     }
     buffer[strlen(buffer)-1] = '\0';
-    if (strcmp(buffer, request->config->jobmanager_type) != 0)
+    if (request->config && 
+        strcmp(buffer, request->config->jobmanager_type) != 0)
     {
         /* Job should be handled by another job manager */
         remove(request->job_state_lock_file);
@@ -899,7 +900,7 @@ skip_single_check:
         goto free_cache_tag;
     }
     buffer[strlen(buffer)-1] = '\0';
-    if (strcmp(buffer, request->config->service_tag) != 0)
+    if (request->config && strcmp(buffer, request->config->service_tag) != 0)
     {
         /* Job should be handled by another job manager */
         remove(request->job_state_lock_file);
