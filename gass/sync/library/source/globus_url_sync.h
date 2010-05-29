@@ -187,7 +187,7 @@ typedef enum
 typedef struct globus_url_sync_modification_params_s
 {
 	globus_url_sync_modification_comp_t	type;
-	unsigned int				tolerance;
+	int					tolerance;
 } globus_url_sync_modification_params_t;
 
 
