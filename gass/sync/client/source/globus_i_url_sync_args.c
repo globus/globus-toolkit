@@ -36,6 +36,9 @@ globus_url_t *	globus_i_url_sync_args_destination	= GLOBUS_NULL;
 globus_bool_t	globus_i_url_sync_args_verbose		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_debug		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_modify		= GLOBUS_FALSE;
+globus_bool_t	globus_i_url_sync_args_newer		= GLOBUS_FALSE;
+globus_bool_t	globus_i_url_sync_args_older		= GLOBUS_FALSE;
+int		globus_i_url_sync_args_tolerance	= 0;
 globus_bool_t	globus_i_url_sync_args_size		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_cache		= GLOBUS_TRUE;
 globus_bool_t	globus_i_url_sync_args_recurse		= GLOBUS_TRUE;
@@ -50,7 +53,10 @@ enum {
     arg_recurse,
     arg_modify,
     arg_size,
-    arg_num = arg_size,
+	arg_new,
+	arg_old,
+	arg_tol,
+    arg_num = arg_tol
 };
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -60,12 +66,22 @@ static char *cache_off_args[] = {"-c", "-connection-caching-off", GLOBUS_NULL};
 static char *recurse_args[] = {"-r", "-recursive-dir-copy", GLOBUS_NULL};
 static char *modify_args[] = {"-m", "-modify", GLOBUS_NULL};
 static char *size_args[] = {"-s", "-size", GLOBUS_NULL};
+static char *new_args[] = {"-n", "-newer", GLOBUS_NULL};
+static char *old_args[] = {"-o", "-older", GLOBUS_NULL};
+static char *tol_args[] = {"-t", "-tolerance", GLOBUS_NULL};
+
 static globus_args_option_descriptor_t verbose_def =
   {arg_verbose, verbose_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t debug_def =
   {arg_debug, debug_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t modify_def =
   {arg_modify, modify_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t new_def =
+{arg_new, new_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t old_def =
+{arg_old, old_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t tol_def =
+{arg_tol, tol_args, 1, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t size_def =
   {arg_size, size_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t cache_off_def =
@@ -74,7 +90,7 @@ static globus_args_option_descriptor_t recurse_def =
   {arg_recurse, recurse_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 
 static char * usage_str= 
-"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-r] [-m] [-s] <sourceURL> <destURL>";
+"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-r ] [-m | -n | -o] [-s] <sourceURL> <destURL>";
 
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
@@ -90,7 +106,13 @@ static char * help_str=
 "  -r | -recursive-dir-copy\n"
 "\tOutput directory names when whole directory is to be copied.\n"
 "  -m | -modify\n"
-"\tCompare files by last modified timestamp.\n"
+"\tDetermine whether source and destination timestamps are equal.\n"
+"  -n | -newer\n"
+"\tDetermine whether source timestamp is newer than destination timestamp.\n"
+"  -o | -older\n"
+"\tDetermine whether destination timestamp is older than source timestamp.\n"
+"  -t | -tolerance [seconds]\n"
+"\tSet tolerance value, in seconds, to be used in comparing last modified timestamps.\n"
 "  -s | -size\n"
 "\tCompare files by size.\n"
 "URL scheme(s) supported:\n"
@@ -141,16 +163,20 @@ globus_i_url_sync_parse_args(
     char	*program;
     globus_args_option_instance_t *instance = NULL;
     globus_list_t	*options_found = NULL,
-			*list = NULL;
-
+					*list = NULL;
+	int    tmp;
+	
     /* Defaults */
     globus_i_url_sync_args_verbose  = GLOBUS_FALSE;
     globus_i_url_sync_args_debug    = GLOBUS_FALSE;
     globus_i_url_sync_args_modify   = GLOBUS_FALSE;
+    globus_i_url_sync_args_newer    = GLOBUS_FALSE;
+    globus_i_url_sync_args_older    = GLOBUS_FALSE;
+    globus_i_url_sync_args_tolerance = 0;
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
     globus_i_url_sync_args_cache    = GLOBUS_TRUE;
     globus_i_url_sync_args_recurse  = GLOBUS_TRUE;
-
+	
     /* determine the program name */
 	program = strrchr(argv[0],'/');
     if (!program) {
@@ -162,9 +188,12 @@ globus_i_url_sync_parse_args(
     args_options[0] = verbose_def;
     args_options[1] = debug_def;
     args_options[2] = modify_def;
-    args_options[3] = size_def;
-    args_options[4] = cache_off_def;
-    args_options[5] = recurse_def;
+	args_options[3] = new_def;
+	args_options[4] = old_def;
+	args_options[5] = tol_def;
+    args_options[6] = size_def;
+    args_options[7] = cache_off_def;
+    args_options[8] = recurse_def;
     if (globus_args_scan(
 		&argc,
 		&argv,
@@ -202,6 +231,21 @@ globus_i_url_sync_parse_args(
 	  case arg_modify:
 	    globus_i_url_sync_args_modify = GLOBUS_TRUE;
 	    break;
+	  case arg_new:
+		globus_i_url_sync_args_newer = GLOBUS_TRUE;
+		break;
+	  case arg_old:
+		globus_i_url_sync_args_older = GLOBUS_TRUE;
+		break;
+	  case arg_tol:
+		if (globus_args_bytestr_to_num(instance->values[0], &tmp) != 0 ||
+		    tmp < 0)
+		{
+		    globus_l_url_sync_badarg(instance->values[0]);
+		    goto usage;
+		}
+		globus_i_url_sync_args_tolerance = tmp;
+		break;
 	  case arg_size:
 	    globus_i_url_sync_args_size = GLOBUS_TRUE;
 	    break;
