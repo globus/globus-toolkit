@@ -499,19 +499,21 @@ globus_l_gram_streamer_local_poll(
             /* Start the termination of the current output streams */
             for (i = 0; streams[i] != NULL; i++)
             {
-                switch (streams[i]->state)
+	    	stream = streams[i];
+
+                switch (stream->state)
                 {
                 case GLOBUS_GRAM_STREAM_NEW:
                 case GLOBUS_GRAM_STREAM_ACTIVE:
                     globus_gass_transfer_fail(
-                            streams[i]->handle,
+                            stream->handle,
                             globus_l_gram_streamer_fail,
                             monitor);
-                    streams[i]->state = GLOBUS_GRAM_STREAM_RESTART;
+                    stream->state = GLOBUS_GRAM_STREAM_RESTART;
                     break;
                 case GLOBUS_GRAM_STREAM_FAIL:
                 case GLOBUS_GRAM_STREAM_DONE:
-                    streams[i]->state = GLOBUS_GRAM_STREAM_RESTART_NEW;
+                    stream->state = GLOBUS_GRAM_STREAM_RESTART_NEW;
                     stream->sent = 0;
                     stream->last_sent = GLOBUS_FALSE;
                     lseek(stream->fd, 0, SEEK_SET);
@@ -566,53 +568,35 @@ globus_l_gram_streamer_local_poll(
     }
 
     /* On the first poll after everything is ready to restart, we'll reload
-     * state information and create new streams
+     * state information and reopen the stream
      */
-    if (monitor->output_stream.state == GLOBUS_GRAM_STREAM_RESTART_NEW)
+    for (i = 0; streams[i] != NULL; i++)
     {
-        /* Re-open output stream */
-        if (monitor->output_stream.fd != -1 &&
-            monitor->output_stream.destination != NULL)
-        {
-            rc = globus_l_gram_streamer_open_destination(
-                    monitor,
-                    &monitor->output_stream);
-            if (rc == GLOBUS_SUCCESS)
-            {
-                monitor->output_stream.state = GLOBUS_GRAM_STREAM_NEW;
-            }
-            else
-            {
-                monitor->output_stream.state = GLOBUS_GRAM_STREAM_FAIL;
-            }
-        }
-        else
-        {
-            monitor->output_stream.state = GLOBUS_GRAM_STREAM_DONE;
-        }
-    }
+        stream = streams[i];
 
-    if (monitor->error_stream.state == GLOBUS_GRAM_STREAM_RESTART_NEW)
-    {
-        if (monitor->error_stream.fd != -1 &&
-            monitor->error_stream.destination != NULL)
-        {
-            rc = globus_l_gram_streamer_open_destination(
-                    monitor,
-                    &monitor->error_stream);
-            if (rc == GLOBUS_SUCCESS)
-            {
-                monitor->error_stream.state = GLOBUS_GRAM_STREAM_NEW;
-            }
-            else
-            {
-                monitor->error_stream.state = GLOBUS_GRAM_STREAM_FAIL;
-            }
-        }
-        else
-        {
-            monitor->error_stream.state = GLOBUS_GRAM_STREAM_DONE;
-        }
+	if (stream->state == GLOBUS_GRAM_STREAM_RESTART_NEW)
+	{
+	    /* Re-open output stream */
+	    if (stream->fd != -1 &&
+		stream->destination != NULL)
+	    {
+		rc = globus_l_gram_streamer_open_destination(
+			monitor,
+			stream);
+		if (rc == GLOBUS_SUCCESS)
+		{
+		    stream->state = GLOBUS_GRAM_STREAM_NEW;
+		}
+		else
+		{
+		    stream->state = GLOBUS_GRAM_STREAM_FAIL;
+		}
+	    }
+	    else
+	    {
+		stream->state = GLOBUS_GRAM_STREAM_DONE;
+	    }
+	}
     }
 
     /* Only queue data if the transfer is alive */

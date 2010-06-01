@@ -666,7 +666,7 @@ sub stage_out
     my $rc;
     my $line;
     my @fields;
-    my @stream_out;
+    my $stream_out;
 
     $self->log("Fork stage out");
     # Check if this is the Condor-G grid monitor
@@ -709,7 +709,7 @@ sub stage_out
         }
         close(STREAMER_ERROR);
 
-        @stream_out = $description->file_stream_out();
+        $stream_out = $description->get('file_stream_out');
         $rc = open(STREAMER_OUTPUT, "<$job_dir/gram_streamer_out");
         if (!$rc)
         {
@@ -723,19 +723,19 @@ sub stage_out
                 $self->log("Streamer output: $line");
                 my ($from, $to) = split(' ', $line);
                 
-                for (my $i = 0; $i < scalar(@stream_out); $i++)
+                for (my $i = 0; $i < scalar(@{$stream_out}); $i++)
                 {
-                    my $pair = $stream_out[$i];
+                    my $pair = $stream_out->[$i];
                     if ($pair->[0] eq $from && $pair->[1] eq $to)
                     {
-                        splice(@stream_out, $i, 1);
+                        splice(@{$stream_out}, $i, 1);
                         last;
                     }
                 }
 
                 $self->respond({'STAGED_STREAM' => "$from $to"});
             }
-            $description->add('filestreamout', @stream_out);
+            $description->add('filestreamout', $stream_out);
         }
     }
     return $self->SUPER::stage_out();
