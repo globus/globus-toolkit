@@ -346,6 +346,61 @@ sub submit
                 return new Globus::GRAM::Error($res[2]);
             }
         }
+
+        if ($is_grid_monitor && -x $streamer)
+        {
+            my $streamer_startup='';
+
+            $starter_index++;
+            $streamer_startup .= "100;perl-fork-start-$$-$starter_index;";
+            $streamer_startup .= 'directory='.$self->job_dir().';';
+
+            if (keys %CHILD_ENV > 0) {
+                $streamer_startup .= 'environment='.
+                    join(',', map { &escape_for_starter($_)
+                            .'='.&escape_for_starter($CHILD_ENV{$_})
+                        } (keys %CHILD_ENV)) . ';';
+            }
+
+            $streamer_startup .= "count=1;";
+
+            $streamer_startup .= 'executable=' .  &escape_for_starter($streamer)
+                . ';';
+            @cmdline = ('-s', $description->state_file());
+            foreach my $p (@job_id)
+            {
+                my $q = $p;
+                # strip leading uuid
+                $q =~ s/.*://;
+                push(@cmdline, '-p', $q);
+            }
+            $streamer_startup .= 'arguments=' .
+                    join(',', map {&escape_for_starter($_)} @cmdline) .
+                    ';';
+            
+            $streamer_startup .= "stdin=/dev/null;";
+            $streamer_startup .= "stdout=gram_streamer_out;";
+            $streamer_startup .= "stderr=gram_streamer_err\n";
+
+            $self->log("streamer_startup is $streamer_startup");
+            print $starter_in $streamer_startup;
+
+            while (<$starter_out>) {
+                chomp;
+                my @res = split(/;/, $_);
+
+                if ($res[1] ne "perl-fork-start-$$-$starter_index") {
+                    next;
+                }
+                if ($res[0] == '101') {
+                    @job_id = (@job_id, split(',', $res[2]));
+                    last;
+                } elsif ($res[0] == '102') {
+                    $self->respond({GT3_FAILURE_MESSAGE => "starter: $res[3]" });
+                    return new Globus::GRAM::Error($res[2]);
+                }
+            }
+        }
         $description->add('jobid', join(',', @job_id));
         return { JOB_STATE => Globus::GRAM::JobState::ACTIVE,
                  JOB_ID => join(',', @job_id) };

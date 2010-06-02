@@ -120,20 +120,6 @@ globus_l_gram_make_job_dir(
 
 static
 int
-globus_l_gram_get_output_destinations(
-    globus_gram_jobmanager_request_t *  request,
-    globus_list_t *                     value_list,
-    globus_list_t **                    destinations);
-
-static
-int
-globus_l_gram_get_output_destination(
-    globus_gram_jobmanager_request_t *  request,
-    globus_list_t *                     value_list,
-    char **                             destination_url);
-
-static
-int
 globus_l_gram_check_position(
     globus_gram_jobmanager_request_t *  request,
     globus_rsl_t *                      position_rsl);
@@ -3277,6 +3263,54 @@ globus_l_gram_remote_io_url_file_create(
                 strerror(errno));
         goto set_remote_io_url_file_failed;
     }
+    fp = fopen(*remote_io_url_filep, "r");
+    if (fp != NULL)
+    {
+        char * tmp;
+        globus_bool_t skip_it = GLOBUS_FALSE;
+
+        rc = fseek(fp, 0, SEEK_END);
+        if (rc < 0)
+        {
+            goto close_readfp;
+        }
+        rc = ftell(fp);
+        tmp = malloc(rc+1);
+        if (tmp == NULL)
+        {
+            goto close_readfp;
+        }
+        if (fseek(fp, 0, SEEK_SET) < 0)
+        {
+            goto free_tmp;
+        }
+        tmp[rc] = 0;
+        if (fgets(tmp, rc, fp) == NULL)
+        {
+            goto free_tmp;
+        }
+        /* trim trailing \n */
+        rc = strlen(tmp)-1;
+        if (tmp[rc] == '\n')
+        {
+            tmp[rc] = 0;
+        }
+        if (strcmp(tmp, remote_io_url) == 0)
+        {
+            skip_it = GLOBUS_TRUE;
+        }
+free_tmp:
+        free(tmp);
+close_readfp:
+        fclose(fp);
+        fp = NULL;
+
+        rc = GLOBUS_SUCCESS;
+        if (skip_it)
+        {
+            goto out;
+        }
+    }
     fp = fopen(*remote_io_url_filep, "w");
     if (fp == NULL)
     {
@@ -3590,351 +3624,6 @@ out:
     return rc;
 }
 /* globus_l_gram_make_job_dir() */
-
-/**
- * Get the list of output destinations from an RSL value list
- *
- * @param request
- *     Job request
- * @param value_list
- *     List of globus_rsl_value_t * containing output destinations
- *     and optional GASS cache tags.
- * @param destinations
- *     Pointer to be set to the list of strings containing normalized
- *     destinations.
- *
- * @retval GLOBUS_SUCCESS
- *     Success
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *     Malloc failed
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
- *     Bad RSL (tag for non-x-gass-cache or unsupported URL scheme)
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE
- *     Error adding to cache
- */
-static
-int
-globus_l_gram_get_output_destinations(
-    globus_gram_jobmanager_request_t *  request,
-    globus_list_t *                     value_list,
-    globus_list_t **                    destinations)
-{
-    globus_rsl_value_t *                value;
-    char *                              destination_url = NULL;
-    globus_list_t **                    list_end;
-    int                                 rc;
-
-    *destinations = NULL;
-    list_end = destinations;
-
-    /* Two formats for the value list:
-     * GRAM 1.5:
-     *  stdout = output-destination
-     *  output-destination: file-path
-     *                      | x-gass-cache-URL tag
-     *                      | x-gass-cache-URL
-     *                      | http-URL
-     *                      | https-URL
-     *                      | ftp-URL
-     *                      | gsiftp-URL
-     *
-     * file-path: LITERAL
-     * x-gass-cache-URL: LITERAL
-     * tag: LITERAL
-     * http-URL: LITERAL
-     * https-URL: LITERAL
-     * ftp-URL: LITERAL
-     * gsiftp-URL: LITERAL
-     *
-     * GRAM 1.6:
-     *  stdout = output-destination-list
-     *  output-destination-list = output-destination-list output-destination
-     *                          | output-destination
-     */
-    value = globus_list_first(value_list);
-    if (globus_rsl_value_is_literal(value))
-    {
-        /* GRAM 1.5 form */
-        rc = globus_l_gram_get_output_destination(
-                request,
-                value_list,
-                &destination_url);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto bad_output_destination;
-        }
-        rc = globus_list_insert(list_end, destination_url);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto insert_failed;
-        }
-        list_end = globus_list_rest_ref(*list_end);
-    }
-    else if (globus_rsl_value_is_sequence(value))
-    {
-        /* GRAM 1.6 form */
-        while (!globus_list_empty(value_list))
-        {
-            rc = globus_l_gram_get_output_destination(
-                    request,
-                    globus_rsl_value_sequence_get_value_list(
-                            globus_list_first(
-                                    value_list)),
-                    &destination_url);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                goto bad_output_destination;
-            }
-            value_list = globus_list_rest(value_list);
-
-            rc = globus_list_insert(list_end, destination_url);
-            if (rc != GLOBUS_SUCCESS)
-            {
-                goto insert_failed;
-            }
-            list_end = globus_list_rest_ref(*list_end);
-        }
-    }
-    else
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-
-        goto bad_rsl;
-    }
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-insert_failed:
-        free(destination_url);
-bad_output_destination:
-        globus_list_destroy_all(*destinations, free);
-        *destinations = NULL;
-    }
-bad_rsl:
-    return rc;
-}
-/* globus_l_gram_get_output_destinations() */
-
-/**
- * Get normalized output destination URL from output value sequence
- *
- * Normalization that occurs in this function: 
- * - x-gass-cache URLs are inserted into the cache and the local path name is
- *   returned as a file: URL
- * - relative local paths are evaluated relative to the job's directory
- *   attribute and then turned into file: URLs
- * - absolute local file names are returned as file: URLs
- *
- * @param request
- *     Job request
- * @param value_list
- *     List of globus_rsl_value_t * values containing either a destination
- *     path, output stream URL, or x-gass-cache path and optional tag.
- * @param destination_url
- *     Pointer to be set to the normalized representation of the destination.
- *
- * @retval GLOBUS_SUCCESS
- *     Success
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
- *     Malloc failed
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL
- *     Bad RSL (tag for non-x-gass-cache or unsupported URL scheme)
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE
- *     Error adding to cache
- */
-static
-int
-globus_l_gram_get_output_destination(
-    globus_gram_jobmanager_request_t *  request,
-    globus_list_t *                     value_list,
-    char **                             destination_url)
-{
-    char *                              path;
-    char *                              tag;
-    char *                              local_filename = NULL;
-    unsigned long                       timestamp;
-    globus_url_t                        url;
-    int                                 rc;
-
-    /* Expect destination [tag] */
-    path = globus_rsl_value_literal_get_string(
-            globus_list_first(
-                    value_list));
-
-    value_list = globus_list_rest(value_list);
-
-    if (value_list == NULL)
-    {
-        tag = NULL;
-    }
-    else if (globus_rsl_value_is_literal(globus_list_first(value_list)))
-    {
-        tag = globus_rsl_value_literal_get_string(
-                    globus_list_first(value_list));
-    }
-    else
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-        goto bad_input;
-    }
-
-    if (path == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-
-        goto bad_input;
-    }
-    rc = globus_url_parse(path, &url);
-    if (rc == GLOBUS_SUCCESS)
-    {
-        /* If is a URL, just copy destination to output, unless it is
-         * an x-gass-cache one, in which case we'll need to insert it
-         * to the cache and then return a file url to the cache entry
-         */
-        switch (url.scheme_type)
-        {
-            case GLOBUS_URL_SCHEME_FTP:
-            case GLOBUS_URL_SCHEME_GSIFTP:
-            case GLOBUS_URL_SCHEME_HTTP:
-            case GLOBUS_URL_SCHEME_HTTPS:
-            case GLOBUS_URL_SCHEME_FILE:
-                *destination_url = strdup(path);
-                if (tag != NULL)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-                    break;
-                }
-                if (*destination_url == NULL)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-                }
-                break;
-            case GLOBUS_URL_SCHEME_X_GASS_CACHE:
-                rc = globus_gass_cache_add(
-                        request->cache_handle,
-                        path,
-                        tag ? tag : request->cache_tag,
-                        GLOBUS_TRUE,
-                        &timestamp,
-                        &local_filename);
-                if (rc < 0)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE;
-
-                    break;
-                }
-
-                *destination_url = globus_common_create_string(
-                        "file://%s",
-                        local_filename);
-                if (*destination_url == NULL)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE;
-
-                    break;
-                }
-
-                rc = globus_gass_cache_add_done(
-                        request->cache_handle,
-                        path,
-                        tag ? tag : request->cache_tag,
-                        timestamp);
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE;
-                }
-
-                break;
-            default:
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-        }
-
-        (void) globus_url_destroy(&url);
-        if (local_filename)
-        {
-            free(local_filename);
-        }
-    }
-    else if (rc == GLOBUS_URL_ERROR_BAD_SCHEME)
-    {
-        /* If the destination is a path, tag must be NULL. Here we'll normalize
-         * relative path to directory
-         */
-
-        /* Ignore RSL parsing error above */
-        rc = GLOBUS_SUCCESS;
-        if (tag != NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-            goto bad_tag;
-        }
-        if (path[0] == '/')
-        {
-            *destination_url = globus_common_create_string(
-                    "file://%s",
-                    path);
-            if (*destination_url == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                goto file_destination_url_failed;
-            }
-        }
-        else
-        {
-            const char * dir;
-
-            rc = globus_gram_job_manager_rsl_attribute_get_string_value(
-                    request->rsl,
-                    GLOBUS_GRAM_PROTOCOL_DIR_PARAM,
-                    &dir);
-            if (rc == GLOBUS_SUCCESS)
-            {
-                *destination_url = globus_common_create_string(
-                        "file://%s/%s",
-                        dir,
-                        path);
-
-                if (*destination_url == NULL)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                    goto file_destination_url_failed;
-                }
-            }
-            else
-            {
-                *destination_url = globus_common_create_string(
-                        "file://%s/%s",
-                        request->config->home,
-                        path);
-
-                if (*destination_url == NULL)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-                    goto file_destination_url_failed;
-                }
-            }
-        }
-    }
-    else
-    {
-        /* Some other parse error */
-        rc = GLOBUS_URL_ERROR_BAD_SCHEME;
-
-        goto bad_scheme;
-    }
-
-file_destination_url_failed:
-bad_scheme:
-bad_tag:
-bad_input:
-    return rc;
-}
-/* globus_l_gram_get_output_destination() */
 
 /**
  * Check that all stdout_position or stderr_values are 0

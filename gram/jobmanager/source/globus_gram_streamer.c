@@ -39,9 +39,8 @@
 
 #include <sys/wait.h>
 
-#define STREAMER_MAX 256
-#define STREAMER_BLOCKSIZE 4096
-
+enum { STREAMER_MAX = 256 };
+const off_t STREAMER_BLOCKSIZE = 4096;
 
 typedef enum
 {
