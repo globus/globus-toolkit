@@ -257,25 +257,24 @@ globus_l_url_sync_modify_func(
 		mktime(&(destination->stats.modify_tm)));
 
     if (params != GLOBUS_NULL)
-      {
-	switch (params->type)
-	  {
-	  case globus_url_sync_modification_time_newer:
-	    if (*result < params->tolerance) {
-	      *result = 0;
-	    }
-	    break;
-	  case globus_url_sync_modification_time_older:
-	    if (*result > (0 - params->tolerance)) {
-	      *result = 0;
-	    }
-	    break;
-	  default:
-	    if (abs(*result) < params->tolerance) {
-	      *result = 0;
-	    }
-	  }
-      }
+    {
+        switch (params->type)
+        {
+            case globus_url_sync_modification_time_newer:
+                if (*result < 0) {
+                    *result = 0;
+                }
+                break;
+            case globus_url_sync_modification_time_older:
+                if (*result > 0) {
+                    *result = 0;
+                }
+                break;
+            default:
+                /* No action required, for globus_url_sync_modification_time_equal. */
+                ;
+        }
+    }
 
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return GLOBUS_SUCCESS;
@@ -468,42 +467,6 @@ globus_url_sync_chained_comparator_add(
 		next, (globus_list_t *) chain->comparator_arg);
 }
 
-globus_url_sync_comparator_t *
-globus_url_sync_modify_comparator_create(
-			    globus_url_sync_modification_comp_t type,
-			    int tolerance)
-{
-	globus_url_sync_comparator_t *result =
-		globus_libc_malloc(sizeof(globus_url_sync_comparator_t));
-	globus_url_sync_modification_params_t * params;
-
-	globus_assert(result);
-	
-	params = globus_libc_malloc(sizeof(globus_url_sync_modification_params_t));
-	globus_assert(params);
-	params->type = type;
-	params->tolerance = tolerance;
-	
-	result->comparator_arg = (globus_url_sync_modification_params_t *) params;
-	result->compare_func = &globus_l_url_sync_modify_func;
-					
-   return(result);
-}
-
-void
-globus_url_sync_modify_comparator_destroy(
-				globus_url_sync_comparator_t * comparator)
-{
-	if (comparator != GLOBUS_NULL) 
-	{
-		if (comparator->comparator_arg != GLOBUS_NULL) {
-			globus_libc_free(comparator->comparator_arg);
-		}
-		globus_libc_free(comparator);
-		comparator = GLOBUS_NULL;
-	}
-}
-
 
 /* Variables */
 
@@ -517,6 +480,12 @@ globus_url_sync_comparator_t    globus_url_sync_comparator_size =
 {
     GLOBUS_NULL,
     globus_l_url_sync_size_func
+};
+
+globus_url_sync_comparator_t    globus_url_sync_comparator_modify =
+{
+	GLOBUS_NULL,
+	globus_l_url_sync_modify_func
 };
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

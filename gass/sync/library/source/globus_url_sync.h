@@ -187,7 +187,7 @@ typedef enum
 typedef struct globus_url_sync_modification_params_s
 {
 	globus_url_sync_modification_comp_t	type;
-	int					tolerance;
+	/* additional parameters may be added in the future */
 } globus_url_sync_modification_params_t;
 
 
@@ -563,19 +563,10 @@ extern globus_url_sync_comparator_t globus_url_sync_comparator_filetype;
 extern globus_url_sync_comparator_t globus_url_sync_comparator_size;
 
 /**
- * Create/destroy comparator for last modified time checks.
+ * Comparator for modification time comparison.
  * @ingroup globus_url_sync_comparators
  */
-
-globus_url_sync_comparator_t *
-globus_url_sync_modify_comparator_create(
-			    globus_url_sync_modification_comp_t type,
-			    int tolerance);
-
-void
-globus_url_sync_modify_comparator_destroy(
-				globus_url_sync_comparator_t * comparator);
-										 
+extern globus_url_sync_comparator_t globus_url_sync_comparator_modify;
 
 /**
  * Allocates and initializes a new chained comparator. The chained comparator
