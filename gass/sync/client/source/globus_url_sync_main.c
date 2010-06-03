@@ -75,7 +75,7 @@ static
 void             
 globus_l_url_sync_main_result_cb(
     globus_url_sync_handle_t                handle,
-    globus_object_t *					    error,
+    globus_object_t *			    error,
     globus_url_sync_endpoint_t *            source,
     globus_url_sync_endpoint_t *            destination,
     int                                     result);
@@ -121,11 +121,13 @@ static int                          num_modules =
 int
 main(int argc, char *argv[])
 {
-    globus_result_t                         result;
-    globus_url_sync_handle_t                handle;
-    int                                     i;
-    globus_l_url_sync_main_monitor_t        monitor;
-    globus_url_sync_comparator_t            chained_comparator;
+    globus_result_t                     result;
+    globus_url_sync_handle_t            handle;
+    int                                 i;
+    globus_l_url_sync_main_monitor_t    monitor;
+    globus_url_sync_comparator_t        chained_comparator;
+    globus_url_sync_comparator_t        modify_comparator;
+	globus_url_sync_modification_params_t modify_params;
     GlobusFuncName(main);
 
     /* Parse arguments */
@@ -165,12 +167,22 @@ main(int argc, char *argv[])
     /* Initialize chain of comparators */
     globus_url_sync_chained_comparator_init(&chained_comparator);
 
-    if (globus_i_url_sync_args_modify)
+    if (globus_i_url_sync_args_newer || globus_i_url_sync_args_older)
     {
+		modify_params.type =
+		(globus_i_url_sync_args_newer && globus_i_url_sync_args_older)?
+			globus_url_sync_modification_time_equal:
+		(globus_i_url_sync_args_newer)?
+			globus_url_sync_modification_time_newer:
+			globus_url_sync_modification_time_older;
+		
+        modify_comparator.comparator_arg = (void *)&modify_params;
+		modify_comparator.compare_func = globus_url_sync_comparator_modify.compare_func;
+
         /* ...modify */
         globus_url_sync_chained_comparator_add(
 				&chained_comparator,
-				&globus_url_sync_comparator_modify);
+				&modify_comparator);
     }
 
     if (globus_i_url_sync_args_size)
@@ -229,8 +241,8 @@ main(int argc, char *argv[])
 
     globus_url_sync_handle_destroy(&handle);
 	globus_url_sync_chained_comparator_destroy(&chained_comparator);
-
-    /* Destroy monitor */
+    
+	/* Destroy monitor */
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 
@@ -341,7 +353,7 @@ main_TESTING(int argc, char *argv[])
     if (result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr, "%s\n",
-				globus_error_print_friendly(globus_error_get(result)));
+			    globus_error_print_friendly(globus_error_get(result)));
         exit(EXIT_FAILURE);
     }
 
@@ -389,7 +401,7 @@ main_ftpclient_complete_cb(
     if (error)
     {
         globus_libc_fprintf(stderr, "%s\n",
-				globus_error_print_friendly(error));
+			    globus_error_print_friendly(error));
     }
 
     /* Signal monitor */

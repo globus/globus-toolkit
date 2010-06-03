@@ -57,6 +57,7 @@
  */
 typedef enum
 {
+    GLOBUS_URL_SYNC_ERROR_NULL = 0,
     GLOBUS_URL_SYNC_ERROR_PARAMETER,
     GLOBUS_URL_SYNC_ERROR_MEMORY,
     GLOBUS_URL_SYNC_ERROR_ABORTED,
@@ -171,8 +172,24 @@ typedef enum
 {
     globus_url_sync_endpoint_type_unknown = 0,
     globus_url_sync_endpoint_type_file,
-    globus_url_sync_endpoint_type_dir,
+    globus_url_sync_endpoint_type_dir
 } globus_url_sync_endpoint_type_t;
+
+/**
+ * Modifcation time comparison mode
+ */
+typedef enum
+{
+	globus_url_sync_modification_time_equal = 0,
+	globus_url_sync_modification_time_newer,
+	globus_url_sync_modification_time_older
+} globus_url_sync_modification_comp_t;
+
+typedef struct globus_url_sync_modification_params_s
+{
+	globus_url_sync_modification_comp_t	type;
+	/* additional parameters may be added in the future */
+} globus_url_sync_modification_params_t;
 
 
 /**
@@ -281,10 +298,11 @@ typedef void
  */
 typedef globus_result_t
 (*globus_url_sync_compare_func_t) (
+    void *					comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *                                       result,
-    globus_object_t *                           error);
+    globus_object_t **                          error);
 
 /**
  * The synchronization comparator. Synchronization functions use the comparator
@@ -546,7 +564,7 @@ extern globus_url_sync_comparator_t globus_url_sync_comparator_filetype;
 extern globus_url_sync_comparator_t globus_url_sync_comparator_size;
 
 /**
- * Comparator for last modified time checks.
+ * Comparator for modification time comparison.
  * @ingroup globus_url_sync_comparators
  */
 extern globus_url_sync_comparator_t globus_url_sync_comparator_modify;

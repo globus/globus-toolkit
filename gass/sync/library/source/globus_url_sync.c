@@ -66,12 +66,12 @@ globus_l_url_sync_arg_cons(
     arg = (globus_l_url_sync_arg_t*) globus_libc_malloc(
             sizeof(globus_l_url_sync_arg_t));
     globus_assert(arg);
-    arg->handle             = handle;
-    arg->entries            = NULL;
-    arg->source             = source;
-    arg->destination        = destination;
-	arg->error				= error;
-    arg->parent             = parent;
+    arg->handle         = handle;
+    arg->entries        = NULL;
+    arg->source         = source;
+    arg->destination    = destination;
+    arg->error		= error;
+    arg->parent		= parent;
 
     return arg;
 }
@@ -513,7 +513,7 @@ globus_l_url_sync_compare_func_top_cb(
                 handle,
                 source,
                 destination,
-				error,
+		error,
                 GLOBUS_NULL);
 
         /* List of Source */
@@ -707,7 +707,7 @@ globus_l_url_sync_compare_func_recurse_cb(
     void *                                      arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    int         								compare_result,
+    int						compare_result,
     globus_object_t *                           error)
 {
     globus_url_sync_handle_t                    handle;
@@ -754,7 +754,7 @@ globus_l_url_sync_compare_func_recurse_cb(
                 handle,
                 source,
                 destination,
-				error,
+		error,
                 sync_arg);
 
         /* List of Source */
