@@ -114,7 +114,7 @@ globus_l_url_sync_exists_func(
     GlobusFuncName(globus_l_url_sync_exists_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
     
-    *result = -1;
+    *result = 0;
 
     /* Stat the source */
 	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
