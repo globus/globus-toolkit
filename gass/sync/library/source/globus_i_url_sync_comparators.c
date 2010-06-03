@@ -39,9 +39,9 @@
 /** Monitor structured user locally to synchronize the asynch FTP calls. */
 typedef struct
 {
-    globus_mutex_t                          mutex;
-    globus_cond_t                           cond;
-    globus_bool_t                           done;
+    globus_mutex_t				mutex;
+    globus_cond_t				cond;
+    globus_bool_t				done;
 } globus_l_url_sync_monitor_t;
 
 /** Callback arg structure used in the chained comparison. */
@@ -74,7 +74,7 @@ globus_l_url_sync_exists_func(
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *					result,
-    globus_object_t *				error);
+    globus_object_t **				error);
 
 static
 globus_result_t
@@ -83,7 +83,7 @@ globus_l_url_sync_size_func(
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *					result,
-    globus_object_t *		       		error);
+    globus_object_t **		       		error);
 
 static
 globus_result_t
@@ -92,7 +92,7 @@ globus_l_url_sync_modify_func(
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *					result,
-    globus_object_t *				error);
+    globus_object_t **				error);
 
 /* Functions */
 
@@ -107,7 +107,7 @@ globus_l_url_sync_exists_func(
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *					result,
-    globus_object_t *				error)
+    globus_object_t **				error)
 {
     globus_result_t	res = GLOBUS_SUCCESS;
 
@@ -132,14 +132,14 @@ globus_l_url_sync_exists_func(
 	  {
 	  case 18:
             /* gridftp authentication error */
-	    error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
+	    *error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
 	    break;
 	  case 11:
 	  case 12:
-	    error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
+	    *error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
 	    break;
 	  default:
-	    error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
+	    *error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
 	  } 
     }
     else 
@@ -147,7 +147,7 @@ globus_l_url_sync_exists_func(
         /* Report an error if source file is not found */
         if (!source->stats.exists) 
 	{
-	    error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
+	    *error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
 	} 
 	else 
         {
@@ -171,7 +171,7 @@ globus_l_url_sync_exists_func(
 	    if (destination->stats.exists)
 	    {
 	        if (source->stats.type != destination->stats.type)
-		  error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+		  *error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
 		else 
 		{
 		    if (source->stats.type == globus_url_sync_endpoint_type_dir)
@@ -180,7 +180,7 @@ globus_l_url_sync_exists_func(
 			    strcat(destination->url, "/");
 		    } else {
 		        if (dir_ending) {
-			    error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+			    *error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
 			}
 		    }
 		}
@@ -195,7 +195,7 @@ globus_l_url_sync_exists_func(
 		else 
 		{
 		    if (dir_ending)
-			    error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
+			*error = GLOBUS_I_URL_SYNC_ERROR_FILETYPE();
 		}
 	    }
 	}
@@ -222,7 +222,7 @@ globus_l_url_sync_size_func(
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *					result,
-    globus_object_t *				error)
+    globus_object_t **				error)
 {
     GlobusFuncName(globus_l_url_sync_size_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
@@ -244,7 +244,7 @@ globus_l_url_sync_modify_func(
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *					result,
-    globus_object_t *				error)
+    globus_object_t **				error)
 {
     globus_url_sync_modification_params_t *params = 
       (globus_url_sync_modification_params_t *)comparator_arg;
@@ -290,7 +290,7 @@ globus_l_url_sync_chain_func(
     void *                                      comparator_arg,
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t		 callback_func,
+    globus_url_sync_compare_func_cb_t		callback_func,
     void *                                      callback_arg)
 {
     globus_url_sync_comparator_t *		next_comparator;
@@ -328,7 +328,7 @@ globus_l_url_sync_chain_func(
 					  source,
 					  destination,
 					  &result,
-					  error);
+					  &error);
 	}	
     }
     
@@ -395,6 +395,12 @@ globus_l_url_sync_ftpclient_mlst(
     {
         globus_url_sync_l_parse_mlst_buffer(endpoint, endpoint->mlst_buffer, name);
     }
+    else
+      {
+        /* Put the error object and assigns the corresponding result */
+        result = globus_error_put(
+		  GLOBUS_I_URL_SYNC_ERROR_REMOTE("FTP client MLST operation failed"));
+      }
     
   cleanexit:
     globus_cond_destroy(&monitor.cond);
@@ -420,11 +426,11 @@ globus_l_url_sync_ftpclient_complete_cb(
 
     monitor = (globus_l_url_sync_monitor_t *) user_arg;
 
-    if(error)
+    if (error)
     {
-        globus_i_url_sync_log_error(error);
+	globus_i_url_sync_log_error(error);
     }
-
+		
     /* Signal monitor */
     globus_mutex_lock(&monitor->mutex);
     {

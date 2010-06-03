@@ -57,6 +57,7 @@
  */
 typedef enum
 {
+    GLOBUS_URL_SYNC_ERROR_NULL = 0,
     GLOBUS_URL_SYNC_ERROR_PARAMETER,
     GLOBUS_URL_SYNC_ERROR_MEMORY,
     GLOBUS_URL_SYNC_ERROR_ABORTED,
@@ -301,7 +302,7 @@ typedef globus_result_t
     globus_url_sync_endpoint_t *                source,
     globus_url_sync_endpoint_t *                destination,
     int *                                       result,
-    globus_object_t *                           error);
+    globus_object_t **                          error);
 
 /**
  * The synchronization comparator. Synchronization functions use the comparator
