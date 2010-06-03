@@ -102,7 +102,10 @@ globus_l_gram_job_manager_validation_rsl_error(
 static
 int
 globus_l_gram_job_manager_validation_value_error(
-    const char *                        attribute);
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        attribute,
+    const char *                        value,
+    const char *                        enumerated_values);
 
 static
 int
@@ -1022,7 +1025,10 @@ globus_l_gram_job_manager_check_rsl_attributes(
             if(strstr(record->enumerated_values, value_str) == GLOBUS_NULL)
             {
                 rc = globus_l_gram_job_manager_validation_value_error(
-                            attribute);
+                            request,
+                            attribute,
+                            value_str,
+                            record->enumerated_values);
 
                 globus_gram_job_manager_request_log(
                         request,
@@ -1335,8 +1341,20 @@ globus_l_gram_job_manager_validation_rsl_error(
 static
 int
 globus_l_gram_job_manager_validation_value_error(
-    const char *                        attribute)
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        attribute,
+    const char *                        value,
+    const char *                        enumerated_values)
 {
+    if (request->gt3_failure_message == NULL)
+    {
+        request->gt3_failure_message = globus_common_create_string(
+                "RSL attribute \"%s\" has value \"%s\" which is not one of the allowed values (%s)",
+                attribute,
+                value,
+                enumerated_values);
+    }
+
     HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
                      GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COUNT)
     HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MYJOB_PARAM,
