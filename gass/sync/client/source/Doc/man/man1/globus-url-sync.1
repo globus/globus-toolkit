@@ -3,7 +3,7 @@
 globus-url-sync \- URL Synchronization
 .SH SYNOPSIS
 .B globus-url-sync
-[-help | -usage] [-version] [-d | -v] [-c] [-r] [-m] [-s] [-t] <sourceURL> <destURL>
+[-help | -usage] [-version] [-d | -v] [-c] [-r] [-n] -o] [-s] <sourceURL> <destURL>
 .SH SUMMARY
 The program
 .B globus-url-sync
@@ -32,15 +32,18 @@ Disable GridFTP client connection caching, which is enabled by default.
 .B -r | -recursive-dir-copy\n
 Output directory names, when an entire directory is to be copied recursively.
 This option may be used to improve performance, particularly when the 
-destination is being populated for the first time.  This option should also 
+destination is being populated for the first time.  This option should also
 be used when an empty directory is to be copied, as the default configuration, 
 which lists complete file pathnames, will not list a pathname of an empty directory.
 .TP
-.B -m | -modify
-Compare files by last modified timestamp.
+.B -n | -newer
+File is to be transferred, if the source timestamp is newer than the destination timestamp.
+.TP
+.B -o | -older
+File is to be transferred, if the source timestamp is older than the destination timestamp.
 .TP
 .B -s | -size
-Compare files by size.
+File is to be transferred, if the sizes of the source and the destination are not the same.
 .SH DESCRIPTION
 The current implementation of 
 .B globus-url-sync
@@ -67,6 +70,14 @@ URL scheme(s) supported:
       File name, relative path: "sshftp://myhost.edu/file1"
       Directory, absolute path: "sshftp://myhost.edu//tmp/dir1/"
 .fi
+.sp
+Piping from 
+.B globus-url-sync 
+to 
+.B globus_url_copy:
+.nf
+  globus-url-sync -r -s gsiftp://host.edu//tmp/dir1 gsiftp://host.edu//tmp/dir2 | globus-url-copy -cd -r -f -
+.fi
 .SH BUGS
 This is an early version of 
 .B globus-url-sync.
@@ -76,18 +87,13 @@ option.
 .P
 .B Known limitations:
 .P 1
-Performance may be slow until it's been optimized to take advantage of
-some new GridFTP features.
-.P 1
-The
-.B -modify 
-option:
-.nf
-  - Timezones are not taken into account.
-  - Timestamps are matched exactly, so files on systems that are not 
-    time-synchronized will never match.
-  - In the future an inexact matching feature may be added.
-.fi
+.B globus-url-copy 
+should be invoked with the 
+.B -r 
+and the
+.B -cd 
+options, so that directories can be copied recursively (for "globus-url-sync -r"),
+and so that directories at the destination can be created.
 .P 1
 Authentication errors may be erroneously be reported as though a file is missing.
 .P 1

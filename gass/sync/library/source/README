@@ -5,17 +5,27 @@ Install globus-url-sync, from source:
 
   Set the $GLOBUS_LOCATION environment variable.
 
-  Using your standard login, check out "gass/sync" from cvs:
+  globus-url-sync was initially released as part of Globus Toolkit 5.0.1.
+  The following should be necessary only if an earlier version of Globus Toolkit 
+  has been installed:
+      Using your standard login, check out "gass/sync" from cvs:
 	$ cvs -d \
             :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages \
             co gass/sync
 
-  Change the ownership, so that binary can be installed in "$GLOBUS_LOCATION/bin":
+      Change the ownership, so that binary can be installed in "$GLOBUS_LOCATION/bin":
 	$ sudo -R chown globus:globus gass
 	$ sudo su globus
 
-  As user "globus", substituting the flavor of your Globus Toolkit installation 
-  for "gcc64dbgpthr":
+  To get the most recent version of globus-url-sync:
+      Using your standard login, update "gass/sync" from cvs:
+	$ cvs -d \
+            :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages \
+            update gass/sync
+
+  If globus-url-sync has been newly checked out or updated, build it:
+      As user "globus", substituting the flavor of your Globus Toolkit installation 
+      for "gcc64dbgpthr":
 	cd gass/sync/library/source/
 	./bootstrap
 	$GLOBUS_LOCATION/sbin/gpt-build -verbose -force gcc64dbgpthr
@@ -48,15 +58,6 @@ Known limitations:
 o globus-url-copy should be invoked with the "-r" and the "-cd" options,
   so that directories can be copied recursively (for "globus-url-sync -r"),
   and so that directories at the destination can be created.
-
-o Performance may be slow until it's been optimized to take advantage of
-  some new GridFTP features.
-
-o The -modify option:
-  - Timezones are not taken into account.
-  - Timestamps are matched exactly, so files on systems that are not
-    time-synchronized will never match.
-  - In the future an inexact matching feature may be added.
 
 o Authentication errors may be erroneously be reported as though a file
   is missing.
