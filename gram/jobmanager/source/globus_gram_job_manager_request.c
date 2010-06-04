@@ -1956,9 +1956,6 @@ failed_cache_eval:
 }
 /* globus_l_gram_init_cache() */
 
-/**
- * 
- */
 static
 int
 globus_l_gram_restart(
@@ -1974,7 +1971,7 @@ globus_l_gram_restart(
     globus_bool_t                       restart_contacts = GLOBUS_FALSE;
 
     /* Evaluate the restart RSL, so that we can merge it with the original
-     * job RLS
+     * job RSL
      */
     rc = globus_rsl_eval(request->rsl, &request->symbol_table);
     if(rc != GLOBUS_SUCCESS)
@@ -2113,21 +2110,14 @@ globus_l_gram_restart(
     /*
      * Remove stdout_position and stderr_position. We don't do streaming
      * any more, so we will reject any restart where the positions
-     * aren't 0.
+     * aren't 0 (validation file checks those).
      */
     stdout_position = globus_gram_job_manager_rsl_extract_relation(
             restart_rsl,
             GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
     if (stdout_position != NULL)
     {
-        rc = globus_l_gram_check_position(
-                request,
-                stdout_position);
         globus_rsl_free_recursive(stdout_position);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto failed_check_position;
-        }
     }
 
     stderr_position = globus_gram_job_manager_rsl_extract_relation(
@@ -2135,14 +2125,7 @@ globus_l_gram_restart(
             GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
     if (stderr_position != NULL)
     {
-        rc = globus_l_gram_check_position(
-                request,
-                stderr_position);
         globus_rsl_free_recursive(stderr_position);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto failed_check_position;
-        }
     }
 
     request->rsl = globus_gram_job_manager_rsl_merge(
@@ -2154,7 +2137,6 @@ globus_l_gram_restart(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
     request->job_stats.restart_count++;
-failed_check_position:
     if (original_rsl)
     {
         globus_rsl_free_recursive(original_rsl);
@@ -2194,14 +2176,7 @@ globus_i_gram_request_stdio_update(
             GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
     if (stdout_position != NULL)
     {
-        rc = globus_l_gram_check_position(
-                request,
-                stdout_position);
         globus_rsl_free_recursive(stdout_position);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto failed_check_position;
-        }
     }
 
     stderr_position = globus_gram_job_manager_rsl_extract_relation(
@@ -2209,14 +2184,7 @@ globus_i_gram_request_stdio_update(
             GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
     if (stderr_position != NULL)
     {
-        rc = globus_l_gram_check_position(
-                request,
-                stderr_position);
         globus_rsl_free_recursive(stderr_position);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            goto failed_check_position;
-        }
     }
 
     tmp_rsl = globus_gram_job_manager_rsl_merge(
@@ -2279,7 +2247,6 @@ globus_i_gram_request_stdio_update(
 staging_list_replace_failed:
 get_remote_io_url_failed:
 failed_rsl_merge:
-failed_check_position:
     return rc;
 }
 /* globus_i_gram_request_stdio_update() */

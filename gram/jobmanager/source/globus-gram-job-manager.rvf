@@ -232,11 +232,13 @@ Attribute: stdout_position
 Description: "Specifies where in the file remote output streaming should be
               restarted from. Must be 0."
 ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
+Values: 0
 
 Attribute: stderr_position
 Description: "Specifies where in the file remote standard error streaming
               should be restarted from. Must be 0."
 ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
+Values: 0
 
 Attribute: file_stage_in
 Description: "Specifies a list of (\"remote URL\" \"local file\") pairs which
