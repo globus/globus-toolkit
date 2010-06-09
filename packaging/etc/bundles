@@ -889,6 +889,5 @@ BUNDLE cas_callout
 
 BUNDLE usagestats_server
         globus_usage_tools
-        globus_usage_tools_setup
         globus_usage_tools_test
 
