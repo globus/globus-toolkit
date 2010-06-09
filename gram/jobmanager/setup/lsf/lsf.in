@@ -17,6 +17,8 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
+use IPC::Open3;
+
 use Config;
 
 # NOTE: This package name must match the name of the .pm file!!
@@ -42,13 +44,18 @@ sub submit
     my $self = shift;
     my $description = $self->{JobDescription};
     my $status;
-    my $lsf_job_script_name;
     my $lsf_job_err_name;
     my $queue;
     my $job_id;
     my @arguments;
     my $email_when = '';
     my $args = '';
+    my $old;
+    my $pid;
+    my $rc;
+    my $job_out;
+    my $job_err;
+    my $status;
 
     $self->log('Entering lsf submit');
 
@@ -154,24 +161,53 @@ sub submit
 
     $self->log('Building job script');
 
-    $lsf_job_script_name = $self->job_dir() . '/scheduler_lsf_submit_script';
-    
     local(*JOB);
-    open( JOB, '>' . $lsf_job_script_name );
-    print JOB<<"EOF";
+    local(*JOB_OUT);
+    local(*JOB_ERR);
+    $pid = IPC::Open3::open3(JOB, JOB_OUT, JOB_ERR, "sh -c '$bsub'");
+    if (!$pid)
+    {
+        return $self->respond_with_failure_extension(
+            "open3: $bsub: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $old = select(JOB_OUT); $|=1;
+    select(JOB_ERR); $|=1;
+    select(JOB); $|=1;
+    select($old);
+
+    $rc = print JOB <<"EOF";
 #! /bin/sh
 #
 # LSF batch job script built by Globus Job Manager
 #
 EOF
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     if(defined($queue))
     {
-	print JOB "#BSUB -q $queue\n";
+	$rc = print JOB "#BSUB -q $queue\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     if(defined($description->project()))
     {
-	print JOB '#BSUB -P ', $description->project(), "\n";
+	$rc = print JOB '#BSUB -P ', $description->project(), "\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     if($cpu_time != 0)
@@ -184,12 +220,24 @@ EOF
 	{
 	    $total_cpu_time = $cpu_time;
 	}
-	print JOB "#BSUB -c ${total_cpu_time}\n";
+	$rc = print JOB "#BSUB -c ${total_cpu_time}\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     if($wall_time != 0)
     {
-	print JOB "#BSUB -W $wall_time\n";
+	$rc = print JOB "#BSUB -W $wall_time\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     if($description->max_memory() != 0)
@@ -204,14 +252,44 @@ EOF
 	{
 	    $total_max_memory = $max_memory;
 	}
-	print JOB "#BSUB -M ${total_max_memory}\n";
+	$rc = print JOB "#BSUB -M ${total_max_memory}\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
-    print JOB '#BSUB -i ', $description->stdin(), "\n";
-    print JOB '#BSUB -o ', $description->stdout(), "\n";
+    $rc = print JOB '#BSUB -i ', $description->stdin(), "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print JOB '#BSUB -o ', $description->stdout(), "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
     $self->nfssync( $description->stdout(), 1 );
-    print JOB '#BSUB -e ', $description->stderr(), "\n";
+    $rc = print JOB '#BSUB -e ', $description->stderr(), "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
     $self->nfssync( $description->stderr(), 1 );
-    print JOB '#BSUB -n ', $description->count(), "\n";
+    $rc = print JOB '#BSUB -n ', $description->count(), "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     foreach my $tuple ($description->environment())
     {
@@ -219,12 +297,30 @@ EOF
 	{
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
 	}
-	print JOB $tuple->[0], '="', $tuple->[1],
+	$rc = print JOB $tuple->[0], '="', $tuple->[1],
 		'"; export ', $tuple->[0], "\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
-    print JOB "\n#Change to directory requested by user\n";
-    print JOB 'cd ', $description->directory(), "\n";
+    $rc = print JOB "\n#Change to directory requested by user\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print JOB 'cd ', $description->directory(), "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     @arguments = $description->arguments();
 
@@ -259,25 +355,48 @@ EOF
 
     if($description->jobtype() eq 'mpi' && $mpiexec ne 'no')
     {
-	print JOB "$mpiexec -n ", $description->count(), ' ';
-	print JOB $description->executable(), " $args \n";
+	$rc = print JOB "$mpiexec -n ", $description->count(), ' ',
+                  $description->executable(), " $args \n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     elsif($description->jobtype() eq 'mpi' && $mpirun ne 'no')
     {
-	print JOB "$mpirun -np ", $description->count(), ' ';
-	print JOB $description->executable(), " $args \n";
+	$rc = print JOB "$mpirun -np ", $description->count(), ' ',
+	          $description->executable(), " $args \n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     elsif($description->jobtype() eq 'multiple')
     {
-        print JOB "pids=''\n";
-        print JOB "exit_code=0\n";
+        $rc = print JOB "pids=''\n", "exit_code=0\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
-	    print JOB $description->executable(), " $args &\n";
-	    print JOB "pids=\"\$pids \$!\"\n";
+	    $rc = print JOB $description->executable(), " $args &\n",
+                            "pids=\"\$pids \$!\"\n";
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                    "print: $lsf_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
 	}
 
-        print JOB <<EOF;
+        $rc = print JOB <<EOF;
         for x in \$pids; do
             wait \$x
             tmp_exit_code=\$?
@@ -287,52 +406,72 @@ EOF
         done
         exit \$exit_code
 EOF
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     else
     {
-	print JOB $description->executable(), " $args\n";
+	$rc = print JOB $description->executable(), " $args\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $lsf_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
-    close(JOB);
+    $rc = close(JOB);
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $lsf_job_script_name: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
     chmod 0755, $lsf_job_script_name;
 
-    $lsf_job_err_name = $self->job_dir() . '/scheduler_bsub_stderr';
-    $self->log("job err is at $lsf_job_err_name");
+    local $/;
+    $job_out = <JOB_OUT>;
+    $job_err = <JOB_ERR>;
+    waitpid $pid, 0;
+    $status = $? >> 8;
+    close(JOB_OUT);
+    close(JOB_ERR);
 
-    $self->log("about to submit job");
-    $self->nfssync( $lsf_job_script_name );
-    $self->nfssync( $lsf_job_err_name );
-    $job_id = (grep(/is submitted/,
-                   split(/\n/, `$bsub < $lsf_job_script_name 2> $lsf_job_err_name`)))[0];
+    $self->log("bsub output: $job_out") if ($job_out ne '');
+    $self->log("bsub error: $job_err") if ($job_err ne '');
+    $self->log("bsub exit status: $status");
 
-    if($? == 0)
+    if($status == 0)
     {
+        $job_id = (grep(/is submitted/, split(/\n/, $job_out)))[0];
 	$job_id =~ m/<([^>]*)>/;
 	$job_id = $1;
 
-	return {
+        if ($job_id eq '')
+        {
+            return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
+        }
+        else
+        {
+            return {
 	           JOB_ID => $job_id,
 		   JOB_STATE => Globus::GRAM::JobState::PENDING
 		};
+        }
     }
     else
     {
-        $self->log("job submission failed, checking $lsf_job_err_name");
-
-        my $stderr;
         local(*ERR);
-        $self->nfssync( $lsf_job_err_name );
-        open(ERR, "<$lsf_job_err_name");
-        local $/;
-        $stderr = <ERR>;
-        close(ERR);
-
         open(ERR, '>' . $description->stderr());
-        print ERR $stderr;
+        print ERR $job_err;
         close(ERR);
 
-        $stderr =~ s/\n/\\n/g;
+        $job_err =~ s/\n/\\n/g;
 
-        $self->respond({ GT3_FAILURE_MESSAGE => $stderr });
+        $self->respond({ GT3_FAILURE_MESSAGE => $job_err });
     }
 
     return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
@@ -490,6 +629,16 @@ sub cancel
 	return { JOB_STATE => Globus::GRAM::JobState::FAILED };
     }
     return Globus::GRAM::Error::JOB_CANCEL_FAILED();
+}
+
+sub respond_with_failure_extension
+{
+    my $self = shift;
+    my $msg = shift;
+    my $rc = shift;
+
+    $self->respond({GT3_FAILURE_MESSAGE => $msg });
+    return $rc;
 }
 
 1;
