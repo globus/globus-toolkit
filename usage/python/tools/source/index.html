@@ -6,7 +6,7 @@
         and testing the installation. It also describes additional
         prerequisites and host
         settings necessary for Usage Statistics Tools operation. 
-    </p></div></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="chapter"><a href="#usagestats-admin-installing">1. Building and Installing</a></span></dt><dd><dl><dt><span class="section"><a href="#id36101679">Preparation and Prerequisites</a></span></dt><dt><span class="section"><a href="#id36101787">Downloading and Installing the Usage Statistics Tools</a></span></dt><dt><span class="section"><a href="#id36101876">Configuring the Usage Stats Tools</a></span></dt><dd><dl><dt><span class="section"><a href="#id36101881">Database configuration</a></span></dt><dt><span class="section"><a href="#usagestats-configuration">Usage Statistics Tools Uploader Configuration</a></span></dt><dt><span class="section"><a href="#id36102142">Testing the Usage Stats Tools</a></span></dt><dt><span class="section"><a href="#id36102176">Running the Usage Stats Tools</a></span></dt></dl></dd></dl></dd><dt><span class="chapter"><a href="#id36102333">2. Command Reference</a></span></dt></dl></div><div class="chapter" title="Chapter 1. Building and Installing"><div class="titlepage"><div><div><h2 class="title"><a name="usagestats-admin-installing"></a>Chapter 1. Building and Installing</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="#id36101679">Preparation and Prerequisites</a></span></dt><dt><span class="section"><a href="#id36101787">Downloading and Installing the Usage Statistics Tools</a></span></dt><dt><span class="section"><a href="#id36101876">Configuring the Usage Stats Tools</a></span></dt><dd><dl><dt><span class="section"><a href="#id36101881">Database configuration</a></span></dt><dt><span class="section"><a href="#usagestats-configuration">Usage Statistics Tools Uploader Configuration</a></span></dt><dt><span class="section"><a href="#id36102142">Testing the Usage Stats Tools</a></span></dt><dt><span class="section"><a href="#id36102176">Running the Usage Stats Tools</a></span></dt></dl></dd></dl></div><div class="section" title="Preparation and Prerequisites"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id36101679"></a>Preparation and Prerequisites</h2></div></div></div><p>
+    </p></div></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="chapter"><a href="#usagestats-admin-installing">1. Building and Installing</a></span></dt><dd><dl><dt><span class="section"><a href="#id36101682">Preparation and Prerequisites</a></span></dt><dt><span class="section"><a href="#id36101789">Downloading and Installing the Usage Statistics Tools</a></span></dt><dt><span class="section"><a href="#id36101879">Configuring the Usage Stats Tools</a></span></dt><dd><dl><dt><span class="section"><a href="#id36101883">Database configuration</a></span></dt><dt><span class="section"><a href="#usagestats-configuration">Usage Statistics Tools Uploader Configuration</a></span></dt><dt><span class="section"><a href="#id36102134">Testing the Usage Stats Tools</a></span></dt><dt><span class="section"><a href="#id36102168">Running the Usage Stats Tools</a></span></dt></dl></dd></dl></dd><dt><span class="chapter"><a href="#id36102351">2. Command Reference</a></span></dt></dl></div><div class="chapter" title="Chapter 1. Building and Installing"><div class="titlepage"><div><div><h2 class="title"><a name="usagestats-admin-installing"></a>Chapter 1. Building and Installing</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="#id36101682">Preparation and Prerequisites</a></span></dt><dt><span class="section"><a href="#id36101789">Downloading and Installing the Usage Statistics Tools</a></span></dt><dt><span class="section"><a href="#id36101879">Configuring the Usage Stats Tools</a></span></dt><dd><dl><dt><span class="section"><a href="#id36101883">Database configuration</a></span></dt><dt><span class="section"><a href="#usagestats-configuration">Usage Statistics Tools Uploader Configuration</a></span></dt><dt><span class="section"><a href="#id36102134">Testing the Usage Stats Tools</a></span></dt><dt><span class="section"><a href="#id36102168">Running the Usage Stats Tools</a></span></dt></dl></dd></dl></div><div class="section" title="Preparation and Prerequisites"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id36101682"></a>Preparation and Prerequisites</h2></div></div></div><p>
             Before installing the Usage Statistics Tools, first determine
             into which directory you wish to install the tools. Set the
             environment variable <code class="envar">GLOBUS_LOCATION</code> to this
@@ -35,7 +35,7 @@
         </p><p>
             For other systems, consult your operating system's documentation
             for package names, or install from the sources mentioned above.
-        </p></div><div class="section" title="Downloading and Installing the Usage Statistics Tools"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id36101787"></a>Downloading and Installing the Usage Statistics Tools</h2></div></div></div><p>
+        </p></div><div class="section" title="Downloading and Installing the Usage Statistics Tools"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id36101789"></a>Downloading and Installing the Usage Statistics Tools</h2></div></div></div><p>
             Download the GPT tools from <a class="ulink" href="ftp://ftp.ncsa.uiuc.edu//aces/gpt/releases/gpt-3.2//gpt-3.2-src.tar.gz" target="_top">ftp://ftp.ncsa.uiuc.edu//aces/gpt/releases/gpt-3.2//gpt-3.2-src.tar.gz</a> and the Usage Statistics Tools source
             bundle from <a class="ulink" href="http://www.mcs.anl.gov/~bester/usagestats_server-1.0-src_bundle.tar.gz" target="_top">http://www.mcs.anl.gov/~bester/usagestats_server-1.0-src_bundle.tar.gz</a>. 
         </p><p>
@@ -43,27 +43,27 @@
             usage stats tools and set the <code class="envar">GLOBUS_LOCATION</code>
             environment variable to that path.
 
-            </p><pre class="screen"><code class="prompt"># </code><span class="command"><strong>GLOBUS_LOCATION=/opt/usage-stats</strong></span>
-<code class="prompt"># </code><span class="command"><strong>export GLOBUS_LOCATION</strong></span></pre><p>
+            </p><pre class="screen"><code class="prompt">% </code><span class="command"><strong>GLOBUS_LOCATION=/opt/usage-stats</strong></span>
+<code class="prompt">% </code><span class="command"><strong>export GLOBUS_LOCATION</strong></span></pre><p>
         </p><p>
             Untar and build gpt:
 
-            </p><pre class="screen"><code class="prompt"># </code><span class="command"><strong>tar zxf gpt-3.2-src.tar.gz</strong></span>
-<code class="prompt"># </code><span class="command"><strong>cd gpt-3.2</strong></span>
-<code class="prompt"># </code><span class="command"><strong>./build_gpt -prefix=$GLOBUS_LOCATION</strong></span>
-<code class="prompt"># </code><span class="command"><strong>cd ..</strong></span></pre><p>
+            </p><pre class="screen"><code class="prompt">% </code><span class="command"><strong>tar zxf gpt-3.2-src.tar.gz</strong></span>
+<code class="prompt">% </code><span class="command"><strong>cd gpt-3.2</strong></span>
+<code class="prompt">% </code><span class="command"><strong>./build_gpt -prefix=$GLOBUS_LOCATION</strong></span>
+<code class="prompt">% </code><span class="command"><strong>cd ..</strong></span></pre><p>
         </p><p>
             Build and install the usage stats tools:
 
-            </p><pre class="screen"><code class="prompt"># </code><span class="command"><strong>$GLOBUS_LOCATION/sbin/gpt-build usagestats_server-1.0-src_bundle.tar.gz</strong></span></pre><p>
-        </p></div><div class="section" title="Configuring the Usage Stats Tools"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id36101876"></a>Configuring the Usage Stats Tools</h2></div></div></div><div class="section" title="Database configuration"><div class="titlepage"><div><div><h3 class="title"><a name="id36101881"></a>Database configuration</h3></div></div></div><p>
+            </p><pre class="screen"><code class="prompt">% </code><span class="command"><strong>$GLOBUS_LOCATION/sbin/gpt-build usagestats_server-1.0-src_bundle.tar.gz</strong></span></pre><p>
+        </p></div><div class="section" title="Configuring the Usage Stats Tools"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id36101879"></a>Configuring the Usage Stats Tools</h2></div></div></div><div class="section" title="Database configuration"><div class="titlepage"><div><div><h3 class="title"><a name="id36101883"></a>Database configuration</h3></div></div></div><p>
         First, create a database user and database to contain the usage stats
         data. This and the following sections assume that the usagestats
         database and the service will be run on the same machine. If that is
         not the case, run the database configuration commands on the machine
         running the database, and use that machine's hostname in place of
         <code class="literal">localhost</code> in the uploader configuration below.
-    </p><div class="section" title="Debian-specific configuration"><div class="titlepage"><div><div><h4 class="title"><a name="id36101896"></a>Debian-specific configuration</h4></div></div></div><p>
+    </p><div class="section" title="Debian-specific configuration"><div class="titlepage"><div><div><h4 class="title"><a name="id36101898"></a>Debian-specific configuration</h4></div></div></div><p>
         </p><pre class="screen"><code class="prompt"># </code><span class="command"><strong>su postgres</strong></span>
 <code class="prompt">% </code><span class="command"><strong>createuser --pwprompt usagestats</strong></span>
 <code class="prompt">Enter password for the new role:</code>
@@ -73,19 +73,25 @@
 <code class="prompt">Shall the new role be allowed to create more roles? (y/n) </code> <strong class="userinput"><code>n</code></strong>
 <code class="prompt">% </code><span class="command"><strong>createdb -O usagestats usagestats</strong></span>
 <code class="prompt">% </code><span class="command"><strong>psql -h localhost --password -U usagestats usagestats &lt; <code class="envar">$GLOBUS_LOCATION</code>/share/globus_usage_tools/usage-tables.sql</strong></span></pre><p>
-        </p></div><div class="section" title="Fedora-specific configuration"><div class="titlepage"><div><div><h4 class="title"><a name="id36101976"></a>Fedora-specific configuration</h4></div></div></div><p>
+        </p></div><div class="section" title="Fedora-specific configuration"><div class="titlepage"><div><div><h4 class="title"><a name="id36101977"></a>Fedora-specific configuration</h4></div></div></div><p>
             On fedora, you'll need to configure the postgres service to allow
             password authentication, unless you will
             be running the <span class="command"><strong>globus-usage-uploader</strong></span> as the
-            <code class="literal">usagestats</code> user:
+            <code class="literal">usagestats</code> user. To do this, change the method
+            used for IPv4 local connections in
+            <code class="filename">/var/lib/pgsql/data/pg_hba.conf</code> from
+            <code class="literal">ident</code> to
+            <code class="literal">md5</code>.
+            </p><pre class="screen"># "local" is for Unix domain socket connections only
+local   all         all                               ident
+# IPv4 local connections:
+host    all         all         127.0.0.1/32          <span class="emphasis"><em>md5</em></span>
+# IPv6 local connections:
+host    all         all         ::1/128               ident</pre><p>
 
-            </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem">Uncomment the
-                <code class="literal">listen_address = 'localhost'</code> line in the file
-                <code class="filename">/var/lib/pgsql/data/postgresql.conf</code>
-                </li><li class="listitem">Change the method used for IPv4 local
-                connections from <code class="literal">ident</code> to
-                <code class="literal">md5</code>.</li></ul></div><p>
         </p><p>
+        Then, create the user and database:
+
         </p><pre class="screen"><code class="prompt"># </code><span class="command"><strong>su postgres</strong></span>
 <code class="prompt">% </code><span class="command"><strong>createuser --pwprompt usagestats</strong></span>
 <code class="prompt">Enter password for the new role:</code>
@@ -101,7 +107,7 @@
         The file contains one variable definition per line, with the value
         contained within quotation marks. Add the password value into the line
         <code class="literal">password = ""</code> between the quotation marks.
-        </p></div><div class="section" title="Testing the Usage Stats Tools"><div class="titlepage"><div><div><h3 class="title"><a name="id36102142"></a>Testing the Usage Stats Tools</h3></div></div></div><p>
+        </p></div><div class="section" title="Testing the Usage Stats Tools"><div class="titlepage"><div><div><h3 class="title"><a name="id36102134"></a>Testing the Usage Stats Tools</h3></div></div></div><p>
     The <span class="application">globus_usage_tools_test</span> package contains
     test cases for all of the packet formats supported by the usage stats
     service. To run these tests, do the following:
@@ -111,7 +117,7 @@
     If everything is working, the output of the tests should end with the lines
     indicating that all tests were successful. If not, check the error messages
     from the tests and verify that all configuration above is completed.
-    </p></div><div class="section" title="Running the Usage Stats Tools"><div class="titlepage"><div><div><h3 class="title"><a name="id36102176"></a>Running the Usage Stats Tools</h3></div></div></div><p>
+    </p></div><div class="section" title="Running the Usage Stats Tools"><div class="titlepage"><div><div><h3 class="title"><a name="id36102168"></a>Running the Usage Stats Tools</h3></div></div></div><p>
         The usage stats tools consist of two programs:
         <span class="command"><strong>globus-usage-collector</strong></span>, and
         <span class="command"><strong>globus-usage-uploader</strong></span>. The
@@ -129,6 +135,12 @@
         is typically run indefinitely in the background. Full usage information
         is available in the <a href="/cgi-bin/olink?sysid" class="olink">reference</a>
         section of this manual.
+    </p><p>
+        To run <span class="command"><strong>globus-usage-collector</strong></span>, use the command:
+
+        </p><pre class="screen"><code class="prompt">% </code><span class="command"><strong>$GLOBUS_LOCATION/sbin/globus-usage-collector -b -f $GLOBUS_LOCATION/var/globus-usage-collector.pid</strong></span>
+<code class="computeroutput">Starting usage collector on UDP port 4810
+Running in background (7128)</code></pre><p>
     </p><p>
         The <span class="command"><strong>globus-usage-uploader</strong></span> program parses packet files
         created by <span class="command"><strong>globus-usage-collector</strong></span> and loads them
@@ -157,7 +169,7 @@ MAILTO="admin@example.org"
 1 * * * * $GLOBUS_LOCATION/sbin/globus-usage-uploader
 # Daily, remove empty usage directories
 59 0 * * * rmdir $GLOBUS_LOCATION/var/usage/*</pre><p>
-</p></div></div></div><div class="chapter" title="Chapter 2. Command Reference"><div class="titlepage"><div><div><h2 class="title"><a name="id36102333"></a>Chapter 2. Command Reference</h2></div></div></div><div class="reference"><div class="titlepage"><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="refentrytitle"><a href="#id36116544">globus-usage-collector</a></span><span class="refpurpose"> &#8212; Record usage statistics packets</span></dt><dt><span class="refentrytitle"><a href="#id36145823">globus-usage-uploader</a></span><span class="refpurpose"> &#8212; Store usage statistics packets in a database</span></dt></dl></div><span class="author"></span><div class="refentry" title="globus-usage-collector"><a name="id36116544"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>Usage Statistics Collector &#8212; Record usage statistics packets</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">globus-usage-collector</code>  [-h] [-p <em class="replaceable"><code>PORT</code></em>] [-b] [-f <em class="replaceable"><code>FILE</code></em>]</p></div></div><div class="refsect1" title="Description"><a name="id36123926"></a><h2>Description</h2><p>
+</p></div></div></div><div class="chapter" title="Chapter 2. Command Reference"><div class="titlepage"><div><div><h2 class="title"><a name="id36102351"></a>Chapter 2. Command Reference</h2></div></div></div><div class="reference"><div class="titlepage"><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="refentrytitle"><a href="#id36116569">globus-usage-collector</a></span><span class="refpurpose"> &#8212; Record usage statistics packets</span></dt><dt><span class="refentrytitle"><a href="#id36145848">globus-usage-uploader</a></span><span class="refpurpose"> &#8212; Store usage statistics packets in a database</span></dt></dl></div><span class="author"></span><div class="refentry" title="globus-usage-collector"><a name="id36116569"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>Usage Statistics Collector &#8212; Record usage statistics packets</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">globus-usage-collector</code>  [-h] [-p <em class="replaceable"><code>PORT</code></em>] [-b] [-f <em class="replaceable"><code>FILE</code></em>]</p></div></div><div class="refsect1" title="Description"><a name="id36123950"></a><h2>Description</h2><p>
 The <span class="command"><strong>globus-usage-collector</strong></span> command is a servivce
 which accepts usage packets on a UDP port and writes them to a file for later
 processing.
@@ -171,7 +183,7 @@ The full set of command-line options to
                     process in the background</td></tr><tr><td>-f <em class="replaceable"><code>FILE</code></em></td><td>Write the process ID of the backgrounded
                 <span class="command"><strong>globus-usage-collector</strong></span> process to
                 <em class="replaceable"><code>FILE</code></em>.</td></tr></tbody></table></div><p>
-</p></div><div class="refsect1" title="Usage Packet Files"><a name="id36145741"></a><h2>Usage Packet Files</h2><p>
+</p></div><div class="refsect1" title="Usage Packet Files"><a name="id36145766"></a><h2>Usage Packet Files</h2><p>
 The files are written in a subdirectory of the current directory
 with its name derived from the current time in UTC. The form of this
 directory name is <em class="replaceable"><code>YYYYMMDD</code></em>, (e.g. the date July 20,
@@ -185,7 +197,7 @@ Each usage packet file consists of simple records containing the binary UDP
 usage packet data. Each packet record consists of 4 fields:
 
 </p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td>Address Length (2 bytes)</td><td>Big-endian length of the Address</td></tr><tr><td>Address</td><td>Big-endian packed binary address</td></tr><tr><td>Packet Length (2 bytes)</td><td>Big-endian length of the packet</td></tr><tr><td>Packet</td><td>Binary packet data</td></tr></tbody></table></div><p>
-</p></div></div><div class="refentry" title="globus-usage-uploader"><div class="refentry.separator"><hr></div><a name="id36145823"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>Usage Statistics Database Uploader &#8212; Store usage statistics packets in a database</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">globus-usage-uploader</code>  [-h] [-d <em class="replaceable"><code>DIRECTORY</code></em>] [-n]</p></div></div><div class="refsect1" title="Description"><a name="id36145887"></a><h2>Description</h2><p>
+</p></div></div><div class="refentry" title="globus-usage-uploader"><div class="refentry.separator"><hr></div><a name="id36145848"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>Usage Statistics Database Uploader &#8212; Store usage statistics packets in a database</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">globus-usage-uploader</code>  [-h] [-d <em class="replaceable"><code>DIRECTORY</code></em>] [-n]</p></div></div><div class="refsect1" title="Description"><a name="id36145912"></a><h2>Description</h2><p>
 The <span class="command"><strong>globus-usage-uploader</strong></span> command is a utility
 which parses usage packets in directories of the form created by
 <span class="command"><strong>globus-usage-collector</strong></span> and uploads them to a
@@ -197,7 +209,7 @@ The full set of command-line options to
 </p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><tbody><tr><td>-h</td><td>Display a help message and exit</td></tr><tr><td>-d <em class="replaceable"><code>DIRECTORY</code></em></td><td>Read data from <em class="replaceable"><code>DIRECTORY</code></em>
                     instead of the configured path.</td></tr><tr><td>-n</td><td>Don't commit usage packets to the database after
                 processing files (for testing)</td></tr></tbody></table></div><p>
-</p></div><div class="refsect1" title="Examples"><a name="id36145956"></a><h2>Examples</h2><pre class="screen"><code class="prompt">% </code><span class="command"><strong>globus-usage-uploader</strong></span>
+</p></div><div class="refsect1" title="Examples"><a name="id36145981"></a><h2>Examples</h2><pre class="screen"><code class="prompt">% </code><span class="command"><strong>globus-usage-uploader</strong></span>
 <code class="computeroutput">
 Processing packets: 20090723
 Processing packets: 20090724

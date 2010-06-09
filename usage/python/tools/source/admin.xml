@@ -4,7 +4,8 @@
 [
 
 <!ENTITY % xinclude SYSTEM "xinclude.mod" >
-<!ENTITY prompt "<prompt>&#35; </prompt>" >
+<!ENTITY prompt "<prompt>&#37; </prompt>" >
+<!ENTITY suprompt "<prompt>&#35; </prompt>" >
 
 %xinclude;
 
@@ -58,7 +59,7 @@
             <application>python-psycopg2</application> using
             <command>apt-get</command>:
             
-            <screen>&prompt;<command>apt-get install python postgresql python-psycopg2</command></screen>
+            <screen>&suprompt;<command>apt-get install python postgresql python-psycopg2</command></screen>
         </para>
 
         <para>
@@ -68,7 +69,7 @@
             <application>python-psycopg2</application> using
             <command>yum</command>:
 
-            <screen>&prompt;<command>yum install python postgresql-server python-psycopg2</command></screen>
+            <screen>&suprompt;<command>yum install python postgresql-server python-psycopg2</command></screen>
         </para>
 
         <para>
@@ -124,7 +125,7 @@
     <section>
         <title>Debian-specific configuration</title>
         <para>
-        <screen>&prompt;<command>su postgres</command>
+        <screen>&suprompt;<command>su postgres</command>
 <prompt>% </prompt><command>createuser --pwprompt usagestats</command>
 <prompt>Enter password for the new role:</prompt>
 <prompt>Enter it again:</prompt>
@@ -142,20 +143,23 @@
             On fedora, you'll need to configure the postgres service to allow
             password authentication, unless you will
             be running the <command>globus-usage-uploader</command> as the
-            <literal>usagestats</literal> user:
+            <literal>usagestats</literal> user. To do this, change the method
+            used for IPv4 local connections in
+            <filename>/var/lib/pgsql/data/pg_hba.conf</filename> from
+            <literal>ident</literal> to
+            <literal>md5</literal>.
+            <screen># "local" is for Unix domain socket connections only
+local   all         all                               ident
+# IPv4 local connections:
+host    all         all         127.0.0.1/32          <emphasis>md5</emphasis>
+# IPv6 local connections:
+host    all         all         ::1/128               ident</screen>
 
-            <itemizedlist>
-                <listitem><simpara>Uncomment the
-                <literal>listen_address = 'localhost'</literal> line in the file
-                <filename>/var/lib/pgsql/data/postgresql.conf</filename>
-                </simpara></listitem>
-                <listitem><simpara>Change the method used for IPv4 local
-                connections from <literal>ident</literal> to
-                <literal>md5</literal>.</simpara></listitem>
-            </itemizedlist>
         </para>
         <para>
-        <screen>&prompt;<command>su postgres</command>
+        Then, create the user and database:
+
+        <screen>&suprompt;<command>su postgres</command>
 <prompt>% </prompt><command>createuser --pwprompt usagestats</command>
 <prompt>Enter password for the new role:</prompt>
 <prompt>Enter it again:</prompt>
@@ -216,6 +220,13 @@
         is typically run indefinitely in the background. Full usage information
         is available in the <olink ptr="usagestats-reference">reference</olink>
         section of this manual.
+    </para>
+    <para>
+        To run <command>globus-usage-collector</command>, use the command:
+
+        <screen>&prompt;<command>$GLOBUS_LOCATION/sbin/globus-usage-collector -b -f $GLOBUS_LOCATION/var/globus-usage-collector.pid</command>
+<computeroutput>Starting usage collector on UDP port 4810
+Running in background (7128)</computeroutput></screen>
     </para>
 
     <para>
