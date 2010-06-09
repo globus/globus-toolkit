@@ -1,0 +1,8 @@
+driver = "psycopg2"
+database = "usagestats"
+host = "localhost"
+port = ""
+user = "usagestats"
+password = ""
+data_directory = "@localstatedir@/usage"
+collector_port = "4810"

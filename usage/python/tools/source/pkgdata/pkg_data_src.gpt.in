@@ -18,14 +18,6 @@
             </Version>
           </Dependency>
         </Source_Dependencies>
-
-        <Source_Setup_Dependency PkgType="pgm">
-          <Setup_Dependency Name="globus_usage_tools_setup_executed">
-            <Version>
-              <Simple_Version Major="0"/>
-            </Version>
-          </Setup_Dependency>
-        </Source_Setup_Dependency>
   </src_pkg>
 
 </gpt_package_metadata>
