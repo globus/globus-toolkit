@@ -58,7 +58,7 @@ typedef struct globus_l_url_sync_handle_s
     globus_url_sync_complete_callback_t     complete_callback;
     globus_url_sync_result_callback_t       result_callback;
     void *                                  user_arg;
-    globus_url_sync_comparator_t *          comparator;
+    globus_url_sync_comparator_t            comparator;
     globus_mutex_t                          mutex;
 } globus_l_url_sync_handle_t;
 
@@ -66,7 +66,7 @@ typedef struct globus_l_url_sync_handle_s
 globus_result_t
 globus_url_sync_handle_init(
     globus_url_sync_handle_t *		    handle,
-    globus_url_sync_comparator_t *          comparator)
+    globus_url_sync_comparator_t            comparator)
 {
     globus_l_url_sync_handle_t *            i_handle;
     GlobusFuncName(globus_url_sync_handle_init);
@@ -313,7 +313,7 @@ globus_i_url_sync_handle_get_user_arg(
     return handle->user_arg;
 }
 
-globus_url_sync_comparator_t *
+globus_url_sync_comparator_t 
 globus_i_url_sync_handle_get_comparator(
     globus_url_sync_handle_t                handle)
 {

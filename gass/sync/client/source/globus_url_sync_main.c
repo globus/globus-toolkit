@@ -121,13 +121,12 @@ static int                          num_modules =
 int
 main(int argc, char *argv[])
 {
-    globus_result_t                     result;
-    globus_url_sync_handle_t            handle;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_url_sync_handle_t            handle = GLOBUS_NULL;
     int                                 i;
     globus_l_url_sync_main_monitor_t    monitor;
-    globus_url_sync_comparator_t        chained_comparator;
-    globus_url_sync_comparator_t        modify_comparator;
-	globus_url_sync_modification_params_t modify_params;
+    globus_url_sync_comparator_t        chained_comparator = GLOBUS_NULL;
+    globus_url_sync_comparator_t        modify_comparator = GLOBUS_NULL;
     GlobusFuncName(main);
 
     /* Parse arguments */
@@ -169,37 +168,42 @@ main(int argc, char *argv[])
 
     if (globus_i_url_sync_args_newer || globus_i_url_sync_args_older)
     {
-		modify_params.type =
-		(globus_i_url_sync_args_newer && globus_i_url_sync_args_older)?
-			globus_url_sync_modification_time_equal:
-		(globus_i_url_sync_args_newer)?
-			globus_url_sync_modification_time_newer:
-			globus_url_sync_modification_time_older;
-		
-        modify_comparator.comparator_arg = (void *)&modify_params;
-		modify_comparator.compare_func = globus_url_sync_comparator_modify.compare_func;
-
-        /* ...modify */
-        globus_url_sync_chained_comparator_add(
-				&chained_comparator,
-				&modify_comparator);
+        if (globus_url_modify_comparator_init(&modify_comparator) == GLOBUS_SUCCESS)
+	{
+	    if (globus_url_sync_set_modification_check_type(modify_comparator,
+		  (globus_i_url_sync_args_newer && globus_i_url_sync_args_older)?
+		     globus_url_sync_modification_time_equal:
+		  (globus_i_url_sync_args_newer)?
+		     globus_url_sync_modification_time_newer:
+		     globus_url_sync_modification_time_older) == GLOBUS_SUCCESS)
+	    {
+	        /* ...modify */
+	        globus_url_sync_chained_comparator_add(
+						       chained_comparator,
+						       modify_comparator);
+	    }
+	}
+	else 
+	{
+	    GLOBUS_L_URL_SYNC_DEBUG_PRINTF("Modify comparator initialization failed.\n");
+	}
     }
 
     if (globus_i_url_sync_args_size)
     {
         /* ...size */
         globus_url_sync_chained_comparator_add(
-				&chained_comparator,
-				&globus_url_sync_comparator_size);
+				chained_comparator,
+				globus_url_sync_comparator_size);
     }
 
     /* ...exists, always checked, including filetype checking */
     globus_url_sync_chained_comparator_add(
-			&chained_comparator,
-			&globus_url_sync_comparator_exists);
+			chained_comparator,
+			globus_url_sync_comparator_exists);
 
     /* Initialize sync handle */
-    globus_url_sync_handle_init(&handle, &chained_comparator);
+    globus_url_sync_handle_init(&handle, chained_comparator);
     globus_url_sync_handle_set_cache_connections(
 			handle,
 			globus_i_url_sync_args_cache);
@@ -240,9 +244,12 @@ main(int argc, char *argv[])
     }
 
     globus_url_sync_handle_destroy(&handle);
-	globus_url_sync_chained_comparator_destroy(&chained_comparator);
+    globus_url_sync_chained_comparator_destroy(&chained_comparator);
     
-	/* Destroy monitor */
+    if (modify_comparator != GLOBUS_NULL)
+        globus_url_sync_modify_comparator_destroy(&modify_comparator);
+	
+    /* Destroy monitor */
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 

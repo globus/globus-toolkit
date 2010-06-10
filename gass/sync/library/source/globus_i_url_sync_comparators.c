@@ -26,6 +26,7 @@
 
 #include "globus_url_sync.h"
 #include "globus_i_url_sync.h"
+#include "globus_i_url_sync_list.h"
 #include "globus_i_url_sync_handle.h"
 #include "globus_i_url_sync_log.h"
 #include "globus_ftp_client.h"
@@ -50,8 +51,16 @@ typedef struct
     globus_list_t *				list;
     globus_url_sync_compare_func_cb_t		cb_func;
     void *					cb_arg;
-}
-globus_l_url_sync_chain_func_cb_arg_t;
+} globus_l_url_sync_chain_func_cb_arg_t;
+
+
+/** Structure used for modification time comparason parameters. */
+
+typedef struct
+{
+	globus_url_sync_modification_comp_t	type;
+	/* additional parameters may be added in the future */
+} globus_l_url_sync_modification_params_t;
 
 /* Function declarations */
 
@@ -93,6 +102,25 @@ globus_l_url_sync_modify_func(
     globus_url_sync_endpoint_t *                destination,
     int *					result,
     globus_object_t **				error);
+
+/* Variables */
+
+globus_l_url_sync_comparator_t globus_l_url_sync_comparator_exists =
+{
+    GLOBUS_NULL,
+    globus_l_url_sync_exists_func
+};
+globus_url_sync_comparator_t globus_url_sync_comparator_exists = 
+  &globus_l_url_sync_comparator_exists;
+
+globus_l_url_sync_comparator_t globus_l_url_sync_comparator_size =
+{
+    GLOBUS_NULL,
+    globus_l_url_sync_size_func
+};
+globus_url_sync_comparator_t globus_url_sync_comparator_size = 
+  &globus_l_url_sync_comparator_size;
+
 
 /* Functions */
 
@@ -246,8 +274,8 @@ globus_l_url_sync_modify_func(
     int *					result,
     globus_object_t **				error)
 {
-    globus_url_sync_modification_params_t *params = 
-      (globus_url_sync_modification_params_t *)comparator_arg;
+    globus_l_url_sync_modification_params_t *params = 
+      (globus_l_url_sync_modification_params_t *)comparator_arg;
 
     GlobusFuncName(globus_l_url_sync_modify_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
@@ -293,7 +321,7 @@ globus_l_url_sync_chain_func(
     globus_url_sync_compare_func_cb_t		callback_func,
     void *                                      callback_arg)
 {
-    globus_url_sync_comparator_t *		next_comparator;
+    globus_url_sync_comparator_t 		next_comparator;
     int						result = 0;
     globus_object_t *                           error = GLOBUS_NULL;
     globus_list_t *				list = comparator_arg;
@@ -320,7 +348,7 @@ globus_l_url_sync_chain_func(
 	{
 	    /* Initiate next comparison in the list. */
 	    next_comparator =
-	      (globus_url_sync_comparator_t *)globus_list_first(list);
+	      (globus_url_sync_comparator_t)globus_list_first(list);
 	    list = globus_list_rest(list);
 			
 	    /* Call next compare func */
@@ -445,54 +473,117 @@ globus_l_url_sync_ftpclient_complete_cb(
 /* Chained comparator functions */
 void
 globus_url_sync_chained_comparator_init(
-    globus_url_sync_comparator_t *					chain)
+    globus_url_sync_comparator_t *	chain)
 {
-    chain->comparator_arg  =  GLOBUS_NULL;
-    chain->compare_func    =  (globus_url_sync_compare_func_t)GLOBUS_NULL;
+    globus_url_sync_comparator_t ichain = (globus_url_sync_comparator_t)
+      globus_libc_malloc(sizeof(globus_l_url_sync_comparator_t));
+
+    globus_assert(ichain);
+
+    ichain->comparator_arg  =  GLOBUS_NULL;
+    ichain->compare_func    =  (globus_url_sync_compare_func_t)GLOBUS_NULL;
     /* unused, because chain is started with "globus_l_url_sync_chain_func",
        which takes the user callback as a parameter. */
+    *chain = ichain;
 }
 
 void
 globus_url_sync_chained_comparator_destroy(
-    globus_url_sync_comparator_t *					chain)
+    globus_url_sync_comparator_t * 	chain)
 {
-    globus_assert(chain);
+    globus_assert(*chain);
 
-    if (chain->comparator_arg)
-        globus_list_free(chain->comparator_arg);
+    if ((*chain)->comparator_arg)
+        globus_list_free((*chain)->comparator_arg);
+    globus_libc_free(*chain);
 }
 
 void
 globus_url_sync_chained_comparator_add(
-    globus_url_sync_comparator_t *					chain,
-    globus_url_sync_comparator_t *					next)
+    globus_url_sync_comparator_t 	chain,
+    globus_url_sync_comparator_t 	next)
 {
     globus_assert(chain);
     chain->comparator_arg = globus_list_cons(
 		next, (globus_list_t *) chain->comparator_arg);
 }
 
+/* Modification comparison structure functions */
 
-/* Variables */
-
-globus_url_sync_comparator_t    globus_url_sync_comparator_exists =
+/**
+ * Initializes the comparator structure.
+ */
+globus_result_t
+globus_url_modify_comparator_init(
+	globus_url_sync_comparator_t *	comparator)
 {
-    GLOBUS_NULL,
-    globus_l_url_sync_exists_func
+   globus_url_sync_comparator_t icomparator = (globus_url_sync_comparator_t)
+                globus_libc_malloc(sizeof(globus_l_url_sync_comparator_t));
+   if (icomparator != GLOBUS_NULL) 
+   {
+       icomparator->comparator_arg = 
+	 globus_libc_malloc(sizeof(globus_l_url_sync_modification_params_t));
+       if (icomparator->comparator_arg != GLOBUS_NULL)
+       {
+	   icomparator->compare_func = globus_l_url_sync_modify_func;
+	   *comparator = icomparator;
+	   return(GLOBUS_SUCCESS);
+       }
+       else 
+       {
+	   globus_libc_free(icomparator);
+           return(GLOBUS_FAILURE);
+       }
+   }
+   else 
+   {
+       return(GLOBUS_FAILURE);
+   }
 };
 
-globus_url_sync_comparator_t    globus_url_sync_comparator_size =
+/**
+ * Destroys the comparator structure.
+ */
+void
+globus_url_sync_modify_comparator_destroy(
+    globus_url_sync_comparator_t *	comparator)
 {
-    GLOBUS_NULL,
-    globus_l_url_sync_size_func
+    if (*comparator != GLOBUS_NULL) {
+        if ((*comparator)->comparator_arg != GLOBUS_NULL)
+	    globus_libc_free((*comparator)->comparator_arg);
+	globus_libc_free(*comparator);
+    }
 };
 
-globus_url_sync_comparator_t    globus_url_sync_comparator_modify =
+/**
+ * Sets the type for the modification time comparison.
+ */
+globus_result_t
+globus_url_sync_set_modification_check_type(
+    globus_url_sync_comparator_t 		comparator,
+    globus_url_sync_modification_comp_t	type)
 {
-	GLOBUS_NULL,
-	globus_l_url_sync_modify_func
+    globus_l_url_sync_modification_params_t *modify_params;
+	
+    if (comparator != GLOBUS_NULL) 
+    {
+        modify_params = (globus_l_url_sync_modification_params_t *)
+				comparator->comparator_arg;
+	
+	if (modify_params != GLOBUS_NULL)
+	{
+	    modify_params->type = type;
+	    return(GLOBUS_SUCCESS);
+	}
+	else 
+	{
+	    return(GLOBUS_FAILURE);
+	}
+    }
+    else 
+    {
+        return(GLOBUS_FAILURE);
+    }
 };
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-

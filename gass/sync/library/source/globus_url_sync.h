@@ -185,13 +185,6 @@ typedef enum
 	globus_url_sync_modification_time_older
 } globus_url_sync_modification_comp_t;
 
-typedef struct globus_url_sync_modification_params_s
-{
-	globus_url_sync_modification_comp_t	type;
-	/* additional parameters may be added in the future */
-} globus_url_sync_modification_params_t;
-
-
 /**
  * Endpoint statistics. File oriented statistics for the endpoint.
  *
@@ -306,17 +299,10 @@ typedef globus_result_t
 
 /**
  * The synchronization comparator. Synchronization functions use the comparator
- * to determine the synchronization status between files and directories. The
- * structure includes a user argument (comparator_arg) that the calling
- * function passes to the comparator functions (e.g., compare_func).
- *
+ * to determine the synchronization status between files and directories.
  * @ingroup globus_url_sync_comparators
  */
-typedef struct globus_url_sync_comparator_s
-{
-    void *                                      comparator_arg;
-    globus_url_sync_compare_func_t              compare_func;
-} globus_url_sync_comparator_t;
+typedef struct globus_l_url_sync_comparator_s * globus_url_sync_comparator_t;
 
 /**
  * Operation result callback.
@@ -421,8 +407,8 @@ globus_url_sync_log_set_handle(
  */
 globus_result_t
 globus_url_sync_handle_init(
-    globus_url_sync_handle_t *              handle,
-    globus_url_sync_comparator_t *          comparator);
+    globus_url_sync_handle_t *  	handle,
+    globus_url_sync_comparator_t 	comparator);
 
 /**
  * Destroys the globus_url_sync Handle.
@@ -437,6 +423,49 @@ globus_url_sync_handle_init(
 globus_result_t
 globus_url_sync_handle_destroy(
     globus_url_sync_handle_t *              handle);
+
+/**
+ * Initializes the comparator structure.
+ *
+ * @ingroup globus_url_sync_comparators
+ *
+ * @param   comparator
+ *          Pointer to an uninitialized comparator handle.
+ * @retval  GLOBUS_SUCCESS
+ *          The handle is initialized and ready for use.
+ */
+globus_result_t
+globus_url_modify_comparator_init(
+	globus_url_sync_comparator_t *	comparator);
+
+/**
+ * Frees memory allcoated when the comparator structure was initialized.
+ *
+ * @ingroup globus_url_sync_comparators
+ *
+ * @param   comparator
+ *          Pointer to an initialized comparator handle.
+ */
+void
+globus_url_sync_modify_comparator_destroy(
+	globus_url_sync_comparator_t *	comparator);
+
+/**
+ * Sets the type for the modification time comparison.
+ *
+ * @ingroup globus_url_sync_comparators
+ *
+ * @param   comparator
+ *          Pointer to an initialized comparator handle.
+ * @param   type
+ *          Equal, newer, or older.
+ * @retval  GLOBUS_SUCCESS
+ *          The type has been set.
+ */
+globus_result_t
+globus_url_sync_set_modification_check_type(
+	globus_url_sync_comparator_t       	comparator,
+	globus_url_sync_modification_comp_t	type);
 
 /**
  * Use connection caching when possible. The GriFTP client API supports
@@ -504,11 +533,11 @@ globus_url_sync_handle_get_recursion(
 
 globus_result_t
 globus_l_url_sync_chain_func(
-    void *                                      comparator_arg,
-    globus_url_sync_endpoint_t *                source,
-    globus_url_sync_endpoint_t *                destination,
-    globus_url_sync_compare_func_cb_t           callback_func,
-    void *                                      callback_arg);
+    void *                                  comparator_arg,
+    globus_url_sync_endpoint_t *            source,
+    globus_url_sync_endpoint_t *            destination,
+    globus_url_sync_compare_func_cb_t       callback_func,
+    void *                                  callback_arg);
 
 /**
  * @defgroup globus_url_sync_operations Synchronize Operations
@@ -552,22 +581,10 @@ globus_url_sync(
 extern globus_url_sync_comparator_t globus_url_sync_comparator_exists;
 
 /**
- * Comparator for type checks. Reports an error if file types do not match.
- * @ingroup globus_url_sync_comparators
- */
-extern globus_url_sync_comparator_t globus_url_sync_comparator_filetype;
-
-/**
  * Comparator for size checks.
  * @ingroup globus_url_sync_comparators
  */
 extern globus_url_sync_comparator_t globus_url_sync_comparator_size;
-
-/**
- * Comparator for modification time comparison.
- * @ingroup globus_url_sync_comparators
- */
-extern globus_url_sync_comparator_t globus_url_sync_comparator_modify;
 
 /**
  * Allocates and initializes a new chained comparator. The chained comparator
@@ -583,7 +600,7 @@ extern globus_url_sync_comparator_t globus_url_sync_comparator_modify;
  */
 void
 globus_url_sync_chained_comparator_init(
-    globus_url_sync_comparator_t *					chain);
+    globus_url_sync_comparator_t *	chain);
 
 /**
  * Destroys a chained comparator.
@@ -595,7 +612,7 @@ globus_url_sync_chained_comparator_init(
  */
 void
 globus_url_sync_chained_comparator_destroy(
-    globus_url_sync_comparator_t *					chain);
+    globus_url_sync_comparator_t *	chain);
 
 /**
  * Adds a comparator to the FRONT of the chain. If add is call in the order
@@ -611,8 +628,8 @@ globus_url_sync_chained_comparator_destroy(
  */
 void
 globus_url_sync_chained_comparator_add(
-    globus_url_sync_comparator_t *					chain,
-    globus_url_sync_comparator_t *					next);
+    globus_url_sync_comparator_t 	chain,
+    globus_url_sync_comparator_t 	next);
 
 EXTERN_C_END
 
