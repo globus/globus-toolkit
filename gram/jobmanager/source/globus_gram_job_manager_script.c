@@ -1729,6 +1729,10 @@ globus_l_gram_enqueue_description(
             ",\n    'streamingrequested' => [ %d ]",
             request->streaming_requested );
 
+    rc = globus_l_gram_enqueue_string(
+            fifo,
+            ",\n    'statefile' => [ '%s' ]",
+            request->job_state_file);
     rc = globus_l_gram_enqueue_staging_list(
             request,
             fifo,

@@ -1378,7 +1378,7 @@ globus_l_condor_parse_log(
                         "%Y-%m-%dT%H:%M:%S",
                         &event_tm); 
 
-                event_stamp = localtime(&event_tm);
+                event_stamp = mktime(&event_tm);
                 break;
             case CLUSTER:
                 globus_assert (pu.type == CONDOR_INTEGER);

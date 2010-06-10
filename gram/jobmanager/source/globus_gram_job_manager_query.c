@@ -1935,6 +1935,10 @@ globus_l_gram_stdio_update_signal(
     char *                              update_rsl_spec)
 {
     globus_rsl_t *                      rsl;
+    globus_rsl_t *                      original_rsl;
+    globus_rsl_t *                      position;
+    globus_rsl_t *                      new_unevaluated_rsl;
+    char *                              new_rsl_spec;
     int                                 rc = GLOBUS_SUCCESS;
 
 
@@ -2019,6 +2023,48 @@ globus_l_gram_stdio_update_signal(
 
         goto free_rsl_out;
     }
+    /* Remove unsupported stdout and stderr position attributes */
+    position = globus_gram_job_manager_rsl_extract_relation(
+            rsl,
+            GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
+    if (position != NULL)
+    {
+        globus_rsl_free_recursive(position);
+    }
+    position = globus_gram_job_manager_rsl_extract_relation(
+            rsl,
+            GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
+    if (position != NULL)
+    {
+        globus_rsl_free_recursive(position);
+    }
+
+    /* Replace the string RSL representation for this job with the
+     * merge of the original and this update. The new RSL unparsed
+     * into a string and stored in request->rsl_spec
+     */
+    original_rsl = globus_rsl_parse(request->rsl_spec);
+    if (original_rsl == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_rsl_out;
+    }
+    new_unevaluated_rsl = globus_gram_job_manager_rsl_merge(
+            original_rsl,
+            rsl);
+    globus_rsl_free_recursive(original_rsl);
+    new_rsl_spec = globus_rsl_unparse(new_unevaluated_rsl);
+    if (new_rsl_spec == NULL)
+    {
+        globus_rsl_free_recursive(new_unevaluated_rsl);
+
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+
+        goto free_rsl_out;
+    }
+    free(request->rsl_spec);
+    request->rsl_spec = new_rsl_spec;
 
     rc = globus_rsl_eval(rsl, &request->symbol_table);
     if(rc != GLOBUS_SUCCESS)

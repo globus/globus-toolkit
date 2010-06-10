@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager">
 
-    <Aging_Version Age="5" Major="10" Minor="53"/>
+    <Aging_Version Age="5" Major="10" Minor="54"/>
     <Description>GRAM Jobmanager</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -28,6 +28,12 @@
             <Dependency Name="globus_gass_cache">
                 <Version>
                     <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
 
@@ -114,6 +120,12 @@
             <Dependency Name="globus_gass_cache">
                 <Version>
                     <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
 
