@@ -176,6 +176,7 @@ main(int argc, char *argv[])
     pid_t childpid;
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+    sigset_t mysigset;
 
     myproxy_socket_attrs_t         *socket_attrs;
     myproxy_server_context_t       *server_context;
@@ -193,6 +194,8 @@ main(int argc, char *argv[])
 
     server_context  = malloc(sizeof(*server_context));
     memset(server_context, 0, sizeof(*server_context));
+
+    sigemptyset(&mysigset);
 
     /* Set context defaults */
     server_context->run_as_daemon = 1;
@@ -241,7 +244,9 @@ main(int argc, char *argv[])
 
     /* If process is killed or Ctrl-C */
     my_signal(SIGTERM, sig_exit); 
+    sigaddset(&mysigset, SIGTERM);
     my_signal(SIGINT,  sig_exit); 
+    sigaddset(&mysigset, SIGINT);
 
     /* Read my configuration */
     if (handle_config(server_context) < 0) {
@@ -287,12 +292,18 @@ main(int argc, char *argv[])
 
        /* Set up signal handling to deal with zombie processes left over  */
        my_signal(SIGCHLD, sig_chld);
+       sigaddset(&mysigset, SIGCHLD);
 
        /* Re-read configuration file on SIGHUP */
        my_signal(SIGHUP, sig_hup);
+       sigaddset(&mysigset, SIGHUP);
 
        /* Set up concurrent server */
        while (1) {
+
+	  /* make sure Globus hasn't blocked signals we care about */
+	  sigprocmask(SIG_UNBLOCK, &mysigset, NULL);
+
 	  socket_attrs->socket_fd = accept(listenfd,
 					   (struct sockaddr *) &client_addr,
 					   &client_addr_len);
