@@ -498,21 +498,35 @@ sub rewrite_urls
             $description->add($which, $first_destination);
             next;
         }
-        foreach my $dest (@destinations)
+        elsif (scalar(@destinations) == 1 &&
+               $first_destination =~ m|x-gass-cache://|)
         {
-            my $pair;
-
-            if (ref($dest))
+	    my @arg = ($cache_pgm, '-add', '-t', $tag, '-n',
+                        $first_destination, 'file:///dev/null');
+            $self->log("$which goes to $first_destination in cache");
+            $self->log("command is " . join(" ", @arg));
+            $filename = $self->pipe_out_cmd(@arg);
+            if ($! != 0)
             {
-                $dest = $dest->[0];
+                $self->log("Error adding to cache $!");
             }
-            $pair = [$cached_destination, $dest];
-
-            push(@{$filestreamout}, $pair);
+	    @arg = ($cache_pgm, '-query', '-t', $tag, $first_destination);
+            $filename = $self->pipe_out_cmd(@arg);
+	    if($filename ne '')
+	    {
+                $self->log("$first_destination in cache resolves to $filename");
+		$description->add($which, $filename);
+	    }
+            else
+            {
+                $self->log("$first_destination in cache did not resolve!");
+            }
         }
-        $description->add($which, $cached_destination);
+        else
+        {
+            $description->add($which, $cached_destination);
+        }
     }
-    $description->add('filestreamout', $filestreamout);
     return {};
 }
 

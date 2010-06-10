@@ -191,7 +191,7 @@ bad_stdout:
     }
     return rc;
 }
-/* globus_gram_job_manager_staging_create_list() */
+/* globus_gram_job_manager_streaming_list_replace() */
 
 static
 int
@@ -304,7 +304,7 @@ globus_l_staging_replace_stream(
          * If any value is a non-sequence, or a sequence of non-x-gass-cache
          * URL with a tag, flag as an error
          */
-        single = globus_list_size(list);
+        single = (globus_list_size(list) == 1);
 
         while (!globus_list_empty(list))
         {
