@@ -16,7 +16,7 @@
 #define MYPROXY_DEFAULT_HOURS          168     /* 1 week */
 #define MYPROXY_DEFAULT_DELEG_HOURS    12
 
-#define MYPROXY_DEFAULT_KEYBITS        1024
+#define MYPROXY_DEFAULT_KEYBITS        2048    /* NIST SP 800-57 */
 
 #define MYPROXY_DEFAULT_TIMEOUT        120
 

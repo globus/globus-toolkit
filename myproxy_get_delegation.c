@@ -367,6 +367,8 @@ voms_proxy_init()
     FILE *cert_file = NULL;
     globus_result_t	local_result;
     globus_gsi_cert_utils_cert_type_t cert_type;
+    char                *keybitsenv = NULL;
+    int                 keybits = MYPROXY_DEFAULT_KEYBITS;
 
     if (ssl_get_times(outputfile, NULL, &cred_expiration) == 0) {
         cred_lifetime = cred_expiration-time(0);
@@ -409,6 +411,10 @@ voms_proxy_init()
         return -1;
     }
 
+    if ((keybitsenv = getenv("MYPROXY_KEYBITS")) != NULL) {
+        keybits = atoi(keybitsenv);
+    }
+
     /* Setup the environment for voms-proxy-init. */
     unsetenv("X509_USER_CERT");
     unsetenv("X509_USER_KEY");
@@ -432,7 +438,7 @@ voms_proxy_init()
     argv[argc++] = "-out";
     argv[argc++] = outputfile;
     argv[argc++] = "-bits";
-    snprintf(bits, sizeof(bits), "%d", MYPROXY_DEFAULT_KEYBITS);
+    snprintf(bits, sizeof(bits), "%d", keybits);
     argv[argc++] = bits;
     argv[argc++] = "-noregen";
 	if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)) {
