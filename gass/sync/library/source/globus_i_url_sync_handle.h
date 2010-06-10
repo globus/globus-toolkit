@@ -265,10 +265,10 @@ globus_i_url_sync_handle_get_user_arg(
  *
  * @param   handle
  *          URL Sync Handle.
- * @retval  globus_url_sync_comparator_t *
+ * @retval  globus_url_sync_comparator_t
  *          A pointer to the synchronization comparator.
  */
-globus_url_sync_comparator_t *
+globus_url_sync_comparator_t 
 globus_i_url_sync_handle_get_comparator(
     globus_url_sync_handle_t                handle);
 

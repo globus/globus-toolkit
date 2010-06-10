@@ -442,7 +442,7 @@ globus_l_url_sync(
     globus_url_sync_endpoint_t *            destination)
 {
     globus_result_t                         result;
-    globus_url_sync_comparator_t *          comparator;
+    globus_url_sync_comparator_t            comparator;
     GlobusFuncName(globus_l_url_sync);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
@@ -575,7 +575,7 @@ globus_url_sync_i_list_dir_cb(
          * comparator. */
         globus_result_t                 result;
         globus_url_sync_handle_t        handle;
-        globus_url_sync_comparator_t *  comparator;
+        globus_url_sync_comparator_t    comparator;
         globus_byte_t *                 entry;
         char child[GLOBUS_I_URL_SYNC_FILENAME_BUFLEN];
 

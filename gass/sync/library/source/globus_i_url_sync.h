@@ -133,6 +133,20 @@ EXTERN_C_END
 
 #define GLOBUS_I_URL_SYNC_FILENAME_BUFLEN 1024
 
+/**
+ * The synchronization comparator. Synchronization functions use the comparator
+ * to determine the synchronization status between files and directories. The
+ * structure includes a user argument (comparator_arg) that the calling
+ * function passes to the comparator functions (e.g., compare_func).
+ *
+ * @ingroup globus_url_sync_comparators
+ */
+typedef struct globus_l_url_sync_comparator_s
+{
+    void *                                      comparator_arg;
+    globus_url_sync_compare_func_t              compare_func;
+} globus_l_url_sync_comparator_t;
+
 #endif	/* _GLOBUS_I_URL_SYNC_H */
 
 #endif  /* GLOBUS_DONT_DOCUMENT_INTERNAL */
