@@ -517,6 +517,8 @@ grid_proxy_init(int seconds,
     char hours[11], bits[11], vomslife[14];
     int argc = 0;
     pid_t childpid;
+    char *keybitsenv = NULL;
+    int keybits = MYPROXY_DEFAULT_KEYBITS;
 
     if (voms) {
         command = "voms-proxy-init";
@@ -543,6 +545,10 @@ grid_proxy_init(int seconds,
         }
     }
     
+    if ((keybitsenv = getenv("MYPROXY_KEYBITS")) != NULL) {
+        keybits = atoi(keybitsenv);
+    }
+
     argv[argc++] = "-verify";
     argv[argc++] = "-hours";
     snprintf(hours, sizeof(hours), "%d", seconds / SECONDS_PER_HOUR);
@@ -554,7 +560,7 @@ grid_proxy_init(int seconds,
         argv[argc++] = vomslife;
     }
     argv[argc++] = "-bits";
-    snprintf(bits, sizeof(bits), "%d", MYPROXY_DEFAULT_KEYBITS);
+    snprintf(bits, sizeof(bits), "%d", keybits);
     argv[argc++] = bits;
 
     if (cert) {

@@ -1224,6 +1224,8 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
     BIO	      			*bio = NULL;
     char                        *GT_PROXY_MODE = NULL;
+    char                *keybitsenv = NULL;
+    int                 keybits = MYPROXY_DEFAULT_KEYBITS;
 
     my_init();
     
@@ -1231,11 +1233,14 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     assert(buffer != NULL);
     assert(buffer_length != NULL);
 
+    if ((keybitsenv = getenv("MYPROXY_KEYBITS")) != NULL) {
+        keybits = atoi(keybitsenv);
+    }
+
     *new_creds = ssl_credentials_new();
 
     globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
-    globus_gsi_proxy_handle_attrs_set_keybits(proxy_handle_attrs,
-					      MYPROXY_DEFAULT_KEYBITS);
+    globus_gsi_proxy_handle_attrs_set_keybits(proxy_handle_attrs, keybits);
 
     local_result = globus_gsi_proxy_handle_init(&(*new_creds)->proxy_req,
 						proxy_handle_attrs);
