@@ -24,6 +24,8 @@ use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::GRAM::StdioMerger;
+use IPC::Open3;
+
 use Globus::Core::Paths;
 
 # NOTE: This package name must match the name of the .pm file!!
@@ -102,7 +104,6 @@ sub submit
     my @environment;
     my $environment_string;
     my $script_filename;
-    my $error_filename;
     my $requirements = '';
     my $rank = '';
     my @arguments;
@@ -111,7 +112,10 @@ sub submit
     my @submit_attrs;
     my $submit_attrs_string;
     my $multi_output = 0;
-    my $failure_text = '';
+    my $pid;
+    my $status;
+    my ($condor_submit_out, $condor_submit_err);
+    my $rc;
 
     # Reject jobs that want streaming, if so configured
     if ( $description->streamingrequested() &&
@@ -259,17 +263,45 @@ sub submit
     # Create script for condor submission
     $script_filename = $self->job_dir() . '/scheduler_condor_submit_script';
 
-    $error_filename = $self->job_dir() . '/scheduler_condor_submit_stderr';
-
     local(*SCRIPT_FILE);
 
-    open(SCRIPT_FILE, ">$script_filename") 
-        or return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED;
+    $rc = open(SCRIPT_FILE, ">$script_filename") ;
 
-    print SCRIPT_FILE "#\n# description file for condor submission\n#\n";
-    print SCRIPT_FILE "Universe = $universe\n";
-    print SCRIPT_FILE "Notification = Never\n";
-    print SCRIPT_FILE "Executable = " . $description->executable . "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "open: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+
+    $rc = print SCRIPT_FILE "#\n# description file for condor submission\n#\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "Universe = $universe\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "Notification = Never\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "Executable = " . $description->executable . "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     $requirements  = "OpSys == \"" . $description->condor_os() . "\" ";
     $requirements .= " && Arch == \"" . $description->condor_arch() . "\" ";
@@ -279,36 +311,114 @@ sub submit
 	$rank = "rank = Memory\n";
     }
 
-    print SCRIPT_FILE "Requirements = $requirements\n";
+    $rc = print SCRIPT_FILE "Requirements = $requirements\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
     if($rank ne '')
     {
-	print SCRIPT_FILE "$rank\n";
+	$rc = print SCRIPT_FILE "$rank\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     if ($ENV{X509_USER_PROXY} ne "") {
-        print SCRIPT_FILE "X509UserProxy = $ENV{X509_USER_PROXY}\n";
+        $rc = print SCRIPT_FILE "X509UserProxy = $ENV{X509_USER_PROXY}\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
-    print SCRIPT_FILE "Environment = $environment_string\n";
-    print SCRIPT_FILE "Arguments = $argument_string\n";
-    print SCRIPT_FILE "InitialDir = " . $description->directory() . "\n";
-    print SCRIPT_FILE "Input = " . $description->stdin() . "\n";
-    print SCRIPT_FILE "Log = " . $self->{condor_logfile} . "\n";
-    print SCRIPT_FILE "log_xml = True\n";
-    print SCRIPT_FILE "#Extra attributes specified by client\n";
-    print SCRIPT_FILE "$submit_attrs_string\n";
+    $rc = print SCRIPT_FILE "Environment = $environment_string\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "Arguments = $argument_string\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "InitialDir = " . $description->directory() . "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "Input = " . $description->stdin() . "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "Log = " . $self->{condor_logfile} . "\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "log_xml = True\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "#Extra attributes specified by client\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = print SCRIPT_FILE "$submit_attrs_string\n";
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "print: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     my $shouldtransferfiles = $description->shouldtransferfiles();
     if (defined($shouldtransferfiles))
     {
         $self->log("Adding \"should_transfer_files = $shouldtransferfiles\"\n");
-        print SCRIPT_FILE "should_transfer_files = $shouldtransferfiles\n";
+        $rc = print SCRIPT_FILE "should_transfer_files = $shouldtransferfiles\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     my $WhenToTransferOutput = $description->whentotransferoutput();
     if (defined($WhenToTransferOutput))
     {
         $self->log("Adding \"WhenToTransferOutput = $WhenToTransferOutput\"\n");
-        print SCRIPT_FILE "WhenToTransferOutput = $WhenToTransferOutput\n";
+        $rc = print SCRIPT_FILE "WhenToTransferOutput = $WhenToTransferOutput\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     my $transfer_input_files = $description->transferinputfiles();
@@ -316,7 +426,13 @@ sub submit
     {
         $self->log("Adding explicitly \"transfer_input_files = "
                   ."$transfer_input_files\"\n");
-        print SCRIPT_FILE "transfer_input_files = $transfer_input_files\n";
+        $rc = print SCRIPT_FILE "transfer_input_files = $transfer_input_files\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     else
     {
@@ -330,7 +446,13 @@ sub submit
             }
             $file_list_string =~ s/, $//;
             $self->log("Adding \"transfer_input_files = $file_list_string\"\n");
-            print SCRIPT_FILE "transfer_input_files = $file_list_string\n";
+            $rc = print SCRIPT_FILE "transfer_input_files = $file_list_string\n";
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                    "print: $script_filename: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
     }
 
@@ -339,13 +461,19 @@ sub submit
     {
         $self->log("Adding explicitly \"transfer_output_files = "
                   ."$transfer_output_files\"\n");
-        print SCRIPT_FILE "transfer_output_files = $transfer_output_files\n";
+        $rc = print SCRIPT_FILE "transfer_output_files = $transfer_output_files\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     else
     {
         my @transfer_output_files = $description->transferoutputfiles();
         if (defined($transfer_output_files[0]))
-            {
+        {
             my $file_list_string = "";
             foreach my $file (@transfer_output_files)
             {
@@ -354,101 +482,113 @@ sub submit
             $file_list_string =~ s/, $//;
             $self->log("Adding \"transfer_output_files = "
                       ."$file_list_string\"\n");
-            print SCRIPT_FILE "transfer_output_files = $file_list_string\n";
+            $rc = print SCRIPT_FILE "transfer_output_files = $file_list_string\n";
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                    "print: $script_filename: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
     }
 
     if ($universe eq 'parallel')
     {
-        print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
-        print SCRIPT_FILE "Output = " . $description->stderr() . "\n";
-        print SCRIPT_FILE "machine_count = " . $description->count() . "\n";
-        print SCRIPT_FILE "queue\n";
+        $rc = print SCRIPT_FILE "Output = " . $description->stdout() . "\n" .
+                                "Error = " . $description->stderr() . "\n" .
+                                "machine_count = " . $description->count() . "\n" .
+                                "queue\n";
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                "print: $script_filename: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     else
     {
         for (my $i = 0; $i < $description->count(); $i++) {
-            if ($multi_output) {
-                print SCRIPT_FILE "Output = " .
-                        $self->{STDIO_MERGER}->add_file('out') . "\n";
-                print SCRIPT_FILE "Error = " .
-                        $self->{STDIO_MERGER}->add_file('err') . "\n";
-            } else {
-                print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
-                print SCRIPT_FILE "Error = " . $description->stderr() . "\n";
+            if ($multi_output)
+            {
+                $rc = print SCRIPT_FILE
+                        "Output = " . $self->{STDIO_MERGER}->add_file('out') .
+                        "\n" .
+                        "Error = " .  $self->{STDIO_MERGER}->add_file('err') .
+                        "\n";
+                if (!$rc)
+                {
+                    return $self->respond_with_failure_extension(
+                        "print: $script_filename: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+                }
             }
-            print SCRIPT_FILE "queue 1\n";
+            else
+            {
+                $rc = print SCRIPT_FILE
+                        "Output = " . $description->stdout() .  "\n" .
+                        "Error = " . $description->stderr() . "\n";
+                if (!$rc)
+                {
+                    return $self->respond_with_failure_extension(
+                        "print: $script_filename: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+                }
+            }
+            $rc = print SCRIPT_FILE "queue 1\n";
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                    "print: $script_filename: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
     }
 
-    close(SCRIPT_FILE);
+    $rc = close(SCRIPT_FILE);
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+            "close: $script_filename: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     $self->log("About to submit condor job");
-    local(*FH);
-    my $pid = open(FH, "-|");
-    if( !defined($pid))
+    local(*SUBMIT_IN);
+    local(*SUBMIT_OUT);
+    local(*SUBMIT_ERR);
+    $pid = IPC::Open3::open3(
+            \*SUBMIT_IN, \*SUBMIT_OUT, \*SUBMIT_ERR,
+            $condor_submit, $script_filename);
+    if (!$pid)
     {
-        # failure to fork
-        $failure_text = "fork: $!\n";
-    }
-    elsif ($pid)
-    {
-        my $rc = 0;
-
-        $self->log("I am the parent");
-        # parent
-        @response_text = <FH>;
-        $rc = close(FH);
-
-        if ((!$rc) && $! == 0) {
-            $self->log("submission failed!!!");
-            # condor submission failed with non-zero exit code
-            $self->nfssync( $error_filename, 0);
-
-            if ($rc == 127 && $response_text[0] =~ m/^exec: /) {
-                # exec failed
-                $self->log("exec failed\n");
-                $failure_text = join("", @response_text);
-                @response_text = ();
-            } elsif (-s $error_filename) {
-                $self->log("Error file is not empty, and submission failed\n");
-                # condor_submit stderr is in $error_filename, we'll use that
-                # as our extended error info
-                local(*ERR);
-                open(ERR, "<$error_filename");
-                local($/);
-                $failure_text = <ERR>;
-                $self->log("Error text is $failure_text");
-                close(ERR);
-                @response_text = ();
-            } else {
-                $self->log("Error file is empty, and submission failed\n");
-            }
-        } else {
-            $self->log("\$rc = $rc, \$! = $!");
-        }
-    }
-    else
-    {
-        # child
-        open (STDERR, '>' . $error_filename);
-        select(STDERR); $| = 1;
-        select(STDOUT); $| = 1;
-
-        if (! exec { $condor_submit } $condor_submit, $script_filename)
-        {
-            print "exec: $!\n";
-            exit(127);
-        }
+        return $self->respond_with_failure_extension(
+            "open3: $condor_submit: $!",
+            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }
 
-    if (@response_text)
+    close(SUBMIT_IN);
+
+    local $/;
+
+    $condor_submit_out = <SUBMIT_OUT>;
+    $condor_submit_err = <SUBMIT_ERR>;
+
+    close(SUBMIT_OUT);
+    close(SUBMIT_ERR);
+
+    waitpid($pid, 0);
+    $status = $?>>8;
+
+    $self->log("condor_submit status: $status");
+    $self->log("condor_submit output: $condor_submit_out");
+    $self->log("condor_submit error: $condor_submit_err");
+
+    if ($status == 0)
     {
-        if ($failure_text ne '') {
-            $self->log("Strange, $failure_text is defined!");
-        }
-	$response_line =(grep(/submitted to cluster/, @response_text))[0];
-	$job_id = (split(/\./, (split(/\s+/, $response_line))[5]))[0];
+        $response_line = (grep(/submitted to cluster/,
+                split(/\n/, $condor_submit_out)))[0];
+
+        $job_id = (split(/\./, (split(/\s+/, $response_line))[5]))[0];
 
 	if($job_id ne '')
 	{
@@ -459,16 +599,20 @@ sub submit
 	    return {JOB_STATE => Globus::GRAM::JobState::PENDING,
 		    JOB_ID    => $job_id};
 	}
-    } elsif ($failure_text ne '') {
+    }
+    elsif ($condor_submit_err ne '')
+    {
         $self->log("Writing extended error information to stderr");
         local(*ERR);
         open(ERR, '>' . $description->stderr());
-        print ERR $failure_text;
+        print ERR $condor_submit_err;
         close(ERR);
 
-        $failure_text =~ s/\n/\\n/g;
+        $condor_submit_err =~ s/\n/\\n/g;
 
-        $self->respond({GT3_FAILURE_MESSAGE => $failure_text });
+        return $self->respond_with_failure_extension(
+                "condor_submit: $condor_submit_err",
+                Globus::GRAM::Error::JOB_EXECUTION_FAILED());
     }
     return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
 }
@@ -612,6 +756,16 @@ sub cancel
     {
 	return Globus::GRAM::Error::JOB_CANCEL_FAILED();
     }
+}
+
+sub respond_with_failure_extension
+{
+    my $self = shift;
+    my $msg = shift;
+    my $rc = shift;
+
+    $self->respond({GT3_FAILURE_MESSAGE => $msg });
+    return $rc;
 }
 
 1;
