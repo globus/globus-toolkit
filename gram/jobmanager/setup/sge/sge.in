@@ -18,9 +18,11 @@ use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
 use IO::File;
+use IPC::Open3;
 use Config;
 
 use strict;
+use warnings;
 
 package Globus::GRAM::JobManager::sge;
 
@@ -90,6 +92,11 @@ sub submit
     my $wall_time;
     my $wall_h;
     my $wall_m;
+    my $rc;
+    my $pid;
+    my ($qsub_outmsg, $qsub_errmsg);
+    my ($qsub_in, $qsub_out, $qsub_err);
+    my $status;
 
     $self->log("Entering SGE submit");
 
@@ -224,20 +231,55 @@ sub submit
     #            But must check more thuroughly...
     #
     $sge_job_script_name = $self->job_dir() . '/scheduler_sge_job_script';
-
-    $sge_job_script = new IO::File($sge_job_script_name, '>') ||
-    	return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED;
     $self->log("  script location: $sge_job_script_name");
+
+    $rc = $sge_job_script = new IO::File($sge_job_script_name, '>');
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "open: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
 
     #####
     # Writing script header
     #
-    $sge_job_script->print("#!/bin/bash\n");
-    $sge_job_script->print("# Grid Engine batch job script built by ");
-    $sge_job_script->print("Globus job manager\n");
-    $sge_job_script->print("\n");
-    $sge_job_script->print("#\$ -S /bin/bash\n");
+    $rc = $sge_job_script->print("#!/bin/bash\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = $sge_job_script->print("# Grid Engine batch job script built by ");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = $sge_job_script->print("Globus job manager\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = $sge_job_script->print("\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
+    $rc = $sge_job_script->print("#\$ -S /bin/bash\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
 
     #####
@@ -245,9 +287,15 @@ sub submit
     #
     if($description->email_address() ne '')
     {
-        $sge_job_script->print("#\$ -M ". $description->email_address() ."\n");
         $self->log("Monitoring job by email");
         $self->log("  email address: " . $description->email_address());
+        $rc = $sge_job_script->print("#\$ -M ". $description->email_address() ."\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     if($description->emailonabort() eq 'yes')
     {
@@ -274,7 +322,13 @@ sub submit
 	$email_when = 'n';
         $self->log("  email(s) will not be sent");
     }
-    $sge_job_script->print("#\$ -m $email_when\n");
+    $rc = $sge_job_script->print("#\$ -m $email_when\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
 
     #####
@@ -282,9 +336,15 @@ sub submit
     #
     if(defined($description->queue()))
     {
-        $sge_job_script->print("#\$ -q " . $description->queue() . "\n");
-        $self->log("Using the following queues:");
+        $self->log("Using the following queue:");
         $self->log("  " . $description->queue);
+        $rc = $sge_job_script->print("#\$ -q " . $description->queue() . "\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
 
@@ -298,7 +358,13 @@ sub submit
     if(defined($description->project()))
     {
         $self->log("  Job assigned to " . $description->project());
-        $sge_job_script->print("#\$ -P ". $description->project() ."\n");
+        $rc = $sge_job_script->print("#\$ -P ". $description->project() ."\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     } 
     else
     {
@@ -315,7 +381,13 @@ sub submit
         $wall_h = ( $wall_time - $wall_m ) / 60;
 
         $self->log("Using max WALL time (h:m:s) of $wall_h:$wall_m:00");
-        $sge_job_script->print("#\$ -l h_rt=$wall_h:$wall_m:00\n");
+        $rc = $sge_job_script->print("#\$ -l h_rt=$wall_h:$wall_m:00\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     #####
@@ -327,7 +399,13 @@ sub submit
         $cpu_h = ( $cpu_time - $cpu_m ) / 60;
 
         $self->log("Using max CPU time (h:m:s) of $cpu_h:$cpu_m:00");
-        $sge_job_script->print("#\$ -l h_cpu=$cpu_h:$cpu_m:00\n");
+        $rc = $sge_job_script->print("#\$ -l h_cpu=$cpu_h:$cpu_m:00\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
 
@@ -338,7 +416,13 @@ sub submit
     if($max_memory != 0)
     {
         $self->log("Total max memory flag is set to $max_memory Mb");
-        $sge_job_script->print("#\$ -l h_data=$max_memory" . "M\n");
+        $rc = $sge_job_script->print("#\$ -l h_data=$max_memory" . "M\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
 
@@ -352,28 +436,81 @@ sub submit
       #
       if ($description->stdout() ne '/dev/null')
       {
-          $sge_job_script->print("#\$ -o "
-                                 . $description->stdout() . ".\$TASK_ID\n");
+          my $stdout = $description->stdout();
+
+          if ($stdout !~ m|^/|)
+          {
+              $stdout = $description->directory() . "/$stdout";
+          }
+
+          $rc = $sge_job_script->print("#\$ -o $stdout.\$TASK_ID\n");
+          if (!$rc)
+          {
+              return $self->respond_with_failure_extension(
+                      "print: $sge_job_script_name: $!",
+                      Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+          }
       }
       else
       {
-          $sge_job_script->print("#\$ -o /dev/null\n");
+          $rc = $sge_job_script->print("#\$ -o /dev/null\n");
+          if (!$rc)
+          {
+              return $self->respond_with_failure_extension(
+                      "print: $sge_job_script_name: $!",
+                      Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+          }
       }
 
       if ($description->stderr() ne '/dev/null')
       {
-          $sge_job_script->print("#\$ -e "
-                                 . $description->stderr() . ".\$TASK_ID\n");
+          my $stderr = $description->stderr();
+
+          if ($stderr !~ m|^/|)
+          {
+              $stderr = $description->directory() . "/$stderr";
+          }
+          $rc = $sge_job_script->print("#\$ -e $stderr.\$TASK_ID\n");
+          if (!$rc)
+          {
+              return $self->respond_with_failure_extension(
+                      "print: $sge_job_script_name: $!",
+                      Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+          }
       }
       else
       {
-          $sge_job_script->print("#\$ -e /dev/null\n");
+          $rc = $sge_job_script->print("#\$ -e /dev/null\n");
+          if (!$rc)
+          {
+              return $self->respond_with_failure_extension(
+                      "print: $sge_job_script_name: $!",
+                      Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+          }
       }
     }
     else
     {
-      $sge_job_script->print("#\$ -o " . $description->stdout() . "\n");
-      $sge_job_script->print("#\$ -e " . $description->stderr() . "\n");
+        my $stdout = $description->stdout();
+        my $stderr = $description->stderr();
+
+        if ($stdout !~ m|^/|)
+        {
+            $stdout = $description->directory() . "/$stdout";
+        }
+        if ($stderr !~ m|^/|)
+        {
+            $stderr = $description->directory() . "/$stderr";
+        }
+        $rc = $sge_job_script->print(
+                "#\$ -o $stdout\n" .
+                "#\$ -e $stderr\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                      "print: $sge_job_script_name: $!",
+                      Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
 
@@ -448,14 +585,26 @@ sub submit
             }
             else
             {
-                $sge_job_script->print("#\$ -pe " . $tuple->[1] . " " .
+                $rc = $sge_job_script->print("#\$ -pe " . $tuple->[1] . " " .
                                        $description->count() . "\n");
+                if (!$rc)
+                {
+                    return $self->respond_with_failure_extension(
+                            "print: $sge_job_script_name: $!",
+                            Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+                }
             }
         }
         else
         {
-            $sge_job_script->print($tuple->[0] . '="' . $tuple->[1]
+            $rc = $sge_job_script->print($tuple->[0] . '="' . $tuple->[1]
                                    . '"; export ' . $tuple->[0] . "\n");
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                        "print: $sge_job_script_name: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
 
     }
@@ -463,14 +612,26 @@ sub submit
     #####
     # Load SGE settings
     #
-    $sge_job_script->print(". $SGE_ROOT/$SGE_CELL/common/settings.sh\n");
+    $rc = $sge_job_script->print(". $SGE_ROOT/$SGE_CELL/common/settings.sh\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
 
     #####
     # 
     #
-    $sge_job_script->print("# Change to directory requested by user\n");
-    $sge_job_script->print('cd ' . $directory . "\n");
+    $rc = $sge_job_script->print("# Change to directory requested by user\n" .
+                           'cd ' . $directory . "\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
 
     #####
@@ -533,8 +694,14 @@ sub submit
         else
         {
             $self->log("  PE is $mpi_pe");
-            $sge_job_script->print("#\$ -pe $mpi_pe "
+            $rc = $sge_job_script->print("#\$ -pe $mpi_pe "
                                    . $description->count() . "\n");
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                        "print: $sge_job_script_name: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
 
         if (($sun_mprun eq "no") && ($mpirun eq "no"))
@@ -546,18 +713,31 @@ sub submit
             #####
             # Using Sun's MPI.
             #
-            $sge_job_script->print("$sun_mprun -np ". $description->count() ." "
+            $rc = $sge_job_script->print("$sun_mprun -np "
+                                   .  $description->count() . " "
                                    . $executable . " $args < "
                                    . $stdin . "\n");
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                        "print: $sge_job_script_name: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
         else
         {
             #####
             # Using non-Sun's MPI.
             #
-            $sge_job_script->print("$mpirun " # " -np ". $description->count() . " "
+            $rc = $sge_job_script->print("$mpirun " 
                                    . $executable . " $args < "
                                    . $stdin . "\n");
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                        "print: $sge_job_script_name: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
     }
     elsif($description->jobtype() eq "multiple")
@@ -568,10 +748,22 @@ sub submit
         $self->log("  forking multiple requests");
         for(my $i = 0; $i < $description->count(); $i++)
         {
-            $sge_job_script->print($executable . " $args < "
+            $rc = $sge_job_script->print($executable . " $args < "
                                    . $stdin . "&\n");
+            if (!$rc)
+            {
+                return $self->respond_with_failure_extension(
+                        "print: $sge_job_script_name: $!",
+                        Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+            }
         }
-        $sge_job_script->print("wait\n");
+        $rc = $sge_job_script->print("wait\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     elsif($description->count() > 1)
     {
@@ -579,24 +771,42 @@ sub submit
         # (single & count>1) -> Using job arrays
         #
         $self->log("  using job arrays with count " . $description->count());
-        $sge_job_script->print("#\$ -t 1-" . $description->count() . "\n");
-        $sge_job_script->print($executable . " $args < "
+        $rc = $sge_job_script->print("#\$ -t 1-" . $description->count() . "\n"
+                               . $executable . " $args < "
                                . $stdin . "\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
     else
     {
         #####
         # Single execution job
         #
-        $sge_job_script->print($executable . " $args < "
+        $rc = $sge_job_script->print($executable . " $args < "
                                . $stdin . "\n");
+        if (!$rc)
+        {
+            return $self->respond_with_failure_extension(
+                    "print: $sge_job_script_name: $!",
+                    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+        }
     }
 
     #####
     # SGE job script is successfully built! :-)
     #
     $self->log("SGE job script successfully built! :-)");
-    $sge_job_script->close();
+    $rc = $sge_job_script->close();
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     #####
     # Submitting a job
@@ -612,15 +822,64 @@ sub submit
       $ENV{CHOS}=$chos;
     }
 
-    $qsub_err_file = $self->job_dir() . "/qsub.err";
-    chomp($job_id = `$qsub $sge_job_script_name 2> $qsub_err_file`);
+    $self->log("executing $qsub $sge_job_script_name");
+    local(*QSUB_IN);
+    local(*QSUB_OUT);
+    local(*QSUB_ERR);
+    $pid = IPC::Open3::open3(
+            \*QSUB_IN, \*QSUB_OUT, \*QSUB_ERR,
+            $qsub, $sge_job_script_name);
+    if (!$pid)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
-    if($? == 0)
+    $self->log("enabling slurp");
+    local($/);
+
+    $qsub_in = \*QSUB_IN;
+    $qsub_out = \*QSUB_OUT;
+    $qsub_err = \*QSUB_ERR;
+
+    $qsub_outmsg = <$qsub_out>;
+    $qsub_errmsg = <$qsub_err>;
+
+    waitpid($pid, 0);
+    $status = $? >> 8;
+
+    close($qsub_in); 
+    close($qsub_out);
+    close($qsub_err);
+
+    if ($qsub_outmsg)
+    {
+        chomp($qsub_outmsg);
+        $self->log("qsub stdout: $qsub_outmsg");
+    }
+    else
+    {
+        $qsub_outmsg = '';
+    }
+
+    if ($qsub_errmsg)
+    {
+        chomp($qsub_errmsg);
+        $self->log("qsub stderr: $qsub_errmsg");
+    }
+    else
+    {
+        $qsub_errmsg = '';
+    }
+    $self->log("qsub exited with $status");
+
+    if($status == 0 && $qsub_outmsg ne '')
     {
         $self->log("  successfully submitted");
 
         # get job ID
-        $job_id = (split(/\s+/, $job_id))[2];
+        $job_id = (split(/\s+/, $qsub_outmsg))[2];
 
         # in the case we used job arrays
         if ($job_id =~ m/(\d+)\.(\d+)-(\d+)/)
@@ -647,21 +906,16 @@ sub submit
     }
     else
     {
-      my $stderr = '';
-      $self->log("  ERROR: job submission failed");
-      local(*ERR);
-      open(ERR, "<$qsub_err_file");
-      while(<ERR>)
-      {
-          $stderr .= $_;
-      }
-      $stderr =~ s/\n/\\n/g;
-      $self->log("qsub stderr: $stderr");
+        $qsub_outmsg =~ s/\n/\\n/g if ($qsub_outmsg);
+        $qsub_errmsg =~ s/\n/\\n/g if ($qsub_errmsg);
+        if ($description->project())
+        {
+            $self->log("check if the project specified does exist");
+        }
 
-      if ($description->project())
-      {
-        $self->log("check if the project specified does exist");
-      }
+        return $self->respond_with_failure_extension(
+                "qsub failed: $qsub_outmsg\\n$qsub_errmsg",
+                Globus::GRAM::Error::INVALID_SCRIPT_REPLY);
     }
 
     #####
@@ -797,6 +1051,16 @@ sub cancel
     }
 
     return Globus::GRAM::Error::JOB_CANCEL_FAILED();
+}
+
+sub respond_with_failure_extension
+{
+    my $self = shift;
+    my $msg = shift;
+    my $rc = shift;
+
+    $self->respond({GT3_FAILURE_MESSAGE => $msg });
+    return $rc;
 }
 
 1;
