@@ -302,7 +302,7 @@ main(int argc, char *argv[])
        while (1) {
 
 	  /* make sure Globus hasn't blocked signals we care about */
-	  sigprocmask(SIG_UNBLOCK, &mysigset, NULL);
+	  pthread_sigmask(SIG_UNBLOCK, &mysigset, NULL);
 
 	  socket_attrs->socket_fd = accept(listenfd,
 					   (struct sockaddr *) &client_addr,

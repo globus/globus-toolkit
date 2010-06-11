@@ -874,7 +874,7 @@ int safe_is_path_trusted_fork(const char *pathname, safe_id_range_list *trusted_
     }
 
     /* set no_sigchld_mask to current mask with SIGCHLD */
-    r = sigprocmask(SIG_BLOCK, NULL, &no_sigchld_mask);
+    r = pthread_sigmask(SIG_BLOCK, NULL, &no_sigchld_mask);
     if (r < 0)  {
 	return SAFE_PATH_ERROR;
     }
@@ -885,7 +885,7 @@ int safe_is_path_trusted_fork(const char *pathname, safe_id_range_list *trusted_
 
     /* block all signals to prevent a signal handler from running in our
      * child */
-    r = sigprocmask(SIG_SETMASK, &all_signals_mask, &save_mask);
+    r = pthread_sigmask(SIG_SETMASK, &all_signals_mask, &save_mask);
     if (r < 0)  {
 	return SAFE_PATH_ERROR;
     }
@@ -946,7 +946,7 @@ int safe_is_path_trusted_fork(const char *pathname, safe_id_range_list *trusted_
 
 	/* allow all signals except SIGCHLD from being sent,
 	 * so the application does not see our child die */
-	r = sigprocmask(SIG_SETMASK, &no_sigchld_mask, NULL);
+	r = pthread_sigmask(SIG_SETMASK, &no_sigchld_mask, NULL);
 	if (r < 0)  {
 	    status = SAFE_PATH_ERROR;
 	}
@@ -999,7 +999,7 @@ int safe_is_path_trusted_fork(const char *pathname, safe_id_range_list *trusted_
 
   restore_mask_and_exit:
     
-    r = sigprocmask(SIG_SETMASK, &save_mask, NULL);
+    r = pthread_sigmask(SIG_SETMASK, &save_mask, NULL);
     if (r < 0)  {
 	status = r;
     }
