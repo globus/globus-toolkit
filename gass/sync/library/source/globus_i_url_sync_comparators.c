@@ -145,8 +145,8 @@ globus_l_url_sync_exists_func(
     *result = 0;
 
     /* Stat the source */
-	if (source->stats.type == globus_url_sync_endpoint_type_unknown)
-		res = globus_l_url_sync_ftpclient_mlst(source);
+    if (source->stats.type == globus_url_sync_endpoint_type_unknown)
+        res = globus_l_url_sync_ftpclient_mlst(source);
 	
     if (res != GLOBUS_SUCCESS)
     {
@@ -255,7 +255,11 @@ globus_l_url_sync_size_func(
     GlobusFuncName(globus_l_url_sync_size_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 	
-    *result = source->stats.size - destination->stats.size;
+    /* size comparison only applies to files */
+    if (source->stats.type == globus_url_sync_endpoint_type_file)
+        *result = source->stats.size - destination->stats.size;
+    else
+        *result = 0;
 	
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
     return GLOBUS_SUCCESS;
@@ -280,28 +284,34 @@ globus_l_url_sync_modify_func(
     GlobusFuncName(globus_l_url_sync_modify_func);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 	
-    *result = (int) difftime(
-		mktime(&(source->stats.modify_tm)),
-		mktime(&(destination->stats.modify_tm)));
-
-    if (params != GLOBUS_NULL)
+    /* modification time comparison only applies to files */
+    if (source->stats.type == globus_url_sync_endpoint_type_file)
     {
-        switch (params->type)
-        {
+        *result = (int) difftime(
+				 mktime(&(source->stats.modify_tm)),
+				 mktime(&(destination->stats.modify_tm)));
+
+	if (params != GLOBUS_NULL)
+	{
+	    switch (params->type)
+	    {
             case globus_url_sync_modification_time_newer:
-                if (*result < 0) {
+                if (*result < 0)
                     *result = 0;
-                }
                 break;
             case globus_url_sync_modification_time_older:
-                if (*result > 0) {
+                if (*result > 0)
                     *result = 0;
-                }
                 break;
             default:
                 /* No action required, for globus_url_sync_modification_time_equal. */
                 ;
+	    }
         }
+    }
+    else
+    {
+        *result = 0;
     }
 
     GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(0, "");
