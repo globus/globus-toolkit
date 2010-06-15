@@ -358,8 +358,10 @@ int makeproxy(const char certfile[], const char keyfile[],
     static char ENDCERT[] = "-----END CERTIFICATE-----";
     static char BEGINKEY1[] = "-----BEGIN RSA PRIVATE KEY-----";
     static char BEGINKEY2[] = "-----BEGIN PRIVATE KEY-----";
+    static char BEGINKEY3[] = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
     static char ENDKEY1[] = "-----END RSA PRIVATE KEY-----";
     static char ENDKEY2[] = "-----END PRIVATE KEY-----";
+    static char ENDKEY3[] = "-----END ENCRYPTED PRIVATE KEY-----";
     unsigned char *certbuf=NULL, *keybuf=NULL;
     char *certstart, *certend, *keystart, *keyend;
     int return_value = -1, size, rval, fd=0;
@@ -411,9 +413,10 @@ int makeproxy(const char certfile[], const char keyfile[],
 
     /* Write the key. */
     if ((keystart = strstr((const char *)keybuf, BEGINKEY1)) == NULL
-	&& (keystart = strstr((const char *)keybuf, BEGINKEY2)) == NULL) {
-	fprintf(stderr, "%s doesn't contain '%s' nor '%s'.\n", keyfile, BEGINKEY1,
-						BEGINKEY2);
+	&& (keystart = strstr((const char *)keybuf, BEGINKEY2)) == NULL
+	&& (keystart = strstr((const char *)keybuf, BEGINKEY3)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s' nor '%s' nor '%s'.\n", keyfile,
+					 BEGINKEY1, BEGINKEY2, BEGINKEY3);
 	goto cleanup;
     }
 
@@ -421,9 +424,11 @@ int makeproxy(const char certfile[], const char keyfile[],
 	keyend += strlen(ENDKEY1);
     else if ((keyend = strstr((const char *)keystart, ENDKEY2)) != NULL)
 	keyend += strlen(ENDKEY2);
+    else if ((keyend = strstr((const char *)keystart, ENDKEY3)) != NULL)
+	keyend += strlen(ENDKEY3);
     else {
-	fprintf(stderr, "%s doesn't contain '%s' nor '%s'.\n", keyfile, ENDKEY1,
-						ENDKEY2);
+	fprintf(stderr, "%s doesn't contain '%s' nor '%s' nor '%s'.\n", keyfile,
+				ENDKEY1, ENDKEY2, ENDKEY3);
 	goto cleanup;
     }
 
