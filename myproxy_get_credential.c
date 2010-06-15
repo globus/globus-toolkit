@@ -572,8 +572,10 @@ write_key( char       *path,
     int          fd = 0;
     static char  BEGINKEY1[] = "-----BEGIN RSA PRIVATE KEY-----";
     static char  BEGINKEY2[] = "-----BEGIN PRIVATE KEY-----";
+    static char  BEGINKEY3[] = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
     static char  ENDKEY1[]   = "-----END RSA PRIVATE KEY-----";
     static char  ENDKEY2[]   = "-----END PRIVATE KEY-----";
+    static char  ENDKEY3[]   = "-----END ENCRYPTED PRIVATE KEY-----";
     char        *keystart,
                 *keyend;
     int          retval     = -1;
@@ -601,10 +603,11 @@ write_key( char       *path,
 
     /* Write the key. */
     if ((keystart = strstr(buffer, BEGINKEY1)) == NULL
-	&& (keystart = strstr(buffer, BEGINKEY2)) == NULL)
+	&& (keystart = strstr(buffer, BEGINKEY2)) == NULL
+	&& (keystart = strstr(buffer, BEGINKEY3)) == NULL)
     {
-      fprintf(stderr, "CREDKEY doesn't contain '%s' nor '%s'.\n", BEGINKEY1,
-					BEGINKEY2);
+      fprintf(stderr, "CREDKEY doesn't contain '%s' nor '%s' nor '%s'.\n",
+				BEGINKEY1, BEGINKEY2, BEGINKEY3);
       goto error;
     }
 
@@ -612,10 +615,12 @@ write_key( char       *path,
 	keyend += strlen(ENDKEY1);
     else if ((keyend = strstr(keystart, ENDKEY2)) != NULL)
 	keyend += strlen(ENDKEY2);
+    else if ((keyend = strstr(keystart, ENDKEY3)) != NULL)
+	keyend += strlen(ENDKEY3);
     else
     {
-      fprintf(stderr, "CREDKEY doesn't contain '%s' nor '%s'.\n", ENDKEY1,
-					ENDKEY2);
+      fprintf(stderr, "CREDKEY doesn't contain '%s' nor '%s' nor '%s'.\n",
+				ENDKEY1, ENDKEY2, ENDKEY3);
       goto error;
     }
 
