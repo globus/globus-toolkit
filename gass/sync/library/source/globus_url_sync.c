@@ -560,10 +560,11 @@ globus_url_sync_i_list_dir_cb(
     GlobusFuncName(globus_url_sync_i_list_dir_cb);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(0, "");
 
-    if (error)
-    {
-        globus_i_url_sync_log_error(error);
-    }
+    globus_i_url_sync_log_debug(
+	"globus_url_sync_i_list_dir_cb: error: %d, url = %s\n", error,
+	(sync_arg->source)->url);
+
+    /* Note: Error cannot be logged here because this is new thread.  */
 
     /* Done if no more listings to be processed */
     done = globus_list_empty(sync_arg->entries);
@@ -686,8 +687,16 @@ globus_l_url_sync_list_complete_cb(
     globus_ftp_client_handle_t *            ftp_handle,
     globus_object_t *                       error)
 {
+    globus_l_url_sync_arg_t * sync_arg = (globus_l_url_sync_arg_t *) user_arg;
     GlobusFuncName(globus_l_url_sync_list_complete_cb);
     GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "ftp_handle");
+
+    if (error)
+    {
+        globus_i_url_sync_log_error(error);
+    }
+
+    sync_arg->error = error;
 
     globus_callback_register_oneshot(
 		     NULL,

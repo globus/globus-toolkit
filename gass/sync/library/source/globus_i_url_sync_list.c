@@ -299,13 +299,13 @@ globus_i_url_sync_list(
     globus_result_t                         result;
     globus_ftp_client_operationattr_t	    attr;
     GlobusFuncName(globus_i_url_sync_list);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
 
     /* This is not a public API, so asserts will be used to check parameters.
      * FTP handle is optional. */
     globus_assert(url);
     globus_assert(entries);
     globus_assert(complete_callback);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, url);
 
     globus_ftp_client_operationattr_init(&attr);
 
@@ -348,7 +348,7 @@ globus_i_url_sync_list(
     /* Completed */
     globus_i_url_sync_log_debug(
             "globus_i_url_sync_list completed (result: %d)\n", result);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
+    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(ftp_handle, url);
     return result;
 }
 /* globus_i_url_sync_list */
@@ -373,7 +373,9 @@ globus_l_url_sync_list_ftp_read_cb(
     int                                     buffer_pos;
 
     GlobusFuncName(globus_l_url_sync_list_ftp_read_cb);
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(ftp_handle, "");
+
+    globus_i_url_sync_log_debug(
+            "globus_l_url_sync_list_ftp_read_cb: error: %d\n", error);
 
     if (error)
     {
@@ -383,7 +385,7 @@ globus_l_url_sync_list_ftp_read_cb(
     {
         list_arg = (globus_l_url_sync_list_arg_t *) user_arg;
 	globus_assert(list_arg);
-	GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(list_arg->ftp_handle, list_arg->url);
+
 	globus_i_url_sync_log_debug("%d bytes read\n", length);
 
 	/* Copy entries to buffer and add them to the list of entries */
@@ -433,7 +435,6 @@ globus_l_url_sync_list_ftp_read_cb(
 	} /* no eof */
     } /* no error */
 
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
 } /* globus_l_url_sync_ftp_list_read_cb */
 
 
@@ -450,20 +451,20 @@ globus_l_url_sync_list_ftp_complete_cb(
     globus_l_url_sync_list_arg_t *          list_arg;
     GlobusFuncName(globus_l_url_sync_list_ftp_complete_cb);
 
+    globus_i_url_sync_log_debug(
+            "globus_l_url_sync_list_ftp_complete_cb: error: %d\n", error);
+
     if (error)
     {
         globus_i_url_sync_log_error(error);
     }
 
     list_arg = (globus_l_url_sync_list_arg_t*) user_arg;
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_ENTER(list_arg->ftp_handle, list_arg->url);
     globus_assert(list_arg);
     list_arg->complete_callback(list_arg->callback_arg, ftp_handle, error);
 
     /* Cleanup */
     globus_l_url_sync_list_arg_destroy(list_arg);
-
-    GLOBUS_I_URL_SYNC_LOG_DEBUG_EXIT(list_arg->ftp_handle, list_arg->url);
 }
 /* globus_l_url_sync_list_ftp_complete_cb */
 
