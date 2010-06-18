@@ -48,6 +48,9 @@ BuildGT()
     env
     export GLOBUS_LOCATION
     echo ==================================================
+    echo Disk space:
+    df . $_CONDOR_SCRATCH_DIR
+    echo ==================================================
     echo Installing $installer to $GLOBUS_LOCATION
     tar xfz $installer
     mv gt*-installer $installerdir
