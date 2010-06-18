@@ -55,20 +55,27 @@ Enables verbose debugging output to the terminal.
 .B -V, --version
 Displays version information and exits.
 .TP
-.BI -s " hostname, " --pshost " hostname"
+.BI -s " hostname[:port], " --pshost " hostname[:port]"
 Specifies the hostname(s) of the myproxy-server(s).  
-Multiple hostnames may be specified in a comma-separated list.
+Multiple hostnames, each hostname optionally followed by a ':' and port number,
+may be specified in a comma-separated list.
 This option is required if the
 .B MYPROXY_SERVER
 environment variable is not defined.  If specified, this option
 overrides the
 .B MYPROXY_SERVER
-environment variable.
+environment variable. If a port number is specified with a hostname, it will
+override the -p option as well as the
+.B MYPROXY_SERVER_PORT
+environment variable for that host.
 .TP
 .BI -p " port, " --psport " port"
 Specifies the TCP port number of the
 .BR myproxy-server (8).
 Default: 7512
+If specified, this option overrides the
+.B MYPROXY_SERVER_PORT
+environment variable.
 .TP
 .B -l, --username
 Specifies the MyProxy account under which the credential should be
@@ -219,7 +226,9 @@ if running as non-root.
 .B MYPROXY_SERVER
 Specifies the hostname(s) where the
 .BR myproxy-server (8)
-is running.  This environment variable can be used in place of the 
+is running. Multiple hostnames can be specified in a comma separated list with
+each hostname optionally followed by a ':' and port number.  This environment
+variable can be used in place of the 
 .B -s
 option.
 .TP

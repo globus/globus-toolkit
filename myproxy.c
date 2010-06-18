@@ -361,12 +361,30 @@ static int get_connected_myproxy_host_socket(char *hostlist, int port) {
     char *pshost = NULL;  /* Copy of hostlist for strtok */
     char *tok;            /* Result of strtok(pshost) */
     int connected = 0;    /* Assume failed connection */
+    int spec_port = port;
     
     /* Assume hostlist is a comma separated list of MyProxy hosts.  */
     /* Try to create a socket connection to each one until success. */
     pshost = strdup(hostlist);
     tok = strtok(pshost,",");
     while (tok != NULL) {
+        char *tok2 = strchr(tok, ':');
+
+        if (tok2 != NULL) { /* server-specific port specified */
+              *tok2 = '\0';
+              spec_port = strtol(++tok2, (char **)NULL, 10);
+              if (spec_port == 0) {
+                   verror_put_errno(errno);
+                   verror_put_string("Error determining port (%s) for host %s\n", tok2, tok);
+                   if (retsock != -1) {
+                        close(retsock);
+                        retsock = -1;
+                   }
+                   break;
+              }
+        }
+        else
+              spec_port = port;
 
         /* Init the socket and (possibly) bind to a port if this is the */
         /* first time looping thru MyProxy hostnames or if a previous   */
@@ -378,7 +396,7 @@ static int get_connected_myproxy_host_socket(char *hostlist, int port) {
             } 
         } 
 
-        if (connect_socket_to_host(retsock,tok,port)) { /* Success! */
+        if (connect_socket_to_host(retsock,tok,spec_port)) { /* Success! */
             connected = 1;
             break; /* out of while loop */
         } else { /* Failed. Get new socket and try next host */
@@ -391,8 +409,8 @@ static int get_connected_myproxy_host_socket(char *hostlist, int port) {
     }
 
     if (connected) { /* Rewrite hostlist to actual (single) connected host */
-        strncpy(hostlist,tok,strlen(hostlist));
-        myproxy_debug("Successfully connected to %s:%d\n", hostlist, port);
+        strcpy(hostlist,tok);
+        myproxy_debug("Successfully2 connected to %s:%d\n", hostlist, spec_port);
     }
     if (pshost) free(pshost);
 
