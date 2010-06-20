@@ -48,6 +48,7 @@ BuildGT()
                 --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
     make globus_usage gsi-openssh install
     cd ..
+    rm -rf $installerdir # limit scratch space use
     echo ==================================================
     echo Installing autotools to $GLOBUS_LOCATION
     cd autotools

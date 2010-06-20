@@ -58,6 +58,7 @@ BuildGT()
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make globus_usage gsi-myproxy install
     cd ..
+    rm -rf $installerdir # limit scratch space use
     echo ==================================================
     echo Installing autotools...
     cd autotools
