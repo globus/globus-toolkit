@@ -1,4 +1,0 @@
-opensslincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/openssl
-## opensslinclude = [ HEADERS ]
-
-PERL=@PERL@
