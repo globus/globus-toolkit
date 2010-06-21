@@ -80,9 +80,7 @@ $ make dist
      $ grid-proxy-init
      $ myproxy-test -startserver -valgrind
 
-5. Tag CVS with the version number (ex. MYPROXY_3_3) and move the GT4
-   tag to this new release version so it is included in future GT4
-   releases.
+5. Tag CVS with the version number (ex. MYPROXY_3_3).
 
      $ cvs tag MYPROXY_X_X
 
