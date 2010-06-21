@@ -370,12 +370,14 @@ voms_proxy_init()
     char                *keybitsenv = NULL;
     int                 keybits = MYPROXY_DEFAULT_KEYBITS;
 
-    if (ssl_get_times(outputfile, NULL, &cred_expiration) == 0) {
-        cred_lifetime = cred_expiration-time(0);
-        if (cred_lifetime <= 0) {
-            verror_put_string("Error: Credential expired!");
-            return -1;
-        }
+    if (ssl_get_times(outputfile, NULL, &cred_expiration) != 0) {
+        verror_put_string("ssl_get_times(%s) failed", outputfile);
+        return -1;
+    }
+    cred_lifetime = cred_expiration-time(0);
+    if (cred_lifetime <= 0) {
+        verror_put_string("Error: Credential expired!");
+        return -1;
     }
 
     hours = (int)(cred_lifetime/(60*60));
