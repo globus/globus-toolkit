@@ -5,6 +5,11 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.2 22 Jun 2010
+  - allow specification of port numbers in MYPROXY_SERVER list
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7039)
+  - support PKCS8 encoded private keys in myproxy-retrieve,
+    myproxy-store, and myproxy-admin-load-credential
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7033)
   - add work-around for Globus libraries blocking signals (SIGTERM,
     SIGCHLD, SIGHUP, etc.) when myproxy-server is built with pthr
     flavor (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7048)
