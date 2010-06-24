@@ -15,6 +15,7 @@
  */
 
 #include "globus_gass_copy.h"
+#include "openssl/md5.h"
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
@@ -1455,5 +1456,267 @@ error_url:
 
     return result;
     
+}
+
+
+
+static
+globus_result_t
+globus_l_gass_copy_cksm_ftp(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    char *                              cksm,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm)
+{
+    globus_result_t                     result;
+    globus_l_gass_copy_glob_info_t      info;
+
+    info.handle = handle;
+    info.attr = attr;
+    info.url = globus_libc_strdup(url);
+
+    info.callbacks_left = 1;
+    info.err = GLOBUS_NULL;
+
+    globus_mutex_init(&info.mutex, GLOBUS_NULL);
+    globus_cond_init(&info.cond, GLOBUS_NULL);
+     
+
+    result = globus_ftp_client_cksm(
+    	         &handle->ftp_handle,
+        	 url,
+        	 attr->ftp_attr,
+		 cksm,
+	         offset,
+		 length,
+	 	 algorithm,
+        	 globus_l_gass_copy_ftp_client_op_done_callback,
+        	 &info);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto error;
+    }
+                 
+    globus_mutex_lock(&info.mutex);
+    while(info.callbacks_left > 0)
+    {
+        globus_cond_wait(&info.cond, &info.mutex);
+    }
+    globus_mutex_unlock(&info.mutex);
+
+
+    if(info.err)
+    {
+        result = globus_error_put(info.err);
+        info.err = GLOBUS_NULL;
+    }
+  
+    globus_cond_destroy(&info.cond);
+    globus_mutex_destroy(&info.mutex);
+    return GLOBUS_SUCCESS;
+error:
+    globus_cond_destroy(&info.cond);
+    globus_mutex_destroy(&info.mutex);
+
+    return result;
+}
+
+#define GASS_COPY_CKSM_BUFSIZE 1024*1024
+
+static
+globus_result_t
+globus_l_gass_copy_cksm_file(
+    char *                              url,
+    char *                              cksm,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm)
+{
+    char *	myname = "globus_l_gass_copy_cksm_file";
+
+    globus_url_t                        parsed_url;
+    globus_result_t 			result;
+    int                                 rc;
+
+    MD5_CTX                             mdctx;
+    char *                              md5ptr;
+    unsigned char                       md[MD5_DIGEST_LENGTH];
+    char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1];
+    char                                buf[GASS_COPY_CKSM_BUFSIZE];
+
+    int                                 i;
+    int                                 fd;
+    int                                 n;
+    globus_off_t                        count;
+    globus_off_t                        read_left;
+
+    rc = globus_url_parse_loose(url, &parsed_url);
+    if(rc != 0)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "globus_url_parse returned %d",
+                myname,
+                url));
+        goto error_url;
+    }
+
+    if(parsed_url.url_path == GLOBUS_NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "url has no path",
+                myname));
+        goto error_fd;
+    }    
+       
+    if(length >= 0)
+    {
+        read_left = length;
+        count = (read_left > GASS_COPY_CKSM_BUFSIZE) ? 
+            GASS_COPY_CKSM_BUFSIZE : read_left;
+    }
+    else
+    {
+        count = GASS_COPY_CKSM_BUFSIZE;
+    }
+    
+    fd = open(parsed_url.url_path, O_RDONLY);        
+    if(fd < 0)
+    {
+        goto error_fd;
+    }
+
+    if (lseek(fd, offset, SEEK_SET) == -1)
+    {
+        goto error_seek;
+    }
+
+    MD5_Init(&mdctx);        
+
+    while((n = read(fd, buf, count)) > 0)
+    {
+        if(length >= 0)
+        {
+            read_left -= n;
+            count = (read_left > GASS_COPY_CKSM_BUFSIZE) ? GASS_COPY_CKSM_BUFSIZE : read_left;
+        }
+
+        MD5_Update(&mdctx, buf, n);
+    }
+
+    MD5_Final(md, &mdctx);
+    
+    close(fd);
+        
+    md5ptr = md5sum;
+    for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+    {
+       sprintf(md5ptr, "%02x", md[i]);
+       md5ptr++;
+       md5ptr++;
+    }
+    md5ptr = '\0';
+    
+    strncpy(cksm, md5sum, sizeof(md5sum));
+    
+    globus_url_destroy(&parsed_url);
+
+    return GLOBUS_SUCCESS;
+
+error_seek:
+    close(fd);
+error_fd:
+    globus_url_destroy(&parsed_url);
+
+error_url:
+
+    return result;
+}
+
+/* Determine the type of the url and call checksum functions above accordingly
+ * */
+
+globus_result_t
+globus_gass_copy_cksm(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *				cksm)
+{
+    static char *   myname = "globus_gass_copy_cksm";    
+
+    globus_result_t                     result;
+    globus_gass_copy_url_mode_t         url_mode;
+    
+    result = globus_gass_copy_get_url_mode(url, &url_mode);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }        
+
+    if(url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+    {
+        result = globus_l_gass_copy_cksm_ftp(
+		     handle,
+		     url,
+		     attr,
+		     cksm,
+		     offset,
+		     length,
+		     algorithm);
+    
+        if(result != GLOBUS_SUCCESS)
+    {
+            goto error_ftp_cksm;
+    }
+    }
+    else if(url_mode == GLOBUS_GASS_COPY_URL_MODE_IO)
+    {
+        result = globus_l_gass_copy_cksm_file(
+		     url,
+		     cksm, 
+		     offset,
+		     length,
+		     algorithm);
+    if(result != GLOBUS_SUCCESS)
+    {
+            goto error_file_cksm;
+        }
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: unsupported URL scheme: %s",
+                myname,
+                url));
+        goto error_exit;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_ftp_cksm:
+error_file_cksm:
+	printf("error\n");
+error_exit:
+        
+    return result;
+        
 }
 
