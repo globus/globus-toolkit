@@ -1474,10 +1474,6 @@ globus_l_gass_copy_cksm_ftp(
     globus_result_t                     result;
     globus_l_gass_copy_glob_info_t      info;
 
-    info.handle = handle;
-    info.attr = attr;
-    info.url = globus_libc_strdup(url);
-
     info.callbacks_left = 1;
     info.err = GLOBUS_NULL;
 

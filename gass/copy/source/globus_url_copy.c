@@ -570,7 +570,7 @@ const char * long_usage =
 "  -sync\n"
 "       Only transfer files where the destination does not exist or differs\n"
 "       from the source.  -sync-level controls how to determine if files\n"
-"       differ.\n
+"       differ.\n"
 "  -sync-level <number>\n"
 "       Choose critera for determining if files differ when performing a\n"
 "       sync transfer.  Level 0 will only transfer if the destination does\n"
@@ -580,7 +580,6 @@ const char * long_usage =
 "       source.  Level 3 will perform a checksum of the source and\n"
 "       transfer if the checksums do not match.\n"
 "       The default sync level is 2.\n"
-"   
 "\n";
 
 /***********
@@ -4574,6 +4573,7 @@ globus_l_guc_check_sync(
                     {
                         retval = GLOBUS_FALSE;
                     }
+                    
                 }
                 break;
 
