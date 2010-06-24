@@ -2798,6 +2798,12 @@ globus_gridftp_server_control_start(
         {
             goto err;
         }
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
+            GLOBUS_XIO_TCP_SET_KEEPALIVE, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
     }
     else if(transport == globus_l_gsc_pipe_driver)
     {
