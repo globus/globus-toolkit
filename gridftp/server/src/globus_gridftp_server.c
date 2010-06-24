@@ -873,6 +873,11 @@ globus_l_gfs_reject_write_cb(
 {
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
+        if(user_arg)
+        {
+            globus_free(user_arg);
+        }
+        
         result = globus_xio_register_close(
             handle,
             NULL,
@@ -894,8 +899,30 @@ globus_l_gfs_reject_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    char * sorry_msg = "421 Service not available, closing control connection\r\n";
-
+    char *                              sorry_msg;
+    char *                              tmp_msg;
+    int                                 len;
+    
+    if(globus_gfs_config_get_int("connections_max") == 0 || 
+        globus_i_gfs_config_bool("connections_disabled"))
+    {
+        if(tmp_msg = globus_gfs_config_get_string("offline_msg") != NULL)
+        {
+            sorry_msg = globus_common_create_string("422 %s\r\n", tmp_msg);
+        }
+        else
+        {
+            sorry_msg = globus_libc_strdup(
+                "422 Service temporarily offline, closing control connection.\r\n");
+        }
+    }
+    else
+    {
+        sorry_msg = globus_libc_strdup(
+            "421 Service not available, closing control connection.\r\n");
+    }
+    
+    len = strlen(sorry_msg);
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         if(result != GLOBUS_SUCCESS)
@@ -906,11 +933,11 @@ globus_l_gfs_reject_open_cb(
         result = globus_xio_register_write(
             handle,
             sorry_msg,
-            strlen(sorry_msg),
-            strlen(sorry_msg),
+            len,
+            len,
             NULL,
             globus_l_gfs_reject_write_cb,
-            NULL);
+            sorry_msg);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -921,7 +948,7 @@ globus_l_gfs_reject_open_cb(
     return;
 
 error:
-
+    globus_free(sorry_msg);
     result = globus_xio_register_close(
         handle,
         NULL,
@@ -956,9 +983,10 @@ globus_l_gfs_server_accept_cb(
         }
 
         /* if too many already open */
-        if(globus_gfs_config_get_int("connections_max") != 0 &&
+        if((globus_gfs_config_get_int("connections_max") != -1 &&
             globus_gfs_config_get_int("open_connections_count")
-                 >= globus_gfs_config_get_int("connections_max"))
+                 >= globus_gfs_config_get_int("connections_max")) ||
+            globus_i_gfs_config_bool("connections_disabled"))
         {
             result = globus_xio_register_open(
                 handle,
@@ -1022,8 +1050,7 @@ globus_l_gfs_server_accept_cb(
                 globus_l_gfs_xio_server = GLOBUS_NULL;
             }
         }
-        else if(!globus_l_gfs_terminated &&
-            !globus_i_gfs_config_bool("connections_disabled"))
+        else if(!globus_l_gfs_terminated)
         {
             result = globus_xio_server_register_accept(
                 globus_l_gfs_xio_server,

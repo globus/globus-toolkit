@@ -134,12 +134,15 @@ static const globus_l_gfs_config_option_t option_list[] =
     "of anonymous_user will be used.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Enable cleartext access and authenticate users against this /etc/passwd formatted file.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "Maximum concurrent connections allowed.  Only applies when running in daemon "
     "mode.  Unlimited if not set.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
     "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"offline_msg", "offline_msg", NULL, "offline-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Custom message to be displayed to clients when the server is offline via the "
+    "connections_disabled or connections_max = 0 options.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"disable_command_list", "disable_command_list", NULL, "disable-command-list", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma seperated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"cas", "cas", NULL, "cas", "authz-callouts", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
