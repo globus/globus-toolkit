@@ -1172,8 +1172,8 @@ globus_l_gsi_proxy_utils_extension_callback(
     int                                 pci_NID;
     int                                 pci_old_NID;
 
-    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
+    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
     extension_object = X509_EXTENSION_get_object(extension);
     nid = OBJ_obj2nid(extension_object);
 

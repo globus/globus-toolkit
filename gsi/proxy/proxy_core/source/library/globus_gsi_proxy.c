@@ -355,11 +355,11 @@ globus_gsi_proxy_create_req(
     
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+        pci_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
     }
     else if(!GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(handle->type))
     {
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+        pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
     }
 
     if(pci_NID != NID_undef)
@@ -370,9 +370,12 @@ globus_gsi_proxy_create_req(
         unsigned char *                 der_data;
         X509_EXTENSION *                pci_ext;
         STACK_OF(X509_EXTENSION) *      extensions;
-        X509V3_EXT_METHOD *             ext_method;
+        const X509V3_EXT_METHOD *       ext_method;
 
         ext_method = X509V3_EXT_get_nid(pci_NID);
+
+        if (ext_method->i2d)
+        {
         
         length = ext_method->i2d(handle->proxy_cert_info, NULL);
         if(length < 0)
@@ -439,6 +442,95 @@ globus_gsi_proxy_create_req(
         }
         
         ASN1_OCTET_STRING_free(ext_data);
+
+        }
+        else
+        {
+            X509V3_CTX ctx;
+            X509V3_CONF_METHOD method = { NULL, NULL, NULL, NULL };
+            long db = 0;
+
+            char language[80];
+            int pathlen;
+            unsigned char *policy = NULL;
+            int policy_len;
+            char *value;
+            char *tmp;
+
+            OBJ_obj2txt(language, 80,
+                handle->proxy_cert_info->policy->policy_language, 1);
+            value = globus_common_create_string("language:%s", language);
+            if (!value)
+            {
+                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                    (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                goto error_exit;
+            }
+
+            pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->path_length);
+            if (pathlen > 0)
+            {
+                tmp = globus_common_create_string("%s,pathlen:%d",
+                                                  value, pathlen);
+                if (!tmp)
+                {
+                    GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                        (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                    globus_libc_free(value);
+                    goto error_exit;
+                }
+                globus_libc_free(value);
+                value = tmp;
+            }
+
+            if (handle->proxy_cert_info->policy->policy)
+            {
+                policy_len = M_ASN1_STRING_length(
+                    handle->proxy_cert_info->policy->policy);
+                policy = globus_malloc(policy_len + 1);
+                if(!policy)
+                {
+                    GLOBUS_GSI_PROXY_MALLOC_ERROR(policy_len + 1);
+                    goto error_exit;
+                }
+                memcpy(
+                    policy,
+                    M_ASN1_STRING_data(handle->proxy_cert_info->policy->policy),
+                    policy_len);
+                policy[policy_len] = '\0';
+                tmp = globus_common_create_string("%s,policy:text:%s",
+                                                  value, policy);
+                if (!tmp)
+                {
+                    GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                        (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                    globus_libc_free(value);
+                    globus_libc_free(policy);
+                    goto error_exit;
+                }
+                globus_libc_free(value);
+                globus_libc_free(policy);
+                value = tmp;
+            }
+
+            X509V3_set_ctx(&ctx, NULL, NULL, NULL, NULL, 0L);
+            ctx.db_meth = &method;
+            ctx.db = &db;
+            pci_ext = X509V3_EXT_conf_nid(NULL, &ctx, pci_NID, value);
+
+            globus_libc_free(value);
+
+            if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+            {
+                X509_EXTENSION_set_critical(pci_ext, 1);
+            }
+        }
 
         extensions = sk_X509_EXTENSION_new_null();
 
@@ -588,8 +680,8 @@ globus_gsi_proxy_inquire_req(
 
     req_extensions = X509_REQ_get_extensions(handle->req);
 
-    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
+    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
     
     for(i=0;i<sk_X509_EXTENSION_num(req_extensions);i++)
     {
@@ -645,17 +737,17 @@ globus_gsi_proxy_inquire_req(
 
         if(nid == pci_old_NID)
         { 
-            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            if(policy_nid == OBJ_txt2nid(IMPERSONATION_PROXY_OID))
             {
                 handle->type=
                     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(INDEPENDENT_PROXY_OID))
             {
                 handle->type =
                     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(LIMITED_PROXY_OID))
             {
                 handle->type =
                     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
@@ -668,17 +760,17 @@ globus_gsi_proxy_inquire_req(
         }
         else
         {
-            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            if(policy_nid == OBJ_txt2nid(IMPERSONATION_PROXY_OID))
             {
                 handle->type=
                     GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(INDEPENDENT_PROXY_OID))
             {
                 handle->type =
                     GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(LIMITED_PROXY_OID))
             {
                 handle->type =
                     GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
@@ -1156,11 +1248,11 @@ globus_l_gsi_proxy_sign_key(
 
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(proxy_type))
     {
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+        pci_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
     }
     else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(proxy_type))
     {
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+        pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
     }
     
     if(pci_NID != NID_undef)
@@ -1169,7 +1261,7 @@ globus_l_gsi_proxy_sign_key(
         unsigned char                   md[SHA_DIGEST_LENGTH];
         long                            sub_hash;
         unsigned int                    len;
-        X509V3_EXT_METHOD *             ext_method;
+        const X509V3_EXT_METHOD *       ext_method;
 
         ext_method = X509V3_EXT_get_nid(pci_NID);
 
@@ -1205,6 +1297,9 @@ globus_l_gsi_proxy_sign_key(
 
         ASN1_INTEGER_set(serial_number, sub_hash);
         
+        if(ext_method->i2d)
+        {
+
         pci_DER_length = ext_method->i2d(handle->proxy_cert_info, 
                                          NULL);
         if(pci_DER_length < 0)
@@ -1268,6 +1363,95 @@ globus_l_gsi_proxy_sign_key(
             goto done;
         }
 
+        }
+        else
+        {
+            X509V3_CTX ctx;
+            X509V3_CONF_METHOD method = { NULL, NULL, NULL, NULL };
+            long db = 0;
+
+            char language[80];
+            int pathlen;
+            unsigned char *policy = NULL;
+            int policy_len;
+            char *value;
+            char *tmp;
+
+            OBJ_obj2txt(language, 80,
+                handle->proxy_cert_info->policy->policy_language, 1);
+            value = globus_common_create_string("language:%s", language);
+            if (!value)
+            {
+                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                    (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                goto done;
+            }
+
+            pathlen = ASN1_INTEGER_get(handle->proxy_cert_info->path_length);
+            if (pathlen > 0)
+            {
+                tmp = globus_common_create_string("%s,pathlen:%d",
+                                                  value, pathlen);
+                if (!tmp)
+                {
+                    GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                        (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                    globus_libc_free(value);
+                    goto done;
+                }
+                globus_libc_free(value);
+                value = tmp;
+            }
+
+            if (handle->proxy_cert_info->policy->policy)
+            {
+                policy_len = M_ASN1_STRING_length(
+                    handle->proxy_cert_info->policy->policy);
+                policy = globus_malloc(policy_len + 1);
+                if(!policy)
+                {
+                    GLOBUS_GSI_PROXY_MALLOC_ERROR(policy_len + 1);
+                    goto done;
+                }
+                memcpy(
+                    policy,
+                    M_ASN1_STRING_data(handle->proxy_cert_info->policy->policy),
+                    policy_len);
+                policy[policy_len] = '\0';
+                tmp = globus_common_create_string("%s,policy:text:%s",
+                                                  value, policy);
+                if (!tmp)
+                {
+                    GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                        (_PCSL("Couldn't create PROXYCERTINFO extension")));
+                    globus_libc_free(value);
+                    globus_libc_free(policy);
+                    goto done;
+                }
+                globus_libc_free(value);
+                globus_libc_free(policy);
+                value = tmp;
+            }
+
+            X509V3_set_ctx(&ctx, NULL, NULL, NULL, NULL, 0L);
+            ctx.db_meth = &method;
+            ctx.db = &db;
+            pci_ext = X509V3_EXT_conf_nid(NULL, &ctx, pci_NID, value);
+
+            globus_libc_free(value);
+
+            if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(proxy_type))
+            {
+                X509_EXTENSION_set_critical(pci_ext, 1);
+            }
+        }
+        
         if(!X509_add_ext(*signed_cert, pci_ext, 0))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -1618,12 +1802,12 @@ globus_l_gsi_proxy_sign_key(
             if(pci_DER)
             {
                 free(pci_DER);
-    			pci_DER = NULL;
+                pci_DER = NULL;
             }
             pci_DER_string->data = NULL;
             pci_DER_string->length = 0;
             ASN1_OCTET_STRING_free(pci_DER_string);
-			pci_DER_string = NULL;
+            pci_DER_string = NULL;
         }
         #else
         
