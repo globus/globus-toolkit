@@ -331,7 +331,7 @@ globus_gsi_cert_utils_get_cert_type(
             *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
         else if((index = X509_get_ext_by_NID(cert,
-                                             OBJ_sn2nid(PROXYCERTINFO_SN),
+                                             OBJ_txt2nid(PROXYCERTINFO_OID),
                                              -1)) != -1  &&
                 (pci_ext = X509_get_ext(cert,index)) &&
                 X509_EXTENSION_get_critical(pci_ext))
@@ -368,15 +368,15 @@ globus_gsi_cert_utils_get_cert_type(
 
             policy_nid = OBJ_obj2nid(policy_lang);
             
-            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            if(policy_nid == OBJ_txt2nid(IMPERSONATION_PROXY_OID))
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(INDEPENDENT_PROXY_OID))
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(LIMITED_PROXY_OID))
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
             }
@@ -386,7 +386,7 @@ globus_gsi_cert_utils_get_cert_type(
             }
             
             if(X509_get_ext_by_NID(cert,
-                                   OBJ_sn2nid(PROXYCERTINFO_SN),
+                                   OBJ_txt2nid(PROXYCERTINFO_OID),
                                    index) != -1)
             { 
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
@@ -397,7 +397,7 @@ globus_gsi_cert_utils_get_cert_type(
             }
         }
         else if((index = X509_get_ext_by_NID(cert,
-                                             OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                             OBJ_txt2nid(PROXYCERTINFO_OLD_OID),
                                              -1)) != -1 &&
                 (pci_ext = X509_get_ext(cert,index)) &&
                 X509_EXTENSION_get_critical(pci_ext))
@@ -434,15 +434,15 @@ globus_gsi_cert_utils_get_cert_type(
 
             policy_nid = OBJ_obj2nid(policy_lang);
             
-            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            if(policy_nid == OBJ_txt2nid(IMPERSONATION_PROXY_OID))
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(INDEPENDENT_PROXY_OID))
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
             }
-            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            else if(policy_nid == OBJ_txt2nid(LIMITED_PROXY_OID))
             {
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
             }
@@ -452,7 +452,7 @@ globus_gsi_cert_utils_get_cert_type(
             }
             
             if(X509_get_ext_by_NID(cert,
-                                   OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                   OBJ_txt2nid(PROXYCERTINFO_OLD_OID),
                                    index) != -1)
             { 
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(

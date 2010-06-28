@@ -72,7 +72,7 @@ PROXYPOLICY * PROXYPOLICY_new()
     ret = NULL;
 
     M_ASN1_New_Malloc(ret, PROXYPOLICY);
-    ret->policy_language = OBJ_nid2obj(OBJ_sn2nid(IMPERSONATION_PROXY_SN));
+    ret->policy_language = OBJ_nid2obj(OBJ_txt2nid(IMPERSONATION_PROXY_OID));
     ret->policy = NULL;
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYPOLICY_NEW);
