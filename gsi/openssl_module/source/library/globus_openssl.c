@@ -86,41 +86,74 @@ globus_l_openssl_activate(void)
         globus_mutex_init(&(mutex_pool[i]),NULL);
     }
 
-    CRYPTO_set_locking_callback(globus_l_openssl_locking_cb);
-    CRYPTO_set_id_callback(globus_l_openssl_thread_id);
+    if (!CRYPTO_get_locking_callback())
+    {
+        CRYPTO_set_locking_callback(globus_l_openssl_locking_cb);
+    }
+    if (!CRYPTO_get_id_callback())
+    {
+        CRYPTO_set_id_callback(globus_l_openssl_thread_id);
+    }
 
-    OBJ_create(ANY_LANGUAGE_OID,
-               ANY_LANGUAGE_SN,
-               ANY_LANGUAGE_LN);
+    if (OBJ_txt2nid(ANY_LANGUAGE_OID) == 0)
+    {
+        OBJ_create(ANY_LANGUAGE_OID,
+                   ANY_LANGUAGE_SN,
+                   ANY_LANGUAGE_LN);
+    }
 
-    OBJ_create(IMPERSONATION_PROXY_OID,
-               IMPERSONATION_PROXY_SN,
-               IMPERSONATION_PROXY_LN);
+    if (OBJ_txt2nid(IMPERSONATION_PROXY_OID) == 0)
+    {
+        OBJ_create(IMPERSONATION_PROXY_OID,
+                   IMPERSONATION_PROXY_SN,
+                   IMPERSONATION_PROXY_LN);
+    }
 
-    OBJ_create(INDEPENDENT_PROXY_OID,
-               INDEPENDENT_PROXY_SN,
-               INDEPENDENT_PROXY_LN);
+    if (OBJ_txt2nid(INDEPENDENT_PROXY_OID) == 0)
+    {
+        OBJ_create(INDEPENDENT_PROXY_OID,
+                   INDEPENDENT_PROXY_SN,
+                   INDEPENDENT_PROXY_LN);
+    }
 
-    OBJ_create(LIMITED_PROXY_OID,
-               LIMITED_PROXY_SN,
-               LIMITED_PROXY_LN);
-    
-    pci_NID = OBJ_create(PROXYCERTINFO_OID,PROXYCERTINFO_SN,PROXYCERTINFO_LN);
+    if (OBJ_txt2nid(LIMITED_PROXY_OID) == 0)
+    {
+        OBJ_create(LIMITED_PROXY_OID,
+                   LIMITED_PROXY_SN,
+                   LIMITED_PROXY_LN);
+    }
 
-    pci_old_NID = OBJ_create(PROXYCERTINFO_OLD_OID,
-                             PROXYCERTINFO_OLD_SN,
-                             PROXYCERTINFO_OLD_LN);
+    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
+    if (pci_NID == 0)
+    {
+        pci_NID = OBJ_create(PROXYCERTINFO_OID,
+                             PROXYCERTINFO_SN,
+                             PROXYCERTINFO_LN);
+    }
 
-    pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
-    pci_old_x509v3_ext_meth = PROXYCERTINFO_OLD_x509v3_ext_meth();
+    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
+    if (pci_old_NID == 0)
+    {
+        pci_old_NID = OBJ_create(PROXYCERTINFO_OLD_OID,
+                                 PROXYCERTINFO_OLD_SN,
+                                 PROXYCERTINFO_OLD_LN);
+    }
 
     /* this sets the pci NID in the static X509V3_EXT_METHOD struct */
-    pci_x509v3_ext_meth->ext_nid = pci_NID;
-    pci_old_x509v3_ext_meth->ext_nid = pci_old_NID;
-    
-    X509V3_EXT_add(pci_x509v3_ext_meth);
-    X509V3_EXT_add(pci_old_x509v3_ext_meth);
-    
+    if (X509V3_EXT_get_nid(pci_NID) == NULL)
+    {
+        pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
+        pci_x509v3_ext_meth->ext_nid = pci_NID;
+        X509V3_EXT_add(pci_x509v3_ext_meth);
+    }
+
+    if (X509V3_EXT_get_nid(pci_old_NID) == NULL)
+    {
+        pci_old_x509v3_ext_meth = PROXYCERTINFO_OLD_x509v3_ext_meth();
+        pci_old_x509v3_ext_meth->ext_nid = pci_old_NID;
+        X509V3_EXT_add(pci_old_x509v3_ext_meth);
+    }
+
     return GLOBUS_SUCCESS;
 }
 /* globus_l_openssl_activate() */
@@ -140,9 +173,15 @@ globus_l_openssl_deactivate(void)
     ERR_clear_error();
 
     X509V3_EXT_cleanup();
-    
-    CRYPTO_set_id_callback(NULL);
-    CRYPTO_set_locking_callback(NULL);
+
+    if (CRYPTO_get_id_callback() == globus_l_openssl_thread_id)
+    {
+        CRYPTO_set_id_callback(NULL);
+    }
+    if (CRYPTO_get_locking_callback() == globus_l_openssl_locking_cb)
+    {
+        CRYPTO_set_locking_callback(NULL);
+    }
 
     for (i=0; i<CRYPTO_num_locks(); i++)
     {

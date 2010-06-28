@@ -1851,8 +1851,8 @@ globus_i_gsi_cred_get_proxycertinfo(
 
     *proxycertinfo = NULL;
 
-    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
+    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
     if(pci_NID == NID_undef || pci_old_NID == NID_undef)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(

@@ -1517,8 +1517,8 @@ globus_i_gsi_callback_check_critical_extensions(
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
-    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    pci_NID = OBJ_txt2nid(PROXYCERTINFO_OID);
+    pci_old_NID = OBJ_txt2nid(PROXYCERTINFO_OLD_OID);
 
     while((critical_position = 
           X509_get_ext_by_critical(x509_context->current_cert, 
