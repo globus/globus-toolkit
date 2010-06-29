@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 if [ -x /usr/bin/getconf ]; then
     PATH="$PATH:`/usr/bin/getconf PATH 2> /dev/null`"
 else
@@ -72,10 +71,10 @@ out_file_size=0
 # stream from that point. If we are just doing a cat of the file, we'll ignore
 # the file length value
 if [ $tailopt != no ]; then
-    out_line_count="`wc -l \"$out_path\" | cut -d\" \" -f1`"
+    out_line_count="`wc -l \"$out_path\" | awk '{print \$1}'`"
     out_line_count="`expr $out_line_count - $tailopt`"
 elif [ $followopt != no ]; then
-    out_line_count="`wc -l \"$out_path\" | cut -d\" \" -f1`"
+    out_line_count="`wc -l \"$out_path\" | awk '{print \$1}'`"
     out_line_count="`expr $out_line_count - $followopt`"
     sleeptime=1
 else
@@ -94,7 +93,7 @@ while [ $followopt != no -o $first = 1 ]; do
 
     # Check if the file has grown since the last time through this loop. If not
     # we'll just continue on
-    new_out_file_size="`wc -c \"$out_path\" | cut -d\" \" -f1`"
+    new_out_file_size="`wc -c \"$out_path\" | awk '{print \$1}'`"
     if [ $new_out_file_size -le $out_file_size ]; then
         sleep $sleeptime
         continue
@@ -108,7 +107,7 @@ while [ $followopt != no -o $first = 1 ]; do
         fi
     elif [ $new_out_file_size -gt $out_file_size ]; then
         # this ends up parsing $out_path for \n, so it's expensive.
-        new_out_line_count="`wc -l \"$out_path\" | cut -d' ' -f1`"
+        new_out_line_count="`wc -l \"$out_path\" | awk '{print \$1}'`"
         # only send complete lines that have arrived since the last check
         out_skip_lines=`expr $new_out_line_count - $out_line_count`
         if [ $out_skip_lines -gt 0 ]; then
