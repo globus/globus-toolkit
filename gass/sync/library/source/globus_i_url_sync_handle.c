@@ -332,17 +332,23 @@ globus_result_t
 globus_i_url_sync_endpoint_init(
     globus_url_sync_endpoint_t **           endpoint_out,
     const char *                            url,
-    globus_ftp_client_handle_t *            ftp_handle)
+    globus_ftp_client_handle_t *            ftp_handle,
+    int                                     pathname_index)
 {
     globus_assert(endpoint_out);
+	
     *endpoint_out = globus_libc_malloc(sizeof(globus_url_sync_endpoint_t));
     memset(*endpoint_out, 0, sizeof(globus_url_sync_endpoint_t));
+	
     globus_assert(*endpoint_out);
     globus_assert(url);
+	
     /* allow room for a trailing "/", in case it's needed */
     (*endpoint_out)->url = globus_libc_malloc(strlen(url)+2);
     strcpy((*endpoint_out)->url, url);
+	
     (*endpoint_out)->ftp_handle = ftp_handle;
+    (*endpoint_out)->pathname_index = pathname_index;
     return GLOBUS_SUCCESS;
 }
 

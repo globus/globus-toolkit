@@ -30,15 +30,17 @@
 
 EXTERN_C_BEGIN
 
-extern globus_url_t *           globus_i_url_sync_args_source;
-extern globus_url_t *           globus_i_url_sync_args_destination;
-extern globus_bool_t            globus_i_url_sync_args_verbose;
-extern globus_bool_t            globus_i_url_sync_args_debug;
-extern globus_bool_t		globus_i_url_sync_args_newer;
+extern globus_url_t * 		globus_i_url_sync_args_source;
+extern globus_url_t * 		globus_i_url_sync_args_destination;
+extern globus_bool_t 		globus_i_url_sync_args_verbose;
+extern globus_bool_t 		globus_i_url_sync_args_debug;
+extern globus_bool_t 		globus_i_url_sync_args_newer;
 extern globus_bool_t		globus_i_url_sync_args_older;
 extern globus_bool_t		globus_i_url_sync_args_size;
 extern globus_bool_t		globus_i_url_sync_args_cache;
 extern globus_bool_t		globus_i_url_sync_args_recurse;
+extern char * 			globus_i_url_sync_args_src_endpoint;
+extern char * 			globus_i_url_sync_args_dst_endpoint;
 
 globus_result_t globus_i_url_sync_parse_args(int argc, char *argv[]);
 

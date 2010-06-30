@@ -290,7 +290,9 @@ globus_result_t
 globus_i_url_sync_endpoint_init(
     globus_url_sync_endpoint_t **           endpoint_out,
     const char *                            url,
-    globus_ftp_client_handle_t *            ftp_handle);
+    globus_ftp_client_handle_t *            ftp_handle,
+    int                                     pathname_index
+);
 
 /**
  * Destroys the endpoint structure.
