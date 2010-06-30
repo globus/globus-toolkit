@@ -109,7 +109,7 @@ foreach $file (@files)
             }
             if (!symlink($file, $new_file))
             {
-                print "FATAL: Symlink error: $!\n";
+                print "FATAL: symlink($file, $new_file) failed: $!\n";
                 exit(1);
             }
             print ".";
