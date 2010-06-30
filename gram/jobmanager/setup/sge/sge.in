@@ -281,6 +281,13 @@ sub submit
                 Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
     }
 
+    $rc = $sge_job_script->print("#\$ -V\n");
+    if (!$rc)
+    {
+        return $self->respond_with_failure_extension(
+                "print: $sge_job_script_name: $!",
+                Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+    }
 
     #####
     # Whom to send email and when
@@ -821,6 +828,10 @@ sub submit
       $chos=~s/\n.*//;
       $ENV{CHOS}=$chos;
     }
+    $ENV{USER} = $ENV{LOGNAME};
+    $ENV{SCRATCH} = $ENV{HOME};
+    $ENV{WORK} = $ENV{HOME};
+
 
     $self->log("executing $qsub $sge_job_script_name");
     local(*QSUB_IN);
