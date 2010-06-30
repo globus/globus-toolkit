@@ -499,11 +499,28 @@ sub rewrite_urls
     {
         my @destinations = $description->$which();
         my $first_destination = $destinations[0];
+        my $first_tag = undef;
         my $cached_destination = $self->job_dir() . "/$which";
 
         if (ref($first_destination))
         {
-            $first_destination = $first_destination->[0];
+            if (scalar(@{$first_destination}) == 2)
+            {
+                $first_tag = $first_destination->[1];
+                $first_destination = $first_destination->[0];
+                $self->log("destination = $first_destination, tag is $first_tag");
+            }
+            else
+            {
+                $first_destination = $first_destination->[0];
+                $self->log("destination = $first_destination, tag is not present");
+            }
+        }
+        elsif (scalar(@destinations) == 2)
+        {
+            $first_tag = $destinations[1];
+            $self->log("destination is $first_destination, tag is $first_tag");
+            @destinations = ($first_destination);
         }
 
         if (scalar(@destinations) == 1 && $first_destination !~ m|://|)
@@ -516,14 +533,19 @@ sub rewrite_urls
         {
 	    my @arg = ($cache_pgm, '-add', '-t', $tag, '-n',
                         $first_destination, 'file:///dev/null');
-            $self->log("$which goes to $first_destination in cache");
-            $self->log("command is " . join(" ", @arg));
-            $filename = $self->pipe_out_cmd(@arg);
-            if ($! != 0)
+            if (!defined($first_tag))
             {
-                $self->log("Error adding to cache $!");
+                $self->log("$which goes to $first_destination in cache");
+                $self->log("command is " . join(" ", @arg));
+                $filename = $self->pipe_out_cmd(@arg);
+                if ($! != 0)
+                {
+                    $self->log("Error adding to cache $!");
+                }
+                $first_tag = $tag;
             }
-	    @arg = ($cache_pgm, '-query', '-t', $tag, $first_destination);
+
+	    @arg = ($cache_pgm, '-query', '-t', $first_tag, $first_destination);
             $filename = $self->pipe_out_cmd(@arg);
 	    if($filename ne '')
 	    {
