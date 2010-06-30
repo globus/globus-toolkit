@@ -85,6 +85,8 @@ sub new
     my $class = shift;
     my $self = {};
     my $description = shift;
+    my $save;
+    my $savedest;
 
     $self->{JobDescription} = $description;
 
@@ -95,6 +97,17 @@ sub new
     if ($@) {
         $self->log("Couldn't create job dir");
     }
+
+    $save = $description->save_job_description();
+    $self->log("Checking to see if we'll save the job description: $save");
+
+    if ($save eq 'yes')
+    {
+        $savedest = "$ENV{HOME}/gram_".$description->uniq_id().".pl";
+        $self->log("Saving job description to $savedest");
+        $description->save($savedest);
+    }
+
     $self->rewrite_urls();
 
     return $self;
