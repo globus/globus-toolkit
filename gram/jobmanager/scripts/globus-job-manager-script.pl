@@ -63,13 +63,30 @@ use Getopt::Long;
 use Globus::GRAM::Error;
 use Globus::GRAM::JobDescription;
 
-my($manager_name, $argument_file, $command) = (undef, undef, undef);
+my($manager_name, $argument_file, $command, $help);
 
 GetOptions('manager-name|m=s' => \$manager_name,
            'argument-file|f=s' => \$argument_file,
-	   'command|c=s' => \$command);
+	   'command|c=s' => \$command,
+           "help|h" => \$help);
 $|=1;
 
+if ($help)
+{
+    my $managers;
+    print "USAGE: $0 -m MANAGER -f FILE -c COMMAND\n";
+    print "Installed managers:";
+    foreach (<$ENV{GLOBUS_LOCATION}/lib/perl/Globus/GRAM/JobManager/*.pm>)
+    {
+        my $manager = $_;
+        chomp($manager);
+        $manager =~ s|.*/||;
+        $manager =~ s|\.pm$||;
+        print " $manager";
+    }
+    print "\n";
+    exit(0);
+}
 if (!defined($manager_name))
 {
     &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
