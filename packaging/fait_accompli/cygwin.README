@@ -1,7 +1,0 @@
-cygwin support currently requires converting selected xio plugin drivers into xio builtin drivers.
-
-move cygwin.patch to ../patches/.
-move cygwin.script.sh to ../scripts/.
-run fait_accompli/installer.sh as usual.
-build the resulting installer on cygwin 1.7 or higher.
-run cygwin.bundle to create a binary zip package.

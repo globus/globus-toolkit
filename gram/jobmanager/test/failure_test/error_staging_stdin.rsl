@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_STDIN *)
-&(executable=/bin/sh)
- (stdin=$(GLOBUSRUN_GASS_URL)/no/such/file)
