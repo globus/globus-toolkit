@@ -5234,6 +5234,11 @@ globus_i_ftp_client_transfer_complete(
         globus_libc_free(client_handle->dest_url);
         client_handle->dest_url = GLOBUS_NULL;
     }
+    if(client_handle->checksum_alg)
+    {
+        globus_libc_free(client_handle->checksum_alg);
+        client_handle->checksum_alg = GLOBUS_NULL;
+    }
     client_handle->source_size = 0;
 
     client_handle->read_all_biggest_offset = 0;
