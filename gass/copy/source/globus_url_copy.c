@@ -1469,7 +1469,7 @@ globus_l_guc_dump_urls(
         
     }    
 
-    globus_mutex_lock(&g_monitor.mutex);
+    globus_mutex_unlock(&g_monitor.mutex);
 
     return;
 }
@@ -4294,7 +4294,7 @@ globus_l_guc_create_dir(
         dst_mkurl = globus_list_remove(&mkdir_urls, mkdir_urls);
         
     
-        if(globus_hashtable_lookup(&guc_info->mkdir_hash, dst_mkurl))
+        if(globus_hashtable_lookup(&guc_info->mkdir_hash, dst_mkurl) == NULL)
         {
             globus_l_guc_gass_attr_init(
                 &handle->dest_gass_copy_attr,
@@ -4313,14 +4313,17 @@ globus_l_guc_create_dir(
             {
                 done_create_dest = GLOBUS_TRUE;
             }
-                    
-            rc = globus_hashtable_insert(
-                &guc_info->mkdir_hash,
-                dst_mkurl,
-                dst_mkurl);
-            if(rc == 0)
+            
+            if(result == GLOBUS_SUCCESS || !first_attempt)
             {
-                inserted = GLOBUS_TRUE;
+                rc = globus_hashtable_insert(
+                    &guc_info->mkdir_hash,
+                    dst_mkurl,
+                    dst_mkurl);
+                if(rc == 0)
+                {
+                    inserted = GLOBUS_TRUE;
+                }
             }
 
             globus_ftp_client_operationattr_destroy(
@@ -4488,7 +4491,7 @@ globus_l_guc_expand_urls(
         }
     }
     
-    if(no_matches && result == GLOBUS_SUCCESS)
+    if(no_matches && result == GLOBUS_SUCCESS && !guc_info->sync)
     {
         result = globus_error_put(
             globus_error_construct_string(
