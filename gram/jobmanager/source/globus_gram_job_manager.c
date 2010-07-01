@@ -1030,12 +1030,16 @@ globus_l_gram_job_manager_remove_reference_locked(
              */
             request = ref->request;
 
-            /* If the request is complete we can destroy it
+            /* If the request is complete, or we are shutting down due to
+             * a proxy expire, we can destroy it
              */
-            if (request->jobmanager_state ==
+            if ((request->jobmanager_state ==
                     GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
                 request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE) ||
+                (request->jobmanager_state ==
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP &&
+                        (manager->stop == GLOBUS_TRUE)))
             {
                 globus_gram_job_manager_log(
                         manager,
@@ -1085,7 +1089,15 @@ globus_l_gram_job_manager_remove_reference_locked(
                     }
                 }
 
-                globus_gram_job_manager_request_destroy(ref->request);
+                if (ref->request->jobmanager_state ==
+                            GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
+                {
+                    globus_gram_job_manager_request_free(ref->request);
+                }
+                else
+                {
+                    globus_gram_job_manager_request_destroy(ref->request);
+                }
                 free(ref->request);
                 free(ref->key);
                 free(ref);
