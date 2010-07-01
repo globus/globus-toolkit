@@ -329,6 +329,7 @@ globus_gass_copy_handle_init(
 	handle->partial_end_offset = -1;
         handle->partial_bytes_remaining = -1;
         handle->send_allo = GLOBUS_FALSE;
+        handle->always_stat_on_expand = GLOBUS_FALSE;
 	return GLOBUS_SUCCESS;
     }
     else
@@ -669,6 +670,19 @@ globus_gass_copy_set_allocate(
     globus_bool_t                       send_allo)
 {
     handle->send_allo = send_allo;
+    
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * Make globus_gass_copy_expand_url() always send stat info
+ */
+globus_result_t
+globus_gass_copy_set_stat_on_expand(
+    globus_gass_copy_handle_t *         handle,
+    globus_bool_t                       always_stat)
+{
+    handle->always_stat_on_expand = always_stat;
     
     return GLOBUS_SUCCESS;
 }

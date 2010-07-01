@@ -93,7 +93,6 @@ typedef struct
 {
     globus_fifo_t                       user_url_list;
     globus_fifo_t                       expanded_url_list;
-    globus_fifo_t                       matched_url_list;
     globus_fifo_t                       dump_url_list;
 
     globus_hashtable_t                  recurse_hash;
@@ -180,6 +179,7 @@ typedef struct globus_l_guc_transfer_s
     globus_off_t                        offset;
     globus_off_t                        length;
     globus_bool_t                       needs_mkdir;
+    globus_fifo_t                       matched_url_list;
 } globus_l_guc_transfer_t;
 
 typedef struct
@@ -435,7 +435,7 @@ const char * long_usage =
 "  -do <filename> | -dump-only <filename>\n"
 "       Perform no write operations on the destination.  Instead, all files\n"
 "       that would be transferred are enumerated and dumped to the specified\n"
-"       file.  Resulting file is the same format at the -f input file.\n"
+"       file.  Resulting file is the same format as the -f input file.\n"
 "       Note: if you intend to use this file as input for a future transfer,\n"
 "       the -create-dest option will be required if any destination\n"
 "       directories do not already exist.\n"
@@ -578,7 +578,7 @@ const char * long_usage =
 "       does not match the size of the source.  Level 2 will transfer if\n"
 "       the timestamp of the destination is older than the timestamp of the\n"
 "       source.  Level 3 will perform a checksum of the source and\n"
-"       transfer if the checksums do not match.\n"
+"       destination and transfer if the checksums do not match.\n"
 "       The default sync level is 2.\n"
 "\n";
 
@@ -1486,7 +1486,7 @@ globus_l_guc_transfer_kickout(
     globus_result_t                     result;
     globus_l_guc_transfer_t *           transfer_info;
     globus_bool_t                       retry = GLOBUS_FALSE;
-
+    globus_bool_t                       expand = GLOBUS_FALSE;
     
     transfer_info = (globus_l_guc_transfer_t * )  user_arg;
 
@@ -1514,8 +1514,8 @@ globus_l_guc_transfer_kickout(
             url_pair = globus_l_guc_dequeue_pair(
                 &transfer_info->guc_info->user_url_list,
                 transfer_info->handle->id);
-            src_url = url_pair->src_url;
-            dst_url = url_pair->dst_url;
+            transfer_info->src_url = url_pair->src_url;
+            transfer_info->dst_url = url_pair->dst_url;
             transfer_info->offset = url_pair->offset;
             transfer_info->length = url_pair->length;
             
@@ -1527,6 +1527,8 @@ globus_l_guc_transfer_kickout(
             {
                 transfer_info->needs_mkdir = GLOBUS_TRUE;
             }
+            
+            expand = GLOBUS_TRUE;
         }
         else
         {
@@ -1540,6 +1542,7 @@ globus_l_guc_transfer_kickout(
                 retry = GLOBUS_TRUE;
             }
         }
+        
     }
     globus_mutex_unlock(&g_monitor.mutex);
     
@@ -1575,6 +1578,63 @@ globus_l_guc_transfer_kickout(
             globus_mutex_unlock(&g_monitor.mutex);
         }
     }
+    else if(expand)
+    {
+            globus_l_guc_gass_attr_init(
+                &transfer_info->handle->source_gass_copy_attr,
+                &transfer_info->handle->source_gass_attr,
+                &transfer_info->handle->source_ftp_attr,
+                transfer_info->guc_info,
+                transfer_info->src_url,
+                GLOBUS_TRUE,
+                GLOBUS_TRUE);
+            if(transfer_info->guc_info->sync)
+            {
+                globus_l_guc_gass_attr_init(
+                    &transfer_info->handle->dest_gass_copy_attr,
+                    &transfer_info->handle->dest_gass_attr,
+                    &transfer_info->handle->dest_ftp_attr,
+                    transfer_info->guc_info,
+                    transfer_info->dst_url,
+                    GLOBUS_FALSE,
+                    GLOBUS_TRUE);
+            }
+             
+            result = globus_l_guc_expand_single_url(transfer_info);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_l_guc_src_dst_pair_t *   url_pair;
+                url_pair = (globus_l_guc_src_dst_pair_t *)
+                        globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
+            
+                url_pair->src_url = globus_libc_strdup(transfer_info->src_url);
+                url_pair->dst_url = globus_libc_strdup(transfer_info->dst_url);
+                url_pair->offset = transfer_info->offset;
+                url_pair->length = transfer_info->length;
+                
+                globus_l_guc_enqueue_pair(
+                    &transfer_info->guc_info->user_url_list, 
+                    url_pair);
+
+                //was_error = GLOBUS_TRUE;
+
+                if(!g_continue)
+                {
+                    //goto error_dirlist;
+                }
+                else
+                {
+                    g_err_msg = globus_error_print_friendly(
+                        globus_error_peek(result));
+                    fprintf(stderr, _GASCSL("\nerror listing %s:\n%s"),
+                        transfer_info->src_url, g_err_msg);
+                    globus_free(g_err_msg);
+                }
+            }
+            
+            globus_l_url_copy_monitor_callback(
+                transfer_info, &transfer_info->handle->gass_copy_handle, NULL);
+    }
     else
     {
         if(retry)
@@ -1598,6 +1658,8 @@ globus_l_guc_transfer_kickout(
             {
                 globus_free(transfer_info->dst_url);
             }
+            globus_fifo_destroy_all(
+                &transfer_info->matched_url_list, globus_l_guc_url_info_free);
             globus_free(transfer_info);
         }
     }
@@ -1657,7 +1719,6 @@ main(int argc, char **argv)
     memset(&guc_info, '\0', sizeof(globus_l_guc_info_t));
     globus_fifo_init(&guc_info.user_url_list);
     globus_fifo_init(&guc_info.expanded_url_list);
-    globus_fifo_init(&guc_info.matched_url_list);
     globus_fifo_init(&guc_info.dump_url_list);
 
     /* parse user parms */
@@ -1789,7 +1850,6 @@ main(int argc, char **argv)
     globus_l_guc_destroy_url_list(&guc_info.user_url_list);
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
     globus_l_guc_destroy_url_list(&guc_info.dump_url_list);
-    globus_fifo_destroy_all(&guc_info.matched_url_list, globus_l_guc_url_info_free);
 
     for(i = 0; i < guc_info.conc; i++)
     {
@@ -1857,6 +1917,28 @@ globus_l_url_copy_monitor_callback(
         
         transfer_info->guc_info->conc_outstanding--;
         transfer_info->handle->current_transfer = NULL;
+        if(transfer_info->src_url)
+        {
+            globus_free(transfer_info->src_url);
+            transfer_info->src_url = NULL;
+        }
+        if(transfer_info->dst_url)
+        {
+            globus_free(transfer_info->dst_url);
+            transfer_info->dst_url = NULL;
+        }
+        if(transfer_info->handle->source_ftp_attr)
+        {
+            globus_ftp_client_operationattr_destroy(
+                &transfer_info->handle->source_ftp_attr);
+            transfer_info->handle->source_ftp_attr = NULL;
+        }
+        if(transfer_info->handle->dest_ftp_attr)
+        {
+            globus_ftp_client_operationattr_destroy(
+                &transfer_info->handle->dest_ftp_attr);
+            transfer_info->handle->dest_ftp_attr = NULL;
+        }   
     }
     globus_mutex_unlock(&g_monitor.mutex);
     
@@ -1949,10 +2031,12 @@ globus_l_guc_entry_cb(
     char *                              tmp_unique;
     globus_bool_t                       seen = GLOBUS_FALSE;
     int                                 retval;
+    globus_l_guc_transfer_t *           transfer_info;                      
     globus_l_guc_url_info_t *           urlinfo;
     
-    guc_info = (globus_l_guc_info_t *) user_arg;
-    
+    transfer_info = (globus_l_guc_transfer_t *) user_arg;
+    guc_info = transfer_info->guc_info;
+
     globus_mutex_lock(&g_monitor.mutex);
     
     if(guc_info->recurse && info_stat &&
@@ -1984,7 +2068,7 @@ globus_l_guc_entry_cb(
         urlinfo->type = info_stat->type;
 
         globus_fifo_enqueue(
-            &guc_info->matched_url_list,
+            &transfer_info->matched_url_list,
            urlinfo);
     }
     
@@ -2002,10 +2086,12 @@ globus_l_guc_dest_entry_cb(
 {
     globus_l_guc_info_t *               guc_info;
     int                                 retval;
+    globus_l_guc_transfer_t *           transfer_info;                      
     globus_l_guc_url_info_t *           urlinfo;
     
-    guc_info = (globus_l_guc_info_t *) user_arg;
-    
+    transfer_info = (globus_l_guc_transfer_t *) user_arg;
+    guc_info = transfer_info->guc_info;
+
     globus_mutex_lock(&g_monitor.mutex);
             
     if(info_stat &&
@@ -2404,14 +2490,6 @@ globus_l_guc_transfer(
     } 
     if(dest_io_handle == NULL)
     {
-        
-        if(transfer_info->needs_mkdir && !guc_info->dump_only_file)
-        {
-            result = globus_l_guc_create_dir(
-                dst_url, transfer_info->handle, transfer_info->guc_info);
-            transfer_info->needs_mkdir = GLOBUS_FALSE;
-        }
-
         globus_l_guc_gass_attr_init(
             &handle->dest_gass_copy_attr,
             &handle->dest_gass_attr,
@@ -2570,7 +2648,19 @@ globus_l_guc_transfer(
                 src_url,
                 GLOBUS_TRUE,
                 GLOBUS_TRUE);
-
+            if(guc_info->sync)
+            {
+                globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
+                globus_l_guc_gass_attr_init(
+                    &handle->dest_gass_copy_attr,
+                    &handle->dest_gass_attr,
+                    &handle->dest_ftp_attr,
+                    guc_info,
+                    dst_url,
+                    GLOBUS_FALSE,
+                    GLOBUS_TRUE);
+            }
+                
             result = globus_l_guc_expand_single_url(transfer_info);
             if(result != GLOBUS_SUCCESS)
             {
@@ -2591,7 +2681,6 @@ globus_l_guc_transfer(
 
                 if(!g_continue)
                 {
-                    globus_mutex_unlock(&g_monitor.mutex);
                     goto error_dirlist;
                 }
                 else
@@ -2604,7 +2693,7 @@ globus_l_guc_transfer(
                 }
             }
             
-           globus_l_url_copy_monitor_callback(
+            globus_l_url_copy_monitor_callback(
                 transfer_info, &handle->gass_copy_handle, NULL);
         }
         else
@@ -2674,17 +2763,6 @@ globus_l_guc_transfer(
         globus_free(dst_url_base);
     }
     
-    if(handle->source_ftp_attr)
-    {
-        globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
-        handle->source_ftp_attr = NULL;
-    }
-    if(handle->dest_ftp_attr)
-    {
-        globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
-        handle->dest_ftp_attr = NULL;
-    }
-
     return result;  
     
 error_transfer:
@@ -2698,6 +2776,18 @@ error_dirlist:
     {
         globus_free(dst_url_base);
     }
+
+    if(handle->source_ftp_attr)
+    {
+        globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
+        handle->source_ftp_attr = NULL;
+    }
+    if(handle->dest_ftp_attr)
+    {
+        globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
+        handle->dest_ftp_attr = NULL;
+    }
+
 
     return result;
     
@@ -2738,6 +2828,7 @@ globus_l_guc_transfer_files(
         transfer_info->handle = guc_info->handles[i];
         transfer_info->guc_info = guc_info;
         transfer_info->needs_mkdir = GLOBUS_FALSE;
+        globus_fifo_init(&transfer_info->matched_url_list);
         
         globus_l_guc_transfer_kickout(transfer_info);
     }
@@ -4296,6 +4387,12 @@ globus_l_guc_create_dir(
     
         if(globus_hashtable_lookup(&guc_info->mkdir_hash, dst_mkurl) == NULL)
         {
+            if(handle->dest_ftp_attr)
+            {
+                globus_ftp_client_operationattr_destroy(
+                    &handle->dest_ftp_attr);
+            }
+
             globus_l_guc_gass_attr_init(
                 &handle->dest_gass_copy_attr,
                 &handle->dest_gass_attr,
@@ -4416,15 +4513,27 @@ globus_l_guc_expand_urls(
             src_url,
             GLOBUS_TRUE,
             GLOBUS_TRUE);
+        if(guc_info->sync)
+        {
+            globus_l_guc_gass_attr_init(
+                &handle->dest_gass_copy_attr,
+                &handle->dest_gass_attr,
+                &handle->dest_ftp_attr,
+                guc_info,
+                dst_url,
+                GLOBUS_FALSE,
+                GLOBUS_TRUE);
+        }
 
         if(!no_expand)
         { 
             globus_l_guc_transfer_t    transfer_info;
-                            
             transfer_info.src_url = user_url_pair->src_url;
             transfer_info.dst_url = user_url_pair->dst_url;
             transfer_info.offset = user_url_pair->offset;
             transfer_info.length = user_url_pair->length;
+            globus_fifo_init(&transfer_info.matched_url_list);
+            transfer_info.needs_mkdir = GLOBUS_TRUE;
             transfer_info.handle = handle;
             transfer_info.guc_info = guc_info;
             handle->current_transfer = &transfer_info;
@@ -4434,7 +4543,9 @@ globus_l_guc_expand_urls(
 
             handle->current_transfer = NULL;
             transfer_info.guc_info->conc_outstanding--;
-                                         
+            globus_fifo_destroy_all(
+                &transfer_info.matched_url_list, globus_l_guc_url_info_free);
+
             if(result != GLOBUS_SUCCESS)
             {
                 globus_l_guc_src_dst_pair_t *   url_pair;
@@ -4453,27 +4564,22 @@ globus_l_guc_expand_urls(
                 goto error_expand;
             }
         }
-        globus_ftp_client_operationattr_destroy(
-            &handle->source_ftp_attr);
+        globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
         handle->source_ftp_attr = NULL;
-
-        if(!globus_fifo_empty(&guc_info->expanded_url_list))
+        if(guc_info->sync)
         {
-            if(guc_info->create_dest && !guc_info->dump_only_file)
-            {
-                result = globus_l_guc_create_dir(dst_url, handle, guc_info);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_transfer;
-                }
-            }
-
-            no_matches = GLOBUS_FALSE;
+            globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
+            handle->dest_ftp_attr = NULL;
         }
                 
         globus_free(user_url_pair->src_url);
         globus_free(user_url_pair->dst_url);
         globus_free(user_url_pair);
+    }
+
+    if(!globus_fifo_empty(&guc_info->expanded_url_list))
+    {
+        no_matches = GLOBUS_FALSE;
     }
 
     result = globus_l_guc_transfer_files(guc_info);
@@ -4520,6 +4626,11 @@ globus_l_guc_expand_urls(
 error_expand:
     globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
     handle->source_ftp_attr = NULL;
+    if(guc_info->sync)
+    {
+        globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
+        handle->dest_ftp_attr = NULL;
+    }
 
 error_transfer:            
     globus_hashtable_destroy_all(&guc_info->recurse_hash,
@@ -4546,7 +4657,10 @@ globus_l_guc_check_sync(
     char                                dst_cksm[128];
     globus_result_t                     result;
     
+    globus_mutex_lock(&g_monitor.mutex);
     dest_urlinfo = globus_hashtable_remove(&guc_info->dest_hash, dst_url);
+    globus_mutex_unlock(&g_monitor.mutex);
+
     if(dest_urlinfo)
     {
         switch(guc_info->sync_level)
@@ -4647,7 +4761,7 @@ globus_l_guc_expand_single_url(
                 src_url,
                 &handle->source_gass_copy_attr,
                 globus_l_guc_entry_cb,
-                guc_info);
+                transfer_info);
     
     if(result != GLOBUS_SUCCESS)
     {
@@ -4665,23 +4779,23 @@ globus_l_guc_expand_single_url(
         dst_is_file = GLOBUS_TRUE;
     }
 
-    if(guc_info->sync && !dst_is_file)
+    if(guc_info->sync)
     {
         result = globus_gass_copy_glob_expand_url(
             &handle->gass_copy_handle,
             dst_url,
             &handle->dest_gass_copy_attr,
             globus_l_guc_dest_entry_cb,
-            guc_info);
+            transfer_info);
     }
     
     files_matched = 0;
     base_url_len = strrchr(src_url, '/') - src_url + 1;
                                  
-    while(!globus_fifo_empty(&guc_info->matched_url_list))
+    while(!globus_fifo_empty(&transfer_info->matched_url_list))
     {
         matched_src_urlinfo = (globus_l_guc_url_info_t *) 
-            globus_fifo_dequeue(&guc_info->matched_url_list);
+            globus_fifo_dequeue(&transfer_info->matched_url_list);
     
         matched_file = matched_src_urlinfo->url + base_url_len;
     
@@ -4724,6 +4838,16 @@ globus_l_guc_expand_single_url(
         
         if(do_transfer)
         {
+            if(guc_info->create_dest && !guc_info->dump_only_file)
+            {
+                result = globus_l_guc_create_dir(
+                    matched_dest_url, handle, guc_info);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_mkdir;
+                }
+            }
+            
             expanded_url_pair = (globus_l_guc_src_dst_pair_t *)
                     globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
         
@@ -4756,6 +4880,7 @@ error_too_many_matches:
             _GASCSL("Multiple source urls must be transferred to a directory "
             "destination url:\n%s\n"),
             dst_url));                    
+error_mkdir:
 error_expand:
     globus_mutex_lock(&g_monitor.mutex);
     guc_info->conc_outstanding--;
@@ -5111,6 +5236,11 @@ globus_l_guc_init_gass_copy_handle(
     if(!guc_info->pipeline)
     {
         globus_gass_copy_set_allocate(gass_copy_handle, guc_info->allo);
+    }
+    
+    if(guc_info->sync)
+    {
+        globus_gass_copy_set_stat_on_expand(gass_copy_handle, GLOBUS_TRUE);
     }
     
     if(g_verbose_flag)
