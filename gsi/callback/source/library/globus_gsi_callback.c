@@ -392,7 +392,7 @@ globus_gsi_callback_X509_verify_cert(
      * errors and returns success. globus_i_gsi_callback_cred_verify() 
      * will check the critical extension later.
      */
-    #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+    #if defined(X509_V_FLAG_ALLOW_PROXY_CERTS)
     X509_STORE_CTX_set_flags(
                    context, X509_V_FLAG_ALLOW_PROXY_CERTS);
     #endif
