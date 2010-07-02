@@ -1838,7 +1838,7 @@ globus_gsi_cred_verify_cert_chain(
          * in the chain to be CA cert and throws invalid CA error
          */ 
 
-        #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+        #if defined(X509_V_FLAG_ALLOW_PROXY_CERTS)
 	X509_STORE_CTX_set_flags(
                         store_context, X509_V_FLAG_ALLOW_PROXY_CERTS);
         #endif
