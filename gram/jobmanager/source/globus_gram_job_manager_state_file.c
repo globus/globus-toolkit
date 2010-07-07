@@ -313,11 +313,6 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
-    rc = fprintf(fp, "%4d\n", (int) request->expected_terminal_state);
-    if (rc < 0)
-    {
-        goto error_exit;
-    }
 
     rc = fprintf(fp, "%4d\n", request->failure_code);
     if (rc < 0)
@@ -329,15 +324,6 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
-    rc = fprintf(fp, "%s\n",
-                request->original_job_id_string
-                ? request->original_job_id_string
-                : "");
-    if (rc < 0)
-    {
-        goto error_exit;
-    }
-
     rc = fprintf(fp, "%s\n", request->rsl_spec);
     if (rc < 0)
     {
@@ -349,11 +335,6 @@ globus_gram_job_manager_state_file_write(
         goto error_exit;
     }
     rc = fprintf(fp, "%s\n", request->config->jobmanager_type);
-    if (rc < 0)
-    {
-        goto error_exit;
-    }
-    rc = fprintf(fp, "%s\n", request->config->service_tag);
     if (rc < 0)
     {
         goto error_exit;
@@ -459,6 +440,25 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp, "%4d\n", (int) request->expected_terminal_state);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n", request->config->service_tag);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n",
+                request->original_job_id_string
+                ? request->original_job_id_string
+                : "");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+
 
 
     /*
@@ -840,11 +840,6 @@ skip_single_check:
     }
     globus_gram_job_manager_request_set_status_time(request,
                 atoi( buffer ), statbuf.st_mtime);
-    if (fgets( buffer, file_len, fp ) == NULL)
-    {
-        goto error_exit;
-    }
-    request->expected_terminal_state = atoi( buffer );
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {
@@ -862,18 +857,9 @@ skip_single_check:
         request->job_id_string = strdup( buffer );
     }
 
-    if(fgets( buffer, file_len, fp ) == NULL)
-    {
-        goto free_job_id_string;
-    }
-    buffer[strlen(buffer)-1] = '\0';
-    if(strcmp(buffer, " ") != 0)
-    {
-        request->original_job_id_string = strdup(buffer);
-    }
     if (fgets( buffer, file_len, fp ) == NULL)
     {
-        goto free_original_job_id_string;
+        goto free_job_id_string;
     }
     buffer[strlen(buffer)-1] = '\0';
     request->rsl_spec = strdup( buffer );
@@ -890,17 +876,6 @@ skip_single_check:
     buffer[strlen(buffer)-1] = '\0';
     if (request->config && 
         strcmp(buffer, request->config->jobmanager_type) != 0)
-    {
-        /* Job should be handled by another job manager */
-        remove(request->job_state_lock_file);
-        goto free_cache_tag;
-    }
-    if (fgets( buffer, file_len, fp ) == NULL)
-    {
-        goto free_cache_tag;
-    }
-    buffer[strlen(buffer)-1] = '\0';
-    if (request->config && strcmp(buffer, request->config->service_tag) != 0)
     {
         /* Job should be handled by another job manager */
         remove(request->job_state_lock_file);
@@ -1062,6 +1037,32 @@ skip_single_check:
     else
     {
         request->job_stats.user_dn = NULL;
+    }
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_client_address;
+    }
+    request->expected_terminal_state = atoi( buffer );
+
+    if (fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_client_address;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    if (request->config && strcmp(buffer, request->config->service_tag) != 0)
+    {
+        /* Job should be handled by another job manager */
+        remove(request->job_state_lock_file);
+        goto free_client_address;
+    }
+    if(fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_client_address;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    if(strcmp(buffer, " ") != 0)
+    {
+        request->original_job_id_string = strdup(buffer);
     }
 
     fclose(fp);
