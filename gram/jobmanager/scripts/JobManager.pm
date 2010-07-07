@@ -357,7 +357,7 @@ sub make_scratchdir
     {
         # Files with names comprised of Ascii values 48-122 should be
 	# relatively easy to remove from the shell if things go bad.
-	$tmpname = 'gram_scratch_' .
+	my $tmpname = 'gram_scratch_' .
 	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
@@ -747,7 +747,9 @@ sub stage_out
     my $description = $self->{JobDescription};
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
-    my $local_path, $remote_path;
+    my ($local, $remote);
+    my ($local_path, $remote_path);
+    my ($stderr, $rc);
     my @arg;
 
     $self->log("stage_out(enter)");
@@ -898,6 +900,7 @@ sub cache_cleanup
     my $description = $self->{JobDescription};
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $job_path = $self->job_dir();
+    my ($stderr, $rc);
 
     $self->log("cache_cleanup(enter)");
 
@@ -1164,7 +1167,7 @@ sub job_dir {
         if ($posix_hostname !~ m/\./) {
             my $aliases = join(' ',(gethostbyname($posix_hostname))[0,1]);
 
-            for $alias (split(/\s+/, $aliases)) {
+            for my $alias (split(/\s+/, $aliases)) {
                 if ($alias =~ m/\./) {
                     $posix_hostname = $alias;
 
@@ -1196,6 +1199,7 @@ sub setup_softenv
     my $soft_msc = shift;
     my $softenv_load = shift;
     my $job_script_fh = shift;
+    my $rc;
 
     my $description = $self->{JobDescription};
 
