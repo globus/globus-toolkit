@@ -370,7 +370,10 @@ globus_gram_job_manager_seg_handle_event(
     while (!found_subjob_id)
     {
         subjob_id_ptr = strstr(request->job_id_string, event->job_id);
-        assert(subjob_id_ptr != NULL);
+        if (subjob_id_ptr == NULL)
+	{
+	    break;
+	}
 
         if (subjob_id_ptr == request->job_id_string ||
             (*(subjob_id_ptr - 1) == ','))
@@ -417,8 +420,6 @@ globus_gram_job_manager_seg_handle_event(
             }
         }
     }
-
-    assert(found_subjob_id);
 
     /* If this is a terminal event (done or failed), we'll update the expected
      * terminal state (in the case of a multi-subjob case) and the exit code
