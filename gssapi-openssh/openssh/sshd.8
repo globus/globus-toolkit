@@ -758,6 +758,12 @@ a comma-separated list of targets (without any tags specified) if
 specified in the environment variable
 .Ev GLOBUS_USAGE_TARGETS
 will be used.
+.It Ev GRIDMAP
+Applies to GSI authentication/authorization. Specifies the location of the
+gridmapfile. If not specified, the gridmap file is assumed to be available at
+/etc/grid-security/grid-mapfile for services running as root and at
+HOME/.gridmap for services running as non-root where HOME is the home directory
+of the effective user from the password file entry.
 .It Ev GSSAPI_MECH_CONF
 Applies to mechglue used to support both GSI and Kerberos GSSAPI mechanisms.
 Used to specify the location of the mech.conf file that lists the mechanism-
