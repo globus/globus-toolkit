@@ -5,7 +5,7 @@
 $Header$
 -->
 
-<refentry>
+<refentry id="gram5-cmd-globus-personal-gatekeeper">
 <refmeta>
 <refentrytitle>globus-personal-gatekeeper</refentrytitle>
 <manvolnum>1</manvolnum>
