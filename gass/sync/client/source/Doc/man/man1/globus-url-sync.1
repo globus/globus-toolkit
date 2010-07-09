@@ -1,4 +1,4 @@
-.TH globus-url-sync 1 "21 April 2010"
+.TH globus-url-sync 1 "9 July 2010"
 .SH NAME
 globus-url-sync \- URL Synchronization
 .SH SYNOPSIS
@@ -35,6 +35,9 @@ This option may be used to improve performance, particularly when the
 destination is being populated for the first time.  This option should also
 be used when an empty directory is to be copied, as the default configuration, 
 which lists complete file pathnames, will not list a pathname of an empty directory.
+.TP
+.B -g | -globus-endpoints <source endpoint> <destination endpoint>
+Format output using endpoints in place of the host portion of source and destination URLs.
 .TP
 .B -n | -newer
 File is to be transferred, if the source timestamp is newer than the destination timestamp.
@@ -76,7 +79,9 @@ Piping from
 to 
 .B globus_url_copy:
 .nf
-  globus-url-sync -r -s gsiftp://host.edu//tmp/dir1 gsiftp://host.edu//tmp/dir2 | globus-url-copy -cd -r -f -
+  globus-url-sync -r -s gsiftp://host.edu//tmp/dir1 \\
+.br
+        gsiftp://host.edu//tmp/dir2 | globus-url-copy -cd -r -f -
 .fi
 .SH BUGS
 This is an early version of 
@@ -84,6 +89,12 @@ This is an early version of
 In the event that unexpected results are returned, please re-run the command with the 
 .B -verbose 
 option.
+.P 1
+.B globus-url-sync
+currently includes files that 
+.B globus-url-copy
+may not be able to read, as part of its output.  If output is piped to the globus.org 
+"xfer" command, the transfer of these files may be retried without succeeding.
 .P
 .B Known limitations:
 .P 1
@@ -94,6 +105,14 @@ and the
 .B -cd 
 options, so that directories can be copied recursively (for "globus-url-sync -r"),
 and so that directories at the destination can be created.
+.P 1
+Until globus.org supports the recursive copying of directories, when
+.B globus-url-sync 
+output is being piped into a globus.org "xfer" command, the
+.B globus-url-sync -g
+and
+.B -r
+options should not be used at the same time.
 .P 1
 Authentication errors may be erroneously be reported as though a file is missing.
 .P 1
