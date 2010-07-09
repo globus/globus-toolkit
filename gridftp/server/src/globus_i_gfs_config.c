@@ -2165,7 +2165,8 @@ globus_i_gfs_config_init(
     for(arg_num = 0; arg_num < argc; arg_num++)
     {
         argp = tmp_argv[arg_num];
-        if(*argp == '-' && *++argp == 'c' && tmp_argv[arg_num + 1])
+        if(argp[0] == '-' && argp[1] == 'c' && argp[2] == '\0' 
+            && tmp_argv[arg_num + 1])
         {
             local_config_file = globus_libc_strdup(tmp_argv[arg_num + 1]);
             arg_num = argc;

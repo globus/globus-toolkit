@@ -906,20 +906,21 @@ globus_l_gfs_reject_open_cb(
     if(globus_gfs_config_get_int("connections_max") == 0 || 
         globus_i_gfs_config_bool("connections_disabled"))
     {
-        if(tmp_msg = globus_gfs_config_get_string("offline_msg") != NULL)
+        if((tmp_msg = globus_gfs_config_get_string("offline_msg")) != NULL)
         {
             sorry_msg = globus_common_create_string("422 %s\r\n", tmp_msg);
         }
         else
         {
             sorry_msg = globus_libc_strdup(
-                "422 Service temporarily offline, closing control connection.\r\n");
+                "422 Service temporarily offline. Closing control connection.\r\n");
         }
     }
     else
     {
         sorry_msg = globus_libc_strdup(
-            "421 Service not available, closing control connection.\r\n");
+            "421 Service busy: Connection limit exceeded. Please try again "
+            "later. Closing control connection.\r\n");
     }
     
     len = strlen(sorry_msg);
