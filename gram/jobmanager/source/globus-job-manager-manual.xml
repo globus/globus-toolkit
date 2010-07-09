@@ -6,7 +6,7 @@ $Header$
 -->
 
 
-<refentry>
+<refentry id="gram5-cmd-globus-job-manager">
 <refmeta>
 <refentrytitle>globus-job-manager</refentrytitle>
 <manvolnum>8</manvolnum>
