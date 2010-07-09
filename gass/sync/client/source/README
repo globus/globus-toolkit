@@ -39,7 +39,8 @@ Piping from globus-url-sync to globus_url_copy
 
 For example:
 
-  globus-url-sync -r -s gsiftp://host.edu//tmp/dir1 gsiftp://host.edu//tmp/dir2 | globus-url-copy -cd -r -f -
+  globus-url-sync -r -s gsiftp://host.edu//tmp/dir1 gsiftp://host.edu//tmp/dir2 \
+       | globus-url-copy -cd -r -f -
 
 
 Note: 
@@ -55,9 +56,18 @@ o See globus-url-sync -help for available options.
 Known limitations:
 -----------------
 
+o globus‐url‐sync currently includes files that globus‐url‐copy may not
+  be able to read, as part of its output.  If output is piped to the
+  globus.org "xfer" command, the transfer of these files may be retried
+  without succeeding.
+
 o globus-url-copy should be invoked with the "-r" and the "-cd" options,
   so that directories can be copied recursively (for "globus-url-sync -r"),
   and so that directories at the destination can be created.
+
+o Until globus.org supports the recursive copying of directories, when 
+  globus‐url‐sync output is being piped into a globus.org "xfer" command, 
+  the globus‐url‐sync ‐g and ‐r options should not be used at the same time.
 
 o Authentication errors may be erroneously be reported as though a file
   is missing.

@@ -494,33 +494,78 @@ globus_l_url_sync_main_result_cb(
     if (globus_i_url_sync_args_verbose || globus_i_url_sync_args_debug)
     {
         /* Verbose results format */
-        globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
-				result,
-				(error) ? "ERROR=" : "",
-				(error) ? globus_error_get_short_desc(error) : "",
-				source->url,
-				destination->url);
-
-	/* Additional details for debug usage */
-	if (globus_i_url_sync_args_debug)
+        if (globus_i_url_sync_args_src_endpoint == GLOBUS_NULL ||
+	    globus_i_url_sync_args_dst_endpoint == GLOBUS_NULL) 
 	{
-	    globus_libc_fprintf(stderr, "%s\n",
-				globus_error_print_friendly(error));
+            globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
+		result,
+		(error) ? "ERROR=" : "",
+		(error) ? globus_error_get_short_desc(error) : "",
+		source->url,
+		destination->url);
 	}
+	else 
+	{
+            globus_libc_printf("%d {%s%s} \"%s:%s\" \"%s:%s\"\n",
+		result,
+		(error) ? "ERROR=" : "",
+		(error) ? globus_error_get_short_desc(error) : "",
+		globus_i_url_sync_args_src_endpoint,
+		&source->url[source->pathname_index],
+		globus_i_url_sync_args_dst_endpoint,
+		&destination->url[destination->pathname_index]);
+	}
+
+		/* Additional details for debug usage */
+        if (globus_i_url_sync_args_debug)
+        {
+            globus_libc_fprintf(stderr, "%s\n",
+				globus_error_print_friendly(error));
+        }
     }
     else if (error)
     {
         /* print readable error message to stderr */
-        globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
-			    globus_error_get_short_desc(error),
-			    source->url, destination->url);
+        if (globus_i_url_sync_args_src_endpoint == GLOBUS_NULL ||
+	    globus_i_url_sync_args_dst_endpoint == GLOBUS_NULL) 
+	{
+	    globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
+		globus_error_get_short_desc(error),
+		source->url,
+		destination->url);
+	}
+	else 
+	{
+	    globus_libc_fprintf(stderr, "ERROR=%s; \"%s:%s\" \"%s:%s\"\n",
+		globus_error_get_short_desc(error),
+		globus_i_url_sync_args_src_endpoint,
+		&source->url[source->pathname_index], 
+		globus_i_url_sync_args_dst_endpoint,
+		&destination->url[destination->pathname_index]);
+	}
     }
     else if (result)
     {
         if (source->stats.type != globus_url_sync_endpoint_type_dir ||
-	    !globus_url_sync_handle_get_recursion(handle))
-	    /* globus-url-copy format */
-	    globus_libc_printf("\"%s\" \"%s\"\n", source->url, destination->url);
+            !globus_url_sync_handle_get_recursion(handle))
+	{
+            /* globus-url-copy format */
+	    if (globus_i_url_sync_args_src_endpoint == GLOBUS_NULL ||
+		globus_i_url_sync_args_dst_endpoint == GLOBUS_NULL) 
+	    {
+	        globus_libc_printf("\"%s\" \"%s\"\n", 
+		    source->url,
+		    destination->url);
+	    }
+	    else 
+	    {
+		globus_libc_printf("\"%s:%s\" \"%s:%s\"\n", 
+		    globus_i_url_sync_args_src_endpoint,
+		    &source->url[source->pathname_index], 
+		    globus_i_url_sync_args_dst_endpoint,
+		    &destination->url[destination->pathname_index]);
+	    }
+	}
     }
     GLOBUS_L_URL_SYNC_DEBUG_EXIT();
 }

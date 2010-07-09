@@ -40,6 +40,8 @@ globus_bool_t	globus_i_url_sync_args_older		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_size		= GLOBUS_FALSE;
 globus_bool_t	globus_i_url_sync_args_cache		= GLOBUS_TRUE;
 globus_bool_t	globus_i_url_sync_args_recurse		= GLOBUS_TRUE;
+char * globus_i_url_sync_args_src_endpoint		= GLOBUS_NULL;
+char * globus_i_url_sync_args_dst_endpoint		= GLOBUS_NULL;
 
 static globus_url_t     globus_l_url_sync_args_source;
 static globus_url_t     globus_l_url_sync_args_destination;
@@ -52,7 +54,8 @@ enum {
     arg_size,
 	arg_new,
 	arg_old,
-    arg_num = arg_old
+	arg_globus_endpoints,
+    arg_num = arg_globus_endpoints
 };
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -63,6 +66,7 @@ static char *recurse_args[] = {"-r", "-recursive-dir-copy", GLOBUS_NULL};
 static char *size_args[] = {"-s", "-size", GLOBUS_NULL};
 static char *new_args[] = {"-n", "-newer", GLOBUS_NULL};
 static char *old_args[] = {"-o", "-older", GLOBUS_NULL};
+static char *globus_args[] = {"-g", "-globus-endpoints", GLOBUS_NULL};
 
 static globus_args_option_descriptor_t verbose_def =
   {arg_verbose, verbose_args, 0, GLOBUS_NULL, GLOBUS_NULL};
@@ -78,9 +82,11 @@ static globus_args_option_descriptor_t cache_off_def =
   {arg_cache_off, cache_off_args, 0, GLOBUS_NULL, GLOBUS_NULL};
 static globus_args_option_descriptor_t recurse_def =
   {arg_recurse, recurse_args, 0, GLOBUS_NULL, GLOBUS_NULL};
+static globus_args_option_descriptor_t globus_def =
+{arg_globus_endpoints, globus_args, 2, GLOBUS_NULL, GLOBUS_NULL};
 
 static char * usage_str= 
-"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-r ] [-n] [-o] [-s] <sourceURL> <destURL>";
+"globus_url_sync [-help | -usage] [-version] [-d | -v] [-c] [-r ] [-n] [-o] [-s] [-g <src> <dst>] <sourceURL> <destURL>";
 
 static char * help_str= 
 "\nglobus_url_sync [options] <sourceURL> <destURL>\n\n"
@@ -94,7 +100,9 @@ static char * help_str=
 "  -c | -connection-caching-off\n"
 "\tDisable GridFTP client connection caching.\n"
 "  -r | -recursive-dir-copy\n"
-"\tOutput directory names when whole directory is to be copied.\n"
+"\tDisable GridFTP client connection caching.\n"
+"  -g | -globus-endpoints <source endpoint> <destination endpoint>\n"
+"\tFormat output using endpoints in place of the host portion of source and destination URLs.\n"
 "  -n | -newer\n"
 "\tFile is to be transferred, if the source timestamp is newer than the destination timestamp.\n"
 "  -o | -older\n"
@@ -159,6 +167,8 @@ globus_i_url_sync_parse_args(
     globus_i_url_sync_args_size     = GLOBUS_FALSE;
     globus_i_url_sync_args_cache    = GLOBUS_TRUE;
     globus_i_url_sync_args_recurse  = GLOBUS_TRUE;
+	globus_i_url_sync_args_src_endpoint = GLOBUS_NULL;
+	globus_i_url_sync_args_dst_endpoint = GLOBUS_NULL;
 	
     /* determine the program name */
 	program = strrchr(argv[0],'/');
@@ -175,6 +185,7 @@ globus_i_url_sync_parse_args(
     args_options[4] = size_def;
     args_options[5] = cache_off_def;
     args_options[6] = recurse_def;
+	args_options[7] = globus_def;
     if (globus_args_scan(
 		&argc,
 		&argv,
@@ -218,6 +229,10 @@ globus_i_url_sync_parse_args(
 	  case arg_size:
 	    globus_i_url_sync_args_size = GLOBUS_TRUE;
 	    break;
+      case arg_globus_endpoints:
+        globus_i_url_sync_args_src_endpoint = globus_libc_strdup(instance->values[0]);
+		globus_i_url_sync_args_dst_endpoint = globus_libc_strdup(instance->values[1]);
+        break;
 	  default:
 	    /* should not get here */
 	    break;

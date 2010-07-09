@@ -37,10 +37,6 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-/* Macros */
-
-#define globus_l_url_sync_url2strlen(url)   globus_l_url_sync_BUFLEN
-
 /* Constants */
 
 static const int globus_l_url_sync_BUFLEN = GLOBUS_URL_SYNC_DIR_ENTRY_LENGTH_MAX + 1;
@@ -109,7 +105,8 @@ globus_l_url_sync_make_new_endpoint(
     strcpy((new_url+base_len), child);
 
     /* Init new endpoint */
-    globus_i_url_sync_endpoint_init(&new_endpoint, new_url, base->ftp_handle);
+    globus_i_url_sync_endpoint_init(&new_endpoint, new_url, 
+				    base->ftp_handle, base->pathname_index);
     globus_assert(new_endpoint);
 
     /* Free the new url, and return new endpoint */
@@ -162,6 +159,7 @@ globus_l_url_sync_make_src_endpoint(
     /* Init new endpoint */
     new_endpoint->url = new_url;
     new_endpoint->ftp_handle = base->ftp_handle;
+    new_endpoint->pathname_index = base->pathname_index;
   
     return new_endpoint;
 } /* globus_l_url_sync_make_src_endpoint */
@@ -224,7 +222,8 @@ char *
 globus_l_url_sync_url2str(
     const globus_url_t *                    url,
     char *                                  str,
-    int                                     len);
+    int                                     len,
+    int *                                   pathname_index);
 
 /**
  * @ingroup globus_l_url_sync
@@ -273,6 +272,8 @@ globus_url_sync(
 {
     globus_url_sync_endpoint_t *            source;
     globus_url_sync_endpoint_t *            destination;
+    int                                     src_pathname_index;
+    int                                     dst_pathname_index;
     globus_ftp_client_handleattr_t *        ftp_attr;
     globus_result_t                         result;
     char                                    source_str[globus_l_url_sync_BUFLEN];
@@ -320,11 +321,11 @@ globus_url_sync(
       {
 	  case GLOBUS_URL_SCHEME_GSIFTP:
 	  case GLOBUS_URL_SCHEME_SSHFTP:
-	      globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
+	      globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN, &src_pathname_index);
 	      globus_i_url_sync_log_debug("source: %s\n", source_str);
 	      break;
 	  case GLOBUS_URL_SCHEME_FILE:
-	    globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN);
+	    globus_l_url_sync_url2str(source_url, source_str, globus_l_url_sync_BUFLEN, &src_pathname_index);
 	    globus_i_url_sync_log_debug("source: %s ('file' not currrently supported)\n", source_str);
 	    /* fall through */
 	  default:
@@ -336,11 +337,11 @@ globus_url_sync(
       {
 	  case GLOBUS_URL_SCHEME_GSIFTP:
 	  case GLOBUS_URL_SCHEME_SSHFTP:
-	      globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
+	      globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN, &dst_pathname_index);
 	      globus_i_url_sync_log_debug("destination: %s\n", destination_str);
 	      break;
 	  case GLOBUS_URL_SCHEME_FILE:		
-	      globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN);
+	      globus_l_url_sync_url2str(destination_url, destination_str, globus_l_url_sync_BUFLEN, &dst_pathname_index);
 	      globus_i_url_sync_log_debug("destination: %s ('file' not currrently supported)\n", destination_str);
 	      /* fall through */
 	  default:
@@ -377,7 +378,8 @@ globus_url_sync(
         /* Initialize source endpoint */
         globus_i_url_sync_endpoint_init(&source, source_str,
                 (globus_ftp_client_handle_t *)
-                globus_libc_malloc(sizeof(globus_ftp_client_handle_t)));
+                globus_libc_malloc(sizeof(globus_ftp_client_handle_t)),
+		src_pathname_index);
 	if (globus_url_sync_handle_get_cache_connections(handle))
 	{
 		/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
@@ -397,7 +399,8 @@ globus_url_sync(
         /* Initialize destination endpoint */
         globus_i_url_sync_endpoint_init(&destination, destination_str,
                 (globus_ftp_client_handle_t *)
-                globus_libc_malloc(sizeof(globus_ftp_client_handle_t)));
+                globus_libc_malloc(sizeof(globus_ftp_client_handle_t)),
+		dst_pathname_index);
 	if (globus_url_sync_handle_get_cache_connections(handle))
 	{
 		/* CAUSES EVENTUAL MEMORY VIOLATION in < GT5 GridFTP API */
@@ -804,7 +807,8 @@ char *
 globus_l_url_sync_url2str(
     const globus_url_t *                    url,
     char *                                  buf,
-    int                                     len)
+    int                                     len,
+    int *                                   pathname_index)
 {
     int                                     size;
     char *                                  pstr;
@@ -861,27 +865,31 @@ globus_l_url_sync_url2str(
 	}
     } else {
         return NULL;
-    }	
+    }
+	
+    /* save the index into buf, where the file path starts */
+    *pathname_index = globus_libc_strlen(buf)+1;
 	
     /* Copy Path */
-    if (url->url_path != NULL) {
+    if (url->url_path != NULL) 
+	{
         char *prefix = "";
 		
-	/* If path is relative, start it with "/~". */
-	if ((strncmp(url->url_path, "//", 2) != 0) && 
-	    (strncmp(url->url_path, "/~", 2) != 0)) {
-	    if ((strncmp(url->url_path, "~", 1) == 0)) {
-	        prefix = "/";
-	    } else if ((strncmp(url->url_path, "/", 1) == 0)) {
-	        prefix = "/~";
+        /* If path is relative, start it with "/~". */
+        if ((strncmp(url->url_path, "//", 2) != 0) && 
+            (strncmp(url->url_path, "/~", 2) != 0)) {
+	        if (url->url_path[0] == '~') {
+	            prefix = "/";
+	        } else if (url->url_path[0] == '/') {
+	            prefix = "/~";
+	        }
 	    }
-	}
-	size = globus_libc_strlen(url->url_path) + globus_libc_strlen(prefix);
-	if (len <= size)
-	    return NULL;
-	globus_libc_snprintf(pstr, len, "%s%s", prefix, url->url_path);
-	pstr += size;
-	len -= size;
+	    size = globus_libc_strlen(url->url_path) + globus_libc_strlen(prefix);
+	    if (len <= size)
+	        return NULL;
+	    globus_libc_snprintf(pstr, len, "%s%s", prefix, url->url_path);
+	    pstr += size;
+	    len -= size;
     } else {
         return NULL;
     }
