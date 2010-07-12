@@ -60,12 +60,16 @@ packetfile_lock = thread.allocate_lock()
 
 pidfile_path = None
 receiver = None
-def termhandler(signum, frame):
-    if pidfile_path != None:
-        os.remove(pidfile_path)
+
+def shutdownthread():
     if receiver != None:
         receiver.shutdown()
     sys.exit(0)
+    
+def termhandler(signum, frame):
+    if pidfile_path != None:
+        os.remove(pidfile_path)
+    thread.start_new_thread(shutdownthread, ())
 
 def packetcloser():
     last_close = int(time.time() / 60 / 60) * 60 * 60
