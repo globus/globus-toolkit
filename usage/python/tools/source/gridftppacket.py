@@ -193,7 +193,10 @@ class GridFTPPacket(CUsagePacket):
                 cursor.execute('''
                     INSERT INTO gftp_scheme(name)
                     VALUES(%s)
-                    RETURNING id
+                    ''', values)
+                cursor.execute('''
+                    SELECT id FROM gftp_scheme
+                    WHERE name=%s
                     ''', values)
                 scheme_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_scheme[name] = scheme_id
@@ -227,7 +230,10 @@ class GridFTPPacket(CUsagePacket):
                 cursor.execute('''
                     INSERT INTO gftp_dsi(name)
                     VALUES(%s)
-                    RETURNING id
+                    ''', values)
+                cursor.execute('''
+                    SELECT id FROM gftp_dsi
+                    WHERE name=%s
                     ''', values)
                 dsi_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_dsi[name] = dsi_id
@@ -270,8 +276,26 @@ class GridFTPPacket(CUsagePacket):
                         dirt_branch,
                         distro_string)
                     VALUES(%s, %s, %s, %s, %s, %s)
-                    RETURNING id
                     ''', values)
+                if values[5] is not None:
+                    cursor.execute('''
+                        SELECT id FROM gftp_versions
+                        WHERE major=%s
+                            AND minor=%s
+                            AND flavor=%s
+                            AND dirt_timestamp=%s
+                            AND dirt_branch=%s
+                            AND distro_string=%s''', values)
+                else:
+                    values = tuple(version_list[:-1])
+                    cursor.execute('''
+                        SELECT id FROM gftp_versions
+                        WHERE major=%s
+                            AND minor=%s
+                            AND flavor=%s
+                            AND dirt_timestamp=%s
+                            AND dirt_branch=%s
+                            AND distro_string is NULL''', values)
                 version_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_versions[version] = version_id
         return version_id
@@ -311,8 +335,26 @@ class GridFTPPacket(CUsagePacket):
                         event_modules,
                         conf_id)
                     VALUES(%s, %s, %s, %s)
-                    RETURNING id
                     ''', values)
+                ql = [host_id]
+                q = 'SELECT id FROM gftp_server WHERE host_id=%s'
+                if gftp_version is None:
+                    q += ' AND gftp_version IS NULL '
+                else:
+                    q += ' AND gftp_version=%s '
+                    ql.append(gftp_version)
+                if event_modules is None:
+                    q += ' AND event_modules IS NULL '
+                else:
+                    q += ' AND event_modules=%s '
+                    ql.append(event_modules)
+                if conf_id is None:
+                    q += ' AND conf_id IS NULL '
+                else:
+                    q += ' AND conf_id=%s '
+                    ql.append(conf_id)
+
+                cursor.execute(q, tuple(ql))
                 server_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_server[values] = server_id
         return server_id
@@ -346,7 +388,11 @@ class GridFTPPacket(CUsagePacket):
                         appname,
                         appver)
                     VALUES(%s, %s)
-                    RETURNING id
+                    ''', values)
+                cursor.execute('''
+                    SELECT id FROM gftp_clients
+                        WHERE appname=%s
+                        AND appver=%s
                     ''', values)
                 client_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_clients[values] = client_id
@@ -379,7 +425,12 @@ class GridFTPPacket(CUsagePacket):
                 cursor.execute('''
                     INSERT INTO gftp_users(name, dn)
                     VALUES(%s, %s)
-                    RETURNING id
+                    ''', values)
+                cursor.execute('''
+                    SELECT id FROM gftp_users
+                    WHERE 
+                        name=%s
+                        AND dn=%s
                     ''', values)
                 user_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_users[values] = user_id
@@ -412,8 +463,10 @@ class GridFTPPacket(CUsagePacket):
                 cursor.execute('''
                     INSERT INTO gftp_xfer_type(command)
                     VALUES(%s)
-                    RETURNING id
                     ''', values)
+                cursor.execute('''
+                    SELECT id FROM gftp_xfer_type
+                    WHERE command=%s''', values)
                 xfer_type_id = cursor.fetchone()[0]
                 GridFTPPacket.__gftp_xfer_type[xfer_type] = xfer_type_id
         return xfer_type_id
