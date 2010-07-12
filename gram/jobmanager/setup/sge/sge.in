@@ -753,10 +753,17 @@ sub submit
         # It's a multiple job
         #
         $self->log("  forking multiple requests");
+	$rc = $sge_job_script->print("pids=''\nexit_code=0\n");
+	if (!$rc)
+	{
+	    return $self->respond_with_failure_extension(
+		    "print: $sge_job_script_name: $!",
+		    Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
+	}
         for(my $i = 0; $i < $description->count(); $i++)
         {
             $rc = $sge_job_script->print($executable . " $args < "
-                                   . $stdin . "&\n");
+                                   . $stdin . "&\npids=\"\$pids \$!\"\n");
             if (!$rc)
             {
                 return $self->respond_with_failure_extension(
@@ -764,7 +771,12 @@ sub submit
                         Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED());
             }
         }
-        $rc = $sge_job_script->print("wait\n");
+
+        $rc = $sge_job_script->print("for x in \$pids; do\n"
+		. "wait \$x; tmp_exit_code=\$?;\n"
+		. "if [ \$exit_code = 0 -a \$tmp_exit_code != 0 ]; then\n"
+		. "    exit_code=\$tmp_exit_code\n"
+		. "fi\ndone\nexit \$exit_code\n");
         if (!$rc)
         {
             return $self->respond_with_failure_extension(
