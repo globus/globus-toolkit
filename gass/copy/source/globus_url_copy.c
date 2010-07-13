@@ -1851,6 +1851,11 @@ main(int argc, char **argv)
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
     globus_l_guc_destroy_url_list(&guc_info.dump_url_list);
 
+    if(guc_info.udt)
+    {
+        /* sidestep udt shutdown issues */
+        return ret_val;
+    }
     for(i = 0; i < guc_info.conc; i++)
     {
         globus_gass_copy_handle_destroy(
@@ -4781,6 +4786,16 @@ globus_l_guc_expand_single_url(
 
     if(guc_info->sync)
     {
+        if(guc_info->create_dest && !guc_info->dump_only_file)
+        {
+            result = globus_l_guc_create_dir(
+                dst_url, handle, guc_info);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_mkdir;
+            }
+        }
+        
         result = globus_gass_copy_glob_expand_url(
             &handle->gass_copy_handle,
             dst_url,
