@@ -2633,11 +2633,8 @@ globus_l_guc_transfer(
         {
             if(!guc_info->dump_only_file)
             {
-                result = globus_gass_copy_mkdir(
-                    &handle->gass_copy_handle,
-                    dst_url,
-                    &handle->dest_gass_copy_attr);
-                    
+                result = globus_l_guc_create_dir(
+                    dst_url, handle, guc_info);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GLOBUS_SUCCESS;
@@ -4386,11 +4383,16 @@ globus_l_guc_create_dir(
     while(!done_create_dest && !globus_list_empty(mkdir_urls))
     {        
         globus_bool_t                   inserted = GLOBUS_FALSE;
+        char *                          already_exists = NULL;
         
         dst_mkurl = globus_list_remove(&mkdir_urls, mkdir_urls);
         
-    
-        if(globus_hashtable_lookup(&guc_info->mkdir_hash, dst_mkurl) == NULL)
+        globus_mutex_lock(&g_monitor.mutex);
+            already_exists = globus_hashtable_lookup(
+                &guc_info->mkdir_hash, dst_mkurl);
+        globus_mutex_unlock(&g_monitor.mutex);
+               
+        if(!already_exists)
         {
             if(handle->dest_ftp_attr)
             {
@@ -4418,10 +4420,13 @@ globus_l_guc_create_dir(
             
             if(result == GLOBUS_SUCCESS || !first_attempt)
             {
-                rc = globus_hashtable_insert(
-                    &guc_info->mkdir_hash,
-                    dst_mkurl,
-                    dst_mkurl);
+                globus_mutex_lock(&g_monitor.mutex);
+                    rc = globus_hashtable_insert(
+                        &guc_info->mkdir_hash,
+                        dst_mkurl,
+                        dst_mkurl);
+                globus_mutex_unlock(&g_monitor.mutex);
+
                 if(rc == 0)
                 {
                     inserted = GLOBUS_TRUE;
@@ -4786,31 +4791,46 @@ globus_l_guc_expand_single_url(
 
     if(guc_info->sync)
     {
-        if(guc_info->create_dest && !guc_info->dump_only_file)
-        {
-            result = globus_l_guc_create_dir(
-                dst_url, handle, guc_info);
-            if(result != GLOBUS_SUCCESS)
-            {
-                goto error_mkdir;
-            }
-
-            globus_l_guc_gass_attr_init(
-                &handle->dest_gass_copy_attr,
-                &handle->dest_gass_attr,
-                &handle->dest_ftp_attr,
-                guc_info,
-                dst_url,
-                GLOBUS_FALSE,
-                GLOBUS_TRUE);
-        }
+        globus_gass_copy_glob_stat_t    stat_info;
         
-        result = globus_gass_copy_glob_expand_url(
+        result = globus_gass_copy_stat(
             &handle->gass_copy_handle,
             dst_url,
             &handle->dest_gass_copy_attr,
-            globus_l_guc_dest_entry_cb,
-            transfer_info);
+            &stat_info);
+        if(result == GLOBUS_SUCCESS)
+        {
+            if(stat_info.type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR)
+            {
+                char *                  tmp_dst;
+                int                     rc; 
+
+                tmp_dst = globus_libc_strdup(dst_url);
+                
+                globus_mutex_lock(&g_monitor.mutex);
+                rc = globus_hashtable_insert(
+                    &guc_info->mkdir_hash,
+                    tmp_dst,
+                    tmp_dst);
+                globus_mutex_unlock(&g_monitor.mutex);
+                if(rc != 0)
+                {
+                    globus_free(tmp_dst);
+                }
+
+                result = globus_gass_copy_glob_expand_url(
+                    &handle->gass_copy_handle,
+                    dst_url,
+                    &handle->dest_gass_copy_attr,
+                    globus_l_guc_dest_entry_cb,
+                    transfer_info);
+            }
+            else
+            {
+                globus_l_guc_dest_entry_cb(
+                    dst_url, &stat_info, transfer_info);
+            }
+        }
     }
     
     files_matched = 0;
