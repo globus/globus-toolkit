@@ -4794,6 +4794,15 @@ globus_l_guc_expand_single_url(
             {
                 goto error_mkdir;
             }
+
+            globus_l_guc_gass_attr_init(
+                &handle->dest_gass_copy_attr,
+                &handle->dest_gass_attr,
+                &handle->dest_ftp_attr,
+                guc_info,
+                dst_url,
+                GLOBUS_FALSE,
+                GLOBUS_TRUE);
         }
         
         result = globus_gass_copy_glob_expand_url(
