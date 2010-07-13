@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /****************************************************************************
 written by
-   Yunhong Gu, last updated 11/02/2007
+   Yunhong Gu, last updated 09/13/2008
 *****************************************************************************/
 
 #ifndef WIN32
@@ -49,6 +49,9 @@ written by
 #else
    #include <winsock2.h>
    #include <ws2tcpip.h>
+   #ifdef LEGACY_WIN32
+      #include <wspiapi.h>
+   #endif
 #endif
 #include "channel.h"
 #include "packet.h"
@@ -66,6 +69,7 @@ written by
 
 CChannel::CChannel():
 m_iIPversion(AF_INET),
+m_iSocket(),
 m_iSndBufSize(65536),
 m_iRcvBufSize(65536)
 {
@@ -73,6 +77,7 @@ m_iRcvBufSize(65536)
 
 CChannel::CChannel(const int& version):
 m_iIPversion(version),
+m_iSocket(),
 m_iSndBufSize(65536),
 m_iRcvBufSize(65536)
 {
@@ -87,7 +92,11 @@ void CChannel::open(const sockaddr* addr)
    // construct an socket
    m_iSocket = socket(m_iIPversion, SOCK_DGRAM, 0);
 
-   if (m_iSocket < 0)
+   #ifdef WIN32
+      if (INVALID_SOCKET == m_iSocket)
+   #else
+      if (m_iSocket < 0)
+   #endif
       throw CUDTException(1, 0, NET_ERROR);
 
    if (NULL != addr)
@@ -118,9 +127,30 @@ void CChannel::open(const sockaddr* addr)
       freeaddrinfo(res);
    }
 
-   if ((0 != setsockopt(m_iSocket, SOL_SOCKET, SO_RCVBUF, (char *)&m_iRcvBufSize, sizeof(int))) ||
-       (0 != setsockopt(m_iSocket, SOL_SOCKET, SO_SNDBUF, (char *)&m_iSndBufSize, sizeof(int))))
-      throw CUDTException(1, 3, NET_ERROR);
+   setUDPSockOpt();
+}
+
+void CChannel::open(UDPSOCKET udpsock)
+{
+   m_iSocket = udpsock;
+   setUDPSockOpt();
+}
+
+void CChannel::setUDPSockOpt()
+{
+   #if defined(BSD) || defined(OSX)
+      // BSD system will fail setsockopt if the requested buffer size exceeds system maximum value
+      int maxsize = 64000;
+      if (0 != setsockopt(m_iSocket, SOL_SOCKET, SO_RCVBUF, (char*)&m_iRcvBufSize, sizeof(int)))
+         setsockopt(m_iSocket, SOL_SOCKET, SO_RCVBUF, (char*)&maxsize, sizeof(int));
+      if (0 != setsockopt(m_iSocket, SOL_SOCKET, SO_SNDBUF, (char*)&m_iSndBufSize, sizeof(int)))
+         setsockopt(m_iSocket, SOL_SOCKET, SO_SNDBUF, (char*)&maxsize, sizeof(int));
+   #else
+      // for other systems, if requested is greated than maximum, the maximum value will be automactally used
+      if ((0 != setsockopt(m_iSocket, SOL_SOCKET, SO_RCVBUF, (char*)&m_iRcvBufSize, sizeof(int))) ||
+          (0 != setsockopt(m_iSocket, SOL_SOCKET, SO_SNDBUF, (char*)&m_iSndBufSize, sizeof(int))))
+         throw CUDTException(1, 3, NET_ERROR);
+   #endif
 
    timeval tv;
    tv.tv_sec = 0;
@@ -140,11 +170,11 @@ void CChannel::open(const sockaddr* addr)
          throw CUDTException(1, 3, NET_ERROR);
    #elif WIN32
       DWORD ot = 1; //milliseconds
-      if (setsockopt(m_iSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&ot, sizeof(DWORD)) < 0)
+      if (0 != setsockopt(m_iSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&ot, sizeof(DWORD)))
          throw CUDTException(1, 3, NET_ERROR);
    #else
       // Set receiving time-out value
-      if (setsockopt(m_iSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(timeval)) < 0)
+      if (0 != setsockopt(m_iSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(timeval)))
          throw CUDTException(1, 3, NET_ERROR);
    #endif
 }
@@ -208,8 +238,14 @@ int CChannel::sendto(const sockaddr* addr, CPacket& packet) const
          *((uint32_t *)packet.m_pcData + i) = htonl(*((uint32_t *)packet.m_pcData + i));
 
    // convert packet header into network order
+   //for (int j = 0; j < 4; ++ j)
+   //   packet.m_nHeader[j] = htonl(packet.m_nHeader[j]);
+   uint32_t* p = packet.m_nHeader;
    for (int j = 0; j < 4; ++ j)
-      packet.m_nHeader[j] = htonl(packet.m_nHeader[j]);
+   {
+      *p = htonl(*p);
+      ++ p;
+   }
 
    #ifndef WIN32
       msghdr mh;
@@ -230,8 +266,14 @@ int CChannel::sendto(const sockaddr* addr, CPacket& packet) const
    #endif
 
    // convert back into local host order
+   //for (int k = 0; k < 4; ++ k)
+   //   packet.m_nHeader[k] = ntohl(packet.m_nHeader[k]);
+   p = packet.m_nHeader;
    for (int k = 0; k < 4; ++ k)
-      packet.m_nHeader[k] = ntohl(packet.m_nHeader[k]);
+   {
+      *p = ntohl(*p);
+       ++ p;
+   }
 
    if (packet.getFlag())
       for (int l = 0, n = packet.getLength() / 4; l < n; ++ l)
@@ -281,8 +323,14 @@ int CChannel::recvfrom(sockaddr* addr, CPacket& packet) const
    packet.setLength(res - CPacket::m_iPktHdrSize);
 
    // convert back into local host order
+   //for (int i = 0; i < 4; ++ i)
+   //   packet.m_nHeader[i] = ntohl(packet.m_nHeader[i]);
+   uint32_t* p = packet.m_nHeader;
    for (int i = 0; i < 4; ++ i)
-      packet.m_nHeader[i] = ntohl(packet.m_nHeader[i]);
+   {
+      *p = ntohl(*p);
+      ++ p;
+   }
 
    if (packet.getFlag())
       for (int j = 0, n = packet.getLength() / 4; j < n; ++ j)

@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 03/16/2007
+   Yunhong Gu, last updated 05/05/2009
 *****************************************************************************/
 
 #include "list.h"
@@ -44,7 +44,11 @@ CSndLossList::CSndLossList(const int& size):
 m_piData1(NULL),
 m_piData2(NULL),
 m_piNext(NULL),
-m_iSize(size)
+m_iHead(-1),
+m_iLength(0),
+m_iSize(size),
+m_iLastInsertPos(-1),
+m_ListLock()
 {
    m_piData1 = new int32_t [m_iSize];
    m_piData2 = new int32_t [m_iSize];
@@ -56,10 +60,6 @@ m_iSize(size)
       m_piData1[i] = -1;
       m_piData2[i] = -1;
    }
-
-   m_iLength = 0;
-   m_iHead = -1;
-   m_iLastInsertPos = -1;
 
    // sender list needs mutex protection
    #ifndef WIN32
@@ -318,7 +318,7 @@ void CSndLossList::remove(const int32_t& seqno)
       }
       else
       {
-         // targe node is empty, check prior node
+         // target node is empty, check prior node
          int i = m_iHead;
          while ((-1 != m_piNext[i]) && (CSeqNo::seqcmp(m_piData1[m_piNext[i]], seqno) < 0))
             i = m_piNext[i];
@@ -424,7 +424,11 @@ m_piData1(NULL),
 m_piData2(NULL),
 m_piNext(NULL),
 m_piPrior(NULL),
-m_iSize(size)
+m_iHead(-1),
+m_iTail(-1),
+m_iLength(0),
+m_iSize(size),
+m_TimeStamp()
 {
    m_piData1 = new int32_t [m_iSize];
    m_piData2 = new int32_t [m_iSize];
@@ -437,10 +441,6 @@ m_iSize(size)
       m_piData1[i] = -1;
       m_piData2[i] = -1;
    }
-
-   m_iLength = 0;
-   m_iHead = -1;
-   m_iTail = -1;
 
    m_TimeStamp = CTimer::getTime();
 }

@@ -93,7 +93,7 @@ public:
    }
 
 public:
-   void setRate(int mbps)
+   void setRate(double mbps)
    {
       m_dPktSndPeriod = (m_iMSS * 8.0) / mbps;
    }

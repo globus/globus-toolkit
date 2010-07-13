@@ -3,10 +3,10 @@
    #include <cstdlib>
    #include <cstring>
    #include <netdb.h>
-   #include <pthread.h>
 #else
    #include <winsock2.h>
    #include <ws2tcpip.h>
+   #include <wspiapi.h>
 #endif
 #include <iostream>
 #include <udt.h>
@@ -27,6 +27,9 @@ int main(int argc, char* argv[])
       cout << "usage: appclient server_ip server_port" << endl;
       return 0;
    }
+
+   // use this function to initialize the UDT library
+   UDT::startup();
 
    struct addrinfo hints, *local, *peer;
 
@@ -51,6 +54,8 @@ int main(int argc, char* argv[])
    //UDT::setsockopt(client, 0, UDT_SNDBUF, new int(10000000), sizeof(int));
    //UDT::setsockopt(client, 0, UDP_SNDBUF, new int(10000000), sizeof(int));
 
+   // Windows UDP issue
+   // For better performance, modify HKLM\System\CurrentControlSet\Services\Afd\Parameters\FastSendDatagramThreshold
    #ifdef WIN32
       UDT::setsockopt(client, 0, UDT_MSS, new int(1052), sizeof(int));
    #endif
@@ -98,7 +103,7 @@ int main(int argc, char* argv[])
       CreateThread(NULL, 0, monitor, &client, 0, NULL);
    #endif
 
-   for (int i = 0; i < 100000000; i ++)
+   for (int i = 0; i < 1000000; i ++)
    {
       int ssize = 0;
       int ss;
@@ -120,6 +125,9 @@ int main(int argc, char* argv[])
    UDT::close(client);
 
    delete [] data;
+
+   // use this function to release the UDT library
+   UDT::cleanup();
 
    return 1;
 }

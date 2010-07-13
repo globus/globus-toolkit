@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 11/05/2007
+   Yunhong Gu, last updated 08/01/2009
 *****************************************************************************/
 
 #ifndef __UDT_COMMON_H__
@@ -49,6 +49,7 @@ written by
 #else
    #include <windows.h>
 #endif
+#include <cstdlib>
 #include "udt.h"
 
 
@@ -176,12 +177,17 @@ public:
    CGuard(pthread_mutex_t& lock);
    ~CGuard();
 
+   static void enterCS(pthread_mutex_t& lock);
+   static void leaveCS(pthread_mutex_t& lock);
+
 private:
    pthread_mutex_t& m_Mutex;            // Alias name of the mutex to be protected
    int m_iLocked;                       // Locking status
 
-   void operator = (const CGuard&) {}
+   CGuard& operator=(const CGuard&);
 };
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -201,7 +207,7 @@ public:
    {return (abs(seq1 - seq2) < m_iSeqNoTH) ? (seq1 - seq2) : (seq2 - seq1);}
 
    inline static const int seqlen(const int32_t& seq1, const int32_t& seq2)
-   {return (seq1 <= seq2) ? (seq2 - seq1 + 1) : (seq2 - seq1 + 1 + m_iMaxSeqNo);}
+   {return (seq1 <= seq2) ? (seq2 - seq1 + 1) : (seq2 - seq1 + m_iMaxSeqNo + 2);}
 
    inline static const int seqoff(const int32_t& seq1, const int32_t& seq2)
    {
@@ -209,19 +215,19 @@ public:
          return seq2 - seq1;
 
       if (seq1 < seq2)
-         return seq2 - seq1 - m_iMaxSeqNo;
+         return seq2 - seq1 - m_iMaxSeqNo - 1;
 
-      return seq2 - seq1 + m_iMaxSeqNo;
+      return seq2 - seq1 + m_iMaxSeqNo + 1;
    }
 
    inline static const int32_t incseq(const int32_t seq)
-   {return (seq == m_iMaxSeqNo - 1) ? 0 : seq + 1;}
+   {return (seq == m_iMaxSeqNo) ? 0 : seq + 1;}
 
    inline static const int32_t decseq(const int32_t& seq)
-   {return (seq == 0) ? m_iMaxSeqNo - 1 : seq - 1;}
+   {return (seq == 0) ? m_iMaxSeqNo : seq - 1;}
 
    inline static const int32_t incseq(const int32_t& seq, const int32_t& inc)
-   {return (m_iMaxSeqNo - seq > inc) ? seq + inc : seq - m_iMaxSeqNo + inc;}
+   {return (m_iMaxSeqNo - seq >= inc) ? seq + inc : seq - m_iMaxSeqNo + inc - 1;}
 
 public:
    static const int32_t m_iSeqNoTH;             // threshold for comparing seq. no.
@@ -236,7 +242,7 @@ class CAckNo
 {
 public:
    inline static const int32_t incack(const int32_t& ackno)
-   {return (ackno == m_iMaxAckSeqNo - 1) ? 0 : ackno + 1;}
+   {return (ackno == m_iMaxAckSeqNo) ? 0 : ackno + 1;}
 
 public:
    static const int32_t m_iMaxAckSeqNo;         // maximum ACK sub-sequence number used in UDT
@@ -253,7 +259,7 @@ public:
    {return (abs(msgno1 - msgno2) < m_iMsgNoTH) ? (msgno1 - msgno2) : (msgno2 - msgno1);}
 
    inline static const int msglen(const int32_t& msgno1, const int32_t& msgno2)
-   {return (msgno1 <= msgno2) ? (msgno2 - msgno1 + 1) : (msgno2 - msgno1 + m_iMaxMsgNo);}
+   {return (msgno1 <= msgno2) ? (msgno2 - msgno1 + 1) : (msgno2 - msgno1 + m_iMaxMsgNo + 2);}
 
    inline static const int msgoff(const int32_t& msgno1, const int32_t& msgno2)
    {
@@ -261,13 +267,13 @@ public:
          return msgno2 - msgno1;
 
       if (msgno1 < msgno2)
-         return msgno2 - msgno1 - m_iMaxMsgNo;
+         return msgno2 - msgno1 - m_iMaxMsgNo - 1;
 
-      return msgno2 - msgno1 + m_iMaxMsgNo;
+      return msgno2 - msgno1 + m_iMaxMsgNo + 1;
    }
 
    inline static const int32_t incmsg(const int32_t& msgno)
-   {return (msgno == m_iMaxMsgNo - 1) ? 0 : msgno + 1;}
+   {return (msgno == m_iMaxMsgNo) ? 0 : msgno + 1;}
 
 public:
    static const int32_t m_iMsgNoTH;             // threshold for comparing msg. no.
@@ -279,6 +285,16 @@ public:
 struct CIPAddress
 {
    static bool ipcmp(const sockaddr* addr1, const sockaddr* addr2, const int& ver = AF_INET);
+   static void ntop(const sockaddr* addr, uint32_t ip[4], const int& ver = AF_INET);
+   static void pton(sockaddr* addr, const uint32_t ip[4], const int& ver = AF_INET);
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct CMD5
+{
+   static void compute(const char* input, unsigned char result[16]);
+};
+
 
 #endif

@@ -1,7 +1,7 @@
 lib_LTLIBRARIES = libudt.la
 
-libudt_la_SOURCES = api.cpp buffer.cpp ccc.cpp channel.cpp common.cpp \
-		    control.cpp core.cpp list.cpp packet.cpp queue.cpp \
+libudt_la_SOURCES = api.cpp buffer.cpp cache.cpp ccc.cpp channel.cpp common.cpp \
+		    core.cpp list.cpp md5.cpp packet.cpp queue.cpp \
                     window.cpp
 
 libudt_la_LDFLAGS = -version-info  @LIBVER@:0

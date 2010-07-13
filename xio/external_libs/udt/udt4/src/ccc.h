@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -34,12 +34,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *****************************************************************************/
 
 /*****************************************************************************
-This header file contains the definition of UDT/CCC base class.
-*****************************************************************************/
-
-/*****************************************************************************
 written by
-   Yunhong Gu, last updated 08/17/2007
+   Yunhong Gu, last updated 05/05/2009
 *****************************************************************************/
 
 
@@ -57,9 +53,10 @@ friend class CUDT;
 
 public:
    CCC();
-   virtual ~CCC() {}
+   virtual ~CCC();
 
 private:
+   CCC(const CCC&);
    CCC& operator=(const CCC&) {return *this;}
 
 public:
@@ -187,6 +184,16 @@ protected:
 
    const CPerfMon* getPerfInfo();
 
+      // Functionality:
+      //    Set user defined parameters.
+      // Parameters:
+      //    0) [in] param: the paramters in one buffer.
+      //    1) [in] size: the size of the buffer.
+      // Returned value:
+      //    None.
+
+   void setUserParam(const char* param, const int& size);
+
 private:
    void setMSS(const int& mss);
    void setMaxCWndSize(const int& cwnd);
@@ -208,6 +215,9 @@ protected:
    int32_t m_iSndCurrSeqNo;		// current maximum seq no sent out
    int m_iRcvRate;			// packet arrive rate at receiver side, packets per second
    int m_iRTT;				// current estimated RTT, microsecond
+
+   char* m_pcParam;			// user defined parameter
+   int m_iPSize;			// size of m_pcParam
 
 private:
    UDTSOCKET m_UDT;                     // The UDT entity that this congestion control algorithm is bound to
@@ -242,6 +252,9 @@ public:
 
 class CUDTCC: public CCC
 {
+public:
+   CUDTCC();
+
 public:
    virtual void init();
    virtual void onACK(const int32_t&);

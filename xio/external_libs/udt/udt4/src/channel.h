@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2008, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 12/12/2006
+   Yunhong Gu, last updated 05/23/2008
 *****************************************************************************/
 
 #ifndef __UDT_CHANNEL_H__
@@ -61,6 +61,15 @@ public:
       //    None.
 
    void open(const sockaddr* addr = NULL);
+
+      // Functionality:
+      //    Opne a UDP channel based on an existing UDP socket.
+      // Parameters:
+      //    0) [in] udpsock: UDP socket descriptor.
+      // Returned value:
+      //    None.
+
+   void open(UDPSOCKET udpsock);
 
       // Functionality:
       //    Disconnect and close the UDP entity.
@@ -145,6 +154,8 @@ public:
 
    int recvfrom(sockaddr* addr, CPacket& packet) const;
 
+private:
+   void setUDPSockOpt();
 
 private:
    int m_iIPversion;                    // IP version

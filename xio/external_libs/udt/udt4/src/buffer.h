@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 09/17/2007
+   Yunhong Gu, last updated 05/05/2009
 *****************************************************************************/
 
 #ifndef __UDT_BUFFER_H__
@@ -50,7 +50,7 @@ written by
 class CSndBuffer
 {
 public:
-   CSndBuffer(const int& mss);
+   CSndBuffer(const int& size, const int& mss);
    ~CSndBuffer();
 
       // Functionality:
@@ -59,47 +59,52 @@ public:
       //    0) [in] data: pointer to the user data block.
       //    1) [in] len: size of the block.
       //    2) [in] ttl: time to live in milliseconds
-      //    3) [in] seqno: sequence number of the first packet in the block, for DGRAM only
-      //    4) [in] order: if the block should be delivered in order, for DGRAM only
+      //    3) [in] order: if the block should be delivered in order, for DGRAM only
       // Returned value:
       //    None.
 
-   void addBuffer(const char* data, const int& len, const int& ttl = -1, const int32_t& seqno = 0, const bool& order = false);
+   void addBuffer(const char* data, const int& len, const int& ttl = -1, const bool& order = false);
+
+      // Functionality:
+      //    Read a block of data from file and insert it into the sending list.
+      // Parameters:
+      //    0) [in] ifs: input file stream.
+      //    1) [in] len: size of the block.
+      // Returned value:
+      //    actual size of data added from the file.
+
+   int addBufferFromFile(std::fstream& ifs, const int& len);
 
       // Functionality:
       //    Find data position to pack a DATA packet from the furthest reading point.
       // Parameters:
       //    0) [out] data: the pointer to the data position.
-      //    1) [in] len: Expected data length.
-      //    2) [out] msgno: message number of the packet.
+      //    1) [out] msgno: message number of the packet.
       // Returned value:
       //    Actual length of data read.
 
-   int readData(char** data, const int& len, int32_t& msgno);
+   int readData(char** data, int32_t& msgno);
 
       // Functionality:
       //    Find data position to pack a DATA packet for a retransmission.
       // Parameters:
       //    0) [out] data: the pointer to the data position.
       //    1) [in] offset: offset from the last ACK point.
-      //    2) [in] len: Expected data length.
-      //    3) [out] msgno: message number of the packet.
-      //    4) [out] seqno: sequence number of the first packet in the message
-      //    5) [out] msglen: length of the message
+      //    2) [out] msgno: message number of the packet.
+      //    3) [out] msglen: length of the message
       // Returned value:
       //    Actual length of data read.
 
-   int readData(char** data, const int offset, const int& len, int32_t& msgno, int32_t& seqno, int& msglen);
+   int readData(char** data, const int offset, int32_t& msgno, int& msglen);
 
       // Functionality:
       //    Update the ACK point and may release/unmap/return the user data according to the flag.
       // Parameters:
-      //    0) [in] len: size of data acknowledged.
-      //    1) [in] payloadsize: regular payload size that UDT always try to read.
+      //    0) [in] offset: number of packets acknowledged.
       // Returned value:
       //    None.
 
-   void ackData(const int& len, const int& payloadsize);
+   void ackData(const int& offset);
 
       // Functionality:
       //    Read size of data still in the sending list.
@@ -111,6 +116,9 @@ public:
    int getCurrBufSize() const;
 
 private:
+   void increase();
+
+private:
    pthread_mutex_t m_BufLock;           // used to synchronize buffer operation
 
    struct Block
@@ -118,27 +126,35 @@ private:
       char* m_pcData;                   // pointer to the data block
       int m_iLength;                    // length of the block
 
+      int32_t m_iMsgNo;                 // message number
       uint64_t m_OriginTime;            // original request time
       int m_iTTL;                       // time to live (milliseconds)
-      int32_t m_iMsgNo;                 // message number
-      int32_t m_iSeqNo;                 // sequence number of first packet
-      int m_iInOrder;                   // flag indicating if the block should be delivered in order
 
-      Block* m_next;                    // next block
-   } *m_pBlock, *m_pLastBlock, *m_pCurrSendBlk, *m_pCurrAckBlk;
+      Block* m_pNext;                   // next block
+   } *m_pBlock, *m_pFirstBlock, *m_pCurrBlock, *m_pLastBlock;
 
-   // m_pBlock:         The first block
-   // m_pLastBlock:     The last block
-   // m_pCurrSendBlk:   The block contains the data with the largest seq. no. that has been sent
-   // m_pCurrAckBlk:    The block contains the data with the latest ACK (= m_pBlock)
+   // m_pBlock:         The head pointer
+   // m_pFirstBlock:    The first block
+   // m_pCurrBlock:	The current block
+   // m_pLastBlock:     The last block (if first == last, buffer is empty)
 
-   int m_iCurrBufSize;                  // Total size of the blocks
-   int m_iCurrSendPnt;                  // pointer to the data with the largest current seq. no.
-   int m_iCurrAckPnt;                   // pointer to the data with the latest ACK
+   struct Buffer
+   {
+      char* m_pcData;			// buffer
+      int m_iSize;			// size
+      Buffer* m_pNext;			// next buffer
+   } *m_pBuffer;			// physical buffer
 
    int32_t m_iNextMsgNo;                // next message number
 
+   int m_iSize;				// buffer size (number of packets)
    int m_iMSS;                          // maximum seqment/packet size
+
+   int m_iCount;			// number of used blocks
+
+private:
+   CSndBuffer(const CSndBuffer&);
+   CSndBuffer& operator=(const CSndBuffer&);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,7 +194,7 @@ public:
       // Returned value:
       //    size of data read.
 
-   int readBufferToFile(std::ofstream& file, const int& len);
+   int readBufferToFile(std::fstream& ofs, const int& len);
 
       // Functionality:
       //    Update the ACK point of the buffer.
@@ -249,6 +265,10 @@ private:
    int m_iMaxPos;			// the furthest data position
 
    int m_iNotch;			// the starting read point of the first unit
+
+private:
+   CRcvBuffer(const CRcvBuffer&);
+   CRcvBuffer& operator=(const CRcvBuffer&);
 };
 
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 03/16/2007
+   Yunhong Gu, last updated 05/05/2009
 *****************************************************************************/
 
 #ifndef __UDT_LIST_H__
@@ -100,6 +100,10 @@ private:
    int m_iLastInsertPos;                // position of last insert node
 
    pthread_mutex_t m_ListLock;          // used to synchronize list operation
+
+private:
+   CSndLossList(const CSndLossList&);
+   CSndLossList& operator=(const CSndLossList&);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +195,10 @@ private:
    int m_iSize;                         // size of the static array
 
    uint64_t m_TimeStamp;		// last list update time or NAK feedback time
+
+private:
+   CRcvLossList(const CRcvLossList&);
+   CRcvLossList& operator=(const CRcvLossList&);
 };
 
 

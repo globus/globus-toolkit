@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 11/02/2007
+   Yunhong Gu, last updated 06/10/2009
 *****************************************************************************/
 
 #ifndef __UDT_CORE_H__
@@ -51,18 +51,18 @@ written by
 #include "channel.h"
 #include "api.h"
 #include "ccc.h"
-#include "control.h"
+#include "cache.h"
 #include "queue.h"
 
 enum UDTSockType {UDT_STREAM = 1, UDT_DGRAM};
 
 class CUDT
 {
-friend struct CUDTSocket;
+friend class CUDTSocket;
 friend class CUDTUnited;
 friend class CCC;
 friend struct CUDTComp;
-friend class CControl;
+friend class CCache;
 friend class CSndQueue;
 friend class CRcvQueue;
 friend class CSndUList;
@@ -75,8 +75,11 @@ private: // constructor and desctructor
    ~CUDT();
 
 public: //API
+   static int startup();
+   static int cleanup();
    static UDTSOCKET socket(int af, int type = SOCK_STREAM, int protocol = 0);
    static int bind(UDTSOCKET u, const sockaddr* name, int namelen);
+   static int bind(UDTSOCKET u, UDPSOCKET udpsock);
    static int listen(UDTSOCKET u, int backlog);
    static UDTSOCKET accept(UDTSOCKET u, sockaddr* addr, int* addrlen);
    static int connect(UDTSOCKET u, const sockaddr* name, int namelen);
@@ -89,14 +92,14 @@ public: //API
    static int recv(UDTSOCKET u, char* buf, int len, int flags);
    static int sendmsg(UDTSOCKET u, const char* buf, int len, int ttl = -1, bool inorder = false);
    static int recvmsg(UDTSOCKET u, char* buf, int len);
-   static int64_t sendfile(UDTSOCKET u, std::ifstream& ifs, const int64_t& offset, const int64_t& size, const int& block = 364000);
-   static int64_t recvfile(UDTSOCKET u, std::ofstream& ofs, const int64_t& offset, const int64_t& size, const int& block = 7280000);
+   static int64_t sendfile(UDTSOCKET u, std::fstream& ifs, const int64_t& offset, const int64_t& size, const int& block = 364000);
+   static int64_t recvfile(UDTSOCKET u, std::fstream& ofs, const int64_t& offset, const int64_t& size, const int& block = 7280000);
    static int select(int nfds, ud_set* readfds, ud_set* writefds, ud_set* exceptfds, const timeval* timeout);
+   static int selectEx(const std::vector<UDTSOCKET>& fds, std::vector<UDTSOCKET>* readfds, std::vector<UDTSOCKET>* writefds, std::vector<UDTSOCKET>* exceptfds, int64_t msTimeOut);
    static CUDTException& getlasterror();
    static int perfmon(UDTSOCKET u, CPerfMon* perf, bool clear = true);
 
 public: // internal API
-   static bool isUSock(UDTSOCKET u);
    static CUDT* getUDTHandle(UDTSOCKET u);
 
 private:
@@ -153,7 +156,7 @@ private:
       // Returned value:
       //    Actual size of data sent.
 
-   int send(char* data, const int& len);
+   int send(const char* data, const int& len);
 
       // Functionality:
       //    Request UDT to receive data to a memory block "data" with size of "len".
@@ -197,7 +200,7 @@ private:
       // Returned value:
       //    Actual size of data sent.
 
-   int64_t sendfile(std::ifstream& ifs, const int64_t& offset, const int64_t& size, const int& block = 366000);
+   int64_t sendfile(std::fstream& ifs, const int64_t& offset, const int64_t& size, const int& block = 366000);
 
       // Functionality:
       //    Request UDT to receive data into a file described as "fd", starting from "offset", with expected size of "size".
@@ -209,7 +212,7 @@ private:
       // Returned value:
       //    Actual size of data received.
 
-   int64_t recvfile(std::ofstream& ofs, const int64_t& offset, const int64_t& size, const int& block = 7320000);
+   int64_t recvfile(std::fstream& ofs, const int64_t& offset, const int64_t& size, const int& block = 7320000);
 
       // Functionality:
       //    Configure UDT options.
@@ -265,8 +268,8 @@ private: // Options
    bool m_bSynSending;                          // Sending syncronization mode
    bool m_bSynRecving;                          // Receiving syncronization mode
    int m_iFlightFlagSize;                       // Maximum number of packets in flight from the peer side
-   int m_iSndQueueLimit;                        // Maximum length of the sending buffer queue
-   int m_iUDTBufSize;                           // UDT buffer size (for receiving)
+   int m_iSndBufSize;                           // Maximum UDT sender buffer size
+   int m_iRcvBufSize;                           // Maximum UDT receiver buffer size
    linger m_Linger;                             // Linger information on close
    int m_iUDPSndBufSize;                        // UDP sending buffer size
    int m_iUDPRcvBufSize;                        // UDP receiving buffer size
@@ -275,11 +278,12 @@ private: // Options
    int m_iSndTimeOut;                           // sending timeout in milliseconds
    int m_iRcvTimeOut;                           // receiving timeout in milliseconds
    bool m_bReuseAddr;				// reuse an exiting port or not, for UDP multiplexer
+   int64_t m_llMaxBW;				// maximum data transfer rate (threshold)
 
 private: // congestion control
    CCCVirtualFactory* m_pCCFactory;             // Factory class to create a specific CC instance
    CCC* m_pCC;                                  // congestion control class
-   CControl* m_pController;			// congestion control manager
+   CCache* m_pCache;				// network information cache
 
 private: // Status
    volatile bool m_bListening;                  // If the UDT entit is listening to connection
@@ -288,11 +292,12 @@ private: // Status
    volatile bool m_bShutdown;                   // If the peer side has shutdown the connection
    volatile bool m_bBroken;                     // If the connection has been broken
    bool m_bOpened;                              // If the UDT entity has been opened
+   int m_iBrokenCounter;			// a counter (number of GC checks) to let the GC tag this socket as disconnected
 
    int m_iEXPCount;                             // Expiration counter
    int m_iBandwidth;                            // Estimated bandwidth
    int m_iRTT;                                  // RTT
-   int m_iRTTVar;                               // RTT varianc
+   int m_iRTTVar;                               // RTT variance
    int m_iDeliveryRate;				// Packet arrival rate at the receiver side
 
 private: // Sending related data
@@ -307,9 +312,11 @@ private: // Sending related data
    volatile double m_dCongestionWindow;         // congestion window size
 
    volatile int32_t m_iSndLastAck;              // Last ACK received
-   int32_t m_iSndLastDataAck;                   // The real last ACK that updates the sender buffer and loss list
-   int32_t m_iSndCurrSeqNo;                     // The largest sequence number that has been sent
+   volatile int32_t m_iSndLastDataAck;          // The real last ACK that updates the sender buffer and loss list
+   volatile int32_t m_iSndCurrSeqNo;            // The largest sequence number that has been sent
    int32_t m_iLastDecSeq;                       // Sequence number sent last decrease occurs
+   int32_t m_iSndLastAck2;                      // Last ACK2 sent back
+   uint64_t m_ullSndLastAck2Time;               // The time when last ACK2 was sent back
 
    int32_t m_iISN;                              // Initial Sequence Number
 
@@ -365,6 +372,7 @@ private: // Trace
    int m_iRecvACKTotal;                         // total number of received ACK packets
    int m_iSentNAKTotal;                         // total number of sent NAK packets
    int m_iRecvNAKTotal;                         // total number of received NAK packets
+   int64_t m_llSndDurationTotal;		// total real time for sending
 
    uint64_t m_LastSampleTime;                   // last performance sample time
    int64_t m_llTraceSent;                       // number of pakctes sent in the last trace interval
@@ -376,11 +384,13 @@ private: // Trace
    int m_iRecvACK;                              // number of ACKs received in the last trace interval
    int m_iSentNAK;                              // number of NAKs sent in the last trace interval
    int m_iRecvNAK;                              // number of NAKs received in the last trace interval
+   int64_t m_llSndDuration;			// real time for sending
+   int64_t m_llSndDurationCounter;		// timers to record the sending duration
 
 private: // Timers
    uint64_t m_ullCPUFrequency;                  // CPU clock frequency, used for Timer
 
-   static const int m_iSYNInterval;             // Periodical Rate Control Interval, 10 microseconds
+   static const int m_iSYNInterval;             // Periodical Rate Control Interval, 10 ms
    static const int m_iSelfClockInterval;       // ACK interval for self-clocking
 
    uint64_t m_ullNextACKTime;			// Next ACK time, in CPU clock cycles
@@ -390,7 +400,8 @@ private: // Timers
    volatile uint64_t m_ullSYNInt;		// SYN interval
    volatile uint64_t m_ullACKInt;		// ACK interval
    volatile uint64_t m_ullNAKInt;		// NAK interval
-   volatile uint64_t m_ullEXPInt;		// EXP interval
+   volatile uint64_t m_ullMinEXPInt;		// Minimum EXP interval
+   volatile int64_t m_llLastRspTime;		// time stamp of last response from the peer
 
    int m_iPktCount;				// packet counter for ACK
    int m_iLightACKCount;			// light ACK counter
@@ -401,10 +412,11 @@ private: // Timers
 
 private: // for UDP multiplexer
    CSndQueue* m_pSndQueue;			// packet sending queue
-   CRcvQueue* m_pRcvQueue;			// packet receivinf queue
+   CRcvQueue* m_pRcvQueue;			// packet receiving queue
    sockaddr* m_pPeerAddr;			// peer address
-   CUDTList* m_pSNode;				// node information for UDT list used in snd queue
-   CUDTList* m_pRNode;                          // node information for UDT list used in rcv queue
+   uint32_t m_piSelfIP[4];			// local UDP IP address
+   CSNode* m_pSNode;				// node information for UDT list used in snd queue
+   CRNode* m_pRNode;                            // node information for UDT list used in rcv queue
 };
 
 

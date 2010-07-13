@@ -3,10 +3,10 @@
    #include <cstdlib>
    #include <cstring>
    #include <netdb.h>
-   #include <pthread.h>
 #else
    #include <winsock2.h>
    #include <ws2tcpip.h>
+   #include <wspiapi.h>
 #endif
 #include <iostream>
 #include <udt.h>
@@ -29,6 +29,9 @@ int main(int argc, char* argv[])
       return 0;
    }
 
+   // use this function to initialize the UDT library
+   UDT::startup();
+
    addrinfo hints;
    addrinfo* res;
 
@@ -39,11 +42,11 @@ int main(int argc, char* argv[])
    hints.ai_socktype = SOCK_STREAM;
    //hints.ai_socktype = SOCK_DGRAM;
 
-   char* service = "9000";
+   string service("9000");
    if (2 == argc)
       service = argv[1];
 
-   if (0 != getaddrinfo(NULL, service, &hints, &res))
+   if (0 != getaddrinfo(NULL, service.c_str(), &hints, &res))
    {
       cout << "illegal port number or port is busy.\n" << endl;
       return 0;
@@ -105,6 +108,9 @@ int main(int argc, char* argv[])
    }
 
    UDT::close(serv);
+
+   // use this function to release the UDT library
+   UDT::cleanup();
 
    return 1;
 }

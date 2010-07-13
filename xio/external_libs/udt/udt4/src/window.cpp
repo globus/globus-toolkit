@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 08/22/2007
+   Yunhong Gu, last updated 07/09/2009
 *****************************************************************************/
 
 #include <cmath>
@@ -108,7 +108,7 @@ int CACKWindow::acknowledge(const int32_t& seq, int32_t& ack)
 
             // calculate RTT
             int rtt = int(CTimer::getTime() - m_pTimeStamp[i]);
-            if (i == m_iHead)
+            if (i + 1 == m_iHead)
             {
                m_iTail = m_iHead = 0;
                m_piACKSeqNo[0] = -1;
@@ -154,22 +154,23 @@ int CACKWindow::acknowledge(const int32_t& seq, int32_t& ack)
 CPktTimeWindow::CPktTimeWindow():
 m_iAWSize(16),
 m_piPktWindow(NULL),
+m_iPktWindowPtr(0),
 m_iPWSize(16),
-m_piProbeWindow(NULL)
+m_piProbeWindow(NULL),
+m_iProbeWindowPtr(0),
+m_iLastSentTime(0),
+m_iMinPktSndInt(1000000),
+m_LastArrTime(),
+m_CurrArrTime(),
+m_ProbeTime()
 {
    m_piPktWindow = new int[m_iAWSize];
    m_piProbeWindow = new int[m_iPWSize];
 
-   m_iPktWindowPtr = 0;
-   m_iProbeWindowPtr = 0;
-
    m_LastArrTime = CTimer::getTime();
 
-   m_iLastSentTime = 0;
-   m_iMinPktSndInt = 1000000;
-
    for (int i = 0; i < m_iAWSize; ++ i)
-      m_piPktWindow[i] = 1;
+      m_piPktWindow[i] = 1000000;
 
    for (int k = 0; k < m_iPWSize; ++ k)
       m_piProbeWindow[k] = 1000;
@@ -178,22 +179,23 @@ m_piProbeWindow(NULL)
 CPktTimeWindow::CPktTimeWindow(const int& asize, const int& psize):
 m_iAWSize(asize),
 m_piPktWindow(NULL),
+m_iPktWindowPtr(0),
 m_iPWSize(psize),
-m_piProbeWindow(NULL)
+m_piProbeWindow(NULL),
+m_iProbeWindowPtr(0),
+m_iLastSentTime(0),
+m_iMinPktSndInt(1000000),
+m_LastArrTime(),
+m_CurrArrTime(),
+m_ProbeTime()
 {
    m_piPktWindow = new int[m_iAWSize];
    m_piProbeWindow = new int[m_iPWSize];
 
-   m_iPktWindowPtr = 0;
-   m_iProbeWindowPtr = 0;
-
    m_LastArrTime = CTimer::getTime();
 
-   m_iLastSentTime = 0;
-   m_iMinPktSndInt = 1000000;
-
    for (int i = 0; i < m_iAWSize; ++ i)
-      m_piPktWindow[i] = 1;
+      m_piPktWindow[i] = 1000000;
 
    for (int k = 0; k < m_iPWSize; ++ k)
       m_piProbeWindow[k] = 1000;
@@ -213,15 +215,22 @@ int CPktTimeWindow::getMinPktSndInt() const
 int CPktTimeWindow::getPktRcvSpeed() const
 {
    // sorting
-   int temp;
+   int* pi = m_piPktWindow;
    for (int i = 0, n = (m_iAWSize >> 1) + 1; i < n; ++ i)
+   {
+      int* pj = pi;
       for (int j = i, m = m_iAWSize; j < m; ++ j)
-         if (m_piPktWindow[i] > m_piPktWindow[j])
+      {
+         if (*pi > *pj)
          {
-            temp = m_piPktWindow[i];
-            m_piPktWindow[i] = m_piPktWindow[j];
-            m_piPktWindow[j] = temp;
+            int temp = *pi;
+            *pi = *pj;
+            *pj = temp;
          }
+         ++ pj;
+      }
+      ++ pi;
+   }
 
    // read the median value
    int median = (m_piPktWindow[(m_iAWSize >> 1) - 1] + m_piPktWindow[m_iAWSize >> 1]) >> 1;
@@ -231,12 +240,16 @@ int CPktTimeWindow::getPktRcvSpeed() const
    int lower = median >> 3;
 
    // median filtering
+   int* pk = m_piPktWindow;
    for (int k = 0, l = m_iAWSize; k < l; ++ k)
-      if ((m_piPktWindow[k] < upper) && (m_piPktWindow[k] > lower))
+   {
+      if ((*pk < upper) && (*pk > lower))
       {
          ++ count;
-         sum += m_piPktWindow[k];
+         sum += *pk;
       }
+      ++ pk;
+   }
 
    // claculate speed, or return 0 if not enough valid value
    if (count > (m_iAWSize >> 1))
@@ -248,15 +261,22 @@ int CPktTimeWindow::getPktRcvSpeed() const
 int CPktTimeWindow::getBandwidth() const
 {
    // sorting
-   int temp;
+   int* pi = m_piProbeWindow;
    for (int i = 0, n = (m_iPWSize >> 1) + 1; i < n; ++ i)
+   {
+      int* pj = pi;
       for (int j = i, m = m_iPWSize; j < m; ++ j)
-         if (m_piProbeWindow[i] > m_piProbeWindow[j])
+      {
+         if (*pi > *pj)
          {
-            temp = m_piProbeWindow[i];
-            m_piProbeWindow[i] = m_piProbeWindow[j];
-            m_piProbeWindow[j] = temp;
+            int temp = *pi;
+            *pi = *pj;
+            *pj = temp;
          }
+         ++ pj;
+      }
+      ++ pi;
+   }
 
    // read the median value
    int median = (m_piProbeWindow[(m_iPWSize >> 1) - 1] + m_piProbeWindow[m_iPWSize >> 1]) >> 1;
@@ -266,12 +286,16 @@ int CPktTimeWindow::getBandwidth() const
    int lower = median >> 3;
 
    // median filtering
+   int* pk = m_piProbeWindow;
    for (int k = 0, l = m_iPWSize; k < l; ++ k)
-      if ((m_piProbeWindow[k] < upper) && (m_piProbeWindow[k] > lower))
+   {
+      if ((*pk < upper) && (*pk > lower))
       {
          ++ count;
-         sum += m_piProbeWindow[k];
+         sum += *pk;
       }
+      ++ pk;
+   }
 
    return (int)ceil(1000000.0 / (double(sum) / double(count)));
 }
@@ -291,10 +315,12 @@ void CPktTimeWindow::onPktArrival()
    m_CurrArrTime = CTimer::getTime();
 
    // record the packet interval between the current and the last one
-   m_piPktWindow[m_iPktWindowPtr] = int(m_CurrArrTime - m_LastArrTime);
+   *(m_piPktWindow + m_iPktWindowPtr) = int(m_CurrArrTime - m_LastArrTime);
 
    // the window is logically circular
-   m_iPktWindowPtr = (m_iPktWindowPtr + 1) % m_iAWSize;
+   ++ m_iPktWindowPtr;
+   if (m_iPktWindowPtr == m_iAWSize)
+      m_iPktWindowPtr = 0;
 
    // remember last packet arrival time
    m_LastArrTime = m_CurrArrTime;
@@ -310,7 +336,9 @@ void CPktTimeWindow::probe2Arrival()
    m_CurrArrTime = CTimer::getTime();
 
    // record the probing packets interval
-   m_piProbeWindow[m_iProbeWindowPtr] = int(m_CurrArrTime - m_ProbeTime);
+   *(m_piProbeWindow + m_iProbeWindowPtr) = int(m_CurrArrTime - m_ProbeTime);
    // the window is logically circular
-   m_iProbeWindowPtr = (m_iProbeWindowPtr + 1) % m_iPWSize;
+   ++ m_iProbeWindowPtr;
+   if (m_iProbeWindowPtr == m_iPWSize)
+      m_iProbeWindowPtr = 0;
 }

@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2010, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,14 +35,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 10/11/2007
+   Yunhong Gu, last updated 05/21/2010
 *****************************************************************************/
 
 #ifdef WIN32
    #include <winsock2.h>
    #include <ws2tcpip.h>
+   #ifdef LEGACY_WIN32
+      #include <wspiapi.h>
+   #endif
 #endif
 
+#include <cstring>
 #include "common.h"
 #include "queue.h"
 #include "core.h"
@@ -54,7 +58,9 @@ m_pQEntry(NULL),
 m_pCurrQueue(NULL),
 m_pLastQueue(NULL),
 m_iSize(0),
-m_iCount(0)
+m_iCount(0),
+m_iMSS(),
+m_iIPversion()
 {
 }
 
@@ -187,7 +193,7 @@ int CUnitQueue::shrink()
 
 CUnit* CUnitQueue::getNextAvailUnit()
 {
-   if (double(m_iCount) / m_iSize > 0.9)
+   if (m_iCount * 10 > m_iSize * 9)
       increase();
 
    if (m_iCount >= m_iSize)
@@ -218,9 +224,16 @@ CUnit* CUnitQueue::getNextAvailUnit()
 
 
 CSndUList::CSndUList():
-m_pUList(NULL),
-m_pLast(NULL)
+m_pHeap(NULL),
+m_iArrayLength(4096),
+m_iLastEntry(-1),
+m_ListLock(),
+m_pWindowLock(NULL),
+m_pWindowCond(NULL),
+m_pTimer(NULL)
 {
+   m_pHeap = new CSNode*[m_iArrayLength];
+
    #ifndef WIN32
       pthread_mutex_init(&m_ListLock, NULL);
    #else
@@ -230,207 +243,201 @@ m_pLast(NULL)
 
 CSndUList::~CSndUList()
 {
-#ifndef WIN32
-   pthread_mutex_destroy(&m_ListLock);
-#else
-   CloseHandle(m_ListLock);
-#endif
+   delete [] m_pHeap;
+
+   #ifndef WIN32
+      pthread_mutex_destroy(&m_ListLock);
+   #else
+      CloseHandle(m_ListLock);
+   #endif
 }
 
-void CSndUList::insert(const int64_t& ts, const int32_t& id, const CUDT* u)
+void CSndUList::insert(const int64_t& ts, const CUDT* u)
 {
    CGuard listguard(m_ListLock);
 
-   CUDTList* n = u->m_pSNode;
-   n->m_llTimeStamp = ts;
-
-   if (NULL == m_pUList)
+   // increase the heap array size if necessary
+   if (m_iLastEntry == m_iArrayLength - 1)
    {
-      n->m_pPrev = n->m_pNext = NULL;
-      m_pLast = m_pUList = n;
+      CSNode** temp = NULL;
 
-      // If UList was empty, signal the sending queue to restart
-      #ifndef WIN32
-         pthread_mutex_lock(m_pWindowLock);
-         pthread_cond_signal(m_pWindowCond);
-         pthread_mutex_unlock(m_pWindowLock);
-      #else
-         SetEvent(*m_pWindowCond);
-      #endif
-
-      return;
-   }
-
-   // SndUList is sorted by the next processing time
-
-   if (n->m_llTimeStamp >= m_pLast->m_llTimeStamp)
-   {
-      // do not insert repeated node
-      if (id == m_pLast->m_iID)
-         return;
-
-      // insert as the last node
-      n->m_pPrev = m_pLast;
-      n->m_pNext = NULL;
-      m_pLast->m_pNext = n;
-      m_pLast = n;
-
-      return;
-   }
-   else if (n->m_llTimeStamp <= m_pUList->m_llTimeStamp)
-   {
-      // do not insert repeated node
-      if (id == m_pUList->m_iID)
-         return;
-
-      // insert as the first node
-      n->m_pPrev = NULL;
-      n->m_pNext = m_pUList;
-      m_pUList->m_pPrev = n;
-      m_pUList = n;
-
-      return;
-   }
-
-   // check somewhere in the middle
-   CUDTList* p = m_pLast->m_pPrev;
-   while (p->m_llTimeStamp > n->m_llTimeStamp)
-      p = p->m_pPrev;
-
-   // do not insert repeated node
-   if ((id == p->m_iID) || (id == p->m_pNext->m_iID) || ((NULL != p->m_pPrev) && (id == p->m_pPrev->m_iID)))
-      return;
-
-   n->m_pPrev = p;
-   n->m_pNext = p->m_pNext;
-   p->m_pNext->m_pPrev = n;
-   p->m_pNext = n;
-}
-
-void CSndUList::remove(const int32_t& id)
-{
-   CGuard listguard(m_ListLock);
-
-   if (NULL == m_pUList)
-      return;
-
-   if (id == m_pUList->m_iID)
-   {
-      // check and remove the first node
-      m_pUList = m_pUList->m_pNext;
-      if (NULL == m_pUList)
-         m_pLast = NULL;
-      else
-         m_pUList->m_pPrev = NULL;
-
-      return;
-   }
-
-   // check further
-   CUDTList* p = m_pUList->m_pNext;
-   while (NULL != p)
-   {
-      if (id == p->m_iID)
+      try
       {
-         p->m_pPrev->m_pNext = p->m_pNext;
-         if (NULL != p->m_pNext)
-            p->m_pNext->m_pPrev = p->m_pPrev;
-         else
-            m_pLast = p->m_pPrev;
-
+         temp = new CSNode*[m_iArrayLength * 2];
+      }
+      catch(...)
+      {
          return;
       }
 
-      p = p->m_pNext;
+      memcpy(temp, m_pHeap, sizeof(CSNode*) * m_iArrayLength);
+      m_iArrayLength *= 2;
+      delete [] m_pHeap;
+      m_pHeap = temp;
    }
+
+   insert_(ts, u);
 }
 
-void CSndUList::update(const int32_t& id, const CUDT* u, const bool& reschedule)
+void CSndUList::update(const CUDT* u, const bool& reschedule)
 {
    CGuard listguard(m_ListLock);
 
-   if (NULL == m_pUList)
+   CSNode* n = u->m_pSNode;
+
+   if (n->m_iHeapLoc >= 0)
    {
-      // insert a new entry if the list was empty
-      CUDTList* n = u->m_pSNode;
-      n->m_llTimeStamp = 1;
-      n->m_pPrev = n->m_pNext = NULL;
-      m_pLast = m_pUList = n;
+      if (!reschedule)
+         return;
 
-      #ifndef WIN32
-         pthread_mutex_lock(m_pWindowLock);
-         pthread_cond_signal(m_pWindowCond);
-         pthread_mutex_unlock(m_pWindowLock);
-      #else
-         SetEvent(*m_pWindowCond);
-      #endif
-
-      return;
-   }
-
-   if (id == m_pUList->m_iID)
-   {
-      if (reschedule)
-         m_pUList->m_llTimeStamp = 1;
-      return;
-   }
-
-   // remove the old entry
-   CUDTList* p = m_pUList->m_pNext;
-   while (NULL != p)
-   {
-      if (id == p->m_iID)
+      if (n->m_iHeapLoc == 0)
       {
-         if (!reschedule)
-            return;
-
-         p->m_pPrev->m_pNext = p->m_pNext;
-         if (NULL != p->m_pNext)
-            p->m_pNext->m_pPrev = p->m_pPrev;
-         else
-            m_pLast = p->m_pPrev;
-
-         break;
+         n->m_llTimeStamp = 1;
+         m_pTimer->interrupt();
+         return;
       }
 
-      p = p->m_pNext;
+      remove_(u);
    }
 
-   // insert at head
-   CUDTList* n = u->m_pSNode;
-   n->m_llTimeStamp = 1;
-   n->m_pPrev = NULL;
-   n->m_pNext = m_pUList;
-   m_pUList->m_pPrev = n;
-   m_pUList = n;
+   insert_(1, u);
 }
 
-int CSndUList::pop(int32_t& id, CUDT*& u)
+int CSndUList::pop(sockaddr*& addr, CPacket& pkt)
 {
    CGuard listguard(m_ListLock);
 
-   if (NULL == m_pUList)
+   if (-1 == m_iLastEntry)
       return -1;
 
-   id = m_pUList->m_iID;
-   u = m_pUList->m_pUDT;
+   CUDT* u = m_pHeap[0]->m_pUDT;
+   remove_(u);
 
-   m_pUList = m_pUList->m_pNext;
-   if (NULL == m_pUList)
-      m_pLast = NULL;
-   else
-      m_pUList->m_pPrev = NULL;
+   if (!u->m_bConnected || u->m_bBroken)
+      return -1;
 
-   return id;
+   // pack a packet from the socket
+   uint64_t ts;
+   if (u->packData(pkt, ts) <= 0)
+      return -1;
+
+   addr = u->m_pPeerAddr;
+
+   // insert a new entry, ts is the next processing time
+   if (ts > 0)
+      insert_(ts, u);
+
+   return 1;
 }
 
+void CSndUList::remove(const CUDT* u)
+{
+   CGuard listguard(m_ListLock);
+
+   remove_(u);
+}
+
+uint64_t CSndUList::getNextProcTime()
+{
+   CGuard listguard(m_ListLock);
+
+   if (-1 == m_iLastEntry)
+      return 0;
+
+   return m_pHeap[0]->m_llTimeStamp;
+}
+
+void CSndUList::insert_(const int64_t& ts, const CUDT* u)
+{
+   CSNode* n = u->m_pSNode;
+
+   // do not insert repeated node
+   if (n->m_iHeapLoc >= 0)
+      return;
+
+   m_iLastEntry ++;
+   m_pHeap[m_iLastEntry] = n;
+   n->m_llTimeStamp = ts;
+
+   int q = m_iLastEntry;
+   int p = q;
+   while (p != 0)
+   {
+      p = (q - 1) >> 1;
+      if (m_pHeap[p]->m_llTimeStamp > m_pHeap[q]->m_llTimeStamp)
+      {
+         CSNode* t = m_pHeap[p];
+         m_pHeap[p] = m_pHeap[q];
+         m_pHeap[q] = t;
+         t->m_iHeapLoc = q;
+         q = p;
+      }
+      else
+         break;
+   }
+
+   n->m_iHeapLoc = q;
+
+   // first entry, activate the sending queue
+   if (0 == m_iLastEntry)
+   {
+      #ifndef WIN32
+         pthread_mutex_lock(m_pWindowLock);
+         pthread_cond_signal(m_pWindowCond);
+         pthread_mutex_unlock(m_pWindowLock);
+      #else
+         SetEvent(*m_pWindowCond);
+      #endif
+   }
+}
+
+void CSndUList::remove_(const CUDT* u)
+{
+   CSNode* n = u->m_pSNode;
+
+   if (n->m_iHeapLoc >= 0)
+   {
+      // remove the node from heap
+      m_pHeap[n->m_iHeapLoc] = m_pHeap[m_iLastEntry];
+      m_iLastEntry --;
+      m_pHeap[n->m_iHeapLoc]->m_iHeapLoc = n->m_iHeapLoc;
+
+      int q = n->m_iHeapLoc;
+      int p = q * 2 + 1;
+      while (p <= m_iLastEntry)
+      {
+         if ((p + 1 <= m_iLastEntry) && (m_pHeap[p]->m_llTimeStamp > m_pHeap[p + 1]->m_llTimeStamp))
+            p ++;
+
+         if (m_pHeap[q]->m_llTimeStamp > m_pHeap[p]->m_llTimeStamp)
+         {
+            CSNode* t = m_pHeap[p];
+            m_pHeap[p] = m_pHeap[q];
+            m_pHeap[p]->m_iHeapLoc = p;
+            m_pHeap[q] = t;
+            m_pHeap[q]->m_iHeapLoc = q;
+
+            q = p;
+            p = q * 2 + 1;
+         }
+         else
+            break;
+      }
+
+      n->m_iHeapLoc = -1;
+   }
+}
 
 //
 CSndQueue::CSndQueue():
+m_WorkerThread(),
 m_pSndUList(NULL),
 m_pChannel(NULL),
 m_pTimer(NULL),
-m_bClosing(false)
+m_WindowLock(),
+m_WindowCond(),
+m_bClosing(false),
+m_ExitCond()
 {
    #ifndef WIN32
       pthread_cond_init(&m_WindowCond, NULL);
@@ -438,6 +445,7 @@ m_bClosing(false)
    #else
       m_WindowLock = CreateMutex(NULL, false, NULL);
       m_WindowCond = CreateEvent(NULL, false, false, NULL);
+      m_ExitCond = CreateEvent(NULL, false, false, NULL);
    #endif
 }
 
@@ -449,15 +457,18 @@ CSndQueue::~CSndQueue()
       pthread_mutex_lock(&m_WindowLock);
       pthread_cond_signal(&m_WindowCond);
       pthread_mutex_unlock(&m_WindowLock);
-      pthread_join(m_WorkerThread, NULL);
+      if (0 != m_WorkerThread)
+         pthread_join(m_WorkerThread, NULL);
       pthread_cond_destroy(&m_WindowCond);
       pthread_mutex_destroy(&m_WindowLock);
    #else
       SetEvent(m_WindowCond);
-      WaitForSingleObject(m_WorkerThread, INFINITE);
+      if (NULL != m_WorkerThread)
+         WaitForSingleObject(m_ExitCond, INFINITE);
       CloseHandle(m_WorkerThread);
       CloseHandle(m_WindowLock);
       CloseHandle(m_WindowCond);
+      CloseHandle(m_ExitCond);
    #endif
 
    delete m_pSndUList;
@@ -470,12 +481,19 @@ void CSndQueue::init(const CChannel* c, const CTimer* t)
    m_pSndUList = new CSndUList;
    m_pSndUList->m_pWindowLock = &m_WindowLock;
    m_pSndUList->m_pWindowCond = &m_WindowCond;
+   m_pSndUList->m_pTimer = m_pTimer;
 
    #ifndef WIN32
-      pthread_create(&m_WorkerThread, NULL, CSndQueue::worker, this);
+      if (0 != pthread_create(&m_WorkerThread, NULL, CSndQueue::worker, this))
+      {
+         m_WorkerThread = 0;
+         throw CUDTException(3, 1);
+      }
    #else
       DWORD threadID;
       m_WorkerThread = CreateThread(NULL, 0, CSndQueue::worker, this, 0, &threadID);
+      if (NULL == m_WorkerThread)
+         throw CUDTException(3, 1);
    #endif
 }
 
@@ -491,35 +509,30 @@ void CSndQueue::init(const CChannel* c, const CTimer* t)
 
    while (!self->m_bClosing)
    {
-      if (NULL != self->m_pSndUList->m_pUList)
+      uint64_t ts = self->m_pSndUList->getNextProcTime();
+
+      if (ts > 0)
       {
          // wait until next processing time of the first socket on the list
          uint64_t currtime;
          CTimer::rdtsc(currtime);
-         if (currtime < self->m_pSndUList->m_pUList->m_llTimeStamp)
-            self->m_pTimer->sleepto(self->m_pSndUList->m_pUList->m_llTimeStamp);
+         if (currtime < ts)
+            self->m_pTimer->sleepto(ts);
 
          // it is time to process it, pop it out/remove from the list
-         int32_t id;
-         CUDT* u;
-         if (self->m_pSndUList->pop(id, u) < 0)
+         sockaddr* addr;
+         CPacket pkt;
+         if (self->m_pSndUList->pop(addr, pkt) < 0)
             continue;
 
-         // pack a packet from the socket
-         uint64_t ts;
-         if (u->packData(pkt, ts) > 0)
-            self->m_pChannel->sendto(u->m_pPeerAddr, pkt);
-
-         // insert a new entry, ts is the next processing time
-         if (ts > 0)
-            self->m_pSndUList->insert(ts, id, u);
+         self->m_pChannel->sendto(addr, pkt);
       }
       else
       {
-         // wait here is there is no sockets with data to be sent
+         // wait here if there is no sockets with data to be sent
          #ifndef WIN32
             pthread_mutex_lock(&self->m_WindowLock);
-            if (!self->m_bClosing && (NULL == self->m_pSndUList->m_pUList))
+            if (!self->m_bClosing && (self->m_pSndUList->m_iLastEntry < 0))
                pthread_cond_wait(&self->m_WindowCond, &self->m_WindowLock);
             pthread_mutex_unlock(&self->m_WindowLock);
          #else
@@ -528,7 +541,12 @@ void CSndQueue::init(const CChannel* c, const CTimer* t)
       }
    }
 
-   return NULL;
+   #ifndef WIN32
+      return NULL;
+   #else
+      SetEvent(self->m_ExitCond);
+      return 0;
+   #endif
 }
 
 int CSndQueue::sendto(const sockaddr* addr, CPacket& packet)
@@ -553,7 +571,7 @@ CRcvUList::~CRcvUList()
 
 void CRcvUList::insert(const CUDT* u)
 {
-   CUDTList* n = u->m_pRNode;
+   CRNode* n = u->m_pRNode;
    CTimer::rdtsc(n->m_llTimeStamp);
 
    if (NULL == m_pUList)
@@ -572,95 +590,65 @@ void CRcvUList::insert(const CUDT* u)
    m_pLast = n;
 }
 
-void CRcvUList::remove(const int32_t& id)
+void CRcvUList::remove(const CUDT* u)
 {
-   if (NULL == m_pUList)
+   CRNode* n = u->m_pRNode;
+
+   if (!n->m_bOnList)
       return;
 
-   if (id == m_pUList->m_iID)
+   if (NULL == n->m_pPrev)
    {
-      // remove first node
-      m_pUList = m_pUList->m_pNext;
+      // n is the first node
+      m_pUList = n->m_pNext;
       if (NULL == m_pUList)
          m_pLast = NULL;
       else
          m_pUList->m_pPrev = NULL;
-
-      return;
    }
-
-   // check further
-   CUDTList* p = m_pUList;
-   while (NULL != p->m_pNext)
+   else
    {
-      if (id == p->m_pNext->m_iID)
+      n->m_pPrev->m_pNext = n->m_pNext;
+      if (NULL == n->m_pNext)
       {
-         p->m_pNext = p->m_pNext->m_pNext;
-         if (NULL != p->m_pNext)
-            p->m_pNext->m_pPrev = p;
-         else
-            m_pLast = p;
-
-         return;
+         // n is the last node
+         m_pLast = n->m_pPrev;
       }
-
-      p = p->m_pNext;
+      else
+         n->m_pNext->m_pPrev = n->m_pPrev;
    }
+
+   n->m_pNext = n->m_pPrev = NULL;
 }
 
-void CRcvUList::update(const int32_t& id)
+void CRcvUList::update(const CUDT* u)
 {
-   if (NULL == m_pUList)
+   CRNode* n = u->m_pRNode;
+
+   if (!n->m_bOnList)
       return;
 
-   if (id == m_pUList->m_iID)
-   {
-      CTimer::rdtsc(m_pUList->m_llTimeStamp);
+   CTimer::rdtsc(n->m_llTimeStamp);
 
-      // if there is only one node in the list, simply update it, otherwise move it to the end
-
-      if (NULL != m_pUList->m_pNext)
-      {
-         CUDTList* n = m_pUList;
-
-         m_pUList = m_pUList->m_pNext;
-         m_pUList->m_pPrev = NULL;
-
-         n->m_pNext = NULL;
-         n->m_pPrev = m_pLast;
-         m_pLast->m_pNext = n;
-         m_pLast = n;
-      }
-
+   // if n is the last node, do not need to change
+   if (NULL == n->m_pNext)
       return;
-   }
 
-   // check further
-   CUDTList* p = m_pUList;
-   while (NULL != p->m_pNext)
+   if (NULL == n->m_pPrev)
    {
-      if (id == p->m_pNext->m_iID)
-      {
-         CTimer::rdtsc(p->m_pNext->m_llTimeStamp);
-
-         if (NULL != p->m_pNext->m_pNext)
-         {
-            CUDTList* n = p->m_pNext;
-
-            p->m_pNext = p->m_pNext->m_pNext;
-            p->m_pNext->m_pPrev = p;
-
-            n->m_pNext = NULL;
-            n->m_pPrev = m_pLast;
-            m_pLast->m_pNext = n;
-            m_pLast = n;
-         }
-
-         return;
-      }
-
-      p = p->m_pNext;
+      m_pUList = n->m_pNext;
+      m_pUList->m_pPrev = NULL;
    }
+   else
+   {
+      n->m_pPrev->m_pNext = n->m_pNext;
+      n->m_pNext->m_pPrev = n->m_pPrev;
+   }
+
+   n->m_pPrev = m_pLast;
+   n->m_pNext = NULL;
+   m_pLast->m_pNext = n;
+   m_pLast = n;
 }
 
 //
@@ -749,15 +737,15 @@ void CHash::remove(const int32_t& id)
 
 
 //
-CRendezvousQueue::CRendezvousQueue()
+CRendezvousQueue::CRendezvousQueue():
+m_vRendezvousID(),
+m_RIDVectorLock()
 {
    #ifndef WIN32
       pthread_mutex_init(&m_RIDVectorLock, NULL);
    #else
       m_RIDVectorLock = CreateMutex(NULL, false, NULL);
    #endif
-
-   m_vRendezvousID.clear();
 }
 
 CRendezvousQueue::~CRendezvousQueue()
@@ -779,17 +767,16 @@ CRendezvousQueue::~CRendezvousQueue()
    m_vRendezvousID.clear();
 }
 
-void CRendezvousQueue::insert(const UDTSOCKET& id, const int& ipv, const sockaddr* addr, CUDT* u)
+void CRendezvousQueue::insert(const UDTSOCKET& id, const int& ipv, const sockaddr* addr)
 {
    CGuard vg(m_RIDVectorLock);
 
    CRL r;
    r.m_iID = id;
-   r.m_iPeerID = 0;
    r.m_iIPversion = ipv;
    r.m_pPeerAddr = (AF_INET == ipv) ? (sockaddr*)new sockaddr_in : (sockaddr*)new sockaddr_in6;
    memcpy(r.m_pPeerAddr, addr, (AF_INET == ipv) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
-   r.m_pUDT = u;
+
    m_vRendezvousID.insert(m_vRendezvousID.end(), r);
 }
 
@@ -811,18 +798,18 @@ void CRendezvousQueue::remove(const UDTSOCKET& id)
       }
 }
 
-bool CRendezvousQueue::retrieve(const sockaddr* addr, UDTSOCKET& id, const UDTSOCKET& peerid, CUDT*& u)
+bool CRendezvousQueue::retrieve(const sockaddr* addr, UDTSOCKET& id)
 {
    CGuard vg(m_RIDVectorLock);
 
    for (vector<CRL>::iterator i = m_vRendezvousID.begin(); i != m_vRendezvousID.end(); ++ i)
-      if (CIPAddress::ipcmp(addr, i->m_pPeerAddr, i->m_iIPversion) && ((0 == i->m_iPeerID) || (peerid == i->m_iPeerID)))
+   {
+      if (CIPAddress::ipcmp(addr, i->m_pPeerAddr, i->m_iIPversion) && ((0 == id) || (id == i->m_iID)))
       {
          id = i->m_iID;
-         i->m_iPeerID = peerid;
-         u = i->m_pUDT;
          return true;
       }
+   }
 
    return false;
 }
@@ -830,13 +817,23 @@ bool CRendezvousQueue::retrieve(const sockaddr* addr, UDTSOCKET& id, const UDTSO
 
 //
 CRcvQueue::CRcvQueue():
+m_WorkerThread(),
+m_UnitQueue(),
 m_pRcvUList(NULL),
 m_pHash(NULL),
 m_pChannel(NULL),
 m_pTimer(NULL),
+m_iPayloadSize(),
 m_bClosing(false),
+m_ExitCond(),
+m_LSLock(),
 m_pListener(NULL),
-m_pRendezvousQueue(NULL)
+m_pRendezvousQueue(NULL),
+m_vNewEntry(),
+m_IDLock(),
+m_mBuffer(),
+m_PassLock(),
+m_PassCond()
 {
    #ifndef WIN32
       pthread_mutex_init(&m_PassLock, NULL);
@@ -848,10 +845,8 @@ m_pRendezvousQueue(NULL)
       m_PassCond = CreateEvent(NULL, false, false, NULL);
       m_LSLock = CreateMutex(NULL, false, NULL);
       m_IDLock = CreateMutex(NULL, false, NULL);
+      m_ExitCond = CreateEvent(NULL, false, false, NULL);
    #endif
-
-   m_vNewEntry.clear();
-   m_mBuffer.clear();
 }
 
 CRcvQueue::~CRcvQueue()
@@ -859,18 +854,21 @@ CRcvQueue::~CRcvQueue()
    m_bClosing = true;
 
    #ifndef WIN32
-      pthread_join(m_WorkerThread, NULL);
+      if (0 != m_WorkerThread)
+         pthread_join(m_WorkerThread, NULL);
       pthread_mutex_destroy(&m_PassLock);
       pthread_cond_destroy(&m_PassCond);
       pthread_mutex_destroy(&m_LSLock);
       pthread_mutex_destroy(&m_IDLock);
    #else
-      WaitForSingleObject(m_WorkerThread, INFINITE);
+      if (NULL != m_WorkerThread)
+         WaitForSingleObject(m_ExitCond, INFINITE);
       CloseHandle(m_WorkerThread);
       CloseHandle(m_PassLock);
       CloseHandle(m_PassCond);
       CloseHandle(m_LSLock);
       CloseHandle(m_IDLock);
+      CloseHandle(m_ExitCond);
    #endif
 
    delete m_pRcvUList;
@@ -900,10 +898,16 @@ void CRcvQueue::init(const int& qsize, const int& payload, const int& version, c
    m_pRendezvousQueue = new CRendezvousQueue;
 
    #ifndef WIN32
-      pthread_create(&m_WorkerThread, NULL, CRcvQueue::worker, this);
+      if (0 != pthread_create(&m_WorkerThread, NULL, CRcvQueue::worker, this))
+      {
+         m_WorkerThread = 0;
+         throw CUDTException(3, 1);
+      }
    #else
       DWORD threadID;
       m_WorkerThread = CreateThread(NULL, 0, CRcvQueue::worker, this, 0, &threadID);
+      if (NULL == m_WorkerThread)
+         throw CUDTException(3, 1);
    #endif
 }
 
@@ -915,9 +919,9 @@ void CRcvQueue::init(const int& qsize, const int& payload, const int& version, c
 {
    CRcvQueue* self = (CRcvQueue*)param;
 
-   CUnit temp;
-   temp.m_Packet.m_pcData = new char[self->m_iPayloadSize];
    sockaddr* addr = (AF_INET == self->m_UnitQueue.m_iIPversion) ? (sockaddr*) new sockaddr_in : (sockaddr*) new sockaddr_in6;
+   CUDT* u = NULL;
+   int32_t id;
 
    while (!self->m_bClosing)
    {
@@ -926,30 +930,33 @@ void CRcvQueue::init(const int& qsize, const int& payload, const int& version, c
       #endif
 
       // check waiting list, if new socket, insert it to the list
-      if (self->ifNewEntry())
+      while (self->ifNewEntry())
       {
          CUDT* ne = self->getNewEntry();
          if (NULL != ne)
          {
-            self->m_pHash->insert(ne->m_SocketID, ne);
             self->m_pRcvUList->insert(ne);
+            self->m_pHash->insert(ne->m_SocketID, ne);
          }
       }
 
       // find next available slot for incoming packet
       CUnit* unit = self->m_UnitQueue.getNextAvailUnit();
       if (NULL == unit)
-         unit = &temp;
+      {
+         // no space, skip this packet
+         CPacket temp;
+         temp.m_pcData = new char[self->m_iPayloadSize];
+         temp.setLength(self->m_iPayloadSize);
+         self->m_pChannel->recvfrom(addr, temp);
+         delete [] temp.m_pcData;
+         goto TIMER_CHECK;
+      }
 
       unit->m_Packet.setLength(self->m_iPayloadSize);
 
-      CUDT* u = NULL;
-      int32_t id;
-
       // reading next incoming packet
       if (self->m_pChannel->recvfrom(addr, unit->m_Packet) <= 0)
-         goto TIMER_CHECK;
-      if (unit == &temp)
          goto TIMER_CHECK;
 
       id = unit->m_Packet.m_iID;
@@ -959,67 +966,71 @@ void CRcvQueue::init(const int& qsize, const int& payload, const int& version, c
       {
          if (NULL != self->m_pListener)
             ((CUDT*)self->m_pListener)->listen(addr, unit->m_Packet);
-         else if (self->m_pRendezvousQueue->retrieve(addr, id, ((CHandShake*)unit->m_Packet.m_pcData)->m_iID, u))
-         {
-            if (u->m_bConnected && !u->m_bBroken)
-               u->processCtrl(unit->m_Packet);
-            else
-               self->storePkt(id, unit->m_Packet.clone());
-         }
+         else if (self->m_pRendezvousQueue->retrieve(addr, id))
+            self->storePkt(id, unit->m_Packet.clone());
       }
-      else 
+      else if (id > 0)
       {
          if (NULL != (u = self->m_pHash->lookup(id)))
          {
-            if (u->m_bConnected && !u->m_bBroken)
+            if (CIPAddress::ipcmp(addr, u->m_pPeerAddr, u->m_iIPversion))
             {
-               if (0 == unit->m_Packet.getFlag())
-                  u->processData(unit);
-               else
-                  u->processCtrl(unit->m_Packet);
+               if (u->m_bConnected && !u->m_bBroken && !u->m_bClosing)
+               {
+                  if (0 == unit->m_Packet.getFlag())
+                     u->processData(unit);
+                  else
+                     u->processCtrl(unit->m_Packet);
 
-               u->checkTimers();
-               self->m_pRcvUList->update(id);
+                  u->checkTimers();
+                  self->m_pRcvUList->update(u);
+               }
             }
          }
-         else
+         else if (self->m_pRendezvousQueue->retrieve(addr, id))
             self->storePkt(id, unit->m_Packet.clone());
       }
 
 TIMER_CHECK:
       // take care of the timing event for all UDT sockets
 
-      CUDTList* ul = self->m_pRcvUList->m_pUList;
+      CRNode* ul = self->m_pRcvUList->m_pUList;
       uint64_t currtime;
       CTimer::rdtsc(currtime);
+      uint64_t ctime = currtime - 100000 * CTimer::getCPUFrequency();
 
-      while ((NULL != ul) && (ul->m_llTimeStamp < currtime - 10000 * CTimer::getCPUFrequency()))
+      while ((NULL != ul) && (ul->m_llTimeStamp < ctime))
       {
          CUDT* u = ul->m_pUDT;
-         int32_t id = ul->m_iID;
 
-         if (u->m_bConnected && !u->m_bBroken)
+         if (u->m_bConnected && !u->m_bBroken && !u->m_bClosing)
          {
             u->checkTimers();
-            self->m_pRcvUList->update(id);
+            self->m_pRcvUList->update(u);
          }
          else
          {
-            self->m_pRcvUList->remove(id);
-            self->m_pHash->remove(id);
+            // the socket must be removed from Hash table first, then RcvUList
+            self->m_pHash->remove(u->m_SocketID);
+            self->m_pRcvUList->remove(u);
+            u->m_pRNode->m_bOnList = false;
          }
 
          ul = self->m_pRcvUList->m_pUList;
       }
    }
 
-   delete [] temp.m_Packet.m_pcData;
    if (AF_INET == self->m_UnitQueue.m_iIPversion)
       delete (sockaddr_in*)addr;
    else
       delete (sockaddr_in6*)addr;
 
-   return NULL;
+   #ifndef WIN32
+      return NULL;
+   #else
+      SetEvent(self->m_ExitCond);
+      return 0;
+   #endif
 }
 
 int CRcvQueue::recvfrom(const int32_t& id, CPacket& packet)
@@ -1040,7 +1051,7 @@ int CRcvQueue::recvfrom(const int32_t& id, CPacket& packet)
          pthread_cond_timedwait(&m_PassCond, &m_PassLock, &timeout);
       #else
          ReleaseMutex(m_PassLock);
-         WaitForSingleObject(m_PassCond, 1);
+         WaitForSingleObject(m_PassCond, 1000);
          WaitForSingleObject(m_PassLock, INFINITE);
       #endif
 

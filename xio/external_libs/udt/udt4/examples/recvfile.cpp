@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <udt.h>
 
 using namespace std;
@@ -18,6 +19,9 @@ int main(int argc, char* argv[])
       cout << "usage: recvfile server_ip server_port remote_filename local_filename" << endl;
       return 0;
    }
+
+   // use this function to initialize the UDT library
+   UDT::startup();
 
    UDTSOCKET fhandle = UDT::socket(AF_INET, SOCK_STREAM, 0);
 
@@ -66,7 +70,7 @@ int main(int argc, char* argv[])
    }
 
    // receive the file
-   ofstream ofs(argv[4], ios::out | ios::binary | ios::trunc);
+   fstream ofs(argv[4], ios::out | ios::binary | ios::trunc);
    int64_t recvsize; 
 
    if (UDT::ERROR == (recvsize = UDT::recvfile(fhandle, ofs, 0, size)))
@@ -78,6 +82,9 @@ int main(int argc, char* argv[])
    UDT::close(fhandle);
 
    ofs.close();
+
+   // use this function to release the UDT library
+   UDT::cleanup();
 
    return 1;
 }

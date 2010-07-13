@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2010, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,19 +35,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 09/19/2007
+   Yunhong Gu, last updated 05/25/2010
 *****************************************************************************/
 
 
 #ifndef WIN32
    #include <cstring>
-   #include <cstdlib>
    #include <cerrno>
 #else
    #include <winsock2.h>
    #include <ws2tcpip.h>
+   #ifdef LEGACY_WIN32
+      #include <wspiapi.h>
+   #endif
 #endif
 #include <cmath>
+#include "md5.h"
 #include "common.h"
 
 uint64_t CTimer::s_ullCPUFrequency = CTimer::readCPUFrequency();
@@ -59,7 +62,10 @@ uint64_t CTimer::s_ullCPUFrequency = CTimer::readCPUFrequency();
    pthread_cond_t CTimer::m_EventCond = CreateEvent(NULL, false, false, NULL);
 #endif
 
-CTimer::CTimer()
+CTimer::CTimer():
+m_ullSchedTime(),
+m_TickCond(),
+m_TickLock()
 {
    #ifndef WIN32
       pthread_mutex_init(&m_TickLock, NULL);
@@ -84,8 +90,14 @@ CTimer::~CTimer()
 void CTimer::rdtsc(uint64_t &x)
 {
    #ifdef WIN32
-      if (!QueryPerformanceCounter((LARGE_INTEGER *)&x))
+      //HANDLE hCurThread = ::GetCurrentThread(); 
+      //DWORD_PTR dwOldMask = ::SetThreadAffinityMask(hCurThread, 1); 
+      BOOL ret = QueryPerformanceCounter((LARGE_INTEGER *)&x);
+      //SetThreadAffinityMask(hCurThread, dwOldMask);
+
+      if (!ret)
          x = getTime() * s_ullCPUFrequency;
+
    #elif IA32
       uint32_t lval, hval;
       //asm volatile ("push %eax; push %ebx; push %ecx; push %edx");
@@ -212,19 +224,30 @@ void CTimer::tick()
 
 uint64_t CTimer::getTime()
 {
+   //For Cygwin and other systems without microsecond level resolution, uncomment the following three lines
+   //uint64_t x;
+   //rdtsc(x);
+   //return x / s_ullCPUFrequency;
+
    #ifndef WIN32
       timeval t;
       gettimeofday(&t, 0);
       return t.tv_sec * 1000000ULL + t.tv_usec;
    #else
       LARGE_INTEGER ccf;
+      HANDLE hCurThread = ::GetCurrentThread(); 
+      DWORD_PTR dwOldMask = ::SetThreadAffinityMask(hCurThread, 1);
       if (QueryPerformanceFrequency(&ccf))
       {
          LARGE_INTEGER cc;
          if (QueryPerformanceCounter(&cc))
+         {
+            SetThreadAffinityMask(hCurThread, dwOldMask); 
             return (cc.QuadPart * 1000000ULL / ccf.QuadPart);
+         }
       }
 
+      SetThreadAffinityMask(hCurThread, dwOldMask); 
       return GetTickCount() * 1000ULL;
    #endif
 }
@@ -266,7 +289,8 @@ void CTimer::waitForEvent()
 //
 // Automatically lock in constructor
 CGuard::CGuard(pthread_mutex_t& lock):
-m_Mutex(lock)
+m_Mutex(lock),
+m_iLocked()
 {
    #ifndef WIN32
       m_iLocked = pthread_mutex_lock(&m_Mutex);
@@ -287,6 +311,25 @@ CGuard::~CGuard()
    #endif
 }
 
+void CGuard::enterCS(pthread_mutex_t& lock)
+{
+   #ifndef WIN32
+      pthread_mutex_lock(&lock);
+   #else
+      WaitForSingleObject(lock, INFINITE);
+   #endif
+}
+
+void CGuard::leaveCS(pthread_mutex_t& lock)
+{
+   #ifndef WIN32
+      pthread_mutex_unlock(&lock);
+   #else
+      ReleaseMutex(lock);
+   #endif
+}
+
+
 //
 CUDTException::CUDTException(int major, int minor, int err):
 m_iMajor(major),
@@ -305,7 +348,8 @@ m_iMinor(minor)
 CUDTException::CUDTException(const CUDTException& e):
 m_iMajor(e.m_iMajor),
 m_iMinor(e.m_iMinor),
-m_iErrno(e.m_iErrno)
+m_iErrno(e.m_iErrno),
+m_strMsg()
 {
 }
 
@@ -496,11 +540,13 @@ const char* CUDTException::getErrorMessage()
    }
 
    // Adding "errno" information
-   if (0 < m_iErrno)
+   if ((0 != m_iMajor) && (0 < m_iErrno))
    {
       m_strMsg += ": ";
       #ifndef WIN32
-         m_strMsg += strerror(m_iErrno);
+         char errmsg[1024];
+         if (strerror_r(m_iErrno, errmsg, 1024) == 0)
+            m_strMsg += errmsg;
       #else
          LPVOID lpMsgBuf;
          FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, m_iErrno, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
@@ -592,4 +638,51 @@ bool CIPAddress::ipcmp(const sockaddr* addr1, const sockaddr* addr2, const int& 
    }
 
    return false;
+}
+
+void CIPAddress::ntop(const sockaddr* addr, uint32_t ip[4], const int& ver)
+{
+   if (AF_INET == ver)
+   {
+      sockaddr_in* a = (sockaddr_in*)addr;
+      ip[0] = a->sin_addr.s_addr;
+   }
+   else
+   {
+      sockaddr_in6* a = (sockaddr_in6*)addr;
+      ip[3] = (a->sin6_addr.s6_addr[15] << 24) + (a->sin6_addr.s6_addr[14] << 16) + (a->sin6_addr.s6_addr[13] << 8) + a->sin6_addr.s6_addr[12];
+      ip[2] = (a->sin6_addr.s6_addr[11] << 24) + (a->sin6_addr.s6_addr[10] << 16) + (a->sin6_addr.s6_addr[9] << 8) + a->sin6_addr.s6_addr[8];
+      ip[1] = (a->sin6_addr.s6_addr[7] << 24) + (a->sin6_addr.s6_addr[6] << 16) + (a->sin6_addr.s6_addr[5] << 8) + a->sin6_addr.s6_addr[4];
+      ip[0] = (a->sin6_addr.s6_addr[3] << 24) + (a->sin6_addr.s6_addr[2] << 16) + (a->sin6_addr.s6_addr[1] << 8) + a->sin6_addr.s6_addr[0];
+   }
+}
+
+void CIPAddress::pton(sockaddr* addr, const uint32_t ip[4], const int& ver)
+{
+   if (AF_INET == ver)
+   {
+      sockaddr_in* a = (sockaddr_in*)addr;
+      a->sin_addr.s_addr = ip[0];
+   }
+   else
+   {
+      sockaddr_in6* a = (sockaddr_in6*)addr;
+      for (int i = 0; i < 4; ++ i)
+      {
+         a->sin6_addr.s6_addr[i * 4] = ip[i] & 0xFF;
+         a->sin6_addr.s6_addr[i * 4 + 1] = (unsigned char)((ip[i] & 0xFF00) >> 8);
+         a->sin6_addr.s6_addr[i * 4 + 2] = (unsigned char)((ip[i] & 0xFF0000) >> 16);
+         a->sin6_addr.s6_addr[i * 4 + 3] = (unsigned char)((ip[i] & 0xFF000000) >> 24);
+      }
+   }
+}
+
+//
+void CMD5::compute(const char* input, unsigned char result[16])
+{
+   md5_state_t state;
+
+   md5_init(&state);
+   md5_append(&state, (const md5_byte_t *)input, strlen(input));
+   md5_finish(&state, result);
 }

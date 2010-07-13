@@ -1,5 +1,5 @@
 /*****************************************************************************
-Copyright (c) 2001 - 2007, The Board of Trustees of the University of Illinois.
+Copyright (c) 2001 - 2009, The Board of Trustees of the University of Illinois.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*****************************************************************************
 written by
-   Yunhong Gu, last updated 08/22/2007
+   Yunhong Gu, last updated 05/05/2009
 *****************************************************************************/
 
 #ifndef __UDT_WINDOW_H__
@@ -84,6 +84,10 @@ private:
    int m_iSize;                 // Size of the ACK history window
    int m_iHead;                 // Pointer to the lastest ACK record
    int m_iTail;                 // Pointer to the oldest ACK record
+
+private:
+   CACKWindow(const CACKWindow&);
+   CACKWindow& operator=(const CACKWindow&);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -173,6 +177,10 @@ private:
    uint64_t m_LastArrTime;      // last packet arrival time
    uint64_t m_CurrArrTime;      // current packet arrival time
    uint64_t m_ProbeTime;        // arrival time of the first probing packet
+
+private:
+   CPktTimeWindow(const CPktTimeWindow&);
+   CPktTimeWindow &operator=(const CPktTimeWindow&);
 };
 
 
