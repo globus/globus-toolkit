@@ -743,7 +743,9 @@ typedef struct globus_gram_job_manager_ref_s
     char *                              key;
     /* Pointer to manager */
     globus_gram_job_manager_t *         manager;
-    /* Pointer to the request */
+    /* Pointer to the request, may be NULL if the request is swapped out of
+     * memory because there is no active reference to it
+     */
     globus_gram_jobmanager_request_t *  request;
     /* Count of callbacks, queries, etc that refer to this job.
      * When 0, the request is eligible for removal from memory.
@@ -768,6 +770,11 @@ typedef struct globus_gram_job_manager_ref_s
      * completed execution.
      */
     globus_bool_t                       loaded_only;
+    /**
+     * Timestamp of the last SEG event we've completely processed. Initially
+     * set to the time of the job submission.
+     */
+    time_t                              seg_last_timestamp;
 }
 globus_gram_job_manager_ref_t;
 
@@ -967,7 +974,8 @@ globus_gram_job_manager_contact_list_free(
 
 void
 globus_gram_job_manager_contact_state_callback(
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_jobmanager_request_t *  request,
+    globus_bool_t                       restart_state_machine);
 
 int
 globus_gram_job_manager_write_callback_contacts(
@@ -1050,6 +1058,7 @@ globus_gram_job_manager_gsi_update_credential(
 
 int
 globus_gram_job_manager_gsi_write_credential(
+    globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential,
     const char *                        path);
 
@@ -1081,6 +1090,11 @@ globus_gram_job_manager_authz_query(
     const char *                        uri,
     const char *                        auth_type);
 
+int
+globus_gram_gsi_get_dn_hash(
+    gss_cred_id_t                       cred,
+    unsigned long *                     hash);
+
 /* globus_gram_job_manager_query.c */
 void
 globus_gram_job_manager_query_callback(
@@ -1108,6 +1122,9 @@ int
 globus_gram_job_manager_staging_create_list(
     globus_gram_jobmanager_request_t *  request);
 
+int
+globus_gram_job_manager_streaming_list_replace(
+    globus_gram_jobmanager_request_t *  request);
 int
 globus_gram_job_manager_staging_remove(
     globus_gram_jobmanager_request_t *  request,

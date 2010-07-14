@@ -17,7 +17,9 @@
 #if !defined(GLOBUS_TIME_H)
 #define      GLOBUS_TIME_H
 
+#include "globus_config.h"
 #include "globus_common_include.h"
+#include <time.h>
 
 EXTERN_C_BEGIN
 
@@ -343,5 +345,3 @@ globus_reltime_cmp(
 EXTERN_C_END
 
 #endif /* GLOBUS_TIME_H */
-
-

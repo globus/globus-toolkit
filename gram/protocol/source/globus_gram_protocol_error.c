@@ -203,7 +203,7 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 167 */     "the job is not running in the account named by the 'user_name' parameter."
 };
 
-globus_thread_key_t                     globus_i_gram_protocol_error_key = 0;
+globus_thread_key_t                     globus_i_gram_protocol_error_key;
 
 enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
 

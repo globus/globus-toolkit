@@ -32,6 +32,7 @@ getnameinfo(
     char                                service_string[10];
     struct hostent                      hostent_res;
     char                                buffer[256];
+    int                                 _h_errno;
 
     if (host != NULL)
     {
@@ -44,7 +45,7 @@ getnameinfo(
                 &hostent_res,
                 buffer,
                 sizeof(buffer),
-                &h_errno);
+                &_h_errno);
         }
 
         if (hostent == NULL && (flags & NI_NAMEREQD))

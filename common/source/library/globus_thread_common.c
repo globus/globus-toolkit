@@ -67,12 +67,7 @@ globus_l_thread_common_deactivate(void);
 static void 
 globus_l_thread_blocking_callback_destroy(void* p);
 
-#if !defined(TARGET_ARCH_WIN32) || defined(BUILD_LITE)
-static globus_thread_key_t              l_thread_stack_key  = GLOBUS_NULL;
-#else
-static globus_thread_key_t              l_thread_stack_key  =
-{ 0, NULL }; // is this type of initialization necessary for Windows???
-#endif
+static globus_thread_key_t              l_thread_stack_key;
 static globus_bool_t                    globus_l_mod_active = GLOBUS_FALSE;
 
 globus_module_descriptor_t              globus_i_thread_common_module =
@@ -420,27 +415,17 @@ void thread_print(char * s, ...)
     char tmp[1023];
     int x;
     va_list ap;
-    pid_t   pid = getpid();
+    pid_t pid = getpid();
+    globus_thread_t tid = globus_thread_self();
     
-#ifdef HAVE_STDARG_H
-        va_start(ap, s);
-#else
-	va_start(ap);
-#endif
+    va_start(ap, s);
 
-#if !defined(BUILD_LITE)
-    sprintf(tmp, "p#%dt#%ld::", pid, (long)globus_thread_self());
+    sprintf(tmp, "p#%dt#%ld::", pid, (long) tid.dummy);
     x = strlen(tmp);
     vsprintf(&tmp[x], s, ap);
 
     globus_libc_printf(tmp);
     globus_thread_yield();
-#else
-    sprintf(tmp, "p#%dt#main::", pid);
-    x = strlen(tmp);
-    vsprintf(&tmp[x], s, ap);
-    printf(tmp);
-#endif
    
     fflush(stdin);
 }

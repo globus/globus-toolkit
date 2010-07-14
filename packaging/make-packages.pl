@@ -40,7 +40,8 @@ my %virtual_packages = ("trusted_ca_setup" => 1,
                         "mmjfs_service_setup" => 1,
                         "mjs_service_setup" => 1,
                         "simple_ca_setup" => 1,
-                        "netlogger_c" => 1 );
+                        "netlogger_c" => 1,
+                        "globus_usage_tools_setup_executed" => 1);
 
 # package_name => [ tree, subdir, build_type, 
 #                   (patch-n-build file, if exists), (per-package tag) ]
@@ -394,11 +395,6 @@ sub create_makefile_installer
          print PAC "packageName('$bun')\n";
          print PAC "url('Globus', 'http://www.globus.org/toolkit')\n";
 
-         if ( $flavor =~ /thr/ )
-         {
-              $suffix = "-thr";
-         }
-
          # We have the dependency sorted list of packages in our build list.
          # We will go through it in order, printing out those packages which
          # appear in the current bundle.  This gives us a dep-sorted bundle
@@ -408,28 +404,10 @@ sub create_makefile_installer
               {
                   print INS "$pack$suffix ";
                   print PAC "package('$pack$suffix');\n";
-                  push @sdkbundle, "$pack" . "-thr";
               }
          }
          print INS "\n";
          close PAC;
-
-         # Also list a threaded version for unthreaded bundles
-         # May not always make sense to build, but good to have
-         # the target available when it does.
-         if ( not ( $flavor =~ /thr/ ) )
-         {
-             open(PAC, ">$top_dir/pacman_cache/${bun}-thr.pacman");
-             print INS "$bun" . "-thr: ";
-             print PAC "packageName('${bun}-thr')\n";
-             foreach my $pack ( @sdkbundle )
-             {
-                 print INS "$pack ";
-                 print PAC "package('$pack');\n";
-             }
-        }
-        print INS "\n";
-        close PAC;
     }
          
     foreach my $pack ( @package_build_list )
@@ -447,7 +425,7 @@ sub create_makefile_installer
 
          open(PAC, ">$top_dir/pacman_cache/$pack.pacman");
          print PAC "packageName($pack)\n";
-         print PAC "version($package_version_hash{$pack});\n";
+         print PAC "version('$package_version_hash{$pack}{version}');\n";
 
          my $extras="";
 
@@ -469,7 +447,6 @@ sub create_makefile_installer
               {
                    print INS " $deppack" unless ( $pack eq $deppack );
                    print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
-                   if ( $deppack eq "globus_rls_server" ) { print INS "-thr"; }
               }
          }
          print INS "\n";
@@ -495,47 +472,12 @@ sub create_makefile_installer
 
          print INS "\n";
          print PAC "cd ('\$GLOBUS_LOCATION')\n";
-         print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}.tar.gz')\n";
+         print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}{version}.tar.gz')\n";
          print PAC "cd ()\n";
          close PAC;
 
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
 
-         print INS "${packname}-only-thr: gpt\n";
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
-         print INS "${packname}-thr: gpt ${packname}-thr-compile ${packname}-thr-runtime\n";
-         print INS "${packname}-thr-runtime: ";
-         foreach my $deppack ( @package_build_list )
-         {
-              if ( $package_runtime_hash{$pack}{$deppack} )
-              {
-                   print INS " $deppack" unless ( $pack eq $deppack );
-                   # globus_replication_client_test has a runtime dep on
-                   # globus_rls_server, which must be built threaded only
-                   if ( $deppack eq "globus_rls_server" ) { print INS "-thr"; }
-              }    
-         }    
-         print INS "\n";
-
-         print INS "${packname}-thr-compile: ";
-         foreach my $deppack ( @package_build_list )
-         {
-              if ( $package_dep_hash{$pack}{$deppack} )
-              {
-                   print INS " ${deppack}-thr-compile" unless ( $pack eq $deppack );
-              }
-         }
-
-         # Barf.  netlogger_c is provided as an external package, so it's in virtual_packages
-         # But globus_xio_netlogger_driver expresses a real GPT dep on it, so we need to
-         # re-add it here so make -j2 builds won't try to build the driver before netlogger_c
-         if ( $pack=~/globus_xio_netlogger_driver/ )
-         {
-              print INS " netlogger_c-thr";
-         }
-         print INS "\n";
-
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
          my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                          $package_list{$pack}[1],
                                          $package_list{$pack}[2]);
@@ -590,7 +532,10 @@ sub import_package_dependencies
         $pkg->read_metadata_file("$metadatafile");
 
         $package_version_hash{$pack}{'major'} = $pkg->{'Version'}->{'major'};
+        $package_version_hash{$pack}{'minor'} = $pkg->{'Version'}->{'minor'};
         $package_version_hash{$pack}{'age'} = $pkg->{'Version'}->{'age'};
+        $package_version_hash{$pack}{'version'} = $pkg->{'Version'}->{'major'} 
+                    . "." . $pkg->{'Version'}->{'minor'};
 
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
         {

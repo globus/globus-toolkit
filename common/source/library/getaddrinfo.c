@@ -45,7 +45,7 @@ getaddrinfo(
     struct protoent *                   proto;
 #endif
     char *                              proto_name = NULL;
-    int                                 h_errno;
+    int                                 _h_errno;
     struct addrinfo *                   addrinfo;
     int                                 service_port = 0;
     static char *                       aliases = NULL;
@@ -95,7 +95,7 @@ getaddrinfo(
                         &hostent_res,
                         buffer,
                         sizeof(buffer),
-                        &h_errno);
+                        &_h_errno);
             }
             else
             {
@@ -109,14 +109,14 @@ getaddrinfo(
                     &hostent_res,
                     buffer,
                     sizeof(buffer),
-                    &h_errno);
+                    &_h_errno);
         }
         if (hostent == NULL)
         {
             result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_COMMON_MODULE,
-                    h_errno,
+                    _h_errno,
                     0 + GLOBUS_EAI_ERROR_OFFSET,
                     __FILE__,
                     "globus_libc_getaddrinfo",

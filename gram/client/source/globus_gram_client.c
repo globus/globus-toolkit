@@ -1005,6 +1005,10 @@ null_param:
  * @param resource_manager_contact
  *     A NULL-terminated character string containing a
  *     @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ * @param attr
+ *     A set of client attributes to use to contact the gatekeeper. If no
+ *     custom attributes are needed, the caller should pass the value 
+ *     @a GLOBUS_GRAM_CLIENT_NO_ATTR.
  * @param info_callback
  *     A pointer to a function to call when the version request has
  *     completed or failed.

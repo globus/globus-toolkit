@@ -100,5 +100,3 @@ globus_range_list_remove_at(
 EXTERN_C_END
 
 #endif /* GLOBUS_LIST_H */
-
-

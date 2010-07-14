@@ -338,8 +338,10 @@ globus_l_gram_job_manager_script_read(
             "event=gram.script_read.start "
             "level=DEBUG "
             "gramid=%s "
+            "result=%d "
             "\n",
-            request->job_contact_path);
+            request->job_contact_path,
+            result);
 
     if (result)
     {
@@ -1151,6 +1153,20 @@ globus_l_gram_job_manager_default_done(
         {
             request->failure_code = 
                 GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.script_read.info "
+                    "level=ERROR "
+                    "gramid=%s "
+                    "msg=\"%s\" "
+                    "value=\"%s\" "
+                    "script_status=%d "
+                    "\n",
+                    request->job_contact_path,
+                    "Invalid GRAM_SCRIPT_JOB_STATE",
+                    value,
+                    script_status);
         }
         else if(globus_i_gram_job_manager_script_valid_state_change(
                     request, script_status))
@@ -1182,6 +1198,20 @@ globus_l_gram_job_manager_default_done(
             {
                 request->failure_code = 
                     GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.script_read.info "
+                        "level=ERROR "
+                        "gramid=%s "
+                        "msg=\"%s\" "
+                        "value=\"%s\" "
+                        "script_status=%d "
+                        "\n",
+                        request->job_contact_path,
+                        "Invalid GRAM_SCRIPT_ERROR",
+                        value,
+                        script_status);
             }
             else
             {
@@ -1302,6 +1332,20 @@ globus_l_gram_job_manager_default_done(
         request->failure_code = 
             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
         request->unsent_status_change = GLOBUS_TRUE;
+        globus_gram_job_manager_request_log(
+                request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.script_read.info "
+                "level=ERROR "
+                "gramid=%s "
+                "msg=\"%s\" "
+                "variable=\"%s\" "
+                "value=\"%s\" "
+                "\n",
+                request->job_contact_path,
+                "unknown variable",
+                variable,
+                value);
     }
 
     GlobusGramJobManagerRequestUnlock(request);

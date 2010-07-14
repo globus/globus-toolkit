@@ -1328,15 +1328,16 @@ globus_l_gram_startup_socket_callback(
                     "context_fd=%d "
                     "response_fd=%d "
                     "acksock=%d "
+                    "msg=\"%s\" "
                     "reason=\"%s\" "
                     "\n",
                     manager->socket_fd,
                     -rc,
-                    "Error importing credential",
                     http_body_fd,
                     context_fd,
                     response_fd,
                     acksock,
+                    "Error importing credential",
                     errstr_escaped ? errstr_escaped : "");
 
             if (errstr)
@@ -1465,6 +1466,7 @@ globus_l_gram_startup_socket_callback(
                  * Additionally, in the STOP state, we need to register the
                  * state machine.
                  */
+                GlobusGramJobManagerRequestLock(old_job_request);
                 globus_gram_job_manager_contact_add(
                         old_job_request,
                         contact,
@@ -1516,6 +1518,7 @@ globus_l_gram_startup_socket_callback(
                     old_job_request->jobmanager_state =
                         GLOBUS_GRAM_JOB_MANAGER_STATE_START;
                 }
+                GlobusGramJobManagerRequestUnlock(old_job_request);
 
                 globus_gram_job_manager_remove_reference(
                         old_job_request->manager,

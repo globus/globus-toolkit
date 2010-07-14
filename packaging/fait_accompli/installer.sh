@@ -8,7 +8,7 @@ TARFILES=netlogger-c-4.0.2.tar.gz
 CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
 
 #GT5 bundles
-BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,gram5-sge,gram5-fork
+BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,cas_callout
 
 PACKAGES=globus_rls_client_jni,myproxy,globus_openssl_backup
 
@@ -109,33 +109,8 @@ fi
 cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
 rm -fr $INSTALLER/source-trees/autotools
 
-HAVE_LNDIR=0
-lndir > /dev/null 2>&1;
-if [ $? -eq 1 ]; then
-    HAVE_LNDIR=1
-fi
-
-if [ "X$HAVE_LNDIR" = "X1" ]; then
-   mkdir -p $INSTALLER/source-trees-thr
-   if [ $? -ne 0 ]; then
-      echo Unable to create $INSTALLER/source-trees-thr
-      exit 4
-   fi
-
-   cd $INSTALLER/source-trees-thr
-   lndir -silent ../source-trees
-   rm -fr mds/libtool
-   cp -Rp ../source-trees/mds/libtool mds
-   rm -fr gsi/simple_ca/setup
-   cp -Rp ../source-trees/gsi/simple_ca/setup gsi/simple_ca
-   cd ../..
-else
-   cp -Rp $INSTALLER/source-trees $INSTALLER/source-trees-thr
-fi
-
 for f in $TARFILES; do
    tar -C $INSTALLER/source-trees -xzf fait_accompli/$f
-   tar -C $INSTALLER/source-trees-thr -xzf fait_accompli/$f
 done
 
 echo Done creating installer.

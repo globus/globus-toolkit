@@ -32,6 +32,17 @@ if test "x$xml_catalog_path" != x"notset"; then
     fi
 fi
 
+AM_PATH_XML2([2.6.11],
+    [ac_cv_have_libxml2=yes],
+    [ac_cv_have_libxml2=no
+    AC_MSG_WARN([Unable to locate a usable libxml2])
+    AC_MSG_WARN([Teragrid gateway user extension will not be usable])
+    AC_MSG_WARN([To remedy, please install libxml2 using your operating system's package management tools or from http://www.xmlsoft.org/downloads.html])])
+
+if test "$ac_cv_have_libxml2" = "yes"; then
+    AC_DEFINE(HAVE_LIBXML2)
+fi
+
 AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
 AC_DEFINE_UNQUOTED(GLOBUS_FLAVOR_NAME, "$GLOBUS_FLAVOR_NAME")
 

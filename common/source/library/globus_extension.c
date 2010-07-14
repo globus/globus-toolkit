@@ -16,7 +16,7 @@
 
 #include "globus_extension.h"
 #include "globus_debug.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 #include "globus_thread_rmutex.h"
 #include "globus_libc.h"
 
@@ -286,8 +286,9 @@ globus_l_extension_shutdown_extension(
                  *   probably also need a register_oneshot wrapper function
                  *   that can do this.
                  * -- for now, extensions are just never unloaded.
-                 */
+                 *
                 lt_dlclose(extension->dlhandle);
+                 */
             }
         }
 #       endif /* !defined(BUILD_STATIC_ONLY) */

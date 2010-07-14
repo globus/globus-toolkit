@@ -16,14 +16,16 @@
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_CALLBACK
 #define GLOBUS_INCLUDE_GLOBUS_CALLBACK
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callback.h Globus Callback API
  *
- * $Source$<br />
- * $Date$<br />
- * $Revision$<br />
- * $Author$<br />
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
  */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * @defgroup globus_callback Globus Callback
@@ -33,7 +35,6 @@
  * <a href="index.html" target="_top">View documentation with frames</a><br>
  * @endhtmlonly
  */
-/* @{ */
 
 #include "globus_common_include.h"
 #include "globus_module.h"
@@ -44,13 +45,11 @@ EXTERN_C_BEGIN
 extern globus_module_descriptor_t       globus_i_callback_module;
 
 /**
- * @name Module Specific
- */
-/* @{ */
-
-/**
+ * @brief Module descriptor
  * @hideinitializer
+ * @ingroup globus_callback
  *
+ * @details
  * Module descriptor for for globus_callback module.  Must be activated before
  * any of the following api is called.
  *
@@ -60,16 +59,22 @@ extern globus_module_descriptor_t       globus_i_callback_module;
 #define GLOBUS_CALLBACK_MODULE (&globus_i_callback_module)
 
 /**
+ * @brief Module descriptor
  * @hideinitializer
+ * @ingroup globus_callback
  * @deprecated
  *
+ * @details
  * Backward compatible name
  */
 #define GLOBUS_POLL_MODULE GLOBUS_CALLBACK_MODULE
 
 /**
+ * @brief Error types
  * @hideinitializer
+ * @ingroup globus_callback
  *
+ * @details
  * Possible error types returned by the api in this module.  You can use the
  * error API to check results against these types.
  *
@@ -92,43 +97,56 @@ typedef enum
 } globus_callback_error_type_t;
 
 /**
- * Handle for a periodic callback.  This handle can be copied or compared,
+ * @brief Periodic callback handle
+ * @ingroup globus_callback
+ *
+ * @details
+ * This handle can be copied or compared,
  * and represented as NULL with GLOBUS_NULL_HANDLE
  */
 typedef int                             globus_callback_handle_t;
 
 /**
- * Handle for a callback space.  This handle can be copied or compared
+ * @brief Callback space handle
+ * @ingroup globus_callback
+ *
+ * @details
+ * This handle can be copied or compared
  * and represented as NULL with GLOBUS_NULL_HANDLE
  */
 typedef int                             globus_callback_space_t;
 
 /**
- * Handle for a space attr.  This handle can be copied
- * and represented as NULL with GLOBUS_NULL
+ * @brief Callback space attribute
+ * @ingroup globus_callback
+ *
+ * @details
+ * This handle can be copied and represented as NULL with GLOBUS_NULL
  */
 typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
 
-/* @} */
-
 /**
  * @defgroup globus_callback_api Globus Callback API
+ * @ingroup globus_callback
  *
  * @htmlonly
  * <a href="main.html" target="_top">View documentation without frames</a><br>
  * <a href="index.html" target="_top">View documentation with frames</a><br>
  * @endhtmlonly
  */
-/* @{ */
 
 /**
- * @name Convenience Macros
+ * @name Convenience Macros 
  */
+
 /* @{ */
 
 /**
+ * @brief Poll the global callback space
  * @hideinitializer
+ * @ingroup globus_callback_api
  *
+ * @details
  * Specifies the global space for globus_callback_space_poll(). argument is
  * the timeout
  *
@@ -138,8 +156,11 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
     globus_callback_space_poll((a), GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
+ * @brief Blocking poll of the global callback space
+ * @ingroup globus_callback_api
  * @hideinitializer
  *
+ * @details
  * Specifies that globus_callback_space_poll() should poll on the global space
  * with an infinite timeout
  *
@@ -149,8 +170,11 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
     globus_callback_poll(&globus_i_abstime_infinity)
 
 /**
+ * @brief Nonblocking poll of the global callback space
+ * @ingroup globus_callback_api
  * @hideinitializer
  *
+ * @details
  * Specifies that globus_callback_space_poll() should poll on the global space
  * with an immediate timeout
  *
@@ -160,8 +184,11 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
     globus_callback_poll(&globus_i_abstime_zero)
 
 /**
+ * @brief Nonblocking poll of the global callback space
+ * @ingroup globus_callback_api
  * @hideinitializer
  *
+ * @details
  * Specifies that globus_callback_space_poll() should poll on the global space
  * with an immediate timeout
  *
@@ -171,18 +198,24 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
     globus_poll_nonblocking()
 
 /**
+ * @brief Wake up callback polling thread
+ * @ingroup globus_callback_api
  * @hideinitializer
- *
+ * @details
  * Counterpart to globus_poll().
  *
+ * @details
  * @see globus_callback_signal_poll()
  */
 #define globus_signal_poll()                                                \
     globus_callback_signal_poll()
 
 /**
+ * @brief Register a oneshot function in the global callback space
  * @hideinitializer
+ * @ingroup globus_callback_api
  *
+ * @details
  * Specifies the global space for globus_callback_space_register_oneshot()
  * all other arguments are the same as specified there.
  *
@@ -201,8 +234,11 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
+ * @brief Register a periodic function in the global callback space
+ * @ingroup globus_callback_api
  * @hideinitializer
  *
+ * @details
  * Specifies the global space for globus_callback_space_register_periodic()
  * all other arguments are the same as specified there.
  *
@@ -223,8 +259,11 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
+ * @brief Register a signal handler in the global callback space
  * @hideinitializer
+ * @ingroup globus_callback_api
  *
+ * @details
  * Specifies the global space for
  * globus_callback_space_register_signal_handler() all other arguments are
  * the same as specified there.
@@ -251,8 +290,10 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
 /* @{ */
 
 /**
- * Globus callback prototype
+ * @brief Globus callback prototype
+ * @ingroup globus_callback_api
  *
+ * @details
  * This is the signature of the function registered with the 
  * globus_callback_register_* calls.
  *
@@ -290,8 +331,10 @@ void
 /* @{ */
 
 /**
- * Register a oneshot some delay from now
+ * @brief Register a oneshot some delay from now
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function registers the callback_func to start some delay_time from
  * now.  
  *
@@ -336,8 +379,10 @@ globus_callback_space_register_oneshot(
 /* @{ */
 
 /**
- * Register a periodic callback
+ * @brief Register a periodic callback
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function registers a periodic callback_func to start some delay_time 
  * and run every period from then.
  *
@@ -366,9 +411,9 @@ globus_callback_space_register_oneshot(
  *        - GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC
  *        - GLOBUS_SUCCESS
  * 
- * @see globus_callback_unregister()
- * @see globus_callback_func_t
- * @see globus_callback_spaces
+ * @see #globus_callback_unregister()
+ * @see #globus_callback_func_t
+ * @see @link globus_callback_spaces @endlink
  */
 globus_result_t
 globus_callback_space_register_periodic(
@@ -380,8 +425,10 @@ globus_callback_space_register_periodic(
     globus_callback_space_t             space);
 
 /**
- * Unregister a callback
- *
+ * @brief Unregister a callback
+ * @ingroup globus_callback_api
+ * 
+ * @details
  * This function will cancel a callback and free the resources 
  * associcated with the callback handle.  If the callback was able to be 
  * canceled immediately (or if it has already run), GLOBUS_SUCCESS is returned 
@@ -418,8 +465,8 @@ globus_callback_space_register_periodic(
  *        - GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED
  *        - GLOBUS_SUCCESS
  * 
- * @see globus_callback_space_register_periodic()
- * @see globus_callback_func_t
+ * @see #globus_callback_space_register_periodic()
+ * @see #globus_callback_func_t
  */
 globus_result_t
 globus_callback_unregister(
@@ -429,8 +476,10 @@ globus_callback_unregister(
     globus_bool_t *                     active);
 
 /**
- * Adjust the delay of a oneshot callback.
+ * @brief Adjust the delay of a oneshot callback
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function allows a user to adjust the delay of a previously
  * registered callback.  It is safe to call this within or outside of
  * the callback that is being modified.
@@ -459,8 +508,10 @@ globus_callback_adjust_oneshot(
     const globus_reltime_t *            new_delay);
 
 /**
- * Adjust the period of a periodic callback.
+ * @brief Adjust the period of a periodic callback.
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function allows a user to adjust the period of a previously
  * registered callback.  It is safe to call this within or outside of
  * the callback that is being modified.
@@ -500,8 +551,10 @@ globus_callback_adjust_period(
 /* @{ */
 
 /**
- * Poll for ready callbacks
+ * @brief Poll for ready callbacks
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function is used to poll for registered callbacks.  
  *
  * For non-threaded builds, callbacks are not/can not be delivered unless this
@@ -544,8 +597,10 @@ globus_callback_space_poll(
     globus_callback_space_t             space);
 
 /**
- * Signal the poll
+ * @brief Signal the poll
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function signals globus_callback_space_poll() that something has
  * changed and it should return to its caller as soon as possible.
  *
@@ -569,8 +624,10 @@ globus_callback_signal_poll();
 /* @{ */
 
 /**
- * Get the amount of time left in a callback
+ * @brief Get the amount of time left in a callback
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function retrieves the remaining time a callback is allowed to run.
  * If a callback has already timed out, time_left will be set to zero and
  * GLOBUS_TRUE returned.  This function is intended to be called within a 
@@ -589,8 +646,10 @@ globus_callback_get_timeout(
     globus_reltime_t *                  time_left);
 
 /**
- * See if there is remaining time in a callback
+ * @brief See if there is remaining time in a callback
+ * @ingroup globus_callback_api
  *
+ * @details
  * This function returns GLOBUS_TRUE if the running time of a callback has
  * already expired.  This function is intended to be called within a callback's
  * stack, but is harmless to call anywhere (will return GLOBUS_FALSE)
@@ -603,8 +662,10 @@ globus_bool_t
 globus_callback_has_time_expired();
 
 /**
- * See if a callback has been restarted.
+ * @brief See if a callback has been restarted.
+ * @ingroup globus_callback_api
  *
+ * @details
  * If the callback is a oneshot, this merely means the callback called 
  * globus_thread_blocking_space_will_block (or globus_cond_wait() at 
  * some point.
@@ -619,22 +680,25 @@ globus_callback_has_time_expired();
  */
 globus_bool_t
 globus_callback_was_restarted();
-/* @} */
+
 /* @} */
 
 /**
  * @defgroup globus_callback_spaces Globus Callback Spaces
+ * @ingroup globus_callback
  *
  * @htmlonly
  * <a href="main.html" target="_top">View documentation without frames</a><br>
  * <a href="index.html" target="_top">View documentation with frames</a><br>
  * @endhtmlonly
  */
-/* @{ */
 
 /**
+ * @brief Global callback space
  * @hideinitializer
+ * @ingroup globus_callback_spaces
  *
+ * @details
  * The 'global' space handle.
  *
  * This is the default space handle implied if no spaces are 
@@ -643,8 +707,10 @@ globus_callback_was_restarted();
 #define GLOBUS_CALLBACK_GLOBAL_SPACE -2
 
 /**
- * Callback space behaviors describe how a space behaves.
+ * @brief Callback space behaviors describe how a space behaves.
+ * @ingroup globus_callback_spaces
  *
+ * @details
  * In a non-threaded build all spaces exhibit a
  * behavior == _BEHAVIOR_SINGLE.  Setting a specific behavior in this case
  * is ignored.
@@ -685,8 +751,10 @@ typedef enum
 } globus_callback_space_behavior_t;
 
 /**
- * Initialize a user space
+ * @brief Initialize a user space
+ * @ingroup globus_callback_spaces
  *
+ * @details
  * This creates a user space.
  *
  * @param space
@@ -718,8 +786,10 @@ globus_callback_space_init(
     globus_callback_space_attr_t        attr);
 
 /**
- * Take a reference to a space
+ * @brief Take a reference to a space
+ * @ingroup globus_callback_spaces
  *
+ * @details
  * A library which has been 'given' a space to provide callbacks on would use
  * this to take a reference on the user's space.  This prevents mayhem should
  * a user destroy a space before the library is done with it.  This reference
@@ -737,8 +807,10 @@ globus_callback_space_reference(
     globus_callback_space_t             space);
 
 /**
- * Destroy a reference to a user space
+ * @brief Destroy a reference to a user space
+ * @ingroup globus_callback_spaces
  *
+ * @details
  * This will destroy a reference to a previously initialized space.  Space will
  * not actually be destroyed until all callbacks registered with this space 
  * have been run and unregistered (if the user has a handle to that callback)
@@ -762,8 +834,10 @@ globus_callback_space_destroy(
     globus_callback_space_t             space);
 
 /**
- * Initialize a space attr.
+ * @brief Initialize a space attr
+ * @ingroup globus_callback_spaces
  *
+ * @details
  * Currently, the only attr to set is the behavior.  The default behavior
  * associated with this attr is GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE
  *
@@ -781,8 +855,9 @@ globus_callback_space_attr_init(
     globus_callback_space_attr_t *      attr);
 
 /**
- * Destroy a space attr.
- *
+ * @brief Destroy a space attr
+ * @ingroup globus_callback_spaces
+ * @details
  * @param attr
  *        attr to destroy, previously initialized with 
  *        globus_callback_space_attr_init()
@@ -798,7 +873,8 @@ globus_callback_space_attr_destroy(
     globus_callback_space_attr_t        attr);
 
 /**
- * Set the behavior of a space
+ * @brief Set the behavior of a space
+ * @ingroup globus_callback_spaces
  *
  * @param attr
  *        attr to associate behavior with
@@ -818,8 +894,11 @@ globus_callback_space_attr_set_behavior(
     globus_callback_space_behavior_t    behavior);
 
 /**
- * Get the behavior associated with an attr
+ * @brief Get the behavior associated with an attr
  *
+ * @ingroup globus_callback_spaces
+ *
+ * @details
  * Note: for a non-threaded build, this will always pass back a behavior ==
  * GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE.
  *
@@ -839,7 +918,8 @@ globus_callback_space_attr_get_behavior(
     globus_callback_space_behavior_t *  behavior);
 
 /**
- * Retrieve the space of a currently running callback
+ * @brief Retrieve the space of a currently running callback
+ * @ingroup globus_callback_spaces
  *
  * @param space
  *        storage for the handle to the space currently running
@@ -854,7 +934,8 @@ globus_callback_space_get(
     globus_callback_space_t *           space);
 
 /**
- * Retrieve the current nesting level of a space
+ * @brief Retrieve the current nesting level of a space
+ * @ingroup globus_callback_spaces
  *
  * @param space
  *        The space to query.
@@ -868,7 +949,8 @@ globus_callback_space_get_depth(
     globus_callback_space_t             space);
 
 /**
- * See if the specified space is a single threaded behavior space 
+ * @brief See if the specified space is a single threaded behavior space 
+ * @ingroup globus_callback_spaces
  *
  * @param space
  *        the space to query
@@ -881,7 +963,6 @@ globus_bool_t
 globus_callback_space_is_single(
     globus_callback_space_t             space);
 
-/* @} */
 
 /**
  * @defgroup globus_callback_signal Globus Callback Signal Handling
@@ -891,11 +972,12 @@ globus_callback_space_is_single(
  * <a href="index.html" target="_top">View documentation with frames</a><br>
  * @endhtmlonly
  */
-/* @{ */
 
 /**
  * @hideinitializer
+ * @ingroup globus_callback_signal
  * 
+ * @details
  * Use this to trap interrupts (SIGINT on unix).  In the future, this will
  * also map to handle ctrl-C on win32.
  */
@@ -906,7 +988,10 @@ globus_callback_space_is_single(
 #endif
 
 /**
- * Fire a callback when the specified signal is received.
+ * @brief Fire a callback when the specified signal is received.
+ * @ingroup globus_callback_signal
+ * 
+ * @details
  * Note that there is a tiny delay between the time this call returns
  * and the signal is actually handled by this library.  It is likely that, if
  * the signal was received the instant the call returned, it will be lost
@@ -946,8 +1031,9 @@ globus_callback_space_register_signal_handler(
     globus_callback_space_t             space);
 
 /**
- * Unregister a signal handling callback
- *
+ * @brief Unregister a signal handling callback
+ * @ingroup globus_callback_signal
+ * 
  * @param signum
  *        The signal to unregister.
  *
@@ -975,8 +1061,10 @@ globus_callback_unregister_signal_handler(
     void *                              unreg_arg);
 
 /**
- * Register a wakeup handler with callback library
+ * @brief Register a wakeup handler with callback library
+ * @ingroup globus_callback_signal
  * 
+ * @details
  * This is really only needed in non-threaded builds, but for cross builds
  * should be used everywhere that a callback may sleep for an extended period
  * of time.
@@ -1004,10 +1092,6 @@ globus_callback_add_wakeup_handler(
     void                                (*wakeup)(void *),
     void *                              user_arg);
 
-/* @} */
-
 EXTERN_C_END
-
-/* @} */
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_CALLBACK */

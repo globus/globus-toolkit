@@ -52,7 +52,10 @@ void
  * 
  *  @param  handle_table
  *          the table of unique handles we want to use.
- *
+ *  @param  destructor
+ *          Function to call to free the data associated with
+ *          a handle when the handle's reference count reaches
+ *          0 or the handle table is destroyed.
  */
 int
 globus_handle_table_init(
@@ -72,7 +75,7 @@ globus_handle_table_destroy(
  *  @param  handle_table
  *          the table of unique handles we want to use.
  *          
- *  @param  value
+ *  @param  datum
  *          the piece of memory to reference count
  * 
  *  @param  initial_refs
@@ -109,6 +112,8 @@ globus_handle_table_increment_reference(
  *          
  *  @param  handle       
  *          the handle that we want to increment
+ *  @param  inc
+ *          the number of references to add the the handle
  * 
  * Returns:  GLOBUS_TRUE if the handle is still referenced.
  *

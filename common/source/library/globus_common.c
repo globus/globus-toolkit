@@ -38,7 +38,7 @@ CVS Information:
 #include "globus_module.h"
 #include "globus_error.h"
 #include "globus_callback.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 #include "globus_extension.h"
 #include "version.h"
 

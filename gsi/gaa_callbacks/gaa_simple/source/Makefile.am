@@ -17,8 +17,8 @@ Sources = \
 	xml_sig.h \
 	gaa_simple.h 
 
-INCLUDES = $(GPT_INCLUDES) -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1
-#-I/usr/include/libxml2 -I/usr/local/include/xmlsec1
+INCLUDES = $(GPT_INCLUDES) $(XMLSEC1_CFLAGS)
+
 
 flavorinclude_HEADERS= \
 	gaa_simple.h saml.h
@@ -27,9 +27,9 @@ lib_LTLIBRARIES = libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) $(XMLSEC1_LDFLAGS)
 
-libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) $(XMLSEC1_LIBS)
 
 #xml_sig_test_SOURCES = xml_sig_test.c
 #xml_sig_test_LDFLAGS = $(GPT_LDFLAGS)

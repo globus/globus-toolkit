@@ -95,7 +95,7 @@ extern const char * _globus_func_name;
 #endif
 
 #if defined(TARGET_ARCH_WIN32)
-#   include <Winsock2.h>
+#   include <winsock2.h>
 #   include <process.h>
 #   include <io.h>
 #   include <sys/timeb.h>
@@ -205,7 +205,7 @@ extern void rewinddir(DIR *dir);
 #ifndef HAVE_INET_PTON
 #define HAVE_INET_PTON 1
 #define GLOBUS_IMPLEMENT_INET_PTON 1
-int inet_pton(int af, const char *src, void *dst);
+extern int inet_pton(int af, const char *src, void *dst);
 #endif /* !HAVE_INET_PTON */
 
 #ifndef HAVE_INET_ADDR
@@ -279,30 +279,6 @@ extern uint32_t inet_addr(const char * cp);
 #endif
 #endif
 
-#ifdef HAVE_PTHREAD
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_pthreads.h"
-#endif
-
-#ifdef HAVE_SOLARISTHREADS
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_solaristhreads.h"
-#endif
-
-#ifdef HAVE_EXTERNALTHREADS
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_external.h"
-#endif
-
-#ifdef HAVE_SPROC
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_sproc.h"
-#endif
-
-#ifdef HAVE_WINDOWS_THREADS
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_windows.h"
-#endif
-
-#ifdef BUILD_LITE
-#   define GLOBUS_THREAD_INCLUDE "globus_thread_none.h"
-#endif
-
 #if !defined(TARGET_ARCH_WIN32)
     typedef size_t                                      globus_size_t;
     typedef ssize_t                                     globus_ssize_t;
@@ -329,8 +305,8 @@ extern uint32_t inet_addr(const char * cp);
 /* POSIX error code remapping */
 #ifdef TARGET_ARCH_WIN32
 	#define EWOULDBLOCK EAGAIN
-	#define ETIMEDOUT 145 /* according to POSIX */
-	#define EINPROGRESS 150 /* according to POSIX */
+	#define ETIMEDOUT WSAETIMEDOUT
+	#define EINPROGRESS WSAEINPROGRESS
 #endif
 
 #if defined(HAVE_INTTYPES_H) && !defined(TARGET_ARCH_CYGWIN)

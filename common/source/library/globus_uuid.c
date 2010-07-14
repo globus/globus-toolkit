@@ -17,15 +17,15 @@
 #include "globus_common_include.h"
 #include "globus_libc.h"
 #ifdef WIN32
-#include <Iptypes.h>
-#include <Iphlpapi.h>
+#include <iptypes.h>
+#include <iphlpapi.h>
 typedef unsigned __int64 uint64_t;
 typedef unsigned short uint16_t;
 typedef unsigned char uint8_t;
 #endif
 #include "globus_uuid.h"
 #include "globus_hashtable.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>

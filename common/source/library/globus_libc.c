@@ -80,11 +80,13 @@ globus_l_libc_copy_hostent_data_to_buffer(
     char *                              buffer,
     size_t                              buflen);
 
+#if !defined(TARGET_ARCH_WIN32)
 static void
 globus_l_libc_copy_pwd_data_to_buffer(
     struct passwd *                     pwd,
     char *                              buffer,
     size_t                              buflen);
+#endif
 
 /******************************************************************************
 Function: globus_libc_lock()
@@ -212,559 +214,6 @@ globus_libc_setuid(
 }
 
 
-#if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
-
-/******************************************************************************
-Function: globus_libc_open()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_open
-int
-globus_libc_open(char *path,
-		 int flags,
-		 ... /*int mode*/)
-{
-    va_list ap;
-    int rc;
-    int save_errno;
-    int mode=0;
-
-    globus_libc_lock();
-
-
-    if(flags & O_CREAT)
-    {
-#       ifdef HAVE_STDARG_H
-        {
-            va_start(ap, flags);
-	    }
-#       else
-	    {
-            va_start(ap);
-	    }
-#       endif
-        mode = va_arg(ap, int);
-        va_end(ap);
-    }
-
-    rc = open(path, flags, mode);
-    save_errno = errno;
-    /* Should set the fd to non-blocking here */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_open() */
-
-/******************************************************************************
-Function: globus_libc_close()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_close
-int
-globus_libc_close(int fd)
-{
-    int rc;
-    int save_errno;
-    globus_libc_lock();
-    rc = close(fd);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_close() */
-
-
-/******************************************************************************
-Function: globus_libc_read()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_read
-int
-globus_libc_read(int fd,
-		 char *buf,
-		 int nbytes)
-{
-    int rc;
-    int save_errno;
-    globus_libc_lock();
-    rc = read(fd, buf, nbytes);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_read() */
-
-/******************************************************************************
-Function: globus_libc_writev()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_writev
-int
-globus_libc_writev(
-    int					fd,
-    struct iovec *			iov,
-    int					iovcnt)
-{
-    int					rc;
-    int					save_errno;
-
-#if defined(HAVE_WRITEV)
-    globus_libc_lock();
-    rc = writev(fd, iov, iovcnt);
-    save_errno = errno;
-
-
-    globus_libc_unlock();
-
-    errno = save_errno;
-
-    return rc;
-#else
-    return globus_libc_write(fd,
-		             iov[0].iov_base,
-		             iov[0].iov_len);
-#endif
-} /* globus_libc_writev() */
-
-/******************************************************************************
-Function: globus_libc_write()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_write
-int
-globus_libc_write(int fd,
-		  char *buf,
-		  int nbytes)
-{
-    int rc;
-    int save_errno;
-    globus_libc_lock();
-    rc = write(fd, buf, nbytes);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_write() */
-
-/******************************************************************************
-Function: globus_libc_umask()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_umask
-mode_t
-globus_libc_umask(mode_t mask)
-{
-    mode_t oldmask;
-    globus_libc_lock();
-    oldmask = umask(mask);
-    globus_libc_unlock();
-    return(oldmask);
-} /* globus_libc_umask */
-
-/******************************************************************************
-Function: globus_libc_fstat()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_fstat
-int
-globus_libc_fstat(int fd,
-		  struct stat *buf)
-{
-    int rc;
-    int save_errno;
-    globus_libc_lock();
-    rc = fstat(fd, buf);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_fstat() */
-
-#endif /* !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE) */
-
-
-#if !defined(BUILD_LITE)
-/******************************************************************************
-Function: globus_libc_malloc()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_malloc
-void *
-globus_libc_malloc(
-    size_t					bytes)
-{
-    globus_bool_t				done;
-    int						save_errno;
-    void *					ptr;
-
-    do
-    {
-		globus_libc_lock();
-		{
-			ptr = (void *) malloc(bytes);
-			save_errno = errno;
-		}
-		globus_libc_unlock();
-
-		if (ptr == GLOBUS_NULL &&
-			(save_errno == EINTR ||
-			save_errno == EAGAIN ||
-			save_errno == EWOULDBLOCK))
-		{
-			done = GLOBUS_FALSE;
-			globus_thread_yield();
-		}
-		else
-		{
-			done = GLOBUS_TRUE;
-		}
-    }
-	while (!done);
-
-    errno = save_errno;
-    return(ptr);
-}
-/* globus_libc_malloc() */
-
-/******************************************************************************
-Function: globus_libc_realloc()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_realloc
-void *
-globus_libc_realloc(void *ptr,
-		    size_t bytes)
-{
-    int save_errno;
-
-    globus_libc_lock();
-    ptr = (void *) realloc(ptr, bytes);
-    save_errno = errno;
-
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(ptr);
-} /* globus_libc_realloc() */
-
-/******************************************************************************
-Function: globus_libc_calloc()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_calloc
-void *
-globus_libc_calloc(size_t nelem,
-		   size_t elsize)
-{
-    int save_errno;
-    void *ptr;
-
-    globus_libc_lock();
-    ptr = (void *) calloc(nelem, elsize);
-    save_errno = errno;
-
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(ptr);
-} /* globus_libc_calloc() */
-
-/******************************************************************************
-Function: globus_libc_free()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_free
-void
-globus_libc_free(void *ptr)
-{
-    int save_errno;
-
-    globus_libc_lock();
-    free (ptr);
-    save_errno = errno;
-
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-
-    return;
-} /* globus_libc_free() */
-
-/******************************************************************************
-Function: globus_libc_alloca()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_alloca
-void *
-globus_libc_alloca(size_t bytes)
-{
-    int save_errno;
-    void *ptr;
-
-    globus_libc_lock();
-    ptr = (void *) alloca(bytes);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(ptr);
-} /* globus_libc_alloca() */
-
-/******************************************************************************
-Function: globus_libc_printf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_printf
-int
-globus_libc_printf(const char *format, ...)
-{
-    va_list ap;
-    int rc;
-    int save_errno;
-
-    globus_libc_lock();
-#ifdef HAVE_STDARG_H
-    va_start(ap, format);
-#else
-    va_start(ap);
-#endif
-
-    rc = vprintf(format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_printf() */
-
-/******************************************************************************
-Function: globus_libc_fprintf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_fprintf
-int
-globus_libc_fprintf(FILE *strm, const char *format, ...)
-{
-    va_list ap;
-    int rc;
-    int save_errno;
-
-    if(strm == GLOBUS_NULL)
-    {
-	return -1;
-    }
-    globus_libc_lock();
-
-#ifdef HAVE_STDARG_H
-    va_start(ap, format);
-#else
-    va_start(ap);
-#endif
-
-    rc = vfprintf(strm, format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_fprintf() */
-
-/******************************************************************************
-Function: globus_libc_sprintf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_sprintf
-int
-globus_libc_sprintf(char *s, const char *format, ...)
-{
-    va_list ap;
-    int rc;
-    int save_errno;
-
-    globus_libc_lock();
-
-#ifdef HAVE_STDARG_H
-    va_start(ap, format);
-#else
-    va_start(ap);
-#endif
-
-    rc = vsprintf(s, format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_sprintf() */
-
-/******************************************************************************
-Function: globus_libc_vprintf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_vprintf
-int
-globus_libc_vprintf(const char *format, va_list ap)
-{
-    int rc;
-    int save_errno;
-
-    globus_libc_lock();
-
-    rc = vprintf(format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_vprintf() */
-
-/******************************************************************************
-Function: globus_libc_vfprintf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_vfprintf
-extern int
-globus_libc_vfprintf(FILE *strm, const char *format, va_list ap)
-{
-    int rc;
-    int save_errno;
-
-    if(strm == GLOBUS_NULL)
-    {
-	return -1;
-    }
-    globus_libc_lock();
-
-    rc = vfprintf(strm, format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_vfprintf() */
-
-/******************************************************************************
-Function: globus_libc_vsprintf()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-#undef globus_libc_vsprintf
-int
-globus_libc_vsprintf(char *s, const char *format, va_list ap)
-{
-    int rc;
-    int save_errno;
-
-    globus_libc_lock();
-
-    rc = vsprintf(s, format, ap);
-    save_errno=errno;
-
-    globus_libc_unlock();
-
-    errno=save_errno;
-    return rc;
-} /* globus_libc_vsprintf() */
-
-#endif /* !defined(BUILD_LITE)*/
 
 static
 int
@@ -807,6 +256,7 @@ globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
     }
 }
 
+#if !HAVE_SNPRINTF
 /******************************************************************************
 Function: globus_libc_snprintf()
 
@@ -826,11 +276,7 @@ globus_libc_snprintf(char *s, size_t n, const char *format, ...)
 
     globus_libc_lock();
 
-#ifdef HAVE_STDARG_H
     va_start(ap, format);
-#else
-    va_start(ap);
-#endif
 
 #if defined(HAVE_VSNPRINTF)
     rc = vsnprintf(s, n, format, ap);
@@ -844,7 +290,9 @@ globus_libc_snprintf(char *s, size_t n, const char *format, ...)
     errno=save_errno;
     return rc;
 } /* globus_libc_snprintf() */
+#endif /* !HAVE_SNPRINTF */
 
+#if !HAVE_VSNPRINTF
 /******************************************************************************
 Function: globus_libc_vsnprintf()
 
@@ -863,11 +311,7 @@ globus_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
 
     globus_libc_lock();
 
-#if defined(HAVE_VSNPRINTF)
-    rc = vsnprintf(s, n, format, ap);
-#else
     rc = globus_l_libc_vsnprintf(s, n, format, ap);
-#endif
     save_errno=errno;
 
     globus_libc_unlock();
@@ -875,6 +319,7 @@ globus_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
     errno=save_errno;
     return rc;
 } /* globus_libc_vsnprintf() */
+#endif
 
 /*
  * Print a globus_off_t to a string. The format for the off_t depends
@@ -1284,7 +729,7 @@ globus_libc_fork(void)
 #if HAVE_FORK
     int child;
 
-    globus_thread_prefork();
+    //globus_thread_prefork();
 
 #   if defined(HAVE_FORK1)
     {
@@ -1296,7 +741,7 @@ globus_libc_fork(void)
     }
 #   endif
 
-    globus_thread_postfork();
+    //globus_thread_postfork();
 
     return child;
 #else

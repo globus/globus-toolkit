@@ -17,6 +17,7 @@
 
 #include "config.h"
 #include "globus_common.h"
+#ifndef TARGET_ARCH_WIN32
 #include "globus_xio_system.h"
 #include "globus_i_xio_system_common.h"
 #include "globus_xio_driver.h"
@@ -1355,11 +1356,11 @@ globus_l_xio_system_poll(
         GlobusXIOSystemDebugPrintf(
             GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
             (_XIOSL("[%s] After select\n"), _xio_name));
-        
+
         globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
         {
             globus_l_xio_system_select_active = GLOBUS_FALSE;
-            
+
             if(nready > 0)
             {
 #ifndef TARGET_ARCH_NETOS
@@ -2578,3 +2579,4 @@ error_close:
     return globus_l_xio_system_close(socket);
 #endif
 }
+#endif /*TARGET_ARCH_WIN32*/

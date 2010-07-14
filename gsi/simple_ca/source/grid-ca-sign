@@ -297,7 +297,11 @@ if test ${openssl_result} != 0; then
     already_signed2=`${GLOBUS_SH_GREP-grep} \
                         "unique_subject = \"yes\"" \
                         ${tmp_output}`
-    if test -n "${already_signed}" || test -n "${already_signed2}"; then
+    already_signed3=`${GLOBUS_SH_GREP-grep} \
+                        "TXT_DB error number 2" \
+                        ${tmp_output}`
+    if test -n "${already_signed}" || test -n "${already_signed2}" \
+                                   || test -n "${already_signed3}"; then
 
         subj_tmp_output=/tmp/tmp_output.$$
         ${openssl_cmd} req -noout -in ${INPUT_REQ_FILE} \

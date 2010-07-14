@@ -175,6 +175,27 @@ main(
         exit(1);
     }
 
+    if (cred != GSS_C_NO_CREDENTIAL)
+    {
+        unsigned long hash;
+        char * newtag;
+
+        rc = globus_gram_gsi_get_dn_hash(
+                cred,
+                &hash);
+        if (rc == GLOBUS_SUCCESS)
+        {
+            newtag = globus_common_create_string("%s%s%lx",
+                    strcmp(config.service_tag, "untagged") == 0
+                            ? "" : config.service_tag,
+                    strcmp(config.service_tag, "untagged") == 0
+                            ? "" : ".",
+                    hash);
+            free(config.service_tag);
+            config.service_tag = newtag;
+        }
+    }
+
     /*
      * Remove delegated proxy from disk.
      */
@@ -283,6 +304,7 @@ main(
                     forked_starter = 0;
                 }
                 rc = globus_gram_job_manager_gsi_write_credential(
+                        NULL,
                         cred,
                         manager.cred_path);
 
@@ -343,7 +365,8 @@ main(
             /* Start off the SEG if we need it.
              */
             if (config.seg_module != NULL || 
-                strcmp(config.jobmanager_type, "fork") == 0)
+                strcmp(config.jobmanager_type, "fork") == 0 ||
+                strcmp(config.jobmanager_type, "condor") == 0)
             {
                 rc = globus_gram_job_manager_init_seg(&manager);
 

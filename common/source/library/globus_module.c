@@ -39,7 +39,7 @@ CVS Information:
 #include "globus_memory.h"
 #include "globus_hashtable.h"
 #include "globus_libc.h"
-#include GLOBUS_THREAD_INCLUDE
+#include "globus_thread.h"
 
 /******************************************************************************
 			       Type definitions

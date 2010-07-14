@@ -51,7 +51,7 @@ globus_l_callback_deactivate(void);
 
 #include "version.h"
 
-globus_module_descriptor_t              globus_i_callback_module =
+globus_module_descriptor_t              globus_i_callback_module_nonthreaded =
 {
     "globus_callback_nonthreaded",
     globus_l_callback_activate,
@@ -568,7 +568,7 @@ globus_l_callback_register(
  */
 
 globus_result_t
-globus_callback_space_register_oneshot(
+globus_callback_space_register_oneshot_nothreads(
     globus_callback_handle_t *          callback_handle,
     const globus_reltime_t *            delay_time,
     globus_callback_func_t              callback_func,
@@ -615,7 +615,7 @@ globus_callback_space_register_oneshot(
  */
 
 globus_result_t
-globus_callback_space_register_periodic(
+globus_callback_space_register_periodic_nothreads(
     globus_callback_handle_t *          callback_handle,
     const globus_reltime_t *            delay_time,
     const globus_reltime_t *            period,
@@ -709,7 +709,7 @@ globus_l_callback_cancel_kickout_cb(
  */
 
 globus_result_t
-globus_callback_unregister(
+globus_callback_unregister_nothreads(
     globus_callback_handle_t            callback_handle,
     globus_callback_func_t              unregister_callback,
     void *                              unreg_args,
@@ -829,7 +829,7 @@ globus_callback_unregister(
 }
 
 globus_result_t
-globus_callback_adjust_oneshot(
+globus_callback_adjust_oneshot_nothreads(
     globus_callback_handle_t            callback_handle,
     const globus_reltime_t *            new_delay)
 {
@@ -917,7 +917,7 @@ globus_callback_adjust_oneshot(
  */
 
 globus_result_t
-globus_callback_adjust_period(
+globus_callback_adjust_period_nothreads(
     globus_callback_handle_t            callback_handle,
     const globus_reltime_t *            new_period)
 {
@@ -1068,7 +1068,7 @@ globus_callback_adjust_period(
  */
 
 globus_result_t
-globus_callback_space_init(
+globus_callback_space_init_nothreads(
     globus_callback_space_t *           space,
     globus_callback_space_attr_t        attr)
 {
@@ -1104,7 +1104,7 @@ globus_callback_space_init(
 }
 
 globus_result_t
-globus_callback_space_reference(
+globus_callback_space_reference_nothreads(
     globus_callback_space_t             space)
 {
     globus_bool_t                       in_table;
@@ -1135,7 +1135,7 @@ globus_callback_space_reference(
  */
 
 globus_result_t
-globus_callback_space_destroy(
+globus_callback_space_destroy_nothreads(
     globus_callback_space_t             space)
 {
     globus_l_callback_space_t *         i_space;
@@ -1168,21 +1168,21 @@ globus_callback_space_destroy(
  */
 
 globus_result_t
-globus_callback_space_attr_init(
+globus_callback_space_attr_init_nothreads(
     globus_callback_space_attr_t *      attr)
 {
     return GLOBUS_SUCCESS;
 }
 
 globus_result_t
-globus_callback_space_attr_destroy(
+globus_callback_space_attr_destroy_nothreads(
     globus_callback_space_attr_t        attr)
 {
     return GLOBUS_SUCCESS;
 }
 
 globus_result_t
-globus_callback_space_attr_set_behavior(
+globus_callback_space_attr_set_behavior_nothreads(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t    behavior)
 {
@@ -1190,7 +1190,7 @@ globus_callback_space_attr_set_behavior(
 }
 
 globus_result_t
-globus_callback_space_attr_get_behavior(
+globus_callback_space_attr_get_behavior_nothreads(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t *  behavior)
 {
@@ -1340,7 +1340,7 @@ globus_l_callback_handle_signals(void)
  *
  */
 void
-globus_callback_space_poll(
+globus_callback_space_poll_nothreads(
     const globus_abstime_t *            timestop,
     globus_callback_space_t             space)
 {
@@ -1577,7 +1577,7 @@ globus_callback_space_poll(
 }
 
 void
-globus_callback_signal_poll()
+globus_callback_signal_poll_nothreads(void)
 {
     if(globus_l_callback_restart_info)
     {
@@ -1591,7 +1591,7 @@ globus_callback_signal_poll()
  * allow a user to get the current space from within a callback
  */
 globus_result_t
-globus_callback_space_get(
+globus_callback_space_get_nothreads(
     globus_callback_space_t *           space)
 {
     if(!space)
@@ -1617,7 +1617,7 @@ globus_callback_space_get(
  * allow a user to get the current nesting level of a space
  */
 int
-globus_callback_space_get_depth(
+globus_callback_space_get_depth_nothreads(
     globus_callback_space_t             space)
 {
     globus_l_callback_space_t *         i_space;
@@ -1641,7 +1641,7 @@ globus_callback_space_get_depth(
 }
 
 globus_bool_t
-globus_callback_space_is_single(
+globus_callback_space_is_single_nothreads(
     globus_callback_space_t             space)
 {
     return GLOBUS_TRUE;
@@ -1654,7 +1654,7 @@ globus_callback_space_is_single(
  */
 
 globus_bool_t
-globus_callback_get_timeout(
+globus_callback_get_timeout_nothreads(
     globus_reltime_t *                  time_left)
 {
     globus_l_callback_space_t *         i_space;
@@ -1739,7 +1739,7 @@ globus_callback_get_timeout(
 }
 
 globus_bool_t
-globus_callback_has_time_expired()
+globus_callback_has_time_expired_nothreads()
 {
     globus_reltime_t                    time_left;
     
@@ -1747,7 +1747,7 @@ globus_callback_has_time_expired()
 }
 
 globus_bool_t
-globus_callback_was_restarted()
+globus_callback_was_restarted_nothreads()
 {
     return globus_l_callback_restart_info
         ? globus_l_callback_restart_info->restarted
@@ -1863,7 +1863,7 @@ globus_l_callback_signal_handler(
 #endif /* HAVE_SIGACTION */
 
 globus_result_t
-globus_callback_space_register_signal_handler(
+globus_callback_space_register_signal_handler_nothreads(
     int                                 signum,
     globus_bool_t                       persist,
     globus_callback_func_t              callback_func,
@@ -1987,7 +1987,7 @@ error_params:
 }
 
 globus_result_t
-globus_callback_unregister_signal_handler(
+globus_callback_unregister_signal_handler_nothreads(
     int                                 signum,
     globus_callback_func_t              unregister_callback,
     void *                              unreg_arg)
@@ -2046,7 +2046,7 @@ error_params:
 }
 
 void
-globus_callback_add_wakeup_handler(
+globus_callback_add_wakeup_handler_nothreads(
     void                                (*wakeup)(void *),
     void *                              user_arg)
 {

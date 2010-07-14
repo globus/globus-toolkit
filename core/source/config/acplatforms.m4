@@ -105,6 +105,10 @@ case "$host" in
     AC_DEFINE(TARGET_ARCH_NETOS)
     AC_DEFINE(TARGET_ARCH_ARM)
   ;;
+  *mingw32* )
+    AC_DEFINE(TARGET_ARCH_WIN32)
+    AC_DEFINE(TARGET_ARCH_X86)
+  ;;
   * )
 	echo "platform not configured with TARGET_ARCH_*"
   ;;

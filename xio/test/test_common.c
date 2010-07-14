@@ -505,8 +505,9 @@ main(
 
     globus_hashtable_destroy(&globus_l_test_hash);
 
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_extension_deactivate("globus_xio_test_drivers");
-    globus_module_deactivate_all();
 
     return rc;
 }

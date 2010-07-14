@@ -253,7 +253,6 @@ globus_gram_job_manager_init(
         goto allow_attach_failed;
     }
 
-    GlobusGramJobManagerLock(manager);
     if (cred != GSS_C_NO_CREDENTIAL)
     {
         manager->cred_expiration_time = 1;
@@ -753,6 +752,7 @@ globus_l_gram_job_manager_add_ref_stub(
     (*ref)->exit_code = request->exit_code;
     (*ref)->status_count = 0;
     (*ref)->loaded_only = GLOBUS_FALSE;
+    (*ref)->seg_last_timestamp = request ? request->seg_last_timestamp : 0;
 
     (*ref)->key = strdup(key);
     if ((*ref)->key == NULL)
@@ -1209,7 +1209,8 @@ globus_gram_job_manager_register_job_id(
             request->job_contact_path,
             job_id);
 
-    if (manager->config->seg_module != NULL)
+    if (manager->config->seg_module != NULL || 
+        strcmp(manager->config->jobmanager_type, "condor") == 0)
     {
         /* If we're using the SEG, split on /,/ so that seg events can be
          * matched to the relevant job requests
@@ -2260,7 +2261,8 @@ globus_gram_job_manager_request_load_all(
              * the job's LRM job id 
              */
             if ((request->config->seg_module != NULL ||
-                 strcmp(request->config->jobmanager_type, "fork") == 0) &&
+                 strcmp(request->config->jobmanager_type, "fork") == 0 ||
+                 strcmp(request->config->jobmanager_type, "condor") == 0) &&
                 (request->restart_state ==
                         GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
                  request->restart_state ==

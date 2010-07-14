@@ -275,7 +275,9 @@ globus_l_gram_job_manager_state_machine(
 
             if(!request->dry_run)
             {
-                globus_gram_job_manager_contact_state_callback(request);
+                globus_gram_job_manager_contact_state_callback(
+                        request,
+                        GLOBUS_FALSE);
             }
 
             rc = globus_gram_job_manager_script_stage_in(request);
@@ -453,7 +455,7 @@ globus_l_gram_job_manager_state_machine(
             /* Send job state callbacks if necessary */
             if(request->unsent_status_change)
             {
-                globus_gram_job_manager_contact_state_callback(request);
+                globus_gram_job_manager_contact_state_callback(request, GLOBUS_FALSE);
                 request->unsent_status_change = GLOBUS_FALSE;
             }
 
@@ -510,7 +512,8 @@ globus_l_gram_job_manager_state_machine(
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 
         if (request->config->seg_module == NULL &&
-            strcmp(request->config->jobmanager_type, "fork") != 0)
+            strcmp(request->config->jobmanager_type, "fork") != 0 &&
+            strcmp(request->config->jobmanager_type, "condor") != 0)
         {
             rc = globus_gram_job_manager_script_poll(request);
         }
@@ -570,139 +573,7 @@ globus_l_gram_job_manager_state_machine(
          */
         query = globus_fifo_peek(&request->pending_queries);
 
-
-        if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL &&
-            query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE)
-        {
-
-            if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
-            {
-                char * tmp_str;
-
-                tmp_str = globus_gram_prepare_log_string(query->signal_arg);
-
-                globus_gram_job_manager_request_log(
-                    request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.state_machine.info "
-                    "level=TRACE "
-                    "gramid=%s "
-                    "query_type=%s "
-                    "rsl=\"%s\" "
-                    "\n",
-                    request->job_contact_path,
-                    "stdio_update",
-                    tmp_str ? tmp_str : "");
-                if (tmp_str)
-                {
-                    free(tmp_str);
-                }
-            }
-
-	    query->rsl = globus_rsl_parse(query->signal_arg);
-	    if(!query->rsl)
-	    {
-                char * tmp_str;
-
-                tmp_str = globus_gram_prepare_log_string(query->signal_arg);
-
-		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = next_state;
-
-                globus_gram_job_manager_request_log(
-                    request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.state_machine.info "
-                    "level=ERROR "
-                    "gramid=%s "
-                    "query_type=%s "
-                    "rsl=\"%s\" "
-                    "msg=%s "
-                    "status=%d "
-                    "reason=\"%s\" "
-                    "\n",
-                    request->job_contact_path,
-                    "stdio_update",
-                    tmp_str ? tmp_str : "",
-                    "Error parsing query rsl",
-                    -rc,
-                    globus_gram_protocol_error_string(query->failure_code));
-
-                if (tmp_str)
-                {
-                    free(tmp_str);
-                }
-		goto error_out;
-	    }
-	    rc = globus_rsl_assist_attributes_canonicalize(query->rsl);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-                char * tmp_str;
-
-                tmp_str = globus_gram_prepare_log_string(query->signal_arg);
-
-		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = next_state;
-
-                globus_gram_job_manager_request_log(
-                    request,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.state_machine.end"
-                    "level=ERROR "
-                    "query_type=%s "
-                    "gramid=%s "
-                    "rsl=\"%s\" "
-                    "msg=\"%s\" "
-                    "status=%d "
-                    "reason=\"%s\" "
-                    "\n",
-                    "stdio_update",
-                    request->job_contact_path,
-                    tmp_str ? tmp_str : "",
-                    "Error canonicalizing RSL",
-                    -query->failure_code,
-                    globus_gram_protocol_error_string(query->failure_code));
-
-                if (tmp_str)
-                {
-                    free(tmp_str);
-                }
-
-		goto error_out;
-	    }
-
-	    rc = globus_gram_job_manager_validate_rsl(
-		    request,
-                    query->rsl,
-		    GLOBUS_GRAM_VALIDATE_STDIO_UPDATE);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = next_state;
-		break;
-	    }
-	    rc = globus_rsl_eval(query->rsl, &request->symbol_table);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		query->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-	        request->jobmanager_state = next_state;
-		break;
-	    }
-
-            rc = globus_i_gram_request_stdio_update(
-                    request,
-                    query->rsl);
-
-		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = next_state;
-		break;
-
-            request->jobmanager_state = next_state;
-            globus_i_gram_remote_io_url_update(request);
-	    break;
-        }
-        else if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
+        if (query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
         {
             rc = globus_gram_job_manager_script_signal(
                     request,
@@ -875,7 +746,9 @@ globus_l_gram_job_manager_state_machine(
 
             if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT)
             {
-                globus_gram_job_manager_contact_state_callback(request);
+                globus_gram_job_manager_contact_state_callback(
+                        request,
+                        GLOBUS_FALSE);
                 request->unsent_status_change = GLOBUS_FALSE;
             }
         }
@@ -970,7 +843,8 @@ globus_l_gram_job_manager_state_machine(
             request->jobmanager_state =
                 GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
         }
-        if(globus_gram_job_manager_rsl_need_file_cleanup(request))
+        if(globus_gram_job_manager_rsl_need_file_cleanup(request) ||
+            strcmp(request->config->jobmanager_type, "condor") == 0)
         {
             globus_l_gram_file_cleanup(request);
         }
@@ -1059,7 +933,7 @@ globus_l_gram_job_manager_state_machine(
          * between the time the job request reply is sent and the 
          * job manager has noticed stop or failed
          */
-        globus_gram_job_manager_contact_state_callback(request);
+        globus_gram_job_manager_contact_state_callback(request, GLOBUS_FALSE);
 
         globus_gram_job_manager_state_file_write(request);
 
@@ -1188,6 +1062,10 @@ globus_l_gram_job_manager_state_machine(
                 request->unsent_status_change = GLOBUS_TRUE;
             }
         }
+        else
+        {
+            request->unsent_status_change = GLOBUS_TRUE;
+        }
         break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
@@ -1238,30 +1116,22 @@ globus_l_gram_job_manager_state_machine(
                 request->job_history_status = request->status;
             }
 
-            globus_gram_job_manager_contact_state_callback(request);
-            request->unsent_status_change = GLOBUS_FALSE;
-        }
-
-        /*
-         * If there are no client callbacks then skip the two phase end
-         * commit delay, since there is nobody listening to the state
-         * changes to send the commit.
-         */
-
-        if(request->two_phase_commit != 0 && request->client_contacts)
-        {
-            GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
-
-            rc = globus_gram_job_manager_state_machine_register(
-                    request->manager,
+            /*
+             * If we are doing two-phase_commit, then we will have the 
+             * state machine restarted after the job state callback message
+             * is done being processed.
+             */
+            globus_gram_job_manager_contact_state_callback(
                     request,
-                    &delay_time);
+                    (request->two_phase_commit != 0));
+            request->unsent_status_change = GLOBUS_FALSE;
 
-            if (rc == GLOBUS_SUCCESS)
+            if (request->two_phase_commit != 0)
             {
                 event_registered = GLOBUS_TRUE;
             }
         }
+
         break;
     }
 
@@ -1280,7 +1150,6 @@ globus_l_gram_job_manager_state_machine(
             request->status,
             event_registered ? "true" : "false");
 
-error_out:
     return event_registered;
 }
 /* globus_gram_job_manager_state_machine() */
@@ -1372,6 +1241,7 @@ globus_gram_job_manager_reply(
 
             goto extension_insert_failed;
         }
+        extension = NULL;
     }
 
     extension = globus_gram_protocol_create_extension(
@@ -1421,6 +1291,7 @@ globus_gram_job_manager_reply(
 
             goto extension_insert_failed;
         }
+        extension = NULL;
     }
 
     /* Response to initial job request. */
@@ -2268,7 +2139,7 @@ globus_l_gram_file_cleanup(
 {
     globus_rsl_t *                      relation;
     globus_rsl_value_t *                value_sequence;
-    globus_list_t **                    value_list;
+    globus_list_t *                     value_list;
     globus_rsl_value_t *                value;
     char *                              path;
 
@@ -2287,23 +2158,40 @@ globus_l_gram_file_cleanup(
         goto no_sequence;
     }
 
-    value_list = globus_rsl_value_sequence_get_list_ref(value_sequence);
-    while (!globus_list_empty(*value_list))
+    /*
+     * GRAM-155: Leak in file_clean_up
+     * Old code removed list elements and freed path in the loop, but
+     * neglected to free value. Now all the data is freed in the
+     * globus_rsl_free_recursive() call at the end.
+     */
+    value_list = globus_rsl_value_sequence_get_value_list(value_sequence);
+    while (!globus_list_empty(value_list))
     {
-        value = globus_list_remove(value_list, *value_list);
+        value = globus_list_first(value_list);
+        value_list = globus_list_rest(value_list);
 
         path = globus_rsl_value_literal_get_string(value);
 
         if (path)
         {
-            unlink(path);
-            free(path);
+            remove(path);
         }
     }
 
 no_sequence:
     globus_rsl_free_recursive(relation);
 not_found:
+    /*
+     * GRAM-130: Individual Condor Logs per Job
+     */
+    if (strcmp(request->config->jobmanager_type, "condor") == 0)
+    {
+        char * condor_log = globus_common_create_string(
+                "%s/condor.%s",
+                request->config->job_state_file_dir,
+                request->uniq_id);
+        remove(condor_log);
+    }
     return;
 }
 /* globus_l_gram_file_cleanup() */

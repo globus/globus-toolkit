@@ -216,7 +216,7 @@ globus_xio_driver_finished_open(
          * finish until the stack unwinds
          */
         if(op->blocking && 
-            globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+            GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
         {
             GlobusXIODebugDelayedFinish();
             op->finished_delayed = GLOBUS_TRUE;
@@ -578,7 +578,7 @@ globus_xio_driver_finished_close(
          * finish until the stack unwinds
          */
         if(op->blocking && 
-            globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+            GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
         {
             GlobusXIODebugDelayedFinish();
             op->finished_delayed = GLOBUS_TRUE;
@@ -626,6 +626,7 @@ globus_xio_driver_pass_write(
     globus_xio_driver_t                 driver;
     globus_xio_operation_type_t         deliver_type = 
         GLOBUS_XIO_OPERATION_TYPE_FINISHED;
+    globus_i_xio_handle_t *             handle;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_driver_pass_write);
 
@@ -635,6 +636,7 @@ globus_xio_driver_pass_write(
     my_context = &context->entry[op->ndx];
     op->progress = GLOBUS_TRUE;
     op->block_timeout = GLOBUS_FALSE;
+    handle = op->_op_handle;
 
     globus_assert(op->ndx < op->stack_size);
 
@@ -744,7 +746,7 @@ globus_xio_driver_pass_write(
     }
     else if(destroy_handle)
     {
-
+        globus_i_xio_handle_destroy(handle);
     }
 
     GlobusXIODebugInternalExit();
@@ -817,7 +819,7 @@ globus_xio_driver_finished_write(
              * finish until the stack unwinds
              */
             if(op->blocking && 
-                globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+                GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
             {
                 GlobusXIODebugDelayedFinish();
                 op->finished_delayed = GLOBUS_TRUE;
@@ -1216,7 +1218,7 @@ globus_xio_driver_finished_read(
              * finish until the stack unwinds
              */
             if(op->blocking && 
-                globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+                GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
             {
                 GlobusXIODebugDelayedFinish();
                 op->finished_delayed = GLOBUS_TRUE;
@@ -1630,7 +1632,7 @@ globus_xio_driver_finished_accept(
          * finish until the stack unwinds
          */
         if(op->blocking && 
-            globus_thread_equal(op->blocked_thread, GlobusXIOThreadSelf()))
+            GlobusXIOBlockedThreadMatchesCurrentThread(op->blocked_thread))
         {
             GlobusXIODebugDelayedFinish();
             op->finished_delayed = GLOBUS_TRUE;

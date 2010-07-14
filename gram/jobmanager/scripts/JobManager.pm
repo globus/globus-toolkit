@@ -95,6 +95,7 @@ sub new
     if ($@) {
         $self->log("Couldn't create job dir");
     }
+    $self->rewrite_urls();
 
     return $self;
 }
@@ -466,6 +467,7 @@ sub rewrite_urls
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $url;
     my $filename;
+    my $filestreamout = [];
 
     foreach ('stdin', 'executable')
     {
@@ -480,6 +482,37 @@ sub rewrite_urls
 	    }
 	}
     }
+    foreach my $which ('stdout', 'stderr')
+    {
+        my @destinations = $description->$which();
+        my $first_destination = $destinations[0];
+        my $cached_destination = $self->job_dir() . "/$which";
+
+        if (ref($first_destination))
+        {
+            $first_destination = $first_destination->[0];
+        }
+
+        if (scalar(@destinations) == 1 && $first_destination !~ m|://|)
+        {
+            $description->add($which, $first_destination);
+            next;
+        }
+        foreach my $dest (@destinations)
+        {
+            my $pair;
+
+            if (ref($dest))
+            {
+                $dest = $dest->[0];
+            }
+            $pair = [$cached_destination, $dest];
+
+            push(@{$filestreamout}, $pair);
+        }
+        $description->add($which, $cached_destination);
+    }
+    $description->add('filestreamout', $filestreamout);
     return {};
 }
 
@@ -665,16 +698,17 @@ sub stage_out
     my $description = $self->{JobDescription};
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
-    my $local_path;
+    my $local_path, $remote_path;
     my @arg;
+
+    $self->log("stage_out(enter)");
 
     if (exists($self->{STDIO_MERGER}) && ref($self->{STDIO_MERGER}))
     {
         my $merger = $self->{STDIO_MERGER};
-        $merger->poll();
+        $merger->poll(1);
     }
 
-    $self->log("stage_out(enter)");
 
     $self->nfssync( $description->stdout(), 0 )
 	if defined $description->stdout();
@@ -687,6 +721,7 @@ sub stage_out
 
 	($local, $remote) = ($_->[0], $_->[1]);
 
+        $self->log("Staging $local to $remote");
 	# handle a couple of types of URLs for local files
 	$local_path = $local;
 	if($local_path =~ m|^x-gass-cache://|)
@@ -707,7 +742,38 @@ sub stage_out
 	}
 
         $self->nfssync($local_path, 0);
-        @arg = ($url_copy_pgm, 'file://' . $local_path, $remote);
+
+        $remote_path = $remote;
+        if ($remote_path =~ m|^x-gass-cache://|)
+        {
+            my $msg;
+
+            @arg = ($cache_pgm, '-add',
+                    '-n', $remote_path,
+                    '-t', $tag,
+                    'file:///dev/null');
+            $msg = $self->pipe_out_cmd(@arg);
+            if ($? != 0)
+            {
+                $self->log("Failed creating cache entry for $remote_path $msg");
+                return Globus::GRAM::Error::STAGE_OUT_FAILED;
+            }
+            @arg = ($cache_pgm, '-query', '-t', $tag, $remote_path);
+            $remote_path = $self->pipe_out_cmd(@arg);
+            if ($? != 0)
+            {
+                $self->log("Query of cache URL path returned $? -- {$remote_path}");
+            }
+
+            return Globus::GRAM::Error::STAGE_OUT_FAILED
+                if ($remote_path eq '');
+            $remote_path = "file://$remote_path";
+        }
+
+        @arg = ($url_copy_pgm, 'file://' . $local_path, $remote_path);
+        $self->log("Staging $local to $remote");
+        $self->log("Concretely, staging $local_path to $remote_path");
+        $self->log("with command " . join(" ", @arg));
 
         ($stderr, $rc) = $self->pipe_err_cmd(@arg);
         if($rc != 0) {
@@ -1097,14 +1163,22 @@ sub setup_softenv
         $self->log("default software environment requested");
 
         #load default software environment
-        print $job_script_fh ". $softenv_load\n";
+        $rc = print $job_script_fh ". $softenv_load\n";
+        if (!$rc)
+        {
+            return "print failed: $job_script_fh: $!";
+        }
     }
     else
     {
         $self->log("custom software environment requested");
 
         local(*SOFTENV);
-        open(SOFTENV, '>' . $softenv_script_name);
+        $rc = open(SOFTENV, '>' . $softenv_script_name);
+        if (!$rc)
+        {
+            return "open failed: $softenv_script_name: $!";
+        }
 
         foreach my $softenv (@softenv)
         {
@@ -1113,13 +1187,17 @@ sub setup_softenv
 
         close(SOFTENV);
 
-        print $job_script_fh "$soft_msc $softenv_script_name\n";
-        print $job_script_fh ". $softenv_script_name.cache.sh\n";
-        print $job_script_fh "rm $softenv_script_name"
-                           . " $softenv_script_name.cache.sh\n";
+        $rc = print $job_script_fh "$soft_msc $softenv_script_name\n"
+                                 . ". $softenv_script_name.cache.sh\n"
+                                 . "rm $softenv_script_name"
+                                 . " $softenv_script_name.cache.sh\n";
+        if (!$rc)
+        {
+            return "print failed: $job_script_fh: $!";
+        }
     }
 
-    return 1;
+    return 0;
 }
 
 1;

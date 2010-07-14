@@ -31,12 +31,21 @@
  *                         ---------------
  **************************************************************************/
 
-#ifdef BUILD_LITE
-#define GlobusXIOThreadSelf()                                               \
-    globus_callback_space_get_depth(GLOBUS_CALLBACK_GLOBAL_SPACE)
-#else
-#define GlobusXIOThreadSelf()   globus_thread_self()
-#endif
+#define GlobusXIOCurrentBlockedThread(blocked_thread)                       \
+    if (globus_i_am_only_thread())                                          \
+    {                                                                       \
+        blocked_thread.thread = globus_thread_self();                       \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        blocked_thread.depth = globus_callback_space_get_depth(             \
+                GLOBUS_CALLBACK_GLOBAL_SPACE);                              \
+    }
+#define GlobusXIOBlockedThreadMatchesCurrentThread(a)                       \
+    (globus_i_am_only_thread()                                              \
+        ? (a.depth ==                                                       \
+            globus_callback_space_get_depth(GLOBUS_CALLBACK_GLOBAL_SPACE))  \
+        : globus_thread_equal(a.thread, globus_thread_self()))
 
 GlobusDebugDeclare(GLOBUS_XIO);
 
@@ -516,6 +525,16 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_server                      type_u.server_s.server
 #define _op_server_timeout_cb           type_u.server_s.timeout_cb
 
+/**
+ * Information about the what thread is being blocked by a callback. In the
+ * non-threaded case, this will be the callback_depth, otherwise the thread_id
+ */
+typedef union
+{
+    globus_thread_t                     thread;
+    int                                 depth;
+}
+globus_i_xio_blocked_thread_t;
 /*
  *  represents a requested io operation (open close read or write).
  */
@@ -585,7 +604,7 @@ typedef struct globus_i_xio_op_s
 
     globus_bool_t                       restarted;
     globus_bool_t                       blocking;
-    globus_thread_t                     blocked_thread;
+    globus_i_xio_blocked_thread_t       blocked_thread;
     globus_bool_t                       finished_delayed;
 
     /* just stash away the cred to open so that the driver can interigate

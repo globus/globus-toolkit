@@ -22,6 +22,7 @@
 #include "globus_gram_jobmanager_callout_error.h"
 
 #include <string.h>
+#include <openssl/evp.h>
 
 static
 void
@@ -612,6 +613,7 @@ globus_gram_job_manager_gsi_update_credential(
     {
         manager->cred_expiration_time = credential_expiration_time;
         rc = globus_gram_job_manager_gsi_write_credential(
+                request,
                 credential,
                 manager->cred_path);
         if (rc != 0)
@@ -624,6 +626,7 @@ globus_gram_job_manager_gsi_update_credential(
     if (request)
     {
         rc = globus_gram_job_manager_gsi_write_credential(
+                request,
                 credential,
                 request->x509_user_proxy);
         if (rc != 0)
@@ -683,6 +686,7 @@ inquire_cred_failed:
  */
 int
 globus_gram_job_manager_gsi_write_credential(
+    globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential,
     const char *                        path)
 {
@@ -691,6 +695,9 @@ globus_gram_job_manager_gsi_write_credential(
     gss_buffer_desc                     credential_buffer;
     int                                 rc;
     int                                 fd;
+    char *                              gt3_error_message = NULL;
+    int                                 written;
+    int                                 save_errno;
 
     major_status = gss_export_cred(&minor_status,
                                    credential,
@@ -700,6 +707,13 @@ globus_gram_job_manager_gsi_write_credential(
     if(GSS_ERROR(major_status))
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        (void) globus_gss_assist_display_status_str(
+            &gt3_error_message,
+            "credential export failed",
+            major_status,
+            minor_status,
+            0);
+
         goto export_failed;
     }
 
@@ -710,18 +724,67 @@ globus_gram_job_manager_gsi_write_credential(
     if(fd == -1)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        save_errno = errno;
+
+        gt3_error_message = globus_common_create_string(
+                "open credential file for writing failed: %s: %s (%d)",
+                path,
+                strerror(save_errno),
+                save_errno);
 
         goto job_proxy_open_failed;
     }
-    rc = write(fd, credential_buffer.value, (size_t) credential_buffer.length);
-    if(rc < credential_buffer.length)
+    written = 0;
+
+    do
+    {
+        rc = write(
+                fd,
+                ((char *) credential_buffer.value) + written,
+                (size_t) credential_buffer.length - written);
+        if(rc < 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            save_errno = errno;
+            gt3_error_message = globus_common_create_string(
+                    "writing credential file failed: %s: %s (%d)",
+                    path,
+                    strerror(save_errno),
+                    save_errno);
+
+            goto job_proxy_write_failed;
+        }
+        else if (rc == 0)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+            gt3_error_message = globus_common_create_string(
+                    "writing credential file failed: %s: %s",
+                    path,
+                    "short write");
+            goto job_proxy_write_failed;
+            
+        }
+        else
+        {
+            written += rc;
+        }
+
+    } while (written < credential_buffer.length);
+
+    rc = close(fd);
+    if (rc != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
 
-        goto job_proxy_write_failed;
+        save_errno = errno;
+        gt3_error_message = globus_common_create_string(
+                "writing credential file failed: %s: %s (%d)",
+                path,
+                strerror(save_errno),
+                save_errno);
+        goto job_proxy_close_failed;
     }
     rc = 0;
-    close(fd);
     fd = -1;
 
 job_proxy_write_failed:
@@ -730,9 +793,18 @@ job_proxy_write_failed:
         close(fd);
         fd = -1;
     }
+job_proxy_close_failed:
 job_proxy_open_failed:
     (void) gss_release_buffer(&minor_status, &credential_buffer);
 export_failed:
+    if (request != NULL && request->gt3_failure_message == NULL)
+    {
+        request->gt3_failure_message = gt3_error_message;
+    }
+    else if (gt3_error_message)
+    {
+        free(gt3_error_message);
+    }
 
     return rc;
 }
@@ -928,3 +1000,134 @@ skip_authz:
     return rc;
 }
 /* globus_gram_job_manager_authz_query() */
+
+/**
+ * @brief Look up the identity of a GSSAPI credential and generate a hash
+ * @ingroup globus_gram_gsi
+ *
+ * @details
+ * The @a globus_gram_gsi_get_dn_hash() function inspects the credential 
+ * named by @a cred parameter to determine the identity of the credential.
+ * It then computes the default hash on that name and assigns a copy of
+ * that value to the @a hash parameter. The caller is responsible for freeing
+ * that value.
+ * 
+ * @param cred
+ *     GSSAPI credential to inspect
+ * @param hash
+ *     Pointer to be set to the hash of the identity of @a cred.
+ *
+ * @return 
+ *     On success, @a globus_gram_gsi_get_dn_hash() returns GLOBUS_SUCCESS
+ *     and modifies the @a hash parameter to point to a copy of the string
+ *     representation of the hash. If an error occurs, @a
+ *     globus_gram_gsi_get_dn_hash() returns a non-zero error code and the
+ *     the value of @a hash is undefined.
+ */
+int
+globus_gram_gsi_get_dn_hash(
+    gss_cred_id_t                       cred,
+    unsigned long *                     hash)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    OM_uint32                           major, minor;
+    gss_name_t                          name;
+    gss_buffer_desc                     namebuf;
+    unsigned char                       md[EVP_MAX_MD_SIZE+1];
+    const EVP_MD *                      evp_md;
+    EVP_MD_CTX                          evp_ctx;
+    unsigned int                        mdlen;
+    unsigned long                       hash_value;
+
+    if (hash == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto out;
+    }
+    *hash = 0L;
+    if (cred == GSS_C_NO_CREDENTIAL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+
+        goto out;
+    }
+
+    major = gss_inquire_cred(
+            &minor,
+            cred,
+            &name,
+            NULL,
+            NULL,
+            NULL);
+
+    if (major != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+
+        goto out;
+    }
+
+    major = gss_display_name(
+            &minor,
+            name,
+            &namebuf,
+            NULL);
+    if (major != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+
+        goto free_name_out;
+    }
+
+    evp_md = EVP_get_digestbyname("sha1");
+    if (evp_md == NULL)
+    {
+        evp_md = EVP_get_digestbyname("md5");
+    }
+    if (evp_md == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_namebuf_out;
+    }
+
+    EVP_MD_CTX_init(&evp_ctx);
+
+    if (EVP_DigestInit_ex(&evp_ctx, evp_md, NULL) != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_namebuf_out;
+    }
+
+    if (EVP_DigestUpdate(&evp_ctx, namebuf.value, namebuf.length) != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_digest_out;
+    }
+
+    if (EVP_DigestFinal_ex(&evp_ctx, md, &mdlen) != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_digest_out;
+    }
+    hash_value = (((unsigned long)md[0]) |
+                  ((unsigned long)md[1] << 8L) |
+                  ((unsigned long)md[2] << 16L) |
+                  ((unsigned long)md[3] << 24L)) & 0xffffffffL;
+
+    *hash = hash_value;
+
+free_digest_out:
+    EVP_MD_CTX_cleanup(&evp_ctx);
+free_namebuf_out:
+    gss_release_buffer(&minor, &namebuf);
+free_name_out:
+    gss_release_name(&minor, &name);
+out:
+    return rc;
+}
+/* globus_gram_gsi_get_dn_hash() */
