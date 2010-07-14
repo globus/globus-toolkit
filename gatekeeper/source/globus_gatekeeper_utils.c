@@ -51,14 +51,6 @@ CVS Information:
 #   include <malloc.h>
 #endif
 
-#if defined(TARGET_ARCH_CRAYT3E)
-#include "unicos.h"
-#endif
-
-#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
-#include <proj.h>
-#endif
-
 #include "globus_gatekeeper_utils.h"
 
 /******************************************************************************
@@ -404,10 +396,6 @@ globus_gatekeeper_util_trans_to_user(struct passwd * pw,
 
 	uid_t myuid;
 
-#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
-    prid_t user_prid;
-#endif
-
 	/* must be root to use this */
 
 	if ((myuid = getuid()) != 0)
@@ -423,44 +411,8 @@ globus_gatekeeper_util_trans_to_user(struct passwd * pw,
 	 *DEE If we are root and want to run as root, should we continue
 	 * here or just exit? Some logging might be usefull. 
 	 */
-
-#		ifdef TARGET_ARCH_CRAYT3E
-	{
-	    /* If MLS is active, validate security information. If the
-	       connection is not allowed, mls_validate does not return.
-	       If MLS is not active, this is a no-op. */
-	    mls_validate( /*havepty*/ 0);
-
-	    /* Record login in user data base. */
-
-	    update_udb(pw->pw_uid, pw->pw_name, /*tty*/ "");
-
-	    /* Set user security attributes and drop all privilege. */
-	    set_seclabel();
-
-	    /* Set account number, job ID, limits, and permissions */
-
-	    if(cray_setup(pw->pw_uid, userid) < 0)
-	    {
-			*errmsg = strdup("Failure performing Cray job setup for user");
-			return 2;
-	    }
-	}
-#	endif /*TARGET_ARCH_CRAYT3E*/
-
 	setgid(pw->pw_gid);
 	initgroups(pw->pw_name, pw->pw_gid);
-
-#	if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
-	{
-		if ((user_prid = getdfltprojuser(pw->pw_name)) < 0)
-		{
-			user_prid = 0;
-		}
-		newarraysess();
-		setprid(user_prid);
-	}
-#	endif
 
 #	if defined(__hpux)
 	{

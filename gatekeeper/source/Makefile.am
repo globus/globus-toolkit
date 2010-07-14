@@ -5,7 +5,7 @@ SUBDIRS= \
 	pkgdata
 
 INCLUDES = $(GPT_INCLUDES)
-LDADD = $(GPT_PGM_LINKS) @LIBOBJS@ @UNICOS_LIBS@
+LDADD = $(GPT_PGM_LINKS) @LIBOBJS@
 
 sbin_PROGRAMS= \
 	globus-gatekeeper \
@@ -13,12 +13,11 @@ sbin_PROGRAMS= \
 
 globus_gatekeeper_SOURCES = \
 	globus_gatekeeper.c \
-	unicos.c \
 	globus_gatekeeper_utils.h \
 	globus_gatekeeper_utils.c
 globus_gatekeeper_LDFLAGS = $(GPT_LDFLAGS)
 
-globus_k5_SOURCES = globus_k5.c unicos.c globus_gatekeeper_utils.c
+globus_k5_SOURCES = globus_k5.c globus_gatekeeper_utils.c
 globus_k5_LDFLAGS = $(GPT_LDFLAGS)
 
 man8datadir=$(mandir)/man8
