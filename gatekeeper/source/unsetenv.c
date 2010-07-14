@@ -43,11 +43,7 @@
 #endif
 
 #include <stddef.h>
-#ifdef TARGET_ARCH_CRAYT3E
-#include <malloc.h>
-#else
 #include <stdlib.h>
-#endif
 #include <string.h>
 
 #ifndef	__P

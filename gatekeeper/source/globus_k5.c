@@ -130,37 +130,6 @@ FILE *stderrX;
 ******************************************************************************/
 
 /******************************************************************************
-Function:   gatekeeper_notice()
-Description: Used by the UNICOS routines in the gatekeeper_utils
-	when they are linked with this modult. 
-Parameters:
-Returns:
-******************************************************************************/
-#if defined(TARGET_ARCH_CRAYT3E)
-void
-gatekeeper_notice(int prty,char * msg)
-{
-	fprintf(stderr,"%s\n",msg);
-}
-#endif
-
-/******************************************************************************
-Function:   gatekeeper_failure()
-Description: Used by the UNICOS routines in the gatekeeper_utils
-		when they are linked with this module.
-Parameters:
-Returns:
-******************************************************************************/
-#if defined(TARGET_ARCH_CRAYT3E)
-void
-gatekeeper_failure(short failure_type,
-					char * msg)
-{
-	fprintf(stderr,"failure:%d:%s\n",failure_type,msg);
-}
-#endif
-
-/******************************************************************************
 Function:   globus_gram_k5_kinit()
 Description:
 Parameters:
@@ -179,7 +148,6 @@ globus_gram_k5_kinit(char * globus_client,
   char * command;
   char * args[100];
   struct stat stx;
-  char * userid = NULL;
 
   if ((rc = globus_gatekeeper_util_globusxmap(getenv("GLOBUSKMAP"),
 			globus_client, &command)))
@@ -230,10 +198,10 @@ int
 main(int argc, char *argv[])
 {
     int i;
-	int rc;
+    int rc;
     char *ccname;
-	char *globusid;
-	char *user;
+    char *globusid;
+    char *user;
     char *newpath;
     char *cp;
     char **ap;
@@ -241,11 +209,9 @@ main(int argc, char *argv[])
     struct stat stx;
     extern int optind;
     extern char *optarg;
-    int      ch;
-	uid_t	 myuid;
-	uid_t    luid;
-	struct passwd *pw;
-	char *errmsg = NULL;
+    uid_t	 myuid;
+    struct passwd *pw;
+    char *errmsg = NULL;
 
 #ifdef DEBUG
 	stderrX = stderr;

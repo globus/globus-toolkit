@@ -14,16 +14,6 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-case $target in
-    alpha*-cray-unicosmk*)
-        UNICOS_LIBS="-luex -lacm  -lshare -lrsc"
-	;;
-    *)
-        UNICOS_LIBS=""
-	;;
-esac
-AC_SUBST(UNICOS_LIBS)
-
 if test "x$GLOBUS_THREADS" != "xnone"; then
     AC_MSG_ERROR(Cannot build gatekeeper with threads)
 fi

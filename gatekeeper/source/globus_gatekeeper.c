@@ -86,14 +86,6 @@
 #include <string.h>
 #endif
 
-#if defined(TARGET_ARCH_CRAYT3E)
-#include "unicos.h"
-#endif
-
-#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
-#include <proj.h>
-#endif
-
 #ifndef HAVE_SETENV
 extern int setenv();
 #endif
@@ -493,10 +485,6 @@ main(int xargc,
     {
         exit(1);
     }
-
-#if defined(TARGET_ARCH_CRAYT3E)
-    unicos_init();
-#endif
 
     /* 
      * Don't allow logins of /etc/nologin exists. 
@@ -989,15 +977,6 @@ main(int xargc,
             logging_phase2(); /* now set stderr to logfile after gss prompts */
 
             net_setup_listener(2, &daemon_port, &listener_fd);
-          
-#         if defined(TARGET_ARCH_CRAYT3E)
-            {
-                if(gatekeeper_uid == 0)
-                {
-                    set_unicos_sockopts(listener_fd);
-                }
-            }
-#         endif
         }
       
         /* ajr,vs --changed printf to sprintf, and added setenv
@@ -1233,13 +1212,6 @@ static void doit()
     *stdout = *fdopen(1,"w");
     (void) setbuf(stdout,NULL);
 
-#if defined(TARGET_ARCH_CRAYT3E)
-    if(gatekeeper_uid == 0)
-    {
-        get_unicos_connect_info(0);
-    }
-#endif
-
     peerlen = sizeof(peer);
     if (getpeername(0, (struct sockaddr *) &peer, &peerlen) == 0)
     {
@@ -1253,38 +1225,6 @@ static void doit()
     setbuf(fdout,NULL);
 
     notice3(LOG_INFO, "Got connection %s at %s", peernum, timestamp());
-
-#ifdef TARGET_ARCH_CRAYT3E
-    /* Need to lookup hostname -- provide for use in udb updates. */
-    {
-        struct sockaddr_in from;
-        int fromlen;
-        struct hostent *hp;
-        char hostname[256];
-
-        /* Get IP address of client. */
-        fromlen = sizeof(from);
-        memset(&from, 0, sizeof(from));
-        if (getpeername(connection_fd, (struct sockaddr *)&from,
-                        &fromlen) < 0)
-        {
-            notice2(LOG_ERR,"getpeername failed: %.100s", strerror(errno));
-            strcpy(hostname, "UNKNOWN");
-        }
-        else
-        {
-            /* Map the IP address to a host name. */
-            hp = gethostbyaddr((char *)&from.sin_addr, 
-                               sizeof(struct in_addr), from.sin_family);
-            if (hp)
-                strncpy(hostname, hp->h_name, sizeof(hostname));
-            else
-                strncpy(hostname, inet_ntoa(from.sin_addr), sizeof(hostname));
-        }
-
-        set_connection_hostname (hostname);
-    }
-#endif /* TARGET_ARCH_CRAYT3E */
 
     /* Do gss authentication here */
 
@@ -1480,18 +1420,6 @@ static void doit()
 
     userid = identity_buffer;
     
-#ifdef TARGET_ARCH_CRAYT3E
-    if (gatekeeper_uid == 0)
-    {
-        get_udbent(userid);
-        if (unicos_access_denied())
-        {
-            failure2(FAILED_AUTHORIZATION,
-                     "UNICOS denied access to user %s.", userid);
-        }
-    }
-#endif /* TARGET_ARCH_CRAYT3E */
-
     /* find body of message and forward it to the service */
     {
         char *  end_of_header = "\015\012\015\012";
@@ -1692,15 +1620,9 @@ static void doit()
     }
 
     service_uid = pw->pw_uid;
-#   if defined(TARGET_ARCH_CRAYT3E)
-    {
-        service_gid = unicos_get_gid();
-    }
-#   else
     {
         service_gid = pw->pw_gid;
     }
-#   endif
 
     notice2(LOG_NOTICE, "Authorized as local uid: %d", service_uid);
     notice2(LOG_NOTICE, "          and local gid: %d", service_gid);
@@ -1823,18 +1745,6 @@ static void doit()
     if (krb5flag && service_option_local_cred)
     {
         args--;
-#       ifdef TARGET_ARCH_CRAYT3E
-        /*DEE Not sure what is not complient, maybe some one could
-         * be more specific about this test
-         */
-        {
-            if(gatekeeper_uid == 0)
-            {
-                failure(FAILED_SERVER,
-                        "Gatekeeper Kerberos code is not UNICOS compliant.");
-            }
-        }
-#       endif
         if (access(gram_k5_path, X_OK) != 0)
             failure2(FAILED_SERVER, "Cannot execute %s", gram_k5_path);
         *args = gram_k5_path;
@@ -2477,19 +2387,6 @@ notice(int prty, char * s)
         fprintf(usrlog_fp, "TIME: %s PID: %d -- Notice: %d: %s\n", timestamp(), getpid(), prty, s);
     }
 } /* notice() */
-
-#if defined(TARGET_ARCH_CRAYT3E)
-/* Make callable entries to failure() and notice() */
-void gatekeeper_failure(short failure_type, char * s)
-{
-    failure(failure_type, s);
-}
-
-void gatekeeper_notice(int prty, char * s)
-{
-    notice(prty, s);
-}
-#endif
 
 
 /******************************************************************************
