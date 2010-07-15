@@ -113,7 +113,7 @@ class GRAM5Packet(CUsagePacket):
     def get_job_manager_instance_id(self, cursor):
         """
         Determine the job manager instance key which matches the job manager
-        start type, host and configuration in this packet. If this job manager
+        start time, host and configuration in this packet. If this job manager
         instance is not defined in the table, attempt to insert it into the
         gram5_job_manager_instances table and return that id.
 
@@ -131,8 +131,10 @@ class GRAM5Packet(CUsagePacket):
         uuid = self.data.get('B')
         start_time = GRAM5Packet.db_class.TimestampFromTicks(
                 float(self.data.get('A')))
-        job_manager_instance_id = \
-            GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
+        byuuidresult = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
+        job_manager_instance_id = None
+        if byuuidresult is not None:
+            (job_manager_instance_id, jmid) = byuuidresult
         if job_manager_instance_id is None:
             values = (job_manager_id, uuid, start_time)
             cursor.execute('''
@@ -144,7 +146,16 @@ class GRAM5Packet(CUsagePacket):
                 RETURNING id''', values)
             job_manager_instance_id = cursor.fetchone()[0]
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
-                    job_manager_instance_id
+                    (job_manager_instance_id, job_manager_id)
+        elif jmid is None:
+            values = (job_manager_id, start_time, uuid)
+            cursor.execute('''
+                UPDATE gram5_job_manager_instances
+                SET job_manager_id=%s, start_time=%s
+                WHERE uuid=%s
+                ''', values)
+            GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
+                    (job_manager_instance_id, job_manager_id)
         return job_manager_instance_id
 
     def get_job_manager_instance_id_by_uuid(self, cursor):
@@ -170,8 +181,10 @@ class GRAM5Packet(CUsagePacket):
             start_time = GRAM5Packet.db_class.TimestampFromTicks(
                     float(self.data.get('A')))
         values = (uuid, start_time)
-        job_manager_instance_id = \
-            GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
+        job_manager_instance_id = None
+        by_uuid_entry = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
+        if by_uuid_entry is not None:
+            job_manager_instance_id = by_uuid_entry[0]
         if job_manager_instance_id is None:
             cursor.execute('''
                 INSERT INTO gram5_job_manager_instances(
@@ -183,7 +196,7 @@ class GRAM5Packet(CUsagePacket):
             GRAM5Packet.__job_manager_instances[values] = \
                     job_manager_instance_id
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
-                    job_manager_instance_id
+                    (job_manager_instance_id, None)
         return job_manager_instance_id
 
     def get_host_id(self):
@@ -445,7 +458,8 @@ class GRAM5Packet(CUsagePacket):
             [jmi_id, job_manager_id, uuid, start_time] = row
             values = (job_manager_id, uuid, start_time)
             GRAM5Packet.__job_manager_instances[values] = jmi_id
-            GRAM5Packet.__job_manager_instances_by_uuid[uuid] = jmi_id
+            GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
+                (jmi_id, job_manager_id)
 
     @staticmethod
     def __init_rsl_attributes(cursor):
