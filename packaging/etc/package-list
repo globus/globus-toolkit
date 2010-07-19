@@ -29,7 +29,6 @@ globus_common	common/source	gpt
 globus_common_setup	common/setup	gpt
 globus_common_test	common/test	gpt
 globus_core	core/source	gpt
-globus_cyrus-sasl	gsi/sasl/patch-n-build pnb cyrus-sasl-1.5.27.tar.gz
 globus_ftp_client	gridftp/client/source	gpt
 globus_ftp_client_test	gridftp/client/test	gpt
 globus_ftp_control	gridftp/control/source	gpt
@@ -101,16 +100,7 @@ globus_xio_netlogger_driver     xio/drivers/netlog  gpt
 globus_xio	xio/src	gpt
 globus_xio_test	xio/test	gpt
 globus_xioperf	xio/xioperf/source	gpt
-globus_ldapmodules	mds/openldap/ldapmodules	gpt
 globus_libtool mds/libtool pnb libtool-1.5.26.tar.gz
-globus_libtool_fake mds/libtool-fake	gpt
-globus_mds_back_giis	mds/openldap/giis-ldapmodules	gpt
-globus_mds_common	mds/common/source	gpt
-globus_mds_common_setup	mds/common/setup	gpt
-globus_mds_gris		mds/gris/source	gpt
-globus_mds_gris_setup	mds/gris/setup	gpt
-globus_mds_test		mds/tests	gpt
-globus_openldap	mds/openldap/patch-n-build pnb openldap-2.0.22.tar.gz
 globus_openssl_backup	gsi/openssl_gpt	        gpt
 globus_openssl	gsi/openssl/source	gpt
 globus_openssl_setup	gsi/openssl/setup	gpt
@@ -136,7 +126,6 @@ globus_rls_test		replica/rls/test/unit	tar
 globus_rls_script	replica/rls/script	gpt
 globus_rsl	gram/rsl/source	gpt
 globus_rsl_assist	gram/rsl_assist/source	gpt
-globus_sasl_gssapi_gsi	gsi/sasl/gssplugins	gpt
 globus_test	test/	gpt
 globus_trusted_ca_42864e48_setup	gsi/trusted_ca/setup	gpt
 globus_user_env	user_env/source	gpt

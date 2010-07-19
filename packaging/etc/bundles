@@ -390,7 +390,6 @@ BUNDLE gt2-threaded THREADED
 	globus_common
 	globus_common_setup
 	globus_core
-	globus_cyrus-sasl
         globus_ftp_client
         globus_ftp_control
         globus_gridftp_sshftp_setup
@@ -411,20 +410,12 @@ BUNDLE gt2-threaded THREADED
 	globus_gss_assist
 	globus_hostname2contacts
         globus_io
-	globus_ldapmodules
 	globus_libtool
-	globus_mds_back_giis
-	globus_mds_common
-	globus_mds_common_setup
-	globus_mds_gris
-	globus_mds_gris_setup
-	globus_openldap
 	globus_openssl
 	globus_openssl_setup
 	globus_openssl_module
 	globus_proxy_utils
 	globus_rsl
-	globus_sasl_gssapi_gsi
 	globus_user_env
         globus_xio
 	gssapi_error
