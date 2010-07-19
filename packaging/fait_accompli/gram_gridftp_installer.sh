@@ -8,7 +8,7 @@ TARFILES=netlogger-c-4.0.2.tar.gz
 
 BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-rls-server-test,globus-gsi-test
 
-PACKAGES=globus_rls_client_jni,myproxy,globus_openssl_backup
+PACKAGES=globus_rls_client_jni,myproxy
 
 echo Making configure/make installer
 echo Step: Checking out and building autotools.

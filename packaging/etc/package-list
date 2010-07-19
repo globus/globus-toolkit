@@ -101,7 +101,6 @@ globus_xio	xio/src	gpt
 globus_xio_test	xio/test	gpt
 globus_xioperf	xio/xioperf/source	gpt
 globus_libtool mds/libtool pnb libtool-1.5.26.tar.gz
-globus_openssl_backup	gsi/openssl_gpt	        gpt
 globus_openssl	gsi/openssl/source	gpt
 globus_openssl_setup	gsi/openssl/setup	gpt
 globus_openssl_error_test	gsi/openssl_error/test	gpt
