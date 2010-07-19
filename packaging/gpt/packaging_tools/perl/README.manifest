@@ -1,0 +1,11 @@
+To create a manifest do the following:
+
+	make distclean
+	perl Makefile.pl
+	make manifest
+
+The file MANIFEST.SKIP contains regexes for files 
+that should be skipped.
+
+The files Makefile and scripts/Makefile need to 
+be removed.

@@ -1,0 +1,4 @@
+* Fallback to using gzip/gunzip if Compress::Zlib unavailable.
+
+* Improve documentation
+

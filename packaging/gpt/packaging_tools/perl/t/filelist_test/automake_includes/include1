@@ -1,0 +1,9 @@
+ifoodir = $(prefix)/ifoo/bar
+ifumdir = $(prefix)/ifoo/ifum/bar
+
+ifoo_PROGRAMS = ifoo ifee ifow ifum
+bin_PROGRAMS =iboo ibee$(flavor) ibow ibum
+ifum_LIBRARIES = libifoo.a \
+	libifee.a \
+	libifow$(flavor).a \
+	libifum.a

@@ -1,0 +1,30 @@
+
+# External Library Dependencies
+LibDependencies = \
+    Ws2_32.lib \
+    libeay32.lib \
+    ssleay32.lib \
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_openssl_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_sysconfig_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_proxy_ssl_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_cert_utils_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_callback_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_credential_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_proxy_core_$(GLOBUS_FLAVOR_NAME).lib
+
+# Windows Only Global Include File
+wininclude_HEADERS = \
+    globus_gssapi_config.h
+
+# Additional Unix Include Files Needed By Tests
+flavorinclude_HEADERS = \
+    gssapi_openssl.h \
+    globus_gsi_gss_constants.h \
+    winglue.h
+
+# Windows Only Exports
+WinExports = \
+    GSS_C_NT_HOSTBASED_SERVICE

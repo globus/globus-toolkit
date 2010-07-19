@@ -1,0 +1,63 @@
+use ExtUtils::MakeMaker;
+
+#$Verbose = 1;
+
+
+my @h_files ;
+my $c_files ;
+
+if (-f 'infback.c') {
+    # zlib 1.2.0 or greater
+    @h_files = qw(crc32.h inffast.h inflate.h trees.h zconf.in.h 
+	          zutil.h deflate.h inffixed.h inftrees.h zconf.h  zlib.h );
+    @c_files = qw(adler32.c crc32.c infback.c inflate.c uncompr.c
+		  compress.c deflate.c gzio.c inffast.c inftrees.c  
+		  trees.c zutil.c );
+}
+else {
+    # zlib 1.1.x
+
+    @h_files = qw(deflate.h infcodes.h inftrees.h zconf.h zutil.h
+		  infblock.h inffast.h infutil.h zlib.h);
+    @c_files = qw(adler32.c compress.c crc32.c gzio.c uncompr.c
+		   deflate.c trees.c zutil.c inflate.c infblock.c
+		   inftrees.c infcodes.c infutil.c inffast.c);
+}
+
+
+WriteMakefile(
+	'NAME'      => 'zlib',
+	'CAPI' 	    => 'TRUE',
+	'LINKTYPE'  => 'static',
+	'SKIP'      => [qw(dynamic test)],
+	'H'         => [@h_files],
+	'C'         => [@c_files],
+	'OBJECT'    => q[$(O_FILES)],
+	'clean'     =>  {'FILES' => 'libz$(LIB_EXT)'}
+);
+
+sub MY::post_constants {
+    <<'END'
+INST_STATIC = libz$(LIB_EXT)
+END
+    ;
+}
+
+sub MY::top_targets {
+    my $top_targets =<<'END';
+all    ::    static
+	@$(NOOP)
+
+static ::    libz$(LIB_EXT)
+	@$(NOOP)
+
+config ::
+
+test :	
+
+END
+    ;
+    $top_targets;
+}
+
+

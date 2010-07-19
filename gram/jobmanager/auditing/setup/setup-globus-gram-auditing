@@ -1,0 +1,152 @@
+#! /usr/bin/env perl
+
+use Getopt::Long;
+use IO::File;
+
+my $gpath = $ENV{GPT_LOCATION};
+
+if (!defined($gpath)) {
+    $gpath = $ENV{GLOBUS_LOCATION};
+}
+
+if (!defined($gpath)) {
+    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
+}
+
+@INC = (@INC, "$gpath/lib/perl");
+require Grid::GPT::Setup;
+
+my $help = 0;
+my $metadata = new Grid::GPT::Setup(package_name => "globus_gram_job_manager_auditing_setup_scripts");
+my $globusdir = "$ENV{GLOBUS_LOCATION}";
+my $setupdir = "$globusdir/setup/globus";
+my $sysconfdir = "$globusdir/etc";
+my $driver = "SQLite";
+my $database = "dbname=$globusdir/var/gram_audit_database/gram_audit.db";
+my $username = '';
+my $password = '';
+my $version = '1';
+my $config_file = "$sysconfdir/globus-job-manager-audit.conf";
+my $create = undef;
+my $upgrade_from = '';
+
+GetOptions(
+  'driver|d=s' => \$driver,
+  'database|b=s' => \$database,
+  'username|n=s' => \$username,
+  'password|p=s' => \$password,
+  'create|c' => \$create,
+  'f=s' => \$upgrade_from,
+  'version|v=s' => \$version,
+  'help|h' => \$help);
+
+&usage if($help || ($upgrade_from && $create));
+
+&write_config();
+
+&create_tables() if($create);
+&upgrade_from() if ($upgrade_from ne '');
+
+$metadata->finish();
+
+# Write configuration file based on the command-line options.
+sub write_config
+{
+    local(*F);
+    open(F, ">$config_file") || die "Unable to create $config_file\n";
+    chmod(0700, $config_file) || die "Unable to set $config_file permissions\n";
+
+    print F <<EOF;
+DRIVER:$driver
+DATABASE:$database
+USERNAME:$username
+PASSWORD:$password
+AUDITVERSION:$version
+EOF
+    close(F);
+}
+
+# Create DB table in the audit database. For SQLite, additionally create the
+# directory for the table file if not present.
+sub create_tables
+{
+    my $path;
+    my $fh;
+
+    if ($driver eq 'SQLite')
+    {
+        if ($database =~ m/dbname=([^;]*)/) {
+            my $dbdir = $1;
+            $dbdir =~ s|/[^/]*$||;
+            mkdir $dbdir, 0700;
+        }
+    }
+
+    $path = "$ENV{GLOBUS_LOCATION}/setup/globus/audit-$driver-$version.sql";
+
+    $fh = new IO::File("<$path")
+        || die "Unable to locate schema $path\n";
+
+    $table_sql = join('', <$fh>);
+
+    foreach (split(/;/, $table_sql)) {
+        chomp;
+        if ($_ ne '') {
+            (system ("$ENV{GLOBUS_LOCATION}/libexec/globus-gram-audit", 
+                    '-conf',
+                    $config_file,
+                    '-query',
+                    $_) == 0) || die "Error creating table\n";
+        }
+    }
+    return 1;
+}
+
+# Upgrade database records from $upgrade_from to $version schemas
+sub upgrade_from
+{
+    my $path;
+    my $fh;
+
+    $path = "$ENV{GLOBUS_LOCATION}/setup/globus/audit-$driver-$upgrade_from-$version.sql";
+
+    $fh = new IO::File("<$path")
+        || die "Unable to locate schema $path\n";
+
+    $table_sql = join('', <$fh>);
+
+    foreach (split(/;/, $table_sql)) {
+        chomp;
+        if ($_ ne '') {
+            (system ("$ENV{GLOBUS_LOCATION}/libexec/globus-gram-audit", 
+                    '-conf',
+                    $config_file,
+                    '-query',
+                    $_) == 0) || die "Error updating table\n";
+        }
+    }
+    return 1;
+}
+
+# Print command usage and exit
+sub usage
+{
+    print <<EOF;
+Usage: $0 [OPTIONS]...
+Options:
+    -h | --help                      Display this help message and exit.
+    -d | --driver DRIVER             Databse driver to use [default: $driver]
+    -b | --database DATABASE         Driver-specific database contact
+                                     [default: $database]
+    -n | --username USERNAME         username used in connection to the database
+                                     [default: $user].
+    -p | --password PASSWORD         password used in connection to the database
+                                     [default: $password].
+    -c | --create                    Create database tables in the database
+                                     [default: no]
+    -v | --version VERSION           Audit version [default: $version].
+    -f OLD-VERSION                   Update tables from OLD-VERSION to the
+                                     current audit version. [default: no]
+EOF
+    exit(0);
+}

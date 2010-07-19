@@ -1,0 +1,237 @@
+#! perl
+
+use strict;
+use Getopt::Long;
+use File::Find;
+use Cwd;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+my $VERSION = 0.01;
+my $verbose = 0;
+my $topdir = cwd();
+my @excludes;
+my ($help, $man);
+
+require Pod::Usage;
+
+# sub pod2usage {
+#   my $ex = shift;
+#   print "gpt_create_automake_rules [-srcdir=<PATH> --exclude=<PATH> -verbose -help]\n";
+#   exit $ex;
+# }
+
+GetOptions( '-srcdir=s' => \$topdir, '-excludes=s@' => \@excludes, 
+            'verbose=i' => \$verbose, 'help' => \$help) 
+  or Pod::Usage::pod2usage(1);
+
+Pod::Usage::pod2usage(0) if $help;
+
+$topdir = Cwd::abs_path($topdir);
+
+
+# target types defined by automake
+my @target_types = ("PROGRAMS", "LTLIBRARIES", "LIBRARIES","SCRIPTS", "HEADERS","DATA", "MANS");
+
+my $amdir = "$gpath/share/gpt_amdir";
+
+my %excluded_dirs;
+for my $p (@excludes) {
+  $excluded_dirs{$p}++;
+}
+
+find(\&find_makefile_am, $topdir);
+
+
+sub generate_rule
+  {
+    my ($target, $installdir, $mpage) = @_;
+    my $target2file = {
+		       PROGRAMS => "progs.am",
+		       LTLIBRARIES => "ltlib.am",
+		       LIBRARIES => "libs.am",
+		       SCRIPTS => "scripts.am",
+		       HEADERS => "header.am",
+		       DATA => "data.am",
+		       MANS => "mans.am",
+		      };
+
+    if (!defined($target2file->{$target})) {
+      die "ERROR: I have no rules file for $target\n";
+    }
+    open (RULES, "$amdir/$target2file->{$target}");
+
+#    print "$target $installdir $target2file->{$target}\n";
+
+    my $result = "";
+    while (<RULES>) {
+      s/\@DIR\@/$installdir/g;
+      s!\%SECTION\%!$mpage!g if defined $mpage;
+      $result .= $_ if (!/^\#\#/);
+    }
+
+    close(RULES);
+    $result .="\n";
+    return $result;      
+}
+
+sub find_makefile_am {
+    if ($_ ne "Makefile.am") {
+      return;
+    }
+    my $file = $_;
+    my $dir = $File::Find::dir;
+#    print "find_makefile_am: $dir\n";
+    $dir =~ s!$topdir/+!!;
+    process_automake_file($file) if ! defined $excluded_dirs{$dir};
+}
+
+sub process_automake_file {
+  my $file = shift;
+  my $rulefile = "Makefile.in";
+  open (QUICK_CHECK, "$rulefile");
+
+# Look for generated output.
+  while (<QUICK_CHECK>) {
+    if (m!filelist-recursive!) {
+      # found some abort this generation.
+      close QUICK_CHECK;
+      return;
+    }
+  }
+  close QUICK_CHECK;
+
+  my ($dir_targets, $mpages) = scan_automake_file($file);
+  my $dir = cwd();
+#  print "process_automake_file: $dir\n";
+  open (OUTPUT, ">>$rulefile");
+  my ($d, $t);
+  my ($link, $unlink, $rules, $filelist, $phony) = ("link: link-recursive ",
+                                                    "unlink: unlink-recursive ",
+                                                    "", 
+                                                    "filelist: filelist-recursive ",
+                                                    ".PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-am");
+  for $d (sort keys %$dir_targets) {
+    my @targets = (sort keys %{$dir_targets->{$d}});
+    for $t (@targets) {
+      if ($t eq 'MANS') {
+        for my $m (sort keys %$mpages) {
+          $filelist .= " filelist-$d$m ";
+          $phony .= " filelist-$d$m ";
+          $rules .= generate_rule($t, $d, $m);
+        }
+      } else {
+        $link .= "link-$d$t ";
+        $unlink .= "unlink-$d$t ";
+        $filelist .= "filelist-$d$t ";
+        $phony .= "link-$d$t unlink-$d$t filelist-$d$t ";
+        $rules .= generate_rule($t, $d);
+      }
+    }
+  }
+  print OUTPUT "link-am:\n\nunlink-am:\n\nfilelist-am:\n\n";
+  print OUTPUT "$link\n\t:\n\n";
+  print OUTPUT "$unlink\n\t:\n\n";
+  
+  print OUTPUT "$phony\n\n";
+  
+  print OUTPUT "$filelist\n\t:\n\n";
+  
+  print OUTPUT $rules;
+  close OUTPUT;
+  
+  my $result = `cat $amdir/subdirs.am >> $rulefile`;
+}
+
+sub scan_automake_file {
+  my ($file) = @_;
+  my %targets;
+  my %mpages;
+  my $curdir = cwd();
+#  print "scan_automake_file: $curdir\n";
+  local *AUTOMAKE;
+  my $result = open(AUTOMAKE, $file);
+  if (! $result) {
+    die "ERROR: Could not open $curdir/$file\n";
+  }
+
+  my $line;
+  my $manstarget = 0;
+  while ($line = <AUTOMAKE>) {
+    if ($line =~ m!^\s*include\s+(?\!\\)(\S+)!) {
+      my $incfile = $1;
+      $incfile =~ s!\$\(top_srcdir\)!$topdir!;
+      $incfile =~ s!\$\(srcdir\)/!$curdir/!;
+      $incfile =~ m!(\S*)/([^/]+)$!;
+      my ($dir, $file) = ($1, $2);
+      chdir $dir if $dir ne $curdir;
+      my ($more_targets, $more_mpages) = scan_automake_file($file);
+#      print "PRE ==========\n";
+#      print Dumper($more_targets);
+#      print Dumper(%targets);
+#      print "==========\n";
+      chdir $curdir if $dir ne $curdir;
+      for my $d (sort keys %$more_targets) {
+        $targets{$d} = {} if ! defined $targets{$d};
+        for my $t (sort keys %{$more_targets->{$d}}) {
+          $targets{$d}->{$t}++;
+        }
+      }
+#      print "POST ==========\n";
+#      print Dumper(%targets);
+#      print "==========\n";
+      for my $m (sort keys %$more_mpages) {
+        $mpages{$m}++;
+      }
+    }
+
+    for my $t (@target_types) {
+      next if $line =~ m!noinst!;
+      if ($line =~ m!^\s*(\w+)_$t\s*=!) {
+        my $tdir = $1;
+        if (!defined($targets{$tdir})) {
+          $targets{$tdir} = {};
+        }
+        $targets{$tdir}->{$t}++;
+        if ($t eq 'MANS') {
+          $manstarget++;
+        }
+      }
+      next if ! $manstarget;
+      while ($line =~ m!\w+\.(\d+)!cg) {
+        $mpages{$1}++;
+      }
+      $manstarget = 0 if $line !~ m!\\\n!;
+    }
+  }
+  close AUTOMAKE;
+  return (\%targets, \%mpages);
+}

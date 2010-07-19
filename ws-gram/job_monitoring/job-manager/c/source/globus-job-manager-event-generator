@@ -1,0 +1,206 @@
+#! /usr/bin/env perl
+
+use strict;
+use POSIX qw(setsid _exit);
+
+BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+
+use strict;
+use Getopt::Long;
+use Globus::Core::Paths;
+
+require 5.005;
+use vars qw(@tests);
+$|=1;
+
+my $sysconfdir = $Globus::Core::Paths::sysconfdir;
+my $libexecdir = $Globus::Core::Paths::libexecdir;
+
+my $seg_config_file = "$sysconfdir/globus-job-manager-seg.conf";
+my $seg = "$libexecdir/globus-scheduler-event-generator";
+my $scheduler_path = '';
+my $scheduler = '';
+my $help = 0;
+my $start_timestamp = 1;
+my $forked = 0;
+my $pidfile = undef;
+my $background = 0;
+
+# MAIN
+umask(0022);
+parse_options();
+if (! -d $scheduler_path)
+{
+    umask(0);
+    mkdir($scheduler_path, 0755) || die ("Can't create $scheduler_path dir\n");
+}
+$start_timestamp = check_timestamp();
+$forked = run_seg();
+
+print "Running in background ($forked)\n" if $forked > 0;
+if (defined($pidfile) && $forked > 0)
+{
+    local(*PIDFILE);
+    open(PIDFILE, ">$pidfile");
+    print PIDFILE "$forked\n";
+    close(PIDFILE);
+}
+
+sub run_seg
+{
+    my $daemon;
+    my $rc;
+    my $pid;
+
+    local(*SEG);
+
+    if ($background)
+    {
+        $daemon = fork();
+
+        if ($daemon > 0)
+        {
+            return $daemon;
+        }
+        elsif (!defined($daemon))
+        {
+            print STDERR "Error forking";
+            return -1;
+        }
+        $SIG{'TERM'} = \&cleanup;
+        $SIG{'INT'} = \&cleanup;
+
+        chdir '/';
+        pipe(STDIN, STDOUT);
+        open(STDERR, '>/dev/null');
+        setsid();
+    }
+
+    $pid = open(SEG, "-|");
+
+    if ($pid > 0)
+    {
+        local(*OUT);
+        my $last_outpath = '';
+
+        while(<SEG>)
+        {
+            chomp;
+
+            my @evt = split(';', $_);
+            my $timestamp;
+            my $outpath;
+
+            my ($mday,$mon,$year) = (gmtime($evt[1]))[3,4,5];
+
+            $outpath = sprintf("$scheduler_path/%04d%02d%02d",
+                            $year+1900, $mon+1, $mday);
+
+            if ($outpath ne $last_outpath)
+            {
+                close(OUT) if ($outpath eq '');
+                open(OUT, ">>$outpath");
+                select(OUT);
+                $|=1;
+            }
+            print OUT "$_\n";
+        }
+        close(SEG);
+        close(OUT);
+    }
+    elsif ($pid == 0)
+    {
+        exec($seg, '-s', $scheduler, '-t', $start_timestamp);
+    }
+    &cleanup();
+}
+
+sub parse_options
+{
+    if (!GetOptions(
+            "scheduler=s" => \$scheduler,
+            "help" => \$help,
+            "background" => \$background,
+            "path" => \$scheduler_path,
+            "pidfile=s" => \$pidfile))
+    {
+        exit(1);
+    }
+
+    if ($help)
+    {
+        usage(0);
+    }
+    elsif ($scheduler eq "")
+    {
+        print STDERR "Error: missing required argument -scheduler\n";
+
+        usage(1);
+    }
+    elsif ($scheduler_path eq '')
+    {
+        $scheduler_path = "$ENV{GLOBUS_LOCATION}/var/globus-job-manager-seg-$scheduler";
+    }
+}
+
+sub usage
+{
+    my $script = $0;
+    my $usage;
+    $script =~ s:.*/::;
+
+    $usage = <<EOF;
+Usage: $script -scheduler SCHEDULER [OPTIONS]
+ -scheduler LRM                     Process events for the named LRM (Local
+                                    Resource Manager)
+ -background                        Run in the background
+ -pidfile PATH                      Write background process id to PATH
+ -help                              Print this help.
+EOF
+
+    if ($_[0] == 0)
+    {
+        print $usage;
+    }
+    else
+    {
+        print STDERR $usage;
+    }
+    exit($_[0]);
+}
+
+sub check_timestamp
+{
+    my $rc = 0;
+    my @dates = 
+        (sort { $b <=> $a }                         # descending order
+            (grep { m|(\d{4})(\d{2})(\d{2})$| }     # ignore non-date filenames
+                (map { s|.*/||; $_; }               # basename of files
+                    <$scheduler_path/*>))); # all in the sched's dir
+
+    if (scalar(@dates) == 0)
+    {
+        return 1;
+    }
+    else
+    {
+        # Pull out timestamp of last event in the file we've created in a
+        # previous invocation and start from there
+        local(*LOGFILE);
+
+        open(LOGFILE, "<$scheduler_path/$dates[0]");
+        my $last_event = (<LOGFILE>)[-1];
+        close(LOGFILE);
+
+        chomp($last_event);
+
+
+        return (split(';', $last_event))[1];
+    }
+}
+
+sub cleanup
+{
+    unlink($pidfile) if (defined($pidfile));
+    POSIX::_exit(0);
+}

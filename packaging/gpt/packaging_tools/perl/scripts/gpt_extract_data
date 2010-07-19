@@ -1,0 +1,114 @@
+#! perl
+
+use strict;
+use Getopt::Long;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+my $VERSION = 0.01;
+my ($name, $version,$build_env);
+my $verbose = 0;
+my ($help, $man);
+
+# sub pod2usage {
+#   my $ex = shift;
+#   print "gpt_extract_data [-name -version -build_env -verbose -help] metadatafile\n";
+#   exit $ex;
+# }
+
+GetOptions( 'name' => \$name, 'version' => \$version, 
+	    'build_env' => \$build_env, 'verbose=i' => \$verbose, 
+	    'help' => \$help)
+  or Pod::Usage::pod2usage(1);
+
+Pod::Usage::pod2usage(0) if $help;
+
+require Grid::GPT::V1::Package;
+require Grid::GPT::PackageFactory;
+use Cwd;
+
+my $srcfile = shift;
+
+my $factory = new Grid::GPT::PackageFactory;
+my $pkg = $factory->type_of_package($srcfile);
+$pkg->read_metadata_file($srcfile);
+
+print "GPT_NAME='$pkg->{'Name'}'\n" if defined $name;
+print "GPT_MAJOR_VERSION='$pkg->{'Version'}->{'major'}'
+GPT_MINOR_VERSION='$pkg->{'Version'}->{'minor'}'\n" if defined $version;
+
+print "GPT_CFLAGS='$pkg->{'cflags'}'
+GPT_INCLUDES='$pkg->{'external_includes'}'
+GPT_LIBS='$pkg->{'external_libs'}'
+GPT_BUILD_WITH_FLAVORS='$pkg->{'With_Flavors'}'\n" if defined $build_env;
+
+__END__
+
+=head1 NAME
+
+B<gpt_extract_data> - Print out package metadata as shell variables
+
+=head1 SYNOPSIS
+
+gpt_extract_data  [--name --version --build_env ] pkg_data_file
+
+=head1 DESCRIPTION
+
+B<gpt_extract_data> Print out package metadata as shell variables.
+
+=head1 OPTIONS
+
+=over 4
+
+=item name
+
+Print out GPT_NAME= the name of the package.
+
+=item version
+
+Print out version numbers as GPT_MAJOR_VERSION and GPT_MINOR_VERSION
+variables.
+
+=item build_env
+
+Print out build environment as GPT_CFLAGS, GPT_INCLUDES, and GPT_LIBS.
+
+
+=back
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

@@ -1,0 +1,24 @@
+service gridftp2
+{
+    port = 2812
+    instances = 100
+    log_level = 0
+    env = GLOBUS_LOCATION=@GLOBUS_LOCATION@
+    env += LD_LIBRARY_PATH=@GLOBUS_LOCATION@/lib
+    env += PATH=@GLOBUS_LOCATION@/sbin:@GLOBUS_LOCATION@/bin
+#   might need additional envs for security
+
+    server = @GLOBUS_LOCATION@/sbin/globus-gridftp-server
+    server_args = -i -aa -l @GLOBUS_LOCATION@/gridftp-be.log
+    server_args += -d WARN  -ia self
+    nice = -20
+    master = @GLOBUS_LOCATION@/libexec/gfs-gfork-master
+    master_args = -G y @GRIDMAP_CONF@
+    master_args += -l @GLOBUS_LOCATION@/gridftp-master-be.log
+
+# must set this next value properly
+    master_args += -b <frontend registartion cs>
+
+#   undoc the following for memory limiting
+#   master_args += -m
+}

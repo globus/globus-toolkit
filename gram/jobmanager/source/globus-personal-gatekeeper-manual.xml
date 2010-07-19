@@ -1,0 +1,202 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<!-- Canonical version of this document lives in 
+$Header$
+-->
+
+<refentry id="gram5-cmd-globus-personal-gatekeeper">
+<refmeta>
+<refentrytitle>globus-personal-gatekeeper</refentrytitle>
+<manvolnum>1</manvolnum>
+<refmiscinfo class="author">University of Chicago</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+<refname>globus-personal-gatekeeper</refname>
+<refpurpose>Manage a user's personal gatekeeper daemon</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+
+<cmdsynopsis>
+<command>globus-personal-gatekeeper</command>
+<arg>-help</arg>
+<arg>-usage</arg>
+<arg>-version</arg>
+<arg>-versions</arg>
+<arg>-list</arg>
+<arg>-directory <replaceable>CONTACT</replaceable></arg>
+</cmdsynopsis>
+
+<cmdsynopsis>
+<command>globus-personal-gatekeeper</command>
+    <arg>-debug</arg>
+    <arg choice="req">-start</arg>
+    <arg>-jmtype <replaceable>LRM</replaceable></arg>
+    <arg>-auditdir <replaceable>AUDIT_DIRECTORY</replaceable></arg>
+    <arg>-port <replaceable>PORT</replaceable></arg>
+    <arg>-log<arg>=<replaceable>DIRECTORY</replaceable></arg></arg>
+    <arg>-seg</arg>
+    <arg>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></arg>
+</cmdsynopsis>
+
+<cmdsynopsis>
+<command>globus-personal-gatekeeper</command>
+<arg>-killall</arg>
+<arg>-kill</arg>
+</cmdsynopsis>
+
+</refsynopsisdiv>
+
+<refsect1><title>Description</title>
+<para>
+The <command>globus-personal-gatekeeper</command> command is a utility which
+manages a gatekeeper and job manager service for a single user. Depending on
+the command-line arguments it will operate in one of several modes. In the
+first set of arguments indicated in the synopsis, the program provides
+information about the <command>globus-personal-gatekeeper</command> command or
+about instances of the <command>globus-personal-gatekeeper</command> that are
+running currently. The second set of arguments indicated in the synopsis
+provide control over starting a new
+<command>globus-personal-gatekeeper</command> instance. The final set of
+arguments provide control for terminating one or more
+<command>globus-personal-gatekeeper</command> instances.
+</para>
+
+<para>
+The <option>-start</option> mode will create a new subdirectory of
+<filename><envar>$HOME</envar>/.globus</filename> and write the configuration
+files needed to start a <command>globus-gatekeeper</command> daemon which will
+invoke the <command>globus-job-manager</command> service when new authenticated
+connections are made to its service port. The
+<command>globus-personal-gatekeeper</command> then exits, printing the contact
+string for the new gatekeeper prefixed by <literal>GRAM contact: </literal> to
+standard output. In addition to the arguments described above, any arguments
+described in <command>globus-job-manager(8)</command> can be appended to the
+command-line and will be added to the job manager configuration for the service
+started by the <command>globus-gatekeeper</command>.
+</para>
+
+<para>
+The new <command>globus-gatekeeper</command> will continue to run in the
+background until killed by invoking
+<command>globus-personal-gatekeeper</command> with the <option>-kill</option> or
+<option>-killall</option> argument. When killed, it will kill the
+<command>globus-gatekeeper</command> and <command>globus-job-manager</command>
+processes, remove state files and configuration data, and then exit. Jobs which
+are running when the personal gatekeeper is killed will continue to run, but
+their job directory will be destroyed so they may fail in the LRM.
+</para>
+
+<para>
+The full set of command-line options to
+<command>globus-personal-gatekeeper</command> consists of:
+
+<variablelist>
+    <varlistentry>
+        <term><option>-help</option></term>
+        <term><option>-usage</option></term>
+        <listitem><simpara>Print command-line option summary and exit</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-version</option></term>
+        <listitem><simpara>Print software version</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-versions</option></term>
+        <listitem><simpara>Print software version including DiRT information</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-list</option></term>
+        <listitem><simpara>Print a list of all currently running personal gatekeepers. These entries will be printed one per line.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-directory <replaceable>CONTACT</replaceable></option></term>
+        <listitem><simpara>Print the configuration directory for the personal gatekeeper with the contact string <replaceable>CONTACT</replaceable>.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-debug</option></term>
+        <listitem><simpara>Print additional debugging information when starting a personal gatekeeper. This option is ignored in other modes.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-start</option></term>
+        <listitem><simpara>Start a new personal gatekeeper process.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-jmtype <replaceable>LRM</replaceable></option></term>
+        <listitem><simpara>Use <replaceable>LRM</replaceable> as the local resource manager interface. If not provided when starting a personal gatekeeper, the job manager will use the default <literal>fork</literal> LRM.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-auditdir <replaceable>AUDIT_DIRECTORY</replaceable></option></term>
+        <listitem><simpara>Write audit report files to <replaceable>AUDIT_DIRECTORY</replaceable>. If not provided, the job manager will not write any audit files.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-port <replaceable>PORT</replaceable></option></term>
+        <listitem><simpara>Listen for gatekeeper TCP/IP connections on the port <replaceable>PORT</replaceable>. If not provided, the gatekeeper will let the operating system choose.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-log<optional>=<replaceable>DIRECTORY</replaceable></optional></option></term>
+        <listitem><simpara>Write job manager log files to <replaceable>DIRECTORY</replaceable>. If <replaceable>DIRECTORY</replaceable> is omitted, the default of <filename><envar>$HOME</envar></filename> will be used. If this option is not present, the job manager will not write any log files.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-seg</option></term>
+        <listitem><simpara>Try to use the SEG mechanism to receive job state change information, instead of polling for these. These require either the system administrator or the user to run an instance of the <command>globus-job-manager-event-generator</command> program for the LRM specified by the <option>-jmtype</option> option.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-acctfile <replaceable>ACCOUNTING_FILE</replaceable></option></term>
+        <listitem><simpara>Write gatekeeper accounting entries to <replaceable>ACCOUNTING_FILE</replaceable>. If not provided, no accounting records are written.</simpara></listitem>
+    </varlistentry>
+</variablelist>
+</para>
+</refsect1>
+
+<refsect1><title>Examples</title>
+
+<para>
+This example shows the output when starting a new personal gatekeeper which
+will schedule jobs via the <literal>lsf</literal> LRM, with debugging enabled.
+</para>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -start -jmtype lsf</command>
+<computeroutput>
+verifying setup...
+done.
+GRAM contact: personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User
+</computeroutput></screen>
+
+<para>
+This example shows the output when listing the current active personal
+gatekeepers.
+</para>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -list</command>
+<computeroutput>
+personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User
+</computeroutput></screen>
+
+<para>
+This example shows the output when querying the configuration directory for th
+eabove personal gatekeeper.
+gatekeepers.
+</para>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -directory "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"</command>
+<computeroutput>
+/home/juser/.globus/.personal-gatekeeper.personal-grid.example.org.1337
+</computeroutput></screen>
+
+<screen><prompt>% </prompt><command>globus-personal-gatekeeper -kill "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"</command>
+<computeroutput>
+killing gatekeeper: "personal-grid.example.org:57846:/DC=org/DC=example/CN=Joe User"
+</computeroutput></screen>
+
+</refsect1>
+<refsect1><title>See Also</title>
+<para>
+<citerefentry><refentrytitle>globusrun</refentrytitle><manvolnum>1</manvolnum></citerefentry>, 
+<citerefentry><refentrytitle>globus-job-manager</refentrytitle><manvolnum>8</manvolnum></citerefentry>, 
+<citerefentry><refentrytitle>globus-gatekeeper</refentrytitle><manvolnum>8</manvolnum></citerefentry>
+</para>
+</refsect1>
+
+</refentry>

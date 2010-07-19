@@ -1,0 +1,3 @@
+Test cases for the following need to be written:
+* scripted read-all
+* caching with more-than-one reuse of handle [recent bug fix]

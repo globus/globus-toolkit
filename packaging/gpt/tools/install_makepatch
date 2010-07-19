@@ -1,0 +1,73 @@
+#! /usr/bin/env perl
+
+use strict;
+use Getopt::Long;
+
+
+my ($prefix);
+my ($perl_location, $help, $man);
+
+GetOptions( 'with-perl=s'=> \$perl_location,
+            'prefix=s'=> \$prefix,
+            "help!" => \$help,
+            "man!" => \$man,
+          ) or pod2usage(1);
+
+pod2usage(0) if $help;
+
+use Cwd;
+
+my $startdir = cwd();
+
+my $topdir = $startdir;
+
+$prefix = "$startdir/install" if ! defined $prefix;
+
+$topdir =~ s!/tools/!/!;
+
+
+@INC = ("./tools", @INC);
+
+require DistGPT;
+
+$perl_location = DistGPT::find_perl(perl_location => $perl_location, 
+                                    perl_version => '5.005',
+                                   topdir => $topdir);
+
+
+die "ERROR: Can't find perl >= 5.005. Use -with-perl=<location> flag\n" 
+  if ! defined $perl_location;
+
+
+if (defined $man) {
+  my $podcommand = $perl_location;
+  $podcommand =~ s!perl$!pod2text!;
+  my $result = system("$podcommand $topdir/tools/install_makepatch");
+  exit 0;
+}
+
+my @commands = (
+                "$perl_location Makefile.PL \\\
+INSTALLDIRS=perl LIB=$prefix/lib/perl \\\
+INSTALLSCRIPT=$prefix/bin INSTALLMAN1DIR=$prefix/man/man1 \\\
+INSTALLMAN3DIR=$prefix/man/man3",
+                      'make', 
+                      'make install',
+               );
+
+my $dist = new DistGPT(
+                       topdir => cwd(),
+                       building => 1,
+                      );
+
+$dist->match_srcdirs();
+
+my $dir = $dist->{'srcdirs'}->{'perlpatch'};
+
+chdir $dir;
+
+for my $c (@commands) {
+  system($c);
+}
+
+chdir $startdir;

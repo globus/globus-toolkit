@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+<gpt_package_metadata Format_Version="0.01" Name="foo" >
+<Aging_Version Age="1" Major="3" Minor="5" />
+<Description >
+         This is the brand new package foo.
+         
+         Its really cool!
+  </Description>
+<Functional_Group >I/Am/Somebody/Because/I/Belong</Functional_Group>
+<Version_Stability Release="experimental" />
+<dev_pkg >
+<Flavor >spicy</Flavor>
+<Binary_Dependencies Type="Build_Link" >
+<Dependency Name="lee" Package="dev" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="low" Package="dev" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="lum" Package="dev" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+</Binary_Dependencies>
+<Binary_Dependencies Type="Compile" >
+<Dependency Name="fee" Package="dev" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="fow" Package="dev" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="fum" Package="dev" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+</Binary_Dependencies>
+<Build_Environment >
+<cflags >-Dfoo</cflags>
+<external_includes >-Imath.h -Issl.h</external_includes>
+<pkg_libs >-lfoo_spicy -lfee_spicy -lfum_2_spicy</pkg_libs>
+<external_libs >-lm -lssl</external_libs>
+</Build_Environment>
+<Post_Install_Message >
+       You need to run run_me
+  </Post_Install_Message>
+<Post_Install_Program >
+       run_me
+  </Post_Install_Program>
+<Setup Name="setmeup" >
+<Aging_Version Age="2" Major="5" Minor="5" />
+</Setup>
+</dev_pkg>
+</gpt_package_metadata>

@@ -1,0 +1,3 @@
+&(executable=$(GLOBUS_LOCATION)/bin/grid-proxy-info)
+ (arguments=-type)
+ (library_path = $(GLOBUS_LOCATION)/lib)

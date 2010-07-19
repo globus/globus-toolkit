@@ -1,0 +1,77 @@
+Overall changes in makepatch version 2.0
+----------------------------------------
+
+General
+
+ * The makepatch package now consists of two programs: 'makepatch' and
+   'applypatch'. 'makepatch' generates the patch kit (using the 'diff'
+   program), 'applypatch' applies it (using the 'patch' program).
+
+Makepatch
+
+ * To avoid most common problems with buggy versions of the 'patch'
+   program, the patch data is relocated to the current directory. 
+   This obsoletes the command line options -fixpath and -fixallpath.
+
+   As a consequence, when a patch is generated from two directories,
+   e.g.:
+
+     makepatch src-1.0 src-1.1 > the-patch
+
+   it must be applied *IN* the directory src-1.0, e.g.
+
+     cd src-1.0; applypatch the-patch
+
+   When fed to patch directly, no -p option should be used:
+
+     cd src-1.0; patch < the-patch
+
+ * (Initial) program options can be specified in environment variable
+   MAKEPATCHINIT, and in preferences files /etc/makepatchrc,
+   $HOME/.makepatchrc and ./.makepatchrc. The latter file name can be
+   overridden with a '-rcfile' option in MAKEPATCHINIT.
+
+ * Makepatch can take standard source archives (.tar.gz, .tar.bz2,
+   .tar or .zip) as input instead of the sources directories.
+   The -extract command line option can be used to change or add
+   extraction rules.
+
+ * MANIFEST files are automatically used unless suppressed with the
+   new -nomanifest option.
+
+ * Files can be excluded from the process with the new command line
+   options -exclude, -exclude_regex, -exclude-vc.
+
+Applypatch
+
+ * The generated patch kit is the concatenation of
+    - a shell preamble;
+    - the actual 'patch' input;
+    - a data section for 'applypatch'.
+
+ * When applied through 'applypatch', the patch kit will be
+   extensively verified for integrity. Heuristics are applied to the
+   current directory to verify that it is indeed the expected source
+   directory. This directory is prepared for the patching, i.e. new
+   files and directories are created if required. Next, the patch data
+   is passed to the 'patch' program for the actual patching. Finally
+   file modes and timestamps are adjusted.
+
+   Example:
+     applypatch -d src-1.0 the-patch
+
+ * When the patch kit is run as a shell script, it will prepare the
+   current directory by creating / removing files and directories as
+   required. The patch kit should then be fed to the 'patch' program.
+
+   Example:
+     cd src-1.0; sh < the-patch; patch < the-patch
+
+ * When the patch kit is fed to the 'patch' program, the files in the
+   current directory will be patched. If the directory has not been
+   prepared (e.g. by running the kit as a shell script) the results
+   will very much depend on your 'patch' program.
+
+   Example:
+     patch -d src-1.0 < the-patch
+

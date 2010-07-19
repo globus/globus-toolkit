@@ -1,0 +1,313 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+    <!ENTITY cmdname "grid-proxy-init">
+    <!ENTITY cmd "<command>grid-proxy-init</command>">
+]>
+
+<refentry id="grid-proxy-init" xreflabel="grid-proxy-init">
+  <refentryinfo>
+    <corpauthor>University of Chicago</corpauthor>
+  </refentryinfo>
+  <refmeta>
+    <refentrytitle>&cmdname;</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">Globus Toolkit</refmiscinfo>
+    <refmiscinfo class="version"><replaceable role="entity">version</replaceable></refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>&cmdname;</refname>
+    <refpurpose>Generate a new proxy certificate</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      &cmd;
+      <arg>-help</arg>
+      <arg>-usage</arg>
+      <arg>-version</arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      &cmd;
+      <arg>-debug</arg>
+      <arg>-q</arg>
+      <arg>-verify</arg>
+      <sbr/>
+      <group>
+          <arg>-valid <replaceable>HOURS</replaceable>:<replaceable>MINUTES</replaceable></arg>
+          <arg>-hours <replaceable>HOURS</replaceable></arg>
+      </group>
+      <arg>-cert <replaceable>CERTFILE</replaceable></arg>
+      <arg>-key <replaceable>KEYFILE</replaceable></arg>
+      <arg>-certdir <replaceable>CERTDIR</replaceable></arg>
+      <arg>-out <replaceable>PROXYPATH</replaceable></arg>
+      <arg>-bits <replaceable>BITS</replaceable></arg>
+      <sbr/>
+      <arg>-policy <replaceable>POLICYFILE</replaceable></arg>
+      <sbr/>
+      <group>
+          <arg>-pl <replaceable>POLICY-OID</replaceable></arg>
+          <arg>-policy-language <replaceable>POLICY-OID</replaceable></arg>
+      </group>
+      <arg>-path-length <replaceable>MAXIMUM</replaceable></arg>
+      <arg>-pwstdin</arg>
+      <arg >-limited</arg>
+      <arg >-independent</arg>
+      <group>
+          <arg >-draft</arg>
+          <arg >-old</arg>
+          <arg >-rfc</arg>
+      </group>
+
+    </cmdsynopsis>
+  </refsynopsisdiv>
+  <refsect1>
+    <title>Description</title>
+    <para>
+    The &cmd; program generates X.509 proxy certificates derived from the
+    currently available certificate files.  By default, this command generates
+    a <ulink url="http://www.ietf.org/rfc/rfc3820.txt">RFC 3820</ulink> Proxy
+    Certificate with a 512 bit key valid for 12 hours in a file named
+    <filename>/tmp/x509up_u<replaceable>UID</replaceable></filename>.
+    Command-line options and variables can modify the format, strength,
+    lifetime, and location of the generated proxy certificate.
+    </para>
+    <para>
+    X.509 proxy certificates are short-lived certificates, signed usually by a
+    user's identity certificate or another proxy certificate. The key
+    associated with a proxy certificate is unencrypted, so applications
+    can authenticate using a proxy identity without providing a passphrase.
+    </para>
+
+    <para>Proxy certificates provide a convenient alternative to constantly
+    entering passwords, but are also less secure than the user's normal
+    security credential. Therefore, they should always be user-readable only
+    (this is enforced by the GSI libraries), and should be deleted after they
+    are no longer needed.</para>
+
+    <para>This version of &cmd; supports three different proxy formats: the
+    old proxy format used in early releases of the Globus Toolkit up to
+    version 2.4.x, an IETF draft version of X.509 Proxy Certificate profile
+    used in Globus Toolkit 3.0.x and 3.2.x, and the RFC 3820 profile used in
+    Globus Toolkit Version 4.0.x and 4.2.x. By default, this version of &cmd; 
+    creates an RFC 3820 compliant proxy. To create a proxy compatible with
+    older versions of the Globus Toolkit, use the <option>-old</option> or
+    <option>-draft</option> command-line options.
+    </para>
+
+    <para>
+    The full set of command-line options to &cmd; are:
+
+    <variablelist>
+        <varlistentry>
+            <term><option>-help</option></term>
+            <term><option>-usage</option></term>
+            <listitem><simpara>Display the command-line options to 
+            &cmd;.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-version</option></term>
+            <listitem><simpara>Display the version number of the &cmd;
+            command</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-debug</option></term>
+            <listitem><simpara>Display information about the path to the
+            certificate and key used to generate the proxy certificate, the
+            path to the trusted certificate directory, and verbose error
+            messages</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-q</option></term>
+            <listitem><simpara>Suppress all output from &cmd; except for
+            passphrase prompts.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-verify</option></term>
+            <listitem><simpara>Perform certificate chain validity checks on the
+            generated proxy.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-valid <replaceable>HOURS</replaceable>:<replaceable>MINUTES</replaceable></option></term>
+            <term><option>-hours <replaceable>HOURS</replaceable></option></term>
+            <listitem><simpara>Create a certificate that is valid for
+            <replaceable>HOURS</replaceable> hours and
+            <replaceable>MINUTES</replaceable> minutes. If not specified, the
+            default of twelve hours and no minutes is used.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-cert <replaceable>CERTFILE</replaceable></option></term>
+            <term><option>-key <replaceable>KEYFILE</replaceable></option></term>
+            <listitem><simpara>Create a proxy certificate signed by
+            the certificate located in <filename>CERTFILE</filename> using the
+            key located in <filename>KEYFILE</filename>. If not specified the
+            default certificate and key will be used. This overrides the
+            values of environment variables described
+            below.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-certdir <replaceable>CERTDIR</replaceable></option></term>
+            <listitem><simpara>Search <replaceable>CERTDIR</replaceable> for
+            trusted certificates if verifying the proxy certificate. If not 
+            specified, the default trusted certificate search path is used. This
+            overrides the value of the <envar>X509_CERT_DIR</envar> environment
+            variable</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-out <replaceable>PROXYPATH</replaceable></option></term>
+            <listitem><simpara>Write the generated proxy certificate file to
+            <replaceable>PROXYPATH</replaceable> instead of the default path of
+            <filename>/tmp/x509up_u<replaceable>UID</replaceable></filename>.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-bits <replaceable>BITS</replaceable></option></term>
+            <listitem><simpara>When creating the proxy certificate, use a 
+            <replaceable>BITS</replaceable> bit key instead of the default
+            512 bit keys.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-policy <replaceable>POLICYFILE</replaceable></option></term>
+            <listitem><simpara>Add the certificate policy data described in
+            <replaceable>POLICYFILE</replaceable> as the ProxyCertInfo X.509
+            extension to the generated proxy certificate.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-pl <replaceable>POLICY-OID</replaceable></option></term>
+          <term><option>-policy-language <replaceable>POLICY-OID</replaceable></option></term>
+          <listitem><simpara>Set the policy language identifier of the policy
+          data specified by the <option>-policy</option> command-line option
+          to the oid specified by the <replaceable>POLICY-OID</replaceable>
+          string.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-path-length <replaceable>MAXIMUM</replaceable></option></term>
+            <listitem><simpara>Set the maximum length of the chain of proxies
+            that can be created by the generated proxy to
+            <replaceable>MAXIMUM</replaceable>. If not set, the default of an
+            unlimited proxy chain length is used.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-pwstdin</option></term>
+            <listitem><simpara>Read the private key's passphrase from stdin
+            instead of reading input from the controlling tty. This is useful
+            when scripting &cmd;.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-limited</option></term>
+            <listitem><simpara>Create a limited proxy. Limited proxies are
+            generally refused by process-creating services, but may be
+            used to authorize with other services.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-independent</option></term>
+            <listitem><simpara>Create an independent proxy. An independent
+            proxy is not treated as an impersonation proxy but as a separate
+            identity for authorization purposes.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-draft</option></term>
+            <listitem><simpara>Create a IETF draft proxy instead of the default
+            RFC 3280-compliant proxy. This type of proxy uses a non-standard proxy
+            policy identifier. This might be useful for authenticating with
+            older versions of the Globus Toolkit.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-old</option></term>
+            <listitem><simpara>Create a legacy proxy instead of the default
+            RFC 3280-compliant proxy. This type of proxy uses a non-standard method
+            of indicating that the certificate is a proxy and whether it is
+            limited.  This might be useful for authenticating with
+            older versions of the Globus Toolkit.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>-rfc</option></term>
+            <listitem><simpara>Create an RFC 3820-compliant proxy certificate.
+            This is the default for this version of &cmd;.</simpara></listitem>
+        </varlistentry>
+    </variablelist>
+
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Examples</title>
+    <para>To create a proxy with the default lifetime and format, run the
+        &cmd; program with no arguments. For example:
+    
+    <screen><prompt>% </prompt><command>grid-proxy-init</command>
+<computeroutput>Your identity: /DC=org/DC=example/CN=Joe User</computeroutput>
+<prompt>Enter GRID pass phrase for this identity:</prompt>
+<computeroutput>Creating proxy .................................. Done
+Your proxy is valid until: Thu Mar 18 03:48:05 2010</computeroutput></screen>
+    </para>
+    
+    <para>To create a stronger proxy that lasts for only 8 hours, use the
+    <option>-hours</option> and <option>-bits</option> command-line options to
+    &cmd;. For example:
+    
+    <screen><prompt>% </prompt><command>grid-proxy-init</command> <option>-hours 8</option> <option>-bits 1024</option>
+<computeroutput>Your identity: /DC=org/DC=example/CN=Joe User</computeroutput>
+<prompt>Enter GRID pass phrase for this identity:</prompt>
+<computeroutput>Creating proxy .................................. Done
+Your proxy is valid until: Thu Mar 17 23:48:05 2010</computeroutput></screen>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Environment Variables</title>
+
+    <para>
+    The following environment variables affect the execution of &cmd;:
+    <variablelist>
+        <varlistentry>
+            <term><envar>X509_USER_CERT</envar></term>
+            <listitem><simpara>Path to the certificate to use as issuer of the
+            new proxy.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><envar>X509_USER_KEY</envar></term>
+            <listitem><simpara>Path to the key to use to sign the new
+            proxy.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><envar>X509_CERT_DIR</envar></term>
+            <listitem><simpara>Path to the directory containing trusted
+            certifiate certificates and signing policies.</simpara></listitem>
+        </varlistentry>
+    </variablelist>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Files</title>
+
+    <para>
+    The following files affect the execution of &cmd;:
+    <variablelist>
+        <varlistentry>
+            <term><filename><envar>$HOME</envar>/.globus/usercert.pem</filename></term>
+            <listitem><simpara>Default path to the certificate to use as issuer
+            of the new proxy.</simpara></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><filename><envar>$HOME</envar>/.globus/userkey.pem</filename></term>
+            <listitem><simpara>Default path to the key to use to sign the new
+            proxy.</simpara></listitem>
+        </varlistentry>
+    </variablelist>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Compatibility</title>
+    <para>
+    For more information about proxy certificate types and their compatibility in GT, see <ulink url="http://dev.globus.org/wiki/Security/ProxyCertTypes">http://dev.globus.org/wiki/Security/ProxyCertTypes</ulink>.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+        <citerefentry><refentrytitle>grid-proxy-destroy</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+        <citerefentry><refentrytitle>grid-proxy-info</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>

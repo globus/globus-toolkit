@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title> UDT Reference</title>
+<link rel="stylesheet" href="udtdoc.css" type="text/css" />
+</head>
+
+<body>
+<div class="ref_head">&nbsp;UDT Reference: Functions</div>
+
+<h4 class="func_name"><strong>getsockname</strong></h4>
+<p>The <b>getsockname</b> method retrieves the local address associated with a UDT socket.</p>
+
+<div class="code">int getsockname(<br />
+&nbsp; UDTSOCKET <font color="#FFFFFF">u</font>,<br />
+&nbsp; struct sockaddr* <font color="#FFFFFF">name</font>,<br />
+&nbsp; int* <font color="#FFFFFF">namelen</font><br />
+);</div>
+
+<h5>Parameters</h5>
+<dl>
+  <dt><i>u</i></dt>
+  <dd>[in] Descriptor identifying a connected socket.</dd>
+  <dt><em>name</em></dt>
+  <dd>[out] The structure to store the local address.</dd>
+  <dt><em>addrlen</em></dt>
+  <dd>[in, out] pointer to the size of the <i>name</i> structure.</dd>
+</dl>
+
+<h5>Return Value</h5>
+<p>On success, <strong>getlasterror</strong> returns 0 and the local address information is stored in <i>name</i>; otherwise it returns UDT::ERROR and the specific error information can be 
+retrieved using <a href="error.htm">getlasterror</a>.</p>
+
+<table width="100%" border="1" cellpadding="1" cellspacing="0" bordercolor="#CCCCCC">
+  <tr>
+    <td width="17%" class="table_headline"><strong>Error Name</strong></td>
+    <td width="17%" class="table_headline"><strong>Error Code</strong></td>
+    <td width="83%" class="table_headline"><strong>Comment</strong></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td>EINVPARAM</td>
+    <td>Invalid parameters.</td>
+  </tr>
+  <tr>
+    <td>EINVSOCK</td>
+    <td>5004</td>
+    <td><i>u</i> is an invailid UDT socket.</td>
+  </tr>
+  <tr>
+    <td>EUNBOUNDSOCK</td>
+    <td>5005</td>
+    <td><i>u</i> is not bound to a local address yet.</td>
+  </tr>
+</table>
+
+<h5>Description</h5>
+<p>The <strong>getsockname</strong> retrieves the local address associated with the socket. The UDT socket must be bound explicitly (via <strong>bind</strong>) or implicitly (via 
+<strong>connect</strong>), otherwise this method will fail because there is no meaningful address bound to the socket.</p>
+
+<h5>See Also</h5>
+<p><strong><a href="bind.htm">listen</a>, <a href="connect.htm">connect</a></strong></p>
+<p>&nbsp;</p>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+AM_CONFIG_HEADER(library/oldgaa/config.h)
+
+AC_CHECK_HEADERS(malloc.h sys/time.h unistd.h)
+
+LAC_DOXYGEN(["../library"])
+
+GLOBUS_FINALIZE
+
+AC_OUTPUT(
+        Makefile
+        pkgdata/Makefile
+        pkgdata/pkg_data_src.gpt
+	library/Makefile
+	library/oldgaa/Makefile
+	doxygen/Makefile
+	doxygen/Doxyfile 
+	doxygen/Doxyfile-internal
+	version.h
+)

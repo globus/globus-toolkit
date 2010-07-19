@@ -1,0 +1,146 @@
+#! /usr/bin/env perl
+
+use Cwd;
+use strict;
+use Getopt::Long;
+
+# determine gpt version number
+
+
+my ($web_location, 
+    $verbose, 
+    $help) = (
+              "/afs/ncsa/web/www.gridpackagingtools.com/htdocs/man",
+              undef, undef);
+
+my @scripts = (
+               "gpt-build",
+               "gpt_build_config",
+               "gpt-bundle",
+               "gpt-config",
+               "gpt-install",
+               "gpt-pkg",
+               "gpt-postinstall",
+               "gpt-query",
+               "gpt-setup",
+               "gpt-undefines",
+               "gpt-uninstall",
+               "gpt-verify",
+               "gpt-virtual-pkg",
+              );
+
+my @modules = (
+               "V1/BinaryDependency",
+               "Filelist",
+               "MyFilelists",
+               "V1/Package",
+               "V1/SourceDependency",
+               "V1/Version",
+               "V1/XML",
+              );
+
+
+my @dtds = (
+            "globus_flavors.dtd",
+            "globus_package.dtd",
+            "gpt_bundle.dtd",
+            "gpt_data.dtd",
+            "gpt_reservoir.dtd",
+           );
+
+GetOptions( 
+           "htmldir=s" => \$web_location,
+           "help!" => \$help,
+           "verbose!" => \$verbose,
+          ) or pod2usage(1);
+
+my $startdir = cwd();
+
+open (CFG, 'packaging_tools/configure.ac');
+
+my ($gptversion);
+for (<CFG>) {
+    if (m!AC_INIT\(\w+,([^,\)]+)!) {
+      $gptversion = $1;
+      $gptversion =~ s!\s+!!g;
+      last;
+    }
+}
+
+close CFG;
+
+my $manpages_location = "$web_location/GPT-$gptversion/";
+my $dtd_location = "$web_location/GPT-$gptversion/DTDs";
+
+mkinstalldir($manpages_location);
+mkinstalldir($dtd_location);
+
+
+for my $s (@scripts) {
+  my $ext = $s eq "gpt-translate-interpreter" ? "-pl" : "";
+  system("pod2html -infile=packaging_tools/perl/scripts/$s$ext -outfile=$manpages_location/$s.html");
+}
+
+system("pod2html -infile=build_gpt -outfile=$manpages_location/build_gpt.html");
+
+for my $m (@modules) {
+  my $html = "$m.html";
+  $html =~ s!^.+/([^/]+)!$1!;
+  
+  system("pod2html -infile=packaging_tools/perl/GPT/$m.pm -outfile=$manpages_location/$html")
+}
+
+for my $f (@dtds) {
+  system("cp packaging_tools/etc/$f $dtd_location/$f")
+}
+
+open (INIDX, 'tools/manpage_index.html');
+open (OUTIDX, ">$manpages_location/index.html");
+
+
+for (<INIDX>) {
+
+  if ( m!GPT_SCRIPTS! ) {
+    for my $s (@scripts, 'build_gpt') {
+      print OUTIDX "<li><a href=\"./$s.html\">$s</a></li>\n\n";
+    }
+  } else {
+    print OUTIDX $_;
+  }
+
+}
+
+close INIDX;
+close OUTIDX;
+
+sub pod2usage {
+  my $ex = shift;
+  print "install_htmldocs [ -htmldir=<path> \\
+             -verbose \\
+             -help \\
+             ]\n";
+  exit $ex;
+}
+
+
+sub mkinstalldir {
+  my $dir = abspath(shift);
+  my @dirlist = split m!/!, $dir;
+  my $subdir= "";
+  for my $d (@dirlist) {
+    next if $d eq "";
+    $subdir .= "/$d";
+    if (! -d $subdir) {
+      my $result = `mkdir $subdir`;
+    }
+  }
+}
+sub abspath {
+  my ($file) = @_;
+  my $home = $ENV{'HOME'};
+  $file =~ s!~!$home!;
+  my $startd = $startdir;
+  $file =~ s!^\./!$startd/!;
+  $file = "$startd/$file" if $file !~ m!^\s*/!;
+  return $file;
+}

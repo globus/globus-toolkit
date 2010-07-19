@@ -1,0 +1,2 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_EXECUTABLE_PERMISSIONS *)
+&(executable=/etc/passwd)

@@ -1,0 +1,127 @@
+#! /bin/sh
+# 
+# Copyright 1999-2010 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+if [ -x /usr/bin/getconf ]; then
+    PATH="$PATH:`/usr/bin/getconf PATH 2> /dev/null`"
+else
+    PATH="$PATH:/usr/bin:/bin:/sbin"
+fi
+PATH="$PATH:$GLOBUS_LOCATION/bin"
+export PATH
+
+if [ $# -lt 6 ]; then
+    printf "Usage: $0 tag jobid stream tailopt followopt url\n" 1>&2
+    exit `[ $1 = "-help" -o $1 = "-usage" -o $1 = "-h" ]`
+fi
+
+tag="$1"
+jobid="$2"
+stream="$3"
+tailopt="$4"
+followopt="$5"
+url="$6"
+
+if [ "$tailopt" != no -a "$followopt" != no ]; then
+    printf "Error: can't have both -f and -t command-line options\n" 1>&2
+    exit 1
+fi
+
+out_path="`globus-gass-cache -query -t \"$tag\" \"x-gass-cache://${jobid}${stream}\"`"
+if [ $? -ne 0 -o "$out_path" = "" ]; then
+    printf "Error locating $stream for job $jobid\n" 1>&2
+    exit 1
+fi
+
+subject=""
+# For https transfers, we'll assume self-authz to a GASS server; otherwise
+# we'll use the default authz (none for http)
+if expr "$url" : https > /dev/null; then
+    subject="`grid-proxy-info -identity 2> /dev/null`"
+    if [ $? -ne 0 -o "$subject" = "" ]; then
+        printf "Error determining subject\n" 1>&2
+        exit 1
+    fi
+fi
+
+# Seconds between instances of the loop. We only care about this for -f mode
+sleeptime=0
+
+# This is the last value of the length of the file, so we can avoid doing
+# the (potentially) more expensive wc -l below. We initialize this to 0 so
+# that the first time through, we will attempt to send data if there are any
+# lines
+out_file_size=0
+
+# We want to keep track of the length of the file in lines for each poll
+# If the client asked to tail the last N lines (via globus-job-get-output -t N
+# or globus-job-get-output -f N) then we'll subtract that off of this lenght and
+# stream from that point. If we are just doing a cat of the file, we'll ignore
+# the file length value
+if [ $tailopt != no ]; then
+    out_line_count="`wc -l \"$out_path\" | awk '{print \$1}'`"
+    out_line_count="`expr $out_line_count - $tailopt`"
+elif [ $followopt != no ]; then
+    out_line_count="`wc -l \"$out_path\" | awk '{print \$1}'`"
+    out_line_count="`expr $out_line_count - $followopt`"
+    sleeptime=1
+else
+    out_line_count=0
+fi
+
+# Don't allow silly values to confuse the tail commands below
+if [ $out_line_count -lt 0 ]; then
+    out_line_count=0
+fi
+
+# Loop will run forever if -f N is used, otherwise it will run 1 time
+first=1
+while [ $followopt != no -o $first = 1 ]; do
+    first=0
+
+    # Check if the file has grown since the last time through this loop. If not
+    # we'll just continue on
+    new_out_file_size="`wc -c \"$out_path\" | awk '{print \$1}'`"
+    if [ $new_out_file_size -le $out_file_size ]; then
+        sleep $sleeptime
+        continue
+    fi
+    if [ $tailopt = 'no' -a $followopt = 'no' ]; then
+        # "cat" case
+        if [ "$subject" != "" ]; then
+            globus-url-copy -s "$subject" file:"$out_path" "$url/dev/stdout"
+        else
+            globus-url-copy file:"$out_path" "$url/dev/stdout"
+        fi
+    elif [ $new_out_file_size -gt $out_file_size ]; then
+        # this ends up parsing $out_path for \n, so it's expensive.
+        new_out_line_count="`wc -l \"$out_path\" | awk '{print \$1}'`"
+        # only send complete lines that have arrived since the last check
+        out_skip_lines=`expr $new_out_line_count - $out_line_count`
+        if [ $out_skip_lines -gt 0 ]; then
+            head -$new_out_line_count "$out_path" | tail -$out_skip_lines | \
+                (if [ "$subject" != "" ]; then
+                    globus-url-copy -s "$subject" file:/dev/stdin \
+                            "$url/dev/stdout"
+                else
+                    globus-url-copy file:/dev/stdin "$url/dev/stdout"
+                fi)
+            out_line_count=$new_out_line_count
+        fi
+        out_file_size=$new_out_file_size
+    fi
+
+    sleep $sleeptime
+done

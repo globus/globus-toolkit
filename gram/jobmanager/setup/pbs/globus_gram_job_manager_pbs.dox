@@ -1,0 +1,64 @@
+/**
+@mainpage PBS Job Manager
+
+This package contains the "pbs" interface to the GRAM Job Manager. It is
+a setup package; the script setup-globus-job-manager-pbs must be run
+to register a pbs job manager with the Gatekeeper as a service.
+
+@section setup_usage Options to setup-globus-job-manager-pbs 
+
+@par -service-name=NAME
+Set the job manager service name to be NAME. The default service name
+for a PBS job manager is "jobmanager-pbs". See
+@ref globus_gram_resource_manager_contact
+for information on how the service name is used by GRAM.
+@par -non-cluster
+Configure the job manager to treat the PBS scheduler as a scheduler for
+a single SMP machine. If this is specified, then the job manager will
+not attempt to use a remote shell to run the job on the hosts names in the
+PBS_NODEFILE. The default behavior for the pbs job manager is to treat the
+PBS scheduler as a cluster.
+@par -cpu-per-node=COUNT
+Configure the job manager to act as a cluster of SMP machines. This is only
+relevant if the -non-cluster option is not given. If this parameter is present
+and the @ref globus_gram_rsl_attribute_hostcount "hostcount RSL attribute"
+is not present in a job submission RSL, the job will be submitted with a
+request for @code count / cpu-per-node @endcode nodes. The default if this
+parameter is not present is 1.
+@par -remote-shell=rsh|ssh
+Configure the job manager to use the given remote shell command for starting
+jobs on a cluster. The default is to search the path for one of ssh and rsh
+(in that order).
+@par -validate-queues=yes|no
+Configure the PBS job manager to check for valid queue names at setup time,
+and put those in an RSL validation file for this scheduler. This will allow
+the Job Manager to validate that a queue named by the
+@ref globus_gram_rsl_attribute_queue "queue RSL attribute" is one supported
+by PBS.
+
+@section pbs_rsl PBS Scheduler-Specific RSL Attributes
+
+The PBS job manager supports a few new scheduler specific options which
+may be included in job submission RSLs.
+
+@par email_address = email@address.com
+Set the email address to receive notifications. See the
+email_on_abort, email_on_execution, and email_on_termination
+attributes.
+@par email_on_abort = yes|no
+Send email to the job submitter (or the address specified in the
+email_address RSL attribute if present) if the job is aborted by the
+scheduler.
+@par email_on_execution = yes|no
+Send email to the job submitter (or the address specified in the
+email_address RSL attribute if present) when the job begins execution.
+@par email_on_termination = yes|no
+Send email to the job submitter (or the address specified in the
+email_address RSL attribute if present) when the job terminates.
+
+@section pbs_changes Change Log
+
+@subsection globus_gram_job_manager_setup_pbs globus_gram_job_manager_setup_pbs 1.0
+
+Split from the core of the Job Manager as a setup package.
+*/

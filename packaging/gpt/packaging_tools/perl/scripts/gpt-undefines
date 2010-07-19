@@ -1,0 +1,277 @@
+#!/usr/bin/perl -w
+
+#use strict;
+use vars qw($top %used_defines %set_defines);
+use File::Find;
+use Getopt::Long;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+$top = ".";
+
+my ($config, $disable_undefs);
+my $verbose = 0;
+my ($help, $man, $version);
+
+# sub pod2usage {
+#   my $ex = shift;
+#   print "gpt_undefines [-srcdir=PATH -config -disable-undefs -verbose -help] headers containing defines\n";
+#   exit $ex;
+# }
+
+GetOptions( 'srcdir=s' => \$top, 'config' => \$config, 
+            'disable-undefs' => \$disable_undefs, 
+	    'verbose=i' => \$verbose, 'help' => \$help,'version' => \$version)
+  or Pod::Usage::pod2usage(1);
+
+Pod::Usage::pod2usage(0) if $help;
+require Grid::GPT::GPTIdentity;
+Grid::GPT::GPTIdentity::print_gpt_version() if defined $version;
+
+
+
+for my $h (@ARGV) {
+  scan_for_def_cmds($h, 1);
+}
+
+
+find(\&globus_sh, $top);
+my $word;
+
+if (defined($config)) {
+
+  for $word (sort keys %used_defines) {
+    
+    next if (defined($set_defines{$word}));
+    
+    print "#ifndef $word\n";
+    print "#undef $word\n";
+    print "#endif\n";
+  }
+
+} else {
+
+  for $word (sort keys %used_defines) {
+    
+    next if (defined($set_defines{$word}));
+    
+    print "$word :\n";
+    for (sort keys %{$used_defines{$word}}) {
+      print "\t$_\n";
+    }
+    print "\n\n";
+  }
+}
+
+
+sub globus_sh
+  {
+    if (! -f "$_") {
+      return;
+    }
+    if (! -T "$_") {
+      return;
+    }
+    
+    if (!/\.[Cch]$/) {
+      return;
+    }
+    if (/config\.h/) {
+      return;
+    }
+    my $file = $_;
+    scan_for_def_cmds($file);
+    $_ = $file;
+  }
+
+sub scan_for_def_cmds 
+{
+  my ($file, $just_defines) = @_;
+  open (FILE,"<$file");
+  my $line_continuation = "no";
+  my $isifdef = "no";
+  while (<FILE>) {
+    my $macro_buffer;
+
+    # process a line continuation    
+    if ($line_continuation eq "yes") {
+      $macro_buffer .= $_;
+      $line_continuation = "no";
+    }
+    
+    # scan for #if?def's
+    if (/^\s*\#if/) {
+      if (m!\\$!) {
+        $line_continuation = "yes";
+      }
+      $macro_buffer = $_;
+      $isifdef = "yes";
+      next if defined($just_defines);
+    }
+    
+    # scan for #define's
+    if (/^\s*\#def/) {
+      if (m!\\$!) {
+        $line_continuation = "yes";
+      }
+      $macro_buffer = $_;
+      $isifdef = "no";
+    }
+    
+    # scan for #undef's including those commented out
+    if (m!^/\*\s*\#undef! and ! defined($disable_undefs)) {
+      # remove comment so that line doesn't get stripped
+      s!^/\*!!;
+      if (m!\\$!) {
+        $line_continuation = "yes";
+      }
+      $macro_buffer = $_;
+      $isifdef = "no";
+    }
+    
+    if (defined($macro_buffer)) {
+      #	print $macro_buffer;
+      my $keywrds = { if =>1,
+                      defined =>1,
+                      ifdef =>1,
+                      ifndef =>1,
+                      define =>1,
+                      0 => 1,
+                      1 => 1
+                    };
+      #	print $macro_buffer;
+
+      # Remove comments for the buffer
+      $macro_buffer =~ s!/\*.+$!!g;
+
+      #	print $macro_buffer;
+      
+      # extract all of the words out of the buffer
+      while ($macro_buffer =~ m/(\w+)/g) {
+        my $word = $1;
+        
+        # skip C keywords
+        next if (defined($keywrds->{$word}));
+        
+        # decide which hash to put the word in.
+        my $wordlist = \%set_defines;
+        $wordlist = \%used_defines if ($isifdef eq "yes");
+        
+        # create the has if it doesn't exist
+        if (!defined($wordlist->{$word})) {
+          $wordlist->{$word} = {};
+        }
+        
+        # fill in the hash entry
+        my $fullname = $file;
+        if (defined($File::Find::name)) {
+          $fullname = $File::Find::name;
+          $fullname =~ s!$top!!;
+        }
+        $wordlist->{$word}->{$fullname} = 1;
+      }
+    }
+  }
+  close FILE;
+  
+}
+
+=head1 NAME
+
+B<gpt_undefines> - Generate a list of preprocessor macros that are not defined.
+
+=head1 SYNOPSIS
+
+gpt_undefines [-srcdir=PATH -config -disable-undefs -verbose -help] headers containing defines
+
+=head1 DESCRIPTION
+
+B<gpt_undefines> Generates a list of preprocessor macros that are not
+defined internally in the source code.  Macros that are defined in the
+header files listed during B<gpt_undefines>'s invocation will also be
+excluded.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -srcdir=PATH
+
+Use PATH as the directory containing the source code.  Source code in
+the entire directory tree will be scanned. Default PATH is the
+directory B<gpt_undefines> was invoked in.
+
+=item -config
+
+Prints the list out in a format that can be pasted into an installable
+header file.
+
+=item -disable-undefs
+
+Do not count commented out undefines as a define. This technique is
+used by autoconf to indicate a negative test result.  Example:
+
+   /* #undef HAVE_TCP_FASTACK */
+
+=back
+
+=head1 Managing Autoconf defines.
+
+By default the defines tested for by the configure script are stored
+in a file called B<config.h>.  This file should never be installed. to
+add autoconf defines to config.h simply add the define in the
+following format to the file acconfig.h:
+
+   #undef AUTOCONF_DEFINE
+
+acconfig.h is tranformed into a config.h.in by the script
+B<autoheader>.  Then the configure script transform it into config.h.
+
+A problem occurs when the autoconf defines are used in installed
+header files.  In this case the defines should be put in an
+installable header file using the following format:
+
+   #ifndef AUTOCONF_DEFINE
+   #undef AUTOCONF_DEFINE
+   #endif
+
+=head1 SEE ALSO
+
+autoconf(1) autoheader(1) 
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

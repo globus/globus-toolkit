@@ -1,0 +1,14 @@
+<!DOCTYPE globus_flavors [
+
+<!ELEMENT flavors (flavor_definition?, flavor_choice*)>
+<!ATTLIST flavors Format_Version NMTOKEN #REQUIRED>
+
+<!ELEMENT flavor_definition (config+)>
+
+<!ELEMENT config #EMPTY>
+<!ATTLIST config switch NMTOKEN #REQUIRED>
+<!ATTLIST config label NMTOKEN>
+<!ATTLIST config nolabel NMTOKEN>
+<!ATTLIST config std NMTOKEN #REQUIRED>
+
+]>

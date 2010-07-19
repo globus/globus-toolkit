@@ -1,0 +1,172 @@
+#! perl
+
+use strict;
+use Getopt::Long;
+use Cwd;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+my $VERSION = 0.01;
+my $installpath;
+my ($flavor, $filelistfile, $gptfile);
+my $prefix;
+my $verbose = 0;
+my ($help, $man);
+my $delete;
+
+# sub pod2usage {
+#   my $ex = shift;
+#   print "gpt-link [-verbose -help -installpath=path_to_globus_installation ] -flavor=build_flavor -filelist=file -gptfile=file -prefix=path_to_external_package\n";
+#   exit $ex;
+# }
+
+GetOptions( 'installpath=s'=> \$installpath,
+            'flavor=s' => \$flavor, 
+            'filelist=s' => \$filelistfile, 
+            'gptfile=s' => \$gptfile, 
+	    'prefix=s' => \$prefix,
+	    'verbose=i' => \$verbose, 'help' => \$help) 
+  or Pod::Usage::pod2usage(1);
+
+Pod::Usage::pod2usage(0) if $help;
+
+if (defined $gptfile || defined $filelistfile) {
+  if (!defined($flavor)) {
+    print "ERROR: Please specify a build flavor\n";
+    Pod::Usage::pod2usage(1);
+  }
+}
+
+if (!defined($prefix)) {
+  print "ERROR: Please specify the installation prefix\n";
+  Pod::Usage::pod2usage(1);
+}
+
+require Grid::GPT::V1::Package;
+require Grid::GPT::FilelistFunctions;
+
+$installpath = $ENV{'GLOBUS_LOCATION'} if ! defined($installpath);
+
+$installpath = Cwd::abs_path($installpath);
+
+open (LIST, "$filelistfile");
+
+
+my @original_files = <LIST>;
+
+chomp @original_files;
+my $factory = new Grid::GPT::PackageFactory;
+my $pkg = $factory->type_of_package($gptfile);
+$pkg->read_metadata_file($gptfile);
+my $name = $pkg->Name();
+
+my $log = new Grid::GPM::Inform(verbose => $verbose);
+my $file_func = new Grid::GPT::FilelistFunctions(log => $log, 
+                                                 installdir => $prefix);
+
+my @install_filelist = @original_files;
+
+$file_func->flavor_filelist(\@install_filelist, $flavor);
+
+for my $pkgtype (@Grid::GPT::V1::Definitions::package_types) {
+  my $filelist = $me->generate_binfilelists($flavor, 0, 0, $pkgtype, \@install_filelist);
+  # assume metadata is not installed
+  $me->install_pkgdata($pkg, $name, $flavor, $pkgtype, \@install_filelist);
+}
+
+
+for my $index (0..@original_files[-1]) {
+  my ($dir, $name) = $install_filelist[$index] =~  m!(.+)/([^/]+)$!;
+  if (! -f $original_files[$index])
+    {
+      print "WARNING: File  $original_files[$index] not found\n";
+    }
+  Grid::GPT::FilelistFunctions::mkinstalldir($dir);
+  symlink $original_files[$index], $install_filelist[$index];
+}
+
+
+
+
+__END__
+
+=head1 NAME
+
+B<globus_virtual_package> - Link external packages into a globus site
+installation. 
+
+=head1 SYNOPSIS
+
+B<globus_virtual_package> [options] external_package_description_file
+
+
+=head1 DESCRIPTION
+
+B<globus_virtual_package> Link external packages into a globus site
+installation. The script uses a description file to create the softlinks. The
+format of this file is defined in the file virtual_package.dtd.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-installpath>
+
+Overrides $GLOBUS_INSTALL_PATH to point to a globus site installation.
+
+=item B<-prefix>
+
+Specifies the installation location of the external package
+
+=item B<-flavor>
+
+Specifies the build flavor of the external package.
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=item B<-man>
+
+Prints the manual page and exits.
+
+=back
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

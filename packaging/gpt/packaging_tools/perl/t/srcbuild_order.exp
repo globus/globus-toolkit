@@ -1,0 +1,102 @@
+++++++++++++++++Table++++++++++++++++++
+/pkgname=complexsrcfee/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrcfee-ANY-src
+Dependencies:
+----------
+/deptype=lib_link/pkgname=complexsrcfum/flavor=ANY/pkgtype=dev-> /from=complexsrcfee-ANY-src/dep=complexsrcfum-ANY-dev/to=complexsrcfum-ANY-src/tag=complexsrcfum-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfum/flavor=ANY/pkgtype=rtl-> /from=complexsrcfee-ANY-src/dep=complexsrcfum-ANY-dev/to=complexsrcfum-ANY-src/tag=complexsrcfum-ANY-rtl
+----------
+Provides:
+----------
+/deptype=lib_link/pkgname=complexsrcfoo/flavor=ANY/pkgtype=dev-> /from=complexsrcfoo-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfoo/flavor=ANY/pkgtype=rtl-> /from=complexsrcfoo-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=dev-> /from=complexsrcfuu-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=rtl-> /from=complexsrcfuu-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-rtl
+----------
+/pkgname=complexsrcfigi/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrcfigi-ANY-src
+Dependencies:
+----------
+----------
+Provides:
+----------
+/deptype=lib_link/pkgname=complexsrcfum/flavor=ANY/pkgtype=dev-> /from=complexsrcfum-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfum/flavor=ANY/pkgtype=rtl-> /from=complexsrcfum-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=dev-> /from=complexsrcfuu-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=rtl-> /from=complexsrcfuu-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-rtl
+/deptype=lib_link/pkgname=complexsrctop/flavor=ANY/pkgtype=dev-> /from=complexsrctop-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-dev
+/deptype=lib_link/pkgname=complexsrctop/flavor=ANY/pkgtype=rtl-> /from=complexsrctop-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-rtl
+----------
+/pkgname=complexsrcfoo/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrcfoo-ANY-src
+Dependencies:
+----------
+/deptype=lib_link/pkgname=complexsrcfee/flavor=ANY/pkgtype=dev-> /from=complexsrcfoo-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfee/flavor=ANY/pkgtype=rtl-> /from=complexsrcfoo-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfue/flavor=ANY/pkgtype=dev-> /from=complexsrcfoo-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfue/flavor=ANY/pkgtype=rtl-> /from=complexsrcfoo-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-rtl
+----------
+Provides:
+----------
+/deptype=lib_link/pkgname=complexsrctop/flavor=ANY/pkgtype=dev-> /from=complexsrctop-ANY-src/dep=complexsrcfoo-ANY-dev/to=complexsrcfoo-ANY-src/tag=complexsrcfoo-ANY-dev
+/deptype=lib_link/pkgname=complexsrctop/flavor=ANY/pkgtype=rtl-> /from=complexsrctop-ANY-src/dep=complexsrcfoo-ANY-dev/to=complexsrcfoo-ANY-src/tag=complexsrcfoo-ANY-rtl
+----------
+/pkgname=complexsrcfue/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrcfue-ANY-src
+Dependencies:
+----------
+----------
+Provides:
+----------
+/deptype=lib_link/pkgname=complexsrcfoo/flavor=ANY/pkgtype=dev-> /from=complexsrcfoo-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfoo/flavor=ANY/pkgtype=rtl-> /from=complexsrcfoo-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=dev-> /from=complexsrcfuu-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=rtl-> /from=complexsrcfuu-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-rtl
+----------
+/pkgname=complexsrcfum/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrcfum-ANY-src
+Dependencies:
+----------
+/deptype=lib_link/pkgname=complexsrcfigi/flavor=ANY/pkgtype=dev-> /from=complexsrcfum-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfigi/flavor=ANY/pkgtype=rtl-> /from=complexsrcfum-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-rtl
+----------
+Provides:
+----------
+/deptype=lib_link/pkgname=complexsrcfee/flavor=ANY/pkgtype=dev-> /from=complexsrcfee-ANY-src/dep=complexsrcfum-ANY-dev/to=complexsrcfum-ANY-src/tag=complexsrcfum-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfee/flavor=ANY/pkgtype=rtl-> /from=complexsrcfee-ANY-src/dep=complexsrcfum-ANY-dev/to=complexsrcfum-ANY-src/tag=complexsrcfum-ANY-rtl
+----------
+/pkgname=complexsrcfuu/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrcfuu-ANY-src
+Dependencies:
+----------
+/deptype=lib_link/pkgname=complexsrcfee/flavor=ANY/pkgtype=dev-> /from=complexsrcfuu-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfee/flavor=ANY/pkgtype=rtl-> /from=complexsrcfuu-ANY-src/dep=complexsrcfee-ANY-dev/to=complexsrcfee-ANY-src/tag=complexsrcfee-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfigi/flavor=ANY/pkgtype=dev-> /from=complexsrcfuu-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfigi/flavor=ANY/pkgtype=rtl-> /from=complexsrcfuu-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfue/flavor=ANY/pkgtype=dev-> /from=complexsrcfuu-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfue/flavor=ANY/pkgtype=rtl-> /from=complexsrcfuu-ANY-src/dep=complexsrcfue-ANY-dev/to=complexsrcfue-ANY-src/tag=complexsrcfue-ANY-rtl
+----------
+Provides:
+----------
+/deptype=lib_link/pkgname=complexsrctop/flavor=ANY/pkgtype=dev-> /from=complexsrctop-ANY-src/dep=complexsrcfuu-ANY-dev/to=complexsrcfuu-ANY-src/tag=complexsrcfuu-ANY-dev
+/deptype=lib_link/pkgname=complexsrctop/flavor=ANY/pkgtype=rtl-> /from=complexsrctop-ANY-src/dep=complexsrcfuu-ANY-dev/to=complexsrcfuu-ANY-src/tag=complexsrcfuu-ANY-rtl
+----------
+/pkgname=complexsrctop/flavor=ANY/pkgtype=src/setupname=NONE-> complexsrctop-ANY-src
+Dependencies:
+----------
+/deptype=lib_link/pkgname=complexsrcfigi/flavor=ANY/pkgtype=dev-> /from=complexsrctop-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfigi/flavor=ANY/pkgtype=rtl-> /from=complexsrctop-ANY-src/dep=complexsrcfigi-ANY-dev/to=complexsrcfigi-ANY-src/tag=complexsrcfigi-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfoo/flavor=ANY/pkgtype=dev-> /from=complexsrctop-ANY-src/dep=complexsrcfoo-ANY-dev/to=complexsrcfoo-ANY-src/tag=complexsrcfoo-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfoo/flavor=ANY/pkgtype=rtl-> /from=complexsrctop-ANY-src/dep=complexsrcfoo-ANY-dev/to=complexsrcfoo-ANY-src/tag=complexsrcfoo-ANY-rtl
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=dev-> /from=complexsrctop-ANY-src/dep=complexsrcfuu-ANY-dev/to=complexsrcfuu-ANY-src/tag=complexsrcfuu-ANY-dev
+/deptype=lib_link/pkgname=complexsrcfuu/flavor=ANY/pkgtype=rtl-> /from=complexsrctop-ANY-src/dep=complexsrcfuu-ANY-dev/to=complexsrcfuu-ANY-src/tag=complexsrcfuu-ANY-rtl
+----------
+Provides:
+----------
+----------
+/pkgname=complexsrcfuu-ANY-src/missing=complexsrcfewy-ANY-dev
+++++++++++++++++Sorted++++++++++++++++++
+complexsrcfigi-ANY-src
+complexsrcfue-ANY-src
+complexsrcfum-ANY-src
+complexsrcfee-ANY-src
+complexsrcfoo-ANY-src
+complexsrcfuu-ANY-src
+complexsrctop-ANY-src
+++++++++++++++++Missing+++++++++++++++++
+Package complexsrcfuu-ANY-src
+Needs /deptype=lib_link->complexsrcfewy-ANY-dev

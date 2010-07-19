@@ -1,0 +1,10 @@
+MANIFEST
+Makefile.PL
+README
+ChangeLog
+Zlib.pm
+t/basic.t
+t/getc.t
+t/getline.t
+t/large.t
+t/tied.t

@@ -1,0 +1,233 @@
+AC_REVISION($Revision$)
+AC_INIT(globus-sh-tools-vars.sh.in)
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+
+if test "x$PERL" = "x"; then
+        AC_PATH_PROG(PERL,perl)
+fi
+
+if test "x$SH" = "x"; then
+	AC_PATH_PROGS(SH, sh bsh, /bin/sh, /bin:/usr/bin:${PATH})
+   	AC_PATH_PROG(TMPKSH, ksh)
+   	AC_PATH_PROG(TMPBASH, bash)
+
+   	dnl IRIX 6.3 and below the SH is broken 
+   	dnl   so change SH to KSH
+   	dnl BSD sh is broken so use bash
+   	dnl CygWin32 ash is broken so force the use of bash
+   	dnl OSF1 sh is broken, use /usr/bin/posix/sh
+   	dnl   if it exists
+	
+	case "$target" in
+		mips-sgi-irix* )
+			SH=${TMPKSH}
+			;;
+    	*bsd* )
+        	if test -n ${TMPBASH};  then
+	    		SH=${TMPBASH}
+			fi
+			;;
+    	i*86-*-cygwin* )
+        	if test -n ${TMPBASH};  then
+           		SH=${TMPBASH}
+			fi
+			;;
+    	*dec* )
+        	if test -x /usr/bin/posix/sh; then
+	   			SH=/usr/bin/posix/sh
+			fi
+			;;
+	esac
+fi
+
+GLOBUS_SH=$SH
+GLOBUS_SH_PERL=$PERL
+
+AC_SUBST(GLOBUS_SH_PERL)
+AC_SUBST(GLOBUS_SH)
+
+AC_PATH_PROGS(GLOBUS_SH_AWK, gawk nawk awk)
+AC_PATH_PROG(GLOBUS_SH_AUTOCONF, autoconf)
+AC_PATH_PROG(GLOBUS_SH_BASENAME, basename)
+AC_PATH_PROG(GLOBUS_SH_CAT, cat)
+AC_PATH_PROG(GLOBUS_SH_CHGRP, chgrp)
+AC_PATH_PROG(GLOBUS_SH_CHMOD, chmod)
+AC_PATH_PROG(GLOBUS_SH_CHOWN, chown)
+AC_PATH_PROG(GLOBUS_SH_CLEAR, clear)
+AC_PATH_PROG(GLOBUS_SH_CP, cp)
+AC_PATH_PROG(GLOBUS_SH_CUT, cut)
+AC_PATH_PROG(GLOBUS_SH_CVS, cvs)
+AC_PATH_PROG(GLOBUS_SH_DATE, date)
+AC_PATH_PROG(GLOBUS_SH_DF, df)
+AC_PATH_PROG(GLOBUS_SH_DIFF, diff)
+AC_PATH_PROG(GLOBUS_SH_DIRNAME, dirname)
+AC_PATH_PROG(GLOBUS_SH_EXPR, expr)
+AC_PATH_PROG(GLOBUS_SH_FINGER, finger)
+AC_PATH_PROG(GLOBUS_SH_GREP, grep)
+AC_PATH_PROG(GLOBUS_SH_GROUPS, groups)
+AC_PATH_PROG(GLOBUS_SH_GZIP, gzip)
+AC_PATH_PROG(GLOBUS_SH_HEAD, head)
+AC_PATH_PROG(GLOBUS_SH_HOSTID, hostid)
+AC_PATH_PROG(GLOBUS_SH_HOSTNAME, hostname)
+AC_PATH_PROG(GLOBUS_SH_IFCONFIG, ifconfig)
+AC_PATH_PROG(GLOBUS_SH_KILL, kill)
+AC_PATH_PROG(GLOBUS_SH_LN, ln)
+AC_PATH_PROG(GLOBUS_SH_LS, ls)
+AC_PATH_PROG(GLOBUS_SH_MKDIR, mkdir)
+AC_PATH_PROG(GLOBUS_SH_MKFIFO, mkfifo)
+AC_PATH_PROG(GLOBUS_SH_MORE, more)
+AC_PATH_PROG(GLOBUS_SH_MV, mv)
+AC_PATH_PROG(GLOBUS_SH_NETSTAT, netstat)
+AC_PATH_PROG(GLOBUS_SH_NSLOOKUP, nslookup)
+AC_PATH_PROG(GLOBUS_SH_PRINTF, printf)
+AC_PATH_PROG(GLOBUS_SH_PWD, pwd)
+AC_PATH_PROG(GLOBUS_SH_RM, rm)
+AC_PATH_PROG(GLOBUS_SH_SED, sed)
+AC_PATH_PROG(GLOBUS_SH_SH, sh)
+AC_PATH_PROG(GLOBUS_SH_SLEEP, sleep)
+AC_PATH_PROG(GLOBUS_SH_SORT, sort)
+AC_PATH_PROG(GLOBUS_SH_STTY, stty)
+AC_PATH_PROG(GLOBUS_SH_SU, su)
+AC_PATH_PROG(GLOBUS_SH_TAIL, tail)
+AC_PATH_PROG(GLOBUS_SH_TAR, tar)
+AC_PATH_PROG(GLOBUS_SH_TEE, tee)
+AC_PATH_PROG(GLOBUS_SH_TEST, test)
+AC_PATH_PROG(GLOBUS_SH_TOP, top)
+AC_PATH_PROG(GLOBUS_SH_TOUCH, touch)
+AC_PATH_PROG(GLOBUS_SH_TR, tr)
+AC_PATH_PROG(GLOBUS_SH_UNAME, uname)
+AC_PATH_PROG(GLOBUS_SH_UNIQ, uniq)
+AC_PATH_PROG(GLOBUS_SH_UPTIME, uptime)
+AC_PATH_PROG(GLOBUS_SH_WC, wc)
+AC_PATH_PROG(GLOBUS_SH_WHOAMI, whoami)
+AC_PATH_PROG(GLOBUS_SH_SUDO, sudo)
+
+#--
+# OPTIONAL system section: needed only for DEC OSF
+#
+AC_PATH_PROG(GLOBUS_SH_VMSTAT, vmstat)
+
+#--
+# OPTIONAL system section: needed only for HP-UX and Solaris
+#
+AC_PATH_PROG(GLOBUS_SH_SYSINFO, sysinfo)
+
+
+#--
+# OPTIONAL system section: needed only for IBM AIX
+#
+AC_PATH_PROG(GLOBUS_SH_LSATTR, lsattr)
+AC_PATH_PROG(GLOBUS_SH_LSCFG, lscfg)
+AC_PATH_PROG(GLOBUS_SH_POE, poe)
+
+#--
+# OPTIONAL system section: needed only for CRAY T3E UNICOS
+#
+AC_PATH_PROG(GLOBUS_SH_GRMVIEW, grmview)
+
+#--
+# OPTIONAL system section: needed only for SGI IRIX
+#
+AC_PATH_PROG(GLOBUS_SH_HINV, hinv)
+
+#--
+# OPTIONAL system section: needed only for SUN SOLARIS
+#
+AC_PATH_PROG(GLOBUS_SH_DMESG, dmesg)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  CONDOR
+#
+AC_PATH_PROG(GLOBUS_SH_CONDOR_Q, condor_q)
+AC_PATH_PROG(GLOBUS_SH_CONDOR_RM, condor_rm)
+AC_PATH_PROG(GLOBUS_SH_CONDOR_STATUS, condor_status)
+AC_PATH_PROG(GLOBUS_SH_CONDOR_SUBMIT, condor_submit)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  EASYMCS
+#
+AC_PATH_PROG(GLOBUS_SH_SPFREE, spfree)
+AC_PATH_PROG(GLOBUS_SH_SPQ, spq)
+AC_PATH_PROG(GLOBUS_SH_SPSUBMIT, spsubmit)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  GLUNIX
+#
+AC_PATH_PROG(GLOBUS_SH_GLURUN, glurun)
+AC_PATH_PROG(GLOBUS_SH_GLUSTAT, glustat)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  GLUNIX or PRUN
+#
+AC_PATH_PROG(GLOBUS_SH_PRINTENV, printenv)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  LOADLEVELER
+#
+AC_PATH_PROG(GLOBUS_SH_LLCANCEL, llcancel)
+AC_PATH_PROG(GLOBUS_SH_LLQ, llq)
+AC_PATH_PROG(GLOBUS_SH_LLSTATUS, llstatus)
+AC_PATH_PROG(GLOBUS_SH_LLSUBMIT, llsubmit)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  LSF
+#
+AC_PATH_PROG(GLOBUS_SH_BJOBS, bjobs)
+AC_PATH_PROG(GLOBUS_SH_BKILL, bkill)
+AC_PATH_PROG(GLOBUS_SH_BQUEUES, bqueues)
+AC_PATH_PROG(GLOBUS_SH_BSUB, bsub)
+AC_PATH_PROG(GLOBUS_SH_LSHOSTS, lshosts)
+AC_PATH_PROG(GLOBUS_SH_LSLOAD, lsload)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  LSF  or  PBS
+#
+AC_PATH_PROG(GLOBUS_SH_MPIRUN, mpirun)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  PBS, NQE or GRD
+#
+AC_PATH_PROG(GLOBUS_SH_QDEL, qdel)
+AC_PATH_PROG(GLOBUS_SH_QSTAT, qstat)
+AC_PATH_PROG(GLOBUS_SH_QSUB, qsub)
+
+# these are only used for GRD
+AC_PATH_PROG(GLOBUS_SH_QSELECT, qselect)
+AC_PATH_PROG(GLOBUS_SH_QHOST, qhost)
+AC_PATH_PROG(GLOBUS_SH_QCONF, qconf)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  PEXEC
+#
+AC_PATH_PROG(GLOBUS_SH_PEXEC, pexec)
+AC_PATH_PROG(GLOBUS_SH_SHOWPART, showpart)
+
+
+#--
+# OPTIONAL jobmanager section: needed only if you plan to use  PRUN
+#
+AC_PATH_PROG(GLOBUS_SH_PKILL, pkill)
+AC_PATH_PROG(GLOBUS_SH_POOL, pool)
+AC_PATH_PROG(GLOBUS_SH_PRESERVE, preserve)
+AC_PATH_PROG(GLOBUS_SH_PRUN, prun)
+AC_PATH_PROG(GLOBUS_SH_PS, ps)
+
+AC_OUTPUT([globus-sh-tools-vars.sh])

@@ -1,0 +1,18 @@
+Installing Globus Core on Windows 2000
+--------------------------------------
+
+1) Create a directory under which all of the globus code will be stored.
+   -- under that directory create the directories:
+      lib/
+      include/
+      bin/
+
+2) Create the environment variable %GLOBUS_LOCATION% and have it point
+   at the previously defined directory.
+
+3) copy the file globus_config.h.win to %GLOBUS_LOCATION%\include\globus_config.h
+
+4) Edit the globus_config.h to reflect the flavor you desire.
+   To add threads undefine BUILD_LITE and define GLOBUS_THREADS_WINDOWS
+   
+

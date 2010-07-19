@@ -1,0 +1,2 @@
+&(executable = /bin/sh)
+ (arguments  = -c 'echo stderr 1>&2')

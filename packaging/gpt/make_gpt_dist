@@ -1,0 +1,233 @@
+#! /usr/bin/env perl
+
+use Cwd;
+use Getopt::Long;
+
+my ($gtar_location, $gunzip_location, $verbose, $version, $help, 
+    $man);
+my $startdir = cwd();
+
+my $tarconf="$startdir/tarfiles/gpt_tarfiles.conf";
+
+GetOptions( 
+           'tarconf=s' => \$tarconf,
+          );
+
+# determine gpt version number
+
+open (CFG, 'packaging_tools/configure.ac');
+
+die "ERROR: Need to set \$GPT_LOCATION \n" if ! defined $ENV{'GPT_LOCATION'};
+
+my $version;
+for (<CFG>) {
+  if (m!AC_INIT\(\w+,([^,\)]+)!) {
+    $version = $1;
+    $version =~ s!\s+!!g;
+    last;
+  }
+}
+
+die "ERROR: Cannot determine GPT version from packaging_tools/configure.ac\n"
+  if ! defined $version;
+
+my @includes = (
+                'packaging_tools',
+                'build_gpt',
+                'make_gpt_dist',
+                'setup_gpt_dist',
+                'tools',
+                'CHANGES',
+                'LICENSE',
+                'INSTALL',
+                'README',
+               );
+
+
+
+$newdir = "gpt-$version";
+
+$newdirname = $newdir;
+$newpkgname = "$ {newdir}-src";
+$newdistname = "$ {newdir}-dist";
+$tmpdirname = $newdirname;
+
+push @INC, "$startdir/packaging_tools/perl/GPT";
+
+require PkgMngmt::Inform;
+
+my $log = new Grid::GPT::PkgMngmt::Inform(
+                                          verbose => $verbose,
+                                          name => "make_gpt_dist",
+                                         );
+
+for my $f ("./$tmpdirname", 
+           "./$newpkgname.tar",
+           "./$newpkgname.tar.gz") {
+
+  if ( -e $f )
+    {
+      $log->announce("Removing existing $f\n");
+      system ("rm -rf $f");
+    }
+
+}
+
+if (! -f "$ENV{'GPT_LOCATION'}/newautotools/bin/autoconf") {
+  $log->announce("Install autotools to bootstrap packaging_tools");
+
+  if (! -d "./support") {
+    my $result = $log->action("./setup_gpt_dist");
+  }
+
+  my $gpt_location = $ENV{'GPT_LOCATION'};
+  my @instructions = ("PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH;GPT_LOCATION=$gpt_location; export GPT_LOCATION; ./configure --prefix=$gpt_location/newautotools", 
+                      "make", 
+                      "make install  > /dev/null 2>&1");
+
+  @INC = ("./tools", @INC);
+
+
+  require DistGPT;
+  my $dist = new DistGPT(
+                         topdir => cwd(),
+                         building => 1,
+                        );
+
+  $dist->match_srcdirs('needautotools');
+
+  for my $tool('autoconf', 'automake', 'libtool') {
+    my $dir = $dist->{'srcdirs'}->{$tool};
+    chdir $dir;
+    for my $i (@instructions) {
+      $log->action($i);
+    }
+    chdir $startdir;
+  }
+
+
+
+}
+
+#
+# prep the source directory by creating a temp directory containing all of the
+# required files.
+#
+
+$log->announce("Copying files into source directory...\n");
+
+$log->action("mkdir $tmpdirname")==0 or 
+  die "Unable to create $tmpdirname: $?";
+
+for my $c (@includes, tarfiles) {
+
+print "Copying $c\n";
+
+$log->action("cp -rf $c $tmpdirname")==0 or 
+  die "Unable to copy $c into $tmpdirname: $?";
+
+}
+
+#
+# change into the temp directory
+#
+
+chdir("./$tmpdirname");
+
+#
+# create any necessary directories
+#
+
+$log->action("./setup_gpt_dist -tarconf=$tarconf");
+
+
+opendir SUPPORT, "support";
+
+my @raw = readdir SUPPORT;
+
+closedir SUPPORT;
+
+my @gnu = map {"support/" . $_ } grep { (m!auto! or m!libtool!) 
+                   and $_ ne $tmpdirname } @raw;
+
+my @gpttar = map {"support/" . $_ } grep { ! (m!auto! or m!libtool!) 
+                   and $_ ne $tmpdirname and ! m!\.$!} @raw;
+
+push @gpttar, @includes;
+
+@gnu = map {"$tmpdirname/" . $_ } @gnu;
+@gpttar = map {"$tmpdirname/" . $_ } @gpttar;
+
+#
+# remove any 'unnecessary' files from the source directory.
+#
+
+$log->announce("pruning source directory of extraneous files...\n");
+$log->action("find . -name CVS -print | xargs rm -rf ")==0 or die "Unable to remove cvs directories: $?";
+
+$log->action('find . -name "*~" -print | xargs rm -rf ');
+
+#
+# run the standard development tools to get the necessary derived files.
+#
+
+my $distdir = cwd();
+
+print "Preparing: $distdir/packaging_tools\n";
+
+chdir("$distdir/packaging_tools") or die "Unable to cd to packaging_tools: $?";
+
+# the existence of a Makefile suggests that make distclean needs to be run
+# since the distclean target will remove the Makefile.
+
+$rc = ! $log->action("make distclean");
+
+die("make distclean of '$distdir/packaging_tools' failed\n") if ! $rc;
+
+#
+# bootstrap the code in each of these directories
+#
+
+$rc = 1;
+$rc = ! $log->action("PATH=$ENV{'GPT_LOCATION'}/newautotools/bin:$ENV{'PATH'}; export PATH; ./bootstrap");
+
+die("bootstrapping of '$distdir/packaging_tools' failed\n") if (!$rc);
+
+chdir($startdir);
+
+@INC = ("./tools", @INC);
+
+require DistGPT;
+
+my $dist = new DistGPT(
+                       gtar => $gtar_location,
+                       gunzip => $gunzip_location,
+                       topdir => "$startdir",
+                      );
+
+printf("Creating $newpkgname.tar.gz ...");
+my $gpt_contents = join(" ", @gpttar);
+$log->action("$dist->{'gtar_location'} czf $newpkgname.tar.gz $gpt_contents")==0
+  or die "Unable to create $newpkgname.tar.gz: $?";
+printf("done.\n");
+
+printf("Creating gnu-autotools-for-$newpkgname.tar.gz ...");
+my $gnu_contents = join(" ", @gnu);
+$log->action("$dist->{'gtar_location'} czf gnu-autotools-for-$newpkgname.tar.gz $gnu_contents")==0 
+  or die "Unable to create gnu-autotools-for-$newpkgname.tar.gz: $?";
+printf("done.\n");
+
+printf("Creating $newdistname.tar.gz ...");
+my $dist_contents = "$gpt_contents $gnu_contents $tmpdirname/tarfiles";
+$log->action("$dist->{'gtar_location'} czf $newdistname.tar.gz $dist_contents")==0
+  or die "Unable to create $newpkgname.tar.gz: $?";
+printf("done.\n");
+
+printf("Cleaning up ...");
+$log->action("rm -rf $tmpdirname")==0 or die "Unable to remove $tmpdirname: $?";
+
+printf("done.\n");
+
+
+exit;
+

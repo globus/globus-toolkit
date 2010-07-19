@@ -1,0 +1,44 @@
+/**
+@mainpage Condor Job Manager
+
+This package contains the "condor" interface to the GRAM Job Manager. It is
+a setup package; the script setup-globus-job-manager-condor must be run
+to register a condor job manager with the Gatekeeper as a service.
+
+@section setup_usage Options to setup-globus-job-manager-condor
+
+@par -service-name=NAME
+Set the job manager service name to be NAME. The default service name
+for a Condor job manager is "jobmanager-condor". See
+@ref globus_gram_resource_manager_contact
+for information on how the service name is used by GRAM.
+
+@par -condor-os=OS
+Set the Condor OS name to be used for jobs submitted to this condor service.
+If not present, then the value will be derived from the operating system being
+run on the node where the setup script is run. To support multiple condor
+operating systems via GRAM, multiple condor job manager services with unique
+service names must be set up.
+
+@par -condor-arch=ARCH
+Set the Condor Architecture name to be used for jobs submitted to this
+condor service.  If not present, then the value will be derived from the
+system architecture of the node where the setup script is run. To support
+multiple condor architectures via GRAM, multiple condor job manager services
+with unique service names must be set up.
+
+
+@section condor_rsl Condor Scheduler-Specific RSL Attributes
+The Condor job manager supports a method for passing condor attributes through
+to the underlying condor scheduler via a scheduler-specific attribute.
+
+@par condor_submit = (CondorAttributeName CondorAttributeValue) ...
+Set a condor-specific job attribute/value pair. The value of the condor_submit
+attribute is a sequence of attribute/value pairs.
+
+@section condor_changes Change Log
+
+@subsection globus_gram_job_manager_setup_condor globus_gram_job_manager_setup_condor 1.0
+
+Split from the core of the Job Manager as a setup package.
+*/

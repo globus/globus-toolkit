@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+
+eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
+use strict;
+use Getopt::Long;
+use File::Find;
+use Cwd;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+
+if (!defined($gpath))
+{
+   $gpath = $ENV{GLOBUS_LOCATION};
+}
+
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+
+require Grid::GPT::GPTIdentity;
+
+if( Grid::GPT::GPTIdentity::gpt_version() ne "@VERSION@" )
+{
+  exit 1;
+}
+
+exit 0;

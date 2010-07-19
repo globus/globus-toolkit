@@ -1,0 +1,4 @@
+Makefile.am
+Makefile.in
+Doxyfile.in
+Doxyfile-internal.in

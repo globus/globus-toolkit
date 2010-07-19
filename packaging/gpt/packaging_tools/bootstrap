@@ -1,0 +1,27 @@
+#! /bin/sh
+
+# check for autotools
+
+for program in automake autoconf aclocal
+    do
+    ($program --version ) > /dev/null 2>&1 || { 
+    echo "ERROR: $program not found" >&2
+    exit 1
+    }
+done
+
+echo "running aclocal"
+#aclocal_path=`which aclocal`
+#echo "aclocal path = $aclocal_path"
+aclocal
+
+echo "running automake -c -a --foreign"
+#automake_path=`which automake`
+#echo "automake path = $automake_path"
+automake -c -a --foreign
+
+echo "running autoconf"
+#autoconf_path=`which autoconf`
+#echo "autoconf path = $autoconf_path"
+autoconf
+

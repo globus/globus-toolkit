@@ -1,0 +1,140 @@
+#! perl
+
+use strict;
+use Getopt::Long;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+use Cwd;
+
+my $VERSION = 0.01;
+my $srcdir = cwd();
+my $flavor = "noflavor";
+my $verbose = 0;
+my ($help, $man);
+
+# sub pod2usage {
+#   my $ex = shift;
+#   print "gpt_save_flavor [-verbose -help] -flavor=flavor <build-parameters file>";
+#   exit $ex;
+# }
+
+GetOptions( 'flavor=s' => \$flavor, 'verbose=i' => \$verbose, 'help' => \$help)
+  or Pod::Usage::pod2usage(1);
+
+Pod::Usage::pod2usage(0) if $help;
+Pod::Usage::pod2usage(-verbose => 2) if $man;
+
+my $file = shift;
+
+if (!defined $flavor or ! defined $file) {
+  Pod::Usage::pod2usage(1);
+}
+
+require Grid::GPT::V1::FlavorDefinition;
+
+my $obj = new Grid::GPT::V1::FlavorDefinition(name => $flavor, 
+                                        build_parameters => $file);
+
+die "ERROR: vendorcc not supported\n" 
+  if $flavor =~ m!vendorcc! and ! defined $obj->{'vendorcc'};
+
+die "ERROR: gcc not supported\n" 
+  if $flavor =~ m!gcc! and ! defined $obj->{'gcc'};
+
+$obj->write_xml(filename => "flavor_$flavor.gpt");
+
+
+__END__
+
+=head1 NAME
+
+B<globus_build_config.pl> - Returns a minimized list of ldflags from a list of globus packages and external libraries.
+
+=head1 SYNOPSIS
+
+globus_build_config.pl  [--ldflags="<extra ld flags>"] --flavor=<globus_flavor_name> <dependent packages list>
+
+=head1 DESCRIPTION
+
+B<globus_build_config.pl> returns a list of ldflags.  It builds this
+list from the ld flags passed in as well as from scanning the
+build_dependencies file of each package passed in as a dependency.
+This scanning is done recursively to cover the entire dependency tree.
+This script is based on the shell script gnome_config.
+
+=head1 LINK ORDER
+
+The flag list returned by B<globus_build_config.pl> is assembled in
+dependent order.  A dependency between two libraries occurs when one
+library needs the symbols of another library in order to link
+correctly.  For most linkers the library providing the symbols has to
+be linked after the library that needs the symbols.  For
+example, from the line:
+
+   -L/opt/Xpm/lib -lXpm -L/usr/lib/X11 -lXm -lX
+
+B<globus_build_config.pl> assumes that the library Xpm is dependent on Xm which in turn is dependent on X.  In addition, B<globus_build_config.pl> assumes that Xpm is located in /opt/Xpm/lib and Xm and X are both located in /usr/lib/X11.
+
+=head1 MINIMIZATION
+
+B<globus_build_config.pl> makes sure that every library is listed only once.  The purpose of this is to reduce the size of the linking command and make the linking behavior more predictable.  Here is an example of minimization:
+
+     Before: -lm -L/home/mystuff/lib -lXm -L$(GLOBUS_INSTALL_PATH)/lib \
+-lfum_$(GLOBUS_FLAVOR_NAME) -lm -L/opt/dum/lib -ldee \
+-L$(GLOBUS_INSTALL_PATH)/lib -lfoo_$(GLOBUS_FLAVOR_NAME) -lm -L/usr/local/lib \
+-lX -L$(GLOBUS_INSTALL_PATH)/lib -lfee_$(GLOBUS_FLAVOR_NAME) -lm -L/opt/dum/lib \
+-ldum
+
+     After: -L/home/mystuff/lib -lXm -L$(GLOBUS_INSTALL_PATH)/lib \
+-lfum_$(GLOBUS_FLAVOR_NAME) -L/opt/dum/lib -ldee -L$(GLOBUS_INSTALL_PATH)/lib \
+-lfoo_$(GLOBUS_FLAVOR_NAME) -L/usr/local/lib -lX -L$(GLOBUS_INSTALL_PATH)/lib \
+-lfee_$(GLOBUS_FLAVOR_NAME)  -lm -L/opt/dum/lib -ldum
+
+Notice that in the After, -lm is listed only once near the end of the list.
+
+=head1 BUGS
+
+Circular dependencies between libraries are not supported.  These
+dependencies are usually resolved by listing one of the libraries
+before and after its co-dependent library (ie. -lfoo -lfee -lfoo).
+B<globus_build_config.pl> will eliminate the first -lfoo because of
+minimization.
+
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

@@ -1,0 +1,6 @@
+lib_LTLIBRARIES = libifoo.la \
+	libifee.la \
+	libifow.la \
+	libifum$(flavor).la
+ifum_SCRIPTS = ifoo.sh ifee.sh ifow.sh ifum.sh
+ifoo_DATA = iboo.conf ibee.conf ibow.conf ibum.conf

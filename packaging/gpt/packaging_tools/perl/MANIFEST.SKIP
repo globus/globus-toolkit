@@ -1,0 +1,5 @@
+CVS
+\.\#
+\w+\~$
+Makefile$
+\.rslt

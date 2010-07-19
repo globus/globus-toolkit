@@ -1,0 +1,14 @@
+GPT_DESCRIPTION_GPT: 
+              This is the brand new package foo.
+              
+              Its really cool!
+       
+GPT_FLAVOR_GPT: spicy
+GPT_GROUP_GPT: I/Am/Somebody/Because/I/Belong
+GPT_NAME_GPT: foo
+GPT_PACKAGE_GPT: foo_spicy_dev
+GPT_PKGTYPE_GPT: dev
+GPT_PROVIDES_GPT: foo_spicy_dev-2, foo_spicy_dev-3, foo_spicy_dev-3.5, foo_spicy_dev
+GPT_REQUIRES_GPT: Requires:  lee_spicy_dev-2,  low_spicy_dev-2,  lum_spicy_dev-2,  fee_spicy_dev-2,  fow_spicy_dev-2,  fum_spicy_dev-2,  rtl_fee_data-2,  rtl_fow_data-2,  rtl_fum_data-2
+GPT_SUMMARY_GPT: foo_spicy_dev experimental version
+GPT_VERSION_GPT: 3.5
