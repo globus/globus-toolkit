@@ -4830,6 +4830,15 @@ globus_l_guc_expand_single_url(
                 globus_l_guc_dest_entry_cb(
                     dst_url, &stat_info, transfer_info);
             }
+            
+            if(stat_info.symlink_target)
+            {
+                globus_free(stat_info.symlink_target);
+            }
+            if(stat_info.unique_id)
+            {
+                globus_free(stat_info.unique_id);
+            }
         }
     }
     
