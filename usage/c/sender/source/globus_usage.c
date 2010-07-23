@@ -25,7 +25,6 @@
 
 static globus_xio_stack_t               globus_l_usage_stats_stack;
 static globus_xio_driver_t              globus_l_usage_stats_udp_driver;
-static globus_mutex_t                   globus_l_usage_stats_mutex;
 
 #define GLOBUS_L_USAGE_STATS_DEFAULT_TARGETS "usage-stats.globus.org:4810"
 #define GLOBUS_L_USAGE_STATS_TIMESTAMP_OFFSET 20
@@ -96,6 +95,8 @@ typedef struct globus_usage_stats_handle_s
     globus_xio_handle_t                 xio_handle;
     globus_list_t *                     xio_desc_list;
     const char *                        optout;
+    globus_bool_t                       inuse;
+    globus_mutex_t                      mutex;
     size_t                              header_length;
     size_t                              data_length;
     unsigned char                       data[PACKET_SIZE];
@@ -158,8 +159,6 @@ globus_l_usage_stats_activate()
 
     GlobusDebugInit(GLOBUS_USAGE, MESSAGES);
 
-    globus_mutex_init(&globus_l_usage_stats_mutex, NULL);
-
     if((result = globus_xio_stack_init(
             &globus_l_usage_stats_stack, NULL)) != GLOBUS_SUCCESS)
     {
@@ -194,8 +193,6 @@ globus_l_usage_stats_deactivate()
     {
         globus_xio_stack_destroy(globus_l_usage_stats_stack);
     }
-    
-    globus_mutex_destroy(&globus_l_usage_stats_mutex);
 
     return globus_module_deactivate(GLOBUS_XIO_MODULE);
 #else
@@ -244,6 +241,10 @@ globus_usage_stats_handle_init(
         return GLOBUS_SUCCESS;
     }
 
+    globus_mutex_init(&new_handle->mutex, NULL);
+
+    new_handle->inuse = GLOBUS_FALSE;
+    
     new_handle->code = htons(code);
     new_handle->version = htons(version);
 
@@ -415,6 +416,8 @@ globus_usage_stats_handle_destroy(
         {
             globus_xio_close(handle->xio_handle, NULL);
         }
+        
+        globus_mutex_destroy(&handle->mutex);
 
         globus_free(handle);
     }
@@ -507,8 +510,28 @@ globus_usage_stats_send_array(
         return result;
     }
 
-    globus_mutex_lock(&globus_l_usage_stats_mutex);
-
+    globus_mutex_lock(&handle->mutex);    
+    {
+        if(handle->inuse)
+        {
+            globus_mutex_unlock(&handle->mutex);   
+            return globus_error_put(
+                globus_error_construct_error(
+                    GLOBUS_USAGE_MODULE,
+                    NULL,
+                    GLOBUS_USAGE_STATS_ERROR_TYPE_OOM,
+                    __FILE__,
+                    _globus_func_name,
+                    __LINE__,
+                    "Handle is busy."));
+        }
+        else
+        {
+            handle->inuse = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+    
     handle->data_length = handle->header_length;
     
     if(param_count > 0)
@@ -576,7 +599,12 @@ globus_usage_stats_send_array(
     
     globus_l_usage_stats_write_packet(handle);
     
-    globus_mutex_unlock(&globus_l_usage_stats_mutex);
+    globus_mutex_lock(&handle->mutex);    
+    {
+        handle->inuse = GLOBUS_FALSE;
+    }
+    globus_mutex_unlock(&handle->mutex);
+
 
 #endif
     return result;
@@ -631,8 +659,28 @@ globus_usage_stats_vsend(
         return result;
     }
 
-    globus_mutex_lock(&globus_l_usage_stats_mutex);
-
+    globus_mutex_lock(&handle->mutex);    
+    {
+        if(handle->inuse)
+        {
+            globus_mutex_unlock(&handle->mutex);   
+            return globus_error_put(
+                globus_error_construct_error(
+                    GLOBUS_USAGE_MODULE,
+                    NULL,
+                    GLOBUS_USAGE_STATS_ERROR_TYPE_OOM,
+                    __FILE__,
+                    _globus_func_name,
+                    __LINE__,
+                    "Handle is busy."));
+        }
+        else
+        {
+            handle->inuse = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+    
     handle->data_length = handle->header_length;
     
     if(param_count > 0)
@@ -698,7 +746,11 @@ globus_usage_stats_vsend(
     
     globus_l_usage_stats_write_packet(handle);
     
-    globus_mutex_unlock(&globus_l_usage_stats_mutex);
+    globus_mutex_lock(&handle->mutex);    
+    {
+        handle->inuse = GLOBUS_FALSE;
+    }
+    globus_mutex_unlock(&handle->mutex);
 
 #endif
     return result;
