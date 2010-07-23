@@ -794,7 +794,7 @@ globus_l_xio_udt_ref_open(
         }
         else
         {
-            /* UDT::setFD(handle->sock, attr->fd); */
+            UDT::bind(handle->sock, attr->fd);
         }
         if(UDT::connect(
             handle->sock, addrinfo->ai_addr, addrinfo->ai_addrlen))
@@ -802,17 +802,20 @@ globus_l_xio_udt_ref_open(
             result = GlobusXIOUdtError("UDT::connect failed");
             goto error_connect;
         }
+        globus_libc_freeaddrinfo(addrinfo);
         *driver_handle = handle;
     }
     else
     {
         *driver_handle = driver_link;
     }
-
+    
     return GLOBUS_SUCCESS;
+
 error_connect:
     UDT::close(handle->sock);
 error_socket:
+    globus_libc_freeaddrinfo(addrinfo);
 error_getaddr:
     globus_free(handle);
 
