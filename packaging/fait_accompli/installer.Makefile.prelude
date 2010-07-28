@@ -52,10 +52,9 @@ postinstall:
 gsi-myproxy: gpt globus-gsi globus_usage myproxy
 gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup                       
 
-# Openssl redirector to globus_system_openssl or globus_openssl_backup
-globus_openssl: @globus_openssl@
-globus_openssl-compile: @globus_openssl@-compile
-globus_openssl-only: @globus_openssl@-only
+globus_openssl: globus_system_openssl
+globus_openssl-compile: globus_system_openssl-compile
+globus_openssl-only: globus_system_openssl-only
 globus_binary_openssl:
 	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_openssl-*/*.tar.gz
 
