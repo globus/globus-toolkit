@@ -153,10 +153,10 @@ main(int argc, char *argv[])
     GLOBUS_L_URL_SYNC_DEBUG_PRINTF("modules activated\n");
 
     /* Set log level, debug takes precedence over verbose */
-    if (globus_i_url_sync_args_debug)
-        globus_url_sync_log_set_level(GLOBUS_URL_SYNC_LOG_LEVEL_DEBUG);
-    else if (globus_i_url_sync_args_verbose)
-        globus_url_sync_log_set_level(GLOBUS_URL_SYNC_LOG_LEVEL_VERBOSE);
+    globus_url_sync_log_set_level(
+	      (globus_i_url_sync_args_debug)? 	GLOBUS_URL_SYNC_LOG_LEVEL_DEBUG:
+	      (globus_i_url_sync_args_verbose)? GLOBUS_URL_SYNC_LOG_LEVEL_VERBOSE:
+				 		GLOBUS_URL_SYNC_LOG_LEVEL_NONE);
 
     /* Initialize monitor */
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
@@ -495,7 +495,7 @@ globus_l_url_sync_main_result_cb(
     {
         /* Verbose results format */
         if (globus_i_url_sync_args_src_endpoint == GLOBUS_NULL ||
-	    globus_i_url_sync_args_dst_endpoint == GLOBUS_NULL) 
+	    globus_i_url_sync_args_dst_endpoint == GLOBUS_NULL || error) 
 	{
             globus_libc_printf("%d {%s%s} \"%s\" \"%s\"\n",
 		result,
@@ -506,17 +506,15 @@ globus_l_url_sync_main_result_cb(
 	}
 	else 
 	{
-            globus_libc_printf("%d {%s%s} \"%s:%s\" \"%s:%s\"\n",
+            globus_libc_printf("%d \"%s:%s\" \"%s:%s\"\n",
 		result,
-		(error) ? "ERROR=" : "",
-		(error) ? globus_error_get_short_desc(error) : "",
 		globus_i_url_sync_args_src_endpoint,
 		&source->url[source->pathname_index],
 		globus_i_url_sync_args_dst_endpoint,
 		&destination->url[destination->pathname_index]);
 	}
 
-		/* Additional details for debug usage */
+	/* Additional details for debug usage */
         if (globus_i_url_sync_args_debug)
         {
             globus_libc_fprintf(stderr, "%s\n",
@@ -526,23 +524,11 @@ globus_l_url_sync_main_result_cb(
     else if (error)
     {
         /* print readable error message to stderr */
-        if (globus_i_url_sync_args_src_endpoint == GLOBUS_NULL ||
-	    globus_i_url_sync_args_dst_endpoint == GLOBUS_NULL) 
-	{
-	    globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n",
+        globus_libc_fprintf(stderr, "ERROR=%s; \"%s\" \"%s\"\n%s\n",
 		globus_error_get_short_desc(error),
 		source->url,
-		destination->url);
-	}
-	else 
-	{
-	    globus_libc_fprintf(stderr, "ERROR=%s; \"%s:%s\" \"%s:%s\"\n",
-		globus_error_get_short_desc(error),
-		globus_i_url_sync_args_src_endpoint,
-		&source->url[source->pathname_index], 
-		globus_i_url_sync_args_dst_endpoint,
-		&destination->url[destination->pathname_index]);
-	}
+			    destination->url,
+		"For more information about this error, please retry with the -v option.");
     }
     else if (result)
     {

@@ -150,25 +150,11 @@ globus_l_url_sync_exists_func(
 	
     if (res != GLOBUS_SUCCESS)
     {
-        globus_object_t * err = globus_error_get(res);
-	int response_code = globus_error_ftp_error_get_code(err);
-	globus_i_url_sync_log_debug("response = %d, result = %d, %s\n", 
-		    response_code, res, globus_error_print_chain(err));
-
-	/* *** use the real return code(s) which are not currently known *** */
-	switch (res)
-	  {
-	  case 18:
-            /* gridftp authentication error */
-	    *error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
-	    break;
-	  case 11:
-	  case 12:
-	    *error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
-	    break;
-	  default:
-	    *error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
-	  } 
+        *error = GLOBUS_I_URL_SYNC_ERROR_NOTFOUND();
+        /* *** if "res" could be correctly interpretted, something to the effect of
+	         *error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication required");
+	         *error = GLOBUS_I_URL_SYNC_ERROR_REMOTE("authentication expired");
+	   could be implemented *** */
     }
     else 
     {
