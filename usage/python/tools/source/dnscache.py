@@ -79,8 +79,12 @@ class DNSCache(object):
                         hostname,
                         domain)
                     VALUES(%s, %s, %s)
-                    RETURNING ID
                     ''', values)
+                self.cursor.execute('''
+                    SELECT id
+                    FROM dns_cache
+                    WHERE ip_address = %s AND hostname = %s''', 
+                    (host_ip, hostname,))
                 host_id = self.cursor.fetchone()[0]
                 DNSCache.__dns_cache[(host_ip, hostname)] = host_id
         return host_id

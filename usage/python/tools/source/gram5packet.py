@@ -105,7 +105,16 @@ class GRAM5Packet(CUsagePacket):
                     poll_used,
                     audit_used)
                 VALUES(%s, %s, %s, %s, %s, %s)
-                RETURNING id''', values)
+                ''', values)
+            cursor.execute('''
+                SELECT id from gram5_job_managers
+                WHERE host_id=%s 
+                    AND version=%s 
+                    AND lrm_id=%s 
+                    AND seg_used=%s
+                    AND poll_used=%s
+                    AND audit_used=%s
+                ''', values)
             job_manager_id = cursor.fetchone()[0]
             GRAM5Packet.__job_managers[values] = job_manager_id
         return job_manager_id
@@ -142,8 +151,12 @@ class GRAM5Packet(CUsagePacket):
                         job_manager_id,
                         uuid,
                         start_time)
-                VALUES(%s, %s, %s)
-                RETURNING id''', values)
+                VALUES(%s, %s, %s)''', values)
+            cursor.execute('''
+                SELECT id 
+                FROM gram5_job_manager_instances
+                WHERE job_manager_id=%s AND uuid=%s AND start_time=%s
+                ''', values)
             job_manager_instance_id = cursor.fetchone()[0]
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
                     (job_manager_instance_id, job_manager_id)
@@ -191,7 +204,11 @@ class GRAM5Packet(CUsagePacket):
                         uuid,
                         start_time)
                 VALUES(%s, %s)
-                RETURNING id''', values)
+                ''', values)
+            cursor.execute('''
+                SELECT id FROM gram5_job_manager_instances
+                WHERE uuid=%s AND start_time=%s
+                ''', values)
             job_manager_instance_id = cursor.fetchone()[0]
             GRAM5Packet.__job_manager_instances[values] = \
                     job_manager_instance_id
@@ -246,9 +263,9 @@ class GRAM5Packet(CUsagePacket):
                 values = (lrm,)
                 cursor.execute('''
                     INSERT INTO gram5_lrms(lrm) VALUES(%s)
-                    RETURNING id
                     ''', values)
-
+                cursor.execute('''SELECT id FROM gram5_lrms WHERE lrm=%s''',
+                        values)
                 lrm_id = cursor.fetchone()[0]
                 GRAM5Packet.__lrms[lrm] = lrm_id
         return lrm_id
@@ -290,8 +307,15 @@ class GRAM5Packet(CUsagePacket):
                         dirt_branch,
                         distro_string)
                     VALUES(%s, %s, %s, %s, %s, %s)
-                    RETURNING id
                     ''', values_sql)
+                cursor.execute('''
+                    SELECT id FROM gram5_versions
+                    WHERE major=%s
+                        AND minor=%s
+                        AND flavor=%s
+                        AND dirt_timestamp=%s
+                        AND dirt_branch=%s
+                        AND distro_string=%s''', values)
                 version_id = cursor.fetchone()[0]
                 GRAM5Packet.__versions[version] = version_id
         return version_id
@@ -618,8 +642,10 @@ class GRAM5Packet(CUsagePacket):
                         attribute,
                         extension)
                     VALUES(%s, %s)
-                    RETURNING id''',
-                values)
+                    ''', values)
+            cursor.execute('''
+                SELECT id FROM gram5_rsl_attributes
+                WHERE attribute=%s AND extension=%s''', values)
             attribute_id = cursor.fetchone()[0]
             GRAM5Packet.__rsl_attributes[attr] = attribute_id
         return attribute_id
@@ -668,7 +694,10 @@ class GRAM5Packet(CUsagePacket):
                             executable,
                             arguments)
                         VALUES(%s, %s)
-                        RETURNING id''', values)
+                        ''', values)
+                cursor.execute('''
+                        SELECT id FROM gram5_executable
+                        WHERE executable=%s AND arguments=%s''', values)
                 executable_id = cursor.fetchone()[0]
                 GRAM5Packet.executables[values] = executable_id
         return executable_id
@@ -881,8 +910,19 @@ class GRAM5JobPacket(GRAM5Packet):
                     rsl_bitfield,
                     jobtype,
                     gram5_job_file_info)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id''', values)
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', values)
+        cursor.execute('''
+                SELECT id FROM gram5_jobs
+                WHERE job_manager_id=%s
+                AND send_time=%s
+                AND count=%s
+                AND host_count=%s
+                AND dryrun=%s
+                AND client_id=%s
+                AND executable_id=%s
+                AND rsl_bitfield=%s
+                AND jobtype=%s
+                AND gram5_job_file_info=%s''', values)
         job_id = cursor.fetchone()[0]
         return job_id
 
@@ -907,8 +947,11 @@ class GRAM5JobPacket(GRAM5Packet):
                         INSERT INTO gram5_client(
                             host_id,
                             dn)
-                        VALUES(%s, %s)
-                        RETURNING id''', values)
+                        VALUES(%s, %s)''', values)
+                cursor.execute('''
+                        SELECT id FROM gram5_client
+                        WHERE host_id=%s
+                        AND dn=%s''', values)
                 client_id = cursor.fetchone()[0]
                 GRAM5Packet.clients[values] = client_id
         return client_id
@@ -1015,8 +1058,24 @@ class GRAM5JobPacket(GRAM5Packet):
                     file_stage_out_https,
                     file_stage_out_ftp,
                     file_stage_out_gsiftp)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id''',
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                values)
+            cursor.execute('''
+                SELECT id FROM gram5_job_file_info
+                WHERE
+                file_clean_up=%s
+                AND file_stage_in_http=%s
+                AND file_stage_in_https=%s
+                AND file_stage_in_ftp=%s
+                AND file_stage_in_gsiftp=%s
+                AND file_stage_in_shared_http=%s
+                AND file_stage_in_shared_https=%s
+                AND file_stage_in_shared_ftp=%s
+                AND file_stage_in_shared_gsiftp=%s
+                AND file_stage_out_http=%s
+                AND file_stage_out_https=%s
+                AND file_stage_out_ftp=%s
+                AND file_stage_out_gsiftp=%s''',
                 values)
             file_info_id = cursor.fetchone()[0]
         return file_info_id
@@ -1049,8 +1108,11 @@ class GRAM5JobPacket(GRAM5Packet):
             cursor.execute('''
                 INSERT into gram5_job_types(
                     jobtype)
-                VALUES(%s)
-                RETURNING id''',
+                VALUES(%s)''',
+                values)
+            cursor.execute('''
+                SELECT id FROM gram5_job_types
+                WHERE jobtype=%s''',
                 values)
             job_type_id = cursor.fetchone()[0]
             GRAM5Packet.job_type_ids[job_type] = job_type_id
