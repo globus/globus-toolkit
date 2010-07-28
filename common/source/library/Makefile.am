@@ -159,7 +159,7 @@ INCLUDES = @GPT_INCLUDES@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAS = @GPT_LDFLAGS@
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 if BUILD_PTHREADS
 libglobus_thread_pthread_la_LIBADD = libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_LIB_LINKS@ @PTHREAD_LIBS@
