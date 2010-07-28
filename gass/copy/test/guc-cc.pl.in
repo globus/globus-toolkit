@@ -140,7 +140,7 @@ while($test_ndx != -1)
                 foreach(@concur)
                 {
                     my $cc=$_;
-                    my $cmd = "globus-url-copy $md $cc $dc_opt -cd -r $src_url $dst_url";
+                    my $cmd = "$Globus::Core::Paths::bindir/globus-url-copy $md $cc $dc_opt -cd -r $src_url $dst_url";
 
                     &run_guc_test($cmd);
                     system("rm -rf $work_dir/GL2/");

@@ -98,7 +98,7 @@ while($test_ndx != -1)
         {
             my $dc_opt=$_;
 
-            my $cmd = "globus-url-copy -fsstack file -dcstack gsi,tcp -stripe $dc_opt $src_url $dst_url";
+            my $cmd = "$Globus::Core::Paths::bindir/globus-url-copy -fsstack file -dcstack gsi,tcp -stripe $dc_opt $src_url $dst_url";
 
             &run_guc_test($cmd);
             system("rm -rf $work_dir/dst.data");
