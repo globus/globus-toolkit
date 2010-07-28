@@ -22,22 +22,12 @@
 #
 
 use strict;
-use POSIX;
 use Test;
 
 my $test_exec = './globus-ftp-client-extended-transfer-test';
 my @tests;
 my @todo;
 use FtpTestLib;
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();

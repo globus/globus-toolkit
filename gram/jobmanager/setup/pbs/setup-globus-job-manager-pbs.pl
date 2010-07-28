@@ -16,46 +16,24 @@
 
 BEGIN
 {
-    use POSIX qw(getcwd);
-
-    if (! exists($ENV{GLOBUS_LOCATION}))
-    {
-        my $p = $0;
-
-        if ($p !~ m/^\//)
-        {
-            $p = getcwd() . '/' . $p;
-        }
-
-        my @p = split(/\//, $p);
-
-my $gpath = $ENV{GPT_LOCATION};
-
-if (!defined($gpath))
-{
-    $gpath = $ENV{GLOBUS_LOCATION};
-}
-
-if (!defined($gpath))
-{
-    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
-}
-
-@INC = (@INC, "$gpath/lib/perl");
-        $ENV{GLOBUS_LOCATION} = join('/', @p[0..$#p-2]);
-
-    }
-    push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-
     if (exists $ENV{GPT_LOCATION})
     {
         push(@INC, "$ENV{GPT_LOCATION}/lib/perl");
+    }
+    if (exists($ENV{GLOBUS_LOCATION}))
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
     }
 }
 
 
 require Grid::GPT::Setup;
 use Getopt::Long;
+use Globus::Core::Paths;
 use strict;
 
 my $name                = 'jobmanager-pbs';
@@ -81,8 +59,7 @@ GetOptions('service-name|s=s' => \$name,
 my $metadata =
     new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup_pbs");
 
-my $globusdir        = $ENV{GLOBUS_LOCATION};
-my $libexecdir        = "$globusdir/libexec";
+my $libexecdir        = "$Globus::Core::Paths::libexecdir";
 
 if($validate_queues ne 'no')
 {
@@ -103,9 +80,9 @@ else
 }
 
 # Do script relocation
-mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
+mkdir "$Globus::Core::Paths::libdir/perl/Globus/GRAM/JobManager", 0777;
 
-my $setupdir = $ENV{GLOBUS_LOCATION} . '/setup/globus';
+my $setupdir = "$Globus::Core::Paths::exec_prefix/setup/globus";
 chdir $setupdir;
 
 print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null --with-softenv-dir=$softenv_dir`;
@@ -124,7 +101,7 @@ if($? != 0)
     exit 3;
 }
 
-open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager/pbs.rvf");    
+open(VALIDATION_FILE, ">$Globus::Core::Paths::datadir/globus_gram_job_manager/pbs.rvf");    
 
 print VALIDATION_FILE <<EOF;
 Attribute: email_address

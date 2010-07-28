@@ -121,45 +121,12 @@ static char * long_usage =
 "                     as described above\n"
 "    -n new_name    - Store the URL in the cache as new_name (argument to\n"
 "                     -add only)\n"
-"    -mdshost host    \n"
-"    -mdsport port    \n"
-"    -mdsbasedn DN    \n"
-"    -mdstimeout sec  \n"
-"                   - mdshost, mdsport, mdsbasedn and mdstimeout overrides\n"
-"                     default settings for contacting the MDS LDAP server.\n"
 "    -r resource    - The resource argument specifies that the cache\n"
 "                     operation will be performed on a remote cache. The\n"
 "                     resource manager contact takes the form:\n"
 "                          host:port/service:subject\n"
 "    -verbose       - Turn on verbose output\n"
 "\n";
-
-int
-test_hostname( char *  value, void *  ignored,  char **  errmsg )
-{
-    struct hostent *   hostent;
-    struct hostent     result;
-    char               buf[1024];
-    int                rc;
-    
-    hostent = globus_libc_gethostbyname_r( (char *) value,
-					   &result,
-					   buf,
-					   1024,
-					   &rc     );
-    if (rc != GLOBUS_SUCCESS)
-	*errmsg = globus_libc_strdup("cannot resolve hostname");
-    return rc;
-}
-
-int
-test_integer( char *  value, void *   ignored, char **  errmsg )
-{
-    int  res = (atoi(value) <= 0);
-    if (res)
-	*errmsg = globus_libc_strdup("argument is not a positive integer");
-    return res;
-}
 
 
 enum { arg_a = 1,	/* Add */
@@ -169,10 +136,6 @@ enum { arg_a = 1,	/* Add */
        arg_dir,		/* Directories */
        arg_type,	/* Directories */
        arg_q,		/* Query */
-       arg_h,		/* hostname */
-       arg_p,		/* Port */
-       arg_b,		/* */
-       arg_T,		/* */
        arg_r,		/* Resource */
        arg_n,		/* NewName */
        arg_t,		/* Tag */
@@ -204,10 +167,6 @@ flagdef(arg_v,   "-v", "-vebose");
 
 flagdef(arg_ct,  "-cleanup-tag", GLOBUS_NULL);
 
-oneargdef(arg_h, "-h", "-mdshost",    test_hostname);
-oneargdef(arg_p, "-p", "-mdsport",    test_integer);
-oneargdef(arg_b, "-b", "-mdsbasedn",  GLOBUS_NULL);
-oneargdef(arg_T, "-T", "-mdstimeout", test_integer);
 oneargdef(arg_r, "-r", "-resource",   GLOBUS_NULL);
 oneargdef(arg_n, "-n", "-newname",    GLOBUS_NULL);
 oneargdef(arg_t, "-t", "-tag",        GLOBUS_NULL);
@@ -224,10 +183,6 @@ static globus_args_option_descriptor_t args_options[n_args];
     setupopt(arg_type);	\
     setupopt(arg_q);	\
     setupopt(arg_ct);	\
-    setupopt(arg_h);	\
-    setupopt(arg_p);	\
-    setupopt(arg_b);	\
-    setupopt(arg_T);	\
     setupopt(arg_r);	\
     setupopt(arg_n);	\
     setupopt(arg_t);	\
@@ -362,22 +317,6 @@ main(int argc, char **argv)
 		globus_l_cache_verbose++;
 		break;
 	    }
-	    break;
-
-	case arg_h:
-	    globus_libc_setenv("GRID_INFO_HOST", instance->values[0], 1);
-	    break;
-
-	case arg_p:
-	    globus_libc_setenv("GRID_INFO_PORT", instance->values[0], 1);
-	    break;
-
-	case arg_b:
-	    globus_libc_setenv("GRID_INFO_BASEDN", instance->values[0], 1);
-	    break;
-	    
-	case arg_T:
-	    globus_libc_setenv("GRID_INFO_TIMEOUT", instance->values[0], 1);
 	    break;
 
 	case arg_r:
@@ -636,7 +575,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     globus_libc_sprintf(
 	spec,
 	"&(executable=$(GLOBUS_LOCATION)/bin/globus-gass-cache)"
-	" (environment=(LD_LIBRARY_PATH $(GLOBUS_LOCATION)/lib))"
+	" (library_path=$(GLOBUS_LOCATION)/lib)"
 	" (stdout=%s/dev/stdout)"
 	" (stderr=%s/dev/stdout)"
 	" (stdin=/dev/null)"

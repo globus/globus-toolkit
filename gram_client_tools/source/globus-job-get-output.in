@@ -17,11 +17,7 @@
 # 
 
 
-if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer ; then
-. ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
-else
-. ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
-fi
+. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 
@@ -191,7 +187,7 @@ tmpfile=${local_tmpdir}/globus_job_get_output.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$
 
 # redirect stderr to file so we can see if error occurs after the fact
 ${bindir}/globusrun -s -r "$resource" 2> $tmpfile \
-    "&(executable=\$(GLOBUSRUN_GASS_URL)/$GLOBUS_LOCATION/bin/globus-job-get-output-helper)
+    "&(executable=\$(GLOBUSRUN_GASS_URL)/$bindir/globus-job-get-output-helper)
       (arguments=
             anExtraTag
             \"$jobid\"

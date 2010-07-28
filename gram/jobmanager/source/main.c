@@ -202,6 +202,7 @@ main(
     if ((!started_without_client) && getenv("X509_USER_PROXY") != NULL)
     {
         remove(getenv("X509_USER_PROXY"));
+        unsetenv("X509_USER_PROXY");
     }
 
     /* Set up LRM-specific state based on our configuration. This will create

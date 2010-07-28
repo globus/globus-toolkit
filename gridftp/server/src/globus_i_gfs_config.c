@@ -2136,12 +2136,13 @@ globus_i_gfs_config_init(
     
     exec_name = tmp_argv[0];
     /* set default exe name */
-    tmp_str = globus_module_getenv("GLOBUS_LOCATION");
+    globus_location(&tmp_str);
     if(tmp_str)
     {
         exec_name = globus_common_create_string(
          "%s/sbin/globus-gridftp-server",
-         globus_module_getenv("GLOBUS_LOCATION"));
+         tmp_str);
+        free(tmp_str);
     }
     else if(exec_name[0] == '.')
     {
@@ -2171,8 +2172,12 @@ globus_i_gfs_config_init(
     }
     if(local_config_file == NULL && !argv_only)
     {
+        char * location;
+        globus_location(&location);
+
         local_config_file = globus_common_create_string(
-        "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
+        "%s/etc/gridftp.conf", location);
+        free(location);
     }
 
     globus_l_gfs_config_load_defaults();

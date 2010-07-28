@@ -45,9 +45,6 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         programs/Makefile
-        programs/grid-mapfile-add-entry
-        programs/grid-mapfile-delete-entry
-        programs/grid-mapfile-check-consistency
         doxygen/Makefile
         doxygen/Doxyfile
         doxygen/Doxyfile-internal

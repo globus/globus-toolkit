@@ -10,10 +10,10 @@ globusperl_DATA = URL.pm
 
 Scripts= \
 	TESTS.pl \
-    globus-ftp-client-many-server.pl \
+	globus-ftp-client-many-server.pl \
 	FtpTestLib.pm \
-    globus-ftp-client-dir-test.pl \
-    globus-ftp-client-run-backend-tests.pl  \
+	globus-ftp-client-dir-test.pl \
+	globus-ftp-client-run-backend-tests.pl  \
 	globus-ftp-client-bad-buffer-test.pl \
 	globus-ftp-client-create-destroy-test.pl \
 	globus-ftp-client-exist-test.pl \
@@ -45,7 +45,33 @@ Data = \
 
 test_DATA = $(Data) 
 
-EXTRA_DIST = $(Scripts) $(Data) $(globusperl_DATA)
+EXTRA_DIST = $(Data) $(globusperl_DATA) \
+	TESTS.pl \
+	globus-ftp-client-many-server.pl.in \
+	FtpTestLib.pm \
+	globus-ftp-client-dir-test.pl \
+	globus-ftp-client-run-backend-tests.pl.in  \
+	globus-ftp-client-bad-buffer-test.pl \
+	globus-ftp-client-create-destroy-test.pl \
+	globus-ftp-client-exist-test.pl \
+	globus-ftp-client-extended-get-test.pl \
+	globus-ftp-client-extended-put-test.pl \
+	globus-ftp-client-extended-transfer-test.pl \
+	globus-ftp-client-lingering-get-test.pl \
+	globus-ftp-client-multiple-block-get-test.pl \
+	globus-ftp-client-partial-get-test.pl \
+	globus-ftp-client-partial-put-test.pl \
+	globus-ftp-client-partial-transfer-test.pl \
+	globus-ftp-client-plugin-test.pl \
+	globus-ftp-client-run-tests.pl.in \
+	globus-ftp-client-get-test.pl.in \
+	globus-ftp-client-caching-get-test.pl.in \
+	globus-ftp-client-put-test.pl \
+	globus-ftp-client-size-test.pl \
+	globus-ftp-client-transfer-test.pl \
+	globus-ftp-client-caching-transfer-test.pl \
+	globus-ftp-client-caching-extended-get-test.pl \
+	globus-ftp-client-user-auth-test.pl
 
 LibHeaders = \
 	globus_ftp_client_test_abort_plugin.h \
@@ -232,6 +258,23 @@ globus_ftp_client_plugin_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_read_all_test_SOURCES = globus_ftp_client_partial_read_all_test.c $(LibHeaders)
 globus_ftp_client_partial_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus-ftp-client-caching-get-test.pl: $(srcdir)/globus-ftp-client-caching-get-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-ftp-client-get-test.pl: $(srcdir)/globus-ftp-client-get-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-ftp-client-many-server.pl: $(srcdir)/globus-ftp-client-many-server.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-ftp-client-run-backend-tests.pl: $(srcdir)/globus-ftp-client-run-backend-tests.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-ftp-client-run-tests.pl: $(srcdir)/globus-ftp-client-run-tests.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+CLEANFILES = globus-ftp-client-caching-get-test.pl  \
+             globus-ftp-client-get-test.pl \
+             globus-ftp-client-many-server.pl \
+             globus-ftp-client-run-backend-tests.pl \
+             globus-ftp-client-run-tests.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

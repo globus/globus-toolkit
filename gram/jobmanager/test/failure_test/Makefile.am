@@ -80,5 +80,9 @@ pkgdata_DATA = \
     error_undefined_executable.rsl
 
 EXTRA_DIST = globus-gram-job-manager-failure-test.pl.in $(pkgdata_DATA)
+CLEANFILES = globus-gram-job-manager-failure-test.pl
+BUILT_SOURCES = globus-gram-job-manager-failure-test.pl
+globus-gram-job-manager-failure-test.pl: $(srcdir)/globus-gram-job-manager-failure-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post

@@ -239,6 +239,8 @@ globus_gram_job_manager_init(
         }
     }
 
+    setenv("X509_USER_PROXY", manager->cred_path, 1);
+
     rc = globus_gram_protocol_set_credentials(cred);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -389,7 +391,7 @@ request_hashtable_init_failed:
         manager->validation_records = NULL;
         
 validation_init_failed:
-        globus_cond_destroy(&manager->mutex);
+        globus_cond_destroy(&manager->cond);
 cond_init_failed:
         GlobusGramJobManagerUnlock(manager);
         globus_mutex_destroy(&manager->mutex);

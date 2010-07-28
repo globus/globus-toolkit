@@ -1,13 +1,6 @@
 AC_REVISION($Revision$)
 AC_INIT(condor.in)
 
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
-
 AC_PATH_PROG(CONDOR_SUBMIT, condor_submit, no)
 if test "$CONDOR_SUBMIT" = "no" ; then
     AC_MSG_ERROR("Cannot locate condor_submit")
@@ -50,10 +43,6 @@ AC_ARG_WITH(mpi-script,
 	     fi],
 	    [CONDOR_MPI_SCRIPT=no])
 
-
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
-libexecdir=${prefix}/libexec
 
 UNAME_MACHINE=`(uname -m) 2> /dev/null ` || UNAME_MACHINE=unknown
 UNAME_RELEASE=`(uname -r) 2> /dev/null ` || UNAME_RELEASE=unknown

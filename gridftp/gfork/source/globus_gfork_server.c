@@ -1550,8 +1550,12 @@ main(
     /* parse out file */
     if(gfork_l_options.conf_file == NULL)
     {
+        char * location;
+
+        globus_location(&location);
         gfork_l_options.conf_file = globus_common_create_string(
-            "%s/etc/gfork.conf", globus_libc_getenv("GLOBUS_LOCATION"));
+            "%s/etc/gfork.conf", location);
+        free(location);
     }
     result = globus_options_xinetd_file_process(
         opt_h, gfork_l_options.conf_file, "gridftp");

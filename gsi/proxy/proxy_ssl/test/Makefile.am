@@ -20,7 +20,9 @@ test_DATA = $(Data)
 
 test_SCRIPTS = $(Scripts)
 
-EXTRA_DIST = $(Scripts) $(Data)
+EXTRA_DIST = TESTS.pl.in test_pci.pl $(Data)
+
+CLEANFILES = TESTS.pl
 
 INCLUDES = $(GPT_INCLUDES)
 
@@ -28,6 +30,9 @@ LDADD = $(GPT_PGM_LINKS)
 
 test_pci_SOURCES = test_proxycertinfo.c
 test_pci_LDFLAGS = $(GPT_LDFLAGS)
+
+TESTS.pl: $(srcdir)/TESTS.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

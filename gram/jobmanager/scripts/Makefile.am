@@ -19,7 +19,9 @@ globusperl_DATA = \
 perldoc_DATA = JobManager.html JobDescription.html
 
 # Files which we want to put in the source package
-EXTRA_DIST = $(libexec_SCRIPTS) $(globusperl_DATA) $(perldoc_DATA) $(noinst_DATA)
+EXTRA_DIST = globus-job-manager-service.in globus-job-manager-script.pl.in \
+            JobDescription.pm.in \
+            JobManager.pm StdioMerger.pm $(perldoc_DATA) $(noinst_DATA)
 
 SUFFIXES = .pm .html
 
@@ -27,7 +29,15 @@ SUFFIXES = .pm .html
 	pod2html --noindex $*.pm | \
 	    sed -e 's,</HEAD>,<LINK REL="stylesheet" HREF="../../../../doxygen/globus.css"></HEAD>,' > $*.html
 
+globus-job-manager-service: globus-job-manager-service.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-job-manager-script.pl: $(srcdir)/globus-job-manager-script.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+JobDescription.pm: $(srcdir)/JobDescription.pm.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
+
+CLEANFILES = globus-job-manager-service globus-job-manager-script.pl JobDescription.pm
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
 
 include $(top_srcdir)/globus_automake_post

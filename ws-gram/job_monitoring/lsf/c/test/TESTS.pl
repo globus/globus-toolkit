@@ -1,7 +1,6 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
-BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
-
+use warnings;
 use strict;
 use Test::Harness;
 

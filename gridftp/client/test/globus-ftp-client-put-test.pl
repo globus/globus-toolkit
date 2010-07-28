@@ -24,7 +24,6 @@ Tests to exercise the "put" functionality of the Globus FTP client library.
 =cut
 
 use strict;
-use POSIX;
 use Test;
 use FtpTestLib;
 use File::Spec;
@@ -32,15 +31,6 @@ use File::Spec;
 my $test_exec = './globus-ftp-client-put-test';
 my @tests;
 my @todo;
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 =pod
 

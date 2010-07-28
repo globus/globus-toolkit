@@ -1,7 +1,17 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
-BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+BEGIN {
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
 
+use warnings;
 use strict;
 use Test::Harness;
 use Cwd;
@@ -13,7 +23,6 @@ my $test_result=1;
 
 $|=1;
 
-my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
 
 @tests = qw(
@@ -29,9 +38,9 @@ my $contact;
     unpack-status-reply-with-extensions-test.pl
 );
 
-chdir "$globus_location/test/@PACKAGE@";
+chdir "$Globus::Core::Paths::exec_prefix/test/@PACKAGE@";
 
-if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
+if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
 {
     Globus::Testing::Utilities::testcred_setup();
 }

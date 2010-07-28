@@ -37,7 +37,7 @@ GLOBUS_VERSION="@GLOBUS_VERSION@"
 
 usage()
 {
-    . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+    . ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
     globus_source ${libexecdir}/globus-sh-tools.sh
 
     ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF

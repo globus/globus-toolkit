@@ -50,7 +50,26 @@ test_DATA = $(Data)
 
 test_SCRIPTS = $(Scripts)
 
-EXTRA_DIST = $(Scripts) $(Data)
+EXTRA_DIST = $(Data) \
+	TESTS.pl.in \
+        compare-name-test.pl \
+        compare-name-test-gt2.pl \
+        compare-name-test-rfc2818.pl \
+        duplicate-name-test.pl \
+        inquire-names-for-mech-test.pl \
+	gssapi-anonymous-test.pl \
+	gssapi-delegation-test.pl \
+        gssapi-import-context-test.pl \
+        gssapi-import-name.pl \
+	gssapi-limited-delegation-test.pl \
+	gssapi-delegation-compat-test.pl \
+	gssapi-thread-test.pl \
+	gssapi-context-test.pl \
+	gssapi-expimp-test.pl \
+	gssapi-acquire-test.pl \
+	gssapi-inquire-sec-ctx-by-oid-test.pl \
+        indicate-mechs-test.pl \
+        release-name-test.pl
 
 test_PROGRAMS= \
         compare-name-test \
@@ -131,6 +150,11 @@ duplicate_name_test_SOURCES = duplicate_name_test.c \
 indicate_mechs_test_SOURCES = indicate_mechs_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
+
+TESTS.pl: $(srcdir)/TESTS.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+CLEANFILES = TESTS.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

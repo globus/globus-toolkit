@@ -21,7 +21,6 @@ Scripts = \
 	globus-gram-client-status-test.pl \
         globus-gram-client-stdio-size-test.pl \
 	globus-gram-client-register-ping-test.pl \
-        globus-gram-client-two-phase-commit-test.pl \
         job-status-with-info-test.pl \
         register-version-test.pl \
         restart-to-new-url-test.pl \
@@ -35,7 +34,7 @@ Data = \
 
 test_DATA=$(Data)
 
-test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
+test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl
 
 test_PROGRAMS= \
         failed-job-two-phase-commit \
@@ -63,7 +62,16 @@ test_PROGRAMS= \
         stdio-update-test \
         version-test
 
-EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
+EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in \
+        globus-gram-client-two-phase-commit-test.pl.in
+
+globus-gram-client-run-tests.pl: $(srcdir)/globus-gram-client-run-tests.pl.in 
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-gram-client-two-phase-commit-test.pl: $(srcdir)/globus-gram-client-two-phase-commit-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+CLEANFILES=globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl
+BUILT_SOURCES=globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl
 
 INCLUDES = $(GPT_INCLUDES)
 

@@ -1,12 +1,25 @@
 #! /usr/bin/env perl
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
+
 use Globus::GRAM::Error;
+use Globus::Core::Paths;
 use IO::File;
 use Test;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
-my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $testdatadir = "$Globus::Core::Paths::datadir/@PACKAGE@";
 my $verbose = 0;
 
 my @test_rsls=qw(
@@ -124,7 +137,7 @@ sub test_rsl
 	}
     }
 
-    system("globusrun -s -r \"$contact\" -f \"$testdatadir/$rsl_file\" >/dev/null 2>&1");
+    system("$Globus::Core::Paths::bindir/globusrun -s -r \"$contact\" -f \"$testdatadir/$rsl_file\" >/dev/null 2>&1");
 
     $rc = $? >> 8;
 

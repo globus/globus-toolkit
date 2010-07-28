@@ -60,7 +60,17 @@ globus_io_authorization_test_SOURCES = globus_io_authorization_test.c
 globus_io_authorization_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_io_authorization_test_LDADD = $(GPT_PGM_LINKS)
 
-EXTRA_DIST = $(Scripts) 
+EXTRA_DIST = \
+	TESTS.pl \
+	globus-io-authorization-test.pl \
+        globus-io-file-test.pl \
+        globus-io-tcp-test.pl \
+        run-io-tests.pl.in
+
+CLEANFILES = run-io-tests.pl
+
+run-io-tests.pl: $(srcdir)/run-io-tests.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

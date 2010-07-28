@@ -34,15 +34,6 @@ my @todo;
 my $fh = new FileHandle;
 my $data;
 
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
-
 my ($proto) = setup_proto();
 my ($dest_host, $dest_file) = setup_remote_dest();
 

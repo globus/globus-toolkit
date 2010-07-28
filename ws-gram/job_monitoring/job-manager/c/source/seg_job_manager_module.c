@@ -222,11 +222,13 @@ globus_l_job_manager_module_activate(void)
     }
     else
     {
-        const char * globus_location = getenv("GLOBUS_LOCATION");
+        char * location;
+        
+        globus_location(&location);
 
         logfile_state->log_dir = globus_common_create_string(
                 "%s/var/globus-job-manager-seg-%s",
-                globus_location ? globus_location : "",
+                location ? globus_location : "",
                 scheduler);
     }
 

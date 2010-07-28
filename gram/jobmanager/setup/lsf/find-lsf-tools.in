@@ -2,11 +2,7 @@ AC_REVISION($Revision$)
 AC_INIT(lsf.in)
 
 # checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
 if test ! -n "${LSF_ENVDIR}"; then
     AC_MSG_WARN([Using default of /etc for LSF_ENVDIR])
@@ -95,10 +91,6 @@ AC_PATH_PROG(BACCT, bacct, no)
 if test "$BACCT" = "no"; then
     AC_MSG_ERROR([Cannot locate bacct])
 fi
-
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
-libexecdir=${prefix}/libexec
 
 AC_OUTPUT(
     lsf.pm:lsf.in

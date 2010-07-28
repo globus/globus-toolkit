@@ -20,18 +20,10 @@ use strict;
 
 my $test_exec = 'version-test';
 
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
 if ($ENV{CONTACT_STRING} eq "")
 {
     die "CONTACT_STRING not set";
 }
-
-@INC = (@INC, "$gpath/lib/perl");
 
 my $valgrind = "";
 
