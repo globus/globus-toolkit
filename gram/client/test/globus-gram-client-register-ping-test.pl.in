@@ -17,9 +17,21 @@
 #
 # Ping a valid and invalid gatekeeper contact.
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
+
 use strict;
-use POSIX;
 use Test;
+use Globus::Core::Paths;
 
 my $test_exec = './globus-gram-client-register-ping-test';
 
@@ -87,7 +99,7 @@ if (exists $ENV{X509_USER_PROXY})
 }
 else
 {
-    chomp($x509_user_proxy = `grid-proxy-info -path`);
+    chomp($x509_user_proxy = `$Globus::Core::Paths::bindir/grid-proxy-info -path`);
 }
 push(@tests, "register_test('$ENV{CONTACT_STRING}', '', 0);");
 push(@tests, "register_test('$ENV{CONTACT_STRING}', '$x509_user_proxy', 0);");

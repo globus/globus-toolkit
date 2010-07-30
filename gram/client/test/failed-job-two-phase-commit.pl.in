@@ -16,9 +16,22 @@
 #
 # Ping a valid and invalid gatekeeper contact.
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
+
 use strict;
 use Test;
 use IO::File;
+use Globus::Core::Paths;
 
 my $test_exec = './failed-job-two-phase-commit';
 
@@ -69,13 +82,13 @@ sub two_phase_test
     {
         sleep($timeout+5);
 
-        my $cache_out = `globus-gass-cache -list -tag $tag`;
+        my $cache_out = `$Globus::Core::Paths::bindir/globus-gass-cache -list -tag $tag`;
         chomp($cache_out);
         if($cache_out ne '')
         {
             $errors .= "Test left unexpected droppings in the cache:\n"
                      . "$cache_out";
-            print STDERR `globus-gass-cache -cleanup-tag $tag`;
+            print STDERR `$Globus::Core::Paths::bindir/globus-gass-cache -cleanup-tag $tag`;
         }
     }
 

@@ -6,7 +6,6 @@ SUBDIRS= \
 
 Scripts = \
 	TESTS.pl \
-        failed-job-two-phase-commit.pl \
 	globus-gram-client-activate-test.pl \
 	globus-gram-client-callback-contact-test.pl \
 	globus-gram-client-cancel-test.pl \
@@ -20,7 +19,6 @@ Scripts = \
         globus-gram-client-set-credentials-test.pl \
 	globus-gram-client-status-test.pl \
         globus-gram-client-stdio-size-test.pl \
-	globus-gram-client-register-ping-test.pl \
         job-status-with-info-test.pl \
         register-version-test.pl \
         restart-to-new-url-test.pl \
@@ -34,7 +32,8 @@ Data = \
 
 test_DATA=$(Data)
 
-test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl
+test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl globus-gram-client-register-ping-test.pl \
+        failed-job-two-phase-commit.pl
 
 test_PROGRAMS= \
         failed-job-two-phase-commit \
@@ -63,15 +62,20 @@ test_PROGRAMS= \
         version-test
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in \
-        globus-gram-client-two-phase-commit-test.pl.in
+        globus-gram-client-two-phase-commit-test.pl.in \
+	globus-gram-client-register-ping-test.pl.in \
+        failed-job-two-phase-commit.pl.in
 
 globus-gram-client-run-tests.pl: $(srcdir)/globus-gram-client-run-tests.pl.in 
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 globus-gram-client-two-phase-commit-test.pl: $(srcdir)/globus-gram-client-two-phase-commit-test.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-gram-client-register-ping-test.pl: $(srcdir)/globus-gram-client-register-ping-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+failed-job-two-phase-commit.pl: $(srcdir)/failed-job-two-phase-commit.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
-CLEANFILES=globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl
-BUILT_SOURCES=globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl
+CLEANFILES=globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl globus-gram-client-register-ping-test.pl failed-job-two-phase-commit.pl
 
 INCLUDES = $(GPT_INCLUDES)
 
