@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -16,6 +16,17 @@
 # limitations under the License.
 # 
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
 
 =head1 Tests for the globus IO authorization modes
 
@@ -25,6 +36,7 @@ use strict;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test;
+use Globus::Core::Paths;
 
 my @tests;
 my @todo;
@@ -32,7 +44,7 @@ my @todo;
 my $server_prog = './globus_io_tcp_test_server';
 my $client_prog = './globus_io_tcp_test_client';
 
-my $identity = `grid-proxy-info -identity`;
+my $identity = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
 
 chomp($identity);
 
@@ -51,7 +63,6 @@ sub basic_func
    my $saved_user_cert;
    my $saved_user_key;
    my $saved_user_proxy;
-   unlink('core');
 
    if(defined($ENV{X509_CERT_DIR}))
    {
@@ -135,11 +146,6 @@ sub basic_func
 
    close(CLIENT);
    close(SERVER);
-
-   if(-r 'core')
-   {
-      ok("Core file generated.", 'ok');
-   }
 
    if($errors eq "" || $expect_failure)
    {

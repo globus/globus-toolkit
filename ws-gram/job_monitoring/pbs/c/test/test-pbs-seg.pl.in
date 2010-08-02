@@ -14,7 +14,8 @@ BEGIN
 
 use IO::File;
 use File::Temp;
-use POSIX;
+use File::Compare;
+use POSIX qw(uname);
 use Globus::Core::Paths;
 use Test;
 
@@ -63,7 +64,7 @@ sub run_test
 sub run_pbs_seg
 {
     my $output = shift;
-    my $seg = "$Globus::Core::paths::libexecdir/globus-scheduler-event-generator";
+    my $seg = "$Globus::Core::Paths::libexecdir/globus-scheduler-event-generator";
     my @args = ($seg, '-s', 'pbs', '-t', $start);
     my $pid2 = open(FH, "|-");
     my $size;

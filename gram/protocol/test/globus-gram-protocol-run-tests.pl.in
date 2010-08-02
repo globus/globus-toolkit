@@ -18,6 +18,7 @@ use Cwd;
 require 5.005;
 use vars qw(@tests);
 use Globus::Testing::Utilities;
+use Globus::Core::Paths;
 
 my $test_result=1;
 

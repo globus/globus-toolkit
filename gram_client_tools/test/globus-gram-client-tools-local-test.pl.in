@@ -205,7 +205,7 @@ sub test_gram_local
     }
 
     # the below will kill the server after 5 minutes
-    ($server_rc, $server_output) .= $u->wait_command($server_pid,
+    ($server_rc, $server_output) = $u->wait_command($server_pid,
                                                      $server_fd);
     if($server_rc != 0)
     {

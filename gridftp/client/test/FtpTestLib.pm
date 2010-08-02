@@ -16,7 +16,6 @@
 # limitations under the License.
 # 
 
-
 package FtpTestLib;
 require Exporter;
 @ISA = qw(Exporter);
@@ -35,8 +34,6 @@ require Exporter;
             );            # symbols to export by default
 
 
-BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
-
 my $default_big_file = "/bin/sh";
 my $default_small_file = "/etc/group";
 my $self = {};
@@ -48,7 +45,6 @@ use Sys::Hostname;
 use Data::Dumper;
 use File::Copy;
 use File::Spec;
-use Cwd;
 use Config;
 defined $Config{sig_name} || die "No sigs?";
 my $name;
@@ -59,11 +55,6 @@ foreach $name (split(' ', $Config{sig_name}))
     $signame[$i] = $name;
     $i++;
 }
-
-# These are globus test support modules.
-# use Globus::URL;
-# use Globus::Testing::HostDB;
-# use Globus::Testing::Startup;
 
 =head1 NAME
 

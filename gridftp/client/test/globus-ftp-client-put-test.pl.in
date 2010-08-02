@@ -16,6 +16,18 @@
 # limitations under the License.
 # 
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
+
 
 =head1 Simple Put Tests
 
@@ -27,6 +39,7 @@ use strict;
 use Test;
 use FtpTestLib;
 use File::Spec;
+use Globus::Core::Paths;
 
 my $test_exec = './globus-ftp-client-put-test';
 my @tests;
@@ -264,7 +277,7 @@ if($ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
 }
 else
 {
-    chomp($subject = `grid-cert-info -subject`);   
+    chomp($subject = `$Globus::Core::Paths::bindir/grid-cert-info -subject`);   
     $subject =~ s/^ *//;
 }
 

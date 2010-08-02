@@ -100,8 +100,8 @@ EOF
 
 globus_source ${libexecdir}/globus-args-parser-header "$@"
 
-rslfile=${local_tmpdir}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.rsl.$$
-tmpfile=${local_tmpdir}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
+rslfile=${TMPDIR:-/tmp}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.rsl.$$
+tmpfile=${TMPDIR:-/tmp}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
 
 
 remove_files ()

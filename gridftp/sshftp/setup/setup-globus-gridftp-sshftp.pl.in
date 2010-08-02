@@ -39,6 +39,7 @@ use Getopt::Long;
 use English;
 use File::Path;
 
+my ($opt_help, $opt_force, $opt_server, $opt_nonroot);
 if(!&GetOptions("help|h","force|f","server|s","nonroot|n")) 
 {
     usage(1);
@@ -74,7 +75,7 @@ my $sshftp = <<EOF;
 # limitations under the License.
 # 
 
-if [ -z "$GLOBUS_LOCATION" ]; then
+if [ -z "\$GLOBUS_LOCATION" ]; then
     GLOBUS_LOCATION=$Globus::Core::Paths::prefix
     export GLOBUS_LOCATION
 fi
@@ -143,6 +144,7 @@ EOF
 
 umask(022);
 
+my $target;
 if(defined($opt_server))
 {
     if(defined($opt_nonroot))

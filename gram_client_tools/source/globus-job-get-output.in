@@ -183,7 +183,7 @@ case ${tailopt}:${followopt} in
 	;;
 esac
 
-tmpfile=${local_tmpdir}/globus_job_get_output.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
+tmpfile=${TMPDIR:-/tmp}/globus_job_get_output.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
 
 # redirect stderr to file so we can see if error occurs after the fact
 ${bindir}/globusrun -s -r "$resource" 2> $tmpfile \

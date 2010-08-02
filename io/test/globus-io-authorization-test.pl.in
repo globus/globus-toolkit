@@ -21,9 +21,22 @@
 
 =cut
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
+
 use strict;
 use POSIX;
 use Test;
+use Globus::Core::Paths;
 
 my @tests;
 my @todo;
@@ -39,34 +52,27 @@ sub basic_func
    my $result;
    my $expect_failure = shift;
    
-   unlink('core');
    my $command = "$test_prog $args";
    #print "Running: $command\n";
    chomp($result = `$test_prog $args`);
+   $rc = $?;
 
    if($rc != 0 && !$expect_failure)
    {
       $errors .= "Test exited with $rc. ";
    }
 
-   if(-r 'core')
+   if(!$expect_failure)
    {
-      ok("Core file generated.", 'ok');
+       ok($result, 'ok');
    }
    else
    {
-       if(!$expect_failure)
-       {
-           ok($result, 'ok');
-       }
-       else
-       {
-           ok($result, "an authorization operation failed");
-       }
+       ok($result, "an authorization operation failed");
    }
 }
 
-my $identity = `grid-proxy-info -identity`;
+my $identity = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
 chomp($identity);
 
 push(@tests, "basic_func('self',0);");

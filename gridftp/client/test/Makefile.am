@@ -66,9 +66,9 @@ EXTRA_DIST = $(Data) $(globusperl_DATA) \
 	globus-ftp-client-run-tests.pl.in \
 	globus-ftp-client-get-test.pl.in \
 	globus-ftp-client-caching-get-test.pl.in \
-	globus-ftp-client-put-test.pl \
+	globus-ftp-client-put-test.pl.in \
 	globus-ftp-client-size-test.pl \
-	globus-ftp-client-transfer-test.pl \
+	globus-ftp-client-transfer-test.pl.in \
 	globus-ftp-client-caching-transfer-test.pl \
 	globus-ftp-client-caching-extended-get-test.pl \
 	globus-ftp-client-user-auth-test.pl
@@ -267,14 +267,20 @@ globus-ftp-client-many-server.pl: $(srcdir)/globus-ftp-client-many-server.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 globus-ftp-client-run-backend-tests.pl: $(srcdir)/globus-ftp-client-run-backend-tests.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-ftp-client-transfer-test.pl: $(srcdir)/globus-ftp-client-transfer-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-ftp-client-put-test.pl: $(srcdir)/globus-ftp-client-put-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 globus-ftp-client-run-tests.pl: $(srcdir)/globus-ftp-client-run-tests.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 CLEANFILES = globus-ftp-client-caching-get-test.pl  \
              globus-ftp-client-get-test.pl \
              globus-ftp-client-many-server.pl \
+	     globus-ftp-client-put-test.pl \
              globus-ftp-client-run-backend-tests.pl \
-             globus-ftp-client-run-tests.pl
+             globus-ftp-client-run-tests.pl \
+	     globus-ftp-client-transfer-test.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

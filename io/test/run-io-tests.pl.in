@@ -17,7 +17,7 @@
 
 BEGIN
 {
-    if (exist $ENV{GLOBUS_LOCATION})
+    if (exists $ENV{GLOBUS_LOCATION})
     {
         push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
     }

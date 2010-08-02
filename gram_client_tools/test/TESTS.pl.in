@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # -----------------------------------------------------------------------
 # TESTS.pl - This script calls all the other tests in the current
@@ -14,19 +14,30 @@
 #
 # -----------------------------------------------------------------------
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
 
 use strict;
 use Cwd;
+use Globus::Core::Paths;
 
 my $exitCode = 0;
 
 my @tests = qw(
-               globus-gram-client-tools-check-for-commands.pl
                globus-gram-client-tools-local-test.pl
                globus-gram-client-tools-remote-test.pl
                );
 
-if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 256)
+if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 256)
 {
     $ENV{X509_CERT_DIR} = cwd();
     $ENV{X509_USER_PROXY} = "testcred.pem";

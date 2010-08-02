@@ -41,6 +41,7 @@ use Test;
 use FtpTestLib;
 use File::Spec;
 use Globus::URL;
+use Globus::Core::Paths;
 
 my $test_exec = './globus-ftp-client-get-test';
 my @tests;
@@ -267,7 +268,7 @@ if($ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
 }
 else
 {
-    chomp($subject = `grid-cert-info -subject`);   
+    chomp($subject = `$Globus::Core::Paths::bindir/grid-cert-info -subject`);   
     $subject =~ s/^ *//;
 }
 

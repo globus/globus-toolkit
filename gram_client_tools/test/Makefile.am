@@ -8,15 +8,13 @@ SUBDIRS= \
 
 
 # Scripts contains all of the scripts in this directory
-Scripts= TESTS.pl
-
-SubstScripts = \
-	globus-gram-client-tools-check-for-commands.pl \
+Scripts = \
+	TESTS.pl \
 	globus-gram-client-tools-local-test.pl \
 	globus-gram-client-tools-remote-test.pl
 
-SubstScriptsIn = \
-	globus-gram-client-tools-check-for-commands.pl.in \
+ScriptsIn = \
+	TESTS.pl.in \
 	globus-gram-client-tools-local-test.pl.in \
 	globus-gram-client-tools-remote-test.pl.in
 
@@ -26,20 +24,21 @@ Data = \
 	testcred.pem
 
 
-test_SCRIPTS = $(Scripts) $(SubstScripts)
+test_SCRIPTS = $(Scripts)
 
 test_DATA=$(Data)
 
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
-EXTRA_DIST = $(Scripts) $(SubstScriptsIn) $(Data)
-CLEANFILES = $(SubstScripts)
+EXTRA_DIST = $(ScriptsIn) $(Data)
+CLEANFILES = $(Scripts)
 
-globus-gram-client-tools-check-for-commands.pl: $(srcdir)/globus-gram-client-tools-check-for-commands.pl.in
+TESTS.pl: $(srcdir)/TESTS.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 globus-gram-client-tools-local-test.pl: $(srcdir)/globus-gram-client-tools-local-test.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
 globus-gram-client-tools-remote-test.pl: $(srcdir)/globus-gram-client-tools-remote-test.pl.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 

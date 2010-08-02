@@ -9,6 +9,7 @@ BEGIN
     else
     {
         push(@INC, '@libdir@/perl');
+    }
 }
 
 use strict;

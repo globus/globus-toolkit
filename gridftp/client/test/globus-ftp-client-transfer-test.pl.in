@@ -16,6 +16,17 @@
 # limitations under the License.
 # 
 
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+	push(@INC, '@libdir@/perl');
+    }
+}
 
 =head1 Simple Transfer Tests
 
@@ -25,23 +36,14 @@ FTP client library.
 =cut
 
 use strict;
-use POSIX;
 use Test;
 use FtpTestLib;
 use File::Spec;
+use Globus::Core::Paths;
 
 my $test_exec = './globus-ftp-client-transfer-test';
 my @tests;
 my @todo;
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 =head2 I<basic_func> (Test 1-2)
 
@@ -310,7 +312,7 @@ if($ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
 }
 else
 {
-    chomp($subject = `grid-cert-info -subject`);   
+    chomp($subject = `$Globus::Core::Paths::bindir/grid-cert-info -subject`);   
     $subject =~ s/^ *//;
 }
 
