@@ -68,10 +68,6 @@ for my $setupfile ('globus-sh-tools-vars.sh')
 
 }
 
-system("mkdir -p $globusdir/lib/perl/Globus/Core");
-system("cp $setupdir/Paths.pm $globusdir/lib/perl/Globus/Core/");
-system("chmod 0644 $globusdir/lib/perl/Globus/Core/Paths.pm");
-
 print "checking globus-hostname\n";
 
 my $hostname = `$globusdir/bin/globus-hostname`;
