@@ -91,6 +91,7 @@ if($? != 0)
     print STDERR "Warning: Error locating PBS commands!\n";
     exit 0;
 }
+print `cp pbs.pm $Globus::Core::Paths::libdir/perl/Globus/GRAM/JobManager`;
 
 # Create service
 $cmd = "$libexecdir/globus-job-manager-service -add -m pbs -s \"$name\"";

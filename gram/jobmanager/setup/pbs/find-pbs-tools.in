@@ -76,5 +76,5 @@ AC_ARG_WITH(softenv-dir,
 AC_SUBST(SOFTENV_DIR)
 
 AC_OUTPUT(
-  $libdir/perl/Globus/GRAM/JobManager/pbs.pm:pbs.in
+  pbs.pm:pbs.in
 )
