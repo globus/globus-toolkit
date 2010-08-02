@@ -334,6 +334,8 @@ typedef struct
     char *                              logname;
     /** GRAM host */
     char *                              hostname;
+    /** Short host name */
+    char *                              short_hostname;
     /**
      * Service tag to differentiate job managers which are processing
      * jobs for the same LRM with different configurations
@@ -436,10 +438,8 @@ typedef struct globus_gram_job_manager_s
     globus_mutex_t                      mutex;
     /** Condition for noting when all jobs are done */
     globus_cond_t                       cond;
-    /** Unix domain socket for receiving new job requests from other job
-     * managers */
-    int                                 socket_fd;
-    /** XIO Handle for socket_fd so we can use XIO's select() loop */
+    /** Unix domain socket handle for receiving new job requests for other
+     * job managers */
     globus_xio_handle_t                 active_job_manager_handle;
     /** Lock file related to the socket_fd */
     int                                 lock_fd;
@@ -1512,7 +1512,6 @@ int
 globus_gram_job_manager_startup_socket_init(
     globus_gram_job_manager_t *         manager,
     globus_xio_handle_t *               handle,
-    int *                               socket_fd,
     int *                               lock_fd);
 
 int

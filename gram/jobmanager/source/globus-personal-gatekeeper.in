@@ -159,7 +159,7 @@ killem ()
                     ${GLOBUS_SH_KILL-kill} -9 $pid &
                 fi
                 cd
-		statedir="${local_tmpdir}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
+		statedir="${TMPDIR:-/tmp}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
                 if [ -r ${dir}/jobmanager.conf ]; then
                     host=`${bindir}/globus-hostname | ${GLOBUS_SH_CUT-cut} -d. -f1`
                     args=`cat "${dir}/jobmanager.conf"`
@@ -388,7 +388,7 @@ fi
 verify_setup
 
 scratch="${file_location}/${file_prefix}.$$"
-statefiledir="${local_tmpdir}/${user}/${file_prefix}.$$"
+statefiledir="${TMPDIR:-/tmp}/${user}/${file_prefix}.$$"
 
 trap cleanup 0 1 2 3 6 9 12 15
 

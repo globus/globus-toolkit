@@ -203,7 +203,7 @@ globus_gram_job_manager_init(
     dir_prefix = globus_common_create_string(
             "%s/.globus/job/%s",
             manager->config->home,
-            manager->config->hostname);
+            manager->config->short_hostname);
     if (dir_prefix == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -275,7 +275,6 @@ globus_gram_job_manager_init(
     }
 
     manager->active_job_manager_handle = NULL;
-    manager->socket_fd = -1;
     manager->lock_fd = -1;
     manager->lock_path = globus_common_create_string(
             "%s/%s.%s.lock",

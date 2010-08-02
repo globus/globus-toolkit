@@ -258,7 +258,6 @@ main(
         rc = globus_gram_job_manager_startup_socket_init(
                 &manager,
                 &manager.active_job_manager_handle,
-                &manager.socket_fd,
                 &manager.lock_fd);
         if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
         {
@@ -270,7 +269,7 @@ main(
             continue;
         }
 
-        if (rc == GLOBUS_SUCCESS && manager.socket_fd != -1)
+        if (rc == GLOBUS_SUCCESS && manager.active_job_manager_handle != NULL)
         {
             if (!started_without_client)
             {
@@ -331,18 +330,18 @@ main(
                  * the job manager socket and lock and let the other
                  * process process jobs
                  */
-                close(manager.socket_fd);
+                /*globus_xio_register_close(manager.active_job_manager_handle, NULL, NULL, NULL);*/
                 close(manager.lock_fd);
-                manager.socket_fd = -1;
+                manager.active_job_manager_handle = NULL;
                 manager.lock_fd = -1;
             }
         }
 
-        /* If manager.socket_fd != -1 then we are the parent from the fork
-         * above. We will restart all existing jobs and then allow the startup
-         * socket to accept new jobs from other job managers.
+        /* If manager.active_job_manager_handle != NULL then we are the parent
+         * from the fork above. We will restart all existing jobs and then
+         * allow the startup socket to accept new jobs from other job managers.
          */
-        if (manager.socket_fd != -1)
+        if (manager.active_job_manager_handle != NULL)
         {
             GlobusTimeAbstimeGetCurrent(manager.usagetracker->jm_start_time);            
             globus_i_gram_usage_stats_init(&manager);
@@ -404,11 +403,11 @@ main(
         }
         else if (!started_without_client)
         {
-            /* If manager.socket_fd == -1 then we are either the child from the
-             * fork or another process started somehow (either command-line
-             * invocation or via a job submit). If we have a client, then we'll
-             * send our fds to the job manager with the lock and let it process
-             * the job.
+            /* If manager.active_job_manager_handle == NULL then we are either
+             * the child from the fork or another process started somehow
+             * (either command-line invocation or via a job submit). If we have
+             * a client, then we'll send our fds to the job manager with the
+             * lock and let it process the job.
              *
              * If this succeeds, we set located_active_jm and leave the loop.
              * Otherwise, we try again.
@@ -451,7 +450,7 @@ main(
     }
 
     GlobusGramJobManagerLock(&manager);
-    if (manager.socket_fd != -1 &&
+    if (manager.active_job_manager_handle != NULL &&
         globus_hashtable_empty(&manager.request_hash) &&
         manager.grace_period_timer == GLOBUS_NULL_HANDLE)
     {
@@ -490,7 +489,7 @@ main(
             "\n");
 
     /* Clean-up to do if we are the active job manager only */
-    if (manager.socket_fd != -1)
+    if (manager.active_job_manager_handle != NULL)
     {
         globus_gram_job_manager_script_close_all(&manager);
         globus_i_gram_usage_end_session_stats(&manager);
