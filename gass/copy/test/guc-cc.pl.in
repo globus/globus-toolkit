@@ -25,10 +25,12 @@ BEGIN
     if (exists $ENV{GLOBUS_LOCATION})
     {
         push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+        push(@INC, "$ENV{GLOBUS_LOCATION}/test/globus_gridftp_server_test");
     }
     else
     {
         push(@INC, '@libdir@/perl');
+        push(@INC, '@exec_prefix@/test/globus_gridftp_server_test');
     }
 }
 
