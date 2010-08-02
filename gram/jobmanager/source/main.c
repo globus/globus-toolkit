@@ -320,7 +320,9 @@ main(
                     http_body_fd = -1;
                     close(context_fd);
                     context_fd = -1;
-                    fclose(stdout);
+
+                    freopen("/dev/null", "w", stdout)
+                    freopen("/dev/null", "w", stderr)
                 }
                 rc = GLOBUS_SUCCESS;
             }
