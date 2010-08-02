@@ -141,7 +141,7 @@ flavorinclude_HEADERS = \
 	globus_uuid.h
 
 
-CFLAGS += -DGLOBUS_PREFIX=\"${prefix}\"
+CFLAGS += -DGLOBUS_PREFIX=\"${prefix}\" -DGLOBUS_LIBDIR=\"${libdir}\"
 pthreads_sources = globus_thread_pthreads.h globus_thread_pthreads.c
 windowsthreads_sources = globus_thread_windows.h globus_thread_windows.c
 
