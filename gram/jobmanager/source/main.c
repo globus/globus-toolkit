@@ -321,8 +321,8 @@ main(
                     close(context_fd);
                     context_fd = -1;
 
-                    freopen("/dev/null", "w", stdout)
-                    freopen("/dev/null", "w", stderr)
+                    freopen("/dev/null", "w", stdout);
+                    freopen("/dev/null", "w", stderr);
                 }
                 rc = GLOBUS_SUCCESS;
             }
