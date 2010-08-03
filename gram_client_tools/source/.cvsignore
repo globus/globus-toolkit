@@ -3,6 +3,7 @@ autom4te.cache
 config.guess
 config.sub
 configure
+gptdata.sh
 missing
 install-sh
 mkinstalldirs

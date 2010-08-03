@@ -11,6 +11,10 @@ Scripts = \
 	globus-gram-job-manager-run-tests.pl \
         job-manager-script-test.pl
 
+ScriptsSources = \
+	globus-gram-job-manager-run-tests.pl.in \
+        job-manager-script-test.pl.in
+
 Data = \
 	b38b4d8c.0 \
 	b38b4d8c.signing_policy \
@@ -20,7 +24,16 @@ pkgtest_SCRIPTS = $(Scripts)
 
 pkgtest_DATA=$(Data)
 
-EXTRA_DIST = TESTS.pl globus-gram-job-manager-run-tests.pl.in $(Data)
+EXTRA_DIST = TESTS.pl $(ScriptsSources) $(Data)
+CLEANFILES = globus-gram-job-manager-run-tests.pl \
+             job-manager-script-test.pl
+BUILT_SOURCES = globus-gram-job-manager-run-tests.pl \
+             job-manager-script-test.pl
+
+globus-gram-job-manager-run-tests.pl: $(srcdir)/globus-gram-job-manager-run-tests.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+job-manager-script-test.pl: $(srcdir)/job-manager-script-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -9,7 +9,6 @@ validationdir = $(datadir)/$(PACKAGE)
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
 libexec_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
-libexec_SCRIPTS = globus-personal-gatekeeper-version.sh
 
 bin_SCRIPTS = globus-personal-gatekeeper
 validation_DATA = globus-gram-job-manager.rvf
@@ -68,10 +67,9 @@ MANUAL_SOURCE = globus-personal-gatekeeper-manual.xml \
                 rsl.xml
 
 # Files which we want to put in the source package
-EXTRA_DIST = globus-personal-gatekeeper \
+EXTRA_DIST = globus-personal-gatekeeper.in \
 	     $(validation_DATA) \
 	     $(sysconf_DATA) version.h.in \
-	     globus-personal-gatekeeper-version.sh.in \
 	     configuration.dox \
 	     globus_gram_job_manager_rsl.dox \
 	     globus_gram_job_manager_script_interface.dox \
@@ -86,18 +84,19 @@ EXTRA_DIST = globus-personal-gatekeeper \
 	     dirt.sh \
              libxml.m4
 
-BUILT_SOURCES = globus_gram_job_manager_rsl.dox
-
 Makefile: $(BUILT_SOURCES)
 
+globus-personal-gatekeeper: globus-personal-gatekeeper.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
-	perl scripts/create_rsl_documentation.pl \
-	    < globus-gram-job-manager.rvf \
-	    > globus_gram_job_manager_rsl.dox
+	perl scripts/create_rsl_documentation.pl < $< > $@
 rsl.xml: globus-gram-job-manager.rvf
-	perl scripts/create_rsl_documentation.pl -x \
-	    < globus-gram-job-manager.rvf \
-	    > rsl.xml
+	perl scripts/create_rsl_documentation.pl -x < $< > $@
+
+CLEANFILES = \
+    globus-personal-gatekeeper \
+    globus_gram_job_manager_rsl.dox
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

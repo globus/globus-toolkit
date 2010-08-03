@@ -90,9 +90,9 @@ sub submit
     my @cmdline;
     my @environment;
     my @arguments;
-    my $fork_starter = "$ENV{GLOBUS_LOCATION}/libexec/globus-fork-starter";
+    my $fork_starter = "$Globus::Core::Paths::libexecdir/globus-fork-starter";
     my $streamer = "$Globus::Core::Paths::libexecdir/globus-gram-streamer";
-    my $fork_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-fork.conf";
+    my $fork_conf = "$Globus::Core::Paths::sysconfdir/globus-fork.conf";
     my $log_path = '/dev/null';
     my $is_grid_monitor = 0;
 

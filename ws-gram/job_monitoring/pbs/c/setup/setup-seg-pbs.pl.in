@@ -1,0 +1,93 @@
+#! /usr/bin/env perl
+# 
+# Copyright 1999-2010 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+
+BEGIN
+{
+    if (exists $ENV{GPT_LOCATION})
+    {
+        push(@INC, "$ENV{GPT_LOCATION}/lib/perl");
+    }
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
+
+require Grid::GPT::Setup;
+use Globus::Core::Paths;
+use Getopt::Long;
+
+my $path                = '';
+my $help		= 0;
+
+GetOptions('path|p=s' => \$path,
+	   'help|h' => \$help);
+
+&usage if $help;
+
+if ($path eq '') {
+    if (exists $ENV{PBS_HOME}) {
+        $path = $ENV{PBS_HOME} . '/server_logs';
+    } else {
+        $path = '/var/spool/pbs/server_logs';
+    }
+}
+if (-e $path)
+{
+    if (! -d $path)
+    {
+        print STDERR "$path is not a directory\n";
+        exit 1;
+    }
+    elsif(! -r $path)
+    {
+        print STDERR "$path cannot be read\n";
+        exit 1;
+    }
+}
+else
+{
+    print STDERR "$path does not exist.\n";
+    print STDERR "Re-run this setup package with PBS_HOME environment variable\n";
+    print STDERR "pointing to the directory containing the PBS server-logs subdirectory\n";
+    exit 1;
+}
+my $metadata =
+    new Grid::GPT::Setup(package_name =>
+            'globus_scheduler_event_generator_pbs_setup');
+
+my $libexecdir	= $Globus::Core::Paths::libexecdir;
+local(*FP);
+
+open(FP, ">$Globus::Core::Paths::sysconfdir/globus-pbs.conf");
+print FP "log_path=$path\n";
+close(FP);
+
+$metadata->finish();
+
+sub usage
+{
+    print "Usage: $0 [options]\n".
+          "Options:  [--path|-p path to PBS server log]\n".
+	  "          [--help|-h]\n".
+          " default path is /var/spool/pbs/server_logs\n";
+    exit 1;
+}

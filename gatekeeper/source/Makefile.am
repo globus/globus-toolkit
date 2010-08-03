@@ -20,6 +20,8 @@ globus_gatekeeper_LDFLAGS = $(GPT_LDFLAGS)
 globus_k5_SOURCES = globus_k5.c globus_gatekeeper_utils.c
 globus_k5_LDFLAGS = $(GPT_LDFLAGS)
 
+globus_gatekeeper_CFLAGS = -DGLOBUS_LOCATION=\"$(prefix)\" -DGLOBUS_LOG_DIR=\"$(localstatedir)\"
+
 man8datadir=$(mandir)/man8
 man8data_DATA = globus-gatekeeper.8 globus-k5.8
 MANUAL_SOURCES = manual.xml globus-gatekeeper-manual.xml globus-k5-manual.xml

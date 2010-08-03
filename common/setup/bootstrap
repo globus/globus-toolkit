@@ -20,9 +20,4 @@ echo "generating findshelltools"
 autoconf findshelltools.in > findshelltools || error
 chmod 755 findshelltools
 
-echo "generating setup-tmpdirs"
-autoconf setup-tmpdirs.in > setup-tmpdirs || error
-chmod 755 setup-tmpdirs
-
-
 exit 0

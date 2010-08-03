@@ -57,7 +57,7 @@ int main(int argc, char * argv[])
     int                                 rc;
     globus_module_descriptor_t *        failed_module;
     globus_result_t                     result;
-    char                                *globus_location = NULL;
+    char                                *location = NULL;
     char                                *cert_dir = NULL;
     char                                *cert = NULL;
     char                                *key = NULL;
@@ -128,8 +128,15 @@ int main(int argc, char * argv[])
     home = getenv("HOME");
     printf("%s\n", home ? home : "no");
     printf("Checking if GLOBUS_LOCATION is set... ");
-    globus_location = getenv("GLOBUS_LOCATION");
-    printf("%s\n", globus_location ? globus_location : "no");
+    location = getenv("GLOBUS_LOCATION");
+    printf("%s\n", location ? location : "no");
+    if (!location)
+    {
+        printf("Checking for default GLOBUS_LOCATION... ");
+        globus_location(&location);
+        printf("%s\n", location ? location : "no");
+    }
+
     printf("Checking if X509_CERT_DIR is set... ");
     cert_dir = getenv("X509_CERT_DIR");
     printf("%s\n", cert_dir ? cert_dir : "no");

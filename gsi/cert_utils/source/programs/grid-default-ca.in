@@ -66,7 +66,7 @@ get_security_dir() {
     elif test "$cadir" = "/etc/grid-security/certificates"; then
         echo "/etc/grid-security"
     else
-        echo "${GLOBUS_LOCATION}/etc"
+        echo "${sysconfdir}"
     fi
 }
 
@@ -83,8 +83,8 @@ show_default() {
         gsconf=${GRID_SECURITY_DIR}/grid-security.conf
     elif test -f "/etc/grid-security/grid-security.conf"; then
         gsconf="/etc/grid-security/grid-security.conf"
-    elif test -f "${GLOBUS_LOCATION}/etc/grid-security.conf"; then
-        gsconf="${GLOBUS_LOCATION}/etc/grid-security.conf"
+    elif test -f "${sysconfdir}/grid-security.conf"; then
+        gsconf="${sysconfdir}/grid-security.conf"
     fi
 
     DEFAULTCACONFFILE=`${GLOBUS_SH_LS-ls} -l "$gsconf" 2>/dev/null | ${GLOBUS_SH_SED-sed} -e "s|.*-> \(.*\)|\1|"`
@@ -237,15 +237,7 @@ EOF
 # main code section
 ############################################################
 
-if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer; then
-    . ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
-elif test -f ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer; then
-    . ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
-else
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before" 1>&2
-    echo "running this script" 1>&2
-    exit 1
-fi
+. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
@@ -263,7 +255,7 @@ short_usage="$PROGRAM_NAME [-help] [ options ...]"
 
 . $libexecdir/globus-args-parser-header
 
-if test -n "${GLOBUS_LOCATION}" -a -x ${bindir}/openssl; then
+if test -x ${bindir}/openssl; then
     SSL_EXEC=${bindir}/openssl
 else
     SSL_EXEC="openssl"
@@ -292,8 +284,8 @@ fi
 if test -d "/etc/grid-security/certificates/." ; then
     set -- "$@" "/etc/grid-security/certificates" 
 fi
-if test -d "${GLOBUS_LOCATION:-/usr}/share/certificates/."; then
-    set -- "$@" "${GLOBUS_LOCATION:-/usr}/share/certificates"
+if test -d "${datadir}/certificates/."; then
+    set -- "$@" "${datadir}/certificates"
 fi
 
 found_ca=0

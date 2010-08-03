@@ -1,12 +1,7 @@
 AC_REVISION($Revision$)
 AC_INIT(pbs.in)
 
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
 AC_PATH_PROG(MPIEXEC, mpiexec, no)
 if test "$MPIEXEC" = "no" ; then
@@ -80,10 +75,6 @@ AC_ARG_WITH(softenv-dir,
 
 AC_SUBST(SOFTENV_DIR)
 
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
-libexecdir=${prefix}/libexec
-
 AC_OUTPUT(
-  $GLOBUS_LOCATION/lib/perl/Globus/GRAM/JobManager/pbs.pm:pbs.in
+  pbs.pm:pbs.in
 )

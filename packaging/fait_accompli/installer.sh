@@ -10,7 +10,7 @@ CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
 #GT5 bundles
 BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,cas_callout
 
-PACKAGES=globus_rls_client_jni,myproxy,globus_openssl_backup
+PACKAGES=globus_rls_client_jni,myproxy
 
 echo Making configure/make installer
 echo Step: Checking out and building autotools.

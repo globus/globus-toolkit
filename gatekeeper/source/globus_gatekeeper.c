@@ -798,14 +798,14 @@ main(int xargc,
     }
     else
     {
-        gatekeeperhome = "/usr";
-        logdir = "/var/log";
+        gatekeeperhome = GLOBUS_LOCATION;
+        logdir = GLOBUS_LOG_DIR;
     }
 
     if (libexecdir == NULL)
     {
-        libexecdir = malloc(strlen(gatekeeperhome) + strlen("/sbin") + 1);
-        sprintf(libexecdir, "%s/sbin", gatekeeperhome);
+        libexecdir = malloc(strlen(gatekeeperhome) + strlen("/libexec") + 1);
+        sprintf(libexecdir, "%s/libexec", gatekeeperhome);
     }
 
 

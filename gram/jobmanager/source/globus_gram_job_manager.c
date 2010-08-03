@@ -203,7 +203,7 @@ globus_gram_job_manager_init(
     dir_prefix = globus_common_create_string(
             "%s/.globus/job/%s",
             manager->config->home,
-            manager->config->hostname);
+            manager->config->short_hostname);
     if (dir_prefix == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -239,6 +239,8 @@ globus_gram_job_manager_init(
         }
     }
 
+    setenv("X509_USER_PROXY", manager->cred_path, 1);
+
     rc = globus_gram_protocol_set_credentials(cred);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -273,7 +275,6 @@ globus_gram_job_manager_init(
     }
 
     manager->active_job_manager_handle = NULL;
-    manager->socket_fd = -1;
     manager->lock_fd = -1;
     manager->lock_path = globus_common_create_string(
             "%s/%s.%s.lock",
@@ -389,7 +390,7 @@ request_hashtable_init_failed:
         manager->validation_records = NULL;
         
 validation_init_failed:
-        globus_cond_destroy(&manager->mutex);
+        globus_cond_destroy(&manager->cond);
 cond_init_failed:
         GlobusGramJobManagerUnlock(manager);
         globus_mutex_destroy(&manager->mutex);

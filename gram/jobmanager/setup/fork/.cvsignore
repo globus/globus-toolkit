@@ -19,3 +19,4 @@ find-fork-tools
 *.lo
 *.la
 .libs
+gptdata.sh

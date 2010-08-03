@@ -27,5 +27,8 @@ pkgdata_DATA = \
     stdio019.err stdio019.out stdio019.rsl
 
 EXTRA_DIST = globus-gram-job-manager-stdio-test.pl.in $(pkgdata_DATA)
+CLEANFILES = globus-gram-job-manager-stdio-test.pl
+globus-gram-job-manager-stdio-test.pl: $(srcdir)/globus-gram-job-manager-stdio-test.pl.in 
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post

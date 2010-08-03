@@ -1,19 +1,11 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 #
 
+use warnings;
 use strict;
 use POSIX;
 
 my $test_exec = './create-extensions-test';
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 sub test
 {

@@ -1,6 +1,7 @@
 aclocal.m4
 autom4te.cache
 missing
+gptdata.sh
 install-sh
 mkinstalldirs
 Makefile.in
@@ -13,6 +14,7 @@ config.status
 configure
 globus_common_test-*.tar.gz
 ltmain.sh
+run-common-tests.pl
 *.lo
 *.la
 .libs

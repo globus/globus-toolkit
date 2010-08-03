@@ -13,6 +13,11 @@ sub startGatekeeper($) {
     my $rc = 0;
     my $contact;
     my $startargs = "-start -auditdir $audit_data_dir";
+
+    if (exists $ENV{X509_CERT_DIR})
+    {
+        $startargs .= " -x509-cert-dir $ENV{X509_CERT_DIR}"
+    }
     
     Util::debug("Starting personal gatekeeper: $personal_gatekeeper $startargs");
     chomp($contact = `$personal_gatekeeper $startargs`);

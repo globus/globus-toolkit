@@ -23,6 +23,14 @@ globus_is_local_user_SOURCES = globus_is_local_user.c
 globus_is_local_user_LDFLAGS = @GPT_LDFLAGS@
 
 globus_is_local_user_LDADD = ../library/libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
+
+globus-sh-exec: $(srcdir)/globus-sh-exec.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-version: $(srcdir)/globus-version.in
+	$(REWRITE_SCRIPT_PREFIXES) \
+            -e 's|$(AT)GLOBUS_VERSION$(AT)|@GLOBUS_VERSION@|' \
+            -e 's|$(AT)GLOBUS_VERSIONNAME$(AT)|@GLOBUS_VERSIONNAME@|' \
+            < $< > $@
 endif
 
 include $(top_srcdir)/globus_automake_post

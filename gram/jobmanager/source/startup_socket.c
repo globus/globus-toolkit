@@ -74,7 +74,6 @@ int
 globus_gram_job_manager_startup_socket_init(
     globus_gram_job_manager_t *         manager,
     globus_xio_handle_t *               handle,
-    int *                               socket_fd,
     int *                               lock_fd)
 {
     static unsigned char                byte[1];
@@ -587,7 +586,6 @@ lockfd_open_failed:
         ;
     }
 
-    *socket_fd = sock;
     *lock_fd = lockfd;
 
     if (rc == GLOBUS_SUCCESS)
@@ -629,7 +627,6 @@ globus_gram_job_manager_starter_send(
     gss_cred_id_t                       cred)
 {
     int                                 sock;
-    char                                sockpath[PATH_MAX != -1 ? PATH_MAX: _POSIX_PATH_MAX];
     char                                byte[1];
     int                                 rc = 0;
     struct sockaddr_un                  addr;
@@ -658,17 +655,10 @@ globus_gram_job_manager_starter_send(
             context_fd,
             response_fd);
 
-    sprintf(sockpath,
-            "%s/.globus/job/%s/%s.%s.sock",
-            manager->config->home,
-            manager->config->hostname,
-            manager->config->jobmanager_type,
-            manager->config->service_tag);
-
     /* create socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = PF_LOCAL;
-    strncpy(addr.sun_path, sockpath, sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
     sock = socket(PF_LOCAL, SOCK_DGRAM, 0);
     if (sock < 0)
     {
@@ -745,7 +735,7 @@ globus_gram_job_manager_starter_send(
                 context_fd,
                 response_fd,
                 -rc,
-                sockpath,
+                manager->socket_path,
                 errno,
                 "Error making datagram connecting to Job Manager",
                 strerror(errno));
@@ -1022,6 +1012,7 @@ globus_l_gram_startup_socket_callback(
     struct iovec                        iov[1];
     gss_buffer_desc                     cred_buffer;
     struct cmsghdr *                    control_message = NULL;
+    int                                 socket_fd;
     int                                 http_body_fd = -1;
     int                                 context_fd = -1;
     int                                 response_fd = -1;
@@ -1035,7 +1026,7 @@ globus_l_gram_startup_socket_callback(
     gss_cred_id_t                       cred;
     char                                byte[1] = {0};
     char                                cmsgbuf[sizeof(struct cmsghdr) + 4 * sizeof(int)];
-    const int                           MAX_NEW_PER_SELECT = 2;
+    const int                           MAX_NEW_PER_SELECT = 1;
     int                                 accepted;
     globus_bool_t                       done = GLOBUS_FALSE;
     int                                 tries;
@@ -1048,7 +1039,16 @@ globus_l_gram_startup_socket_callback(
     struct linger                       linger;
     char *                              gt3_failure_message = NULL;
 
+    if (result != GLOBUS_SUCCESS)
+    {
+        return;
+    }
     cred_buffer.value = cred_buffer_value;
+    globus_xio_handle_cntl(
+            handle,
+            globus_i_gram_job_manager_file_driver,
+            GLOBUS_XIO_FILE_GET_HANDLE,
+            &socket_fd);
 
     for (accepted = 0; !done && accepted < MAX_NEW_PER_SELECT; accepted++)
     {
@@ -1059,7 +1059,7 @@ globus_l_gram_startup_socket_callback(
                 "level=DEBUG "
                 "fd=%d "
                 "\n",
-                manager->socket_fd);
+                socket_fd);
 
         cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
         memset(cred_buffer.value, 0, cred_buffer.length);
@@ -1082,7 +1082,7 @@ globus_l_gram_startup_socket_callback(
         tries = 10;
         while (tries > 0)
         { 
-            rc = recvmsg(manager->socket_fd, &message, 0);
+            rc = recvmsg(socket_fd, &message, 0);
             if (rc <= 0 && errno == EINPROGRESS)
             {
                 tries--;
@@ -1129,7 +1129,7 @@ globus_l_gram_startup_socket_callback(
                     "reason=\"%s\" "
                     "\n",
                     levelstr,
-                    manager->socket_fd,
+                    socket_fd,
                     "recvmsg failed",
                     -rc,
                     errno,
@@ -1180,7 +1180,7 @@ globus_l_gram_startup_socket_callback(
                     "acksock=%d "
                     "reason=\"%s\" "
                     "\n",
-                    manager->socket_fd,
+                    socket_fd,
                     -rc,
                     "Message did not contain required descriptors",
                     http_body_fd,
@@ -1229,7 +1229,7 @@ globus_l_gram_startup_socket_callback(
                     "errno=%d "
                     "reason=\"%s\" "
                     "\n",
-                    manager->socket_fd,
+                    socket_fd,
                     -rc,
                     "Failed sending ack",
                     http_body_fd,
@@ -1277,7 +1277,7 @@ globus_l_gram_startup_socket_callback(
                     "rc=%d "
                     "byte=%d "
                     "\n",
-                    manager->socket_fd,
+                    socket_fd,
                     -GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED,
                     "Failed receiving ack",
                     http_body_fd,
@@ -1331,7 +1331,7 @@ globus_l_gram_startup_socket_callback(
                     "msg=\"%s\" "
                     "reason=\"%s\" "
                     "\n",
-                    manager->socket_fd,
+                    socket_fd,
                     -rc,
                     http_body_fd,
                     context_fd,

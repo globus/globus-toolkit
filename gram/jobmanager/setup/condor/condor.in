@@ -24,6 +24,7 @@ use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::GRAM::StdioMerger;
+use Globus::Core::Paths;
 use IPC::Open3;
 
 use Globus::Core::Paths;
@@ -59,7 +60,7 @@ sub new
     my $description = $self->{JobDescription};
     my $stdout = $description->stdout();
     my $stderr = $description->stderr();
-    my $globus_condor_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-condor.conf";
+    my $globus_condor_conf = "$Globus::Core::Paths::sysconfdir/globus-condor.conf";
 
     if (! exists($self->{condor_logfile}))
     {

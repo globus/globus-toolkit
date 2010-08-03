@@ -1,14 +1,12 @@
 AC_REVISION($Revision$)
 AC_INIT(globus-lsf.conf.in)
 
-# checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
-AC_ARG_WITH(log-path, [--with-log-path=PATH], LSF_LOGDIR=$withval,
+AC_ARG_WITH(log-path,
+        AC_HELP_STRING([--with-log-path=PATH], [Use LSF logs in PATH]),
+        LSF_LOGDIR=$withval,
         LSF_LOGDIR='')
 
 if test "$LSF_LOGDIR" = "" || test "$LSF_LOGDIR" = "yes" || test "$LSF_LOGDIR" = "no"; then

@@ -46,7 +46,18 @@ gss_assist_gridmap_SOURCES = gss_assist_gridmap.c
 gridmap_test_SOURCES = gridmap_test.c
 gridmap_userok_SOURCES = gridmap_userok.c
 
-EXTRA_DIST = $(Scripts) $(Data)
+EXTRA_DIST = $(Data) \
+	TESTS.pl.in \
+	gss-assist-impexp-test.pl \
+	gss-assist-auth-test.pl \
+	gss-assist-gridmap-test.pl \
+        gridmap-test.pl \
+        gridmap-tools-test.pl
+
+TESTS.pl: $(srcdir)/TESTS.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+CLEANFILES = TESTS.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

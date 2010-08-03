@@ -16,12 +16,6 @@
 
 
 
-/*
-gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_LOCATION/lib delegation_test.c -lglobus_gssapi_gsi_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_ssl_utils_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg
-
-*/
-
-
 #define EXT_SIZE 16
 #include "gssapi.h"
 #include "../source/library/gssapi_ssleay.h"

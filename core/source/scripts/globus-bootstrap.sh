@@ -56,6 +56,10 @@ fi
 
 . ${GPT_LOCATION}/libexec/gpt-bootstrap.sh
 
+#extract whether the package is built with flavors from the src metadata
+$GPT_LOCATION/sbin/gpt_extract_data \
+    --name --version --build_env ./pkgdata/pkg_data_src.gpt.in > gptdata.sh
+
 # update stamp.h.in
 
 if test -f "stamp-h.in" ; then

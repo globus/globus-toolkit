@@ -1,20 +1,28 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 BEGIN
 {
-    push(@INC, $ENV{GLOBUS_LOCATION}. '/lib/perl');
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, $ENV{GLOBUS_LOCATION}. '/lib/perl');
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
 }
 
 use Globus::GRAM::Error;
+use Globus::Core::Paths;
 use IO::File;
 use Test;
-use File::Path;
 use File::Compare;
+use File::Temp;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
-my $testtmp = &make_tmpdir();
-my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $testtmp = File::Temp::tempdir(CLEANUP => 1);
+my $testdatadir = "$Globus::Core::Paths::datadir/@PACKAGE@";
 my $verbose = 0;
 
 my @test_cases=qw(
@@ -72,7 +80,7 @@ sub test_rsl
     }
 
 
-    system("globusrun -s -r \"$contact\" -f $additionalrslfile >$testout 2>$testerr");
+    system("$Globus::Core::Paths::bindir/globusrun -s -r \"$contact\" -f $additionalrslfile >$testout 2>$testerr");
 
     $rc = $? >> 8 ||
           File::Compare::compare("$testdatadir/$testname.out", $testout) ||
@@ -132,51 +140,5 @@ else
     foreach (@tests)
     {
 	eval "&$_";
-    }
-}
-
-sub make_tmpdir
-{
-    my $root;
-    my $suffix = '/gram_jobmanager_test_';
-    my $created = 0;
-    my $tmpname;
-    my @acceptable = split(//, "abcdefghijklmnopqrstuvwxyz".
-			       "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
-			       "0123456789");
-    if(exists($ENV{TMPDIR}))
-    {
-	$root = $ENV{TMPDIR};
-    }
-    else
-    {
-	$root = '/tmp';
-    }
-    while($created == 0)
-    {
-	$tmpname = $root . $suffix .
-	           $acceptable[rand() * $#acceptable] .
-	           $acceptable[rand() * $#acceptable] .
-	           $acceptable[rand() * $#acceptable] .
-	           $acceptable[rand() * $#acceptable] .
-	           $acceptable[rand() * $#acceptable] .
-	           $acceptable[rand() * $#acceptable];
-	$created = mkdir($tmpname, 0700);
-	if($created)
-	{
-	    if(-l $tmpname or ! -d $tmpname or ! -o $tmpname)
-	    {
-		$created = 0;
-	    }
-	}
-    }
-    return $tmpname;
-}
-
-END
-{
-    if(-d $testtmp and -o $testtmp)
-    {
-	File::Path::rmtree($testtmp);
     }
 }

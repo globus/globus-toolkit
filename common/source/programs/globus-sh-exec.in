@@ -17,7 +17,7 @@
 # 
 
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 # This was done by the script initializer before V2.0

@@ -2,22 +2,20 @@ AC_DEFUN([GLOBUS_INIT], [
 
 AM_MAINTAINER_MODE
 
+dnl Default prefix is $GLOBUS_LOCATION, falling back to /usr if that
+dnl is not present in the environment. Can be overridden by using
+dnl --prefix during configure time
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
+
 # checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
 if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
     export GPT_LOCATION
 fi
 
-#extract whether the package is built with flavors from the src metadata
-$GPT_LOCATION/sbin/gpt_extract_data --build $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
-
-. ./tmpfile.gpt
-rm ./tmpfile.gpt
+# This is created in globus-bootstrap.sh
+. ./gptdata.sh
 
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
@@ -74,8 +72,6 @@ if test "x$GLOBUS_FLAVOR_NAME" != "xnoflavor" ; then
 	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 fi
 
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
 
 AC_SUBST(CC)
 AC_SUBST(CPP)
@@ -105,7 +101,7 @@ AC_SUBST(OBJECT_MODE)
 
 
 define([AM_PROG_LIBTOOL],[
-	LIBTOOL='$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
+	LIBTOOL='$(SHELL) $${GLOBUS_LOCATION:-$(sbindir)}$${GLOBUS_LOCATION:+/sbin}/libtool-$(GLOBUS_FLAVOR_NAME)'
 	AC_SUBST(LIBTOOL)
 	AC_SUBST(LN_S)
 ])

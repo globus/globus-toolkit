@@ -80,6 +80,12 @@ bin_PROGRAMS= \
 # a list of sources needed to compile the library.
 globus_gass_server_SOURCES = globus_gass_server.c
 
+globus-gass-server-shutdown: globus-gass-server-shutdown.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+BUILT_SOURCES = globus-gass-server-shutdown
+CLEANFILES = globus-gass-server-shutdown
+
 # _LDFLAGS is an automake macro which contains
 # directives to the linker add before the list of objects and libraries.
 # 

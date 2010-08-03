@@ -63,6 +63,7 @@ globus_gram_job_manager_config_init(
     char *                              tmp;
     char                                hostname[MAXHOSTNAMELEN];
     char *                              conf_path = NULL;
+    char *                              dot;
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
@@ -503,6 +504,13 @@ globus_gram_job_manager_config_init(
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto out;
+    }
+
+    config->short_hostname = strdup(hostname);
+    dot = strchr(config->short_hostname, '.');
+    if (dot != NULL)
+    {
+        *dot = 0;
     }
 
     rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);

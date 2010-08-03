@@ -12,9 +12,17 @@ setup_SCRIPTS = \
     setup-globus-gram-job-manager.pl
 
 EXTRA_DIST = \
-    setup-globus-gram-job-manager \
-    setup-globus-gram-job-manager.pl \
+    setup-globus-gram-job-manager.in \
+    setup-globus-gram-job-manager.pl.in \
     globus_gram_job_manager_program_setup.dox
+
+setup-globus-gram-job-manager: $(srcdir)/setup-globus-gram-job-manager.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+setup-globus-gram-job-manager.pl: $(srcdir)/setup-globus-gram-job-manager.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
+CLEANFILES = setup-globus-gram-job-manager setup-globus-gram-job-manager.pl 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

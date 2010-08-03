@@ -31,18 +31,9 @@ my $test_exec = './globus-ftp-client-caching-transfer-test';
 my @tests;
 my @todo;
 
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
 my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
-
-@INC = (@INC, "$gpath/lib/perl");
 
 # Test #1-2. Basic functionality: Do two transfers of /etc/group to/from
 # localhost (with and without a valid proxy) using URL caching.
