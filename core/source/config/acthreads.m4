@@ -2,8 +2,7 @@ dnl
 dnl LAC_THREADS()
 dnl     Adds thread-related options to the configure command-line handling
 dnl     Set the appropriate lac_cv_* variables:
-dnl             lac_cv_threads_type ("no", "pthreads", 
-dnl                                     "solaristhreads")
+dnl             lac_cv_threads_type ("no", "pthreads")
 dnl             lac_cv_threads_defines
 dnl             lac_cv_threads_CFLAGS
 dnl             lac_cv_threads_CXXFLAGS
@@ -104,12 +103,6 @@ AC_MSG_CHECKING(for pthreads)
         case "$lib_type" in
           pthread )
             case "$host" in
-              mips-sgi-irix6* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
-                LAC_THREADS_ADD_DEFINE(_SGI_MP_SOURCE)  
-              ;;
               *-hp-hpux11* )
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
@@ -189,8 +182,6 @@ do
         LAC_THREADS_DEFINE_ONE(HAVE_PTHREAD_INIT_FUNC)
         LAC_THREADS_DEFINE_ONE(HAVE_THREAD_SAFE_STDIO)
         LAC_THREADS_DEFINE_ONE(HAVE_THREAD_SAFE_SELECT) 
-        LAC_THREADS_DEFINE_ONE(_SGI_MP_SOURCE)  
-        LAC_THREADS_DEFINE_ONE(__USE_FIXED_PROTOTYPES__)
         LAC_THREADS_DEFINE_ONE(_REENTRANT)
         LAC_THREADS_DEFINE_ONE(_POSIX_PTHREAD_SEMANTICS) 
         * )
