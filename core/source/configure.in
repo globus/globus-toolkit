@@ -94,7 +94,6 @@ AC_SUBST(AUTOMAKE_OPTS)
 
 
 AM_PROG_LIBTOOL
-mv ./libtool libtool-$GLOBUS_FLAVOR_NAME
 
 dnl
 dnl Output selected thread package
