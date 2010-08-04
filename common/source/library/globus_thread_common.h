@@ -78,12 +78,6 @@ globus_thread_blocking_space_will_block(
     globus_callback_space_t             blocking_space);
 
 void
-globus_thread_prefork();
-
-void
-globus_thread_postfork();
-
-void
 globus_thread_blocking_reset();
 
 void thread_print(char * s, ...);
