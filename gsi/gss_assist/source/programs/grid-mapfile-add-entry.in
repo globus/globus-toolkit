@@ -223,25 +223,16 @@ fi
 
 $ECHO_DRYRUN "Verifying that Local Name(s)=($ln) are legitimate local accounts."
 
-if test -x ${sbindir}/globus-is-local-user; then
-    globus_is_local_user=${sbindir}/globus-is-local-user
-elif test -x ${libexecdir}/globus-is-local-user; then
-    globus_is_local_user=${libexecdir}/globus-is-local-user
-else
-    echo "ERROR: Unable to find globus-is-local-user" 1>&2
-    Cleanup
-    exit 1
-fi
-
 for name in $ln ; do
     $ECHO_DRYRUN "Checking ln(s)=$name"
-    ${globus_is_local_user} $name
+    idres=`id $name 2>&1`
     if  [ "$?" -eq 0 ] ; then
         $ECHO_DRYRUN "Local Name=$name does exist"
     else
         echo "entry not added because the LN(s) is/are not legitimate"
         $ECHO_DRYRUN "Local Name=$name does *NOT* exist"
         $ECHO_DRYRUN "Entry *NOT* added"
+        $ECHO_DRYRUN "Result: $idres"
         Cleanup
         exit 1
     fi
