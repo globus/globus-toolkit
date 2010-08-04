@@ -1,8 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS= \
-	pkgdata
+SUBDIRS= pkgdata config init
 
 INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS) @LIBOBJS@

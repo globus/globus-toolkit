@@ -80,6 +80,8 @@ $Header$
 <arg>-k</arg>
 <sbr/>
 <arg>-globuskmap <replaceable>KMAP</replaceable></arg>
+<sbr/>
+<arg>-pidfile <replaceable>PIDFILE</replaceable></arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -252,6 +254,12 @@ The full set of command-line options to &cmd; consists of:
         <listitem><simpara>Use <replaceable>KMAP</replaceable> as the path to
         the Grid credential to kerberos initialization mapping
         file.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-pidfile <replaceable>PIDFILE</replaceable></term>
+        <listitem><simpara>Write the process id of the &cmd; to the
+        file named by <replaceable>PIDFILE</replaceable>.
+        </simpara></listitem>
     </varlistentry>
 </variablelist>
 </para>
