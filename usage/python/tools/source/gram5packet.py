@@ -911,8 +911,36 @@ class GRAM5JobPacket(GRAM5Packet):
                     jobtype,
                     gram5_job_file_info)
                 VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', values)
-        cursor.execute('''
+
+        idqueryvalues=[values[0], values[1], values[2], values[3], values[4]]
+        idquery = '''
                 SELECT id FROM gram5_jobs
+                WHERE job_manager_id=%s
+                AND send_time=%s
+                AND count=%s
+                AND host_count=%s
+                AND dryrun=%s
+                '''
+        if client_id is not None:
+            idquery += ' AND client_id=%s'
+            idqueryvalues.append(client_id)
+        if executable_id is not None:
+            idquery += ' AND executable_id=%s'
+            idqueryvalues.append(executable_id)
+        idquery += '''
+            AND rsl_bitfield=%s 
+            AND jobtype=%s 
+            AND gram5_job_file_info=%s
+            '''
+        idqueryvalues.append(rsl_bitfield)
+        idqueryvalues.append(jobtype)
+        idqueryvalues.append(gram5_job_file_info)
+
+        cursor.execute(idquery, tuple(idqueryvalues))
+        try:
+            job_id = cursor.fetchone()[0]
+        except:
+            print '''SELECT id FROM gram5_jobs
                 WHERE job_manager_id=%s
                 AND send_time=%s
                 AND count=%s
@@ -922,8 +950,8 @@ class GRAM5JobPacket(GRAM5Packet):
                 AND executable_id=%s
                 AND rsl_bitfield=%s
                 AND jobtype=%s
-                AND gram5_job_file_info=%s''', values)
-        job_id = cursor.fetchone()[0]
+                AND gram5_job_file_info=%s''', values
+
         return job_id
 
     def get_client_id(self, cursor):
