@@ -6,7 +6,7 @@ use Getopt::Long;
 sub commands;
 
 my ($gpt_location, $rpm_info) = ($ENV{'GPT_LOCATION'}, "");
-my ($perl_location, $verbose, $autotools, $boot, $help, $man, $version, $test);
+my ($perl_location, $verbose, $boot, $help, $man, $version, $test);
 
 GetOptions( 'with-perl=s'=> \$perl_location,
             'prefix=s'=> \$gpt_location,
@@ -16,7 +16,6 @@ GetOptions( 'with-perl=s'=> \$perl_location,
             "man!" => \$man,
             "verbose!" => \$verbose,
             "version!" => \$version,
-            "autotools!" => \$autotools,
           ) or pod2usage(1);
 
 pod2usage(0) if $help;
@@ -73,12 +72,6 @@ my %builddirections = (
                        'perltest' => 'perl',
                        'perlpatch' => 'perl',
                        'perltar' => 'perl',
-                       'autoconf' => 'autotools',
-                       'automake' => 'autotools',
-                       'libtool' => 'autotools',
-                       'oldautoconf' => 'oldautotools',
-                       'oldautomake' => 'oldautotools',
-                       'oldlibtool' => 'oldautotools',
                        'perlzlib' => 'compress',
                        'perlzlibio' => 'perl',
                        'filespec' => 'perl',
@@ -95,18 +88,6 @@ my $shutup =" > /dev/null 2>&1";
 $shutup = "" if defined $verbose;
 
 my %commands = (
-                autotools => ["PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH; \\
-GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
-PERL=$perl_location export PERL; \\
-./configure --prefix=$gpt_location/newautotools", 
-                              "PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH;make", 
-                              "PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH; \\
-make install $shutup"
-                             ],
-                oldautotools => ["PATH=$gpt_location/oldautotools/bin:$ENV{'PATH'}; export PATH; GPT_LOCATION=$gpt_location; export GPT_LOCATION; ./configure --prefix=$gpt_location/oldautotools", 
-                              "make", 
-                              "make install"
-                             ],
                 gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
 ./configure --with-perl=$perl_location", 
                         "make", 
@@ -143,7 +124,7 @@ INSTALLMAN3DIR=$gpt_location/man/man3 $shutup",
                         ]
                );
 my %boot = (
-             gpt => "PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH; ./bootstrap",
+             gpt => "./bootstrap",
            );
 
 if (! -d "./support") {
@@ -170,7 +151,7 @@ my $dist = new DistGPT(
                        building => 1,
                       );
 
-$dist->match_srcdirs($autotools || $boot);
+$dist->match_srcdirs($boot);
 
 for my $s  (@{ $dist->get_keys() }) {
 
@@ -192,10 +173,6 @@ for my $s  (@{ $dist->get_keys() }) {
 
   my $instructions = $builddirections{$s};
   
-  next if $instructions eq 'autotools' and 
-    ! defined $autotools and ! defined $boot;
-
-  next if $instructions eq 'oldautotools' and ! defined $autotools;
   next if $s eq 'perltest' and ! defined $test;
 
   $log->announce("building $dir");
@@ -256,7 +233,7 @@ sub pod2usage {
              -boot \\
              -help \\
              -man \\
-             -autotools ]\n";
+             ]\n";
   exit $ex;
 }
 
@@ -273,9 +250,8 @@ GetOptions( 'with-perl=s'=> \$perl_location,
             "man!" => \$man,
             "verbose!" => \$verbose,
             "version!" => \$version,
-            "autotools!" => \$autotools,
 
-build_gpt [ -with-perl=<path> -prefix=<path> -boot -test -autotools -help -man -autotools -version -verbose ]
+build_gpt [ -with-perl=<path> -prefix=<path> -boot -test -help -man -version -verbose ]
 
 =head1 DESCRIPTION
 
@@ -294,13 +270,9 @@ $GPT_LOCATION.
 =item I<-verbose>: Print copious build messages for diagnostic purposes.
 
 =item I<-boot>: Run autools via the packaging_tools/bootstrap script.
-The flag also install the needed autotools.
 
 =item I<-test>: Run some Perl module tests after the installation of
 each module.  This will also install GPT.
-
-=item I<-autotools>: Install various versions of automake, autoconf,
-and libtool.
 
 =item I<-help>: Print usage and exit..
 
