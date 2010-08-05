@@ -2,7 +2,6 @@
 
 VERSION=`cat fait_accompli/version`
 INSTALLER=gt$VERSION-all-source-installer
-#AUTOTOOLS=source-trees/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
 TARFILES=netlogger-c-4.0.2.tar.gz
 CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
@@ -10,7 +9,7 @@ CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
 #GT5 bundles
 BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,cas_callout
 
-PACKAGES=globus_rls_client_jni,myproxy,globus_openssl_backup
+PACKAGES=globus_rls_client_jni,myproxy
 
 echo Making configure/make installer
 #echo Step: Checking out and building autotools.
@@ -84,9 +83,9 @@ rm farfleblatt
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt
 autoconf farfleblatt > $INSTALLER/configure
 chmod +x $INSTALLER/configure
-cp $AUTOTOOLS/install-sh $INSTALLER
-cp $AUTOTOOLS/config.sub $INSTALLER
-cp $AUTOTOOLS/config.guess $INSTALLER
+cp fait_accompli/install-sh $INSTALLER
+cp fait_accompli/config.sub $INSTALLER
+cp fait_accompli/config.guess $INSTALLER
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.INSTALL > $INSTALLER/INSTALL
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/README
 
