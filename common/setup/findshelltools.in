@@ -1,15 +1,7 @@
 AC_REVISION($Revision$)
 AC_INIT(globus-sh-tools-vars.sh.in)
 
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
-
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
 if test "x$PERL" = "x"; then
         AC_PATH_PROG(PERL,perl)

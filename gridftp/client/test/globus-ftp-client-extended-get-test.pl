@@ -31,15 +31,6 @@ my $test_exec = './globus-ftp-client-extended-get-caching-test';
 my @tests;
 my @todo;
 
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
-
 my ($proto) = setup_proto();
 my ($source_host, $testfile, $local_copy) = setup_remote_source(1);
 

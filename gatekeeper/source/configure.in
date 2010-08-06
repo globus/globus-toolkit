@@ -42,10 +42,54 @@ AC_HEADER_STDC
 AC_REPLACE_FUNCS(setenv)
 AC_REPLACE_FUNCS(unsetenv)
 
+AC_ARG_WITH(initscript-config-path,
+            AC_HELP_STRING([--with-initscript-config-path=PATH],
+            [Set the path to init script configuration. By default, this package
+             will install its configuration file in
+             $sysconfdir/globus-gatekeeper.conf. 
+             ]),
+            [if test "$withval" = "yes";  then
+                AC_MSG_ERROR([Invalid path: $withval])
+            else
+                GATEKEEPER_CONFIGDIR=`dirname $withval`
+                GATEKEEPER_CONFIGFILE=`basename $withval`
+            fi],
+            [
+                GATEKEEPER_CONFIGDIR="$sysconfdir"
+                GATEKEEPER_CONFIGFILE="globus-gatekeeper.conf"
+            ])
+
+AC_ARG_WITH(lsb,
+        AC_HELP_STRING(
+            [--with-lsb],
+            [Enable use of LSB support functions in the globus-gatekeeper
+            init script. If set, it will use linux-specific functions to start
+            and stop the gatekeeper service and log its status changes. This
+            script will probe for the LSB base scripts if this is not set.
+            If not found, it will use a generic service startup script.]),
+            [ if test "$withval" = yes; then
+                INIT_SCRIPT_SOURCE=globus-gatekeeper-lsb.in
+              else
+                INIT_SCRIPT_SOURCE=globus-gatekeeper.in
+              fi],
+            [
+                if test -f /lib/lsb/init-functions; then
+                    INIT_SCRIPT_SOURCE=globus-gatekeeper-lsb.in
+                else
+                    INIT_SCRIPT_SOURCE=globus-gatekeeper.in
+                fi
+            ])
+
+AC_SUBST(GATEKEEPER_CONFIGDIR)
+AC_SUBST(GATEKEEPER_CONFIGFILE)
+AC_SUBST(INIT_SCRIPT_SOURCE)
+
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
-    [  --with-xml-catalog=PATH       Path to XML catalog],
+    AC_HELP_STRING([--with-xml-catalog=PATH],
+    [Path to XML catalog. If this option is used, manual pages will be
+    generated from the XML documentation files.]),
     [xml_catalog_path="$withval"],
     [xml_catalog_path="notset"])
 
@@ -72,5 +116,7 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
+        init/Makefile
+        config/Makefile
         Makefile
 )

@@ -25,7 +25,6 @@ dnl   ARFLAGS
 dnl   RANLIB
 dnl   CXX_WORKS
 dnl   CROSS
-dnl   INSURE
 dnl   F77
 dnl   F77FLAGS
 dnl   F90
@@ -55,7 +54,6 @@ dnl   lac_cv_ARFLAGS
 dnl   lac_cv_RANLIB
 dnl   lac_cv_CXX_WORKS
 dnl   lac_cv_CROSS
-dnl   lac_cv_INSURE
 dnl   lac_cv_F77
 dnl   lac_cv_F77FLAGS
 dnl   lac_cv_F90
@@ -69,39 +67,24 @@ dnl LAC_COMPILERS_ARGS()
 AC_DEFUN([LAC_COMPILERS_ARGS],
 [
 AC_ARG_WITH(threads,
-        [  --with-threads=TYPE          build target with threads],
+    AC_HELP_STRING([--with-threads=TYPE], [build target with threads]),
         [lac_cv_threads_type="$withval"],
         [lac_cv_threads_type=${lac_cv_threads_type='no'}])
 
 AC_ARG_ENABLE(debug,
-        [  --enable-debug                compile in debugging features],
+    AC_HELP_STRING([--enable-debug], [compile in debugging features]),
         [lac_cv_debug="$enableval"],
         [lac_cv_debug=${lac_cv_debug='no'}])
 
 AC_ARG_ENABLE(64bit,
-        [  --enable-64bit                build 64-bit objects (SGI Irix 6.x, HP HPUX 11.x, IA-64 only)],
+    AC_HELP_STRING([--enable-64bit], [build 64-bit objects]),
         [lac_cv_build_64bit="$enableval"],
         [lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
 
 AC_ARG_ENABLE(profiling,
-        [  --enable-profiling            enable profile build (GCC only)],
+    AC_HELP_STRING([--enable-profiling], [enable profile build (GCC only)]),
         [lac_cv_build_profile="$enableval"],
         [lac_cv_build_profile=${lac_cv_build_profile='no'}])
-
-AC_ARG_ENABLE(insure,
-        changequote(<<, >>)dnl
-  <<--enable-insure[=PATH]      use Insure++ [default=insure]>>,
-        changequote([, ])dnl
-        [
-                if test "$enableval" = "yes"; then
-                        lac_cv_INSURE="insure"
-                else
-                        lac_cv_INSURE="$enableval"
-                fi
-        ],
-        [
-                lac_cv_INSURE=""
-        ])
 ])
 
 AC_DEFUN([LAC_COMPILERS],
@@ -139,7 +122,6 @@ LAC_SUBSTITUTE_COMPILER_VAR(LIBS)
 LAC_SUBSTITUTE_COMPILER_VAR(AR)
 LAC_SUBSTITUTE_COMPILER_VAR(ARFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(RANLIB)
-LAC_SUBSTITUTE_COMPILER_VAR(INSURE)
 LAC_SUBSTITUTE_COMPILER_VAR(F77)
 LAC_SUBSTITUTE_COMPILER_VAR(CROSS)
 LAC_SUBSTITUTE_COMPILER_VAR(F77FLAGS)
@@ -170,9 +152,9 @@ dnl LAC_COMPILERS_SET_ALL_VARS(THREAD-TYPE)
 AC_DEFUN([LAC_COMPILERS_SET_ALL_VARS],
 [
 lac_CFLAGS="$CFLAGS "
-lac_CPPFLAGS="$CPPFLAGS -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/$globus_cv_flavor"
+lac_CPPFLAGS="$CPPFLAGS -I$includedir -I$includedir/$globus_cv_flavor"
 lac_CXXFLAGS="$CXXFLAGS "
-lac_LDFLAGS="$LDFLAGS -L$GLOBUS_LOCATION/lib"
+lac_LDFLAGS="$LDFLAGS -L$libdir "
 lac_LIBS="$LIBS "
 lac_F77FLAGS="$F77FLAGS "
 lac_F90FLAGS="$F90FLAGS "
@@ -564,128 +546,6 @@ case ${host}--$1 in
         LAC_PROG_CC_GNU($lac_cv_CXX,[],
             [lac_CXXFLAGS="$lac_64bit_flag -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
-    *-hp-hpux10*--no )
-    
-        if test "$GLOBUS_CC" = "mpicc"; then
-            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
-            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
-        else
-            if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC)
-            fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-        fi
-        CC="$lac_cv_CC"
-        LAC_PROG_CC_GNU($lac_cv_CC, ,
-            [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
-        LAC_PROG_CC_GNU($lac_cv_CXX, ,
-            [lac_CXXFLAGS="-D_HPUX_SOURCE $lac_CXXFLAGS"])
-        ;;
-    *-hp-hpux10* )
-        
-        if test "$GLOBUS_CC" = "mpicc"; then
-            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
-            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
-        else
-            if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC c++ g++ gcc)
-            fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-        fi
-        CC="$lac_cv_CC"
-        LAC_PROG_CC_GNU($lac_cv_CC, ,
-                [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
-        LAC_PROG_CC_GNU($lac_cv_CXX, ,
-                [lac_CXXFLAGS="-D_HPUX_SOURCE $lac_CXXFLAGS"])
-        if test "$1" = "pthreads" ; then
-            lac_CFLAGS="$lac_CFLAGS -I/usr/include/reentrant"
-            lac_CXXFLAGS="$lac_CXXFLAGS -I/usr/include/reentrant"
-        fi
-        ;;
-    mips-sgi-irix6* )
-        lac_cv_CC=
-        
-        if test "$GLOBUS_CC" = "mpicc"; then
-            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
-            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
-        fi
-        
-        if test "X$lac_cv_CC" = "X" ; then
-            if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
-            fi
-            
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-            
-            if test "$build_arg_mpi" = "yes" -a "$mpi_own_lib" != "yes"; then
-                lac_LIBS="$lac_LIBS -lmpi"
-            fi
-        fi
-        CC="$lac_cv_CC"
-        
-        LAC_PROG_CC_GNU([$lac_cv_CC],
-                [
-                case $lac_cv_build_64bit in
-                        yes )  lac_64bit_flag="-mabi=64" ;;
-                        -*  )  lac_64bit_flag="$lac_cv_build_64bit" ;;
-                        *   )  lac_64bit_flag="-mabi=n32" ;;
-                esac
-                ],
-                [
-                case $lac_cv_build_64bit in
-                        yes )  lac_64bit_flag="-64" ;;
-                        -*  )  lac_64bit_flag="$lac_cv_build_64bit" ;;
-                        *   )  lac_64bit_flag="-n32" ;;
-                esac
-                ])      
-
-        LAC_CHECK_CFLAGS($lac_cv_CC,[$lac_64bit_flag $lac_CFLAGS],
-                [lac_CFLAGS="$lac_64bit_flag $lac_CFLAGS"
-                 lac_LDFLAGS="$lac_64bit_flag $lac_LDFLAGS"])
-
-        LAC_CHECK_CFLAGS($lac_cv_CC,[-woff 1048 $lac_CFLAGS],
-                [lac_CFLAGS="-woff 1048 $lac_CFLAGS"])
-
-        LAC_CHECK_LDFLAGS($lac_cv_CC,
-                [$lac_CFLAGS],[-Wl,-woff,84 $lac_LDFLAGS],
-                [lac_LDFLAGS="-Wl,-woff,84 $lac_LDFLAGS"])
-
-        LAC_PROG_CC_GNU($lac_cv_CXX, ,
-                [lac_CXXFLAGS="$lac_64bit_flag $lac_CXXFLAGS"])
-        LAC_CHECK_CFLAGS($lac_cv_CXX, [-woff 1048 $lac_CXXFLAGS],
-                [lac_CXXFLAGS="-woff 1048 $lac_CXXFLAGS"])
-
-        dnl RANLIB is more or less defunct on SIG IRIX6.
-        dnl Don't set RANLIB for since if its present its
-        dnl probable gnu and is incompatible
-        dnl     This fixes the reported problem on  modi4.ncsa.uiuc.edu
-        AC_CACHE_VAL(lac_cv_RANLIB, lac_cv_RANLIB="true")
-
-        lac_F77FLAGS="$lac_64bit_flag $lac_F77FLAGS"
-        lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
-      ;;
     *-ibm-aix*--pthreads )
 
         if test "$GLOBUS_CC" = "mpicc"; then
@@ -872,72 +732,6 @@ case ${host}--$1 in
                     lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
                 ])
         fi  
-      ;;
-    *-dec-osf4* | *-dec-osf5* )
-        if test "$lac_cv_build_64bit" = "no"; then
-            AC_MSG_ERROR(32 bits not supported on this platform, use the 64 bit flavor instead)
-            exit 1
-        fi
-        
-        if test "$GLOBUS_CC" = "mpicc"; then
-            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
-            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
-        else
-            if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX CC c++ g++ gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx)
-            fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-        fi
-        CC="$lac_cv_CC"
-        
-        if test "$1" = "pthreads" ; then
-            LAC_PROG_CC_GNU($lac_cv_CC,
-                        [lac_LIBS="$lac_LIBS -lpthread"],
-                        [lac_CFLAGS="-pthread $lac_CFLAGS"
-                         lac_CPPFLAGS="-pthread $lac_CPPFLAGS"])
-            LAC_PROG_CC_GNU($lac_cv_CXX,
-                        [lac_LIBS="$lac_LIBS -lpthread"],
-                        [lac_CXXFLAGS="-pthread $lac_CXXFLAGS"])
-        fi
-        lac_CFLAGS="-D_OSF_SOURCE $lac_CFLAGS"
-        lac_CXXFLAGS="-D_OSF_SOURCE $lac_CXXFLAGS"
-      ;;
-    alpha-cray-unicosmk* )
-        dnl Cray T3E
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi
-        
-        if test "$GLOBUS_CC" = "mpicc"; then
-            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
-            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
-        else
-            if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
-            fi
-            
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-        fi
-        CC="$lac_cv_CC"
-        lac_CFLAGS="-Xm $lac_CFLAGS"
-        lac_CXXFLAGS="-Xm $lac_CXXFLAGS"
-        lac_LDFLAGS="-Xm $lac_LDFLAGS"
       ;;
     *linux* )
         dnl No 64bit support yet

@@ -65,9 +65,10 @@ AC_DEFUN([LAC_DOXYGEN_PREDEFINES],dnl
 AC_DEFUN([LAC_DOXYGEN],dnl
 [
     AC_ARG_ENABLE(doxygen,
-    changequote(<<, >>)dnl  
-<< --enable-doxygen[=PATH]     use Doxygen to generate documentation>>,
-    changequote([, ])dnl
+        AC_HELP_STRING([--enable-doxygen[[=PATH]]],
+                [Use Doxygen to generate doxygen. If specified, PATH is the
+                path to the doxygen executable; otherwise it is
+                autodiscovered]),
     [
         if test "$enableval" = "yes"; then
         AC_PATH_PROG(DOXYGEN,
@@ -87,8 +88,10 @@ AC_DEFUN([LAC_DOXYGEN],dnl
 
 
     AC_ARG_ENABLE(internal-doc,
-    [ --enable-internal-doc        Generate Doxygen documentation for
-                   internal functions. Requires --enable-doxygen],
+        AC_HELP_STRING(
+                [--enable-internal-doc],
+                [Generate Doxygen documentation for internal functions.
+                Requires --enable-doxygen]),
     [
     DOXYFILE="Doxyfile-internal"
     AC_SUBST(DOXYFILE) 

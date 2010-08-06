@@ -2,6 +2,7 @@ aclocal.m4
 autom4te.cache
 configure
 missing
+gptdata.sh
 install-sh
 ltmain.sh
 mkinstalldirs

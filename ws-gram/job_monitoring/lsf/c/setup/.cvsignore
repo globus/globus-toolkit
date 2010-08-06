@@ -1,5 +1,8 @@
 aclocal.m4
+autom4te.cache
 missing
+find-lsf-logs
+gptdata.sh
 install-sh
 mkinstalldirs
 Makefile.in

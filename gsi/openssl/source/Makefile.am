@@ -16,7 +16,7 @@ SUBDIRS = pkgdata
 MANUAL_SOURCE = globus-update-certificate-dir-manual.xml \
                 manual.xml
 
-EXTRA_DIST = dirt.sh $(bin_SCRIPTS) $(MANUAL_SOURCE) $(man8data_DATA)
+EXTRA_DIST = dirt.sh globus-update-certificate-dir.in $(MANUAL_SOURCE) $(man8data_DATA)
 
 libglobus_openssl_version___GLOBUS_FLAVOR_NAME__la_SOURCES = \
     globus_openssl_version.c
@@ -26,8 +26,10 @@ globus_openssl_version_SOURCES = main.c
 globus_openssl_version.h: globus-openssl-version
 	./globus-openssl-version -H > globus_openssl_version.h
 
-CLEANFILES = globus_openssl_version.h
+CLEANFILES = globus_openssl_version.h globus-update-certificate-dir
 
+globus-update-certificate-dir: globus-update-certificate-dir.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

@@ -25,21 +25,11 @@ an operation is left in progress.
 =cut
 
 use strict;
-use POSIX;
 use Test;
 use FtpTestLib;
 
 my $test_exec = './globus-ftp-client-lingering-get-test';
 my @tests;
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 =head1 I<lingering_get> (Test 1)
 

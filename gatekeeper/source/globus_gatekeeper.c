@@ -475,6 +475,7 @@ main(int xargc,
     int    rc;
     netlen_t   namelen;
     struct sockaddr_in name;
+    char *pidpath = NULL;
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
@@ -764,6 +765,11 @@ main(int xargc,
 	    }
 	    i++;
 	}
+	else if ((strcmp(argv[i], "-pidfile") == 0)
+		 && (i + 1 < argc))
+        {
+            pidpath = argv[++i];
+        }
         else
         {
             if (strcmp(argv[i], "-help") != 0)
@@ -781,6 +787,7 @@ main(int xargc,
                     "[-x509_user_cert file] [-x509_user_key file]\n"
                     "[-x509_user_proxy file]\n"
                     "[-k] [-globuskmap file]\n"
+                    "[-pidfile path]\n"
                     "}"
                 );
             exit(1);
@@ -798,14 +805,14 @@ main(int xargc,
     }
     else
     {
-        gatekeeperhome = "/usr";
-        logdir = "/var/log";
+        gatekeeperhome = GLOBUS_LOCATION;
+        logdir = GLOBUS_LOG_DIR;
     }
 
     if (libexecdir == NULL)
     {
-        libexecdir = malloc(strlen(gatekeeperhome) + strlen("/sbin") + 1);
-        sprintf(libexecdir, "%s/sbin", gatekeeperhome);
+        libexecdir = malloc(strlen(gatekeeperhome) + strlen("/libexec") + 1);
+        sprintf(libexecdir, "%s/libexec", gatekeeperhome);
     }
 
 
@@ -1078,6 +1085,18 @@ main(int xargc,
         /* stderr is either the logfile, the users stderr or the /dev/null */
         /* stdout is either the logfile, the users stdout or the /dev/null */
 
+        if (pidpath != NULL)
+        {
+            FILE * pidfile;
+
+            pidfile = fopen(pidpath, "w");
+            if (pidfile)
+            {
+                fprintf(pidfile, "%d\n", (int) getpid());
+                fclose(pidfile);
+            }
+        }
+
         while (1)
         {
             connection_fd = net_accept(listener_fd);
@@ -1125,6 +1144,10 @@ main(int xargc,
                 exit(0);
             }
             close(connection_fd);
+        }
+        if (pidpath != NULL)
+        {
+            remove(pidpath);
         }
     }
 

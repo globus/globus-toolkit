@@ -14,4 +14,10 @@ pkgdata_DATA = \
 
 EXTRA_DIST = globus-gram-job-manager-rsl-size-test.pl.in $(pkgdata_DATA)
 
+BUILT_SOURCES = globus-gram-job-manager-rsl-size-test.pl
+CLEANFILES = globus-gram-job-manager-rsl-size-test.pl
+
+globus-gram-job-manager-rsl-size-test.pl: $(srcdir)/globus-gram-job-manager-rsl-size-test.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+
 include $(top_srcdir)/globus_automake_post

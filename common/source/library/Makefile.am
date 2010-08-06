@@ -86,16 +86,12 @@ Sources= \
 	globus_common_include.h \
 	globus_uuid.c \
 	globus_uuid.h \
-    closedir.c \
     freeaddrinfo.c \
     gai_strerror.c \
     getaddrinfo.c \
     getnameinfo.c \
     inet_addr.c \
     inet_pton.c \
-    opendir.c \
-    readdir.c \
-    rewinddir.c \
     globus_thread_none.c \
     globus_netos_libc.h
 
@@ -141,6 +137,7 @@ flavorinclude_HEADERS = \
 	globus_uuid.h
 
 
+CFLAGS += -DGLOBUS_PREFIX=\"${prefix}\" -DGLOBUS_LIBDIR=\"${libdir}\"
 pthreads_sources = globus_thread_pthreads.h globus_thread_pthreads.c
 windowsthreads_sources = globus_thread_windows.h globus_thread_windows.c
 
@@ -158,7 +155,7 @@ INCLUDES = @GPT_INCLUDES@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAS = @GPT_LDFLAGS@
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 if BUILD_PTHREADS
 libglobus_thread_pthread_la_LIBADD = libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_LIB_LINKS@ @PTHREAD_LIBS@

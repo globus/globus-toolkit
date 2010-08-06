@@ -16,7 +16,7 @@ man8data_DATA=  grid-mapfile-add-entry.8 \
                 grid-mapfile-delete-entry.8 \
                 grid-mapfile-check-consistency.8
 
-MANUALS_SOURCE = manual.xml \ 
+MANUALS_SOURCE = manual.xml \
         grid-mapfile-add-entry-manual.xml \
         grid-mapfile-delete-entry-manual.xml \
         grid-mapfile-check-consistency-manual.xml \
@@ -24,7 +24,17 @@ MANUALS_SOURCE = manual.xml \
 
 EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man8data_DATA)
 
+grid-mapfile-add-entry: grid-mapfile-add-entry.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+grid-mapfile-delete-entry: grid-mapfile-delete-entry.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+grid-mapfile-check-consistency: grid-mapfile-check-consistency.in
+	$(REWRITE_SCRIPT_PREFIXES) -e s'|$(AT)PERL$(AT)|@PERL@|' < $< > $@
+
 INCLUDES =  -I$(top_srdir) $(GPT_INCLUDES) 
+
+BUILT_SOURCES = $(Admin_Scripts)
+CLEANFILES = $(Admin_Scripts)
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

@@ -22,21 +22,11 @@
 # sure handle con/destructors work.
 
 use strict;
-use POSIX;
 use Test;
 use FtpTestLib;
 
 my $test_exec = './globus-ftp-client-create-destroy-test';
 my @tests;
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 sub create_destroy
 {

@@ -18,17 +18,11 @@ LAC_THREADS
 
 CHECK_REENTRANT_FUNCS
 
-CHECK_NEED_LNSL
+AC_SEARCH_LIBS(socket, socket)
+AC_SEARCH_LIBS(gethostbyname, nsl)
 
-CHECK_NEED_LSOCKET
-
-case $host in 
-    *cygwin* | *mingw*)
-    ;;
-    *)
-    CHECK_NEED_LDL
-    ;;
-esac
+AC_CHECK_LIB(ltdl, lt_dlerror)
+AC_CHECK_FUNCS(lt_dlmutex_register)
 
 GPT_SET_LIBS(["$EXTERNAL_LIBS"])
 
@@ -78,8 +72,6 @@ AC_OUTPUT(
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
 	programs/Makefile
-	programs/globus-sh-exec
-	programs/globus-version
 	scripts/Makefile
 	config/Makefile
 	doxygen/Makefile

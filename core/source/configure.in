@@ -94,7 +94,6 @@ AC_SUBST(AUTOMAKE_OPTS)
 
 
 AM_PROG_LIBTOOL
-mv ./libtool libtool-$GLOBUS_FLAVOR_NAME
 
 dnl
 dnl Output selected thread package
@@ -125,7 +124,6 @@ if test "x-$lt_cv_path_LD" != "x-"; then
 fi
 
 AC_OUTPUT(Makefile
-       	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
 	scripts/Makefile
 	aclocal/Makefile
 	aclocal/automake_config

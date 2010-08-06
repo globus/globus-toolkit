@@ -1,0 +1,59 @@
+prefix="${GLOBUS_LOCATION:-@prefix@}"
+exec_prefix="${GLOBUS_LOCATION:-@exec_prefix@}"
+sbindir="${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}"
+bindir="${GLOBUS_LOCATION:-@bindir@}${GLOBUS_LOCATION:+/bin}"
+libdir="${GLOBUS_LOCATION:-@libdir@}${GLOBUS_LOCATION:+/lib}"
+libexecdir="${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}"
+includedir="${GLOBUS_LOCATION:-@includedir@}${GLOBUS_LOCATION:+/include}"
+datadir="${GLOBUS_LOCATION:-@datadir@}${GLOBUS_LOCATION:+/share}"
+sysconfdir="${GLOBUS_LOCATION:-@sysconfdir@}${GLOBUS_LOCATION:+/etc}"
+sharedstatedir="${GLOBUS_LOCATION:-@sharedstatedir@}${GLOBUS_LOCATION:+/com}"
+localstatedir="${GLOBUS_LOCATION:-@localstatedir@}${GLOBUS_LOCATION:+/var}"
+
+if [ `uname 2> /dev/null` = Linux -o \
+     `uname 2> /dev/null` = SunOS ]; then
+    DELIM=
+    if [ -n "${LD_LIBRARY_PATH}" ]; then
+        DELIM=:
+    fi
+    LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH 
+fi
+
+
+if [ `uname 2> /dev/null` = 'Darwin' ]; then
+    DELIM=
+    if [ -n "${DYLD_LIBRARY_PATH}" ]; then
+        DELIM=:
+    fi
+    DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
+    export DYLD_LIBRARY_PATH
+fi
+
+if [ `uname 2> /dev/null` = 'AIX' ]; then
+    if [ -z "${LIBPATH}" ]; then
+        LIBPATH="/usr/lib:/lib"
+    fi
+    LIBPATH="${libdir}:${LIBPATH}"
+    export LIBPATH
+fi
+
+if [ `uname 2> /dev/null` = 'HP-UX' ]; then
+    DELIM=
+    if [ -n "${SHLIB_PATH}" ]; then
+        DELIM=:
+    fi
+    SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
+    export SHLIB_PATH
+fi
+
+globus_source () {
+
+  # Check if file exists and source it
+  if [ ! -f "$1" ] ; then
+     ${GLOBUS_SH_PRINTF-printf} "$1 not found.\n" >&2
+     exit 1
+  fi
+
+  . "$1"
+}

@@ -1,19 +1,27 @@
+'\" t
 .\"     Title: globus-gatekeeper
-.\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 03/30/2010
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 08/04/2010
 .\"    Manual: Globus Toolkit
 .\"    Source: University of Chicago
+.\"  Language: English
 .\"
-.TH "GLOBUS\-GATEKEEPER" "8" "03/30/2010" "University of Chicago" "Globus Toolkit"
+.TH "GLOBUS\-GATEKEEPER" "8" "08/04/2010" "University of Chicago" "Globus Toolkit"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
 .SH "NAME"
 globus-gatekeeper \- Authorize and execute a grid service on behalf of a user
 .SH "SYNOPSIS"
-.HP 18
+.HP \w'\fBglobus\-gatekeeper\fR\ 'u
 \fBglobus\-gatekeeper\fR [\-help]
 .br
 [\-conf\ \fIPARAMETER_FILE\fR]
@@ -51,6 +59,8 @@ globus-gatekeeper \- Authorize and execute a grid service on behalf of a user
 [\-k]
 .br
 [\-globuskmap\ \fIKMAP\fR]
+.br
+[\-pidfile\ \fIPIDFILE\fR]
 .SH "DESCRIPTION"
 .PP
 The
@@ -68,7 +78,7 @@ program is to start instances of the
 service\&. A single
 \fBglobus\-gatekeeper\fR
 deployment can handle multiple different service configurations by having entries in the
-\fI/etc/grid\-services\fR
+/etc/grid\-services
 directory\&.
 .PP
 Typically, users interact with the
@@ -142,9 +152,9 @@ Sets the gatekeeper deployment directory to
 \fIPATH\fR\&. This is used to interpret relative paths for accounting files, libexecdir, certificate paths, and also to set the
 \fBGLOBUS_LOCATION\fR
 environment variable in the service environment\&. If not specified, the gatekeeper looks for service executables in
-\fI/usr/sbin\fR, configuration in
-\fI/etc\fR, and writes logs and accounting files to
-\fI/var/log\fR\&.
+/usr/sbin, configuration in
+/etc, and writes logs and accounting files to
+/var/log\&.
 .RE
 .PP
 \-l \fILOGFILE\fR, \-logfile \fILOGFILE\fR
@@ -163,11 +173,11 @@ Set the path to write accounting records to
 .RS 4
 Look for service executables in
 \fILIBEXECDIR\fR\&. If not specified, the
-\fIsbin\fR
+sbin
 subdirectory of the parameter to
 \fB\-home\fR
 is used, or
-\fI/usr/sbin\fR
+/usr/sbin
 if that is not set\&.
 .RE
 .PP
@@ -250,6 +260,14 @@ Use
 \fIKMAP\fR
 as the path to the Grid credential to kerberos initialization mapping file\&.
 .RE
+.PP
+\-pidfile \fIPIDFILE\fR
+.RS 4
+Write the process id of the
+\fBglobus\-gatekeeper\fR
+to the file named by
+\fIPIDFILE\fR\&.
+.RE
 .SH "ENVIRONMENT"
 .PP
 If the following variables affect the execution of
@@ -282,30 +300,30 @@ Default path to gatekeeper service files\&.
 .SH "FILES"
 .PP
 .PP
-\fI/etc/grid\-services/\fR\fI\fISERVICENAME\fR\fR
+/etc/grid\-services/\fISERVICENAME\fR
 .RS 4
 Service configuration for
 \fISERVICENAME\fR\&.
 .RE
 .PP
-\fI/etc/grid\-security/grid\-mapfile\fR
+/etc/grid\-security/grid\-mapfile
 .RS 4
 Default file mapping Grid identities to POSIX identities\&.
 .RE
 .PP
-\fI/etc/globuskmap\fR
+/etc/globuskmap
 .RS 4
 Default file mapping Grid identities to Kerberos 5 principals\&.
 .RE
 .PP
-\fI/etc/globus\-nologin\fR
+/etc/globus\-nologin
 .RS 4
 File to disable the
 \fBglobus\-gatekeeper\fR
 program\&.
 .RE
 .PP
-\fI/var/log/globus\-gatekeeper\&.log\fR
+/var/log/globus\-gatekeeper\&.log
 .RS 4
 Default gatekeeper log\&.
 .RE

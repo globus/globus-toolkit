@@ -128,7 +128,23 @@ globus_l_common_env_path( char** bufp, char* name )
 globus_result_t
 globus_location( char **   bufp )
 {
-     return globus_l_common_env_path(bufp, "GLOBUS_LOCATION");
+    globus_result_t result;
+
+    result = globus_l_common_env_path(bufp, "GLOBUS_LOCATION");
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        *bufp = globus_common_create_string("%s", GLOBUS_PREFIX);
+        if (! *bufp)
+        {
+            return GLOBUS_COMMON_PATH_ERROR_INSTANCE(_GCSL("malloc error"));
+        }
+        else
+        {
+            result = GLOBUS_SUCCESS;
+        }
+    }
+    return result;
 }
 
 

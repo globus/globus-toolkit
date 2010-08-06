@@ -151,11 +151,29 @@ int
 globus_i_thread_pre_activate(void)
 {
     char *                              impl_name;
-    const char                          format[] = "libglobus_thread_%s.la";
+    char *                              location;
+    char *                              libdir;
+    const char                          format[] = "libglobus_thread_%s";
     lt_dlhandle                         impl_lib;
     globus_thread_impl_t *              impl;
 
+    location = getenv("GLOBUS_LOCATION");
+    if (location != NULL)
+    {
+        libdir = malloc(strlen(location) + 5);
+        if (libdir == NULL)
+        {
+            return GLOBUS_FAILURE;
+        }
+        sprintf(libdir, "%s/lib", location);
+    }
+    else
+    {
+        libdir = strdup(GLOBUS_LIBDIR);
+    }
+
     lt_dlinit();
+    lt_dladdsearchdir(libdir);
 
     if (globus_l_thread_model[0] == 0)
     {
@@ -178,7 +196,7 @@ globus_i_thread_pre_activate(void)
         impl_name = malloc(sizeof(format) + strlen(globus_l_thread_model) + 1);
         sprintf(impl_name, format, globus_l_thread_model);
 
-        impl_lib = lt_dlopen(impl_name);
+        impl_lib = lt_dlopenext(impl_name);
         if (impl_lib == NULL)
         {
             printf("dlopen %s: %s\n", impl_name, lt_dlerror());

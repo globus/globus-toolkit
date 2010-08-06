@@ -1,0 +1,42 @@
+package Globus::Core::Paths;
+
+require Exporter;
+
+@ISA = qw(Exporter);
+
+@EXPORT = qw($exec_prefix $prefix
+             $sbindir $bindir
+	     $libdir $libexecdir $includedir
+	     $datadir $sysconfdir $sharedstatedir
+	     $localstatedir);
+
+if (exists $ENV{GLOBUS_LOCATION})
+{
+    $prefix=$ENV{GLOBUS_LOCATION};
+    $exec_prefix=$ENV{GLOBUS_LOCATION};
+    $sbindir="$exec_prefix/sbin";
+    $bindir="$exec_prefix/bin";
+    $libdir="$exec_prefix/lib";
+    $libexecdir="$exec_prefix/libexec";
+    $includedir="$prefix/include";
+    $datadir="$prefix/share";
+    $sysconfdir="$prefix/etc";
+    $sharedstatedir="$prefix/com";
+    $localstatedir="$prefix/var";
+}
+else
+{
+    $prefix='@prefix@';
+    $exec_prefix='@prefix@';
+    $sbindir="@sbindir@";
+    $bindir="@bindir@";
+    $libdir="@libdir@";
+    $libexecdir="@libexecdir@";
+    $includedir="@includedir@";
+    $datadir="@datadir@";
+    $sysconfdir="@sysconfdir@";
+    $sharedstatedir="@sharedstatedir@";
+    $localstatedir="@localstatedir@";
+}
+
+1;

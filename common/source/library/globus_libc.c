@@ -729,19 +729,7 @@ globus_libc_fork(void)
 #if HAVE_FORK
     int child;
 
-    //globus_thread_prefork();
-
-#   if defined(HAVE_FORK1)
-    {
-	child = fork1();
-    }
-#   else
-    {
-	child = fork();
-    }
-#   endif
-
-    //globus_thread_postfork();
+    child = fork();
 
     return child;
 #else

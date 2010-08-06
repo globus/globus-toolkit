@@ -15,7 +15,17 @@
 # limitations under the License.
 #
 
-BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+BEGIN
+{
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+    }
+    else
+    {
+        push(@INC, '@libdir@/perl');
+    }
+}
 
 use strict;
 use Test::Harness;
@@ -26,13 +36,11 @@ require 5.005;
 use vars qw(@tests);
 $|=1;
 
-my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
 my $test_result=1;
 my $kill_gatekeeper=0;
 my $personal_gatekeeper = $Globus::Core::Paths::bindir
                         . "/globus-personal-gatekeeper";
-
 @tests = qw(
     failed-job-two-phase-commit.pl
     globus-gram-client-activate-test.pl
@@ -55,10 +63,10 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
     version-test.pl
 );
 
-chdir "$globus_location/test/@PACKAGE@";
-$ENV{PATH} .= ":$globus_location/test/@PACKAGE@";
+chdir "$Globus::Core::Paths::exec_prefix/test/@PACKAGE@";
+$ENV{PATH} .= ":$Globus::Core::Paths::exec_prefix/test/@PACKAGE@";
 
-if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
+if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
 {
     $ENV{X509_CERT_DIR} = cwd();
     $ENV{X509_USER_PROXY} = "testcred.pem";

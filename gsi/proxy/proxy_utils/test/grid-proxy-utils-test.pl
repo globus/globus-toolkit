@@ -1,9 +1,10 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 use strict;
 use Test;
 use File::Temp;
 use Globus::Testing::Utilities;
+use Globus::Core::Paths;
 
 Globus::Testing::Utilities::testcred_setup(1) || die("Unable to set up creds");
 
@@ -19,7 +20,7 @@ sub test_proxy
     my $expect = $case->[2];
     my $result;
 
-    system("$ENV{GLOBUS_LOCATION}/bin/grid-proxy-init $proxy_format $proxy_type > /dev/null 2>/dev/null");
+    system("$Globus::Core::Paths::bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null 2>/dev/null");
 
     if ($? != 0)
     {
@@ -28,7 +29,7 @@ sub test_proxy
         ok($?, 0);
         return;
     }
-    $result = `$ENV{GLOBUS_LOCATION}/bin/grid-proxy-info -type`;
+    $result = `$Globus::Core::Paths::bindir/grid-proxy-info -type`;
 
     if ($? != 0)
     {

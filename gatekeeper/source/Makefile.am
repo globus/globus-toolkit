@@ -1,8 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS= \
-	pkgdata
+SUBDIRS= pkgdata config init
 
 INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS) @LIBOBJS@
@@ -19,6 +18,8 @@ globus_gatekeeper_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_k5_SOURCES = globus_k5.c globus_gatekeeper_utils.c
 globus_k5_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gatekeeper_CFLAGS = -DGLOBUS_LOCATION=\"$(prefix)\" -DGLOBUS_LOG_DIR=\"$(localstatedir)\"
 
 man8datadir=$(mandir)/man8
 man8data_DATA = globus-gatekeeper.8 globus-k5.8

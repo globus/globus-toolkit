@@ -3554,7 +3554,7 @@ globus_l_gram_make_job_dir(
     out_file = globus_common_create_string(
                 "%s/.globus/job/%s/%s",
                 request->config->home,
-                request->config->hostname,
+                request->config->short_hostname,
                 request->uniq_id);
     if (out_file == NULL)
     {

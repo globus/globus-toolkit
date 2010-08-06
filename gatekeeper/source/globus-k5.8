@@ -1,19 +1,27 @@
+'\" t
 .\"     Title: globus-k5
-.\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 03/30/2010
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 08/04/2010
 .\"    Manual: Globus Toolkit
 .\"    Source: University of Chicago
+.\"  Language: English
 .\"
-.TH "GLOBUS\-K5" "8" "03/30/2010" "University of Chicago" "Globus Toolkit"
+.TH "GLOBUS\-K5" "8" "08/04/2010" "University of Chicago" "Globus Toolkit"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
 .SH "NAME"
 globus-k5 \- Acquire Kerberos Credentials for use with Grid Services
 .SH "SYNOPSIS"
-.HP 10
+.HP \w'\fBglobus\-k5\fR\ 'u
 \fBglobus\-k5\fR \fISERVICE\-COMMAND\fR [\fISERVICE\-ARGS\fR...]
 .SH "DESCRIPTION"
 .PP
@@ -24,7 +32,7 @@ program is an authorization module used by the
 program to acquire Kerberos 5 Credentials prior to executing a Grid Service\&. This may be accomplished by running
 \fBkinit\fR
 with a password stored in the
-\fIglobuskmap\fR
+globuskmap
 file, using the NCSA
 \fBkrb525\fR
 command, or the
@@ -42,7 +50,7 @@ and
 for the Grid and local POSIX user identities\&. This program is normally run as root, and will call seteuid() prior to executing the Grid Service\&.
 .PP
 The parameters to use and the mapping for the globus to K5 user are located in the
-\fIglobuskmap\fR
+globuskmap
 file\&.
 .SH "FORMAT OF THE GLOBUSKMAP FILE"
 .PP
@@ -50,11 +58,15 @@ The globuskmap file is a line\-oriented file which each line containing a comman
 \fIGLOBUSID\fR
 value followed by a command\-line for running a process to acquire a Kerberos credential\&. For example:
 .sp
+.if n \{\
 .RS 4
+.\}
 .nf
 "/O=Example/OU=Grid/CN=Joe User" /usr/afsws/bin/klog \-principal juser \-password mypasswd \-cell infn\&.it
 .fi
+.if n \{\
 .RE
+.\}
 .sp
 .SH "ENVIRONMENT"
 .PP
@@ -83,7 +95,7 @@ Grid identity to generate Kerberos credentials for\&.
 .SH "FILES"
 .PP
 .PP
-\fI/etc/globuskmap\fR
+/etc/globuskmap
 .RS 4
 Default file mapping Grid identities to Kerberos 5 principals\&.
 .RE

@@ -191,6 +191,7 @@ globus_gram_job_manager_validation_init(
             enum_escaped = globus_gram_prepare_log_string(
                     record->enumerated_values);
 
+            /*
             globus_gram_job_manager_log(
                     manager,
                     GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
@@ -209,6 +210,7 @@ globus_gram_job_manager_validation_init(
                     record->default_when,
                     (default_escaped != NULL) ? default_escaped : "",
                     (enum_escaped != NULL) ? enum_escaped : "");
+            */
             if (description_escaped)
             {
                 free(description_escaped);

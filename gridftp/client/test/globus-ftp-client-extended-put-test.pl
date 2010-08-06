@@ -21,19 +21,10 @@
 # in extended block mode
 
 use strict;
-use POSIX;
 use Test;
 use FtpTestLib;
 
 my $test_exec = './globus-ftp-client-extended-put-test';
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 my @tests;
 my @todo;

@@ -1,20 +1,11 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 #
 
+use warnings;
 use strict;
-use POSIX;
 use Test;
 
 my $test_exec = './globus-gram-protocol-error-test';
-
-my $gpath = $ENV{GLOBUS_LOCATION};
-
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
 
 my @tests;
 my @todo;

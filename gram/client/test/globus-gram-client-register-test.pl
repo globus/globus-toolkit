@@ -23,13 +23,8 @@ use Test;
 
 my $test_exec = './globus-gram-client-register-test';
 
-my $gpath = $ENV{GLOBUS_LOCATION};
 my $x509_certdir_string;
 
-if (!defined($gpath))
-{
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
 if ($ENV{CONTACT_STRING} eq "")
 {
     die "CONTACT_STRING not set";
@@ -42,8 +37,6 @@ else
 {
     $x509_certdir_string = "";
 }
-
-@INC = (@INC, "$gpath/lib/perl");
 
 my @tests;
 my @todo;

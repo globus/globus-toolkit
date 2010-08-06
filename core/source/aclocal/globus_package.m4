@@ -2,22 +2,20 @@ AC_DEFUN([GLOBUS_INIT], [
 
 AM_MAINTAINER_MODE
 
+dnl Default prefix is $GLOBUS_LOCATION, falling back to /usr if that
+dnl is not present in the environment. Can be overridden by using
+dnl --prefix during configure time
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
+
 # checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
 if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
     export GPT_LOCATION
 fi
 
-#extract whether the package is built with flavors from the src metadata
-$GPT_LOCATION/sbin/gpt_extract_data --build $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
-
-. ./tmpfile.gpt
-rm ./tmpfile.gpt
+# This is created in globus-bootstrap.sh
+. ./gptdata.sh
 
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
@@ -74,8 +72,6 @@ if test "x$GLOBUS_FLAVOR_NAME" != "xnoflavor" ; then
 	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 fi
 
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
 
 AC_SUBST(CC)
 AC_SUBST(CPP)
@@ -102,13 +98,6 @@ AC_SUBST(cross_compiling)
 AC_SUBST(OBJEXT)
 AC_SUBST(EXEEXT)
 AC_SUBST(OBJECT_MODE)
-
-
-define([AM_PROG_LIBTOOL],[
-	LIBTOOL='$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
-	AC_SUBST(LIBTOOL)
-	AC_SUBST(LN_S)
-])
 
 dnl define FILELIST_FILE variable
 FILELIST_FILE=`pwd`;
@@ -152,34 +141,5 @@ dnl END OF GLOBUS_INIT
 ])
 
 
-AC_DEFUN([GLOBUS_FINALIZE], [
-
-lac_INSURE=$INSURE
-
-AC_ARG_ENABLE(insure,
- 	changequote(<<, >>)dnl
-  <<--disable-insure	disable Insure++ >>,
-	changequote([, ])dnl
-	[
-		if test "$enableval" = "yes"; then
-			lac_INSURE="${INSURE-insure}"
-		else
-			lac_INSURE="$enableval"
-		fi
-	],
-	[
-		lac_INSURE=""
-	])
-
-
-if test ! -z "$lac_INSURE"; then
-	CC=$lac_INSURE
-	LD=$lac_INSURE
-	CXX=$lac_INSURE
-	AC_SUBST(CC) 
-	AC_SUBST(LD) 
-	AC_SUBST(CXX) 
-fi 
-
-])
-
+dnl Nothing to do here after insure flavoring is removed
+AC_DEFUN([GLOBUS_FINALIZE], []) 

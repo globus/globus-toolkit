@@ -1571,7 +1571,7 @@ globus_gsi_sysconfig_get_cert_dir_win32(
     char *                              installed_cert_dir = NULL;
     globus_result_t                     result;
     char *                              home = NULL;
-    char *                              globus_location;
+    char *                              location;
 
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_cert_dir_win32";
@@ -1649,15 +1649,15 @@ globus_gsi_sysconfig_get_cert_dir_win32(
     /* now look in  $GLOBUS_LOCATION/share/certificates */
     if (!(*cert_dir))
     {
-        globus_location = getenv("GLOBUS_LOCATION");
+        globus_location(&location);
         
-        if (globus_location)
+        if (location)
         {
             result = globus_i_gsi_sysconfig_create_cert_dir_string(
                 cert_dir,
                 &default_cert_dir,
                 "%s%s%s",
-                globus_location,
+                location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_TRUSTED_CERT_DIR);
             if(result != GLOBUS_SUCCESS &&
@@ -1993,7 +1993,7 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
     char *                              installed_host_key = NULL;
     char *                              local_host_cert = NULL;
     char *                              local_host_key = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -2076,15 +2076,15 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
     /* now check installed location for host cert */
     if(!(*host_cert) && !(*host_key)) 
     {
-        globus_location = getenv("GLOBUS_LOCATION");
+        result = globus_location(&location);
 
-        if(globus_location)
+        if(location)
         {
             result = globus_i_gsi_sysconfig_create_cert_string(
                 host_cert,
                 &installed_host_cert,
                 "%s%s%s%s%s%s",
-                globus_location,
+                location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_CERT_DIR,
                 FILE_SEPERATOR,
@@ -2097,7 +2097,7 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
                     host_key,
                     &installed_host_key,
                     "%s%s%s%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     X509_INSTALLED_CERT_DIR,
                     FILE_SEPERATOR,
@@ -2266,7 +2266,7 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
     char *                              installed_service_key = NULL;
     char *                              local_service_cert = NULL;
     char *                              local_service_key = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -2378,15 +2378,15 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
     /* now check intstalled location for service cert */
     if(!(*service_cert) && !(*service_key))
     {
-        globus_location = getenv("GLOBUS_LOCATION");
+        globus_location(&location);
 
-        if(globus_location)
+        if(location)
         {
             result = globus_i_gsi_sysconfig_create_cert_string(
                 service_cert,
                 &installed_service_cert,
                 "%s%s%s%s%s%s%s%s",
-                globus_location,
+                location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_CERT_DIR,
                 FILE_SEPERATOR,
@@ -2401,7 +2401,7 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
                     service_key,
                     &installed_service_key,
                     "%s%s%s%s%s%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     X509_INSTALLED_CERT_DIR,
                     FILE_SEPERATOR,
@@ -3097,7 +3097,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
     char *                              home_dir = NULL;
     char *                              authz_env = NULL;
     char *                              authz_filename = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_authz_conf_filename_win32";
@@ -3158,13 +3158,13 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
 
         if(authz_filename == NULL)
         {
-            globus_location = getenv("GLOBUS_LOCATION");
+            globus_location(&location);
             
-            if(globus_location)
+            if(location)
             {
                 authz_filename = globus_common_create_string(
                     "%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     INSTALLED_AUTHZ_FILE);
                 if(!authz_filename)
@@ -3274,7 +3274,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
     char *                              home_dir = NULL;
     char *                              authz_lib_env = NULL;
     char *                              authz_lib_filename = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_authz_lib_conf_filename_win32";
@@ -3338,13 +3338,13 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
 
         if(authz_lib_filename == NULL)
         {
-            globus_location = getenv("GLOBUS_LOCATION");
+            globus_location(&location);
             
-            if(globus_location)
+            if(location)
             {
                 authz_lib_filename = globus_common_create_string(
                     "%s%s%s%s_%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
 		    INSTALLED_AUTHZ_LIB_DIR,
 		    DEFAULT_AUTHZ_LIB_FILE_BASE,
@@ -3464,7 +3464,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
     char *                              home_dir = NULL;
     char *                              gaa_env = NULL;
     char *                              gaa_filename = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_gaa_conf_filename_win32";
@@ -3526,13 +3526,13 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
 
         if(gaa_filename == NULL)
         {
-            globus_location = getenv("GLOBUS_LOCATION");
+            globus_location(&location);
             
-            if(globus_location)
+            if(location)
             {
                 gaa_filename = globus_common_create_string(
                     "%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     INSTALLED_GAA_FILE);
                 if(!gaa_filename)
@@ -5060,7 +5060,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     char *                              installed_cert_dir = NULL;
     globus_result_t                     result;
     char *                              home = NULL;
-    char *                              globus_location;
+    char *                              location;
 
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_cert_dir_unix";
@@ -5140,15 +5140,15 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     /* now look in  $GLOBUS_LOCATION/share/certificates */
     if (!(*cert_dir))
     {
-        globus_location = getenv("GLOBUS_LOCATION");
+        globus_location(&location);
         
-        if (globus_location)
+        if (location)
         {
             result = globus_i_gsi_sysconfig_create_cert_dir_string(
                 cert_dir,
                 &default_cert_dir,
                 "%s%s%s",
-                globus_location,
+                location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_TRUSTED_CERT_DIR);
             if(result != GLOBUS_SUCCESS &&
@@ -5484,7 +5484,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
     char *                              installed_host_key = NULL;
     char *                              local_host_cert = NULL;
     char *                              local_host_key = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -5567,15 +5567,15 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
     /* now check installed location for host cert */
     if(!(*host_cert) && !(*host_key)) 
     {
-        globus_location = getenv("GLOBUS_LOCATION");
+        globus_location(&location);
 
-        if(globus_location)
+        if(location)
         {
             result = globus_i_gsi_sysconfig_create_cert_string(
                 host_cert,
                 &installed_host_cert,
                 "%s%s%s%s%s%s",
-                globus_location,
+                location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_CERT_DIR,
                 FILE_SEPERATOR,
@@ -5588,7 +5588,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
                     host_key,
                     &installed_host_key,
                     "%s%s%s%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     X509_INSTALLED_CERT_DIR,
                     FILE_SEPERATOR,
@@ -5757,7 +5757,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
     char *                              installed_service_key = NULL;
     char *                              local_service_cert = NULL;
     char *                              local_service_key = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -5869,15 +5869,15 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
     /* now check intstalled location for service cert */
     if(!(*service_cert) && !(*service_key))
     {
-        globus_location = getenv("GLOBUS_LOCATION");
+        globus_location(&location);
 
-        if(globus_location)
+        if(location)
         {
             result = globus_i_gsi_sysconfig_create_cert_string(
                 service_cert,
                 &installed_service_cert,
                 "%s%s%s%s%s%s%s%s",
-                globus_location,
+                location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_CERT_DIR,
                 FILE_SEPERATOR,
@@ -5892,7 +5892,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                     service_key,
                     &installed_service_key,
                     "%s%s%s%s%s%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     X509_INSTALLED_CERT_DIR,
                     FILE_SEPERATOR,
@@ -6730,7 +6730,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
     char *                              home_dir = NULL;
     char *                              authz_env = NULL;
     char *                              authz_filename = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_authz_conf_filename_unix";
@@ -6790,13 +6790,13 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
 
         if(authz_filename == NULL)
         {
-            globus_location = getenv("GLOBUS_LOCATION");
+            globus_location(&location);
             
-            if(globus_location)
+            if(location)
             {
                 authz_filename = globus_common_create_string(
                     "%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     INSTALLED_AUTHZ_FILE);
                 if(!authz_filename)
@@ -6910,7 +6910,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_unix(
     char *                              home_dir = NULL;
     char *                              authz_lib_env = NULL;
     char *                              authz_lib_filename = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_authz_lib_conf_filename_unix";
@@ -6971,13 +6971,13 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_unix(
 
         if(authz_lib_filename == NULL)
         {
-            globus_location = getenv("GLOBUS_LOCATION");
+            globus_location(&location);
             
-            if(globus_location)
+            if(location)
             {
                 authz_lib_filename = globus_common_create_string(
                     "%s%s%s%s_%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
 		    INSTALLED_AUTHZ_LIB_DIR,
 		    DEFAULT_AUTHZ_LIB_FILE_BASE,
@@ -7094,7 +7094,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
     char *                              home_dir = NULL;
     char *                              gaa_env = NULL;
     char *                              gaa_filename = NULL;
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_gaa_conf_filename_unix";
@@ -7154,13 +7154,13 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
 
         if(gaa_filename == NULL)
         {
-            globus_location = getenv("GLOBUS_LOCATION");
+            globus_location(&location);
             
-            if(globus_location)
+            if(location)
             {
                 gaa_filename = globus_common_create_string(
                     "%s%s%s",
-                    globus_location,
+                    location,
                     FILE_SEPERATOR,
                     INSTALLED_GAA_FILE);
                 if(!gaa_filename)
@@ -7407,7 +7407,7 @@ const char *win32_secure_path(void)
 /* Get Globus Location Or Current Working Directory */
 const char *win32_cwd(void)
 {
-    char *                              globus_location = NULL;
+    char *                              location = NULL;
     char *                              tmp_path        = NULL;
     char *                              temp_path       = NULL;
     char *                              cwd             = NULL;
@@ -7416,12 +7416,12 @@ const char *win32_cwd(void)
     /* Collect environment all variables we might need */    
     tmp_path        = getenv("TMP");
     temp_path       = getenv("TEMP");
-    globus_location = getenv("GLOBUS_LOCATION");
+    globus_location(&location);
     cwd = _getcwd(buffer,sizeof(buffer) - 1);
     
-    if(globus_location)
+    if(location)
     {
-        return globus_location;
+        return location;
     }
     else if(cwd) 
     {

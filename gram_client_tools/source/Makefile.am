@@ -54,13 +54,23 @@ MANUAL_SOURCE = globus-job-cancel-manual.xml \
                 globusrun-manual.xml \
                 manual.xml
 
-globus-job-cancel: globus-job-clean
-	cp globus-job-clean globus-job-cancel
+globus-job-cancel: globus-job-clean.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-job-clean: globus-job-clean.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-job-submit: globus-job-run.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-job-run: globus-job-run.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-job-status: globus-job-status.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+globus-job-get-output: globus-job-get-output.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
-globus-job-submit: globus-job-run
-	cp globus-job-run globus-job-submit
 
-CLEANFILES=globus-job-submit globus-job-cancel
+CLEANFILES=globus-job-cancel globus-job-clean \
+           globus-job-submit globus-job-run \
+           globus-job-status globus-job-get-output
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
@@ -70,6 +80,7 @@ $(man1data_DATA): $(MANUAL_SOURCE)
 	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
 endif
 
+DISTCLEANFILES = version.h
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

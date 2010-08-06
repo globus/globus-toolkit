@@ -39,15 +39,8 @@ printDirections ()
 
 
 
-if test -f ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer; then
-    . ${GLOBUS_LOCATION:-/usr}/share/globus/globus-script-initializer
-elif test -f ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer; then
-    . ${GLOBUS_LOCATION:-/usr}/libexec/globus-script-initializer
-else
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before" 1>&2
-    echo "running this script" 1>&2
-    exit 1
-fi
+. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
+
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
@@ -56,9 +49,9 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
         secconfdir="${GRID_SECURITY_DIR}"
         if test ! -z "${X509_CERT_DIR}" ; then
             trusted_certs_dir="${X509_CERT_DIR}"
-        elif test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" \
-            = "X`echo ${GLOBUS_LOCATION:-/usr}|sed 's/\/$//'`" ; then
-            trusted_certs_dir="${GLOBUS_LOCATION:-/usr}/share/certificates"
+        elif test "X`echo ${GRID_SECURITY_DIR}| sed 's/\/\//\//'`" \
+                = "X`echo ${sysconfdir}|sed 's/\/\//\//'`" ; then
+            trusted_certs_dir="${datadir}/certificates"
         elif test -d "${secconfdir}/certificates"; then
             trusted_certs_dir="${secconfdir}/certificates"
         else
@@ -74,13 +67,13 @@ elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] &&
     else
         trusted_certs_dir="${secconfdir}/certificates"
     fi
-elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
-     [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
-    secconfdir="${GLOBUS_LOCATION}/etc"
+elif [ -r "${sysconfdir}/globus-user-ssl.conf" ] &&
+     [ -r "${sysconfdir}/globus-host-ssl.conf" ] ; then
+    secconfdir="${sysconfdir}"
     if test ! -z "${X509_CERT_DIR}" ; then
         trusted_certs_dir="${X509_CERT_DIR}"
     else
-        trusted_certs_dir="${GLOBUS_LOCATION:-/usr}/share/certificates"
+        trusted_certs_dir="${datadir}/certificates"
     fi
 fi
 
@@ -816,7 +809,7 @@ emit_directions () {
 
 
 #SSL related variables
-if test -n "${GLOBUS_LOCATION}" -a -x ${bindir}/openssl; then
+if test -x ${bindir}/openssl; then
     SSL_EXEC=${bindir}/openssl
 else
     SSL_EXEC="openssl"
@@ -862,8 +855,8 @@ if test -z "$trusted_certs_dir"; then
         echo "Error reading"
         echo "    /etc/grid-security/globus-user-ssl.conf"
         echo "    /etc/grid-security/globus-host-ssl.conf"
-        echo "    \${GLOBUS_LOCATION}/etc/globus-user-ssl.conf"
-        echo "    \${GLOBUS_LOCATION}/etc/globus-host-ssl.conf"
+        echo "    \${sysconfdir}/globus-user-ssl.conf"
+        echo "    \${sysconfdir}etc/globus-host-ssl.conf"
         echo ""
         echo "Can't find valid CA config files. Please make sure"
         echo "that the grid administrator has installed a CA setup "

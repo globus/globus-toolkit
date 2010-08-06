@@ -36,6 +36,7 @@ pkgtest_PROGRAMS= \
         unpack-status-reply-with-extensions-test
 
 EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in
+CLEANFILES = globus-gram-protocol-run-tests.pl
 
 INCLUDES = $(GPT_INCLUDES)
 
@@ -65,8 +66,17 @@ unpack_status_reply_with_extensions_test_LDFLAGS = $(GPT_LDFLAGS)
 create_extensions_test_SOURCES = create_extensions_test.c
 create_extensions_test_LDFLAGS = $(GPT_LDFLAGS)
 
+pack_with_extensions_test_SOURCES = pack_with_extensions_test.c
+pack_with_extensions_test_LDFLAGS = $(GPT_LDFLAGS)
+
 unpack_message_test_SOURCES = unpack_message_test.c
 unpack_message_test_LDFLAGS = $(GPT_LDFLAGS)
+
+unpack_with_extensions_test_SOURCES = unpack_with_extensions_test.c
+unpack_with_extensions_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus-gram-protocol-run-tests.pl: $(srcdir)/globus-gram-protocol-run-tests.pl.in
+	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
