@@ -46,7 +46,7 @@ my $sysconfdir	= "$Globus::Core::Paths::sysconfdir";
 my $libexecdir	= "$Globus::Core::Paths::libexecdir";
 my $bindir	= "$Globus::Core::Paths::bindir";
 my $sbindir	= "$Globus::Core::Paths::sbindir";
-my $state_dir   = "$globusdir/tmp/gram_job_state";
+my $state_dir   = "$Globus::Core::Paths::prefix/tmp/gram_job_state";
 my $help	= 0;
 my $auditing_dir = '';   
 
@@ -188,7 +188,7 @@ sub setup_job_manager_conf
     $conf_file = new IO::File(">$jm_conf") || die "open failed for $jm_conf";
 
     print $conf_file <<EOF;
-	-home \"$globusdir\"
+	-home \"$Globus::Core::Paths::prefix\"
 	-globus-gatekeeper-host $hostname
 	-globus-gatekeeper-port $gatekeeper_port
 	-globus-gatekeeper-subject \"$gatekeeper_subject\"
