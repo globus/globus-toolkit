@@ -169,6 +169,7 @@ globus_l_extension_activate(void)
         {
             goto error_dlinit;
         }
+#       if HAVE_LT_DLMUTEX_REGISTER
         if(lt_dlmutex_register(
             globus_l_libtool_mutex_lock,
             globus_l_libtool_mutex_unlock,
@@ -177,6 +178,7 @@ globus_l_extension_activate(void)
         {
             goto error_dlmutex;
         }
+#       endif
 #       endif /* !BUILD_STATIC_ONLY */
         
         globus_hashtable_init(

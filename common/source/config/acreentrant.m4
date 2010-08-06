@@ -10,7 +10,7 @@ check_gethostbyaddr_r=yes
 check_gethostbyname_r=yes
 
 
-if test $GLOBUS_THREADS != "none" -a ${check_gethostbyaddr_r} = "yes" ; then
+if test ${check_gethostbyaddr_r} = "yes" ; then
 
 AC_CHECK_FUNCS(gethostbyaddr_r, [
 	AC_MSG_CHECKING(number of arguments to gethostbyaddr_r)
@@ -77,7 +77,6 @@ fi
 
 AC_CHECK_FUNCS(gethostbyname)
 
-if test $GLOBUS_THREADS != "none" -a ${check_gethostbyname_r} = "yes" ; then
 AC_CHECK_FUNCS(gethostbyname_r, [
          AC_MSG_CHECKING(number of arguments to gethostbyname_r)
 	 globus_gethostbyname_args=no
@@ -128,44 +127,41 @@ AC_CHECK_FUNCS(gethostbyname_r, [
 	 AC_MSG_RESULT($globus_gethostbyname_args)
 	 break;])
 
-fi
 
 AC_CHECK_FUNCS(ctime)
 AC_CHECK_FUNCS(localtime)
 AC_CHECK_FUNCS(gmtime)
 
-if test $GLOBUS_THREADS != "none"; then
-    AC_CHECK_FUNCS(localtime_r)
-    AC_CHECK_FUNCS(gmtime_r)
-    AC_CHECK_FUNCS(ctime_r, 
+AC_CHECK_FUNCS(localtime_r)
+AC_CHECK_FUNCS(gmtime_r)
+AC_CHECK_FUNCS(ctime_r, 
+    [
+        AC_MSG_CHECKING(number of arguments to ctime_r)
+        globus_ctime_args=no
+        AC_TRY_COMPILE(
         [
-            AC_MSG_CHECKING(number of arguments to ctime_r)
-            globus_ctime_args=no
-            AC_TRY_COMPILE(
-            [
 #               include "globus_config.h"
 #               include <time.h>
+        ],
+        [
+            time_t clock;
+            char buf[26];
+            ctime_r(&clock, buf);
+        ], AC_DEFINE(GLOBUS_HAVE_CTIME_R_2) globus_ctime_args=2)
+        if test $globus_ctime_args = no; then
+            AC_TRY_COMPILE(
+            [
+#                   include "globus_config.h"
+#                   include <time.h>
             ],
             [
                 time_t clock;
                 char buf[26];
-                ctime_r(&clock, buf);
-            ], AC_DEFINE(GLOBUS_HAVE_CTIME_R_2) globus_ctime_args=2)
-            if test $globus_ctime_args = no; then
-                AC_TRY_COMPILE(
-                [
-#                   include "globus_config.h"
-#                   include <time.h>
-                ],
-                [
-                    time_t clock;
-                    char buf[26];
-                    ctime_r(&clock, buf, 26);
-                ], AC_DEFINE(GLOBUS_HAVE_CTIME_R_3) globus_ctime_args=3)
-            fi
-            AC_MSG_RESULT($globus_ctime_args)
-        ])
-fi
+                ctime_r(&clock, buf, 26);
+            ], AC_DEFINE(GLOBUS_HAVE_CTIME_R_3) globus_ctime_args=3)
+        fi
+        AC_MSG_RESULT($globus_ctime_args)
+    ])
 
 AC_MSG_CHECKING(if struct passwd contains pw_age)
 globus_pw_age=no;
@@ -197,7 +193,6 @@ AC_MSG_RESULT($globus_pw_comment)
 
 
 AC_CHECK_FUNCS(getpwnam)
-if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(getpwnam_r, 
     [
         AC_MSG_CHECKING(number of arguments to getpwnam_r)
@@ -241,11 +236,9 @@ AC_CHECK_FUNCS(getpwnam_r,
         fi
         AC_MSG_RESULT($globus_getpwnam_args)
     ])
-fi
 
 AC_CHECK_FUNCS(getpwuid)
 
-if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(getpwuid_r, 
     [
         AC_MSG_CHECKING(number of arguments to getpwuid_r)
@@ -289,9 +282,7 @@ AC_CHECK_FUNCS(getpwuid_r,
         fi
         AC_MSG_RESULT($globus_getpwuid_args)
     ])
-fi
 
-if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(readdir_r, 
     [
         AC_MSG_CHECKING(number of arguments to readdir_r)
@@ -355,7 +346,6 @@ AC_CHECK_FUNCS(readdir_r,
         fi
         AC_MSG_RESULT($globus_readdir_args)
     ])
-fi
 
 AC_MSG_CHECKING(if struct dirent contains d_off)
 AC_TRY_COMPILE(
@@ -382,8 +372,8 @@ AC_TRY_COMPILE(
         struct dirent dir;
         ((int) dir.d_off) == 1;
     ],
-    AC_MSG_RESULT("yes"); AC_DEFINE(GLOBUS_HAVE_DIRENT_OFF),
-    AC_MSG_RESULT("no"))
+    AC_MSG_RESULT([yes]); AC_DEFINE(GLOBUS_HAVE_DIRENT_OFF),
+    AC_MSG_RESULT([no]))
 
 AC_MSG_CHECKING(if struct dirent contains d_offset)
 AC_TRY_COMPILE(
@@ -410,8 +400,8 @@ AC_TRY_COMPILE(
 struct dirent dir;
 ((int) dir.d_offset) == 1;
     ],
-    AC_MSG_RESULT("yes") ; AC_DEFINE(GLOBUS_HAVE_DIRENT_OFFSET), 
-    AC_MSG_RESULT("no"))
+    AC_MSG_RESULT([yes]) ; AC_DEFINE(GLOBUS_HAVE_DIRENT_OFFSET), 
+    AC_MSG_RESULT([no]))
 
 AC_MSG_CHECKING(if struct dirent contains d_type)
 AC_TRY_COMPILE(
@@ -438,8 +428,8 @@ AC_TRY_COMPILE(
 struct dirent dir;
 ((int) dir.d_type) == 1;
     ],
-    AC_MSG_RESULT("yes") ; AC_DEFINE(GLOBUS_HAVE_DIRENT_TYPE),
-    AC_MSG_RESULT("no"))
+    AC_MSG_RESULT([yes]) ; AC_DEFINE(GLOBUS_HAVE_DIRENT_TYPE),
+    AC_MSG_RESULT([no]))
 
 AC_MSG_CHECKING(if struct dirent contains d_reclen)
 AC_TRY_COMPILE(
@@ -466,6 +456,6 @@ AC_TRY_COMPILE(
 struct dirent dir;
 ((int) dir.d_reclen) == 1;
     ],
-    AC_MSG_RESULT("yes") ; AC_DEFINE(GLOBUS_HAVE_DIRENT_RECLEN),
-    AC_MSG_RESULT("no"))
+    AC_MSG_RESULT([yes]) ; AC_DEFINE(GLOBUS_HAVE_DIRENT_RECLEN),
+    AC_MSG_RESULT([no]))
 ])

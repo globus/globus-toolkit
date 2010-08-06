@@ -211,59 +211,46 @@ EOF
 sub get_gatekeeper_info
 {
     my ($gatekeeper_conf_filename) = $_[0];
-    my ($host_cert_line, $host_cert_file, $subject, $port) = ();
+    my ($host_cert_file, $subject, $port) = ();
+    my $grid_cert_info = "$Globus::Core::Paths::bindir/grid-cert-info";
 
     $port = 0;
     if (-f "$gatekeeper_conf_filename")
     {
         print "Reading gatekeeper configuration file...\n";
 
-        chomp($host_cert_line = `grep x509_user_cert $gatekeeper_conf_filename`);
-        $host_cert_file = (split(/x509_user_cert/, $host_cert_line))[1];
-        $host_cert_file =~ s/^\s+//; #strip leading whitespace
+        chomp($host_cert_file = `. $gatekeeper_conf_filename ; echo $GLOBUS_GATEKEEPER_CERT_FILE`);
 
-        my $port = 0;
-        if ( open(GK_CONF, $gatekeeper_conf_filename) )
+        if ($host_cert_file eq '')
         {
-          $port =(m/^(\s*)-port\s+([0-9]+)/)[1] while(! $port && ($_=<GK_CONF>));
-          close GK_CONF;
+            print "No certificate named in gatekeeper configuration file, checking default cert...\n";
+            $host_cert_file = "/etc/grid-security/hostcert.pem";
+        }
+
+        chomp($port = `. $gatekeeper_conf_filename ; echo $GLOBUS_GATEKEEPER_PORT`);
+        if ($port eq '')
+        {
+            $port = 0;
+        }
+        else
+        {
+            $port = int($port);
         }
     }
-    elsif (-r '/etc/grid-security/hostcert.pem')
+
+    if (-r $host_cert_file)
     {
-        print "No gatekeeper configuration file, checking default cert...\n";
-        $host_cert_file = "/etc/grid-security/hostcert.pem";
+        chomp($subject = `$grid_cert_info -subject -file \"$host_cert_file\"`);
     }
     else
-    {
-        print "Unable to determine gatekeeper certificate name\n";
-    }
-
-    if ( ! -r "$host_cert_file" )
     {
 	print STDERR <<EOF;
 Warning: Host cert file: $host_cert_file not found.  Re-run
          setup-globus-gram-job-manager after installing host cert file.
 EOF
-       $subject="unknown";
+        $subject = 'unknown';
     }
-    else
-    {
-       chomp($subject =
-             `${bindir}/grid-cert-info -subject -file $host_cert_file`);
-       if ( $? != 0 )
-       {
-	print STDERR <<EOF;
-Warning: Host cert file: $host_cert_file does not contain a certificate.
-         Re-run setup-globus-gram-job-manager after installing host cert file.
-EOF
-	  $subject = "unknown";
-       }
-       else
-       {
-	  $subject =~ s/^\s+//; #strip leading whitespace
-       }
-    }
+    $subject =~ s/^\s+//; #strip leading whitespace
 
     return ($subject, $port);
 }

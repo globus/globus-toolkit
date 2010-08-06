@@ -86,16 +86,12 @@ Sources= \
 	globus_common_include.h \
 	globus_uuid.c \
 	globus_uuid.h \
-    closedir.c \
     freeaddrinfo.c \
     gai_strerror.c \
     getaddrinfo.c \
     getnameinfo.c \
     inet_addr.c \
     inet_pton.c \
-    opendir.c \
-    readdir.c \
-    rewinddir.c \
     globus_thread_none.c \
     globus_netos_libc.h
 

@@ -80,13 +80,13 @@ my ($install, $installer, $anonymous, $force,
     $skipbundle, $faster, $paranoia, $version, $uncool, $avoid_bootstrap,
     $binary, $deporder, $inplace, $restart_package, $doxygen,
     $deps, $graph, $listpack, $listbun, $cvsuser,
-    $autotools, $gpt, $core, $enable_64bit ) =
+    $gpt, $core, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 0,
     0, 0, "no", 0, 0,
     0, 0, 0, 0, "",
-    1, 1, 1, "");
+    1, 1, "");
 
 my @user_bundles;
 my @user_packages;
@@ -115,7 +115,6 @@ GetOptions( 'i|install=s' => \$install,
             'deporder!' => \$deporder,
             'restart=s' => \$restart_package,
             'doxygen!' => \$doxygen,
-            'autotools!' => \$autotools,
             'gpt!' => \$gpt,
             'core!' => \$core,
             'd|deps!' => \$deps,
@@ -203,7 +202,7 @@ if ( not $noupdates )
 {
     if ( $deps  )
     {
-        cvs_checkout_subdir("gt", "autotools");
+        cvs_checkout_subdir("gt");
     } else {
         get_sources();
     }
@@ -375,7 +374,6 @@ sub create_makefile_installer
 
     system("mkdir $top_dir/pacman_cache");
     open(INS, ">$top_dir/$installer") or die "Can't open $installer: $!\n";
-    install_gt2_autotools();
     install_globus_core();
 
     # First list all the bundles as targets, followed by their depordered
@@ -821,11 +819,6 @@ sub build_prerequisites()
 {
     install_gpt() if $gpt;
 
-    if ( $autotools )
-    {
-        install_gt2_autotools();
-    }
-
     if ( $core && $gpt )
     {
         install_globus_core();
@@ -968,49 +961,6 @@ sub gpt_get_version
     return $version;
 }
 
-# --------------------------------------------------------------------
-sub install_gt2_autotools()
-# --------------------------------------------------------------------
-{
-    my $res;
-    chdir cvs_subdir('gt'). "/autotools";
-
-    if ( -e 'bin/automake' )
-    {
-        print "Using existing GT2 autotools installation.\n";
-    } else {
-        print "Building GT2 autotools.\n";
-        print "Logging to ${log_dir}/gt2-autotools.log\n";
-
-        if ( -e "install-autotools" )
-        {            
-            $res = log_system("./install-autotools `pwd`",
-                    "${log_dir}/gt2-autotools.log");
-        } else {
-            die "ERROR: autotools/install-autotools doesn't exist.  Check cvs logs.";
-        }
-
-        if ( $? ne 0 )
-        {
-            print "\tAutotools dies the first time through sometimes due to\n";
-            print "\temacs .texi issues.  I am trying again.\n";
-
-            log_system("./install-autotools `pwd`", 
-                    "${log_dir}/gt2-autotools.log");
-            if ( $? ne 0 )
-            {
-                die "ERROR: Error building autotools.  Check log.\n";
-            } else {
-                print "\tWorked second time through.\n";
-            }
-        }
-    }
-
-    $ENV{'PATH'} = cwd() . "/bin:$ENV{'PATH'}";
-
-    print "\n";
-}
-
 # Some packages require globus core to be installed to build.
 # TODO:  This should always go local, because packages install links
 #  to the automake headers.  These links don't get cleaned by
@@ -1095,13 +1045,7 @@ sub get_sources()
     foreach my $tree ( @cvs_build_list )
     {
         print "Checking out cvs tree $tree.\n";
-        if ( $tree eq "autotools" )
-        {
-            cvs_checkout_subdir("gt", "autotools");
-        } else
-        {
-            cvs_checkout_generic( $tree );
-        }
+        cvs_checkout_generic( $tree );
     }
 }
 
@@ -1852,15 +1796,13 @@ Options:
     --anonymous             Use anonymous cvs checkouts
     --cvsuser=<user>        Use "user" as account on CVS server
     --no-updates            Don't update CVS checkouts
-    --noautotools           Don't build autotools
     --nogpt                 Don't build gpt
     --nocore                Don't build core
     --force                 Force
     --faster                Don't repackage if packages exist already
     --flavor=<flv>          Set flavor base.  Default gcc32dbg
-    --gt-tag (-t)           Set GT and autotools tags.  Default HEAD
+    --gt-tag (-t)           Set GT tag.  Default HEAD
     --gt-dir (-d)           Set GT CVS directory.
-    --autotools-dir         Set autotools CVS directory.
     --verbose               Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."   Create bundles b1,b2,...
     --packages="p1,p2,..."  Create packages p1,p2,...
@@ -1914,11 +1856,6 @@ modifications.  Note, however, that make-packages won't
 check that your CVS tags match the requested CVS tags.
 Short version is "-n"
  
-=item B<--noautotools>
-
-Don't build the GT2 autotools.  You must have the autotools
-already on your PATH for this to work.
-
 =item B<--nogpt>
 
 Don't build GPT.  You must have the correct version of GPT

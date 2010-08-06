@@ -47,10 +47,23 @@ echo "running autoheader"
     autoheader || error
 fi
 
+OLDIFS="$IFS"
+IFS="
+"
+for x in `echo "${PATH}" | tr ":" "\n"`; do
+    if test -x "$x/libtoolize"; then
+        libtoolize=libtoolize
+        break
+    elif test -x "$x/glibtoolize"; then
+        libtoolize=glibtoolize
+        break
+    fi
+done
+IFS="$OLDIFS"
+
 echo "running libtoolize --copy --force"
-#echo 'running: ' `which libtoolize`
-libtoolize --copy  --force|| \
-  libtoolize --copy --force  || error
+$libtoolize --copy  --force|| \
+  $libtoolize --copy --force  || error
 
 echo "running automake --copy -add-missing --foreign"
 #echo 'running: ' `which automake`

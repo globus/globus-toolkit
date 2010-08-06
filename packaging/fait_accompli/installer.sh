@@ -2,7 +2,6 @@
 
 VERSION=`cat fait_accompli/version`
 INSTALLER=gt$VERSION-all-source-installer
-AUTOTOOLS=source-trees/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
 TARFILES=netlogger-c-4.0.2.tar.gz
 CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
@@ -13,12 +12,12 @@ BUNDLES=globus-resource-management-server,globus-resource-management-client,glob
 PACKAGES=globus_rls_client_jni,myproxy
 
 echo Making configure/make installer
-echo Step: Checking out and building autotools.
-./make-packages.pl --trees=autotools --skippackage --skipbundle $@
-if [ $? -ne 0 ]; then
-	echo There was trouble building autotools
-	exit 2
-fi
+#echo Step: Checking out and building autotools.
+#./make-packages.pl --trees=autotools --skippackage --skipbundle $@
+#if [ $? -ne 0 ]; then
+#	echo There was trouble building autotools
+#	exit 2
+#fi
 
 echo Step: Checking out source code.
 ./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
@@ -82,11 +81,11 @@ cat fait_accompli/installer.Makefile.prelude farfleblatt > $INSTALLER/Makefile.i
 rm farfleblatt
 
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt
-source-trees/autotools/bin/autoconf farfleblatt > $INSTALLER/configure
+autoconf farfleblatt > $INSTALLER/configure
 chmod +x $INSTALLER/configure
-cp $AUTOTOOLS/install-sh $INSTALLER
-cp $AUTOTOOLS/config.sub $INSTALLER
-cp $AUTOTOOLS/config.guess $INSTALLER
+cp fait_accompli/install-sh $INSTALLER
+cp fait_accompli/config.sub $INSTALLER
+cp fait_accompli/config.guess $INSTALLER
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.INSTALL > $INSTALLER/INSTALL
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/README
 
@@ -107,7 +106,7 @@ else
 fi
 
 cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
-rm -fr $INSTALLER/source-trees/autotools
+#rm -fr $INSTALLER/source-trees/autotools
 
 for f in $TARFILES; do
    tar -C $INSTALLER/source-trees -xzf fait_accompli/$f
