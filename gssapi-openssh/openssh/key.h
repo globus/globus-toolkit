@@ -35,6 +35,7 @@ enum types {
 	KEY_RSA1,
 	KEY_RSA,
 	KEY_DSA,
+	KEY_NULL,
 	KEY_RSA_CERT,
 	KEY_DSA_CERT,
 	KEY_UNSPEC
