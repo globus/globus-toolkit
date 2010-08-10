@@ -122,6 +122,10 @@ extern u_int utmp_len;
  */
 typedef pthread_t sp_pthread_t;
 #else
+#define pthread_create openssh_pthread_create
+#define pthread_exit openssh_pthread_exit
+#define pthread_cancel openssh_pthread_cancel
+#define pthread_join openssh_pthread_join
 typedef pid_t sp_pthread_t;
 #endif
 
