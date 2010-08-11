@@ -73,6 +73,7 @@ AC_OUTPUT(
 	library/Makefile
 	programs/Makefile
 	scripts/Makefile
+        scripts/Paths.pm
 	config/Makefile
 	doxygen/Makefile
 	doxygen/Doxyfile 

@@ -23,12 +23,10 @@ globus-makefile-header: globus-makefile-header.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 globus-script-initializer: globus-script-initializer.in
 	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-Paths.pm: Paths.pm.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 BUILT_SOURCES = globus-hostname globus-domainname \
                 globus-sh-tools.sh globus-makefile-header \
-                globus-script-initializer Paths.pm
+                globus-script-initializer
 
 clean-local:
 	-rm -f $(BUILT_SOURCES)

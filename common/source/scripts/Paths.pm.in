@@ -7,36 +7,53 @@ require Exporter;
 @EXPORT = qw($exec_prefix $prefix
              $sbindir $bindir
 	     $libdir $libexecdir $includedir
+             $datarootdir
+             $mandir
 	     $datadir $sysconfdir $sharedstatedir
-	     $localstatedir);
+	     $localstatedir
+             eval_path);
+
+sub eval_path
+{
+    my $path = shift;
+    my $last = $path;
+
+    while ($path =~ m/\$\{([^}]*)\}/)
+    {
+        my $varname = $1;
+        my $evaluated;
+        eval "\$evaluated = \${$1}";
+
+        $path =~ s/\${$varname}/$evaluated/g;
+        if ($path eq $last)
+        {
+            die "Error evaluating $last\n";
+        }
+        $last = $path;
+    }
+    return $path;
+}
 
 if (exists $ENV{GLOBUS_LOCATION})
 {
     $prefix=$ENV{GLOBUS_LOCATION};
     $exec_prefix=$ENV{GLOBUS_LOCATION};
-    $sbindir="$exec_prefix/sbin";
-    $bindir="$exec_prefix/bin";
-    $libdir="$exec_prefix/lib";
-    $libexecdir="$exec_prefix/libexec";
-    $includedir="$prefix/include";
-    $datadir="$prefix/share";
-    $sysconfdir="$prefix/etc";
-    $sharedstatedir="$prefix/com";
-    $localstatedir="$prefix/var";
 }
 else
 {
     $prefix='@prefix@';
     $exec_prefix='@prefix@';
-    $sbindir="@sbindir@";
-    $bindir="@bindir@";
-    $libdir="@libdir@";
-    $libexecdir="@libexecdir@";
-    $includedir="@includedir@";
-    $datadir="@datadir@";
-    $sysconfdir="@sysconfdir@";
-    $sharedstatedir="@sharedstatedir@";
-    $localstatedir="@localstatedir@";
 }
+$sbindir = eval_path('@sbindir@');
+$bindir = eval_path('@bindir@');
+$libdir = eval_path('@libdir@');
+$libexecdir = eval_path('@libexecdir@');
+$includedir = eval_path('@includedir@');
+$datarootdir = eval_path('@datarootdir@');
+$datadir = eval_path('@datadir@');
+$mandir = eval_path('@mandir@');
+$sysconfdir = eval_path('@sysconfdir@');
+$sharedstatedir = eval_path('@sharedstatedir@');
+$localstatedir = eval_path('@localstatedir@');
 
 1;
