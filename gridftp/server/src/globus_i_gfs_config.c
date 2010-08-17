@@ -83,6 +83,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     "accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, 
     "Exit after a single connection.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"chroot_path", "chroot_path", NULL, "chroot-path", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, 
+    "Path to become the new root after authentication.  This path must contain a valid "
+    "certificate structure, /etc/passwd, and /etc/groups.  The command "
+    "globus-gridftp-server-setup-chroot can help create a suitable directory structure.", NULL, NULL,GLOBUS_FALSE, NULL},
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "Add levels together to use more than one.  0 = Disables all authorization checks. 1 = Authorize identity. "

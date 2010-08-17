@@ -1473,6 +1473,7 @@ globus_l_gfs_data_authorize(
     struct passwd *                     pwent = NULL;
     struct group *                      grent = NULL;
     int                                 auth_level;
+    char *                              chroot_dir = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
@@ -1796,6 +1797,18 @@ globus_l_gfs_data_authorize(
                 goto uid_error;
             }
         }
+        
+        if((chroot_dir = globus_i_gfs_config_string("chroot_path")) != NULL)
+        {
+            rc = chroot(chroot_dir);
+            if(rc != 0)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Unable to chroot.");
+                    goto uid_error;
+            }
+        }
+
         rc = setuid(pwent->pw_uid);
         if(rc != 0)
         {

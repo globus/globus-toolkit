@@ -12,6 +12,7 @@ SUBDIRS = \
 EXTRA_DIST = \
     dsi_bones \
     embed \
+    globus-gridftp-server-setup-chroot \
     gridftp-password.pl \
     gridftp.gfork.in \
     gridftp-fe.gfork.in \
@@ -101,7 +102,8 @@ sbin_PROGRAMS= \
 	globus-gridftp-server 
 
 sbin_SCRIPTS = \
-    gridftp-password.pl
+    gridftp-password.pl \
+    globus-gridftp-server-setup-chroot
 
 libexec_PROGRAMS= \
     gfs-gfork-master \
