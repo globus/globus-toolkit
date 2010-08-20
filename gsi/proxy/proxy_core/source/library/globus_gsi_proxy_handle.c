@@ -1809,7 +1809,13 @@ globus_gsi_proxy_handle_set_is_limited(
 
     if(is_limited == GLOBUS_TRUE)
     {
-        if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+        if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY);
+        }
+        else if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
         {
             result = globus_gsi_proxy_handle_set_type(
                 handle,
@@ -1824,7 +1830,13 @@ globus_gsi_proxy_handle_set_is_limited(
     }
     else
     {
-        if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+        if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY);
+        }
+        else if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
         {
             result = globus_gsi_proxy_handle_set_type(
                 handle,
