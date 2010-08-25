@@ -87,6 +87,11 @@ int setenv(register const char *name, register const char *value, int rewrite);
 void strmode(int mode, char *p);
 #endif
 
+#ifndef HAVE_STRPTIME
+#include  <time.h>
+char *strptime(const char *buf, const char *fmt, struct tm *tm);
+#endif
+
 #if !defined(HAVE_MKDTEMP) || defined(HAVE_STRICT_MKSTEMP)
 int mkstemps(char *path, int slen);
 int mkstemp(char *path);

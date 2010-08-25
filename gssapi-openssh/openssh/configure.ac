@@ -1427,6 +1427,7 @@ AC_CHECK_FUNCS( \
 	strlcpy \
 	strmode \
 	strnvis \
+	strptime \
 	strtonum \
 	strtoll \
 	strtoul \
@@ -1905,6 +1906,12 @@ AC_ARG_WITH(ssl-dir,
 					LDFLAGS="-L${withval}/lib -R${withval}/lib ${LDFLAGS}"
 				else
 					LDFLAGS="-L${withval}/lib ${LDFLAGS}"
+				fi
+			elif test -d "$withval/lib64"; then
+				if test -n "${need_dash_r}"; then
+					LDFLAGS="-L${withval}/lib64 -R${withval}/lib64 ${LDFLAGS}"
+				else
+					LDFLAGS="-L${withval}/lib64 ${LDFLAGS}"
 				fi
 			else
 				if test -n "${need_dash_r}"; then
