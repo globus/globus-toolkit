@@ -18,6 +18,16 @@
 
 #include "includes.h"
 #include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
+
+/* Only in 0.9.8 */
+#ifndef OPENSSL_DSA_MAX_MODULUS_BITS
+# define OPENSSL_DSA_MAX_MODULUS_BITS        10000
+#endif
+#ifndef OPENSSL_RSA_MAX_MODULUS_BITS
+# define OPENSSL_RSA_MAX_MODULUS_BITS        16384
+#endif
 
 /* OPENSSL_free() is Free() in versions before OpenSSL 0.9.6 */
 #if !defined(OPENSSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x0090600f)
@@ -97,3 +107,4 @@ int ssh_EVP_Cipher(EVP_CIPHER_CTX *, char *, char *, int);
 int ssh_EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *);
 void ssh_SSLeay_add_all_algorithms(void);
 #endif	/* SSH_DONT_OVERLOAD_OPENSSL_FUNCS */
+
