@@ -23,6 +23,10 @@ if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     LIBPATH=$LD_LIBRARY_PATH
     export LIBPATH
 fi
+if test -d /prereq/perl-5.8.9/bin; then
+    PATH=/prereq/perl-5.8.9/bin:$PATH
+    export PATH
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildZLib"; then
     if test ! -d $ZLIB_LOCATION; then
         echo Building zlib-1.2.3...
