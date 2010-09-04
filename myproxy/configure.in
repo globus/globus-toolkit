@@ -112,7 +112,6 @@ dnl
 dnl Check for UI_UTIL_read_pw
 dnl
 AC_CHECK_FUNC(UI_UTIL_read_pw, AC_DEFINE(HAVE_UI_UTIL))
-LIBS="$saved_LIBS"
 dnl
 dnl Check for SASL
 dnl
