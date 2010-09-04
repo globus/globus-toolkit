@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.73 $)
+AC_REVISION($Revision: 1.74 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -112,7 +112,6 @@ dnl
 dnl Check for UI_UTIL_read_pw
 dnl
 AC_CHECK_FUNC(UI_UTIL_read_pw, AC_DEFINE(HAVE_UI_UTIL))
-LIBS="$saved_LIBS"
 dnl
 dnl Check for SASL
 dnl
