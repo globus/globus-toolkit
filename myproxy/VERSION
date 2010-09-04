@@ -1,9 +1,16 @@
-This is MyProxy v5.2 22 Jun 2010.
+This is MyProxy v5.3 XX Xxx 2010.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v5.3 XX Xxx 2010
+  - fix configure checks for globus_usage_stats_send,
+    globus_usage_stats_send_array, and
+    globus_gsi_proxy_handle_set_extensions when installing without
+    existing Globus libraries in LD_LIBRARY_PATH
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7098)
+
 v5.2 22 Jun 2010
   - allow specification of port numbers in MYPROXY_SERVER list
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7039)
