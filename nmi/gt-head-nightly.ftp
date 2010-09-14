@@ -1,4 +1,4 @@
 method = ftp
 ftp_root = http://
-ftp_target = cvs.globus.org/HEAD/nightly.tar.gz
+ftp_target = globus.org/HEAD/nightly.tar.gz
 untar = false
