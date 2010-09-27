@@ -40,6 +40,11 @@ done_cb(
     if(err) tmpstr = " an";
     else    tmpstr = "out";
 
+    if (err) {
+            const char *error_str = globus_error_print_friendly(err);
+            printf("Error: %s\n", error_str);
+    }
+
     if(err) { printf("done with%s error\n", tmpstr);
 	      error = GLOBUS_TRUE; }
     globus_mutex_lock(&lock);
