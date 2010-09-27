@@ -285,6 +285,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Idle time in seconds before an unused ipc connection will close.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_connect_timeout", "ipc_connect_timeout", NULL, "ipc-connect-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 60, NULL,
     "Time in seconds before cancelling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"always_send_markers", "always_send_markers", NULL, "always-send-markers", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL, NULL, NULL,GLOBUS_FALSE, NULL}, /* always send perf and restart markers, even in mode S */
 {NULL, "User Messages", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"banner", "banner", NULL, "banner", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Message to display to the client before authentication.", NULL, NULL,GLOBUS_TRUE, NULL},

@@ -4878,11 +4878,12 @@ globus_l_gfs_data_begin_cb(
             globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
         }
 
-        if(!op->writing && op->data_handle->info.mode == 'E')
+        if(!op->writing && (op->data_handle->info.mode == 'E' || 
+            globus_i_gfs_config_bool("always_send_markers")))
         {
             /* send first 0 byte marker */
             event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-            event_reply.recvd_bytes = op->recvd_bytes;
+            event_reply.recvd_bytes = 0;
             event_reply.node_ndx = op->node_ndx;
             if(op->event_callback != NULL)
             {
@@ -5467,7 +5468,8 @@ globus_l_gfs_data_end_read_kickout(
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    if(op->data_handle->info.mode == 'E')
+    if(op->data_handle->info.mode == 'E' || 
+        globus_i_gfs_config_bool("always_send_markers"))
     {
         globus_gfs_event_info_t        event_reply;
 
@@ -5480,6 +5482,7 @@ globus_l_gfs_data_end_read_kickout(
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
         event_reply.id = op->id;
         event_reply.recvd_bytes = op->recvd_bytes;
+        op->recvd_bytes = 0;
         event_reply.recvd_ranges = op->recvd_ranges;
         event_reply.node_ndx = op->node_ndx;
         event_reply.node_count = op->data_handle->info.nstreams;
@@ -5928,44 +5931,47 @@ globus_l_gfs_data_trev_kickout(
                 globus_assert(0 && "possibly memory corruption");
                 break;
         }
-        switch(bounce_info->event_type)
+        if(pass)
         {
-            case GLOBUS_GFS_EVENT_BYTES_RECVD:
-                event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
-                bounce_info->op->recvd_bytes = 0;
-                event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-                break;
-
-            case GLOBUS_GFS_EVENT_RANGES_RECVD:
-                event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
-                globus_range_list_copy(
-                    &event_reply->recvd_ranges,
-                    bounce_info->op->recvd_ranges);
-                globus_range_list_remove(
-                    bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
-                break;
-
-            default:
-                globus_assert(0 && "invalid state, not possible");
-                break;
+            switch(bounce_info->event_type)
+            {
+                case GLOBUS_GFS_EVENT_BYTES_RECVD:
+                    event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
+                    bounce_info->op->recvd_bytes = 0;
+                    event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+                    break;
+    
+                case GLOBUS_GFS_EVENT_RANGES_RECVD:
+                    event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
+                    globus_range_list_copy(
+                        &event_reply->recvd_ranges,
+                        bounce_info->op->recvd_ranges);
+                    globus_range_list_remove(
+                        bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
+                    break;
+    
+                default:
+                    globus_assert(0 && "invalid state, not possible");
+                    break;
+            }
         }
 
-    recv_info = bounce_info->op->info_struct;
-    object.name = recv_info->pathname;
-    object.size = bounce_info->op->bytes_transferred;
-    object.final = GLOBUS_FALSE;
-    action = GFS_ACL_ACTION_COMMIT;
-    rc = globus_gfs_acl_authorize(
-        &bounce_info->op->session_handle->acl_handle,
-        action,
-        &object,
-        &res,
-        globus_l_gfs_authorize_cb,
-        NULL);
-    if(rc == GLOBUS_GFS_ACL_COMPLETE)
-    {
-        globus_l_gfs_authorize_cb(&object, action, NULL, res);
-    }
+        recv_info = bounce_info->op->info_struct;
+        object.name = recv_info->pathname;
+        object.size = bounce_info->op->bytes_transferred;
+        object.final = GLOBUS_FALSE;
+        action = GFS_ACL_ACTION_COMMIT;
+        rc = globus_gfs_acl_authorize(
+            &bounce_info->op->session_handle->acl_handle,
+            action,
+            &object,
+            &res,
+            globus_l_gfs_authorize_cb,
+            NULL);
+        if(rc == GLOBUS_GFS_ACL_COMPLETE)
+        {
+            globus_l_gfs_authorize_cb(&object, action, NULL, res);
+        }
 
     }
     globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
@@ -6723,7 +6729,8 @@ globus_gridftp_server_begin_transfer(
         event_reply.node_count = op->node_count;
     }
 
-    if(!op->data_handle->is_mine || op->data_handle->info.mode == 'E')
+    if(!op->data_handle->is_mine || op->data_handle->info.mode == 'E' ||
+        globus_i_gfs_config_bool("always_send_markers"))
     {
         event_reply.event_mask |=
             GLOBUS_GFS_EVENT_BYTES_RECVD | GLOBUS_GFS_EVENT_RANGES_RECVD;
@@ -7214,7 +7221,8 @@ globus_gridftp_server_operation_event(
                 }
                 op->bytes_transferred += event_info->recvd_bytes;
             }
-            if(op->data_handle->info.mode == 'E')
+            if(op->data_handle->info.mode == 'E' || 
+                globus_i_gfs_config_bool("always_send_markers"))
             {
                 pass = GLOBUS_TRUE;
             }
