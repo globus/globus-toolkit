@@ -640,9 +640,9 @@ globus_l_gram_job_manager_read_validation_file(
         {
             globus_gram_job_manager_log(
                     manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
                     "event=gram.validation_record.info "
-                    "level=WARN "
+                    "level=ERROR "
                     "msg=\"Unknown attribute in validation file\" "
                     "path=\"%s\" "
                     "attribute=\"%s\" "
@@ -652,9 +652,17 @@ globus_l_gram_job_manager_read_validation_file(
                     attribute,
                     value);
 
-            /* unknown attribute.... ignore */
-            free(value);
-            value = GLOBUS_NULL;
+            if (manager->gt3_failure_message == NULL)
+            {
+                manager->gt3_failure_message = globus_common_create_string(
+                        "the job manager is misconfigured with an unknown property \"%s\" is in the RSL validation file at \"%s\"",
+                        attribute,
+                        validation_filename);
+            }
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
+
+            /* unknown attribute.... error */
+            goto free_value_exit;
         }
         free(attribute);
         attribute = GLOBUS_NULL;

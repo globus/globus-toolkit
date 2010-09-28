@@ -293,5 +293,5 @@ Attribute: savejobdescription
 Description: "Save a copy of the job description to $HOME"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Values: yes no
-DefaultValue: no
+Default: no
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
