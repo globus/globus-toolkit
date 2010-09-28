@@ -211,7 +211,7 @@ main(
     rc = globus_gram_job_manager_init(&manager, cred, &config);
     if(rc != GLOBUS_SUCCESS)
     {
-        reply_and_exit(NULL, rc, NULL);
+        reply_and_exit(NULL, rc, manager.gt3_failure_message);
     }
 
     /*
