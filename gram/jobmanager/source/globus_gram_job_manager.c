@@ -146,6 +146,7 @@ globus_gram_job_manager_init(
         goto out;
     }
     
+    manager->gt3_failure_message = NULL;
     manager->usagetracker = NULL;
     manager->config = config;
     manager->stop = GLOBUS_FALSE;

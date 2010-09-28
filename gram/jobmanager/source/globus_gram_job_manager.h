@@ -476,6 +476,11 @@ typedef struct globus_gram_job_manager_s
     globus_callback_handle_t            pending_restart_handle;
     /** Usage stats tracking data */
     globus_i_gram_usage_tracker_t *     usagetracker;
+    /**
+     * Error message extension for early misconfiguration-type errors that
+     * occur before a request is read.
+     */
+    char *                              gt3_failure_message;
 }
 globus_gram_job_manager_t;
 
