@@ -1174,6 +1174,7 @@ globus_l_gram_startup_socket_callback(
                     "level=ERROR "
                     "fd=%d "
                     "status=%d "
+                    "msg=\"%s\" "
                     "http_body_fd=%d "
                     "context_fd=%d "
                     "response_fd=%d "
