@@ -54,6 +54,25 @@ if [ "$HADOOP_CLASSPATH" != "" ]; then
   CLASSPATH=${CLASSPATH}:${HADOOP_CLASSPATH}
 fi
 
+# Configurations for the authz
+# Only applies to the root user due to ownership issues
+if [ $UID -eq 0 ]; then
+  # LCAS configuration
+  export LCAS_LOG_LEVEL=0
+  export LCAS_DEBUG_LEVEL=0
+  export LCAS_DB_FILE=/etc/lcas/lcas.db
+  export LCAS_DIR=/etc/lcas
+  export LCAS_MOD_HOME=/usr/lib64/modules
+ 
+  # LCMAPS configuration
+  export LCMAPS_LOG_LEVEL=0
+  export LCMAPS_DEBUG_LEVEL=0
+  export LCMAPS_DB_FILE=/etc/lcmaps/lcmaps.db
+  export LCMAPS_DIR=/etc/lcmaps
+  export LCMAPS_MOD_HOME=/usr/lib64/modules
+  export LCMAPS_POLICY_NAME=globus_gridftp_mapping
+fi
+
 if [ -e @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf ] ; then
     . @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf
 fi
@@ -62,5 +81,5 @@ if [ -e @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf ] ; then
     . @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf
 fi
                                                                       
-exec @GLOBUSLOCATION@/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
+exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
 

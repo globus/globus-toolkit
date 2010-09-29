@@ -27,16 +27,11 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  jdk >= 2000:1.6.0_07-fcs
 BuildRequires:  jpackage-utils
 BuildRequires: hadoop-0.20-libhdfs
-BuildRequires: gpt
-BuildRequires: gpt-postinstall
-BuildRequires: vdt_globus_essentials
-BuildRequires: vdt_globus_data_server
-BuildRequires: vdt_globus_sdk
+BuildRequires: globus-gridftp-server-devel
 
 Requires: hadoop-0.20-libhdfs
-Requires: vdt_globus_data_server
-Requires: prima
-Requires: gpt-postinstall
+Requires: globus-gridftp-server-progs
+Requires: globus-mapping-osg
 Requires: xinetd
 Requires: osg-ca-certs fetch-crl
 Requires: gratia-probe-gridftp-transfer
