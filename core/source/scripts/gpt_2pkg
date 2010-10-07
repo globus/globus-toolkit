@@ -104,10 +104,10 @@ my $cflags = "$pkg->{'cflags'} -I\${includedir}/globus -I\${libdir}/globus/inclu
 $cflags =~ s!^\s+|\s+$!!g;
 $cflags =~ s!\s+! !g;
 
-print OUT "prefix=/usr\n";
-print OUT "exec_prefix=\${prefix}\n";
-print OUT "libdir=\${exec_prefix}/lib\n";
-print OUT "includedir=\${prefix}/include\n";
+print OUT "prefix=\@prefix\@\n";
+print OUT "exec_prefix=\@exec_prefix\@\n";
+print OUT "libdir=\@exec_prefix\@/lib\n";
+print OUT "includedir=\@prefix\@/include\n";
 print OUT "\n";
 print OUT "Name: $name\n";
 print OUT "Description: Globus Toolkit - $description\n";
