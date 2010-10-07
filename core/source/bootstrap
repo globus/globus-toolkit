@@ -88,6 +88,9 @@ $GPT_LOCATION/sbin/gpt_create_automake_rules || error
 echo "running autoconf"
 autoconf || error
 
+echo "running gpt_2pkg"
+perl ./scripts/gpt_2pkg -src ./pkgdata/pkg_data_src.gpt.in -o ./pkgdata/globus-core.pc.in
+
 # update stamp.h.in
 
 if test -f "stamp-h.in" ; then

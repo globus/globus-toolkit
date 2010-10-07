@@ -60,6 +60,9 @@ fi
 $GPT_LOCATION/sbin/gpt_extract_data \
     --name --version --build_env ./pkgdata/pkg_data_src.gpt.in > gptdata.sh
 
+#create pkg_config file from gpt metadata
+$GLOBUS_LOCATION/libexec/gpt_2pkg --src=./pkgdata/pkg_data_src.gpt.in -o=./pkgdata/pkg_data_src.pc.in
+
 # update stamp.h.in
 
 if test -f "stamp-h.in" ; then

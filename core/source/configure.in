@@ -132,5 +132,6 @@ AC_OUTPUT(Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters
+	pkgdata/globus-core.pc
 	)
 
