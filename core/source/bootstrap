@@ -50,6 +50,9 @@ if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
 fi
 
+echo "running gpt_2pkg"
+perl ./scripts/gpt_2pkg -src ./pkgdata/pkg_data_src.gpt.in -o ./pkgdata/globus-core.pc.in
+
 echo "running aclocal $config"
 aclocal $config || error
 
@@ -88,8 +91,6 @@ $GPT_LOCATION/sbin/gpt_create_automake_rules || error
 echo "running autoconf"
 autoconf || error
 
-echo "running gpt_2pkg"
-perl ./scripts/gpt_2pkg -src ./pkgdata/pkg_data_src.gpt.in -o ./pkgdata/globus-core.pc.in
 
 # update stamp.h.in
 
