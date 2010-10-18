@@ -23,4 +23,7 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	doxygen/Makefile
+        setup-globus-gaa-authz-callout.pl
+        setup-globus-gaa-authz-callout
+        setup-globus-gaa-authz-callout-message
 )

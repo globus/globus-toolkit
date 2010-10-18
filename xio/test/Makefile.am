@@ -50,6 +50,13 @@ Scripts = 				\
 	close-barrier-test.pl           \
 	close-cancel-test.pl            \
 	failure-test.pl                 \
+	http-get-test.pl		\
+	http-header-test.pl		\
+	http-post-test.pl		\
+	http-put-test.pl		\
+        http-pingpong-test.pl		\
+	http-timeout-test.pl		\
+	http-throughput-test.pl         \
 	read-barrier-test.pl            \
 	timeout-test.pl                 \
 	cancel-test.pl                  \
@@ -68,7 +75,9 @@ Scripts = 				\
 	run-all-tests.pl                \
 	TESTS.pl
 
-SubstScripts = \
+test_SCRIPTS = $(Scripts) 
+
+ScriptSource =                          \
 	http-get-test.pl		\
 	http-header-test.pl		\
 	http-post-test.pl		\
@@ -77,34 +86,7 @@ SubstScripts = \
 	http-timeout-test.pl		\
 	http-throughput-test.pl
 
-SubstScriptsSource = \
-	http-get-test.pl.in \
-	http-header-test.pl.in \
-	http-post-test.pl.in \
-	http-put-test.pl.in \
-        http-pingpong-test.pl.in \
-	http-timeout-test.pl.in	\
-	http-throughput-test.pl.in
-
-test_SCRIPTS = $(Scripts) $(SubstScripts)
-
-http-get-test.pl: http-get-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-http-header-test.pl: http-header-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-http-post-test.pl: http-post-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-http-put-test.pl: http-put-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-http-pingpong-test.pl: http-pingpong-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-http-timeout-test.pl: http-timeout-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-http-throughput-test.pl: http-throughput-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-EXTRA_DIST = $(Scripts) $(SubstScriptsSource) $(Data) 
-CLEANFILES = $(SubstScripts)
+EXTRA_DIST = $(Scripts) $(ScriptSource) $(Data) 
 
 LDADD = $(GPT_PGM_LINKS)
 

@@ -26,13 +26,5 @@ pkgtest_DATA=testcert.pem testkey.pem \
 
 EXTRA_DIST = $(Scripts) $(GeneratedScriptsSources) $(pkgtest_DATA)
 
-globus-gram-job-manager-auditing-tg-job-submission-test.pl: $(srcdir)/globus-gram-job-manager-auditing-tg-job-submission-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gram-job-manager-auditing-job-submission-test.pl: $(srcdir)/globus-gram-job-manager-auditing-job-submission-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = $(GeneratedScripts)
-BUILT_SOURCES = $(GeneratedScripts)
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

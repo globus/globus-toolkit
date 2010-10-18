@@ -86,6 +86,10 @@ AC_OUTPUT(
         pkgdata/pkg_data_src.gpt
 	library/Makefile
         programs/Makefile
+        programs/grid-cert-info
+        programs/grid-change-pass-phrase
+        programs/grid-cert-request
+        programs/grid-default-ca
         doxygen/Makefile
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal

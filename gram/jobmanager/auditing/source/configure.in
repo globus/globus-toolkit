@@ -34,6 +34,7 @@ AC_DEFINE_UNQUOTED(GLOBUS_FLAVOR_NAME, "$GLOBUS_FLAVOR_NAME")
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
+        globus-gram-audit
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile

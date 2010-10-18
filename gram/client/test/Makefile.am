@@ -66,17 +66,6 @@ EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in \
 	globus-gram-client-register-ping-test.pl.in \
         failed-job-two-phase-commit.pl.in
 
-globus-gram-client-run-tests.pl: $(srcdir)/globus-gram-client-run-tests.pl.in 
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gram-client-two-phase-commit-test.pl: $(srcdir)/globus-gram-client-two-phase-commit-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gram-client-register-ping-test.pl: $(srcdir)/globus-gram-client-register-ping-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-failed-job-two-phase-commit.pl: $(srcdir)/failed-job-two-phase-commit.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES=globus-gram-client-run-tests.pl globus-gram-client-two-phase-commit-test.pl globus-gram-client-register-ping-test.pl failed-job-two-phase-commit.pl
-
 INCLUDES = $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)

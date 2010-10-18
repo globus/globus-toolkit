@@ -23,7 +23,7 @@ CFLAGS += -DGAA_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\"
 
 EXTRA_DIST=
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	gaa_plugin.h
 
 lib_LTLIBRARIES = libglobus_gaa_plugin_$(GLOBUS_FLAVOR_NAME).la

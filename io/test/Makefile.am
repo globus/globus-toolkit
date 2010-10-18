@@ -67,15 +67,5 @@ EXTRA_DIST = \
         globus-io-tcp-test.pl.in \
         run-io-tests.pl.in
 
-CLEANFILES = run-io-tests.pl \
-             globus-io-authorization-test.pl.in \
-	     globus-io-tcp-test.pl.in
-run-io-tests.pl: $(srcdir)/run-io-tests.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-io-authorization-test.pl: $(srcdir)/globus-io-authorization-test.pl.in 
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-io-tcp-test.pl: $(srcdir)/globus-io-tcp-test.pl.in 
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

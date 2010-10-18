@@ -16,7 +16,8 @@
 # limitations under the License.
 # 
 
+@GLOBUS_SCRIPT_INITIALIZER@
 
-. ${GLOBUS_LOCATION:-@libexecdir@}{$GLOBUS_LOCATION:+/libexec}/globus-sh-tools.sh
+. ${libexecdir}/globus-sh-tools.sh
 
 $GLOBUS_SH_PERL -I${libdir}/perl ${exec_prefix}/setup/globus/setup-globus-gaa-authz-callout.pl "$@"

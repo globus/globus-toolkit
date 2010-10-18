@@ -49,18 +49,7 @@ Perform the give SQL query on the audit database.
 
 =cut
 
-BEGIN
-{
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push (@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push (@INC, '@libdir@/perl');
-    }
-}
-
+@GLOBUS_PERL_INITIALIZER@
 
 use Getopt::Long;
 use strict;

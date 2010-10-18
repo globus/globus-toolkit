@@ -6,7 +6,7 @@ Sources= \
 	proxypolicy.c \
 	proxypolicy.h
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	proxycertinfo.h \
 	proxypolicy.h
 

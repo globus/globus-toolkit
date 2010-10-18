@@ -1,14 +1,8 @@
 #! @SH@
 
-if test -z "${GLOBUS_LOCATION}"; then
-    echo ""
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
-    echo "running this script"
-    echo ""
-    exit 1
-fi
+@GLOBUS_SCRIPT_INITIALIZER@
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${libexecdir}/globus-script-initializer
 
 #
 # Should this go into the initializer:

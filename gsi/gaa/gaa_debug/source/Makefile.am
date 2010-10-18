@@ -13,7 +13,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 EXTRA_DIST=
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	gaa_debug.h
 
 lib_LTLIBRARIES = libglobus_gaa_debug_$(GLOBUS_FLAVOR_NAME).la

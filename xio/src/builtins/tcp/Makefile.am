@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre
 Sources= \
     globus_xio_tcp_driver.c
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
     globus_xio_tcp_driver.h 
 
 

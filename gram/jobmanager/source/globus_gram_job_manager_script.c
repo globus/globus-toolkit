@@ -1845,9 +1845,12 @@ globus_l_gram_request_validate(
     globus_gram_jobmanager_request_t *  request)
 {
     struct stat                         statbuf;
-    char                                script_path[512];
-    char *                              location;
+    char *                              script_path;
+    char *                              script_path_pattern;
     int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+
 
     globus_gram_job_manager_request_log(
             request,
@@ -1864,19 +1867,18 @@ globus_l_gram_request_validate(
         return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
 
-    if(globus_location(&location) != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-    }
-   /*
-    * test that the scheduler script files exist and
-    * that the user has permission to execute then.
-    */
+    /*
+     * test that the scheduler script files exist and
+     * that the user has permission to execute then.
+     */
 
-   /*---------------- job manager script -----------------*/
-   sprintf(script_path,
-           "%s/libexec/globus-job-manager-script.pl",
-           request->config->globus_location);
+    /*---------------- job manager script -----------------*/
+    result = globus_eval_path("${libexecdir}/globus-job-manager-script.pl", &script_path);
+    if (result != GLOBUS_SUCCESS || script_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+        goto eval_script_path_failed;
+    }
 
     if (stat(script_path, &statbuf) != 0)
     {
@@ -1888,25 +1890,25 @@ globus_l_gram_request_validate(
                 "event=gram.request_validate.end "
                 "level=ERROR "
                 "gramid=%s "
-                "path=\"%s/libexec/globus-job-manager-script.pl\" "
+                "path=\"%s\" "
                 "msg=\"%s\" "
                 "status=%d "
                 "errno=%d "
                 "reason=\"%s\" "
                 "\n",
                 request->job_contact_path,
-                request->config->globus_location,
+                script_path,
                 "Script status failed",
                 -rc,
                 errno,
                 strerror(errno));
         
-        goto free_location_exit;
-   }
+        goto script_path_not_found;
+    }
 
-   if (!(statbuf.st_mode & 0111))
-   {
-       rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
+    if (access(script_path, X_OK) < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
 
         globus_gram_job_manager_request_log(
                 request,
@@ -1914,24 +1916,39 @@ globus_l_gram_request_validate(
                 "event=gram.request_validate.end "
                 "level=ERROR "
                 "gramid=%s "
-                "path=\"%s/libexec/globus-job-manager-script.pl\" "
+                "path=\"%s\" "
                 "msg=\"%s\" "
                 "status=%d "
                 "\n",
                 request->job_contact_path,
-                request->config->globus_location,
+                script_path,
                 "Script not executable",
                 -rc);
 
-       goto free_location_exit;
-   }
+        goto bad_script_permissions;
+    }
+    free(script_path);
+    script_path = NULL;
 
-   /*
-    * Verify existence/executableness of scheduler specific script.
-    */
-    sprintf(script_path, "%s/lib/perl/Globus/GRAM/JobManager/%s.pm",
-                        location,
-                        request->config->jobmanager_type);
+    script_path_pattern = globus_common_create_string(
+            "${libdir}/perl/Globus/GRAM/JobManager/%s.pm",
+            request->config->jobmanager_type);
+    if (script_path_pattern == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto script_pattern_alloc_failed;
+    }
+
+    /* Verify existence/executableness of scheduler specific script.  */
+
+    result = globus_eval_path(script_path_pattern, &script_path);
+    if (result != GLOBUS_SUCCESS || script_path == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto lrm_script_path_failed;
+    }
 
     if(stat(script_path, &statbuf) != 0)
     {
@@ -1943,21 +1960,20 @@ globus_l_gram_request_validate(
                 "event=gram.request_validate.end "
                 "level=ERROR "
                 "gramid=%s "
-                "path=\"%s/lib/perl/Globus/GRAM/JobManager/%s.pm\" "
+                "path=\"%s\" "
                 "msg=\"%s\" "
                 "status=%d "
                 "errno=%d "
                 "reason=\"%s\" "
                 "\n",
                 request->job_contact_path,
-                request->config->globus_location,
-                request->config->jobmanager_type,
+                script_path,
                 "Script status failed",
                 -rc,
                 errno,
                 strerror(errno));
         
-        goto free_location_exit;
+        goto lrm_module_not_found;
     }
 
     globus_gram_job_manager_request_log(
@@ -1970,8 +1986,22 @@ globus_l_gram_request_validate(
             request->job_contact_path,
             0);
 
-free_location_exit:
-    free(location);
+lrm_module_not_found:
+lrm_script_path_failed:
+    if (script_path_pattern != NULL)
+    {
+        free(script_path_pattern);
+        script_path_pattern = NULL;
+    }
+script_pattern_alloc_failed:
+bad_script_permissions:
+script_path_not_found:
+    if (script_path != NULL)
+    {
+        free(script_path);
+        script_path = NULL;
+    }
+eval_script_path_failed:
     return rc;
 }
 /* globus_l_gram_request_validate() */
@@ -2516,10 +2546,8 @@ globus_gram_job_manager_script_handle_init(
     char *                              env[7];
     int                                 i;
 
-    pipe_cmd[0] = globus_common_create_string(
-            "%s/libexec/globus-job-manager-script.pl",
-            manager->config->globus_location);
-    if (pipe_cmd[0] == NULL)
+    result = globus_eval_path("${libexecdir}/globus-job-manager-script.pl", &pipe_cmd[0]);
+    if (result != GLOBUS_SUCCESS || pipe_cmd[0] == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
@@ -2640,9 +2668,12 @@ globus_gram_job_manager_script_handle_init(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.script.end level=ERROR msg=\"%s\" status=%d "
+                "event=gram.script.end "
+                "level=ERROR "
+                "msg=\"%s\" "
+                "status=%d "
                 "reason=\"%s\"\n",
-                "failed opening script handle"
+                "failed opening script handle",
                 -rc,
                 escaped_errstr ? escaped_errstr : "");
 

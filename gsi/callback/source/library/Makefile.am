@@ -11,7 +11,7 @@ Sources= \
 	globus_gsi_callback_error.c \
 	globus_gsi_callback_data.c
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gsi_callback.h \
 	globus_gsi_callback_constants.h
 

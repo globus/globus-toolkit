@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 =head1 NAME
 
@@ -57,17 +57,7 @@ continue running after the service is removed.
 =cut
 
 
-BEGIN
-{
-    if (exists($ENV{GLOBUS_LOCATION}))
-    {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push(@INC, '@libdir@/perl');
-    }
-}
+@GLOBUS_PERL_INITIALIZER@
 
 use strict;
 use Getopt::Long;

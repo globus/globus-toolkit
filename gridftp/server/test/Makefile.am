@@ -4,7 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata 
 
-globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
+globusperldir = $(libdir)/perl/Globus
 
 Scripts= \
     gfs_common.pl \
@@ -32,23 +32,6 @@ EXTRA_DIST = $(Data) \
     globus-gridftp-dyn-be.pl.in \
     globus-gridftp-gfork-fe.pl.in \
     globus-gridftp-be-gfork.pl.in
-
-gfs_common.pl: $(srcdir)/gfs_common.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gridftp-be-gfork.pl: $(srcdir)/globus-gridftp-be-gfork.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gridftp-dyn-be.pl: $(srcdir)/globus-gridftp-dyn-be.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gridftp-gfork-fe.pl: $(srcdir)/globus-gridftp-gfork-fe.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-gridftp-gfork-mem.pl: $(srcdir)/globus-gridftp-gfork-mem.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = gfs_common.pl \
-             globus-gridftp-be-gfork.pl \
-             globus-gridftp-dyn-be.pl \
-             globus-gridftp-gfork-fe.pl \
-             globus-gridftp-gfork-mem.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

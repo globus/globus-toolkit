@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre
 Sources= \
     globus_xio_mode_e_driver.c
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
     globus_xio_mode_e_driver.h    
 
 noinst_LTLIBRARIES = libglobus_xio_mode_e_driver_$(GLOBUS_FLAVOR_NAME).la 

@@ -74,12 +74,6 @@
                     <Simple_Version Major="2"/> 
                 </Version>
             </Setup_Dependency>
-
-            <Setup_Dependency Name="globus_common_setup"> 
-                <Version>
-                    <Simple_Version Major="2"/> 
-                </Version>
-            </Setup_Dependency>
         </Source_Setup_Dependency>
 
         <Source_Setup_Dependency PkgType="rtl">

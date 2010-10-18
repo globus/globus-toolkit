@@ -10,7 +10,7 @@ Sources= \
 	globus_gsi_cred_constants.h \
 	globus_gsi_cred_error.c 
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gsi_credential.h \
 	globus_gsi_cred_constants.h
 

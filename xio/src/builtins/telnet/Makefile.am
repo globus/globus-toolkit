@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre
 Sources= \
     globus_xio_telnet.c
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
     globus_xio_telnet.h
 
 

@@ -125,28 +125,33 @@ globus_gram_job_manager_validation_init(
 {
     char *                              validation_filename;
     char *                              scheduler_validation_filename;
+    char *                              scheduler_validation_filename_pattern;
     int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result;
     globus_list_t *                     tmp_list;
     globus_gram_job_manager_validation_record_t *
                                         record;
 
     manager->validation_records = NULL;
 
-    validation_filename = globus_common_create_string(
-            "%s/share/globus_gram_job_manager/%s.rvf",
-            manager->config->globus_location,
-            "globus-gram-job-manager");
-
-    if(validation_filename == NULL)
+    result = globus_eval_path(
+            "${datadir}/globus_gram_job_manager/globus-gram-job-manager.rvf",
+            &validation_filename);
+    if (result != GLOBUS_SUCCESS || validation_filename == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto validation_filename_failed;
     }
-    scheduler_validation_filename = globus_common_create_string(
-            "%s/share/globus_gram_job_manager/%s.rvf",
-            manager->config->globus_location,
+    scheduler_validation_filename_pattern = globus_common_create_string(
+            "${datadir}/globus_gram_job_manager/%s.rvf",
             manager->config->jobmanager_type);
-    if(scheduler_validation_filename == NULL)
+    if(scheduler_validation_filename_pattern == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto scheduler_validation_filename_pattern_failed;
+    }
+    result = globus_eval_path(scheduler_validation_filename_pattern, &scheduler_validation_filename);
+    if (result != GLOBUS_SUCCESS || scheduler_validation_filename == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto scheduler_validation_filename_failed;
@@ -239,6 +244,8 @@ globus_gram_job_manager_validation_init(
 read_validation_failed:
     free(scheduler_validation_filename);
 scheduler_validation_filename_failed:
+    free(scheduler_validation_filename_pattern);
+scheduler_validation_filename_pattern_failed:
     free(validation_filename);
 validation_filename_failed:
     return rc;

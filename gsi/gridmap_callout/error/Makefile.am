@@ -9,7 +9,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 EXTRA_DIST=
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gridmap_callout_error.h
 
 lib_LTLIBRARIES = libglobus_gridmap_callout_error_$(GLOBUS_FLAVOR_NAME).la

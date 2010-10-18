@@ -8,7 +8,7 @@ Sources= \
 	globus_gsi_system_config_constants.h \
 	globus_gsi_system_config_error.c
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gsi_system_config.h \
         globus_gsi_system_config_constants.h
 

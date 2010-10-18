@@ -2187,7 +2187,7 @@ globus_gram_job_manager_request_load_all(
         goto opendir_failed;
     }
 
-    while ((rc = globus_libc_readdir_r(dir, &entry)) == 0)
+    while ((rc = globus_libc_readdir_r(dir, &entry)) == 0 && entry != NULL)
     {
         if ((sscanf( entry->d_name,
                     state_file_pattern,

@@ -11,7 +11,7 @@ Sources= \
 	globus_io_error_hierarchy.h \
 	globus_io_xio_compat.c
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
 	globus_io.h \
 	globus_io_error_hierarchy.h
 

@@ -22,6 +22,8 @@ package Globus::Testing::Utilities;
 #
 # ====================================================================
 
+@GLOBUS_PERL_INITIALIZER@
+
 #use strict;
 use Carp;
 use File::Find;
@@ -29,6 +31,7 @@ use Cwd;
 use Config;
 use FileHandle;
 use POSIX "sys_wait_h";
+use Globus::Core::Paths;
 
 sub new {
     my $class = shift;
@@ -48,7 +51,7 @@ sub new {
     }
     else
     {
-        $self->{globus} = '@prefix@';
+        $self->{globus} = $Globus::Core::Paths::prefix;
     }
 
     bless $self, $class;
@@ -550,7 +553,7 @@ sub testcred_env
     }
     else
     {
-        $testdir = '@exec_prefix@/test/globus_test';
+        $testdir = "$Globus::Core::Paths::exec_prefix/test/globus_test";
     }
     if (exists($_[0]) && $_[0])
     {

@@ -18,4 +18,9 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	Makefile
+        test-package
+        test-toolkit
+        testcred-env.sh
+        testcred-setup.sh
+        Utilities.pm
 )

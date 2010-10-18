@@ -5,7 +5,7 @@ SUBDIRS = \
 	pkgdata \
 	doxygen
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
     globus_xio_netlogger.h
 
 INCLUDES = $(GPT_INCLUDES) 

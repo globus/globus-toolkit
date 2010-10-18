@@ -102,7 +102,6 @@ static char *                           globus_l_ftp_client_ssh_client_program =
 char *
 globus_i_ftp_client_find_ssh_client_program()
 {
-    char *                              gl;
     char *                              hd;
     char *                              path;
     globus_result_t                     result;
@@ -125,15 +124,12 @@ globus_i_ftp_client_find_ssh_client_program()
         }
     }
 
-    /* now try $GL */
+    /* now try $GLOBUS_LOCATION */
     if(globus_l_ftp_client_ssh_client_program == NULL)
     {
-        result = globus_location(&gl);
-        if(result == GLOBUS_SUCCESS)
+        result = globus_eval_path("${libexecdir}/" GLOBUS_L_FTP_CLIENT_SSH_EXEC_SCRIPT, &path);
+        if(result == GLOBUS_SUCCESS && path != NULL)
         {
-            path = globus_common_create_string("%s/libexec/%s",
-                gl, GLOBUS_L_FTP_CLIENT_SSH_EXEC_SCRIPT);
-            free(gl);
             result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
             if(result == GLOBUS_SUCCESS)
             {
