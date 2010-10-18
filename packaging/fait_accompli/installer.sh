@@ -20,7 +20,7 @@ echo Making configure/make installer
 #fi
 
 echo Step: Checking out source code.
-CONFIG_SITE=`pwd`/fait_accompli/config.site ./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
