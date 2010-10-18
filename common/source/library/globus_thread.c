@@ -32,6 +32,8 @@
  */
 
 #include "globus_thread.h"
+extern globus_result_t globus_eval_path(const char *, char **);
+
 #include "ltdl.h"
 extern globus_module_descriptor_t globus_i_thread_none_module;
 
@@ -151,25 +153,16 @@ int
 globus_i_thread_pre_activate(void)
 {
     char *                              impl_name;
-    char *                              location;
     char *                              libdir;
     const char                          format[] = "libglobus_thread_%s";
     lt_dlhandle                         impl_lib;
     globus_thread_impl_t *              impl;
+    globus_result_t                     result;
 
-    location = getenv("GLOBUS_LOCATION");
-    if (location != NULL)
+    result = globus_eval_path("${libdir}", &libdir);
+    if (result != GLOBUS_SUCCESS || libdir == NULL)
     {
-        libdir = malloc(strlen(location) + 5);
-        if (libdir == NULL)
-        {
-            return GLOBUS_FAILURE;
-        }
-        sprintf(libdir, "%s/lib", location);
-    }
-    else
-    {
-        libdir = strdup(GLOBUS_LIBDIR);
+        return GLOBUS_FAILURE;
     }
 
     lt_dlinit();
@@ -1317,7 +1310,7 @@ globus_thread_exit(
     {
         globus_l_thread_impl->thread_exit(value);
     }
-    exit(value);
+    exit((int)value);
 }
 /* globus_thread_exit() */
 

@@ -61,6 +61,7 @@
 #include <sys/wait.h>
 
 
+#include "globus_common.h"
 #include "globus_gss_assist.h"
 #include "gssapi.h"
 
@@ -423,19 +424,27 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
     char * newfilename;
     int    prefixl, pathl, sufixl;
     char * prefix,  * path, * sufix;
+    char * evaluated_path;
+    globus_result_t result;
 
     prefix = (prefixp) ? prefixp : "";
     path   = (pathp) ? pathp : "";
     sufix  = (sufixp) ? sufixp : "";
 
     prefixl = strlen(prefix);
-    pathl   =  strlen(path);
     sufixl  =  strlen(sufix); 
+
+    result = globus_eval_path(path, &evaluated_path);
+    if (result != GLOBUS_SUCCESS)
+    {
+        failure2(FAILED_SERVER, "evaluating path %s failed\n", path);
+    }
+    pathl   =  strlen(evaluated_path);
 
     newfilename = (char *) calloc(1, (prefixl + pathl + sufixl + 3));
     if (newfilename) 
     {
-        if (*path != '/')
+        if (*evaluated_path != '/')
         {
             strcat(newfilename, prefix);
             if ((prefixl != 0) && (prefix[prefixl-1] != '/'))
@@ -443,10 +452,10 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
                 strcat(newfilename, "/");
             }
         }
-        strcat(newfilename, path);
+        strcat(newfilename, evaluated_path);
         if ((pathl  != 0) &&
             (sufixl != 0) && 
-            (path[pathl-1] != '/') && 
+            (evaluated_path[pathl-1] != '/') && 
             sufix[0] != '/')
         {
             strcat(newfilename, "/");
@@ -1836,6 +1845,7 @@ static void doit()
         unsetenv("X509_USER_DELEG_PROXY");
     }
 
+#if 0
     /*
      * finally do environment variable substitution 
      * on the args
@@ -1849,6 +1859,7 @@ static void doit()
             failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
         }
     }
+#endif
                         
 
     if (gatekeeper_uid == 0)

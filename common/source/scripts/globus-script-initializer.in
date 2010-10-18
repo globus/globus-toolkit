@@ -1,14 +1,33 @@
-prefix="${GLOBUS_LOCATION:-@prefix@}"
-exec_prefix="${GLOBUS_LOCATION:-@exec_prefix@}"
-sbindir="${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}"
-bindir="${GLOBUS_LOCATION:-@bindir@}${GLOBUS_LOCATION:+/bin}"
-libdir="${GLOBUS_LOCATION:-@libdir@}${GLOBUS_LOCATION:+/lib}"
-libexecdir="${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}"
-includedir="${GLOBUS_LOCATION:-@includedir@}${GLOBUS_LOCATION:+/include}"
-datadir="${GLOBUS_LOCATION:-@datadir@}${GLOBUS_LOCATION:+/share}"
-sysconfdir="${GLOBUS_LOCATION:-@sysconfdir@}${GLOBUS_LOCATION:+/etc}"
-sharedstatedir="${GLOBUS_LOCATION:-@sharedstatedir@}${GLOBUS_LOCATION:+/com}"
-localstatedir="${GLOBUS_LOCATION:-@localstatedir@}${GLOBUS_LOCATION:+/var}"
+
+eval_path()
+{
+    _pathval="$1"
+    _old_pathval=""
+
+    while test "$_pathval" != "$_old_pathval"; do
+        _old_pathval="$_pathval"
+        eval _pathval="$_pathval"
+    done
+    echo "$_pathval"
+}
+
+if test -n "${GLOBUS_LOCATION}" ; then
+    prefix="${GLOBUS_LOCATION}"
+else
+    prefix='@prefix@'
+fi
+
+exec_prefix="`eval_path '@exec_prefix@'`"
+sbindir="`eval_path '@sbindir@'`"
+bindir="`eval_path '@bindir@'`"
+libdir="`eval_path '@libdir@'`"
+libexecdir="`eval_path '@libexecdir@'`"
+includedir="`eval_path '@includedir@'`"
+datarootdir="`eval_path '@datarootdir@'`"
+datadir="`eval_path '@datadir@'`"
+sysconfdir="`eval_path '@sysconfdir@'`"
+sharedstatedir="`eval_path '@sharedstatedir@'`"
+localstatedir="`eval_path '@localstatedir@'`"
 
 if [ `uname 2> /dev/null` = Linux -o \
      `uname 2> /dev/null` = SunOS ]; then

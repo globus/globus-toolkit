@@ -8,7 +8,7 @@ Sources= \
 	globus_callout_constants.h \
 	globus_callout_error.c 
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_callout.h \
 	globus_callout_constants.h
 

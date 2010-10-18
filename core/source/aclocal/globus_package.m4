@@ -1,4 +1,99 @@
+AC_DEFUN([GLOBUS_INITIALIZERS], [
+initializer_prefix="${prefix}"
+test "$initializer_prefix" = "NONE" && initializer_prefix="$ac_default_prefix"
+GLOBUS_SCRIPT_INITIALIZER="
+# BEGIN GLOBUS_SCRIPT_INITIALIZER
+eval_path()
+{
+    _pathval=\"\[$]1\"
+    _old_pathval=\"\"
+
+    while test \"\$_pathval\" != \"\$_old_pathval\"; do
+        _old_pathval=\"\$_pathval\"
+        eval _pathval=\"\$_pathval\"
+    done
+    echo \"\$_pathval\"
+}
+
+if test -n \"\${GLOBUS_LOCATION}\" ; then
+    prefix=\"\${GLOBUS_LOCATION}\"
+else
+    prefix='$initializer_prefix'
+fi
+
+exec_prefix=\"\`eval_path $exec_prefix\`\"
+test \"\$exec_prefix\" = NONE && exec_prefix=\"\$prefix\"
+sbindir=\"\`eval_path $sbindir\`\"
+bindir=\"\`eval_path $bindir\`\"
+libdir=\"\`eval_path $libdir\`\"
+libexecdir=\"\`eval_path $libexecdir\`\"
+includedir=\"\`eval_path $includedir\`\"
+datarootdir=\"\`eval_path $datarootdir\`\"
+datadir=\"\`eval_path $datadir\`\"
+sysconfdir=\"\`eval_path $sysconfdir\`\"
+sharedstatedir=\"\`eval_path $sharedstatedir\`\"
+localstatedir=\"\`eval_path $localstatedir\`\"
+# END GLOBUS_SCRIPT_INITIALIZER
+"
+AC_SUBST(GLOBUS_SCRIPT_INITIALIZER)
+_AM_SUBST_NOTMAKE(GLOBUS_SCRIPT_INITIALIZER)
+
+GLOBUS_PERL_INITIALIZER="
+BEGIN
+{
+    my (\$prefix, \$exec_prefix, \$libdir);
+
+    sub eval_path
+    {
+        my \$path = shift;
+        my \$last = \$path;
+
+        #{
+        while (\$path =~ m/\\\${([[^}]]*)}/)
+        {
+            my \$varname = \${1};
+            my \$evaluated;
+            eval \"\\\$evaluated = \\\${\$varname}\";
+
+            \$path =~ s/\\\${\$varname}/\$evaluated/g;
+            if (\$path eq \$last)
+            {
+                die \"Error evaluating \$last\n\";
+            }
+            \$last = \$path;
+        }
+        return \$path;
+    }
+
+    if (exists \$ENV{GLOBUS_LOCATION})
+    {
+        \$prefix = \$ENV{GLOBUS_LOCATION};
+    }
+    else
+    {
+        \$prefix = '$initializer_prefix';
+    }
+
+    \$exec_prefix=eval_path('$exec_prefix');
+    \$libdir = eval_path('$libdir');
+
+    push(@INC, \"\${libdir}/perl\");
+
+    if (exists \$ENV{GPT_LOCATION})
+    {
+        push(@INC, \"\$ENV{GPT_LOCATION}/lib/perl\");
+    }
+}
+"
+
+AC_SUBST(GLOBUS_PERL_INITIALIZER)
+_AM_SUBST_NOTMAKE(GLOBUS_PERL_INITIALIZER)
+
+])
+
 AC_DEFUN([GLOBUS_INIT], [
+globus_prefix="${prefix}"
+test "$globus_gprefix" = "NONE" && globus_gprefix="$ac_default_prefix"
 
 AM_MAINTAINER_MODE
 
@@ -20,6 +115,8 @@ fi
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
 fi
+
+GLOBUS_INITIALIZERS
 
 AC_ARG_WITH(flavor,
 	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
@@ -67,9 +164,20 @@ AC_SUBST(GLOBUS_FLAVOR_NAME)
 
 
 # get the environment scripts
+eval_path()
+{
+    _pathval="[$]1"
+    _old_pathval=""
+
+    while test "$_pathval" != "$_old_pathval"; do
+        _old_pathval="$_pathval"
+        eval "_pathval=\"$_pathval\""
+    done
+    echo "$_pathval"
+}
 
 if test "x$GLOBUS_FLAVOR_NAME" != "xnoflavor" ; then
-	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+	. `eval_path ${libexecdir}/globus-build-env-$GLOBUS_FLAVOR_NAME.sh`
 fi
 
 

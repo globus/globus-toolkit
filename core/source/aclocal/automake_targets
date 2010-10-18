@@ -1,47 +1,30 @@
 ## Special globus installation directories
 
-setupdir = $${GLOBUS_LOCATION:-$(prefix)}/setup/globus
+setupdir = $(prefix)/setup/globus
 ## setup = [ DATA,PROGRAMS,SCRIPTS ]
 
-testdir = $${GLOBUS_LOCATION:-$(prefix)}/test/$(PACKAGE)
+testdir = $(prefix)/test/$(PACKAGE)
 ## test = [ DATA,PROGRAMS,SCRIPTS ]
 
-scriptsysconfdir = $${GLOBUS_LOCATION:-$(prefix)}/etc
+scriptsysconfdir = $(sysconfdir)
 ## scriptsysconf = [ PROGRAMS,SCRIPTS ]
 
-flavorincludedir = $${GLOBUS_LOCATION:-$(prefix)}/include/$(GLOBUS_FLAVOR_NAME)
+flavorincludedir = ${includedir}/$(GLOBUS_FLAVOR_NAME)
 ## flavorinclude = [ HEADERS ]
 
-pkgdir = $${GLOBUS_LOCATION:-$(prefix)}/etc/globus_packages/$(PACKAGE)
+pkgdir = ${sysconfdir}/globus_packages/$(PACKAGE)
 ## pkg = [ DATA ]
 
-aclocaldir = $${GLOBUS_LOCATION:-$(prefix)}/share/globus_aclocal
+aclocaldir = ${datadir}/globus_aclocal
 ## aclocal = [ DATA ]
 
-amdirdir = $${GLOBUS_LOCATION:-$(prefix)}/share/globus_amdir
+amdirdir = ${datadir}/globus_amdir
 ## amdir = [ DATA ]
 
-doxygendir = $${GLOBUS_LOCATION:-$(prefix)}/share/doxygen
+doxygendir = ${datadir}/doxygen
 ## doxygen = [ DATA ]
 
-docdir = $${GLOBUS_LOCATION:-$(prefix)}/share/doc
+docdir = ${datadir}/doc
 ## doc = [ DATA ]
 
 LINK_BAK = orig
-
-AT=@
-REWRITE_SCRIPT_PREFIXES=sed -e 's|$(AT)prefix$(AT)|$(prefix)|' \
-    -e 's|$(AT)exec_prefix$(AT)|$(exec_prefix)|' \
-    -e 's|$(AT)bindir$(AT)|$(bindir)|' \
-    -e 's|$(AT)sbindir$(AT)|$(sbindir)|' \
-    -e 's|$(AT)libdir$(AT)|$(libdir)|' \
-    -e 's|$(AT)libexecdir$(AT)|$(libexecdir)|' \
-    -e 's|$(AT)includedir$(AT)|$(includedir)|' \
-    -e 's|$(AT)datadir$(AT)|$(datadir)|' \
-    -e 's|$(AT)sysconfdir$(AT)|$(sysconfdir)|' \
-    -e 's|$(AT)sharedstatedir$(AT)|$(sharedstatedir)|' \
-    -e 's|$(AT)localstatedir$(AT)|$(localstatedir)|' \
-    -e 's|$(AT)VERSION$(AT)|$(VERSION)|' \
-    -e 's|$(AT)PACKAGE$(AT)|$(PACKAGE)|' \
-    -e 's|$(AT)DIRT_TIMESTAMP$(AT)|@DIRT_TIMESTAMP@|' \
-    -e 's|$(AT)DIRT_BRANCH_ID$(AT)|@DIRT_BRANCH_ID@|'
