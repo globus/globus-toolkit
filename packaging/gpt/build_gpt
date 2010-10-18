@@ -88,8 +88,8 @@ my $shutup =" > /dev/null 2>&1";
 $shutup = "" if defined $verbose;
 
 my %commands = (
-                gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
-./configure --with-perl=$perl_location", 
+                gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; unset CONFIG_SITE ; \\
+./configure --with-perl=$perl_location --datadir='\${prefix}/share' --libexecdir='\${exec_prefix}/lib/globus'", 
                         "make", 
                         "make install",
                         "make install-man",

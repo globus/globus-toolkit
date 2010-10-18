@@ -20,7 +20,7 @@ echo Making configure/make installer
 #fi
 
 echo Step: Checking out source code.
-./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+CONFIG_SITE=`pwd`/fait_accompli/config.site ./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
@@ -86,6 +86,7 @@ chmod +x $INSTALLER/configure
 cp fait_accompli/install-sh $INSTALLER
 cp fait_accompli/config.sub $INSTALLER
 cp fait_accompli/config.guess $INSTALLER
+cp fait_accompli/config.site.in $INSTALLER
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.INSTALL > $INSTALLER/INSTALL
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/README
 
@@ -98,12 +99,7 @@ cp -r quickstart $INSTALLER
 # Symlink over the bootstrapped CVS dirs.
 # Must use -h in tar command to dereference them
 mkdir $INSTALLER/source-trees
-cp --version > /dev/null 2>&1;
-if [ $? -eq 0 ]; then
-   CPOPTS=RpL
-else
-   CPOPTS=Rp
-fi
+CPOPTS=RpL
 
 cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
 #rm -fr $INSTALLER/source-trees/autotools
