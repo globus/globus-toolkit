@@ -17,7 +17,7 @@ Sources= \
     globus_i_xio_http.h \
     globus_xio_http.h
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
     globus_xio_http.h
 
 noinst_HEADERS = \

@@ -7,8 +7,8 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
-    echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh"
+if [ ! -f ${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh ]; then
+    echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh"
     echo "       Please ensure that you have installed the globus-core package and"
     echo "       that GLOBUS_LOCATION is set to the proper directory"
     exit
@@ -33,4 +33,4 @@ fi
 cp -f configure.in.in configure.in
 echo "$builtin_makefiles)" >> configure.in
 
-. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
+. ${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh

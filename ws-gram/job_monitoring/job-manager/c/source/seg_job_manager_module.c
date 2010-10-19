@@ -222,14 +222,11 @@ globus_l_job_manager_module_activate(void)
     }
     else
     {
-        char * location;
-        
-        globus_location(&location);
+        char * log_dir_pattern = globus_common_create_string(
+                "${localstatedir}/globus-job-manager-seg-%s", scheduler);
 
-        logfile_state->log_dir = globus_common_create_string(
-                "%s/var/globus-job-manager-seg-%s",
-                location ? globus_location : "",
-                scheduler);
+        globus_eval_path(log_dir_pattern, &logfile_state->log_dir);
+        free(log_dir_pattern);
     }
 
     if (logfile_state->log_dir == NULL)

@@ -26,7 +26,6 @@ globus_authz_null_callout	gsi/authz_null_callout/source	gpt
 globus_authz_test	gsi/authz/test	gpt
 globus_callout	callout/source	gpt
 globus_common	common/source	gpt
-globus_common_setup	common/setup	gpt
 globus_common_test	common/test	gpt
 globus_core	core/source	gpt
 globus_ftp_client	gridftp/client/source	gpt

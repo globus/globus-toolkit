@@ -4,8 +4,6 @@ AC_CONFIG_SRCDIR(Makefile.am)
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([ no-installman ])
 
-echo $target > ./etc/gpt/gnu_target
-
 AC_ARG_WITH([perl],
 	
 [ --with-perl=<path>     specify path to perl binary ],

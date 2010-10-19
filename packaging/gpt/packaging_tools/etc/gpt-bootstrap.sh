@@ -9,7 +9,7 @@ error()
 # Removed check for autotools.  CAB 01/08
 
 # Always include globus macros
-config="$aclocal_includes -I $GLOBUS_LOCATION/share/globus_aclocal"
+config="$aclocal_includes"
 
 # test for local macros
 if test -d "./config"; then
@@ -25,6 +25,8 @@ if test ! -f "$GLOBUS_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; the
     else
         config="$config -I $GPT_LOCATION/share/gpt/aclocal"
     fi
+else
+    config="$config -I $GLOBUS_LOCATION/share/globus_aclocal"
 fi
 
 if test "x$GPT_LOCATION" = "x"; then

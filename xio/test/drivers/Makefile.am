@@ -14,7 +14,7 @@ Sources = \
 	globus_xio_null.c \
 	globus_xio_stack_driver.c
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
 	globus_xio_stack_driver.h \
 	globus_xio_null_pass.h \
 	globus_xio_bounce.h \

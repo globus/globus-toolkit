@@ -17,6 +17,13 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
+        http-get-test.pl
+        http-header-test.pl
+        http-pingpong-test.pl
+        http-post-test.pl
+        http-put-test.pl
+        http-throughput-test.pl
+        http-timeout-test.pl
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	drivers/Makefile

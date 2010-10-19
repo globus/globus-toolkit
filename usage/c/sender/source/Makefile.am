@@ -5,7 +5,7 @@ SUBDIRS = pkgdata
 
 Sources= globus_usage.c
 
-flavorinclude_HEADERS = globus_usage.h
+include_HEADERS = globus_usage.h
 
 
 lib_LTLIBRARIES = libglobus_usage_$(GLOBUS_FLAVOR_NAME).la 
