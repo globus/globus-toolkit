@@ -10,6 +10,8 @@ v5.3 XX Xxx 2010
     globus_gsi_proxy_handle_set_extensions when installing without
     existing Globus libraries in LD_LIBRARY_PATH
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7098)
+  - in myproxy-server-setup, look in /sbin and /usr/sbin for chkconfig
+    or update-rc.d in case they're not in PATH
 
 v5.2 22 Jun 2010
   - allow specification of port numbers in MYPROXY_SERVER list

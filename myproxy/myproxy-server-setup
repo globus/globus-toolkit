@@ -101,8 +101,20 @@ sub setupboot {
     close(OUT);
     chmod(0755, "$initdir/myproxy");
     print "Installed $initdir/myproxy.\n";
-    chomp($chkconfig = `which chkconfig 2>/dev/null`);
-    chomp($updatercd = `which update-rc.d 2>/dev/null`);
+    if (-x "/sbin/chkconfig") {
+      $chkconfig = "/sbin/chkconfig";
+    } elsif (-x "/usr/sbin/chkconfig") {
+      $chkconfig = "/usr/sbin/chkconfig";
+    } else {
+      chomp($chkconfig = `which chkconfig 2>/dev/null`);
+    }
+    if (-x "/sbin/update-rc.d") {
+      $updatercd = "/sbin/update-rc.d";
+    } elsif (-x "/usr/sbin/update-rc.d") {
+      $updatercd = "/usr/sbin/update-rc.d";
+    } else {
+      chomp($updatercd = `which update-rc.d 2>/dev/null`);
+    }
     if (-x $chkconfig) {
       system("$chkconfig --add myproxy");
     } elsif (-x $updatercd) {
