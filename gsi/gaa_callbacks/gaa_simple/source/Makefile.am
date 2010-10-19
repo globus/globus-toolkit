@@ -20,7 +20,7 @@ Sources = \
 INCLUDES = $(GPT_INCLUDES) $(XMLSEC1_CFLAGS)
 
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	gaa_simple.h saml.h
 
 lib_LTLIBRARIES = libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la

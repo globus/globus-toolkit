@@ -7,6 +7,10 @@
 #     $Revision$
 #     $Author$
 
+@GLOBUS_PERL_INITIALIZER@
+
+use Globus::Core::Paths;
+
 =head1 NAME
 
 Globus::GRAM::JobDescription - GRAM Job Description
@@ -120,7 +124,7 @@ sub new
         }
         else
         {
-            $home = '@exec_prefix@';
+            $home = $Globus::Core::Paths::exec_prefix;
         }
         foreach my $key (keys %{$self}) {
             if ($key =~ m/^[^_]/) {

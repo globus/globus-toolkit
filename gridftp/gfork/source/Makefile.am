@@ -16,7 +16,7 @@ Sources= \
 INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS)
 
-flavorinclude_HEADERS = globus_gfork.h
+include_HEADERS = globus_gfork.h
 
 lib_LTLIBRARIES = libglobus_gfork_$(GLOBUS_FLAVOR_NAME).la
 

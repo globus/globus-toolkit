@@ -30,7 +30,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gram_protocol_constants.h \
 	globus_gram_protocol.h 
 

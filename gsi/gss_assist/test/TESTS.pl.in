@@ -1,16 +1,6 @@
-#!/usr/bin/perl
+#! /usr/bin/perl
 
-BEGIN
-{
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push(@INC, '@libdir@/perl');
-    }
-}
+@GLOBUS_PERL_INITIALIZER@
 
 use strict;
 use warnings;

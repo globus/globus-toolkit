@@ -46,7 +46,7 @@ AC_ARG_WITH(initscript-config-path,
             AC_HELP_STRING([--with-initscript-config-path=PATH],
             [Set the path to init script configuration. By default, this package
              will install its configuration file in
-             $sysconfdir/globus-gatekeeper.conf. 
+             ${sysconfdir}/globus-gatekeeper.conf. 
              ]),
             [if test "$withval" = "yes";  then
                 AC_MSG_ERROR([Invalid path: $withval])
@@ -55,10 +55,11 @@ AC_ARG_WITH(initscript-config-path,
                 GATEKEEPER_CONFIGFILE=`basename $withval`
             fi],
             [
-                GATEKEEPER_CONFIGDIR="$sysconfdir"
+                GATEKEEPER_CONFIGDIR='${sysconfdir}'
                 GATEKEEPER_CONFIGFILE="globus-gatekeeper.conf"
             ])
 
+LSB=""
 AC_ARG_WITH(lsb,
         AC_HELP_STRING(
             [--with-lsb],
@@ -68,21 +69,16 @@ AC_ARG_WITH(lsb,
             script will probe for the LSB base scripts if this is not set.
             If not found, it will use a generic service startup script.]),
             [ if test "$withval" = yes; then
-                INIT_SCRIPT_SOURCE=globus-gatekeeper-lsb.in
-              else
-                INIT_SCRIPT_SOURCE=globus-gatekeeper.in
+                LSB="-lsb"
               fi],
             [
                 if test -f /lib/lsb/init-functions; then
-                    INIT_SCRIPT_SOURCE=globus-gatekeeper-lsb.in
-                else
-                    INIT_SCRIPT_SOURCE=globus-gatekeeper.in
+                    LSB="-lsb"
                 fi
             ])
 
 AC_SUBST(GATEKEEPER_CONFIGDIR)
 AC_SUBST(GATEKEEPER_CONFIGFILE)
-AC_SUBST(INIT_SCRIPT_SOURCE)
 
 xml_catalog_path="notset"
 AC_ARG_WITH(
@@ -106,9 +102,6 @@ if test "x$xml_catalog_path" != x"notset"; then
     fi
 fi
 
-eval SYSCONFDIR="$sysconfdir"
-AC_DEFINE_UNQUOTED(SYSCONFDIR, "$SYSCONFDIR", [Read-only single machine data])
-
 AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
 
 GLOBUS_FINALIZE
@@ -117,6 +110,9 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         init/Makefile
+        init/globus-gatekeeper:init/globus-gatekeeper${LSB}.in
         config/Makefile
+        config/globus-gatekeeper
+        config/$GATEKEEPER_CONFIGFILE:config/globus-gatekeeper.in
         Makefile
 )

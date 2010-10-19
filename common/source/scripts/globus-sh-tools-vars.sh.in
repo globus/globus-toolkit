@@ -1,7 +1,5 @@
 
-
-# 
-# Copyright 1999-2006 University of Chicago
+# Copyright 1999-2010 University of Chicago
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,24 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
 
-@GLOBUS_SCRIPT_INITIALIZER@
-
-if test -z "$GLOBUS_SH_VARIABLES_SET" ; then
-    
-    . ${libexecdir}/globus-sh-tools-vars.sh
-    
-    # export all commands:
-
-    for _var in `set|${GLOBUS_SH_GREP-grep} "^GLOBUS_SH"| \
-        ${GLOBUS_SH_SED-sed} -n '/^GLOBUS_SH/s/=.*$//p' `
-    do
-        export ${_var}
-    done
-    GLOBUS_SH_VARIABLES_SET="Y"
-    export GLOBUS_SH_VARIABLES_SET
-
-
-    # end of config file
-fi
+# Interpreters:
+GLOBUS_SH_PERL="@GLOBUS_SH_PERL@"
+GLOBUS_SH="@GLOBUS_SH@"

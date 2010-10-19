@@ -26,7 +26,7 @@ Sources= \
 	wrap.c \
 	set_sec_context_opts.c 
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gss_assist.h \
         globus_gss_assist_constants.h
 

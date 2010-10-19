@@ -13,6 +13,7 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 AC_OUTPUT(
         Makefile
+        setup-openssl
         pkgdata/Makefile
         pkgdata/pkg_data_src.gpt
 )

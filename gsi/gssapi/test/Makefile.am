@@ -151,10 +151,5 @@ indicate_mechs_test_SOURCES = indicate_mechs_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
 
-TESTS.pl: $(srcdir)/TESTS.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = TESTS.pl
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

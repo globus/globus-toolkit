@@ -25,4 +25,11 @@ AC_OUTPUT(
 	doxygen/Makefile
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
+        globus-ftp-client-caching-get-test.pl
+        globus-ftp-client-get-test.pl
+        globus-ftp-client-many-server.pl
+        globus-ftp-client-run-backend-tests.pl
+        globus-ftp-client-transfer-test.pl
+        globus-ftp-client-put-test.pl
+        globus-ftp-client-run-tests.pl
 )

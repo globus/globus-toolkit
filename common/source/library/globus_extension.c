@@ -153,7 +153,7 @@ int
 globus_l_extension_activate(void)
 {
     static globus_bool_t                initialized = GLOBUS_FALSE;
-    char *                              tmp;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusFuncName(globus_l_extension_activate);
     
     if(!initialized)
@@ -195,26 +195,25 @@ globus_l_extension_activate(void)
         globus_rmutex_init(&globus_l_extension_mutex, NULL);
         globus_thread_key_create(&globus_l_extension_owner_key, NULL);
         
-        if(globus_location(&tmp) == GLOBUS_SUCCESS)
+        result = globus_eval_path("${libdir}", &globus_l_globus_location);
+        if(result != GLOBUS_SUCCESS)
         {
-#if defined(TARGET_ARCH_WIN32)
-            globus_l_globus_location =
-                globus_common_create_string("%s\\lib", tmp);
-#else
-            globus_l_globus_location =
-                globus_common_create_string("%s/lib", tmp);
-#endif
-            globus_free(tmp);
+            goto error_path;
         }
-        
+
         initialized = GLOBUS_TRUE;
         GlobusExtensionDebugExit();
     }
     
     return GLOBUS_SUCCESS;
 
+error_path:
+    globus_hashtable_destroy(&globus_l_extension_builtins);
+    globus_hashtable_destroy(&globus_l_extension_loaded);
 #   ifndef BUILD_STATIC_ONLY
+#   if HAVE_LT_DLMUTEX_REGISTER
 error_dlmutex:
+#   endif
     lt_dlexit();
 error_dlinit:
     GlobusExtensionDebugExitWithError();

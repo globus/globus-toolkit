@@ -4,12 +4,12 @@ include $(top_srcdir)/globus_automake_pre_top
 lib_LTLIBRARIES = libglobus_openssl_version_$(GLOBUS_FLAVOR_NAME).la
 libexec_PROGRAMS = globus-openssl-version
 bin_SCRIPTS = globus-update-certificate-dir
-nodist_flavorinclude_HEADERS = globus_openssl_version.h
+nodist_include_HEADERS = globus_openssl_version.h
 
 man8datadir=$(mandir)/man8
 man8data_DATA = globus-update-certificate-dir.8
 
-nodist_flavorincludedir = $(flavorincludedir)
+nodist_includedir = $(includedir)
 
 SUBDIRS = pkgdata
 
@@ -26,10 +26,7 @@ globus_openssl_version_SOURCES = main.c
 globus_openssl_version.h: globus-openssl-version
 	./globus-openssl-version -H > globus_openssl_version.h
 
-CLEANFILES = globus_openssl_version.h globus-update-certificate-dir
-
-globus-update-certificate-dir: globus-update-certificate-dir.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
+CLEANFILES = globus_openssl_version.h 
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

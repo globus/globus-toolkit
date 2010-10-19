@@ -16,18 +16,7 @@
 # limitations under the License.
 # 
 
-
-BEGIN
-{
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push(@INC, '@libdir@/perl');
-    }
-}
+@GLOBUS_TEST_PERL_INITIALIZER@
 
 # ------------------------------------------------------------------------
 # globus_test_gridftp_local

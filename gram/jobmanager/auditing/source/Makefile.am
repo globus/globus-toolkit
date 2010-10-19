@@ -15,12 +15,6 @@ MANUAL_SOURCE = manual.xml globus-gram-audit-manual.xml
 # Files which we want to put in the source package
 EXTRA_DIST = globus-gram-audit.in $(mandata_DATA) $(MANUAL_SOURCE)
 
-globus-gram-audit: globus-gram-audit.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-BUILT_SOURCES = globus-gram-audit
-CLEANFILES = globus-gram-audit
-
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 

@@ -1,11 +1,11 @@
 include $(top_srcdir)/globus_automake_pre
 
 # Extra directories into which we install files
-globusperldir=$(GLOBUS_LOCATION)/lib/perl/Globus/GRAM
-perldocdir=$(GLOBUS_LOCATION)/share/doc/perl/Globus/GRAM
+globusperldir=$(libdir)/perl/Globus/GRAM
+perldocdir=$(datadir)/doc/perl/Globus/GRAM
 
 # Not handled by automake, because of :: in the destination file names
-MAN_DIR=$(GLOBUS_LOCATION)/man/man3
+MAN_DIR=${mandir}/man3
 
 # What gets installed where
 globusperl_DATA = Error.pm JobSignal.pm JobState.pm

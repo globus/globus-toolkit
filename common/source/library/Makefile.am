@@ -96,11 +96,12 @@ Sources= \
     globus_netos_libc.h
 
 flavorinclude_HEADERS = \
-        $(OS_HEADERS) \
+	$(OS_HEADERS)
+include_HEADERS = \
 	globus_release.h \
 	globus_module.h \
 	globus_url.h \
-    globus_states.h \
+        globus_states.h \
 	globus_list.h \
 	globus_hashtable.h \
 	globus_fifo.h \

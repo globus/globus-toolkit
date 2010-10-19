@@ -15,12 +15,16 @@
 # limitations under the License.
 #
 
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
+
 GLOBUS_GATEKEEPER_CONFIG=${GLOBUS_GATEKEEPER_CONFIG:-@GATEKEEPER_CONFIGDIR@/@GATEKEEPER_CONFIGFILE@}
 test -f "${GLOBUS_GATEKEEPER_CONFIG}" && . "${GLOBUS_GATEKEEPER_CONFIG}"
 
-test -f ${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}/globus-gatekeeper || exit 0
+test -f ${sbindir}/globus-gatekeeper || exit 0
 
-GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-@localstatedir@/run/globus-gatekeeper.pid}"
+GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
 GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 
 
@@ -33,7 +37,7 @@ case "$1" in
             kflag=""
         fi
 
-        ${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}/globus-gatekeeper \
+        ${sbindir}/globus-gatekeeper \
             -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
             ${GLOBUS_GATEKEEPER_PORT:+-p ${GLOBUS_GATEKEEPER_PORT}} \
             ${GLOBUS_GATEKEEPER_LOG:+-l "${GLOBUS_GATEKEEPER_LOG}"} \

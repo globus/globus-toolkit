@@ -1,5 +1,4 @@
 
-
 # 
 # Copyright 1999-2006 University of Chicago
 # 
@@ -16,19 +15,46 @@
 # limitations under the License.
 # 
 
+eval_path()
+{
+    _pathval="$1"
+    _old_pathval=""
+
+    while test "$_pathval" != "$_old_pathval"; do
+        _old_pathval="$_pathval"
+        eval "_pathval=\"$_pathval\""
+    done
+    echo "$_pathval"
+}
+
+prefix="${GLOBUS_LOCATION:-@prefix@}"
+exec_prefix='@exec_prefix@'
+
+test "$exec_prefix" = NONE && exec_prefix='$prefix'
+sbindir='@sbindir@'
+bindir='@bindir@'
+libdir='@libdir@'
+libexecdir='@libexecdir@'
+includedir='@includedir@'
+datarootdir='@datarootdir@'
+datadir='@datadir@'
+sysconfdir='@sysconfdir@'
+sharedstatedir='@sharedstatedir@'
+localstatedir='@localstatedir@'
+
 MP="@MP@"
 MP_INCLUDES="@MP_INCLUDES@"
 MP_LIBS="@MP_LIBS@"
 
 CC="@CC@"
 CPP="@CPP@"
-CPPFLAGS='@CPPFLAGS@'
-CFLAGS='@CFLAGS@'
+CPPFLAGS="`eval_path '@CPPFLAGS@'`"
+CFLAGS="`eval_path '@CFLAGS@'`"
 
 
-LDFLAGS='@LDFLAGS@'
-LIBS="@LIBS@"
-STATIC_LDFLAGS="@STATIC_LDFLAGS@" 
+LDFLAGS="`eval_path '@LDFLAGS@'`"
+LIBS="`eval_path '@LIBS@'`"
+STATIC_LDFLAGS="`eval_path '@STATIC_LDFLAGS@'`" 
 
 CXX="@CXX@"
 CXXCPP="@CXXCPP@"

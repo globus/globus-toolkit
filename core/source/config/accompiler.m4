@@ -861,15 +861,15 @@ LAC_PROG_CC_GNU([$lac_cv_CC $lac_CFLAGS],
 ],
 [])
 
-AC_CACHE_CHECK("C flags", lac_cv_CFLAGS, lac_cv_CFLAGS=$lac_CFLAGS)
-AC_CACHE_CHECK("C++ flags", lac_cv_CXXFLAGS, lac_cv_CXXFLAGS=$lac_CXXFLAGS)
-AC_CACHE_CHECK("linker flags", lac_cv_LDFLAGS, lac_cv_LDFLAGS=$lac_LDFLAGS)
-AC_CACHE_CHECK("required libraries", lac_cv_LIBS, lac_cv_LIBS=$lac_LIBS)
-AC_CACHE_CHECK("C Preprocessor", lac_cv_CPP, lac_cv_CPP="$lac_cv_CC -E")
-AC_CACHE_CHECK("C Preprocessor flags", lac_cv_CPPFLAGS,lac_cv_CPPFLAGS=$lac_CPPFLAGS)
-AC_CACHE_CHECK("C++ Preprocessor", lac_cv_CXXCPP, lac_cv_CXXCPP="$lac_cv_CXX -E")
-AC_CACHE_CHECK("F77 flags", lac_cv_F77FLAGS, lac_cv_F77FLAGS="$lac_F77FLAGS")
-AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
+AC_CACHE_CHECK([C flags], lac_cv_CFLAGS, lac_cv_CFLAGS=$lac_CFLAGS)
+AC_CACHE_CHECK([C++ flags], lac_cv_CXXFLAGS, lac_cv_CXXFLAGS=$lac_CXXFLAGS)
+AC_CACHE_CHECK([linker flags], lac_cv_LDFLAGS, lac_cv_LDFLAGS=$lac_LDFLAGS)
+AC_CACHE_CHECK([required libraries], lac_cv_LIBS, lac_cv_LIBS=$lac_LIBS)
+AC_CACHE_CHECK([C Preprocessor], lac_cv_CPP, lac_cv_CPP="$lac_cv_CC -E")
+AC_CACHE_CHECK([C Preprocessor flags], lac_cv_CPPFLAGS,lac_cv_CPPFLAGS=$lac_CPPFLAGS)
+AC_CACHE_CHECK([C++ Preprocessor], lac_cv_CXXCPP, lac_cv_CXXCPP="$lac_cv_CXX -E")
+AC_CACHE_CHECK([F77 flags], lac_cv_F77FLAGS, lac_cv_F77FLAGS="$lac_F77FLAGS")
+AC_CACHE_CHECK([F90 flags], lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 
 
 CC="$lac_cv_CC"

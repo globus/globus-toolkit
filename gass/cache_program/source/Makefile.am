@@ -63,20 +63,6 @@ EXTRA_DIST = globus-gass-cache.in \
 	     globus-gass-cache-destroy.in \
 	     version.h.in
 
-globus-gass-cache: globus-gass-cache.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-globus-gass-cache-destroy: globus-gass-cache-destroy.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-globus-gass-cache-util.pl: globus-gass-cache-util.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = \
-    globus-gass-cache \
-    globus-gass-cache-destroy \
-    globus-gass-cache-util.pl
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
 

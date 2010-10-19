@@ -11,7 +11,7 @@ Sources = \
 
 EXTRA_DIST = version.h.in
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gsi_authz_callout_error.h
 
 

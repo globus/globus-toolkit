@@ -14,4 +14,7 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
+        JobDescription.pm
+        globus-job-manager-service
+        globus-job-manager-script.pl
 )

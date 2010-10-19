@@ -28,19 +28,25 @@ done
 
 config=
 
-# test for local macros
-if test -d "./config"; then
-    config="$config -I ./config"
-fi
+# local macros
+config="$config -I ./config"
+
+# macros we install
+config="$config -I ./aclocal"
 
 # test to see if GPT macros are in a seperate location
-if test ! -f "$GLOBUS_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
+if test ! -f "$GLOBUS_LOCATION/share/gpt_autoconf_macros.m4"; then
     if test "x$GPT_LOCATION" = "x"; then
         echo "ERROR Globus Packaging Tools not found" >&2
         echo "ERROR either set GPT_LOCATION or install them in $GLOBUS_LOCATION" >&2
         exit 1
-    else
+    elif test -f "$GPT_LOCATION/share/globus/globus_aclocal/gpt_autoconf_macros.m4";  then
+	config="$config -I $GPT_LOCATION/share/globus/globus_aclocal"
+    elif test -f "$GPT_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
         config="$config -I $GPT_LOCATION/share/globus_aclocal"
+    else
+	echo "ERROR Can't find gpt_autoconf_macros.m4" 1>&2
+	exit 1
     fi
 else
     config="$config -I $GLOBUS_LOCATION/share/globus_aclocal"

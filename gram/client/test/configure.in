@@ -18,4 +18,8 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
+        globus-gram-client-run-tests.pl
+        globus-gram-client-two-phase-commit-test.pl
+        globus-gram-client-register-ping-test.pl
+        failed-job-two-phase-commit.pl
 )
