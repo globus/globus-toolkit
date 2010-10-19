@@ -15,21 +15,7 @@
 # limitations under the License.
 # 
 
-BEGIN
-{
-    if (exists $ENV{GPT_LOCATION})
-    {
-        push(@INC, "$ENV{GPT_LOCATION}/lib/perl");
-    }
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push(@INC, '@libdir@/perl');
-    }
-}
+@GLOBUS_PERL_INITIALIZER@
 
 use strict;
 use warnings;

@@ -31,16 +31,6 @@ test_DATA=$(Data)
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
 EXTRA_DIST = $(ScriptsIn) $(Data)
-CLEANFILES = $(Scripts)
-
-TESTS.pl: $(srcdir)/TESTS.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-globus-gram-client-tools-local-test.pl: $(srcdir)/globus-gram-client-tools-local-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-globus-gram-client-tools-remote-test.pl: $(srcdir)/globus-gram-client-tools-remote-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

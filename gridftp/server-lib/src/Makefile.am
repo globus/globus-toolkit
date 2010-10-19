@@ -13,7 +13,7 @@ Sources= \
     globus_gridftp_server_control_commands.c            \
     globus_xio_gssapi_ftp.c
 
-flavorinclude_HEADERS =                         \
+include_HEADERS =                         \
     globus_gridftp_server_control.h             \
     globus_xio_gssapi_ftp.h
 

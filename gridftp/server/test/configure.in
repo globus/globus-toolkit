@@ -22,4 +22,9 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
+        gfs_common.pl
+        globus-gridftp-be-gfork.pl
+        globus-gridftp-dyn-be.pl
+        globus-gridftp-gfork-fe.pl
+        globus-gridftp-gfork-mem.pl
 )

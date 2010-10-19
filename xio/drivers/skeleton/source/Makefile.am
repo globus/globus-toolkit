@@ -4,7 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = \
 	pkgdata 
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
     globus_xio_skeleton_driver.h
 
 INCLUDES = $(GPT_INCLUDES)

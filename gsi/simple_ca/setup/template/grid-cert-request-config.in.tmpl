@@ -8,7 +8,9 @@ if test -z "${GLOBUS_LOCATION}"; then
     exit 1
 fi
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
 
 secconfdir=${TRUSTED_CA_DIR-/etc/grid-security/certificates/}
 

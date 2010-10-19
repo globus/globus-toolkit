@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
+@GLOBUS_SCRIPT_INIITIALIZER@
+. ${libexecdir}/globus-script-initializer
 
 TEST=$1
 

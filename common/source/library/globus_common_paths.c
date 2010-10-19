@@ -32,6 +32,7 @@ CVS Information:
 
 #include "config.h"
 #include "globus_common.h"
+#include "globus_l_common_paths.h"
 
 #ifdef HAVE_STRING_H
 #include <string.h>
@@ -134,7 +135,7 @@ globus_location( char **   bufp )
 
     if (result != GLOBUS_SUCCESS)
     {
-        *bufp = globus_common_create_string("%s", GLOBUS_PREFIX);
+        *bufp = strdup(globus_l_common_path_lookup_table[0].path);
         if (! *bufp)
         {
             return GLOBUS_COMMON_PATH_ERROR_INSTANCE(_GCSL("malloc error"));
@@ -147,6 +148,97 @@ globus_location( char **   bufp )
     return result;
 }
 
+
+/**
+ * @ingroup globus_common
+ * 
+ * @param pathstring
+ *     A string containing any number of variable path references using the
+ *     syntax ${PATH-NAME} Supported path elements are
+ *     - prefix
+ *     - exec_prefix
+ *     - sbindir
+ *     - bindir
+ *     - libdir
+ *     - libexecdir
+ *     - includedir
+ *     - datarootdir
+ *     - datadir
+ *     - mandir
+ *     - sysconfdir
+ *     - sharedstatedir
+ *     - localstatedir
+ *     These strings are based on the parameters passed to this package
+ *     configure script, but modified so that if GLOBUS_LOCATION is
+ *     set in the environment, it is used instead of the configured path.
+ * @param bufp
+ *     Pointer to be set to a newly allocated string that has recursively
+ *     resolved all substitution paths.
+ */
+globus_result_t
+globus_eval_path(const char * pathstring, char **bufp)
+{
+    char * tmp;
+    char * newtmp;
+    char * location = getenv("GLOBUS_LOCATION");
+    int i;
+
+    if (location != NULL)
+    {
+        globus_l_common_path_lookup_table[0].path = location;
+    }
+
+    *bufp = NULL;
+
+    tmp = strdup(pathstring);
+    while (tmp != NULL && strchr(tmp, '$') != 0)
+    {
+        char * end;
+        if ((newtmp = strstr(tmp, "${")) != NULL)
+        {
+            *newtmp = 0;
+            newtmp = newtmp + 2;
+            end = strstr(newtmp, "}");
+
+            if (end == NULL)
+            {
+                free(tmp);
+                tmp = NULL;
+                break;
+            }
+            *end = 0;
+        }
+        for (i = 0; globus_l_common_path_lookup_table[i].name != NULL; i++)
+        {
+            if (strcmp(newtmp, globus_l_common_path_lookup_table[i].name) == 0)
+            {
+                newtmp = malloc(strlen(tmp) + strlen(globus_l_common_path_lookup_table[i].path) + strlen(end+1) + 1);
+                if (newtmp == NULL)
+                {
+                    free(tmp);
+                    tmp = NULL;
+                }
+                else
+                {
+                    sprintf(newtmp, "%s%s%s",
+                        tmp, globus_l_common_path_lookup_table[i].path, end+1);
+                    free(tmp);
+                    tmp = newtmp;
+                }
+                break;
+            }
+        } 
+    }
+    if (tmp != NULL)
+    {
+        *bufp = tmp;
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        return GLOBUS_COMMON_PATH_ERROR_INSTANCE(_GCSL("Can't resolve path"));
+    }
+}
 
 /*****************************************************************************
                                  help function

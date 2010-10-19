@@ -441,7 +441,6 @@ globus_gram_job_manager_config_init(
             goto out;
         }
     }
-
     /* Now initialize values from our environment */
     config->home = strdup(getenv("HOME"));
     if (config->home == NULL)
@@ -474,6 +473,18 @@ globus_gram_job_manager_config_init(
         config->target_globus_location = strdup(
                 config->globus_location);
         if (config->target_globus_location == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto out;
+        }
+    }
+    if (config->job_state_file_dir == NULL)
+    {
+        config->job_state_file_dir = globus_common_create_string(
+                "%s/tmp/gram_job_state/",
+                config->globus_location);
+        if (config->job_state_file_dir == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 

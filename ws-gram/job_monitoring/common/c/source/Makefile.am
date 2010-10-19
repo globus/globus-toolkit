@@ -19,7 +19,7 @@ CFLAGS += -DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\"
 
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
-flavorinclude_HEADERS = globus_scheduler_event_generator.h \
+include_HEADERS = globus_scheduler_event_generator.h \
 			globus_scheduler_event_generator_app.h
 
 # lib_LTLIBRARIES is an automake macro which contains

@@ -5,7 +5,7 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
-globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
+globusperldir = $(libdir)/perl/Globus
 globusperl_DATA = URL.pm
 
 Scripts= \
@@ -258,29 +258,6 @@ globus_ftp_client_plugin_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_read_all_test_SOURCES = globus_ftp_client_partial_read_all_test.c $(LibHeaders)
 globus_ftp_client_partial_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
-
-globus-ftp-client-caching-get-test.pl: $(srcdir)/globus-ftp-client-caching-get-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-ftp-client-get-test.pl: $(srcdir)/globus-ftp-client-get-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-ftp-client-many-server.pl: $(srcdir)/globus-ftp-client-many-server.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-ftp-client-run-backend-tests.pl: $(srcdir)/globus-ftp-client-run-backend-tests.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-ftp-client-transfer-test.pl: $(srcdir)/globus-ftp-client-transfer-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-ftp-client-put-test.pl: $(srcdir)/globus-ftp-client-put-test.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-ftp-client-run-tests.pl: $(srcdir)/globus-ftp-client-run-tests.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = globus-ftp-client-caching-get-test.pl  \
-             globus-ftp-client-get-test.pl \
-             globus-ftp-client-many-server.pl \
-	     globus-ftp-client-put-test.pl \
-             globus-ftp-client-run-backend-tests.pl \
-             globus-ftp-client-run-tests.pl \
-	     globus-ftp-client-transfer-test.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

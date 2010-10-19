@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre_top
 
 # Install perl module here:
 
-globustestingperldir = $(GLOBUS_LOCATION)/lib/perl/Globus/Testing
+globustestingperldir = $(libdir)/perl/Globus/Testing
 
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
@@ -32,19 +32,6 @@ EXTRA_DIST = Utilities.pm.in pkgdata/MyFilelists.pm \
 	global_security_descriptor.xml.in \
 	usercert.pem userkey.pem \
         testcred-env.sh.in testcred-setup.sh.in
-CLEANFILES = test-package test-toolkit testcred-env.sh testcred-setup.sh \
-                Utilities.pm
-
-test-package: $(srcdir)/test-package.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-test-toolkit: $(srcdir)/test-toolkit.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-testcred-env.sh: $(srcdir)/testcred-env.sh.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-testcred-setup.sh: $(srcdir)/testcred-setup.sh.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-Utilities.pm: $(srcdir)/Utilities.pm.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

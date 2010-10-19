@@ -37,18 +37,6 @@ $(man1data_DATA) $(man8data_DATA): $(MANUALS_SOURCE)
 	$(XSLTPROC) --stringparam version "`$$GLOBUS_LOCATION/bin/globus-version 2> /dev/null || echo`" --xinclude replace-version.xsl manual.xml
 endif
 
-grid-cert-info: grid-cert-info.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-grid-change-pass-phrase: grid-change-pass-phrase.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-grid-cert-request: grid-cert-request.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-grid-default-ca: grid-default-ca.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
 CLEANFILES = $(User_Scripts)
 
 BUILT_SOURCES = $(User_Scripts)

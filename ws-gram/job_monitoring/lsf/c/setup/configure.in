@@ -18,6 +18,7 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
+        setup-seg-lsf.pl
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	doxygen/Makefile

@@ -23,18 +23,7 @@ MANUALS_SOURCE = manual.xml \
         replace-version.xsl 
 
 EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man8data_DATA)
-
-grid-mapfile-add-entry: grid-mapfile-add-entry.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-grid-mapfile-delete-entry: grid-mapfile-delete-entry.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-grid-mapfile-check-consistency: grid-mapfile-check-consistency.in
-	$(REWRITE_SCRIPT_PREFIXES) -e s'|$(AT)PERL$(AT)|@PERL@|' < $< > $@
-
 INCLUDES =  -I$(top_srdir) $(GPT_INCLUDES) 
-
-BUILT_SOURCES = $(Admin_Scripts)
-CLEANFILES = $(Admin_Scripts)
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

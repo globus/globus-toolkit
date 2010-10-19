@@ -6,7 +6,7 @@ Sources = globus_error_openssl.h \
           globus_i_error_openssl.h \
           globus_i_error_openssl.c
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
           globus_error_openssl.h
 
 lib_LTLIBRARIES = libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).la

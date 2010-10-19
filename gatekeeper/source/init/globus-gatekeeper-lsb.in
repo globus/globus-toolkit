@@ -27,13 +27,17 @@
 #                    It is part of the Globus Toolkit(
 ### END INIT INFO
 
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
+
 GLOBUS_GATEKEEPER_CONFIG=${GLOBUS_GATEKEEPER_CONFIG:-@GATEKEEPER_CONFIGDIR@/@GATEKEEPER_CONFIGFILE@}
 test -f "${GLOBUS_GATEKEEPER_CONFIG}" && . "${GLOBUS_GATEKEEPER_CONFIG}"
-test -f ${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}/globus-gatekeeper || exit 0
+test -f ${sbindir}/globus-gatekeeper || exit 0
 
 . /lib/lsb/init-functions
 
-GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-@localstatedir@/run/globus-gatekeeper.pid}"
+GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
 GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 
 case "$1" in
@@ -46,7 +50,7 @@ case "$1" in
         fi
 
         start_daemon -p "${GLOBUS_GATEKEEPER_PIDFILE}" \
-            ${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}/globus-gatekeeper \
+            ${$sbindir}/globus-gatekeeper \
             -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
             ${GLOBUS_GATEKEEPER_PORT:+-p ${GLOBUS_GATEKEEPER_PORT}} \
             ${GLOBUS_GATEKEEPER_LOG:+-l "${GLOBUS_GATEKEEPER_LOG}"} \
@@ -66,7 +70,8 @@ case "$1" in
         exit $rc
         ;;
     stop)
-        killproc -p "${GLOBUS_GATEKEEPER_PIDFILE:-@localstatedir@/run/globus-gatekeeper.pid}" ${GLOBUS_LOCATION:-@sbindir@}${GLOBUS_LOCATION:+/sbin}/globus-gatekeeper
+        killproc -p "${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}" \
+            ${sbindir}/globus-gatekeeper
         rc=$?
         if [ $rc = 0 ]; then
             log_success_msg "Stopped globus-gatekeeper"

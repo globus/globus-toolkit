@@ -23,9 +23,10 @@
 # your environment before applying the new GLOBUS_LOCATION
 #
 
+@GLOBUS_SCRIPT_INITIALIZER@
 
 if [ -z "${GLOBUS_LOCATION}" ]; then
-    GLOBUS_LOCATION='@prefix@'
+    GLOBUS_LOCATION='$prefix'
 fi
 
 if [ -n "${GLOBUS_PATH}" ]; then
@@ -73,41 +74,41 @@ fi
 
 
 GLOBUS_PATH=${GLOBUS_LOCATION}
-PATH="${GLOBUS_LOCATION}/bin:${GLOBUS_LOCATION}/sbin:${PATH}";
+PATH="${bindir}:${sbindir}:${PATH}";
 
 if [ -n "${MANPATH}" ]; then
-    MANPATH="${GLOBUS_LOCATION}/man:${MANPATH}"
+    MANPATH="${datadir}/man:${MANPATH}"
 fi
 
 DELIM=
 if [ -n "${LD_LIBRARY_PATH}" ]; then
     DELIM=:
 fi
-LD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY_PATH}"
+LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
 
 DELIM=
 if [ -n "${DYLD_LIBRARY_PATH}" ]; then
     DELIM=:
 fi
-DYLD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${DYLD_LIBRARY_PATH}"
+DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
 
 if [ -z "${LIBPATH}" ]; then
     LIBPATH="/usr/lib:/lib"
 fi
-LIBPATH="${GLOBUS_LOCATION}/lib:${LIBPATH}"
+LIBPATH="${libdir}:${LIBPATH}"
 
 DELIM=
 if [ -n "${SHLIB_PATH}" ]; then
     DELIM=:
 fi
-SHLIB_PATH="${GLOBUS_LOCATION}/lib${DELIM}${SHLIB_PATH}"
+SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
 
-if [ -d $GLOBUS_LOCATION/lib/sasl ]; then
+if [ -d ${libdir}/sasl ]; then
     DELIM=
     if [ -n "${SASL_PATH}" ]; then
         DELIM=:
     fi
-    SASL_PATH="${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
+    SASL_PATH="${libdir}/sasl${DELIM}${SASL_PATH}"
 fi
 
 export GLOBUS_PATH PATH MANPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH LIBPATH SHLIB_PATH SASL_PATH
@@ -117,7 +118,7 @@ if [ -n "${LD_LIBRARYN32_PATH}" ]; then
     if [ "X${LD_LIBRARYN32_PATH}" != "X" ]; then
         DELIM=:
     fi
-    LD_LIBRARYN32_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARYN32_PATH}"
+    LD_LIBRARYN32_PATH="${libdir}${DELIM}${LD_LIBRARYN32_PATH}"
     export LD_LIBRARYN32_PATH
 fi
 
@@ -126,17 +127,15 @@ if [ -n "${LD_LIBRARY64_PATH}" ]; then
     if [ "X${LD_LIBRARY64_PATH}" != "X" ]; then
         DELIM=:
     fi
-    LD_LIBRARY64_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY64_PATH}"
+    LD_LIBRARY64_PATH="${libdir}${DELIM}${LD_LIBRARY64_PATH}"
     export LD_LIBRARY64_PATH
 fi
 
-if [ -d $GLOBUS_LOCATION/lib/perl ]; then
+if [ -d ${libdir}/perl ]; then
     DELIM=""
     if [ "X${PERL5LIB}" != "X" ]; then
         DELIM=:
     fi
-    PERL5LIB="${GLOBUS_LOCATION}/lib/perl${DELIM}${PERL5LIB}"
+    PERL5LIB="${libdir}/perl${DELIM}${PERL5LIB}"
     export PERL5LIB
 fi
-
-

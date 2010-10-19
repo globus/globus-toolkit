@@ -28,4 +28,7 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	version.h
+        globus-gass-cache
+        globus-gass-cache-destroy
+        globus-gass-cache-util.pl
 )

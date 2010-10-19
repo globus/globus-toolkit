@@ -54,24 +54,6 @@ MANUAL_SOURCE = globus-job-cancel-manual.xml \
                 globusrun-manual.xml \
                 manual.xml
 
-globus-job-cancel: globus-job-clean.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-job-clean: globus-job-clean.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-job-submit: globus-job-run.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-job-run: globus-job-run.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-job-status: globus-job-status.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-globus-job-get-output: globus-job-get-output.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-
-CLEANFILES=globus-job-cancel globus-job-clean \
-           globus-job-submit globus-job-run \
-           globus-job-status globus-job-get-output
-
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 

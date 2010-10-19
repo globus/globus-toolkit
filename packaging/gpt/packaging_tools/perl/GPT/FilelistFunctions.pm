@@ -274,17 +274,19 @@ sub flavor_install {
     # Assume all headers are flavored
     if ($f =~ m!/?include/!) {
       my $dir = $f;
-      $dir =~ s!/[^/]+\.h!!;
-      $dir =~ s!^/?include!include/$flavor!;
+      my $old_dir;
+      $dir =~ s!/[^/]+\.h$!!;
+      $old_dir = $dir;
+      $dir .= "/$flavor";
       mkinstalldir("$installdir/$dir");
-      $name =~ s!^/?include/!include/$flavor/!;
+      $name =~ s!^$old_dir!$dir!;
       my $result = `mv $installdir/$f $installdir/$name` 
         if -f "$installdir/$f";
     }
-    if ($f =~ m!lib/lib.+\.a!) {
+    if ($f =~ m!/lib[^/]+\.a!) {
       next if $f =~ m!$flavor\.a!;
       my $newf = $f;
-      $newf=~ s!(.+)\.a!$ {1}_$flavor\.a!;
+      $newf=~ s!\.a!_$flavor\.a!;
       my $result = `mv $installdir/$f $installdir/$newf`
         if -f "$installdir/$f";
     }

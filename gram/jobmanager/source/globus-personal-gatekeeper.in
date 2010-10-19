@@ -22,7 +22,10 @@ VERSION=@VERSION@
 DIRT_TIMESTAMP=1028570784
 DIRT_BRANCH_ID=23
 
-. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
+
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 short_usage="globus-personal-gatekeeper [-help] [-start] [-list] [-killall] ..."

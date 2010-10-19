@@ -1,4 +1,8 @@
 #Now using GT5 all target
+srcdir=@srcdir@
+CONFIG_SITE=@INSTALLER_ROOT@/config.site
+export CONFIG_SITE
+
 all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh @i18n@ prews-test globus-gsi-test done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
@@ -29,7 +33,7 @@ distclean: clean
 	rm -f Makefile config.status config.log
 
 # Functional group dependencies, expressed in bundles.
-common: gpt globus_core globus_common globus_common_setup
+common: gpt globus_core globus_common
 i18n: gpt common globus-internationalization
 prews: gridftp prewsgram
 prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 

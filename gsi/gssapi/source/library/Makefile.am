@@ -48,7 +48,7 @@ Sources_GSS_EXTENSIONS = \
 Sources_OPENSSL_INTERNALS = \
 	globus_ssl_locl.h
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
 	gssapi.h
 
 if USE_SYMBOL_LABELS

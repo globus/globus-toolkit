@@ -54,10 +54,5 @@ EXTRA_DIST = $(Data) \
         gridmap-test.pl \
         gridmap-tools-test.pl
 
-TESTS.pl: $(srcdir)/TESTS.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = TESTS.pl
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

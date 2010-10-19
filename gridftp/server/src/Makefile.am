@@ -58,7 +58,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
-flavorinclude_HEADERS = globus_gridftp_server.h \
+include_HEADERS = globus_gridftp_server.h \
 						globus_gridftp_server_embed.h
 
 # lib_LTLIBRARIES is an automake macro which contains

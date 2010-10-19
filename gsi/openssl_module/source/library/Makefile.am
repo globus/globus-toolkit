@@ -4,7 +4,7 @@ Sources= \
 	globus_openssl.c \
 	globus_openssl.h
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
 	globus_openssl.h
 
 lib_LTLIBRARIES = libglobus_openssl_$(GLOBUS_FLAVOR_NAME).la

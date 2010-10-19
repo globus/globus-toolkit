@@ -5,7 +5,6 @@
 BUNDLE globus-resource-management-server
 	globus_core
 	globus_common
-	globus_common_setup
         globus_callout
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
@@ -53,7 +52,6 @@ BUNDLE globus-resource-management-server
 BUNDLE globus-resource-management-sdk
 	globus_core
 	globus_common
-	globus_common_setup
         globus_callout
 	globus_openssl
 	globus_openssl_setup
@@ -86,7 +84,6 @@ BUNDLE globus-resource-management-sdk
 BUNDLE globus-resource-management-client
 	globus_core
 	globus_common
-	globus_common_setup
         globus_hostname_lookup
         globus_callout
 	globus_openssl
@@ -119,7 +116,6 @@ BUNDLE globus-resource-management-client
 BUNDLE globus-data-management-server
 	globus_core
 	globus_common
-	globus_common_setup
         globus_callout
 	globus_openssl
 	globus_openssl_setup
@@ -158,7 +154,6 @@ BUNDLE globus-data-management-server
 BUNDLE globus-data-management-sdk
 	globus_core
 	globus_common
-	globus_common_setup
         globus_callout
 	globus_openssl
 	globus_openssl_setup
@@ -188,7 +183,6 @@ BUNDLE globus-data-management-sdk
 BUNDLE globus-data-management-client
 	globus_core
 	globus_common
-	globus_common_setup
         globus_hostname_lookup
         globus_callout
 	globus_openssl
@@ -273,7 +267,6 @@ BUNDLE globus-gsi
 	globus_openssl
 	globus_openssl_setup
         globus_callout
-	globus_common_setup
 	globus_common
 	globus_core
 	gssapi_error
@@ -289,7 +282,6 @@ BUNDLE globus-rls-server THREADED
         globus_core
         globus_callout
         globus_common
-        globus_common_setup
         globus_openssl
 	globus_openssl_setup
         globus_user_env
@@ -330,7 +322,6 @@ BUNDLE gt2-unthreaded
 	globus_authz_null_callout
 	globus_callout
 	globus_common
-	globus_common_setup
 	globus_core
 	globus_ftp_client
 	globus_ftp_control
@@ -379,7 +370,6 @@ BUNDLE gt2-unthreaded
 BUNDLE gt2-threaded THREADED
 	globus_callout
 	globus_common
-	globus_common_setup
 	globus_core
         globus_ftp_client
         globus_ftp_control
@@ -413,7 +403,6 @@ BUNDLE gt2-threaded THREADED
 BUNDLE globus-simple-ca
 	globus_core
 	globus_common
-	globus_common_setup
 	globus_openssl
 	globus_openssl_setup
 	globus_icu4c
@@ -428,7 +417,6 @@ BUNDLE globus-common-libs
         globus_core
         globus_openssl
 	globus_openssl_setup
-        globus_common_setup
         globus_common
         globus_gsi_openssl_error
         globus_gsi_proxy_ssl
@@ -520,7 +508,6 @@ BUNDLE gt4-java-ws-core
 BUNDLE gt4-java-admin
         globus_core
         globus_common
-        globus_common_setup
         globus_java_container_admin_tools
         globus_java_container_admin_tools_setup
 

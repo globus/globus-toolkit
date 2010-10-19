@@ -86,9 +86,6 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
 
 Makefile: $(BUILT_SOURCES)
 
-globus-personal-gatekeeper: globus-personal-gatekeeper.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	perl scripts/create_rsl_documentation.pl < $< > $@
 rsl.xml: globus-gram-job-manager.rvf

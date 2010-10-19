@@ -18,6 +18,7 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
+        setup-globus-job-manager-condor.pl
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	doxygen/Doxyfile

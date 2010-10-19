@@ -109,6 +109,7 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	Makefile
         version.h
+        globus-update-certificate-dir
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 )

@@ -26,6 +26,7 @@ my $package_output = $top_dir . "/package-output";
 my $bin_output = $top_dir . "/bin-pkg-output";
 my $bundle_output = $top_dir . "/bundle-output";
 my $bin_bundle_output = $top_dir . "/bin-bundle-output";
+$ENV{CONFIG_SITE} = "$top_dir/fait_accompli/config.site" if not exists $ENV{CONFIG_SITE};
 
 # What do I need to clean up from old buids?
 my @cleanup_dirs = ('log-output', '$bundle_ouput/BUILD');

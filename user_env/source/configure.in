@@ -22,6 +22,8 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
+        globus-user-env.sh
+        globus-user-env.csh
 	doxygen/Makefile
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal

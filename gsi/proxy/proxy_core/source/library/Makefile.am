@@ -10,7 +10,7 @@ Sources= \
 	globus_gsi_proxy_constants.h \
 	globus_gsi_proxy_error.c 
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	globus_gsi_proxy.h \
 	globus_gsi_proxy_constants.h 
 

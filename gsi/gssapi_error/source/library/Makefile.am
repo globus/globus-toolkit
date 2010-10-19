@@ -6,7 +6,7 @@ Sources= \
 	globus_error_gssapi.h \
 	globus_i_error_gssapi.h
 
-flavorinclude_HEADERS = \
+include_HEADERS = \
 	globus_error_gssapi.h
 
 lib_LTLIBRARIES = libglobus_gssapi_error_$(GLOBUS_FLAVOR_NAME).la

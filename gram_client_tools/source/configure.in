@@ -47,4 +47,10 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	version.h
+        globus-job-cancel:globus-job-clean.in
+        globus-job-clean:globus-job-clean.in
+        globus-job-submit:globus-job-run.in
+        globus-job-run:globus-job-run.in
+        globus-job-status:globus-job-status.in
+        globus-job-get-output:globus-job-get-output.in
 )

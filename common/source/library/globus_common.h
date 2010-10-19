@@ -180,6 +180,9 @@ globus_common_i18n_get_string(
 globus_result_t
 globus_location (  char **   bufp );
 
+globus_result_t
+globus_eval_path( const char * pathstring, char ** bufp);
+
 /* returns value of GLOBUS_LOCATION in the deploy dir config file */
 globus_result_t
 globus_common_get_attribute_from_config_file( char *   deploy_path,

@@ -17,19 +17,5 @@ EXTRA_DIST = \
     setup-globus-gaa-authz-callout.pl.in \
     globus_gaa_authz_callout.dox
 
-CLEANFILES = \
-    setup-globus-gaa-authz-callout \
-    setup-globus-gaa-authz-callout-message \
-    setup-globus-gaa-authz-callout.pl
-
-setup-globus-gaa-authz-callout.pl: $(srcdir)/setup-globus-gaa-authz-callout.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-setup-globus-gaa-authz-callout: $(srcdir)/setup-globus-gaa-authz-callout.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-setup-globus-gaa-authz-callout-message: $(srcdir)/setup-globus-gaa-authz-callout-message.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

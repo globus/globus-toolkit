@@ -1,4 +1,6 @@
-. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
 
 X509_CERT_DIR=$exec_prefix/test/globus_test
 X509_USER_CERT=$X509_CERT_DIR/testcred.pem

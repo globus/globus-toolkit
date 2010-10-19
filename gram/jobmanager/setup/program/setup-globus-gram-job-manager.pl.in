@@ -15,26 +15,12 @@
 # limitations under the License.
 #
 
-BEGIN
-{
-    if (exists $ENV{GPT_LOCATION})
-    {
-        push(@INC, "$ENV{GPT_LOCATION}/lib/perl");
-    }
-
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push(@INC, '@libdir@/perl');
-    }
-}
+@GLOBUS_PERL_INITIALIZER@
 
 use Getopt::Long;
 use IO::File;
 use Globus::Core::Paths;
+use POSIX;
 require Grid::GPT::Setup;
 
 my $metadata =
@@ -258,35 +244,26 @@ EOF
 sub get_system_info
 {
     my ($hostname, $cpu, $manufacturer, $os_name, $os_version);
+    my @uname_data;
 
     print "Determining system information...\n";
     chomp($hostname = `${bindir}/globus-hostname`);
     ($cpu, $manufacturer) = (split(/-/, `${libexecdir}/config.guess`))[0,1];
-    $uname_cmd = &lookup_shell_command("GLOBUS_SH_UNAME");
 
-    chomp($os_name=`$uname_cmd -s`);
+    @uname_data = POSIX::uname();
+
+    $os_name = $uname_data[0];
+
     $os_version="";
 
     if($os_name eq "AIX")
     {
-       chomp($os_version = `$uname_cmd -v`);
-       $os_version .= ".";
+       $os_version = $uname_data[3] . ".";
     }
 
-    chomp($os_version .= `$uname_cmd -r`);
+    $os_version .= $uname_data[2];
 
     return ($hostname, $cpu, $manufacturer, $os_name, $os_version);
-}
-
-sub lookup_shell_command
-{
-    my ($cmdvar, $cmd);
-
-    $cmdvar = $_[0];
-
-    chomp($cmd = `${bindir}/globus-sh-exec -e echo \\\$$cmdvar`);
-
-    return $cmd;
 }
 
 sub usage
@@ -297,4 +274,3 @@ sub usage
     "          [--help|-h]\n";
     exit 1;
 }
-

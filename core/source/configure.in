@@ -4,18 +4,14 @@ AC_CONFIG_AUX_DIR(config)
 
 # checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
 if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
     export GPT_LOCATION
 fi
 
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
+GLOBUS_INITIALIZERS
 
 # save CC and CFLAGS, so AC_PROG_CC can detect and use a compiler
 # up to the point where we want to pick a compiler based on the
@@ -125,6 +121,7 @@ fi
 
 AC_OUTPUT(Makefile
 	scripts/Makefile
+        scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
 	aclocal/Makefile
 	aclocal/automake_config
 	config/Makefile
@@ -132,5 +129,6 @@ AC_OUTPUT(Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters
+	pkgdata/globus-core.pc
 	)
 

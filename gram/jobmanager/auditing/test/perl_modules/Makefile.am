@@ -14,12 +14,5 @@ pkgdata_DATA= \
 EXTRA_DIST = GatekeeperManager.pm Util.pm \
              ConfigurationManager.pm.in Uploader.pm.in
 
-BUILT_SOURCES = ConfigurationManager.pm Uploader.pm
-ConfigurationManager.pm: $(srcdir)/ConfigurationManager.pm.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-Uploader.pm: $(srcdir)/Uploader.pm.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = ConfigurationManager.pm Uploader.pm
 
 include $(top_srcdir)/globus_automake_post

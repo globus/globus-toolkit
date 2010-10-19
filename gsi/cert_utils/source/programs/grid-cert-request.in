@@ -39,7 +39,9 @@ printDirections ()
 
 
 
-. ${GLOBUS_LOCATION:-@libexecdir@}${GLOBUS_LOCATION:+/libexec}/globus-script-initializer
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
 
 globus_source ${libexecdir}/globus-sh-tools.sh
 

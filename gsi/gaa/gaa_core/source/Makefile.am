@@ -22,7 +22,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 EXTRA_DIST=
 
-flavorinclude_HEADERS= \
+include_HEADERS= \
 	gaa.h \
 	gaa_constants.h \
 	gaa_core.h

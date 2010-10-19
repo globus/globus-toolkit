@@ -10,10 +10,5 @@ setup_SCRIPTS = \
 
 EXTRA_DIST = fork.in find-fork-tools globus_gram_job_manager_fork.dox
 
-setup-globus-job-manager-fork.pl: $(srcdir)/setup-globus-job-manager-fork.pl.in
-	$(REWRITE_SCRIPT_PREFIXES) < $< > $@
-
-CLEANFILES = setup-globus-job-manager-fork.pl
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
