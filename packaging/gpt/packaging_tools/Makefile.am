@@ -1,5 +1,3 @@
-prefix=$(GPT_LOCATION)
-
 sbin_SCRIPTS = 	\
 	perl/scripts/gpt-build \
 	perl/scripts/gpt_build_config \
@@ -33,7 +31,7 @@ sbin_SCRIPTS = 	\
 
 gptdatadir = ${prefix}/etc/gpt
 
-gptdata_DATA = gpt_scripts_list
+gptdata_DATA = $(top_builddir)/gpt_scripts_list
 
 gptexecsharedir = ${prefix}/share/gpt
 
@@ -175,17 +173,17 @@ install-data-hook: install-localize hack-for-globus-core
 
 install-localize:
 	@echo "Localizing scripts to $(PERL)"
-	$(PERL) $(DESTDIR)$(sbindir)/gpt-config -perl=$(PERL) \
+	GPT_LOCATION=$(DESTDIR)$(prefix) $(PERL) $(DESTDIR)$(sbindir)/gpt-config -perl=$(PERL) \
 	-probe \
 	-ignore-errors
 
 install-pod2man:
 	@if test "X$(POD2MAN)" != "X"; then \
-		$(mkinstalldirs) $(DESTDIR)man/man1; \
+		$(mkinstalldirs) $(DESTDIR)$(mandir)/man1; \
 		list='$(sbin_SCRIPTS)'; for p in $$list; do \
 	  		script=`echo $$p | sed 's!perl/scripts/!!'`; \
-	  		echo "Generating $(DESTDIR)$(prefix)/man/man1/$$script.1"; \
-	  		$(POD2MAN) $$p > $(DESTDIR)$(prefix)/man/man1/$$script.1; \
+	  		echo "Generating $(DESTDIR)$(mandir)/man1/$$script.1"; \
+	  		$(POD2MAN) $$p > $(DESTDIR)$(mandir)/man1/$$script.1; \
 		done \
 	else \
 		echo "Skipping Man page installation"; \
@@ -205,7 +203,23 @@ hack-for-globus-core:
 		cd $$startdir; \
 	fi
 
-gpt_scripts_list: Makefile.am
+$(top_builddir)/gpt_scripts_list: Makefile.am
 	@echo "Creating script list"
 	@echo $(sbin_SCRIPTS) | sed 's!perl/scripts/!!g'> $(top_builddir)/gpt_scripts_list
 
+
+EXTRA_DIST = \
+    $(sbin_SCRIPTS) \
+    $(gptexecshare_SCRIPTS) \
+    $(gptmodules_DATA) \
+    $(v1modules_DATA) \
+    $(pkgmntmodules_DATA) \
+    $(filelistmodules_DATA) \
+    $(fileiomodules_DATA) \
+    $(flat1modules_DATA) \
+    $(xml1modules_DATA) \
+    $(amdir_DATA) \
+    $(pkg_conf_DATA) \
+    $(dtd_DATA) \
+    $(aclocal_DATA) \
+    $(libexec_SCRIPTS)

@@ -13,54 +13,15 @@ $VERSION     = 0.01;
 
 {
   my %masks = (
-               zlib => "zlib-1",
-               perlzlib => "Compress-Zlib",
-               perlzlibio => "IO-Zlib",
-               perltest => "Test-Simple",
-               perlpatch => "makepatch",
-               perltar => "Archive-Tar",
-               oldautoconf => "autoconf-2.13",
-               oldautomake => "automake-1.4",
-               oldlibtool => "libtool-1.3.5",
-               autoconf => "autoconf-2.5",
-               automake => "automake-1.7",
-               libtool => "libtool-1.5",
-               filespec => "File-Spec",
-               podparser => "PodParser",
-               md5 => "Digest-MD5",
                core => "globus_core",
                gpt => "packaging_tools",
             );
 
 my @buildorder = (
-             "zlib",
-             "perlzlib",
-             "perlzlibio",
-             "perltest",
-             "perlpatch",
-             "perltar",
-             "oldautoconf",
-             "oldlibtool",
-             "oldautomake",
-             "autoconf",
-             "libtool",
-             "automake",
-             "filespec",
-             "podparser",
-             "md5",
              "core",
              "gpt",
             );
 
-
-my @autotools =(
-             "oldautoconf",
-             "oldlibtool",
-             "oldautomake",
-             "autoconf",
-             "libtool",
-             "automake",
-               );
 
   sub get_key_list {
     return \@buildorder;
@@ -69,13 +30,6 @@ my @autotools =(
   sub get_mask {
     my $mask = shift;
     return $masks{$mask};
-  }
-
-  sub is_autotool {
-    my $name = shift;
-    my @scan = grep { $name eq $_ } @autotools;
-    return 1 if @scan;
-    return 0;
   }
 
 }
@@ -167,8 +121,6 @@ sub match_srcdirs {
       $me->{'srcdirs'}->{$k} = "$me->{'topdir'}/packaging_tools";
       next;
     }
-
-    next if is_autotool($k) and ! defined $needautotools;
 
    my $n = get_mask($k);
 
