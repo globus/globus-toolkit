@@ -41,16 +41,7 @@ AC_SUBST(POD2MAN)
 
 # checking for the GPT_LOCATION
 
-if test "x$GPT_LOCATION" = "x"; then
-    # checking for the GLOBUS_LOCATION
-
-    if test "x$GLOBUS_LOCATION" = "x"; then
-        echo "ERROR Please specify GLOBUS_LOCATION or GPT_LOCATION" >&2
-        exit 1
-    else
-        GPT_LOCATION=$GLOBUS_LOCATION
-    fi
-fi
+AC_PREFIX_DEFAULT(${GPT_LOCATION:-/usr/local})
 
 AC_PATH_PROGS(TAR, gtar tar)
 AC_PATH_PROGS(GUNZIP, gunzip)
