@@ -1,6 +1,6 @@
 include $(top_srcdir)/globus_automake_pre
 
-EXTRA_DIST= globus-gatekeeper-nolsb.in globus-gatekeeper-lsb.in
+EXTRA_DIST= globus-gatekeeper.in globus-gatekeeper-lsb.in
 
 gatekeeperinitdir = ${sysconfdir}/init.d
 

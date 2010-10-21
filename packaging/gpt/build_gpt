@@ -40,16 +40,42 @@ $perl_location = DistGPT::find_perl(perl_location => $perl_location,
 die "ERROR: Can't find perl >= 5.005. Use -with-perl=<location> flag\n" 
   if ! defined $perl_location;
 
+# Check prerequisite perl modules
+my %prereqs = (
+    'Archive::Tar' => [0, 22],
+    'Compress::Zlib' => [1, 21],
+    'Digest::MD5' => [2, 20],
+    'File::Spec' => [0, 8],
+    'IO::Zlib' => [1, 1],
+    'Pod::Parser' => [1, 18],
+    'Test::Simple' => [0, 47]);
 
-my $zlibdownflag = "-downgrade";
+my $prereq_error = '';
+for my $pkg (keys %prereqs)
+{
+    my $installed_version = eval "require $pkg; return \$${pkg}::VERSION";
+    my ($prereq_major, $prereq_minor) = @{$prereqs{$pkg}};
+    my ($installed_major, $installed_minor) = split(/\./, $installed_version);
+
+    if ((($installed_major || 0) < $prereq_major) ||
+        ((($installed_major || 0) == $prereq_major) && 
+         (($installed_minor || 0) < $prereq_minor)))
+    {
+        if (defined($installed_major))
+        {
+            $prereq_error .= "Found too-old version of $pkg ($installed_major.$installed_minor).\nVersion $prereq_major.$prereq_minor or greater is required\n";
+        }
+        else
+        {
+            $prereq_error .= "Prerequisite package $pkg version $prereq_major.$prereq_minor not found.";
+        }
+    }
+}
+die $prereq_error if ($prereq_error ne '');
+
 my $result = DistGPT::find_perl(perl_location => $perl_location, 
-                                    perl_version => '5.6.1',
-                                   topdir => $topdir);
-
-$zlibdownflag = "" if ! defined $result;
-
-
-
+                                perl_version => '5.6.1',
+                                topdir => $topdir);
 
 if (defined $man) {
   my $podcommand = $perl_location;
@@ -60,23 +86,8 @@ if (defined $man) {
 
 print_version() if $version;
 
-my @testdirs  = (
-                 'perlzlib',
-                 'perlzlibio',
-                 'perltar',
-                 'filespec',
-                 'md5',
-                );
 
 my %builddirections = (
-                       'perltest' => 'perl',
-                       'perlpatch' => 'perl',
-                       'perltar' => 'perl',
-                       'perlzlib' => 'compress',
-                       'perlzlibio' => 'perl',
-                       'filespec' => 'perl',
-                       'podparser' => 'perl',
-                       'md5' => 'perl',
                        'gpt' => 'gpt',
                       );
 
@@ -89,49 +100,16 @@ $shutup = "" if defined $verbose;
 
 my %commands = (
                 gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; unset CONFIG_SITE ; \\
-./configure --with-perl=$perl_location --datadir='$gpt_location/share' --libexecdir='\${exec_prefix}/lib/globus'", 
+./configure --with-perl=$perl_location --datadir='$gpt_location/share' --libexecdir='\${exec_prefix}/lib/globus' --mandir='\${prefix}/share/man'", 
                         "make", 
                         "make install",
                         "make install-man",
                        ],
-                 perl => ["unset LANG; \\\
-PERL5LIB=$gpt_location/lib/perl:$ENV{'PERL5LIB'}; export PERL5LIB; \\\
-$perl_location Makefile.PL \\\
-INSTALLDIRS=perl LIB=$gpt_location/lib/perl \\\
-INSTALLSCRIPT=$gpt_location/sbin INSTALLMAN1DIR=$gpt_location/man/man1 \\\
-INSTALLMAN3DIR=$gpt_location/man/man3",
-                      'make', 
-                      'make install',
-                     ],             ,
-                compress => ["if test -f Zlib.c; then \
-echo 'removing Zlib.c'; \
-rm Zlib.c; \
-fi",
-			  "unset LANG; \\\
-$perl_location Makefile.PL $zlibdownflag \\\
-INSTALLDIRS=perl LIB=$gpt_location/lib/perl \\\
-INSTALLSCRIPT=$gpt_location/sbin \\\
-INSTALLMAN1DIR=$gpt_location/man/man1 \\\
-INSTALLMAN3DIR=$gpt_location/man/man3 $shutup",
-			  "unset LANG; \\\
-$perl_location Makefile.PL \\\
-INSTALLDIRS=perl LIB=$gpt_location/lib/perl \\\
-INSTALLSCRIPT=$gpt_location/sbin \\\
-INSTALLMAN1DIR=$gpt_location/man/man1 \\\
-INSTALLMAN3DIR=$gpt_location/man/man3 $shutup",
-                         "make $shutup", 
-                         "make install $shutup"
-                        ]
+                
                );
 my %boot = (
              gpt => "./bootstrap",
            );
-
-if (! -d "./support") {
-  my $result = system("./setup_gpt_dist");
-}
-
-
 
 require PkgMngmt::Inform;
 
@@ -157,20 +135,6 @@ for my $s  (@{ $dist->get_keys() }) {
 
   my $dir = $dist->{'srcdirs'}->{$s};
 
-  #
-  # we only want to build File::Spec if a version >= 0.8 doesn't already exist on the
-  # system.
-  #
-  
-  if ($s eq 'filespec')
-    {
-      eval { require File::Spec };
-      if(($File::Spec::VERSION || 0) >= 0.8)
-        {
-          next;
-        }
-    }
-
   my $instructions = $builddirections{$s};
   
   next if $s eq 'perltest' and ! defined $test;
@@ -185,13 +149,6 @@ for my $s  (@{ $dist->get_keys() }) {
       action($i, $dir);
     }
   }
-
-  next if ! defined $test;
-  next if ! grep { $_ eq $s } @testdirs;
-
-  $log->announce("testing $dir");
-  action("PERL5LIB=$gpt_location/lib/perl:$ENV{'PERL5LIB'}; export PERL5LIB; make test", $dir, 1);
-
 }
 
 sub action {
