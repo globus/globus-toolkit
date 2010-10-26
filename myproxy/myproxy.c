@@ -410,7 +410,7 @@ static int get_connected_myproxy_host_socket(char *hostlist, int port) {
 
     if (connected) { /* Rewrite hostlist to actual (single) connected host */
         strcpy(hostlist,tok);
-        myproxy_debug("Successfully2 connected to %s:%d\n", hostlist, spec_port);
+        myproxy_debug("Successfully connected to %s:%d\n", hostlist, spec_port);
     }
     if (pshost) free(pshost);
 
@@ -664,41 +664,47 @@ myproxy_bootstrap_client(myproxy_socket_attrs_t *socket_attrs,
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        if (bootstrap_if_no_cert_dir) {
-            if (strstr(verror_get_string(), "CRL") != NULL) {
-                myproxy_log("CRL error detected.  Attempting to recover.");
-                switch (myproxy_clean_crls()) {
-                case -1:
-                    verror_print_error(stderr);
-                case 0:
+        if (bootstrap_if_no_cert_dir &&
+            strstr(verror_get_string(), "CRL") != NULL) {
+            myproxy_log("CRL error detected.  Attempting to recover.");
+            switch (myproxy_clean_crls()) {
+            case -1:
+                verror_print_error(stderr);
+            case 0:
+                goto cleanup;
+            }
+            verror_clear();
+        } else if (bootstrap_if_no_cert_dir &&
+                   strstr(verror_get_string(),
+                          "Can't get the local trusted CA certificate") != NULL) {
+            if (bootstrap_even_if_cert_dir_exists) {
+                if (myproxy_bootstrap_trust(socket_attrs) < 0) {
                     goto cleanup;
                 }
                 verror_clear();
-            } else if (strstr(verror_get_string(),
-                              "Can't get the local trusted CA certificate") != NULL) {
-                if (bootstrap_even_if_cert_dir_exists) {
-                    if (myproxy_bootstrap_trust(socket_attrs) < 0) {
-                        goto cleanup;
-                    }
-                    verror_clear();
-                } else {
-                    verror_put_string("The CA that signed the myproxy-server's certificate is untrusted.");
-                    verror_put_string("If you want to trust the CA, re-run with the -b option.");
-                    goto cleanup;
-                }
             } else {
+                verror_put_string("The CA that signed the myproxy-server's certificate is untrusted.");
+                verror_put_string("If you want to trust the CA, re-run with the -b option.");
                 goto cleanup;
             }
-            /* Try again after recovery attempt... */
-            if (myproxy_init_client(socket_attrs) < 0) {
-                verror_print_error(stderr);
-                goto cleanup;
-            }
-            GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
-            if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-                verror_print_error(stderr);
-                goto cleanup;
-            }
+        } else if (GSI_SOCKET_check_creds(socket_attrs->gsi_socket)
+                   == GSI_SOCKET_SUCCESS) {
+            /* If we tried with credentials and failed, then
+               try again with anonymous authentication. */
+            myproxy_debug("%s", verror_get_string());
+            myproxy_debug("Certificate authentication error. Trying anonymous.");
+            verror_clear();
+            GSI_SOCKET_use_creds(socket_attrs->gsi_socket, "/dev/null");
+        } else {
+            goto cleanup; /* can't recover, so don't re-try */
+        }
+        /* Try again after recovery attempt... */
+        if (myproxy_init_client(socket_attrs) < 0) {
+            goto cleanup;
+        }
+        GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
+        if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+            goto cleanup;
         }
     }
 
