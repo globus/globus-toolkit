@@ -129,6 +129,12 @@ main(int argc, char *argv[])
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
+    if (!outputfile && !no_credentials) {
+	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
+						GLOBUS_PROXY_FILE_OUTPUT);
+    }
+
     /* Connect to server and authenticate.
        Bootstrap trust roots as needed. */
     if (myproxy_bootstrap_client(socket_attrs,
@@ -136,12 +142,6 @@ main(int argc, char *argv[])
                                  bootstrap) < 0) {
         verror_print_error(stderr);
         goto cleanup;
-    }
-
-    if (!outputfile && !no_credentials) {
-	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
-	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
-						GLOBUS_PROXY_FILE_OUTPUT);
     }
 
     if (!use_empty_passwd) {
