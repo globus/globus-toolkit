@@ -5,6 +5,12 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.3 XX Xxx 2010
+  - if myproxy-logon GSI mutual authentication with the myproxy-server
+    fails, try again with client-side anonymous authentication,
+    in case the client-side GSI credentials are unacceptable to the
+    myproxy-server (for example, signed by an untrusted CA), but the
+    myproxy-server would accept an anonymous client
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7103)
   - fix configure checks for globus_usage_stats_send,
     globus_usage_stats_send_array, and
     globus_gsi_proxy_handle_set_extensions when installing without
