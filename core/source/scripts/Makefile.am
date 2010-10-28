@@ -1,6 +1,7 @@
 include $(top_srcdir)/aclocal/automake_targets
 
-libexec_SCRIPTS = \
+corescriptsdir=${exec_prefix}/lib/globus
+corescripts_SCRIPTS = \
 	globus-build-env-$(GLOBUS_FLAVOR_NAME).sh \
 	globus-bootstrap.sh \
 	gpt_2pkg
