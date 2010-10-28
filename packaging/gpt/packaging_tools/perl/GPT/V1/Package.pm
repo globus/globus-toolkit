@@ -427,8 +427,9 @@ sub convert_metadata {
 	    $converted->{$n} = $self->{$n};
             next if ! defined $converted->{$n};
 	    if ($n eq 'pkg_libs') {
-	      $converted->{$n} =~ s!(-l\w+)\s+!$ {1}_$flavor !g;
-	      $converted->{$n} =~ s!(-l\w+)$!$ {1}_$flavor!;
+	      #we're no longer flavoring library names
+	      #$converted->{$n} =~ s!(-l\w+)\s+!$ {1}_$flavor !g;
+	      #$converted->{$n} =~ s!(-l\w+)$!$ {1}_$flavor!;
 	    }
 	  }
 	}
