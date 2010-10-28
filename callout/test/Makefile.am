@@ -25,15 +25,15 @@ callout_test_LDFLAGS = $(GPT_LDFLAGS)
 callout_chain_test_SOURCES = callout_chain_test.c
 callout_chain_test_LDFLAGS = $(GPT_LDFLAGS)
 
-test_LTLIBRARIES = libtest_$(GLOBUS_FLAVOR_NAME).la \
-                   libchaina_test_$(GLOBUS_FLAVOR_NAME).la \
-                   libchainb_test_$(GLOBUS_FLAVOR_NAME).la \
-                   libchainc_test_$(GLOBUS_FLAVOR_NAME).la
+test_LTLIBRARIES = libtest.la \
+                   libchaina_test.la \
+                   libchainb_test.la \
+                   libchainc_test.la
 
-libtest___GLOBUS_FLAVOR_NAME__la_SOURCES = libtest.c
-libchaina_test___GLOBUS_FLAVOR_NAME__la_SOURCES = libchaina_test.c
-libchainb_test___GLOBUS_FLAVOR_NAME__la_SOURCES = libchainb_test.c
-libchainc_test___GLOBUS_FLAVOR_NAME__la_SOURCES = libchainc_test.c
+libtest_la_SOURCES = libtest.c
+libchaina_test_la_SOURCES = libchaina_test.c
+libchainb_test_la_SOURCES = libchainb_test.c
+libchainc_test_la_SOURCES = libchainc_test.c
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -42,19 +42,19 @@ Client_Sources = \
 
 
 
-lib_LTLIBRARIES = libgridftp_server_info_client_types_$(GLOBUS_FLAVOR_NAME).la \
-                  libgridftp_server_info_client_client_bindings_$(GLOBUS_FLAVOR_NAME).la \
+lib_LTLIBRARIES = libgridftp_server_info_client_types.la \
+                  libgridftp_server_info_client_client_bindings.la \
                   $(NULL)
 
-nodist_libgridftp_server_info_client_types___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Types_Sources)
-libgridftp_server_info_client_types___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
-libgridftp_server_info_client_types___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+nodist_libgridftp_server_info_client_types_la_SOURCES = $(Types_Sources)
+libgridftp_server_info_client_types_la_LIBADD = @GPT_LIB_LINKS@
+libgridftp_server_info_client_types_la_LDFLAGS = @GPT_LDFLAGS@
 
 
 
-nodist_libgridftp_server_info_client_client_bindings___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Client_Sources)
-libgridftp_server_info_client_client_bindings___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
-libgridftp_server_info_client_client_bindings___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+nodist_libgridftp_server_info_client_client_bindings_la_SOURCES = $(Client_Sources)
+libgridftp_server_info_client_client_bindings_la_LIBADD = @GPT_LIB_LINKS@
+libgridftp_server_info_client_client_bindings_la_LDFLAGS = @GPT_LDFLAGS@
 
 
 nodist_gridftp_server_info_clientinclude_HEADERS = \

@@ -7,14 +7,14 @@ SUBDIRS= pkgdata doxygen scripts
 validationdir = $(datadir)/$(PACKAGE)
 
 # Where targets are installed
-noinst_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
+noinst_LTLIBRARIES = libglobus_gram_job_manager.la
 libexec_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
 
 bin_SCRIPTS = globus-personal-gatekeeper
 validation_DATA = globus-gram-job-manager.rvf
 
 # Mapping of source files to libraries and executables
-libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_gram_job_manager_la_SOURCES = \
 	globus_gram_job_manager.h \
         globus_gram_job_manager_config.c \
         globus_gram_job_manager.c \
@@ -45,12 +45,12 @@ INCLUDES = $(GPT_INCLUDES) $(XML_CPPFLAGS)
 
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
-	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la \
+	./libglobus_gram_job_manager.la \
         $(GPT_PGM_LINKS) $(XML_LIBS)
 
 globus_gram_streamer_LDFLAGS = $(GPT_LDFLAGS)
 globus_gram_streamer_LDADD = \
-	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la -lglobus_gass_transfer_$(GLOBUS_FLAVOR_NAME) $(GPT_PGM_LINKS) $(XML_LIBS)
+	./libglobus_gram_job_manager.la -lglobus_gass_transfer $(GPT_PGM_LINKS) $(XML_LIBS)
 
 man1datadir=$(mandir)/man1
 man1data_DATA = globus-personal-gatekeeper.1

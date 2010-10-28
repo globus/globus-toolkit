@@ -27,13 +27,13 @@ include_HEADERS= \
 	gaa_constants.h \
 	gaa_core.h
 
-lib_LTLIBRARIES = libglobus_gaa_core_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gaa_core.la
 
-libglobus_gaa_core___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gaa_core_la_SOURCES = $(Sources)
 
-libglobus_gaa_core___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gaa_core_la_LDFLAGS = $(GPT_LDFLAGS)
 
-libglobus_gaa_core___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gaa_core_la_LIBADD = $(GPT_LIB_LINKS)
 
 
 include $(top_srcdir)/globus_automake_post

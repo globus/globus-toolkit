@@ -14,13 +14,13 @@ INCLUDES = $(GPT_INCLUDES)
 include_HEADERS= \
 	gaa_gss_generic.h
 
-lib_LTLIBRARIES = libglobus_gaa_gss_generic_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gaa_gss_generic.la
 
-libglobus_gaa_gss_generic___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gaa_gss_generic_la_SOURCES = $(Sources)
 
-libglobus_gaa_gss_generic___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gaa_gss_generic_la_LDFLAGS = $(GPT_LDFLAGS)
 
-libglobus_gaa_gss_generic___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gaa_gss_generic_la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST=
 

@@ -40,15 +40,15 @@ flavorinclude_HEADERS=			\
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
 lib_LTLIBRARIES = 				\
-	libglobus_url_sync_$(GLOBUS_FLAVOR_NAME).la
+	libglobus_url_sync.la
 
 # bin_PROGRAMS is an automake macros which contains a list of
 # binaries to be installed in $prefix/bin
 bin_PROGRAMS =
 
-libglobus_url_sync___GLOBUS_FLAVOR_NAME__la_LDFLAGS	= @GPT_LDFLAGS@
-libglobus_url_sync___GLOBUS_FLAVOR_NAME__la_LIBADD	= @GPT_LIB_LINKS@
-libglobus_url_sync___GLOBUS_FLAVOR_NAME__la_SOURCES	= $(Sources)
+libglobus_url_sync_la_LDFLAGS	= @GPT_LDFLAGS@
+libglobus_url_sync_la_LIBADD	= @GPT_LIB_LINKS@
+libglobus_url_sync_la_SOURCES	= $(Sources)
 
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.

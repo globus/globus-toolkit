@@ -26,13 +26,13 @@ EXTRA_DIST=
 include_HEADERS= \
 	gaa_plugin.h
 
-lib_LTLIBRARIES = libglobus_gaa_plugin_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gaa_plugin.la
 
-libglobus_gaa_plugin___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gaa_plugin_la_SOURCES = $(Sources)
 
-libglobus_gaa_plugin___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gaa_plugin_la_LDFLAGS = $(GPT_LDFLAGS)
 
-libglobus_gaa_plugin___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gaa_plugin_la_LIBADD = $(GPT_LIB_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

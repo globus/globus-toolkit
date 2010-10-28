@@ -17,13 +17,13 @@ INCLUDES = $(GPT_INCLUDES)
 
 flavorinclude_HEADERS=globus_gram_myjob.h
 
-lib_LTLIBRARIES = libglobus_gram_myjob_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gram_myjob.la
 
-libglobus_gram_myjob___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gram_myjob_la_SOURCES = $(Sources)
 
-libglobus_gram_myjob___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gram_myjob_la_LDFLAGS = $(GPT_LDFLAGS)
 
-libglobus_gram_myjob___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gram_myjob_la_LIBADD = $(GPT_LIB_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

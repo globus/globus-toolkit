@@ -19,17 +19,17 @@ ServiceSources = \
 
 # This is the version of the service implementation which will be dynamic
 # loaded at runtime by the service container
-GridFTPServerInfoServicelib_LTLIBRARIES = libGridFTPServerInfoService_$(GLOBUS_FLAVOR_NAME).la
+GridFTPServerInfoServicelib_LTLIBRARIES = libGridFTPServerInfoService.la
 
 
-nodist_libGridFTPServerInfoService___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+nodist_libGridFTPServerInfoService_la_SOURCES = \
         $(built_ServiceSources)
-libGridFTPServerInfoService___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libGridFTPServerInfoService_la_SOURCES = \
         $(ServiceSources)
 
-libGridFTPServerInfoService___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-        ../libgridftp_server_info_types_$(GLOBUS_FLAVOR_NAME).la  @GPT_LIB_LINKS@ 
+libGridFTPServerInfoService_la_LIBADD = \
+        ../libgridftp_server_info_types.la  @GPT_LIB_LINKS@ 
 
-libGridFTPServerInfoService___GLOBUS_FLAVOR_NAME__la_LDFLAGS =  @GPT_LDFLAGS@  -rpath $(GridFTPServerInfoServicelibdir)
+libGridFTPServerInfoService_la_LDFLAGS =  @GPT_LDFLAGS@  -rpath $(GridFTPServerInfoServicelibdir)
 
 include $(top_srcdir)/globus_automake_post

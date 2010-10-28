@@ -16,14 +16,14 @@ Sources= \
 INCLUDES = $(GPT_INCLUDES)
 LDFLAGS =  -L $(GLOBUS_LOCATION)/lib/globus_service_modules/wsrf/services
 
-lib_LTLIBRARIES = libgridftp_admin_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libgridftp_admin.la
 
-libgridftp_admin___GLOBUS_FLAVOR_NAME__la_CFLAGS = $(GPT_CFLAGS)
+libgridftp_admin_la_CFLAGS = $(GPT_CFLAGS)
 
-libgridftp_admin___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libgridftp_admin_la_LIBADD = \
 	@GPT_LIB_LINKS@
-libgridftp_admin___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libgridftp_admin___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libgridftp_admin_la_SOURCES = $(Sources)
+libgridftp_admin_la_LDFLAGS = \
  -L $(GLOBUS_LOCATION)/lib/globus_service_modules/wsrf/services \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 

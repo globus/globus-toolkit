@@ -12,13 +12,13 @@ flavorinclude_HEADERS = \
 
 INCLUDES = $(GPT_INCLUDES) -I $(LIBZ_PATH)/include
 
-lib_LTLIBRARIES = libglobus_xio_blockz_driver_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_xio_blockz_driver.la
 
-libglobus_xio_blockz_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_xio_blockz_driver_la_LIBADD = \
 	@GPT_LIB_LINKS@ $(LIBZ_PATH)/lib/liblzo2.la
-libglobus_xio_blockz_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_xio_blockz_driver_la_SOURCES = \
 	globus_xio_blockz.c
-libglobus_xio_blockz_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_xio_blockz_driver_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib -rpath $(LIBZ_PATH)/lib
 
 

@@ -45,12 +45,12 @@ Types_Sources = \
 
 
 
-lib_LTLIBRARIES = libgridftp_server_info_types_$(GLOBUS_FLAVOR_NAME).la \
+lib_LTLIBRARIES = libgridftp_server_info_types.la \
                   $(NULL)
 
-nodist_libgridftp_server_info_types___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Types_Sources)
-libgridftp_server_info_types___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
-libgridftp_server_info_types___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+nodist_libgridftp_server_info_types_la_SOURCES = $(Types_Sources)
+libgridftp_server_info_types_la_LIBADD = @GPT_LIB_LINKS@
+libgridftp_server_info_types_la_LDFLAGS = @GPT_LDFLAGS@
 
 
 

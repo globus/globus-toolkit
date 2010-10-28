@@ -17,14 +17,14 @@ include_HEADERS =                         \
     globus_gridftp_server_control.h             \
     globus_xio_gssapi_ftp.h
 
-lib_LTLIBRARIES = libglobus_gridftp_server_control_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gridftp_server_control.la
 
 INCLUDES = $(GPT_INCLUDES)
 
-libglobus_gridftp_server_control___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources) 
-libglobus_gridftp_server_control___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_gridftp_server_control_la_SOURCES = $(Sources) 
+libglobus_gridftp_server_control_la_LDFLAGS = \
     $(GPT_LDFLAGS)
-libglobus_gridftp_server_control___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gridftp_server_control_la_LIBADD = \
 	$(GPT_LIB_LINKS)
 
 EXTRA_DIST = \

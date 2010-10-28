@@ -8,13 +8,13 @@ Sources = globus_gfs_acl_example.c
 
 INCLUDES = $(GPT_INCLUDES)
 
-lib_LTLIBRARIES = libglobus_gridftp_server_acl_example_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gridftp_server_acl_example.la
 
-libglobus_gridftp_server_acl_example___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gridftp_server_acl_example_la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_gridftp_server_acl_example___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_gridftp_server_acl_example_la_SOURCES = \
 	$(Sources)
-libglobus_gridftp_server_acl_example___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_gridftp_server_acl_example_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
 EXTRA_DIST = version.h.in

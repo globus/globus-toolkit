@@ -9,13 +9,13 @@ INCLUDES = $(GPT_INCLUDES)
 
 EXTRA_DIST = 
 
-lib_LTLIBRARIES = libglobus_gram_job_manager_callout_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gram_job_manager_callout.la
 
-libglobus_gram_job_manager_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gram_job_manager_callout_la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_gram_job_manager_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_gram_job_manager_callout_la_SOURCES = \
 	globus_gram_jobmanager_callout.c
-libglobus_gram_job_manager_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_gram_job_manager_callout_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
 include $(top_srcdir)/globus_automake_post

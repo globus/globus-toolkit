@@ -43,11 +43,11 @@ globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
 	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl -header \
 		$(srcdir)/globus-gram-protocol-constants.sh
 
-lib_LTLIBRARIES = libglobus_gram_protocol_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gram_protocol.la
 
-libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gram_protocol_la_SOURCES = $(Sources)
+libglobus_gram_protocol_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gram_protocol_la_LIBADD = $(GPT_LIB_LINKS)
 
 Makefile: $(BUILT_SOURCES)
 
