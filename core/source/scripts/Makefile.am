@@ -8,4 +8,5 @@ corescripts_SCRIPTS = \
 
 EXTRA_DIST = \
 	globus-build-env.sh.in \
-	globus-bootstrap.sh
+	globus-bootstrap.sh \
+	gpt_2pkg
