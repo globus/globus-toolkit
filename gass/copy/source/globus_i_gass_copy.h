@@ -254,6 +254,10 @@ struct globus_gass_copy_state_s
 
 };
 
+globus_result_t
+globus_i_gass_copy_state_new(
+    globus_gass_copy_handle_t *handle);
+
 EXTERN_C_END
 
 #endif /*GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H */

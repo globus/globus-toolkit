@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "globus_gass_copy.h"
+#include "globus_i_gass_copy.h"
 #include "openssl/md5.h"
+
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
@@ -57,7 +58,8 @@ typedef struct
     globus_gass_copy_attr_t *          attr;
     globus_gass_copy_glob_entry_cb_t   entry_cb;
     void *                             entry_user_arg;
-    
+    globus_gass_copy_callback_t        op_cb;
+    void *                             op_cb_arg;
 } globus_l_gass_copy_glob_info_t; 
 
 static
@@ -202,19 +204,21 @@ globus_gass_copy_glob_expand_url(
         {
             result = globus_gass_copy_stat(
                 handle, info->url, attr, stat_info);
-            
-            info->entry_cb(
-                info->url,
-                stat_info,
-                info->entry_user_arg);
-                
-            if(stat_info->symlink_target)
+            if(result == GLOBUS_SUCCESS)
             {
-                globus_free(stat_info->symlink_target);
-            }
-            if(stat_info->unique_id)
-            {
-                globus_free(stat_info->unique_id);
+                info->entry_cb(
+                    info->url,
+                    stat_info,
+                    info->entry_user_arg);
+                    
+                if(stat_info->symlink_target)
+                {
+                    globus_free(stat_info->symlink_target);
+                }
+                if(stat_info->unique_id)
+                {
+                    globus_free(stat_info->unique_id);
+                }
             }
                 
             glob = GLOBUS_FALSE;
@@ -360,7 +364,7 @@ globus_l_gass_copy_glob_expand_file_url(
                 "[%s]: path is not a dir: %s",
                 myname,
                 parsed_url.url_path));
-        goto error_url;
+        goto error_stat;
     }
 
     dir = globus_libc_opendir(parsed_url.url_path);
@@ -517,14 +521,13 @@ globus_l_gass_copy_glob_expand_ftp_url(
     globus_result_t                    result;    
     globus_ftp_client_tristate_t       feature_response;
     globus_ftp_client_features_t       features;
+    char *                             tmp;
     
 
 
     info->base_url = globus_libc_strdup(info->url);
-    info->glob_pattern = strrchr(info->base_url, '/');
-    globus_url_string_hex_decode(info->glob_pattern);
-    
-    if(info->glob_pattern == GLOBUS_NULL || *info->glob_pattern == '\0')
+    tmp = strrchr(info->base_url, '/');
+    if(tmp == GLOBUS_NULL || tmp == '\0')
     {
         result = globus_error_put(
             globus_error_construct_string(
@@ -535,8 +538,12 @@ globus_l_gass_copy_glob_expand_ftp_url(
         goto error_url;
     }
 
-    *(info->glob_pattern++) = '\0';
-    
+    tmp++;
+    info->glob_pattern = globus_libc_strdup(tmp);
+    *tmp = '\0';
+
+    globus_url_string_hex_decode(info->glob_pattern);
+   
     info->base_url_len = strlen(info->base_url);
     info->list_buffer = GLOBUS_NULL;
     info->buffer_length = 0;
@@ -627,6 +634,7 @@ globus_l_gass_copy_glob_expand_ftp_url(
     globus_mutex_destroy(&info->mutex);
         
     globus_free(info->base_url);
+    globus_free(info->glob_pattern);
 
     return GLOBUS_SUCCESS;
 
@@ -638,6 +646,7 @@ error_feat:
 error_feat_init:    
     globus_cond_destroy(&info->cond);
     globus_mutex_destroy(&info->mutex);
+    globus_free(info->glob_pattern);
 
 error_url:
     globus_free(info->base_url);
@@ -783,6 +792,37 @@ globus_l_gass_copy_ftp_client_op_done_callback(
     info->callbacks_left--;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);
+    
+    return;
+}
+
+static
+void
+globus_l_gass_copy_ftp_client_cksm_done_callback(
+    void *                             user_arg,
+    globus_ftp_client_handle_t *       handle,
+    globus_object_t *                  err)
+{
+    globus_l_gass_copy_glob_info_t * info;
+
+    info = (globus_l_gass_copy_glob_info_t *) user_arg;
+    if(info->op_cb)
+    {
+       info->op_cb(info->op_cb_arg, info->handle, err); 
+    }
+    else
+    {
+        globus_mutex_lock(&info->mutex);
+        if(err && !info->err)
+        {
+            info->err = globus_object_copy(err);
+        }
+        info->callbacks_left--;
+        globus_cond_signal(&info->cond);
+        globus_mutex_unlock(&info->mutex);
+    }
+    
+    globus_free(info);
     
     return;
 }
@@ -1249,7 +1289,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
         {
             sprintf(
                 matched_url, 
-                "%s/%s%s",
+                "%s%s%s",
                 info->base_url, 
                 encoded_path,
                 type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR ? "/" : "");
@@ -1912,54 +1952,68 @@ globus_l_gass_copy_cksm_ftp(
     char *                              cksm,
     globus_off_t                        offset,
     globus_off_t                        length,
-    const char *                        algorithm)
+    const char *                        algorithm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg)
 {
     globus_result_t                     result;
-    globus_l_gass_copy_glob_info_t      info;
+    globus_l_gass_copy_glob_info_t *    info;
 
-    info.callbacks_left = 1;
-    info.err = GLOBUS_NULL;
-
-    globus_mutex_init(&info.mutex, GLOBUS_NULL);
-    globus_cond_init(&info.cond, GLOBUS_NULL);
-     
-
+    info = (globus_l_gass_copy_glob_info_t *)
+        globus_calloc(sizeof(globus_l_gass_copy_glob_info_t), 1);
+    
+    info->callbacks_left = 1;
+    info->err = GLOBUS_NULL;
+    info->handle = handle;
+    info->op_cb = callback;
+    info->op_cb_arg = callback_arg;
+    
+    if(!callback)
+    {
+        globus_mutex_init(&info->mutex, GLOBUS_NULL);
+        globus_cond_init(&info->cond, GLOBUS_NULL);
+    }
+    
     result = globus_ftp_client_cksm(
-                 &handle->ftp_handle,
-                 url,
-                 attr->ftp_attr,
-                 cksm,
-                 offset,
-                 length,
-                 algorithm,
-                 globus_l_gass_copy_ftp_client_op_done_callback,
-                 &info);
+        &handle->ftp_handle,
+        url,
+        attr->ftp_attr,
+        cksm,
+        offset,
+        length,
+        algorithm,
+        globus_l_gass_copy_ftp_client_cksm_done_callback,
+        info);
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
-                 
-    globus_mutex_lock(&info.mutex);
-    while(info.callbacks_left > 0)
+    
+    if(!callback)
     {
-        globus_cond_wait(&info.cond, &info.mutex);
-    }
-    globus_mutex_unlock(&info.mutex);
+        globus_mutex_lock(&info->mutex);
+        while(info->callbacks_left > 0)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+        globus_mutex_unlock(&info->mutex);
 
+        if(info->err)
+        {
+            result = globus_error_put(info->err);
+            info->err = GLOBUS_NULL;
+        }
+        
+        globus_cond_destroy(&info->cond);
+        globus_mutex_destroy(&info->mutex);
 
-    if(info.err)
-    {
-        result = globus_error_put(info.err);
-        info.err = GLOBUS_NULL;
+        globus_free(info);
     }
-  
-    globus_cond_destroy(&info.cond);
-    globus_mutex_destroy(&info.mutex);
+
     return GLOBUS_SUCCESS;
 error:
-    globus_cond_destroy(&info.cond);
-    globus_mutex_destroy(&info.mutex);
 
+    globus_free(info);
     return result;
 }
 
@@ -1968,11 +2022,14 @@ error:
 static
 globus_result_t
 globus_l_gass_copy_cksm_file(
+    globus_gass_copy_handle_t *         handle,
     char *                              url,
     char *                              cksm,
     globus_off_t                        offset,
     globus_off_t                        length,
-    const char *                        algorithm)
+    const char *                        algorithm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg)
 {
     char *      myname = "globus_l_gass_copy_cksm_file";
 
@@ -2069,7 +2126,11 @@ globus_l_gass_copy_cksm_file(
     strncpy(cksm, md5sum, sizeof(md5sum));
     
     globus_url_destroy(&parsed_url);
-
+    
+    if(callback)
+    {
+        callback(callback_arg, handle, NULL);
+    }
     return GLOBUS_SUCCESS;
 
 error_seek:
@@ -2095,6 +2156,30 @@ globus_gass_copy_cksm(
     const char *                        algorithm,
     char *                              cksm)
 {
+    return globus_gass_copy_cksm_async(
+        handle,
+        url,
+        attr,
+        offset,
+        length,
+        algorithm,
+        cksm,
+        NULL,
+        NULL);
+}
+
+globus_result_t
+globus_gass_copy_cksm_async(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *                              cksm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg)
+{
     static char *   myname = "globus_gass_copy_cksm";    
 
     globus_result_t                     result;
@@ -2110,13 +2195,15 @@ globus_gass_copy_cksm(
     if(url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
     {
         result = globus_l_gass_copy_cksm_ftp(
-                     handle,
-                     url,
-                     attr,
-                     cksm,
-                     offset,
-                     length,
-                     algorithm);
+            handle,
+            url,
+            attr,
+            cksm,
+            offset,
+            length,
+            algorithm,
+            callback,
+            callback_arg);
     
         if(result != GLOBUS_SUCCESS)
         {
@@ -2126,13 +2213,16 @@ globus_gass_copy_cksm(
     else if(url_mode == GLOBUS_GASS_COPY_URL_MODE_IO)
     {
         result = globus_l_gass_copy_cksm_file(
-                     url,
-                     cksm, 
-                     offset,
-                     length,
-                     algorithm);
-    if(result != GLOBUS_SUCCESS)
-    {
+            handle,
+            url,
+            cksm, 
+            offset,
+            length,
+            algorithm,
+            callback,
+            callback_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
             goto error_file_cksm;
         }
     }
@@ -2157,4 +2247,3 @@ error_exit:
     return result;
         
 }
-

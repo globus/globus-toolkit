@@ -708,6 +708,18 @@ globus_gass_copy_cksm(
     char *				cksm);
 
 globus_result_t
+globus_gass_copy_cksm_async(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *                              cksm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg);
+
+globus_result_t
 globus_gass_copy_stat(
     globus_gass_copy_handle_t *         handle,
     char *                              url,
