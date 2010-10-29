@@ -6585,6 +6585,14 @@ globus_l_ftp_client_pp_get_next(
                 client_handle->attr.rfc1738_url);
         }
 
+        globus_i_ftp_client_plugin_notify_transfer(
+            client_handle,
+            url_ent->source_url,
+            client_handle->source->attr,
+            url_ent->dest_url,
+            client_handle->dest->attr,
+            NULL);
+
         globus_fifo_enqueue(&client_handle->dst_op_queue, url_ent);
         src_url_ent = globus_malloc(sizeof(globus_i_ftp_client_url_ent_t));
         memcpy(src_url_ent, url_ent, sizeof(globus_i_ftp_client_url_ent_t));
