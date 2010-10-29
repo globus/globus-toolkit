@@ -689,22 +689,63 @@ globus_i_ftp_client_restart(
     case GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT:
     case GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION:
     case GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO:
-	result = globus_ftp_control_force_close(
-	    handle->dest->control_handle,
-	    globus_i_ftp_client_force_close_callback,
-	    handle->dest);
-
-	if(result == GLOBUS_SUCCESS)
+	if(handle->op != GLOBUS_FTP_CLIENT_TRANSFER || !handle->source_pasv)
 	{
-	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_RESTART;
-	    handle->restart_info = restart_info;
-	    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
-
-	    globus_i_ftp_client_plugin_notify_restart(handle);
-	}
+	    result = globus_ftp_control_force_close(
+                handle->dest->control_handle,
+                globus_i_ftp_client_force_close_callback,
+                handle->dest);
+    
+            if(result == GLOBUS_SUCCESS)
+            {
+                handle->state = GLOBUS_FTP_CLIENT_HANDLE_RESTART;
+                handle->restart_info = restart_info;
+                handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+    
+                globus_i_ftp_client_plugin_notify_restart(handle);
+            }
+            else
+            {
+                err = globus_error_get(result);
+            }
+        }
 	else
 	{
-	    err = globus_error_get(result);
+	    result = globus_ftp_control_force_close(
+		handle->dest->control_handle,
+		globus_i_ftp_client_force_close_callback,
+		handle->dest);
+
+	    if(result == GLOBUS_SUCCESS)
+	    {
+		result = globus_ftp_control_force_close(
+		    handle->source->control_handle,
+		    globus_i_ftp_client_force_close_callback,
+		    handle->source);
+
+		if(result == GLOBUS_SUCCESS)
+		{
+		    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+		    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+		    handle->state = GLOBUS_FTP_CLIENT_HANDLE_RESTART;
+		    handle->restart_info = restart_info;
+	    
+		    globus_i_ftp_client_plugin_notify_restart(handle);
+		}
+		else
+		{
+		    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+		    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
+		    handle->state = GLOBUS_FTP_CLIENT_HANDLE_RESTART;
+		    handle->restart_info = restart_info;
+	    
+		    globus_i_ftp_client_plugin_notify_restart(handle);
+		}
+	    }
+	    else
+	    {
+		err = globus_error_get(result);
+	    }
 	}
 	
 	break;

@@ -433,6 +433,13 @@ globus_ftp_client_handle_destroy(
     globus_ftp_client_handle_t *		handle);
 
 globus_result_t
+globus_ftp_client_handle_borrow_connection(
+    globus_ftp_client_handle_t *		from_handle,
+    globus_bool_t                               from_is_source,
+    globus_ftp_client_handle_t *		to_handle,
+    globus_bool_t                               to_is_source);
+
+globus_result_t
 globus_ftp_client_handle_cache_url_state(
     globus_ftp_client_handle_t *		handle,
     const char *				url);

@@ -165,6 +165,69 @@ globus_i_ftp_client_find_ssh_client_program()
     return globus_l_ftp_client_ssh_client_program;
 }
 
+globus_result_t
+globus_ftp_client_handle_borrow_connection(
+    globus_ftp_client_handle_t *		from_handle,
+    globus_bool_t                               from_is_source,
+    globus_ftp_client_handle_t *		to_handle,
+    globus_bool_t                               to_is_source)
+{
+    
+    if(from_handle && *from_handle && to_handle && *to_handle)
+    {
+        if(to_is_source && from_is_source)
+        {
+            (*to_handle)->source = (*from_handle)->source;
+            if((*to_handle)->source)
+            {
+                (*to_handle)->source->owner = *to_handle;
+            }
+            (*from_handle)->source = NULL;
+        }
+        else if(!to_is_source && from_is_source)
+        {
+            (*to_handle)->dest = (*from_handle)->source;
+            if((*to_handle)->dest)
+            {
+                (*to_handle)->dest->owner = *to_handle;
+            }
+            (*from_handle)->source = NULL;
+        }
+        else if(to_is_source && !from_is_source)
+        {
+            (*to_handle)->source = (*from_handle)->dest;
+            if((*to_handle)->source)
+            {
+                (*to_handle)->source->owner = *to_handle;
+            }
+            (*from_handle)->dest = NULL;
+        }            
+        else if(!to_is_source && !from_is_source)
+        {
+            (*to_handle)->dest = (*from_handle)->dest;
+            if((*to_handle)->dest)
+            {
+                (*to_handle)->dest->owner = *to_handle;
+            }
+            (*from_handle)->dest = NULL;
+        }
+    }
+    else 
+    {
+        if(from_handle && *from_handle && from_is_source)
+        {
+            globus_i_ftp_client_target_release(*from_handle, (*from_handle)->source);
+        }
+        else if(from_handle && *from_handle && !from_is_source)
+        {
+            globus_i_ftp_client_target_release(*from_handle, (*from_handle)->dest);
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+    
+}
+
 /**
  * @name Initialize
  */
@@ -272,6 +335,7 @@ globus_ftp_client_handle_init(
     i_handle->checksum_offset = 0;
     i_handle->checksum_length = -1;
     i_handle->checksum = GLOBUS_NULL;
+    i_handle->source_pasv = (globus_libc_getenv("GLOBUS_FTP_CLIENT_SOURCE_PASV") != NULL);
     globus_fifo_init(&i_handle->src_op_queue);
     globus_fifo_init(&i_handle->dst_op_queue);
     globus_fifo_init(&i_handle->src_response_pending_queue);

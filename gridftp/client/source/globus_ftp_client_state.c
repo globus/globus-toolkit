@@ -300,6 +300,51 @@ globus_i_ftp_client_response_callback(
    
     globus_i_ftp_client_handle_lock(client_handle);
     
+    
+    
+    if(response && (response->code == 125 || response->code == 150) &&
+        client_handle->attr.pipeline_callback)
+    {                
+        globus_i_ftp_client_url_ent_t * url_ent = NULL;
+        
+        if(target == client_handle->source)
+        {
+            if(!globus_fifo_empty(&client_handle->src_response_pending_queue))
+            {
+                url_ent = globus_fifo_peek(&client_handle->src_response_pending_queue);
+                if(target->url_string)
+                {
+                    globus_free(target->url_string);
+                }
+                target->url_string = globus_libc_strdup(url_ent->source_url);
+                if(client_handle->source_url)
+                {
+                    globus_free(client_handle->source_url);
+                }
+                client_handle->source_url = globus_libc_strdup(url_ent->source_url);
+            }
+        }
+        else if(target == client_handle->dest)
+        {
+            if(!globus_fifo_empty(&client_handle->dst_response_pending_queue))
+            {
+                url_ent = globus_fifo_peek(&client_handle->dst_response_pending_queue);
+                if(target->url_string)
+                {
+                    globus_free(target->url_string);
+                }
+                target->url_string = globus_libc_strdup(url_ent->dest_url);
+                if(client_handle->dest_url)
+                {
+                    globus_free(client_handle->dest_url);
+                }
+                client_handle->dest_url = globus_libc_strdup(url_ent->dest_url);
+            }
+        }
+    }                       
+    
+    
+    
     if(response)
     {
         globus_i_ftp_client_plugin_notify_response(
@@ -1157,6 +1202,13 @@ redo:
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
 	    target->mode = target->attr->mode;
+	    
+	    /* disable source pasv */
+	    if(target->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+	    {
+	        client_handle->source_pasv = GLOBUS_FALSE;
+	    }
+	    
 	    result = globus_ftp_control_local_mode(target->control_handle,
 						   target->mode);
 	    if(result != GLOBUS_SUCCESS)
@@ -2069,7 +2121,40 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_STAT;
 	}
-	/* Prefer PASV data connections for most operations */
+        /* defaulting to a PASV on the source */
+        else if(client_handle->source_pasv && 
+            target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+        {
+            if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION)
+            {
+                if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+                    target == client_handle->dest && !client_handle->num_pasv_addresses)
+                {
+                    target = client_handle->source;
+                    
+                    error = globus_i_ftp_client_target_activate(
+                        client_handle, target, &registered);
+                    if(registered == GLOBUS_FALSE && 
+                        client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_ABORT &&
+                        client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+                    {
+                        goto connection_error;
+                    }
+                    
+                    break;
+                }
+                else
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
+                }
+            }
+            
+            if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION)
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
+            }
+        }
+	/* Prefer PASV data connections for stream client/server operations */
 	else if(client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION ||
 		(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
@@ -2499,22 +2584,60 @@ redo:
 	    {
 		target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION;
 	    }
+
+            /* if this was a source pasv, continue setting up the dest */ 
+            if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+                target == client_handle->source && !target->delayed_pasv)
+            {
+                target = client_handle->dest;
+                
+                error = globus_i_ftp_client_target_activate(
+                    client_handle, target, &registered);
+                if(registered == GLOBUS_FALSE && 
+                    client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_ABORT &&
+                    client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+                {
+                    goto connection_error;
+                }
+                
+                break;
+            }
 	}
         else if(!error)
 	{
+            /* try without ipv6 */
 	    if(target->attr->allow_ipv6)
 	    {
-	        /* lets try without ipv6 */
 	        target->attr->allow_ipv6 = GLOBUS_FALSE;
 	        globus_ftp_control_ipv6_allow(handle, GLOBUS_FALSE);
 	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
 	    }
+            /* Try doing a PORT for a client/server transfer */
 	    else if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
 	       target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK )
 	    {
-	        /* Try doing a PORT in some cases */
 	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
 	    }
+	    /* Try the PASV on the other server for a 3rd party transfer */
+	    else if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+	       target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+	    {   
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+                client_handle->source_pasv = !client_handle->source_pasv;
+                target = (target == client_handle->source) ? 
+                    client_handle->dest : client_handle->source;
+
+                error = globus_i_ftp_client_target_activate(
+                    client_handle, target, &registered);
+                if(registered == GLOBUS_FALSE && 
+                    client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_ABORT &&
+                    client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+                {
+                    goto connection_error;
+                }
+                
+                break;
+	    }   
 	    else
 	    {
 	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
@@ -3741,10 +3864,9 @@ redo:
             }
         }
         
-        if(!target->delayed_pasv)
+        if(!target->delayed_pasv && !client_handle->source->delayed_pasv)
         {
             target = client_handle->source;
-    
             error =
                 globus_i_ftp_client_target_activate(client_handle,
                                                     target,
@@ -4252,7 +4374,8 @@ redo:
                 }
                 else
                 {
-                    target = client_handle->source;
+                    target = (target == client_handle->source) ? 
+                        client_handle->dest : client_handle->source;
             
                     error =
                         globus_i_ftp_client_target_activate(client_handle,
@@ -6244,7 +6367,7 @@ globus_l_ftp_client_pp_src_add(
         &pl_source_url,
         &pl_dest_url,
         client_handle->attr.pipeline_arg);
-
+    
     if(pl_source_url == NULL)
     {
         return GLOBUS_SUCCESS;
@@ -6259,6 +6382,9 @@ globus_l_ftp_client_pp_src_add(
         url_ent->source_url,
         &url_ent->src_url,
         client_handle->attr.rfc1738_url);
+
+    client_handle->no_callback_count++;
+    globus_fifo_enqueue(&client_handle->src_response_pending_queue, url_ent);
 
     if(target->attr->module_alg_str != NULL)
     {
@@ -6299,9 +6425,6 @@ globus_l_ftp_client_pp_src_add(
         goto result_fault;
     }
 
-    client_handle->no_callback_count++;
-    globus_fifo_enqueue(&client_handle->src_response_pending_queue, url_ent);
-
     *added = GLOBUS_TRUE;
     return GLOBUS_SUCCESS;
 
@@ -6333,6 +6456,7 @@ globus_l_ftp_client_pp_dst_add(
         &pl_source_url,
         &pl_dest_url,
         client_handle->attr.pipeline_arg);
+    
     if(pl_dest_url == NULL)
     {
         return GLOBUS_SUCCESS;
@@ -6347,8 +6471,19 @@ globus_l_ftp_client_pp_dst_add(
         &url_ent->dst_url,
         client_handle->attr.rfc1738_url);
 
+    client_handle->no_callback_count++;
+    globus_fifo_enqueue(&client_handle->dst_response_pending_queue, url_ent);
+    
     if(target->attr->module_alg_str != GLOBUS_NULL)
     {
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            url_ent->dest_url,
+            target->mask,
+            "ESTO %s %s" CRLF,
+            target->attr->module_alg_str,
+            url_ent->dst_url.url_path);
+
         result = globus_ftp_control_send_command(
             handle,
             "ESTO %s %s" CRLF,
@@ -6359,6 +6494,13 @@ globus_l_ftp_client_pp_dst_add(
     }
     else if(target->attr->append)
     {
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            url_ent->dest_url,
+            target->mask,
+            "APPE %s" CRLF,
+            url_ent->dst_url.url_path);
+
         result = globus_ftp_control_send_command(
             handle,
             "APPE %s" CRLF,
@@ -6368,6 +6510,13 @@ globus_l_ftp_client_pp_dst_add(
     }
     else
     {
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            url_ent->dest_url,
+            target->mask,
+            "STOR %s" CRLF,
+            url_ent->dst_url.url_path);
+
         result = globus_ftp_control_send_command(
             handle,
             "STOR %s" CRLF,
@@ -6379,9 +6528,6 @@ globus_l_ftp_client_pp_dst_add(
     {
         goto result_fault;
     }
-
-    client_handle->no_callback_count++;
-    globus_fifo_enqueue(&client_handle->dst_response_pending_queue, url_ent);
 
     *added = GLOBUS_TRUE;
     return GLOBUS_SUCCESS;
@@ -6473,6 +6619,9 @@ globus_l_ftp_client_pp_xfer_dst_add(
     url_ent = (globus_i_ftp_client_url_ent_t *)
         globus_fifo_dequeue(&client_handle->dst_op_queue);
     
+    client_handle->no_callback_count++;
+    globus_fifo_enqueue(&client_handle->dst_response_pending_queue, url_ent);
+
     if(target->attr->module_alg_str != GLOBUS_NULL)
     {
         globus_i_ftp_client_plugin_notify_command(
@@ -6480,6 +6629,14 @@ globus_l_ftp_client_pp_xfer_dst_add(
             url_ent->dest_url,
             target->mask,
             "ESTO %s %s" CRLF,
+            target->attr->module_alg_str,
+            url_ent->dst_url.url_path);
+
+        result = globus_ftp_control_send_command(
+            handle,
+            "ESTO %s %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            target,
             target->attr->module_alg_str,
             url_ent->dst_url.url_path);
     }
@@ -6491,19 +6648,7 @@ globus_l_ftp_client_pp_xfer_dst_add(
             target->mask,
             "STOR %s" CRLF,
             url_ent->dst_url.url_path);
-    }
-    if(target->attr->module_alg_str != GLOBUS_NULL)
-    {
-        result = globus_ftp_control_send_command(
-            handle,
-            "ESTO %s %s" CRLF,
-            globus_i_ftp_client_response_callback,
-            target,
-            target->attr->module_alg_str,
-            url_ent->dst_url.url_path);
-    }
-    else
-    {
+
         result = globus_ftp_control_send_command(
             handle,
             "STOR %s" CRLF,
@@ -6515,9 +6660,6 @@ globus_l_ftp_client_pp_xfer_dst_add(
     {
         goto result_fault;
     }
-
-    client_handle->no_callback_count++;
-    globus_fifo_enqueue(&client_handle->dst_response_pending_queue, url_ent);
 
     *added = GLOBUS_TRUE;
     return GLOBUS_SUCCESS;
@@ -6550,48 +6692,48 @@ globus_l_ftp_client_pp_xfer_src_add(
     url_ent = (globus_i_ftp_client_url_ent_t *)
         globus_fifo_dequeue(&client_handle->src_op_queue);
 
-        if(target->attr->module_alg_str != GLOBUS_NULL)
-        {
-            globus_i_ftp_client_plugin_notify_command(
-                client_handle,
-                url_ent->source_url,
-                target->mask,
-                "ERET %s %s" CRLF,
-                target->attr->module_alg_str,
-                url_ent->src_url.url_path);
-
-            result = globus_ftp_control_send_command(
-                handle,
-                "ERET %s %s\r\n",
-                globus_i_ftp_client_response_callback,
-                target,
-                target->attr->module_alg_str,
-                url_ent->src_url.url_path);
-        }
-        else
-        {
-            globus_i_ftp_client_plugin_notify_command(
-                client_handle,
-                url_ent->source_url,
-                target->mask,
-                "RETR %s" CRLF,
-                url_ent->src_url.url_path);
-
-            result = globus_ftp_control_send_command(
-                handle,
-                "RETR %s" CRLF,
-                globus_i_ftp_client_response_callback,
-                target,
-                url_ent->src_url.url_path);
-        }
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto result_fault;
-        }
-
-        globus_fifo_enqueue(
-            &client_handle->src_response_pending_queue, url_ent);
+    globus_fifo_enqueue(
+        &client_handle->src_response_pending_queue, url_ent);
     client_handle->no_callback_count++;
+
+    if(target->attr->module_alg_str != GLOBUS_NULL)
+    {
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            url_ent->source_url,
+            target->mask,
+            "ERET %s %s" CRLF,
+            target->attr->module_alg_str,
+            url_ent->src_url.url_path);
+
+        result = globus_ftp_control_send_command(
+            handle,
+            "ERET %s %s\r\n",
+            globus_i_ftp_client_response_callback,
+            target,
+            target->attr->module_alg_str,
+            url_ent->src_url.url_path);
+    }
+    else
+    {
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            url_ent->source_url,
+            target->mask,
+            "RETR %s" CRLF,
+            url_ent->src_url.url_path);
+
+        result = globus_ftp_control_send_command(
+            handle,
+            "RETR %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            target,
+            url_ent->src_url.url_path);
+    }
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto result_fault;
+    }
 
     *added = GLOBUS_TRUE;
 
