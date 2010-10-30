@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-@GLOBUS_PERL_INIITIALIZER@
+@GLOBUS_PERL_INITIALIZER@
 
 # ------------------------------------------------------------------------
 # test-toolkit - A script to test an installation of the Globus Toolkit.
