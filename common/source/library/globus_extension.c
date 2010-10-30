@@ -382,13 +382,13 @@ globus_l_extension_dlopen(
             search_path ? search_path : globus_l_globus_location);
     }
     
-    snprintf(library, 1024, "lib%s_%s", name, build_flavor);
+    snprintf(library, 1024, "lib%s", name);
     library[1023] = 0;
     dlhandle = lt_dlopenext(library);
     if(!dlhandle)
     {
         /* older libtools dont search the extensions correctly */
-        snprintf(library, 1024, "lib%s_%s" MY_LIB_EXT, name, build_flavor);
+        snprintf(library, 1024, "lib%s" MY_LIB_EXT, name);
         library[1023] = 0;
         dlhandle = lt_dlopenext(library);
     }
