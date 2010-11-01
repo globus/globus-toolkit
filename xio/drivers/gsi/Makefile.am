@@ -10,13 +10,13 @@ include_HEADERS = \
 
 INCLUDES = $(GPT_INCLUDES)
 
-lib_LTLIBRARIES = libglobus_xio_gsi_driver_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_xio_gsi_driver.la
 
-libglobus_xio_gsi_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_xio_gsi_driver_la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_xio_gsi_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_xio_gsi_driver_la_SOURCES = \
 	globus_i_xio_gsi.h  globus_xio_gsi.h globus_xio_gsi.c
-libglobus_xio_gsi_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_xio_gsi_driver_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
 EXTRA_DIST = version.h.in

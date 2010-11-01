@@ -38,13 +38,13 @@ noinst_HEADERS = \
     globus_i_xio.h \
     globus_i_xio_system_common.h
 
-lib_LTLIBRARIES = libglobus_xio_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_xio.la
 
 INCLUDES = $(GPT_INCLUDES)
 
-libglobus_xio___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources) 
-libglobus_xio___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_xio___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_xio_la_SOURCES = $(Sources) 
+libglobus_xio_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_xio_la_LIBADD = \
 	$(GPT_LIB_LINKS) \
 	$(XIO_BUILTIN_LIBS)
 

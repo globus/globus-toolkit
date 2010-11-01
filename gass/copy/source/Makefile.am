@@ -38,18 +38,18 @@ include_HEADERS= \
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
-lib_LTLIBRARIES = libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gass_copy.la
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
-libglobus_gass_copy___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gass_copy_la_SOURCES = $(Sources)
 
 # _LDFLAGS is an automake macro which contains
 # directives to the linker add before the list of objects and libraries.
 # 
 # GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-libglobus_gass_copy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gass_copy_la_LDFLAGS = $(GPT_LDFLAGS)
 
 # _LIBADD is an automake macro which contains
 # directives to the linker added after the list of objects.  
@@ -57,7 +57,7 @@ libglobus_gass_copy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-libglobus_gass_copy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gass_copy_la_LIBADD = $(GPT_LIB_LINKS)
 
 
 # bin_PROGRAMS is an automake macro which contains
@@ -91,7 +91,7 @@ globus_url_copy_LDFLAGS = $(GPT_LDFLAGS)  -export-dynamic
 # 
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_url_copy_LDADD = ./libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).la \
+globus_url_copy_LDADD = ./libglobus_gass_copy.la \
 			$(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post

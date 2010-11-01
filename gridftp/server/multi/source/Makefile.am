@@ -9,13 +9,13 @@ include_HEADERS = \
 
 INCLUDES = $(GPT_INCLUDES)
 
-lib_LTLIBRARIES = libglobus_xio_gridftp_multicast_driver_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_xio_gridftp_multicast_driver.la
 
-libglobus_xio_gridftp_multicast_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_xio_gridftp_multicast_driver_la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_xio_gridftp_multicast_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_xio_gridftp_multicast_driver_la_SOURCES = \
 	globus_xio_gridftp_multicast_driver.c
-libglobus_xio_gridftp_multicast_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_xio_gridftp_multicast_driver_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
 EXTRA_DIST = version.h.in

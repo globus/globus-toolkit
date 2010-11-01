@@ -63,18 +63,18 @@ include_HEADERS = globus_gridftp_server.h \
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
-lib_LTLIBRARIES = libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gridftp_server.la
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gridftp_server_la_SOURCES = $(Sources)
 
 # _LDFLAGS is an automake macro which contains
 # directives to the linker add before the list of objects and libraries.
 # 
 # GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gridftp_server_la_LDFLAGS = $(GPT_LDFLAGS)
 
 # _LIBADD is an automake macro which contains
 # directives to the linker added after the list of objects.  
@@ -82,7 +82,7 @@ libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gridftp_server_la_LIBADD = \
     $(MODULE_LIBS) \
     $(GPT_LIB_LINKS)
 
@@ -130,7 +130,7 @@ globus_gridftp_server_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 globus_gridftp_server_LDADD = \
-        ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
+        ./libglobus_gridftp_server.la \
         $(GPT_PGM_LINKS)
 
 

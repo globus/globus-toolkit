@@ -15,14 +15,14 @@ include_HEADERS = \
 	globus_io.h \
 	globus_io_error_hierarchy.h
 
-lib_LTLIBRARIES = libglobus_io_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_io.la
 
 INCLUDES = $(GPT_INCLUDES)
 
-libglobus_io___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
-libglobus_io___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
+libglobus_io_la_LDFLAGS = @GPT_LDFLAGS@
+libglobus_io_la_LIBADD = @GPT_LIB_LINKS@
 
-libglobus_io___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_io_la_SOURCES = $(Sources)
 
 EXTRA_DIST = \
         version.h.in

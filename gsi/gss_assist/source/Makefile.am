@@ -36,10 +36,10 @@ EXTRA_DIST = \
        version.h.in \
        dirt.sh
 
-lib_LTLIBRARIES = libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).la
-libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+lib_LTLIBRARIES = libglobus_gss_assist.la
+libglobus_gss_assist_la_SOURCES = $(Sources)
+libglobus_gss_assist_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gss_assist_la_LIBADD = $(GPT_LIB_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

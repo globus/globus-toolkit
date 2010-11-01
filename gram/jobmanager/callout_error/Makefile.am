@@ -10,14 +10,14 @@ INCLUDES = $(GPT_INCLUDES)
 include_HEADERS= \
 	globus_gram_jobmanager_callout_error.h
 
-lib_LTLIBRARIES = libglobus_gram_job_manager_callout_error_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gram_job_manager_callout_error.la
 
-libglobus_gram_job_manager_callout_error___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gram_job_manager_callout_error_la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_gram_job_manager_callout_error___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_gram_job_manager_callout_error_la_SOURCES = \
 	globus_i_gram_jobmanager_callout_error.c \
 	globus_gram_jobmanager_callout_error.h
-libglobus_gram_job_manager_callout_error___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_gram_job_manager_callout_error_la_LDFLAGS = \
 	@GPT_LDFLAGS@
 
 EXTRA_DIST=

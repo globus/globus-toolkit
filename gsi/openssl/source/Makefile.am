@@ -1,7 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-lib_LTLIBRARIES = libglobus_openssl_version_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_openssl_version.la
 libexec_PROGRAMS = globus-openssl-version
 bin_SCRIPTS = globus-update-certificate-dir
 nodist_include_HEADERS = globus_openssl_version.h
@@ -18,7 +18,7 @@ MANUAL_SOURCE = globus-update-certificate-dir-manual.xml \
 
 EXTRA_DIST = dirt.sh globus-update-certificate-dir.in $(MANUAL_SOURCE) $(man8data_DATA)
 
-libglobus_openssl_version___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_openssl_version_la_SOURCES = \
     globus_openssl_version.c
 
 globus_openssl_version_SOURCES = main.c
