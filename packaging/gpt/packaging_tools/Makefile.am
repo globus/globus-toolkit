@@ -19,25 +19,22 @@ sbin_SCRIPTS = 	\
 	perl/scripts/gpt-postinstall \
 	perl/scripts/gpt_save_flavor \
 	perl/scripts/gpt-query \
-	perl/scripts/gpt-setup \
 	perl/scripts/gpt_sort_filelist \
-	perl/scripts/gpt-undefines \
 	perl/scripts/gpt-uninstall \
 	perl/scripts/gpt-update \
 	perl/scripts/gpt-verify \
-	perl/scripts/gpt-virtual-pkg \
 	perl/scripts/gpt_version
 
 
-gptdatadir = ${prefix}/etc/gpt
+gptdatadir = ${datadir}/gpt
 
 gptdata_DATA = $(top_builddir)/gpt_scripts_list
 
-gptexecsharedir = ${prefix}/share/gpt
+gptexecsharedir = ${datadir}/gpt
 
 gptexecshare_SCRIPTS = config.guess
 
-gptmodulesdir = ${prefix}/lib/perl/Grid/GPT
+gptmodulesdir = $(perlmoduledir)/Grid/GPT
 
 gptmodules_DATA = \
 	perl/GPT/Algorithms.pm \
@@ -141,8 +138,8 @@ amdir_DATA = \
 	amdir/pkgdata_Makefile.am
 
 
-pkg_confdir = $(sysconfdir)/gpt
-dtddir = $(sysconfdir)/gpt/dtd
+pkg_confdir = $(datadir)/gpt
+dtddir = $(datadir)/gpt/dtd
 aclocaldir = $(datadir)/gpt/aclocal
 
 pkg_conf_DATA = \
@@ -158,12 +155,7 @@ dtd_DATA = \
 	etc/gpt_filelist.dtd
 
 aclocal_DATA = \
-	etc/gpt_autoconf_macros.m4 \
-	etc/Makefile_am.frg \
-	etc/bootstrap.frg \
-	etc/configure_in.frg \
-	etc/pkg_data_src_gpt_in.frg \
-	etc/top_Makefile_am.frg
+	etc/gpt_autoconf_macros.m4
 
 libexec_SCRIPTS = \
 	etc/gpt-bootstrap.sh
@@ -173,17 +165,19 @@ install-data-hook: install-localize hack-for-globus-core
 
 install-localize:
 	@echo "Localizing scripts to $(PERL)"
-	GPT_LOCATION=$(DESTDIR)$(prefix) $(PERL) $(DESTDIR)$(sbindir)/gpt-config -perl=$(PERL) \
+	PERLLIB=$(DESTDIR)$(perlmoduledir)$${PERLLIB:+:$$PERLLIB} \
+	$(PERL) $(DESTDIR)$(sbindir)/gpt-config -perl=$(PERL) \
+	-location=$(DESTDIR)$(prefix) \
 	-probe \
 	-ignore-errors
 
 install-pod2man:
 	@if test "X$(POD2MAN)" != "X"; then \
-		$(mkinstalldirs) $(DESTDIR)$(mandir)/man1; \
+		$(mkinstalldirs) $(DESTDIR)$(mandir)/man8; \
 		list='$(sbin_SCRIPTS)'; for p in $$list; do \
 	  		script=`echo $$p | sed 's!perl/scripts/!!'`; \
-	  		echo "Generating $(DESTDIR)$(mandir)/man1/$$script.1"; \
-	  		$(POD2MAN) $$p > $(DESTDIR)$(mandir)/man1/$$script.1; \
+	  		echo "Generating $(DESTDIR)$(mandir)/man1/$$script.8"; \
+	  		$(POD2MAN) $$p > $(DESTDIR)$(mandir)/man1/$$script.8; \
 		done \
 	else \
 		echo "Skipping Man page installation"; \
@@ -191,16 +185,23 @@ install-pod2man:
 
 hack-for-globus-core:
 	@if test ! -h $(datadir)/globus_aclocal; then \
-		startdir=`pwd`; \
-		cd $(datadir); \
-		$(LN_S) gpt/aclocal globus_aclocal; \
-		cd $$startdir; \
+	    startdir=`pwd`; \
+	    cd $(datadir); \
+	    $(LN_S) gpt/aclocal globus_aclocal; \
+	    cd $$startdir; \
 	fi; \
 	if test ! -h $(datadir)/gpt_amdir; then \
-		startdir=`pwd`; \
-		cd $(datadir); \
-		$(LN_S) gpt/amdir gpt_amdir; \
-		cd $$startdir; \
+	    startdir=`pwd`; \
+	    cd $(datadir); \
+	    $(LN_S) gpt/amdir gpt_amdir; \
+	    cd $$startdir; \
+	fi; \
+	if test ! -d $(sysconfdir); then \
+	    $(mkinstalldirs) $(sysconfdir); \
+	fi; \
+	if test ! -h $(sysconfdir)/gpt; then \
+	    cd $(sysconfdir); \
+	    $(LN_S) $(pkg_confdir) gpt; \
 	fi
 
 $(top_builddir)/gpt_scripts_list: Makefile.am

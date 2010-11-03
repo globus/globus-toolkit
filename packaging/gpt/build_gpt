@@ -100,7 +100,7 @@ $shutup = "" if defined $verbose;
 
 my %commands = (
                 gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; unset CONFIG_SITE ; \\
-./configure --with-perl=$perl_location --datadir='$gpt_location/share' --libexecdir='\${exec_prefix}/lib/globus' --mandir='\${prefix}/share/man'", 
+./configure --with-perl=$perl_location --datadir='\${prefix}/share' --libexecdir='\${libdir}/globus' --mandir='\${prefix}/share/man'", 
                         "make", 
                         "make install",
                         "make install-man",

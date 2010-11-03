@@ -144,8 +144,8 @@ sub process_automake_file {
     for $t (@targets) {
       if ($t eq 'MANS') {
         for my $m (sort keys %$mpages) {
-          $filelist .= " filelist-$d$m ";
-          $phony .= " filelist-$d$m ";
+          $filelist .= " filelist-$d ";
+          $phony .= " filelist-$d ";
           $rules .= generate_rule($t, $d, $m);
         }
       } else {

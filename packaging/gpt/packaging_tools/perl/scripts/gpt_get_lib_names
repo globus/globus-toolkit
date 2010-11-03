@@ -11,6 +11,27 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
+my ($old, $shared) = (0,0);
+if (scalar(@ARGV) == 3)
+{
+    if ($ARGV[2] eq '-old')
+    {
+        $old = 1;
+    }
+    elsif ($ARGV[2] eq '-dynamic')
+    {
+        $shared = 1;
+    }
+    else
+    {
+        print STDERR "Usage: $0 library directory [-old|-dynamic]\n";
+        exit 1;
+    }
+}
+else
+{
+    $old = $shared = 1;
+}
  open(FILE, "< $ARGV[0]")   or die "Can't open $ARGV[0] for reading: $!\n";
  
          my @filecontents= <FILE>; 
@@ -26,12 +47,12 @@ if ( ! ( defined eval "require 5.005" ) )
 	     }
 	 foreach $soname (@uniq){
 	 	chomp $soname;
-	 	print "$ARGV[1]/$soname\n";
+	 	print "$ARGV[1]/$soname\n" if ($shared);
 		}
 	 ($staticnames, @rest) = grep /^old_library/, @filecontents;
 	 $staticnames =~ s/'//g;
 	 ($ident, $staticname)= split /=/, $staticnames;
 	 chomp $staticname;
-	 print "$ARGV[1]/$staticname\n";
-	 print "$ARGV[1]/$ARGV[0]\n";
+	 print "$ARGV[1]/$staticname\n" if ($old);
+	 print "$ARGV[1]/$ARGV[0]\n" if ($old);
 

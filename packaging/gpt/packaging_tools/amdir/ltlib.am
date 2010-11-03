@@ -81,6 +81,8 @@ filelist-@DIR@LTLIBRARIES: $(@DIR@_LTLIBRARIES)
 ## Funny invocation because Makefile variable can be empty, leading to
 ## a syntax error in sh.
 	@list='$(@DIR@_LTLIBRARIES)'; for p in $$list; do \
-	  $(GPT_LOCATION)/sbin/gpt_get_lib_names $$p $(DESTDIR)$(@DIR@dir) >> $(FILELIST_FILE); \
+	  true $(GPT_LOCATION)/sbin/gpt_get_lib_names $$p $(DESTDIR)$(@DIR@dir) >> $(FILELIST_FILE); \
+	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+	  $(GPT_LOCATION)/sbin/gpt_get_lib_names $$p $(DESTDIR)$(@DIR@dir) -old | sed -e 's!^$(exec_prefix)!!' >> "$${filelistdir}/${GLOBUS_FLAVOR_NAME}_dev.filelist"; \
+	  $(GPT_LOCATION)/sbin/gpt_get_lib_names $$p $(DESTDIR)$(@DIR@dir) -dynamic | sed -e 's!^$(exec_prefix)!!' >> "$${filelistdir}/${GLOBUS_FLAVOR_NAME}_rtl.filelist"; \
 	done
-
