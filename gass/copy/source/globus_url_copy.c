@@ -4595,7 +4595,8 @@ globus_l_guc_expand_urls(
         globus_l_guc_url_pair_free(user_url_pair);
     }
 
-    if(!globus_fifo_empty(&guc_info->expanded_url_list))
+    if(!globus_fifo_empty(&guc_info->expanded_url_list) || 
+        guc_info->sync || guc_info->dump_only_fp)
     {
         no_matches = GLOBUS_FALSE;
     }
@@ -4615,7 +4616,7 @@ globus_l_guc_expand_urls(
         }
     }
     
-    if(no_matches && result == GLOBUS_SUCCESS && !guc_info->sync)
+    if(no_matches && result == GLOBUS_SUCCESS)
     {
         result = globus_error_put(
             globus_error_construct_string(
