@@ -23,24 +23,24 @@ INCLUDES = $(GPT_INCLUDES) $(XMLSEC1_CFLAGS)
 include_HEADERS= \
 	gaa_simple.h saml.h
 
-lib_LTLIBRARIES = libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gaa_simple.la
 
-libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gaa_simple_la_SOURCES = $(Sources)
 
-libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) $(XMLSEC1_LDFLAGS)
+libglobus_gaa_simple_la_LDFLAGS = $(GPT_LDFLAGS) $(XMLSEC1_LDFLAGS)
 
-libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) $(XMLSEC1_LIBS)
+libglobus_gaa_simple_la_LIBADD = $(GPT_LIB_LINKS) $(XMLSEC1_LIBS)
 
 #xml_sig_test_SOURCES = xml_sig_test.c
 #xml_sig_test_LDFLAGS = $(GPT_LDFLAGS)
 #xml_sig_test_LDADD = \
-#		libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la \
+#		libglobus_gaa_simple.la \
 #		$(GPT_PGM_LINKS)
 #
 #nametest_SOURCES = nametest.c
 #nametest_LDFLAGS = $(GPT_LDFLAGS)
 #nametest_LDADD = \
-#		libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la \
+#		libglobus_gaa_simple.la \
 #		$(GPT_PGM_LINKS)
 #
 #

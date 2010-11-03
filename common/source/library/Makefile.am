@@ -92,11 +92,8 @@ Sources= \
     getnameinfo.c \
     inet_addr.c \
     inet_pton.c \
-    globus_thread_none.c \
-    globus_netos_libc.h
+    globus_thread_none.c
 
-flavorinclude_HEADERS = \
-	$(OS_HEADERS)
 include_HEADERS = \
 	globus_release.h \
 	globus_module.h \
@@ -150,22 +147,22 @@ if BUILD_WINDOWS_THREADS
 thread_libs += libglobus_thread_windows.la
 endif
 
-lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la $(thread_libs)
+lib_LTLIBRARIES = libglobus_common.la $(thread_libs)
 
 INCLUDES = @GPT_INCLUDES@
 
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
-libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+libglobus_common_la_LIBADD = @GPT_LIB_LINKS@
+libglobus_common_la_SOURCES = $(Sources)
+libglobus_common_la_LDFLAGS = @GPT_LDFLAGS@
 
 if BUILD_PTHREADS
-libglobus_thread_pthread_la_LIBADD = libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_LIB_LINKS@ @PTHREAD_LIBS@
+libglobus_thread_pthread_la_LIBADD = libglobus_common.la @GPT_LIB_LINKS@ @PTHREAD_LIBS@
 libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c globus_thread_pthreads.h
 libglobus_thread_pthread_la_LDFLAGS = @GPT_LDFLAGS@ -module
 endif
 
 if BUILD_WINDOWS_THREADS
-libglobus_thread_windows_la_LIBADD = libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_LIB_LINKS@
+libglobus_thread_windows_la_LIBADD = libglobus_common.la @GPT_LIB_LINKS@
 libglobus_thread_windows_la_SOURCES = globus_thread_windows.c globus_thread_windows.h
 libglobus_thread_windows_la_LDFLAGS = @GPT_LDFLAGS@ -module
 endif
@@ -175,8 +172,5 @@ EXTRA_DIST = \
 	globus_callback_threads.c \
         $(pthreads_sources) \
         $(windowsthreads_sources)
-
-EXTRA_HEADERS = \
-        globus_netos_dir.h
 
 include $(top_srcdir)/globus_automake_post

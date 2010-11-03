@@ -15,7 +15,7 @@
         <Build_Environment >
             <cflags ></cflags>
             <external_includes ></external_includes>
-            <pkg_libs >-ludt_$GLOBUS_FLAVOR_NAME</pkg_libs>
+            <pkg_libs >-ludt</pkg_libs>
             <external_libs ></external_libs>
         </Build_Environment>
 

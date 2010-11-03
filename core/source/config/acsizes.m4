@@ -33,7 +33,7 @@ dnl CHECK_FOR_INTTYPE name
 AC_DEFUN([CHECK_FOR_INTTYPE],
 [
     inttype_name=$1
-    inttype_bits=`echo "$inttype_name" | sed -e 's/u\?int\([[0-9]]\+\)_t/\1/'`
+    inttype_bits=`echo "$inttype_name" | tr -d '[[A-Za-z_]]'`
     inttype_size=`expr $inttype_bits / 8`
     if echo $inttype_name | grep '^u' > /dev/null 2>/dev/null ; then
         inttype_sign="unsigned"

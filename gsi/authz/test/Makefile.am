@@ -23,13 +23,13 @@ authz_cred_test_SOURCES = authz_cred_test.c gssapi_test_utils.c gssapi_test_util
 authz_cred_test_LDFLAGS = $(GPT_LDFLAGS)
 authz_cred_test_LDADD = $(GPT_PGM_LINKS)
 
-lib_LTLIBRARIES = libglobus_authz_test_callout_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_authz_test_callout.la
 
-libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Callout_sources)
+libglobus_authz_test_callout_la_SOURCES = $(Callout_sources)
 
-libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_authz_test_callout_la_LIBADD = $(GPT_LIB_LINKS)
 
-libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_authz_test_callout_la_LDFLAGS = \
 	$(GPT_LDFLAGS) -module -rpath $(GLOBUS_LOCATION)
 
 

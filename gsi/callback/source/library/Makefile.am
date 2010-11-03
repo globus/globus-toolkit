@@ -15,13 +15,13 @@ include_HEADERS= \
 	globus_gsi_callback.h \
 	globus_gsi_callback_constants.h
 
-lib_LTLIBRARIES = libglobus_gsi_callback_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gsi_callback.la
 
 INCLUDES = -I.. @GPT_INCLUDES@ -I$(top_srcdir)/library/oldgaa
 
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gsi_callback_la_SOURCES = $(Sources)
 
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = ./oldgaa/libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la  @GPT_LIB_LINKS@
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+libglobus_gsi_callback_la_LIBADD = ./oldgaa/libglobus_oldgaa.la  @GPT_LIB_LINKS@
+libglobus_gsi_callback_la_LDFLAGS = @GPT_LDFLAGS@
 
 include $(top_srcdir)/globus_automake_post

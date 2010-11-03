@@ -35,7 +35,7 @@ if test "X$builtins" != "X" ; then
     if test -f builtins/$builtin/Makefile.in ; then
       XIO_BUILTIN_DIRS="$XIO_BUILTIN_DIRS $builtin"
       XIO_BUILTIN_DOXY_DIRS="$XIO_BUILTIN_DOXY_DIRS ../builtins/${builtin}"  
-      lib_name="builtins/${builtin}/libglobus_xio_${builtin}_driver_${GLOBUS_FLAVOR_NAME}.la"
+      lib_name="builtins/${builtin}/libglobus_xio_${builtin}_driver.la"
       XIO_BUILTIN_LIBS="$XIO_BUILTIN_LIBS $lib_name"
     
       BUILTIN_EXTENSIONS_DEC="${BUILTIN_EXTENSIONS_DEC}GlobusXIODeclareModule(${builtin}); "

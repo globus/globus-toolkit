@@ -40,7 +40,7 @@ globus_gridftp_server_embedded_LDFLAGS = $(GPT_LDFLAGS)
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 globus_gridftp_server_embedded_LDADD = \
-        $(top_srcdir)/libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
+        $(top_srcdir)/libglobus_gridftp_server.la \
         $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post

@@ -52,16 +52,6 @@ else
 fi
 AC_SUBST(GLOBUS_CALLBACK_BUILD)
 
-OS_HEADERS=""
-
-case "$host" in
-    arm* )
-        OS_HEADERS="$OS_HEADERS globus_netos_libc.h"
-        ;;
-esac
-
-AC_SUBST(OS_HEADERS)
-
 LAC_DOXYGEN("../library")
 
 AC_PATH_PROGS(GLOBUS_SH_PERL, perl perl5)

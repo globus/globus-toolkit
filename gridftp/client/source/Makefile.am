@@ -60,11 +60,11 @@ include_HEADERS= \
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
-lib_LTLIBRARIES = libglobus_ftp_client_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_ftp_client.la
 
-libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_ftp_client_la_SOURCES = $(Sources)
+libglobus_ftp_client_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_ftp_client_la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST = globus_ftp_client_restart_plugin.example \
 	globus_ftp_client_debug_plugin.example \

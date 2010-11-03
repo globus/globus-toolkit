@@ -19,15 +19,15 @@ Sources= \
 EXTRA_DIST= \
         config.h.in
 
-lib_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_oldgaa.la
 
 INCLUDES = $(GPT_INCLUDES) -I.
 
 #AM_CFLAGS = -DDEBUG
 
-libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_oldgaa_la_SOURCES = $(Sources)
 
-libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_oldgaa_la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_oldgaa_la_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post

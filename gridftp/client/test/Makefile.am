@@ -88,8 +88,8 @@ LibSources = \
 	globus_ftp_client_test_throughput_plugin.c \
 	globus_ftp_client_test_common.c
 
-noinst_LTLIBRARIES = libglobus_ftp_client_test_$(GLOBUS_FLAVOR_NAME).la
-libglobus_ftp_client_test___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+noinst_LTLIBRARIES = libglobus_ftp_client_test.la
+libglobus_ftp_client_test_la_SOURCES = \
 	$(LibHeaders) \
 	$(LibSources)
 
@@ -137,7 +137,7 @@ test_PROGRAMS= \
     
 
 INCLUDES = $(GPT_INCLUDES)
-LDADD = libglobus_ftp_client_test_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+LDADD = libglobus_ftp_client_test.la $(GPT_PGM_LINKS)
 
 globus_ftp_client_create_destroy_test_SOURCES = globus_ftp_client_create_destroy_test.c $(LibHeaders)
 globus_ftp_client_create_destroy_test_LDFLAGS = $(GPT_LDFLAGS)

@@ -18,11 +18,11 @@ LDADD = $(GPT_PGM_LINKS)
 
 include_HEADERS = globus_gfork.h
 
-lib_LTLIBRARIES = libglobus_gfork_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gfork.la
 
-libglobus_gfork___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_gfork___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gfork___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gfork_la_SOURCES = $(Sources)
+libglobus_gfork_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gfork_la_LIBADD = \
     $(MODULE_LIBS) $(GPT_LIB_LINKS)
 
 sbin_PROGRAMS= \
@@ -32,7 +32,7 @@ gfork_CFLAGS = $(GPT_CFLAGS)
 gfork_SOURCES = globus_gfork_server.c
 gfork_LDFLAGS = $(GPT_LDFLAGS)
 gfork_LDADD = \
-    ./libglobus_gfork_$(GLOBUS_FLAVOR_NAME).la \
+    ./libglobus_gfork.la \
     $(GPT_PGM_LINKS)
 
 

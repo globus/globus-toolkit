@@ -1,6 +1,6 @@
 #! /usr/bin/env perl
 
-@GLOBUS_PERL_INITIAlIZER@
+@GLOBUS_PERL_INITIALIZER@
 
 use strict;
 use Getopt::Long;

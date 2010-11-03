@@ -24,16 +24,14 @@ include_HEADERS = globus_scheduler_event_generator.h \
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
-lib_LTLIBRARIES = libglobus_scheduler_event_generator_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_scheduler_event_generator.la
 
 libexec_PROGRAMS = globus-scheduler-event-generator
 
-libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_scheduler_event_generator_la_SOURCES = \
 	globus_scheduler_event_generator.h globus_scheduler_event_generator.c
-libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	$(GPT_LDFLAGS)
-libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	$(GPT_LIB_LINKS)
+libglobus_scheduler_event_generator_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_scheduler_event_generator_la_LIBADD = $(GPT_LIB_LINKS)
 
 globus_scheduler_event_generator_SOURCES = \
 	main.c \
@@ -43,7 +41,7 @@ globus_scheduler_event_generator_SOURCES = \
 	globus_scheduler_event_generator_app.h
 globus_scheduler_event_generator_LDFLAGS = $(GPT_LDFLAGS) -export-dynamic
 globus_scheduler_event_generator_LDADD = \
-	libglobus_scheduler_event_generator_$(GLOBUS_FLAVOR_NAME).la \
+	libglobus_scheduler_event_generator.la \
 	$(GPT_PGM_LINKS)
 
 EXTRA_DIST= version.h.in protocol.dox

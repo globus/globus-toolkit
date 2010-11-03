@@ -9,14 +9,14 @@ Sources= \
 include_HEADERS = \
 	globus_error_gssapi.h
 
-lib_LTLIBRARIES = libglobus_gssapi_error_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gssapi_error.la
 
 INCLUDES = @GPT_INCLUDES@
 
-libglobus_gssapi_error___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gssapi_error_la_LDFLAGS = $(GPT_LDFLAGS)
 
-libglobus_gssapi_error___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gssapi_error_la_LIBADD = $(GPT_LIB_LINKS)
 
-libglobus_gssapi_error___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gssapi_error_la_SOURCES = $(Sources)
 
 include $(top_srcdir)/globus_automake_post

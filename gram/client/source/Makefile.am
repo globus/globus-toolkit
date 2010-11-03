@@ -34,11 +34,11 @@ include_HEADERS= \
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
-lib_LTLIBRARIES = libglobus_gram_client_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gram_client.la
 
-libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gram_client_la_SOURCES = $(Sources)
+libglobus_gram_client_la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gram_client_la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST= resource_manager_contact.dox \
 	version.h.in

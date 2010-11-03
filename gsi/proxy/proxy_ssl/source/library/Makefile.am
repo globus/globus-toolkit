@@ -10,14 +10,14 @@ include_HEADERS= \
 	proxycertinfo.h \
 	proxypolicy.h
 
-lib_LTLIBRARIES = libglobus_proxy_ssl_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_proxy_ssl.la
 
 INCLUDES = $(GPT_INCLUDES) -I.
 
-libglobus_proxy_ssl___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_proxy_ssl_la_SOURCES = $(Sources)
 
-libglobus_proxy_ssl___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_proxy_ssl_la_LIBADD = $(GPT_LIB_LINKS)
 
-libglobus_proxy_ssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_proxy_ssl_la_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
