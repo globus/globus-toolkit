@@ -42,8 +42,8 @@ if test ! -f "$GLOBUS_LOCATION/share/gpt_autoconf_macros.m4"; then
         exit 1
     elif test -f "$GPT_LOCATION/share/globus/globus_aclocal/gpt_autoconf_macros.m4";  then
 	config="$config -I $GPT_LOCATION/share/globus/globus_aclocal"
-    elif test -f "$GPT_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
-        config="$config -I $GPT_LOCATION/share/globus_aclocal"
+    elif test -f "$GPT_LOCATION/share/globus/aclocal/gpt_autoconf_macros.m4"; then
+        config="$config -I $GPT_LOCATION/share/globus/aclocal"
     else
 	echo "ERROR Can't find gpt_autoconf_macros.m4" 1>&2
 	exit 1

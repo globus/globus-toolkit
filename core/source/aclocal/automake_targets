@@ -12,7 +12,7 @@ scriptsysconfdir = $(sysconfdir)
 flavorincludedir = ${includedir}/$(GLOBUS_FLAVOR_NAME)
 ## flavorinclude = [ HEADERS ]
 
-pkgdir = ${sysconfdir}/globus_packages/$(PACKAGE)
+pkgdir = ${datadir}/packages/$(PACKAGE)
 ## pkg = [ DATA ]
 
 aclocaldir = ${datadir}/globus_aclocal
