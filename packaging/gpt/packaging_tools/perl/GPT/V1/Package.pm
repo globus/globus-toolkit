@@ -84,7 +84,7 @@ sub path_namer
 {
   my ($self, $name, $f, $t)=@_;
   my $globus=$ENV{GLOBUS_LOCATION};
-  my $path="$globus/etc/globus_packages/$name/pkg_data_".$f."_$t.gpt";
+  my $path="$globus/share/globus/packages/$name/pkg_data_".$f."_$t.gpt";
  
   $self->read_metadata_file($path);
 }

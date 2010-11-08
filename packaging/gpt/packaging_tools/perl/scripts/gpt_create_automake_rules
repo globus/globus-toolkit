@@ -61,7 +61,7 @@ $topdir = Cwd::abs_path($topdir);
 # target types defined by automake
 my @target_types = ("PROGRAMS", "LTLIBRARIES", "LIBRARIES","SCRIPTS", "HEADERS","DATA", "MANS");
 
-my $amdir = "$gpath/share/gpt_amdir";
+my $amdir = "$gpath/share/globus/amdir";
 
 my %excluded_dirs;
 for my $p (@excludes) {

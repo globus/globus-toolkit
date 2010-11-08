@@ -1,36 +1,47 @@
+sbin_SCRIPT_sources = 	\
+	perl/scripts/gpt-build.in \
+	perl/scripts/gpt-bundle \
+	perl/scripts/gpt-config.in \
+	perl/scripts/gpt_create_automake_rules \
+        perl/scripts/gpt_extract_data \
+	perl/scripts/gpt_generate_bin_pkg_data \
+	perl/scripts/gpt_get_lib_names \
+	perl/scripts/gpt-install \
+        perl/scripts/gpt-perl-version \
+	perl/scripts/gpt-pkg \
+	perl/scripts/gpt-postinstall \
+	perl/scripts/gpt-query \
+	perl/scripts/gpt_save_flavor \
+	perl/scripts/gpt_sort_filelist \
+	perl/scripts/gpt-uninstall \
+	perl/scripts/gpt-verify \
+	perl/scripts/gpt_version.in
+
 sbin_SCRIPTS = 	\
 	perl/scripts/gpt-build \
 	perl/scripts/gpt_build_config \
 	perl/scripts/gpt-bundle \
 	perl/scripts/gpt-config \
 	perl/scripts/gpt_create_automake_rules \
-        perl/scripts/gpt-deps \
         perl/scripts/gpt_extract_data \
-        perl/scripts/gpt-filelist-convert \
-        perl/scripts/gpt-filelist-copy \
-        perl/scripts/gpt-file-remove \
-	perl/scripts/gpt-flavor-configuration \
 	perl/scripts/gpt_generate_bin_pkg_data \
 	perl/scripts/gpt_get_lib_names \
 	perl/scripts/gpt-install \
-	perl/scripts/gpt-md5 \
         perl/scripts/gpt-perl-version \
 	perl/scripts/gpt-pkg \
 	perl/scripts/gpt-postinstall \
-	perl/scripts/gpt_save_flavor \
 	perl/scripts/gpt-query \
+	perl/scripts/gpt_save_flavor \
 	perl/scripts/gpt_sort_filelist \
 	perl/scripts/gpt-uninstall \
-	perl/scripts/gpt-update \
 	perl/scripts/gpt-verify \
 	perl/scripts/gpt_version
 
-
-gptdatadir = ${datadir}/gpt
+gptdatadir = @gptdatadir@
 
 gptdata_DATA = $(top_builddir)/gpt_scripts_list
 
-gptexecsharedir = ${datadir}/gpt
+gptexecsharedir = @gptexecsharedir@
 
 gptexecshare_SCRIPTS = config.guess
 
@@ -123,7 +134,7 @@ xml1modules_DATA = \
 	perl/GPT/PackageFilelist/xml1/ListInterface.pm
 
 
-amdirdir = $(datadir)/gpt/amdir
+amdirdir = @amdir@
 
 amdir_DATA = \
 	amdir/data.am \
@@ -138,9 +149,9 @@ amdir_DATA = \
 	amdir/pkgdata_Makefile.am
 
 
-pkg_confdir = $(datadir)/gpt
-dtddir = $(datadir)/gpt/dtd
-aclocaldir = $(datadir)/gpt/aclocal
+pkg_confdir = $(datadir)/globus/gpt
+dtddir = $(datadir)/globus/dtd
+aclocaldir = $(datadir)/globus/aclocal
 
 pkg_conf_DATA = \
 	etc/globus_flavor_labels.conf \
@@ -161,10 +172,12 @@ libexec_SCRIPTS = \
 	etc/gpt-bootstrap.sh
 
 install-man: install-pod2man
-install-data-hook: install-localize hack-for-globus-core
+install-data-hook: install-localize
 
 install-localize:
-	@echo "Localizing scripts to $(PERL)"
+	echo "Localizing scripts to $(PERL)"; \
+	GLOBUS_LOCATION=$(DESTDIR)$(prefix) \
+	GPT_LOCATION=$(DESTDIR)$(prefix) \
 	PERLLIB=$(DESTDIR)$(perlmoduledir)$${PERLLIB:+:$$PERLLIB} \
 	$(PERL) $(DESTDIR)$(sbindir)/gpt-config -perl=$(PERL) \
 	-location=$(DESTDIR)$(prefix) \
@@ -183,34 +196,13 @@ install-pod2man:
 		echo "Skipping Man page installation"; \
 	fi
 
-hack-for-globus-core:
-	@if test ! -h $(datadir)/globus_aclocal; then \
-	    startdir=`pwd`; \
-	    cd $(datadir); \
-	    $(LN_S) gpt/aclocal globus_aclocal; \
-	    cd $$startdir; \
-	fi; \
-	if test ! -h $(datadir)/gpt_amdir; then \
-	    startdir=`pwd`; \
-	    cd $(datadir); \
-	    $(LN_S) gpt/amdir gpt_amdir; \
-	    cd $$startdir; \
-	fi; \
-	if test ! -d $(sysconfdir); then \
-	    $(mkinstalldirs) $(sysconfdir); \
-	fi; \
-	if test ! -h $(sysconfdir)/gpt; then \
-	    cd $(sysconfdir); \
-	    $(LN_S) $(pkg_confdir) gpt; \
-	fi
-
 $(top_builddir)/gpt_scripts_list: Makefile.am
 	@echo "Creating script list"
 	@echo $(sbin_SCRIPTS) | sed 's!perl/scripts/!!g'> $(top_builddir)/gpt_scripts_list
 
 
 EXTRA_DIST = \
-    $(sbin_SCRIPTS) \
+    $(sbin_SCRIPTS_sources) \
     $(gptexecshare_SCRIPTS) \
     $(gptmodules_DATA) \
     $(v1modules_DATA) \

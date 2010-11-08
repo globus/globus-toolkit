@@ -116,7 +116,7 @@ sub new
         $flavor = $pkginfo->flavor();
         $pkgtype = $pkginfo->pkgtype();
 
-        my $tmpPath = "etc/globus_packages/" . $name . "/" . $flavor . "_" . $pkgtype . ".filelist";
+        my $tmpPath = "share/globus/packages/$name/${flavor}_${pkgtype}.filelist";
         $self->setFilelist( read => $tmpPath );
     }
 

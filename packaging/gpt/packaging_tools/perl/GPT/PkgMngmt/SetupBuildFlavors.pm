@@ -32,9 +32,7 @@ $VERSION     = 0.01;
         {
           die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
         }
-      $environment{'core_src'} = "$gpath/etc/gpt";
-
-      $environment{'core_src'} .= "/globus_core-src.tar.gz";
+      $environment{'core_src'} = "$gpath/share/globus/gpt/globus_core-src.tar.gz";
 
     }
     return $environment{'core_src'};

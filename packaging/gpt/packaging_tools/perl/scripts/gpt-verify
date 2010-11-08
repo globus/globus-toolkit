@@ -42,7 +42,7 @@ if ( defined($globus_path) && !defined($gpath) )
     $gpath = $globus_path;
 }
 
-if ( ! -d "$globus_path/etc/globus_packages" )
+if ( ! -d "$datadir/globus/packages" )
 {
     die("Can't find a globus_packages directory to work on in your GLOBUS_LOCATION!\n");
 }

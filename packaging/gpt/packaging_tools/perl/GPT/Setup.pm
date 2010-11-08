@@ -135,7 +135,7 @@ the package metadata file for the remaining information.
 =item finish
 
 Writes metatdata into
-$GLOBUS_LOCATION/etc/globus_packages/setup/<setup_format_name> to
+$GLOBUS_LOCATION/share/globus/packages/setup/<setup_format_name> to
 indicate that the setup is complete.
 
 =head1 AUTHOR

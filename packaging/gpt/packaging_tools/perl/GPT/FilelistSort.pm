@@ -56,8 +56,7 @@ sub new {
 sub reset {
   my $self = shift;
   $self->{'list'} = [];
-##  @{$self->{'list'}} = grep { $_->{'dir'} !~ m!etc/globus_packages/! }
-  @{$self->{'list'}} = grep { $_->{'dir'} !~ m!etc/gpt/packages/! }
+  @{$self->{'list'}} = grep { $_->{'dir'} !~ m!share/globus/globus/packages/! }
     grep { $_->{'dir'} !~ m!etc/globus_packages/! }
       @{$self->{'fulllist'}};
 
@@ -225,8 +224,7 @@ sub extract_data {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-##    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|include|lib|setup|etc/globus_packages)(?:/|$)!) {
-    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|include|lib|setup|etc/gpt/packages)(?:/|$)!) {
+    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|include|lib|setup|share/globus/packages)(?:/|$)!) {
       push @newlist, $_;
     }
   }

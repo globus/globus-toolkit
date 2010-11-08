@@ -41,7 +41,7 @@ if ( defined($globus_path) && !defined($gpath) )
     $gpath = $globus_path;
 }
 
-if ( ! -d "$globus_path/etc/globus_packages" )
+if ( ! -d "$globus_path/share/globus/packages" )
 {
     die("Can't find a globus_packages directory to work on in your GLOBUS_LOCATION!\n");
 }
@@ -56,12 +56,6 @@ if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 require Pod::Usage;
 
 my($force, $error, $version, $help, $man, $location, $debug);
-
-# sub pod2usage {
-#   my $ex = shift;
-#   print "gpt-postinstall [-help -force -version]\n";
-#   exit $ex;
-# }
 
 GetOptions( 'force'      => \$force,
            'debug'          => \$debug,

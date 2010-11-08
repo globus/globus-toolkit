@@ -673,7 +673,7 @@ sub copy_flavored_pgm_files {
   for my $f (@$filelist) {
     my ($dir, $name) = $f =~ m!(.+)/([^/]+)$!;
 
-    next if $dir =~  m!/etc/\w+packages!;
+    next if $dir =~  m!/share/globus/packages!;
 
     $dir = "$installdir/$dir";
 

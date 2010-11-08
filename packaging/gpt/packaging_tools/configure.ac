@@ -64,9 +64,17 @@ AC_SUBST(GPT_LOCATION)
 initializer_prefix="$prefix"
 test "$initializer_prefix" = "NONE" && initializer_prefix="$ac_default_prefix"
 test "$initializer_exec_prefix" = "" && initializer_exec_prefix='${prefix}'
+gptdatadir='${datadir}/globus/gpt'
+gptexecsharedir='${datadir}/globus/gpt'
+amdir='${datadir}/globus/amdir'
+
+AC_SUBST(gptdatadir)
+AC_SUBST(gptexecsharedir)
+AC_SUBST(amdir)
 
 GPT_PERL_INITIALIZER="
 my (\$prefix, \$exec_prefix, \$bindir, \$sbindir, \$libdir, \$perlmoduledir);
+my (\$gptdatadir, \$gptexecsharedir, \$amdir);
 
 sub eval_path
 {
@@ -104,12 +112,16 @@ else
 \$sbindir = eval_path('$sbindir');
 \$libdir = eval_path('$libdir');
 \$perlmoduledir = eval_path('$perlmoduledir');
+\$gptdatadir = eval_path('$gptdatadir');
+\$gptexecsharedir = eval_path('$gptexecsharedir');
+\$amdir = eval_path('$amdir');
 
 push(@INC, \"\${perlmoduledir}\");
 my \$datadir = eval_path(\"${datadir}\");
 "
 AC_SUBST(GPT_PERL_INITIALIZER)
 _AM_SUBST_NOTMAKE(GPT_PERL_INITIALIZER)
+
 
 AC_CONFIG_FILES(Makefile 
         perl/scripts/gpt-build

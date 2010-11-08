@@ -811,9 +811,6 @@ sub bundlename
 
   if (! defined $arch) 
   {
-  # Add path to LocalEnv module to @INC
-  push @INC,"$gpath/var/lib/perl";
-
   die "ERROR: GPT is not configured. Use gpt-config\n" 
     if ! defined eval ("require Grid::GPT::LocalEnv;");
 
@@ -925,7 +922,7 @@ B<gpt-bundle> Creates binary or source bundles from an installation or a
 collection of source packages.  These bundles can then distributed be
 installed using I<gpt-install> or I<gpt-build>. A bundle consists of a
 collection of packages and a XML formatted description file. The DTD
-for this file is found in I<$GPT_LOCATION/etc/gpt_bundle.dtd>.
+for this file is found in I<$GPT_LOCATION/share/gpt/dtd/gpt_bundle.dtd>.
 
 The script accepts a list of packages from the command line or from an
 inputed bundle description file.  It expands this list to include all

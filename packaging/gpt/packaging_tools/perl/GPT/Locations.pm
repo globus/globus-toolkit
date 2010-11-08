@@ -30,7 +30,6 @@ sub new
              gpt_amdir => undef,
              gpt_aclocaldir => undef,
              pkgdir => undef,
-             altpkgdir => undef,
              bundledir => undef,
              setupdir => undef,
             };
@@ -65,7 +64,7 @@ sub _init {
 sub _init_gptdir {
   my ($me) =@_;
   my $gptdir = $ENV{'GPT_LOCATION'};
-  $me->{'gpt_etcdir'} = "$gptdir/etc/gpt";
+  $me->{'gpt_etcdir'} = "$gptdir/share/gpt";
   $me->{'gpt_amdir'} = "$gptdir/share/gpt/amdir";
   $me->{'gpt_aclocaldir'} = "$gptdir/share/gpt/aclocal";
 }
@@ -87,10 +86,14 @@ sub create_dirs {
   if ($args{'mode'} eq 'install' ) {
     Grid::GPT::FilelistFunctions::mkinstalldir($me->{'bundledir'});
     Grid::GPT::FilelistFunctions::mkinstalldir($me->{'setupdir'});
-    my $startdir = cwd();
-    chdir "$me->{'installdir'}/etc";
-    my $result = `ln -s gpt/packages globus_packages` 
-      if ! -d "globus_packages";
+    my $amdir = $me->{'gpt_amdir'};
+    $amdir =~ s!globus/amdir!gpt_amdir!;
+    if (-d "$amdir") {
+      Grid::GPT::FilelistFunctions::mkinstalldir("$me->{'installdir'}/share/globus");
+      Grid::GPT::FilelistFunctions::mkinstalldir("$me->{'installdir'}/share/globus/aclocal");
+      Grid::GPT::FilelistFunctions::mkinstalldir("$me->{'installdir'}/share/globus/flavors");
+    }
+
     return
   }
   if ($args{'mode'} eq 'build' ) {
@@ -132,18 +135,10 @@ Or use the -location switch"
     if ! defined $me->{'installdir'};
 
   # Determine what kind of package directory we have
+  my ($pkgdir) = ("share/globus/packages");
 
-  my ($altpkgdir, $pkgdir) = ("etc/globus_packages", "etc/gpt/packages");
-
-  if (-d "$me->{'installdir'}/etc/globus_packages" and 
-      ! -d "$me->{'installdir'}/etc/gpt/packages") {
-    $pkgdir = "etc/globus_packages";
-    $altpkgdir = "etc/gpt/packages";
-  }
-
-  $me->{'bundledir'} = "$me->{'installdir'}/etc/gpt/bundles";
+  $me->{'bundledir'} = "$me->{'installdir'}/share/globus/bundles";
   $me->{'pkgdir'} = "$me->{'installdir'}/$pkgdir";
-  $me->{'altpkgdir'} = "$me->{'installdir'}/$altpkgdir";
   $me->{'setupdir'} = "$me->{'installdir'}/$pkgdir/setup";
 }
 

@@ -21,21 +21,6 @@ $VERSION = '0.01';
 
 # Preloaded methods go here.
 sub find_make {
-  my $gpath = $ENV{GPT_LOCATION};
-
-  if (!defined($gpath))
-    {
-      $gpath = $ENV{GLOBUS_LOCATION};
-    }
-
-  if (!defined($gpath))
-    {
-      die "GPT_LOCATION or needs to be set before running this script";
-    }
-
-  # Add path to LocalEnv module to @INC
-  push @INC,"$gpath/var/lib/perl";
-
   die "ERROR: GPT is not configured. Use gpt-config\n" 
     if ! defined eval ("require Grid::GPT::LocalEnv;");
 

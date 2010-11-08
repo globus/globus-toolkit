@@ -49,7 +49,6 @@ sub get_rpm_settings_list {
 sub new {
   my ($that, %args)  = @_;
 
-  push @INC, 
   my $class = ref($that) || $that;
   my $me  = {
              ignore_errors => $args{'ignore_errors'},
@@ -332,14 +331,15 @@ sub clear_rpm_settings {
 sub localize {
   my($me) = @_;
 
-  my $gpath = $me->{'gpath'};
+  my $pmpath;
+  foreach my $dir (@INC) {
+      next unless ( -e "$dir/Grid/GPT/LocalEnv.pm.in");
+      $pmpath = $dir;
+      last;
+  }
 
-  require Grid::GPT::FilelistFunctions;
-  Grid::GPT::FilelistFunctions::mkinstalldir("$gpath/var/lib/perl/Grid/GPT/");
-
-  open INFILE, "$gpath/lib/perl/Grid/GPT/LocalEnv.pm.in";
-  open OUTFILE, ">$gpath/var/lib/perl/Grid/GPT/LocalEnv.pm";
-  my $link = ">$gpath/var/lib/perl/Grid/GPT/LocalEnv.pm";
+  open INFILE, "$pmpath/Grid/GPT/LocalEnv.pm.in";
+  open OUTFILE, ">$pmpath/Grid/GPT/LocalEnv.pm";
 
   for my $l (<INFILE>) {
     while (my ($n,$v) = each(%{$me->{'substitutions'}})) {

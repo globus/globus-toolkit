@@ -5,7 +5,6 @@ use Carp;
 
 require Exporter;
 use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-use Data::Dumper;
 use Grid::GPT::V1::XML;
 use Grid::GPT::V1::Definitions;
 use Grid::GPT::V1::FlavorDefinition;
@@ -32,7 +31,7 @@ sub new {
       {
         $gpath = $ENV{GLOBUS_LOCATION};
       }
-    my $confdir = "$gpath/etc/gpt";
+    my $confdir = "$gpath/share/globus/gpt";
 
     if (defined $args{'core'}) {
 
@@ -63,9 +62,9 @@ sub new {
 
       $me->{'flavors'} = [];
 
-      if (-d "$gpath/etc/globus_core") {
-        opendir(CONFDIR, "$gpath/etc/globus_core") 
-          || die "ERROR:BuildFlavors: $gpath/etc/globus_core cannot be accessed\n";
+      if (-d "$gpath/share/globus/globus_core") {
+        opendir(CONFDIR, "$gpath/share/globus/globus_core") 
+          || die "ERROR:BuildFlavors: $gpath/share/globus/globus_core cannot be accessed\n";
 
         my @flavorfiles = grep {m!flavor_\w+.gpt!} readdir(CONFDIR);
 
@@ -73,13 +72,12 @@ sub new {
         for my $ff (@flavorfiles) {
           my $obj = 
             new Grid::GPT::V1::FlavorDefinition(xmlfile => 
-                                            "$gpath/etc/globus_core/$ff");
+                                            "$gpath/share/globus/globus_core/$ff");
           $me->{$obj->{'name'}} = $obj;
           push @{$me->{'flavors'}}, $obj->{'name'};
         }
       }
     }
-##print Dumper $me;
     return $me;
 }
 
