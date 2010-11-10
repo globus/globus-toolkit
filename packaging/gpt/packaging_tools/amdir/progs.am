@@ -58,7 +58,6 @@ filelist-@DIR@PROGRAMS:
           else \
               filelisttype="pgm_static"; \
           fi; \
-	  true echo "$(DESTDIR)$(@DIR@dir)/$$p" >> $(FILELIST_FILE); \
 	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
 	  p="`echo "$(@DIR@dir)/$$p" | sed -e 's!^$(exec_prefix)!!'`"; \
 	  echo "$$p" >> "$${filelistdir}/${GLOBUS_FLAVOR_NAME}_$${filelisttype}.filelist"; \

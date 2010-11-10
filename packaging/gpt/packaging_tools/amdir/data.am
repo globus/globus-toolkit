@@ -65,7 +65,6 @@ filelist-@DIR@DATA:
 ## Funny invocation because Makefile variable can be empty, leading to
 ## a syntax error in sh.
 	@list='$(@DIR@_DATA)'; for p in $$list; do \
-	  true echo "$(DESTDIR)$(@DIR@dir)/$$p" >> $(FILELIST_FILE); \
 	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
 	  origp="$$p" ; \
 	  p="`echo $(@DIR@dir)/$$p | sed -e 's!^$(prefix)!!'`"; \

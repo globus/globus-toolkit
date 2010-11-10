@@ -1,5 +1,7 @@
 #! perl
 
+@GPT_PERL_INITIALIZER@
+
 use strict;
 use Carp;
 use Getopt::Long;
@@ -21,36 +23,16 @@ if ( ! ( defined eval "require 5.005" ) )
 # dig the globus and gpt paths out of the user's environment variables
 #
 
-my $gpath;
-my $gpt_path = $ENV{GPT_LOCATION};
-my $globus_path = $ENV{GLOBUS_LOCATION};
 my $verbose;
 
-if ( !defined($gpt_path) && !defined($globus_path) )
-{
-    die("GPT_LOCATION and GLOBUS_LOCATION needs to be set before running this script");
-}
-
-if ( defined($gpt_path) )
-{
-    $gpath = $gpt_path;
-}
-
-if ( defined($globus_path) && !defined($gpath) )
-{
-    $gpath = $globus_path;
-}
-
-if ( ! -d "$globus_path/share/globus/packages" )
+if ( ! -d "$datadir/globus/packages" )
 {
     die("Can't find a globus_packages directory to work on in your GLOBUS_LOCATION!\n");
 }
 
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
-
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;
@@ -62,7 +44,7 @@ GetOptions( 'force'      => \$force,
            'verbose'          => \$verbose,
             'version'    => \$version,
             'help|?'     => \$help,
-            'location=s' => \$globus_path, 
+            'location=s' => \$prefix, 
             'man'        => \$man)
   or Pod::Usage::pod2usage(0);
 
@@ -87,7 +69,7 @@ my $log = new Grid::GPT::PkgMngmt::Inform(
                                           debug => $debug
                                          );
 
-my $locations = new Grid::GPT::Locations( installdir => $globus_path);
+my $locations = new Grid::GPT::Locations( installdir => $prefix);
 
 my $list;
 
@@ -332,7 +314,7 @@ sub formatSetupCommand
     # first check in $GL/setup/globus/ to maintain backwards compatibility
     #
 
-    $tmpcmd1 = $globus_path . "/setup/globus/" . $setupcmd;
+    $tmpcmd1 = "$prefix/setup/globus/$setupcmd";
 
     if ( -x $tmpcmd1 )
     {
@@ -345,7 +327,7 @@ sub formatSetupCommand
     # otherwise check in $GL/setup/ to support new-style paths
     #
 
-    $tmpcmd2 = $globus_path . "/setup/" . $setupcmd;
+    $tmpcmd2 = "$prefix/setup/$setupcmd";
 
     if ( -x $tmpcmd2 )
     {
@@ -406,7 +388,7 @@ sub action
       system(
              "GLOBUS_LOCATION=$locations->{'installdir'}; \\
 export GLOBUS_LOCATION; \\
-GPT_LOCATION=$gpath; \\
+GPT_LOCATION=$locations->{'installdir'}; \\
 export GPT_LOCATION; \\
 $command 2>&1");
 

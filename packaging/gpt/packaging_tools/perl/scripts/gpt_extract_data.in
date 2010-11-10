@@ -1,5 +1,7 @@
 #! perl
 
+@GPT_PERL_INITIALIZER@
+
 use strict;
 use Getopt::Long;
 use Config;
@@ -15,22 +17,9 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
-my $gpath = $ENV{GPT_LOCATION};
-if (!defined($gpath))
-{
-  $gpath = $ENV{GLOBUS_LOCATION};
-
-}
-if (!defined($gpath))
-{
-   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
-
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;

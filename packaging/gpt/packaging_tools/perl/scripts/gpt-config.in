@@ -36,17 +36,12 @@ my $options_result = GetOptions(
                                 'strict' => \$strict
                               );
 
-my $gpath = $prefix;
 
-#
-# alter the include path
-#
-
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+push(@INC, $perlmoduledir);
 
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;
@@ -101,7 +96,7 @@ if ( defined eval "require Grid::GPT::LocalEnv;" and ! defined $probe)
 
 my $localizer = new Grid::GPT::Localize(%mode, 
                                         ignore_errors => $ignore,
-                                        gpath => $gpath,
+                                        gpath => $prefix,
                                         systar => defined $archivetar ? undef : 1,
                                        );
 
@@ -144,12 +139,12 @@ sub modify_gpt_scripts {
   for $s (@scripts) {
     next if $s !~ m!\w+!;
 
-    open SCRIPT, "$gpath/sbin/$s";
+    open SCRIPT, "$sbindir/$s";
 
     my @contents = <SCRIPT>;
     close SCRIPT;
 
-    open SCRIPT, ">$gpath/sbin/$s";
+    open SCRIPT, ">$sbindir/$s";
 
     my $done;
     my $with_w = defined $strict ? " -w" : "";

@@ -603,7 +603,7 @@ source distribution from a package metadata file called
 pkg_data_src.gpt.  If no instructions are found the script uses the
 default instructions described in I<Grid::GPT::PkgMngmt::Build>.
 
-Multiple packages can be built by passing in multiple i<-srcdir>
+Multiple packages can be built by passing in multiple I<-srcdir>
 arguments or multiple source packages and or bundles.  For now these
 have to be passed in in dependent order ie. if package foo needs
 package fee's headers to build then fee should come first.
@@ -616,8 +616,7 @@ is done by a seperate script called I<gpt-pkg>.
 
 Build flavors are character string labels that represent a set of
 compiler and linker options defined during the building of the
-globus_core package. Predefined flavors can be listed by using the
-B<globus_flavor_configuration> script.  Packages can be built with any
+globus_core package.  Packages can be built with any
 installed flavor.  globus_core can only be built with pre-defined
 flavors.  globus_core needs to be built by hand
 (i.e. ./configure|make|make install) to install a custom build flavor.
@@ -697,13 +696,13 @@ Just install the listed flavors.  Don't build any source code.
 =item B<-coresrc>
 
 Use this version of globus_core source rather than the one found in
-$GLOBUS_LOCATION/share/globus/gpt/globus_core-src.tar.gz.
+@pkg_confdir@/globus_core-src.tar.gz
 
 =item B<-flavor-cfg=FILE>
 
 Use the flavor configurations found in FILE.  The default
 configuration file is
-$GLOBUS_LOCATION/share/globus/gpt/globus_flavor_labels.conf
+@pkg_confdir@/globus_flavor_labels.conf
 
 =item B<-logdir=DIRECTORY>
 
@@ -742,7 +741,7 @@ Further details are found in the B<Grid::GPT::PkgMngmt::BuildMacros> manpage.
 
 =head1 SEE ALSO
 
-gpt-pkg(1) gpt-bundle(1) gpt-install(1) BuildMacros(3)
+gpt-pkg(8) gpt-bundle(8) gpt-install(8) BuildMacros(3)
 
 =head1 AUTHOR
 

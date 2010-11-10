@@ -16,7 +16,7 @@ $VERSION     = 0.01;
   sub get_target {
     my $gpath = shift;
     return $target if defined $target;
-    $target = `$gpath/share/gpt/config.guess`;
+    $target = `$gpath/share/globus/gpt/config.guess`;
     chomp($target);
     return $target;
   }

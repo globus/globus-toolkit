@@ -100,8 +100,9 @@ my $shutup =" > /dev/null 2>&1";
 $shutup = "" if defined $verbose;
 
 $ENV{GPT_LOCATION} = $gpt_location;
+delete $ENV{CONFIG_SITE};
 my %commands = (
-                gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; unset CONFIG_SITE ; \\
+                gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
 ./configure --with-perl=$perl_location --datadir='\${prefix}/share' --libexecdir='\${libdir}/globus' --mandir='\${prefix}/share/man'", 
                         "make", 
                         "make install",

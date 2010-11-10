@@ -4,6 +4,8 @@ use strict;
 use Getopt::Long;
 use Config;
 
+@GPT_PERL_INITIALIZER@
+
 #
 # Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
 # need to alter the invocation path to a valid perl interpreter in the GPT front-end
@@ -15,29 +17,14 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
-my $gpath = $ENV{GPT_LOCATION};
-
-if (!defined($gpath))
-{
-  $gpath = $ENV{GLOBUS_LOCATION};
-
-}
-
-if (!defined($gpath))
-{
-   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+push(@INC, $perlmoduledir);
 
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$ENV{GPT_LOCATION} does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;
-
-my $prefix = $gpath;
 
 my $VERSION = 0.01;
 my $srcdir = cwd();
@@ -178,15 +165,15 @@ __END__
 
 =head1 NAME
 
-B<globus_build_config> - Returns a minimized list of ldflags from a list of globus packages and external libraries.
+B<gpt_build_config> - Returns a minimized list of ldflags from a list of globus packages and external libraries.
 
 =head1 SYNOPSIS
 
-globus_build_config -src <source metadata file>  CB-f <globus_flavor_name> -link [static|shared] 
+gpt_build_config -src <source metadata file> -f <globus_flavor_name> -link [static|shared] 
 
 =head1 DESCRIPTION
 
-B<globus_build_config.pl> creates a file in it's current directory named
+B<gpt_build_config> creates a file in it's current directory named
 gpt_build_temp.sh that contains a list of necessary flags assembled from 
 the build environment metadata of the packages on which the source metadata 
 depends.  
@@ -195,7 +182,7 @@ This script was initially inspired by the shell script gnome_config.
 
 =head1 LINK ORDER
 
-The flag list returned by B<globus_build_config.pl> is assembled in
+The flag list returned by B<gpt_build_config> is assembled in
 dependent order.  A dependency between two libraries occurs when one
 library needs the symbols of another library in order to link
 correctly.  For most linkers the library providing the symbols has to

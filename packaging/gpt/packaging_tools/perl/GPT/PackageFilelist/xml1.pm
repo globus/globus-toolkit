@@ -69,9 +69,8 @@ sub new
     # handle arguments
     #
 
-    my %args = (installdir => $ENV{'GLOBUS_LOCATION'}, @_);
+    my %args = @_;
 
-    my $installdir = $args{'installdir'};
     my $packageList = $args{'packageList'};
     my $pkginfo = $args{'pkginfo'};
     my $relativePath = $args{'relativePath'};

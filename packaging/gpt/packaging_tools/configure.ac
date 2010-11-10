@@ -15,19 +15,16 @@ AC_ARG_WITH([perl],
 	*)
                 PERL=$withval
                 AC_SUBST(PERL) 
-                perldir="`echo $PERL | sed -e 's|/[^/]*\$||'`"
-                POD2MAN="$perldir/pod2man"
-                if ! test -f $POD2MAN; then
-                 POD2MAN=
-                fi 
 		;;
 	esac
 ],
 [
         AC_PATH_PROG(PERL,perl)
-        AC_PATH_PROG(POD2MAN,pod2man)
 ]
 )
+
+AC_PATH_PROG(POD2MAN, pod2man)
+AM_CONDITIONAL(INSTALL_MANS, test "x$POD2MAN" != "x")
 
 AC_ARG_WITH([perlmoduledir],
     AC_HELP_STRING([--with-perlmoduledir=PATH],
@@ -67,14 +64,21 @@ test "$initializer_exec_prefix" = "" && initializer_exec_prefix='${prefix}'
 gptdatadir='${datadir}/globus/gpt'
 gptexecsharedir='${datadir}/globus/gpt'
 amdir='${datadir}/globus/amdir'
+pkg_confdir='${datadir}/globus/gpt'
+dtddir='${datadir}/globus/dtd'
+aclocaldir='${datadir}/globus/aclocal'
 
 AC_SUBST(gptdatadir)
 AC_SUBST(gptexecsharedir)
 AC_SUBST(amdir)
+AC_SUBST(pkg_confdir)
+AC_SUBST(dtddir)
+AC_SUBST(aclocaldir)
 
 GPT_PERL_INITIALIZER="
-my (\$prefix, \$exec_prefix, \$bindir, \$sbindir, \$libdir, \$perlmoduledir);
-my (\$gptdatadir, \$gptexecsharedir, \$amdir);
+my (\$prefix, \$globus_prefix, \$exec_prefix, \$bindir, \$sbindir, \$libdir, \$perlmoduledir);
+my (\$datadir, \$datarootdir, \$gptdatadir, \$gptexecsharedir, \$amdir);
+my (\$pkg_confdir, \$dtddir, \$aclocaldir);
 
 sub eval_path
 {
@@ -107,14 +111,28 @@ else
     \$prefix = '$initializer_prefix';
 }
 
+if (exists \$ENV{GLOBUS_LOCATION})
+{
+    \$globus_prefix = \$ENV{GLOBUS_LOCATION};
+}
+else
+{
+    \$globus_prefix = '$initializer_prefix';
+}
+
 \$exec_prefix = eval_path('$initializer_exec_prefix');
 \$bindir = eval_path('$bindir');
 \$sbindir = eval_path('$sbindir');
 \$libdir = eval_path('$libdir');
 \$perlmoduledir = eval_path('$perlmoduledir');
+\$datarootdir = eval_path('$datarootdir');
+\$datadir = eval_path('$datadir');
 \$gptdatadir = eval_path('$gptdatadir');
 \$gptexecsharedir = eval_path('$gptexecsharedir');
 \$amdir = eval_path('$amdir');
+\$pkg_confdir = eval_path('$pkg_confdir');
+\$dtddir = eval_path('$dtddir');
+\$aclocaldir = eval_path('$aclocaldir');
 
 push(@INC, \"\${perlmoduledir}\");
 my \$datadir = eval_path(\"${datadir}\");
@@ -125,8 +143,23 @@ _AM_SUBST_NOTMAKE(GPT_PERL_INITIALIZER)
 
 AC_CONFIG_FILES(Makefile 
         perl/scripts/gpt-build
+        perl/scripts/gpt_build_config
+        perl/scripts/gpt-bundle
         perl/scripts/gpt-config
+        perl/scripts/gpt_create_automake_rules
+        perl/scripts/gpt_extract_data
+        perl/scripts/gpt_generate_bin_pkg_data
+        perl/scripts/gpt-install
+        perl/scripts/gpt-pkg
+        perl/scripts/gpt-postinstall
+        perl/scripts/gpt-query
+        perl/scripts/gpt_save_flavor
+        perl/scripts/gpt_sort_filelist
+        perl/scripts/gpt-uninstall
+        perl/scripts/gpt-verify
         perl/scripts/gpt_version
         perl/GPT/GPTIdentity.pm
+	perl/GPT/Locations.pm
+        perl/GPT/PkgMngmt/SetupBuildFlavors.pm
         )
 AC_OUTPUT()

@@ -1,4 +1,4 @@
-# - perl -
+#! /usr/bin/perl
 #
 # test that the interpreter under which we're running is capable of handling
 # a set of syntax based on a version number

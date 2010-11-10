@@ -1,4 +1,7 @@
 #! perl 
+
+@GPT_PERL_INITIALIZER@
+
 use Cwd;
 use Config;
 
@@ -13,26 +16,14 @@ if ( ! ( defined eval "require 5.005" ) )
   die "GPT requires at least Perl version 5.005";
 }
 
-my $gpath = $ENV{GPT_LOCATION};
- 
-if (!defined($gpath))
-{
-  $gpath = $ENV{GLOBUS_LOCATION};
-}
-   
-if (!defined($gpath))
-{
-  die "GPT_LOCATION or needs to be set before running this script";
-}
+push (@INC, $perlmoduledir);
 
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
-
-system( "$gpath/sbin/gpt_version" ) == 0
+system( "${sbindir}/gpt_version" ) == 0
          or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
 
 if ( !( defined eval "require Grid::GPT::GPTObject" ) )
 {
-  die("$gpath does not appear to hold a valid GPT installation\n");
+  die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;
@@ -1106,7 +1097,7 @@ I<-xml> switch.
 
 =head1 SEE ALSO
 
-gpt-build(1) gpt-install(1) gpt-pkg(1) 
+gpt-build(8) gpt-install(8) gpt-pkg(8) 
 
 =head1 AUTHOR
 

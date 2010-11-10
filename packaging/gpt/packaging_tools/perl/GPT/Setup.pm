@@ -6,13 +6,6 @@ use Carp;
 require Exporter;
 use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-
-# This module is included by scripts outside of GPT and so require the 
-use Config;
-# @INC fiddling
-my $gpt_path = $ENV{GPT_LOCATION};
-@INC = ("$gpt_path/lib/perl", "$gpt_path/lib/perl/$Config{'archname'}", @INC);
-
 require Grid::GPT::Installation;
 require Grid::GPT::Locations;
 require Grid::GPT::V1::Version;

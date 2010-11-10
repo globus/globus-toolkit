@@ -13,6 +13,7 @@ use Grid::GPT::V1::SourceDependency;
 use Grid::GPT::V1::BinaryDependency;
 use Grid::GPT::V1::BuildFlavors;
 use Grid::GPT::DepIndexes;
+use Grid::GPT::Locations;
 
 # set the version for version checking
 $VERSION     = 0.01;
@@ -51,6 +52,7 @@ sub new {
                  system => undef,
                  Build_Instructions => undef,
                  SrcDir => undef,
+                 locations => new Grid::GPT::Locations({})
                 };
 
     for  my $f (sort keys %args) { 
@@ -83,8 +85,7 @@ return $self;
 sub path_namer
 {
   my ($self, $name, $f, $t)=@_;
-  my $globus=$ENV{GLOBUS_LOCATION};
-  my $path="$globus/share/globus/packages/$name/pkg_data_".$f."_$t.gpt";
+  my $path="$self->{locations}->{pkgdir}/${name}/pkg_data_${f}_${t}.gpt";
  
   $self->read_metadata_file($path);
 }

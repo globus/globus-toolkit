@@ -1,5 +1,7 @@
 #! perl
 
+@GPT_PERL_INITIALIZER@
+
 use strict;
 use Getopt::Long;
 use File::Find;
@@ -17,22 +19,12 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
-my $gpath = $ENV{GPT_LOCATION};
-if (!defined($gpath))
-{
-  $gpath = $ENV{GLOBUS_LOCATION};
 
-}
-if (!defined($gpath))
-{
-   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+push(@INC, $perlmoduledir);
 
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 my $VERSION = 0.01;
@@ -60,8 +52,6 @@ $topdir = Cwd::abs_path($topdir);
 
 # target types defined by automake
 my @target_types = ("PROGRAMS", "LTLIBRARIES", "LIBRARIES","SCRIPTS", "HEADERS","DATA", "MANS");
-
-my $amdir = "$gpath/share/globus/amdir";
 
 my %excluded_dirs;
 for my $p (@excludes) {

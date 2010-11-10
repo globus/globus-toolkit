@@ -1,5 +1,7 @@
 #! perl
 
+@GPT_PERL_INITIALIZER@
+
 use Data::Dumper;
 
 use strict;
@@ -19,26 +21,13 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
-#
-# dig the globus and gpt paths out of the user's environment variables
-#
-
-my $gpath     = defined $ENV{GPT_LOCATION} ? $ENV{GPT_LOCATION} 
-                                           : $ENV{GLOBUS_LOCATION};
-if ( !defined($gpath))
-{
-    die("GPT_LOCATION needs to be set before running this script");
-}
-
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
-
-system("$gpath/sbin/gpt_version") == 0
+system("$sbindir/gpt_version") == 0
          or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
 
 
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;
@@ -228,7 +217,7 @@ Or use a wild card for the flavor to uninstall all flavors of the package.
 
 =head1 SEE ALSO
 
-gpt-install(1) gpt-query(1) gpt-verify(1) gpt-postinstall(1)
+gpt-install(8) gpt-query(8) gpt-verify(8) gpt-postinstall(8)
 
 =head1 AUTHOR
 

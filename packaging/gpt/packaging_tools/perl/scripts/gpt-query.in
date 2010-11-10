@@ -1,10 +1,11 @@
 #! perl
 
+@GPT_PERL_INITIALIZER@
+
 use strict;
 use Config;
 use Cwd;
 
-my $gpath;
 my $version;
 
 #
@@ -18,37 +19,13 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
-#
-# dig the globus and gpt paths out of the user's environment variables
-#
-
-my $gpt_path = $ENV{GPT_LOCATION};
-my $globus_path = $ENV{GLOBUS_LOCATION};
-
-if ( !defined($gpt_path) && !defined($globus_path) )
-{
-    die("GPT_LOCATION needs to be set before running this script");
-}
-
-if ( defined($gpt_path) )
-{
-    $gpath = $gpt_path;
-}
-
-if ( defined($globus_path) && !defined($gpath) )
-{
-    $gpath = $globus_path;
-}
-
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
-
-system("$gpath/sbin/gpt_version") == 0
+system("$sbindir/gpt_version") == 0
          or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
 
 
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 #
@@ -250,7 +227,7 @@ if( defined($bndl_style) )
   exit;
 }
 
-$globus_path = $locations->{'installdir'};
+my $globus_path = $locations->{'installdir'};
 
     if (defined $lookupfile) {
       $lookupfile =~ s!^$globus_path!!;
@@ -451,7 +428,7 @@ what is used to resolve dependencies.
 
 =head1 SEE ALSO
 
-gpt-install(1) gpt-uninstall(1) gpt-verify(1) gpt-postinstall(1)
+gpt-install(8) gpt-uninstall(8) gpt-verify(8) gpt-postinstall(8)
 
 =head1 AUTHOR
 

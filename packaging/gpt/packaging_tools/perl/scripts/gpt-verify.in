@@ -1,5 +1,7 @@
 #! perl
 
+@GPT_PERL_INITIALIZER@
+
 use Data::Dumper;
 
 use strict;
@@ -18,44 +20,20 @@ if ( ! ( defined eval "require 5.005" ) )
     die "GPT requires at least Perl version 5.005";
 }
 
-#
-# dig the globus and gpt paths out of the user's environment variables
-#
-
-my $gpath;
-my $gpt_path = $ENV{GPT_LOCATION};
-my $globus_path = $ENV{GLOBUS_LOCATION};
 my $verbose;
-
-if ( !defined($gpt_path) && !defined($globus_path) )
-{
-    die("GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script");
-}
-
-if ( defined($gpt_path) )
-{
-    $gpath = $gpt_path;
-}
-
-if ( defined($globus_path) && !defined($gpath) )
-{
-    $gpath = $globus_path;
-}
 
 if ( ! -d "$datadir/globus/packages" )
 {
     die("Can't find a globus_packages directory to work on in your GLOBUS_LOCATION!\n");
 }
 
-@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
-
-system("$gpath/sbin/gpt_version") == 0
+system("$sbindir/gpt_version") == 0
          or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
 
 
 if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
 {
-    die("$gpath does not appear to hold a valid GPT installation\n");
+    die("$prefix does not appear to hold a valid GPT installation\n");
 }
 
 require Pod::Usage;
@@ -153,11 +131,11 @@ sub main
     printf("\n");
     if ($failed > 0)
     {
-        printf("ERROR: The collection of packages in $globus_path is not coherent!\n");
+        printf("ERROR: The collection of packages in $prefix is not coherent!\n");
     }
     else
     {
-        printf("The collection of packages in $globus_path appear to be coherent.\n");
+        printf("The collection of packages in $prefix appear to be coherent.\n");
     }
 
     return;
@@ -251,7 +229,7 @@ Prints the version of GPT and exits.
 
 =head1 SEE ALSO
 
-gpt-install(1) gpt-uninstall(1) gpt-query(1) gpt-postinstall(1)
+gpt-install(8) gpt-uninstall(8) gpt-query(8) gpt-postinstall(8)
 
 =head1 AUTHOR
 

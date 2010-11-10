@@ -1,41 +1,64 @@
 sbin_SCRIPT_sources = 	\
-	perl/scripts/gpt-build.in \
-	perl/scripts/gpt-bundle \
-	perl/scripts/gpt-config.in \
-	perl/scripts/gpt_create_automake_rules \
-        perl/scripts/gpt_extract_data \
-	perl/scripts/gpt_generate_bin_pkg_data \
-	perl/scripts/gpt_get_lib_names \
-	perl/scripts/gpt-install \
-        perl/scripts/gpt-perl-version \
-	perl/scripts/gpt-pkg \
-	perl/scripts/gpt-postinstall \
-	perl/scripts/gpt-query \
-	perl/scripts/gpt_save_flavor \
-	perl/scripts/gpt_sort_filelist \
-	perl/scripts/gpt-uninstall \
-	perl/scripts/gpt-verify \
-	perl/scripts/gpt_version.in
+        perl/scripts/gpt-build.in \
+        perl/scripts/gpt-bundle.in \
+        perl/scripts/gpt-config.in \
+        perl/scripts/gpt-install.in \
+        perl/scripts/gpt-pkg.in \
+        perl/scripts/gpt-postinstall.in \
+        perl/scripts/gpt-query.in \
+        perl/scripts/gpt-uninstall.in \
+        perl/scripts/gpt-verify.in \
+        perl/scripts/gpt_build_config.in \
+        perl/scripts/gpt_create_automake_rules.in \
+        perl/scripts/gpt_extract_data.in \
+        perl/scripts/gpt_generate_bin_pkg_data.in \
+        perl/scripts/gpt_save_flavor.in \
+        perl/scripts/gpt_sort_filelist.in \
+        perl/scripts/gpt_version.in
 
-sbin_SCRIPTS = 	\
-	perl/scripts/gpt-build \
-	perl/scripts/gpt_build_config \
-	perl/scripts/gpt-bundle \
-	perl/scripts/gpt-config \
-	perl/scripts/gpt_create_automake_rules \
-        perl/scripts/gpt_extract_data \
-	perl/scripts/gpt_generate_bin_pkg_data \
+sbin_SCRIPT_nosources =
 	perl/scripts/gpt_get_lib_names \
-	perl/scripts/gpt-install \
+        perl/scripts/gpt-perl-version
+
+documented_scripts = \
+	perl/scripts/gpt-build \
+        perl/scripts/gpt-bundle \
+        perl/scripts/gpt-config \
+        perl/scripts/gpt-install \
+        perl/scripts/gpt-pkg \
+        perl/scripts/gpt-postinstall \
+        perl/scripts/gpt-query \
+        perl/scripts/gpt-uninstall \
+        perl/scripts/gpt-verify \
+        perl/scripts/gpt_build_config \
+        perl/scripts/gpt_extract_data
+
+undocumented_scripts = \
         perl/scripts/gpt-perl-version \
-	perl/scripts/gpt-pkg \
-	perl/scripts/gpt-postinstall \
-	perl/scripts/gpt-query \
-	perl/scripts/gpt_save_flavor \
-	perl/scripts/gpt_sort_filelist \
-	perl/scripts/gpt-uninstall \
-	perl/scripts/gpt-verify \
-	perl/scripts/gpt_version
+        perl/scripts/gpt_create_automake_rules \
+        perl/scripts/gpt_generate_bin_pkg_data \
+        perl/scripts/gpt_get_lib_names \
+        perl/scripts/gpt_save_flavor \
+        perl/scripts/gpt_sort_filelist \
+        perl/scripts/gpt_version
+
+man8_MANS = 
+if INSTALL_MANS
+man8_MANS += \
+    $(builddir)/gpt-build.8 \
+    $(builddir)/gpt-bundle.8 \
+    $(builddir)/gpt-config.8 \
+    $(builddir)/gpt-install.8 \
+    $(builddir)/gpt-pkg.8 \
+    $(builddir)/gpt-postinstall.8 \
+    $(builddir)/gpt-query.8 \
+    $(builddir)/gpt-uninstall.8 \
+    $(builddir)/gpt-verify.8 \
+    $(builddir)/gpt_build_config.8 \
+    $(builddir)/gpt_extract_data.8
+endif
+
+sbin_SCRIPTS = 	$(documented_scripts) $(undocumented_scripts)
 
 gptdatadir = @gptdatadir@
 
@@ -149,9 +172,9 @@ amdir_DATA = \
 	amdir/pkgdata_Makefile.am
 
 
-pkg_confdir = $(datadir)/globus/gpt
-dtddir = $(datadir)/globus/dtd
-aclocaldir = $(datadir)/globus/aclocal
+pkg_confdir = @pkg_confdir@
+dtddir = @dtddir@
+aclocaldir = @aclocaldir@
 
 pkg_conf_DATA = \
 	etc/globus_flavor_labels.conf \
@@ -171,7 +194,6 @@ aclocal_DATA = \
 libexec_SCRIPTS = \
 	etc/gpt-bootstrap.sh
 
-install-man: install-pod2man
 install-data-hook: install-localize
 
 install-localize:
@@ -184,17 +206,12 @@ install-localize:
 	-probe \
 	-ignore-errors
 
-install-pod2man:
-	@if test "X$(POD2MAN)" != "X"; then \
-		$(mkinstalldirs) $(DESTDIR)$(mandir)/man8; \
-		list='$(sbin_SCRIPTS)'; for p in $$list; do \
-	  		script=`echo $$p | sed 's!perl/scripts/!!'`; \
-	  		echo "Generating $(DESTDIR)$(mandir)/man1/$$script.8"; \
-	  		$(POD2MAN) $$p > $(DESTDIR)$(mandir)/man1/$$script.8; \
-		done \
-	else \
-		echo "Skipping Man page installation"; \
-	fi
+if INSTALL_MANS
+$(man8_MANS): $(documented_scripts)
+	list='$(documented_scripts)'; for p in $$list; do \
+            $(POD2MAN) $(srcdir)/$$p > $(builddir)/`basename $$p`.8; \
+        done
+endif
 
 $(top_builddir)/gpt_scripts_list: Makefile.am
 	@echo "Creating script list"
@@ -203,6 +220,7 @@ $(top_builddir)/gpt_scripts_list: Makefile.am
 
 EXTRA_DIST = \
     $(sbin_SCRIPTS_sources) \
+    $(sbin_SCRIPT_nosources) \
     $(gptexecshare_SCRIPTS) \
     $(gptmodules_DATA) \
     $(v1modules_DATA) \
