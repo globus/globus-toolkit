@@ -67,13 +67,7 @@ all_filelists: filelist_file
 	  || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac;
 
 
-$(FILELIST_FILES): sort_filelist
-
-sort_filelist: all_filelists
-	$(GPT_LOCATION)/sbin/gpt_sort_filelist  \
-	--flavor=$(GLOBUS_FLAVOR_NAME) \
-	-pkg=$(srcdir)/pkg_data_src.gpt.in ./master.filelist \
-	$(GPT_LINKTYPE);
+$(FILELIST_FILES): all_filelists
 
 # Override the normal install target to avoid dying when a given
 # kind of metadata file is missing by calling "true"
