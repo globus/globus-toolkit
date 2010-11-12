@@ -248,6 +248,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"direct_io", "direct", NULL, "direct", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL /* use O_DIRECT */, NULL, NULL, GLOBUS_FALSE, NULL},
  {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Set the startup directory to the authenticated users home dir.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"perms", "perms", NULL, "perms", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
