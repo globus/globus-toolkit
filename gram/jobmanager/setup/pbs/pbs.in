@@ -721,7 +721,7 @@ sub poll
 
     # return code 153 = "Unknown Job Id".
     # verifying that the job is no longer there.
-    if($exit_code == 153)
+    if($exit_code == 153 || $exit_code == 35)
     {
         $self->log("qstat rc is 153 == Unknown Job ID == DONE");
         $state = Globus::GRAM::JobState::DONE;
