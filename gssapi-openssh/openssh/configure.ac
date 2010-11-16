@@ -100,9 +100,9 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
-		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
+		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
 	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
-		${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
+		${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
 	else
 		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
@@ -1204,19 +1204,6 @@ AC_CHECK_HEADERS(libutil.h)
 AC_SEARCH_LIBS(login, util bsd, [AC_DEFINE(HAVE_LOGIN, 1,
 	[Define if your libraries define login()])])
 AC_CHECK_FUNCS(fmt_scaled logout updwtmp logwtmp)
-
-dnl
-dnl Check for globus_usage_stats_send
-dnl
-AC_SEARCH_LIBS(globus_usage_stats_send,
-               globus_usage globus_usage_${globus_flavor_type},
-               AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
-dnl
-dnl Check for globus_usage_stats_send_array
-dnl
-AC_SEARCH_LIBS(globus_usage_stats_send_array,
-               globus_usage globus_usage_${globus_flavor_type},
-               AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1, [Have Globus Usage send_array]))
 
 AC_FUNC_STRFTIME
 
@@ -3553,6 +3540,19 @@ if test "x$gsi_path" != "xno" ; then
     AC_CHECK_FUNCS(globus_gss_assist_map_and_authorize)
 fi
 AC_SUBST(INSTALL_GSISSH)
+
+dnl
+dnl Check for globus_usage_stats_send
+dnl
+AC_CHECK_FUNC(globus_usage_stats_send,
+              AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
+
+dnl
+dnl Check for globus_usage_stats_send_array
+dnl
+AC_CHECK_FUNC(globus_usage_stats_send_array,
+              AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1,
+                        [Have Globus Usage send_array]))
 
 # Check whether the user wants GSSAPI mechglue support
 AC_ARG_WITH(mechglue,
