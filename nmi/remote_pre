@@ -6,7 +6,7 @@ if test "x$NMI_PLATFORM" != "xunmanaged-x86_rhap_5"; then
     mv -f tasklist.nmi.new tasklist.nmi
 fi
 # skip GT4 builds on x86_64_macos_10.6-updated
-if test "x$NMI_PLATFORM" == "xx86_64_macos_10.6-updated"; then
+if test "x$NMI_PLATFORM" = "xx86_64_macos_10.6-updated"; then
     grep -v GT4 tasklist.nmi > tasklist.nmi.new
     mv -f tasklist.nmi.new tasklist.nmi
 fi
