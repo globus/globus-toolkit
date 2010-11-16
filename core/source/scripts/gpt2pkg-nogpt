@@ -68,10 +68,10 @@ $cflags = "$cflags -I\${includedir}/globus -I\${libdir}/globus/include $extinc";
 $cflags =~ s!^\s+|\s+$!!g;
 $cflags =~ s!\s+! !g;
 
-print "prefix=/usr\n";
-print "exec_prefix=\${prefix}\n";
-print "libdir=\${exec_prefix}/lib\n";
-print "includedir=\${prefix}/include\n";
+print "prefix=\@prefix\@\n";
+print "exec_prefix=\@exec_prefix\@\n";
+print "libdir=\@exec_prefix\@/lib\n";
+print "includedir=\@prefix\@/include\n";
 print "\n";
 print "Name: $name\n";
 print "Description: Globus Toolkit - $description\n";
