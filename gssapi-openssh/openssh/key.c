@@ -1012,6 +1012,8 @@ key_type_from_name(char *name)
 		return KEY_RSA;
 	} else if (strcmp(name, "ssh-dss") == 0) {
 		return KEY_DSA;
+	} else if (strcmp(name, "null") == 0) {
+		return KEY_NULL;
 	} else if (strcmp(name, "ssh-rsa-cert-v00@openssh.com") == 0) {
 		return KEY_RSA_CERT_V00;
 	} else if (strcmp(name, "ssh-dss-cert-v00@openssh.com") == 0) {
