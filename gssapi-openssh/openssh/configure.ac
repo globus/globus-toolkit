@@ -1326,15 +1326,15 @@ fi
 dnl
 dnl Check for globus_usage_stats_send
 dnl
-AC_SEARCH_LIBS(globus_usage_stats_send,
-               globus_usage globus_usage_${globus_flavor_type},
-               AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
+AC_CHECK_FUNC(globus_usage_stats_send,
+              AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
+
 dnl
 dnl Check for globus_usage_stats_send_array
 dnl
-AC_SEARCH_LIBS(globus_usage_stats_send_array,
-               globus_usage globus_usage_${globus_flavor_type},
-               AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1, [Have Globus Usage send_array]))
+AC_CHECK_FUNC(globus_usage_stats_send_array,
+              AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1,
+                        [Have Globus Usage send_array]))
 
 # End Globus/GSI section
 
