@@ -2,14 +2,9 @@ AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 AC_CONFIG_AUX_DIR(config)
 
-# checking for the GLOBUS_LOCATION
-
 AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-    export GPT_LOCATION
-fi
+GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 
 GLOBUS_INITIALIZERS
 
@@ -32,7 +27,7 @@ AM_CONFIG_HEADER(globus_config.h:globus_config.h.in)
 
 AC_ARG_WITH(
     flavor,
-    [  --with-flavor                 Globus flavor string],
+    AC_HELP_STRING([--with-flavor], [Globus flavor string]),
     [globus_cv_flavor="$withval"],
     [globus_cv_flavor="notset"])
 
@@ -43,34 +38,89 @@ if test "$globus_cv_flavor" = "notset" \
     AC_MSG_ERROR([A flavor description string must be specified!])
 fi
 
-LAC_COMPILERS
-# Linux FHS 2.3 6.1.5: /lib64 and /lib32
-# The 64-bit architectures PPC64, s390x, sparc64 and AMD64 must place 64-bit
-# libraries in /lib64, and 32-bit (or 31-bit on s390) libraries in /lib.
-# The 64-bit architecture IA64 must place 64-bit libraries in /lib.
+  
+AC_ARG_WITH([setupdir],
+AC_HELP_STRING([--with-setupdir=DIR],
+[setup installation directory [[PREFIX/setup/globus]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-setupdir requires an argument])
+    fi
+    setupdir=$withval
+],
+[
+    setupdir='${prefix}/setup/globus'
+])
+AC_SUBST(setupdir)
 
-case "$globus_cv_flavor" in
-    *32*)
-        case "$build" in
-            powerpc64*linux* | s390*linux* | sparc64*linux* | x86_64*linux* )
-                libdir='${exec_prefix}/lib'
-                ;;
-            ia64*linux*)
-                libdir='${exec_prefix}/lib32'
-                ;;
-        esac
-        ;;
-    *64*)
-        case "$build" in
-            powerpc64*linux* | s390*linux* | sparc64*linux* | x86_64*linux* )
-                libdir='${exec_prefix}/lib64'
-                ;;
-            ia64*linux*)
-                libdir='${exec_prefix}/lib'
-                ;;
-        esac
-        ;;
-esac
+AC_ARG_WITH([testdir],
+AC_HELP_STRING([--with-testdir=DIR],
+[test installation directory [[PREFIX/test/PACKAGE]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-testdir requires an argument])
+    fi
+    testdir=$withval
+],
+[
+    testdir='${prefix}/test/${PACKAGE}'
+])
+AC_SUBST(testdir)
+
+AC_ARG_WITH([flavorincludedir],
+AC_HELP_STRING([--with-flavorincludedir=DIR],
+[flavored header installation directory [[INCLUDEDIR/FLAVOR]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-flavorincludedir requires an argument])
+    fi
+    flavorincludedir=$withval
+],
+[
+    flavorincludedir='${includedir}/${GLOBUS_FLAVOR_NAME}'
+])
+AC_SUBST(flavorincludedir)
+
+AC_ARG_WITH([perlmoduledir],
+AC_HELP_STRING([--with-perlmoduledir=DIR],
+[perl module directory [[PREFIX/lib/perl]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-perlmoduledir requires an argument])
+    fi
+    perlmoduledir=$withval
+],
+[
+    perlmoduledir='${prefix}/lib/perl'
+])
+AC_SUBST(perlmoduledir)
+
+AC_ARG_WITH([doxygendir],
+AC_HELP_STRING([--with-doxygendir=DIR],
+[doxygen installation directory [[DATADIR/doxygen]]]),
+[
+    if test x$withval = "xno" -o x$withval = "xyes" ; then
+        AC_MSG_ERROR([--with-doxygendir requires an argument])
+    fi
+    doxygendir=$withval
+],
+[
+    doxygendir='${datadir}/doxygen'
+])
+AC_SUBST(doxygendir)
+
+aclocaldir='${datadir}/globus/aclocal'
+pkgdir='${datadir}/globus/packages/${PACKAGE}'
+flavordir='${datadir}/globus/flavors'
+
+AC_SUBST(aclocaldir)
+AC_SUBST(pkgdir)
+AC_SUBST(flavordir)
+
+GLOBUS_FLAVOR_NAME="$globus_cv_flavor"
+AC_SUBST(GLOBUS_FLAVOR_NAME)
+
+LAC_COMPILERS
 
 aixargs=""
 if test "x$AIX" = "xyes"; then
@@ -98,9 +148,6 @@ if test "X$GPT_LINKTYPE" = "Xstatic"; then
     AC_DEFINE(BUILD_STATIC_ONLY)
 fi
 
-GLOBUS_FLAVOR_NAME=$globus_cv_flavor
-AC_SUBST(GLOBUS_FLAVOR_NAME)
-
 dnl define FILELIST_FILE variable
 FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
@@ -112,9 +159,8 @@ if test "x$PERL" = "x"; then
 fi
 
 
-AC_ARG_ENABLE(internal-doc,
-[  --enable-am-depends		Enable automake dependency caching.
-				(Requires gcc, developers only)],
+AC_ARG_ENABLE(am-depends,
+    AC_HELP_STRING([--enable-am-depends], [Enable automake dependency caching.  (Requires gcc, developers only)]),
 [
 	if test "X$GCC" = "Xyes"; then
 		AUTOMAKE_OPTS=""
@@ -162,10 +208,12 @@ fi
 AC_OUTPUT(Makefile
 	scripts/Makefile
         scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
+        scripts/globus-build-env-noflavor.sh:scripts/globus-build-env-noflavor.sh.in
 	aclocal/Makefile
 	aclocal/automake_config
 	config/Makefile
 	doxygen/Makefile
+        doxygen/globus-build-doxygen-dependencies
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters

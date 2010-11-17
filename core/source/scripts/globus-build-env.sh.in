@@ -42,6 +42,14 @@ sysconfdir='@sysconfdir@'
 sharedstatedir='@sharedstatedir@'
 localstatedir='@localstatedir@'
 
+setupdir='@setupdir@'
+testdir='@testdir@'
+flavorincludedir='@flavorincludedir@'
+pkgdir='@pkgdir@'
+aclocaldir='@aclocaldir@'
+perlmoduledir='@perlmoduledir@'
+doxygendir='@doxygendir@'
+
 MP="@MP@"
 MP_INCLUDES="@MP_INCLUDES@"
 MP_LIBS="@MP_LIBS@"

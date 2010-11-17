@@ -36,25 +36,7 @@ directory structure in another location.
 
 =cut
 
-my $gpt_path;
-my $globus_path;
-
-BEGIN {
-    $gpt_path = $ENV{GPT_LOCATION};
-    if (!defined($gpt_path))
-    {
-      $gpt_path = $ENV{GLOBUS_LOCATION};
-
-    }
-
-    $globus_path = $ENV{GLOBUS_LOCATION};
-
-    if (!defined($gpt_path) || !defined($globus_path))
-    {
-       die "GPT_LOCATION and GLOBUS_LOCATION need to be set before running this script"
-    }
-    push(@INC, "$gpt_path/lib/perl");
-}
+@GLOBUS_PERL_INITIALIZER@
 
 use strict;
 use IO::File;
@@ -95,7 +77,7 @@ foreach (glob("$docpath/*"))
 print "Sorting into functional groups\n";
 foreach (keys %pkgs) {
     my $package_factory = new Grid::GPT::PackageFactory();
-    my @package_files = glob("$globus_path/etc/globus_packages/$_/pkg_data*.gpt");
+    my @package_files = glob("$pkgdir/$_/pkg_data*.gpt");
     my $package_file = $package_files[0];
 
     if ($package_file eq '') {

@@ -13,7 +13,7 @@
 # Include the standard part of the doxygen configuration:
 #
 
-@INCLUDE_PATH = @prefix@/share/doxygen
+@INCLUDE_PATH = @doxygendir@
 
 @INCLUDE = Doxyfile.include
 
@@ -64,27 +64,27 @@ EXAMPLE_PATH           = @lac_doxygen_examples@
 # each generated HTML page. If it is left blank doxygen will generate a 
 # standard header.
 
-HTML_HEADER            = @prefix@/share/doxygen/globus_head.html
+HTML_HEADER            = @doxygendir@/globus_head.html
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for 
 # each generated HTML page. If it is left blank doxygen will generate a 
 # standard footer.
 
-HTML_FOOTER            = @prefix@/share/doxygen/globus_foot.html
+HTML_FOOTER            = @doxygendir@/globus_foot.html
 
 # The HTML_STYLESHEET tag can be used to specify a user defined cascading 
 # style sheet that is used by each HTML page. It can be used to 
 # fine-tune the look of the HTML output. If the tag is left blank doxygen 
 # will generate a default style sheet 
 
-HTML_STYLESHEET        = @prefix@/share/doxygen/globus.css
+HTML_STYLESHEET        = @doxygendir@/globus.css
 
 # The LATEX_HEADER tag can be used to specify a personal LaTeX header for 
 # the generated latex document. The header should contain everything until 
 # the first chapter. If it is left blank doxygen will generate a 
 # standard header. Notice: only use this tag if you know what you are doing! 
 
-LATEX_HEADER           = @prefix@/share/doxygen/globus_head.tex
+LATEX_HEADER           = @doxygendir@/globus_head.tex
 
 # The PREDEFINED tag can be used to specify one or more macro names that 
 # are defined before the preprocessor is started (similar to the -D option of 

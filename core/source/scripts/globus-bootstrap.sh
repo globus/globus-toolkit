@@ -1,5 +1,4 @@
- 
-
+#! /bin/sh
 # 
 # Copyright 1999-2006 University of Chicago
 # 
@@ -51,9 +50,7 @@ if test -d doxygen ; then
 fi
 
 
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-fi
+GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 
 . ${GPT_LOCATION}/lib/globus/gpt-bootstrap.sh
 

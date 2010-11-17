@@ -1,33 +1,33 @@
 ## Special globus installation directories
 
-setupdir = $(prefix)/setup/globus
+setupdir = @setupdir@
 ## setup = [ DATA,PROGRAMS,SCRIPTS ]
 
-testdir = $(prefix)/test/$(PACKAGE)
+testdir = @testdir@
 ## test = [ DATA,PROGRAMS,SCRIPTS ]
 
-scriptsysconfdir = $(sysconfdir)
+scriptsysconfdir = @sysconfdir@
 ## scriptsysconf = [ PROGRAMS,SCRIPTS ]
 
-flavorincludedir = ${includedir}/$(GLOBUS_FLAVOR_NAME)
+flavorincludedir = @flavorincludedir@
 ## flavorinclude = [ HEADERS ]
 
-pkgdir = ${datadir}/packages/$(PACKAGE)
+pkgdir = @pkgdir@
 ## pkg = [ DATA ]
 
-aclocaldir = ${datadir}/globus_aclocal
+aclocaldir = @aclocaldir@
 ## aclocal = [ DATA ]
 
-amdirdir = ${datadir}/globus_amdir
+amdirdir = @amdirdir@
 ## amdir = [ DATA ]
 
-doxygendir = ${datadir}/doxygen
+doxygendir = @doxygendir@
 ## doxygen = [ DATA ]
 
-docdir = ${datadir}/doc
+docdir = @docdir@
 ## doc = [ DATA ]
 
-flavordir = ${datadir}/$(PACKAGE)
+flavordir = @flavordir@
 ## flavor = [ DATA ]
 
 flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
@@ -77,15 +77,17 @@ install-pkgDATA: $(pkg_DATA)
 	@list='$(pkg_DATA)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  f=`echo $$p | sed -e 's|^.*/||'`; \
-	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pkgdir)/$$f'"; \
-	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pkgdir)/$$f"; \
+	  if test -f "$$d$$p"; then \
+	      echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pkgdir)/$$f'"; \
+	      $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pkgdir)/$$f"; \
+	    fi; \
 	done || true
 
 $(flavor_DATA): build-parameters
 	$(GPT_LOCATION)/sbin/gpt_save_flavor --flavor=$(GLOBUS_FLAVOR_NAME) build-parameters
 
 $(METADATA_FILES): pkg_data_src.gpt
-	@$(GPT_LOCATION)/sbin/gpt_generate_bin_pkg_data  \
+	$(GPT_LOCATION)/sbin/gpt_generate_bin_pkg_data  \
 	--flavor=$(GLOBUS_FLAVOR_NAME) pkg_data_src.gpt
 
 
@@ -97,3 +99,17 @@ distclean-local:
 		rm pkg_data_*.gpt; \
 	fi
 
+dist-hook: filelist_file
+
+install-data-hook:
+	@list='$(FILELIST_FILES)'; for p in $$list; do \
+	    if test `cat "$(DESTDIR)$(pkgdir)/$$p" | wc -l` = 2; then \
+		rm "$(DESTDIR)$(pkgdir)/$$p" ; \
+	    fi; \
+	done
+	@list='$(METADATA_FILES)'; for p in $$list; do \
+	    related_filelist=`echo $$p | sed -e 's/pkg_data_//' -e 's/\.gpt$$/.filelist/'`; \
+	    if test ! -f "$(DESTDIR)$(pkgdir)/$$related_filelist"; then \
+		rm $(DESTDIR)$(pkgdir)/$$p; \
+	    fi ; \
+	done

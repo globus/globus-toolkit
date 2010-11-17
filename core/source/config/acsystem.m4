@@ -242,6 +242,9 @@ AC_CHECK_FUNCS(sigaction)
 AC_CHECK_FUNCS(geteuid)
 AC_CHECK_FUNCS(getpwnam)
 AC_CHECK_FUNCS(getpwuid)
+AC_CHECK_FUNCS(vsnprintf)
+AC_CHECK_FUNCS(snprintf)
+AC_CHECK_FUNCS(strncasecmp)
 
 dnl used in RSL
 AC_FUNC_ALLOCA

@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -17,6 +17,53 @@
 # 
 
 
+BEGIN
+{
+    my ($prefix, $exec_prefix, $libdir);
+
+    sub eval_path
+    {
+        my $path = shift;
+        my $last = $path;
+
+        #{
+        while ($path =~ m/\${([^}]*)}/)
+        {
+            my $varname = ${1};
+            my $evaluated;
+            eval "\$evaluated = \${$varname}";
+
+            $path =~ s/\${$varname}/$evaluated/g;
+            if ($path eq $last)
+            {
+                die "Error evaluating $last\n";
+            }
+            $last = $path;
+        }
+        return $path;
+    }
+
+    if (exists $ENV{GLOBUS_LOCATION})
+    {
+        $prefix = $ENV{GLOBUS_LOCATION};
+    }
+    else
+    {
+        $prefix = '/usr';
+    }
+
+    $exec_prefix=eval_path('NONE');
+    $libdir = eval_path('${exec_prefix}/lib');
+
+    push(@INC, "${libdir}/perl");
+
+    if (exists $ENV{GPT_LOCATION})
+    {
+        push(@INC, "$ENV{GPT_LOCATION}/lib/perl");
+    }
+}
+
+
 =head1 NAME
 
 B<globus_build_doxygen_dependencies> - Returns a list of documentation
@@ -28,30 +75,15 @@ use strict;
 use Getopt::Long;
 use Carp;
 
-my $gpath = $ENV{GPT_LOCATION};
-
-if (!defined($gpath))
-{
-  $gpath = $ENV{GLOBUS_LOCATION};
-
-}
-
-if (!defined($gpath))
-{
-   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
-
 require Grid::GPT::V1::Package;
 require Grid::GPT::DepIndexes;
 
 use Cwd;
 
-my $prefix = $ENV{GLOBUS_LOCATION};
 my $srcfile;
 my $help;
 my $debug = 0;
+my $pkgdir= eval_path('${datadir}/globus/packages/${PACKAGE}');
 my @deps;
 
 sub pod2usage
@@ -106,7 +138,7 @@ sub process_package($)
                 print STDERR "Found dependency $name\n" if $debug;
                 $dependencies{$name} = 1;
                 $new_pkgfile =
-                    "$prefix/etc/globus_packages/$name/pkg_data_noflavor_doc.gpt";
+                    "$pkgdir/$name/pkg_data_noflavor_doc.gpt";
                 foreach(process_package($new_pkgfile, $name))
                 {
                      $dependencies{$_} = 1;
