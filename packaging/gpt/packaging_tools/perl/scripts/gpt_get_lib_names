@@ -1,4 +1,4 @@
-#! perl
+#! /usr/bin/perl
 
 #
 # Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you

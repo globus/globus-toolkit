@@ -4,6 +4,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
 require Exporter;
 require AutoLoader;
+
 use Cwd;
 
 @ISA = qw(Exporter AutoLoader);
@@ -12,17 +13,16 @@ $VERSION = '0.01';
 sub get_tool_location {
   my $program = shift;
   my %locations = (
-                   gtar => "@gtar@",
-                   gzip => "@gzip@",
-                   gunzip => "@gunzip@",
-                   gmake => "@gmake@",
-                   perl => "@perl@",
-                   rpm => "@rpm@",
-                   rpmbuild => "@rpmbuild@",
+                   gtar => "@GTAR@",
+                   gzip => "@GZIP@",
+                   gunzip => "@GUNZIP@",
+                   gmake => "@GMAKE@",
+                   perl => "@PERL@",
+                   rpm => "@RPM@",
+                   rpmbuild => "@RPMBUILD@",
                   );
 
   return $locations{$program};
-
 }
 
 sub get_rpm_setting {
@@ -41,7 +41,9 @@ sub get_rpm_setting {
 
 }
 
-sub get_target {return "@target@"}
+sub get_target {
+    return Grid::GPT::Locallize::get_target();
+}
 sub use_system_tar {return "@systar@"}
 
 sub listconfig {

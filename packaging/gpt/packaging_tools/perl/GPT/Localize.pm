@@ -1,5 +1,7 @@
 package Grid::GPT::Localize;
 
+use Grid::GPT::Locations;
+
 use strict;
 use Carp;
 
@@ -13,11 +15,11 @@ $VERSION     = 0.01;
 
 {
   my $target;
+  my $locations = new Grid::GPT::Locations;
+
   sub get_target {
-    my $gpath = shift;
     return $target if defined $target;
-    $target = `$gpath/share/globus/gpt/config.guess`;
-    chomp($target);
+    chomp($target = `$locations->{gptexecsharedir}/config.guess`);
     return $target;
   }
 }

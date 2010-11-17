@@ -1,4 +1,4 @@
-#! perl
+#! @PERL@
 
 @GPT_PERL_INITIALIZER@
 
@@ -54,7 +54,8 @@ $pkg->read_metadata_file($srcfile);
 
 print "GPT_NAME='$pkg->{'Name'}'\n" if defined $name;
 print "GPT_MAJOR_VERSION='$pkg->{'Version'}->{'major'}'
-GPT_MINOR_VERSION='$pkg->{'Version'}->{'minor'}'\n" if defined $version;
+GPT_MINOR_VERSION='$pkg->{'Version'}->{'minor'}'
+GPT_AGE_VERSION='$pkg->{'Version'}->{'age'}'\n" if defined $version;
 
 print "GPT_CFLAGS='$pkg->{'cflags'}'
 GPT_INCLUDES='$pkg->{'external_includes'}'
@@ -85,8 +86,8 @@ Print out GPT_NAME= the name of the package.
 
 =item version
 
-Print out version numbers as GPT_MAJOR_VERSION and GPT_MINOR_VERSION
-variables.
+Print out version numbers as GPT_MAJOR_VERSION, GPT_MINOR_VERSION, and
+GPT_AGE_VERSION variables.
 
 =item build_env
 

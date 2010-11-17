@@ -1,7 +1,6 @@
 AC_REVISION($Revision$)
-AC_INIT(gpt, 3.2)
+AC_INIT(gpt, 3.3)
 AC_CONFIG_SRCDIR(Makefile.am)
-AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([ no-installman ])
 
 AC_ARG_WITH([perl],
@@ -51,7 +50,7 @@ AC_SUBST(POD2MAN)
 
 AC_PREFIX_DEFAULT(${GPT_LOCATION:-/usr/local})
 
-AC_PATH_PROGS(TAR, gtar tar)
+AC_PATH_PROGS(GTAR, gtar tar)
 AC_PATH_PROGS(GUNZIP, gunzip)
 AC_PATH_PROGS(GZIP, gzip)
 AC_PROG_LN_S
@@ -61,6 +60,8 @@ AC_SUBST(GPT_LOCATION)
 initializer_prefix="$prefix"
 test "$initializer_prefix" = "NONE" && initializer_prefix="$ac_default_prefix"
 test "$initializer_exec_prefix" = "" && initializer_exec_prefix='${prefix}'
+test "$datarootdir" = "" && "$datarootdir"='${datadir}'
+AC_SUBST(datarootdir)
 gptdatadir='${datadir}/globus/gpt'
 gptexecsharedir='${datadir}/globus/gpt'
 amdir='${datadir}/globus/amdir'
@@ -76,6 +77,7 @@ AC_SUBST(dtddir)
 AC_SUBST(aclocaldir)
 
 GPT_PERL_INITIALIZER="
+# datarootdir is here to stop warnings
 my (\$prefix, \$globus_prefix, \$exec_prefix, \$bindir, \$sbindir, \$libdir, \$perlmoduledir);
 my (\$datadir, \$datarootdir, \$gptdatadir, \$gptexecsharedir, \$amdir);
 my (\$pkg_confdir, \$dtddir, \$aclocaldir);
@@ -140,15 +142,57 @@ my \$datadir = eval_path(\"${datadir}\");
 AC_SUBST(GPT_PERL_INITIALIZER)
 _AM_SUBST_NOTMAKE(GPT_PERL_INITIALIZER)
 
+dnl Things that used to be in Localize.pm
+if test "x$GTAR" = "x"; then
+    AC_MSG_ERROR([Unable to find tar. Set GTAR to the path to a tar command that accepts -z])
+fi
+AC_MSG_CHECKING([if tar accepts -z])
+"$GTAR" zcf empty.tar.gz /dev/null 2> /dev/null
+tar_result=$?
+rm -f empty.tar.gz
+if test "$tar_result" != 0; then
+    AC_MSG_ERROR([no, set GTAR to the path to a tar command that accepts -z])
+else
+    AC_MSG_RESULT(yes)
+fi
 
-AC_CONFIG_FILES(Makefile 
+AC_PATH_PROGS(MAKE, gmake gnumake make)
+if test "x$MAKE" = "x"; then
+    AC_MSG_ERROR([Unable to find GNU Make.])
+fi
+AC_MSG_CHECKING([if $MAKE is GNU])
+$MAKE --version | grep -q GNU
+gmake_check_result="$?"
+
+if test "$gmake_check_result" != 0; then
+    AC_MSG_ERROR([no, set MAKE to the path to GNU Make])
+else
+    AC_MSG_RESULT(yes)
+fi
+
+AC_PATH_PROGS(RPM, rpm, rpm)
+AC_PATH_PROGS(RPMBUILD, rpmbuild)
+
+AC_CONFIG_FILES(
+        Makefile 
+        etc/Makefile
+        amdir/Makefile
+        perl/Makefile
+        perl/scripts/Makefile
+        perl/GPT/Makefile
+        perl/GPT/PackageFilelist/FileIO/Makefile
+        perl/GPT/PackageFilelist/flat1/Makefile
+        perl/GPT/PackageFilelist/Makefile
+        perl/GPT/PackageFilelist/xml1/Makefile
+        perl/GPT/PkgMngmt/Makefile
+        perl/GPT/V1/Makefile
         perl/scripts/gpt-build
         perl/scripts/gpt_build_config
         perl/scripts/gpt-bundle
-        perl/scripts/gpt-config
         perl/scripts/gpt_create_automake_rules
         perl/scripts/gpt_extract_data
         perl/scripts/gpt_generate_bin_pkg_data
+        perl/scripts/gpt_get_lib_names
         perl/scripts/gpt-install
         perl/scripts/gpt-pkg
         perl/scripts/gpt-postinstall
@@ -160,6 +204,7 @@ AC_CONFIG_FILES(Makefile
         perl/scripts/gpt_version
         perl/GPT/GPTIdentity.pm
 	perl/GPT/Locations.pm
+	perl/GPT/LocalEnv.pm
         perl/GPT/PkgMngmt/SetupBuildFlavors.pm
         )
 AC_OUTPUT()

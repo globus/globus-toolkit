@@ -30,6 +30,7 @@ sub new
              gpt_etcdir => undef,
              gpt_amdir => undef,
              gpt_aclocaldir => undef,
+             gptexecsharedir => undef,
              pkgdir => undef,
              coredir => undef,
              bundledir => undef,
@@ -70,6 +71,7 @@ sub _init_gptdir {
   $me->{'gpt_etcdir'} = "$gptdatadir";
   $me->{'gpt_amdir'} = "$amdir";
   $me->{'gpt_aclocaldir'} = "$aclocaldir";
+  $me->{'gptexecsharedir'} = "$gptexecsharedir";
 }
 
 sub _init_tmpdir {

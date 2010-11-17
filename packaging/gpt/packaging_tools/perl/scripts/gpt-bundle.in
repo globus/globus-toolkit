@@ -1,4 +1,4 @@
-#! perl 
+#! @PERL@
 
 @GPT_PERL_INITIALIZER@
 

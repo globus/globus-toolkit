@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#! @PERL@
 
-eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+eval 'exec @PERL@  -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 use strict;
 use Getopt::Long;

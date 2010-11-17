@@ -1,4 +1,4 @@
-#!perl
+#! @PERL@
 
 use strict;
 use Getopt::Long;
