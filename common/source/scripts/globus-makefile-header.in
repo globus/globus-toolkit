@@ -232,7 +232,7 @@ sub getDevLines
     # point our installation object at our globus location
     #
 
-    $installation = new Grid::GPT::Installation(pkgdir => "$Globus::Core::Paths::sysconfdir/globus_packages");
+    $installation = new Grid::GPT::Installation(pkgdir => "$Globus::Core::Paths::datadir/globus/packages");
     $installation->set_depenv('Build');
 
     #
@@ -306,7 +306,7 @@ sub getDevLines
     #
 
     push(@$header, "GLOBUS_CFLAGS=\"$cflagslist\"");
-    push(@$header, "GLOBUS_INCLUDES=\"-I$Globus::Core::Paths::includedir/$flavor $includeslist\"");
+    push(@$header, "GLOBUS_INCLUDES=\"-I$Globus::Core::Paths::includedir -I$Globus::Core::Paths::flavorincludedir $includeslist\"");
     push(@$header, "GLOBUS_LIBS=\"$libslist\"");
     push(@$header, "GLOBUS_LDFLAGS=\"-L$Globus::Core::Paths::libdir\"");
     push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist $extlibslist\"");

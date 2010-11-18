@@ -21,6 +21,7 @@ require Exporter;
 @EXPORT = qw($exec_prefix $prefix
              $sbindir $bindir
 	     $libdir $libexecdir $includedir
+             $flavorincludedir
              $datarootdir
              $mandir
 	     $datadir $sysconfdir $sharedstatedir
@@ -59,13 +60,14 @@ $exec_prefix=eval_path('@exec_prefix@');
 $sbindir = eval_path('@sbindir@');
 $bindir = eval_path('@bindir@');
 $libdir = eval_path('@libdir@');
-$libexecdir = eval_path('@libexecdir@');
 $includedir = eval_path('@includedir@');
 $datarootdir = eval_path('@datarootdir@');
 $datadir = eval_path('@datadir@');
 $mandir = eval_path('@mandir@');
+$libexecdir = eval_path('@libexecdir@');
 $sysconfdir = eval_path('@sysconfdir@');
 $sharedstatedir = eval_path('@sharedstatedir@');
 $localstatedir = eval_path('@localstatedir@');
+$flavorincludedir = eval_path('@flavorincludedir@');
 
 1;

@@ -46,10 +46,7 @@ CVS Information:
 #include <arpa/inet.h>
 #endif
 
-#if !defined(MAXPATHLEN)
-#   include <sys/param.h>
-#   define MAXPATHLEN PATH_MAX
-#endif
+#include <stddef.h> /* For offsetof() */
 
 /* HPUX 10.20 headers do not define this */
 #if defined(TARGET_ARCH_HPUX)
@@ -1651,7 +1648,7 @@ globus_libc_gethomedir(char *result, int bufsize)
     static globus_mutex_t   gethomedir_mutex;
     static int              initialized = GLOBUS_FALSE;
     static struct passwd    pw;
-    static char             homedir[MAXPATHLEN];
+    static char *           homedir;
     static int              homedir_len = 0;
     static char             buf[1024];
     int                     rc;
@@ -1691,7 +1688,8 @@ globus_libc_gethomedir(char *result, int bufsize)
 	    if (!rc && p)
 	    {
 		len = strlen(p);
-		if (len+1 < MAXPATHLEN)
+		homedir = globus_malloc(len + 1);
+		if (homedir)
 		{
 		    memcpy(homedir, p, len);
 		    homedir[len] = '\0';
@@ -1989,9 +1987,6 @@ globus_libc_readdir_r(DIR *dirp,
 	struct dirent *tmpdir, *entry;
 	int save_errno;
 
-	entry = (struct dirent *) globus_malloc(sizeof(struct dirent)
-						+ MAXPATHLEN
-						+ 1);
 	globus_libc_lock();
 
 	tmpdir = readdir(dirp);
@@ -2003,12 +1998,14 @@ globus_libc_readdir_r(DIR *dirp,
 
 	    globus_libc_unlock();
 
-            globus_free(entry);
-
 	    errno = save_errno;
 
 	    return -1;
 	}
+
+	entry = (struct dirent *) globus_malloc(offsetof(struct dirent, d_name)
+						+ strlen(tmpdir->d_name)
+						+ 1);
 
 	/* copy returned buffer into data structure */
 	entry->d_ino = tmpdir->d_ino;
@@ -2052,8 +2049,8 @@ globus_libc_readdir_r(DIR *dirp,
 #       if defined(GLOBUS_HAVE_READDIR_R_3)
 	{
 	    int rc = 0;
-	    struct dirent *entry = globus_malloc(sizeof(struct dirent)
-						 + MAXPATHLEN
+	    struct dirent *entry = globus_malloc(offsetof(struct dirent, d_name)
+						 + NAME_MAX
 						 + 1);
 
 	    rc = readdir_r(dirp, entry, result);
@@ -2067,8 +2064,8 @@ globus_libc_readdir_r(DIR *dirp,
 	}
 #       elif defined(GLOBUS_HAVE_READDIR_R_2)
 	{
-	    struct dirent *entry = globus_malloc(sizeof(struct dirent)
-						 + MAXPATHLEN
+	    struct dirent *entry = globus_malloc(offsetof(struct dirent, d_name)
+						 + NAME_MAX
 						 + 1);
 	    int rc=0;
 

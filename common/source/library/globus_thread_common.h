@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/**
+/*
  * @file globus_thread_common.h Common Thread Interface
  *
  * $Source$

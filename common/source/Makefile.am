@@ -9,7 +9,7 @@ SUBDIRS= \
 	config \
 	doxygen
 
-sbin_SCRIPTS= \
+libexec_SCRIPTS= \
 	config.guess
 
 EXTRA_DIST = \

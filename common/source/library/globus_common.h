@@ -45,14 +45,6 @@ CVS Information:
 
 EXTERN_C_BEGIN
 
-/* TODO remove this if we ever doxyegenate common fully */
-/**
- * @mainpage
- *
- *   @note <b>More globus_common API documentation is available <a href="../../../common/">here</a>.</b>
- *
- */
-
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
@@ -115,11 +107,6 @@ char *alloca ();
 #  endif
 # endif
 #endif
-#endif
-
-#if !defined(MAXPATHLEN)
-#   include <sys/param.h>
-#   define MAXPATHLEN PATH_MAX
 #endif
 
 /* most network-related functions (getpeername, getsockname,...) have
