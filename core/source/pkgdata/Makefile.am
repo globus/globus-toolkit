@@ -30,7 +30,14 @@ docdir = @docdir@
 flavordir = @flavordir@
 ## flavor = [ DATA ]
 
+pkgconfdir = @prefix@/lib/pkgconfig
+## pkgconfdir = [ DATA ]
+
+pkgconf_DATA = globus-core.pc
+
 flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
+
+EXTRA_DIST = globus-core.pc.in
 
 LINK_BAK = orig
 AUTOMAKE_OPTIONS=no-dependencies

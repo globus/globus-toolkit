@@ -30,7 +30,7 @@ EXTERN_C_BEGIN
  * @defgroup http_driver Globus XIO HTTP Driver
  * This driver implements the HTTP/1.0 and HTTP/1.1 protocols within
  * the Globus XIO framework. It may be used with the tcp driver for
- * the standard HTTP protcol stack, or may be combined with the gsi
+ * the standard HTTP protocol stack, or may be combined with the gsi
  * driver for a HTTPS implementation.
  *
  * This implementation supports user-defined HTTP headers, persistent
@@ -403,7 +403,7 @@ typedef enum
      */
     /* int *                            status_code,
        char **                          reason_phrase,
-       globus_xio_http_version_t *      version,
+       globus_xio_http_version_t *      http_version,
        globus_hashtable_t *             headers */
     GLOBUS_XIO_HTTP_GET_RESPONSE
 
@@ -445,8 +445,7 @@ globus_xio_http_errors_t;
  * @ingroup http_driver
  * Valid HTTP versions, used with the
  * #GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HTTP_VERSION attribute and the
- * #GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_HTTP_VERSION, and
- * #GLOBUS_XIO_HTTP_HANDLE_GET_REQUEST_HTTP_VERSION handle controls.
+ * #GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_HTTP_VERSION handle control
  */
 typedef enum
 {

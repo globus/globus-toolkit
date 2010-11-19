@@ -27,7 +27,7 @@ perlmoduledir = @perlmoduledir@
 doxygendir = @doxygendir@
 ## doxygen = [ DATA ]
 
-docdir = ${datadir}/doc
+docdir = @docdir@
 ## doc = [ DATA ]
 
 LINK_BAK = orig

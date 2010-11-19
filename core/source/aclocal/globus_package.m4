@@ -1,96 +1,3 @@
-AC_DEFUN([GLOBUS_INITIALIZERS], [
-initializer_prefix="${prefix}"
-test "$initializer_prefix" = "NONE" && initializer_prefix="$ac_default_prefix"
-GLOBUS_SCRIPT_INITIALIZER="
-# BEGIN GLOBUS_SCRIPT_INITIALIZER
-eval_path()
-{
-    _pathval=\"\[$]1\"
-    _old_pathval=\"\"
-
-    while test \"\$_pathval\" != \"\$_old_pathval\"; do
-        _old_pathval=\"\$_pathval\"
-        eval _pathval=\"\$_pathval\"
-    done
-    echo \"\$_pathval\"
-}
-
-if test -n \"\${GLOBUS_LOCATION}\" ; then
-    prefix=\"\${GLOBUS_LOCATION}\"
-else
-    prefix='$initializer_prefix'
-fi
-
-exec_prefix=\"\`eval_path $exec_prefix\`\"
-test \"\$exec_prefix\" = NONE && exec_prefix=\"\$prefix\"
-sbindir=\"\`eval_path $sbindir\`\"
-bindir=\"\`eval_path $bindir\`\"
-libdir=\"\`eval_path $libdir\`\"
-libexecdir=\"\`eval_path $libexecdir\`\"
-includedir=\"\`eval_path $includedir\`\"
-datarootdir=\"\`eval_path $datarootdir\`\"
-datadir=\"\`eval_path $datadir\`\"
-sysconfdir=\"\`eval_path $sysconfdir\`\"
-sharedstatedir=\"\`eval_path $sharedstatedir\`\"
-localstatedir=\"\`eval_path $localstatedir\`\"
-# END GLOBUS_SCRIPT_INITIALIZER
-"
-AC_SUBST(GLOBUS_SCRIPT_INITIALIZER)
-_AM_SUBST_NOTMAKE(GLOBUS_SCRIPT_INITIALIZER)
-
-GLOBUS_PERL_INITIALIZER="
-BEGIN
-{
-    my (\$prefix, \$exec_prefix, \$libdir);
-
-    sub eval_path
-    {
-        my \$path = shift;
-        my \$last = \$path;
-
-        #{
-        while (\$path =~ m/\\\${([[^}]]*)}/)
-        {
-            my \$varname = \${1};
-            my \$evaluated;
-            eval \"\\\$evaluated = \\\${\$varname}\";
-
-            \$path =~ s/\\\${\$varname}/\$evaluated/g;
-            if (\$path eq \$last)
-            {
-                die \"Error evaluating \$last\n\";
-            }
-            \$last = \$path;
-        }
-        return \$path;
-    }
-
-    if (exists \$ENV{GLOBUS_LOCATION})
-    {
-        \$prefix = \$ENV{GLOBUS_LOCATION};
-    }
-    else
-    {
-        \$prefix = '$initializer_prefix';
-    }
-
-    \$exec_prefix=eval_path('$exec_prefix');
-    \$libdir = eval_path('$libdir');
-
-    push(@INC, \"\${libdir}/perl\");
-
-    if (exists \$ENV{GPT_LOCATION})
-    {
-        push(@INC, \"\$ENV{GPT_LOCATION}/lib/perl\");
-    }
-}
-"
-
-AC_SUBST(GLOBUS_PERL_INITIALIZER)
-_AM_SUBST_NOTMAKE(GLOBUS_PERL_INITIALIZER)
-
-])
-
 AC_DEFUN([GLOBUS_INIT], [
 globus_prefix="${prefix}"
 test "$globus_gprefix" = "NONE" && globus_gprefix="$ac_default_prefix"
@@ -103,20 +10,29 @@ dnl --prefix during configure time
 AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
 # checking for the GLOBUS_LOCATION
-
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-    export GPT_LOCATION
-fi
+GLOBUS_LOCATION="${GLOBUS_LOCATION:-/usr}"
+GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION}}"
 
 # This is created in globus-bootstrap.sh
-. ./gptdata.sh
+. "${srcdir}/gptdata.sh"
 
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
 fi
 
 GLOBUS_INITIALIZERS
+
+eval_path()
+{
+    _pathval="[$]1"
+    _old_pathval=""
+
+    while test "$_pathval" != "$_old_pathval"; do
+        _old_pathval="$_pathval"
+        eval "_pathval=\"$_pathval\""
+    done
+    echo "$_pathval"
+}
 
 AC_ARG_WITH(flavor,
         AC_HELP_STRING([--with-flavor=FLAVOR],
@@ -137,7 +53,7 @@ AC_ARG_WITH(flavor,
 	        echo "Warning: $withval ignored" >&2
         else
 		GLOBUS_FLAVOR_NAME=$withval
-                if test ! -f "$GLOBUS_LOCATION/share/globus/globus_core/flavor_$GLOBUS_FLAVOR_NAME.gpt"; then
+                if test ! -f "${GLOBUS_LOCATION}/share/globus/flavors/flavor_$GLOBUS_FLAVOR_NAME.gpt"; then
 	                echo "ERROR: Flavor $GLOBUS_FLAVOR_NAME has not been installed" >&2
 	                exit 1
                 fi 
@@ -165,19 +81,8 @@ AC_SUBST(GLOBUS_FLAVOR_NAME)
 
 
 # get the environment scripts
-eval_path()
-{
-    _pathval="[$]1"
-    _old_pathval=""
 
-    while test "$_pathval" != "$_old_pathval"; do
-        _old_pathval="$_pathval"
-        eval "_pathval=\"$_pathval\""
-    done
-    echo "$_pathval"
-}
-
-. `eval_path ${libexecdir}/globus-build-env-$GLOBUS_FLAVOR_NAME.sh`
+. ${GLOBUS_LOCATION}/share/globus/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 
 doxygendir="`eval_path '$doxygendir'`"
 

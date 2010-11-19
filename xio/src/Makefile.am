@@ -48,6 +48,8 @@ libglobus_xio_la_LIBADD = \
 	$(GPT_LIB_LINKS) \
 	$(XIO_BUILTIN_LIBS)
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST = \
 	globus_xio_system_win32.c \
 	globus_i_xio_win32.h \
@@ -57,7 +59,8 @@ EXTRA_DIST = \
 	globus_i_xio_win32_socket.c \
 	version.h.in \
 	extensions.h.in \
-	configure.in.in
+	configure.in.in \
+	$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -6,8 +6,6 @@ AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 
 GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 
-GLOBUS_INITIALIZERS
-
 # save CC and CFLAGS, so AC_PROG_CC can detect and use a compiler
 # up to the point where we want to pick a compiler based on the
 # flavor  (see config/accompiler.m4)
@@ -148,6 +146,8 @@ if test "X$GPT_LINKTYPE" = "Xstatic"; then
     AC_DEFINE(BUILD_STATIC_ONLY)
 fi
 
+GLOBUS_INITIALIZERS
+
 dnl define FILELIST_FILE variable
 FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
@@ -209,6 +209,7 @@ AC_OUTPUT(Makefile
 	scripts/Makefile
         scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
         scripts/globus-build-env-noflavor.sh:scripts/globus-build-env-noflavor.sh.in
+        scripts/globus-bootstrap.sh
 	aclocal/Makefile
 	aclocal/automake_config
 	config/Makefile
@@ -217,6 +218,5 @@ AC_OUTPUT(Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters
-	pkgdata/globus-core.pc
 	)
 

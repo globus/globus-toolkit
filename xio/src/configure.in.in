@@ -55,7 +55,7 @@ AC_SUBST(BUILTIN_EXTENSIONS_DEF)
 CFLAGS="$CFLAGS -DGLOBUS_BUILTIN"
 LAC_DOXYGEN("../ $XIO_BUILTIN_DOXY_DIRS", 
             "*.doc", 
-            "$GLOBUS_LOCATION/sbin/globus-vararg-enums-doxygen-filter.pl")
+            "${GLOBUS_LOCATION:-/usr}/sbin/globus-vararg-enums-doxygen-filter.pl")
 
 AM_CONFIG_HEADER(config.h)
 AC_CHECK_FUNCS(sysconf)

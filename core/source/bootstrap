@@ -58,8 +58,11 @@ if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
 fi
 
-echo "running gpt2pkg-nogpt"
-perl ./scripts/gpt2pkg-nogpt ./pkgdata/pkg_data_src.gpt.in > ./pkgdata/globus-core.pc.in
+$GPT_LOCATION/sbin/gpt_extract_data \
+    --name --version --build_env ./pkgdata/pkg_data_src.gpt.in > gptdata.sh
+
+echo "running gpt-to-pkgconfig"
+$GPT_LOCATION/sbin/gpt-to-pkgconfig ./pkgdata/pkg_data_src.gpt.in
 
 echo "running aclocal $config"
 aclocal $config || error

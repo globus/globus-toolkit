@@ -152,7 +152,7 @@ dnl LAC_COMPILERS_SET_ALL_VARS(THREAD-TYPE)
 AC_DEFUN([LAC_COMPILERS_SET_ALL_VARS],
 [
 lac_CFLAGS="$CFLAGS "
-lac_CPPFLAGS="$CPPFLAGS -I$includedir -I$includedir/$globus_cv_flavor"
+lac_CPPFLAGS="$CPPFLAGS -I$includedir -I$flavorincludedir"
 lac_CXXFLAGS="$CXXFLAGS "
 lac_LDFLAGS="$LDFLAGS -L$libdir "
 lac_LIBS="$LIBS "
@@ -170,6 +170,8 @@ if test -z "$GLOBUS_CC" ; then
         GLOBUS_CC="unknown"
     fi
 fi
+
+AC_GNU_SOURCE
 
 case ${host}--$1 in
     i*86*solaris2*)
@@ -953,7 +955,6 @@ AC_CACHE_CHECK([F90 flags], lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 CC="$lac_cv_CC"
 CFLAGS="$lac_cv_CFLAGS"
 AC_PROG_CC
-LAC_GNU_SOURCE
 CROSS="$cross_compiling"
 AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)

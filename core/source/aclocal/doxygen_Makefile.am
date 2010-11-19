@@ -19,19 +19,19 @@ install-data-local:
 		for dir in `find ./doc/* -type d -print|sed "s,./doc/,,"`; do \
 			if test -z "`echo $${dir}|sed -n '/^man/ p'`"; then \
 				$(INSTALL) -d -m 755 \
-					$(DESTDIR)$(docdir)/@PACKAGE@/$${dir}; \
+					$(DESTDIR)$(docdir)/$${dir}; \
 			else \
 				$(INSTALL) -d -m 755 \
-					$(DESTDIR)$(prefix)/$${dir}; \
+					$(DESTDIR)$(mandir)/`echo $${dir} | sed -e 's/^man//'`; \
 			fi \
 		done; \
 		for file in `find ./doc -type f -print|sed "s,./doc/,,"`; do \
 			if test -z "`echo $${file}|sed -n '/^man/ p'`"; then \
 				$(INSTALL) -m 644 ./doc/$${file} \
-					$(DESTDIR)$(docdir)/@PACKAGE@/$${file}; \
+					$(DESTDIR)$(docdir)/$${file}; \
 			else \
 				$(INSTALL) -m 644 ./doc/$${file} \
-					$(DESTDIR)$(prefix)/$${file};\
+					$(DESTDIR)$(mandir)/`echo $${file} | sed -e 's/^man//'`;\
 			fi \
 		done \
 	fi
@@ -43,10 +43,12 @@ clean-data-local:
 
 filelist:
 	@if test ! -z "@DOXYGEN@"; then \
-		find ./doc -type f -print| \
-		sed "s,./doc/man,$(prefix)/man,"| \
-		sed "s,./doc,$(docdir)/@PACKAGE@," \
-		>> $(FILELIST_FILE); \
+                filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+		find ./doc -type f -print | \
+		sed -e 's,./doc/man,$(mandir),' \
+                    -e 's,./doc,$(docdir),' \
+                    -e 's,^$(prefix),,' \
+		>> $${filelistdir}/noflavor_doc.filelist; \
 	fi
 
 dist-hook: all-local

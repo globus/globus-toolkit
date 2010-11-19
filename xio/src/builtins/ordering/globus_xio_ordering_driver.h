@@ -62,6 +62,7 @@
  * @defgroup ordering_driver_envs Env Variables
  * @ingroup ordering_driver
  *
+ * The ordering driver uses the following environment variable
  * - GLOBUS_XIO_ORDERING_DEBUG Available if using a debug build.  See
  * globus_debug.h for format.
  */

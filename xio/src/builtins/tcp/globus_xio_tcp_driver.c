@@ -2028,7 +2028,7 @@ globus_l_xio_tcp_connect(
     }
     
     result = globus_l_xio_tcp_attr_copy(
-        (void **) &connect_info->attr, (void *) attr);
+        (void **) (void *) &connect_info->attr, (void *) attr);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(

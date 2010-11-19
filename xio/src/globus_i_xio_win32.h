@@ -9,9 +9,9 @@
 #define GLOBUS_I_XIO_WIN32_H_
 
 #include "globus_i_xio_system_common.h"
-#include <Windows.h>
+#include <windows.h>
 #include <process.h>
-#include <Winsock2.h>
+#include <winsock2.h>
 
 typedef struct globus_l_xio_win32_event_entry_s *
     globus_i_xio_win32_event_entry_t;

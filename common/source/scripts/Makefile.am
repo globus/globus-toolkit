@@ -11,8 +11,10 @@ bin_SCRIPTS = \
 	globus-domainname \
 	globus-makefile-header
 
-perllibdir = ${libdir}/perl/Globus/Core
-perllib_SCRIPTS = Paths.pm
+globuscore_perlmoduledir = $(perlmoduledir)/Globus/Core
+## globuscore_perlmodule = [ DATA ]
+
+globuscore_perlmodule_DATA = Paths.pm
 
 EXTRA_DIST = \
 	globus-args-parser-header \

@@ -230,7 +230,7 @@ globus_l_openssl_thread_id(void)
     globus_thread_t self = globus_thread_self();
     unsigned long rc;
 
-    memcpy(&rc, &self, sizeof(unsigned long));
+    memcpy(&rc, &self.dummy, sizeof(unsigned long));
 
     return rc;
 }
