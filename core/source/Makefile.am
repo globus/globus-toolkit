@@ -11,7 +11,7 @@ flavorinclude_HEADERS = \
 SUBDIRS = aclocal config scripts pkgdata doxygen
 
 
-EXTRA_DIST = bootstrap GLOBUS_LICENSE dirt.sh
+EXTRA_DIST = bootstrap GLOBUS_LICENSE dirt.sh globus-core.spec
 
 dist-hook:
 	$(GPT_LOCATION)/sbin/gpt_create_automake_rules -srcdir=$(top_distdir)
