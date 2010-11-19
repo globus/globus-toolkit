@@ -139,7 +139,7 @@ Or use the -location switch"
 
   $me->{'bundledir'} = "${datadir}/globus/bundles";
   $me->{'pkgdir'} = "${datadir}/globus/packages";
-  $me->{'flavordir'} = "${datadir}/globus/globus_core";
+  $me->{'flavordir'} = "${datadir}/globus/flavors";
   $me->{'setupdir'} = "${datadir}/globus/packages/setup";
   $me->{pkg_confdir} = "${pkg_confdir}";
 }

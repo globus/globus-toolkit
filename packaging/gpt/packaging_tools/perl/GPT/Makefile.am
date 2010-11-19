@@ -2,6 +2,11 @@ SUBDIRS = PkgMngmt PackageFilelist V1
 
 gptmodulesdir = $(perlmoduledir)/Grid/GPT
 
+nodist_gptmodules_DATA = \
+	LocalEnv.pm \
+	Locations.pm \
+	GPTIdentity.pm
+
 gptmodules_DATA = \
 	Algorithms.pm \
 	BaseNode.pm \
@@ -15,12 +20,9 @@ gptmodules_DATA = \
 	Filelist.pm \
 	FilelistSort.pm \
 	GPTFilelist.pm \
-	GPTIdentity.pm \
 	GPTObject.pm \
 	Installation.pm \
-	LocalEnv.pm \
 	Localize.pm \
-	Locations.pm \
 	MatchNode.pm \
 	MD5.pm \
 	MyFilelists.pm \
@@ -38,4 +40,8 @@ gptmodules_DATA = \
 	SetupInstallation.pm \
 	Setup.pm
 
-EXTRA_DIST = $(gptmodules_DATA)
+EXTRA_DIST = $(gptmodules_DATA) \
+	LocalEnv.pm.in \
+	Locations.pm.in \
+	GPTIdentity.pm.in
+

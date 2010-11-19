@@ -14,6 +14,7 @@ sbin_SCRIPT_sources = 	\
 	gpt_get_lib_names.in \
         gpt_save_flavor.in \
         gpt_sort_filelist.in \
+	gpt-to-pkgconfig \
         gpt_version.in
 
 documented_scripts = \
@@ -34,11 +35,12 @@ undocumented_scripts = \
         gpt_get_lib_names \
         gpt_save_flavor \
         gpt_sort_filelist \
+	gpt-to-pkgconfig \
         gpt_version
 
 sbin_SCRIPTS = 	$(documented_scripts) $(undocumented_scripts)
 
-EXTRA_DIST = $(sbin_SCRIPTS_sources)
+EXTRA_DIST = $(sbin_SCRIPT_sources)
 
 man8_MANS = 
 if INSTALL_MANS

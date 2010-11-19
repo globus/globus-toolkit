@@ -63,6 +63,8 @@ automake --copy --add-missing --foreign || \
 echo "running gpt_create_automake_rules --excludes=doxygen"
 $GPT_LOCATION/sbin/gpt_create_automake_rules --excludes=doxygen || error
 
+echo "Running gpt-to-pkgconfig"
+$GPT_LOCATION/sbin/gpt-to-pkgconfig pkgdata/pkg_data_src.gpt.in || error
 
 echo "running autoconf"
 autoconf || error

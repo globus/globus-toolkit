@@ -1,5 +1,9 @@
 gptmodulesdir = $(perlmoduledir)/Grid/GPT
 pkgmntmodulesdir = ${gptmodulesdir}/PkgMngmt
+
+nodist_pkgmntmodules_DATA = \
+	SetupBuildFlavors.pm
+
 pkgmntmodules_DATA = \
 	Archive.pm \
 	BuildMacros.pm \
@@ -9,4 +13,5 @@ pkgmntmodules_DATA = \
 	Inform.pm \
 	SetupBuildFlavors.pm
 
-EXTRA_DIST = $(pkgmntmodules_DATA)
+EXTRA_DIST = $(pkgmntmodules_DATA) \
+	SetupBuildFlavors.pm.in

@@ -3,11 +3,11 @@ AC_DEFUN([GPT_INIT], [
         GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 
         AC_SUBST(GPT_LOCATION)
+        AC_SUBST(GPT_PKGCONFIG_DEPENDENCIES)
 
-	#extract the name and version of the package from the src metadata
-	$GPT_LOCATION/sbin/gpt_extract_data --name --version $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
-	. ./tmpfile.gpt
-	rm ./tmpfile.gpt
+        # bootstrap extracts the the name and version of the package from the
+        # src metadata into gptdata.sh for easier processing
+        . ${srcdir}/gptdata.sh
 	GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
 
         # Determine if GPT is version 2.x
@@ -94,6 +94,15 @@ dnl		fi
 	AC_SUBST(GPT_LINKTYPE)
 	builddir=`pwd`
 	AC_SUBST(builddir)
+
+        # Export pkg-config information about this package
+        pkgconfdir='${prefix}/lib/pkgconfig'
+        pkgconffile=`echo "${GPT_NAME}.pc" | sed -e 's!_!-!g'`
+
+        AC_SUBST(pkgconfdir)
+        AC_SUBST(pkgconffile)
+
+        AC_CONFIG_FILES([pkgdata/$pkgconffile])
 ])
 
 AC_DEFUN([GPT_SET_CFLAGS], [

@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Long;
 
+print join("\n", @ARGV);
 sub commands;
 
 my ($gpt_location, $rpm_info) = ($ENV{'GPT_LOCATION'}, "");
@@ -28,18 +29,9 @@ use Cwd;
 
 my $topdir = cwd();
 
-@INC = ("./tools", @INC);
+push(@INC, "./tools", "./packaging_tools/perl/GPT");
 
-require DistGPT;
-
-$perl_location = DistGPT::find_perl(perl_location => $perl_location, 
-                                    perl_version => '5.005',
-                                   topdir => $topdir);
-
-
-
-die "ERROR: Can't find perl >= 5.005. Use -with-perl=<location> flag\n" 
-  if ! defined $perl_location;
+use 5.005_001;
 
 # Check prerequisite perl modules
 my %prereqs = (
@@ -74,19 +66,7 @@ for my $pkg (keys %prereqs)
 }
 die $prereq_error if ($prereq_error ne '');
 
-my $result = DistGPT::find_perl(perl_location => $perl_location, 
-                                perl_version => '5.6.1',
-                                topdir => $topdir);
-
-if (defined $man) {
-  my $podcommand = $perl_location;
-  $podcommand =~ s!perl$!pod2text!;
-  my $result = system("$podcommand ./build_gpt");
-  exit 0;
-}
-
 print_version() if $version;
-
 
 my %builddirections = (
                        'gpt' => 'gpt',
@@ -101,9 +81,10 @@ $shutup = "" if defined $verbose;
 
 $ENV{GPT_LOCATION} = $gpt_location;
 delete $ENV{CONFIG_SITE};
+my $perlarg = "--with-perl=$perl_location" if defined($perl_location);
 my %commands = (
                 gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
-./configure --with-perl=$perl_location --datadir='\${prefix}/share' --libexecdir='\${libdir}/globus' --mandir='\${prefix}/share/man'", 
+./configure $perlarg --datadir='\${prefix}/share' --libexecdir='\${datadir}/globus' --mandir='\${prefix}/share/man'", 
                         "make", 
                         "make install",
                         "make install-man",
@@ -124,34 +105,17 @@ my $log = new Grid::GPT::PkgMngmt::Inform(
 
 $log->announce("installing GPT into $gpt_location");
 
-
-require DistGPT;
-
-my $dist = new DistGPT(
-                       topdir => cwd(),
-                       building => 1,
-                      );
-
-$dist->match_srcdirs($boot);
-
-for my $s  (@{ $dist->get_keys() }) {
-
-  my $dir = $dist->{'srcdirs'}->{$s};
-
-  my $instructions = $builddirections{$s};
+my $dir = 'packaging_tools';
+my $instructions = $builddirections{'gpt'};
   
-  next if $s eq 'perltest' and ! defined $test;
-
-  $log->announce("building $dir");
+$log->announce("building $dir");
   
-  action($boot{$instructions},$dir) 
+action($boot{$instructions},$dir) 
     if defined $boot{$instructions} and defined $boot;
 
-  for my $i (@{$commands{$instructions}}) {
-    {
-      action($i, $dir);
-    }
-  }
+for my $i (@{$commands{$instructions}})
+{
+    action($i, $dir);
 }
 
 sub action {

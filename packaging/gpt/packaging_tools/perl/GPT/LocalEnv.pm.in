@@ -16,7 +16,7 @@ sub get_tool_location {
                    gtar => "@GTAR@",
                    gzip => "@GZIP@",
                    gunzip => "@GUNZIP@",
-                   gmake => "@GMAKE@",
+                   gmake => "@MAKE@",
                    perl => "@PERL@",
                    rpm => "@RPM@",
                    rpmbuild => "@RPMBUILD@",
@@ -29,13 +29,13 @@ sub get_rpm_setting {
   my $item = shift;
 
   my %rpm = (
-             license => "@license@",
-             vendor => "@vendor@",
-             ftpsite => "@ftpsite@",
-             url => "@url@",
-             packager => "@packager@",
-             prefix => "@prefix@",
-             '/usr/sbin/Check' => "@/usr/sbin/Check@",
+             license => '@license@',
+             vendor => '@vendor@',
+             ftpsite => '@ftpsite@',
+             url => '@url@',
+             packager => '@packager@',
+             prefix => '@prefix@',
+             '/usr/sbin/Check' => '@/usr/sbin/Check@',
             );
   return $rpm{$item};
 
@@ -44,7 +44,7 @@ sub get_rpm_setting {
 sub get_target {
     return Grid::GPT::Locallize::get_target();
 }
-sub use_system_tar {return "@systar@"}
+sub use_system_tar {return "@GTAR@"}
 
 sub listconfig {
 
