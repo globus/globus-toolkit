@@ -27,9 +27,6 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 #		Globus RPM specfile creator script
 Source2:	globus-spec-creator
-#		Adapt dependency script to Fedora's documentation location:
-#		Not relevant for upstream - not submitted to globus bugzilla
-Patch1:	        %{name}-fedora.patch
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Provides:	%{name}-devel = %{version}-%{release}
@@ -52,7 +49,6 @@ Globus Core
 
 %prep
 %setup -q -n %{_name}-%{version}
-%patch1 -p1 -b .fedora
 
 # custom perl requires that removes dependency on gpt perl modules
 cat << EOF > %{name}-req

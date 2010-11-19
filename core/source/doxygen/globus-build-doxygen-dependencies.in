@@ -58,7 +58,15 @@ pod2usage(0) if $help;
 pod2usage('Must specify src_metadata_file') if !defined($srcfile);
 
 @deps = process_package($srcfile);
-print join(' ', map {"$datadir/doc/$_/html/$_.tag"} @deps) . "\n";
+foreach (@deps) {
+    my $pkg = new Grid::GPT::V1::Package;
+    $pkg->read_metadata_file("$datadir/globus/packages/$_/pkg_data_noflavor_doc.gpt");
+    my $dir = "$_-$pkg->{'Version'}->{'major'}.$pkg->{'Version'}->{'minor'}";
+    $dir =~ s/_/-/g;
+    $_ = "$datadir/doc/$dir/html/$_.tag";
+}
+print join(' ', @deps) . "\n";
+
 
 sub process_package($)
 {
