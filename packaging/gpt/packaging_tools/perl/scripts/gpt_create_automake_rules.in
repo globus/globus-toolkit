@@ -64,6 +64,7 @@ find(\&find_makefile_am, $topdir);
 sub generate_rule
   {
     my ($target, $installdir, $mpage) = @_;
+    my ($realdir);
     my $target2file = {
 		       PROGRAMS => "progs.am",
 		       LTLIBRARIES => "ltlib.am",
@@ -78,11 +79,14 @@ sub generate_rule
       die "ERROR: I have no rules file for $target\n";
     }
     open (RULES, "$amdir/$target2file->{$target}");
+    $realdir = $installdir;
+    $realdir =~ s/^nodist_//;
 
 #    print "$target $installdir $target2file->{$target}\n";
 
     my $result = "";
     while (<RULES>) {
+      s/\@DIR\@dir/${realdir}dir/g;
       s/\@DIR\@/$installdir/g;
       s!\%SECTION\%!$mpage!g if defined $mpage;
       $result .= $_ if (!/^\#\#/);
@@ -166,7 +170,6 @@ sub scan_automake_file {
   my %targets;
   my %mpages;
   my $curdir = cwd();
-#  print "scan_automake_file: $curdir\n";
   local *AUTOMAKE;
   my $result = open(AUTOMAKE, $file);
   if (! $result) {
@@ -184,10 +187,6 @@ sub scan_automake_file {
       my ($dir, $file) = ($1, $2);
       chdir $dir if $dir ne $curdir;
       my ($more_targets, $more_mpages) = scan_automake_file($file);
-#      print "PRE ==========\n";
-#      print Dumper($more_targets);
-#      print Dumper(%targets);
-#      print "==========\n";
       chdir $curdir if $dir ne $curdir;
       for my $d (sort keys %$more_targets) {
         $targets{$d} = {} if ! defined $targets{$d};
@@ -195,9 +194,6 @@ sub scan_automake_file {
           $targets{$d}->{$t}++;
         }
       }
-#      print "POST ==========\n";
-#      print Dumper(%targets);
-#      print "==========\n";
       for my $m (sort keys %$more_mpages) {
         $mpages{$m}++;
       }
