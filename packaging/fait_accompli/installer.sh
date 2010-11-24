@@ -12,12 +12,6 @@ BUNDLES=globus-resource-management-server,globus-resource-management-client,glob
 PACKAGES=globus_rls_client_jni,myproxy
 
 echo Making configure/make installer
-#echo Step: Checking out and building autotools.
-#./make-packages.pl --trees=autotools --skippackage --skipbundle $@
-#if [ $? -ne 0 ]; then
-#	echo There was trouble building autotools
-#	exit 2
-#fi
 
 echo Step: Checking out source code.
 ./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
@@ -109,3 +103,7 @@ for f in $TARFILES; do
 done
 
 echo Done creating installer.
+
+# Creating source tarballs
+./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --deps --deporder --skipbundle $@ 
+

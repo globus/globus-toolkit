@@ -7,4 +7,4 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-. ${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh
+. ${GLOBUS_LOCATION}/share/globus/globus-bootstrap.sh

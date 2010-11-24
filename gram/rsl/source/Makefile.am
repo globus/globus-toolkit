@@ -18,9 +18,12 @@ Sources= \
 	globus_rsl.h \
 	globus_rsl_parser.c
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST= \
 	globus_rsl_parser.lex.c \
-	version.h.in
+	version.h.in \
+	$(doc_DATA)
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.

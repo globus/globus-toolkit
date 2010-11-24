@@ -451,7 +451,7 @@ COMPACT_LATEX          = YES
 # by the printer. Possible values are: a4, a4wide, letter, legal and 
 # executive. If left blank a4wide will be used.
 
-PAPER_TYPE             = letter
+PAPER_TYPE             = 
 
 # The EXTRA_PACKAGES tag can be to specify one or more names of LaTeX 
 # packages that should be included in the LaTeX output.
@@ -477,7 +477,7 @@ PDF_HYPERLINKS         = YES
 # plain latex in the generated Makefile. Set this option to YES to get a 
 # higher quality PDF documentation.
 
-USE_PDFLATEX           = NO
+USE_PDFLATEX           = YES
 
 # If the LATEX_BATCHMODE tag is set to YES, doxygen will add the \\batchmode. 
 # command to the generated LaTeX files. This will instruct LaTeX to keep 
@@ -547,7 +547,7 @@ MAN_EXTENSION          = .3
 # only source the real man page, but without them the man command 
 # would be unable to find the correct page. The default is NO.
 
-MAN_LINKS              = YES
+MAN_LINKS              = NO
 
 #---------------------------------------------------------------------------
 # Configuration options related to the preprocessor   

@@ -13,10 +13,12 @@ nodist_includedir = $(includedir)
 
 SUBDIRS = pkgdata
 
+doc_DATA = GLOBUS_LICENSE
+
 MANUAL_SOURCE = globus-update-certificate-dir-manual.xml \
                 manual.xml
 
-EXTRA_DIST = dirt.sh globus-update-certificate-dir.in $(MANUAL_SOURCE) $(man8_MANS)
+EXTRA_DIST = dirt.sh globus-update-certificate-dir.in $(MANUAL_SOURCE) $(man8_MANS) $(doc_DATA)
 
 libglobus_openssl_version_la_SOURCES = \
     globus_openssl_version.c

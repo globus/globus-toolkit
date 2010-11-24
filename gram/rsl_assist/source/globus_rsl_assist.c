@@ -28,7 +28,7 @@
  *   RSL parse trees or strings.
  */
 
-/**
+/*
  * @file globus_rsl_assist.c RSL Help Functions
  *
  * CVS Information:

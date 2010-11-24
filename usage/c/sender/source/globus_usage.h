@@ -66,4 +66,3 @@ globus_usage_stats_send_array(
 EXTERN_C_END
 
 #endif
-

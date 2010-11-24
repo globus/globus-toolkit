@@ -120,6 +120,11 @@ CVS Information:
 #define GLOBUS_L_READY_OTHER	-108	/* Data ready from another process */
 #define GLOBUS_L_ETIMEOUT	-109	/* Time out waiting for ready */
 
+/* HACK */
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 /* Prototype the mangling functions. */
 static
 int

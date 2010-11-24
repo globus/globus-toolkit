@@ -29,16 +29,16 @@
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
 
+#ifndef BUILD_STATIC_ONLY
 #ifdef WIN32
 #include "globus_libtool_windows.h"
+#else
+#include <ltdl.h>
+#endif
 #endif
 
 #include "version.h"
 
-/* ToDo: HACK! This is undefined on the Windows side so do this for now */
-#ifdef WIN32
-#define flavor "win32dbg"
-#endif
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
 static void
@@ -649,6 +649,8 @@ globus_callout_call_type(
     va_list                             ap;
     int                                 rc;
     char *                              dlerror;
+    char *                              flavor_start;
+    char *                              file;
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
@@ -710,6 +712,22 @@ globus_callout_call_type(
             
             *dlhandle = lt_dlopenext(current_datum->file);
             
+            if(*dlhandle == NULL)
+            {
+                flavor_start = strrchr(current_datum->file, '_');
+                if (flavor_start) {
+                    file = strdup(current_datum->file);
+                    if(file == NULL)
+                        {
+                            GLOBUS_CALLOUT_MALLOC_ERROR(result);
+                            goto exit;
+                        }
+                    file[flavor_start - current_datum->file] = '\0';
+                    *dlhandle = lt_dlopenext(file);
+                    free(file);
+                }
+            }
+
             if(*dlhandle == NULL)
             {
                 GLOBUS_CALLOUT_ERROR_RESULT(

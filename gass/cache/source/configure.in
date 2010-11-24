@@ -7,7 +7,8 @@ GLOBUS_INIT
 
 AM_PROG_LIBTOOL
 
-dnl config header goes here
+
+GLOBUS_OPENSSL
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)

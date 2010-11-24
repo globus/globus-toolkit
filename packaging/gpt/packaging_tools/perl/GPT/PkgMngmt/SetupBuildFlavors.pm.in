@@ -90,13 +90,19 @@ sub check_flavor {
   return "INSTALLED" if @installed_flavors;
   return "DEFINED";
 }
+
 sub select_core_src {
   my ($me, %args) = @_;
   my ($usercore, $coreobj) = ($args{'usercore'}, $args{'coreobj'});
   my $gptcore = get_core_src();
   my ($userversion, $objversion, $gptversion);
   if (defined $usercore) {
-    my $pkg =Grid::GPT::PkgDist::get_pkgdata_from_tar($usercore);
+    my $pkg;
+      if (-d $usercore) {
+        $pkg = Grid::GPT::PkgDist::get_pkgdata_from_dir($usercore);
+      } else {
+        $pkg = Grid::GPT::PkgDist::get_pkgdata_from_tar($usercore);
+      }
     $userversion = $pkg->{'Version'};
   }
 
@@ -110,7 +116,13 @@ sub select_core_src {
     if ! defined $pkg;
   $gptversion =  $pkg->{'Version'};
 
-  if (defined $userversion) {
+  if (defined $userversion && -d $usercore) {
+    $me->{'coreobj'} = 
+      new Grid::GPT::PkgMngmt::ExpandSource(srcdir => $usercore, 
+                                            locations => $me->{'locations'});
+    $me->{'coreversion'} = $userversion;
+    return;
+  } elsif (defined $userversion) {
     $me->{'coreobj'} = 
       new Grid::GPT::PkgMngmt::ExpandSource(tarfile => $usercore, 
                                             locations => $me->{'locations'});

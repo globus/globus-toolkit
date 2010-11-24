@@ -7,11 +7,11 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-if [ ! -f ${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh ]; then
-    echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh"
+if [ ! -f ${GLOBUS_LOCATION}/share/globus/globus-bootstrap.sh ]; then
+    echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/share/globus/globus-bootstrap.sh"
     echo "       Please ensure that you have installed the globus-core package and"
     echo "       that GLOBUS_LOCATION is set to the proper directory"
     exit
 fi
 
-. ${GLOBUS_LOCATION}/lib/globus/globus-bootstrap.sh
+. ${GLOBUS_LOCATION}/share/globus/globus-bootstrap.sh

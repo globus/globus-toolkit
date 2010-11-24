@@ -719,3 +719,94 @@ uninstall-am: uninstall-gptexecshareSCRIPTS
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
+link-am:
+
+unlink-am:
+
+filelist-am:
+
+link: link-recursive link-gptexecshareSCRIPTS 
+	:
+
+unlink: unlink-recursive unlink-gptexecshareSCRIPTS 
+	:
+
+.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-gptexecshareSCRIPTS unlink-gptexecshareSCRIPTS filelist-gptexecshareSCRIPTS 
+
+filelist: filelist-recursive filelist-gptexecshareSCRIPTS 
+	:
+
+
+
+
+link-gptexecshareSCRIPTS: $(gptexecshare_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(gptexecsharedir)
+	@list='$(gptexecshare_SCRIPTS)'; for p in $$list; do \
+	  mydir=`pwd`; \
+	  target_p=$(DESTDIR)$(gptexecsharedir)/`echo $$p|sed '$(transform)'`; \
+	  if test -f $$p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+		fi; \
+	  else if test -f $(srcdir)/$$p; then \
+		cd $(srcdir); \
+		fullsrcdir=`pwd`; \
+		cd $$mydir; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$fullsrcdir/$$p $$target_p"; \
+			ln -s $$fullsrcdir/$$p $$target_p; \
+		fi; \
+	  else :; fi; fi; \
+	done
+
+unlink-gptexecshareSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(gptexecshare_SCRIPTS)'; for p in $$list; do \
+	    	target_p=$(DESTDIR)$(gptexecsharedir)/`echo $$p|sed '$(transform)'`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+		fi; \
+	done
+
+filelist-gptexecshareSCRIPTS:
+	@list='$(gptexecshare_SCRIPTS)'; for p in $$list; do \
+	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+	  p="`echo "$(gptexecsharedir)/$$p" | sed -e 's!^$(prefix)!!'`"; \
+	  echo "$$p" >> "$${filelistdir}/${GLOBUS_FLAVOR_NAME}_pgm.filelist"; \
+	done
+
+
+link-recursive unlink-recursive filelist-recursive:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+

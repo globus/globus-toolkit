@@ -1,7 +1,6 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
@@ -26,7 +25,9 @@ include_HEADERS = globus_scheduler_event_generator.h \
 # a list of libtool libraries that are to be installed in $prefix/lib
 lib_LTLIBRARIES = libglobus_scheduler_event_generator.la
 
-libexec_PROGRAMS = globus-scheduler-event-generator
+sbin_PROGRAMS = globus-scheduler-event-generator
+
+doc_DATA = GLOBUS_LICENSE
 
 libglobus_scheduler_event_generator_la_SOURCES = \
 	globus_scheduler_event_generator.h globus_scheduler_event_generator.c
@@ -44,8 +45,7 @@ globus_scheduler_event_generator_LDADD = \
 	libglobus_scheduler_event_generator.la \
 	$(GPT_PGM_LINKS)
 
-EXTRA_DIST= version.h.in protocol.dox
+EXTRA_DIST= version.h.in protocol.dox $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-

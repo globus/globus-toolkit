@@ -82,10 +82,6 @@ EXTERN_C_BEGIN
 
 #define GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN 0UL
 
-#if !defined(PATH_MAX) && defined(MAXPATHLEN)
-#   define PATH_MAX MAXPATHLEN
-#endif
-
 /*
  *  Other definitions
  */

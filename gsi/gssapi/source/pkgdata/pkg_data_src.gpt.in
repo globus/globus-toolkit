@@ -2,7 +2,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Name="globus_gssapi_gsi" Format_Version="0.02">
-    <Aging_Version Major="7" Minor="5" Age="3"/>
+    <Aging_Version Major="8" Minor="0" Age="4"/>
     <Description >GSSAPI library</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -18,11 +18,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">
@@ -61,11 +56,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">

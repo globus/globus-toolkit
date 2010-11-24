@@ -860,9 +860,12 @@ if test -z "$trusted_certs_dir"; then
         echo "    \${sysconfdir}/globus-user-ssl.conf"
         echo "    \${sysconfdir}etc/globus-host-ssl.conf"
         echo ""
-        echo "Can't find valid CA config files. Please make sure"
-        echo "that the grid administrator has installed a CA setup "
-        echo "package and run gpt-postinstall."
+        echo "Can't find valid CA config files."
+        echo "Not all CAs use this tool to generate certificate requests."
+        echo "If your CA is using this tool, make sure that you have installed"
+        echo "your CA's setup package."
+        echo "If your CA is not using this tool, consult the CA documentation"
+        echo "to find the right way to request a certificate."
     fi
 
     echo ""

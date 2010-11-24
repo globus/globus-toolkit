@@ -8,9 +8,12 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST= \
         version.h \
-        dirt.sh
+        dirt.sh \
+	GLOBUS_LICENSE
 
 distclean-local: 
 	-rm -f stamp-h.in

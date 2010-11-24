@@ -20,11 +20,6 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_openssl_module">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -43,11 +38,6 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_openssl_module">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -58,14 +48,6 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>  
-        </Source_Dependencies>
-
-        <Source_Dependencies Type="pgm_runtime">
-            <Dependency Name="globus_openssl" Package="pgm">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
         </Source_Dependencies>
 
         <Source_Setup_Dependency PkgType="pgm">
