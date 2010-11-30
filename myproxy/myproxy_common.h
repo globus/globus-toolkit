@@ -89,6 +89,8 @@ typedef int socklen_t;
 #include "vomsclient.h"
 #endif
 
+#include  "voms_utils.h"
+
 #if defined(HAVE_SECURITY_PAM_APPL_H)
 # include <security/pam_appl.h>
 #elif defined(HAVE_PAM_PAM_APPL_H)
