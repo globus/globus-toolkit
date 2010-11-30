@@ -92,6 +92,7 @@ static int quiet = 0;
 static int bootstrap = 0;
 static int no_credentials = 0;
 static char **voms = NULL;
+static char **vomses = NULL;
 
 int
 main(int argc, char *argv[]) 
@@ -198,7 +199,9 @@ main(int argc, char *argv[])
     }
 
     if (outputfile) {
-        if (voms) {
+        if ((voms != NULL) && 
+            (server_response->voms_response_type != MYPROXY_VOMS_OK_RESPONSE))
+        {
             if (voms_proxy_init() < 0) { /* should an error be fatal? */
                 fprintf(stderr, "Warning: Failed to add VOMS attributes.\n");
                 verror_print_error(stderr);
@@ -240,6 +243,7 @@ main(int argc, char *argv[])
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
     if (voms) free_array_list(&voms);
+    if (vomses) free_array_list(&vomses);
     return return_value;
 }
 
@@ -348,6 +352,23 @@ init_arguments(int argc,
     if (attrs->pshost == NULL) {
 	fprintf(stderr, "Unspecified myproxy-server. Please set the MYPROXY_SERVER environment variable\nor set the myproxy-server hostname via the -s flag.\n");
 	exit(1);
+    }
+
+    if (voms) {
+        int i;
+        char * voms_userconf = NULL;
+        for (i = 0; voms[i] != NULL; i++) {
+            myproxy_request_add_voname(request, voms[i]);
+        }
+        voms_userconf = getenv("VOMS_USERCONF");
+        if (voms_userconf != NULL) {
+            vomses = get_vomses(voms_userconf);
+            if (vomses != NULL) {
+                for (i = 0; vomses[i]; i++) {
+                    myproxy_request_add_vomses(request, vomses[i]);
+                }
+            }
+        }
     }
 
     return;

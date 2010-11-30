@@ -66,6 +66,8 @@ LibSources= \
 	verror.h \
 	vomsclient.c \
 	vomsclient.h \
+	voms_utils.c \
+	voms_utils.h \
 	vparse.c \
 	vparse.h
 
