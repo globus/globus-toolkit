@@ -1832,14 +1832,6 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
 	}
     }
 
-    /* Include VOMS_RESPONSE */
-    if (response->voms_response_type == MYPROXY_VOMS_OK_RESPONSE)
-    {
-        len = my_append(data, MYPROXY_VOMS_RESPONSE_TYPE_STRING,  "1\n", NULL);
-        if (len < 0)
-            return -1;
-    }
-
     /* myproxy_debug("sending %s\n", data); */
 
     return len+1;
@@ -1913,33 +1905,6 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			      &response->error_string);
 	return_code = 0;
 	goto error;
-    }
-
-    /* deserialize VOMS_RESPONSE */
-    len = convert_message(data,
-                          MYPROXY_VOMS_RESPONSE_TYPE_STRING,
-                          CONVERT_MESSAGE_DEFAULT_FLAGS,
-                          &buf);
-    if (len == -1) {
-        goto error;
-    } else if (len == -2) {
-        response->voms_response_type = MYPROXY_NO_VOMS_REQUEST;
-    } else {
-        switch(string_to_int(buf, &value)) {
-        case STRING_TO_INT_SUCCESS:
-            if (value == MYPROXY_VOMS_OK_RESPONSE) {
-                response->voms_response_type = MYPROXY_VOMS_OK_RESPONSE;
-            } else {
-                verror_put_string("Unknown %s value \"%d\"", MYPROXY_VOMS_RESPONSE_TYPE_STRING, value);
-                goto error;
-            }
-            break;
-        case STRING_TO_INT_NONNUMERIC:
-            verror_put_string("Non-numeric characters in %s \"%s\"", MYPROXY_VOMS_RESPONSE_TYPE_STRING, buf);
-            goto error;
-        case STRING_TO_INT_ERROR:
-            goto error;
-        }
     }
 
     /* Parse any cred info in response */

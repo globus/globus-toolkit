@@ -103,9 +103,11 @@ int myproxy_get_delegation(
 	return(1);
     }      
 
+#if 0 /* response was lost in myproxy_accept_delegation() */
     if (myproxy_recv_response(socket_attrs, server_response) < 0) {
        return(1);
     }
+#endif
 
     if (outfile[0] == '-' && outfile[1] == '\0') {
         printf("%.*s", credential_len, credentials);
