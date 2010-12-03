@@ -307,11 +307,14 @@ globus_l_gfs_signal_init()
         NULL);
 #   endif
 #   ifdef SIGHUP
-    globus_callback_register_signal_handler(
-        SIGHUP,
-        GLOBUS_TRUE,
-        globus_l_gfs_sighup,
-        NULL);
+    if(globus_i_gfs_config_string("loaded_config"))
+    {
+        globus_callback_register_signal_handler(
+            SIGHUP,
+            GLOBUS_TRUE,
+            globus_l_gfs_sighup,
+            NULL);
+    }
 #   endif
 
 #   ifdef SIGKILL
