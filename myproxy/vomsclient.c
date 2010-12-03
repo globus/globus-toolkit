@@ -764,7 +764,6 @@ void get_voms_proxy(myproxy_socket_attrs_t *attrs,
         myproxy_log("Delegating credentials for %s lifetime=%d",
                     creds->owner_name, lifetime);
         response->response_type = MYPROXY_OK_RESPONSE;
-        response->voms_response_type = MYPROXY_VOMS_OK_RESPONSE;
     }
     return ;
 }

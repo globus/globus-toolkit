@@ -5,6 +5,9 @@
 #define LINE_BUFF_SIZE   (1024)
 #define TOKEN_SIZE       (512)
 
+#define ACSEQ_OID        "1.3.6.1.4.1.8005.100.100.5"
+
+
 /*
  * Internal Structures
  */
@@ -392,6 +395,23 @@ load_vomses(const char *path, voms_string_array *array)
     return 0;
 }
 
+static X509 *
+load_X509_from_file(const char *filepath)
+{
+    FILE *certfile = NULL;
+    X509 *cert = NULL;
+
+    certfile = fopen(filepath, "r");
+    if (certfile == NULL) {
+        return NULL;
+    }
+    cert = PEM_read_X509(certfile, NULL, NULL, NULL);
+    fclose(certfile);
+
+    return cert;
+}
+
+
 /*
  *  External Function
  */
@@ -421,4 +441,44 @@ get_vomses(const char *path)
     return result;
 }
 
+
+int
+has_voms_extension(const char *certfilepath)
+{
+    ASN1_OBJECT *acseq_oid = NULL;
+    X509 *cert = NULL;
+    int position = -1;
+    int result = -1;
+
+    assert (certfilepath != NULL);
+
+    acseq_oid = OBJ_txt2obj(ACSEQ_OID, 1);
+    if (acseq_oid == NULL) {
+        return result;
+    }
+
+    cert = load_X509_from_file(certfilepath);
+    if (cert == NULL) {
+        goto error;
+    }
+
+    position = X509_get_ext_by_OBJ(cert, acseq_oid, -1);
+    if (position >= 0) {
+        result = 1;
+    } else {
+        result = 0;
+    }
+
+    if (cert != NULL) {
+        X509_free(cert);
+    }
+
+  error:
+
+    if (acseq_oid != NULL) {
+        ASN1_OBJECT_free(acseq_oid);
+    }
+
+    return result;
+}
 

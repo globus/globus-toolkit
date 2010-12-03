@@ -27,13 +27,6 @@ typedef enum
     MYPROXY_AUTHORIZATION_RESPONSE
 } myproxy_proto_response_type_t;
 
-/* voms request response codes */
-typedef enum
-{
-    MYPROXY_NO_VOMS_REQUEST,
-    MYPROXY_VOMS_OK_RESPONSE
-} myproxy_proto_voms_response_type_t;
-
 /* client/server socket attributes */
 typedef struct myproxy_socket_attrs_s
 {
@@ -76,8 +69,6 @@ typedef struct
   char				*error_string;
   myproxy_creds_t		*info_creds;
   myproxy_certs_t               *trusted_certs;
-
-  myproxy_proto_voms_response_type_t voms_response_type;
 } myproxy_response_t;
 
   
