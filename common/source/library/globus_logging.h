@@ -57,6 +57,8 @@ typedef struct globus_logging_module_s
     globus_logging_header_func_t        header_func;
 } globus_logging_module_t;
 
+void
+globus_logging_update_pid(void);
 
 globus_result_t
 globus_logging_init(
