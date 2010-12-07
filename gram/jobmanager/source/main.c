@@ -88,7 +88,7 @@ main(
     globus_gram_job_manager_t           manager;
     char *                              sleeptime_str;
     long                                sleeptime;
-    globus_bool_t                       started_without_client = GLOBUS_FALSE;
+    globus_bool_t                       debug_mode_service = GLOBUS_FALSE;
     globus_bool_t                       located_active_jm = GLOBUS_FALSE;
     int                                 http_body_fd;
     int                                 context_fd;
@@ -133,7 +133,7 @@ main(
     }
     if (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL)
     {
-        started_without_client = GLOBUS_TRUE;
+        debug_mode_service = GLOBUS_TRUE;
     }
     /* Set environment variables from configuration */
     if(config.globus_location != NULL)
@@ -164,7 +164,7 @@ main(
             &minor_status,
             GSS_C_BOTH,
             &cred);
-    if ((!started_without_client) && GSS_ERROR(major_status))
+    if ((!debug_mode_service) && GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
                 stderr,
@@ -199,7 +199,7 @@ main(
     /*
      * Remove delegated proxy from disk.
      */
-    if ((!started_without_client) && getenv("X509_USER_PROXY") != NULL)
+    if ((!debug_mode_service) && getenv("X509_USER_PROXY") != NULL)
     {
         remove(getenv("X509_USER_PROXY"));
     }
@@ -218,7 +218,7 @@ main(
      * Pull out file descriptor numbers for security context and job request
      * from the environment (set by the gatekeeper)
      */
-    if (!started_without_client)
+    if (!debug_mode_service)
     {
         char * fd_env = getenv("GRID_SECURITY_HTTP_BODY_FD");
 
@@ -254,55 +254,55 @@ main(
          * active job manager here. If we get the OLD_JM_ALIVE error
          * somebody else has it
          */
-        rc = globus_gram_job_manager_startup_socket_init(
+        rc = globus_gram_job_manager_startup_lock(
                 &manager,
-                &manager.active_job_manager_handle,
-                &manager.socket_fd,
                 &manager.lock_fd);
-        if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+        if (rc == GLOBUS_SUCCESS)
         {
-            rc = GLOBUS_SUCCESS;
-        }
-        else if (rc != GLOBUS_SUCCESS)
-        {
-            /* Some system error. Try again */
-            continue;
-        }
-
-        if (rc == GLOBUS_SUCCESS && manager.socket_fd != -1)
-        {
-            if (!started_without_client)
+            /* We've acquired the lock. We will fork a new process to act like all other job managers
+             * which don't have the lock, and continue on in this process managing jobs for this LRM.
+             * Note that the child process does not inherit the lock
+             */
+            if (!debug_mode_service)
             {
-                /* We've acquired the manager socket */
+                int save_errno = 0;
+
+                /* We've acquired the manager lock */
                 forked_starter = fork();
-            }
-            else
-            {
-                /* Fake PID */
-                forked_starter = 1;
-            }
+                save_errno = errno;
 
-            if (forked_starter < 0)
-            {
-                fprintf(stderr, "fork failed: %s", strerror(errno));
-                exit(1);
-            }
-            else if (forked_starter > 0)
-            {
-                /* We are the parent process, which means we hold 
-                 * the manager lock file and have an open socket for
-                 * processing new jobs.
-                 *
-                 * The lock is not inherited by the child process, so
-                 * we'll act like the single job manager and let the
-                 * forked processes pass the job fds to me.
-                 */
-
-                /* Clean fake PID so that we don't try to wait for init(8) */
-                if (forked_starter == 1)
+                if (forked_starter < 0)
                 {
-                    forked_starter = 0;
+                    if (sleeptime != 0)
+                    {
+                        sleep(sleeptime);
+                    }
+
+                    fprintf(stderr, "fork failed: %s", strerror(save_errno));
+                    exit(1);
                 }
+                else if (forked_starter == 0)
+                {
+                    /* We are the child process. We'll close our reference to
+                     * the lock and let the other process deal with jobs
+                     */
+                    close(manager.lock_fd);
+                    manager.lock_fd = -1;
+                }
+                globus_logging_update_pid();
+                if (sleeptime != 0)
+                {
+                    sleep(sleeptime);
+                }
+
+            }
+
+            if (manager.lock_fd >= 0)
+            {
+                /* We hold the manager lock, so we'll store our credential, and then, try to accept
+                 * socket connections. If the socket connections fail, we'll exit, and another process
+                 * will be forked to handle them.
+                 */
                 rc = globus_gram_job_manager_gsi_write_credential(
                         NULL,
                         cred,
@@ -313,32 +313,37 @@ main(
                     fprintf(stderr, "write cred failed\n");
                     exit(1);
                 }
-                if (!started_without_client)
+                if (!debug_mode_service)
                 {
-                    started_without_client = GLOBUS_TRUE;
                     close(http_body_fd);
                     http_body_fd = -1;
                     close(context_fd);
                     context_fd = -1;
                     fclose(stdout);
                 }
-                rc = GLOBUS_SUCCESS;
-            }
-            else
-            {
-                /* We are the child process. We'll close our reference to
-                 * the job manager socket and lock and let the other
-                 * process process jobs
-                 */
-                close(manager.socket_fd);
-                close(manager.lock_fd);
-                manager.socket_fd = -1;
-                manager.lock_fd = -1;
+
+                rc = globus_gram_job_manager_startup_socket_init(
+                        &manager,
+                        &manager.active_job_manager_handle,
+                        &manager.socket_fd);
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    /* This releases our lock. Either the child process will attempt to acquire the
+                     * lock again or some another job manager will acquire the lock
+                     */
+                    exit(0);
+                }
+                assert(manager.socket_fd != -1);
             }
         }
+        else if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+        {
+            /* Some system error. Try again */
+            continue;
+        }
 
-        /* If manager.socket_fd != -1 then we are the parent from the fork
-         * above. We will restart all existing jobs and then allow the startup
+        /* If manager.socket_fd != -1 then we are the main job manager for this LRM.
+         * We will restart all existing jobs and then allow the startup
          * socket to accept new jobs from other job managers.
          */
         if (manager.socket_fd != -1)
@@ -349,9 +354,15 @@ main(
 
             located_active_jm = GLOBUS_TRUE;
 
-            /* Load existing jobs. The show must go on if this fails */
-            (void) globus_gram_job_manager_request_load_all(
+            /* Load existing jobs. The show must go on if this fails, unless it
+             * fails with a misconfiguration error
+             */
+            rc = globus_gram_job_manager_request_load_all(
                     &manager);
+            if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED)
+            {
+                reply_and_exit(NULL, rc, manager.gt3_failure_message);
+            }
 
             /* At this point, seg_last_timestamp is the earliest last timestamp 
              * for any pre-existing jobs. If that is 0, then we don't have any
@@ -401,7 +412,7 @@ main(
                         
             }
         }
-        else if (!started_without_client)
+        else if (http_body_fd)
         {
             /* If manager.socket_fd == -1 then we are either the child from the
              * fork or another process started somehow (either command-line
@@ -425,6 +436,19 @@ main(
                 close(context_fd);
                 manager.done = GLOBUS_TRUE;
             }
+        }
+        else
+        {
+            /* We were started by hand, but another process is currently the main job manager */
+            unsigned long realpid = 0;
+            FILE * pidin = fopen(manager.pid_path, "r");
+            fscanf(pidin, "%lu", &realpid);
+            fclose(pidin);
+
+            fprintf(stderr, "Other job manager process with pid %lu running and processing jobs\n",
+                    realpid);
+
+            exit(0);
         }
     }
 

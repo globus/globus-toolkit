@@ -55,54 +55,47 @@ globus_xio_stack_t                      globus_i_gram_job_manager_file_stack;
 #endif
 
 /**
- * Create socket to handle startup messages from other job managers
+ * Acquire the lock file for the job manager
  *
- * Creates a UNIX domain socket, binds it to a well-known user-and lrm-specific
- * filename, and then creates and registers an XIO handle for select.
+ * The globus_gram_job_manager_startup_lock() attempts to lock the job manager's lock file. If successful
+ * then this job manager must become the main job manager to manage jobs for this particular resource.
+ *
+ * This function can fail in two main ways: if the lock fails because another process owns a lock, it
+ * returns GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE; otherwise, it returns
+ * GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE. 
  *
  * @param manager
- *     Manager to create the socket for.
- * @param handle
- *     Pointer to XIO handle to be set to the socket descriptor.
+ *     Pointer to job manager state
  * @param lock_fd
- *     Pointer to file descriptor pointing to the UNIX domain socket.
- * @param lock_fd
- *     Pointer to file descriptor pointing to the lock file associated with the 
- *     UNIX domain socket.
+ *     Pointer to set to the lock file descriptor.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE
+ *     Error locking state file
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE
+ *     Old job manager alive
  */
 int
-globus_gram_job_manager_startup_socket_init(
+globus_gram_job_manager_startup_lock(
     globus_gram_job_manager_t *         manager,
-    globus_xio_handle_t *               handle,
-    int *                               socket_fd,
     int *                               lock_fd)
 {
-    static unsigned char                byte[1];
-    int                                 sock = -1;
     int                                 rc = 0;
-    globus_result_t                     result;
-    struct sockaddr_un                  addr;
     int                                 lockfd = -1;
-    mode_t                              old_umask;
     int                                 i;
-    int                                 rcvbuf;
     int                                 flags;
-    int                                 save_errno;
-    FILE *                              fp;
     enum { GRAM_RETRIES = 100 };
 
     globus_gram_job_manager_log(
             manager,
             GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.startup_socket_init.start level=DEBUG\n");
-
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.startup_socket_init.lock.start "
-            "level=TRACE "
-            "path=\"%s\"\n",
+            "event=gram.startup_lock.start "
+            "level=DEBUG "
+            "path=\"%s\" "
+            "\n",
             manager->lock_path);
+
     /* Create and lock lockfile */
     for (i = 0, lockfd = -1; lockfd < 0 && i < GRAM_RETRIES; i++)
     {
@@ -114,7 +107,7 @@ globus_gram_job_manager_startup_socket_init(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.startup_socket_init.lock.end "
+                "event=gram.startup_lock.end "
                 "level=ERROR "
                 "status=%d "
                 "path=\"%s\" "
@@ -135,7 +128,7 @@ globus_gram_job_manager_startup_socket_init(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.startup_socket_init.lock.end "
+                "event=gram.startup_lock.end "
                 "level=ERROR "
                 "status=%d "
                 "path=\"%s\" "
@@ -156,7 +149,7 @@ globus_gram_job_manager_startup_socket_init(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.startup_socket_init.lock.end "
+                "event=gram.startup_lock.end "
                 "level=ERROR "
                 "status=%d "
                 "path=\"%s\" "
@@ -179,7 +172,7 @@ globus_gram_job_manager_startup_socket_init(
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-                "event=gram.startup_socket_init.lock.end "
+                "event=gram.startup_lock.end "
                 "level=DEBUG "
                 "status=%d "
                 "path=\"%s\" "
@@ -195,16 +188,70 @@ globus_gram_job_manager_startup_socket_init(
         goto lock_failed;
     }
 
+    else
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+                "event=gram.startup_lock.end "
+                "level=DEBUG "
+                "path=\"%s\" "
+                "status=%d "
+                "\n",
+                manager->lock_path,
+                rc);
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+lock_failed:
+fcntl_lockfd_failed:
+        close(lockfd);
+        lockfd = -1;
+    }
+lockfd_open_failed:
+    *lock_fd = lockfd;
+
+    return rc;
+}
+/* globus_gram_job_manager_startup_lock() */
+
+/**
+ * Create socket to handle startup messages from other job managers
+ *
+ * Creates a UNIX domain socket, binds it to a well-known user-and lrm-specific
+ * filename, and then creates and registers an XIO handle for select.
+ *
+ * @param manager
+ *     Manager to create the socket for.
+ * @param handle
+ *     Pointer to XIO handle to be set to the socket descriptor.
+ * @param lock_fd
+ *     Pointer to file descriptor pointing to the UNIX domain socket.
+ */
+int
+globus_gram_job_manager_startup_socket_init(
+    globus_gram_job_manager_t *         manager,
+    globus_xio_handle_t *               handle,
+    int *                               socket_fd)
+{
+    static unsigned char                byte[1];
+    int                                 sock = -1;
+    int                                 rc = 0;
+    globus_result_t                     result;
+    struct sockaddr_un                  addr;
+    mode_t                              old_umask;
+    int                                 i;
+    int                                 rcvbuf;
+    int                                 flags;
+    int                                 save_errno;
+    FILE *                              fp;
+    enum { GRAM_RETRIES = 100 };
+
     globus_gram_job_manager_log(
             manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-            "event=gram.startup_socket_init.lock.end "
-            "level=TRACE "
-            "path=\"%s\" "
-            "status=%d "
-            "\n",
-            manager->lock_path,
-            rc);
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.startup_socket_init.start level=DEBUG\n");
 
     globus_gram_job_manager_log(
             manager,
@@ -577,18 +624,10 @@ write_pid_failed:
             fclose(fp);
         }
         remove(manager->pid_path);
-open_pid_failed:
-        remove(manager->lock_path);
-lock_failed:
-fcntl_lockfd_failed:
-        close(lockfd);
-        lockfd = -1;
-lockfd_open_failed:
-        ;
     }
+open_pid_failed:
 
     *socket_fd = sock;
-    *lock_fd = lockfd;
 
     if (rc == GLOBUS_SUCCESS)
     {
