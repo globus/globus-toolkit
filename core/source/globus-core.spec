@@ -25,8 +25,6 @@ URL:		http://www.globus.org/
 #		mv gt5.0.2-all-source-installer/source-trees/core/cource globus_core-5.17
 #		tar -zcf globus_core-5.17.tar.gz globus_core-5.17
 Source:		%{_name}-%{version}.tar.gz
-#		Globus RPM specfile creator script
-Source2:	globus-spec-creator
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Provides:	%{name}-devel = %{version}-%{release}
@@ -87,12 +85,6 @@ chmod 644 $RPM_BUILD_ROOT%{_datadir}/globus/globus-build-env-*.sh
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
-# Install the Globus RPM specfile creator script
-mkdir -p $RPM_BUILD_ROOT%{_bindir}
-install %SOURCE2 $RPM_BUILD_ROOT%{_bindir}/globus-spec-creator
-mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
-pod2man %SOURCE2 > $RPM_BUILD_ROOT%{_mandir}/man1/globus-spec-creator.1
-
 # Don't use /usr/bin/env
 sed 's!/usr/bin/env perl!/usr/bin/perl!' -i $RPM_BUILD_ROOT%{_sbindir}/globus-*
 
@@ -100,15 +92,15 @@ sed 's!/usr/bin/env perl!/usr/bin/perl!' -i $RPM_BUILD_ROOT%{_sbindir}/globus-*
 rm -f $RPM_BUILD_ROOT/GLOBUS_LICENSE
 sed /GLOBUS_LICENSE/d -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist
 
-# Install license file
-mkdir -p $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}
-install -m 644 -p GLOBUS_LICENSE $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}
-
 # Generate package filelists
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! > package.filelist
+
+# man_MANS may get compressed
+cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
+  | sed -e s!^!%{_prefix}! -e 's!\.[0-9]$!&*!' >> package.filelist
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -124,9 +116,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/globus
 %dir %{_libdir}/globus/include
 %{_bindir}/globus-spec-creator
-%doc %{_mandir}/man1/globus-spec-creator.1*
 %dir %{_docdir}/%{name}-%{version}
-%doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.17-1

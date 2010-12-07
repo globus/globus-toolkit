@@ -1,9 +1,6 @@
 include $(top_srcdir)/aclocal/automake_targets
 
-licensedir = @docdir@
-## license = [ DATA ]
-
-license_DATA = GLOBUS_LICENSE
+doc_DATA = GLOBUS_LICENSE
 
 flavorinclude_HEADERS = \
 	globus_config.h
