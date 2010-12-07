@@ -1514,11 +1514,15 @@ globus_i_gram_usage_stats_destroy(
 
 /* startup_socket.c */
 int
+globus_gram_job_manager_startup_lock(
+    globus_gram_job_manager_t *         manager,
+    int *                               lock_fd);
+
+int
 globus_gram_job_manager_startup_socket_init(
     globus_gram_job_manager_t *         manager,
     globus_xio_handle_t *               handle,
-    int *                               socket_fd,
-    int *                               lock_fd);
+    int *                               socket_fd);
 
 int
 globus_gram_job_manager_starter_send(
