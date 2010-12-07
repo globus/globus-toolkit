@@ -125,6 +125,17 @@ globus_l_logging_periodic(
     globus_mutex_unlock(&handle->mutex);
 }
 
+/**
+ * Reset the cached version of the pid used for logging. Call this after
+ * fork() to keep logging working in a child process
+ */
+void
+globus_logging_update_pid(void)
+{
+    globus_l_logging_pid = getpid();
+}
+/* globus_logging_update_pid() */
+
 /*
  *  external functions
  */
