@@ -50,6 +50,8 @@ easily converted.
 touch aclocal.m4
 touch Makefile.in
 touch configure
+unset GLOBUS_LOCATION
+unset GPT_LOCATION
 
 for i in config.guess config.sub ; do
   [ -f /usr/share/libtool/$i ] && rm $i && cp -p /usr/share/libtool/$i $i

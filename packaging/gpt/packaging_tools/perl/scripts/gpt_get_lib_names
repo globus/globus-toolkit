@@ -82,5 +82,5 @@ SONAME: foreach $soname (@uniq)
 $staticnames =~ s/'//g;
 ($ident, $staticname)= split /=/, $staticnames;
 chomp $staticname;
-print "$ARGV[1]/$staticname\n" if ($old);
+print "$ARGV[1]/$staticname\n" if ($old && ($staticname ne ''));
 print "$ARGV[1]/$ARGV[0]\n" if ($old);
