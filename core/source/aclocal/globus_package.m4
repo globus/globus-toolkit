@@ -20,8 +20,6 @@ if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
 fi
 
-GLOBUS_INITIALIZERS
-
 eval_path()
 {
     _pathval="[$]1"
@@ -83,6 +81,8 @@ AC_SUBST(GLOBUS_FLAVOR_NAME)
 # get the environment scripts
 
 . ${GLOBUS_LOCATION}/share/globus/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+
+GLOBUS_INITIALIZERS
 
 doxygendir="`eval_path '$doxygendir'`"
 
