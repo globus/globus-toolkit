@@ -80,7 +80,7 @@ filelist-@DIR@DATA:
             *-*.pc) \
               echo "$$p" >> "$${filelistdir}/$(GLOBUS_FLAVOR_NAME)_dev.filelist"; \
               ;; \
-            doc-*) \
+            *doc-*) \
               echo "$$p" >> "$${filelistdir}/noflavor_doc.filelist"; \
               ;; \
             *) \

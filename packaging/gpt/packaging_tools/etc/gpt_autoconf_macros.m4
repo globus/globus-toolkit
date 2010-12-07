@@ -98,9 +98,11 @@ dnl		fi
         # Export pkg-config information about this package
         pkgconfdir='${prefix}/lib/pkgconfig'
         pkgconffile=`echo "${GPT_NAME}.pc" | sed -e 's!_!-!g'`
+        pkgconffile_in="${pkgconffile}.in"
 
         AC_SUBST(pkgconfdir)
         AC_SUBST(pkgconffile)
+        AC_SUBST(pkgconffile_in)
 
         AC_CONFIG_FILES([pkgdata/$pkgconffile])
 ])
