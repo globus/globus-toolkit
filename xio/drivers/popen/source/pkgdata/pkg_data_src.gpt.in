@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_xio_popen_driver" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="9" Age="0"/>
+    <Aging_Version Major="1" Minor="0" Age="1"/>
     <Description> Globus XIO Pipe Open Driver</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
@@ -18,7 +18,7 @@
 
         </Source_Dependencies>
 
-        <Source_Dependencies Type="pgm_link">
+        <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -26,15 +26,7 @@
             </Dependency>
         </Source_Dependencies>
 
-        <Source_Dependencies Type="doc_runtime">
-            <Dependency Name="globus_xio" Package="doc">
-                <Version>
-                    <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
-        </Source_Dependencies>
-
-        <With_Flavors build="yes"/>
+        <With_Flavors ColocateLibraries="no" build="yes"/>
 
         <Build_Environment>
             <cflags>@GPT_PKG_CFLAGS@</cflags>
