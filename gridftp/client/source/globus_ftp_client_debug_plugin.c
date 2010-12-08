@@ -1199,6 +1199,8 @@ globus_l_ftp_client_debug_plugin_complete(
  *        A pointer to an uninitialized plugin. The plugin will be
  *        configured as a debugging plugin, with the default of sending
  *        debugging messages to stderr.
+ * @param stream
+ * @param text
  *
  * @return This function returns an error if
  * - plugin is null
@@ -1329,7 +1331,7 @@ globus_ftp_client_debug_plugin_destroy(
     GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_RETURN(plugin);
 
     result = globus_ftp_client_plugin_get_plugin_specific(plugin,
-	                                                  (void **) &d);
+	                                                  (void **) (void *) &d);
     if(result != GLOBUS_SUCCESS)
     {
 	return result;

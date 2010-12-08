@@ -39,32 +39,32 @@
  * TransferPerfTotal : This event type will be sent everytime a throughput
  *      plugin total callback is received.
  *
- * URL.SOURCE   <string>  Source url of transfer
- * URL.DEST     <string>  Dest url of transfer
- * BYTES        <int>     Total bytes transfered thus far
- * BW.CURRENT   <float>   Current (instantaneous) bandwidth
- * BW.AVG       <float>   Average (instantaneous) bandwidth
+ * - URL.SOURCE   <string>  Source url of transfer
+ * - URL.DEST     <string>  Dest url of transfer
+ * - BYTES        <int>     Total bytes transfered thus far
+ * - BW.CURRENT   <float>   Current (instantaneous) bandwidth
+ * - BW.AVG       <float>   Average (instantaneous) bandwidth
  *
  * TransferPerfStripe  : This event type will be sent everytime a throughput
  *      plugin stripe callback is received.
  *
- * URL.SOURCE   <string>  Source url of transfer
- * URL.DEST     <string>  Dest url of transfer
- * INDEX        <int>     The stripe index the event applies to
- * BYTES        <int>     Total bytes transfered thus far on this stripe
- * BW.CURRENT   <float>   Current (instantaneous) bandwidth on this stripe
- * BW.AVG       <float>   Average (instantaneous) bandwidth on this stripe
+ * - URL.SOURCE   <string>  Source url of transfer
+ * - URL.DEST     <string>  Dest url of transfer
+ * - INDEX        <int>     The stripe index the event applies to
+ * - BYTES        <int>     Total bytes transfered thus far on this stripe
+ * - BW.CURRENT   <float>   Current (instantaneous) bandwidth on this stripe
+ * - BW.AVG       <float>   Average (instantaneous) bandwidth on this stripe
  *
  * TransferBegin  : This event type will be sent everytime a throughput
  *      plugin begin callback is received.
  *
- * URL.SOURCE   <string>  Source url of transfer
- * URL.DEST     <string>  Dest url of transfer
+ * - URL.SOURCE   <string>  Source url of transfer
+ * - URL.DEST     <string>  Dest url of transfer
  *
  * TransferEnd  : This event type will be sent everytime a throughput
  *      plugin complete callback is received.
  *
- * SUCCESS      <bool>    Completion status
+ * - SUCCESS      <bool>    Completion status
  *
  */
 

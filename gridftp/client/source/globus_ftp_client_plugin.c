@@ -81,12 +81,12 @@ globus_l_ftp_client_plugin_restart_operation(
  *
  * @param handle
  *        The handle which is associated with the list.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original list's attribute set.
  * @param when
@@ -143,12 +143,12 @@ globus_ftp_client_plugin_restart_list(
  *
  * @param handle
  *        The handle which is associated with the list.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original list's attribute set.
  * @param when
@@ -206,12 +206,12 @@ globus_ftp_client_plugin_restart_verbose_list(
  *
  * @param handle
  *        The handle which is associated with the list.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original list's attribute set.
  * @param when
@@ -268,12 +268,12 @@ globus_ftp_client_plugin_restart_machine_list(
  *
  * @param handle
  *        The handle which is associated with the list.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original list's attribute set.
  * @param when
@@ -330,12 +330,12 @@ globus_ftp_client_plugin_restart_mlst(
  *
  * @param handle
  *        The handle which is associated with the list.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original list's attribute set.
  * @param when
@@ -537,12 +537,12 @@ globus_ftp_client_plugin_restart_cksm(
  *
  * @param handle
  *        The handle which is associated with the delete.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original delete's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original delete's attribute set.
  * @param when
@@ -599,12 +599,12 @@ globus_ftp_client_plugin_restart_delete(
  *
  * @param handle
  *        The handle which is associated with the feat.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original feat's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original feat's attribute set.
  * @param when
@@ -661,12 +661,12 @@ globus_ftp_client_plugin_restart_feat(
  *
  * @param handle
  *        The handle which is associated with the mkdir.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original mkdir's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original mkdir's attribute set.
  * @param when
@@ -723,12 +723,12 @@ globus_ftp_client_plugin_restart_mkdir(
  *
  * @param handle
  *        The handle which is associated with the rmdir.
- * @param source_url
+ * @param url
  *        The destination URL of the transfer. This may be different than
  *        the original rmdir's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original rmdir's attribute set.
  * @param when
@@ -1101,12 +1101,12 @@ globus_ftp_client_plugin_restart_third_party_transfer(
  *
  * @param handle
  *        The handle which is associated with the operation.
- * @param source_url
+ * @param url
  *        The source URL of the size check. This may be different than
  *        the original operations URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new operation. This may be a
  *        modified version of the original operations's attribute set.
  * @param when
@@ -1161,12 +1161,12 @@ globus_ftp_client_plugin_restart_size(
  *
  * @param handle
  *        The handle which is associated with the operation.
- * @param source_url
+ * @param url
  *        The source URL of the modification time check. This may be different
  *        than the original operations URL, if the plugin decides to redirect
  *        to another FTP server due to performance or reliability problems with
  *        the original URL.
- * @param source_attr
+ * @param attr
  *        The attributes to use for the new operation. This may be a
  *        modified version of the original operations's attribute set.
  * @param when

@@ -339,7 +339,7 @@ globus_ftp_client_throughput_nl_plugin_init(
     {
         globus_ftp_client_throughput_plugin_get_user_specific(
             plugin,
-            (void **) &info);
+            (void **) (void *) &info);
         info->destroy_handle = GLOBUS_TRUE;
     }
     else
@@ -494,7 +494,7 @@ globus_ftp_client_throughput_nl_plugin_destroy(
 
     result = globus_ftp_client_throughput_plugin_get_user_specific(
               plugin,
-              (void **) &info);
+              (void **) (void *) &info);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -525,6 +525,8 @@ globus_ftp_client_throughput_nl_plugin_destroy(
  * receiving the same throughput callbacks that the throughput plugin
  * provides by using this function to set these callbacks.  Note that
  * the callbacks are defined the same as in the throughput plugin
+ *
+ * @param plugin
  *
  * @param begin_cb
  *        the callback to be called upon the start of a transfer
@@ -576,7 +578,7 @@ globus_ftp_client_throughput_nl_plugin_set_callbacks(
 
     result = globus_ftp_client_throughput_plugin_get_user_specific(
               plugin,
-              (void **) &info);
+              (void **) (void *) &info);
 
     if(result != GLOBUS_SUCCESS)
     {

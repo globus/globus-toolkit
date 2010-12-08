@@ -31,7 +31,7 @@
  * @defgroup globus_ftp_client_restart_marker_plugin Restart Marker Plugin
  * @ingroup globus_ftp_client_plugins
  *
- * This plugin is intended to allow users to make restart markers persistant.
+ * This plugin is intended to allow users to make restart markers persistent.
  * During a transfer, every marker received will result in the user's 'marker'
  * callback being called with the new restart marker that can be stored. If
  * the application were to prematurely terminate (while transferring), the user
@@ -71,7 +71,7 @@ globus_module_descriptor_t globus_i_ftp_client_restart_marker_plugin_module;
  * started.
  *
  * The intended use for this callback is for the user to use the transfer
- * urls to locate a restart marker in some persistant storage. If one is
+ * urls to locate a restart marker in some persistent storage. If one is
  * found, it should be copied into 'user_saved_marker' and the callback
  * should return GLOBUS_TRUE. This will cause the transfer to be restarted
  * using that restart marker.  If one is not found, return GLOBUS_FALSE to

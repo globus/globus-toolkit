@@ -66,12 +66,16 @@ libglobus_ftp_client_la_SOURCES = $(Sources)
 libglobus_ftp_client_la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_ftp_client_la_LIBADD = $(GPT_LIB_LINKS)
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST = globus_ftp_client_restart_plugin.example \
 	globus_ftp_client_debug_plugin.example \
 	globus_ftp_client_restart_marker_plugin.example \
 	globus_ftp_client_throughput_nl_plugin.h \
 	globus_ftp_client_throughput_nl_plugin.c \
-	version.h.in
+	globus-ftp-client.spec \
+	version.h.in \
+	$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

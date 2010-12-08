@@ -720,7 +720,7 @@ globus_ftp_client_perf_plugin_set_copy_destroy(
 
     result = globus_ftp_client_plugin_get_plugin_specific(
               plugin,
-              (void **) &ps);
+              (void **) (void *) &ps);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -767,7 +767,7 @@ globus_ftp_client_perf_plugin_destroy(
 
     result = globus_ftp_client_plugin_get_plugin_specific(
         plugin,
-        (void **) &ps);
+        (void **) (void *) &ps);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -827,7 +827,7 @@ globus_ftp_client_perf_plugin_get_user_specific(
 
     result = globus_ftp_client_plugin_get_plugin_specific(
         plugin,
-        (void **) &ps);
+        (void **) (void *) &ps);
 
     if(result != GLOBUS_SUCCESS)
     {

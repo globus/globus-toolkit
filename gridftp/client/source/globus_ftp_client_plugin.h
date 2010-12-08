@@ -947,7 +947,7 @@ typedef void (*globus_ftp_client_plugin_data_t)(
  * @ingroup globus_ftp_client_plugins
  *
  * This callback is used to notify a plugin that a FTP control
- * command is being sent.The client library will only call this
+ * command is being sent. The client library will only call this
  * function for response callbacks associated with a command which is
  * in the plugin's command mask, and associated with one of the other
  * ftp operations with a defined callback in the plugin.
