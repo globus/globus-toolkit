@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#! @PERL@
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -60,7 +60,11 @@ if ( defined eval "require Grid::GPT::V1::Package" )
 }
 else
 {
-    $environment = "gpt1";
+    print "globus-makefile-header requires the GPT perl module.\n";
+    print "If you want to use it you have to install the grid-packaging-tools package.\n";
+    print "Consider using alternatives like pkg-config instead.\n";
+
+    exit 1;
 }
 
 #
@@ -102,28 +106,6 @@ if ( defined(@ARGV) && ($ARGV[0] ne "") )
     push(@pkgs, @ARGV);
 }
 @pkgs = buildMultiArg(@pkgs);
-
-if ($environment eq "gpt1")
-{
-    my($argstring, $pkgstr);
-
-    $argstring = "-flavor=$flavor ";
-
-    if ($static)
-    {
-        $argstring .= "-link=static ";
-    }
-
-    $pkgstr = join(' ', @pkgs);
-    if (length($pkgstr) > 0)
-    {
-        $argstring .= "$pkgstr ";
-    }
-
-    action("$Globus::Core::Paths::bindir/globus-makefile-header.gpt1 $argstring");
-
-    exit;
-}
 
 if ( grep(/^ANY$/, @pkgs) )
 {

@@ -24,4 +24,8 @@ EXTRA_DIST = \
 	globus-makefile-header.in \
         Paths.pm.in globus-script-initializer.in
 
+install-exec-hook:
+	for script in $(libexec_SCRIPTS); do \
+	    chmod 644 $(DESTDIR)$(libexecdir)/$$script; \
+	done
 include $(top_srcdir)/globus_automake_post

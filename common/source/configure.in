@@ -19,6 +19,8 @@ CHECK_REENTRANT_FUNCS
 AC_SEARCH_LIBS(socket, socket)
 AC_SEARCH_LIBS(gethostbyname, nsl)
 
+LT_LIB_DLLOAD
+
 AC_CHECK_LIB(ltdl, lt_dlerror)
 AC_CHECK_FUNCS(lt_dlmutex_register)
 
