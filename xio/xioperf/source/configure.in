@@ -14,6 +14,9 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 GLOBUS_FINALIZE
 
+dnl Don't create a pkg-config file for program-only packages
+pkgconffile=""
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
