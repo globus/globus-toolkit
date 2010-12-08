@@ -12,6 +12,7 @@ doc_DATA = GLOBUS_LICENSE
 EXTRA_DIST= \
         version.h \
         dirt.sh \
+	globus-gsi-sysconfig.spec \
 	GLOBUS_LICENSE
 
 include $(top_srcdir)/globus_automake_post

@@ -9,6 +9,7 @@ SUBDIRS= \
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST= \
+	globus-gsi-credential.spec \
         version.h \
         dirt.sh \
 	GLOBUS_LICENSE
