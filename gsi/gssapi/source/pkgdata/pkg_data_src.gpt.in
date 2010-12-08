@@ -98,7 +98,7 @@
             </Setup_Dependency>
         </Source_Setup_Dependency>
 
-        <With_Flavors build="yes"/>
+        <With_Flavors ColocateLibraries="no" build="yes"/>
 
         <Build_Environment>
             <cflags>@GPT_PKG_CFLAGS@</cflags>
