@@ -37,7 +37,7 @@ gfork_LDADD = \
 
 doc_DATA = GLOBUS_LICENSE README.txt
 
-EXTRA_DIST = version.h.in $(doc_DATA)
+EXTRA_DIST = version.h.in $(doc_DATA) globus-gfork.spec
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
