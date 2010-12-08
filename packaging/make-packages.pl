@@ -256,7 +256,7 @@ sub generate_build_list()
 {
     print "Generating package build list ...\n";
 
-    if ( not defined(@cvs_build_list) )
+    if ( not @cvs_build_list )
     {
         @cvs_build_list = ("gt");
     }
@@ -742,7 +742,7 @@ sub populate_bundle_list
 sub populate_bundle_build_list()
 # --------------------------------------------------------------------
 {
-    if ( defined(@user_packages) ) 
+    if ( @user_packages ) 
     {
         my $bundle = "user_def";
 
@@ -752,7 +752,7 @@ sub populate_bundle_build_list()
         push @bundle_build_list, $bundle;
     } 
 
-    if ( defined(@user_bundles) or defined(@user_packages))
+    if ( @user_bundles or @user_packages)
     {
         foreach my $user_bundle (@user_bundles)
         {
@@ -786,7 +786,7 @@ sub populate_package_build_hash()
     # $bundle_list{'bundle name'} = flavor, array of packages.
     # So, for each bundle to build, run through the array of packages
     # and add it to the list of packages to be built.
-    if ( defined(@bundle_build_list) ) 
+    if ( @bundle_build_list ) 
     {
         for my $iter (@bundle_build_list)
         {

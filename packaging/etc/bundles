@@ -8,8 +8,6 @@ BUNDLE globus-resource-management-server
         globus_callout
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
-	globus_openssl
-	globus_openssl_setup
 	globus_user_env
 	globus_gass_cache
 	globus_gsi_openssl_error
@@ -53,8 +51,6 @@ BUNDLE globus-resource-management-sdk
 	globus_core
 	globus_common
         globus_callout
-	globus_openssl
-	globus_openssl_setup
 	globus_user_env
 	globus_gass_cache
 	globus_gsi_openssl_error
@@ -86,8 +82,6 @@ BUNDLE globus-resource-management-client
 	globus_common
         globus_hostname_lookup
         globus_callout
-	globus_openssl
-	globus_openssl_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -117,8 +111,6 @@ BUNDLE globus-data-management-server
 	globus_core
 	globus_common
         globus_callout
-	globus_openssl
-	globus_openssl_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -155,8 +147,6 @@ BUNDLE globus-data-management-sdk
 	globus_core
 	globus_common
         globus_callout
-	globus_openssl
-	globus_openssl_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -185,8 +175,6 @@ BUNDLE globus-data-management-client
 	globus_common
         globus_hostname_lookup
         globus_callout
-	globus_openssl
-	globus_openssl_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -264,8 +252,6 @@ BUNDLE globus-gsi
 	globus_gsi_proxy_ssl
 	globus_gsi_openssl_error
 	globus_user_env
-	globus_openssl
-	globus_openssl_setup
         globus_callout
 	globus_common
 	globus_core
@@ -282,8 +268,6 @@ BUNDLE globus-rls-server THREADED
         globus_core
         globus_callout
         globus_common
-        globus_openssl
-	globus_openssl_setup
         globus_user_env
         globus_gsi_openssl_error
         globus_gsi_proxy_ssl
@@ -350,8 +334,6 @@ BUNDLE gt2-unthreaded
 	globus_gssapi_gsi
 	globus_gss_assist
 	globus_io
-	globus_openssl
-	globus_openssl_setup
 	globus_openssl_module
 	globus_proxy_utils
 	globus_rsl
@@ -391,8 +373,6 @@ BUNDLE gt2-threaded THREADED
 	globus_gss_assist
 	globus_hostname2contacts
         globus_io
-	globus_openssl
-	globus_openssl_setup
 	globus_openssl_module
 	globus_proxy_utils
 	globus_rsl
@@ -403,8 +383,6 @@ BUNDLE gt2-threaded THREADED
 BUNDLE globus-simple-ca
 	globus_core
 	globus_common
-	globus_openssl
-	globus_openssl_setup
 	globus_icu4c
 	globus_gsi_openssl_error
 	globus_openssl_module
@@ -415,8 +393,6 @@ BUNDLE globus-simple-ca
 
 BUNDLE globus-common-libs
         globus_core
-        globus_openssl
-	globus_openssl_setup
         globus_common
         globus_gsi_openssl_error
         globus_gsi_proxy_ssl
