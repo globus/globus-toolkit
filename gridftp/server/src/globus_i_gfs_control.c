@@ -17,6 +17,10 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 struct passwd *
 globus_l_gfs_getpwuid(
     uid_t                               uid);

@@ -15,6 +15,7 @@
  */
 
 #include "globus_i_gridftp_server.h"
+#include "globus_gsi_system_config.h"
 #include "version.h"
 
 #define GLOBUS_GFS_HELP_ROWS            60
@@ -2146,8 +2147,7 @@ globus_i_gfs_config_init(
     }
     else if(exec_name[0] == '.')
     {
-        tmp_str = malloc(PATH_MAX);
-        getcwd(tmp_str, PATH_MAX);
+        GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&tmp_str);
         exec_name = globus_common_create_string(
          "%s/%s", tmp_str, exec_name);
         globus_free(tmp_str);
@@ -2172,12 +2172,7 @@ globus_i_gfs_config_init(
     }
     if(local_config_file == NULL && !argv_only)
     {
-        char * location;
-        globus_location(&location);
-
-        local_config_file = globus_common_create_string(
-        "%s/etc/gridftp.conf", location);
-        free(location);
+        globus_eval_path("${sysconfdir}/gridftp.conf", &local_config_file);
     }
 
     globus_l_gfs_config_load_defaults();

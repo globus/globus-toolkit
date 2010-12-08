@@ -20,6 +20,9 @@
 #include "openssl/md5.h"
 #include "version.h"
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_FILE);
 

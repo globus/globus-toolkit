@@ -26,7 +26,6 @@
 
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
-#define GSC_GETPW_PWBUFSIZE        (USER_NAME_MAX*3)+(PATH_MAX*2)
 
 #define GFSDataOpDec(_op, _d_op, _d_s)                                  \
 do                                                                      \
@@ -760,18 +759,37 @@ globus_l_gfs_getpwuid(
     uid_t                               uid)
 {
     int                                 rc;
-    char                                pw_buffer[GSC_GETPW_PWBUFSIZE];
+    int                                 pw_buflen;
+    char *                              pw_buffer;
     struct passwd                       pwent_mem;
     struct passwd *                     pw_result;
     struct passwd *                     pwent = NULL;
 
-    rc = globus_libc_getpwuid_r(getuid(), &pwent_mem, pw_buffer,
-                GSC_GETPW_PWBUFSIZE, &pw_result);
-    if(rc != 0)
+#ifdef _SC_GETPW_R_SIZE_MAX
+    pw_buflen = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
+    if(pw_buflen < 1)
+    {
+        pw_buflen = 1024;
+    }
+#else
+    pw_buflen = 1024;
+#endif
+    pw_buffer = globus_malloc(pw_buflen);
+    if(!pw_buffer)
     {
         return NULL;
     }
+
+    rc = globus_libc_getpwuid_r(getuid(), &pwent_mem, pw_buffer,
+                                pw_buflen, &pw_result);
+    if(rc != 0)
+    {
+        globus_free(pw_buffer);
+        return NULL;
+    }
+
     pwent = globus_l_gfs_pw_copy(&pwent_mem);
+    globus_free(pw_buffer);
 
     return pwent;
 }
@@ -782,19 +800,37 @@ globus_l_gfs_getpwnam(
     const char *                        name)
 {
     int                                 rc;
-    char                                pw_buffer[GSC_GETPW_PWBUFSIZE];
+    int                                 pw_buflen;
+    char *                              pw_buffer;
     struct passwd                       pwent_mem;
     struct passwd *                     pw_result;
     struct passwd *                     pwent = NULL;
 
-    rc = globus_libc_getpwnam_r(
-        (char *)name, &pwent_mem, pw_buffer,GSC_GETPW_PWBUFSIZE, &pw_result);
-    if(rc != 0)
+#ifdef _SC_GETPW_R_SIZE_MAX
+    pw_buflen = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
+    if(pw_buflen < 1)
+    {
+        pw_buflen = 1024;
+    }
+#else
+    pw_buflen = 1024;
+#endif
+    pw_buffer = globus_malloc(pw_buflen);
+    if(!pw_buffer)
     {
         return NULL;
     }
 
+    rc = globus_libc_getpwnam_r(
+        (char *)name, &pwent_mem, pw_buffer, pw_buflen, &pw_result);
+    if(rc != 0)
+    {
+        globus_free(pw_buffer);
+        return NULL;
+    }
+
     pwent = globus_l_gfs_pw_copy(&pwent_mem);
+    globus_free(pw_buffer);
 
     return pwent;
 }
