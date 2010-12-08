@@ -213,7 +213,7 @@ globus_gass_transfer_requestattr_initialize(
  *        The scheme which which the attribute will be used for.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully initialized.
+ *         The attribute was successfully initialized.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         Either @a attr or @a url_scheme was GLOBUS_NULL.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
@@ -264,7 +264,7 @@ globus_gass_transfer_requestattr_init(
  *        The attribute set to be destroyed.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully destroyed.
+ *         The attribute was successfully destroyed.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -307,7 +307,7 @@ globus_gass_transfer_requestattr_destroy(
  *        set.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -398,7 +398,7 @@ globus_gass_transfer_requestattr_get_proxy_url(
  *        with this attribute set.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -477,7 +477,7 @@ globus_gass_transfer_requestattr_get_block_size(
  *        The value of the file mode attribute.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -556,7 +556,7 @@ globus_gass_transfer_requestattr_get_file_mode(
  *        The value of the connection reuse attribute.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -694,7 +694,7 @@ globus_gass_transfer_socket_requestattr_initialize(
  *        The value of the socket buffer.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -773,7 +773,7 @@ globus_gass_transfer_requestattr_get_socket_sndbuf(
  *        The value of the socket buffer.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -852,7 +852,7 @@ globus_gass_transfer_requestattr_get_socket_rcvbuf(
  *        The value of the nodelay attribute.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -998,7 +998,7 @@ globus_gass_transfer_secure_requestattr_initialize(
  *        GLOBUS_GASS_TRANSFER_AUTHORIZE_SUBJECT
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -1130,7 +1130,7 @@ globus_gass_transfer_listenerattr_initialize(
  *        The scheme which which the attribute will be used for.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully initialized.
+ *         The attribute was successfully initialized.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         Either @a attr or @a url_scheme was GLOBUS_NULL.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
@@ -1187,7 +1187,7 @@ globus_gass_transfer_listenerattr_init(
  *        The number of outstanding connections to allow.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
@@ -1265,7 +1265,7 @@ globus_gass_transfer_listenerattr_get_backlog(
  *        The TCP or UDP port number to use.
  *
  * @retval GLOBUS_SUCCESS
- *         The attribute was succesfully updated.
+ *         The attribute was successfully updated.
  * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */

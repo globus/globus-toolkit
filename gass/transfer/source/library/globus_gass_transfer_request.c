@@ -41,7 +41,7 @@
  * @param request
  *        The request to query.
  *
- * @return The @link #globus_gass_transfer_request_type_t type @endlink
+ * @return The @link #globus_gass_transfer_request_type_t type@endlink
  * of the request.
  */
 globus_gass_transfer_request_type_t

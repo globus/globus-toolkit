@@ -47,8 +47,8 @@ EXTERN_C_BEGIN
  * simple protocol-independent API.
  *
  * The GASS Transfer API provides a way to implement both
- * @link globus_gass_transfer_client client @endlink and
- * @link globus_gass_transfer_server server @endlink
+ * @link globus_gass_transfer_client client@endlink and
+ * @link globus_gass_transfer_server server@endlink
  * components. These share common data block and request management
  * functionality. Client-specific functions are provided to implement file
  * "get", "put", and "append" operations. Server-specific functions are
@@ -62,7 +62,7 @@ EXTERN_C_BEGIN
  * server-side support for the http and https protocols. 
  * An application which requires additional
  * protocol support may add this through the @link
- * globus_gass_transfer_protocol protocol module interface @endlink.
+ * globus_gass_transfer_protocol protocol module interface@endlink.
  *
  * The GASS Transfer API is defined in the header file
  * "globus_gass_transfer.h"
@@ -122,9 +122,9 @@ extern globus_module_descriptor_t		globus_i_gass_transfer_module;
  * For server operations, the request is initialized by calling
  * globus_gass_transfer_accept().
  *
- * The functions in the @link globus_gass_transfer_request request section
- * @endlink of this manual describe the functions available for accessing
- * information from a request handle.
+ * The functions in the @link globus_gass_transfer_request request
+ * section@endlink of this manual describe the functions available for
+ * accessing information from a request handle.
  *
  * Each request handle should be destroyed by calling
  * globus_gass_transfer_request_destroy() once the user has completed
@@ -340,7 +340,7 @@ typedef void
  * file transfers. The operations supported by the GASS Transfer API
  * are file get, put, and append. These operations are provided for
  * HTTP, and HTTPS file servers. The @link
- * globus_gass_transfer_protocol protocol module interface @endlink
+ * globus_gass_transfer_protocol protocol module interface@endlink
  * allows support for additional protocols to be added
  * easily.
  *
