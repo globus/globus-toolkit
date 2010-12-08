@@ -1,8 +1,8 @@
 /**
 @anchor page_extensions
-@page extensions GridFTP: Protocol Extensions to FTP for the Grid
+@page globus_ftp_extensions GridFTP: Protocol Extensions to FTP for the Grid
 
-@subsection extensions_intro Introduction
+@section extensions_intro Introduction
 
 <p>
 This section defines extensions to the FTP specification STD 9, RFC
@@ -48,7 +48,7 @@ the control channel.
 
 <p>
 
-@subsection term Terminology
+@section term Terminology
 
 @par Parallel transfer
 From a single data server, splitting file data for transfer over multiple
@@ -71,7 +71,7 @@ The DTP can be passive or active.
 The protocol interpreter.  The user and server sides of the protocol
 have distinct roles implemented in a user-PI and a server-PI.
 
-@subsection Existing FTP Standards Used
+@section Existing FTP Standards Used
 
 - RFC 959, @ref rfc959 "FILE TRANSFER PROTOCOL (FTP)", J. Postel,
   R. Reynolds (October 1985)
@@ -135,7 +135,7 @@ have distinct roles implemented in a user-PI and a server-PI.
 		- Restart of a stream mode transfer
 
 @anchor sec_SPAS
-@subsection SPAS Striped Passive (SPAS)
+@section SPAS Striped Passive (SPAS)
 
 This extension is used to establish a vector of data socket listeners for for a
 server with one or more stripes.  This command MUST be used in conjunction with
@@ -177,7 +177,7 @@ There are no options in this SPAS specification, and hence there is no
 OPTS command defined.
 
 @anchor sec_SPOR
-@subsection SPOR Striped Data Port (SPOR)
+@section SPOR Striped Data Port (SPOR)
 
 This extension is to be used as a complement to the SPAS command to
 implement striped third-party transfers. This command MUST always be used in
@@ -211,7 +211,7 @@ There are no options in this SPOR specification, and hence there is no
 OPTS command defined.
 
 @anchor sec_ERET
-@subsection ERET Extended Retrieve (ERET)
+@section ERET Extended Retrieve (ERET)
 
 The extended retrieve extension is used to request that a retrieve be
 done with some additional processing on the server. This command an
@@ -254,7 +254,7 @@ the beginning of the section of the file which was requested.
 <p>
 
 @anchor sec_ESTO
-@subsection ESTO Extended Store (ESTO)
+@section ESTO Extended Store (ESTO)
 
 The extended store extension is used to request that a store be done with some
 additional processing on the server. Arbitrary data processing algorithms may
@@ -290,7 +290,7 @@ parameter to the adjusted store.
 <p>
 
 @anchor sec_SBUF
-@subsection SBUF Set Buffer Size (SBUF)
+@section SBUF Set Buffer Size (SBUF)
 
 This extension adds the capability of a client to set the TCP buffer
 size for subsequent data connections to a value. This replaces the
@@ -323,7 +323,7 @@ the server or client operating systems' TCP implementations.
 <p>
 
 @anchor sec_DCAU
-@subsection DCAU Data Channel Authentication (DCAU)
+@section DCAU Data Channel Authentication (DCAU)
 
 This extension provides a method for specifying the type of
 authentication to be performed on FTP data channels. This extension
@@ -366,7 +366,7 @@ to disable it if it does not implement data channel authentication.
 If the security handshake fails, the server should return the error
 response 432 (Data channel authentication failed).
 
-@subsection mode_e Extended Block Mode
+@section mode_e Extended Block Mode
 The striped and parallel data transfer methods described above require
 an extended transfer mode to support out-of-sequence data delivery,
 and partial data transmission per data connection. The extended block
@@ -462,7 +462,7 @@ stripes. The 126 response serves this purpose.
 The 126 is an intermediate response to RETR command.  It has the following
 format.
 
-"126" <SP> 1*(count of data connections)
+126 <SP> 1*(count of data connections)
 
 Several "Count of data connections" can be in a single reply.  They
 correspond to the stripes returned in the response to the SPAS command.
@@ -587,7 +587,7 @@ All perf-line facts represent an instantaneous state of the transfer
 at the given timestamp. The meaning of the facts are
 
 - Timestamp - The time at which the server computed the performance
-  information. This is in seconds since the epoch ((00:00:00 UTC, January 1,
+  information. This is in seconds since the epoch (00:00:00 UTC, January 1,
   1970).
 - Stripe Index - the index (0-number of stripes on the STOR side of the
   transfer) which this marker pertains to.
@@ -605,7 +605,7 @@ send a final perf marker for each stripe. This is a marker with
 'Stripe Bytes Transferred' set to the total transfer size for that stripe.
 
 @anchor sec_OPTS
-@subsection opts Options to RETR
+@section opts Options to RETR
 
 The options described in this section provide a means to convey
 striping and transfer parallelism information to the server-DTP. For
@@ -639,7 +639,7 @@ The various StripeLayout parameters are to be implemented as follows:
 
 @par Partitioned
 A partitioned data layout is one where the data is distributed evenly
-on the destination data nodes.Only one contiguous section of data
+on the destination data nodes. Only one contiguous section of data
 is stored on each data node. A data node is defined here a single
 host-port mentioned in the SPOR command
 
@@ -666,7 +666,7 @@ connections per destination data node to this value. If the
 increase the number of parallel connections to per destination data
 node to at most this value.
 
-@subsection refs References
+@section refs References
 
 @anchor rfc959 [1]
 Postel, J. and Reynolds, J., "<a
@@ -689,7 +689,7 @@ Elz, R. and Hethom, P., "<a
 href="http://www.ietf.org/internet-drafts/draft-ietf-ftpext-mlst-13.txt">
 FTP Extensions</a>", IETF Draft, May 2001.
 
-@subsection appendix_i Appendix I: Implementation under GSI
+@section appendix_i Appendix I: Implementation under GSI
 
 <p>
 There are several security components in this document which are extensions

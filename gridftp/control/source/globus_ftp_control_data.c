@@ -1000,6 +1000,13 @@ globus_list_remove_element(
  * @param handle
  *        A pointer to a FTP control handle which is configured to
  *        create an incoming data connection.
+ *
+ * @param callback
+ *        This callback is called when the connection occurs.  This
+ *        parameter may be NULL.
+ *
+ * @param user_arg
+ *        The user argument passed to the connect callback.
  */
 globus_result_t
 globus_ftp_control_data_connect_read(
@@ -1108,7 +1115,7 @@ globus_ftp_control_data_connect_read(
  * @param handle
  *        A pointer to a FTP control handle which is configured to
  *        create an outgoing data connection.
- * @param interface
+ * @param interface_addr
  *
  */
 globus_result_t
@@ -1192,13 +1199,6 @@ globus_ftp_control_data_set_interface(
  *
  * @param user_arg
  *        The user argument passed to the connect callback.
- *
- * @param enqueue_func
- *        The function used to break up data over the stripes.  This
- *        parameter is ignored when in stream mode.
- *
- * @param enqueue_arg
- *        The user argument passed to the enqueue function.
  */
 globus_result_t
 globus_ftp_control_data_connect_write(
@@ -1804,7 +1804,7 @@ globus_l_ftp_control_data_stream_connect_direction(
  *        store information about any channels added by this function.
  * @param num_channels
  *        The number of additional channels to add.
- * @param stripe
+ * @param stripe_ndx
  *        A integer identifying the stripe to add channels too. In the
  *        case of non-striped transfer this parameter will be ignored.
  */
@@ -1880,6 +1880,7 @@ globus_ftp_control_data_add_channels(
  *
  * @param array_size
  *        The number of elements in count[].
+ * @param eof_message
  * @param cb
  *        The function to be called when the eof message has been called.
  * @param user_arg
@@ -2143,7 +2144,7 @@ globus_l_ftp_control_data_send_eof(
  *        update information about any channels removed by this function.
  * @param num_channels
  *        The number of channels to remove.
- * @param stripe
+ * @param stripe_ndx
  *        A integer identifying the stripe to remove channels from. In the
  *        case of non-striped transfer this parameter will be ignored.
  */
@@ -2253,7 +2254,7 @@ globus_ftp_control_data_remove_channels(
  *        determine the host corresponding to "stripe" and number of
  *        channels corresponding to that host.
  * @param num_channels
- * @param stripe
+ * @param stripe_ndx
  *        A integer identifying the stripe for which to return the
  *        number of channels. In the case of non-striped transfer this
  *        parameter should be zero.
@@ -2340,7 +2341,7 @@ globus_ftp_control_data_query_channels(
  *        channels corresponding to that host.
  * @param num_channels
  *
- * @param stripe
+ * @param stripe_ndx
  *        A integer identifying the stripe for which to return the
  *        number of channels. In the case of non-striped transfer this
  *        parameter should be zero.
@@ -3449,13 +3450,13 @@ globus_ftp_control_local_mode(
 
 
 /**
- * Update the FTP control handle with the given socket buffer size
+ * Update the FTP control handle with the given socket buffer
  * information.
  *
  * @param handle
  *        A pointer to the FTP control handle to be updated
- * @param buffer_size
- *        Specifies the size of the socket buffer in bytes.
+ * @param tcp_buffer
+ *        A pointer to the socket buffer.
  *
  */
 globus_result_t
@@ -3646,7 +3647,8 @@ globus_ftp_control_data_get_socket_buf(
  * @param dcau
  *        A parameter specifying the data channel authentication
  *        mode. Possible values are No Authentication, Self
- *        Authentication and Subject-name authentication. */
+ *        Authentication and Subject-name authentication.
+ * @param delegated_credential_handle */
 globus_result_t
 globus_ftp_control_local_dcau(
     globus_ftp_control_handle_t *		handle,
@@ -5221,8 +5223,8 @@ globus_ftp_control_local_layout(
         }
 
         user_arg = GLOBUS_NULL;
-        sprintf(strmsg, "StripedLayout=Blocked;BlockSize=%d;",
-            layout->round_robin.block_size);
+        sprintf(strmsg, "StripedLayout=Blocked;BlockSize=%ld;",
+                (long) layout->round_robin.block_size);
     }
     else if(layout->mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
     {
@@ -5427,6 +5429,8 @@ globus_X_ftp_control_local_layout(
  *        user calls globus_ftp_control_release_data_info().  The callback
  *        is passed all of the arguments passed to this function with the
  *        exception of data_info.
+ * @param callback_arg
+ *        User supplied argument to the callback function
  */
 globus_result_t
 globus_ftp_control_create_data_info(
@@ -5618,11 +5622,10 @@ globus_ftp_control_release_data_info(
  * @param stripe_ndx
  *        The index of the stripe on which the data will be sent.  The index
  *        of each stripe is determined by the call to local_spas or local_spor.
- * @param data_info
- *        In order to use this function the user must have a valid pointer
- *        to a globus_ftp_control_data_write_info_t structure.  The user should
- *        call globus_ftp_control_create_data_info() to populate a valid
- *        data_info structure.
+ * @param callback
+ *        The function to be called once the data has been sent
+ * @param callback_arg
+ *        User supplied argument to the callback function
  */
 globus_result_t
 globus_ftp_control_data_write_stripe(
@@ -8418,8 +8421,8 @@ globus_l_ftp_stream_write_callback(
         {
             /* faking memory allocation */
             char  tag_str[128];
-            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d",
-                    dc_handle->type, nl_nbytes);
+            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%ld",
+                    dc_handle->type, (long) nl_nbytes);
             globus_netlogger_write(
                 &dc_handle->nl_ftp_handle,
                 GFTP_NL_EVENT_SENT_DATA,
@@ -8623,8 +8626,8 @@ globus_l_ftp_stream_read_callback(
             if(dc_handle->nl_ftp_handle_set)
             {
                 char tag_str[128];
-                sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d",
-                        dc_handle->type, nl_nbytes);
+                sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%ld",
+                        dc_handle->type, (long) nl_nbytes);
                 globus_netlogger_write(
                     &dc_handle->nl_ftp_handle,
                     GFTP_NL_EVENT_RECEIVED_DATA,
@@ -9463,8 +9466,8 @@ globus_l_ftp_eb_read_callback(
             if(dc_handle->nl_ftp_handle_set)
             {
                 char tag_str[128];
-                sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d",
-                         dc_handle->type, nl_bytes);
+                sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%ld",
+                        dc_handle->type, (long) nl_bytes);
                 globus_netlogger_write(
                     &dc_handle->nl_ftp_handle,
                     GFTP_NL_EVENT_RECEIVED_DATA,
@@ -9942,8 +9945,8 @@ globus_l_ftp_eb_write_callback(
         {
             /* faking memory allocation */
             char tag_str[128];
-            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d",
-                    dc_handle->type, nl_bytes);
+            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%ld",
+                    dc_handle->type, (long) nl_bytes);
             globus_netlogger_write(
                 &dc_handle->nl_ftp_handle,
                 GFTP_NL_EVENT_SENT_DATA,

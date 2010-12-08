@@ -451,7 +451,7 @@ globus_l_ftp_control_listen_cb(
  *  client. The command structure is used as a convience to determine 
  *  what command the client issued.  This function parses a command
  *  string sent by a client and populates the command argument
- *  appropriatly. In the GSSAPI case it will also decode and unwrap
+ *  appropriately. In the GSSAPI case it will also decode and unwrap
  *  the command before parsing it.  
  *
  * @param command
@@ -792,7 +792,7 @@ globus_ftp_control_command_copy(
  *  @param callback
  *         The user callback that will be called when the server
  *         structure is no longer listening.
- *  @param callback
+ *  @param callback_arg
  *         The user argument that is passed into callback.
  */
 
@@ -2681,7 +2681,7 @@ globus_ftp_control_send_response(
 
     if(handle->cc_handle.auth_info.authenticated == GLOBUS_TRUE)
     {
-        rc=globus_i_ftp_control_encode_reply(buf,(char **) &encoded_buf,
+        rc=globus_i_ftp_control_encode_reply(buf,(char **) (void *) &encoded_buf,
                                              &(handle->cc_handle.auth_info));
 
         globus_libc_free(buf);
