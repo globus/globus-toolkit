@@ -93,29 +93,24 @@ class GRAM5Packet(CUsagePacket):
         audit_used = (self.data.get('G') == '1')
 
         values = (host_id, version_id, lrm_id, seg_used, poll_used, audit_used)
-
         job_manager_id = GRAM5Packet.__job_managers.get(values)
+
         if job_manager_id is None:
+            cursor.execute("select nextval('gram5_job_managers_id_seq') as key")
+            job_manager_id = cursor.fetchone()[0]
+            values_sql = (job_manager_id, host_id, version_id, lrm_id, seg_used, poll_used, audit_used)
+
             cursor.execute('''
                 INSERT INTO gram5_job_managers(
+                    id,
                     host_id,
                     version,
                     lrm_id,
                     seg_used,
                     poll_used,
                     audit_used)
-                VALUES(%s, %s, %s, %s, %s, %s)
-                ''', values)
-            cursor.execute('''
-                SELECT id from gram5_job_managers
-                WHERE host_id=%s 
-                    AND version=%s 
-                    AND lrm_id=%s 
-                    AND seg_used=%s
-                    AND poll_used=%s
-                    AND audit_used=%s
-                ''', values)
-            job_manager_id = cursor.fetchone()[0]
+                VALUES(%s, %s, %s, %s, %s, %s, %s)
+                ''', values_sql)
             GRAM5Packet.__job_managers[values] = job_manager_id
         return job_manager_id
 
@@ -138,26 +133,23 @@ class GRAM5Packet(CUsagePacket):
         """
         job_manager_id = self.get_job_manager_id(cursor)
         uuid = self.data.get('B')
-        start_time = GRAM5Packet.db_class.TimestampFromTicks(
+        start_time = GRAM5Packet.TimestampFromTicks(
                 float(self.data.get('A')))
         byuuidresult = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
         job_manager_instance_id = None
         if byuuidresult is not None:
             (job_manager_instance_id, jmid) = byuuidresult
         if job_manager_instance_id is None:
-            values = (job_manager_id, uuid, start_time)
+            cursor.execute("select nextval('gram5_job_manager_instances_id_seq') as key")
+            job_manager_instance_id = cursor.fetchone()[0]
+            values = (job_manager_instance_id, job_manager_id, uuid, start_time)
             cursor.execute('''
                 INSERT INTO gram5_job_manager_instances(
+                        id,
                         job_manager_id,
                         uuid,
                         start_time)
-                VALUES(%s, %s, %s)''', values)
-            cursor.execute('''
-                SELECT id 
-                FROM gram5_job_manager_instances
-                WHERE job_manager_id=%s AND uuid=%s AND start_time=%s
-                ''', values)
-            job_manager_instance_id = cursor.fetchone()[0]
+                VALUES(%s, %s, %s, %s)''', values)
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
                     (job_manager_instance_id, job_manager_id)
         elif jmid is None:
@@ -191,25 +183,26 @@ class GRAM5Packet(CUsagePacket):
         uuid = self.data.get('B')
         start_time = None
         if self.data.get('A') != None:
-            start_time = GRAM5Packet.db_class.TimestampFromTicks(
+            start_time = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get('A')))
-        values = (uuid, start_time)
         job_manager_instance_id = None
         by_uuid_entry = GRAM5Packet.__job_manager_instances_by_uuid.get(uuid)
         if by_uuid_entry is not None:
             job_manager_instance_id = by_uuid_entry[0]
         if job_manager_instance_id is None:
+            cursor.execute("""
+                select nextval('gram5_job_manager_instances_id_seq') as key
+                """)
+            job_manager_instance_id = cursor.fetchone()[0]
+            values = (job_manager_instance_id, uuid, start_time)
+
             cursor.execute('''
                 INSERT INTO gram5_job_manager_instances(
+                        id,
                         uuid,
                         start_time)
-                VALUES(%s, %s)
+                VALUES(%s, %s, %s)
                 ''', values)
-            cursor.execute('''
-                SELECT id FROM gram5_job_manager_instances
-                WHERE uuid=%s AND start_time=%s
-                ''', values)
-            job_manager_instance_id = cursor.fetchone()[0]
             GRAM5Packet.__job_manager_instances[values] = \
                     job_manager_instance_id
             GRAM5Packet.__job_manager_instances_by_uuid[uuid] = \
@@ -260,13 +253,15 @@ class GRAM5Packet(CUsagePacket):
         if lrm is not None:
             lrm_id = GRAM5Packet.__lrms.get(lrm)
             if lrm_id is None:
-                values = (lrm,)
-                cursor.execute('''
-                    INSERT INTO gram5_lrms(lrm) VALUES(%s)
-                    ''', values)
-                cursor.execute('''SELECT id FROM gram5_lrms WHERE lrm=%s''',
-                        values)
+                cursor.execute("""
+                    SELECT nextval('gram5_lrms_id_seq') as key
+                    """)
                 lrm_id = cursor.fetchone()[0]
+
+                values = (lrm_id, lrm)
+                cursor.execute('''
+                    INSERT INTO gram5_lrms(id, lrm) VALUES(%s, %s)
+                    ''', values)
                 GRAM5Packet.__lrms[lrm] = lrm_id
         return lrm_id
 
@@ -293,30 +288,27 @@ class GRAM5Packet(CUsagePacket):
         if version is not None:
             version_id = GRAM5Packet.__versions.get(version)
             if version_id is None:
+                cursor.execute("""
+                    select nextval('gram5_versions_id_seq') as key
+                    """)
+                version_id = cursor.fetchone()[0]
                 version_list = list(version)
-                version_list[3] = GRAM5Packet.db_class.TimestampFromTicks(
+                version_list[3] = GRAM5Packet.TimestampFromTicks(
                     version_list[3])
+                version_list.insert(0, version_id)
                 values_sql = tuple(version_list)
 
                 cursor.execute('''
                     INSERT INTO gram5_versions(
+                        id,
                         major,
                         minor,
                         flavor,
                         dirt_timestamp,
                         dirt_branch,
                         distro_string)
-                    VALUES(%s, %s, %s, %s, %s, %s)
+                    VALUES(%s, %s, %s, %s, %s, %s, %s)
                     ''', values_sql)
-                cursor.execute('''
-                    SELECT id FROM gram5_versions
-                    WHERE major=%s
-                        AND minor=%s
-                        AND flavor=%s
-                        AND dirt_timestamp=%s
-                        AND dirt_branch=%s
-                        AND distro_string=%s''', values)
-                version_id = cursor.fetchone()[0]
                 GRAM5Packet.__versions[version] = version_id
         return version_id
 
@@ -636,17 +628,18 @@ class GRAM5Packet(CUsagePacket):
     def get_rsl_attribute_index(self, attr, cursor):
         attribute_id = GRAM5Packet.__rsl_attributes.get(attr)
         if attribute_id is None:
-            values = (attr, True)
+            cursor.execute("""
+                SELECT nextval('gram5_rsl_attributes_id_seq') as key
+                """)
+            attribute_id = cursor.fetchone()[0]
+            values = (attribute_id, attr, True)
             cursor.execute(
                 '''INSERT INTO gram5_rsl_attributes(
+                        id,
                         attribute,
                         extension)
-                    VALUES(%s, %s)
+                    VALUES(%s, %s, %s)
                     ''', values)
-            cursor.execute('''
-                SELECT id FROM gram5_rsl_attributes
-                WHERE attribute=%s AND extension=%s''', values)
-            attribute_id = cursor.fetchone()[0]
             GRAM5Packet.__rsl_attributes[attr] = attribute_id
         return attribute_id
 
@@ -689,18 +682,30 @@ class GRAM5Packet(CUsagePacket):
         if executable is not None:
             executable_id = GRAM5Packet.executables.get(values)
             if executable_id is None:
+                cursor.execute("""
+                    SELECT nextval('gram5_executable_id_seq') as key
+                    """)
+                executable_id = cursor.fetchone()[0]
+                values_sql = (executable_id, executable, arguments)
+
                 cursor.execute('''
                         INSERT INTO gram5_executable(
+                            id,
                             executable,
                             arguments)
-                        VALUES(%s, %s)
-                        ''', values)
-                cursor.execute('''
-                        SELECT id FROM gram5_executable
-                        WHERE executable=%s AND arguments=%s''', values)
-                executable_id = cursor.fetchone()[0]
+                        VALUES(%s,%s, %s)
+                        ''', values_sql)
                 GRAM5Packet.executables[values] = executable_id
         return executable_id
+
+    @staticmethod
+    def TimestampFromTicks(ticks):
+        timestamp=0
+        try: 
+            timestamp = GRAM5Packet.db_class.TimestampFromTicks(float(ticks))
+        except:
+            timestamp = GRAM5Packet.db_class.TimestampFromTicks(round(float(ticks),0))
+        return timestamp
 
 class GRAM5JMPacket(GRAM5Packet):
     """
@@ -830,25 +835,25 @@ class GRAM5JobPacket(GRAM5Packet):
         done_timestamp = None
 
         if self.data.get('c') is not None and float(self.data.get('c')) > 1:
-            unsubmitted_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            unsubmitted_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("c")))
         if self.data.get('d') is not None and float(self.data.get('d')) > 1:
-            file_stage_in_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            file_stage_in_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("d")))
         if self.data.get('e') is not None and float(self.data.get('e')) > 1:
-            pending_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            pending_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("e")))
         if self.data.get('f') is not None and float(self.data.get('f')) > 1:
-            active_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            active_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("f")))
         if self.data.get('g') is not None and float(self.data.get('g')) > 1:
-            failed_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            failed_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("g")))
         if self.data.get('h') is not None and float(self.data.get('h')) > 1:
-            file_stage_out_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            file_stage_out_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("h")))
         if self.data.get('i') is not None and float(self.data.get('i')) > 1:
-            done_timestamp = GRAM5Packet.db_class.TimestampFromTicks(
+            done_timestamp = GRAM5Packet.TimestampFromTicks(
                     float(self.data.get("i")))
         return (
             self.get_job_id(GRAM5Packet.cursor),
@@ -886,7 +891,13 @@ class GRAM5JobPacket(GRAM5Packet):
         gram5_job_file_info = self.get_file_info(cursor)
         jobtype = self.get_job_type(cursor)
 
+        cursor.execute("""
+            SELECT nextval('gram5_jobs_id_seq') as key
+            """)
+        job_id = cursor.fetchone()[0]
+
         values = (
+            job_id,
             job_manager_id,
             GRAM5Packet.db_class.Timestamp(*self.send_time),
             count,
@@ -900,6 +911,7 @@ class GRAM5JobPacket(GRAM5Packet):
 
         cursor.execute('''
                 INSERT INTO gram5_jobs(
+                    id,
                     job_manager_id,
                     send_time,
                     count,
@@ -910,47 +922,7 @@ class GRAM5JobPacket(GRAM5Packet):
                     rsl_bitfield,
                     jobtype,
                     gram5_job_file_info)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', values)
-
-        idqueryvalues=[values[0], values[1], values[2], values[3], values[4]]
-        idquery = '''
-                SELECT id FROM gram5_jobs
-                WHERE job_manager_id=%s
-                AND send_time=%s
-                AND count=%s
-                AND host_count=%s
-                AND dryrun=%s
-                '''
-        if client_id is not None:
-            idquery += ' AND client_id=%s'
-            idqueryvalues.append(client_id)
-        if executable_id is not None:
-            idquery += ' AND executable_id=%s'
-            idqueryvalues.append(executable_id)
-        idquery += '''
-            AND rsl_bitfield=%s 
-            AND jobtype=%s 
-            AND gram5_job_file_info=%s
-            '''
-        idqueryvalues.append(rsl_bitfield)
-        idqueryvalues.append(jobtype)
-        idqueryvalues.append(gram5_job_file_info)
-
-        cursor.execute(idquery, tuple(idqueryvalues))
-        try:
-            job_id = cursor.fetchone()[0]
-        except:
-            print '''SELECT id FROM gram5_jobs
-                WHERE job_manager_id=%s
-                AND send_time=%s
-                AND count=%s
-                AND host_count=%s
-                AND dryrun=%s
-                AND client_id=%s
-                AND executable_id=%s
-                AND rsl_bitfield=%s
-                AND jobtype=%s
-                AND gram5_job_file_info=%s''', values
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', values)
 
         return job_id
 
@@ -971,16 +943,17 @@ class GRAM5JobPacket(GRAM5Packet):
             client_id = GRAM5Packet.clients.get(values)
 
             if client_id is None:
+                cursor.execute("""
+                    SELECT nextval('gram5_client_id_seq') as key
+                    """)
+                client_id = cursor.fetchone()[0]
+                values_sql = (client_id, host_id, user_dn)
                 cursor.execute('''
                         INSERT INTO gram5_client(
+                            id,
                             host_id,
                             dn)
-                        VALUES(%s, %s)''', values)
-                cursor.execute('''
-                        SELECT id FROM gram5_client
-                        WHERE host_id=%s
-                        AND dn=%s''', values)
-                client_id = cursor.fetchone()[0]
+                        VALUES(%s, %s, %s)''', values_sql)
                 GRAM5Packet.clients[values] = client_id
         return client_id
 
@@ -1043,21 +1016,6 @@ class GRAM5JobPacket(GRAM5Packet):
         if file_stage_out_gsiftp is None:
             file_stage_out_gsiftp = 0
 
-        values = (
-            file_clean_up,
-            file_stage_in_http,
-            file_stage_in_https,
-            file_stage_in_ftp,
-            file_stage_in_gsiftp,
-            file_stage_in_shared_http,
-            file_stage_in_shared_https,
-            file_stage_in_shared_ftp,
-            file_stage_in_shared_gsiftp,
-            file_stage_out_http,
-            file_stage_out_https,
-            file_stage_out_ftp,
-            file_stage_out_gsiftp)
-
         if file_clean_up != 0 or \
                 file_stage_in_http != 0 or \
                 file_stage_in_https != 0 or \
@@ -1071,8 +1029,29 @@ class GRAM5JobPacket(GRAM5Packet):
                 file_stage_out_https != 0 or \
                 file_stage_out_ftp != 0 or \
                 file_stage_out_gsiftp != 0:
+            cursor.execute("""
+                SELECT nextval('gram5_job_file_info_id_seq') AS key
+                """)
+            file_info_id = cursor.fetchone()[0]
+            values = (
+                file_info_id,
+                file_clean_up,
+                file_stage_in_http,
+                file_stage_in_https,
+                file_stage_in_ftp,
+                file_stage_in_gsiftp,
+                file_stage_in_shared_http,
+                file_stage_in_shared_https,
+                file_stage_in_shared_ftp,
+                file_stage_in_shared_gsiftp,
+                file_stage_out_http,
+                file_stage_out_https,
+                file_stage_out_ftp,
+                file_stage_out_gsiftp)
+
             cursor.execute('''
                 INSERT into gram5_job_file_info(
+                    id,
                     file_clean_up,
                     file_stage_in_http,
                     file_stage_in_https,
@@ -1086,26 +1065,8 @@ class GRAM5JobPacket(GRAM5Packet):
                     file_stage_out_https,
                     file_stage_out_ftp,
                     file_stage_out_gsiftp)
-                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
                 values)
-            cursor.execute('''
-                SELECT id FROM gram5_job_file_info
-                WHERE
-                file_clean_up=%s
-                AND file_stage_in_http=%s
-                AND file_stage_in_https=%s
-                AND file_stage_in_ftp=%s
-                AND file_stage_in_gsiftp=%s
-                AND file_stage_in_shared_http=%s
-                AND file_stage_in_shared_https=%s
-                AND file_stage_in_shared_ftp=%s
-                AND file_stage_in_shared_gsiftp=%s
-                AND file_stage_out_http=%s
-                AND file_stage_out_https=%s
-                AND file_stage_out_ftp=%s
-                AND file_stage_out_gsiftp=%s''',
-                values)
-            file_info_id = cursor.fetchone()[0]
         return file_info_id
 
     def get_job_type(self, cursor):
@@ -1133,16 +1094,15 @@ class GRAM5JobPacket(GRAM5Packet):
         job_type_id = GRAM5Packet.job_type_ids.get(job_type)
 
         if job_type_id == None:
+            cursor.execute("SELECT nextval('gram5_job_types_id_seq') AS key")
+            job_type_id = cursor.fetchone()[0]
+            values = (job_type_id, job_type)
             cursor.execute('''
                 INSERT into gram5_job_types(
+                    id,
                     jobtype)
-                VALUES(%s)''',
+                VALUES(%s, %s)''',
                 values)
-            cursor.execute('''
-                SELECT id FROM gram5_job_types
-                WHERE jobtype=%s''',
-                values)
-            job_type_id = cursor.fetchone()[0]
             GRAM5Packet.job_type_ids[job_type] = job_type_id
         return job_type_id
 # vim: ts=4:sw=4:syntax=python

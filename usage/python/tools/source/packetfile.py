@@ -65,11 +65,14 @@ class PacketFile(object):
             raise EOFError("Error reading packet length")
         packet_len = 0
         [packet_len] = struct.unpack("!h", lens)
-        packet = self.packet_file.read(packet_len)
-        if packet == '' or len(packet) < packet_len:
-            raise EOFError("Error reading packet")
+        if packet_len > 0:
+            packet = self.packet_file.read(packet_len)
+            if len(packet) < packet_len:
+                raise EOFError("Error reading packet")
 
-        return (sender, packet)
+            return (sender, packet)
+        else:
+            return (sender, None)
 
     def write_packet(self, sender, packet):
         """

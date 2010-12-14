@@ -62,7 +62,7 @@ def parse(address, packet):
     Arguments:
     packet -- Binary usage packet data
     """
-    values = struct.unpack_from("!hh", packet)
+    values = struct.unpack("!hh", packet[0:struct.calcsize("!hh")])
 
     constructor = __packet_classifier.get(values)
 

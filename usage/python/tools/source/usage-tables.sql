@@ -463,8 +463,7 @@ CREATE TABLE gram5_job_manager_status(
     -- Number of jobs currently in the FAILED state
     failed INTEGER NOT NULL,
     -- Number of jobs currently in the DONE state
-    done INTEGER NOT NULL,
-    PRIMARY KEY(job_manager_instance_id, status_time)
+    done INTEGER NOT NULL
 );
 
 CREATE INDEX gram5_job_manager_status_date_index

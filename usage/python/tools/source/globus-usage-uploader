@@ -18,6 +18,7 @@ import os
 import sys
 import glob
 import getopt
+import time
 from datetime import datetime
 
 sys.path.append(
@@ -70,14 +71,14 @@ def main(argv):
     last_dir_name = ''
     for dir_name in glob.glob(os.path.join(usageconfig.data_directory, '[0-9]*')):
         print "Processing packets: " + os.path.basename(dir_name)
-        dd = datetime.strptime(os.path.basename(dir_name), "%Y%m%d")
+        dd = datetime(*time.strptime(os.path.basename(dir_name), "%Y%m%d")[0:6])
         now = datetime.utcnow()
         todays_files = (now.year == dd.year and now.month == dd.month and \
             now.day == dd.day)
         packet_types = dict()
         packet_counts = 0
         for infile in glob.glob(os.path.join(dir_name, '*.gup')):
-            hour=os.path.basename(infile).partition(".")[0]
+            hour=os.path.basename(infile).split(".")[0]
             if todays_files and int(hour) >= now.hour:
                 continue
             print "" + os.path.basename(infile) + "...",
@@ -91,12 +92,13 @@ def main(argv):
                     for x in range(0, 10000):
                         res = p.read_packet()
                         if res is not None:
-                            packet = packetparser.parse(res[0], res[1])
-                            if not(packet_types.has_key(packet.__class__)):
-                                packet_types[packet.__class__] = [packet]
-                            else:
-                                packet_types[packet.__class__].append(packet)
-                            packet_counts += 1
+                            if res[1] != None:
+                                packet = packetparser.parse(res[0], res[1])
+                                if not(packet_types.has_key(packet.__class__)):
+                                    packet_types[packet.__class__] = [packet]
+                                else:
+                                    packet_types[packet.__class__].append(packet)
+                                packet_counts += 1
                         else:
                             break
                     # Nothing left in the file 

@@ -45,13 +45,14 @@ class UsagePacket(object):
                     socket.AF_INET6, address)
         else:
             self.ip_address = None
-        checkvals = struct.unpack_from("!hh", packet)
+        checkvals = struct.unpack("!hh", packet[0:struct.calcsize("!hh")])
         self.endian_prefix = "!"
         if (checkvals[0] > ENDIAN_CHECK) or \
                 (checkvals[1] > ENDIAN_CHECK):
             self.endian_prefix = "<"
-        packdata = struct.unpack_from(
-                self.endian_prefix + "hh", packet)
+        packdata = struct.unpack(
+                self.endian_prefix + "hh", 
+			packet[0:struct.calcsize(self.endian_prefix + "hh")])
         offset = struct.calcsize(self.endian_prefix + "hh")
         self.component_code = packdata[0]
         self.packet_version = packdata[1]
@@ -156,9 +157,10 @@ class UsagePacket(object):
 
         """
         endian_qualified_format = self.endian_prefix + format
-        res = struct.unpack_from(
+        fmtsize = struct.calcsize(endian_qualified_format)
+        endpack = self.packet_body_offset + fmtsize
+        res = struct.unpack(
                 endian_qualified_format,
-                self.packet_body, 
-                self.packet_body_offset)
-        self.packet_body_offset += struct.calcsize(endian_qualified_format)
+                self.packet_body[self.packet_body_offset:endpack])
+        self.packet_body_offset = endpack
         return res
