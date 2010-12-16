@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
-Version:        0.2.0
-Release:        1%{?dist}
+Version:        0.2.2
+Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -17,9 +17,6 @@ URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
 # ./configure
 # make dist
 Source0:        %{name}-%{version}.tar.gz
-Source1:        gridftp-hdfs-local.conf
-Source2:        replica-map.conf
-Source3:        gridftp-hdfs.logrotate
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 # RHEL4 doesn't have java-devel, so we build with Sun's jdk instead.
@@ -47,16 +44,12 @@ HDFS DSI plugin for GridFTP
 %prep
 %setup -q
 
-%ifnarch x86_64
-sed -i -e 's:gcc64dbg:gcc32dbg:g' src/Makefile.in
-%endif
-
 %build
 
 export JAVA_HOME=/usr/java/latest
 export PATH=$JAVA_HOME/bin:$PATH
 export GLOBUS_LOCATION=/opt/globus
-
+export CFLAGS=-I/usr/include/globus
 %configure --with-java=/usr/java/latest/
 
 make
@@ -66,15 +59,9 @@ rm -rf $RPM_BUILD_ROOT
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
-install -p -m 0644 %{SOURCE1} $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/
-install -p -m 0644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/
-
 # Remove libtool turds
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
-
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
-install -p -m 0644 %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -98,17 +85,29 @@ fi
 %{_bindir}/gridftp-hdfs-inetd
 %{_bindir}/gridftp-hdfs-standalone
 %config(noreplace) %{_sysconfdir}/xinetd.d/%{name}
-%{_libdir}/libglobus_gridftp_server_hdfs_gcc*dbg.so.0
-%{_libdir}/libglobus_gridftp_server_hdfs_gcc*dbg.so.0.0.0
-# .so usually goes in a -devel package, but we'll leave it in this time.
-%{_libdir}/libglobus_gridftp_server_hdfs_gcc*dbg.so
+%{_libdir}/libglobus_gridftp_server_hdfs.so*
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp-inetd.conf
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}-local.conf
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Wed Dec 15 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.2-1
+- Update the bootstrapping scripts for the correct HADOOP_HOME
+  and exporting CLASSPATH
+
+* Sun Oct 17 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.1-2
+- Update the bootstrapping scripts to include the JVM paths.
+- Fix library names for flavourless-Globus
+
+* Fri Oct 15 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.0-3
+- Rebuild to create new Koji build.
+
+* Tue Sep 28 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.0-2
+- Update configurations to use GT5 GridFTP server from Fedora
+- Include environment variables for LCMAPS/LCAS support
+
 * Mon May 17 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.0-1
 - Adjust build to depend on hadoop-0.20 RPM layout.
 - Commit patches to upstream source.

@@ -1,8 +1,15 @@
 #!/bin/sh                                                            
 
 HADOOP_CONF_DIR=/etc/hadoop-0.20/conf
+HADOOP_HOME=/usr/lib/hadoop-0.20
 
 source $HADOOP_CONF_DIR/hadoop-env.sh
+
+if [ "x$JAVA_HOME" = "x" ]; then
+JAVA_HOME=/usr/java/default
+fi
+# Often, libjvm gets hidden off the path.
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/i386:$JAVA_HOME/jre/lib/i386/server:$JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server
 
 # The following is the CLASSPATH building logic from the hadoop script:
 # CLASSPATH initially contains $HADOOP_CONF_DIR
@@ -80,6 +87,8 @@ fi
 if [ -e @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf ] ; then
     . @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf
 fi
+
+export CLASSPATH=$CLASSPATH
                                                                       
 exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
 
