@@ -911,6 +911,13 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	goto error;
     }
 
+    if (!(gss_flags & GSS_C_CONF_FLAG)) {
+      GSI_SOCKET_set_error_string(self,
+                                  "requested confidentiality GSSAPI service"
+                                  " but it is not available");
+      goto error;
+    }
+
     if (gss_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
         self->limited_proxy = 1;
     }
