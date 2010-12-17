@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_copy">
 
-    <Aging_Version Age="4" Major="6" Minor="0"/>
+    <Aging_Version Age="5" Major="7" Minor="0"/>
     <Description>Globus Gass Copy</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -119,7 +119,7 @@
             </Dependency>
         </Source_Dependencies>
 
-        <With_Flavors build="yes"/>
+        <With_Flavors ColocateLibraries="no" build="yes"/>
 
         <Build_Environment>
             <cflags>@GPT_PKG_CFLAGS@</cflags>

@@ -943,7 +943,7 @@ globus_gass_copy_attr_set_io(
  *
  * @param attr
  *      A globus_gass_copy attribute structure
- * @param io_attr
+ * @param gass_attr
  *      The http/https attributes to be used
  *
  * @return

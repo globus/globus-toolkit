@@ -7,8 +7,11 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
+doc_DATA = GLOBUS_LICENSE
 EXTRA_DIST = \
-	version.h.in
+	globus-gass-copy.spec \
+	version.h.in \
+	$(doc_DATA)
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
