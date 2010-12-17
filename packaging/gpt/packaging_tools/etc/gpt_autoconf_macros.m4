@@ -2,6 +2,24 @@ dnl GPT_INIT()
 AC_DEFUN([GPT_INIT], [
         GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 
+	dnl --with-docdir for older autoconf (<2.60)
+	AC_ARG_WITH([docdir],
+	AC_HELP_STRING([--with-docdir=DIR], [Install documentation in DIR [[default: ${datadir}/doc/$PACKAGE]]]),
+        [case $withval in 
+	  yes|no)
+		AC_MSG_ERROR([Invalid DIR])
+		;;
+	  *)
+		docdir="$withval"
+		;;
+	esac
+	],
+	[
+		docdir='${datadir}/doc/${PACKAGE}'
+	])
+	AC_SUBST(docdir)
+
+
         AC_SUBST(GPT_LOCATION)
         AC_SUBST(GPT_PKGCONFIG_DEPENDENCIES)
 
@@ -96,15 +114,15 @@ dnl		fi
 	AC_SUBST(builddir)
 
         # Export pkg-config information about this package
-        pkgconfdir='${prefix}/lib/pkgconfig'
+        pkgconfdir='${libdir}/pkgconfig'
         pkgconffile=`echo "${GPT_NAME}.pc" | sed -e 's!_!-!g'`
-        pkgconffile_in="${pkgconffile}.in"
+        pkgconffile_in="pkg_data_src.pc.in"
 
         AC_SUBST(pkgconfdir)
         AC_SUBST(pkgconffile)
         AC_SUBST(pkgconffile_in)
 
-        AC_CONFIG_FILES([pkgdata/$pkgconffile])
+        AC_CONFIG_FILES(pkgdata/$pkgconffile:pkgdata/pkg_data_src.pc.in)
 ])
 
 AC_DEFUN([GPT_SET_CFLAGS], [

@@ -43,6 +43,9 @@ sbin_SCRIPTS = 	$(documented_scripts) $(undocumented_scripts)
 EXTRA_DIST = $(sbin_SCRIPT_sources)
 
 man8_MANS = 
+
+builddir = $(top_builddir)/$(subdir)
+
 if INSTALL_MANS
 man8_MANS += \
     $(builddir)/gpt-build.8 \

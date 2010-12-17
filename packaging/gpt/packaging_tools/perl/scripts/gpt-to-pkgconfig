@@ -67,7 +67,7 @@ $cflags =~ s!^\s+|\s+$!!g;
 $cflags =~ s!\s+! !g;
 
 my $outfile = $ARGV[0];
-$outfile =~ s|/[^/]*$|/$name.pc.in|;
+$outfile =~ s|\.gpt(\.in)?|.pc.in|;
 
 # Add fake dependency for other things that were detected in autoconf using
 # pkg-config

@@ -1,10 +1,10 @@
 package Grid::GPT::LocalEnv; 
 use strict; 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
-
 require Exporter;
 require AutoLoader;
 
+use Grid::GPT::Localize;
 use Cwd;
 
 @ISA = qw(Exporter AutoLoader);
@@ -42,7 +42,7 @@ sub get_rpm_setting {
 }
 
 sub get_target {
-    return Grid::GPT::Locallize::get_target();
+    return Grid::GPT::Localize::get_target();
 }
 sub use_system_tar {return "@GTAR@"}
 
