@@ -40,6 +40,7 @@ int ssl_init_wbio_buffer(SSL *s, int push);
 void ssl_free_wbio_buffer(SSL *s);
 
 int ssl3_setup_key_block(SSL *s);
+int tls1_setup_key_block(SSL *s);
 void ssl3_cleanup_key_block(SSL *s);
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10000000L)

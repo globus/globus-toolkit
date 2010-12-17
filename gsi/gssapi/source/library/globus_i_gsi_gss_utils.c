@@ -528,6 +528,24 @@ globus_i_gsi_gss_create_and_fill_context(
             goto free_cert_dir;   
         }
     }
+    else
+    {
+        char * cipher_string = getenv("GLOBUS_SSL_CIPHERS");
+
+        if (cipher_string)
+        {
+            if(!SSL_set_cipher_list(context->gss_ssl,
+                                    cipher_string))
+            {
+                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                    (_GGSL("Couldn't set the cipher cert order in the SSL object to %s"), cipher_string));
+                major_status = GSS_S_FAILURE;
+                goto free_cert_dir;   
+            }
+        }
+    }
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
         3, (globus_i_gsi_gssapi_debug_fstream,
@@ -582,6 +600,7 @@ globus_i_gsi_gss_create_and_fill_context(
                 context->gss_ssl, 
                 BIO_NOCLOSE);
     
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
     {
         char buff[256];
         int i;
@@ -1035,7 +1054,7 @@ globus_i_gsi_gss_handshake(
                 context_handle->ret_flags |= GSS_C_CONF_FLAG;
             }
 
-            /* DEBUG BLOCK */
+            if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
             {
                 char                    cipher_description[256];
                 GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
@@ -1643,7 +1662,7 @@ globus_i_gsi_gss_SSL_write_bio(
 
     ssl_handle = context->gss_ssl;
 
-    /* DEBUG BLOCK */
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "client_random=");
@@ -1666,9 +1685,16 @@ globus_i_gsi_gss_SSL_write_bio(
     BIO_write(bp, (char *) ssl_handle->s3->client_random, SSL3_RANDOM_SIZE);
     BIO_write(bp, (char *) ssl_handle->s3->server_random, SSL3_RANDOM_SIZE);
     
-    ssl3_setup_key_block(ssl_handle);
+    if (ssl_handle->version == SSL3_VERSION)
+    {
+        ssl3_setup_key_block(ssl_handle);
+    }
+    else if (ssl_handle->version == TLS1_VERSION)
+    {
+        tls1_setup_key_block(ssl_handle);
+    }
     
-    /* DEBUG BLOCK */
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
@@ -1699,7 +1725,7 @@ globus_i_gsi_gss_SSL_write_bio(
         }
         
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nwrite_iv=");
-        for (index = 0; index < 8; ++index)
+        for (index = 0; index < EVP_MAX_IV_LENGTH; ++index)
         {
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
@@ -1707,11 +1733,25 @@ globus_i_gsi_gss_SSL_write_bio(
         }
         
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nread_iv=");
-        for (index = 0; index < 8; index++)
+        for (index = 0; index < EVP_MAX_IV_LENGTH; index++)
         {
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
                     "%02X", ssl_handle->enc_read_ctx->iv[index]));
+        }
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nread_mac_secret =");
+        for (index = 0; index < EVP_MAX_MD_SIZE; ++index)
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                    "%02X", ssl_handle->s3->read_mac_secret[index]));
+        }
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nwrite_mac_secret =");
+        for (index = 0; index < EVP_MAX_MD_SIZE; ++index)
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                    "%02X", ssl_handle->s3->write_mac_secret[index]));
         }
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\n");
     }
@@ -1774,7 +1814,7 @@ globus_i_gsi_gss_SSL_read_bio(
     BIO_read(bp, (char*) ssl_handle->s3->client_random, SSL3_RANDOM_SIZE);
     BIO_read(bp, (char*) ssl_handle->s3->server_random, SSL3_RANDOM_SIZE);
 
-    /* DEBUG BLOCK */
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "client_random=");
@@ -1858,7 +1898,7 @@ globus_i_gsi_gss_SSL_read_bio(
         }
     }
 
-    /* DEBUG BLOCK */
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
@@ -1960,7 +2000,7 @@ globus_i_gsi_gss_SSL_read_bio(
     BIO_read(bp, (char*) ssl_handle->enc_write_ctx->iv,  EVP_MAX_IV_LENGTH);
     BIO_read(bp, (char*) ssl_handle->enc_read_ctx->iv,   EVP_MAX_IV_LENGTH);
     
-    /* DEBUG BLOCK */
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "write_sequence=");
@@ -1993,6 +2033,20 @@ globus_i_gsi_gss_SSL_read_bio(
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
                     "%02X", ssl_handle->enc_read_ctx->iv[index]));
+        }
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nread_mac_secret =");
+        for (index = 0; index < EVP_MAX_MD_SIZE; ++index)
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                    "%02X", ssl_handle->s3->read_mac_secret[index]));
+        }
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nwrite_mac_secret =");
+        for (index = 0; index < EVP_MAX_MD_SIZE; ++index)
+        {
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (globus_i_gsi_gssapi_debug_fstream,
+                    "%02X", ssl_handle->s3->write_mac_secret[index]));
         }
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\n");
     }
