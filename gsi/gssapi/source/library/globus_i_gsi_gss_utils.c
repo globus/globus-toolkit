@@ -1652,6 +1652,7 @@ globus_i_gsi_gss_SSL_write_bio(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     SSL *                               ssl_handle;
+    int                                 ssl_result;
     unsigned char                       intbuffer[4];
     static char *                       _function_name_ =
         "globus_i_gsi_gss_SSL_write_bio";
@@ -1685,13 +1686,16 @@ globus_i_gsi_gss_SSL_write_bio(
     BIO_write(bp, (char *) ssl_handle->s3->client_random, SSL3_RANDOM_SIZE);
     BIO_write(bp, (char *) ssl_handle->s3->server_random, SSL3_RANDOM_SIZE);
     
-    if (ssl_handle->version == SSL3_VERSION)
+    
+    ssl_result = ssl_handle->method->ssl3_enc->setup_key_block(ssl_handle);
+    if (!ssl_result)
     {
-        ssl3_setup_key_block(ssl_handle);
-    }
-    else if (ssl_handle->version == TLS1_VERSION)
-    {
-        tls1_setup_key_block(ssl_handle);
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            (_GGSL("Attempt to setup key block of the SSL handle failed")));
+        major_status = GSS_S_FAILURE;
+        goto error_exit;
     }
     
     if (GLOBUS_I_GSI_GSSAPI_DEBUG(2))
@@ -1774,6 +1778,7 @@ globus_i_gsi_gss_SSL_write_bio(
     
     ssl3_cleanup_key_block(ssl_handle);
 
+error_exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
@@ -1839,6 +1844,23 @@ globus_i_gsi_gss_SSL_read_bio(
 
     ssl_handle->s3->tmp.new_cipher = ssl_handle->session->cipher;
         
+    /* We save the key block in the BIO when we export. However, other
+     * bits of the tmp block are initialized (such as length of hashes),
+     * so we'll setup the key block and then copy in its value from the 
+     * BIO
+     */
+    ssl_result = ssl_handle->method->ssl3_enc->setup_key_block(ssl_handle);
+    if (!ssl_result)
+    {
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            (_GGSL("Attempt to setup key block of the SSL handle failed")));
+        major_status = GSS_S_FAILURE;
+        goto exit;
+    }
+    OPENSSL_free(ssl_handle->s3->tmp.key_block);
+
     /* read the tmp.key_block */
     if (BIO_pending(bp) < 4)
     {
