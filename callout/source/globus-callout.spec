@@ -26,7 +26,7 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	grid-packaging-tools
-BuildRequires:	libtool-ltdl-devel%{?_isa} >= 2
+BuildRequires:	libtool-ltdl-devel%{?_isa} >= 1
 BuildRequires:	globus-common-devel%{?_isa} >= 3
 BuildRequires:	globus-core%{?_isa} >= 4
 BuildRequires:	doxygen

@@ -25,7 +25,7 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	openssl%{?_isa} >= 1
+Requires:	openssl%{?_isa} 
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 1
 BuildRequires:	globus-gsi-callback-devel%{?_isa}

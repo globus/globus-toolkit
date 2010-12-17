@@ -30,7 +30,7 @@ BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-common-devel%{?_isa} >= 3
 BuildRequires:	globus-openssl-module-devel%{?_isa}
 BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
-BuildRequires:	openssl-devel%{?_isa} >= 1
+BuildRequires:	openssl-devel%{?_isa}
 BuildRequires:	globus-core%{?_isa} >= 4
 BuildRequires:	doxygen
 BuildRequires:	graphviz

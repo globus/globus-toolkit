@@ -25,12 +25,12 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	openssl%{?_isa} >= 1
+Requires:	openssl%{?_isa}
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 1
 BuildRequires:	globus-common-devel%{?_isa} >= 3
 BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
-BuildRequires:	openssl-devel%{?_isa} >= 1
+BuildRequires:	openssl-devel%{?_isa}
 BuildRequires:	globus-core%{?_isa} >= 4
 BuildRequires:	doxygen
 BuildRequires:	graphviz
@@ -51,7 +51,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 1
 Requires:	globus-common-devel%{?_isa} >= 3
 Requires:	globus-gsi-openssl-error-devel%{?_isa}
-Requires:	openssl-devel%{?_isa} >= 1
+Requires:	openssl-devel%{?_isa}
 Requires:	globus-core%{?_isa} >= 4
 
 %package doc

@@ -30,7 +30,7 @@ docdir = @docdir@
 flavordir = @flavordir@
 ## flavor = [ DATA ]
 
-pkgconfdir = @prefix@/lib/pkgconfig
+pkgconfdir = @libdir@/pkgconfig
 ## pkgconfdir = [ DATA ]
 
 pkgconf_DATA = globus-core.pc

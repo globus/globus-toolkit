@@ -29,7 +29,7 @@ BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gsi-callback-devel%{?_isa}
 BuildRequires:	globus-openssl-module-devel%{?_isa}
 BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
-BuildRequires:	openssl-devel%{?_isa} >= 1
+BuildRequires:	openssl-devel%{?_isa}
 BuildRequires:	globus-core%{?_isa} >= 4
 BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 1
 BuildRequires:	globus-common-devel%{?_isa} >= 3
@@ -53,7 +53,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gsi-callback-devel%{?_isa}
 Requires:	globus-openssl-module-devel%{?_isa}
 Requires:	globus-gsi-openssl-error-devel%{?_isa}
-Requires:	openssl-devel%{?_isa} >= 1
+Requires:	openssl-devel%{?_isa}
 Requires:	globus-core%{?_isa} >= 4
 Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 1
 Requires:	globus-common-devel%{?_isa} >= 3
