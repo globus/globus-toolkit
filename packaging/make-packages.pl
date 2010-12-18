@@ -939,10 +939,13 @@ sub install_gpt()
         # Newer GPTs will unset LANG automatically in build_gpt.
         my $OLANG = $ENV{'LANG'};
         $ENV{'LANG'} = "";
-        system("./build_gpt $verbose > $log_dir/$gpt_ver.log 2>&1");
+        system("./build_gpt $verbose >> $log_dir/$gpt_ver.log 2>&1");
         $ENV{'LANG'} = $OLANG;
 
         paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
+        system("./make_gpt_dist >> $log_dir/$gpt_ver.log 2>&1");
+	mkdir $package_output;
+        system("mv ${gpt_ver}*.tar.gz $package_output");
     }
 
     @INC = (@INC, "$target/lib/perl", "$target/lib/perl/$Config{'archname'}");
