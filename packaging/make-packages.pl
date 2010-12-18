@@ -931,7 +931,7 @@ sub install_gpt()
         print "Installing $gpt_ver to $target\n";
         print "Logging to ${log_dir}/$gpt_ver.log\n";
 
-        chdir $gpt_dir/packaging_tools;
+        chdir "$gpt_dir/packaging_tools";
         system("./bootstrap > $log_dir/$gpt_ver.log 2>&1");
         chdir $gpt_dir;
 
