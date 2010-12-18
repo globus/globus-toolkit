@@ -37,7 +37,7 @@ pkgconf_DATA = globus-core.pc
 
 flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
 
-EXTRA_DIST = globus-core.pc.in
+EXTRA_DIST = pkg_data_src.pc.in
 
 LINK_BAK = orig
 AUTOMAKE_OPTIONS=no-dependencies
