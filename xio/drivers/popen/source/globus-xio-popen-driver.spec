@@ -66,7 +66,8 @@ unset GPT_LOCATION
 
 %{_datadir}/globus/globus-bootstrap.sh
 
-%configure --with-flavor=%{flavor}
+%configure --with-flavor=%{flavor} --docdir=%{_docdir}/%{name}-%{version} \
+           --disable-static
 
 make %{?_smp_mflags}
 
