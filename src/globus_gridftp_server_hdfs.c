@@ -1014,11 +1014,12 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         globus_free(hdfs_handle->nbytes);
         globus_free(hdfs_handle->offsets);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS; zero outstanding blocks.\n");
-        if (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1) 
+        if ((hdfs_handle->fd != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1))
         {
              if (rc == GLOBUS_SUCCESS)
                rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
              globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Failed to close file in HDFS.\n");
+             hdfs_handle->fd = NULL;
         }
         snprintf(err_msg, MSG_SIZE, "receive %d blocks of size %d bytes\n",
                         local_io_count,local_io_block_size);
@@ -1385,10 +1386,11 @@ globus_l_gfs_hdfs_read_from_storage(
     if (hdfs_handle->outstanding == 0)
     {
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS.\n");
-        if (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1)
+        if ((hdfs_handle->fd != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1))
         {
              rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
              globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
+             hdfs_handle->fd = NULL;
         } else {
         globus_gridftp_server_finished_transfer(hdfs_handle->op, 
                                                 GLOBUS_SUCCESS);

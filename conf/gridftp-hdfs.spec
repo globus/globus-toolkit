@@ -1,5 +1,5 @@
 Name:           gridftp-hdfs
-Version:        0.2.2
+Version:        0.2.3
 Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -48,8 +48,7 @@ HDFS DSI plugin for GridFTP
 
 export JAVA_HOME=/usr/java/latest
 export PATH=$JAVA_HOME/bin:$PATH
-export GLOBUS_LOCATION=/opt/globus
-export CFLAGS=-I/usr/include/globus
+export CFLAGS="-I/usr/include/globus -I/usr/lib64/globus/include"
 %configure --with-java=/usr/java/latest/
 
 make
@@ -93,6 +92,9 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Fri Dec 17 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-1
+- Protect against a double-free if only one block is read.
+
 * Wed Dec 15 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.2-1
 - Update the bootstrapping scripts for the correct HADOOP_HOME
   and exporting CLASSPATH
