@@ -15,7 +15,9 @@ AC_DEFUN([GPT_INIT], [
 	esac
 	],
 	[
-		docdir='${datadir}/doc/${PACKAGE}'
+                if test -z "$docdir"; then
+                        docdir='${datadir}/doc/${PACKAGE}'
+                fi
 	])
 	AC_SUBST(docdir)
 
