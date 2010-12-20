@@ -22,7 +22,7 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	openssl%{?_isa} >= 1
+Requires:	openssl%{?_isa}
 Requires:	globus-gsi-credential%{?_isa} >= 3
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 1
@@ -31,7 +31,7 @@ BuildRequires:	globus-gsi-callback-devel%{?_isa}
 BuildRequires:	globus-openssl-module-devel%{?_isa}
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
 BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
-BuildRequires:	openssl-devel%{?_isa} >= 1
+BuildRequires:	openssl-devel%{?_isa}
 BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 1
 BuildRequires:	globus-core%{?_isa} >= 4
 BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 1
