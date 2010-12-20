@@ -94,7 +94,7 @@ unset GPT_LOCATION
 
 export GRIDMAP=/etc/grid-security/grid-mapfile
 %configure --with-flavor=%{flavor} --sysconfdir=/etc/%{name} \
-           --with-docdir=%{_docdir}/%{name}-%{version} \
+           --docdir=%{_docdir}/%{name}-%{version} \
            --disable-static
 
 make %{?_smp_mflags}
