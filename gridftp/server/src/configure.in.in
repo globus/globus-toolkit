@@ -92,11 +92,16 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
     globus-gridftp-password
+    globus-gridftp-server-enable-sshftp
     Makefile
     embed/Makefile
     pkgdata/Makefile
     pkgdata/pkg_data_src.gpt
     modules/Makefile
+    init/Makefile
+    init/globus-gridftp-server
+    init/globus-gridftp-sshftp
+    gridftp.conf.default
     doxygen/Makefile
     doxygen/Doxyfile
     doxygen/Doxyfile-internal

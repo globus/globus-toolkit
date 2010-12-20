@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# globus-gridftp-sshftp	
+#
+# chkconfig: - 20 80
+# description: Controls sshftp access to the globus-gridftp-server.
+#
+
+@GLOBUS_SCRIPT_INITIALIZER@
+
+rc=0
+conf=${sysconfdir}/gridftp.conf
+pidfile=${localstatedir}/run/globus-gridftp-server.pid
+gridftpd=${sbindir}/globus-gridftp-server
+
+start() {
+	echo -n "Starting globus-gridftp-server: "
+	if [ ! -f $conf ]; then
+	  cp $conf.default $conf;
+	fi
+
+        # add  -pidfile $pidfile
+        $gridftpd -S -c $conf 
+	rc=$?
+         
+	[ $rc -eq 0 ] && echo "OK" || echo "FAILED";
+	return $rc
+}	
+
+stop() {
+	echo -n "Stopping globus-gridftp-server: "
+	killall -s INT $gridftpd 2>/dev/null
+        rc=$?
+	sleep 2
+	killall -s KILL $gridftpd 2>/dev/null
+
+	[ $rc -eq 0 ] && echo "OK" || echo "FAILED";
+	return $rc
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    status)
+	;;
+    restart|reload)
+    	stop
+	start
+	;;
+    *)
+	echo "Usage: $0 {start|stop|status|restart|reload}"
+	exit 1
+	;;
+esac
+exit $rc
+

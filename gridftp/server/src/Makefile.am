@@ -6,19 +6,25 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = \
     modules \
     .       \
+    init    \
     pkgdata \
     doxygen
 
 doc_DATA = GLOBUS_LICENSE
+
+gridftpconfdir = ${sysconfdir}
+gridftpconf_DATA = gridftp.conf.default
 
 EXTRA_DIST = \
     dsi_bones \
     embed \
     globus-gridftp-server.spec \
     globus-gridftp-password.in \
+    globus-gridftp-server-enable-sshftp.in \
     version.h.in \
     extensions.h.in \
     configure.in.in \
+    gridftp.conf.default.in \
     $(doc_DATA)
 
 # Sources contains all of the source files in the directory.
@@ -103,7 +109,9 @@ sbin_PROGRAMS= \
     gfs-gfork-master \
     gfs-dynbe-client
 
-sbin_SCRIPTS = globus-gridftp-password
+sbin_SCRIPTS = \
+	globus-gridftp-password \
+	globus-gridftp-server-enable-sshftp
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
