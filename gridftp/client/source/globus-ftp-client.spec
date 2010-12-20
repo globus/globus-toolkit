@@ -143,6 +143,7 @@ sed -e '/bug\.3/d' -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
 
 # Generate package filelists
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
+cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
   | sed s!^!%{_prefix}! > package.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
   | sed s!^!%{_prefix}! > package-devel.filelist
@@ -165,7 +166,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f package-devel.filelist devel
 %defattr(-,root,root,-)
-%{_libdir}/pkgconfig/%{name}.pc
 
 %files -f package-doc.filelist doc
 %defattr(-,root,root,-)
