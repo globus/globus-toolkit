@@ -93,7 +93,7 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
     }
     myproxy_log("Processing usage_stats_target (%s)\n", target_str);
 
-    if(target_str && strchr(target_str, '!'))
+    if(target_str && (strchr(target_str, ',') || strchr(target_str, '!')))
     {
         target = target_str;
 
@@ -193,7 +193,7 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
         globus_list_insert(&myproxy_usage_handle_list, usage_ent);
     }
 
-
+    result = GLOBUS_SUCCESS;
     for(list = myproxy_usage_handle_list;
         !globus_list_empty(list);
         list = globus_list_rest(list))
@@ -201,13 +201,20 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
         usage_ent = (myproxy_usage_ent_t *) globus_list_first(list);
 
         usage_ent->handle = NULL;
-        myproxy_log("USAGE: Initializing (%s) (%s)", usage_ent->target?:"NULL",
-                     usage_ent->taglist?:"NULL");
-        result = globus_usage_stats_handle_init(
+        if (globus_usage_stats_handle_init(
             &usage_ent->handle,
             MYPROXY_USAGE_ID,
             MYPROXY_USAGE_VER,
-            usage_ent->target);
+            usage_ent->target) != GLOBUS_SUCCESS)
+        {
+            myproxy_log("USAGE-STATS: Error initializing (%s) (%s)",
+                     usage_ent->target?:"NULL",
+                     usage_ent->taglist?:"NULL");
+            result = GLOBUS_FAILURE;
+        } else
+            myproxy_log("USAGE-STATS: Initialized (%s) (%s)",
+                     usage_ent->target?:"NULL",
+                     usage_ent->taglist?:"NULL");
     }
 
     return result;
@@ -298,7 +305,7 @@ myproxy_log_usage_stats(
         usage_ent = (myproxy_usage_ent_t *) globus_list_first(list);
 
         if(!usage_ent || usage_ent->handle == NULL)
-            return;
+            continue;
         
         if(save_taglist == NULL || 
             strcmp(save_taglist, usage_ent->taglist) != 0)
