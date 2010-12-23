@@ -407,8 +407,8 @@ handle_config(myproxy_server_context_t *server_context)
 #ifdef HAVE_GLOBUS_USAGE
         if (myproxy_usage_stats_init(server_context) != GLOBUS_SUCCESS)
         {
-            verror_put_string("Error Initializing Usage Stat Target(s)!");
-            return -1;
+            myproxy_log("Error initializing one or more Usage Stat target(s)!"
+				" But continuing ...");
         }
 #endif
     }

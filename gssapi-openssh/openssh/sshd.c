@@ -1547,7 +1547,7 @@ main(int ac, char **av)
 #ifdef HAVE_GLOBUS_USAGE
 	if (ssh_usage_stats_init(options.disable_usage_stats,
 			options.usage_stats_targets) != GLOBUS_SUCCESS) {
-		fatal("Error initializing Globus Usage Metrics");
+		error("Error initializing Globus Usage Metrics, but continuing ...");
 	}
 #endif /* HAVE_GLOBUS_USAGE */
 
