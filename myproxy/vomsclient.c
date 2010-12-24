@@ -53,6 +53,7 @@ voms_get_user_info(struct vomsdata *vd,
         goto done;
     }
 
+    myproxy_debug("Retrieve %s VO", command->vo);
     for (i = 0; servers[i] != NULL; i++) {
         struct contactdata *info = servers[i];
         myproxy_debug("Contact to VOMS Server: %s", info->host);
