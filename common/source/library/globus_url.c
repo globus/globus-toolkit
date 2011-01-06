@@ -2193,6 +2193,8 @@ globus_url_copy(
     COPY_FIELD(filter, scope)
     COPY_FIELD(url_specific_part, filter)
 
+    return GLOBUS_SUCCESS;
+
     FREE_EXIT(filter)
     FREE_EXIT(scope)
     FREE_EXIT(attributes)
