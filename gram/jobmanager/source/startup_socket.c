@@ -357,10 +357,10 @@ globus_gram_job_manager_startup_socket_init(
             "\n",
             manager->socket_path);
     memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = PF_LOCAL;
+    addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
 
-    sock = socket(PF_LOCAL, SOCK_DGRAM, 0);
+    sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sock < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
@@ -706,9 +706,9 @@ globus_gram_job_manager_starter_send(
 
     /* create socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = PF_LOCAL;
+    addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, sockpath, sizeof(addr.sun_path)-1);
-    sock = socket(PF_LOCAL, SOCK_DGRAM, 0);
+    sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sock < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
@@ -791,7 +791,7 @@ globus_gram_job_manager_starter_send(
         goto connect_failed;
     }
     /* create acksocks */
-    rc = socketpair(PF_LOCAL, SOCK_STREAM, 0, acksock);
+    rc = socketpair(AF_UNIX, SOCK_STREAM, 0, acksock);
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
