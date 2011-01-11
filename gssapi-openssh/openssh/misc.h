@@ -39,6 +39,7 @@ void	 sock_set_v6only(int);
 int	 timingsafe_bcmp(const void *, const void *, size_t);
 
 struct passwd *pwcopy(struct passwd *);
+void	 pwfree(struct passwd *);
 const char *ssh_gai_strerror(int);
 
 typedef struct arglist arglist;
