@@ -76,7 +76,7 @@ ssh_usage_stats_init(int disable_usage_stats, char *usage_stats_targets)
     result = globus_module_activate(GLOBUS_USAGE_MODULE);
     if (result != GLOBUS_SUCCESS)
     {
-        error("ERROR: couldn't activate USAGE module");
+        error("ERROR: couldn't activate USAGE STATS module");
         return result;
     }
 
@@ -93,7 +93,7 @@ ssh_usage_stats_init(int disable_usage_stats, char *usage_stats_targets)
     }
     debug("Processing usage_stats_target (%s)\n", target_str);
 
-    if(target_str && strchr(target_str, '!'))
+    if(target_str && (strchr(target_str, ',') || strchr(target_str, '!')))
     {
         target = target_str;
 
@@ -193,7 +193,7 @@ ssh_usage_stats_init(int disable_usage_stats, char *usage_stats_targets)
         globus_list_insert(&usage_handle_list, usage_ent);
     }
 
-
+    result = GLOBUS_SUCCESS;
     for(list = usage_handle_list;
         !globus_list_empty(list);
         list = globus_list_rest(list))
@@ -201,13 +201,20 @@ ssh_usage_stats_init(int disable_usage_stats, char *usage_stats_targets)
         usage_ent = (ssh_usage_ent_t *) globus_list_first(list);
 
         usage_ent->handle = NULL;
-        debug("USAGE: Initializing (%s) (%s)", usage_ent->target?:"NULL",
-                     usage_ent->taglist?:"NULL");
-        result = globus_usage_stats_handle_init(
+        if (globus_usage_stats_handle_init(
             &usage_ent->handle,
             SSH_GLOBUS_USAGE_ID,
             SSH_GLOBUS_USAGE_VER,
-            usage_ent->target);
+            usage_ent->target) != GLOBUS_SUCCESS)
+        {
+            error("USAGE-STATS: Error initializing (%s) (%s)",
+                     usage_ent->target?:"NULL",
+                     usage_ent->taglist?:"NULL");
+            result = GLOBUS_FAILURE;
+        } else
+            debug("USAGE-STATS: Initialized (%s) (%s)", usage_ent->target?:"NULL",
+                     usage_ent->taglist?:"NULL");
+
     }
 
     return result;
@@ -286,7 +293,7 @@ log_usage_stats(char *ssh_release, const char *ssl_release,
         usage_ent = (ssh_usage_ent_t *) globus_list_first(list);
 
         if(!usage_ent || usage_ent->handle == NULL)
-            return;
+            continue;
         
         if(save_taglist == NULL || 
             strcmp(save_taglist, usage_ent->taglist) != 0)

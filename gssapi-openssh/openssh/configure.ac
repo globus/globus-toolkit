@@ -109,7 +109,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 		     ;;
 		2.*) no_attrib_nonnull=1 ;;
 		3.*) CFLAGS="$CFLAGS -Wsign-compare -Wformat-security" ;;
-		4.*) CFLAGS="$CFLAGS -Wsign-compare -Wno-pointer-sign -Wformat-security" ;;
+		4.*) CFLAGS="$CFLAGS -Wsign-compare -Wno-pointer-sign -Wformat-security -fno-strict-aliasing" ;;
 		*) ;;
 	esac
 
@@ -447,7 +447,7 @@ int main(void) { exit(0); }
 	AC_DEFINE(DISABLE_FD_PASSING, 1,
 		[Define if your platform needs to skip post auth
 		file descriptor passing])
-	AC_DEFINE(SSH_IOBUFSZ, 65536, [Windows is sensitive to read buffer size])
+	AC_DEFINE(SSH_IOBUFSZ, 65535, [Windows is sensitive to read buffer size])
 	;;
 *-*-dgux*)
 	AC_DEFINE(IP_TOS_IS_BROKEN, 1,
@@ -505,6 +505,12 @@ int main(void) { exit(0); }
 *-*-dragonfly*)
 	SSHDLIBS="$SSHDLIBS -lcrypt"
 	;;
+*-*-haiku*) 
+    LIBS="$LIBS -lbsd "
+    AC_CHECK_LIB(network, socket)
+    AC_DEFINE(HAVE_U_INT64_T)
+    MANTYPE=man 
+    ;; 
 *-*-hpux*)
 	# first we define all of the options common to all HP-UX releases
 	CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED=1"
@@ -606,6 +612,7 @@ int main(void) { exit(0); }
 		if it doesn't return EOPNOTSUPP.])
 	AC_DEFINE(_PATH_BTMP, "/var/log/btmp", [log for bad login attempts])
 	AC_DEFINE(USE_BTMP)
+	AC_DEFINE(LINUX_OOM_ADJUST, 1, [Adjust Linux out-of-memory killer])
 	inet6_default_4in6=yes
 	case `uname -r` in
 	1.*|2.0.*)
@@ -760,9 +767,11 @@ mips-sony-bsd|mips-sony-newsos4)
 	;;
 # UnixWare 7.x, OpenUNIX 8
 *-*-sysv5*)
+	CPPFLAGS="$CPPFLAGS -Dvsnprintf=_xvsnprintf -Dsnprintf=_xsnprintf"
 	AC_DEFINE(UNIXWARE_LONG_PASSWORDS, 1, [Support passwords > 8 chars])
 	AC_DEFINE(USE_PIPES)
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_GETADDRINFO)
 	AC_DEFINE(BROKEN_SETREUID)
 	AC_DEFINE(BROKEN_SETREGID)
 	AC_DEFINE(PASSWD_NEEDS_USERNAME)
@@ -801,6 +810,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE(DISABLE_SHADOW)
 	AC_DEFINE(DISABLE_FD_PASSING)
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_GETADDRINFO)
 	AC_DEFINE(BROKEN_SETREUID)
 	AC_DEFINE(BROKEN_SETREGID)
 	AC_DEFINE(WITH_ABBREV_NO_TTY)
@@ -1452,7 +1462,18 @@ LIBEDIT_MSG="no"
 AC_ARG_WITH(libedit,
 	[  --with-libedit[[=PATH]]   Enable libedit support for sftp],
 	[ if test "x$withval" != "xno" ; then
-		if test "x$withval" != "xyes"; then
+		if test "x$withval" = "xyes" ; then
+			AC_PATH_PROG(PKGCONFIG, pkg-config, no)
+			if test "x$PKGCONFIG" != "xno"; then
+				AC_MSG_CHECKING(if $PKGCONFIG knows about libedit)
+			 	if "$PKGCONFIG" libedit; then
+					AC_MSG_RESULT(yes)
+					use_pkgconfig_for_libedit=yes
+				else
+					AC_MSG_RESULT(no)
+				fi
+			fi
+		else
 			CPPFLAGS="$CPPFLAGS -I${withval}/include"
 			if test -n "${need_dash_r}"; then
 				LDFLAGS="-L${withval}/lib -R${withval}/lib ${LDFLAGS}"
@@ -1460,14 +1481,20 @@ AC_ARG_WITH(libedit,
 				LDFLAGS="-L${withval}/lib ${LDFLAGS}"
 			fi
 		fi
+		if test "x$use_pkgconfig_for_libedit" == "xyes"; then
+			LIBEDIT=`$PKGCONFIG --libs-only-l libedit`
+			CPPFLAGS="$CPPFLAGS `$PKGCONFIG --cflags libedit`"
+		else
+			LIBEDIT="-ledit -lcurses"
+		fi
+		OTHERLIBS=`echo $LIBEDIT | sed 's/-ledit//'`
 		AC_CHECK_LIB(edit, el_init,
 			[ AC_DEFINE(USE_LIBEDIT, 1, [Use libedit for sftp])
-			  LIBEDIT="-ledit -lcurses"
 			  LIBEDIT_MSG="yes"
 			  AC_SUBST(LIBEDIT)
 			],
 			[ AC_MSG_ERROR(libedit not found) ],
-			[ -lcurses ]
+			[ $OTHERLIBS ]
 		)
 		AC_MSG_CHECKING(if libedit version is compatible)
 		AC_COMPILE_IFELSE(
@@ -1558,6 +1585,7 @@ AC_CHECK_FUNCS( \
 	getrlimit \
 	getttyent \
 	glob \
+	group_from_gid \
 	inet_aton \
 	inet_ntoa \
 	inet_ntop \
@@ -1584,8 +1612,10 @@ AC_CHECK_FUNCS( \
 	setegid \
 	setenv \
 	seteuid \
+	setgroupent \
 	setgroups \
 	setlogin \
+	setpassent\
 	setpcred \
 	setproctitle \
 	setregid \
@@ -1605,6 +1635,7 @@ AC_CHECK_FUNCS( \
 	strlcpy \
 	strmode \
 	strnvis \
+	strptime \
 	strtonum \
 	strtoll \
 	strtoul \
@@ -1614,10 +1645,16 @@ AC_CHECK_FUNCS( \
 	truncate \
 	unsetenv \
 	updwtmpx \
+	user_from_uid \
 	vasprintf \
 	vhangup \
 	vsnprintf \
 	waitpid \
+)
+
+# PKCS#11 support requires dlopen() and co
+AC_SEARCH_LIBS(dlopen, dl,
+    AC_DEFINE([ENABLE_PKCS11], [], [Enable for PKCS#11 support])
 )
 
 # IRIX has a const char return value for gai_strerror()
@@ -1729,8 +1766,8 @@ dnl    Checks for utmp functions
 AC_CHECK_FUNCS(endutent getutent getutid getutline pututline setutent)
 AC_CHECK_FUNCS(utmpname)
 dnl    Checks for utmpx functions
-AC_CHECK_FUNCS(endutxent getutxent getutxid getutxline pututxline )
-AC_CHECK_FUNCS(setutxent utmpxname)
+AC_CHECK_FUNCS(endutxent getutxent getutxid getutxline getutxuser pututxline)
+AC_CHECK_FUNCS(setutxdb setutxent utmpxname)
 dnl    Checks for lastlog functions
 AC_CHECK_FUNCS(getlastlogxbyname)
 
@@ -2077,6 +2114,12 @@ AC_ARG_WITH(ssl-dir,
 					LDFLAGS="-L${withval}/lib -R${withval}/lib ${LDFLAGS}"
 				else
 					LDFLAGS="-L${withval}/lib ${LDFLAGS}"
+				fi
+			elif test -d "$withval/lib64"; then
+				if test -n "${need_dash_r}"; then
+					LDFLAGS="-L${withval}/lib64 -R${withval}/lib64 ${LDFLAGS}"
+				else
+					LDFLAGS="-L${withval}/lib64 ${LDFLAGS}"
 				fi
 			else
 				if test -n "${need_dash_r}"; then
@@ -3477,66 +3520,6 @@ if test "x$ac_cv_libc_defines_sys_nerr" = "xyes" ; then
 	AC_DEFINE(HAVE_SYS_NERR, 1, [Define if your system defines sys_nerr])
 fi
 
-SCARD_MSG="no"
-# Check whether user wants sectok support
-AC_ARG_WITH(sectok,
-	[  --with-sectok           Enable smartcard support using libsectok],
-	[
-		if test "x$withval" != "xno" ; then
-			if test "x$withval" != "xyes" ; then
-				CPPFLAGS="$CPPFLAGS -I${withval}"
-				LDFLAGS="$LDFLAGS -L${withval}"
-				if test ! -z "$need_dash_r" ; then
-					LDFLAGS="$LDFLAGS -R${withval}"
-				fi
-				if test ! -z "$blibpath" ; then
-					blibpath="$blibpath:${withval}"
-				fi
-			fi
-			AC_CHECK_HEADERS(sectok.h)
-			if test "$ac_cv_header_sectok_h" != yes; then
-				AC_MSG_ERROR(Can't find sectok.h)
-			fi
-			AC_CHECK_LIB(sectok, sectok_open)
-			if test "$ac_cv_lib_sectok_sectok_open" != yes; then
-				AC_MSG_ERROR(Can't find libsectok)
-			fi
-			AC_DEFINE(SMARTCARD, 1,
-				[Define if you want smartcard support])
-			AC_DEFINE(USE_SECTOK, 1,
-				[Define if you want smartcard support
-				using sectok])
-			SCARD_MSG="yes, using sectok"
-		fi
-	]
-)
-
-# Check whether user wants OpenSC support
-OPENSC_CONFIG="no"
-AC_ARG_WITH(opensc,
-	[  --with-opensc[[=PFX]]     Enable smartcard support using OpenSC (optionally in PATH)],
-	[
-	    if test "x$withval" != "xno" ; then
-		if test "x$withval" != "xyes" ; then
-  			OPENSC_CONFIG=$withval/bin/opensc-config
-		else
-  			AC_PATH_PROG(OPENSC_CONFIG, opensc-config, no)
-		fi
-		if test "$OPENSC_CONFIG" != "no"; then
-			LIBOPENSC_CFLAGS=`$OPENSC_CONFIG --cflags`
-			LIBOPENSC_LIBS=`$OPENSC_CONFIG --libs`
-			CPPFLAGS="$CPPFLAGS $LIBOPENSC_CFLAGS"
-			LIBS="$LIBS $LIBOPENSC_LIBS"
-			AC_DEFINE(SMARTCARD)
-			AC_DEFINE(USE_OPENSC, 1,
-				[Define if you want smartcard support
-				using OpenSC])
-			SCARD_MSG="yes, using OpenSC"
-		fi
-	    fi
-	]
-)
-
 # Check libraries needed by DNS fingerprint support
 AC_SEARCH_LIBS(getrrsetbyname, resolv,
 	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
@@ -3620,9 +3603,12 @@ AC_ARG_WITH(selinux,
 		AC_DEFINE(WITH_SELINUX,1,[Define if you want SELinux support.])
 		SELINUX_MSG="yes"
 		AC_CHECK_HEADER([selinux/selinux.h], ,
-		    AC_MSG_ERROR(SELinux support requires selinux.h header))
-		AC_CHECK_LIB(selinux, setexeccon, [ LIBSELINUX="-lselinux" ],
-		    AC_MSG_ERROR(SELinux support requires libselinux library))
+			AC_MSG_ERROR(SELinux support requires selinux.h header))
+		AC_CHECK_LIB(selinux, setexeccon,
+			[ LIBSELINUX="-lselinux"
+			  LIBS="$LIBS -lselinux"
+			],
+			AC_MSG_ERROR(SELinux support requires libselinux library))
 		SSHDLIBS="$SSHDLIBS $LIBSELINUX"
 		AC_CHECK_FUNCS(getseuserbyname get_default_context_with_level)
 		LIBS="$save_LIBS"
@@ -4367,34 +4353,6 @@ if test -n "$conf_wtmp_location"; then
 fi
 
 
-dnl utmpx detection - I don't know any system so perverse as to require
-dnl  utmpx, but not define UTMPX_FILE (ditto wtmpx.) No doubt it's out
-dnl  there, though.
-AC_MSG_CHECKING([if your system defines UTMPX_FILE])
-AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <utmp.h>
-#ifdef HAVE_UTMPX_H
-#include <utmpx.h>
-#endif
-#ifdef HAVE_PATHS_H
-#  include <paths.h>
-#endif
-	],
-	[ char *utmpx = UTMPX_FILE; ],
-	[ AC_MSG_RESULT(yes) ],
-	[ AC_MSG_RESULT(no)
-	  system_utmpx_path=no ]
-)
-if test -z "$conf_utmpx_location"; then
-	if test x"$system_utmpx_path" = x"no" ; then
-		AC_DEFINE(DISABLE_UTMPX)
-	fi
-else
-	AC_DEFINE_UNQUOTED(CONF_UTMPX_FILE, "$conf_utmpx_location",
-		[Define if you want to specify the path to your utmpx file])
-fi
-
 dnl wtmpx detection
 AC_MSG_CHECKING([if your system defines WTMPX_FILE])
 AC_TRY_COMPILE([
@@ -4431,17 +4389,18 @@ dnl Adding -Werror to CFLAGS early prevents configure tests from running.
 dnl Add now.
 CFLAGS="$CFLAGS $werror_flags"
 
-if grep "#define BROKEN_GETADDRINFO 1" confdefs.h >/dev/null || \
-    test "x$ac_cv_func_getaddrinfo" != "xyes" ; then
-	AC_SUBST(TEST_SSH_IPV6, no)
+if test "x$ac_cv_func_getaddrinfo" != "xyes" ; then
+	TEST_SSH_IPV6=no
 else
-	AC_SUBST(TEST_SSH_IPV6, yes)
+	TEST_SSH_IPV6=yes
 fi
+AC_CHECK_DECL(BROKEN_GETADDRINFO,  TEST_SSH_IPV6=no)
+AC_SUBST(TEST_SSH_IPV6, $TEST_SSH_IPV6)
 
 AC_EXEEXT
 AC_CONFIG_FILES([Makefile buildpkg.sh opensshd.init openssh.xml \
 	openbsd-compat/Makefile openbsd-compat/regress/Makefile \
-	scard/Makefile ssh_prng_cmds survey.sh])
+	ssh_prng_cmds survey.sh])
 AC_OUTPUT
 
 # Print summary of options

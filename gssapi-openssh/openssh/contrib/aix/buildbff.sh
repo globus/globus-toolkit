@@ -159,7 +159,7 @@ done
 # AIX 5.3 and newer have /dev/random and don't create ssh_prng_cmds
 if [ -f $FAKE_ROOT/$sysconfdir/ssh_prng_cmds ]
 then
-	mv FAKE_ROOT/$sysconfdir/ssh_prng_cmds \
+	mv $FAKE_ROOT/$sysconfdir/ssh_prng_cmds \
 		$FAKE_ROOT/$sysconfdir/ssh_prng_cmds.default
 fi
 

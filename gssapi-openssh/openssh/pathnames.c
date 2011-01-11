@@ -27,6 +27,7 @@ char *_PATH_SSH_DAEMON_PID_FILE		= STRINIT;
 char *_PATH_SSH_SYSTEM_RC		= STRINIT;
 char *_PATH_SSH_HOSTS_EQUIV		= STRINIT;
 char *_PATH_SSH_KEY_SIGN		= STRINIT;
+char *_PATH_SSH_PKCS11_HELPER	= STRINIT;
 char *_PATH_SFTP_SERVER			= STRINIT;
 char *SSH_RAND_HELPER			= STRINIT;
 char *_PATH_STDPATH_WITH_SCP		= STRINIT;
@@ -84,6 +85,7 @@ init_pathnames()
     _PATH_SSH_SYSTEM_RC		= compose3(gl, SSHDIR, "/sshrc");
     _PATH_SSH_HOSTS_EQUIV	= compose3(gl, SSHDIR, "/shosts.equiv");
     _PATH_SSH_KEY_SIGN		= compose3(gl, LIBEXEC, "/ssh-keysign");
+    _PATH_SSH_PKCS11_HELPER = compose3(gl, LIBEXEC, "/ssh-pkcs11-helper");
     _PATH_SFTP_SERVER		= compose3(gl, LIBEXEC, "/sftp-server");
     SSH_RAND_HELPER		= compose3(gl, LIBEXEC, "/ssh-rand-helper");
     _PATH_STDPATH_WITH_SCP	= compose4(_PATH_STDPATH, ":", gl, BINDIR);

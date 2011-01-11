@@ -87,6 +87,11 @@ int setenv(register const char *name, register const char *value, int rewrite);
 void strmode(int mode, char *p);
 #endif
 
+#ifndef HAVE_STRPTIME
+#include  <time.h>
+char *strptime(const char *buf, const char *fmt, struct tm *tm);
+#endif
+
 #if !defined(HAVE_MKDTEMP) || defined(HAVE_STRICT_MKSTEMP)
 int mkstemps(char *path, int slen);
 int mkstemp(char *path);
@@ -198,6 +203,14 @@ int vasprintf(char **, const char *, va_list);
 
 #ifndef HAVE_VSNPRINTF
 int vsnprintf(char *, size_t, const char *, va_list);
+#endif
+
+#ifndef HAVE_USER_FROM_UID
+char *user_from_uid(uid_t, int);
+#endif
+
+#ifndef HAVE_GROUP_FROM_GID
+char *group_from_gid(gid_t, int);
 #endif
 
 void *xmmap(size_t size);
