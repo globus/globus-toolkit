@@ -1,63 +1,82 @@
-#!/usr/bin/perl
+#! /usr/bin/perl
 
-use XML::DOM;
+# This script parses a source package gpt metadata file ($ARGV[0]) and
+# generates a pkg-config file containing equivalent metadata with package names
+# modified so that _ becomes -. The resulting pkg-config file is written
+# to pkg_data_src.pc.in in the directory where $ARGV[0] was located. This
+# must be run through an autoconf substitution (or equivalent) to resolve
+# paths to $prefix, $exec_prefix, $libdir, $includedir, and $flavorincludedir
+#
+# This script ignores version aging and assumes that any version >= than the
+# version named in the metadata is compatible.
+# 
+# This script is based on one by Mattias Ellert, but rewritten to use
+# XML::Parser for compatibility with certain linux distributions without
+# requiring perl modules that are in their package sets
 
-my $parser = new XML::DOM::Parser;
+use XML::Parser;
 
-die "No gpt package file provided" if not defined $ARGV[0];
+my $parser = new XML::Parser(Style => 'Objects', Pkg => 'GPT');
+my $doc = $parser->parsefile($ARGV[0]);
+my $gptmeta = $doc->[0];
 
-my $gptdoc = $parser->parsefile($ARGV[0]);
+my $gptname = $gptmeta->{Name};
+my $gptagingver = (grep { ($_->isa('GPT::Aging_Version')) } @{$gptmeta->{Kids}})[0];
+my $gptmajorver = $gptagingver->{Major};
+my $gptminorver = $gptagingver->{Minor};
 
-my $gptmeta = $gptdoc->getElementsByTagName("gpt_package_metadata");
-my $gptname = $gptmeta->item(0)->getAttributeNode("Name")->getValue;
-
-my $gptagingver = $gptdoc->getElementsByTagName("Aging_Version");
-my $gptmajorver = $gptagingver->item(0)->getAttributeNode("Major")->getValue;
-my $gptminorver = $gptagingver->item(0)->getAttributeNode("Minor")->getValue;
-
-my $description = $gptdoc->getElementsByTagName("Description")
-    ->item(0)->getFirstChild->getData;
-
-#my $flavor = $gptdoc->getElementsByTagName("Flavor")
-#    ->item(0)->getFirstChild->getData;
+my $description_element = (grep
+                    { ($_->isa('GPT::Description')) }
+                    @{$gptmeta->{Kids}})[0];
+my $description = $description_element->{Kids}->[0]->{Text};
 
 my %deps;
-for my $bindep ($gptdoc->getElementsByTagName("Source_Dependencies")) {
-    my $type = $bindep->getAttributeNode("Type")->getValue;
-    next unless $type eq "compile";
-    for my $dep ($bindep->getElementsByTagName("Dependency")) {
-	my $depname = $dep->getAttributeNode("Name")->getValue;
-	$depname =~ tr/_/-/;
-	my $depver = $dep->getElementsByTagName("Simple_Version")
-	    ->item(0)->getAttributeNode("Major")->getValue;
-	$deps{$depname} = $depver;
+my $srcpkg = (grep
+                    { ($_->isa('GPT::src_pkg')) }
+                    @{$gptmeta->{Kids}})[0];
+my $sourcedeps_element = (grep
+                    { ($_->isa('GPT::Source_Dependencies')) }
+                    @{$srcpkg->{Kids}});
+for my $bindep (grep
+                    { ($_->isa('GPT::Source_Dependencies')) }
+                    @{$srcpkg->{Kids}})
+{
+    my $type = $bindep->{Type};
+    next unless $type eq 'compile';
+
+    for my $dep (grep { $_->isa('GPT::Dependency') } @{$bindep->{Kids}})
+    {
+        my $depname = $dep->{Name};
+        $depname =~ tr/_/-/;
+        my $depverelement = (grep { $_->isa('GPT::Simple_Version') }
+                @{$dep->{Kids}})[0];
+        my $depver = $depverelement->{Major};
+        $deps{$depname} = $depver;
     }
 }
 
-my $cflagselem = $gptdoc->getElementsByTagName("cflags")->item(0);
-my $cflagsnode = $cflagselem->getFirstChild if defined $cflagselem;
-my $cflags = $cflagsnode->getData if defined $cflagsnode;
+my $buildenv = (grep {$_->isa('GPT::Build_Environment')} @{$srcpkg->{Kids}})[0];
 
-my $extincelem = $gptdoc->getElementsByTagName("external_includes")->item(0);
-my $extincnode = $extincelem->getFirstChild if defined $extincelem;
-my $extinc = $extincnode->getData if defined $extincnode;
+my $cflagselem = (grep { $_->isa('GPT::cflags') } @{$buildenv->{Kids}})[0];
+my $cflags = $cflagselem->{Kids}->[0]->{Text};
 
-my $pkglibselem = $gptdoc->getElementsByTagName("pkg_libs")->item(0);
-my $pkglibsnode = $pkglibselem->getFirstChild if defined $pkglibselem;
-my $pkglibs = $pkglibsnode->getData if defined $pkglibsnode;
+my $extincelem = (grep { $_->isa('GPT::external_includes') } @{$buildenv->{Kids}})[0];
+my $extinc = $extincelem->{Kids}->[0]->{Text};
 
-my $extlibselem = $gptdoc->getElementsByTagName("external_libs")->item(0);
-my $extlibsnode = $extlibselem->getFirstChild if defined $extlibselem;
-my $extlibs = $extlibsnode->getData if defined $extlibsnode;
+my $pkglibselem = (grep { $_->isa('GPT::pkg_libs') } @{$buildenv->{Kids}})[0];
+my $pkglib = $pkglibselem->{Kids}->[0]->{Text};
 
-my $name = $gptname;
+my $extlibselem = (grep { $_->isa('GPT::external_libs') } @{$buildenv->{Kids}})[0];
+my $extelibs = $extlibselem->{Kids}->[0]->{Text};
+
+
+my $name = gptname;
 $name =~ tr/_/-/;
 
 $description =~ s!^\s+|\s+$!!g;
 $description =~ s!\s+! !g;
 
-my $version = $gptmajorver . '.' . $gptminorver;
-
+my $version = "$gptmajorver.$gptminorver";
 my $libs = "-L\${libdir} $pkglibs $extlibs";
 $libs =~ s!^\s+|\s+$!!g;
 $libs =~ s!\s+! !g;
@@ -67,10 +86,18 @@ $cflags =~ s!^\s+|\s+$!!g;
 $cflags =~ s!\s+! !g;
 
 my $outfile = $ARGV[0];
-$outfile =~ s|\.gpt(\.in)?|.pc.in|;
+if ($outfile =~ m|/|)
+{
+    $outfile =~ s|/[^/]*$|/pkg_data_src.pc.in|;
+}
+else
+{
+    $outfile = 'pkg_data_src.pc.in';
+}
+
 
 # Add fake dependency for other things that were detected in autoconf using
-# pkg-config
+# pkg-config autoconf macros
 $deps{'@GPT_PKGCONFIG_DEPENDENCIES@'} = 0;
 
 local(*OUTFILE);
@@ -86,7 +113,7 @@ print OUTFILE "Description: Globus Toolkit - $description\n";
 print OUTFILE "Version: $version\n";
 print OUTFILE "Requires:";
 while (($key, $value) = each(%deps)) {
-    print OUTFILE ($value > 0 ? " $key >= $value" : " $key");
+        print OUTFILE ($value > 0 ? " $key >= $value" : " $key");
 }
 print OUTFILE "\n";
 print OUTFILE "Libs: $libs\n";
