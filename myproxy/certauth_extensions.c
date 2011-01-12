@@ -1005,9 +1005,6 @@ handle_certificate(unsigned char            *input_buffer,
 
   int           return_value = 1;
   int           verify;
-  unsigned char number_of_certs;
-  char        * buf = NULL;
-  int           buf_len;
   long          sub_hash;
   unsigned char md[SHA_DIGEST_LENGTH];
   unsigned int  md_len = 0;
@@ -1017,7 +1014,7 @@ handle_certificate(unsigned char            *input_buffer,
   X509_REQ * req          = NULL;
   EVP_PKEY * pkey         = NULL;
   X509     * cert         = NULL;
-  BIO      * return_bio   = NULL;
+  SSL_CREDENTIALS *creds  = NULL;
 
   myproxy_debug("handle_certificate()");
 
@@ -1151,60 +1148,35 @@ handle_certificate(unsigned char            *input_buffer,
       goto error;
   }
 
-  return_bio = BIO_new(BIO_s_mem());
-  if (return_bio == NULL) {
-    verror_put_string("BIO_new() failed");
-    ssl_error_to_verror();
+  if ((creds = ssl_credentials_new()) == NULL) {
+    verror_put_string("Failed to create creds!");
     goto error;
   }
 
-  /* send number of certificates in reply for backward compatibility */
+  /* Load any intermediate/sub-CA certs if configured */
+  if (server_context->certificate_issuer_subca_certfile != NULL) {
+    if (ssl_certificate_load_from_file(creds,
+        server_context->certificate_issuer_subca_certfile) != SSL_SUCCESS) {
+      verror_put_string("Failed to load sub-CA certs from file (%s)!",
+                   server_context->certificate_issuer_subca_certfile);
+      goto error;
+    }
+    myproxy_log("Also sending sub-CA certificates from file (%s)",
+               server_context->certificate_issuer_subca_certfile);
+  }
 
-  /* NOTE: this "backwards compatibility" issue is a quirk of myproxy.
-   * If this is not set, then it causes a problem when the client
-   * reads the response a writes things back to the bio.  Since this 
-   * is acting as a CA and returning a short-lived identity certificate
-   * it is currently set up to return "1". 
-   */
-
-  number_of_certs = 1; /* in this case */
-
-  if (BIO_write(return_bio, &number_of_certs, 
-		sizeof(number_of_certs)) == SSL_ERROR) {
-    verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
-    ssl_error_to_verror();
+  /* Place our cert on top of any other certs in creds */
+  if (ssl_certificate_push(creds, cert) != SSL_SUCCESS) {
+    verror_put_string("Error pushing cert onto creds");
     goto error;
   }
 
-  if (i2d_X509_bio(return_bio, cert) == SSL_ERROR) {
-    verror_put_string("Could not write signed certificate to bio.");
-    ssl_error_to_verror();
+  /* Now convert the creds to return buffer */
+  if (ssl_creds_to_buffer(creds, output_buffer, output_buffer_length)
+                                           == SSL_ERROR) {
+    verror_put_string("Falied to write creds to buffer");
     goto error;
   }
-
-  /* Convert the bio to a buffer and return to the calling function */
-
-  /* Basically cribbed from bio_to_buffer from ssl_utils.c - it is not
-   * publically exposed via the ssl_utils.h header and if it were that
-   * would be used. */
-
-  buf_len = BIO_pending( return_bio );
-
-  buf = malloc( buf_len );
-
-  if ( buf == NULL ) {
-    verror_put_string("Return buffer malloc() failed.");
-    goto error;
-  }
-
-  if ( BIO_read(return_bio, buf, buf_len ) == SSL_ERROR ) {
-    ssl_error_to_verror();
-    verror_put_string("Failed dumping bio to return buffer.");
-    goto error;
-  }
-
-  *output_buffer = (unsigned char *)buf;
-  *output_buffer_length = buf_len;
 
   /* We're good to go */
 
@@ -1220,16 +1192,10 @@ handle_certificate(unsigned char            *input_buffer,
   if ( pkey != NULL ) {
     EVP_PKEY_free( pkey );
   }
-  if ( cert != NULL ) {
+  if ( creds != NULL ) {
+    ssl_credentials_destroy( creds );
+  } else if ( cert != NULL ) {
     X509_free( cert );
-  }
-  if ( return_bio != NULL ) {
-    BIO_free( return_bio );
-  }
-  if ( return_value ) {
-    if ( buf != NULL ) {
-      free( buf );
-    }
   }
 
   return return_value;

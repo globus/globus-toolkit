@@ -59,6 +59,7 @@ typedef struct myproxy_server_context_s
   char **certificate_openssl_engine_pre; /* Which 'pre' commands to use */
   char **certificate_openssl_engine_post;/* Which 'post' commands to use */
   char *certificate_issuer_key_passphrase; /* CA signing key passphrase */
+  char *certificate_issuer_subca_certfile; /* Sub-CA certs to be sent with CA-GET */
   char *certificate_issuer_email_domain; /* CA email domain for alt name */
   char *certificate_extfile;        /* CA extension file */
   char *certificate_extapp;         /* CA extension call-out */

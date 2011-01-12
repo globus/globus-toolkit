@@ -72,6 +72,17 @@ int ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 				   const char		*path);
 
 /*
+ * ssl_certificate_push()
+ *
+ * Set given certificate as the creds' certificate, pushing any existing
+ * certificate in the creds structure into the constituent certificate chain.
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
+ */
+int ssl_certificate_push(SSL_CREDENTIALS  *creds,
+                         X509 *cert);
+
+/*
  * ssl_private_key_load_from_file()
  *
  * Load a key from the given file and store it in the given credentials
