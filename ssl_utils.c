@@ -344,7 +344,9 @@ creds_to_bio(SSL_CREDENTIALS *chain, BIO **bio)
        return SSL_ERROR;
     }
 
-    number_of_certs = sk_X509_num(chain->certificate_chain) + 1;
+    number_of_certs = 1;
+    if (chain->certificate_chain != NULL)
+      number_of_certs += sk_X509_num(chain->certificate_chain);
 
     if (BIO_write(output_bio, &number_of_certs,sizeof(number_of_certs)) == SSL_ERROR) {
        verror_put_string("Failed dumping chain to buffer"
@@ -617,6 +619,31 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     }
     
     return return_status;
+}
+
+int
+ssl_certificate_push(SSL_CREDENTIALS    *creds,
+                     X509 *cert)
+{
+    assert(creds != NULL);
+    assert(cert != NULL);
+
+    /* Place the given cert on top of other certs in creds */
+    if (creds->certificate != NULL) {
+
+      if (creds->certificate_chain == NULL)
+        creds->certificate_chain = sk_X509_new_null();
+
+      if (sk_X509_insert(creds->certificate_chain, creds->certificate, 0)
+                                          == SSL_ERROR) {
+	verror_put_string("Error inserting certificate into creds cert chain");
+	ssl_error_to_verror();
+        return SSL_ERROR;
+      }
+    }
+    creds->certificate = cert;
+
+    return SSL_SUCCESS;
 }
 
 int
@@ -1541,7 +1568,9 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	verror_put_string("BIO_new() failed");
 	goto error;
     }
-    number_of_certs = sk_X509_num(creds->certificate_chain) + 2;
+    number_of_certs = 2;
+    if (creds->certificate_chain != NULL)
+      number_of_certs += sk_X509_num(creds->certificate_chain);
     if (BIO_write(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR)
     {
 	verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");

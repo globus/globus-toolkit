@@ -87,6 +87,7 @@ static struct config_directives our_conf[] = {
 	{"certificate_request_checker", 1, 1},
 	{"certificate_issuer_checker", 1, 1},
 	{"certificate_issuer_key_passphrase", 1, 1},
+	{"certificate_issuer_subca_certfile", 1, 1},
 	{"certificate_openssl_engine_id", 1, 1},
 	{"certificate_openssl_engine_lockfile", 1, 1},
 	{"certificate_openssl_engine_pre", 0, NARGS_DONTCHECK},
@@ -255,6 +256,7 @@ clear_server_context(myproxy_server_context_t *context)
     free_ptr(&context->certificate_request_checker);
     free_ptr(&context->certificate_issuer_checker);
     free_ptr(&context->certificate_issuer_key_passphrase);
+    free_ptr(&context->certificate_issuer_subca_certfile);
     free_ptr(&context->certificate_openssl_engine_id);
     free_ptr(&context->certificate_openssl_engine_lockfile);
     free_array_list(&context->certificate_openssl_engine_pre);
@@ -535,6 +537,9 @@ line_parse_callback(void *context_arg,
     }
     else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0) {
 	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_subca_certfile") == 0) {
+	context->certificate_issuer_subca_certfile = strdup(tokens[1]);
     }
     else if (strcmp(directive, "certificate_openssl_engine_id") == 0) {
         context->certificate_openssl_engine_id = strdup(tokens[1]);

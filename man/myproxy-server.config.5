@@ -452,6 +452,15 @@ If the
 .B certificate_issuer_key 
 is encrypted, give the passphrase here.
 .TP
+.BI certificate_issuer_subca_certfile " full-path-to-subca-certificate-file"
+If you would like an intermediate/sub-CA certificate chain to be sent
+along with the EEC (End Entity Certificate) generated using a local
+intermediate/sub-CA, specify the file that contains those certificates in
+PEM format. This is meant to aid scenarios where the CA used is an
+intermediate CA (i.e. not a root CA) and the client may not have the
+intermediate CA(s) in its trust store. The client will write out the
+chain into the same file as the EEC, following the EEC.
+.TP
 .BI certificate_issuer_hashalg " algorithm"
 Specifies the hash algorithm to use when signing end-entity
 certificates. 
@@ -935,6 +944,8 @@ certificate_issuer_cert /home/globus/.globus/simpleCA/cacert.pem
 certificate_issuer_key /home/globus/.globus/simpleCA/private/cakey.pem
 .PP
 certificate_issuer_key_passphrase "myproxy"
+.PP
+certificate_issuer_subca_certfile "/etc/grid-security/subca_certificates"
 .PP
 certificate_serialfile /home/globus/.globus/simpleCA/serial
 .PP
