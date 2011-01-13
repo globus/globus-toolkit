@@ -1,10 +1,10 @@
-This is MyProxy v5.3 XX Xxx 2011.
+This is MyProxy v5.3 17 Jan 2011.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v5.3 XX Xxx 2011
+v5.3 17 Jan 2011
   - if myproxy-logon GSI mutual authentication with the myproxy-server
     fails, try again with client-side anonymous authentication,
     in case the client-side GSI credentials are unacceptable to the
