@@ -781,7 +781,6 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 				       sizeof(error_string));
 	   verror_put_string("Error getting name of remote party: %s\n",
 			     error_string);
-	   return_value = 1;
 	   goto error;
        }
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
