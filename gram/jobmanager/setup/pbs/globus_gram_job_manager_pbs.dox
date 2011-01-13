@@ -55,6 +55,8 @@ email_address RSL attribute if present) when the job begins execution.
 @par email_on_termination = yes|no
 Send email to the job submitter (or the address specified in the
 email_address RSL attribute if present) when the job terminates.
+@par name <i>NAME</i> 
+Use <i>NAME</i> as the PBS job name
 
 @section pbs_changes Change Log
 
