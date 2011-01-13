@@ -1,8 +1,0 @@
-o the above requires the database module to upgrade to latest pool & dbcp libraries
-o write command line scripts to receiver deamon
-o add the ~/scripts to cvs
-
-java ws core reports:
-
-o finish container up time report... (need to do it by some time period)
-o do not ignore private ip addresses, add them to the 'private' list
