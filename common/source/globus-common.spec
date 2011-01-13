@@ -4,6 +4,13 @@
 %global flavor gcc32
 %endif
 
+%if "%{?rhel}" == "5"
+%global docdiroption "with-docdir"
+%else
+%global docdiroption "docdir"
+%endif
+
+
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-common
@@ -40,6 +47,7 @@ BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-core%{?_isa} >= 4
 BuildRequires:	doxygen
 BuildRequires:	graphviz
+BuildRequires:	libtool-ltdl-devel
 %if "%{?rhel}" == "5"
 BuildRequires:	graphviz-gd
 %endif
@@ -152,7 +160,7 @@ unset GPT_LOCATION
 
 export GLOBUS_VERSION=5.2.0
 %configure --with-flavor=%{flavor} --enable-doxygen \
-           --docdir=%{_docdir}/%{name}-%{version} \
+           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --disable-static
 
 
