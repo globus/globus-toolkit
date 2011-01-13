@@ -129,6 +129,10 @@ Description: "Send email to the job submitter (or the address specified in the
 Values: yes no
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
+Attribute: name
+Description: "The name of job to submit to the PBS batch scheduler"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
 EOF
 
 if($validate_queues)
