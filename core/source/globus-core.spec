@@ -8,11 +8,17 @@
 
 %global debug_package %{nil}
 
+%if "%{?rhel}" == "5"
+%global docdiroption "with-docdir"
+%else
+%global docdiroption "docdir"
+%endif
+
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.5
+Version:	7.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
@@ -30,10 +36,8 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:	%{name}-devel = %{version}-%{release}
 Obsoletes:	%{name}-devel < 5.15-0.5
 Requires:	pkgconfig
-Requires:	perl(XML::DOM)
 Requires:	perl(XML::Parser)
 BuildRequires:	grid-packaging-tools
-BuildRequires:	perl(XML::DOM)
 BuildRequires:	perl(XML::Parser)
 
 %description
@@ -67,7 +71,7 @@ unset GPT_LOCATION
 	   --libexecdir='${datadir}/globus' \
 	   --with-flavor=%{flavor} \
 	   --enable-64bit=%{enable64} \
-           --docdir=%{_docdir}/%{name}-%{version} \
+           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
 	   --with-setupdir='${datadir}/globus/setup' \
 	   --with-testdir='${datadir}/globus/test/${PACKAGE}' \
 	   --with-flavorincludedir='${libdir}/globus/include' \

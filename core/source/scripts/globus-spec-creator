@@ -2,7 +2,7 @@
 
 use Getopt::Long;
 use POSIX;
-use XML::DOM;
+use XML::Parser;
 use User::pwent;
 use Sys::Hostname;
 use Pod::Usage;
@@ -52,61 +52,65 @@ if (defined $directory) {
     $setupdirectory =~ s![^/]*$!setup!;
 }
 
-my $parser = new XML::DOM::Parser;
+my $parser = new XML::Parser(Style => 'Objects', Pkg => 'GPT');
 
 my %srcdeps;
 my %setupdeps;
 
 my $gptdoc = $parser->parsefile($gptfile);
 
-my $gptmeta = $gptdoc->getElementsByTagName("gpt_package_metadata");
-my $gptname = $gptmeta->item(0)->getAttributeNode("Name")->getValue;
+my $gptmeta = $gptdoc->[0];
+my $gptname = $gptmeta->{Name};
 
-my $gptagingver = $gptmeta->item(0)->getElementsByTagName("Aging_Version");
-my $gptmajorver = $gptagingver->item(0)->getAttributeNode("Major")->getValue;
-my $gptminorver = $gptagingver->item(0)->getAttributeNode("Minor")->getValue;
+my $gptagingver = (grep {$_->isa('GPT::Aging_Version')} @{$gptmeta->{Kids}})[0];
+my $gptmajorver = $gptagingver->{Major};
+my $gptminorver = $gptagingver->{Minor};
 
-my $gptdesc = $gptmeta->item(0)->getElementsByTagName("Description");
-my $description = $gptdesc->item(0)->getFirstChild->getData;
+my $gptdesc =  (grep {$_->isa('GPT::Description')} @{$gptmeta->{Kids}})[0];
+my $description = $gptdesc->{Kids}->[0]->{Text};
 $description =~ s!^\s+|\s+$!!g;
 
-for my $srcdep ($gptmeta->item(0)
-		->getElementsByTagName("Source_Dependencies")) {
-    my $type = $srcdep->getAttributeNode("Type")->getValue;
+my $srcpkg = (grep {$_->isa('GPT::src_pkg')} @{$gptmeta->{Kids}})[0];
+for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$srcpkg->{Kids}})
+{
+    my $type = $srcdep->{Type};
     $srcdeps{$type} = {} unless defined $srcdeps{$type};
-    for my $dep ($srcdep->getElementsByTagName("Dependency")) {
-	my $depname = $dep->getAttributeNode("Name")->getValue;
-	my $deppkg = $dep->getAttributeNode("Package")->getValue
-	    if defined $dep->getAttributeNode("Package");
+    for my $dep (grep {$_->isa('GPT::Dependency')} @{$srcdep->{Kids}})
+    {
+	my $depname = $dep->{Name};
+	my $deppkg = $dep->{Package} if defined $dep->{Package};
 	$depname = $depname . "-progs" if ($deppkg eq "pgm");
 	$depname = $depname . "-doc" if ($deppkg eq "doc");
 	$depname =~ tr/_/-/;
-	my $depver = $dep->getElementsByTagName("Simple_Version")
-	    ->item(0)->getAttributeNode("Major")->getValue;
+        my $depver_element = (grep {$_->isa('GPT::Simple_Version')}
+            @{dep->{Kids}})[0];
+	my $depver = $depver_element->{Major};
 	$srcdeps{$type}{$depname} = $depver
 	    unless (defined $srcdeps{$type}{$depname}
 		    and $srcdeps{$type}{$depname} >= $depver);
     }
 }
 
-for my $setupdep ($gptmeta->item(0)
-		  ->getElementsByTagName("Source_Setup_Dependency")) {
-    my $type = $setupdep->getAttributeNode("PkgType")->getValue;
+for my $setupdep (grep {$_->isa('GPT::Source_Setup_Dependency')}
+        @{$gptmeta->{Kids}})
+{
+    my $type = $setupdep->{PkgType};
     $setupdeps{$type} = {} unless defined $setupdeps{$type};
-    for my $dep ($setupdep->getElementsByTagName("Setup_Dependency")) {
-	my $depname = $dep->getAttributeNode("Name")->getValue;
+    for my $dep (grep {$_->isa('Setup_Dependency')} @{$setupdep->{Kids}})
+    {
+	my $depname = $dep->{Name};
 	$depname =~ tr/_/-/;
-	my $depver = $dep->getElementsByTagName("Simple_Version")
-	    ->item(0)->getAttributeNode("Major")->getValue;
+	my $depver_el = (grep {$_->isa("GPT::Simple_Version")} @{$dep->{Kids}})[0];
+        my $depver = $depver_el->{Major};
 	$setupdeps{$type}{$depname} = $depver
 	    unless (defined $setupdeps{$type}{$depname}
 		    and $setupdeps{$type}{$depname} >= $depver);
     }
 }
 
-my $pkglibs = $gptmeta->item(0)->getElementsByTagName("Build_Environment")
-    ->item(0)->getElementsByTagName("pkg_libs")->item(0);
-$pkglibs = $pkglibs->getFirstChild if defined $pkglibs;
+my $buildenv = grep {$_->isa('GPT::Build_Environment')} @{$srcpkg->{Kids}};
+my $pkglibs = (grep {$_->isa('GPT::pkg_libs')} @{$buildenv->{Kids}})[0];
+$pkglibs = $pkglibs->{Kids}->[0]->{Text} if defined $pkglibs;
 
 my $setupname;
 my $setupversion;
@@ -117,60 +121,60 @@ if (defined $setupfile) {
 
     my $setupdoc = $parser->parsefile($setupfile);
 
-    my $setupmeta = $setupdoc->getElementsByTagName("gpt_package_metadata");
-    $setupname = $setupmeta->item(0)->getAttributeNode("Name")->getValue;
+    my $setupmeta = $setupdoc->[0];
+    $setupname = $setupmeta->{Name};
 
     die "Setup package name does not match main package name"
 	if ($setupname ne $gptname . '_setup');
 
-    my $setupagingver = $setupmeta->item(0)
-	->getElementsByTagName("Aging_Version");
-    my $setupmajorver = $setupagingver->item(0)
-	->getAttributeNode("Major")->getValue;
-    my $setupminorver = $setupagingver->item(0)
-	->getAttributeNode("Minor")->getValue;
+    my $setupagingver = (grep {$_->isa('GPT::Aging_Version')}
+            @{$setupmeta->{Kids}})[0];
+    my $setupmajorver = $setupagingver->{Major};
+    my $setupminorver = $setupagingver->{Minor};
 
-    my $setupdesc = $setupmeta->item(0)->getElementsByTagName("Description");
-    $setupdescription = $setupdesc->item(0)->getFirstChild->getData;
+    my $setupdesc = (grep {$_->isa('GPT::Description')} @{$setupmeta->{Kids}})[0];
+    $setupdescription = $setupdesc->{Kids}->[0]->{Text};
     $setupdescription =~ s!^\s+|\s+$!!g;
 
-    for my $srcdep ($setupmeta->item(0)
-		    ->getElementsByTagName("Source_Dependencies")) {
-	my $type = $srcdep->getAttributeNode("Type")->getValue;
+    my $setupsrcpkg = (grep {$_->isa('GPT::src_pkg')} @{$setupmeta->{Kids}})[0];
+    for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$setupsrcpkg->{Kids}})
+    {
+	my $type = $srcdep->{Type};
 	$srcdeps{$type} = {} unless defined $srcdeps{$type};
-	for my $dep ($srcdep->getElementsByTagName("Dependency")) {
-	    my $depname = $dep->getAttributeNode("Name")->getValue;
-	    my $deppkg = $dep->getAttributeNode("Package")->getValue
-		if defined $dep->getAttributeNode("Package");
+	for my $dep (grep {$_->isa('GPT::Dependency')} @{$srcdep->{Kids}})
+        {
+	    my $depname = $dep->{Name};
+	    my $deppkg = $dep->{Package}
+		if defined $dep->{Package};
 	    $depname = $depname . "-progs" if ($deppkg eq "pgm");
 	    $depname =~ tr/_/-/;
-	    my $depver = $dep->getElementsByTagName("Simple_Version")
-		->item(0)->getAttributeNode("Major")->getValue;
+	    my $depverel = (grep {$_->isa('GPT::Simple_Version')} @{$dep->{Kids}})[0];
+            my $depver = $depverel->{Major};
 	    $srcdeps{$type}{$depname} = $depver
 		unless (defined $srcdeps{$type}{$depname}
 			and $srcdeps{$type}{$depname} >= $depver);
 	}
     }
 
-    for my $setupdep ($setupmeta->item(0)
-		      ->getElementsByTagName("Source_Setup_Dependency")) {
-	my $type = $setupdep->getAttributeNode("PkgType")->getValue;
+    for my $setupdep (grep {$_->isa('Source_Setup_Dependency')} @{$setupsrcpkg->{Kids}})
+    {
+	my $type = $setupdep->{PkgType};
 	$setupdeps{$type} = {} unless defined $setupdeps{$type};
-	for my $dep ($setupdep->getElementsByTagName("Setup_Dependency")) {
-	    my $depname = $dep->getAttributeNode("Name")->getValue;
+	for my $dep (grep {$_->isa('GPT::Setup_Dependency')} @{$setupdep->{Kids}})
+        {
+	    my $depname = $dep->{Name};
 	    $depname =~ tr/_/-/;
-	    my $depver = $dep->getElementsByTagName("Simple_Version")
-		->item(0)->getAttributeNode("Major")->getValue;
+	    my $depverel = (grep {$_->isa('GPT::Simple_Version')} @{$dep->{Kids}})[0];
+	    my $depver = $depverel->{Major};
 	    $setupdeps{$type}{$depname} = $depver
 		unless (defined $setupdeps{$type}{$depname}
 			and $setupdeps{$type}{$depname} >= $depver);
 	}
     }
 
-    my $setuppostinstall = $setupmeta->item(0)
-	->getElementsByTagName("Post_Install_Program");
-    $postinstall = $setuppostinstall->item(0)->getFirstChild->getData
-	if defined $setuppostinstall->item(0);
+    my $setuppostinstall = (grep {$_->isa('GPT::Post_Install_Program')} @{$setupsrcpkg->{Kids}})[0];
+    $postinstall = $setuppostinstall->{Kids}->[0]->{Text}
+	if defined $setuppostinstall->{Kids}->[0];
     $postinstall =~ s!^\s+|\s+$!!g;
 
     $setupversion = $setupmajorver . '.' . $setupminorver;
