@@ -20,6 +20,8 @@ v5.3 17 Jan 2011
     or update-rc.d in case they're not in PATH
   - add certificate_issuer_subca_certfile option in myproxy-server.config 
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7119)
+  - make all Globus Usage library errors non-fatal
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7111)
 
 v5.2 22 Jun 2010
   - allow specification of port numbers in MYPROXY_SERVER list
