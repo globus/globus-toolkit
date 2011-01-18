@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.3 17 Jan 2011
+  - fix myproxy-logon bug in versions 5.0-5.2 that disabled
+    myproxy-server identity verification
+    (http://grid.ncsa.illinois.edu/myproxy/security/myproxy-adv-2011-01.txt)
   - if myproxy-logon GSI mutual authentication with the myproxy-server
     fails, try again with client-side anonymous authentication,
     in case the client-side GSI credentials are unacceptable to the
