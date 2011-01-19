@@ -437,7 +437,8 @@ globus_gram_job_manager_contact_state_callback(
 
     /* Create message extensions to send exit code if known */
     if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
-        request->config->seg_module != NULL)
+        (request->config->seg_module != NULL ||
+         strcmp(request->config->jobmanager_type, "condor") == 0))
     {
         entry = globus_gram_protocol_create_extension(
                 "exit-code",
