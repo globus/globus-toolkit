@@ -780,10 +780,7 @@ BUNDLE gt4-gram-condor
         globus_scheduler_event_generator_condor_test
 
 BUNDLE gram5-condor
-        globus_scheduler_event_generator_condor
-        globus_scheduler_event_generator_condor_setup                
         globus_gram_job_manager_setup_condor
-        globus_scheduler_event_generator_condor_test
 
 BUNDLE gt4-gram-lsf
         globus_wsrf_gram_service_java_setup_lsf                
