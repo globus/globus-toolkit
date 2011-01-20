@@ -471,7 +471,7 @@ globus_i_gsi_gss_create_and_fill_context(
             2, "Forcing TLS.\n");
 	SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
     }
-    else if (cred_usage == GSS_C_INITIATE)
+    else if (cred_usage == GSS_C_INITIATE && SSLeay() < 0x0090708fL)
     {
 	/* For backward compatibility.  Older GSI GSSAPI accepters
 	   will fail if we try to negotiate TLSv1, so stick with SSLv3
