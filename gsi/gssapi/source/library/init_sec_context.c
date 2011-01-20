@@ -405,6 +405,7 @@ GSS_CALLCONV gss_init_sec_context(
                 (context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
                 ? GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY
                 : GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY);
+
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
