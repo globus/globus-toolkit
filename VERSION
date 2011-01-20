@@ -25,6 +25,11 @@ v5.3 17 Jan 2011
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7119)
   - make all Globus Usage library errors non-fatal
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7111)
+  - add myproxy-logon support for requesting certificates containing
+    VOMS assertions from myproxy-servers that have
+    "allow_voms_attribute_requests true" in myproxy-server.config; if
+    the myproxy-server does not add the requested VOMS assertion,
+    myproxy-logon tries to add it by running voms-proxy-init as before
 
 v5.2 22 Jun 2010
   - allow specification of port numbers in MYPROXY_SERVER list
