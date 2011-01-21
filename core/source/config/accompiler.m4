@@ -206,7 +206,7 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++)
                 AC_PATH_PROGS(lac_cv_F77, $F77 g77)
             else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
+                AC_PATH_PROGS(lac_cv_CC, $CC c99 cc $lac_cv_CC)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
                 AC_PATH_PROGS(lac_cv_F77, $F77 f77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 f90)
@@ -222,10 +222,13 @@ case ${host}--$1 in
         LAC_PROG_CC_GNU($lac_cv_CC,
                         [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
                                 lac_CFLAGS="-D_REENTRANT $lac_CFLAGS"
-                         fi],
+                         fi
+                         lac_CFLAGS="$lac_CFLAGS -std=gnu99 -D_XOPEN_SOURCE=600 -D__EXTENSIONS__"
+                        ],
                         [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
                                 lac_CFLAGS="-mt $lac_CFLAGS"
                          fi
+                         lac_CFLAGS="$lac_CFLAGS -D_XOPEN_SOURCE=600 -D__EXTENSIONS__"
                          lac_cflags_opt="-xO3"])
 
         LAC_PROG_CC_GNU($lac_cv_CXX,
@@ -238,6 +241,7 @@ case ${host}--$1 in
                          fi
                          lac_cxxflags_opt="-xO3"
                         ])
+
 
         if test "$lac_cv_build_64bit" = "yes"; then
                     lac_CFLAGS="$lac_CFLAGS -m64"
