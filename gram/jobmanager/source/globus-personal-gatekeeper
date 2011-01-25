@@ -353,7 +353,6 @@ while [ -n "$1" ]; do
                 if [ "$logdir" = "" ]; then
                     logdir="$HOME"
                 fi
-		shift
 		;;
         -single)
                 single="$1"
