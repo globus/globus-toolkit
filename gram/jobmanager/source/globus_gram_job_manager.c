@@ -421,7 +421,7 @@ globus_gram_job_manager_destroy(
     {
         return;
     }
-    globus_gram_job_manager_shutdown_seg(manager->config->seg_module);
+    globus_gram_job_manager_shutdown_seg(manager);
 
     globus_gram_protocol_callback_disallow(manager->url_base);
     free(manager->url_base);
