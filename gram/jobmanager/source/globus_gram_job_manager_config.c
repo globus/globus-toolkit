@@ -295,8 +295,11 @@ globus_gram_job_manager_config_init(
         {
             char *                  log_level_string = strdup(argv[++i]);
             char *                  level_string = NULL;
+            char *                  last_string = NULL;
 
-            while ((level_string = strsep(&log_level_string, "|")) != NULL)
+            for (level_string = strtok_r(log_level_string, "|", &last_string);
+                 level_string != NULL;
+                 level_string = strtok_r(NULL, "|", &last_string))
             {
                 if (strcmp(level_string, "FATAL") == 0)
                 {
@@ -323,6 +326,7 @@ globus_gram_job_manager_config_init(
                     config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE;
                 }
             }
+            free(log_level_string);
         }
         else if (strcmp(argv[i], "-disable-usagestats") == 0)
         {
