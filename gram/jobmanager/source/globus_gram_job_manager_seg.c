@@ -215,10 +215,27 @@ failed_periodic:
 
 globus_result_t
 globus_gram_job_manager_shutdown_seg(
-    const char *                        seg_modele)
+    globus_gram_job_manager_t *         manager)
 {
-    globus_module_deactivate(GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE);
+    if (! manager->seg_started)
+    {
+        return GLOBUS_SUCCESS;
+    }
 
+    if (manager->fork_callback_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(
+                manager->fork_callback_handle,
+                NULL,
+                NULL,
+                NULL);
+        manager->fork_callback_handle = GLOBUS_NULL_HANDLE;
+    }
+    else
+    {
+        globus_module_deactivate(GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE);
+    }
+    manager->seg_started = GLOBUS_FALSE;
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_shutdown_seg() */

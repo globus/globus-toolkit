@@ -1316,7 +1316,7 @@ globus_gram_job_manager_init_seg(
 
 globus_result_t
 globus_gram_job_manager_shutdown_seg(
-    const char *                        seg_module);
+    globus_gram_job_manager_t *         manager);
 
 void
 globus_gram_job_manager_seg_handle_event(
