@@ -2129,6 +2129,7 @@ globus_gram_job_manager_request_load_all(
     dir = globus_libc_opendir(manager->config->job_state_file_dir);
     if (dir == NULL)
     {
+        int save_errno = errno;
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
@@ -2143,6 +2144,15 @@ globus_gram_job_manager_request_load_all(
                 errno,
                 strerror(errno));
 
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
+        if (manager->gt3_failure_message == NULL)
+        {
+            manager->gt3_failure_message = globus_common_create_string(
+                    "the job manager failed to open the job state file directory \"%s\": %s",
+                    manager->config->job_state_file_dir,
+                    strerror(save_errno));
+
+        }
         goto opendir_failed;
     }
 

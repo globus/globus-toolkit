@@ -438,8 +438,10 @@ typedef struct globus_gram_job_manager_s
     globus_mutex_t                      mutex;
     /** Condition for noting when all jobs are done */
     globus_cond_t                       cond;
-    /** Unix domain socket handle for receiving new job requests for other
+    /** Unix domain socket for receiving new job requests for other
      * job managers */
+    int                                 socket_fd;
+    /** XIO Handle for socket_fd so we can use XIO's select loop */
     globus_xio_handle_t                 active_job_manager_handle;
     /** Lock file related to the socket_fd */
     int                                 lock_fd;
@@ -1514,10 +1516,15 @@ globus_i_gram_usage_stats_destroy(
 
 /* startup_socket.c */
 int
+globus_gram_job_manager_startup_lock(
+    globus_gram_job_manager_t *         manager,
+    int *                               lock_fd);
+
+int
 globus_gram_job_manager_startup_socket_init(
     globus_gram_job_manager_t *         manager,
     globus_xio_handle_t *               handle,
-    int *                               lock_fd);
+    int *                               socket_fd);
 
 int
 globus_gram_job_manager_starter_send(

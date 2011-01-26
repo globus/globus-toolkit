@@ -2793,8 +2793,7 @@ globus_gram_job_manager_destroy_directory(
     char *                              path;
     char *                              new_path;
     DIR *                               dir;
-    struct dirent                       entry;
-    struct dirent *                     resultp;
+    struct dirent *                     entry;
     struct stat                         st;
     globus_list_t *                     unchecked_dir_list = NULL;
     globus_list_t *                     dir_list = NULL;
@@ -2923,17 +2922,18 @@ globus_gram_job_manager_destroy_directory(
             continue;
         }
 
-        while (readdir_r(dir, &entry, &resultp) == 0 && resultp != NULL)
+        while (globus_libc_readdir_r(dir, &entry) == 0 && entry != NULL)
         {
-            if (strcmp(entry.d_name, ".") == 0 ||
-                strcmp(entry.d_name, "..") == 0)
+            if (strcmp(entry->d_name, ".") == 0 ||
+                strcmp(entry->d_name, "..") == 0)
             {
+                free(entry);
                 continue;
             }
             new_path = globus_common_create_string(
                     "%s/%s",
                     path,
-                    entry.d_name);
+                    entry->d_name);
             if (new_path == NULL)
             {
                 globus_gram_job_manager_request_log(
@@ -2951,12 +2951,13 @@ globus_gram_job_manager_destroy_directory(
                         "\n",
                         request->job_contact_path,
                         path,
-                        entry.d_name,
+                        entry->d_name,
                         "Malloc failed",
                         -1,
                         errno,
                         strerror(errno));
                 failures++;
+                free(entry);
                 continue;
             }
             rc = lstat(new_path, &st);
@@ -2982,6 +2983,7 @@ globus_gram_job_manager_destroy_directory(
                         strerror(errno));
 
                 failures++;
+                free(entry);
                 continue;
             }
 
@@ -3011,6 +3013,7 @@ globus_gram_job_manager_destroy_directory(
 
                     free(new_path);
                     failures++;
+                    free(entry);
                     continue;
                 }
             }
@@ -3042,6 +3045,7 @@ globus_gram_job_manager_destroy_directory(
                 }
                 free(new_path);
                 new_path = NULL;
+                free(entry);
             }
         }
         closedir(dir);
