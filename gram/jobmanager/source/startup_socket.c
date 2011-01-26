@@ -69,12 +69,13 @@ globus_xio_stack_t                      globus_i_gram_job_manager_file_stack;
 /**
  * Acquire the lock file for the job manager
  *
- * The globus_gram_job_manager_startup_lock() attempts to lock the job manager's lock file. If successful
- * then this job manager must become the main job manager to manage jobs for this particular resource.
+ * The globus_gram_job_manager_startup_lock() attempts to lock the job
+ * manager's lock file. If successful then this job manager must become the
+ * main job manager to manage jobs for this particular resource.
  *
- * This function can fail in two main ways: if the lock fails because another process owns a lock, it
- * returns GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE; otherwise, it returns
- * GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE. 
+ * This function can fail in two main ways: if the lock fails because another
+ * process owns a lock, it returns GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+ * otherwise, it returns GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE. 
  *
  * @param manager
  *     Pointer to job manager state
@@ -238,7 +239,7 @@ lockfd_open_failed:
  *     Manager to create the socket for.
  * @param handle
  *     Pointer to XIO handle to be set to the socket descriptor.
- * @param lock_fd
+ * @param socket_fd
  *     Pointer to file descriptor pointing to the UNIX domain socket.
  */
 int
