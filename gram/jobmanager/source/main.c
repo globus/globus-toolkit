@@ -286,7 +286,6 @@ main(
                     /* We are the child process. We'll close our reference to
                      * the lock and let the other process deal with jobs
                      */
-                    sleep(1);
                     close(manager.lock_fd);
                     manager.lock_fd = -1;
                 }
@@ -300,8 +299,9 @@ main(
 
             if (manager.lock_fd >= 0)
             {
-                /* We hold the manager lock, so we'll store our credential, and then, try to accept
-                 * socket connections. If the socket connections fail, we'll exit, and another process
+                /* We hold the manager lock, so we'll store our credential, and
+                 * then, try to accept socket connections. If the socket
+                 * connections fail, we'll exit, and another process
                  * will be forked to handle them.
                  */
                 rc = globus_gram_job_manager_gsi_write_credential(
@@ -318,9 +318,6 @@ main(
                 {
                     close(http_body_fd);
                     http_body_fd = -1;
-                    close(context_fd);
-                    context_fd = -1;
-                    fclose(stdout);
                 }
 
                 rc = globus_gram_job_manager_startup_socket_init(
@@ -362,8 +359,19 @@ main(
                     &manager);
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED)
             {
+                if (forked_starter != 0)
+                {
+                    kill(forked_starter, SIGTERM);
+                    forked_starter = 0;
+                }
                 reply_and_exit(NULL, rc, manager.gt3_failure_message);
             }
+            if ((!debug_mode_service) && context_fd != -1)
+            {
+                close(context_fd);
+                context_fd = -1;
+            }
+            fclose(stdout);
 
             /* At this point, seg_last_timestamp is the earliest last timestamp 
              * for any pre-existing jobs. If that is 0, then we don't have any
