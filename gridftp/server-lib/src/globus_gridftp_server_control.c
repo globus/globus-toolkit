@@ -5264,13 +5264,13 @@ globus_gridftp_server_control_begin_transfer(
         if(op->server_handle->data_object->first_use)
         {
             res = globus_i_gsc_intermediate_reply(
-                op, _FSMSL("150 Begining transfer.\r\n"));
+                op, _FSMSL("150 Beginning transfer.\r\n"));
             op->server_handle->data_object->first_use = GLOBUS_FALSE;
         }
         else
         {
             res = globus_i_gsc_intermediate_reply(
-                op, _FSMSL("125 Begining transfer; reusing existing data connection.\r\n"));
+                op, _FSMSL("125 Beginning transfer; reusing existing data connection.\r\n"));
         }
 
         if(op->event.event_mask != 0)
