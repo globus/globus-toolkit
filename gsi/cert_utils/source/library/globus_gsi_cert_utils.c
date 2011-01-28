@@ -848,7 +848,7 @@ globus_gsi_cert_utils_get_eec(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     static char *                       _function_name_ =
-        "globus_gsi_cert_utils_get_base_name";
+        "globus_gsi_cert_utils_get_eec";
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
     *eec = NULL;
@@ -880,6 +880,58 @@ globus_gsi_cert_utils_get_eec(
 }
 /* globus_gsi_cert_utils_get_eec() */
 
+/**
+ * Get the identity-providing certificate associated with a certificate chain.
+ * This may be an independent proxy or a end-entity certificate.
+ * @ingroup globus_gsi_cert_utils
+ *
+ * @param cert_chain
+ *    Certificate chain to inspect.
+ * @param eec
+ *    Pointer to be set to the certificate value from within the cert chain.
+ *    Must freed by the caller.
+ */
+globus_result_t
+globus_gsi_cert_utils_get_identity_cert(
+    STACK_OF(X509) *                    cert_chain,
+    X509 **                             identity_cert)
+{
+    int                                 i;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    static char *                       _function_name_ =
+        "globus_gsi_cert_utils_get_identity_cert";
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+
+    *identity_cert = NULL;
+    for(i = 0;i < sk_X509_num(cert_chain);i++)
+    {
+        result = globus_gsi_cert_utils_get_cert_type(
+            sk_X509_value(cert_chain, i),
+            &cert_type);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CERT_UTILS_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CERT_UTILS_ERROR_DETERMINING_CERT_TYPE);
+            goto exit;
+        }
+
+        if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC ||
+           (cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY))
+        {
+            *identity_cert = sk_X509_value(cert_chain, i);
+            break;
+        }
+    }
+    
+
+ exit:
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
+}
+/* globus_gsi_cert_utils_get_identity_cert() */
 
 static char *
 globus_l_gsi_cert_utils_normalize_dn(
