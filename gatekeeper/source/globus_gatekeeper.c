@@ -1270,6 +1270,7 @@ main(int xargc,
                 listener_fd = -1;
 
                 dup2(connection_fd, 0);
+                fcntl(connection_fd, F_SETFD, 1);
                 /* this should work, but not sure !? */
                 /* Reports say it is needed on some systems */
                 *stdin = *fdopen(0,"r"); /* reopen stdin  we need this since */
@@ -1384,7 +1385,7 @@ static void doit()
             peernum = "";
     }
 
-    fdout = fdopen(dup(0),"w"); /* establish an output stream */
+    fdout = fdopen(1,"w"); /* establish an output stream */
     setbuf(fdout,NULL);
 
     notice3(LOG_INFO, "Got connection %s at %s", peernum, timestamp());
