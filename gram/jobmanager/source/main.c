@@ -90,8 +90,8 @@ main(
     long                                sleeptime = 0;
     globus_bool_t                       debug_mode_service = GLOBUS_FALSE;
     globus_bool_t                       located_active_jm = GLOBUS_FALSE;
-    int                                 http_body_fd;
-    int                                 context_fd;
+    int                                 http_body_fd = -1;
+    int                                 context_fd = -1;
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
     OM_uint32                           major_status, minor_status;
     pid_t                               forked_starter = 0;
@@ -107,6 +107,10 @@ main(
      * stderr may also, depending on the option in the grid-services
      */
     setbuf(stdout,NULL);
+    /* Don't export these to the perl scripts */
+    fcntl(STDIN_FILENO, F_SETFD, (int) 1);
+    fcntl(STDOUT_FILENO, F_SETFD, (int) 1);
+    fcntl(STDERR_FILENO, F_SETFD, (int) 1);
 
     /* Activate a common before parsing command-line so that
      * things work. Note that we can't activate everything yet because we might
@@ -229,6 +233,7 @@ main(
             fprintf(stderr, "Error locating http body fd\n");
             exit(1);
         }
+        fcntl(http_body_fd, F_SETFD, 1);
 
         fd_env = getenv("GRID_SECURITY_CONTEXT_FD");
         rc = sscanf(fd_env ? fd_env : "-1", "%d", &context_fd);
@@ -237,6 +242,7 @@ main(
             fprintf(stderr, "Error locating security context fd\n");
             exit(1);
         }
+        fcntl(context_fd, F_SETFD, 1);
     }
 
 
@@ -260,9 +266,10 @@ main(
                 &manager.lock_fd);
         if (rc == GLOBUS_SUCCESS)
         {
-            /* We've acquired the lock. We will fork a new process to act like all other job managers
-             * which don't have the lock, and continue on in this process managing jobs for this LRM.
-             * Note that the child process does not inherit the lock
+            /* We've acquired the lock. We will fork a new process to act like
+             * all other job managers which don't have the lock, and continue
+             * on in this process managing jobs for this LRM.  Note that the
+             * child process does not inherit the lock
              */
             if (!debug_mode_service)
             {
@@ -287,7 +294,6 @@ main(
                     /* We are the child process. We'll close our reference to
                      * the lock and let the other process deal with jobs
                      */
-                    sleep(1);
                     close(manager.lock_fd);
                     manager.lock_fd = -1;
                 }
@@ -301,8 +307,9 @@ main(
 
             if (manager.lock_fd >= 0)
             {
-                /* We hold the manager lock, so we'll store our credential, and then, try to accept
-                 * socket connections. If the socket connections fail, we'll exit, and another process
+                /* We hold the manager lock, so we'll store our credential, and
+                 * then, try to accept socket connections. If the socket
+                 * connections fail, we'll exit, and another process
                  * will be forked to handle them.
                  */
                 rc = globus_gram_job_manager_gsi_write_credential(
@@ -319,9 +326,6 @@ main(
                 {
                     close(http_body_fd);
                     http_body_fd = -1;
-                    close(context_fd);
-                    context_fd = -1;
-                    fclose(stdout);
                 }
 
                 rc = globus_gram_job_manager_startup_socket_init(
@@ -330,8 +334,9 @@ main(
                         &manager.socket_fd);
                 if (rc != GLOBUS_SUCCESS)
                 {
-                    /* This releases our lock. Either the child process will attempt to acquire the
-                     * lock again or some another job manager will acquire the lock
+                    /* This releases our lock. Either the child process will
+                     * attempt to acquire the lock again or some another job
+                     * manager will acquire the lock
                      */
                     exit(0);
                 }
@@ -344,7 +349,8 @@ main(
             continue;
         }
 
-        /* If manager.socket_fd != -1 then we are the main job manager for this LRM.
+        /* If manager.socket_fd != -1 then we are the main job manager for this
+         * LRM.
          * We will restart all existing jobs and then allow the startup
          * socket to accept new jobs from other job managers.
          */
@@ -363,8 +369,19 @@ main(
                     &manager);
             if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED)
             {
+                if (forked_starter > 0)
+                {
+                    kill(forked_starter, SIGTERM);
+                    forked_starter = 0;
+                }
                 reply_and_exit(NULL, rc, manager.gt3_failure_message);
             }
+            if (context_fd != -1)
+            {
+                close(context_fd);
+                context_fd = -1;
+            }
+            freopen("/dev/null", "a", stdout);
 
             /* At this point, seg_last_timestamp is the earliest last timestamp 
              * for any pre-existing jobs. If that is 0, then we don't have any
@@ -440,12 +457,14 @@ main(
             }
             else
             {
-                sleep(1);
+                globus_libc_usleep(250000);
             }
         }
         else
         {
-            /* We were started by hand, but another process is currently the main job manager */
+            /* We were started by hand, but another process is currently the
+             * main job manager
+             */
             unsigned long realpid = 0;
             FILE * pidin = fopen(manager.pid_path, "r");
             fscanf(pidin, "%lu", &realpid);
