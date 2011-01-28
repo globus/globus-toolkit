@@ -1097,7 +1097,7 @@ globus_i_gsi_gss_retrieve_peer(
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     gss_buffer_desc                     peer_buffer;
     X509 *                              peer_cert = NULL;
-    X509 *                              eec = NULL;
+    X509 *                              identity_cert = NULL;
     STACK_OF(X509) *                    peer_cert_chain = NULL;
     static char *                       _function_name_ =
         "globus_i_gsi_gss_retrieve_peer";
@@ -1151,10 +1151,10 @@ globus_i_gsi_gss_retrieve_peer(
             goto exit;
         }
         
-        local_result = globus_gsi_cert_utils_get_eec(
+        local_result = globus_gsi_cert_utils_get_identity_cert(
             peer_cert_chain,
-            &eec);
-        if(local_result != GLOBUS_SUCCESS || eec == NULL)
+            &identity_cert);
+        if(local_result != GLOBUS_SUCCESS || identity_cert == NULL)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
@@ -1163,7 +1163,7 @@ globus_i_gsi_gss_retrieve_peer(
             goto exit;
         }
 
-        peer_buffer.value = eec;
+        peer_buffer.value = identity_cert;
         peer_buffer.length = sizeof(X509);
 
         major_status = gss_import_name(
@@ -1477,9 +1477,9 @@ globus_i_gsi_gss_create_cred(
     gss_cred_id_desc *                  newcred = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     gss_buffer_desc                     name_buffer;
-    X509 *                              eec;
+    X509 *                              identity_cert;
     STACK_OF(X509) *                    cert_chain = NULL;
-    globus_bool_t                       free_eec = GLOBUS_FALSE;
+    globus_bool_t                       free_identity_cert = GLOBUS_FALSE;
     
     static char *                       _function_name_ =
         "globus_i_gsi_gss_create_cred";
@@ -1539,7 +1539,8 @@ globus_i_gsi_gss_create_cred(
         goto error_exit;
     }
 
-    if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
+    if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type) && 
+        !(cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY))
     {
         local_result = globus_gsi_cred_get_cert_chain(
             newcred->cred_handle, 
@@ -1552,9 +1553,9 @@ globus_i_gsi_gss_create_cred(
             major_status = GSS_S_FAILURE;
             goto error_exit;
         }
-        local_result = globus_gsi_cert_utils_get_eec(
+        local_result = globus_gsi_cert_utils_get_identity_cert(
             cert_chain,
-            &eec);
+            &identity_cert);
         if (local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1570,7 +1571,7 @@ globus_i_gsi_gss_create_cred(
     {
         local_result = globus_gsi_cred_get_cert(
             newcred->cred_handle, 
-            &eec);
+            &identity_cert);
         if (local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1579,9 +1580,9 @@ globus_i_gsi_gss_create_cred(
             major_status = GSS_S_FAILURE;
             goto error_exit;
         }
-        free_eec = GLOBUS_TRUE;
+        free_identity_cert = GLOBUS_TRUE;
     }
-    name_buffer.value = eec;
+    name_buffer.value = identity_cert;
     name_buffer.length = sizeof(X509);
 
     major_status = gss_import_name(
@@ -1611,9 +1612,9 @@ globus_i_gsi_gss_create_cred(
     }
 
  exit:
-    if (free_eec)
+    if (free_identity_cert)
     {
-        X509_free(eec);
+        X509_free(identity_cert);
     }
     if (cert_chain != NULL)
     {

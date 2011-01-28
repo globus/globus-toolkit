@@ -2585,7 +2585,8 @@ globus_l_gsi_proxy_determine_type(
      */
     if (((requested_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK) !=
          (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK)) &&
-         ! (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_EEC))
+         ! (issuer_cert_type & (GLOBUS_GSI_CERT_UTILS_TYPE_EEC |
+                                GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY)))
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
                     result,
@@ -2664,7 +2665,8 @@ globus_l_gsi_proxy_determine_type(
     if (((requested_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK) !=
          (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK)) &&
          ! (issuer_cert_type & (GLOBUS_GSI_CERT_UTILS_TYPE_EEC |
-                                GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY)))
+                                GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY |
+                                GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY)))
     {
         GLOBUS_GSI_PROXY_ERROR_RESULT(
                     result,
