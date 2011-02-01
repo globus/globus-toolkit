@@ -110,6 +110,8 @@ globus_l_gfs_hdfs_start(
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *)
         globus_malloc(sizeof(globus_l_gfs_hdfs_handle_t));
 
+    globus_mutex_init(&hdfs_handle->mutex, GLOBUS_NULL);
+
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     finished_info.type = GLOBUS_GFS_OP_SESSION_START;
     finished_info.result = GLOBUS_SUCCESS;
@@ -293,6 +295,7 @@ globus_l_gfs_hdfs_destroy(
     if (hdfs_handle->local_host)
         globus_free(hdfs_handle->local_host);
     remove_file_buffer(hdfs_handle);
+    globus_mutex_destroy(&hdfs_handle->mutex);
     globus_free(hdfs_handle);
     closelog();
 }
@@ -1382,7 +1385,6 @@ globus_l_gfs_hdfs_read_from_storage(
             }
         }
     }
-    globus_mutex_unlock(&hdfs_handle->mutex);
     if (hdfs_handle->outstanding == 0)
     {
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS.\n");
@@ -1396,6 +1398,7 @@ globus_l_gfs_hdfs_read_from_storage(
                                                 GLOBUS_SUCCESS);
         }
     }
+    globus_mutex_unlock(&hdfs_handle->mutex);
     return;
 }
 
@@ -1459,7 +1462,6 @@ globus_l_gfs_hdfs_send(
 
         if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, hdfs_handle->pathname)) == NULL)
             hasStat = 0;
-printf("File exists.\n");
 
         if (hasStat && fileInfo->mKind == kObjectKindDirectory) {
             char * hostname = globus_malloc(sizeof(char)*256);

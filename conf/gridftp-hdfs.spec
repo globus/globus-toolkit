@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
 Version:        0.2.3
-Release:        1
+Release:        5
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -92,7 +92,10 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
-* Fri Dec 17 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-1
+* Mon Jan 31 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-4
+- Purposefully leak file handle due to lifetime and synchronization issues.
+
+* Fri Dec 17 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-2
 - Protect against a double-free if only one block is read.
 
 * Wed Dec 15 2010 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.2-1
