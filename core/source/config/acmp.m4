@@ -31,8 +31,7 @@ AC_DEFUN([LAC_MP],
 AC_DEFUN([LAC_MP_INC_ARGS],
 [
 AC_ARG_WITH(mpi-includes,
-    [  --with-mpi-includes     Specify include flags for MPI
-                          (example --with-mpi-includes=-I/path/to/mpi/headers)],
+    AC_HELP_STRING([--with-mpi-includes], [Specify include flags for MPI (example --with-mpi-includes=-I/path/to/mpi/headers)]),
     [if test "$build_arg_mpi" != "yes" ; then
         AC_MSG_ERROR([you must specify --with-mpi[[=yes]] to use --with-mpi-includes])
         exit 1
@@ -46,8 +45,7 @@ AC_ARG_WITH(mpi-includes,
     ])
 
 AC_ARG_WITH(mpi-libs,
-    [  --with-mpi-libs         Specify libs and LDFLAGS for MPI
-                          (example --with-mpi-libs=\"-L/path/to/mpi/libs -lmpi\")],
+    AC_HELP_STRING([--with-mpi-libs], [Specify libs and LDFLAGS for MPI (example --with-mpi-libs=\"-L/path/to/mpi/libs -lmpi\")]),
     [if test "$build_arg_mpi" != "yes" ; then
         AC_MSG_ERROR([you must specify --with-mpi[[=yes]] to use --with-mpi-libs])
         exit 1
@@ -64,7 +62,7 @@ AC_ARG_WITH(mpi-libs,
 AC_DEFUN([LAC_MP_ARGS],
 [
 AC_ARG_WITH(mpi,
-    [  --with-mpi              include the MPI protocols],
+    AC_HELP_STRING([--with-mpi], [include the MPI protocols]),
     [if test "$withval" = "yes" ; then
         build_arg_mpi='yes'
      else

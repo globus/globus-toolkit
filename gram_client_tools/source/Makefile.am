@@ -35,8 +35,8 @@ globusrun_SOURCES = globusrun.c
 globusrun_LDFLAGS = $(GPT_LDFLAGS)
 globusrun_LDADD = $(GPT_PGM_LINKS)
 
-man1datadir=$(mandir)/man1
-man1data_DATA = globus-job-cancel.1 \
+## man1dir = [ DOC ]
+man1_MANS = globus-job-cancel.1 \
                 globus-job-clean.1 \
                 globus-job-get-output.1 \
                 globus-job-run.1  \
@@ -57,7 +57,7 @@ MANUAL_SOURCE = globus-job-cancel-manual.xml \
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 
-$(man1data_DATA): $(MANUAL_SOURCE)
+$(man1_MANS): $(MANUAL_SOURCE)
 	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
 	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
 endif

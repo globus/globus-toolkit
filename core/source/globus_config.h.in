@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif
+
 #undef HAVE_PTHREAD
 #undef HAVE_PTHREAD_INIT_FUNC
 #undef HAVE_PTHREAD_PREEMPTIVE

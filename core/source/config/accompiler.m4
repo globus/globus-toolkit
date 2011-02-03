@@ -152,7 +152,7 @@ dnl LAC_COMPILERS_SET_ALL_VARS(THREAD-TYPE)
 AC_DEFUN([LAC_COMPILERS_SET_ALL_VARS],
 [
 lac_CFLAGS="$CFLAGS "
-lac_CPPFLAGS="$CPPFLAGS -I$includedir -I$includedir/$globus_cv_flavor"
+lac_CPPFLAGS="$CPPFLAGS -I$includedir -I$flavorincludedir"
 lac_CXXFLAGS="$CXXFLAGS "
 lac_LDFLAGS="$LDFLAGS -L$libdir "
 lac_LIBS="$LIBS "
@@ -170,6 +170,8 @@ if test -z "$GLOBUS_CC" ; then
         GLOBUS_CC="unknown"
     fi
 fi
+
+AC_GNU_SOURCE
 
 case ${host}--$1 in
     i*86*solaris2*)
@@ -391,6 +393,33 @@ case ${host}--$1 in
         CC="$lac_cv_CC"
         ;;
     sparc64-*-linux* )
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" != "gcc"; then
+                AC_MSG_ERROR(vendorcc not supported on this platform)
+            fi
+
+            if test "$lac_cv_build_64bit" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -m64"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m64"
+                lac_LDFLAGS="$lac_LDFLAGS -m64"
+            else
+                lac_CFLAGS="$lac_CFLAGS -m32"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                lac_LDFLAGS="$lac_LDFLAGS -m32"
+            fi
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX c++ g++)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        fi
+        CC="$lac_cv_CC"
+        ;;
+    s390x-*-linux* )
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
@@ -792,6 +821,57 @@ case ${host}--$1 in
         fi
         CC="$lac_cv_CC"
       ;;
+    x86_64-*-k*bsd*-gnu* )
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" != "gcc"; then
+                AC_MSG_ERROR(vendorcc not supported on this platform)
+            fi
+
+            if test "$lac_cv_build_64bit" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -m64"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m64"
+                lac_LDFLAGS="$lac_LDFLAGS -m64"
+            else
+                lac_CFLAGS="$lac_CFLAGS -m32"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                lac_LDFLAGS="$lac_LDFLAGS -m32"
+            fi
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX c++ g++)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        fi
+        CC="$lac_cv_CC"
+      ;;
+    *-*-k*bsd*-gnu* )
+        if test "$lac_cv_build_64bit" = "yes"; then
+                AC_MSG_ERROR(64 bits not supported on this platform)
+                exit 1
+        fi
+        
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" != "gcc"; then
+                AC_MSG_ERROR(vendorcc not supported on this platform)
+            fi
+
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++ gcc)
+            AC_PATH_PROGS(lac_cv_F77, $F77 g77 f77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        fi
+        CC="$lac_cv_CC"
+      ;;
+
     * )
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then

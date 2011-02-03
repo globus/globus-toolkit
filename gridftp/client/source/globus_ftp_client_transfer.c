@@ -2089,7 +2089,7 @@ abort:
  * aborted, the complete_callback will be invoked with the final
  * status of the get.
  *
- * @param u_handle
+ * @param handle
  *        An FTP Client handle to use for the get operation.
  * @param url
  *	  The URL to download. The URL may be an ftp or gsiftp URL.
@@ -2799,6 +2799,7 @@ globus_ftp_client_partial_put(
  *	  Attributes for this file transfer.
  * @param restart
  *        Pointer to a restart marker.
+ * @param esto_alg_str
  * @param complete_callback
  *        Callback to be invoked once the "put" is completed.
  * @param callback_arg
@@ -3346,11 +3347,13 @@ error_param:
  *	  The URL to transfer. The URL may be an ftp or gsiftp URL.
  * @param source_attr
  *	  Attributes for the souce URL.
+ * @param eret_alg_str
  * @param dest_url
  *        The destination URL for the transfer. The URL may be an ftp
  *        or gsiftp URL.
  * @param dest_attr
  *        Attributes for the destination URL.
+ * @param esto_alg_str
  * @param restart
  *        Pointer to a restart marker.
  * @param complete_callback

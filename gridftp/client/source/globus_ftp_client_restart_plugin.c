@@ -396,7 +396,7 @@ globus_l_ftp_client_restart_plugin_copy(
 	goto free_exit;
     }
     result = globus_ftp_client_plugin_get_plugin_specific(newguy,
-	                                                  (void **) &newd);
+	                                                  (void **) (void *) &newd);
     if(result != GLOBUS_SUCCESS)
     {
 	goto destroy_exit;
@@ -1288,7 +1288,7 @@ globus_ftp_client_restart_plugin_set_stall_timeout(
     globus_result_t                     result;
 
     result = globus_ftp_client_plugin_get_plugin_specific(
-        plugin, (void **) &d);
+        plugin, (void **) (void *) &d);
     if(result != GLOBUS_SUCCESS)
     {
         return result;
@@ -1500,7 +1500,7 @@ globus_ftp_client_restart_plugin_destroy(
     GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin);
 
     result = globus_ftp_client_plugin_get_plugin_specific(plugin,
-	                                                  (void **) &d);
+	                                                  (void **) (void *) &d);
     if(result != GLOBUS_SUCCESS)
     {
         return result;

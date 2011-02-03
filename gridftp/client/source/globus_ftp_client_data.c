@@ -330,6 +330,7 @@ error:
  *        mode, the data does not need to be sent in order. In stream
  *	  mode (the default), data must be sent in sequential
  *	  order. The behavior is undefined if multiple writes overlap.
+ * @param eof
  * @param callback
  *        The function to be called once the data has been written.
  * @param callback_arg

@@ -67,7 +67,7 @@ typedef enum
     GLOBUS_URL_SCHEME_X_NEXUS,
     /** GASS Cache Entry */
     GLOBUS_URL_SCHEME_X_GASS_CACHE,
-    /** Any other URL of the form <b>scheme</b>://<something */
+    /** Any other URL of the form <b>scheme</b>://<b>something</b> */
     GLOBUS_URL_SCHEME_UNKNOWN,
     GLOBUS_URL_SCHEME_SSHFTP,
     /** Total number of URL schemes supported */

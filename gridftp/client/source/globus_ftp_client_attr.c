@@ -500,7 +500,7 @@ globus_ftp_client_handleattr_get_clientinfo(
  *
  * @param attr
  *        Attribute to modify
- * @param gridftp
+ * @param gridftp2
  *        Set to GLOBUS_TRUE to enable GridFTP2 support.
  *        Default of GLOBUS_FALSE specifies that GridFTP is disabled.
  */
@@ -1987,7 +1987,7 @@ error_exit:
  *
  * @param attr
  *        The attribute set to query or modify.
- * @param buffer
+ * @param tcp_buffer
  *        The value of tcp_buffer attribute.
  *
  * @see #globus_gsiftp_control_tcpbuffer_t
@@ -2081,11 +2081,11 @@ error_exit:
  *   data transfer, and then converted to native format before being
  *   returned to the user's data callbacks.
  *
- * The default type for the ftp client libary is binary.
+ * The default type for the ftp client library is binary.
  *
  * @param attr
  *        The attribute set to query or modify.
- * @param buffer
+ * @param type
  *        The value of type attribute.
  *
  * @see #globus_ftp_control_type_t
@@ -2181,7 +2181,7 @@ error_exit:
  *
  * @param attr
  *        The attribute set to query or modify.
- * @param layout
+ * @param mode
  *        The value of mode attribute
  *
  * @see #globus_ftp_control_mode_t,
@@ -2270,7 +2270,9 @@ error_exit:
     return globus_error_put(err);
 }
 /* globus_ftp_client_operationattr_get_mode() */
+/* @} */
 
+/* @{ */
 /**
  * Set/Get whether or not list data will use the current data mode
  * @ingroup globus_ftp_client_operationattr

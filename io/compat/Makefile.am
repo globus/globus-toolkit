@@ -17,6 +17,8 @@ include_HEADERS = \
 
 lib_LTLIBRARIES = libglobus_io.la
 
+doc_DATA = GLOBUS_LICENSE
+
 INCLUDES = $(GPT_INCLUDES)
 
 libglobus_io_la_LDFLAGS = @GPT_LDFLAGS@
@@ -24,8 +26,7 @@ libglobus_io_la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_io_la_SOURCES = $(Sources)
 
-EXTRA_DIST = \
-        version.h.in
+EXTRA_DIST = globus-io.spec version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

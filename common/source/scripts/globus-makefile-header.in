@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#! @PERL@
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -60,7 +60,11 @@ if ( defined eval "require Grid::GPT::V1::Package" )
 }
 else
 {
-    $environment = "gpt1";
+    print "globus-makefile-header requires the GPT perl module.\n";
+    print "If you want to use it you have to install the grid-packaging-tools package.\n";
+    print "Consider using alternatives like pkg-config instead.\n";
+
+    exit 1;
 }
 
 #
@@ -102,28 +106,6 @@ if ( defined(@ARGV) && ($ARGV[0] ne "") )
     push(@pkgs, @ARGV);
 }
 @pkgs = buildMultiArg(@pkgs);
-
-if ($environment eq "gpt1")
-{
-    my($argstring, $pkgstr);
-
-    $argstring = "-flavor=$flavor ";
-
-    if ($static)
-    {
-        $argstring .= "-link=static ";
-    }
-
-    $pkgstr = join(' ', @pkgs);
-    if (length($pkgstr) > 0)
-    {
-        $argstring .= "$pkgstr ";
-    }
-
-    action("$Globus::Core::Paths::bindir/globus-makefile-header.gpt1 $argstring");
-
-    exit;
-}
 
 if ( grep(/^ANY$/, @pkgs) )
 {
@@ -232,7 +214,7 @@ sub getDevLines
     # point our installation object at our globus location
     #
 
-    $installation = new Grid::GPT::Installation(pkgdir => "$Globus::Core::Paths::sysconfdir/globus_packages");
+    $installation = new Grid::GPT::Installation(pkgdir => "$Globus::Core::Paths::datadir/globus/packages");
     $installation->set_depenv('Build');
 
     #
@@ -306,7 +288,7 @@ sub getDevLines
     #
 
     push(@$header, "GLOBUS_CFLAGS=\"$cflagslist\"");
-    push(@$header, "GLOBUS_INCLUDES=\"-I$Globus::Core::Paths::includedir/$flavor $includeslist\"");
+    push(@$header, "GLOBUS_INCLUDES=\"-I$Globus::Core::Paths::includedir -I$Globus::Core::Paths::flavorincludedir $includeslist\"");
     push(@$header, "GLOBUS_LIBS=\"$libslist\"");
     push(@$header, "GLOBUS_LDFLAGS=\"-L$Globus::Core::Paths::libdir\"");
     push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist $extlibslist\"");
@@ -325,55 +307,9 @@ sub getBuildEnvLines
     my($copy);
     my ($in_initializer) = (0);
 
-    open(IN, "$Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh") || die "ERROR: Cannot open $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh!\n$common_error\n";
+    open(IN, "/bin/sh $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh makefile-header|") || die "ERROR: Cannot open $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh!\n$common_error\n";
 
-    while (<IN>)
-    { 
-        if ( /\S/ ) #if not whitespace
-        { 
-            my $copy=$_;
-
-            if ($copy =~ m/# BEGIN GLOBUS_SCRIPT_INITIALIZER/)
-            {
-                $in_initializer = 1;
-                print "GLOBUS_LOCATION=$ENV{GLOBUS_LOCATION}\n"
-                    if (exists $ENV{GLOBUS_LOCATION});
-                print "prefix=@prefix@\n";
-                print "exec_prefix=@exec_prefix@\n";
-                print "sbindir=@sbindir@\n";
-                print "libdir=@libdir@\n";
-                print "libexecdir=@libexecdir@\n";
-                print "includedir=@includedir@\n";
-                print "datarootdir=@datarootdir@\n";
-                print "datadir=@datadir@\n";
-                print "mandir=@mandir@\n";
-                print "sysconfdir=@sysconfdir@\n";
-                print "sharedstatedir=@sharedstatedir@\n";
-                print "localstatedir=@localstatedir@\n";
-            }
-            elsif ($copy =~ m/# END GLOBUS_SCRIPT_INITIALIZER/)
-            {
-                $in_initializer = 0;
-            }
-
-            next if ($in_initializer);
-
-            # if copy does NOT match an uppercase letter followed by a _ then another uppercase letter 
-            # skip PERL, 'cause it's defined in sh-tools too
-
-            if ( ( $copy !~ /^PERL/ ) && ( $copy !~ /^#/ )  && ($copy =~ /=/) )
-            {
-		if ($copy !~ /^GLOBUS_/ )
-		{
-                    push(@$header, "GLOBUS_" . $copy);
-	        }
-		else
-		{
-		    push (@$header, $copy);
-    		}
-            }
-        }
-    }   
+    push(@$header, <IN>);
 
     close(IN);
 }

@@ -1,5 +1,4 @@
- 
-
+#! /bin/sh
 # 
 # Copyright 1999-2006 University of Chicago
 # 
@@ -17,7 +16,9 @@
 # 
 
 
-aclocal_includes="$aclocal_includes -I $GLOBUS_LOCATION/share/globus/globus_aclocal"
+@GLOBUS_SCRIPT_INITIALIZER@
+
+aclocal_includes="$aclocal_includes -I $aclocaldir"
 for file in 'globus_automake_pre' \
     'globus_automake_post' \
     'globus_automake_pre_top' \
@@ -28,7 +29,7 @@ do
             rm ${file}
         fi
         echo "installing ${file} link"
-        ln -s $GLOBUS_LOCATION/share/globus/globus_aclocal/${file} ${file}
+        ln -s $aclocaldir/${file} ${file}
     fi
 done
 
@@ -39,30 +40,25 @@ if test -d doxygen ; then
     do
 	if test ! -h "doxygen/$file" ; then
 	    echo "installing doxygen/$file link"
-	    ln -s $GLOBUS_LOCATION/share/globus/globus_aclocal/$file doxygen/$file
+	    ln -s $aclocaldir/$file doxygen/$file
 	fi
     done
     
     if test ! -h doxygen/Makefile.am ; then
 	echo "installing Makefile.am link in doxygen"
-	ln -s $GLOBUS_LOCATION/share/globus/globus_aclocal/doxygen_Makefile.am \
+	ln -s $aclocaldir/doxygen_Makefile.am \
 	    doxygen/Makefile.am
     fi
 fi
 
 
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-fi
+GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 
-. ${GPT_LOCATION}/lib/globus/gpt-bootstrap.sh
+. ${GPT_LOCATION}/share/globus/gpt-bootstrap.sh
 
 #extract whether the package is built with flavors from the src metadata
 $GPT_LOCATION/sbin/gpt_extract_data \
     --name --version --build_env ./pkgdata/pkg_data_src.gpt.in > gptdata.sh
-
-#create pkg_config file from gpt metadata
-$GLOBUS_LOCATION/lib/globus/gpt_2pkg --src=./pkgdata/pkg_data_src.gpt.in -o=./pkgdata/pkg_data_src.pc.in
 
 # update stamp.h.in
 

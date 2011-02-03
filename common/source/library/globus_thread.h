@@ -37,7 +37,15 @@
 #include "globus_time.h"
 
 #if HAVE_PTHREAD
+
+#if defined __GNUC__ && defined __EXCEPTIONS
+#undef __EXCEPTIONS
 #include <pthread.h>
+#define __EXCEPTIONS 1
+#else
+#include <pthread.h>
+#endif
+
 #endif
 
 #if HAVE_WINDOWS_THREADS

@@ -37,9 +37,10 @@ AC_DEFUN([LAC_DOXYGEN_TAGFILES],dnl
         if test "X$x" != "X" ; then
         lac_tag_base=`echo ${x} | sed -e 's|.*/||' -e 's|\.tag$||'`
         lac_tag="${lac_tag_base}.tag"
-            lac_doxygen_tagfiles="$lac_doxygen_tagfiles $x"
-            lac_doxygen_internal_tagfiles="$lac_doxygen_internal_tagfiles ${x}i"
-        lac_doxygen_installdox="$lac_doxygen_installdox -l${lac_tag}@../../${lac_tag_base}/html"
+        lac_doxygen_tagfiles="$lac_doxygen_tagfiles $x"
+        lac_doxygen_internal_tagfiles="$lac_doxygen_internal_tagfiles ${x}i"
+        lac_html_dir=`echo ${x} | sed -e 's|.*/\(.*/html\)/.*|../../\1|'`
+        lac_doxygen_installdox="$lac_doxygen_installdox -l${lac_tag}@${lac_html_dir}"
     fi
     done
     AC_SUBST(lac_doxygen_tagfiles)
@@ -126,7 +127,7 @@ AC_DEFUN([LAC_DOXYGEN],dnl
     LAC_DOXYGEN_PROJECT($GPT_NAME)
     LAC_DOXYGEN_OUTPUT_TAGFILE($GPT_NAME)
 
-    lac_dep_check="$GLOBUS_LOCATION/sbin/globus-build-doxygen-dependencies"
+    lac_dep_check="${GLOBUS_LOCATION:-$ac_default_prefix}/sbin/globus-build-doxygen-dependencies"
 
     if test ! -x $lac_dep_check ; then
 

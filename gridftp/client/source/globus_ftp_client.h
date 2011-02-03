@@ -414,7 +414,7 @@ globus_ftp_client_restart_marker_from_string(
  *
  * Create/Destroy/Modify an FTP Client Handle.
  *
- * Within the Globus FTP Client Libary, all FTP operations require a
+ * Within the Globus FTP Client Library, all FTP operations require a
  * handle parameter. Currently, only one FTP operation may be in
  * progress at once per FTP handle. FTP connections may be cached
  * between FTP operations, for improved performance.

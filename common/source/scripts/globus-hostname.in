@@ -76,8 +76,8 @@ _hostname="${GLOBUS_HOSTNAME}"
 if [ -z "${GLOBUS_HOSTNAME}" ] ; then
 
   # Set the _fullname based upon Globus's hostname command
-  if [ -x "${libexecdir}/globus-libc-hostname" ]; then
-    _fullname="`${libexecdir}/globus-libc-hostname`"
+  if [ -x "${sbindir}/globus-libc-hostname" ]; then
+    _fullname="`${sbindir}/globus-libc-hostname`"
   fi
 
   # if failed to set, use the system's hostname command

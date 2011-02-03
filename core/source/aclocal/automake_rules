@@ -1037,7 +1037,11 @@ unlink-pkgDATA:
 
 filelist-pkgDATA:
 	@list='$(pkg_DATA)'; for p in $$list; do \
-	  echo "$(DESTDIR)$(pkgdir)/$$p" >> $(FILELIST_FILE); \
+	  case $$p in \
+	      $(FILELIST_FILE) | pkg_data_noflavor_data.gpt ) \
+	      echo "$(DESTDIR)$(pkgdir)/$$p" >> $(FILELIST_FILE); \
+	    ;; \
+	  esac ; \
 	done
 
 
@@ -1245,3 +1249,11 @@ link-recursive unlink-recursive filelist-recursive:
 	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
 	fi; test -z "$$fail"
 
+bindist: $(PACKAGE)-$(VERSION)-$(build_triplet).tar.gz
+
+$(PACKAGE)-$(VERSION)-$(build_triplet).tar.gz: all
+	destdir=$(PACKAGE)-$(VERSION)-$(build_triplet); \
+	rm -rf $(destdir); \
+	$(MAKE) install DESTDIR=`pwd`/$$destdir; \
+	cat $$destdir/$(pkgdir)/*.filelist | sed -e 's/^\///' \
+	| sort -u | (cd binpkgs/$(prefix) && pax -w) | gzip > $$destdir.tar.gz

@@ -35,7 +35,7 @@
  * is parameterized to control how often and when to attempt to restart
  * the operation.
  *
- * This restart plugin will restart an FTP operation if a noticable
+ * This restart plugin will restart an FTP operation if a noticeable
  * fault has occurred---a connection timing out, a failure by the server
  * to process a command, a protocol error, an authentication error.
  *

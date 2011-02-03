@@ -4,21 +4,28 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS = \
-	modules \
-	.       \
-	pkgdata \
-	doxygen
+    modules \
+    .       \
+    init    \
+    pkgdata \
+    doxygen
+
+doc_DATA = GLOBUS_LICENSE
+
+gridftpconfdir = ${sysconfdir}
+gridftpconf_DATA = gridftp.conf.default
 
 EXTRA_DIST = \
     dsi_bones \
     embed \
-    gridftp-password.pl \
-    gridftp.gfork.in \
-    gridftp-fe.gfork.in \
-    gridftp-be.gfork.in \
-	version.h.in \
-	extensions.h.in \
-	configure.in.in
+    globus-gridftp-server.spec \
+    globus-gridftp-password.in \
+    globus-gridftp-server-enable-sshftp.in \
+    version.h.in \
+    extensions.h.in \
+    configure.in.in \
+    gridftp.conf.default.in \
+    $(doc_DATA)
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
@@ -98,19 +105,13 @@ libglobus_gridftp_server_la_LIBADD = \
 # <directory_name>dir
 
 sbin_PROGRAMS= \
-	globus-gridftp-server 
-
-sbin_SCRIPTS = \
-    gridftp-password.pl
-
-libexec_PROGRAMS= \
+    globus-gridftp-server \
     gfs-gfork-master \
     gfs-dynbe-client
 
-scriptsysconf_SCRIPTS=\
-    gridftp.gfork \
-    gridftp-fe.gfork \
-    gridftp-be.gfork
+sbin_SCRIPTS = \
+	globus-gridftp-password \
+	globus-gridftp-server-enable-sshftp
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.

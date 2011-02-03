@@ -38,7 +38,13 @@
 
 #if _POSIX_THREADS
 
+#if defined __GNUC__ && defined __EXCEPTIONS
+#undef __EXCEPTIONS
 #include <pthread.h>
+#define __EXCEPTIONS 1
+#else
+#include <pthread.h>
+#endif
 
 EXTERN_C_BEGIN
 

@@ -3,14 +3,13 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_cache">
 
-    <Aging_Version Age="1" Major="6" Minor="0" />
+    <Aging_Version Age="2" Major="7" Minor="0" />
     <Description>Globus Gass Cache</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
     <src_pkg>
-
-        <With_Flavors build="yes" />
+        <With_Flavors ColocateLibraries="no" build="yes" />
 
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_common">
@@ -24,12 +23,6 @@
                     <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
-            
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>   
         </Source_Dependencies>
 
         <Source_Dependencies Type="lib_link">
@@ -38,12 +31,6 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
-
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>   
         </Source_Dependencies>
 
         <Build_Environment>

@@ -92,11 +92,8 @@ Sources= \
     getnameinfo.c \
     inet_addr.c \
     inet_pton.c \
-    globus_thread_none.c \
-    globus_netos_libc.h
+    globus_thread_none.c
 
-flavorinclude_HEADERS = \
-	$(OS_HEADERS)
 include_HEADERS = \
 	globus_release.h \
 	globus_module.h \
@@ -175,8 +172,5 @@ EXTRA_DIST = \
 	globus_callback_threads.c \
         $(pthreads_sources) \
         $(windowsthreads_sources)
-
-EXTRA_HEADERS = \
-        globus_netos_dir.h
 
 include $(top_srcdir)/globus_automake_post

@@ -2,9 +2,10 @@
 
 # checking for the GLOBUS_LOCATION
 
+
 if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
+    echo "Using default globus location of /usr"
+    GLOBUS_LOCATION=/usr
 fi
 
 error()
@@ -34,6 +35,7 @@ config="$config -I ./config"
 # macros we install
 config="$config -I ./aclocal"
 
+GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
 # test to see if GPT macros are in a seperate location
 if test ! -f "$GLOBUS_LOCATION/share/gpt_autoconf_macros.m4"; then
     if test "x$GPT_LOCATION" = "x"; then
@@ -42,8 +44,8 @@ if test ! -f "$GLOBUS_LOCATION/share/gpt_autoconf_macros.m4"; then
         exit 1
     elif test -f "$GPT_LOCATION/share/globus/globus_aclocal/gpt_autoconf_macros.m4";  then
 	config="$config -I $GPT_LOCATION/share/globus/globus_aclocal"
-    elif test -f "$GPT_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
-        config="$config -I $GPT_LOCATION/share/globus_aclocal"
+    elif test -f "$GPT_LOCATION/share/globus/aclocal/gpt_autoconf_macros.m4"; then
+        config="$config -I $GPT_LOCATION/share/globus/aclocal"
     else
 	echo "ERROR Can't find gpt_autoconf_macros.m4" 1>&2
 	exit 1
@@ -56,8 +58,11 @@ if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
 fi
 
-echo "running gpt_2pkg"
-perl ./scripts/gpt_2pkg -src ./pkgdata/pkg_data_src.gpt.in -o ./pkgdata/globus-core.pc.in
+$GPT_LOCATION/sbin/gpt_extract_data \
+    --name --version --build_env ./pkgdata/pkg_data_src.gpt.in > gptdata.sh
+
+echo "running gpt-to-pkgconfig"
+$GPT_LOCATION/sbin/gpt-to-pkgconfig ./pkgdata/pkg_data_src.gpt.in
 
 echo "running aclocal $config"
 aclocal $config || error

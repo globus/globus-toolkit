@@ -17,7 +17,7 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_CALLBACK
 #define GLOBUS_INCLUDE_GLOBUS_CALLBACK
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
+/*
  * @file globus_callback.h Globus Callback API
  *
  * $Source$
@@ -1072,7 +1072,7 @@ globus_callback_unregister_signal_handler(
  * An example use is for an io poller that sleeps indefinitely on select().  If
  * the callback library receives a signal that it needs to deliver asap, it
  * will call the wakeup handler(s), These wakeup handlers must run as though
- * they were called from a signal handler (dont use any thread utilities).
+ * they were called from a signal handler (don't use any thread utilities).
  * The io poll example will likely write a single byte to a pipe that select()
  * is monitoring.
  * 

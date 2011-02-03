@@ -52,14 +52,14 @@ globus_gram_streamer_LDFLAGS = $(GPT_LDFLAGS)
 globus_gram_streamer_LDADD = \
 	./libglobus_gram_job_manager.la -lglobus_gass_transfer $(GPT_PGM_LINKS) $(XML_LIBS)
 
-man1datadir=$(mandir)/man1
-man1data_DATA = globus-personal-gatekeeper.1
+## man1dir = [ DOC ]
+man1_MANS = globus-personal-gatekeeper.1
 
-man8datadir=$(mandir)/man8
-man8data_DATA = globus-job-manager.8
+## man3dir = [ DOC ]
+man8_MANS = globus-job-manager.8
 
-man5datadir=$(mandir)/man5
-man5data_DATA = rsl.5
+## man8dir = [ DOC ]
+man5_MANS = rsl.5
 
 MANUAL_SOURCE = globus-personal-gatekeeper-manual.xml \
                 globus-job-manager-manual.xml \
@@ -77,9 +77,9 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
 	     globus_job_manager_rsl_validation.dox \
 	     job_execution_environment.dox \
              $(MANUAL_SOURCE) \
-             $(man1data_DATA) \
-             $(man5data_DATA) \
-             $(man8data_DATA) \
+             $(man1_MANS) \
+             $(man5_MANS) \
+             $(man8_MANS) \
 	     main.dox \
 	     dirt.sh \
              libxml.m4
@@ -98,7 +98,7 @@ CLEANFILES = \
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 
-$(man1data_DATA) $(man5data_DATA) $(man8data_DATA): $(MANUAL_SOURCE)
+$(man1_MANS) $(man5_MANS) $(man8_MANS): $(MANUAL_SOURCE)
 	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
 	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
 endif

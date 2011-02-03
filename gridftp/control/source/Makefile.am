@@ -57,10 +57,13 @@ libglobus_ftp_control_la_LDFLAGS = $(GPT_LDFLAGS)
 # from the dependent packages
 libglobus_ftp_control_la_LIBADD = $(GPT_LIB_LINKS)
 
+doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = \
 	globus_gridftp_protocol_extensions.doc \
-	version.h.in
+	globus-ftp-control.spec \
+	version.h.in \
+	$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

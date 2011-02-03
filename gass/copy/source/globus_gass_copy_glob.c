@@ -20,6 +20,9 @@
 #include <fnmatch.h>
 #endif
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
 
 /************************************************************
  * glob support
@@ -1428,7 +1431,11 @@ globus_l_gass_copy_mkdir_file(
         goto error_null_path;
     }
     
+#ifndef TARGET_ARCH_WIN32
     rc = mkdir(parsed_url.url_path, 0777);
+#else
+    rc = mkdir(parsed_url.url_path);
+#endif
 
     if(rc != 0)
     {

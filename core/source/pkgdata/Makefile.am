@@ -1,6 +1,46 @@
-include $(top_srcdir)/aclocal/automake_targets
+## Special globus installation directories
 
-flavordir = $(GLOBUS_LOCATION)/etc/$(PACKAGE)
+setupdir = @setupdir@
+## setup = [ DATA,PROGRAMS,SCRIPTS ]
+
+testdir = @testdir@
+## test = [ DATA,PROGRAMS,SCRIPTS ]
+
+scriptsysconfdir = @sysconfdir@
+## scriptsysconf = [ PROGRAMS,SCRIPTS ]
+
+flavorincludedir = @flavorincludedir@
+## flavorinclude = [ HEADERS ]
+
+pkgdir = @pkgdir@
+## pkg = [ DATA ]
+
+aclocaldir = @aclocaldir@
+## aclocal = [ DATA ]
+
+amdirdir = @amdirdir@
+## amdir = [ DATA ]
+
+doxygendir = @doxygendir@
+## doxygen = [ DATA ]
+
+docdir = @docdir@
+## doc = [ DATA ]
+
+flavordir = @flavordir@
+## flavor = [ DATA ]
+
+pkgconfdir = @libdir@/pkgconfig
+## pkgconfdir = [ DATA ]
+
+pkgconf_DATA = globus-core.pc
+
+flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
+
+EXTRA_DIST = pkg_data_src.pc.in
+
+LINK_BAK = orig
+AUTOMAKE_OPTIONS=no-dependencies
 
 FILELIST_FILES = noflavor_data.filelist \
 	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
@@ -20,15 +60,12 @@ METADATA_FILES = \
 
 pkg_DATA = $(FILELIST_FILES) $(METADATA_FILES)
 
-flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
-
-EXTRA_DIST = MyFilelists.pm
-
 filelist_file: $(MAKEFILE_AMS)
-	@mydir=`pwd`; \
-	if test -f "master.filelist"; then \
-		rm $(FILELIST_FILE); \
-	fi
+	@for p in $(FILELIST_FILES); do \
+	    if test -f "$$p"; then \
+	        rm -f $$p; \
+	    fi; \
+        done
 
 all_filelists: filelist_file
 	 @(cd .. && $(MAKE) $(AM_MAKEFLAGS) filelist) \
@@ -37,21 +74,21 @@ all_filelists: filelist_file
 	  || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac;
 
 
-$(FILELIST_FILES): sort_filelist
+$(FILELIST_FILES): all_filelists
 
-sort_filelist: all_filelists
-	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist $(GPT_LINKTYPE)
-
+# Override the normal install target to avoid dying when a given
+# kind of metadata file is missing by calling "true"
 install-pkgDATA: $(pkg_DATA)
 	@$(NORMAL_INSTALL)
-	test -z "$(pkgdir)" || $(mkdir_p) "$(DESTDIR)$(pkgdir)";
+	test -z "$(pkgdir)" || $(mkinstalldirs) "$(DESTDIR)$(pkgdir)";
 	@list='$(pkg_DATA)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  f=`echo $$p | sed -e 's|^.*/||'`; \
-	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pkgdir)/$$f'"; \
-	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pkgdir)/$$f"; \
+	  if test -f "$$d$$p"; then \
+	      echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pkgdir)/$$f'"; \
+	      $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pkgdir)/$$f"; \
+	    fi; \
 	done || true
-
 
 $(flavor_DATA): build-parameters
 	$(GPT_LOCATION)/sbin/gpt_save_flavor --flavor=$(GLOBUS_FLAVOR_NAME) build-parameters
@@ -67,7 +104,19 @@ distclean-local:
 	fi; \
 	if test -f pkg_data_noflavor_data.gpt; then \
 		rm pkg_data_*.gpt; \
-	fi; \
-	if test -f flavor_$(GLOBUS_FLAVOR_NAME).gpt; then \
-		rm flavor_$(GLOBUS_FLAVOR_NAME).gpt; \
 	fi
+
+dist-hook: filelist_file
+
+install-data-hook:
+	@list='$(FILELIST_FILES)'; for p in $$list; do \
+	    if test `cat "$(DESTDIR)$(pkgdir)/$$p" | wc -l` = 2; then \
+		rm "$(DESTDIR)$(pkgdir)/$$p" ; \
+	    fi; \
+	done
+	@list='$(METADATA_FILES)'; for p in $$list; do \
+	    related_filelist=`echo $$p | sed -e 's/pkg_data_//' -e 's/\.gpt$$/.filelist/'`; \
+	    if test ! -f "$(DESTDIR)$(pkgdir)/$$related_filelist"; then \
+		rm $(DESTDIR)$(pkgdir)/$$p; \
+	    fi ; \
+	done

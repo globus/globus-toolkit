@@ -25,6 +25,10 @@
 #include <fnmatch.h>
 #endif
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 #define DEFAULT_MAX_Q_LEN               10
 #define GSU_MAX_USERNAME_LENGTH         256
 #define GSU_MAX_PW_LENGTH               GSU_MAX_USERNAME_LENGTH*6

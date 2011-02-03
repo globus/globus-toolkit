@@ -68,7 +68,7 @@ typedef struct _DllModule {
     HANDLE                  hDllHandle;
     char                    pcFileName[MAX_FILE_NAME_Z];
     int                     iRefCount;
-    } DllModule, *pDllModule;
+    } DllModule;
     
 
 // Static Variables
@@ -255,6 +255,7 @@ canonicalize_path (const char *path,
 lt_dlhandle lt_dlopenext (const char *filename)
 {
 pDllModule pModule = NULL;
+char *ffilename = NULL;
 
     // Check Argument
     if(!filename) {
@@ -273,8 +274,13 @@ pDllModule pModule = NULL;
         return NULL;
         }
         
+    // If there will be modules with sonames other than 0 this will not work
+    ffilename = malloc(strlen(filename) + 3);
+    strncpy(ffilename, filename, strlen(filename) + 1);
+    strcat(ffilename, "-0");
+
     // Is This Module Already Open?
-    pModule = FindLoadedModuleByName(filename);
+    pModule = FindLoadedModuleByName(ffilename);
     if(pModule) {
         // Bump The Reference Count
         pModule->iRefCount += 1;
@@ -284,6 +290,7 @@ pDllModule pModule = NULL;
         
         // Return The Address Of The Data Struct As The Handle
         iLastError = 0;
+        free (ffilename);
         return (lt_dlhandle) pModule;
         }
     
@@ -292,7 +299,7 @@ pDllModule pModule = NULL;
     //       Section Before Doing The Open, But That Would Require A Mechanism
     //       To Prevent A Second Request For The Same Module To Be Handled While
     //       A First One Is In Progress - This Is A "Later If Needed" Item
-    pModule = OpenModule(filename);
+    pModule = OpenModule(ffilename);
     if(pModule) {
         // Bump The Reference Count
         pModule->iRefCount += 1;
@@ -300,6 +307,7 @@ pDllModule pModule = NULL;
         // Return The Module
         LeaveCriticalSection(&csLibLock);
         iLastError = 0;
+        free (ffilename);
         return (lt_dlhandle) pModule;
         }
     
@@ -308,6 +316,7 @@ pDllModule pModule = NULL;
         
     // Not Found Or Opened
     iLastError = LT_ERROR_DEPLIB_NOT_FOUND;
+    free (ffilename);
     return (lt_dlhandle) pModule;
 }
 

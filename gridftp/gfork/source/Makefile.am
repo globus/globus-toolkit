@@ -22,8 +22,7 @@ lib_LTLIBRARIES = libglobus_gfork.la
 
 libglobus_gfork_la_SOURCES = $(Sources)
 libglobus_gfork_la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gfork_la_LIBADD = \
-    $(MODULE_LIBS) $(GPT_LIB_LINKS)
+libglobus_gfork_la_LIBADD = $(GPT_LIB_LINKS)
 
 sbin_PROGRAMS= \
     gfork
@@ -36,7 +35,9 @@ gfork_LDADD = \
     $(GPT_PGM_LINKS)
 
 
-EXTRA_DIST = version.h.in
+doc_DATA = GLOBUS_LICENSE README.txt
+
+EXTRA_DIST = version.h.in $(doc_DATA) globus-gfork.spec
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -2,8 +2,6 @@ include $(top_srcdir)/globus_automake_pre
 
 flavordir = $(GLOBUS_LOCATION)/etc/$(PACKAGE)
 
-EXTRA_DIST=MyFilelists.pm
-
 FILELIST_FILES = noflavor_data.filelist \
 	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
 	noflavor_doc.filelist \

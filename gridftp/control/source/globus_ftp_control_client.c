@@ -1799,7 +1799,7 @@ globus_ftp_control_send_command(
 
         rc=globus_i_ftp_control_encode_command(&(handle->cc_handle),
                                                buf,
-                                               (char **) &encode_buf);
+                                               (char **) (void *) &encode_buf);
         
         globus_libc_free(buf);
 
@@ -4678,7 +4678,7 @@ globus_l_ftp_control_queue_element_init(
         result=globus_i_ftp_control_encode_command(
             &handle->cc_handle,
             write_buf,
-            (char **) &element->write_buf);     
+            (char **) (void *) &element->write_buf);     
     }
     else
     {

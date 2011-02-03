@@ -11,8 +11,10 @@ bin_SCRIPTS = \
 	globus-domainname \
 	globus-makefile-header
 
-perllibdir = ${libdir}/perl/Globus/Core
-perllib_SCRIPTS = Paths.pm
+globuscore_perlmoduledir = $(perlmoduledir)/Globus/Core
+## globuscore_perlmodule = [ DATA ]
+
+globuscore_perlmodule_DATA = Paths.pm
 
 EXTRA_DIST = \
 	globus-args-parser-header \
@@ -22,4 +24,8 @@ EXTRA_DIST = \
 	globus-makefile-header.in \
         Paths.pm.in globus-script-initializer.in
 
+install-exec-hook:
+	for script in $(libexec_SCRIPTS); do \
+	    chmod 644 $(DESTDIR)$(libexecdir)/$$script; \
+	done
 include $(top_srcdir)/globus_automake_post

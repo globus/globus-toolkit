@@ -65,8 +65,8 @@
  * must be called after the #GLOBUS_GASS_TRANSFER_MODULE has already been
  * activated. Once registered, applications may use URLs of the scheme type
  * provided by the protocol module for the standard @link
- * globus_gass_transfer_client client @endlink or @link
- * globus_gass_transfer_server server @endlink operations.
+ * globus_gass_transfer_client client@endlink or @link
+ * globus_gass_transfer_server server@endlink operations.
  */
 
 #ifndef GLOBUS_GASS_INCLUDE_GLOBUS_GASS_PROTO_H
@@ -88,9 +88,17 @@
 EXTERN_C_BEGIN
 
 /* Module-specific types */
+/**
+ * Protocol module request handling structure.
+ * @ingroup globus_gass_transfer_protocol
+ * @see #globus_gass_transfer_request_proto_s */
 typedef struct globus_gass_transfer_request_proto_s
 globus_gass_transfer_request_proto_t;
 
+/**
+ * Protocol module listener handling structure.
+ * @ingroup globus_gass_transfer_protocol
+ * @see #globus_gass_transfer_listener_proto_s */
 typedef struct globus_gass_transfer_listener_proto_s
 globus_gass_transfer_listener_proto_t;
 
@@ -223,7 +231,7 @@ typedef void
  *        A protocol-specific attribute set, created by calling the
  *        protocol module's
  *        @link globus_gass_transfer_proto_descriptor_t::new_requestattr
- *        new_requestattr function pointer @endlink.
+ *        new_requestattr function pointer@endlink.
  */
 typedef void
 (* globus_gass_transfer_proto_new_request_t)(
@@ -246,7 +254,7 @@ typedef void
  *        A protocol-specific attribute set, created by calling the
  *        protocol module's
  *        @link globus_gass_transfer_proto_descriptor_t::new_listenerattr
- *        new_listenerattr function pointer @endlink.
+ *        new_listenerattr function pointer@endlink.
  * @param scheme
  *        The URL scheme that the server has requested for the new listener.
  *        This will be one the scheme associated with a particular
@@ -368,16 +376,16 @@ typedef void
     globus_gass_transfer_requestattr_t *	attr);
 
 /**
- * @struct globus_gass_transfer_request_proto_t
+ * @struct globus_gass_transfer_request_proto_s
  * Protocol module request handling structure.
  * @ingroup globus_gass_transfer_protocol
  *
  * This structure is created by a GASS transfer protocol module to
  * handle a particular request. It is created in response to a
- * @link globus_gass_transfer_listener_proto_t::accept
- * listener's accept method @endlink or a @link
+ * @link globus_gass_transfer_listener_proto_s::accept
+ * listener's accept method@endlink or a @link
  * globus_gass_transfer_proto_descriptor_t::new_request
- * protocol module's new_request method @endlink.
+ * protocol module's new_request method@endlink.
  *
  * Memory management of this structure is the responsibility of the protocol
  * module. The destroy method will be called when the GASS Transfer library
@@ -431,7 +439,7 @@ struct globus_gass_transfer_request_proto_s
 };
 
 /**
- * @struct globus_gass_transfer_listener_proto_t
+ * @struct globus_gass_transfer_listener_proto_s
  * Protocol module listener handling structure.
  * @ingroup globus_gass_transfer_protocol
  */

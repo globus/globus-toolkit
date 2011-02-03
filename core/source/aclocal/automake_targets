@@ -1,30 +1,33 @@
 ## Special globus installation directories
 
-setupdir = $(prefix)/setup/globus
+setupdir = @setupdir@
 ## setup = [ DATA,PROGRAMS,SCRIPTS ]
 
-testdir = $(prefix)/test/$(PACKAGE)
+testdir = @testdir@
 ## test = [ DATA,PROGRAMS,SCRIPTS ]
 
-scriptsysconfdir = $(sysconfdir)
+scriptsysconfdir = ${sysconfdir}
 ## scriptsysconf = [ PROGRAMS,SCRIPTS ]
 
-flavorincludedir = ${includedir}/$(GLOBUS_FLAVOR_NAME)
+flavorincludedir = @flavorincludedir@
 ## flavorinclude = [ HEADERS ]
 
-pkgdir = ${sysconfdir}/globus_packages/$(PACKAGE)
+pkgdir = @pkgdir@
 ## pkg = [ DATA ]
 
-aclocaldir = ${datadir}/globus_aclocal
+aclocaldir = @aclocaldir@
 ## aclocal = [ DATA ]
 
 amdirdir = ${datadir}/globus_amdir
 ## amdir = [ DATA ]
 
-doxygendir = ${datadir}/doxygen
+perlmoduledir = @perlmoduledir@
+## perlmoduledir = [ DATA ]
+
+doxygendir = @doxygendir@
 ## doxygen = [ DATA ]
 
-docdir = ${datadir}/doc
+docdir = @docdir@
 ## doc = [ DATA ]
 
 LINK_BAK = orig

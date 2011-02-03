@@ -9,12 +9,16 @@ SUBDIRS= \
 	config \
 	doxygen
 
-sbin_SCRIPTS= \
+libexec_SCRIPTS= \
 	config.guess
+
+doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = \
 	version.h.in\
-	globus_common.txt
+	globus_common.txt \
+	globus-common.spec \
+	$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

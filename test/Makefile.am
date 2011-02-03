@@ -26,7 +26,7 @@ test_SCRIPTS = $(Scripts)
 
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
-EXTRA_DIST = Utilities.pm.in pkgdata/MyFilelists.pm \
+EXTRA_DIST = Utilities.pm.in \
 	test-toolkit.in testcred.pem b38b4d8c.0 \
 	test-package.in b38b4d8c.signing_policy \
 	global_security_descriptor.xml.in \

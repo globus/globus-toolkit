@@ -25,6 +25,8 @@ fi
 AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
 AC_SUBST(GLOBUS_TOOLKIT_ID)
 
+AC_PATH_PROG(SSH_BIN, ssh, "/usr/bin/ssh") 
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
@@ -35,4 +37,5 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	version.h
+        gridftp-ssh
 )

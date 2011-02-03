@@ -8,9 +8,9 @@ PRE_TOP_FILES =
 POST_TOP_FILES = automake_top_rules
 
 AUTOMAKE_MACROS = \
-	globus_package.m4 \
 	acnetworking.m4 \
-	acdoxygen.m4
+	acdoxygen.m4 \
+	globus_openssl.m4
 
 DOXYGEN_FILES = \
 	doxygen_Makefile.am \
@@ -19,6 +19,8 @@ DOXYGEN_FILES = \
 	
 aclocal_DATA = \
 	$(AUTOMAKE_MACROS) \
+	globus_package.m4 \
+	globus_initializers.m4 \
 	$(DOXYGEN_FILES) \
 	globus_automake_pre \
 	globus_automake_post \
@@ -29,6 +31,8 @@ EXTRA_DIST = $(PRE_FILES) \
 	$(POST_FILES) \
 	$(PRE_TOP_FILES) \
 	$(POST_TOP_FILES) \
+	globus_package.m4 \
+	globus_initializers.m4 \
 	$(AUTOMAKE_MACROS) \
 	$(DOXYGEN_FILES)
 

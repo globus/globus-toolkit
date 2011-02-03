@@ -80,7 +80,7 @@ globus_l_gass_transfer_drain_callbacks(
  *        A user-supplied buffer containing the data associated with the
  *        request.
  * @param send_length
- *        The lenght of the @a bytes array.
+ *        The length of the @a bytes array.
  * @param last_data
  *        A flag to indicate whether this is the final block of data
  *        for the request. If this is true, then the @a callback
@@ -252,7 +252,7 @@ globus_gass_transfer_send_bytes(
  *        A user-supplied buffer containing the data associated with the
  *        request.
  * @param max_length
- *        The lenght of the @a bytes array.
+ *        The length of the @a bytes array.
  * @param wait_for_length
  *        The minimum amount of data to wait for before invoking the @a
  *        callback function. A partial byte array of at least this amount

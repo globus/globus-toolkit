@@ -42,12 +42,16 @@ CVS Information:
 #include "globus_ftp_client_debug_plugin.h"
 #include "globus_ftp_client_restart_plugin.h"
 #include "globus_error_gssapi.h"
+#include "globus_gsi_system_config.h"
 
 /*
  *  use globus_io for netlogger stuff
  */
 #include "globus_io.h"
 #include "version.h"  /* provides local_version */
+#ifdef WIN32
+#include "openssl/applink.c"
+#endif
 
 #define GUC_URL_ENC_CHAR "#;:=+ ,"
 
@@ -1209,13 +1213,21 @@ globus_l_guc_dump_urls(
     globus_l_guc_src_dst_pair_t *       url_pair;
     FILE *                              dumpfile;
     char *                              dumptmp;
+#ifdef WIN32
+    char *                              dumptmp2;
+#endif
     int                                 dumpfd;
     int                                 i;
     globus_l_guc_transfer_t *           transfer_info;
 
     guc_info = (globus_l_guc_info_t *) user_arg;
     dumptmp = globus_common_create_string("%s.XXXXXX", guc_info->dumpfile);
+#ifdef WIN32
+    dumptmp2 = mktemp(dumptmp);
+    dumpfd = open(dumptmp2, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+#else
     dumpfd = mkstemp(dumptmp);
+#endif
     if(dumpfd < 0)
     {
         return;
@@ -1490,7 +1502,7 @@ main(int argc, char **argv)
     int                                     i;
     globus_callback_handle_t                dumpfile_handle;
 
-    setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1);
+    globus_libc_setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1);
     err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
     if( err != GLOBUS_SUCCESS )
     {
@@ -2907,7 +2919,8 @@ guc_l_convert_file_url(
 {
     char *                              tmp_ptr;
     char *                              tmp_path;
-    char                                start_dir[PATH_MAX];
+    char *                              start_dir = NULL;
+    globus_result_t                     result;
     char *                              dir_ptr = "";
 
 
@@ -2920,8 +2933,8 @@ guc_l_convert_file_url(
 
     if(in_url[0] != '/')
     {
-        tmp_ptr = getcwd(start_dir, PATH_MAX);
-        if(tmp_ptr == NULL)
+        result = GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&start_dir);
+        if(result != GLOBUS_SUCCESS)
         {
             /* just punt if the system call fails */
             return globus_libc_strdup(in_url);
@@ -2940,6 +2953,9 @@ guc_l_convert_file_url(
     globus_free(dir_ptr);
     globus_free(tmp_path);
     
+    if (start_dir)
+        globus_free(start_dir);
+
     return tmp_ptr;
 }
 
