@@ -69,9 +69,8 @@ sub new
     # handle arguments
     #
 
-    my %args = (installdir => $ENV{'GLOBUS_LOCATION'}, @_);
+    my %args = @_;
 
-    my $installdir = $args{'installdir'};
     my $packageList = $args{'packageList'};
     my $pkginfo = $args{'pkginfo'};
     my $relativePath = $args{'relativePath'};
@@ -116,7 +115,7 @@ sub new
         $flavor = $pkginfo->flavor();
         $pkgtype = $pkginfo->pkgtype();
 
-        my $tmpPath = "etc/globus_packages/" . $name . "/" . $flavor . "_" . $pkgtype . "_filelist.xml";
+        my $tmpPath = "share/globus/packages/$name/${flavor}_${pkgtype}_filelist.xml";
         $self->setFilelist( read => $tmpPath, write => $tmpPath );
     }
 

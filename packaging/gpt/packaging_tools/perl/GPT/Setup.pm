@@ -6,13 +6,6 @@ use Carp;
 require Exporter;
 use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-
-# This module is included by scripts outside of GPT and so require the 
-use Config;
-# @INC fiddling
-my $gpt_path = $ENV{GPT_LOCATION};
-@INC = ("$gpt_path/lib/perl", "$gpt_path/lib/perl/$Config{'archname'}", @INC);
-
 require Grid::GPT::Installation;
 require Grid::GPT::Locations;
 require Grid::GPT::V1::Version;
@@ -135,7 +128,7 @@ the package metadata file for the remaining information.
 =item finish
 
 Writes metatdata into
-$GLOBUS_LOCATION/etc/globus_packages/setup/<setup_format_name> to
+$GLOBUS_LOCATION/share/globus/packages/setup/<setup_format_name> to
 indicate that the setup is complete.
 
 =head1 AUTHOR

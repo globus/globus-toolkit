@@ -8,12 +8,8 @@ test "$exec_prefix" = 'NONE' && exec_prefix='${prefix}'
 # (see installer.configure.in)
 libdir='@libdir@'
 
-# FHS eliminates libexec, so we'll stick those files in ${libdir}/globus
-test "$libexecdir" = '${exec_prefix}/libexec' && libexecdir='${libdir}/globus'
-
-# Be more polite about share
-test "$datadir" = '${prefix}/share' && datadir='${prefix}/share/globus'
-test "$datadir" = '${datarootdir}' && datadir='${datarootdir}/globus'
+# FHS eliminates libexec, so we'll stick those files in ${datadir}/globus
+test "$libexecdir" = '${exec_prefix}/libexec' && libexecdir='${datadir}/globus'
 
 # Be more polite about include
 test "$includedir" = '${prefix}/include' && includedir='${prefix}/include/globus'

@@ -29,10 +29,10 @@ sub new {
 
 sub _init {
   my ($me, %args) = @_;
-  my $coreflavors = new Grid::GPT::V1::BuildFlavors(core =>1);
+  my $coreflavors = new Grid::GPT::V1::BuildFlavors(core =>1, locations=> $me->{locations});
   push @{$me->{'flavors'}}, @{$coreflavors->{'flavors'}};
 
-  if (-d "$me->{'locations'}->{'installdir'}/etc/globus_core") {
+  if (-d "$me->{'locations'}->{'installdir'}/share/globus/globus_core") {
     my $installedflavors = new Grid::GPT::V1::BuildFlavors(installed => 1,
                                                            locations => 
                                                            $me->{'locations'});

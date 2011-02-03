@@ -53,6 +53,12 @@ filelist-@DIR@PROGRAMS:
 ## Funny invocation because Makefile variable can be empty, leading to
 ## a syntax error in sh.
 	@list='$(@DIR@_PROGRAMS)'; for p in $$list; do \
-	  echo "$(DESTDIR)$(@DIR@dir)/$$p" >> $(FILELIST_FILE); \
+          if test "$(GPT_LINKTYPE)" = "shared"; then \
+              filelisttype="pgm"; \
+          else \
+              filelisttype="pgm_static"; \
+          fi; \
+	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+	  p="`echo "$(@DIR@dir)/$$p" | sed -e 's!^$(exec_prefix)!!'`"; \
+	  echo "$$p" >> "$${filelistdir}/${GLOBUS_FLAVOR_NAME}_$${filelisttype}.filelist"; \
 	done
-

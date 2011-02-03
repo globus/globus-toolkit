@@ -5,7 +5,6 @@ use Carp;
 
 require Exporter;
 use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-#use Data::Dumper;
 
 # set the version for version checking
 $VERSION     = 0.01;
@@ -170,11 +169,6 @@ sub read {
     }
 
     $leftover = substr($l,$lastmatch);
-#    my $i = 0;
-#    for (@tagstack) {
-#    print "tag: $i: ", Dumper($_);
-#    $i++;
-#    }
   }
 
 
@@ -183,7 +177,6 @@ sub read {
    push @{$self->{'errors'}}, 
    "ERROR: $t->{'lineno'} - Tag <$t->{'name'}> does not have an end tag"; 
   }
-#  print Dumper($self);
 }
 
 sub doctype 
@@ -275,10 +268,10 @@ sub write_tag {
   my ($self, $tag) = @_;
   local *FILE = *{$self->{'FILE'}};
   
-  print FILE "<$tag->{'name'} ";
+  print FILE "<$tag->{'name'}";
 
   for my $a (sort keys %{$tag->{attributes}}) {
-    print FILE "$a=\"$tag->{attributes}->{$a}\" ";
+    print FILE " $a=\"$tag->{attributes}->{$a}\" ";
   }
 
   if (@{$tag->{'contents'}} == 0) {
@@ -289,10 +282,7 @@ sub write_tag {
   }
 
   for my $c (@{$tag->{'contents'}}) {
-#    use Data::Dumper;
-#    print "XML undefined content: ", Dumper $tag  if ! defined $c;
     if (ref($c) eq 'HASH') {
-#      print "<$tag->{'name'}>\n";
       $self->write_tag($c);
     } else {
       print FILE "$c";

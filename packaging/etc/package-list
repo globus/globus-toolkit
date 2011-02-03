@@ -126,7 +126,7 @@ globus_rsl_assist	gram/rsl_assist/source	gpt
 globus_test	test/	gpt
 globus_trusted_ca_42864e48_setup	gsi/trusted_ca/setup	gpt
 globus_user_env	user_env/source	gpt
-gssapi_error	gsi/gssapi_error/source	gpt
+globus_gssapi_error	gsi/gssapi_error/source	gpt
 globus_gcs_b38b4d8c_setup       gsi/gcs/setup	gpt
 globus_simple_ca	gsi/simple_ca/source	gpt
 globus_simple_ca_setup	gsi/simple_ca/setup	gpt

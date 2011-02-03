@@ -74,8 +74,7 @@ sub load_installation
 
       # Check to see if version checking is disabled for this location.
       my $gptdir = $me->{'locations'}->{'pkgdir'};
-      $gptdir =~ s!globus_packages!gpt!;
-##      $gptdir =~ s!gpt/packages!gpt!;
+      $gptdir =~ s!gpt/packages!gpt!;
 
       $me->{'disable_version_checking'} = 1 
         if -e "$gptdir/disable_version_checking" 

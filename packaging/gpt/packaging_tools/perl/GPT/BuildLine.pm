@@ -20,25 +20,12 @@ sub convert_static_libs
 {
     my ($libslist, $flavor) = @_;
 
-    $libslist =~ s:\s+: :g;
+    chomp($libslist);
 
-    my @libs = split(/ /, $libslist);
-    $libslist="";
-    foreach my $libname (@libs)
-    {
-        if ( length($libslist) > 0 )
-        {
-            $libslist .= " ";
-        }
-
-        if ($libname =~ m!$flavor! || $libname =~ m!GLOBUS_FLAVOR_NAME!)
-        {
-            $libname =~ s/\-l/$ENV{GLOBUS_LOCATION}\/lib\/lib/;
-            $libname = $libname.".a";
-        }
-        $libslist .= $libname;
-    }
-    return $libslist;
+    # For globus libraries, replace -lglobus_.* with ${libdir}/libglobus.*.a
+    return join(' ',
+        map { if (m!-lglobus!) { s!-l!\${libdir}/lib!; s!$!.a! } $_; }
+        split(/ +/, $libslist));
 }
 
 sub create_buildlines {

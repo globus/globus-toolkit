@@ -65,6 +65,26 @@ filelist-@DIR@DATA:
 ## Funny invocation because Makefile variable can be empty, leading to
 ## a syntax error in sh.
 	@list='$(@DIR@_DATA)'; for p in $$list; do \
-	  echo "$(DESTDIR)$(@DIR@dir)/$$p" >> $(FILELIST_FILE); \
+	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+          dirname='@DIR@'; \
+	  origp="$$p" ; \
+	  p="`echo $(@DIR@dir)/$$p | sed -e 's!^$(prefix)!!'`"; \
+	  case "$$dirname-$$origp" in \
+            *-pkg_data_*.gpt) \
+              type=`echo $$origp | sed -e 's!^pkg_data_!!' -e 's!.gpt$$!!'`; \
+              echo "$$p" >> "$${filelistdir}/$${type}.filelist" ; \
+              ;; \
+            *-*.filelist) \
+              echo "$$p" >> "$${filelistdir}/$${origp}" ; \
+              ;; \
+            *-*.pc) \
+              echo "$$p" >> "$${filelistdir}/$(GLOBUS_FLAVOR_NAME)_dev.filelist"; \
+              ;; \
+            *doc-*) \
+              echo "$$p" >> "$${filelistdir}/noflavor_doc.filelist"; \
+              ;; \
+            *) \
+              echo "$$p" >> "$${filelistdir}/noflavor_data.filelist"; \
+              ;; \
+	  esac ; \
 	done
-

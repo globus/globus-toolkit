@@ -256,7 +256,7 @@ sub generate_build_list()
 {
     print "Generating package build list ...\n";
 
-    if ( not defined(@cvs_build_list) )
+    if ( not @cvs_build_list )
     {
         @cvs_build_list = ("gt");
     }
@@ -742,7 +742,7 @@ sub populate_bundle_list
 sub populate_bundle_build_list()
 # --------------------------------------------------------------------
 {
-    if ( defined(@user_packages) ) 
+    if ( @user_packages ) 
     {
         my $bundle = "user_def";
 
@@ -752,7 +752,7 @@ sub populate_bundle_build_list()
         push @bundle_build_list, $bundle;
     } 
 
-    if ( defined(@user_bundles) or defined(@user_packages))
+    if ( @user_bundles or @user_packages)
     {
         foreach my $user_bundle (@user_bundles)
         {
@@ -786,7 +786,7 @@ sub populate_package_build_hash()
     # $bundle_list{'bundle name'} = flavor, array of packages.
     # So, for each bundle to build, run through the array of packages
     # and add it to the list of packages to be built.
-    if ( defined(@bundle_build_list) ) 
+    if ( @bundle_build_list ) 
     {
         for my $iter (@bundle_build_list)
         {
@@ -931,16 +931,21 @@ sub install_gpt()
         print "Installing $gpt_ver to $target\n";
         print "Logging to ${log_dir}/$gpt_ver.log\n";
 
+        chdir "$gpt_dir/packaging_tools";
+        system("./bootstrap > $log_dir/$gpt_ver.log 2>&1");
         chdir $gpt_dir;
 
         # gpt 3.0.1 has trouble if LANG is set, as on RH9
         # Newer GPTs will unset LANG automatically in build_gpt.
         my $OLANG = $ENV{'LANG'};
         $ENV{'LANG'} = "";
-        system("./build_gpt $verbose > $log_dir/$gpt_ver.log 2>&1");
+        system("./build_gpt $verbose >> $log_dir/$gpt_ver.log 2>&1");
         $ENV{'LANG'} = $OLANG;
 
         paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
+        system("./make_gpt_dist >> $log_dir/$gpt_ver.log 2>&1");
+	mkdir $package_output;
+        system("mv ${gpt_ver}*.tar.gz $package_output");
     }
 
     @INC = (@INC, "$target/lib/perl", "$target/lib/perl/$Config{'archname'}");
@@ -1560,11 +1565,7 @@ sub package_source_pnb()
 # --------------------------------------------------------------------
 {
     my ($package, $subdir, $tree) = @_;
-    #my $tarname = $package_list{$package}[3];
-    #my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
-    #my $tarbase = $tarname;
-    #$tarbase =~ s!\.tar\.gz!!;
-    #my $patchfile = "${tarbase}-patch";
+    my $taropts = 'chf';
 
     print "Following PNB packaging for $package.\n";
     #print "\tUsing tarfile: $tarfile.\n";
@@ -1572,23 +1573,6 @@ sub package_source_pnb()
     chdir $subdir;
     my $version = gpt_get_version("pkg_data_src.gpt");
     patch_package($package);
-
-    # Some patches will fail to apply a second time
-    # So clean up the old patched tar directory if
-    # it exists from a previous build.
-    #if ( -d "$tarbase" )
-    #{
-        #log_system("rm -fr $tarbase", "$pkglog/$package");
-        #paranoia("$tarbase exists, but could not be deleted.\n");
-    #}
-
-    #log_system("gzip -dc $tarfile | tar xf -",
-               #"$pkglog/$package");
-    #paranoia "Untarring $package failed.  See $pkglog/$package.";
-    #chdir $tarbase;
-    #log_system("patch -N -s -p1 -i ../patches/$patchfile",
-               #"$pkglog/$package");
-    #paranoia "patch failed.  See $pkglog/$package.";
 
     # Strip off leading directory component
     my ($otherdirs, $tardir) = $subdir =~ m!(.+/)([^/]+)$!;
@@ -1600,7 +1584,13 @@ sub package_source_pnb()
     log_system("mv $tardir $package-$version",
                "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
-    log_system("tar chf $package_output/${package}-${version}.tar $package-$version",
+    if ($package eq 'globus_database_sqliteodbc')
+    {
+	# This package includes a symlink source -> . which trips up some
+	# versions of tar
+	$taropts = 'cf';
+    }
+    log_system("tar $taropts $package_output/${package}-${version}.tar $package-$version",
                "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
     log_system("gzip -f $package_output/${package}-${version}.tar",

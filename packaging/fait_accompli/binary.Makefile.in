@@ -24,7 +24,11 @@ rls: gpt globus-rls-server
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
 @gptlocation@/sbin/gpt-postinstall:
-	cd gpt && OBJECT_MODE=32 ./build_gpt
+	export OBJECT_MODE=32; \
+	cd gpt; \
+	./configure --prefix="$(GPT_LOCATION)" ; \
+	make install
+
 install: postinstall
 postinstall:
 	ln -s ${GLOBUS_LOCATION}/etc/gpt/packages ${GLOBUS_LOCATION}/etc/globus_packages

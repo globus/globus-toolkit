@@ -41,7 +41,9 @@ filelist-man%SECTION%: $(man%SECTION%_MANS) $(man_MANS)
 	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
 	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
 	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo $(DESTDIR)$(man%SECTION%dir)/$$inst >> $(FILELIST_FILE); \
+	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+	  p="`echo $(man%SECTION%dir)/$$inst | sed -e 's!^$(prefix)!!'`"; \
+	  echo $$p >> "$${filelistdir}/noflavor_doc.filelist"; \
 	done
 
 

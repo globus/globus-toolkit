@@ -1188,9 +1188,9 @@ sub check_input_file {
     return "SRC_2xBUNDLE";
   }
 
+  return "BIN_PKG" if grep { m!share/globus/packages! } @contents;
   return "BIN_PKG" if grep { m!etc/gpt/packages! } @contents;
   return "BIN_PKG" if grep { m!etc/globus_packages! } @contents;
-##  return "BIN_PKG" if grep { m!etc/gpt/packages! } @contents;
   return "SRC_PKG" if grep { m!pkgdata! } @contents;
   return "SRC_PKG" if grep { m!pkg_data_src.gpt! } @contents;
 

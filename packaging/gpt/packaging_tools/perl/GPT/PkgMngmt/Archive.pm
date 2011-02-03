@@ -75,21 +75,6 @@ You can get the module from www.cpan.org";
     
     return if defined $gtar;
 
-    my $gpath = $ENV{GPT_LOCATION};
-
-    if (!defined($gpath))
-      {
-        $gpath = $ENV{GLOBUS_LOCATION};
-      }
-
-    if (!defined($gpath))
-      {
-        die "GPT_LOCATION or needs to be set before running this script";
-      }
-
-    # Add path to LocalEnv module to @INC
-    push @INC,"$gpath/var/lib/perl";
-
     die "ERROR: GPT is not configured. Use gpt-config\n" 
       if ! defined eval ("require Grid::GPT::LocalEnv;");
 
@@ -109,24 +94,6 @@ You can get the module from www.cpan.org";
 # Preloaded methods go here.
 sub new {
   my ($class, %arg) = @_;
-
-
-
-
-  my $gpath = $ENV{GPT_LOCATION};
-
-  if (!defined($gpath))
-    {
-      $gpath = $ENV{GLOBUS_LOCATION};
-    }
-
-  if (!defined($gpath))
-    {
-      die "GPT_LOCATION or needs to be set before running this script";
-    }
-
-  # Add path to LocalEnv module to @INC
-  push @INC,"$gpath/var/lib/perl";
 
   die "ERROR: GPT is not configured. Use gpt-config\n" 
     if ! defined eval ("require Grid::GPT::LocalEnv;");
@@ -343,7 +310,7 @@ sub gpt_pkg {
 
   for my $f (@$rawfilelist) {
     $f =~ s!^/+!!;
-    $f =~ s!etc/globus_packages/!etc/gpt/packages/!;
+    $f =~ s!etc/globus_packages/!share/globus/packages/!;
     push @filelist, $f;
   }
 
@@ -413,7 +380,7 @@ sub rpm {
   my $rawfilelist = $filelist;
   $filelist = [];
   for my $f (@$rawfilelist) {
-    $f =~ s!etc/globus_packages/!etc/gpt/packages/!;
+    $f =~ s!etc/globus_packages/!share/globus/packages/!;
     push @$filelist, $f;
   }
 

@@ -5,11 +5,11 @@ use Carp;
 
 require Exporter;
 use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-use Data::Dumper;
 use Grid::GPT::V1::XML;
 use Grid::GPT::V1::Definitions;
 use Grid::GPT::V1::FlavorDefinition;
 use Grid::GPT::V1::FlavorChoices;
+use Grid::GPT::Locations;
 
 # set the version for version checking
 $VERSION     = 0.01;
@@ -25,18 +25,14 @@ sub new {
                locations => $args{'locations'},
 		};
     bless $me, $class;
-
-    my $gpath = $ENV{GPT_LOCATION};
-    
-    if (!defined($gpath))
-      {
-        $gpath = $ENV{GLOBUS_LOCATION};
-      }
-    my $confdir = "$gpath/etc/gpt";
+    if (! defined $me->{locations})
+    {
+        $me->{locations} = new Grid::GPT::Locations;
+    }
 
     if (defined $args{'core'}) {
 
-      my $conf_file = "$confdir/globus_flavor_labels.conf";
+      my $conf_file = "$me->{locations}->{pkg_confdir}/globus_flavor_labels.conf";
       $conf_file = $args{'cfg'} if defined $args{'cfg'};
       my $choicefile = new Grid::GPT::V1::XML;
       $choicefile->read($conf_file);
@@ -57,15 +53,11 @@ sub new {
     }
 
     if (defined $args{'installed'}) {
-
-      my $gpath = $me->{'locations'}->installdir();
-
-
       $me->{'flavors'} = [];
 
-      if (-d "$gpath/etc/globus_core") {
-        opendir(CONFDIR, "$gpath/etc/globus_core") 
-          || die "ERROR:BuildFlavors: $gpath/etc/globus_core cannot be accessed\n";
+      if (-d $me->{locations}->{flavordir}) { 
+        opendir(CONFDIR, $me->{locations}->{flavordir})
+          || die "ERROR:BuildFlavors: $me->{locations}->{flavordir} cannot be accessed\n";
 
         my @flavorfiles = grep {m!flavor_\w+.gpt!} readdir(CONFDIR);
 
@@ -73,13 +65,12 @@ sub new {
         for my $ff (@flavorfiles) {
           my $obj = 
             new Grid::GPT::V1::FlavorDefinition(xmlfile => 
-                                            "$gpath/etc/globus_core/$ff");
+                                            "$me->{locations}->{flavordir}/$ff");
           $me->{$obj->{'name'}} = $obj;
           push @{$me->{'flavors'}}, $obj->{'name'};
         }
       }
     }
-##print Dumper $me;
     return $me;
 }
 

@@ -1,9 +1,10 @@
 package Grid::GPT::LocalEnv; 
 use strict; 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
-
 require Exporter;
 require AutoLoader;
+
+use Grid::GPT::Localize;
 use Cwd;
 
 @ISA = qw(Exporter AutoLoader);
@@ -12,37 +13,38 @@ $VERSION = '0.01';
 sub get_tool_location {
   my $program = shift;
   my %locations = (
-                   gtar => "@gtar@",
-                   gzip => "@gzip@",
-                   gunzip => "@gunzip@",
-                   gmake => "@gmake@",
-                   perl => "@perl@",
-                   rpm => "@rpm@",
-                   rpmbuild => "@rpmbuild@",
+                   gtar => "@GTAR@",
+                   gzip => "@GZIP@",
+                   gunzip => "@GUNZIP@",
+                   gmake => "@MAKE@",
+                   perl => "@PERL@",
+                   rpm => "@RPM@",
+                   rpmbuild => "@RPMBUILD@",
                   );
 
   return $locations{$program};
-
 }
 
 sub get_rpm_setting {
   my $item = shift;
 
   my %rpm = (
-             license => "@license@",
-             vendor => "@vendor@",
-             ftpsite => "@ftpsite@",
-             url => "@url@",
-             packager => "@packager@",
-             prefix => "@prefix@",
-             '/usr/sbin/Check' => "@/usr/sbin/Check@",
+             license => '@license@',
+             vendor => '@vendor@',
+             ftpsite => '@ftpsite@',
+             url => '@url@',
+             packager => '@packager@',
+             prefix => '@prefix@',
+             '/usr/sbin/Check' => '@/usr/sbin/Check@',
             );
   return $rpm{$item};
 
 }
 
-sub get_target {return "@target@"}
-sub use_system_tar {return "@systar@"}
+sub get_target {
+    return Grid::GPT::Localize::get_target();
+}
+sub use_system_tar {return "@GTAR@"}
 
 sub listconfig {
 

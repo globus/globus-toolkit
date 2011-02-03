@@ -1,16 +1,33 @@
 dnl GPT_INIT()
 AC_DEFUN([GPT_INIT], [
-        if test "x$GPT_LOCATION" = "x"; then
-                echo "ERROR Please specify GPT_LOCATION" >&2
-                exit 1
-        fi
+        GPT_LOCATION="${GPT_LOCATION:-${GLOBUS_LOCATION:-/usr}}"
+
+	dnl --with-docdir for older autoconf (<2.60)
+	AC_ARG_WITH([docdir],
+	AC_HELP_STRING([--with-docdir=DIR], [Install documentation in DIR [[default: ${datadir}/doc/$PACKAGE]]]),
+        [case $withval in 
+	  yes|no)
+		AC_MSG_ERROR([Invalid DIR])
+		;;
+	  *)
+		docdir="$withval"
+		;;
+	esac
+	],
+	[
+                if test -z "$docdir"; then
+                        docdir='${datadir}/doc/${PACKAGE}'
+                fi
+	])
+	AC_SUBST(docdir)
+
 
         AC_SUBST(GPT_LOCATION)
+        AC_SUBST(GPT_PKGCONFIG_DEPENDENCIES)
 
-	#extract the name and version of the package from the src metadata
-	$GPT_LOCATION/sbin/gpt_extract_data --name --version $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
-	. ./tmpfile.gpt
-	rm ./tmpfile.gpt
+        # bootstrap extracts the the name and version of the package from the
+        # src metadata into gptdata.sh for easier processing
+        . ${srcdir}/gptdata.sh
 	GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
 
         # Determine if GPT is version 2.x
@@ -73,11 +90,11 @@ dnl		fi
 	. ./gpt_build_temp.sh  
 	rm ./gpt_build_temp.sh
 	GPT_CFLAGS="$GPT_CONFIG_CFLAGS"
-	GPT_INCLUDES="-I$GLOBUS_LOCATION/include/$GLOBUS_FLAVOR_NAME $GPT_CONFIG_INCLUDES"
+	GPT_INCLUDES="$GPT_CONFIG_INCLUDES"
 	GPT_LIBS="$GPT_CONFIG_PKG_LIBS $GPT_CONFIG_LIBS"
-	GPT_LDFLAGS="$GPT_CONFIG_STATIC_LINKLINE -L$GLOBUS_LOCATION/lib $GPT_LDFLAGS"
+	GPT_LDFLAGS="$GPT_CONFIG_STATIC_LINKLINE $GPT_LDFLAGS"
 	GPT_PGM_LINKS="$GPT_CONFIG_PGM_LINKS $GPT_CONFIG_LIBS"
-	GPT_LIB_LINKS="$GPT_CONFIG_LIB_LINKS $GPT_CONFIG_LIBS"
+	GPT_LIB_LINKS="-version-info $GPT_MAJOR_VERSION:$GPT_MINOR_VERSION:$GPT_AGE_VERSION $GPT_CONFIG_LIB_LINKS $GPT_CONFIG_LIBS"
 
 
 
@@ -97,6 +114,17 @@ dnl		fi
 	AC_SUBST(GPT_LINKTYPE)
 	builddir=`pwd`
 	AC_SUBST(builddir)
+
+        # Export pkg-config information about this package
+        pkgconfdir='${libdir}/pkgconfig'
+        pkgconffile=`echo "${GPT_NAME}.pc" | sed -e 's!_!-!g'`
+        pkgconffile_in="pkg_data_src.pc.in"
+
+        AC_SUBST(pkgconfdir)
+        AC_SUBST(pkgconffile)
+        AC_SUBST(pkgconffile_in)
+
+        AC_CONFIG_FILES(pkgdata/$pkgconffile:pkgdata/pkg_data_src.pc.in)
 ])
 
 AC_DEFUN([GPT_SET_CFLAGS], [

@@ -435,8 +435,7 @@ sub getMetadataPath
         return undef;
     }
 
-    my $str = "etc/globus_packages/"
-##    my $str = "etc/gpt/packages/"
+    my $str = "share/globus/packages/"
               . $self->getPkgInfo()->pkgname()
               . "/pkg_data_"
               . $self->getPkgInfo()->flavor()

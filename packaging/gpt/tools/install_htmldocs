@@ -22,11 +22,9 @@ my @scripts = (
                "gpt-pkg",
                "gpt-postinstall",
                "gpt-query",
-               "gpt-setup",
                "gpt-undefines",
                "gpt-uninstall",
                "gpt-verify",
-               "gpt-virtual-pkg",
               );
 
 my @modules = (

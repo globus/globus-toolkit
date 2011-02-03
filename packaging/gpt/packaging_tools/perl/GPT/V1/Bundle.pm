@@ -849,7 +849,7 @@ sub save_bundle_def
   my $self      = shift;		
   my $globusdir = shift;
 
-  my $bndlDir   = "$globusdir/etc/gpt/bundles/$self->{'Name'}";
+  my $bndlDir   = "$globusdir/share/gpt/bundles/$self->{'Name'}";
 
   if (!(-e "$bndlDir"))
   {
@@ -879,7 +879,7 @@ sub get_bundle_def
   my $globusdir = $args{'globusdir'};
   my $file      = $args{'file'};
 
-  my $bndlDir   = "$globusdir/etc/gpt/bundles/$file";
+  my $bndlDir   = "$globusdir/share/gpt/bundles/$file";
 
   opendir(DIR, $bndlDir) || die "can't opendir $bndlDir: $!";
   my @dots      = grep { /$file\.gpt-bundle\.xml/ } readdir(DIR);
@@ -893,7 +893,7 @@ sub remove_bundle_def
   my $self                = shift;		
   my $globusdir           = shift;
 
-  my $bndlDir             = "$globusdir/etc/gpt/bundles/$self->{'Name'}";
+  my $bndlDir             = "$globusdir/share/gpt/bundles/$self->{'Name'}";
 
   if( !defined($self->{'BundleFile'}) )
   {

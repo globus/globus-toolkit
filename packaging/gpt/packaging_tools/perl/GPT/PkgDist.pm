@@ -159,10 +159,11 @@ sub scan_for_valid_pkgfile
     {
       return $f if $f =~ m!^(?:\./)?[^/]+/pkg_data_src!;
       return $f if $f =~ m!^(?:\./)?[^/]+/pkgdata/pkg_data_src!;
+      return $f if $f =~ m!/pkgdata/pkg_data_src.gpt(?:\.in)!;
       return undef;
     }
 
-    return $f if $f =~ m!etc/gpt/packages!;
+    return $f if $f =~ m!share/globus/globus/packages!;
     return $f if $f =~ m!etc/globus_packages!;
     return undef;
   }
@@ -271,6 +272,32 @@ sub get_pkgdata_from_tar {
   }
 
   my $metadata=$tar->get_content($pkgfile);
+  my $factory = new Grid::GPT::PackageFactory;
+  my $pkg = $factory->type_of_package($metadata);
+  $pkg->read_metadata_file($metadata);
+  return $pkg;
+}
+
+sub get_pkgdata_from_dir {
+  my ($dir) = @_;
+  my @gptfiles;
+
+  find sub { push @gptfiles, map( {$File::Find::name } grep { m!pkg_data.*\.gpt! } $_ ) }, $dir;
+
+  my $pkgfile = Grid::GPT::PkgDist::scan_for_valid_pkgfile(@gptfiles);
+
+  if (! defined $pkgfile) {
+    print STDERR "WARNING: packaging data file not found in $dir\n";
+
+    return undef;
+  }
+
+  local(*PKGDATA);
+  open(PKGDATA, "<$pkgfile");
+
+  local($/);
+  my $metadata = <PKGDATA>;
+
   my $factory = new Grid::GPT::PackageFactory;
   my $pkg = $factory->type_of_package($metadata);
   $pkg->read_metadata_file($metadata);

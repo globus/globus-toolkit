@@ -54,6 +54,8 @@ filelist-@DIR@LIBRARIES:
 ## Funny invocation because Makefile variable can be empty, leading to
 ## a syntax error in sh.
 	@list='$(@DIR@_LIBRARIES)'; for p in $$list; do \
-	  echo "$(DESTDIR)$(@DIR@dir)/$$p" >> $(FILELIST_FILE); \
+	  filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+	  p="`echo $$p | sed -e 's!^$(exec_prefix)!!'`"; \
+	  echo "$$p" >> "$${filelistdir}${GLOBUS_FLAVOR_NAME}_rtl.filelist"; \
 	done
 
