@@ -577,11 +577,11 @@ globus_l_xio_gsi_accept(
     
     if(driver_server)
     {
-        result = globus_l_xio_gsi_attr_copy((void **) &attr, driver_server);
+        result = globus_l_xio_gsi_attr_copy((void **) (void *) &attr, driver_server);
     }
     else
     {
-        result = globus_l_xio_gsi_attr_init((void **) &attr);
+        result = globus_l_xio_gsi_attr_init((void **) (void *) &attr);
     }
     if(result != GLOBUS_SUCCESS)
     {
@@ -1715,7 +1715,7 @@ globus_l_xio_gsi_open(
     
     if(driver_attr)
     {
-        result = globus_l_xio_gsi_attr_copy((void **) &handle->attr,
+        result = globus_l_xio_gsi_attr_copy((void **) (void *) &handle->attr,
                                             driver_attr);
         if(result == GLOBUS_SUCCESS && driver_link)
         {
@@ -1724,13 +1724,13 @@ globus_l_xio_gsi_open(
     }
     else if(driver_link)
     {
-        result = globus_l_xio_gsi_attr_copy((void **) &handle->attr,
+        result = globus_l_xio_gsi_attr_copy((void **) (void *) &handle->attr,
                                             driver_link);
     }
     else
     {
         result = globus_l_xio_gsi_attr_copy(
-            (void **) &handle->attr,
+            (void **) (void *) &handle->attr,
             (void *) &globus_l_xio_gsi_attr_default);        
     }
     

@@ -83,6 +83,7 @@
  * @defgroup mode_e_driver_envs Env Variables
  * @ingroup mode_e_driver
  *
+ * The mode_e driver uses the following environment variable
  * - GLOBUS_XIO_MODE_E_DEBUG Available if using a debug build.  See 
  * globus_debug.h for format.  
  */
@@ -176,7 +177,7 @@ typedef enum
      * @param num_streams
      *      Specifies the number of streams to use.
      */
-    /* int					max_connection_count */
+    /* int					num_streams */
     GLOBUS_XIO_MODE_E_SET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
@@ -186,7 +187,7 @@ typedef enum
      * @param num_streams_out
      *      The stream count will be stored here.
      */
-    /* int *					max_connection_count_out */
+    /* int *					num_streams_out */
     GLOBUS_XIO_MODE_E_GET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
@@ -218,10 +219,9 @@ typedef enum
      * a data_desc or the driver has to calculate the EODC
      * @ingroup mode_e_driver_cntls
      *
-     * @param eof
-     *      GLOBUS_TRUE to send EOF (default), GLOBUS_FALSE to not send EOF.
-     * @param eod_count
-     *      Specifies the number of EODs that must be received by the server.
+     * @param manual_eodc
+     *      GLOBUS_TRUE to set EODC manually, GLOBUS_FALSE to not set EODC
+     * manually (default).
      */
     /* globus_bool_t				manual_eodc */
     GLOBUS_XIO_MODE_E_SET_MANUAL_EODC,
@@ -230,7 +230,7 @@ typedef enum
      * Get MANUAL_EODC flag on the attr.
      * @ingroup mode_e_driver_cntls
      *
-     * @param eof_out
+     * @param manual_eodc_out
      *      The MANUAL_EODC flag will be stored here.
      */
     /* globus_bool_t *				manual_eodc_out */
@@ -292,7 +292,7 @@ typedef enum
      *      The stack will be stored here. If none is set, GLOBUS_NULL will be
      *      set.
      */
-    /* globus_xio_attr_t *         attr_out */
+    /* globus_xio_attr_t *         stack_out */
 
     GLOBUS_XIO_MODE_E_GET_STACK_ATTR
 

@@ -19,10 +19,16 @@
 #include "version.h"
 #include <stdio.h>
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/wait.h>
+#endif
 
 #define USE_SOCKET_PAIR 1
 #define GLOBUS_L_XIO_POPEN_WAITPID_DELAY 500
+
+#ifdef WIN32
+#define WNOHANG 0
+#endif
 
 GlobusDebugDefine(GLOBUS_XIO_POPEN);
 
@@ -493,7 +499,9 @@ globus_l_xio_popen_init_child_pipe(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_popen_init_child_pipe);
 
+#ifndef WIN32
     fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
 
     result = globus_xio_system_file_init(out_system, fd);
     if(result != GLOBUS_SUCCESS)
@@ -533,6 +541,9 @@ globus_l_xio_popen_open(
     
     GlobusXIOPOpenDebugEnter();
     
+#ifdef WIN32
+    result = GlobusXIOErrorSystemResource("not available for windows");
+#else
     attr = (xio_l_popen_attr_t *) 
         driver_attr ? driver_attr : &xio_l_popen_attr_default;
 
@@ -680,6 +691,7 @@ error_out_pipe:
 error_in_pipe:
     globus_l_xio_popen_handle_destroy(handle);
 error_handle:
+#endif
     GlobusXIOPOpenDebugExitWithError();
     return result;
 }
@@ -712,6 +724,9 @@ globus_l_popen_waitpid(
     globus_reltime_t                    delay;
     GlobusXIOName(globus_l_popen_waitpid);
 
+#ifdef WIN32
+    result = GlobusXIOErrorSystemResource("not available for windows");
+#else
     rc = waitpid(handle->pid, &status, opts);
     if(rc > 0)
     {
@@ -817,6 +832,7 @@ globus_l_popen_waitpid(
             handle);         
     }
 
+#endif
     GlobusXIOPOpenDebugExit();
 }
 

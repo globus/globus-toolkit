@@ -164,12 +164,13 @@ globus_i_xio_http_header_info_set_header(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_xio_http_header_t *          header;
     int                                 rc;
+    unsigned long                       length;
     GlobusXIOName(globus_l_xio_http_header_set);
 
     /* Special cases for entity-body handling headers */
     if (strcmp(header_name, "Content-Length") == 0)
     {
-        rc = sscanf(header_value, "%u", &headers->content_length);
+        rc = sscanf(header_value, "%lu", &length);
 
         if (rc < 1)
         {
@@ -177,6 +178,7 @@ globus_i_xio_http_header_info_set_header(
 
             goto error_exit;
         }
+        headers->content_length = length;
         headers->flags |= GLOBUS_I_XIO_HTTP_HEADER_CONTENT_LENGTH_SET;
     }
     else if (strcmp(header_name, "Transfer-Encoding") == 0)

@@ -814,7 +814,7 @@ typedef globus_result_t
  *
  *  This function will pass a close request down the driver stack.  Upon
  *  completion of the close operation globus_xio will call the funciton
- *  pointed to by the cb arguement.
+ *  pointed to by the cb argument.
  *
  *  @param op
  *         The operation to pass along the driver stack for closing.
@@ -1396,11 +1396,11 @@ typedef struct globus_xio_string_cntl_table_s
  *  many available parsing functions but the developer is free to right their own
  *  if the provided ones are not sufficient.  Sample parsing functions follow:
  *
- *  - @ref globus_i_xio_attr_string_single_bool
- *  - @ref globus_i_xio_attr_string_single_float
- *  - @ref globus_i_xio_attr_string_single_int
- *  - @ref globus_i_xio_attr_string_single_string
- *  - @ref globus_i_xio_attr_string_dual_positive_int
+ *  - @ref globus_xio_string_cntl_bool
+ *  - @ref globus_xio_string_cntl_float
+ *  - @ref globus_xio_string_cntl_int
+ *  - @ref globus_xio_string_cntl_string
+ *  - @ref globus_xio_string_cntl_int_int
  *
  */
 /**

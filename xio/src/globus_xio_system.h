@@ -31,8 +31,8 @@ extern globus_module_descriptor_t       globus_i_xio_system_module;
 
 #ifdef WIN32
 
-#include <Windows.h>
-#include <Winsock2.h>
+#include <windows.h>
+#include <winsock2.h>
 #define GLOBUS_XIO_SYSTEM_INVALID_FILE INVALID_HANDLE_VALUE
 #define GLOBUS_XIO_SYSTEM_INVALID_SOCKET INVALID_SOCKET
 

@@ -526,7 +526,7 @@ globus_l_xio_mode_e_handle_create(
     memset(handle, 0, sizeof(globus_l_xio_mode_e_handle_t));
     if (!attr)
     {
-        result = globus_l_xio_mode_e_attr_init((void**)&handle->attr); 
+        result = globus_l_xio_mode_e_attr_init((void**)(void*)&handle->attr); 
         if (result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -537,7 +537,7 @@ globus_l_xio_mode_e_handle_create(
     else
     {
         result = globus_l_xio_mode_e_attr_copy(
-                                (void**)&handle->attr, (void*)attr);
+                                (void**)(void*)&handle->attr, (void*)attr);
         if (result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(

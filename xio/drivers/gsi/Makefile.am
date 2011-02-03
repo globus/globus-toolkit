@@ -9,6 +9,7 @@ include_HEADERS = \
     globus_xio_gsi.h
 
 INCLUDES = $(GPT_INCLUDES)
+doc_DATA = GLOBUS_LICENSE
 
 lib_LTLIBRARIES = libglobus_xio_gsi_driver.la
 
@@ -19,7 +20,7 @@ libglobus_xio_gsi_driver_la_SOURCES = \
 libglobus_xio_gsi_driver_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
-EXTRA_DIST = version.h.in
+EXTRA_DIST = version.h.in $(doc_DATA) globus-xio-gsi-driver.spec
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

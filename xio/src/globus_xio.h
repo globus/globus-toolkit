@@ -118,7 +118,7 @@ EXTERN_C_BEGIN
  */
 
 /**
- * @addtongroup GLOBUS_XIO_API_ASSIST
+ * @addtogroup GLOBUS_XIO_API_ASSIST
  *
  *  \par Timeouts
  *  A user can set a timeout value for any io operation.  Each IO 

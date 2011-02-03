@@ -187,7 +187,7 @@ typedef enum
      * @ingroup GLOBUS_XIO_API
      *
      * @param config_string
-     *      The driver specific paramter string.
+     *      The driver specific parameter string.
      */
     GLOBUS_XIO_SET_STRING_OPTIONS
     

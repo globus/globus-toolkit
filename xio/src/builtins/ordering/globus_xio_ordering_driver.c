@@ -367,12 +367,12 @@ globus_l_xio_ordering_handle_create(
     }
     if (!attr)
     {
-       result = globus_l_xio_ordering_attr_init((void**)&handle->attr); 
+        result = globus_l_xio_ordering_attr_init((void**)(void*)&handle->attr);
     }
     else
     {
         result = globus_l_xio_ordering_attr_copy(
-                                (void**)&handle->attr, (void*)attr);
+                                (void**)(void*)&handle->attr, (void*)attr);
     }
     if (result != GLOBUS_SUCCESS)
     {
