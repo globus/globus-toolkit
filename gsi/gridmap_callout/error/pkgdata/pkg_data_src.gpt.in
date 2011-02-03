@@ -23,7 +23,7 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="gssapi_error">
+            <Dependency Name="globus_gssapi_error">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>
@@ -37,7 +37,7 @@
                 </Version>
             </Dependency>        
 
-            <Dependency Name="gssapi_error">
+            <Dependency Name="globus_gssapi_error">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>

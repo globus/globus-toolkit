@@ -1,12 +1,12 @@
 include $(top_srcdir)/globus_automake_pre
 
-man1datadir=$(mandir)/man1
-man8datadir=$(mandir)/man8
 
-man1data_DATA = grid-cert-info.1 \
+## man1dir = [ DOC ]
+man1_MANS = grid-cert-info.1 \
         grid-cert-request.1 \
         grid-change-pass-phrase.1
-man8data_DATA = grid-default-ca.8
+## man8dir = [ DOC ]
+man8_MANS = grid-default-ca.8
 MANUALS_SOURCE = manual.xml \
         grid-cert-info-manual.xml \
         grid-cert-request-manual.xml \
@@ -27,12 +27,12 @@ Dist_Scripts = \
 
 bin_SCRIPTS = $(User_Scripts)
 
-EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man1data_DATA) $(man8data_DATA)
+EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man1_MANS) $(man8_MANS)
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 
-$(man1data_DATA) $(man8data_DATA): $(MANUALS_SOURCE)
+$(man1_MANS) $(man8_MANS): $(MANUALS_SOURCE)
 	$(XMLLINT) --xinclude --dtdvalid http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd manual.xml > /dev/null
 	$(XSLTPROC) --stringparam version "`$$GLOBUS_LOCATION/bin/globus-version 2> /dev/null || echo`" --xinclude replace-version.xsl manual.xml
 endif

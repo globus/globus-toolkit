@@ -12,7 +12,9 @@ Sources = \
 	globus_gsi_authz_constants.h \
 	globus_i_gsi_authz.h
 
-EXTRA_DIST = version.h.in
+doc_DATA = GLOBUS_LICENSE
+
+EXTRA_DIST = globus-authz.spec version.h.in $(doc_DATA)
 
 include_HEADERS= \
 	globus_gsi_authz.h

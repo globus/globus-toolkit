@@ -36,7 +36,7 @@
 #include "proxycertinfo.h"
 #include "openssl/asn1.h"
 #ifdef WIN32
-#include "globus_gssapi_config.h"
+#include "openssl/applink.c"
 #endif
 
 #define SHORT_USAGE_FORMAT \

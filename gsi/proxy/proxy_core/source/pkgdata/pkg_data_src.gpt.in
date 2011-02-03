@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gsi_proxy_core" Format_Version="0.01">
 
-    <Aging_Version Major="4" Minor="7" Age="4"/>
+    <Aging_Version Major="5" Minor="1" Age="5"/>
     <Description> Globus GSI Proxy Core Library</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -19,11 +19,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">
@@ -62,11 +57,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">
@@ -109,7 +99,7 @@
             </Setup_Dependency>
         </Source_Setup_Dependency>
 
-        <With_Flavors build="yes" />
+        <With_Flavors ColocateLibraries="no" build="yes" />
 
         <Build_Environment>
             <cflags>@GPT_PKG_CFLAGS@</cflags>

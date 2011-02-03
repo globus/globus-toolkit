@@ -7,7 +7,9 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
-EXTRA_DIST=
+doc_DATA = GLOBUS_LICENSE
+
+EXTRA_DIST= $(doc_DATA) globus-gsi-proxy-ssl.spec
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

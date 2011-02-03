@@ -20,6 +20,9 @@
 #include "globus_gss_assist.h"
 #include "openssl/bn.h"
 #include <regex.h>
+#ifdef WIN32
+#include "openssl/applink.c"
+#endif
 
 char *
 indent_string(const char * str)

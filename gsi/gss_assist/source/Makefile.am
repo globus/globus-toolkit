@@ -1,4 +1,3 @@
-
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
@@ -32,9 +31,13 @@ include_HEADERS= \
 
 INCLUDES = $(GPT_INCLUDES)     
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST = \
+       globus-gss-assist.spec \
        version.h.in \
-       dirt.sh
+       dirt.sh \
+       $(doc_DATA)
 
 lib_LTLIBRARIES = libglobus_gss_assist.la
 libglobus_gss_assist_la_SOURCES = $(Sources)

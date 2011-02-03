@@ -20,11 +20,6 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_openssl_module">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -41,11 +36,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">
@@ -68,7 +58,7 @@
             </Setup_Dependency>
         </Source_Setup_Dependency>
 
-        <With_Flavors build="yes"/>
+        <With_Flavors ColocateLibraries="no" build="yes"/>
 
         <Build_Environment>
             <cflags>@GPT_PKG_CFLAGS@</cflags>

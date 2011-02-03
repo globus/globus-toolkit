@@ -34,7 +34,7 @@
 #include "globus_gsi_credential.h"
 #include "globus_openssl.h"
 #ifdef WIN32
-#include "globus_gssapi_config.h"
+#include "openssl/applink.c"
 #endif
 
 int                                     debug = 0;

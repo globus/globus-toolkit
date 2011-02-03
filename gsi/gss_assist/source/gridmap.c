@@ -117,6 +117,393 @@ globus_l_gss_assist_line_length(
 
 #endif
 
+
+
+/******************************************************************************
+                       Start of gridmapdir functions
+
+ These all use the environment variable GRIDMAPDIR
+  (a) if not set, then the gridmapdir functions are not used
+  (b) the value it is set to defines the gridmap directory
+      (eg export GRIDMAPDIR=/etc/grid-security/gridmapdir)
+
+******************************************************************************/
+
+#include <utime.h>
+#include <errno.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <sys/types.h>
+
+/******************************************************************************
+Function:   gridmapdir_otherlink
+Description:
+        find another link in GRIDMAPDIR to the same inode as firstlink
+        and change the modification time of firstlink to now (so that we
+        always know when this pair was last used)
+        
+Parameters:
+        firstlink, the filename of the link we already know
+
+Returns:
+        a pointer to the other link's filename (without path) or NULL if none
+        found (this is malloc'd and will need freeing)
+
+******************************************************************************/
+static char 
+*gridmapdir_otherlink(char *   firstlink)
+{
+     int            ret;
+     char           *firstlinkpath, *otherlinkdup, *otherlinkpath,
+                    *gridmapdir;
+     struct dirent  *gridmapdirentry;
+     DIR            *gridmapdirstream;
+     struct stat    statbuf;
+     ino_t          firstinode;
+
+     gridmapdir = getenv("GRIDMAPDIR");
+     if (gridmapdir == NULL) return NULL;
+     
+     firstlinkpath = malloc(strlen(gridmapdir) + 2 + strlen(firstlink));
+     sprintf(firstlinkpath, "%s/%s", gridmapdir, firstlink);     
+     ret = stat(firstlinkpath, &statbuf);
+     free(firstlinkpath);   
+     if (ret != 0) return NULL;
+     if (statbuf.st_nlink != 2) return NULL;
+     
+     firstinode = statbuf.st_ino; /* save for comparisons */
+          
+     gridmapdirstream = opendir(gridmapdir);
+
+     if (gridmapdirstream != NULL)
+     {
+         while ((gridmapdirentry = readdir(gridmapdirstream)) != NULL)
+         {       
+                 if (strcmp(gridmapdirentry->d_name, firstlink) == 0) continue;
+           
+                 otherlinkpath = malloc(strlen(gridmapdir) + 2 + 
+                                        strlen(gridmapdirentry->d_name));
+                 sprintf(otherlinkpath, "%s/%s", gridmapdir, 
+                                            gridmapdirentry->d_name);
+
+                 ret = stat(otherlinkpath, &statbuf);     
+                 if ((ret == 0) && (statbuf.st_ino == firstinode))
+                 {
+                      utime(otherlinkpath, (struct utimbuf *) NULL);
+                      free(otherlinkpath);
+                      otherlinkdup = strdup(gridmapdirentry->d_name);
+                      closedir(gridmapdirstream);     
+                      return otherlinkdup;
+                 }
+                 else free(otherlinkpath);
+         }
+         
+         closedir(gridmapdirstream);     
+     }
+
+     return NULL;
+}
+
+/******************************************************************************
+Function:   gridmapdir_urlencode
+Description:
+        Convert string to URL encoded and return pointer to the encoded
+        version, obtained through malloc. Calling routine must free
+        this. Here "URL encoded" means anything other than an isalnum()
+        goes to %HH where HH is its ascii value in hex; also A-Z => a-z 
+        This name is suitable for filenames since no / or spaces.
+
+Parameters:
+        rawstring, the string to be converted
+
+Returns:
+        a pointer to the encoded string or NULL if the malloc failed
+
+******************************************************************************/
+static char 
+*gridmapdir_urlencode(char * rawstring)
+{
+     int          encodedchar = 0, rawchar = 0;
+     char *       encodedstring;
+     
+     encodedstring = (char *) malloc(3 * strlen(rawstring) + 1);
+     
+     if (encodedstring == NULL) return (char *) NULL;
+
+     while (rawstring[rawchar] != '\0')
+     {
+           if (isalnum(rawstring[rawchar]))
+           {
+               encodedstring[encodedchar] = tolower(rawstring[rawchar]);
+               ++rawchar;
+               ++encodedchar;
+           }
+           else
+           {
+               sprintf(&encodedstring[encodedchar], "%%%02x", 
+                                               rawstring[rawchar]);
+               ++rawchar;
+               encodedchar = encodedchar + 3;
+           }        
+     }
+
+     encodedstring[encodedchar] = '\0';
+     
+     return encodedstring;
+}
+
+/******************************************************************************
+Function:   gridmapdir_newlease
+Description:
+        Search for an unleased local username to give to the globus user
+        corresponding to encodedfilename, and then lease it.
+
+Parameters: 
+        encodedfilename, URL-encoded globus client name and pathname of 
+           the globus user who requested authentication 
+        usernameprefix, the prefix of acceptable usernames (or "\0")
+
+Returns:
+        no return value
+******************************************************************************/
+
+void
+gridmapdir_newlease(char *     encodedglobusidp,
+                    char *     usernameprefix)
+{
+     int            ret;
+     char           *userfilename, *encodedfilename, *gridmapdir;
+     struct dirent  *gridmapdirentry;
+     DIR            *gridmapdirstream;
+     struct stat    statbuf;
+     
+     gridmapdir = getenv("GRIDMAPDIR");
+     if (gridmapdir == NULL) return;
+
+     encodedfilename = malloc(strlen(gridmapdir) + (size_t) 2 + 
+                              strlen(encodedglobusidp));
+     sprintf(encodedfilename, "%s/%s", gridmapdir, encodedglobusidp);
+
+     gridmapdirstream = opendir(gridmapdir);
+
+     while ((gridmapdirentry = readdir(gridmapdirstream)) != NULL)
+     {
+       /* we dont want any files that dont look like acceptable usernames */
+       if ((*(gridmapdirentry->d_name) == '%') || 
+           (strcmp(gridmapdirentry->d_name, "root") == 0))   continue;
+       else if (*(gridmapdirentry->d_name) == '.')           continue;
+       else if (index(gridmapdirentry->d_name, '~') != NULL) continue;
+       else if (strncmp(gridmapdirentry->d_name, usernameprefix,
+                        strlen(usernameprefix)) != 0)        continue;
+
+       userfilename = malloc(strlen(gridmapdir) + (size_t) 2 + 
+                             strlen(gridmapdirentry->d_name));
+       sprintf(userfilename, "%s/%s", gridmapdir, gridmapdirentry->d_name);
+       stat(userfilename, &statbuf);
+       
+       if (statbuf.st_nlink == 1) /* this one isnt leased yet */
+       {   
+           ret = link(userfilename, encodedfilename);
+           free(userfilename);
+           if (ret != 0) 
+           {
+               /* link failed: this is probably because a VERY lucky
+                  other process has obtained a lease for encodedfilename 
+                  while we were faffing around */
+               closedir(gridmapdirstream);
+               free(encodedfilename);
+               return;
+           }
+     
+           stat(encodedfilename, &statbuf);
+           if (statbuf.st_nlink > 2) 
+           {
+              /* two globusIDs have grabbed the same username: back off */
+              unlink(encodedfilename);
+              continue;
+           }
+
+           closedir(gridmapdirstream);
+           free(encodedfilename);
+           return; /* link worked ok, so return */
+       }
+       else free(userfilename); /* already in use, try next one */
+     }
+     
+     closedir(gridmapdirstream);
+     free(encodedfilename);
+     return; /* no unleased names left: give up */     
+}
+     
+/******************************************************************************
+Function:   gridmapdir_userid
+Description:
+        This is equivalent to globus_gss_assist_gridmap but for the dynamic
+        user ids in the gridmapdir: maps a globusID to a local unix user id,
+        either one already leased, or calls gridmapdir_newlease() to obtain 
+        a new lease. This is called by globus_gss_assist_gridmap if the 
+        local user id in the static gridmap file begins . (for a dynamic id)
+
+Parameters: 
+        globusidp, globus client name who requested authentication 
+        usernameprefix, prefix of the local usernames which would 
+               be acceptable (or "\0" )
+        *userid returned userid name for local system. 
+
+Returns:
+       
+        0 on success
+        !=0 on failure
+
+******************************************************************************/
+
+static int
+gridmapdir_userid(char *     globusidp,
+                  char *     usernameprefix,
+                  char **    useridp)
+{
+     char             *encodedglobusidp;
+     
+     if (getenv("GRIDMAPDIR") == NULL) return 1; /* GRIDMAPDIR defined? */
+
+     if (globusidp[0] != '/') return 1; /* must be a proper subject DN */
+     
+     encodedglobusidp = gridmapdir_urlencode(globusidp);
+
+     *useridp = gridmapdir_otherlink(encodedglobusidp);
+
+     if (*useridp == NULL) /* maybe no lease yet */
+     {
+         gridmapdir_newlease(encodedglobusidp, usernameprefix); 
+         /* try making a lease */
+         
+         *useridp = gridmapdir_otherlink(encodedglobusidp); 
+         /* check if there is a now a lease - possibly made by someone else */
+
+         if (*useridp == NULL) 
+         {
+             free(encodedglobusidp);
+             return 1; /* still no good */
+         }
+     }
+
+     free(encodedglobusidp);
+     return 0;
+}
+
+/******************************************************************************
+Function:   gridmapdir_globusid
+Description:
+        This is equivalent to globus_gss_assist_map_local_user but for the 
+        dynamic user ids in the gridmapdir: search through leases to find
+        which globusID corresponds to a local unix user id.
+        This is called by globus_gss_assist_map_local_user 
+
+Parameters: 
+        globus client name who requested authentication 
+        *userid returned userid name for local system. 
+
+Returns:
+       
+        0 on success
+        !=0 on failure
+
+******************************************************************************/
+
+static int
+gridmapdir_globusid(char *     useridp,
+                    char **    globusidp)
+{
+     int              encodedptr = 0, decodedptr = 0;
+     char             *encodedglobusidp;
+     
+     if (useridp[0] == '/') return 1; /* must not be a subject DN */
+     
+     encodedglobusidp = gridmapdir_otherlink(useridp);
+
+     if (encodedglobusidp == NULL) return 1; /* not leased */
+     
+     *globusidp = malloc(strlen(encodedglobusidp));
+     
+     while (encodedglobusidp[encodedptr] != '\0')
+     {
+            if (encodedglobusidp[encodedptr] != '%')
+            {
+                (*globusidp)[decodedptr] = encodedglobusidp[encodedptr];
+                ++encodedptr;
+                ++decodedptr;
+            }
+            else /* must be a %HH encoded character */
+            {
+                /* even paranoids have enemies ... */
+                if (encodedglobusidp[encodedptr+1] == '\0') break;
+                if (encodedglobusidp[encodedptr+2] == '\0') break;
+
+                (*globusidp)[decodedptr] = 
+                   globus_i_gss_assist_xdigit_to_value(encodedglobusidp[encodedptr+1]) * 16 +
+                   globus_i_gss_assist_xdigit_to_value(encodedglobusidp[encodedptr+2]);
+
+                encodedptr = encodedptr + 3;
+                ++decodedptr;
+            }
+     }
+              
+     free(encodedglobusidp);
+     (*globusidp)[decodedptr] = '\0';
+     return 0;
+}
+
+/******************************************************************************
+Function:   gridmapdir_userok
+Description:
+        This is equivalent to globus_gss_assist_userok but for the dynamic
+        user ids in the gridmapdir: finds the local unix username leased to 
+        a globusID and compare with the username being checked.
+        This is called by globus_gss_assist_userok if the local user id in
+        the static gridmap file is -  (for a dynamic id)
+
+Parameters: 
+        globus client name who requested authentication 
+        userid to be checked
+
+Returns:
+        0 on success (authorization allowed)
+        !=0 on failure or authorization denied
+                
+******************************************************************************/
+
+static int
+gridmapdir_userok(char *     globusidp,
+                  char *     userid)
+{
+     char                    *encodedglobusidp, *leasedname;
+     
+     if (globusidp[0] != '/') return 1; /* must be a proper subject DN */
+     
+     encodedglobusidp = gridmapdir_urlencode(globusidp);
+     leasedname       = gridmapdir_otherlink(encodedglobusidp);
+     free(encodedglobusidp);
+
+     if (leasedname == NULL) return 1;
+
+     if (strcmp(userid, leasedname) == 0)
+     {
+         free(leasedname);
+         return 0;
+     }
+     else
+     {
+         free(leasedname);
+         return 1;
+     }
+}
+
+/******************************************************************************
+                     End of gridmapdir functions
+******************************************************************************/
+
 /**
  * @brief Look up the default mapping for a Grid identity in a gridmap file
  * @ingroup globus_gsi_gss_assist
@@ -157,6 +544,8 @@ globus_gss_assist_gridmap(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_gss_assist_gridmap_line_t *
                                         gline = NULL;
+    char                               *usernameprefix;
+    int                                 ret;
 
     static char *                       _function_name_ =
     "globus_gss_assist_gridmap";
@@ -213,6 +602,16 @@ globus_gss_assist_gridmap(
                 (_GASL("Duplicate string operation failed")));
 	    goto exit;
 	}
+
+	if ((*useridp)[0] == '.') /* need to use gridmapdir */
+	{             
+	    usernameprefix = strdup(&((*useridp)[1]));
+	    free(*useridp); *useridp = NULL;
+	    ret = gridmapdir_userid(globusidp, usernameprefix, useridp);
+	    free(usernameprefix);
+	    return ret;
+        }
+
     }
     else
     {
@@ -332,6 +731,12 @@ globus_gss_assist_userok(
         goto exit;
     }
 
+    if (*((gline->user_ids)[0]) == '.') /* try using gridmapdir */ 
+    {
+        globus_i_gss_assist_gridmap_line_free(gline);
+        return gridmapdir_userok(globusid, userid);
+    }
+    else
     for (useridp = gline->user_ids; *useridp != NULL; useridp++)
     {
 	if (strcmp(*useridp, userid) == 0)
@@ -503,7 +908,8 @@ globus_gss_assist_map_local_user(
         error_obj = globus_error_get(result);
         globus_object_free(error_obj);
 
-        return 1;
+        /* try with gridmapdir before giving up completely */
+        return gridmapdir_globusid(local_user, globusidp);
     }
 } 
 /* globus_gss_assist_map_local_user() */
@@ -1203,6 +1609,9 @@ globus_i_gss_assist_gridmap_parse_globusid(
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_i_gss_assist_gridmap_parse_globusid";
+
+    static char *                       hexdigit = "0123456789ABCDEF";
+
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     /*
@@ -1269,7 +1678,7 @@ globus_i_gss_assist_gridmap_parse_globusid(
          * First, make sure we have enough room in our output buffer.
          */
 
-	if ((buffer_index + 1 /* for NUL */) >= buffer_len)
+	while ((buffer_index + 4) >= buffer_len)
 	{
 	    /* Grow buffer */
 	    char *tmp_buffer;
@@ -1294,8 +1703,18 @@ globus_i_gss_assist_gridmap_parse_globusid(
             
 	    buffer = tmp_buffer;
 	}
-        
-	buffer[buffer_index++] = unparsed_char;
+
+	if ((unparsed_char < ' ') || (unparsed_char > '~'))
+	{
+	    buffer[buffer_index++] = '\\';
+	    buffer[buffer_index++] = 'x';
+	    buffer[buffer_index++] = hexdigit[(unparsed_char >> 4) & 0x0f];
+	    buffer[buffer_index++] = hexdigit[unparsed_char & 0x0f];
+	}
+	else
+	{
+	    buffer[buffer_index++] = unparsed_char;
+	}
 	buffer[buffer_index] = NUL;
 
 	escaped = 0;

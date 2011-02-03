@@ -20,7 +20,9 @@ Sources = \
 
 INCLUDES = $(GPT_INCLUDES)
 
-EXTRA_DIST=
+doc_DATA = GLOBUS_LICENSE
+
+EXTRA_DIST= $(doc_DATA)
 
 include_HEADERS= \
 	gaa.h \

@@ -1,4 +1,3 @@
-
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
@@ -7,14 +6,13 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST= \
+	globus-gsi-proxy-core.spec \
         version.h \
-        dirt.sh
+        dirt.sh \
+	$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-
-
-
-
-
