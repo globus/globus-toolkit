@@ -52,7 +52,6 @@ globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
 globus_extension_registry_t             globus_i_gfs_acl_registry;
 
-
 static globus_mutex_t                   gfs_l_data_brain_mutex;
 static globus_list_t *                  gfs_l_data_brain_ready_list = NULL;
 static globus_bool_t                    gfs_l_data_brain_ready = GLOBUS_FALSE;
@@ -147,6 +146,7 @@ typedef struct
     char *                              client_appname;
     char *                              client_appver;
     char *                              client_scheme;
+    gss_cred_id_t                       dcsc_cred;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -675,7 +675,12 @@ globus_l_gfs_free_session_handle(
         globus_xio_driver_list_destroy(
             session_handle->net_stack_list, GLOBUS_FALSE);
     }
-
+    if(session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
+    {
+        OM_uint32   min_rc;
+        gss_release_cred(
+            &min_rc, &session_handle->dcsc_cred);
+    }
     globus_handle_table_destroy(&session_handle->handle_table);
     globus_i_gfs_acl_destroy(&session_handle->acl_handle);
     globus_free(session_handle);
@@ -2444,6 +2449,90 @@ error:
     return result;
 }
 
+
+
+static char                             globus_l_gfs_base64_pad = '=';
+static char *                           globus_l_gfs_base64_n =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static 
+globus_result_t
+globus_l_gfs_base64_decode(
+    const unsigned char  *              inbuf,
+    globus_byte_t *                     outbuf,
+    globus_size_t *                     out_len)
+{
+    int                                 i;
+    int                                 j;
+    int                                 D;
+    char *                              p;
+
+    for(i=0, j=0; inbuf[i] && inbuf[i] != globus_l_gfs_base64_pad; i++)
+    {
+        if((p = strchr(globus_l_gfs_base64_n, inbuf[i])) == NULL)
+        {
+	    goto err;
+        }
+        D = p - globus_l_gfs_base64_n;
+        switch(i&3)
+        {
+            case 0:
+                outbuf[j] = D<<2;
+                break;
+            case 1:
+                outbuf[j++] |= D>>4;
+                outbuf[j] = (D&15)<<4;
+                break;
+            case 2:
+                outbuf[j++] |= D>>2;
+                outbuf[j] = (D&3)<<6;
+                break;
+            case 3:
+                outbuf[j++] |= D;
+                break;
+            default:
+                break;
+        }
+    }
+
+    switch(i&3)
+    {
+        case 1:
+	    goto err;
+ 
+       case 2:
+            if(D&15)
+            {
+	        goto err;
+            }
+            if(strcmp((char *) &inbuf[i], "=="))
+            {
+	        goto err;
+            }
+            break;
+
+        case 3:
+            if(D&3)
+            {
+	        goto err;
+            }
+            if(strcmp((char *) &inbuf[i], "="))
+            {
+	        goto err;
+            }
+            break;
+
+        default:
+            break;
+    }
+    *out_len = j;
+
+    return GLOBUS_SUCCESS;
+
+err:
+    return -1;
+
+}
+
 void
 globus_i_gfs_data_request_command(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -2527,6 +2616,76 @@ globus_i_gfs_data_request_command(
                 globus_gridftp_server_finished_command(op, result, NULL);
             }
             break;
+
+        case GLOBUS_GFS_CMD_DCSC:
+            if(strcasecmp(cmd_info->cksm_alg, "D") == 0)
+            {
+                if(op->session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
+                {
+                    OM_uint32           min_rc;
+                    gss_release_cred(
+                        &min_rc, &op->session_handle->dcsc_cred);
+                }
+            }
+            else if(strcasecmp(cmd_info->cksm_alg, "P") == 0)
+            {
+                globus_size_t           dcsc_len;
+                OM_uint32               major_status; 
+                OM_uint32               minor_status;
+                gss_buffer_desc         buf; 
+                gss_cred_id_t           cred;
+                
+                dcsc_len = strlen(cmd_info->pathname);
+                buf.value = calloc(1, dcsc_len);
+                
+                rc = globus_l_gfs_base64_decode(
+                    cmd_info->pathname, buf.value, &dcsc_len);
+                if(rc != GLOBUS_SUCCESS)
+                {
+                    globus_free(buf.value);
+                    result = GlobusGFSErrorGeneric(
+                        "Invalid base64 input for credential type P.");
+                }
+                else
+                {
+                    globus_libc_setenv("GLOBUS_GFS_IMSP", "1", 0);
+                            
+                    buf.length = strlen(buf.value);
+                    major_status = gss_import_cred(
+                        &minor_status,
+                        &cred,
+                        GSS_C_NO_OID,
+                        0,
+                        &buf,
+                        0,
+                        NULL);
+                    globus_free(buf.value);
+                    if(major_status != GSS_S_COMPLETE)
+                    {
+                        result = GlobusGFSErrorWrapFailed(
+                            "Credential import", minor_status);
+                    }
+                    else
+                    {
+                        if(op->session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
+                        {
+                            OM_uint32   min_rc;
+                            gss_release_cred(
+                                &min_rc, &op->session_handle->dcsc_cred);
+                        }
+                        
+                        op->session_handle->dcsc_cred = cred;
+                    }
+                }
+            }
+            else
+            {
+                result = GlobusGFSErrorGeneric("Unsupported credential type.");
+            }
+            call = GLOBUS_FALSE;
+            globus_gridftp_server_finished_command(op, result, NULL);
+            break;
+
         case GLOBUS_GFS_CMD_SITE_SETNETSTACK:
             if(strcasecmp(cmd_info->pathname, "default") == 0)
             {
@@ -2804,7 +2963,8 @@ globus_result_t
 globus_l_gfs_data_handle_init(
     globus_l_gfs_data_handle_t **       u_handle,
     globus_gfs_data_info_t *            data_info,
-    globus_list_t *                     net_stack_list)
+    globus_list_t *                     net_stack_list,
+    globus_l_gfs_data_session_t *       session_handle)
 {
     int                                 tcp_mem_limit;
     globus_l_gfs_data_handle_t *        handle;
@@ -2812,6 +2972,7 @@ globus_l_gfs_data_handle_init(
     globus_ftp_control_dcau_t           dcau;
     char *                              interface;
     globus_bool_t                       use_interface = GLOBUS_FALSE;
+    gss_cred_id_t                       cred;
     GlobusGFSName(globus_l_gfs_data_handle_init);
     GlobusGFSDebugEnter();
 
@@ -2964,8 +3125,18 @@ globus_l_gfs_data_handle_init(
     dcau.mode = handle->info.dcau;
     dcau.subject.mode = handle->info.dcau;
     dcau.subject.subject = handle->info.subject;
+    
+    if(session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
+    {
+        cred = session_handle->dcsc_cred;
+    }
+    else
+    {
+        cred = handle->info.del_cred;
+    }
+    
     result = globus_ftp_control_local_dcau(
-        &handle->data_channel, &dcau, handle->info.del_cred);
+        &handle->data_channel, &dcau, cred);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -3664,7 +3835,7 @@ globus_i_gfs_data_request_passive(
             data_info->del_cred = session_handle->del_cred;
         }
         result = globus_l_gfs_data_handle_init(
-            &handle, data_info, session_handle->net_stack_list);
+            &handle, data_info, session_handle->net_stack_list, session_handle);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
@@ -3917,7 +4088,7 @@ globus_i_gfs_data_request_active(
             data_info->del_cred = session_handle->del_cred;
         }
         result = globus_l_gfs_data_handle_init(
-            &handle, data_info, session_handle->net_stack_list);
+            &handle, data_info, session_handle->net_stack_list, session_handle);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
@@ -6424,7 +6595,8 @@ globus_i_gfs_data_session_start(
     session_handle->ref = 1;
     session_handle->del_cred = session_info->del_cred;
     session_handle->context = context;
-
+    session_handle->dcsc_cred = GSS_C_NO_CREDENTIAL;
+    
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
     {

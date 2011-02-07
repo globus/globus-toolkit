@@ -112,7 +112,8 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_SITE_DSI,
     GLOBUS_GFS_CMD_SITE_SETNETSTACK,
     GLOBUS_GFS_CMD_SITE_SETDISKSTACK,
-    GLOBUS_GFS_CMD_SITE_CLIENTINFO
+    GLOBUS_GFS_CMD_SITE_CLIENTINFO,
+    GLOBUS_GFS_CMD_DCSC
 } globus_gfs_command_type_t;
 
 /*
