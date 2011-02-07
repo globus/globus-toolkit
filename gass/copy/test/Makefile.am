@@ -34,6 +34,8 @@ Data = \
 test_SCRIPTS = $(Scripts)
 test_DATA=$(Data)
 
+CLEANFILES = globus-test-perl-initializer
+
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
 EXTRA_DIST = TESTS.pl $(ScriptSources) $(Data)
