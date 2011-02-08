@@ -1254,10 +1254,17 @@ globus_i_gsi_callback_check_signing_policy(
 
         if(result != GLOBUS_SUCCESS)
         {
-            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY);
-            goto exit;
+            if(globus_libc_getenv("GLOBUS_GFS_IMSP") != NULL)
+            {
+                result = GLOBUS_SUCCESS;
+            }
+            else
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY);
+                goto exit;
+            }
         }
     }
 
