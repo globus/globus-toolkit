@@ -35,7 +35,7 @@ sub new {
 	    fulllist => [],
 	    flavor => $arg{'flavor'},
 	    log => $log,
-            rootfile_supression => $arg{'rootfile_supression'},
+	    rootfile_supression => $arg{'rootfile_supression'},
 	   };
   bless $me, $class;
 
@@ -56,16 +56,16 @@ sub new {
 sub reset {
   my $self = shift;
   $self->{'list'} = [];
-  @{$self->{'list'}} = grep { $_->{'dir'} !~ m!share/globus/globus/packages/! }
+  @{$self->{'list'}} = grep { $_->{'dir'} !~ m!share/globus/packages/! }
     grep { $_->{'dir'} !~ m!etc/globus_packages/! }
       @{$self->{'fulllist'}};
 
 # need to leave this because of bug that leaves noinst files in the root dir.
-  @{$self->{'list'}} = grep { $_->{'dir'} =~ m!\w+!  
+  @{$self->{'list'}} = grep { $_->{'dir'} =~ m!\w+!
                                 or $_->{'name'} =~ m!\.xml!
                                   or $_->{'name'} =~ m!\.wsdd!
                                     or $_->{'name'} =~ m!setenv!
-                                      or $_->{'name'} =~ m!\.properties! } 
+                                      or $_->{'name'} =~ m!\.properties! }
     @{$self->{'list'}};
 
 }
@@ -75,7 +75,7 @@ sub flavored_files {
   my $f = $self->{'flavor'};
   my $list = $self->{'list'};
   my @newlist;
-  
+
   for (@{$list}) {
     if ($_->{'name'} =~ /[_-]$f/ and $_->{'name'} !~ /\.h$/) {
       push @newlist, $_;
@@ -111,7 +111,9 @@ sub flavored_headers {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'name'} =~ /\.h$/ and $_->{'dir'} =~ m!include/$f!) {
+    if ($_->{'name'} =~ /\.h$/
+        and ($_->{'dir'} =~ m!include/$f! or
+             $_->{'dir'} =~ m!lib(64)?(/.*)?/include!)) {
       push @newlist, $_;
     }
   }
@@ -123,7 +125,9 @@ sub noflavor_headers {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'name'} =~ /\.h$/ and $_->{'dir'} !~ m!include/$f!) {
+    if ($_->{'name'} =~ /\.h$/
+        and ($_->{'dir'} !~ m!include/$f! and
+             $_->{'dir'} !~ m!lib(64)?(/.*)?/include!)) {
       push @newlist, $_;
     }
   }
@@ -147,7 +151,7 @@ sub extract_setup_files {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'dir'} =~ m!^/setup/!) {
+    if ($_->{'dir'} =~ m!(?:/|^)setup(?:/|$)!) {
       push @newlist, $_;
     }
   }
@@ -159,9 +163,11 @@ sub extract_static_libs {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    # Changed to allow for lib/subdir/lib.a while still allowing
-    # lib/lib.a, where apparently the dir is just lib, not lib/
-    if ($_->{'name'} =~ /\.a$/ and $_->{'dir'} =~ m!lib$|lib/!) {
+    if ( ( $_->{'name'} =~ m!\.a$!
+           or $_->{'name'} =~ m!^[^.]*\.so$!
+           or $_->{'name'} =~ m!^[^.]*\.sl$!
+           or $_->{'name'} =~ m!^[^.]*\.dylib$! )
+         and $_->{'name'} =~ m!^lib!) {
       push @newlist, $_;
     }
   }
@@ -173,9 +179,9 @@ sub extract_dynamic_libs {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ( ( $_->{'name'} =~ m!\.so! 
-           or $_->{'name'} =~ m!\.sl! 
-           or $_->{'name'} =~ m!\.dylib! ) 
+    if ( ( $_->{'name'} =~ m!(?:\.so\.|\.[^.]+\.so)!
+           or $_->{'name'} =~ m!(?:\.sl\.|\.[^.]+\.sl)!
+           or $_->{'name'} =~ m!(?:\.dylib\.|\.[^.]+\.dylib)! )
          and $_->{'name'} =~ m!^lib!) {
       push @newlist, $_;
     }
@@ -188,7 +194,7 @@ sub extract_perl_modules {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'name'} =~ m!\.pm! and $_->{'dir'} =~ m!lib!) {
+    if ($_->{'name'} =~ m!\.pm! and $_->{'dir'} =~ m!perl5?!) {
       push @newlist, $_;
     }
   }
@@ -224,7 +230,7 @@ sub extract_data {
   my $list = $self->{'list'};
   my @newlist;
   for (@{$list}) {
-    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|include|lib|setup|share/globus/packages)(?:/|$)!) {
+    if ($_->{'dir'} !~ m!(?:/|^)(?:share/doc|man|s?bin|libexec|test|include|lib(64)?|perl5?|setup|share/globus/packages)(?:/|$)!) {
       push @newlist, $_;
     }
   }
@@ -236,8 +242,8 @@ sub add_package_metadata_files {
   $flavor = $self->{'flavor'} if !defined($flavor);
 
   for my $f (@{$self->{'fulllist'}}) {
-    if ($f->{'name'} eq "$ {flavor}_$type.filelist" or 
-	$f->{'name'} eq "pkg_data_$ {flavor}_$type.gpt") {
+    if ($f->{'name'} eq "${flavor}_$type.filelist" or
+        $f->{'name'} eq "pkg_data_${flavor}_$type.gpt") {
       push @{$self->{'list'}}, $f;
     }
   }

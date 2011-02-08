@@ -1,5 +1,4 @@
-#!  @PERL@
-#
+#! @PERL@
 
 @GPT_PERL_INITIALIZER@
 
@@ -10,9 +9,7 @@ use Cwd;
 use Config;
 
 #
-# Do a perl check for version >= 5.005.  See 'gpt-config' should
-# you # need to alter the invocation path to a valid perl interpreter in the
-# GPT front-end programs.
+# Do a perl check for version >= 5.005.
 #
 
 if ( ! ( defined eval "require 5.005" ) )
@@ -43,8 +40,7 @@ my $man = 0;
 my $help = 0;
 my ($verbose, $flavor_cfg, $srcfile, $static, $force,
     $installdir, $installonly, $allflavors, $stdflavors, $noflavor, 
-    $version, $update, $logdir, $nosrc,
-   $coresrc, $debug, $ignore_errors);
+    $version, $update, $logdir, $nosrc, $coresrc, $debug, $ignore_errors);
 my %macros;
 
 # process the -option options

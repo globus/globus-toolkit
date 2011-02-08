@@ -23,7 +23,7 @@ $VERSION     = 0.01;
 
     return $rpm if defined $rpm;
 
-    die "ERROR: GPT is not configured. Use gpt-config\n" 
+    die "ERROR: GPT is not configured.\n" 
       if ! defined eval ("require Grid::GPT::LocalEnv;");
 
     require Grid::GPT::LocalEnv;
@@ -71,7 +71,7 @@ $VERSION     = 0.01;
     
     return if defined $gtar;
 
-    die "ERROR: GPT is not configured. Use gpt-config\n" 
+    die "ERROR: GPT is not configured.\n" 
       if ! defined eval ("require Grid::GPT::LocalEnv;");
 
     require Grid::GPT::LocalEnv;

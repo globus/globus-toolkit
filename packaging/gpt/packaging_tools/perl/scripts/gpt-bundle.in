@@ -6,17 +6,13 @@ use Cwd;
 use Config;
 
 #
-# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' 
-# should you need to alter the invocation path to a valid perl interpreter in 
-# the GPT front-end programs.
+# Do a perl check for version >= 5.005.
 #
 
 if ( ! ( defined eval "require 5.005" ) )
 {
   die "GPT requires at least Perl version 5.005";
 }
-
-push (@INC, $perlmoduledir);
 
 system( "${sbindir}/gpt_version" ) == 0
          or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
@@ -802,7 +798,7 @@ sub bundlename
 
   if (! defined $arch) 
   {
-  die "ERROR: GPT is not configured. Use gpt-config\n" 
+  die "ERROR: GPT is not configured.\n" 
     if ! defined eval ("require Grid::GPT::LocalEnv;");
 
   require Grid::GPT::LocalEnv;
@@ -912,8 +908,7 @@ B<gpt-bundle> [options] packages
 B<gpt-bundle> Creates binary or source bundles from an installation or a
 collection of source packages.  These bundles can then distributed be
 installed using I<gpt-install> or I<gpt-build>. A bundle consists of a
-collection of packages and a XML formatted description file. The DTD
-for this file is found in I<$GPT_LOCATION/share/gpt/dtd/gpt_bundle.dtd>.
+collection of packages and a XML formatted description file.
 
 The script accepts a list of packages from the command line or from an
 inputed bundle description file.  It expands this list to include all

@@ -163,7 +163,7 @@ sub scan_for_valid_pkgfile
       return undef;
     }
 
-    return $f if $f =~ m!share/globus/globus/packages!;
+    return $f if $f =~ m!share/globus/packages!;
     return $f if $f =~ m!etc/globus_packages!;
     return undef;
   }

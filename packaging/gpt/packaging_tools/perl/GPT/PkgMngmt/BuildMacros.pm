@@ -21,7 +21,7 @@ $VERSION = '0.01';
 
 # Preloaded methods go here.
 sub find_make {
-  die "ERROR: GPT is not configured. Use gpt-config\n" 
+  die "ERROR: GPT is not configured.\n" 
     if ! defined eval ("require Grid::GPT::LocalEnv;");
 
   require Grid::GPT::LocalEnv;

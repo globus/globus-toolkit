@@ -2,6 +2,9 @@
 
 eval 'exec @PERL@  -S $0 ${1+"$@"}'
     if 0; # not running under some shell
+
+@GPT_PERL_INITIALIZER@
+
 use strict;
 use Getopt::Long;
 use File::Find;
@@ -9,20 +12,13 @@ use Cwd;
 use Config;
 
 #
-# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
-# need to alter the invocation path to a valid perl interpreter in the GPT front-end
-# programs.
+# Do a perl check for version >= 5.005.
 #
-
-@GPT_PERL_INITIALIZER@
 
 if ( ! ( defined eval "require 5.005" ) )
 {
     die "GPT requires at least Perl version 5.005";
 }
-
-push(@INC, "$perlmoduledir/$Config{'archname'}", @INC);
-
 
 require Grid::GPT::GPTIdentity;
 

@@ -271,7 +271,7 @@ sub write_tag {
   print FILE "<$tag->{'name'}";
 
   for my $a (sort keys %{$tag->{attributes}}) {
-    print FILE " $a=\"$tag->{attributes}->{$a}\" ";
+    print FILE " $a=\"$tag->{attributes}->{$a}\"";
   }
 
   if (@{$tag->{'contents'}} == 0) {

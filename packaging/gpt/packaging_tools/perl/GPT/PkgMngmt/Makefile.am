@@ -10,8 +10,7 @@ pkgmntmodules_DATA = \
 	Build.pm \
 	ExpandSource.pm \
 	FlavorMacros.pm \
-	Inform.pm \
-	SetupBuildFlavors.pm
+	Inform.pm
 
 EXTRA_DIST = $(pkgmntmodules_DATA) \
 	SetupBuildFlavors.pm.in

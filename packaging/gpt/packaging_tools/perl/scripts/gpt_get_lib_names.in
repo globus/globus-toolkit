@@ -1,9 +1,7 @@
 #! @PERL@
 
 #
-# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
-# need to alter the invocation path to a valid perl interpreter in the GPT front-end
-# programs.
+# Do a perl check for version >= 5.005.
 #
 
 if ( ! ( defined eval "require 5.005" ) )

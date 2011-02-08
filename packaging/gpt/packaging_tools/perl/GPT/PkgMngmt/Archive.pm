@@ -75,7 +75,7 @@ You can get the module from www.cpan.org";
     
     return if defined $gtar;
 
-    die "ERROR: GPT is not configured. Use gpt-config\n" 
+    die "ERROR: GPT is not configured.\n" 
       if ! defined eval ("require Grid::GPT::LocalEnv;");
 
     require Grid::GPT::LocalEnv;
@@ -95,7 +95,7 @@ You can get the module from www.cpan.org";
 sub new {
   my ($class, %arg) = @_;
 
-  die "ERROR: GPT is not configured. Use gpt-config\n" 
+  die "ERROR: GPT is not configured.\n" 
     if ! defined eval ("require Grid::GPT::LocalEnv;");
 
   require Grid::GPT::LocalEnv;

@@ -764,8 +764,7 @@ Grid::GPT::V1::Package - Perl extension for reading packaging metadata files
 =head1 DESCRIPTION
 
 I<Grid::GPT::V1::Package> is used to manage (ie. read, write, convert)
-packaging metadata. The data is stored in XML format that follows the
-file F<package.dtd>.
+packaging metadata. The data is stored in XML format.
 
 =head1 Metadata Fields
 

@@ -61,22 +61,7 @@ $VERSION           = '0.01';
 
     return if defined $gtar;
 
-    my $gpath = $ENV{GPT_LOCATION};
-
-    if (!defined($gpath))
-      {
-        $gpath = $ENV{GLOBUS_LOCATION};
-      }
-
-    if (!defined($gpath))
-      {
-        die "GPT_LOCATION or needs to be set before running this script";
-      }
-
-    # Add path to LocalEnv module to @INC
-    push @INC,"$gpath/var/lib/perl";
-
-    die "ERROR: GPT is not configured. Use gpt-config\n" 
+    die "ERROR: GPT is not configured.\n" 
       if ! defined eval ("require Grid::GPT::LocalEnv;");
 
     require Grid::GPT::LocalEnv;

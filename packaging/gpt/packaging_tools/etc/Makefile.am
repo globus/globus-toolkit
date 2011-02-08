@@ -19,3 +19,5 @@ EXTRA_DIST = \
     gpt_rpm.spec.template \
     $(aclocal_DATA) \
     $(libexec_SCRIPTS) 
+
+CLEANFILES = gpt_rpm.spec

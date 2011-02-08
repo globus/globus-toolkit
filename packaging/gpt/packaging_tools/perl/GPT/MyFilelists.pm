@@ -91,7 +91,7 @@ sub dev_files {
   push @$result, @$list;
   $me->{'filelist'}->reset();
 
-  $me->{'filelist'}->flavored_headers() if defined $me->{'mangling'};
+  $me->{'filelist'}->flavored_headers();
   $me->{'filelist'}->add_package_metadata_files('dev');
   $list = $me->{'filelist'}->get_list();
   push @$result, @$list;

@@ -211,13 +211,13 @@ sub set_tools {
   my $msg = "";
 
   if (defined $me->{'systar'}) {
-    $msg .= "Can't find GNU tar. Use -gtar=<location> flag" 
+    $msg .= "Can't find GNU tar. " 
       if ! defined $me->{'gtar_location'};
     $me->setsub('gtar', $me->{'gtar_location'});
-    $msg .= "Can't find GNU unzip. Use -gunzip=<location> flag" 
+    $msg .= "Can't find GNU unzip. " 
       if ! defined $me->{'gunzip_location'};
     $me->setsub('gunzip', $me->{'gunzip_location'});
-    $msg .= "Can't find GNU zip. Use -gzip=<location> flag" 
+    $msg .= "Can't find GNU zip. " 
       if ! defined $me->{'gzip_location'};
     $me->setsub('gzip', $me->{'gzip_location'});
   } else {
@@ -226,7 +226,7 @@ sub set_tools {
     $me->setsub('gunzip', 'N/A');
   }
 
-  $msg .= "Can't find GNU make. Use -gmake=<location> flag" 
+  $msg .= "Can't find GNU make. " 
     if ! defined $me->{'gmake_location'};
   $me->setsub('gmake', $me->{'gmake_location'});
   $me->{'rpm_location'} = 'Not Available' 
@@ -240,8 +240,8 @@ sub set_tools {
   $me->setsub('rpmbuild', $me->{'rpmbuild_location'});
 
   if ($msg ne "") {
-    die "ERROR: $msg with gpt-config\n" if ! defined $me->{'ignore_errors'};
-    print STDERR "WARNING: $msg with gpt-config\n";
+    die "ERROR: $msg\n" if ! defined $me->{'ignore_errors'};
+    print STDERR "WARNING: $msg\n";
   }
 }
 
@@ -328,33 +328,6 @@ sub clear_rpm_settings {
   $me->setsub('packager',"N/A");
   $me->setsub('prefix',"N/A");
 }
-
-
-sub localize {
-  my($me) = @_;
-
-  my $pmpath;
-  foreach my $dir (@INC) {
-      next unless ( -e "$dir/Grid/GPT/LocalEnv.pm.in");
-      $pmpath = $dir;
-      last;
-  }
-
-  open INFILE, "$pmpath/Grid/GPT/LocalEnv.pm.in";
-  open OUTFILE, ">$pmpath/Grid/GPT/LocalEnv.pm";
-
-  for my $l (<INFILE>) {
-    while (my ($n,$v) = each(%{$me->{'substitutions'}})) {
-      $v = "NOT CONFIGURED" if ! defined $v;
-      $l =~ s!\@$n\@!$v!g;
-    }
-    print OUTFILE $l;
-  }
-  close INFILE;
-  close OUTFILE;
-}
-
-
 
 1;
 __END__
