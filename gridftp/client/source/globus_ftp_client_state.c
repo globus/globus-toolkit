@@ -1756,12 +1756,108 @@ redo:
 	}
 
     skip_opts_retr:
+	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_DCSC;
+	goto redo;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_DCSC:
+	target->state = GLOBUS_FTP_CLIENT_TARGET_DCSC;
+
+	if(target->attr->dcsc_type == 0 || 
+	    (target->attr->dcsc_type == target->dcsc_type && 
+	    target->dcsc_blob && target->attr->dcsc_blob &&
+	    strcmp(target->attr->dcsc_blob, target->dcsc_blob) == 0))
+	{
+	    goto skip_dcsc;
+	}
+
+        if(globus_i_ftp_client_feature_get(target->features, 
+            GLOBUS_FTP_CLIENT_FEATURE_DCSC) != GLOBUS_FTP_CLIENT_TRUE &&
+            target->url.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
+        {
+            goto skip_dcsc;
+        }
+
+	/* changing DCSC forces us to trash our old data connections */
+	memset(&target->cached_data_conn,
+	       '\0',
+	       sizeof(globus_i_ftp_client_data_target_t));
+
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+	    target->url_string,
+	    target->mask,
+	    "DCSC %c%s%s" CRLF,
+	    (char) target->attr->dcsc_type,
+	    target->attr->dcsc_type == 'D' ? "" : " ",
+	    target->attr->dcsc_type == 'D' ? "" : target->attr->dcsc_blob);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+	{
+	    break;
+	}
+
+	globus_assert(
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+	result = globus_ftp_control_send_command(
+	    target->control_handle,
+	    "DCSC %c%s%s" CRLF,
+	    globus_i_ftp_client_response_callback,
+	    target,
+	    (char) target->attr->dcsc_type,
+	    target->attr->dcsc_type == 'D' ? "" : " ",
+	    target->attr->dcsc_type == 'D' ? "" : target->attr->dcsc_blob);
+
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+
+	break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_DCSC:
+	globus_assert(
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+	if((!error) &&
+	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+	{
+            target->dcsc_type = target->attr->dcsc_type;
+            if(target->dcsc_blob)
+            {
+                globus_free(target->dcsc_blob);
+            }
+            target->dcsc_blob = globus_libc_strdup(target->attr->dcsc_blob);
+            target->dcsc_p_cred = target->attr->dcsc_p_cred;
+	}
+	else
+	{
+	    error = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("DCSC");
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+	    goto notify_fault;
+	}
+
+    skip_dcsc:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU;
 	goto redo;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_DCAU;
-
+        
+        if(target->dcsc_p_cred != GSS_C_NO_CREDENTIAL)
+        {
+            target->attr->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
+        }
 	if(target->attr->dcau.mode == target->dcau.mode &&
 	   target->dcau.mode != GLOBUS_FTP_CONTROL_DCAU_DEFAULT)
 	{
@@ -1878,10 +1974,21 @@ redo:
 	    {
 		target->dcau.mode = target->attr->dcau.mode;
 	    }
-
-	    result = globus_ftp_control_local_dcau(target->control_handle,
-						   &target->dcau,
-                          target->control_handle->cc_handle.auth_info.credential_handle);
+            
+            if(target->dcsc_p_cred != GSS_C_NO_CREDENTIAL)
+            {                
+                result = globus_ftp_control_local_dcau(
+                    target->control_handle,
+                    &target->dcau,
+                    target->dcsc_p_cred);
+            }
+            else
+            {
+                result = globus_ftp_control_local_dcau(
+                    target->control_handle,
+                    &target->dcau,
+                    target->control_handle->cc_handle.auth_info.credential_handle);
+            }
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		goto result_fault;
@@ -2155,10 +2262,12 @@ redo:
             }
         }
 	/* Prefer PASV data connections for stream client/server operations */
+        /* unless asked not to via GLOBUS_FTP_CLIENT_NO_SERVER_PASV env var */
 	else if(client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION ||
 		(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
-		 target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM))
+		 target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM && 
+                 !globus_libc_getenv("GLOBUS_FTP_CLIENT_NO_SERVER_PASV")))
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
 	}
@@ -5136,6 +5245,13 @@ globus_l_ftp_client_parse_feat(
 		{
 		    target->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_DEFAULT;
 		}
+	    }
+	    else if(strncmp(feature_label, "DCSC", 4) == 0)
+	    {
+	        globus_i_ftp_client_feature_set(
+	            target->features,
+	            GLOBUS_FTP_CLIENT_FEATURE_DCSC,
+	            GLOBUS_FTP_CLIENT_TRUE);
 	    }
 	    else if(strncmp(feature_label, "ESTO", 4) == 0)
 	    {

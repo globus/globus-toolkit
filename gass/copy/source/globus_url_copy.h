@@ -72,6 +72,7 @@ typedef struct globus_guc_info_s
     globus_bool_t                       cache_dst_authz_assert;
     gss_cred_id_t                       src_cred;
     gss_cred_id_t                       dst_cred;
+    gss_cred_id_t                       data_cred;
 
     globus_bool_t                       verbose;
     globus_bool_t                       quiet;

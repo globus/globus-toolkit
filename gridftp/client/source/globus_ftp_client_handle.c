@@ -1142,17 +1142,20 @@ globus_result_t
 globus_l_ftp_client_override_attr(
     globus_i_ftp_client_target_t *		target)
 {
-    globus_result_t				result;
+    globus_result_t				result = GLOBUS_SUCCESS;
     globus_ftp_control_dcau_t			dcau;
 
     /* We bind the authentication state right away, however */
     if(target->url.scheme_type != GLOBUS_URL_SCHEME_GSIFTP)
     {
-	dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
-
-	result = globus_ftp_client_operationattr_set_dcau(
-		&target->attr,
-		&dcau);
+        if(!target->attr->dcsc_blob)
+        {
+            dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+            
+            result = globus_ftp_client_operationattr_set_dcau(
+                &target->attr,
+                &dcau);
+        }
 
 	if(result)
 	{
@@ -1300,6 +1303,10 @@ globus_l_ftp_client_target_delete(
     if(target->authz_assert)
     {
         globus_libc_free(target->authz_assert);
+    }
+    if(target->dcsc_blob)
+    {
+        globus_libc_free(target->dcsc_blob);
     }
     if(target->clientinfo_argstr)
     {
@@ -1926,7 +1933,7 @@ globus_i_ftp_client_can_reuse_data_conn(
     case GLOBUS_FTP_CLIENT_LIST:
     case GLOBUS_FTP_CLIENT_NLST:
     case GLOBUS_FTP_CLIENT_MLSD:
-	if(source == source->cached_data_conn.source &&
+	if(source && source == source->cached_data_conn.source &&
 	   source->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
 	   source->cached_data_conn.operation == GLOBUS_FTP_CLIENT_GET)
 	{
@@ -1934,7 +1941,7 @@ globus_i_ftp_client_can_reuse_data_conn(
 	}
 	break;
     case GLOBUS_FTP_CLIENT_PUT:
-	if(dest == dest->cached_data_conn.dest &&
+	if(dest && dest == dest->cached_data_conn.dest &&
 	   dest->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
 	   dest->cached_data_conn.operation == client_handle->op)
 	{
@@ -1942,7 +1949,7 @@ globus_i_ftp_client_can_reuse_data_conn(
 	}
 	break;
     case GLOBUS_FTP_CLIENT_TRANSFER:
-	if(source == source->cached_data_conn.source &&
+	if(source && dest && source == source->cached_data_conn.source &&
 	   source == dest->cached_data_conn.source &&
 	   dest == source->cached_data_conn.dest &&
 	   dest == dest->cached_data_conn.dest &&

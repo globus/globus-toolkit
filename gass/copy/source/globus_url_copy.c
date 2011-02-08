@@ -172,8 +172,10 @@ typedef struct
         
     gss_cred_id_t                       src_cred;
     gss_cred_id_t                       dst_cred;
+    gss_cred_id_t                       data_cred;
     char *                              src_cred_subj;
     char *                              dst_cred_subj;
+    char *                              data_cred_subj;
 
     char *                              mc_file;
     char *                              dumpfile;
@@ -704,6 +706,7 @@ enum
     arg_cred,
     arg_src_cred,
     arg_dst_cred,
+    arg_data_cred,
     arg_allo,
     arg_noallo,
     arg_delayed_pasv,
@@ -823,6 +826,7 @@ oneargdef(arg_dst_authz_assert, "-daa", "-dst-authz-assert", GLOBUS_NULL, GLOBUS
 oneargdef(arg_cred, "-cred", "-cred", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_src_cred, "-sc", "-src-cred", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dst_cred, "-dc", "-dst-cred", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_data_cred, "-data-cred", "-data-cred", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_sync_level, "-sync-level", "-sync-level", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dump_only, "-do", "-dump-only", GLOBUS_NULL, GLOBUS_NULL);
 
@@ -907,6 +911,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_cred);         	\
     setupopt(arg_src_cred);         	\
     setupopt(arg_dst_cred);         	\
+    setupopt(arg_data_cred);         	\
     setupopt(arg_stripe_bs);         	\
     setupopt(arg_striped);
 
@@ -1077,6 +1082,7 @@ globus_l_guc_ext(
     ext_info.pipeline = guc_info->pipeline;
     ext_info.src_cred = guc_info->src_cred;
     ext_info.dst_cred = guc_info->dst_cred;
+    ext_info.data_cred = guc_info->data_cred;
 
     rc = globus_extension_activate(g_ext);
     if(rc != 0)
@@ -2193,6 +2199,10 @@ globus_l_guc_info_destroy(
     {
         gss_release_cred(&min_stat, &guc_info->dst_cred);
     }
+    if(guc_info->data_cred != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &guc_info->data_cred);
+    }
     if(guc_info->src_cred_subj)
     {
         globus_free(guc_info->src_cred_subj);
@@ -2200,6 +2210,10 @@ globus_l_guc_info_destroy(
     if(guc_info->dst_cred_subj)
     {
         globus_free(guc_info->dst_cred_subj);
+    }
+    if(guc_info->data_cred_subj)
+    {
+        globus_free(guc_info->data_cred_subj);
     }
     if(guc_info->alias_file)
     {
@@ -3332,7 +3346,6 @@ globus_l_guc_load_cred(
     gss_name_t                          name;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
-
     if(path)
     {
         buf.value = globus_common_create_string("X509_USER_PROXY=%s", path);
@@ -3477,8 +3490,10 @@ globus_l_guc_parse_arguments(
     guc_info->cache_dst_authz_assert = GLOBUS_FALSE;
     guc_info->src_cred = GSS_C_NO_CREDENTIAL;
     guc_info->dst_cred = GSS_C_NO_CREDENTIAL;
+    guc_info->data_cred = GSS_C_NO_CREDENTIAL;
     guc_info->src_cred_subj = NULL;
     guc_info->dst_cred_subj = NULL;
+    guc_info->data_cred_subj = NULL;
     guc_info->dumpfile = NULL;
     guc_info->dump_only_file = NULL;
     guc_info->dump_only_fp = NULL;
@@ -3851,6 +3866,19 @@ globus_l_guc_parse_arguments(
                     return -1;
             }
             break;
+        case arg_data_cred:
+            result = globus_l_guc_load_cred(
+                instance->values[0], 
+                &guc_info->data_cred,
+                &guc_info->data_cred_subj);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    "Error loading data channel credential: %s\n",
+                    globus_error_print_friendly(globus_error_peek(result)));
+                    return -1;
+            }
+            break;
 	case arg_delayed_pasv:
 	    guc_info->delayed_pasv = GLOBUS_TRUE;
 	    break;
@@ -4161,7 +4189,7 @@ globus_l_guc_parse_arguments(
                 return -1;
         }
     }
-    
+
     if(subject && !guc_info->source_subject)
     {
         guc_info->source_subject = globus_libc_strdup(subject);
@@ -5626,6 +5654,11 @@ globus_l_guc_gass_attr_init(
                 subject);
         }
 
+        if(guc_info->data_cred != GSS_C_NO_CREDENTIAL)
+        {
+            globus_ftp_client_operationattr_set_data_security(
+                ftp_attr, 'P', guc_info->data_cred);
+        }
         if(guc_info->no_dcau)
         {
             dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;

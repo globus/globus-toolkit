@@ -5722,6 +5722,12 @@ globus_l_ftp_client_transfer_normalize_attrs(
     *normalized_source_attr = GLOBUS_NULL;
     *normalized_dest_attr = GLOBUS_NULL;
 
+    if((source_attr && *source_attr && (*source_attr)->dcsc_blob) || 
+        (dest_attr && *dest_attr && (*dest_attr)->dcsc_blob))
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
     normalized_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
 
     if(strncmp(source_url, dest_url, 3) != 0)
