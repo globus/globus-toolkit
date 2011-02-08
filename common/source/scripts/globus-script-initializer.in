@@ -29,41 +29,42 @@ sysconfdir="`eval_path '@sysconfdir@'`"
 sharedstatedir="`eval_path '@sharedstatedir@'`"
 localstatedir="`eval_path '@localstatedir@'`"
 
-if [ `uname 2> /dev/null` = Linux -o \
-     `uname 2> /dev/null` = SunOS ]; then
-    DELIM=
-    if [ -n "${LD_LIBRARY_PATH}" ]; then
-        DELIM=:
+if [ x$prefix != "x/usr" ]; then
+    if [ `uname 2> /dev/null` = Linux -o \
+         `uname 2> /dev/null` = SunOS ]; then
+        DELIM=
+        if [ -n "${LD_LIBRARY_PATH}" ]; then
+            DELIM=:
+        fi
+        LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
+        export LD_LIBRARY_PATH 
     fi
-    LD_LIBRARY_PATH="${libdir}${DELIM}${LD_LIBRARY_PATH}"
-    export LD_LIBRARY_PATH 
-fi
 
-
-if [ `uname 2> /dev/null` = 'Darwin' ]; then
-    DELIM=
-    if [ -n "${DYLD_LIBRARY_PATH}" ]; then
-        DELIM=:
+    if [ `uname 2> /dev/null` = 'Darwin' ]; then
+        DELIM=
+        if [ -n "${DYLD_LIBRARY_PATH}" ]; then
+            DELIM=:
+        fi
+        DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
+        export DYLD_LIBRARY_PATH
     fi
-    DYLD_LIBRARY_PATH="${libdir}${DELIM}${DYLD_LIBRARY_PATH}"
-    export DYLD_LIBRARY_PATH
-fi
 
-if [ `uname 2> /dev/null` = 'AIX' ]; then
-    if [ -z "${LIBPATH}" ]; then
-        LIBPATH="/usr/lib:/lib"
+    if [ `uname 2> /dev/null` = 'AIX' ]; then
+        if [ -z "${LIBPATH}" ]; then
+            LIBPATH="/usr/lib:/lib"
+        fi
+        LIBPATH="${libdir}:${LIBPATH}"
+        export LIBPATH
     fi
-    LIBPATH="${libdir}:${LIBPATH}"
-    export LIBPATH
-fi
 
-if [ `uname 2> /dev/null` = 'HP-UX' ]; then
-    DELIM=
-    if [ -n "${SHLIB_PATH}" ]; then
-        DELIM=:
+    if [ `uname 2> /dev/null` = 'HP-UX' ]; then
+        DELIM=
+        if [ -n "${SHLIB_PATH}" ]; then
+            DELIM=:
+        fi
+        SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
+        export SHLIB_PATH
     fi
-    SHLIB_PATH="${libdir}${DELIM}${SHLIB_PATH}"
-    export SHLIB_PATH
 fi
 
 globus_source () {

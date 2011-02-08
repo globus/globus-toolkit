@@ -12,7 +12,7 @@ my $setupfile;
 my $release = "1";
 my $directory;
 my $setupdirectory;
-my $toolkitversion = "5.0.2";
+my $toolkitversion = "5.2.0";
 my $email;
 my $nodoc;
 my $help;
@@ -225,21 +225,8 @@ else {
 }
 print "License:\tASL 2.0\n";
 print "URL:\t\thttp://www.globus.org/\n";
-print "#\t\tSource is extracted from the globus toolkit installer:\n";
-print "#\t\twget -N http://www-unix.globus.org/ftppub/$sourcedir/installers/src/gt$toolkitversion-all-source-installer.tar.bz2\n";
-print "#\t\ttar -jxf gt$toolkitversion-all-source-installer.tar.bz2\n";
-print "#\t\tmv gt$toolkitversion-all-source-installer/source-trees/" . ($directory ? $directory : "###DIRECTORY###") . " $gptname-$version\n";
-print "#\t\tcp -p gt$toolkitversion-all-source-installer/source-trees/core/source/GLOBUS_LICENSE $gptname-$version\n"
-    if ($name ne "globus-core");
-print "#\t\ttar -zcf $gptname-$version.tar.gz $gptname-$version\n";
 print "Source:\t\t%{_name}-%{version}.tar.gz\n";
 if (defined $setupfile) {
-    print "#\t\tSource1 is extracted from the globus toolkit installer:\n";
-    print "#\t\twget -N http://www-unix.globus.org/ftppub/$sourcedir/installers/src/gt$toolkitversion-all-source-installer.tar.bz2\n";
-    print "#\t\ttar -jxf gt$toolkitversion-all-source-installer.tar.bz2\n";
-    print "#\t\tmv gt$toolkitversion-all-source-installer/source-trees/" . ($setupdirectory ? $setupdirectory : "###DIRECTORY###") . " $setupname-$setupversion\n";
-    print "#\t\tcp -p gt$toolkitversion-all-source-installer/source-trees/core/source/GLOBUS_LICENSE $setupname-$setupversion\n";
-    print "#\t\ttar -zcf $setupname-$setupversion.tar.gz $setupname-$setupversion\n";
     print "Source1:\t%{_name}_setup-%{setupversion}.tar.gz\n";
 }
 if ($docpkg) {
@@ -283,13 +270,10 @@ if (!$libs) {
 	print "Requires:\t$key" . ($value > 0 ? " >= $value\n" : "\n")
 	    unless $key eq 'trusted-ca-setup';
     }
-    print "BuildRequires:\tgrid-packaging-tools\n";
+    print "BuildRequires:\tgrid-packaging-tools >= 3.3\n";
+    print "BuildRequires:\tglobus-core >= 7.5\n";
     while (($key, $value) = each(%{$srcdeps{'compile'}})) {
-	if ($key eq "globus-core") {
-	    print "BuildRequires:\t$key%{?_isa}" .
-		($value > 0 ? " >= $value\n" : "\n");
-	}
-	else {
+	if ($key ne "globus-core") {
 	    print "BuildRequires:\t$key-devel%{?_isa}" .
 		($value > 0 ? " >= $value\n" : "\n");
 	}
@@ -316,13 +300,10 @@ else {
 	print "Requires:\t$key" . ($value > 0 ? " >= $value\n" : "\n")
 	    unless $key eq 'trusted-ca-setup';
     }
-    print "BuildRequires:\tgrid-packaging-tools\n";
+    print "BuildRequires:\tgrid-packaging-tools >= 3.3\n";
+    print "BuildRequires:\tglobus-core >= 7.5\n";
     while (($key, $value) = each(%{$srcdeps{'compile'}})) {
-	if ($key eq "globus-core") {
-	    print "BuildRequires:\t$key%{?_isa}" .
-		($value > 0 ? " >= $value\n" : "\n");
-	}
-	else {
+	if ($key ne "globus-core") {
 	    print "BuildRequires:\t$key-devel%{?_isa}" .
 		($value > 0 ? " >= $value\n" : "\n");
 	}
@@ -337,7 +318,7 @@ else {
 	print "BuildRequires:\tgraphviz-gd\n";
 	print "%endif\n";
 	print "BuildRequires:\tghostscript\n";
-	print "%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 6\n";
+	print "%if %{?fedora}%{!?fedora:0} >= 9 || %{?rhel}%{!?rhel:0} >= 5\n";
 	print "BuildRequires:\ttex(latex)\n";
 	print "%else\n";
 	print "BuildRequires:\ttetex-latex\n";
@@ -486,12 +467,6 @@ rm -rf autom4te.cache
 ";
 
 print "
-# Remove flavor tags
-sed -e \"s!<With_Flavors!<With_Flavors ColocateLibraries=\\\"no\\\"!\" \\
-  -i pkgdata/pkg_data_src.gpt.in
-" if ($libs);
-
-print "
 unset GLOBUS_LOCATION
 unset GPT_LOCATION
 %{_datadir}/globus/globus-bootstrap.sh
@@ -499,12 +474,14 @@ unset GPT_LOCATION
 
 if ($docpkg) {
     print "
-%configure --with-flavor=%{flavor} --enable-doxygen --docdir=%{_docdir}/%{name}-%{version}
+%configure --disable-static --with-flavor=%{flavor} \\
+           --enable-doxygen --docdir=%{_docdir}/%{name}-%{version}
 ";
 }
 else {
     print "
-%configure --with-flavor=%{flavor}
+%configure --disable-static --with-flavor=%{flavor} \\
+           --docdir=%{_docdir}/%{name}-%{version}
 ";
 }
 
@@ -525,7 +502,7 @@ rm -rf autom4te.cache
 
 %{_datadir}/globus/globus-bootstrap.sh
 
-%configure --without-flavor
+%configure --without-flavor --docdir=%{_docdir}/%{name}-%{version}
 
 make %{?_smp_mflags}
 
@@ -573,8 +550,12 @@ if (not defined $pkglibs) {
 # This library is opened using lt_dlopenext, so the libtool archives
 # (.la files) can not be removed - fix the libdir...
 for lib in `find \$RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` ; do
-  sed \"s!^libdir=.*!libdir=\\'%{_libdir}\\'!\" -i \$lib
+  sed -e \"s!^libdir=.*!libdir=\\'%{_libdir}\\'!\" \\
+      -e \"s!^dependency_libs=.*!dependency_libs=\\'\\'!\" -i \$lib
 done
+grep 'lib.*\\.la\$' \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \\
+  >> \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist
+sed /lib.*\\.la\$/d -i \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 " if ($libs);
 }
 else {
@@ -586,9 +567,10 @@ sed '/lib.*\\.la\$/d' -i \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 }
 
 print "
-# Remove static libraries (.a files)
-find \$RPM_BUILD_ROOT%{_libdir} -name 'lib*.a' -exec rm -v '{}' \\;
-sed '/lib.*\\.a\$/d' -i \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
+# Move license file to main package
+grep GLOBUS_LICENSE \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\
+  >> \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist
+sed /GLOBUS_LICENSE/d -i \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
 " if ($libs);
 
 print "
@@ -598,10 +580,13 @@ sed -e '/_%{_name}-%{version}_.*\\.3/d' \\
   -i \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
 " if ($docpkg);
 
-print "# Generate package filelists\n";
+print "
+# Generate package filelists
+";
 
 if (!$libs) {
     print "cat \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \\\n";
+    print "    \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\\n"
     print "    \$GLOBUSPACKAGEDIR/%{_name}_setup/noflavor_pgm.filelist \\\n"
 	if defined $setupfile;
     print "  | sed s!^!%{_prefix}! > package.filelist\n";
@@ -644,7 +629,6 @@ print "
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
-%doc %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 ";
 
 print "
@@ -659,15 +643,12 @@ print "%dir %{_datadir}/globus/packages/%{_name}_setup
 print "
 %files -f package-devel.filelist devel
 %defattr(-,root,root,-)
-%{_libdir}/pkgconfig/%{name}.pc
 " if ($develpkg);
 
 print "
 %files -f package-doc.filelist doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
-%dir %{_docdir}/%{name}-%{version}/latex
-%dir %{_docdir}/%{name}-%{version}/rtf
 " if ($docpkg);
 
 print "
@@ -710,7 +691,7 @@ The package's source directory in the toolkit installer
 
 =item B<-toolkitversion> versionnumber
 
-Globus toolkit version (default: 5.0.2)
+Globus toolkit version (default: 5.2.0)
 
 =item B<-email> emailaddress
 

@@ -214,7 +214,7 @@ AC_OUTPUT(Makefile
 	aclocal/automake_config
 	config/Makefile
 	doxygen/Makefile
-        doxygen/globus-build-doxygen-dependencies
+	doxygen/globus-build-doxygen-dependencies
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters

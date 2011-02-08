@@ -39,7 +39,7 @@ BEGIN
     {
         push(@INC, 
                 "@libdir@/perl",
-                "@libdir@/lib/perl/$Config{archname}");
+                "@libdir@/perl/$Config{archname}");
     }
 }
 
@@ -166,9 +166,9 @@ sub main
     $hash = buildEnvHash($header);
     if(!($hash->{container}->{GLOBUS_LD}))
     {
-	$hash->{container}->{GLOBUS_LD}=$hash->{container}->{GLOBUS_CC};
-	my $ordering=$hash->{ordering};
-	push (@$ordering, "GLOBUS_LD");
+        $hash->{container}->{GLOBUS_LD} = $hash->{container}->{GLOBUS_CC};
+        my $ordering=$hash->{ordering};
+        push (@$ordering, "GLOBUS_LD");
     }
     displayHash($hash);
 
@@ -223,18 +223,18 @@ sub getDevLines
 
     my $verpkgs;
 
-      $verpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor, pkgtype => 'dev');
-      for my $l(@{$verpkgs->{'pkgs'}})
-      {
-	      my $vername=$l->{'depnode'}->{'Name'};
-	      $vername =~ tr/a-z/A-Z/;
-	      my $vernum = $l->{'depnode'}->{'Version'}->{'major'}."."
-	      	.$l->{'depnode'}->{'Version'}->{'minor'}."." 
-		.$l->{'depnode'}->{'Version'}->{'age'};
+    $verpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor, pkgtype => 'dev');
+    for my $l(@{$verpkgs->{'pkgs'}})
+    {
+        my $vername=$l->{'depnode'}->{'Name'};
+        $vername =~ tr/a-z/A-Z/;
+        my $vernum = $l->{'depnode'}->{'Version'}->{'major'}."."
+            .$l->{'depnode'}->{'Version'}->{'minor'}."." 
+            .$l->{'depnode'}->{'Version'}->{'age'};
 
-		push(@$header, $vername."_VERSION= ".$vernum."\n");
-      }
-    
+        push(@$header, $vername."_VERSION= ".$vernum."\n");
+    }
+
     my $libpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor);
     my $testpkgs = $libpkgs->{pkgs};
     if (!@$testpkgs)
@@ -292,7 +292,6 @@ sub getDevLines
     push(@$header, "GLOBUS_LIBS=\"$libslist\"");
     push(@$header, "GLOBUS_LDFLAGS=\"-L$Globus::Core::Paths::libdir\"");
     push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist $extlibslist\"");
-    push(@$header, "GLOBUS_LIBTOOL=\"$Globus::Core::Paths::sbindir/libtool-$flavor\"");
 }
 
 ### getBuildEnvLines( $header )
@@ -474,7 +473,9 @@ sub displayHash
         $value = stripHashValue($value);
         $value = formatHashValue($value);
 
-        $key =~ s/cross_compiling/CROSS_COMPILING/;
+        if ($key =~ /cross_compiling/ ) {
+            $value =~ s/CROSS/GLOBUS_CROSS/;
+        }
         $value =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
 
         printf("$key = $value\n");

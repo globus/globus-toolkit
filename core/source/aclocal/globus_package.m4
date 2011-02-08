@@ -1,6 +1,4 @@
 AC_DEFUN([GLOBUS_INIT], [
-globus_prefix="${prefix}"
-test "$globus_gprefix" = "NONE" && globus_gprefix="$ac_default_prefix"
 
 AM_MAINTAINER_MODE
 

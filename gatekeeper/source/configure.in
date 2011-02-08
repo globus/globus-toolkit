@@ -59,7 +59,7 @@ AC_ARG_WITH(initscript-config-path,
                 GATEKEEPER_CONFIGFILE="globus-gatekeeper.conf"
             ])
 
-LSB=""
+LSB="-nolsb"
 AC_ARG_WITH(lsb,
         AC_HELP_STRING(
             [--with-lsb],
@@ -77,6 +77,7 @@ AC_ARG_WITH(lsb,
                 fi
             ])
 
+AC_SUBST(LSB)
 AC_SUBST(GATEKEEPER_CONFIGDIR)
 AC_SUBST(GATEKEEPER_CONFIGFILE)
 
@@ -110,7 +111,8 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         init/Makefile
-        init/globus-gatekeeper:init/globus-gatekeeper${LSB}.in
+        init/globus-gatekeeper-lsb
+        init/globus-gatekeeper-nolsb
         config/Makefile
         config/globus-gatekeeper
         config/$GATEKEEPER_CONFIGFILE:config/globus-gatekeeper.in

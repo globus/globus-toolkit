@@ -3569,3 +3569,26 @@ globus_libc_join(
     
     return s;
 }
+
+/* These are no longer used, but are kept in the library in order to
+   be able to resolve symbols in binaries compiled against older versions
+   of the globus common library */
+#undef globus_libc_calloc
+void *globus_libc_calloc(size_t nmemb, size_t size)
+{
+    return calloc(nmemb, size);
+}
+#undef globus_libc_malloc
+void *globus_libc_malloc(size_t size)
+{
+    return malloc(size);
+}
+#undef globus_libc_free
+void globus_libc_free(void *ptr)
+{
+    free(ptr);
+}
+#undef globus_libc_realloc
+void *globus_libc_realloc(void *ptr, size_t size) {
+    return realloc(ptr, size);
+}

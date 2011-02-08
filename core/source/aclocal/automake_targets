@@ -22,7 +22,7 @@ amdirdir = ${datadir}/globus_amdir
 ## amdir = [ DATA ]
 
 perlmoduledir = @perlmoduledir@
-## perlmoduledir = [ DATA ]
+## perlmodule = [ DATA ]
 
 doxygendir = @doxygendir@
 ## doxygen = [ DATA ]

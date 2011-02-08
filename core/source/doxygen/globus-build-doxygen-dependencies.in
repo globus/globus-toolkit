@@ -37,7 +37,6 @@ use Cwd;
 my $srcfile;
 my $help;
 my $debug = 0;
-my $pkgdir= eval_path('@pkgdir@');
 my @deps;
 
 sub pod2usage
@@ -100,7 +99,7 @@ sub process_package($)
                 print STDERR "Found dependency $name\n" if $debug;
                 $dependencies{$name} = 1;
                 $new_pkgfile =
-                    "$pkgdir/$name/pkg_data_noflavor_doc.gpt";
+                    "$datadir/globus/packages/$name/pkg_data_noflavor_doc.gpt";
                 foreach(process_package($new_pkgfile, $name))
                 {
                      $dependencies{$_} = 1;

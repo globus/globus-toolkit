@@ -20,12 +20,12 @@ require Exporter;
 
 @EXPORT = qw($exec_prefix $prefix
              $sbindir $bindir
-	     $libdir $libexecdir $includedir
+             $libdir $libexecdir $includedir
              $flavorincludedir
              $datarootdir
              $mandir
-	     $datadir $sysconfdir $sharedstatedir
-	     $localstatedir);
+             $datadir $sysconfdir $sharedstatedir
+             $localstatedir);
 
 sub eval_path
 {
@@ -50,13 +50,13 @@ sub eval_path
 
 if (exists $ENV{GLOBUS_LOCATION})
 {
-    $prefix=$ENV{GLOBUS_LOCATION};
+    $prefix = $ENV{GLOBUS_LOCATION};
 }
 else
 {
-    $prefix='@prefix@';
+    $prefix = '@prefix@';
 }
-$exec_prefix=eval_path('@exec_prefix@');
+$exec_prefix = eval_path('@exec_prefix@');
 $sbindir = eval_path('@sbindir@');
 $bindir = eval_path('@bindir@');
 $libdir = eval_path('@libdir@');

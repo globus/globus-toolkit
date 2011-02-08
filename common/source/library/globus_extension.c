@@ -21,12 +21,7 @@
 #include "globus_libc.h"
 
 #ifndef BUILD_STATIC_ONLY
-
-#   ifdef WIN32
-#       include "globus_libtool_windows.h"
-#   else
-#       include "ltdl.h"
-#   endif
+#include "ltdl.h"
 #endif /* !BUILD_STATIC_ONLY */
 
 #include "globus_common.h"
