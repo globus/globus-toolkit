@@ -3288,6 +3288,7 @@ globus_gsc_959_command_add(
     cmd_ent->help = globus_libc_strdup(help);
     cmd_ent->min_argc = min_argc;
     cmd_ent->max_argc = max_argc;
+    cmd_ent->restrict_list = NULL;
     if(command_name == NULL)
     {
         globus_list_insert(&server_handle->all_cmd_list, cmd_ent);
