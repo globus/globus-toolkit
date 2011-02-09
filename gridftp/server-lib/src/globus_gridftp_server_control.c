@@ -2205,7 +2205,7 @@ globus_l_gsc_command_callout(
     globus_i_gsc_op_t *                 op;
     globus_gsc_959_command_cb_t         cmd_cb = NULL;
     globus_i_gsc_server_handle_t *      server_handle;
-    globus_bool_t                       restrict = GLOBUS_FALSE;
+    globus_bool_t                       fail_restrict = GLOBUS_FALSE;
     globus_list_t *                     list;
 
     GlobusGridFTPServerName(globus_l_gsc_command_callout);
@@ -2272,7 +2272,7 @@ globus_l_gsc_command_callout(
             op->command, &cmd_array, cmd_ent->max_argc);
 
         list = cmd_ent->restrict_list;
-        while(!globus_list_empty(list) && !restrict)
+        while(!globus_list_empty(list) && !fail_restrict)
         {
             globus_bool_t               done = GLOBUS_FALSE;
             char **                     restrict_args = NULL;
@@ -2301,15 +2301,15 @@ globus_l_gsc_command_callout(
                 {
                     if(strcasecmp(cmd_array[i], restrict_args[i]) == 0)
                     {
-                        restrict = GLOBUS_TRUE;
+                        fail_restrict = GLOBUS_TRUE;
                     }
                     else
                     {
-                        restrict = GLOBUS_FALSE;
+                        fail_restrict = GLOBUS_FALSE;
                     }
                 }
                 i++;
-            } while(restrict && !done);
+            } while(fail_restrict && !done);
             
             if(restrict_args)
             {
@@ -2322,7 +2322,7 @@ globus_l_gsc_command_callout(
             globus_gsc_959_finished_command(op,
                 _FSMSL("501 Syntax error in parameters or arguments.\r\n"));
         }
-        else if(restrict)
+        else if(fail_restrict)
         {
             globus_gsc_959_finished_command(op,
                 _FSMSL("501 Command arguments disabled.\r\n"));
