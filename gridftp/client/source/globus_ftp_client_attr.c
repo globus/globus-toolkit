@@ -69,11 +69,13 @@ GSS_CALLCONV gss_export_cred_with_full_cert_chain(
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     result = globus_gsi_cred_read_proxy_bio(cred_handle, mem);        
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
 
     BIO_free(mem);
@@ -83,32 +85,38 @@ GSS_CALLCONV gss_export_cred_with_full_cert_chain(
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir);
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     result = globus_gsi_callback_set_cert_dir(cred_data, ca_cert_dir);
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     result = globus_gsi_cred_verify_cert_chain(cred_handle, cred_data);
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     result = globus_gsi_callback_get_cert_chain(cred_data, &chain);
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
 
     result = globus_gsi_cred_set_cert_chain(cred_handle, chain);
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     
     mem = BIO_new(BIO_s_mem());
@@ -117,6 +125,7 @@ GSS_CALLCONV gss_export_cred_with_full_cert_chain(
     if(result != GLOBUS_SUCCESS)
     {
         *minor_status = result;
+        goto error;
     }
     buf.length = BIO_get_mem_data(mem, &buf.value);
         
