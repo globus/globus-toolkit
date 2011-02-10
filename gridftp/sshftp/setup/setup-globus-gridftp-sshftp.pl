@@ -60,7 +60,7 @@ export GLOBUS_LOCATION=$globusdir
 
 #export GLOBUS_TCP_PORT_RANGE=50000,50100
 
-\$GLOBUS_LOCATION/sbin/globus-gridftp-server -ssh 
+exec \$GLOBUS_LOCATION/sbin/globus-gridftp-server -ssh 
 # -data-interface <interface to force data connections>
 EOF
 
@@ -103,17 +103,17 @@ fi
 
 remote_default1=.globus/sshftp
 remote_default2=/etc/grid-security/sshftp
-
+remote_fail="echo -e 500 Server is not configured for SSHFTP connections.\\\\\\r\\\\\\n"
 remote_program=\$GLOBUS_REMOTE_SSHFTP
 if  [ "X" = "X\$remote_program" ]; then
-    remote_program="(( test -f \$remote_default1 && \$remote_default1 ) || \$remote_default2 )"
+    remote_program="(( test -f \$remote_default1 && \$remote_default1 ) || ( test -f \$remote_default2 && \$remote_default2 ) || \$remote_fail )"
 fi
 
 if [ "X" != "X\$GLOBUS_SSHFTP_PRINT_ON_CONNECT" ]; then
     echo "Connecting to \$1 ..." >/dev/tty
 fi
 
-$sshprog \$port_str \$remote_host \$remote_program
+exec $sshprog \$port_str \$remote_host \$remote_program
 EOF
 
 ######################################################
