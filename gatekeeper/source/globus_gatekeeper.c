@@ -2078,22 +2078,19 @@ static void doit()
         setenv("LOGIN",userid,1);
         setenv("HOME",pw->pw_dir,1);
         setenv("SHELL",pw->pw_shell,1);
-        /* 
-         * Could set path, and other variables as well 
-         * Unset many of the gssapi set env variables. 
-         * If not present won't hurt to unset. 
-         * Leave the X509_CERT_DIR of trusted certs
-         * for the user to use. 
-         */
-        unsetenv("GRIDMAP"); /* unset it */
-        unsetenv("GLOBUSCERTDIR"); /* unset it */
-        unsetenv("GLOBUSKEYDIR"); /* unset it */
-        unsetenv("X509_USER_KEY"); /* unset it */
-        unsetenv("X509_USER_CERT"); /* unset it */
-
-	/* SLANG - can't unset this, otherwise jobmanager won't know where to look. */
-	/* unsetenv("X509_USER_PROXY"); */ /* unset it  */
     }
+    /* 
+     * Could set path, and other variables as well 
+     * Unset many of the gssapi set env variables. 
+     * If not present won't hurt to unset. 
+     * Leave the X509_CERT_DIR of trusted certs
+     * for the user to use. 
+     */
+    unsetenv("GRIDMAP"); /* unset it */
+    unsetenv("GLOBUSCERTDIR"); /* unset it */
+    unsetenv("GLOBUSKEYDIR"); /* unset it */
+    unsetenv("X509_USER_KEY"); /* unset it */
+    unsetenv("X509_USER_CERT"); /* unset it */
 
     /* for tranition, if gatekeeper has the path, set it
      * for the grid_services to use 
