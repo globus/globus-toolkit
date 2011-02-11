@@ -175,6 +175,7 @@ typedef struct globus_l_gsc_cmd_ent_s
     void *                              user_arg;
     int                                 max_argc;
     int                                 min_argc;
+    globus_list_t *                     restrict_list;
 } globus_l_gsc_cmd_ent_t;
 
 typedef struct globus_l_gsc_reply_ent_s
@@ -2208,6 +2209,9 @@ globus_l_gsc_command_callout(
     globus_i_gsc_op_t *                 op;
     globus_gsc_959_command_cb_t         cmd_cb = NULL;
     globus_i_gsc_server_handle_t *      server_handle;
+    globus_bool_t                       fail_restrict = GLOBUS_FALSE;
+    globus_list_t *                     list;
+
     GlobusGridFTPServerName(globus_l_gsc_command_callout);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -2270,10 +2274,62 @@ globus_l_gsc_command_callout(
     {
         argc = globus_l_gsc_parse_command(
             op->command, &cmd_array, cmd_ent->max_argc);
+
+        list = cmd_ent->restrict_list;
+        while(!globus_list_empty(list) && !fail_restrict)
+        {
+            globus_bool_t               done = GLOBUS_FALSE;
+            char **                     restrict_args = NULL;
+            int                         i;
+            char *                      restrict_cmd;
+            
+            restrict_cmd = globus_list_first(list);
+            list = globus_list_rest(list);
+            
+            globus_l_gsc_parse_command(
+                restrict_cmd, &restrict_args, cmd_ent->max_argc);
+
+            i = 1;
+            if(strcmp(cmd_array[0], "SITE") == 0)
+            {
+                i++;
+            }
+            
+            do
+            {
+                if(!cmd_array[i] || !restrict_args || !restrict_args[i])
+                {
+                    done = GLOBUS_TRUE;
+                }
+                else
+                {
+                    if(strcasecmp(cmd_array[i], restrict_args[i]) == 0)
+                    {
+                        fail_restrict = GLOBUS_TRUE;
+                    }
+                    else
+                    {
+                        fail_restrict = GLOBUS_FALSE;
+                    }
+                }
+                i++;
+            } while(fail_restrict && !done);
+            
+            if(restrict_args)
+            {
+                globus_l_gsc_free_command_array(restrict_args);
+            }
+        }           
+            
         if(argc < cmd_ent->min_argc)
         {
             globus_gsc_959_finished_command(op,
                 _FSMSL("501 Syntax error in parameters or arguments.\r\n"));
+        }
+        else if(fail_restrict)
+        {
+            globus_gsc_959_finished_command(op,
+                _FSMSL("501 Command arguments disabled.\r\n"));
         }
         else if(server_handle->fault_cmd != NULL)
         {
@@ -2468,6 +2524,10 @@ globus_l_gsc_hash_cmd_destroy(
         {
             globus_free(cmd_ent->help);
         }
+        if(!globus_list_empty(cmd_ent->restrict_list))
+        {
+            globus_list_destroy_all(cmd_ent->restrict_list, globus_libc_free);
+        }
         globus_free(cmd_ent);
     }
     GlobusGridFTPServerDebugVerboseExit();
@@ -2628,6 +2688,10 @@ globus_gridftp_server_control_destroy(
         if(cmd_ent->help != NULL)
         {
             globus_free(cmd_ent->help);
+        }
+        if(!globus_list_empty(cmd_ent->restrict_list))
+        {
+            globus_list_destroy_all(cmd_ent->restrict_list, globus_libc_free);
         }
         globus_free(cmd_ent);
     }
@@ -2798,6 +2862,12 @@ globus_gridftp_server_control_start(
     {
         res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
             GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
+            GLOBUS_XIO_TCP_SET_KEEPALIVE, GLOBUS_TRUE);
         if(res != GLOBUS_SUCCESS)
         {
             goto err;
@@ -3216,6 +3286,7 @@ globus_gsc_959_command_add(
     cmd_ent->help = globus_libc_strdup(help);
     cmd_ent->min_argc = min_argc;
     cmd_ent->max_argc = max_argc;
+    cmd_ent->restrict_list = NULL;
     if(command_name == NULL)
     {
         globus_list_insert(&server_handle->all_cmd_list, cmd_ent);
@@ -3260,29 +3331,79 @@ globus_gsc_959_command_remove(
     const char *                        command_name)
 {
     globus_result_t                     res;
-    globus_list_t *                     list;
+    globus_list_t *                     list = NULL;
     globus_l_gsc_cmd_ent_t *            cmd_ent;
-    GlobusGridFTPServerName(globus_gsc_command_add);
+    char *                              restrict_args = NULL;
+    char *                              cmd_name;
+    char *                              tmp_ptr;
+    char *                              spacer;
+    GlobusGridFTPServerName(globus_gsc_command_remove);
 
     globus_mutex_lock(&server_handle->mutex);
     {
+        tmp_ptr = command_name;
+        while(*tmp_ptr == ' ') tmp_ptr++;
+        cmd_name = globus_libc_strdup(tmp_ptr);
 
-        if(strncmp("SITE ", command_name, 5) == 0 && strlen(command_name) > 5)
+        for(tmp_ptr = cmd_name; tmp_ptr && *tmp_ptr && *tmp_ptr != ' '; tmp_ptr++)
         {
-            char * tmp_ptr;
-            char * cmd_name;
-
-            tmp_ptr = (char *)&command_name[5];
+            *tmp_ptr = toupper(*tmp_ptr);
+        }
+        
+        if(strncmp("SITE ", cmd_name, 5) == 0 && strlen(cmd_name) > 5)
+        {
+            char *                      save_ptr;
+            
+            tmp_ptr = (char *)&cmd_name[5];
             while(*tmp_ptr == ' ') tmp_ptr++;
-            cmd_name = tmp_ptr;
+            save_ptr = tmp_ptr;
+            for(; tmp_ptr && *tmp_ptr && *tmp_ptr != ' '; tmp_ptr++)
+            {
+                *tmp_ptr = toupper(*tmp_ptr);
+            }
+            tmp_ptr = save_ptr;
+            
+            restrict_args = strchr(tmp_ptr, ' ');
+            if(restrict_args)
+            {
+                *restrict_args = '\0';
+                restrict_args++;
+                while(restrict_args && *restrict_args == ' ') restrict_args++;
 
-            list = (globus_list_t *) globus_hashtable_remove(
-                &server_handle->site_cmd_table, cmd_name);
+                if(restrict_args && *restrict_args)
+                {
+                    spacer = "SITE NONE";
+                    list = (globus_list_t *) globus_hashtable_lookup(
+                        &server_handle->site_cmd_table, tmp_ptr);
+                }
+            }
+            if(!list)
+            {
+                list = (globus_list_t *) globus_hashtable_remove(
+                    &server_handle->site_cmd_table, tmp_ptr);
+            }
         }
         else
         {
-            list = (globus_list_t *) globus_hashtable_remove(
-                &server_handle->cmd_table, command_name);
+            restrict_args = strchr(cmd_name, ' ');
+            if(restrict_args)
+            {
+                *restrict_args = '\0';
+                restrict_args++;
+                while(restrict_args && *restrict_args == ' ') restrict_args++;
+
+                if(restrict_args && *restrict_args)
+                {
+                    spacer = "NONE";
+                    list = (globus_list_t *) globus_hashtable_lookup(
+                        &server_handle->cmd_table, cmd_name);
+                }
+            }
+            if(!list)
+            {
+                list = (globus_list_t *) globus_hashtable_remove(
+                    &server_handle->cmd_table, cmd_name);
+            }
         }
 
         if(list == NULL)
@@ -3291,24 +3412,47 @@ globus_gsc_959_command_remove(
             goto error_notexist;
         }
 
-        while(!globus_list_empty(list))
-        {
-            cmd_ent = (globus_l_gsc_cmd_ent_t *)
-                globus_list_remove(&list, list);
-
-            if(cmd_ent->help)
+        if(restrict_args && *restrict_args)
+        {            
+            while(!globus_list_empty(list))
             {
-                globus_free(cmd_ent->help);
+                cmd_ent = (globus_l_gsc_cmd_ent_t *) globus_list_first(list);
+                
+                globus_list_insert(
+                    &cmd_ent->restrict_list,
+                    globus_common_create_string("%s %s\r\n",spacer, restrict_args));
+
+                list = globus_list_rest(list);
             }
-            globus_free(cmd_ent->cmd_name);
-            globus_free(cmd_ent);
         }
+        else
+        {
+            while(!globus_list_empty(list))
+            {
+                cmd_ent = (globus_l_gsc_cmd_ent_t *)
+                    globus_list_remove(&list, list);
+    
+                if(cmd_ent->help)
+                {
+                    globus_free(cmd_ent->help);
+                }
+                if(!globus_list_empty(cmd_ent->restrict_list))
+                {
+                    globus_list_destroy_all(
+                        cmd_ent->restrict_list, globus_libc_free);
+                }
+                globus_free(cmd_ent->cmd_name);
+                globus_free(cmd_ent);
+            }
+        }
+        globus_free(cmd_name);
     }
     globus_mutex_unlock(&server_handle->mutex);
-
+    
     return GLOBUS_SUCCESS;
 
 error_notexist:
+    globus_free(cmd_name);
     globus_mutex_unlock(&server_handle->mutex);
     return res;
 }

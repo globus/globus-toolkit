@@ -307,11 +307,14 @@ globus_l_gfs_signal_init()
         NULL);
 #   endif
 #   ifdef SIGHUP
-    globus_callback_register_signal_handler(
-        SIGHUP,
-        GLOBUS_TRUE,
-        globus_l_gfs_sighup,
-        NULL);
+    if(globus_i_gfs_config_string("loaded_config"))
+    {
+        globus_callback_register_signal_handler(
+            SIGHUP,
+            GLOBUS_TRUE,
+            globus_l_gfs_sighup,
+            NULL);
+    }
 #   endif
 
 #   ifdef SIGKILL
@@ -604,7 +607,7 @@ globus_l_gfs_new_server_cb(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-             "Couldnt get remote contact.  Possible using a non-tcp protocol");
+                "Couldn't get remote contact.  Possibly using a non-tcp protocol.\n");
             remote_contact = strdup("0.0.0.0");
         }
         if(!globus_i_gfs_config_allow_addr(remote_contact, GLOBUS_FALSE))
@@ -625,7 +628,7 @@ globus_l_gfs_new_server_cb(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-             "Couldnt get remote contact.  Possible using a non-tcp protocol");
+                "Couldn't get remote contact.  Possibly using a non-tcp protocol.\n");
             remote_contact = strdup("0.0.0.0");
         }
         
@@ -648,7 +651,7 @@ globus_l_gfs_new_server_cb(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-             "Couldnt get local contact.  Possible using a non-tcp protocol");
+                "Couldn't get local contact.  Possibly using a non-tcp protocol.\n");
             local_contact = strdup("0.0.0.0");
         }
 
@@ -663,14 +666,26 @@ globus_l_gfs_new_server_cb(
             {
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_INFO,
-                 "Couldnt get local contact.  Possible using a non-tcp protocol");
+                    "Couldn't get local contact.  Possibly using a non-tcp protocol.\n");
                 tmp_local_contact = strdup("0.0.0.0:0");
             }
 
             globus_gfs_config_set_ptr("contact_string", tmp_local_contact);
         }
 
-
+        result = globus_xio_handle_cntl(
+            handle,
+            globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_SET_NODELAY,
+            GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO, 
+                "Couldn't enable TCP_NODELAY.  Possibly using a non-tcp protocol.\n");
+            result = GLOBUS_SUCCESS;
+        }
+            
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
@@ -873,6 +888,11 @@ globus_l_gfs_reject_write_cb(
 {
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
+        if(user_arg)
+        {
+            globus_free(user_arg);
+        }
+        
         result = globus_xio_register_close(
             handle,
             NULL,
@@ -894,8 +914,31 @@ globus_l_gfs_reject_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    char * sorry_msg = "421 Service not available, closing control connection\r\n";
-
+    char *                              sorry_msg;
+    char *                              tmp_msg;
+    int                                 len;
+    
+    if(globus_gfs_config_get_int("connections_max") == 0 || 
+        globus_i_gfs_config_bool("connections_disabled"))
+    {
+        if((tmp_msg = globus_gfs_config_get_string("offline_msg")) != NULL)
+        {
+            sorry_msg = globus_common_create_string("422 %s\r\n", tmp_msg);
+        }
+        else
+        {
+            sorry_msg = globus_libc_strdup(
+                "422 Service temporarily offline. Closing control connection.\r\n");
+        }
+    }
+    else
+    {
+        sorry_msg = globus_libc_strdup(
+            "421 Service busy: Connection limit exceeded. Please try again "
+            "later. Closing control connection.\r\n");
+    }
+    
+    len = strlen(sorry_msg);
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         if(result != GLOBUS_SUCCESS)
@@ -906,11 +949,11 @@ globus_l_gfs_reject_open_cb(
         result = globus_xio_register_write(
             handle,
             sorry_msg,
-            strlen(sorry_msg),
-            strlen(sorry_msg),
+            len,
+            len,
             NULL,
             globus_l_gfs_reject_write_cb,
-            NULL);
+            sorry_msg);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -921,7 +964,7 @@ globus_l_gfs_reject_open_cb(
     return;
 
 error:
-
+    globus_free(sorry_msg);
     result = globus_xio_register_close(
         handle,
         NULL,
@@ -956,9 +999,10 @@ globus_l_gfs_server_accept_cb(
         }
 
         /* if too many already open */
-        if(globus_gfs_config_get_int("connections_max") != 0 &&
+        if((globus_gfs_config_get_int("connections_max") != -1 &&
             globus_gfs_config_get_int("open_connections_count")
-                 >= globus_gfs_config_get_int("connections_max"))
+                 >= globus_gfs_config_get_int("connections_max")) ||
+            globus_i_gfs_config_bool("connections_disabled"))
         {
             result = globus_xio_register_open(
                 handle,
@@ -1022,8 +1066,7 @@ globus_l_gfs_server_accept_cb(
                 globus_l_gfs_xio_server = GLOBUS_NULL;
             }
         }
-        else if(!globus_l_gfs_terminated &&
-            !globus_i_gfs_config_bool("connections_disabled"))
+        else if(!globus_l_gfs_terminated)
         {
             result = globus_xio_server_register_accept(
                 globus_l_gfs_xio_server,
@@ -1454,7 +1497,10 @@ main(
             "Error: unable to drop supplemental group privileges.\n");
         return 1;
     }
-    setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1); 
+    if(!getenv("GLOBUS_CALLBACK_POLLING_THREADS"))
+    {
+        setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1); 
+    }
     /* activte globus stuff */    
     if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||

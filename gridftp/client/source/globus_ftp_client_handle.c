@@ -161,6 +161,69 @@ globus_i_ftp_client_find_ssh_client_program()
     return globus_l_ftp_client_ssh_client_program;
 }
 
+globus_result_t
+globus_ftp_client_handle_borrow_connection(
+    globus_ftp_client_handle_t *		from_handle,
+    globus_bool_t                               from_is_source,
+    globus_ftp_client_handle_t *		to_handle,
+    globus_bool_t                               to_is_source)
+{
+    
+    if(from_handle && *from_handle && to_handle && *to_handle)
+    {
+        if(to_is_source && from_is_source)
+        {
+            (*to_handle)->source = (*from_handle)->source;
+            if((*to_handle)->source)
+            {
+                (*to_handle)->source->owner = *to_handle;
+            }
+            (*from_handle)->source = NULL;
+        }
+        else if(!to_is_source && from_is_source)
+        {
+            (*to_handle)->dest = (*from_handle)->source;
+            if((*to_handle)->dest)
+            {
+                (*to_handle)->dest->owner = *to_handle;
+            }
+            (*from_handle)->source = NULL;
+        }
+        else if(to_is_source && !from_is_source)
+        {
+            (*to_handle)->source = (*from_handle)->dest;
+            if((*to_handle)->source)
+            {
+                (*to_handle)->source->owner = *to_handle;
+            }
+            (*from_handle)->dest = NULL;
+        }            
+        else if(!to_is_source && !from_is_source)
+        {
+            (*to_handle)->dest = (*from_handle)->dest;
+            if((*to_handle)->dest)
+            {
+                (*to_handle)->dest->owner = *to_handle;
+            }
+            (*from_handle)->dest = NULL;
+        }
+    }
+    else 
+    {
+        if(from_handle && *from_handle && from_is_source)
+        {
+            globus_i_ftp_client_target_release(*from_handle, (*from_handle)->source);
+        }
+        else if(from_handle && *from_handle && !from_is_source)
+        {
+            globus_i_ftp_client_target_release(*from_handle, (*from_handle)->dest);
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+    
+}
+
 /**
  * @name Initialize
  */
@@ -268,6 +331,7 @@ globus_ftp_client_handle_init(
     i_handle->checksum_offset = 0;
     i_handle->checksum_length = -1;
     i_handle->checksum = GLOBUS_NULL;
+    i_handle->source_pasv = (globus_libc_getenv("GLOBUS_FTP_CLIENT_SOURCE_PASV") != NULL);
     globus_fifo_init(&i_handle->src_op_queue);
     globus_fifo_init(&i_handle->dst_op_queue);
     globus_fifo_init(&i_handle->src_response_pending_queue);
@@ -1074,17 +1138,20 @@ globus_result_t
 globus_l_ftp_client_override_attr(
     globus_i_ftp_client_target_t *		target)
 {
-    globus_result_t				result;
+    globus_result_t				result = GLOBUS_SUCCESS;
     globus_ftp_control_dcau_t			dcau;
 
     /* We bind the authentication state right away, however */
     if(target->url.scheme_type != GLOBUS_URL_SCHEME_GSIFTP)
     {
-	dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
-
-	result = globus_ftp_client_operationattr_set_dcau(
-		&target->attr,
-		&dcau);
+        if(!target->attr->dcsc_blob)
+        {
+            dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+            
+            result = globus_ftp_client_operationattr_set_dcau(
+                &target->attr,
+                &dcau);
+        }
 
 	if(result)
 	{
@@ -1232,6 +1299,10 @@ globus_l_ftp_client_target_delete(
     if(target->authz_assert)
     {
         globus_libc_free(target->authz_assert);
+    }
+    if(target->dcsc_blob)
+    {
+        globus_libc_free(target->dcsc_blob);
     }
     if(target->clientinfo_argstr)
     {
@@ -1858,7 +1929,7 @@ globus_i_ftp_client_can_reuse_data_conn(
     case GLOBUS_FTP_CLIENT_LIST:
     case GLOBUS_FTP_CLIENT_NLST:
     case GLOBUS_FTP_CLIENT_MLSD:
-	if(source == source->cached_data_conn.source &&
+	if(source && source == source->cached_data_conn.source &&
 	   source->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
 	   source->cached_data_conn.operation == GLOBUS_FTP_CLIENT_GET)
 	{
@@ -1866,7 +1937,7 @@ globus_i_ftp_client_can_reuse_data_conn(
 	}
 	break;
     case GLOBUS_FTP_CLIENT_PUT:
-	if(dest == dest->cached_data_conn.dest &&
+	if(dest && dest == dest->cached_data_conn.dest &&
 	   dest->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
 	   dest->cached_data_conn.operation == client_handle->op)
 	{
@@ -1874,7 +1945,7 @@ globus_i_ftp_client_can_reuse_data_conn(
 	}
 	break;
     case GLOBUS_FTP_CLIENT_TRANSFER:
-	if(source == source->cached_data_conn.source &&
+	if(source && dest && source == source->cached_data_conn.source &&
 	   source == dest->cached_data_conn.source &&
 	   dest == source->cached_data_conn.dest &&
 	   dest == dest->cached_data_conn.dest &&

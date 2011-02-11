@@ -167,12 +167,14 @@ globus_l_gsc_cmd_dcau(
     switch(*tmp_ptr)
     {
         case 'S':
+            /*
             if(op->server_handle->del_cred == NULL)
             {
                 globus_gsc_959_finished_command(
                     op, _FSMSL("504 No delegated credential.\r\n"));
             }
-            else if(argc < 3)
+            else */
+            if(argc < 3)
             {
                 globus_gsc_959_finished_command(
                     op, _FSMSL("501 DCAU S expected subject.\r\n"));
@@ -192,12 +194,14 @@ globus_l_gsc_cmd_dcau(
 
         case 'A':
             /* if no del cred return error else fall through */
+            /*
             if(op->server_handle->del_cred == NULL)
             {
                 globus_gsc_959_finished_command(
                     op, _FSMSL("504 No delegated credential.\r\n"));
                 break;
             }
+            */
         case 'N':
             if(argc != 2)
             {
@@ -1997,9 +2001,24 @@ globus_l_gsc_cmd_pasv_cb(
     if(msg != NULL)
     {
         globus_free(msg);
+        msg = NULL;
+    }
+    if(response_msg != NULL)
+    {
+        msg = globus_common_create_string("%s : %s", err_msg, response_msg);
+    }
+    else
+    {
+        msg = err_msg;
     }
     op->server_handle->pasv_info = NULL;
-    globus_gsc_959_finished_command(op, err_msg);
+    tmp_ptr = globus_gsc_string_to_959(500, msg, NULL);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
+    if(response_msg != NULL)
+    {
+        globus_free(msg);
+    }
     globus_free(wrapper);
 }
 
@@ -2979,7 +2998,7 @@ globus_i_gsc_add_commands(
             GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         1,
-        "ALLO <sp> <size>",
+        "",
         NULL);
 
     globus_gsc_959_command_add(

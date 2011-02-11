@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "globus_gass_copy.h"
+#include "globus_i_gass_copy.h"
+#include "openssl/md5.h"
+
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
@@ -59,7 +61,8 @@ typedef struct
     globus_gass_copy_attr_t *          attr;
     globus_gass_copy_glob_entry_cb_t   entry_cb;
     void *                             entry_user_arg;
-    
+    globus_gass_copy_callback_t        op_cb;
+    void *                             op_cb_arg;
 } globus_l_gass_copy_glob_info_t; 
 
 static
@@ -138,9 +141,13 @@ globus_gass_copy_glob_expand_url(
     int                                 url_len;
     int                                 path_len;
     globus_bool_t                       glob = GLOBUS_TRUE;
-    globus_gass_copy_glob_stat_t        info_stat;  
+    globus_gass_copy_glob_stat_t *      stat_info;  
     char *                              path;
 
+
+    stat_info = (globus_gass_copy_glob_stat_t *)
+         globus_calloc(1, sizeof(globus_gass_copy_glob_stat_t));
+         
     info = (globus_l_gass_copy_glob_info_t *)
         globus_malloc(sizeof(globus_l_gass_copy_glob_info_t));
     
@@ -196,17 +203,41 @@ globus_gass_copy_glob_expand_url(
         }
         else
 #endif
-        {    
-            info_stat.type = GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN;
-            info_stat.unique_id = GLOBUS_NULL;
-            info_stat.symlink_target = GLOBUS_NULL;
-            info_stat.mode = -1;
-            info_stat.mdtm = -1;
-            info_stat.size = -1;
+        if(handle->always_stat_on_expand)
+        {
+            result = globus_gass_copy_stat(
+                handle, info->url, attr, stat_info);
+            if(result == GLOBUS_SUCCESS)
+            {
+                info->entry_cb(
+                    info->url,
+                    stat_info,
+                    info->entry_user_arg);
+                    
+                if(stat_info->symlink_target)
+                {
+                    globus_free(stat_info->symlink_target);
+                }
+                if(stat_info->unique_id)
+                {
+                    globus_free(stat_info->unique_id);
+                }
+            }
+                
+            glob = GLOBUS_FALSE;
+        }
+        else
+        {
+            stat_info->type = GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN;
+            stat_info->unique_id = GLOBUS_NULL;
+            stat_info->symlink_target = GLOBUS_NULL;
+            stat_info->mode = -1;
+            stat_info->mdtm = -1;
+            stat_info->size = -1;
             
             info->entry_cb(
                 info->url,
-                &info_stat,
+                stat_info,
                 info->entry_user_arg);
                  
             glob = GLOBUS_FALSE;
@@ -252,11 +283,13 @@ globus_gass_copy_glob_expand_url(
 
     globus_free(info->url);
     globus_free(info);
+    globus_free(stat_info);
     return result;
             
 error:
     globus_free(info->url);
     globus_free(info);
+    globus_free(stat_info);
     return result;
 }
 
@@ -334,7 +367,7 @@ globus_l_gass_copy_glob_expand_file_url(
                 "[%s]: path is not a dir: %s",
                 myname,
                 parsed_url.url_path));
-        goto error_url;
+        goto error_stat;
     }
 
     dir = globus_libc_opendir(parsed_url.url_path);
@@ -491,14 +524,13 @@ globus_l_gass_copy_glob_expand_ftp_url(
     globus_result_t                    result;    
     globus_ftp_client_tristate_t       feature_response;
     globus_ftp_client_features_t       features;
+    char *                             tmp;
     
 
 
     info->base_url = globus_libc_strdup(info->url);
-    info->glob_pattern = strrchr(info->base_url, '/');
-    globus_url_string_hex_decode(info->glob_pattern);
-    
-    if(info->glob_pattern == GLOBUS_NULL || *info->glob_pattern == '\0')
+    tmp = strrchr(info->base_url, '/');
+    if(tmp == GLOBUS_NULL || tmp == '\0')
     {
         result = globus_error_put(
             globus_error_construct_string(
@@ -509,8 +541,12 @@ globus_l_gass_copy_glob_expand_ftp_url(
         goto error_url;
     }
 
-    *(info->glob_pattern++) = '\0';
-    
+    tmp++;
+    info->glob_pattern = globus_libc_strdup(tmp);
+    *tmp = '\0';
+
+    globus_url_string_hex_decode(info->glob_pattern);
+   
     info->base_url_len = strlen(info->base_url);
     info->list_buffer = GLOBUS_NULL;
     info->buffer_length = 0;
@@ -601,6 +637,7 @@ globus_l_gass_copy_glob_expand_ftp_url(
     globus_mutex_destroy(&info->mutex);
         
     globus_free(info->base_url);
+    globus_free(info->glob_pattern);
 
     return GLOBUS_SUCCESS;
 
@@ -612,6 +649,7 @@ error_feat:
 error_feat_init:    
     globus_cond_destroy(&info->cond);
     globus_mutex_destroy(&info->mutex);
+    globus_free(info->glob_pattern);
 
 error_url:
     globus_free(info->base_url);
@@ -762,6 +800,37 @@ globus_l_gass_copy_ftp_client_op_done_callback(
 }
 
 static
+void
+globus_l_gass_copy_ftp_client_cksm_done_callback(
+    void *                             user_arg,
+    globus_ftp_client_handle_t *       handle,
+    globus_object_t *                  err)
+{
+    globus_l_gass_copy_glob_info_t * info;
+
+    info = (globus_l_gass_copy_glob_info_t *) user_arg;
+    if(info->op_cb)
+    {
+       info->op_cb(info->op_cb_arg, info->handle, err); 
+    }
+    else
+    {
+        globus_mutex_lock(&info->mutex);
+        if(err && !info->err)
+        {
+            info->err = globus_object_copy(err);
+        }
+        info->callbacks_left--;
+        globus_cond_signal(&info->cond);
+        globus_mutex_unlock(&info->mutex);
+    }
+    
+    globus_free(info);
+    
+    return;
+}
+
+static
 int
 globus_l_gass_copy_mdtm_to_timet(
     char *                              mdtm_str,
@@ -867,6 +936,174 @@ error_exit:
     return GLOBUS_FAILURE;
 }
     
+static
+globus_result_t
+globus_l_gass_copy_glob_parse_mlst_line(
+    char *                              line,
+    globus_gass_copy_glob_stat_t *      stat_info)
+{
+    static char *   myname = "globus_l_gass_copy_glob_parse_ftp_list";
+    globus_result_t                     result;
+    int                                 i;
+    char *                              space;
+    char *                              filename;
+    char *                              startline;
+    char *                              startfact;
+    char *                              endfact;
+    char *                              factval;
+    
+    char *                              unique_id = NULL;
+    char *                              mode_s = NULL;
+    char *                              symlink_target = NULL;
+    char *                              modify_s = NULL;
+    char *                              size_s = NULL;
+    globus_gass_copy_glob_entry_t       type;
+
+    startline = line;
+    
+    space = strchr(startline, ' ');
+    if(space == GLOBUS_NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: Bad MLSD response",
+                myname));
+                  
+        goto error_invalid_mlsd;
+    }
+    *space = '\0';            
+    filename = space + 1;
+    startfact = startline;
+    
+    while(startfact != space)
+    {
+        endfact = strchr(startfact, ';');
+        if(endfact)
+        {             
+            *endfact = '\0';
+        }
+        else
+        {                                     
+/*
+         older MLST-draft spec says ending fact can be missing
+         the final semicolon... not a problem to support this,
+         no need to die.  (ncftpd does this) 
+            
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Bad MLSD response",
+                    myname));
+                  
+            goto error_invalid_mlsd;
+*/
+
+            endfact = space - 1;   
+        }
+        
+        factval = strchr(startfact, '=');
+        if(!factval)
+        {             
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Bad MLSD response",
+                    myname));
+                  
+            goto error_invalid_mlsd;
+        }
+        *(factval++) = '\0';
+
+        for(i = 0; startfact[i] != '\0'; i++)
+        {
+            startfact[i] = tolower(startfact[i]);
+        }
+    
+        if(strcmp(startfact, "type") == 0)
+        {
+            if(strcasecmp(factval, "dir") == 0)
+            {
+                type = GLOBUS_GASS_COPY_GLOB_ENTRY_DIR;
+            }
+            else if(strcasecmp(factval, "file") == 0)
+            {
+                type = GLOBUS_GASS_COPY_GLOB_ENTRY_FILE;
+            }
+            else
+            {
+                type = GLOBUS_GASS_COPY_GLOB_ENTRY_OTHER;
+            } 
+        }                 
+        if(strcmp(startfact, "unique") == 0)
+        {
+            unique_id = factval;                        
+        }                 
+        if(strcmp(startfact, "unix.mode") == 0)
+        {
+            mode_s = factval;                        
+        }
+        if(strcmp(startfact, "modify") == 0)
+        {
+            modify_s = factval;                        
+        }                 
+        if(strcmp(startfact, "size") == 0)
+        {
+            size_s = factval;                        
+        }                 
+        if(strcmp(startfact, "unix.slink") == 0)
+        {
+            symlink_target = factval;                        
+        }                 
+        
+        startfact = endfact + 1;                                 
+    } 
+
+    
+    stat_info->type = type;
+    stat_info->unique_id = globus_libc_strdup(unique_id);
+    stat_info->symlink_target = globus_libc_strdup(symlink_target);
+    stat_info->mode = -1;
+    stat_info->size = -1;
+    stat_info->mdtm = -1;
+        
+    if(mode_s)
+    {
+        stat_info->mode = strtoul(mode_s, NULL, 0);
+    }
+    
+    if(size_s)
+    {
+        globus_off_t            size;
+        int                     rc;
+        
+        rc = sscanf(size_s, "%"GLOBUS_OFF_T_FORMAT, &size);
+        if(rc == 1)
+        {
+            stat_info->size = size;
+        }
+    }
+    
+    if(modify_s)
+    {
+        int                     mdtm;
+        
+        if(globus_l_gass_copy_mdtm_to_timet(modify_s, &mdtm) == 
+            GLOBUS_SUCCESS)
+        {
+            stat_info->mdtm = mdtm;
+        }
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_invalid_mlsd:
+
+    return result;
+}
 
 static
 globus_result_t
@@ -1055,7 +1292,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
         {
             sprintf(
                 matched_url, 
-                "%s/%s%s",
+                "%s%s%s",
                 info->base_url, 
                 encoded_path,
                 type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR ? "/" : "");
@@ -1278,6 +1515,253 @@ globus_l_gass_copy_urlencode(
 
 
 
+static
+globus_result_t
+globus_l_gass_copy_stat_ftp(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_gass_copy_glob_stat_t *      stat_info)
+{
+    globus_result_t                     result;
+    globus_l_gass_copy_glob_info_t      info;
+    globus_byte_t *                     mlst_buf;
+    globus_size_t                       mlst_len;
+    
+    info.callbacks_left = 1;
+    info.err = GLOBUS_NULL;
+    globus_cond_init(&info.cond, GLOBUS_NULL);
+    globus_mutex_init(&info.mutex, GLOBUS_NULL);
+        
+    result = globus_ftp_client_mlst(
+        &handle->ftp_handle,
+        url,
+        attr->ftp_attr,
+        &mlst_buf,
+        &mlst_len,
+        globus_l_gass_copy_ftp_client_op_done_callback,
+        &info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_mlst;
+    }
+
+    globus_mutex_lock(&info.mutex);
+    while(info.callbacks_left > 0)
+    {
+        globus_cond_wait(&info.cond, &info.mutex);
+    }
+    globus_mutex_unlock(&info.mutex);
+
+    if(info.err)
+    {
+        result = globus_error_put(info.err);
+        info.err = GLOBUS_NULL;
+    }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_mlst;
+    }
+    
+    result = globus_l_gass_copy_glob_parse_mlst_line(
+        (char *) mlst_buf, stat_info);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_parse;
+    }
+
+    globus_free(mlst_buf);
+    globus_cond_destroy(&info.cond);
+    globus_mutex_destroy(&info.mutex);
+
+    return GLOBUS_SUCCESS;
+
+error_parse:
+    globus_free(mlst_buf);
+
+error_mlst:
+    globus_cond_destroy(&info.cond);
+    globus_mutex_destroy(&info.mutex);
+
+    return result;
+}
+
+static
+globus_result_t
+globus_l_gass_copy_stat_file(
+    char *                              url,
+    globus_gass_copy_glob_stat_t *      stat_info)
+{
+    static char *   myname = "globus_l_gass_copy_stat_file";    
+    int                                 rc;
+    globus_result_t                     result;
+    struct stat                         stat_buf;
+    globus_url_t                        parsed_url;
+    char                                unique_id[256];
+    globus_gass_copy_glob_entry_t       type;
+    char                                symlink_target[MAXPATHLEN*2];
+    
+    rc = globus_url_parse(url, &parsed_url);
+    
+    if(rc != 0)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "globus_url_parse returned %d",
+                myname,
+                rc));
+        goto error_url;
+    }
+    
+    if(parsed_url.url_path == GLOBUS_NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "url has no path",
+                myname));
+        goto error_null_path;
+    }
+    
+    if(lstat(parsed_url.url_path, &stat_buf) != 0)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: invalid entry in dir: %s",
+                myname,
+                parsed_url.url_path));
+        goto error_stat;
+    }
+
+    *symlink_target = '\0';
+    if(S_ISLNK(stat_buf.st_mode))
+    {
+        if(stat(parsed_url.url_path, &stat_buf) != 0)
+        {
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: invalid symlink entry in dir: %s",
+                    myname,
+                    parsed_url.url_path)); 
+            goto error_stat;
+        }
+        if(realpath(parsed_url.url_path, symlink_target) == NULL)
+        {
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: unable to find path of symlink in dir: %s",
+                    myname,
+                    parsed_url.url_path));
+            goto error_stat;
+        }
+    }    
+
+    if(S_ISDIR(stat_buf.st_mode))
+    {
+        type = GLOBUS_GASS_COPY_GLOB_ENTRY_DIR;
+    }
+    else
+    {                 
+        type = GLOBUS_GASS_COPY_GLOB_ENTRY_FILE;
+    } 
+
+    *unique_id = '\0';        
+    sprintf(
+        unique_id,
+        "%lx-%lx;",
+        (unsigned long) stat_buf.st_dev, 
+        (unsigned long) stat_buf.st_ino);
+
+    stat_info->type = type;
+    stat_info->unique_id = globus_libc_strdup(unique_id);
+    stat_info->symlink_target = *symlink_target ? 
+        globus_libc_strdup(symlink_target) : NULL;
+    stat_info->mode = stat_buf.st_mode & 07777;
+    stat_info->mdtm = (int) stat_buf.st_mtime;
+    stat_info->size = stat_buf.st_size;
+           
+    globus_url_destroy(&parsed_url); 
+    return GLOBUS_SUCCESS;
+
+error_stat:    
+error_null_path:
+    globus_url_destroy(&parsed_url);
+    
+error_url:
+
+    return result;
+    
+}
+
+globus_result_t
+globus_gass_copy_stat(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_gass_copy_glob_stat_t *      stat_info)
+{   
+    static char *   myname = "globus_gass_copy_stat";    
+
+    globus_result_t                     result;
+    globus_gass_copy_url_mode_t         url_mode;
+    
+    result = globus_gass_copy_get_url_mode(url, &url_mode);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    
+    if(url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+    {
+        result = globus_l_gass_copy_stat_ftp(handle, url, attr, stat_info);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+    }
+    else if(url_mode == GLOBUS_GASS_COPY_URL_MODE_IO)
+    {
+        result = globus_l_gass_copy_stat_file(url, stat_info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: unsupported URL scheme: %s",
+                myname,
+                url));
+        goto error_exit;
+    }
+    
+    return GLOBUS_SUCCESS;
+    
+error_exit:
+
+    return result;
+    
+}
+
+
 globus_result_t
 globus_gass_copy_mkdir(
     globus_gass_copy_handle_t *         handle,
@@ -1464,3 +1948,309 @@ error_url:
     
 }
 
+
+
+static
+globus_result_t
+globus_l_gass_copy_cksm_ftp(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    char *                              cksm,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg)
+{
+    globus_result_t                     result;
+    globus_l_gass_copy_glob_info_t *    info;
+
+    info = (globus_l_gass_copy_glob_info_t *)
+        globus_calloc(sizeof(globus_l_gass_copy_glob_info_t), 1);
+    
+    info->callbacks_left = 1;
+    info->err = GLOBUS_NULL;
+    info->handle = handle;
+    info->op_cb = callback;
+    info->op_cb_arg = callback_arg;
+    
+    if(!callback)
+    {
+        globus_mutex_init(&info->mutex, GLOBUS_NULL);
+        globus_cond_init(&info->cond, GLOBUS_NULL);
+    }
+    
+    result = globus_ftp_client_cksm(
+        &handle->ftp_handle,
+        url,
+        attr->ftp_attr,
+        cksm,
+        offset,
+        length,
+        algorithm,
+        globus_l_gass_copy_ftp_client_cksm_done_callback,
+        info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    if(!callback)
+    {
+        globus_mutex_lock(&info->mutex);
+        while(info->callbacks_left > 0)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+        globus_mutex_unlock(&info->mutex);
+
+        if(info->err)
+        {
+            result = globus_error_put(info->err);
+            info->err = GLOBUS_NULL;
+        }
+        
+        globus_cond_destroy(&info->cond);
+        globus_mutex_destroy(&info->mutex);
+
+        globus_free(info);
+    }
+
+    return GLOBUS_SUCCESS;
+error:
+
+    globus_free(info);
+    return result;
+}
+
+#define GASS_COPY_CKSM_BUFSIZE 1024*1024
+
+static
+globus_result_t
+globus_l_gass_copy_cksm_file(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    char *                              cksm,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg)
+{
+    char *      myname = "globus_l_gass_copy_cksm_file";
+
+    globus_url_t                        parsed_url;
+    globus_result_t                     result;
+    int                                 rc;
+
+    MD5_CTX                             mdctx;
+    char *                              md5ptr;
+    unsigned char                       md[MD5_DIGEST_LENGTH];
+    char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1];
+    char                                buf[GASS_COPY_CKSM_BUFSIZE];
+
+    int                                 i;
+    int                                 fd;
+    int                                 n;
+    globus_off_t                        count;
+    globus_off_t                        read_left;
+
+    rc = globus_url_parse_loose(url, &parsed_url);
+    if(rc != 0)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "globus_url_parse returned %d",
+                myname,
+                url));
+        goto error_url;
+    }
+
+    if(parsed_url.url_path == GLOBUS_NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "url has no path",
+                myname));
+        goto error_fd;
+    }    
+       
+    if(length >= 0)
+    {
+        read_left = length;
+        count = (read_left > GASS_COPY_CKSM_BUFSIZE) ? 
+            GASS_COPY_CKSM_BUFSIZE : read_left;
+    }
+    else
+    {
+        count = GASS_COPY_CKSM_BUFSIZE;
+    }
+    
+    fd = open(parsed_url.url_path, O_RDONLY);        
+    if(fd < 0)
+    {
+        goto error_fd;
+    }
+
+    if (lseek(fd, offset, SEEK_SET) == -1)
+    {
+        goto error_seek;
+    }
+
+    MD5_Init(&mdctx);        
+
+    while((n = read(fd, buf, count)) > 0)
+    {
+        if(length >= 0)
+        {
+            read_left -= n;
+            count = (read_left > GASS_COPY_CKSM_BUFSIZE) ? GASS_COPY_CKSM_BUFSIZE : read_left;
+        }
+
+        MD5_Update(&mdctx, buf, n);
+    }
+
+    MD5_Final(md, &mdctx);
+    
+    close(fd);
+        
+    md5ptr = md5sum;
+    for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+    {
+       sprintf(md5ptr, "%02x", md[i]);
+       md5ptr++;
+       md5ptr++;
+    }
+    md5ptr = '\0';
+    
+    strncpy(cksm, md5sum, sizeof(md5sum));
+    
+    globus_url_destroy(&parsed_url);
+    
+    if(callback)
+    {
+        callback(callback_arg, handle, NULL);
+    }
+    return GLOBUS_SUCCESS;
+
+error_seek:
+    close(fd);
+error_fd:
+    globus_url_destroy(&parsed_url);
+
+error_url:
+
+    return result;
+}
+
+/* Determine the type of the url and call checksum functions above accordingly
+ * */
+
+globus_result_t
+globus_gass_copy_cksm(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *                              cksm)
+{
+    return globus_gass_copy_cksm_async(
+        handle,
+        url,
+        attr,
+        offset,
+        length,
+        algorithm,
+        cksm,
+        NULL,
+        NULL);
+}
+
+globus_result_t
+globus_gass_copy_cksm_async(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *                              cksm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg)
+{
+    static char *   myname = "globus_gass_copy_cksm";    
+
+    globus_result_t                     result;
+    globus_gass_copy_url_mode_t         url_mode;
+    
+    result = globus_gass_copy_get_url_mode(url, &url_mode);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }        
+
+    if(url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+    {
+        result = globus_l_gass_copy_cksm_ftp(
+            handle,
+            url,
+            attr,
+            cksm,
+            offset,
+            length,
+            algorithm,
+            callback,
+            callback_arg);
+    
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_ftp_cksm;
+        }
+    }
+    else if(url_mode == GLOBUS_GASS_COPY_URL_MODE_IO)
+    {
+        result = globus_l_gass_copy_cksm_file(
+            handle,
+            url,
+            cksm, 
+            offset,
+            length,
+            algorithm,
+            callback,
+            callback_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_file_cksm;
+        }
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: unsupported URL scheme: %s",
+                myname,
+                url));
+        goto error_exit;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_ftp_cksm:
+error_file_cksm:
+error_exit:
+        
+    return result;
+        
+}

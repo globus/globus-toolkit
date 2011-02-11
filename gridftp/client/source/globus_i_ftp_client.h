@@ -168,6 +168,10 @@ typedef struct globus_i_ftp_client_operationattr_t
     char *                                      disk_stack_str;
     char *                                      module_alg_str;
     char *                                      clientinfo_argstr;
+    int                                         dcsc_type;
+    void *                                      dcsc_cred;
+    gss_cred_id_t                               dcsc_p_cred;
+    char *                                      dcsc_blob;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -331,6 +335,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SIZE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM,
     GLOBUS_FTP_CLIENT_TARGET_CKSM,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_DCSC,
+    GLOBUS_FTP_CLIENT_TARGET_DCSC,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU,
     GLOBUS_FTP_CLIENT_TARGET_DCAU,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PBSZ,
@@ -651,6 +657,9 @@ typedef struct globus_i_ftp_client_handle_t
     globus_fifo_t                               dst_response_pending_queue;
 
     int                                         no_callback_count;
+    
+    globus_bool_t                               source_pasv;
+
     /** User pointer
      * @see globus_ftp_client_handle_set_user_pointer(),
      *      globus_ftp_client_handle_get_user_pointer()
@@ -719,6 +728,10 @@ typedef struct globus_i_ftp_client_target_s
     globus_list_t *                             net_stack_list;
     
     char *                                      clientinfo_argstr;
+    
+    int                                         dcsc_type;
+    char *                                      dcsc_blob;
+    gss_cred_id_t                               dcsc_p_cred;
 } globus_i_ftp_client_target_t;
 
 /**

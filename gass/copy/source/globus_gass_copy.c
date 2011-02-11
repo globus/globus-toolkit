@@ -88,6 +88,10 @@ void
 globus_l_gass_copy_perf_cancel_ftp_callback(
     globus_gass_copy_perf_info_t *          perf_info);
 
+globus_result_t
+globus_l_gass_copy_state_free(
+    globus_gass_copy_state_t *          tate);
+
 /* uncomment this line for debug messages */
 /* #define GLOBUS_I_GASS_COPY_DEBUG */
 
@@ -329,6 +333,7 @@ globus_gass_copy_handle_init(
 	handle->partial_end_offset = -1;
         handle->partial_bytes_remaining = -1;
         handle->send_allo = GLOBUS_FALSE;
+        handle->always_stat_on_expand = GLOBUS_FALSE;
 	return GLOBUS_SUCCESS;
     }
     else
@@ -391,6 +396,12 @@ globus_gass_copy_handle_destroy(
             handle->performance = GLOBUS_NULL;
         }
 
+        if(handle->state)
+        {
+            globus_l_gass_copy_state_free(handle->state);
+            handle->state = GLOBUS_NULL;
+        }
+        
         return result;
     }
     else
@@ -669,6 +680,19 @@ globus_gass_copy_set_allocate(
     globus_bool_t                       send_allo)
 {
     handle->send_allo = send_allo;
+    
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * Make globus_gass_copy_expand_url() always send stat info
+ */
+globus_result_t
+globus_gass_copy_set_stat_on_expand(
+    globus_gass_copy_handle_t *         handle,
+    globus_bool_t                       always_stat)
+{
+    handle->always_stat_on_expand = always_stat;
     
     return GLOBUS_SUCCESS;
 }
@@ -2102,11 +2126,11 @@ globus_l_gass_copy_target_destroy(
  * instantiate state structure
  */
 globus_result_t
-globus_l_gass_copy_state_new(
+globus_i_gass_copy_state_new(
     globus_gass_copy_handle_t *handle)
 {
     globus_object_t * err;
-    static char * myname="globus_l_gass_copy_state_new";
+    static char * myname="globus_i_gass_copy_state_new";
 
     globus_gass_copy_state_t ** tmp_state = &(handle->state);
     *tmp_state = (globus_gass_copy_state_t *)
@@ -2138,7 +2162,7 @@ globus_l_gass_copy_state_new(
     globus_mutex_init(&((*tmp_state)->mutex), GLOBUS_NULL);
 
     return GLOBUS_SUCCESS;
-} /* globus_l_gass_copy_state_new() */
+} /* globus_i_gass_copy_state_new() */
 
 /**
  * free state structure
@@ -4156,7 +4180,7 @@ globus_l_gass_copy_write_from_queue(
             globus_mutex_unlock(&state->mutex);
             
             globus_l_gass_copy_state_free(state);
-            
+
             if(callback != GLOBUS_NULL)
             {
                 callback(
@@ -5126,7 +5150,7 @@ globus_gass_copy_register_url_to_url(
     }
 
     /* Initialize the state for this transfer */
-    result = globus_l_gass_copy_state_new(handle);
+    result = globus_i_gass_copy_state_new(handle);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
 
     state = handle->state;
@@ -5469,7 +5493,7 @@ globus_gass_copy_register_url_to_handle(
     }
 
     /* Initialize the state for this transfer */
-    result = globus_l_gass_copy_state_new(handle);
+    result = globus_i_gass_copy_state_new(handle);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
 
     state = handle->state;
@@ -5626,7 +5650,7 @@ globus_gass_copy_register_handle_to_url(
     }
 
     /* Initialize the state for this transfer */
-    result = globus_l_gass_copy_state_new(handle);
+    result = globus_i_gass_copy_state_new(handle);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
 
     state = handle->state;

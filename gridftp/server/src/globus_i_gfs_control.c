@@ -1043,6 +1043,18 @@ globus_l_gfs_request_command(
         instance->rnfr_pathname = GLOBUS_NULL;
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
+    else if(strcmp(cmd_array[0], "DCSC") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_DCSC;
+        command_info->cksm_alg = globus_libc_strdup(cmd_array[1]);
+        command_info->pathname = globus_libc_strdup(cmd_array[2]);
+        if(command_info->pathname == NULL && 
+            strcasecmp(command_info->cksm_alg, "d") != 0)
+        {
+            goto err;
+        }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SECURITY;
+    }
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
         command_info->command = GLOBUS_GFS_CMD_CKSM;
@@ -2286,6 +2298,22 @@ globus_l_gfs_add_commands(
     {
         goto error;
     }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "DCSC",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        3,
+        "DCSC <sp> credential type [ <sp> encoded credential ]",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gridftp_server_control_add_feature(
+        control_handle, "DCSC P,D");
+
     result = globus_gsc_959_command_add(
         control_handle,
         "SITE DSI",

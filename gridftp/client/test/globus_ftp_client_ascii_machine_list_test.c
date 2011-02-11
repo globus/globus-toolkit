@@ -35,18 +35,17 @@ done_cb(
 	globus_ftp_client_handle_t *		handle,
 	globus_object_t *			err)
 {
-    char * tmpstr;
+    if (err) {
+            const char *error_str = globus_error_print_friendly(err);
+            fprintf(stderr, "Error: %s\n", error_str);
 
-    if(err) tmpstr = " an";
-    else    tmpstr = "out";
+            error = GLOBUS_TRUE;
+    }
 
-    if(err) { printf("done with%s error\n", tmpstr);
-	      error = GLOBUS_TRUE; }
     globus_mutex_lock(&lock);
     done = GLOBUS_TRUE;
     globus_cond_signal(&cond);
     globus_mutex_unlock(&lock);
-       
 }
 
 static
@@ -107,7 +106,14 @@ int main(int argc, char * argv[])
 					    0);
     if(result != GLOBUS_SUCCESS)
     {
-	done = GLOBUS_TRUE;
+            globus_object_t *err;
+            const char *error_str;
+
+            err = globus_error_peek(result);
+            error_str = globus_error_print_friendly(err);
+            fprintf(stderr, "Error: %s\n", error_str);
+            done = GLOBUS_TRUE;
+            error = GLOBUS_TRUE;
     }
     else
     {

@@ -4589,25 +4589,68 @@ globus_ftp_client_abort(
     case GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION:
     case GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO:
 	
-	result = globus_ftp_control_force_close(
-	    handle->dest->control_handle,
-	    globus_i_ftp_client_force_close_callback,
-	    handle->dest);
-
-	if(result == GLOBUS_SUCCESS)
+	if(handle->op != GLOBUS_FTP_CLIENT_TRANSFER || !handle->source_pasv)
 	{
-	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
-	    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+            result = globus_ftp_control_force_close(
+                handle->dest->control_handle,
+                globus_i_ftp_client_force_close_callback,
+                handle->dest);
+    
+            if(result == GLOBUS_SUCCESS)
+            {
+                handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+                handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+    
+                globus_i_ftp_client_plugin_notify_abort(handle);
+                
+                handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+            }
+            else
+            {
+                err = globus_error_get(result);
+                goto unlock_error;
+            }
+        }
+        else
+        {
+            result = globus_ftp_control_force_close(
+                handle->dest->control_handle,
+                globus_i_ftp_client_force_close_callback,
+                handle->dest);
+            if(result == GLOBUS_SUCCESS)
+            {
+                result = globus_ftp_control_force_close(
+                    handle->source->control_handle,
+                    globus_i_ftp_client_force_close_callback,
+                    handle->source);
 
-	    globus_i_ftp_client_plugin_notify_abort(handle);
-	    
-	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
-	}
-	else
-	{
-	    err = globus_error_get(result);
-	    goto unlock_error;
-	}
+                if(result == GLOBUS_SUCCESS)
+                {
+                    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+                    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+                    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+
+                    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+                    globus_i_ftp_client_plugin_notify_abort(handle);
+                }
+                else
+                {
+                    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
+                    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+                    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+
+                    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+                }
+            }
+            else
+            {
+                err = globus_error_get(result);
+
+                goto error;
+            }
+        }
+        
 	break;
 
     case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT:
@@ -4633,6 +4676,45 @@ globus_ftp_client_abort(
 	    {
 		err = globus_error_get(result);
 		goto unlock_error;
+	    }
+	}
+	else if(handle->source_pasv)
+	{
+	    result = globus_ftp_control_force_close(
+		handle->dest->control_handle,
+		globus_i_ftp_client_force_close_callback,
+		handle->dest);
+	    if(result == GLOBUS_SUCCESS)
+	    {
+		result = globus_ftp_control_force_close(
+		    handle->source->control_handle,
+		    globus_i_ftp_client_force_close_callback,
+		    handle->source);
+
+		if(result == GLOBUS_SUCCESS)
+		{
+		    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+		    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+		    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+
+		    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+		    globus_i_ftp_client_plugin_notify_abort(handle);
+		}
+		else
+		{
+		    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+		    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
+		    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+
+		    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+		}
+	    }
+	    else
+	    {
+		err = globus_error_get(result);
+
+		goto error;
 	    }
 	}
 	else
@@ -5237,6 +5319,11 @@ globus_i_ftp_client_transfer_complete(
         globus_libc_free(client_handle->dest_url);
         client_handle->dest_url = GLOBUS_NULL;
     }
+    if(client_handle->checksum_alg)
+    {
+        globus_libc_free(client_handle->checksum_alg);
+        client_handle->checksum_alg = GLOBUS_NULL;
+    }
     client_handle->source_size = 0;
 
     client_handle->read_all_biggest_offset = 0;
@@ -5439,6 +5526,38 @@ globus_i_ftp_client_target_activate(
 	    (*registered) = GLOBUS_TRUE;
 	}
     }
+    else if(target->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION)
+    {
+	if(handle->source == target)
+	{
+	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION;
+	}
+	else
+	{
+	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION;
+	}
+        result = globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_i_ftp_client_faked_response_callback,
+            target);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            if(handle->err == GLOBUS_SUCCESS)
+            {
+                handle->err = globus_object_copy(err);
+            }
+
+            globus_i_ftp_client_plugin_notify_fault(
+                handle,
+                target->url_string,
+                err);
+            goto error_exit;
+        }
+        (*registered) = GLOBUS_TRUE;
+    }
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_i_ftp_client_target_activate() exiting\n"));
@@ -5606,6 +5725,12 @@ globus_l_ftp_client_transfer_normalize_attrs(
     *normalized_source_attr = GLOBUS_NULL;
     *normalized_dest_attr = GLOBUS_NULL;
 
+    if((source_attr && *source_attr && (*source_attr)->dcsc_blob) || 
+        (dest_attr && *dest_attr && (*dest_attr)->dcsc_blob))
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
     normalized_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
 
     if(strncmp(source_url, dest_url, 3) != 0)

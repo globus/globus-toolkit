@@ -947,6 +947,14 @@ l_ticker_cb(
                 default:
                     globus_assert(0 && "should never happen--memory corruption");
             }
+            if(result == GLOBUS_SUCCESS)
+            {
+            }
+            else if(d->max_retries >= 0)
+            {
+                d->max_retries++;
+            }
+                
         }
     }
     d->ticker++;

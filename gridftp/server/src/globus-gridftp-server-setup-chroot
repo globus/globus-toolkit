@@ -1,0 +1,60 @@
+#!/bin/sh
+
+USAGE="Usage: $0 [-c <certificates dir>] -r <chroot path to create>"
+
+CERT_DIR=/etc/grid-security/certificates
+
+COPYFILES="/etc/passwd
+           /etc/group
+           /etc/hosts
+           /etc/nsswitch.conf"
+if [ $UID -ne 0 ]; then
+    echo "This command must be run as 'root'."
+    exit 1
+fi
+       
+while getopts "c:r:" opt; do
+  case $opt in
+    c ) CERT_DIR=$OPTARG;;
+    r ) ROOT_DIR=$OPTARG;;
+    * ) echo $USAGE; exit 1;;
+  esac
+done
+
+if [ -z "$ROOT_DIR" -o "$ROOT_DIR" -ef "/" ]; then
+    echo "Invalid root path: $ROOT_DIR."
+    echo $USAGE 
+    exit 1
+fi
+
+mkdir -p $ROOT_DIR
+if [ ! -d "$ROOT_DIR" ]; then
+    exit 1;
+fi
+
+chown root.root $ROOT_DIR
+chmod 755 $ROOT_DIR
+mkdir $ROOT_DIR/tmp 2>/dev/null
+chmod 1777 $ROOT_DIR/tmp
+mkdir $ROOT_DIR/dev 2>/dev/null
+/dev/MAKEDEV -d $ROOT_DIR/dev -x zero null random urandom
+
+if [ ! -e /dev/null ]; then
+    echo "Could not create /dev devices."
+    exit 1
+fi
+
+mkdir -p $ROOT_DIR/etc/grid-security/certificates
+cp -LpR $CERT_DIR/* $ROOT_DIR/etc/grid-security/certificates/
+
+for file in $COPYFILES; do
+    cp --parents -Lp $file $ROOT_DIR
+done
+echo ""
+echo "Finished setting up a chroot dir at $ROOT_DIR."
+echo ""
+echo "You may wish to create data directories or use"
+echo "	mount --bind datadir $ROOT_DIR/datadir"
+echo "to link in external directories."
+echo ""
+

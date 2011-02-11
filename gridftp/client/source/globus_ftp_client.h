@@ -433,6 +433,13 @@ globus_ftp_client_handle_destroy(
     globus_ftp_client_handle_t *		handle);
 
 globus_result_t
+globus_ftp_client_handle_borrow_connection(
+    globus_ftp_client_handle_t *		from_handle,
+    globus_bool_t                               from_is_source,
+    globus_ftp_client_handle_t *		to_handle,
+    globus_bool_t                               to_is_source);
+
+globus_result_t
 globus_ftp_client_handle_cache_url_state(
     globus_ftp_client_handle_t *		handle,
     const char *				url);
@@ -997,6 +1004,18 @@ globus_result_t
 globus_ftp_client_operationattr_get_control_protection(
     const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_control_protection_t *		protection);
+    
+globus_result_t
+globus_ftp_client_operationattr_set_data_security(
+    globus_ftp_client_operationattr_t *		attr,
+    int                                         type,
+    void *                                      credential);
+
+globus_result_t
+globus_ftp_client_operationattr_get_data_security(
+    const globus_ftp_client_operationattr_t *	attr,
+    int  *                                      type,
+    void **                                     credential);
 
 globus_result_t
 globus_ftp_client_operationattr_set_resume_third_party_transfer(
@@ -1162,6 +1181,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_REST_STREAM,
     GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM,
     GLOBUS_FTP_CLIENT_FEATURE_DCAU,
+    GLOBUS_FTP_CLIENT_FEATURE_DCSC,
     GLOBUS_FTP_CLIENT_FEATURE_ESTO,
     GLOBUS_FTP_CLIENT_FEATURE_ERET,
     GLOBUS_FTP_CLIENT_FEATURE_SIZE,

@@ -268,7 +268,9 @@ struct globus_gass_copy_handle_s
   
   /* says whether or not to send ALLO for ftp destinations */
   globus_bool_t                       send_allo;
-    
+
+  /* run a stat check on all urls passed to globus_gass_copy_glob_expand_url */
+  globus_bool_t                       always_stat_on_expand;
 };
 
 /**
@@ -358,6 +360,17 @@ globus_result_t
 globus_gass_copy_set_allocate(
     globus_gass_copy_handle_t *         handle,
     globus_bool_t                       send_allo);
+
+
+/* run a stat check on all urls passed to globus_gass_copy_glob_expand_url 
+    FALSE by default 
+ */
+
+globus_result_t
+globus_gass_copy_set_stat_on_expand(
+    globus_gass_copy_handle_t *         handle,
+    globus_bool_t                       always_stat);
+
 
 /* find out what transfer mode will be used for a given url, so that the proper attributes may be passed to one of the copy function */
 globus_result_t
@@ -684,6 +697,34 @@ globus_gass_copy_mkdir(
     char *                              url,
     globus_gass_copy_attr_t *           attr);
 
+globus_result_t
+globus_gass_copy_cksm(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *				cksm);
+
+globus_result_t
+globus_gass_copy_cksm_async(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t                        offset,
+    globus_off_t                        length,
+    const char *                        algorithm,
+    char *                              cksm,
+    globus_gass_copy_callback_t         callback,
+    void *                              callback_arg);
+
+globus_result_t
+globus_gass_copy_stat(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_gass_copy_glob_stat_t *      stat_info);
 
 
 EXTERN_C_END

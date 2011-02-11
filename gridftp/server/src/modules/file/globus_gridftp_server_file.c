@@ -1977,7 +1977,14 @@ globus_l_gfs_file_open(
         result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
         goto error_attr;
     }
-    
+
+#ifdef O_DIRECT
+    if(globus_gfs_config_get_bool("direct_io"))
+    {
+        open_flags |= O_DIRECT;
+    }    
+#endif
+
     result = globus_xio_attr_cntl(
         attr,
         globus_l_gfs_file_driver,

@@ -30,6 +30,204 @@
 
 #include <string.h>
 
+#include "openssl/x509.h"
+#include "openssl/pem.h"
+#include "globus_gsi_credential.h"
+#include "globus_gsi_system_config.h"
+
+
+
+/*  to be moved into gss_assist  */
+OM_uint32 
+GSS_CALLCONV gss_export_cred_with_full_cert_chain(
+    OM_uint32 *                         minor_status,
+    const gss_cred_id_t                 cred_in,
+    const gss_OID                       desired_mech,
+    OM_uint32                           option_req,
+    gss_buffer_t                        export_buffer)
+{
+    globus_result_t                     result;
+    gss_buffer_desc                     buf;
+    OM_uint32                           maj_rc;
+    OM_uint32                           min_rc;
+    gss_cred_id_t                       cred;
+    globus_gsi_cred_handle_t            cred_handle;
+    globus_gsi_callback_data_t          cred_data;
+    BIO *                               mem;
+    STACK_OF(X509) *                    chain;
+    char *                              ca_cert_dir;
+
+    maj_rc = gss_export_cred(&min_rc, cred_in, NULL, 0, &buf);
+    if(maj_rc != GSS_S_COMPLETE)
+    {
+        *minor_status = min_rc;
+        goto error;
+    }
+    mem = BIO_new_mem_buf(buf.value, buf.length);
+    
+    result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    result = globus_gsi_cred_read_proxy_bio(cred_handle, mem);        
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+
+    BIO_free(mem);
+    gss_release_buffer(&min_rc, &buf);
+          
+    result = globus_gsi_callback_data_init(&cred_data);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    result = globus_gsi_callback_set_cert_dir(cred_data, ca_cert_dir);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    result = globus_gsi_cred_verify_cert_chain(cred_handle, cred_data);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    result = globus_gsi_callback_get_cert_chain(cred_data, &chain);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+
+    result = globus_gsi_cred_set_cert_chain(cred_handle, chain);
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    
+    mem = BIO_new(BIO_s_mem());
+
+    result = globus_gsi_cred_write(cred_handle, mem);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        *minor_status = result;
+        goto error;
+    }
+    buf.length = BIO_get_mem_data(mem, &buf.value);
+        
+    maj_rc = gss_import_cred(
+        &min_rc,
+        &cred,
+        GSS_C_NO_OID,
+        0,
+        &buf,
+        0,
+        NULL);
+    if(maj_rc != GSS_S_COMPLETE)
+    {
+        *minor_status = min_rc;
+        goto error;
+    }
+    
+    BIO_free(mem);
+    globus_gsi_cred_handle_destroy(cred_handle);
+    globus_gsi_callback_data_destroy(cred_data);
+    globus_free(ca_cert_dir);
+    sk_X509_pop_free(chain, X509_free);
+    
+    maj_rc = gss_export_cred(
+        &min_rc, cred, desired_mech, option_req, export_buffer);
+    if(maj_rc != GSS_S_COMPLETE)
+    {
+        *minor_status = min_rc;
+        goto error;
+    }
+
+    gss_release_cred(&min_rc, &cred);
+            
+    *minor_status = GLOBUS_SUCCESS;    
+    return GSS_S_COMPLETE;
+
+error:
+
+    if(maj_rc == GSS_S_COMPLETE)
+    {
+        maj_rc = GSS_S_FAILURE;
+    }
+    return maj_rc;
+
+}
+
+static char                             globus_l_ftp_base64_pad = '=';
+static char *                           globus_l_ftp_base64_n =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+static 
+globus_result_t
+globus_l_ftp_base64_encode(
+    const unsigned char *               inbuf,
+    globus_size_t                       in_len,
+    globus_byte_t *                     outbuf,
+    globus_size_t *                     out_len)
+{
+    int                                 i;
+    int                                 j;
+    unsigned char                       c;
+
+    for (i=0,j=0; i < in_len; i++)
+    {
+        switch (i%3)
+        {
+            case 0:
+                outbuf[j++] = globus_l_ftp_base64_n[inbuf[i]>>2];
+                c = (inbuf[i]&3)<<4;
+                break;
+            case 1:
+                outbuf[j++] = globus_l_ftp_base64_n[c|inbuf[i]>>4];
+                c = (inbuf[i]&15)<<2;
+                break;
+            case 2:
+                outbuf[j++] = globus_l_ftp_base64_n[c|inbuf[i]>>6];
+                outbuf[j++] = globus_l_ftp_base64_n[inbuf[i]&63];
+                c = 0;
+                break;
+            default:
+                globus_assert(0);
+                break;
+        }
+    }
+    if (i%3)
+    {
+        outbuf[j++] = globus_l_ftp_base64_n[c];
+    }
+    switch (i%3)
+    {
+        case 1:
+            outbuf[j++] = globus_l_ftp_base64_pad;
+        case 2:
+            outbuf[j++] = globus_l_ftp_base64_pad;
+    }
+
+    outbuf[j] = '\0';
+    *out_len = j;
+
+    return GLOBUS_SUCCESS;
+}
+
 /**
  * @name Initialize
  */
@@ -997,9 +1195,13 @@ globus_ftp_client_operationattr_init(
     i_attr->authz_assert                = GLOBUS_NULL;
     i_attr->delayed_pasv                = GLOBUS_FALSE;
     i_attr->net_stack_str               = GLOBUS_NULL;
-    i_attr->disk_stack_str               = GLOBUS_NULL;
+    i_attr->disk_stack_str              = GLOBUS_NULL;
     i_attr->module_alg_str              = GLOBUS_NULL;
-
+    i_attr->dcsc_type                   = 0;
+    i_attr->dcsc_cred                   = GLOBUS_NULL;
+    i_attr->dcsc_p_cred                 = GSS_C_NO_CREDENTIAL;
+    i_attr->dcsc_blob                   = GLOBUS_NULL;
+    
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
     {
@@ -1116,6 +1318,11 @@ globus_ftp_client_operationattr_destroy(
     {
         globus_libc_free(i_attr->authz_assert);
         i_attr->authz_assert = GLOBUS_NULL;
+    }
+    if(i_attr->dcsc_blob)
+    {
+        globus_libc_free(i_attr->dcsc_blob);
+        i_attr->dcsc_blob = GLOBUS_NULL;
     }
     globus_libc_free(i_attr);
 
@@ -2926,6 +3133,118 @@ error_exit:
 }
 /* globus_ftp_client_operationattr_get_data_protection() */
 
+/**
+ * @name Data Channel Security Context
+ */
+/* @{ */
+/**
+ * Set/Get the data channel security context type and credential.
+ *
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param type
+ *        The type of credential.  Currently only 'P' is supported, and
+ *        requires a gss_cred_id_t for the credential.
+ * @param credential
+ *        A credential appropriate for the type specified.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_data_security(
+    globus_ftp_client_operationattr_t *		attr,
+    int                                         type,
+    void *                                      credential)
+{
+    OM_uint32                                   maj_rc;
+    OM_uint32                                   min_rc;
+    gss_buffer_desc                             gsi_buffer;
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    globus_result_t                             result;
+    GlobusFuncName(globus_ftp_client_operationattr_set_data_security);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+	
+	goto error_exit;
+    }
+    i_attr = *attr;
+    
+    if(type == 'P')
+    {
+        globus_size_t                   blob_len;
+
+        maj_rc = gss_export_cred_with_full_cert_chain(
+            &min_rc, credential, NULL, 0, &gsi_buffer);
+        if(maj_rc != GSS_S_COMPLETE)
+        {
+            err = globus_error_get(min_rc);
+            goto error_exit;
+        }
+
+        blob_len = gsi_buffer.length * 2;
+        i_attr->dcsc_blob = globus_calloc(1, blob_len);
+        result = globus_l_ftp_base64_encode(
+            gsi_buffer.value,
+            gsi_buffer.length,
+            i_attr->dcsc_blob,
+            &blob_len);
+        gss_release_buffer(&min_rc, &gsi_buffer);
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
+        i_attr->dcsc_p_cred = credential;
+    }
+    if(type == 'P' || type == 'D')
+    {
+        i_attr->dcsc_type = type;
+        i_attr->dcsc_cred = credential;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_data_security() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_data_security(
+    const globus_ftp_client_operationattr_t *	attr,
+    int  *                                      type,
+    void **                                     credential)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_data_security);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+	
+	goto error_exit;
+    }
+    i_attr = *attr;
+    if(type != GLOBUS_NULL)
+    {
+        *type = i_attr->dcsc_type;
+    }
+    if(credential != GLOBUS_NULL)
+    {
+        *credential = i_attr->dcsc_cred;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_data_security() */
+
 /* @} */
 
 /**
@@ -3391,6 +3710,15 @@ globus_ftp_client_operationattr_copy(
 
     result = globus_ftp_client_operationattr_set_dcau(dst,
 					              &i_src->dcau);
+    if(result)
+    {
+	goto destroy_exit;
+    }
+
+    result = globus_ftp_client_operationattr_set_data_security(
+	    dst,
+	    i_src->dcsc_type,
+	    i_src->dcsc_cred);
     if(result)
     {
 	goto destroy_exit;

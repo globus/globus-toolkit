@@ -21,6 +21,7 @@ EXTRA_DIST = \
     globus-gridftp-server.spec \
     globus-gridftp-password.in \
     globus-gridftp-server-enable-sshftp.in \
+    globus-gridftp-server-setup-chroot \
     version.h.in \
     extensions.h.in \
     configure.in.in \
@@ -111,7 +112,8 @@ sbin_PROGRAMS= \
 
 sbin_SCRIPTS = \
 	globus-gridftp-password \
-	globus-gridftp-server-enable-sshftp
+	globus-gridftp-server-enable-sshftp \
+        globus-gridftp-server-setup-chroot
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.

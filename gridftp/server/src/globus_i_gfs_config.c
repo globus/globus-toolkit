@@ -84,6 +84,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     "accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, 
     "Exit after a single connection.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"chroot_path", "chroot_path", NULL, "chroot-path", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, 
+    "Path to become the new root after authentication.  This path must contain a valid "
+    "certificate structure, /etc/passwd, and /etc/groups.  The command "
+    "globus-gridftp-server-setup-chroot can help create a suitable directory structure.", NULL, NULL,GLOBUS_FALSE, NULL},
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "Add levels together to use more than one.  0 = Disables all authorization checks. 1 = Authorize identity. "
@@ -135,12 +139,15 @@ static const globus_l_gfs_config_option_t option_list[] =
     "of anonymous_user will be used.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Enable cleartext access and authenticate users against this /etc/passwd formatted file.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "Maximum concurrent connections allowed.  Only applies when running in daemon "
     "mode.  Unlimited if not set.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
     "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"offline_msg", "offline_msg", NULL, "offline-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Custom message to be displayed to clients when the server is offline via the "
+    "connections_disabled or connections_max = 0 options.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"disable_command_list", "disable_command_list", NULL, "disable-command-list", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma seperated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"cas", "cas", NULL, "cas", "authz-callouts", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
@@ -242,6 +249,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"direct_io", "direct", NULL, "direct", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL /* use O_DIRECT */, NULL, NULL, GLOBUS_FALSE, NULL},
  {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Set the startup directory to the authenticated users home dir.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"perms", "perms", NULL, "perms", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -279,6 +288,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Idle time in seconds before an unused ipc connection will close.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_connect_timeout", "ipc_connect_timeout", NULL, "ipc-connect-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 60, NULL,
     "Time in seconds before cancelling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"always_send_markers", "always_send_markers", NULL, "always-send-markers", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL, NULL, NULL,GLOBUS_FALSE, NULL}, /* always send perf and restart markers, even in mode S */
 {NULL, "User Messages", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"banner", "banner", NULL, "banner", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Message to display to the client before authentication.", NULL, NULL,GLOBUS_TRUE, NULL},
@@ -2163,7 +2174,8 @@ globus_i_gfs_config_init(
     for(arg_num = 0; arg_num < argc; arg_num++)
     {
         argp = tmp_argv[arg_num];
-        if(*argp == '-' && *++argp == 'c' && tmp_argv[arg_num + 1])
+        if(argp[0] == '-' && argp[1] == 'c' && argp[2] == '\0' 
+            && tmp_argv[arg_num + 1])
         {
             local_config_file = globus_libc_strdup(tmp_argv[arg_num + 1]);
             arg_num = argc;
