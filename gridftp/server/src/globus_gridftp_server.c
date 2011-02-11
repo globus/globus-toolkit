@@ -607,7 +607,7 @@ globus_l_gfs_new_server_cb(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-             "Couldnt get remote contact.  Possible using a non-tcp protocol");
+                "Couldn't get remote contact.  Possibly using a non-tcp protocol.\n");
             remote_contact = strdup("0.0.0.0");
         }
         if(!globus_i_gfs_config_allow_addr(remote_contact, GLOBUS_FALSE))
@@ -628,7 +628,7 @@ globus_l_gfs_new_server_cb(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-             "Couldnt get remote contact.  Possible using a non-tcp protocol");
+                "Couldn't get remote contact.  Possibly using a non-tcp protocol.\n");
             remote_contact = strdup("0.0.0.0");
         }
         
@@ -651,7 +651,7 @@ globus_l_gfs_new_server_cb(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
-             "Couldnt get local contact.  Possible using a non-tcp protocol");
+                "Couldn't get local contact.  Possibly using a non-tcp protocol.\n");
             local_contact = strdup("0.0.0.0");
         }
 
@@ -666,14 +666,26 @@ globus_l_gfs_new_server_cb(
             {
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_INFO,
-                 "Couldnt get local contact.  Possible using a non-tcp protocol");
+                    "Couldn't get local contact.  Possibly using a non-tcp protocol.\n");
                 tmp_local_contact = strdup("0.0.0.0:0");
             }
 
             globus_gfs_config_set_ptr("contact_string", tmp_local_contact);
         }
 
-
+        result = globus_xio_handle_cntl(
+            handle,
+            globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_SET_NODELAY,
+            GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO, 
+                "Couldn't enable TCP_NODELAY.  Possibly using a non-tcp protocol.\n");
+            result = GLOBUS_SUCCESS;
+        }
+            
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
