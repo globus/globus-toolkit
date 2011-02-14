@@ -1473,7 +1473,7 @@ error_before_callback:
 
 
 static const char *hex_chars = "0123456789ABCDEF";
-#define ALLOWED_CHARS "$-_.+!'\"(),/:?*@=&"
+#define ALLOWED_CHARS "$-_.+!'\"(),/:@=&"
 
 #define NEEDS_ENCODING(c) \
     (!isalnum(c) && strchr(ALLOWED_CHARS, (c)) == NULL)
