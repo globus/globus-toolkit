@@ -16,7 +16,8 @@ my %prereqs = (
     'File::Spec' => [0, 8],
     'IO::Zlib' => [1, 1],
     'Pod::Parser' => [1, 18],
-    'Test::Simple' => [0, 47]);
+    'Test::Simple' => [0, 47],
+    'XML::Parser' => [2, 0]);
 
 my $prereq_error = '';
 for my $pkg (keys %prereqs)
