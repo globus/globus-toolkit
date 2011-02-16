@@ -60,7 +60,7 @@ for my $pkg (keys %prereqs)
         }
         else
         {
-            $prereq_error .= "Prerequisite package $pkg version $prereq_major.$prereq_minor not found.";
+            $prereq_error .= "Prerequisite package $pkg version $prereq_major.$prereq_minor not found.\n";
         }
     }
 }
