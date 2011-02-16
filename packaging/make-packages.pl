@@ -942,7 +942,7 @@ sub install_gpt()
         system("./check-gpt-prereqs $verbose");
         paranoia("Missing prerequisites");
 
-        system("(./build_gpt $verbose >> $log_dir/$gpt_ver.log 2>&1");
+        system("./build_gpt $verbose >> $log_dir/$gpt_ver.log 2>&1");
         $ENV{'LANG'} = $OLANG;
 
         paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
