@@ -1319,6 +1319,8 @@ sub package_sources()
     mkdir $source_output;
     mkdir $package_output;
 
+    system("cp epstopdf-2.9.5gw $package_output");
+
     for my $package ( @package_build_list )
     {
         my ($tree, $subdir, $custom) = ($package_list{$package}[0],
