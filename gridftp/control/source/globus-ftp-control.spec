@@ -173,8 +173,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -f package-doc.filelist doc
 %defattr(-,root,root,-)
 %dir %{_docdir}/%{name}-%{version}/html
-%dir %{_docdir}/%{name}-%{version}/latex
-%dir %{_docdir}/%{name}-%{version}/rtf
 
 %changelog
 * Sat Jan 23 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 2.11-1
