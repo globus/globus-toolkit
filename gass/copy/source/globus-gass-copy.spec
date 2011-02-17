@@ -6,7 +6,7 @@
 
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
