@@ -53,19 +53,20 @@ EXTERN_C_BEGIN
  * @ingroup gsi_driver
  * 
  * An XIO handle with the gsi driver can be created with either
- * @ref globus_xio_handle_create() or @ref globus_xio_server_register_accept().
+ * globus_xio_handle_create () or globus_xio_server_register_accept ().
  *
  * If the handle is created with
- * @ref globus_xio_server_register_accept(), the
- * @ref globus_xio_register_open() call will proceed to accept a GSSAPI
+ * globus_xio_server_register_accept (), the
+ * globus_xio_register_open () call will proceed to accept a GSSAPI
  * security context. Upon successful completion of the open, ie after
  * the open callback has been called, the application may
  * proceed to read or write data associated with the GSI session.
  *
- * If the handle is created with @ref globus_xio_handle_create(), then
+ * If the handle is created with globus_xio_handle_create (), then
  * the XIO handle will implement the client-side (init) of the GSSAPI call
  * sequence and establish a security context with the accepting side indicated
- * by the contact_string passed to @ref globus_xio_register_open().
+ * by the contact_string passed to globus_xio_register_open ().
+ *
  */
  
 /**
@@ -83,18 +84,18 @@ EXTERN_C_BEGIN
  * @defgroup gsi_driver_server Server
  * @ingroup gsi_driver
  *
- * @ref globus_xio_server_create() causes a new transport-specific
+ * globus_xio_server_create() causes a new transport-specific
  * listener socket to be created to handle new GSI connections.
- * @ref globus_xio_server_register_accept() will accept a new
- * connection for processing. @ref globus_xio_server_register_close()
+ * globus_xio_server_register_accept() will accept a new
+ * connection for processing. globus_xio_server_register_close()
  * cleans up the internal resources associated with the http server
  * and calls close on the listener.
  *
  * All accepted handles inherit all gsi specific attributes set in the attr to
- * @ref globus_xio_server_create(), but can be overridden with the attr to 
- * @ref globus_xio_register_open(). Furthermore, accepted handles will use the
+ * globus_xio_server_create(), but can be overridden with the attr to 
+ * globus_xio_register_open(). Furthermore, accepted handles will use the
  * GSSAPI accept security context call unless explicitly overriden during the
- * @ref globus_xio_register_open() call (@ref
+ * globus_xio_register_open() call (
  * GLOBUS_XIO_GSI_FORCE_SERVER_MODE).
  */
 
@@ -119,8 +120,8 @@ EXTERN_C_BEGIN
  * 
  * GSI driver specific attrs and cntls.
  * 
- * @see globus_xio_attr_cntl()
- * @see globus_xio_handle_cntl()
+ * @see globus_xio_attr_cntl ()
+ * @see globus_xio_handle_cntl ()
  */
 
 /**
@@ -134,9 +135,9 @@ EXTERN_C_BEGIN
  * The GSI driver uses mostly GSSAPI calls, so it generally just wraps the
  * underlying GSSAPI errors or uses generic xio errors.
  * 
- * @see globus_xio_driver_error_match()
- * @see globus_error_gssapi_match()
- * @see globus_error_match_openssl_error()
+ * @see globus_xio_driver_error_match ()
+ * @see globus_error_gssapi_match ()
+ * @see globus_error_match_openssl_error ()
  */
 
 /**
