@@ -137,8 +137,12 @@ rm -rf $RPM_BUILD_ROOT
 /etc/init.d/globus-gridftp-sshftp start  >/dev/null
 
 %preun progs
-/etc/init.d/globus-gridftp-server stop
-/etc/init.d/globus-gridftp-sshftp stop
+if /etc/init.d/globus-gridftp-server status; then
+    /etc/init.d/globus-gridftp-server stop
+fi
+if /etc/init.d/globus-gridftp-sshftp status; then
+    /etc/init.d/globus-gridftp-sshftp stop
+fi
 /sbin/chkconfig --del globus-gridftp-server
 /sbin/chkconfig --del globus-gridftp-sshftp
 

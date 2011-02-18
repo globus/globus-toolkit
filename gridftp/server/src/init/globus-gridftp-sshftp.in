@@ -19,9 +19,14 @@ start() {
           ${sbindir}/globus-gridftp-server-enable-sshftp -out $defaultconf
 	  rc=$?
 	fi
+
 	[ $rc -ne 0 ] && return 1
 
-	if [ ! -f $enabledconf ]; then  
+        if [ ! -d /etc/grid-security ] ; then
+            mkdir /etc/grid-security
+            rc=$?
+        fi
+	if [ $rc -eq 0 -a ! -f $enabledconf ]; then  
 	  ln -s $defaultconf $enabledconf
           rc=$?
 	fi
@@ -55,8 +60,10 @@ case "$1" in
     status)
 	if [ -f $enabledconf ]; then
           echo "sshftp access to globus-gridftp-server is enabled."
+          exit 0
         else
 	  echo "sshftp access to globus-gridftp-server is disabled."
+          exit 3
 	fi
 	;;
     restart|reload)
