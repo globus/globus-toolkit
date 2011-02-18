@@ -12,7 +12,7 @@
 
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	6.1
+Version:	6.2
 Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 

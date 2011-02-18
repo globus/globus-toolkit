@@ -1355,10 +1355,13 @@ error_exit:
  *        The backend storage module name
  * @param module_args
  *        The backend storage module parameters
- *        
+ *
+ * @htmlonly
  * @see #globus_gsiftp_control_parallelism_t,
  *      globus_ftp_client_operationattr_set_layout(), 
  *      globus_ftp_client_operationattr_set_mode()
+ * @endhtmlonly
+ *        
  *
  * @note This is a Grid-FTP extension, and may not be supported on all FTP
  * servers.
@@ -1372,7 +1375,7 @@ globus_ftp_client_operationattr_set_storage_module(
     char *                                  m_args="";
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    GlobusFuncName(globus_ftp_client_operationattr_set_parallelism);
+    GlobusFuncName(globus_ftp_client_operationattr_set_storage_module);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1696,7 +1699,10 @@ error_exit:
  * @param parallelism
  *        The value of parallelism attribute.
  *        
- * @see #globus_gsiftp_control_parallelism_t,
+ * @see 
+ * @htmlonly
+ *      #globus_gsiftp_control_parallelism_t,
+ * @endhtmlonly
  *      globus_ftp_client_operationattr_set_layout(), 
  *      globus_ftp_client_operationattr_set_mode()
  *
@@ -2079,7 +2085,10 @@ error_exit:
  * @param layout
  *        The value of layout attribute. 
  *
- * @see #globus_ftp_control_layout_t,
+ * @see 
+ * @htmlonly
+ *      #globus_ftp_control_layout_t,
+ * @endhtmlonly
  *      globus_ftp_client_operationattr_set_parallelism(),
  *      globus_ftp_client_operationattr_set_mode()
  *
@@ -2197,7 +2206,9 @@ error_exit:
  * @param tcp_buffer
  *        The value of tcp_buffer attribute.
  *
- * @see #globus_gsiftp_control_tcpbuffer_t
+ * @htmlonly
+ * @see globus_ftp_control_tcpbuffer_t
+ * @endhtmlonly
  */
 globus_result_t
 globus_ftp_client_operationattr_set_tcp_buffer(
@@ -2295,7 +2306,9 @@ error_exit:
  * @param type
  *        The value of type attribute.
  *
- * @see #globus_ftp_control_type_t
+ * @htmlonly
+ * @see globus_ftp_control_type_t
+ * @endhtmlonly
  */
 globus_result_t
 globus_ftp_client_operationattr_set_type(
@@ -2391,7 +2404,10 @@ error_exit:
  * @param mode
  *        The value of mode attribute
  *
- * @see #globus_ftp_control_mode_t,
+ * @see
+ * @htmlonly
+ *      globus_ftp_control_mode_t,
+ * @endhtmlonly
  *      globus_ftp_client_operationattr_set_parallelism(),
  *      globus_ftp_client_operationattr_set_layout()
  *
