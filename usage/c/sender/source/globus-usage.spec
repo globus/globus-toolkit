@@ -4,6 +4,12 @@
 %global flavor gcc32
 %endif
 
+%if "%{?rhel}" == "5"
+%global docdiroption "with-docdir"
+%else
+%global docdiroption "docdir"
+%endif
+
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
 Version:	2.0
@@ -68,7 +74,8 @@ unset GPT_LOCATION
 
 %{_datadir}/globus/globus-bootstrap.sh
 
-%configure --with-flavor=%{flavor} --docdir=%{_docdir}/%{name}-%{version} \
+%configure --with-flavor=%{flavor} \
+           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --disable-static
 
 make %{?_smp_mflags}

@@ -4,6 +4,12 @@
 %global flavor gcc32
 %endif
 
+%if "%{?rhel}" == "5"
+%global docdiroption "with-docdir"
+%else
+%global docdiroption "docdir"
+%endif
+
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
 Version:	2.0
@@ -50,7 +56,8 @@ unset GLOBUS_LOCATION
 unset GPT_LOCATION
 %{_datadir}/globus/globus-bootstrap.sh
 
-%configure --with-flavor=%{flavor} --docdir=%{_docdir}/%{name}-%{version}
+%configure --with-flavor=%{flavor} \
+           --%{docdiroption}=%{_docdir}/%{name}-%{version}
 
 make %{?_smp_mflags}
 

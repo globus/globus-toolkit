@@ -4,6 +4,12 @@
 %global flavor gcc32
 %endif
 
+%if "%{?rhel}" == "5"
+%global docdiroption "with-docdir"
+%else
+%global docdiroption "docdir"
+%endif
+
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
 Version:	4.0
@@ -111,7 +117,7 @@ unset GLOBUS_LOCATION
 %{_datadir}/globus/globus-bootstrap.sh
 
 %configure --with-flavor=%{flavor} --enable-doxygen \
-           --docdir=%{_docdir}/%{name}-%{version} \
+           --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --disable-static
 
 make %{?_smp_mflags}
