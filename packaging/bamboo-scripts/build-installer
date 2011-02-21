@@ -1,0 +1,13 @@
+#! /bin/sh
+
+topdir=$(pwd)
+version=$(cat fait_accompli/version)
+
+curl -s http://bamboo.globus.org/browse/GT50-INSTALLER/latest/artifact/Installer/gt${version}-all-source-installer.tar.gz | tar zxf -
+cd gt${version}-all-source-installer
+./configure --with-flavor=gcc64dbg --prefix=${topdir}/Build
+make
+
+cd ..
+
+sh ./fait_accompli/bundle-binaries ${topdir}/Build gt${version}-all-source-installer/Makefile.in
