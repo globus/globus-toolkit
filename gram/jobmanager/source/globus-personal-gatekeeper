@@ -312,7 +312,6 @@ startnew=false
 host=`${bindir}/globus-hostname| ${GLOBUS_SH_CUT-cut} -d. -f1`
 file_location="$HOME/.globus/."
 file_prefix="gram.$host"
-log=never
 seg=0
 startargs=''
 single=''
@@ -481,6 +480,101 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 if [ "$logdir" != "" ]; then
     log_line=`echo "-stdio-log \"$logdir\""`
     log_levels="-log-levels 'FATAL|ERROR'"
+fi
+
+if test "${jmtype}" = "condor"; then
+    condor_arch=unknown
+    condor_os=unknown
+
+    set -- ${startargs}
+    while test "$#" -gt 0; do
+        case $1 in
+            -condor-os)
+                shift
+                condor_os="$1"
+                ;;
+            -condor-arch)
+                shift
+                condor_arch="$1"
+                ;;
+        esac
+        shift
+    done
+
+    UNAME_MACHINE=`(uname -m) 2> /dev/null ` || UNAME_MACHINE=unknown
+    UNAME_RELEASE=`(uname -r) 2> /dev/null ` || UNAME_RELEASE=unknown
+    UNAME_SYSTEM=`(uname -s) 2> /dev/null ` || UNAME_SYSTEM=unknown
+    UNAME_VERSION=`(uname -v) 2> /dev/null ` || UNAME_VERSION=unknown
+
+    if test $condor_os = "unknown"; then
+        case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}" in
+           *:FreeBSD:6*)
+             condor_os=FREEBSD6
+             ;;
+           *:Linux:*)
+             condor_os=LINUX
+             ;;
+           *:OSF1:*)
+             condor_os=OSF1
+             ;;
+           *:SunOS:5.[[6-9]])
+             condor_os=SOLARIS`echo ${UNAME_RELEASE} | sed -e 's:5\.\(.\):2\1:'`
+             ;;
+           *:SunOS:5.10)
+             condor_os=SOLARIS5.10
+             ;;
+           *:HP-UX:*)
+             condor_os=HPUX11
+             ;;
+           *:Darwin:*)
+             condor_os=OSX
+             ;;
+           *:AIX:*)
+             condor_os=AIX${UNAME_VERSION}${UNAME_RELEASE}
+             ;;
+           *)
+             echo "Unable to determine condor-os from uname" 1>&2
+             docleanup=true
+             exit 1
+             ;;
+        esac
+        startargs="$startargs -condor-os $condor_os"
+    fi
+
+    if test $condor_arch = 'unknown'; then
+        case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}" in
+            alpha:*:*)
+                condor_arch=ALPHA
+                ;;
+            x86_64:*:*)
+                condor_arch=x86_64
+                ;;
+            i?86*:*:*)
+                condor_arch=INTEL
+                ;;
+            sun4*:*:*)
+                condor_arch=`uname -m | sed -e 's:sun4\(.\):SUN4\1:'`
+                ;;
+            9000/?00:*:*)
+                condor_arch=HPPA2
+                ;;
+            ia64:*:*)
+                condor_arch=IA64
+                ;;
+            "Power Macintosh":*:*)
+                condor_arch=PPC
+                ;;
+            *:AIX:[[23]]) 
+                condor_arch=PWR3II 
+                ;; 
+            *)
+                echo "Unable to determine condor arch" 1>&2
+                docleanup=true
+                exit 1
+                ;;
+        esac
+        startargs="$startargs -condor-arch $condor_arch"
+    fi
 fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
