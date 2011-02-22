@@ -9,8 +9,9 @@ cd gt${version}-all-source-installer
 ./configure --with-flavor=${flavor} --prefix=${topdir}/Build
 make
 
-installername=gt${version}-$(./Build/share/gpt/config.guess)-${flavor}-installer
 cd ..
+
+installername=gt${version}-$(./Build/share/gpt/config.guess)-${flavor}-installer
 
 chmod a+x fait_accompli/bundle-binaries
 chmod a+x fait_accompli/gpt-generate-bundle-definition
