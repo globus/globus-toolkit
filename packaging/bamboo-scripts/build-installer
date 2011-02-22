@@ -14,6 +14,7 @@ cd ..
 
 chmod a+x fait_accompli/bundle-binaries
 chmod a+x fait_accompli/gpt-generate-bundle-definition
+chmod a+x fait_accompli/binary-makefile-generator
 
 ./fait_accompli/bundle-binaries \
     ${topdir}/Build \
