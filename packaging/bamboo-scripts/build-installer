@@ -11,7 +11,7 @@ make
 
 cd ..
 
-installername=gt${version}-$(./Build/share/gpt/config.guess)-${flavor}-installer
+installername=gt${version}-$(./Build/share/gpt/config.guess)-${flavor}-bin-installer
 
 chmod a+x fait_accompli/bundle-binaries
 chmod a+x fait_accompli/gpt-generate-bundle-definition
