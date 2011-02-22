@@ -125,7 +125,10 @@ char *
 get_home_path();
 
 /*
-** Return the path to the trusted certificates directory.      
+** Return the path to the target trusted certificates directory,
+** even if it doesn't exist (i.e., different from
+** GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR() which returns the certificates
+** directory path only if it exists).
 **/
 char*
 get_trusted_certs_path();
