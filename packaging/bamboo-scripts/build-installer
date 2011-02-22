@@ -2,12 +2,22 @@
 
 topdir=$(pwd)
 version=$(cat fait_accompli/version)
+flavor=gcc64dbg
+installername=gt${version}-$(./Build/share/gpt/config.guess)-${flavor}-installer
 
 curl -s http://bamboo.globus.org/browse/GT50-INSTALLER/latest/artifact/Installer/gt${version}-all-source-installer.tar.gz | tar zxf -
 cd gt${version}-all-source-installer
-./configure --with-flavor=gcc64dbg --prefix=${topdir}/Build
+./configure --with-flavor=${flavor} --prefix=${topdir}/Build
 make
 
 cd ..
 
-sh ./fait_accompli/bundle-binaries ${topdir}/Build gt${version}-all-source-installer/Makefile.in
+chmod a+x fait_accompli/bundle-binaries
+chmod a+x fait_accompli/gpt-generate-bundle-definition
+
+./fait_accompli/bundle-binaries \
+    ${topdir}/Build \
+    gt${version}-all-source-installer/Makefile.in
+
+mv tmp ${installername}
+tar zcf ${installername}.tar.gz ${installername}
