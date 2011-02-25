@@ -252,6 +252,15 @@ const char *myproxy_get_storage_dir();
 int myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out);
 
 /*
+ * myproxy_check_cert_dir()
+ *
+ * Checks to see if the files in the given trustroots
+ * directory are sane (such as world-readable, etc.).
+ * Returns 1 if sane, 0 otherwise.
+ */
+int myproxy_check_cert_dir(const char cert_dir[]);
+
+/*
  * myproxy_get_certs()
  *
  * Return linked list of trusted CA certificate and related files.

@@ -1717,7 +1717,7 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 }
 
 int
-myproxy_check_certs(const char cert_dir[])
+myproxy_check_cert_dir(const char cert_dir[])
 {
     DIR *dir = NULL;
     struct dirent *de = NULL;
