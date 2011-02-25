@@ -712,7 +712,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
             myproxy_log_verror();
         }
 	    } else {
-		myproxy_debug("  client requested trusted certificates but"
+		myproxy_log("  client requested trusted certificates but "
 			      "cert_dir not configured");
 	    }
 	}

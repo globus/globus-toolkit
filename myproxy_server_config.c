@@ -1222,6 +1222,14 @@ check_config(myproxy_server_context_t *context)
 	    verror_put_errno(errno);
 	    rval = -1;
 	}
+	if (context->cert_dir == NULL)
+            myproxy_log("WARNING: cert_dir not specified in config file. "
+                        "No trustroots can be returned to clients!");
+        else if (!myproxy_check_certs(context->cert_dir)) {
+	    verror_put_string("The trustroots directory %s has failed sanity"
+                        " checks.", context->cert_dir);
+	    rval = -1;
+        }
 
     return rval;
 }
@@ -1313,12 +1321,6 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	goto error;
     }
     
-    if (context->cert_dir == NULL)
-    {
-	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
-	GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&context->cert_dir);
-    }
-
     return_code = check_config(context);
     
   error:
