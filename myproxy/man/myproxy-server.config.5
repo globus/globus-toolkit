@@ -254,8 +254,6 @@ to clients requesting trust roots (such as via the
 .BR myproxy-logon (1)
 .B -T
 option).
-Defaults to 
-.IR /etc/grid-security/certificates .
 .TP
 .BI max_proxy_lifetime " hours"
 This line specifies a server-wide maximum lifetime for
@@ -927,6 +925,8 @@ default_key_retrievers     "none"
 trusted_retrievers         "*"
 .PP
 default_trusted_retrievers "none"
+.PP
+cert_dir                   /etc/grid-security/certificates
 .PD
 .PP
 The following enables CA functionality using an existing Globus Simple
@@ -948,6 +948,8 @@ certificate_issuer_key_passphrase "myproxy"
 certificate_serialfile /home/globus/.globus/simpleCA/serial
 .PP
 certificate_mapfile /etc/grid-security/grid-mapfile
+.PP
+cert_dir /etc/grid-security/certificates
 .PD
 .PP
 The following will cause usage metrics to be reported to the default target (only the

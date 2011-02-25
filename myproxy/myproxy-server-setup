@@ -68,6 +68,7 @@ sub setupconfig {
     print CONF "default_key_retrievers    \"none\"\n";
     print CONF "trusted_retrievers    \"*\"\n";
     print CONF "default_trusted_retrievers \"none\"\n";
+    print CONF "cert_dir /etc/grid-security/certificates\n";
     close(CONF);
     print "Wrote a default myproxy-server configuration to $CONFIG.\n";
   }

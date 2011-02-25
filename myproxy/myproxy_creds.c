@@ -1716,6 +1716,43 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
     return 0;
 }
 
+int
+myproxy_check_certs(const char cert_dir[])
+{
+    DIR *dir = NULL;
+    struct dirent *de = NULL;
+    char path[MAXPATHLEN];
+    struct stat s;
+
+    if ((dir = opendir(cert_dir)) == NULL) {
+	verror_put_string("failed to open %s", cert_dir);
+	return 0;
+    }
+    while ((de = readdir(dir)) != NULL) {
+	snprintf(path, MAXPATHLEN, "%s/%s", cert_dir, de->d_name);
+        if (stat(path, &s) < 0) {
+            myproxy_log("stat(%s) failed: %s", path, strerror(errno));
+            goto failure;
+        }
+	if (!S_ISREG(s.st_mode)) { /* only regular files, please */
+            continue;
+	}
+        if (!(s.st_mode & S_IROTH)) { /* must be world-readable */
+	    verror_put_string("FAILURE: %s not world readable. ", path);
+            goto failure;
+        }
+    }
+    closedir(dir);
+
+    return 1;
+
+ failure:
+    if (dir != NULL)
+        closedir(dir);
+    return 0;
+}
+
+
 myproxy_certs_t *
 myproxy_get_certs(const char cert_dir[])
 {
@@ -1733,11 +1770,15 @@ myproxy_get_certs(const char cert_dir[])
 	snprintf(path, MAXPATHLEN, "%s/%s", cert_dir, de->d_name);
     if (stat(path, &s) < 0) {
         myproxy_log("stat(%s) failed: %s", path, strerror(errno));
-        continue;
+        goto failure;
     }
 	if (!S_ISREG(s.st_mode)) { /* only regular files, please */
         continue;
 	}
+        if (!(s.st_mode & S_IROTH)) { /* must be world-readable */
+	    verror_put_string("FAILURE: %s not world readable", cert_dir);
+            goto failure;
+        }
 	if (curr == NULL) {
 	    curr = head = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
 	} else {
@@ -1757,6 +1798,8 @@ myproxy_get_certs(const char cert_dir[])
     return head;
 
  failure:
+    if (dir != NULL)
+        closedir(dir);
     myproxy_certs_free(head);
     return NULL;
 }
