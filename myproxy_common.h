@@ -72,7 +72,6 @@ typedef int socklen_t;
 #include "ssl_utils.h"
 #include "string_funcs.h"
 #include "vparse.h"
-#include "myproxy_creds.h"
 
 #if defined(HAVE_LIBSASL2)
 #include <sasl.h>
