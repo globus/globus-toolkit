@@ -1,9 +1,12 @@
-This is MyProxy v5.3 17 Jan 2011.
+This is MyProxy v5.4 XX Xxx 2011.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v5.4 XX Xxx 2011
+  - ...
+
 v5.3 17 Jan 2011
   - fix myproxy-logon bug in versions 5.0-5.2 that disabled
     myproxy-server identity verification
