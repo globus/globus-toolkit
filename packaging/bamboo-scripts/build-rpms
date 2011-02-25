@@ -24,7 +24,7 @@ EOF
 
 target32=i686-redhat-linux
 
-if egrep 'CentOS|Scientific Linux' /etc/redhat-release; then
+if egrep 'CentOS|Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release; then
     target32=i386-redhat-linux
     echo "%rhel                  5" >> $topdir/.rpmmacros
 fi
