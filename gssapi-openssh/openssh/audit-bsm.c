@@ -305,13 +305,13 @@ audit_run_command(const char *command)
 }
 
 void
-audit_session_open(const char *ttyn)
+audit_session_open(struct logininfo *li)
 {
 	/* not implemented */
 }
 
 void
-audit_session_close(const char *ttyn)
+audit_session_close(struct logininfo *li)
 {
 	/* not implemented */
 }
