@@ -197,3 +197,33 @@ solaris_contract_post_fork_parent(pid_t pid)
 		close(ctl_fd);
 }
 #endif
+
+#ifdef USE_SOLARIS_PROJECTS
+#include <sys/task.h>
+#include <project.h>
+
+/*
+ * Get/set solaris default project.
+ * If we fail, just run along gracefully.
+ */
+void
+solaris_set_default_project(struct passwd *pw)
+{
+	struct project  *defaultproject;
+	struct project   tempproject;
+	char buf[1024];
+
+	/* get default project, if we fail just return gracefully  */
+	if ((defaultproject = getdefaultproj(pw->pw_name, &tempproject, &buf,
+	    sizeof(buf))) > 0) {
+		/* set default project */
+		if (setproject(defaultproject->pj_name, pw->pw_name,
+		    TASK_NORMAL) != 0)
+			debug("setproject(%s): %s", defaultproject->pj_name,
+			    strerror(errno));
+	} else {
+		/* debug on getdefaultproj() error */
+		debug("getdefaultproj(%s): %s", pw->pw_name, strerror(errno));
+	}
+}
+#endif /* USE_SOLARIS_PROJECTS */

@@ -20,8 +20,11 @@
 
 #include <sys/types.h>
 
+#include <pwd.h>
+
 void solaris_contract_pre_fork(void);
 void solaris_contract_post_fork_child(void);
 void solaris_contract_post_fork_parent(pid_t pid);
+void solaris_set_default_project(struct passwd *);
 
 #endif

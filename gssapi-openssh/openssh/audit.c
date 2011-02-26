@@ -147,9 +147,9 @@ audit_event(ssh_audit_event_t event)
  * within a single connection.
  */
 void
-audit_session_open(const char *ttyn)
+audit_session_open(struct logininfo *li)
 {
-	const char *t = ttyn ? ttyn : "(no tty)";
+	const char *t = li->line ? li->line : "(no tty)";
 
 	debug("audit session open euid %d user %s tty name %s", geteuid(),
 	    audit_username(), t);
@@ -163,9 +163,9 @@ audit_session_open(const char *ttyn)
  * within a single connection.
  */
 void
-audit_session_close(const char *ttyn)
+audit_session_close(struct logininfo *li)
 {
-	const char *t = ttyn ? ttyn : "(no tty)";
+	const char *t = li->line ? li->line : "(no tty)";
 
 	debug("audit session close euid %d user %s tty name %s", geteuid(),
 	    audit_username(), t);
