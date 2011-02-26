@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2.c,v 1.121 2009/06/22 05:39:28 dtucker Exp $ */
+/* $OpenBSD: auth2.c,v 1.122 2010/08/31 09:58:37 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -188,7 +188,7 @@ input_service_request(int type, u_int32_t seq, void *ctxt)
 	Authctxt *authctxt = ctxt;
 	u_int len;
 	int acceptit = 0;
-	char *service = packet_get_string(&len);
+	char *service = packet_get_cstring(&len);
 	packet_check_eom();
 
 	if (authctxt == NULL)

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.183 2010/04/26 22:28:24 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.186 2010/11/29 23:45:51 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -69,6 +69,7 @@
 #include "msg.h"
 #include "pathnames.h"
 #include "uidswap.h"
+#include "hostfile.h"
 #include "schnorr.h"
 #include "jpake.h"
 
@@ -81,16 +82,6 @@ extern char *client_version_string;
 extern char *server_version_string;
 extern Options options;
 extern Kex *xxx_kex;
-
-/* tty_flag is set in ssh.c. use this in ssh_userauth2 */
-/* if it is set then prevent the switch to the null cipher */
-
-extern int tty_flag;
-
-/* tty_flag is set in ssh.c. use this in ssh_userauth2 */
-/* if it is set then prevent the switch to the null cipher */
-
-extern int tty_flag;
 
 /* tty_flag is set in ssh.c. use this in ssh_userauth2 */
 /* if it is set then prevent the switch to the null cipher */
@@ -117,8 +108,60 @@ verify_host_key_callback(Key *hostkey)
 	return 0;
 }
 
+static char *
+order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
+{
+	char *oavail, *avail, *first, *last, *alg, *hostname, *ret;
+	size_t maxlen;
+	struct hostkeys *hostkeys;
+	int ktype;
+
+	/* Find all hostkeys for this hostname */
+	get_hostfile_hostname_ipaddr(host, hostaddr, port, &hostname, NULL);
+	hostkeys = init_hostkeys();
+	load_hostkeys(hostkeys, hostname, options.user_hostfile2);
+	load_hostkeys(hostkeys, hostname, options.system_hostfile2);
+	load_hostkeys(hostkeys, hostname, options.user_hostfile);
+	load_hostkeys(hostkeys, hostname, options.system_hostfile);
+
+	oavail = avail = xstrdup(KEX_DEFAULT_PK_ALG);
+	maxlen = strlen(avail) + 1;
+	first = xmalloc(maxlen);
+	last = xmalloc(maxlen);
+	*first = *last = '\0';
+
+#define ALG_APPEND(to, from) \
+	do { \
+		if (*to != '\0') \
+			strlcat(to, ",", maxlen); \
+		strlcat(to, from, maxlen); \
+	} while (0)
+
+	while ((alg = strsep(&avail, ",")) && *alg != '\0') {
+		if ((ktype = key_type_from_name(alg)) == KEY_UNSPEC)
+			fatal("%s: unknown alg %s", __func__, alg);
+		if (lookup_key_in_hostkeys_by_type(hostkeys,
+		    key_type_plain(ktype), NULL))
+			ALG_APPEND(first, alg);
+		else
+			ALG_APPEND(last, alg);
+	}
+#undef ALG_APPEND
+	xasprintf(&ret, "%s%s%s", first, *first == '\0' ? "" : ",", last);
+	if (*first != '\0')
+		debug3("%s: prefer hostkeyalgs: %s", __func__, first);
+
+	xfree(first);
+	xfree(last);
+	xfree(hostname);
+	xfree(oavail);
+	free_hostkeys(hostkeys);
+
+	return ret;
+}
+
 void
-ssh_kex2(char *host, struct sockaddr *hostaddr)
+ssh_kex2(char *host, struct sockaddr *hostaddr, u_short port)
 {
 	Kex *kex;
 
@@ -176,6 +219,13 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	if (options.hostkeyalgorithms != NULL)
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    options.hostkeyalgorithms;
+	else {
+		/* Prefer algorithms that we already have keys for */
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
+		    order_hostkeyalgs(host, hostaddr, port);
+	}
+	if (options.kex_algorithms != NULL)
+		myproposal[PROPOSAL_KEX_ALGS] = options.kex_algorithms;
 
 #ifdef GSSAPI
 	/* If we've got GSSAPI algorithms, then we also support the
@@ -197,6 +247,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
 	kex->kex[KEX_DH_GEX_SHA256] = kexgex_client;
+	kex->kex[KEX_ECDH_SHA2] = kexecdh_client;
 #ifdef GSSAPI
 	if (options.gss_keyex) {
 		kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_client;

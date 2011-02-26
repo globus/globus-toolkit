@@ -454,6 +454,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 }
 
 /* Privileged */
+/* gssapi_keyex arg added for Globus usage */
 int
 ssh_gssapi_userok(char *user, struct passwd *pw, int gssapi_keyex)
 {
@@ -608,6 +609,7 @@ ssh_gssapi_update_creds(ssh_gssapi_ccache *store) {
 	return ok;
 }
 
+/* added for Globus usage */
 void
 ssh_gssapi_get_client_info(char **userdn, char **mech) {
 	*userdn = gssapi_client.displayname.value;

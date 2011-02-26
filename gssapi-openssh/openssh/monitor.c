@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.108 2010/07/13 23:13:16 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.110 2010/09/09 10:45:45 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -631,10 +631,10 @@ mm_answer_sign(int sock, Buffer *m)
 	p = buffer_get_string(m, &datlen);
 
 	/*
-	 * Supported KEX types will only return SHA1 (20 byte) or
-	 * SHA256 (32 byte) hashes
+	 * Supported KEX types use SHA1 (20 bytes), SHA256 (32 bytes),
+	 * SHA384 (48 bytes) and SHA512 (64 bytes).
 	 */
-	if (datlen != 20 && datlen != 32)
+	if (datlen != 20 && datlen != 32 && datlen != 48 && datlen != 64)
 		fatal("%s: data length incorrect: %u", __func__, datlen);
 
 	/* save session id, it will be passed on the first call */
@@ -1735,6 +1735,7 @@ mm_get_kex(Buffer *m)
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
 	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
+	kex->kex[KEX_ECDH_SHA2] = kexecdh_server;
 #ifdef GSSAPI
 	if (options.gss_keyex) {
 		kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
@@ -2045,6 +2046,9 @@ mm_answer_gss_userok(int sock, Buffer *m)
 		fatal("In GSSAPI monitor when GSSAPI is disabled");
 
 	gssapi_keyex = buffer_get_int(m);
+
+	if (!options.gss_authentication && !options.gss_keyex)
+		fatal("In GSSAPI monitor when GSSAPI is disabled");
 
 	authenticated = authctxt->valid && 
 	    ssh_gssapi_userok(authctxt->user, authctxt->pw, gssapi_keyex);

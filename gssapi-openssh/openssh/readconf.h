@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.86 2010/07/19 09:15:12 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.88 2010/11/13 23:27:50 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -64,11 +64,12 @@ typedef struct {
 	int     compression_level;	/* Compression level 1 (fast) to 9
 					 * (best). */
 	int     tcp_keep_alive;	/* Set SO_KEEPALIVE. */
-        int     tcp_rcv_buf; /* user switch to set tcp recv buffer */
-	int	tcp_rcv_buf_poll; /* Option to poll recv buf every window transfer */
-	int 	hpn_disabled; 	 /* Switch to disable HPN buffer management */
-	int	hpn_buffer_size; /* User definable size for HPN buffer window */
-
+	int     tcp_rcv_buf; /* user switch to set tcp recv buffer */
+	int     tcp_rcv_buf_poll; /* Option to poll recv buf every window transfer */
+	int     hpn_disabled;    /* Switch to disable HPN buffer management */
+	int     hpn_buffer_size; /* User definable size for HPN buffer window */
+	int	ip_qos_interactive;	/* IP ToS/DSCP/class for interactive */
+	int	ip_qos_bulk;		/* IP ToS/DSCP/class for bulk traffic */
 	LogLevel log_level;	/* Level for logging. */
 
 	int     port;		/* Port to connect. */
@@ -83,6 +84,7 @@ typedef struct {
 	char   *ciphers;	/* SSH2 ciphers in order of preference. */
 	char   *macs;		/* SSH2 macs in order of preference. */
 	char   *hostkeyalgorithms;	/* SSH2 server key types in order of preference. */
+	char   *kex_algorithms;	/* SSH2 kex methods in order of preference. */
 	int	protocol;	/* Protocol in order of preference. */
 	char   *hostname;	/* Real host to connect. */
 	char   *host_key_alias;	/* hostname alias for .ssh/known_hosts */
