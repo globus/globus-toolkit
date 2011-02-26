@@ -69,6 +69,7 @@ extern Authmethod method_passwd;
 extern Authmethod method_kbdint;
 extern Authmethod method_hostbased;
 #ifdef GSSAPI
+extern Authmethod method_gsskeyex;
 extern Authmethod method_gssapi;
 #endif
 #ifdef JPAKE
@@ -79,6 +80,7 @@ Authmethod *authmethods[] = {
 	&method_none,
 	&method_pubkey,
 #ifdef GSSAPI
+	&method_gsskeyex,
 	&method_gssapi,
 #endif
 #ifdef JPAKE
@@ -274,6 +276,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 
 	authctxt->postponed = 0;
+	authctxt->server_caused_failure = 0;
 
 	/* try to authenticate user */
 	m = authmethod_lookup(method);
@@ -346,7 +349,8 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 	} else {
 
 		/* Allow initial try of "none" auth without failure penalty */
-		if (authctxt->attempt > 1 || strcmp(method, "none") != 0)
+		if (!authctxt->server_caused_failure &&
+		    (authctxt->attempt > 1 || strcmp(method, "none") != 0))
 			authctxt->failures++;
 		if (authctxt->failures >= options.max_authtries) {
 #ifdef SSH_AUDIT_EVENTS

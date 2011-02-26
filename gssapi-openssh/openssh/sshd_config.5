@@ -423,12 +423,40 @@ Specifies whether user authentication based on GSSAPI is allowed.
 The default is
 .Dq no .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIKeyExchange
+Specifies whether key exchange based on GSSAPI is allowed. GSSAPI key exchange
+doesn't rely on ssh keys to verify host identity.
+The default is
+.Dq no .
+Note that this option applies to protocol version 2 only.
 .It Cm GSSAPICleanupCredentials
 Specifies whether to automatically destroy the user's credentials cache
 on logout.
 The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIStrictAcceptorCheck
+Determines whether to be strict about the identity of the GSSAPI acceptor 
+a client authenticates against. If
+.Dq yes
+then the client must authenticate against the
+.Pa host
+service on the current hostname. If 
+.Dq no
+then the client may authenticate against any service key stored in the 
+machine's default store. This facility is provided to assist with operation 
+on multi homed machines. 
+The default is
+.Dq yes .
+Note that this option applies only to protocol version 2 GSSAPI connections,
+and setting it to 
+.Dq no
+may only work with recent Kerberos GSSAPI libraries.
+.It Cm GSSAPIStoreCredentialsOnRekey
+Controls whether the user's GSSAPI credentials should be updated following a 
+successful connection rekeying. This option can be used to accepted renewed 
+or updated credentials from a compatible client. The default is
+.Dq no .
 .It Cm HostbasedAuthentication
 Specifies whether rhosts or /etc/hosts.equiv authentication together
 with successful public key client host authentication is allowed

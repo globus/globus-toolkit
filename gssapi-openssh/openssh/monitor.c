@@ -172,6 +172,8 @@ int mm_answer_gss_setup_ctx(int, Buffer *);
 int mm_answer_gss_accept_ctx(int, Buffer *);
 int mm_answer_gss_userok(int, Buffer *);
 int mm_answer_gss_checkmic(int, Buffer *);
+int mm_answer_gss_sign(int, Buffer *);
+int mm_answer_gss_updatecreds(int, Buffer *);
 #endif
 
 #ifdef SSH_AUDIT_EVENTS
@@ -241,6 +243,7 @@ struct mon_table mon_dispatch_proto20[] = {
     {MONITOR_REQ_GSSSTEP, MON_ISAUTH, mm_answer_gss_accept_ctx},
     {MONITOR_REQ_GSSUSEROK, MON_AUTH, mm_answer_gss_userok},
     {MONITOR_REQ_GSSCHECKMIC, MON_ISAUTH, mm_answer_gss_checkmic},
+    {MONITOR_REQ_GSSSIGN, MON_ONCE, mm_answer_gss_sign},
 #endif
 #ifdef JPAKE
     {MONITOR_REQ_JPAKE_GET_PWDATA, MON_ONCE, mm_answer_jpake_get_pwdata},
@@ -253,6 +256,12 @@ struct mon_table mon_dispatch_proto20[] = {
 };
 
 struct mon_table mon_dispatch_postauth20[] = {
+#ifdef GSSAPI
+    {MONITOR_REQ_GSSSETUP, 0, mm_answer_gss_setup_ctx},
+    {MONITOR_REQ_GSSSTEP, 0, mm_answer_gss_accept_ctx},
+    {MONITOR_REQ_GSSSIGN, 0, mm_answer_gss_sign},
+    {MONITOR_REQ_GSSUPCREDS, 0, mm_answer_gss_updatecreds},
+#endif
     {MONITOR_REQ_MODULI, 0, mm_answer_moduli},
     {MONITOR_REQ_SIGN, 0, mm_answer_sign},
     {MONITOR_REQ_PTY, 0, mm_answer_pty},
@@ -357,6 +366,10 @@ monitor_child_preauth(Authctxt *_authctxt, struct monitor *pmonitor)
 		/* Permit requests for moduli and signatures */
 		monitor_permit(mon_dispatch, MONITOR_REQ_MODULI, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_SIGN, 1);
+#ifdef GSSAPI
+		/* and for the GSSAPI key exchange */
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSETUP, 1);
+#endif
 	} else {
 		mon_dispatch = mon_dispatch_proto15;
 
@@ -443,6 +456,10 @@ monitor_child_postauth(struct monitor *pmonitor)
 		monitor_permit(mon_dispatch, MONITOR_REQ_MODULI, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_SIGN, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_TERM, 1);
+#ifdef GSSAPI
+		/* and for the GSSAPI key exchange */
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSETUP, 1);
+#endif		
 	} else {
 		mon_dispatch = mon_dispatch_postauth15;
 		monitor_permit(mon_dispatch, MONITOR_REQ_TERM, 1);
@@ -1692,6 +1709,13 @@ mm_get_kex(Buffer *m)
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
 	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
 	kex->kex[KEX_ECDH_SHA2] = kexecdh_server;
+#ifdef GSSAPI
+	if (options.gss_keyex) {
+		kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+		kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_server;
+		kex->kex[KEX_GSS_GEX_SHA1] = kexgss_server;
+	}
+#endif
 	kex->server = 1;
 	kex->hostkey_type = buffer_get_int(m);
 	kex->kex_type = buffer_get_int(m);
@@ -1898,6 +1922,9 @@ mm_answer_gss_setup_ctx(int sock, Buffer *m)
 	OM_uint32 major;
 	u_int len;
 
+	if (!options.gss_authentication && !options.gss_keyex)
+		fatal("In GSSAPI monitor when GSSAPI is disabled");
+
 	goid.elements = buffer_get_string(m, &len);
 	goid.length = len;
 
@@ -1925,6 +1952,9 @@ mm_answer_gss_accept_ctx(int sock, Buffer *m)
 	OM_uint32 flags = 0; /* GSI needs this */
 	u_int len;
 
+	if (!options.gss_authentication && !options.gss_keyex)
+		fatal("In GSSAPI monitor when GSSAPI is disabled");
+
 	in.value = buffer_get_string(m, &len);
 	in.length = len;
 	major = ssh_gssapi_accept_ctx(gsscontext, &in, &out, &flags);
@@ -1942,6 +1972,7 @@ mm_answer_gss_accept_ctx(int sock, Buffer *m)
 		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSTEP, 0);
 		monitor_permit(mon_dispatch, MONITOR_REQ_GSSUSEROK, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_GSSCHECKMIC, 1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSIGN, 1);
 	}
 	return (0);
 }
@@ -1952,6 +1983,9 @@ mm_answer_gss_checkmic(int sock, Buffer *m)
 	gss_buffer_desc gssbuf, mic;
 	OM_uint32 ret;
 	u_int len;
+
+	if (!options.gss_authentication && !options.gss_keyex)
+		fatal("In GSSAPI monitor when GSSAPI is disabled");
 
 	gssbuf.value = buffer_get_string(m, &len);
 	gssbuf.length = len;
@@ -1979,7 +2013,11 @@ mm_answer_gss_userok(int sock, Buffer *m)
 {
 	int authenticated;
 
-	authenticated = authctxt->valid && ssh_gssapi_userok(authctxt->user);
+	if (!options.gss_authentication && !options.gss_keyex)
+		fatal("In GSSAPI monitor when GSSAPI is disabled");
+
+	authenticated = authctxt->valid && 
+	    ssh_gssapi_userok(authctxt->user, authctxt->pw);
 
 	buffer_clear(m);
 	buffer_put_int(m, authenticated);
@@ -1992,6 +2030,74 @@ mm_answer_gss_userok(int sock, Buffer *m)
 	/* Monitor loop will terminate if authenticated */
 	return (authenticated);
 }
+
+int 
+mm_answer_gss_sign(int socket, Buffer *m)
+{
+	gss_buffer_desc data;
+	gss_buffer_desc hash = GSS_C_EMPTY_BUFFER;
+	OM_uint32 major, minor;
+	u_int len;
+
+	if (!options.gss_authentication && !options.gss_keyex)
+		fatal("In GSSAPI monitor when GSSAPI is disabled");
+
+	data.value = buffer_get_string(m, &len);
+	data.length = len;
+	if (data.length != 20) 
+		fatal("%s: data length incorrect: %d", __func__, 
+		    (int) data.length);
+
+	/* Save the session ID on the first time around */
+	if (session_id2_len == 0) {
+		session_id2_len = data.length;
+		session_id2 = xmalloc(session_id2_len);
+		memcpy(session_id2, data.value, session_id2_len);
+	}
+	major = ssh_gssapi_sign(gsscontext, &data, &hash);
+
+	xfree(data.value);
+
+	buffer_clear(m);
+	buffer_put_int(m, major);
+	buffer_put_string(m, hash.value, hash.length);
+
+	mm_request_send(socket, MONITOR_ANS_GSSSIGN, m);
+
+	gss_release_buffer(&minor, &hash);
+
+	/* Turn on getpwnam permissions */
+	monitor_permit(mon_dispatch, MONITOR_REQ_PWNAM, 1);
+	
+	/* And credential updating, for when rekeying */
+	monitor_permit(mon_dispatch, MONITOR_REQ_GSSUPCREDS, 1);
+
+	return (0);
+}
+
+int
+mm_answer_gss_updatecreds(int socket, Buffer *m) {
+	ssh_gssapi_ccache store;
+	int ok;
+
+	store.filename = buffer_get_string(m, NULL);
+	store.envvar   = buffer_get_string(m, NULL);
+	store.envval   = buffer_get_string(m, NULL);
+
+	ok = ssh_gssapi_update_creds(&store);
+
+	xfree(store.filename);
+	xfree(store.envvar);
+	xfree(store.envval);
+
+	buffer_clear(m);
+	buffer_put_int(m, ok);
+
+	mm_request_send(socket, MONITOR_ANS_GSSUPCREDS, m);
+
+	return(0);
+}
+
 #endif /* GSSAPI */
 
 #ifdef JPAKE

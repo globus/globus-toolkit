@@ -508,11 +508,43 @@ Specifies whether user authentication based on GSSAPI is allowed.
 The default is
 .Dq no .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIKeyExchange
+Specifies whether key exchange based on GSSAPI may be used. When using
+GSSAPI key exchange the server need not have a host key.
+The default is
+.Dq no .
+Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIClientIdentity
+If set, specifies the GSSAPI client identity that ssh should use when 
+connecting to the server. The default is unset, which means that the default 
+identity will be used.
+.It Cm GSSAPIServerIdentity
+If set, specifies the GSSAPI server identity that ssh should expect when 
+connecting to the server. The default is unset, which means that the
+expected GSSAPI server identity will be determined from the target
+hostname.
 .It Cm GSSAPIDelegateCredentials
 Forward (delegate) credentials to the server.
 The default is
 .Dq no .
-Note that this option applies to protocol version 2 only.
+Note that this option applies to protocol version 2 connections using GSSAPI.
+.It Cm GSSAPIRenewalForcesRekey
+If set to 
+.Dq yes
+then renewal of the client's GSSAPI credentials will force the rekeying of the
+ssh connection. With a compatible server, this can delegate the renewed 
+credentials to a session on the server.
+The default is
+.Dq no .
+.It Cm GSSAPITrustDns
+Set to 
+.Dq yes to indicate that the DNS is trusted to securely canonicalize
+the name of the host being connected to. If 
+.Dq no, the hostname entered on the
+command line will be passed untouched to the GSSAPI library.
+The default is
+.Dq no .
+This option only applies to protocol version 2 connections using GSSAPI.
 .It Cm HashKnownHosts
 Indicates that
 .Xr ssh 1
