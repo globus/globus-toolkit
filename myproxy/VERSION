@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.4 XX Xxx 2011
+  - prefer to link with libvomsapi instead of libvomsc
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7133)
   - myproxy-server trustroots security improvements:
     - cert_dir no longer defaults to /etc/grid-security/certificates.
     - Server will ignore requests for trustroots if cert_dir is not
