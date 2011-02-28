@@ -1892,6 +1892,7 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
             verror_put_errno(errno);
             verror_put_string("Unable to write to %s", tmp_path);
             fclose(file);
+            file = NULL;
             goto error;
         }
         fclose(file);
@@ -1920,6 +1921,10 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
     if (log_file_name != NULL)
     {
         free(log_file_name);
+    }
+    if (log_file != NULL)
+    {
+        fclose(log_file);
     }
     if (file != NULL)
     {
