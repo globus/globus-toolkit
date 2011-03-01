@@ -9,6 +9,8 @@ v5.4 XX Xxx 2011
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7133)
   - fix double-free in myproxy_install_trusted_cert_files() on write error
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7135)
+  - add myproxy-test -generatecerts option and remove dependency on $HOME
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7139)
   - myproxy-server trustroots security improvements:
     - cert_dir no longer defaults to /etc/grid-security/certificates.
     - Server will ignore requests for trustroots if cert_dir is not
