@@ -33,6 +33,8 @@ fi
 cat <<EOF >> $topdir/.rpmmacros
 %_topdir               $topdir
 %_tmppath              $tmppath
+# Override this, as it breaks documentation dependencies in some of the builds 
+%_excludedocs 0
 EOF
 
 # Remove everything prior to building
