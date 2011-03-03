@@ -183,7 +183,7 @@ diff -N source-trees/database/c/sqlite/patches/sqlite-3.3.17-patch
 + 	mv $(DOC) doc
 + 
 +-install:	sqlite3 libsqlite3.la sqlite3.h ${HAVE_TCL:1=tcl_install}
-++install:      sqlite3($TEXE) libsqlite3.la sqlite3.h ${HAVE_TCL:1=tcl_install}
+++install:	sqlite3$(TEXE) libsqlite3.la sqlite3.h ${HAVE_TCL:1=tcl_install}
 + 	$(INSTALL) -d $(DESTDIR)$(libdir)
 + 	$(LTINSTALL) libsqlite3.la $(DESTDIR)$(libdir)
 + 	$(INSTALL) -d $(DESTDIR)$(exec_prefix)/bin
