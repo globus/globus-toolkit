@@ -1776,8 +1776,8 @@ myproxy_get_certs(const char cert_dir[])
         continue;
 	}
         if (!(s.st_mode & S_IROTH)) { /* must be world-readable */
-	    verror_put_string("FAILURE: %s not world readable", cert_dir);
-            goto failure;
+	    myproxy_log("WARNING: %s not world readable; skipping it", cert_dir);
+            continue;
         }
 	if (curr == NULL) {
 	    curr = head = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
