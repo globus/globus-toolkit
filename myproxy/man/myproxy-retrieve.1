@@ -162,7 +162,7 @@ By default (also made explicit with the value
 .B HYBRID
 ), a reverse-DNS lookup is NOT performed; the user-specified
 host name is used instead. This name must match at least one
-of the DNS names in the subjectAltName extension of the server's
+of the names of type dNSName in the subjectAltName extension of the server's
 certificate or the CN (Common Name) in the certificate. Setting
 this variable to
 .B STRICT_GT2
@@ -171,7 +171,7 @@ FQHN and then to use that FQHN instead of the user-specified name in
 verifying the identity of the server. Setting this variable to
 .B STRICT_RFC2818
 will cause the client to NOT consider the CN (Common Name) if
-at least one DNS name exists in the subjectAltName extension.
+at least one name of type dNSName exists in the subjectAltName extension.
 This is per RFC 2818.
 .PP
 This variable setting will be ignored if
