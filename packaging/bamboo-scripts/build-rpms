@@ -6,7 +6,7 @@ umask 022
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
 
-args=$(getopt n:v:)
+args=$(getopt n:v: $*)
 set -- ${args}
 
 for i; do
@@ -14,9 +14,11 @@ for i; do
         -n)
             osname="$2"
             shift
+            shift
             ;;
         -v)
             osver="$2"
+            shift
             shift
             ;;
         --)
