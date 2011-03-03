@@ -586,7 +586,7 @@ print "
 
 if (!$libs) {
     print "cat \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \\\n";
-    print "    \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\\n"
+    print "    \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\\n";
     print "    \$GLOBUSPACKAGEDIR/%{_name}_setup/noflavor_pgm.filelist \\\n"
 	if defined $setupfile;
     print "  | sed s!^!%{_prefix}! > package.filelist\n";
