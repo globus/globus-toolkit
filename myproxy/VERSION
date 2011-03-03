@@ -42,9 +42,8 @@ v5.4 XX Xxx 2011
       defined.
     - Server will refuse to start if the trustroots directory set using
       cert_dir contains any regular files that are not world-readable.
-    - Server will also fail requests for trustroots if a regular file
-      that is not world-readable is found in the trustroots directory
-      set using cert_dir.
+    - Once started, the server will skip (i.e. will not return to client)
+      any regular files found later to NOT have world-readable permissions.
 
 v5.3 17 Jan 2011
   - fix myproxy-logon bug in versions 5.0-5.2 that disabled
