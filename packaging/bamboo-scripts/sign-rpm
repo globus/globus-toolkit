@@ -1,4 +1,4 @@
-spawn rpm --resign {*}$argv
+spawn rpm --resign $argv
 
 expect {
 "^Enter pass phrase: " { send -- "\r" ; exp_continue }
