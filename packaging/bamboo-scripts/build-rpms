@@ -33,6 +33,7 @@ if [ "$osname" = "" -o "$osver" = "" ]; then
     exit 1
 fi
 
+mkdir -p $topdir
 # Copy GPG keyring to $topdir
 cp -R $HOME/.gnupg $topdir/.gnupg
 
