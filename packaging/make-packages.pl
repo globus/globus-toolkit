@@ -351,7 +351,7 @@ sub generate_build_list()
                 foreach my $depender ( keys %{$package_require_hash{$dpk}} )
                 {
                    my $req = $package_require_hash{$dpk}{$depender};
-                   next if ( ($low le $req) && ( $req le $high ) );
+                   next if ( ($low <= $req) && ( $req <= $high ) );
                    push @errors, "$depender wants $dpk at $req, but it is $high with age $age\n";
                 }
            }
