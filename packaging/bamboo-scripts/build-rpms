@@ -3,6 +3,7 @@
 set -e
 umask 022
 
+bamboodir=$(pwd)/bamboo
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
 
@@ -93,7 +94,7 @@ cd ../../package-output
 for i in *.tar.gz; do rpmbuild -ts --nodeps $i || true; done
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
-        rpmbuild --sign --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
+        rpmbuild --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
         rpmsdir=$topdir/RPMS
 
         rpms="$(find $rpmsdir -name "$i-[0-9]*rpm" -o \
@@ -116,7 +117,7 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
-        rpmbuild --sign --target $target32 \
+        rpmbuild --target $target32 \
                  --rebuild $topdir/SRPMS/$i-[0-9]*src.rpm
         rpmsdir=$topdir/RPMS
 
@@ -130,10 +131,15 @@ for i in grid-packaging-tools $packages; do
 done
 
 cd $topdir
+
 mv RPMS.x86_64/x86_64 RPMS
+
+find RPMS -name '*.rpm' -exec ${bamboodir}/sign-rpm {} \;
+find SRPMS -name '*.rpm' -exec ${bamboodir}/sign-rpm {} \;
 
 reporoot="${topdir}/repo"
 repodir="${reporoot}/${osname}/${osver}"
+
 # Generate YUM repository
 mkdir -p "${repodir}"
 cp -R RPMS/* "${repodir}"
