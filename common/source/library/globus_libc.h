@@ -27,7 +27,7 @@ Description:
 #include "globus_common_include.h"
 #include "globus_thread.h"
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
 /* For addrinfo struct */
 #include <winsock2.h>
 #include <ws2tcpip.h>

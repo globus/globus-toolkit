@@ -22,7 +22,7 @@
 #define GLOBUS_COMMON_INCLUDE_H 1
 
 #include "globus_config.h"
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
