@@ -21,8 +21,8 @@ fi
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk 
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/packaging_tools/configure gpt/check-gpt-prereqs
 
-packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles | \
-    awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
+packages="$(echo gpt-*.tar.gz; ./make-packages.pl -a -lp -deps -deporder -bundles=$bundles | \
+    awk "/at version/ { print \$1 \"-\" \$4 }")"
 
 echo "$packages" > bamboo-package-list
 
