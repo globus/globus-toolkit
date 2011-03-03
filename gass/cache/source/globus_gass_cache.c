@@ -369,51 +369,6 @@ globus_l_gass_cache_trace(
 static int
 globus_l_gass_cache_module_activate(void)
 {
-#ifdef TARGET_ARCH_CYGWIN
-
-/* 
- * Have to do this check at runtime, as the same executable can run
- * on both Win9x and WinNT, and it seems like stat() -> st_nlink is
- * broken on only one of them.
- */
-
-    char         file1[PATH_MAX];
-    char         file2[PATH_MAX];
-    int          fd;
-    int          rc;
-    struct stat  stx;
-    
-    tmpnam(file1);
-    tmpnam(file2);
-
-    remove(file1);
-    remove(file2);
-    
-    fd = open(file1, 
-	      O_RDWR|O_CREAT,
-	      GLOBUS_L_FILE_MODE);
-
-    if (fd < 0)
-	goto real_exit;
-
-    close(fd);
-    
-    rc = stat(file1, &stx);
-    if ((rc!=0) || (stx.st_nlink != 1))
-	globus_l_gass_cache_link_works = GLOBUS_FALSE;
-    else if (link(file1,file2))
-	globus_l_gass_cache_link_works = GLOBUS_FALSE;
-    else
-    {
-	rc = stat(file1, &stx);
-	if ((rc!=0) || (stx.st_nlink != 2))
-	    globus_l_gass_cache_link_works = GLOBUS_FALSE;
-    }
-
-    remove(file2);
-    remove(file1);
- real_exit:
-#endif
     globus_l_gass_cache_pid = globus_libc_getpid();
     globus_l_gass_cache_fn_fudge = 0;
     return GLOBUS_SUCCESS;

@@ -29,7 +29,7 @@
  */
 
 #ifndef GSS_CALLCONV
-#if defined(WIN32) || defined(_WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)
 #define GSS_CALLCONV __stdcall
 #define GSS_CALLCONV_C __cdecl
 #else
