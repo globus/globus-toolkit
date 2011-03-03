@@ -347,7 +347,7 @@ sub generate_build_list()
                 my $high = $package_version_hash{$dpk}{'major'};
                 my $age = $package_version_hash{$dpk}{'age'};
                 my $low = $high - $age;
-                print "$dpk at version $package_version_hash{$dpk}{'major'}\n";
+                print "$dpk at version $package_version_hash{$dpk}{'major'}.$package_version_hash{$dpk}{'minor'}\n";
                 foreach my $depender ( keys %{$package_require_hash{$dpk}} )
                 {
                    my $req = $package_require_hash{$dpk}{$depender};
