@@ -295,3 +295,9 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Values: yes no
 Default: no
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: loglevel
+Description: "Override the default log level for this job. The value of this
+             attribute consists of a combination of the strings
+             FATAL, ERROR, WARN, INFO, DEBUG, TRACE joined by the | character"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

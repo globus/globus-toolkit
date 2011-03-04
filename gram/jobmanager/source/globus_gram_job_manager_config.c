@@ -141,8 +141,7 @@ globus_gram_job_manager_config_init(
         argc = newargc + 1;
     }
     /* Default log level if nothing specified on command-line or config file */
-    config->log_levels = GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL
-                       | GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
+    config->log_levels = -1;
 
     /* Default to using GLOBUS_USAGE_TARGETS environment variable.
      * If not set, use the Globus usage stats service
@@ -293,40 +292,10 @@ globus_gram_job_manager_config_init(
         else if (strcmp(argv[i], "-log-levels") == 0
                 && (i+1 < argc))
         {
-            char *                  log_level_string = strdup(argv[++i]);
-            char *                  level_string = NULL;
-            char *                  last_string = NULL;
-
-            for (level_string = strtok_r(log_level_string, "|", &last_string);
-                 level_string != NULL;
-                 level_string = strtok_r(NULL, "|", &last_string))
-            {
-                if (strcmp(level_string, "FATAL") == 0)
-                {
-                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL;
-                }
-                else if (strcmp(level_string, "ERROR") == 0)
-                {
-                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
-                }
-                else if (strcmp(level_string, "WARN") == 0)
-                {
-                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_WARN;
-                }
-                else if (strcmp(level_string, "INFO") == 0)
-                {
-                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_INFO;
-                }
-                else if (strcmp(level_string, "DEBUG") == 0)
-                {
-                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG;
-                }
-                else if (strcmp(level_string, "TRACE") == 0)
-                {
-                    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE;
-                }
-            }
-            free(log_level_string);
+            rc = globus_i_gram_parse_log_levels(
+                    argv[++i],
+                    &config->log_levels,
+                    NULL);
         }
         else if (strcmp(argv[i], "-disable-usagestats") == 0)
         {
@@ -401,6 +370,17 @@ globus_gram_job_manager_config_init(
                 argv[i] ? argv[i] : "");
         }
     }
+
+    /* If log levels were not specified on the command-line or configuration, set the
+     * service default
+     */
+    if (config->log_levels == -1)
+    {
+        config->log_levels = 0;
+    }
+    /* Always have these at a minimum */
+    config->log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL
+                       |  GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
 
     /* Verify that required values are present */
     if(config->jobmanager_type == NULL)
@@ -737,4 +717,111 @@ globus_l_gram_tokenize(char * command, char ** args, int * n)
 
 }
 /* globus_l_gram_tokenize() */
+
+/**
+ * @brief Parse log level specification
+ * 
+ * @details
+ *     The globus_i_gram_parse_log_levels() function parses the log level string passed
+ *     in its first argument to the mask pointed to by  the second argument.
+ *     The log level string contains one or more level names combined by the
+ *     "|" delimiter. The set of valid level names is:
+ *     - FATAL
+ *     - ERROR
+ *     - WARN
+ *     - INFO
+ *     - DEBUG
+ *     - TRACE
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Success
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED
+ *     Server misconfigured
+ */
+int
+globus_i_gram_parse_log_levels(
+    const char *                        unparsed_string,
+    int *                               log_levels,
+    char **                             error_string)
+{
+    char *                  log_level_string = strdup(unparsed_string);
+    char *                  level_string = NULL;
+    char *                  last_string = NULL;
+    int                     rc = GLOBUS_SUCCESS;
+
+    if (log_level_string == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto error_exit;
+    }
+    if (error_string != NULL)
+    {
+        *error_string = NULL;
+    }
+    *log_levels = 0;
+
+    for (level_string = strtok_r(log_level_string, "|", &last_string);
+         level_string != NULL;
+         level_string = strtok_r(NULL, "|", &last_string))
+    {
+        if (strcmp(level_string, "FATAL") == 0)
+        {
+            *log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_FATAL;
+        }
+        else if (strcmp(level_string, "ERROR") == 0)
+        {
+            *log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR;
+        }
+        else if (strcmp(level_string, "WARN") == 0)
+        {
+            *log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_WARN;
+        }
+        else if (strcmp(level_string, "INFO") == 0)
+        {
+            *log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_INFO;
+        }
+        else if (strcmp(level_string, "DEBUG") == 0)
+        {
+            *log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG;
+        }
+        else if (strcmp(level_string, "TRACE") == 0)
+        {
+            *log_levels |= GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE;
+        }
+        else
+        {
+            globus_gram_job_manager_log(
+                    NULL,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                    "event=gram.config.info "
+                    "level=ERROR "
+                    "status=-1 "
+                    "msg=\"%s\" "
+                    "string=\"%s\" "
+                    "error_at=\"%s\" "
+                    "\n",
+                    "Error parsing log level string",
+                    unparsed_string,
+                    level_string);
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
+
+            if (error_string != NULL)
+            {
+                *error_string = globus_common_create_string(
+                        "Error parsing log level string '%s' at '%s'\n",
+                        unparsed_string,
+                        level_string);
+            }
+            break;
+        }
+    }
+    free(log_level_string);
+
+error_exit:
+    return rc;
+}
+/* globus_i_gram_parse_log_levels() */
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -459,6 +459,13 @@ globus_gram_job_manager_state_file_write(
         goto error_exit;
     }
 
+    rc = fprintf(fp, "%d\n",
+                request->job_log_level);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+
 
 
     /*
@@ -1065,6 +1072,16 @@ skip_single_check:
         request->original_job_id_string = strdup(buffer);
     }
 
+    if(fgets( buffer, file_len, fp ) == NULL)
+    {
+        goto free_original_job_id_string;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    if(strcmp(buffer, " ") != 0)
+    {
+        request->job_log_level = atoi(buffer);
+    }
+
     fclose(fp);
 
     free(buffer);
@@ -1082,6 +1099,12 @@ skip_single_check:
 
     return GLOBUS_SUCCESS;
 
+free_original_job_id_string:
+    if (request->original_job_id_string != NULL)
+    {
+        free(request->original_job_id_string);
+        request->original_job_id_string = NULL;
+    }
 free_client_address:
     if (request->job_stats.client_address != NULL)
     {
@@ -1111,12 +1134,6 @@ free_rsl_spec:
     {
         free(request->rsl_spec);
         request->rsl_spec = NULL;
-    }
-free_original_job_id_string:
-    if (request->original_job_id_string != NULL)
-    {
-        free(request->original_job_id_string);
-        request->original_job_id_string = NULL;
     }
 free_job_id_string:
     if (request->job_id_string != NULL)

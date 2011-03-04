@@ -212,16 +212,16 @@ globus_gram_job_manager_request_init(
     {
         *old_job_request = NULL;
     }
-    r = malloc(sizeof(globus_gram_jobmanager_request_t));
+    r = calloc(1, sizeof(globus_gram_jobmanager_request_t));
     if (r == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto request_malloc_failed;
     }
+    r->job_log_level = -1;
     r->config = manager->config;
     r->manager = manager;
-    memset(&r->job_stats, 0, sizeof(globus_i_gram_usage_job_tracker_t));
 
     GlobusTimeAbstimeGetCurrent(r->job_stats.unsubmitted_timestamp);
     r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
@@ -595,6 +595,38 @@ globus_gram_job_manager_request_init(
         goto bad_proxy_timeout;
     }
 
+    rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+        r->rsl,
+        "loglevel",
+        &tmp_string);
+    switch (rc)
+    {
+    case GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE:
+        r->job_log_level = r->config->log_levels;
+        break;
+
+    case GLOBUS_SUCCESS:
+        if (tmp_string != NULL)
+        {
+            rc = globus_i_gram_parse_log_levels(
+                    tmp_string,
+                    &r->job_log_level,
+                    &r->gt3_failure_message);
+
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+                goto get_job_log_levels_failed;
+            }
+        }
+        else
+        {
+    default:
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+            goto get_job_log_levels_failed;
+        }
+    }
+
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -698,6 +730,7 @@ staging_list_create_failed:
 cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
+get_job_log_levels_failed:
 bad_proxy_timeout:
         if (r->remote_io_url_file)
         {
@@ -1373,6 +1406,7 @@ globus_gram_job_manager_request_set_status_time(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
             "event=gram.job.info "
+            "level=INFO "
             "gramid=%s "
             "job_status=%d "
             "\n",
@@ -1415,6 +1449,27 @@ globus_gram_job_manager_request_log(
     ... )
 {
     va_list ap;
+
+    /* job_log_level is initialized to the global log level, but can be modified via
+     * the log_level RSL attribute. If it masks the requested log level to zero, don't bother
+     * calling the logging functions
+     */
+    if (request != NULL && request->job_log_level != -1)
+    {
+        level = level & request->job_log_level;
+
+        if (level == 0)
+        {
+            return;
+        }
+
+        /*
+         * If we have a request-specific log level that differs from the global
+         * config, we need to make sure the log level matches the global type
+         * mask so that it won't get discarded by globus_logging_vwrite
+         */
+        level = request->config->log_levels;
+    }
 
     if (globus_i_gram_job_manager_log_sys != NULL)
     {

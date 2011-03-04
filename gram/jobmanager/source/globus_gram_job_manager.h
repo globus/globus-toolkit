@@ -305,9 +305,10 @@ typedef struct
      */
     int                                 proxy_timeout;
     /**
-     * Events to record to syslog/log file
+     * Events to record to syslog/log file. A bitwise or of the values from the
+     * globus_gram_job_manager_log_level_t enumeration.
      */
-    globus_gram_job_manager_log_level_t log_levels;
+    int                                 log_levels;
     /**
      * Flag indicating whether to use syslog for logging
      */
@@ -739,6 +740,12 @@ typedef struct globus_gram_job_manager_request_s
      * Information to be tracked for usagestats
      */
     globus_i_gram_usage_job_tracker_t   job_stats;
+
+    /**
+     * Per-job log configuration, a bitwise or of values from the
+     * globus_gram_job_manager_log_level_t enumeration.
+     */
+    int                                 job_log_level;
 }
 globus_gram_jobmanager_request_t;
 
@@ -793,6 +800,12 @@ globus_gram_job_manager_config_init(
 void
 globus_gram_job_manager_config_destroy(
     globus_gram_job_manager_config_t *  config);
+
+int
+globus_i_gram_parse_log_levels(
+    const char *                        unparsed_string,
+    int *                               log_levels,
+    char **                             error_string);
 
 /* globus_gram_job_manager_request.c */
 #ifdef DEBUG_THREADS
