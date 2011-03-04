@@ -22,9 +22,9 @@
  * limitations under the License.
  */
 
-#ifdef HAVE_GLOBUS_USAGE
-
 #include "includes.h"
+
+#ifdef HAVE_GLOBUS_USAGE
 
 #include <stdarg.h>
 #include <unistd.h> 
