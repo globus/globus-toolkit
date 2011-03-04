@@ -136,7 +136,7 @@ mv RPMS.x86_64/x86_64 RPMS
 find RPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
 find SRPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
 
-sh ${bambooscriptdir}/create-repo-pkg -n "${osname}" -v "${osver}"
+sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}"
 
 reporoot="${topdir}/repo"
 repodir="${reporoot}/${osname}/${osver}"
