@@ -1,0 +1,119 @@
+#! /bin/sh
+
+bambooscriptdir=$(dirname $0)
+if ! expr $bambooscriptdir ":" "/" ; then
+    bambooscriptdir="$(pwd)/$bambooscriptdir"
+fi
+
+args=$(getopt n:v:b:s: $*)
+set -- ${args}
+
+baseurl="http://www.mcs.anl.gov/~mlink/globusrepo/\$osname/\\\$releasever/\\\$basearch/"
+srcbaseurl="http://www.mcs.anl.gov/~mlink/globusrepo/\$osname/\\\$releasever/SRPMS/"
+
+for i; do
+    case "$i" in
+        -n)
+            osname="$2"
+            shift
+            shift
+            ;;
+        -v)
+            osver="$2"
+            shift
+            shift
+            ;;
+        -b)
+            baseurl="$2"
+            shift
+            shift
+            ;;
+        -s)
+            srcbaseurl="$2"
+            shift
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+    esac
+done
+
+if [ "$osname" = "" -o "$osver" = "" ]; then
+    echo "Usage: $0 -n OSNAME -v OSVER" 1>&2
+    exit 1
+fi
+
+baseurlresolved="$(eval echo $baseurl)"
+srcbaseurlresolved="$(eval echo $srcbaseurl)"
+
+for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
+    mkdir -p ${HOME}/${x}
+done
+
+cat <<EOF > $HOME/SOURCES/Globus.$osname.repo
+[Globus]
+name=Globus
+baseurl=$baseurlresolved
+failovermethod=priority
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+ 
+[Globus-source]
+name=Globus - Source
+baseurl=$srcbaseurlresolved
+failovermethod=priority
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+EOF
+cp "${bambooscriptdir}/RPM-GPG-KEY-Globus" $HOME/SOURCES
+
+cat <<EOF > $HOME/SPECS/Globus-repo-config.$osname.spec
+Name:           Globus-repo-config.$osname
+Version:        $osver
+Release:        1
+Summary:        Globus Repository Configuration
+Group:          System Environment/Base
+License:        ASL 2.0
+URL:            http://globus.org
+Source0:        RPM-GPG-KEY-Globus
+Source1:        Globus.$osname.repo
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildArch:      noarch
+Requires:       ${osname}-release >= ${osver}
+
+%description
+This package installs the Globus yum repository configuration and GPG key.
+
+%prep
+%setup -c -T
+
+%build
+
+%install
+rm -rf \$RPM_BUILD_ROOT
+
+# gpg
+install -Dpm 644 %{SOURCE0} \
+  \$RPM_BUILD_ROOT%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-Globus
+
+# yum
+install -dm 755 \$RPM_BUILD_ROOT%{_sysconfdir}/yum.repos.d
+install -pm 644 %{SOURCE1} \
+  \$RPM_BUILD_ROOT%{_sysconfdir}/yum.repos.d
+
+%clean
+rm -rf \$RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%{_sysconfdir}/pki/rpm-gpg/*
+%config %{_sysconfdir}/yum.repos.d/*
+EOF
+
+rpmbuild -ba $HOME/SPECS/Globus-repo-config.$osname.spec
+expect ${bambooscriptdir}/sign-rpm $HOME/SRPMS/Globus-repo-config.$osname*rpm
+expect ${bambooscriptdir}/sign-rpm $HOME/RPMS/noarch/Globus-repo-config.$osname*rpm
