@@ -22,12 +22,15 @@
  * limitations under the License.
  */
 
+#ifdef HAVE_GLOBUS_USAGE
+
+#include "includes.h"
+
 #include <stdarg.h>
+#include <unistd.h> 
 
 #include "log.h"
 #include "ssh-globus-usage.h"
-
-#ifdef HAVE_GLOBUS_USAGE
 
 static globus_list_t *usage_handle_list = NULL;
 
