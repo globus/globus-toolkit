@@ -295,3 +295,17 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Values: yes no
 Default: no
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: loglevel
+Description: "Override the default log level for this job. The value of this
+             attribute consists of a combination of the strings
+             FATAL, ERROR, WARN, INFO, DEBUG, TRACE joined by the | character"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: logpattern
+Description: "Override the default log path pattern for this job. The value of
+             this attribute is a string (potentially containing RSL
+             substitutions) that is evaluated to the path to write the log to. If
+             the resulting string contains the pattern $(DATE) (or any other
+             RSL substitution, it will be reevaluated at log time)."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

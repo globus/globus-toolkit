@@ -130,6 +130,11 @@ main(
     {
         reply_and_exit(NULL, rc, NULL);
     }
+
+    globus_thread_key_create(
+            &globus_i_gram_request_key,
+            NULL);
+
     rc = globus_gram_job_manager_logging_init(&config);
     if (rc != GLOBUS_SUCCESS)
     {

@@ -38,6 +38,7 @@ $Header$
 <arg>-scratch-dir-base <replaceable>SCRATCH_DIRECTORY</replaceable></arg>
 <arg>-enable-syslog</arg>
 <arg>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></arg>
+<arg>-log-pattern <replaceable>PATTERN</replaceable></arg>
 <arg>-log-levels <replaceable>LEVELS</replaceable></arg>
 <arg>-state-file-dir <replaceable>STATE_DIRECTORY</replaceable></arg>
 <arg>-globus-tcp-port-range <replaceable>PORT_RANGE</replaceable></arg>
@@ -153,8 +154,12 @@ The full set of command-line options to
         </simpara></listitem>
     </varlistentry>
     <varlistentry>
+        <term><option>-log-pattern <replaceable>PATTERN</replaceable></option></term>
+        <listitem><simpara>Configure the job manager to write log messages to files named by the string <replaceable>PATTERN</replaceable>. The <replaceable>PATTERN</replaceable> string may contain job-independent RSL substitutions such as <literal>$(HOME)</literal>, <literal>$(LOGNAME)</literal>, etc, as well as the special RSL substition <literal>$(DATE)</literal> which will be resolved at log time to the date in YYYYMMDD form.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
         <term><option>-stdio-log <replaceable>LOG_DIRECTORY</replaceable></option></term>
-        <listitem><simpara>Configure the job manager to write log messages to files  in the <replaceable>LOG_DIRECTORY</replaceable> directory. Files will be named <filename><replaceable>LOG_DIRECTORY</replaceable>/gram_<replaceable>YYYYMMDD</replaceable>.log</filename>. Logging is further controlled by the argument to the <option>-log-levels</option> parameter described below. The <replaceable>LOG_DIRECTORY</replaceable> value can include variables derived from the job manager environment using the same syntax as RSL substitutions. For example, <literal>-stdio-log $(HOME)</literal> would cause each user's logs to be stored in their individual home directories.</simpara></listitem>
+        <listitem><simpara>Configure the job manager to write log messages to files in the <replaceable>LOG_DIRECTORY</replaceable> directory. This is a backward-compatible parameter, equivalent to <parameter>-log-pattern <replaceable>LOG_DIRECTORY</replaceable><literal>/gram_$(DATE).log</literal></parameter>.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-log-levels <replaceable>LEVELS</replaceable></option></term>

@@ -212,16 +212,16 @@ globus_gram_job_manager_request_init(
     {
         *old_job_request = NULL;
     }
-    r = malloc(sizeof(globus_gram_jobmanager_request_t));
+    r = calloc(1, sizeof(globus_gram_jobmanager_request_t));
     if (r == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
         goto request_malloc_failed;
     }
+    r->job_log_level = -1;
     r->config = manager->config;
     r->manager = manager;
-    memset(&r->job_stats, 0, sizeof(globus_i_gram_usage_job_tracker_t));
 
     GlobusTimeAbstimeGetCurrent(r->job_stats.unsubmitted_timestamp);
     r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
@@ -341,6 +341,15 @@ globus_gram_job_manager_request_init(
         goto failed_add_contact_to_symboltable;
     }
 
+    rc = globus_l_gram_symboltable_add(
+            &r->symbol_table,
+            "GLOBUS_GRAM_JOB_ID",
+            r->uniq_id);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto failed_add_contact_to_symboltable;
+    }
     r->job_contact_path = globus_common_create_string(
             "/%"PRIu64"/%"PRIu64"/",
             uniq1,
@@ -595,6 +604,61 @@ globus_gram_job_manager_request_init(
         goto bad_proxy_timeout;
     }
 
+    rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+        r->rsl,
+        "loglevel",
+        &tmp_string);
+    switch (rc)
+    {
+    case GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE:
+        r->job_log_level = r->config->log_levels;
+        break;
+
+    case GLOBUS_SUCCESS:
+        if (tmp_string != NULL)
+        {
+            rc = globus_i_gram_parse_log_levels(
+                    tmp_string,
+                    &r->job_log_level,
+                    &r->gt3_failure_message);
+
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+                goto get_job_log_levels_failed;
+            }
+        }
+        else
+        {
+    default:
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+            goto get_job_log_levels_failed;
+        }
+    }
+
+    rc = globus_gram_job_manager_rsl_attribute_get_string_value(
+        r->rsl,
+        "logpattern",
+        &tmp_string);
+    switch (rc)
+    {
+    case GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE:
+        r->log_pattern = NULL;
+        break;
+
+    case GLOBUS_SUCCESS:
+        if (tmp_string != NULL)
+        {
+            r->log_pattern = strdup(tmp_string);
+        }
+        else
+        {
+    default:
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+            goto get_job_log_pattern_failed;
+        }
+    }
+
     rc = globus_mutex_init(&r->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -698,6 +762,12 @@ staging_list_create_failed:
 cond_init_failed:
         globus_mutex_destroy(&r->mutex);
 mutex_init_failed:
+        if (r->log_pattern)
+        {
+            free(r->log_pattern);
+        }
+get_job_log_pattern_failed:
+get_job_log_levels_failed:
 bad_proxy_timeout:
         if (r->remote_io_url_file)
         {
@@ -1373,6 +1443,7 @@ globus_gram_job_manager_request_set_status_time(
             request,
             GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
             "event=gram.job.info "
+            "level=INFO "
             "gramid=%s "
             "job_status=%d "
             "\n",
@@ -1415,7 +1486,44 @@ globus_gram_job_manager_request_log(
     ... )
 {
     va_list ap;
+    int stdio_level = level;
 
+    /* Allow logging code to determine this thread's current job request to handle
+     * per-job log configuration
+     */
+    globus_thread_setspecific(
+            globus_i_gram_request_key,
+            request);
+
+    /* job_log_level is initialized to the global log level, but can be modified via
+     * the log_level RSL attribute. If it masks the requested log level to zero, don't bother
+     * calling the logging functions
+     */
+    if (request != NULL && request->job_log_level != -1)
+    {
+        stdio_level = level & request->job_log_level;
+
+        if (stdio_level == 0)
+        {
+            goto skip_stdio;
+        }
+
+        /*
+         * If we have a request-specific log level that differs from the global
+         * config, we need to make sure the log level matches the global type
+         * mask so that it won't get discarded by globus_logging_vwrite
+         */
+        stdio_level = request->config->log_levels;
+    }
+    va_start(ap, format);
+    globus_logging_vwrite(
+        globus_i_gram_job_manager_log_stdio,
+        stdio_level,
+        format,
+        ap);
+    va_end(ap);
+
+skip_stdio:
     if (globus_i_gram_job_manager_log_sys != NULL)
     {
         va_start(ap, format);
@@ -1426,16 +1534,10 @@ globus_gram_job_manager_request_log(
             ap);
         va_end(ap);
     }
-    if (globus_i_gram_job_manager_log_stdio != NULL)
-    {
-        va_start(ap, format);
-        globus_logging_vwrite(
-            globus_i_gram_job_manager_log_stdio,
-            level,
-            format,
-            ap);
-        va_end(ap);
-    }
+
+    globus_thread_setspecific(
+            globus_i_gram_request_key,
+            NULL);
 }
 /* globus_gram_job_manager_request_log() */
 

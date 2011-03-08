@@ -2,12 +2,12 @@
 .\"     Title: rsl
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 07/09/2010
+.\"      Date: 03/08/2011
 .\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "RSL" "5" "07/09/2010" "University of Chicago" "GRAM5 Commands"
+.TH "RSL" "5" "03/08/2011" "University of Chicago" "GRAM5 Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -96,6 +96,16 @@ This specifies how the jobmanager should start the job\&. Possible values are si
 library_path
 .RS 4
 Specifies a list of paths to be appended to the system\-specific library path environment variables\&.
+.RE
+.PP
+loglevel
+.RS 4
+Override the default log level for this job\&. The value of this attribute consists of a combination of the strings FATAL, ERROR, WARN, INFO, DEBUG, TRACE joined by the | character
+.RE
+.PP
+logpattern
+.RS 4
+Override the default log path pattern for this job\&. The value of this attribute is a string (potentially containing RSL substitutions) that is evaluated to the path to write the log to\&. If the resulting string contains the pattern $(DATE) (or any other RSL substitution, it will be reevaluated at log time)\&.
 .RE
 .PP
 max_cpu_time
