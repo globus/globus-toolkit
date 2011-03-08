@@ -159,7 +159,7 @@ globus_list_t * paren_count_stack = NULL;
 %}
 
 
-UNQUOTED_LITERAL           ([^\t \n+&|=!<>()"'^*$#?~]+)
+UNQUOTED_LITERAL           ([^\t \n+&|=!<>()"'^*$#?~][^\t \n=!<>()"'^*$#?~]*)
 UNQUOTED_LITERAL_CHAR      ([^\t \n+&|=!<>()"'^*$#?~])
 NORMAL_QUOTE_DELIMITER     (["'])
 USER_QUOTE_DELIMITER       ("^")
