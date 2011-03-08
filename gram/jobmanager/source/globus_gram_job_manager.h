@@ -40,6 +40,9 @@
 
 EXTERN_C_BEGIN
 
+/** Pointer to the current request to allow per-job logging to occur */
+extern globus_thread_key_t globus_i_gram_request_key;
+
 /* Type definitions */
 typedef enum
 {
@@ -305,21 +308,18 @@ typedef struct
      */
     int                                 proxy_timeout;
     /**
-     * Events to record to syslog/log file
+     * Events to record to syslog/log file. A bitwise or of the values from the
+     * globus_gram_job_manager_log_level_t enumeration.
      */
-    globus_gram_job_manager_log_level_t log_levels;
+    int                                 log_levels;
     /**
      * Flag indicating whether to use syslog for logging
      */
     globus_bool_t                       syslog_enabled;
     /**
-     * Flag indicating whether to use syslog for logging
+     * Log file pattern. This may contain standard RSL substitutions.
      */
-    globus_bool_t                       stdiolog_enabled;
-    /**
-     * Log file directory
-     */
-    const char *                        stdiolog_directory;
+    const char *                        log_pattern;
 
     /*
      * -------------------------------------------------------------------
@@ -739,6 +739,16 @@ typedef struct globus_gram_job_manager_request_s
      * Information to be tracked for usagestats
      */
     globus_i_gram_usage_job_tracker_t   job_stats;
+
+    /**
+     * Per-job log configuration, a bitwise or of values from the
+     * globus_gram_job_manager_log_level_t enumeration.
+     */
+    int                                 job_log_level;
+    /**
+     * Per-job log filename pattern. If not set, the global log path will be used
+     */
+    char *                              log_pattern;
 }
 globus_gram_jobmanager_request_t;
 
@@ -793,6 +803,12 @@ globus_gram_job_manager_config_init(
 void
 globus_gram_job_manager_config_destroy(
     globus_gram_job_manager_config_t *  config);
+
+int
+globus_i_gram_parse_log_levels(
+    const char *                        unparsed_string,
+    int *                               log_levels,
+    char **                             error_string);
 
 /* globus_gram_job_manager_request.c */
 #ifdef DEBUG_THREADS
