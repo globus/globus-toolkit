@@ -27,6 +27,8 @@ globus_logging_handle_t                 globus_i_gram_job_manager_log_stdio;
 globus_logging_handle_t                 globus_i_gram_job_manager_log_sys;
 static globus_symboltable_t             globus_l_gram_log_symboltable;
 static FILE *                           globus_l_gram_log_fp = NULL;
+globus_thread_key_t                     globus_i_gram_request_key;
+
 
 static
 void
@@ -55,6 +57,7 @@ globus_gram_job_manager_logging_init(
     globus_result_t                     result = GLOBUS_SUCCESS;
     time_t                              now;
     struct tm *                         nowtm;
+    int                                 rc;
 
     if (config->syslog_enabled)
     {
@@ -80,58 +83,53 @@ globus_gram_job_manager_logging_init(
         globus_i_gram_job_manager_log_sys = NULL;
     }
 
-    if (config->stdiolog_enabled)
+    rc = globus_symboltable_init(
+            &globus_l_gram_log_symboltable,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+    if (rc != GLOBUS_SUCCESS)
     {
-        int rc;
+        fprintf(stderr, "Error initializing logging: symboltable_init\n");
+        exit(1);
+    }
 
-        rc = globus_symboltable_init(
-                &globus_l_gram_log_symboltable,
-                globus_hashtable_string_hash,
-                globus_hashtable_string_keyeq);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr, "Error initializing logging: symboltable_init\n");
-            exit(1);
-        }
+    rc = globus_symboltable_create_scope(&globus_l_gram_log_symboltable);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error initializing logging: create scope\n");
+        exit(1);
+    }
 
-        rc = globus_symboltable_create_scope(&globus_l_gram_log_symboltable);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr, "Error initializing logging: create scope\n");
-            exit(1);
-        }
+    rc = globus_i_gram_symbol_table_populate(
+            config,
+            &globus_l_gram_log_symboltable);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "Error initializing logging: symboltable_populate\n");
+        exit(1);
+    }
 
-        rc = globus_i_gram_symbol_table_populate(
-                config,
-                &globus_l_gram_log_symboltable);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr,
-                    "Error initializing logging: symboltable_populate\n");
-            exit(1);
-        }
+    globus_l_gram_logging_module.header_func =
+            globus_logging_stdio_ng_module.header_func;
+    now = time(NULL);
+    nowtm = gmtime(&now);
 
-        globus_l_gram_logging_module.header_func =
-                globus_logging_stdio_ng_module.header_func;
-        now = time(NULL);
-        nowtm = gmtime(&now);
+    result = globus_logging_init(
+            &globus_i_gram_job_manager_log_stdio,
+            NULL,
+            0,
+            config->log_levels|GLOBUS_LOGGING_INLINE,
+            &globus_l_gram_logging_module,
+            (void *) config);
 
-        result = globus_logging_init(
-                &globus_i_gram_job_manager_log_stdio,
-                NULL,
-                0,
-                config->log_levels|GLOBUS_LOGGING_INLINE,
-                &globus_l_gram_logging_module,
-                (void *) config->stdiolog_directory);
+    if (result != GLOBUS_SUCCESS)
+    {
+        char * errstr = globus_error_print_friendly(
+                globus_error_peek(result));
 
-        if (result != GLOBUS_SUCCESS)
-        {
-            char * errstr = globus_error_print_friendly(
-                    globus_error_peek(result));
-
-            fprintf(stderr, "Error initializing logging: %s\n", errstr);
-            exit(1);
-        }
+        fprintf(stderr, "Error initializing logging: %s\n", errstr);
+        exit(1);
     }
     return result;
 }
@@ -197,59 +195,118 @@ globus_l_gram_logging_write(
     globus_size_t                       length,
     void *                              user_arg)
 {
-    const char *                        dir = user_arg;
+    static char *                       DATE_SYMBOL = "DATE";
+    globus_gram_job_manager_config_t *  config = user_arg;
+    const char *                        log_pattern;
     time_t                              now;
     struct tm *                         now_tm;
-    static char *                       evaluated_dir = NULL;
-    static char                         path[MAXPATHLEN] = "";
-    static char                         last_path[MAXPATHLEN] = "";
+    char                                now_str[9];
+    char *                              path = NULL;
+    static char *                       last_path = NULL;
     int                                 fd;
     int                                 flags;
     int                                 rc;
+    globus_gram_jobmanager_request_t *  request;
+    globus_symboltable_t *              symboltable;
+
+    request = globus_thread_getspecific(globus_i_gram_request_key);
+    if (request != NULL)
+    {
+        symboltable = &request->symbol_table;
+        log_pattern = request->log_pattern;
+    }
+    else
+    {
+        symboltable = &globus_l_gram_log_symboltable;
+    }
+
+    if (log_pattern == NULL)
+    {
+        log_pattern = config->log_pattern;
+    }
+
+    if (log_pattern == NULL)
+    {
+        /* stdio logging was not enabled for the system or via the job rsl */
+        return;
+    }
 
     now = time(NULL);
     now_tm = gmtime(&now);
 
-    if (evaluated_dir == NULL)
-    {
-        globus_gram_job_manager_rsl_eval_string(
-                &globus_l_gram_log_symboltable,
-                dir,
-                &evaluated_dir);
-    }
-
-    snprintf(
-            path,
-            sizeof(path),
-            "%s/gram_%04d%02d%02d.log",
-            evaluated_dir ? evaluated_dir : dir,
+    snprintf(now_str, 9, "%04d%02d%02d",
             now_tm->tm_year + 1900,
             now_tm->tm_mon + 1,
             now_tm->tm_mday);
 
-    if (strcmp(path, last_path) != 0)
+
+    /* Create a new scope for this so that job RSL variables which conflict with
+     * DATE_SYMBOL won't get clobbered and leak
+     */
+    globus_symboltable_create_scope(symboltable);
+
+    globus_symboltable_insert(
+            symboltable,
+            DATE_SYMBOL,
+            now_str);
+            
+    globus_gram_job_manager_rsl_eval_string(
+            symboltable,
+            log_pattern,
+            &path);
+
+    globus_symboltable_remove_scope(
+            symboltable);
+
+    if (path == NULL)
     {
-        strcpy(last_path, path);
+        /* Bad RSL Substitution? */
+        return;
+    }
+
+    if (last_path == NULL || strcmp(path, last_path) != 0)
+    {
+        if (last_path)
+        {
+            free(last_path);
+        }
+        last_path = path;
+        path = NULL;
+
         if (globus_l_gram_log_fp != NULL)
         {
-            freopen(path, "a", globus_l_gram_log_fp);
+            freopen(last_path, "a", globus_l_gram_log_fp);
         }
         else
         {
-            globus_l_gram_log_fp = fopen(path, "a");
-            globus_assert(globus_l_gram_log_fp != NULL);
-            setvbuf(globus_l_gram_log_fp, NULL, _IONBF, 0);
+            globus_l_gram_log_fp = fopen(last_path, "a");
+            if (globus_l_gram_log_fp)
+            {
+                setvbuf(globus_l_gram_log_fp, NULL, _IONBF, 0);
+            }
         }
 
-        fd = fileno(globus_l_gram_log_fp);
-        flags = fcntl(fd, F_GETFL);
-        globus_assert(flags >= 0);
-        flags |= FD_CLOEXEC;
-        rc = fcntl(fd, F_SETFL, flags);
-        globus_assert(rc >= 0);
+        if (globus_l_gram_log_fp)
+        {
+            fd = fileno(globus_l_gram_log_fp);
+            flags = fcntl(fd, F_GETFL);
+            if (flags >= 0)
+            {
+                flags |= FD_CLOEXEC;
+                rc = fcntl(fd, F_SETFL, flags);
+            }
+        }
+    }
+    else
+    {
+        free(path);
+        path = NULL;
     }
 
-    fwrite(buf, length, 1, globus_l_gram_log_fp);
+    if (globus_l_gram_log_fp)
+    {
+        fwrite(buf, length, 1, globus_l_gram_log_fp);
+    }
 }
 /* globus_l_gram_logging_write() */
 

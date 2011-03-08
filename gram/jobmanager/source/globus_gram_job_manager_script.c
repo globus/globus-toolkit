@@ -1244,6 +1244,17 @@ globus_l_gram_job_manager_default_done(
         {
             request->job_id_string = strdup(value);
             request->original_job_id_string = strdup(value);
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                    "event=gram.job.info "
+                    "level=INFO "
+                    "msg=\"%s\" "
+                    "lrm_id=\"%s\" "
+                    "\n",
+                    "job submitted to lrm",
+                    value);
         }
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ACCT_INFO") == 0)

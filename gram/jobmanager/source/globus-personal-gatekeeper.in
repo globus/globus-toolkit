@@ -463,6 +463,52 @@ else
   globus_toolkit_version="Unknown"
 fi
 
+if test "${jmtype}" = condor; then
+    found_condor_arch=0
+    found_condor_os=0
+    set -- ${startargs}
+    while [ $# -gt 0 ]; do
+        if [ "$1" = "-condor-arch" ]; then
+            found_condor_arch=1
+            shift
+        elif [ "$1" = "-condor-os" ]; then
+            found_condor_os=1
+            shift
+        fi
+        shift
+    done
+
+    if [ $found_condor_arch = 0 -o $found_condor_os = 0 ]; then
+        setupdir="${GLOBUS_LOCATION}/setup/globus"
+        if [ -x "${setupdir}/globus-condor-print-config" ]; then
+            set -- `${setupdir}/globus-condor-print-config` 
+            while [ $# -gt 0 ]; do
+                case $1 in
+                  -condor-arch)
+                      shift
+                      if [ $found_condor_arch = 0 ]; then
+                          startargs="$startargs -condor-arch $1"
+                          found_condor_arch=1
+                      fi
+                  ;;
+                  -condor-os)
+                      shift
+                      if [ $found_condor_os = 0 ]; then
+                          startargs="$startargs -condor-os $1"
+                          found_condor_os=1
+                      fi
+                  ;;
+                esac
+                shift
+            done
+        else
+            printf "Unable to determine -condor-os and/or condor-arch\n" 1>&2
+            docleanup=true
+            exit 1
+        fi
+    fi
+fi
+
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION:-@exec_prefix@}
 -type ${jmtype}
