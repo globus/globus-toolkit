@@ -14,7 +14,7 @@
             </Dependency>
             <Dependency Name="globus_xio_gsi_driver">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
            <Dependency Name="globus_gfork">
@@ -52,7 +52,7 @@
             </Dependency>
             <Dependency Name="globus_xio_gsi_driver">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
            <Dependency Name="globus_gfork">
@@ -90,7 +90,7 @@
             </Dependency>
             <Dependency Name="globus_xio_gsi_driver">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
            <Dependency Name="globus_gfork">

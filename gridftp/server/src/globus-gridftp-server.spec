@@ -28,11 +28,11 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-xio-gsi-driver%{?_isa}
+Requires:	globus-xio-gsi-driver%{?_isa} >= 1
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gridftp-server-control-devel%{?_isa}
 BuildRequires:	globus-usage-devel%{?_isa} >= 1
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa}
+BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 1
 BuildRequires:	globus-xio-devel%{?_isa}
 BuildRequires:	globus-authz-devel%{?_isa}
 BuildRequires:	globus-gfork-devel%{?_isa}

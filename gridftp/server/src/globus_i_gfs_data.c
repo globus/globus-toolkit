@@ -2683,9 +2683,7 @@ globus_i_gfs_data_request_command(
                         "Invalid base64 input for credential type P.");
                 }
                 else
-                {
-                    globus_libc_setenv("GLOBUS_GFS_IMSP", "1", 0);
-                            
+                {                            
                     buf.length = strlen(buf.value);
                     major_status = gss_import_cred(
                         &minor_status,
@@ -3164,7 +3162,34 @@ globus_l_gfs_data_handle_init(
     
     if(session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
     {
+        globus_xio_attr_t               xio_attr;
+
         cred = session_handle->dcsc_cred;
+
+        result = globus_i_ftp_control_data_get_attr(
+            &handle->data_channel,
+            &xio_attr);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "couldn't access data channel attr: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
+        }
+        result = globus_xio_attr_cntl(
+            xio_attr,
+            globus_io_compat_get_gsi_driver(),
+            GLOBUS_XIO_GSI_SET_ALLOW_MISSING_SIGNING_POLICY,
+            GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "unable to allow missing signing polcies: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
+        }
     }
     else
     {
@@ -3201,7 +3226,7 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
-
+    
     if(!globus_list_empty(net_stack_list))
     {
         globus_xio_stack_t              stack;
@@ -3850,6 +3875,10 @@ globus_i_gfs_data_request_passive(
         op->session_handle = session_handle;
         op->info_struct = data_info;
         op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE;
+        if(session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
+        {
+            data_info->del_cred = session_handle->dcsc_cred;
+        }
         if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
         {
             globus_callback_register_oneshot(
@@ -3870,6 +3899,12 @@ globus_i_gfs_data_request_passive(
         {
             data_info->del_cred = session_handle->del_cred;
         }
+        else
+        {   
+            session_handle->dcsc_cred = data_info->del_cred;
+            data_info->del_cred = NULL;
+        }
+
         result = globus_l_gfs_data_handle_init(
             &handle, data_info, session_handle->net_stack_list, session_handle);
         if(result != GLOBUS_SUCCESS)
@@ -4103,6 +4138,10 @@ globus_i_gfs_data_request_active(
         op->session_handle = session_handle;
         op->info_struct = data_info;
         op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_ACTIVE;
+        if(session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
+        {
+            data_info->del_cred = session_handle->dcsc_cred;
+        }
         if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
         {
             globus_callback_register_oneshot(
@@ -4122,6 +4161,11 @@ globus_i_gfs_data_request_active(
         if(data_info->del_cred == NULL)
         {
             data_info->del_cred = session_handle->del_cred;
+        }
+        else
+        {
+            session_handle->dcsc_cred = data_info->del_cred;
+            data_info->del_cred = NULL;
         }
         result = globus_l_gfs_data_handle_init(
             &handle, data_info, session_handle->net_stack_list, session_handle);

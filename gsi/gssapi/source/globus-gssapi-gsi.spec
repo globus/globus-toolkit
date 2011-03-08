@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
+Version:	8.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -34,7 +34,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	openssl%{?_isa} 
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 1
-BuildRequires:	globus-gsi-callback-devel%{?_isa}
+BuildRequires:	globus-gsi-callback-devel%{?_isa} >= 3
 BuildRequires:	globus-openssl-module-devel%{?_isa}
 BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
 BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 1

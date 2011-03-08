@@ -12,7 +12,7 @@
 
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
+Version:	1.1
 Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
@@ -36,7 +36,7 @@ BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 2
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
 BuildRequires:	globus-xio-devel%{?_isa}
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 8
 BuildRequires:	globus-xio-doc
 BuildRequires:	doxygen
 BuildRequires:	graphviz

@@ -430,6 +430,22 @@ globus_i_gsi_gss_create_and_fill_context(
         free(certdir);
         certdir = NULL;
     }
+    
+    if(req_flags & GSS_C_GLOBUS_ALLOW_MISSING_SIGNING_POLICY)
+    {
+        local_result = globus_gsi_callback_set_allow_missing_signing_policy(
+            context->callback_data,
+            GLOBUS_TRUE);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+    }    
+    
     #if (OPENSSL_VERSION_NUMBER >= 0x009080dfL)
     {
         /*

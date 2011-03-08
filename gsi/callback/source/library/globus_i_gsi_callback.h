@@ -205,6 +205,7 @@ typedef struct globus_l_gsi_callback_data_s {
     globus_gsi_extension_callback_t     extension_cb;
     void *                              extension_oids;
     globus_bool_t                       check_self_signed_policy;
+    globus_bool_t                       allow_missing_signing_policy;
     globus_result_t                     error;
 
 } globus_i_gsi_callback_data_t;

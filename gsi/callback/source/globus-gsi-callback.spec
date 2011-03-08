@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
+Version:	3.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 

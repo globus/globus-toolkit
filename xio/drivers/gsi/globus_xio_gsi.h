@@ -291,7 +291,7 @@ typedef enum
      */
     /* globus_xio_gsi_delegation_mode_t *   delegation_mode*/
     GLOBUS_XIO_GSI_GET_DELEGATION_MODE,
-
+    
     /** GlobusVarArgEnum(attr)
      * Make the on the wire protocol SSL compatible.
      * @ingroup gsi_driver_cntls
@@ -551,7 +551,28 @@ typedef enum
      *      The server mode.
      */
     /* globus_bool_t                    server_mode */
-    GLOBUS_XIO_GSI_FORCE_SERVER_MODE
+    GLOBUS_XIO_GSI_FORCE_SERVER_MODE,
+    
+    /** GlobusVarArgEnum(attr)
+     * Set the allow missing signing policy flag
+     * @ingroup gsi_driver_cntls
+     *
+     * @param allow
+     *      The flag setting to use
+     * @note Changing this flag changes the req_flags     
+     */
+    /* globus_bool_t    allow*/
+    GLOBUS_XIO_GSI_SET_ALLOW_MISSING_SIGNING_POLICY,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the allow missing signing policy flag
+     * @ingroup gsi_driver_cntls
+     *
+     * @param allow
+     *      The flag currently set
+     */
+    /* globus_bool_t *  allow*/
+    GLOBUS_XIO_GSI_GET_ALLOW_MISSING_SIGNING_POLICY
 } globus_xio_gsi_cmd_t;
 
 /**

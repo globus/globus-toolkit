@@ -1254,7 +1254,7 @@ globus_i_gsi_callback_check_signing_policy(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(globus_libc_getenv("GLOBUS_GFS_IMSP") != NULL)
+            if(callback_data->allow_missing_signing_policy)
             {
                 result = GLOBUS_SUCCESS;
             }

@@ -327,6 +327,26 @@ globus_l_xio_gsi_attr_cntl(
             *out_delegation_mode = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE;
         }
         break;
+
+      case GLOBUS_XIO_GSI_SET_ALLOW_MISSING_SIGNING_POLICY:
+        in_bool = va_arg(ap, globus_bool_t);
+        if(in_bool)
+        {
+            attr->req_flags |= GSS_C_GLOBUS_ALLOW_MISSING_SIGNING_POLICY;
+        }
+        else
+        {
+            attr->req_flags &= ~GSS_C_GLOBUS_ALLOW_MISSING_SIGNING_POLICY;
+        }
+        break;
+      case GLOBUS_XIO_GSI_GET_ALLOW_MISSING_SIGNING_POLICY:
+        out_bool = va_arg(ap, globus_bool_t *);
+        if(out_bool)
+        {
+            *out_bool = attr->req_flags & GSS_C_GLOBUS_ALLOW_MISSING_SIGNING_POLICY;
+        }
+        break;
+        
         /*
          * SSL compatibility mode
          */

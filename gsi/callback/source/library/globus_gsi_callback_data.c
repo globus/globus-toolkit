@@ -1236,3 +1236,93 @@ globus_gsi_callback_set_check_policy_for_self_signed_certs(
     return result;
 }
 /* @} */
+
+/**
+ * @name Getting and setting the allow missing signing policy flag
+ */
+/* @{ */
+/**
+ * @ingroup globus_gsi_callback_data
+ * This function gets the value of the "allow missing signing policy" flag
+ * in the callback data. If this is TRUE then the CA signing
+ * policy need not be present.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the error from
+ * @param allow
+ *        Contains the value of the flag upon successful return. 
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ * @since Globus Toolkit 5.2.0
+ */
+globus_result_t
+globus_gsi_callback_get_allow_missing_signing_policy(
+    globus_gsi_callback_data_t          callback_data,
+    globus_bool_t *                     allow)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_get_allow_missing_signing_policy";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+ 
+    if(!callback_data)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            (_CLS("NULL parameter callback_data passed to function: %s"),
+             _function_name_));
+        goto exit;
+    }
+
+    *allow = callback_data->allow_missing_signing_policy;
+
+ exit:
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+/**
+ * @ingroup globus_gsi_callback_data
+ * This function sets the value of the "allow missing signing policy" flag
+ * in the callback data. If this is TRUE then the CA signing
+ * policy need not be present.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the error on
+ * @param allow
+ *        New value of the flag
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ * @since Globus Toolkit 5.2.0
+ */
+globus_result_t
+globus_gsi_callback_set_allow_missing_signing_policy(
+    globus_gsi_callback_data_t          callback_data,
+    globus_bool_t                       allow)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_set_allow_missing_signing_policy";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    if(!callback_data)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            (_CLS("NULL parameter callback_data passed to function: %s"),
+             _function_name_));
+        goto exit;
+    }
+
+    callback_data->allow_missing_signing_policy = allow;
+
+ exit:
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+/* @} */

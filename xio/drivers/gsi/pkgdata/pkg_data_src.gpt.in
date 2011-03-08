@@ -2,7 +2,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 
 <gpt_package_metadata Name="globus_xio_gsi_driver" Format_Version="0.01">
-    <Aging_Version Major="1" Minor="0" Age="1"/>
+    <Aging_Version Major="1" Minor="1" Age="1"/>
     <Description> Globus XIO GSI Driver</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
@@ -21,7 +21,7 @@
                 <Version ><Simple_Version Major="2"/></Version>
             </Dependency>
             <Dependency Name="globus_gssapi_gsi"> 
-                <Version ><Simple_Version Major="4"/></Version>
+                <Version ><Simple_Version Major="8"/></Version>
             </Dependency>
         </Source_Dependencies>
 
@@ -38,7 +38,7 @@
                 <Version ><Simple_Version Major="2"/></Version>
             </Dependency>
             <Dependency Name="globus_gssapi_gsi"> 
-                <Version ><Simple_Version Major="4"/></Version>
+                <Version ><Simple_Version Major="8"/></Version>
             </Dependency>
         </Source_Dependencies>
 
