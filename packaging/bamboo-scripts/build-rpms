@@ -6,8 +6,8 @@ umask 022
 bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
-
-args=$(getopt n:v: $*)
+artifactroot=""
+args=$(getopt n:v:a: $*)
 set -- ${args}
 
 for i; do
@@ -22,6 +22,11 @@ for i; do
             shift
             shift
             ;;
+        -a)
+            artifactroot="$2"
+            shift
+            shift
+            ;;
         --)
             shift
             break
@@ -30,7 +35,7 @@ for i; do
 done
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
-    echo "Usage: $0 -n OSNAME -v OSVER" 1>&2
+    echo "Usage: $0 -n OSNAME -v OSVER [-a ARTIFACTROOT]" 1>&2
     exit 1
 fi
 
@@ -72,7 +77,7 @@ cat <<EOF >> $topdir/.rpmmacros
 EOF
 
 # Remove everything prior to building
-pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^globus-' || true) )"
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm
 fi
@@ -110,9 +115,9 @@ cd $topdir
 mv RPMS RPMS.x86_64
 mkdir RPMS
 
-pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^globus-' || true) )"
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm -e $pkgs_to_rm
+    sudo rpm -e --allmatches $pkgs_to_rm
 fi
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
@@ -136,14 +141,41 @@ mv RPMS.x86_64/x86_64 RPMS
 find RPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
 find SRPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
 
+allpkgs_x86_64="$(find RPMS/noarch RPMS/x86_64 -name '*.rpm' | \
+    sed -e 's|.*/||' -e 's|\.[^\.]*.rpm||')"
+allpkgs_x86="$(find RPMS/noarch RPMS/i?86 -name '*.rpm' | \
+    sed -e 's|.*/||' -e 's|\.[^\.]*.rpm||')"
+
+# Create yum repo configuration package that includes the path to the
+# yum repositories and the public GPG key
 sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}"
+if test "$artifactroot" != ""; then
+    sh ${bamboodir}/create-repo-pkg -n "${osname}" -v "${osver}" \
+    -b "$artifactroot/repo/\$osname/\\\$releasever/\\\$basearch/" \
+    -s "$artifactroot/repo/\$osname/\\\$releasever/SRPMS/" \
+    -r Globus-bamboo-config
+fi
 
 reporoot="${topdir}/repo"
 repodir="${reporoot}/${osname}/${osver}"
 
-# Generate YUM repository
+# Generate YUM repositories for the different package types
 mkdir -p "${repodir}"
 cp -R RPMS/* "${repodir}"
 cp -R SRPMS "${repodir}"
 
-createrepo "${reporoot}"
+createrepo "${reporoot}/$osname/$osver/SRPMS"
+createrepo "${reporoot}/$osname/$osver/noarch"
+createrepo "${reporoot}/$osname/$osver/x86_64"
+createrepo "${reporoot}/$osname/$osver/i"?86
+
+# Export the package lists for the full set of RPMS we generated (64- and
+# 32-bit forms)
+echo "$allpkgs_x86_64" > packages.gcc64
+echo "$allpkgs_x86" > packages.gcc32
+
+# Remove everything
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
+if [ -n "$pkgs_to_rm" ]; then
+    sudo rpm -e --allmatches $pkgs_to_rm
+fi

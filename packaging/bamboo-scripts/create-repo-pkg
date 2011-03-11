@@ -5,12 +5,13 @@ if ! expr $bambooscriptdir ":" "/" ; then
     bambooscriptdir="$(pwd)/$bambooscriptdir"
 fi
 
-args=$(getopt n:v:b:s: $*)
+args=$(getopt n:v:b:s:r: $*)
 set -- ${args}
 
 baseurl="http://www.mcs.anl.gov/~mlink/globusrepo/\$osname/\\\$releasever/\\\$basearch/"
 srcbaseurl="http://www.mcs.anl.gov/~mlink/globusrepo/\$osname/\\\$releasever/SRPMS/"
 
+reponame="Globus-repo-config"
 for i; do
     case "$i" in
         -n)
@@ -33,6 +34,11 @@ for i; do
             shift
             shift
             ;;
+        -r)
+            reponame="$2"
+            shift
+            shift
+            ;;
         --)
             shift
             break
@@ -41,7 +47,7 @@ for i; do
 done
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
-    echo "Usage: $0 -n OSNAME -v OSVER" 1>&2
+    echo "Usage: $0 -n OSNAME -v OSVER [-b baseurl] [-s srcbaseurl] [-r repopkgname]" 1>&2
     exit 1
 fi
 
@@ -71,8 +77,8 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
 EOF
 cp "${bambooscriptdir}/RPM-GPG-KEY-Globus" $HOME/SOURCES
 
-cat <<EOF > $HOME/SPECS/Globus-repo-config.$osname.spec
-Name:           Globus-repo-config.$osname
+cat <<EOF > $HOME/SPECS/$reponame.$osname.spec
+Name:           $reponame.$osname
 Version:        $osver
 Release:        1
 Summary:        Globus Repository Configuration
@@ -80,7 +86,7 @@ Group:          System Environment/Base
 License:        ASL 2.0
 URL:            http://globus.org
 Source0:        RPM-GPG-KEY-Globus
-Source1:        Globus.$osname.repo
+Source1:        $reponame.$osname.repo
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 Requires:       ${osname}-release >= ${osver}
@@ -114,6 +120,6 @@ rm -rf \$RPM_BUILD_ROOT
 %config %{_sysconfdir}/yum.repos.d/*
 EOF
 
-rpmbuild -ba $HOME/SPECS/Globus-repo-config.$osname.spec
-expect ${bambooscriptdir}/sign-rpm $HOME/SRPMS/Globus-repo-config.$osname*rpm
-expect ${bambooscriptdir}/sign-rpm $HOME/RPMS/noarch/Globus-repo-config.$osname*rpm
+rpmbuild -ba $HOME/SPECS/$reponame.$osname.spec
+expect ${bambooscriptdir}/sign-rpm $HOME/SRPMS/${reponame}.$osname*rpm
+expect ${bambooscriptdir}/sign-rpm $HOME/RPMS/noarch/${reponame}.$osname*rpm
