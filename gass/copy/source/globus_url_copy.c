@@ -2511,8 +2511,8 @@ globus_l_guc_transfer(
     char *                                       dst_filename;
     char *                                       src_url_base = GLOBUS_NULL;
     char *                                       dst_url_base = GLOBUS_NULL;
-    int                                          src_url_base_len;
-    int                                          dst_url_base_len;
+    int                                          src_url_base_len = 0;
+    int                                          dst_url_base_len = 0;
     globus_result_t                              result;
     globus_bool_t                                new_url;
     globus_bool_t                                dst_is_dir;
@@ -4713,6 +4713,7 @@ typedef struct
     globus_bool_t                       source;
     globus_l_guc_url_info_t *           urlinfo;
     globus_bool_t                       done;
+    globus_object_t *                   error;
     globus_l_guc_monitor_t *            monitor;
 } globus_l_guc_cksm_info_t;
 
@@ -4732,6 +4733,7 @@ globus_l_guc_cksm_cb(
     {
         globus_free(cksm_info->urlinfo->checksum);
         cksm_info->urlinfo->checksum = NULL;
+        cksm_info->error = globus_object_copy(error);
     }
     globus_mutex_lock(&cksm_info->monitor->mutex);
     {
@@ -4744,12 +4746,13 @@ globus_l_guc_cksm_cb(
 #define GUC_L_CKSM_SIZE 128
 
 static
-globus_bool_t
+globus_result_t
 globus_l_guc_check_sync(
     globus_l_guc_info_t *               guc_info,
     globus_l_guc_handle_t *             handle,
     globus_l_guc_url_info_t *           src_urlinfo,
-    char *                              dst_url)
+    char *                              dst_url,
+    globus_bool_t *                     mismatch)
 {
     globus_bool_t                       retval = GLOBUS_TRUE;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -4778,6 +4781,7 @@ globus_l_guc_check_sync(
                     src_cksm_info.urlinfo = src_urlinfo;
                     src_cksm_info.done = GLOBUS_FALSE;
                     src_cksm_info.monitor = &cksm_monitor;
+                    src_cksm_info.error = NULL;
                     
                     result = globus_gass_copy_cksm_async(
                         &handle->gass_copy_handle,
@@ -4793,7 +4797,7 @@ globus_l_guc_check_sync(
                     {
                         globus_free(src_urlinfo->checksum);
                         src_urlinfo->checksum = NULL;
-                        printf("%s\n", globus_error_print_friendly(globus_error_peek(result)));
+                        goto error;
                     }
                     globus_ftp_client_handle_t      real_ftp_handle;
                     globus_ftp_client_handle_t      cksm_ftp_handle;
@@ -4802,6 +4806,7 @@ globus_l_guc_check_sync(
                     dst_cksm_info.urlinfo = dest_urlinfo;
                     dst_cksm_info.done = GLOBUS_FALSE;
                     dst_cksm_info.monitor = &cksm_monitor;
+                    dst_cksm_info.error = NULL;
                     
                     globus_gass_copy_get_ftp_handle(
                         &handle->gass_copy_handle, &real_ftp_handle);
@@ -4824,7 +4829,10 @@ globus_l_guc_check_sync(
                     {
                         globus_free(dest_urlinfo->checksum);
                         dest_urlinfo->checksum = NULL;
-                        printf("%s\n", globus_error_print_friendly(globus_error_peek(result)));
+                        globus_ftp_client_handle_borrow_connection(
+                            &cksm_ftp_handle, GLOBUS_TRUE, &real_ftp_handle, GLOBUS_FALSE);
+
+                        goto error;
                     }
                         
                     globus_mutex_lock(&cksm_monitor.mutex);
@@ -4834,13 +4842,29 @@ globus_l_guc_check_sync(
                             &cksm_monitor.cond, &cksm_monitor.mutex);
                     }
                     globus_mutex_unlock(&cksm_monitor.mutex);
+                    
+                    if(src_cksm_info.error)
+                    {
+                        result = globus_error_put(src_cksm_info.error);
+                        globus_ftp_client_handle_borrow_connection(
+                            &cksm_ftp_handle, GLOBUS_TRUE, &real_ftp_handle, GLOBUS_FALSE);
 
+                        goto error;
+                    }
+                    if(dst_cksm_info.error)
+                    {
+                        result = globus_error_put(dst_cksm_info.error);
+                        globus_ftp_client_handle_borrow_connection(
+                            &cksm_ftp_handle, GLOBUS_TRUE, &real_ftp_handle, GLOBUS_FALSE);
+
+                        goto error;
+                    }
+                    
                     if(src_urlinfo->checksum && dest_urlinfo->checksum &&
                         strcmp(src_urlinfo->checksum, dest_urlinfo->checksum) == 0)
                     {
                         retval = GLOBUS_FALSE;
                     }
-                    
                     globus_ftp_client_handle_borrow_connection(
                         &cksm_ftp_handle, GLOBUS_TRUE, &real_ftp_handle, GLOBUS_FALSE);
 
@@ -4881,8 +4905,12 @@ globus_l_guc_check_sync(
         globus_l_guc_url_info_free(dest_urlinfo);
     }
     
-    
-    return retval;
+    *mismatch = retval;
+    return GLOBUS_SUCCESS;
+
+error:
+    *mismatch = GLOBUS_TRUE;
+    return result;
 
 }
 
@@ -4980,6 +5008,21 @@ globus_l_guc_expand_single_url(
                     &handle->dest_gass_copy_attr,
                     globus_l_guc_dest_entry_cb,
                     transfer_info);
+                if(result != GLOBUS_SUCCESS && !g_continue)
+                {
+                    /* we know it exists, so we can fail on this error */
+                    result = globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_NULL,
+                            globus_error_peek(result),
+                            GLOBUS_NULL,
+                            __FILE__,
+                            GLOBUS_NULL,
+                            __LINE__,
+                            "Unable to list destination directory for sync: %s",
+                            dst_url));
+                    goto error_expand;
+                }
             }
             else
             {
@@ -5043,8 +5086,12 @@ globus_l_guc_expand_single_url(
         }
         if(guc_info->sync)
         {
-            do_transfer = globus_l_guc_check_sync(
-                guc_info, handle, matched_src_urlinfo, matched_dest_url);
+            result = globus_l_guc_check_sync(
+                guc_info, handle, matched_src_urlinfo, matched_dest_url, &do_transfer);
+            if(result != GLOBUS_SUCCESS && !g_continue)
+            {
+                goto error_expand;
+            }
         }
         
         if(do_transfer)
