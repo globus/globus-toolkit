@@ -169,9 +169,9 @@ createrepo "${reporoot}/$osname/$osver/i"?86
 
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
-allpkgs64="$(find "${reporoot}/${osname}/${osver}/x86_64" -name '*.rpm' | \
+allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
-allpkgs32="$(find "${reporoot}/${osname}/${osver}/i?86" -name '*.rpm' | \
+allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i?86 -name '*.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
 
 echo "$allpkgs32" > packages.gcc32
