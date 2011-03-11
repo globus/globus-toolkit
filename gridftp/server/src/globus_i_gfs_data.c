@@ -204,9 +204,9 @@ typedef struct globus_l_gfs_data_operation_s
     int                                 stripe_connections_pending;
 
     /* used to shift the offset from the dsi due to partial/restart */
-    int                                 write_delta;
+    globus_off_t                        write_delta;
     /* used to shift the offset from the dsi due to partial/restart */
-    int                                 transfer_delta;
+    globus_off_t                        transfer_delta;
     int                                 stripe_chunk;
     globus_range_list_t                 stripe_range_list;
 
