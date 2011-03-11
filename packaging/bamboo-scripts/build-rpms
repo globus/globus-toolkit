@@ -137,14 +137,10 @@ done
 cd $topdir
 
 mv RPMS.x86_64/x86_64 RPMS
+mv RPMS.x86_64/noarch/* RPMS/x86_64
 
 find RPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
 find SRPMS -name '*.rpm' -exec expect ${bamboodir}/sign-rpm {} \;
-
-allpkgs_x86_64="$(find RPMS/noarch RPMS/x86_64 -name '*.rpm' | \
-    sed -e 's|.*/||' -e 's|\.[^\.]*.rpm||')"
-allpkgs_x86="$(find RPMS/noarch RPMS/i?86 -name '*.rpm' | \
-    sed -e 's|.*/||' -e 's|\.[^\.]*.rpm||')"
 
 # Create yum repo configuration package that includes the path to the
 # yum repositories and the public GPG key
@@ -161,20 +157,27 @@ repodir="${reporoot}/${osname}/${osver}"
 
 # Generate YUM repositories for the different package types
 mkdir -p "${repodir}"
-cp -R RPMS/* "${repodir}"
+cp -R RPMS/x86_64 "${repodir}"
+cp -R RPMS/i?86 "${repodir}"
+cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
+cp RPMS/noarch/*.rpm "${repodir}"/i?86/
 cp -R SRPMS "${repodir}"
 
 createrepo "${reporoot}/$osname/$osver/SRPMS"
-createrepo "${reporoot}/$osname/$osver/noarch"
 createrepo "${reporoot}/$osname/$osver/x86_64"
 createrepo "${reporoot}/$osname/$osver/i"?86
 
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
-echo "$allpkgs_x86_64" > packages.gcc64
-echo "$allpkgs_x86" > packages.gcc32
+allpkgs64="$(find "${reporoot}/${osname}/${osver}/x86_64" -name '*.rpm' | \
+    sed -e 's|.*/||' -e 's|\.rpm||')"
+allpkgs32="$(find "${reporoot}/${osname}/${osver}/i?86" -name '*.rpm' | \
+    sed -e 's|.*/||' -e 's|\.rpm||')"
 
-# Remove everything
+echo "$allpkgs32" > packages.gcc32
+echo "$allpkgs64" > packages.gcc64
+
+# Remove what we built
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm

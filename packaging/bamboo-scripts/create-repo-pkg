@@ -58,7 +58,7 @@ for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
     mkdir -p ${HOME}/${x}
 done
 
-cat <<EOF > $HOME/SOURCES/Globus.$osname.repo
+cat <<EOF > $HOME/SOURCES/${reponame}.$osname.repo
 [Globus]
 name=Globus
 baseurl=$baseurlresolved
