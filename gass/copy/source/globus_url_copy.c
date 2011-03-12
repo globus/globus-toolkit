@@ -4991,6 +4991,21 @@ globus_l_guc_expand_single_url(
                     &handle->dest_gass_copy_attr,
                     globus_l_guc_dest_entry_cb,
                     transfer_info);
+                if(result != GLOBUS_SUCCESS && !g_continue)
+                {
+                    /* we know it exists, so we can fail on this error */
+                    result = globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_NULL,
+                            globus_error_peek(result),
+                            GLOBUS_NULL,
+                            __FILE__,
+                            GLOBUS_NULL,
+                            __LINE__,
+                            "Unable to list destination directory for sync: %s",
+                            dst_url));
+                    goto error_expand;
+                }
             }
             else
             {
