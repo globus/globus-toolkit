@@ -23,7 +23,7 @@ static globus_bool_t                    done;
 static globus_bool_t                    error = GLOBUS_FALSE;
 static globus_result_t                  result;
 
-void quick_exit(char *stage) 
+void g_quick_exit(char *stage) 
 {
     globus_libc_printf( "\nThe following stage failed: %s\n", stage);
     globus_libc_fprintf(stderr,globus_object_printable_to_string(globus_error_get(result)));
@@ -36,7 +36,7 @@ void quick_exit(char *stage)
 void assert_result(char* stage) 
 {
     if (GLOBUS_SUCCESS != result) 
-        quick_exit(stage);
+        g_quick_exit(stage);
 }
 
 void complete_callback(
