@@ -158,20 +158,22 @@ repodir="${reporoot}/${osname}/${osver}"
 # Generate YUM repositories for the different package types
 mkdir -p "${repodir}"
 cp -R RPMS/x86_64 "${repodir}"
-cp -R RPMS/i?86 "${repodir}"
+mkdir "${repodir}"/i386
+cp -R RPMS/i?86/* "${repodir}"/i386
+
 cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
-cp RPMS/noarch/*.rpm "${repodir}"/i?86/
+cp RPMS/noarch/*.rpm "${repodir}"/i386/
 cp -R SRPMS "${repodir}"
 
 createrepo "${reporoot}/$osname/$osver/SRPMS"
 createrepo "${reporoot}/$osname/$osver/x86_64"
-createrepo "${reporoot}/$osname/$osver/i"?86
+createrepo "${reporoot}/$osname/$osver/i386"
 
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
 allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
-allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i?86 -name '*.rpm' | \
+allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
 
 echo "$allpkgs32" > packages.gcc32
