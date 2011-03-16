@@ -44,6 +44,7 @@ INCLUDES = $(GPT_INCLUDES)
 # Scripts contains all of the scripts in this directory
 Scripts= \
 	TESTS.pl \
+        TESTS-junit.pl \
 	globus-common-args-test.pl \
 	globus-common-poll-test.pl \
 	globus-common-error-stg-test.pl \
@@ -60,8 +61,7 @@ Scripts= \
 	globus-common-libcsetenv-test.pl \
 	globus-common-list-test.pl \
         globus-common-uuid-test.pl \
-        globus-common-largefile-test.pl \
-	run-common-tests.pl
+        globus-common-largefile-test.pl
 
 Data= \
 	globus_common_args_test.stdout \
@@ -146,277 +146,65 @@ globus_common_log_test_SOURCES = globus_common_log_test.c
 globus_common_log_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_common_log_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_args_test_SOURCES = globus_common_args_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_args_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_args_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_error_string_test_SOURCES = globus_common_error_string_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_error_string_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_error_string_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_error_test_SOURCES = globus_common_error_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_error_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_error_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_hash_test_SOURCES = globus_common_hash_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_hash_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_hash_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library
 globus_common_mem_test_SOURCES = globus_common_mem_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_mem_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_mem_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_module_test_SOURCES = globus_common_module_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_module_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_module_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_poll_test_SOURCES = globus_common_poll_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_poll_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_poll_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_thread_test_SOURCES = globus_common_thread_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_thread_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_thread_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_timedwait_test_SOURCES = globus_common_timedwait_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_timedwait_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_timedwait_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_list_test_SOURCES = globus_common_list_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_list_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_list_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_url_test_SOURCES = globus_common_url_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_url_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_common_url_test_LDADD = $(GPT_PGM_LINKS)
 
-
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_fifo_test_SOURCES = globus_common_fifo_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-#
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_fifo_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.
-# LDADD is specific for linking programs
-#
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_fifo_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_strptime_test_SOURCES = globus_common_strptime_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-#
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_strptime_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.
-# LDADD is specific for linking programs
-#
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_strptime_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_handle_table_test_SOURCES = globus_common_handle_table_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-#
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_handle_table_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.
-# LDADD is specific for linking programs
-#
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_handle_table_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_common_libcsetenv_test_SOURCES = globus_common_libcsetenv_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-#
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_libcsetenv_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.
-# LDADD is specific for linking programs
-#
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated
-# from the dependent packages
 globus_common_libcsetenv_test_LDADD = $(GPT_PGM_LINKS)
-
 
 globus_common_uuid_test_SOURCES = globus_common_uuid_test.c
 globus_common_uuid_test_LDFLAGS = $(GPT_LDFLAGS)
@@ -426,11 +214,13 @@ globus_common_largefile_test_SOURCES = globus_common_largefile_test.c
 globus_common_largefile_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_common_largefile_test_LDADD = $(GPT_PGM_LINKS)
 
+test:
+	chmod a+x $(Scripts)
+	perl ./TESTS.pl
 
-
-
+junit:
+	chmod a+x $(Scripts)
+	perl ./TESTS-junit.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-
-

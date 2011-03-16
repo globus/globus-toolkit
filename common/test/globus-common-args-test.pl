@@ -27,12 +27,11 @@ common library.
 =cut
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
+use File::Compare;
 
 my $test_prog = './globus_common_args_test';
 
-my $diff = 'diff';
 my @tests;
 my @todo;
 
@@ -40,19 +39,19 @@ sub basic_func
 {
    my ($errors,$rc) = ("",0);
    
-   $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+   $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr");
 
    if($rc != 0)
    {
       $errors .= "Test exited with $rc. ";
    }
 
-   if(-r 'core')
+   if($rc & 128)
    {
       $errors .= "\n# Core file generated.";
    }
    
-   $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
+   $rc = compare("$test_prog.log.stdout", "$test_prog.stdout");
    
    if($rc != 0)
    {
@@ -60,17 +59,16 @@ sub basic_func
    }
 
 
-   $rc = system("$diff $test_prog.log.stderr $test_prog.stderr") / 256;
+   $rc = compare("$test_prog.log.stderr", "$test_prog.stderr");
    
    if($rc != 0)
    {
       $errors .= "\n# Test produced unexpected output, see $test_prog.log.stderr";
    }
    
-   if($errors eq "")
+   ok($errors eq "", $test_prog);
+   if ($errors eq "")
    {
-      ok('success', 'success');
-      
       if( -e "$test_prog.log.stdout" )
       {
 	 unlink("$test_prog.log.stdout");
@@ -81,11 +79,6 @@ sub basic_func
 	 unlink("$test_prog.log.stderr");
       } 
    }
-   else
-   {
-      ok($errors, 'success');
-   }
-
 }
 
 sub sig_handler

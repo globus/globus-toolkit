@@ -24,7 +24,7 @@ main()
     
     rc = (sizeof(globus_off_t) < 8);
     
-    printf("%sok 1\n", rc == 0 ? "" : "not ");
+    printf("%sok 1 globus_off_t_at_least_64_bits\n", rc == 0 ? "" : "not ");
 
     return rc;
 }

@@ -16,7 +16,16 @@
 
 #include "globus_common.h"
 
-typedef int (*test_case_t)(void);
+typedef int (*test_func_t)(void);
+typedef struct
+{
+    test_func_t  test_func;
+    const char * test_name;
+}
+test_case_t;
+
+#define TEST_CASE(x) {x, #x}
+
 #define SIZEOF_ARRAY(x) (sizeof(x)/sizeof(x[0]))
 
 static
@@ -238,26 +247,26 @@ main()
     int i;
     test_case_t test_cases[] =
     {
-        uuid_is_unique_test,
-        uuid_import_test,
-        uuid_fields_test,
+        TEST_CASE(uuid_is_unique_test),
+        TEST_CASE(uuid_import_test),
+        TEST_CASE(uuid_fields_test),
 
-        uuid_bad_import_test
+        TEST_CASE(uuid_bad_import_test)
     };
     int rc;
     int not_ok = 0;
 
-    printf("1..%d\n", SIZEOF_ARRAY(test_cases));
+    printf("1..%d\n", (int) SIZEOF_ARRAY(test_cases));
 
     for (i = 0; i < SIZEOF_ARRAY(test_cases); i++)
     {
-        rc = (test_cases[i])();
+        rc = (test_cases[i].test_func)();
 
         if (rc != 0)
         {
             not_ok++;
         }
-        printf("%sok\n", rc == 0 ? "" : "not ");
+        printf("%sok %s\n", rc == 0 ? "" : "not ", test_cases[i].test_name);
     }
 
     return not_ok;

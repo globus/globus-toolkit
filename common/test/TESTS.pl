@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -16,7 +16,28 @@
 # limitations under the License.
 # 
 
+use strict;
+use Test::Harness;
+require 5.005;
+use vars qw(@tests);
 
-my $res = system('./run-common-tests.pl');
-exit ( $res != 0 );
+@tests = qw( globus-common-args-test.pl
+	     globus-common-error-test.pl
+             globus-common-mem-test.pl
+	     globus-common-module-test.pl
+	     globus-common-poll-test.pl
+             globus-common-thread-test.pl
+	     globus-common-timedwait-test.pl
+	     globus-common-url-test.pl
+	     globus-common-error-stg-test.pl
+	     globus-common-hash-test.pl
+	     globus-common-fifo-test.pl
+	     globus-common-strptime-test.pl
+	     globus-common-handle-table-test.pl
+	     globus-common-libcsetenv-test.pl
+	     globus-common-list-test.pl
+             globus-common-uuid-test.pl
+             globus-common-largefile-test.pl
+	     );
 
+runtests(@tests);

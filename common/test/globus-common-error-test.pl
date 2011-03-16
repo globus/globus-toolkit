@@ -27,8 +27,8 @@ common library.
 =cut
 
 use strict;
-use POSIX;
-use Test;
+use File::Compare;
+use Test::More;
 
 my $test_prog = './globus_common_error_test';
 
@@ -40,14 +40,14 @@ sub basic_func
 {
    my ($errors,$rc) = ("",0);
    
-   $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+   $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr");
 
    if($rc != 0)
    {
       $errors .= "Test exited with $rc. ";
    }
 
-   if(-r 'core')
+   if($rc & 128)
    {
       $errors .= "\n# Core file generated.";
    }
@@ -67,10 +67,9 @@ sub basic_func
       $errors .= "Test produced unexpected output, see $test_prog.log.stderr";
    }
    
-   if($errors eq "")
+   ok($errors eq "", $test_prog);
+   if ($errors eq '')
    {
-      ok('success', 'success');
-      
       if( -e "$test_prog.log.stdout" )
       {
 	 unlink("$test_prog.log.stdout");
@@ -81,11 +80,6 @@ sub basic_func
 	 unlink("$test_prog.log.stderr");
       } 
    }
-   else
-   {
-      ok($errors, 'success');
-   }
-
 }
 
 sub sig_handler

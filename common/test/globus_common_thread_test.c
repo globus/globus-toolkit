@@ -380,6 +380,7 @@ main(
     long					thread_id;
     globus_thread_t                             thread;
 
+    globus_thread_set_model("pthread");
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
     if (argc != 4)

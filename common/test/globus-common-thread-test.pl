@@ -28,9 +28,9 @@ common library.
 
 use strict;
 use POSIX;
-use Test;
+use Test::More;
 
-my $test_prog = './globus_common_thread_test';
+my $test_prog = 'globus_common_thread_test';
 
 my $diff = 'diff';
 my @tests;
@@ -40,14 +40,14 @@ sub basic_func
 {
    my ($errors,$rc) = ("",0);
    
-   $rc = system("$test_prog 10 5 10 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+   $rc = system("./$test_prog 10 5 10 1>$test_prog.log.stdout 2>$test_prog.log.stderr");
 
    if($rc != 0)
    {
       $errors .= "Test exited with $rc. ";
    }
 
-   if(-r 'core')
+   if($rc & 128)
    {
       $errors .= "\n# Core file generated.";
    }
@@ -69,7 +69,7 @@ sub basic_func
 
    if($errors eq "")
    {
-      ok('success', 'success');
+      ok('success' eq 'success', "$test_prog-basic_func");
       
       if( -e "$test_prog.log.stdout" )
       {
@@ -83,7 +83,7 @@ sub basic_func
    }
    else
    {
-      ok($errors, 'success');
+      ok($errors eq 'success', "$test_prog-basic_func");
    }
 
 }
