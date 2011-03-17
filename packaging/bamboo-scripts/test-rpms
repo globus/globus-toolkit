@@ -1,0 +1,102 @@
+#! /bin/sh
+
+set -e
+umask 022
+
+bamboodir=$(pwd)/bamboo-scripts
+topdir=$(pwd)
+tmppath=$(pwd)/tmp
+testoutdir=$(pwd)/test-results
+chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/packaging_tools/configure gpt/check-gpt-prereqs
+
+args=$(getopt r:a: $*)
+set -- ${args}
+
+for i; do
+    case "$i" in
+        -r)
+            repopkg_url="$2"
+            shift
+            shift
+            ;;
+        -a)
+            artifact_url="$2"
+            shift
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+    esac
+done
+
+if [ "$repopkg_url" = "" -o "$artifact_url" = ""]; then
+    echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL" 1>&2
+    exit 1
+fi
+
+mkdir -p $topdir
+mkdir -p $testoutdir
+
+# Reset home to this directory as it is a transient bamboo build dir
+HOME=$topdir
+
+mkdir -p $tmppath
+
+# Remove all globus-related packages prior to testing
+pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
+if [ -n "$pkgs_to_rm" ]; then
+    sudo rpm -e --allmatches $pkgs_to_rm
+fi
+
+# Download and install the repo definition package
+sudo rpm -hUv "$repopkg_url"
+
+# Create source packages for the tests
+./make-packages.pl -a -deporder -bundles=globus-data-management-test \
+        -flavor=gcc64 -packages=globus_core -skipbundle
+
+for flavor in gcc64 gcc32; do
+    # Remove all globus-related packages prior to testing
+    pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-' || true) )"
+    if [ -n "$pkgs_to_rm" ]; then
+        sudo rpm -e --allmatches $pkgs_to_rm
+    fi
+
+    if [ "$flavor" = gcc64 ]; then
+        arch="x86_64"
+        archcmd="x86_64"
+    elif egrep -q 'CentOS|Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release; then
+        arch="i386"
+        archcmd="i386"
+    else
+        arch="i686"
+        archcmd="i386"
+    fi
+
+    # yum clean will enable us to download 32-bit or 64-bit below
+    sudo yum clean all
+
+    # Install the binary RPMs that we will test
+    $archcmd sudo yum -y install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
+
+    mkdir -p "$tmppath/$flavor"
+    cd "$tmppath/$flavor"
+
+    flavortestoutdir="${testoutdir}/${flavor}"
+
+    mkdir -p "${flavortestoutdir}"
+
+    for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
+        gzip -dc "$testpkg" | tar xf -
+        testpkgname=$( echo $(basename $testpkg | sed -e 's/\.tar\.gz//') )
+        cd $testpkgname
+        testpkgname_no_ver=$(echo $testpkgname | sed -e 's/-.*//' | sed -e 's/_/-/g')
+        ./configure --with-flavor=${flavor}
+        make 
+        make junit || true
+        cp ${testpkgname_no_ver}.xml ${flavortestoutdir}/ || true
+        cd ..
+    done
+done
