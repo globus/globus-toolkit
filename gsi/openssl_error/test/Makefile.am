@@ -13,8 +13,8 @@ INCLUDES = $(GPT_INCLUDES)
 
 Scripts= \
 	TESTS.pl \
-	globus-openssl-error-test.pl \
-	run-openssl-error-tests.pl
+	TESTS-junit.pl \
+	globus-openssl-error-test.pl
 
 Data= \
 	globus_openssl_error_test.stdout
@@ -27,6 +27,14 @@ EXTRA_DIST = $(Scripts) $(Data)
 
 test_PROGRAMS= \
 	globus_openssl_error_test
+
+test:
+	chmod a+x $(Scripts)
+	perl ./TESTS.pl
+
+junit:
+	chmod a+x $(Scripts)
+	perl ./TESTS-junit.pl
 
 globus_openssl_error_test_SOURCES = globus_openssl_error_test.c
 globus_openssl_error_test_LDFLAGS = $(GPT_LDFLAGS)

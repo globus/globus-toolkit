@@ -1,5 +1,11 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
-exit ( 0 != system('./run-openssl-error-tests.pl'));
+use strict;
+use Test::Harness;
+require 5.005;
+use vars qw(@tests);
 
+@tests = qw( globus-openssl-error-test.pl
+	     );
 
+runtests(@tests);

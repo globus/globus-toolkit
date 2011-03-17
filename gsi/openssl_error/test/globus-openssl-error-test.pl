@@ -10,12 +10,10 @@ Tests to exercise the error handling functionality of the globus
 =cut
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 
 my $test_prog = 'globus_openssl_error_test';
 
-my $diff = 'diff';
 my @tests;
 my @todo;
 
@@ -23,14 +21,14 @@ sub basic_func
 {
     my ($errors,$rc) = ("",0);
    
-    $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+    $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr");
 
     if($rc != 0)
     {
         $errors .= "Test exited with $rc. ";
     }
 
-    if(-r 'core')
+    if($rc & 128)
     {
         $errors .= "\n# Core file generated.";
     }
@@ -43,17 +41,15 @@ sub basic_func
         $rc++ unless ( $logged =~ /$line/ );
     }
 					   
-    # $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
-    
     if($rc != 0)
     {
         $errors .= "Test produced unexpected output, see $test_prog.log.stdout";
     }
 
-    if($errors eq "")
+    ok($errors eq '', 'globus_error_wrap_openssl_error');
+
+    if($errors eq '')
     {
-        ok('success', 'success');
-        
         if( -e "$test_prog.log.stdout" )
         {
 	    unlink("$test_prog.log.stdout");
