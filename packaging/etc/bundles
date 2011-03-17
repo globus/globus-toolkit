@@ -213,6 +213,7 @@ BUNDLE globus-data-management-client
 
 BUNDLE	globus-data-management-test
         globus_common_test
+        globus_openssl_error_test
 
 BUNDLE	gram-gridftp-test
 	globus_test
