@@ -31,7 +31,7 @@ for i; do
     esac
 done
 
-if [ "$repopkg_url" = "" -o "$artifact_url" = ""]; then
+if [ "$repopkg_url" = "" -o "$artifact_url" = "" ]; then
     echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL" 1>&2
     exit 1
 fi
