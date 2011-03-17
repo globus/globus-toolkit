@@ -4934,6 +4934,7 @@ globus_l_guc_expand_single_url(
     globus_l_guc_info_t *               guc_info;
     globus_l_guc_handle_t *             handle;
     globus_bool_t                       do_transfer = GLOBUS_TRUE;
+    int                                 rc; 
     
     src_url = transfer_info->urls->src_url;
     dst_url = transfer_info->urls->dst_url;
@@ -4987,7 +4988,6 @@ globus_l_guc_expand_single_url(
             if(stat_info.type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR)
             {
                 char *                  tmp_dst;
-                int                     rc; 
 
                 tmp_dst = globus_libc_strdup(dst_url);
                 
@@ -5038,6 +5038,43 @@ globus_l_guc_expand_single_url(
             {
                 globus_free(stat_info.unique_id);
             }
+        }
+        else if(!g_continue)
+        {
+            char *                      tmp_errstr;
+            globus_object_t *           tmp_err;
+            char *                      tmp_ptr;
+            
+            tmp_err = globus_error_peek(result);
+            tmp_errstr = globus_error_print_friendly(tmp_err);
+            for(tmp_ptr = tmp_errstr; *tmp_ptr != '\0'; tmp_ptr++)
+            {
+                *tmp_ptr = tolower(*tmp_ptr);
+            }
+
+            rc = globus_error_ftp_error_get_code(tmp_err);
+            /* if error code is not 5xx, or is 5xx and the error
+             * is not "No such file or directory" or "File not found", fail.
+             * ugly, but we can't rely on error codes. */
+            if(rc <= 0 || 
+                rc / 100 != 5 || 
+                (strstr(tmp_errstr, "no such file") == NULL &&
+                strstr(tmp_errstr, "file not found") == NULL))
+            {
+                globus_free(tmp_errstr);
+                result = globus_error_put(
+                    globus_error_construct_error(
+                        GLOBUS_NULL,
+                        tmp_err,
+                        GLOBUS_NULL,
+                        __FILE__,
+                        GLOBUS_NULL,
+                        __LINE__,
+                        "Unable to check destination url for sync: %s",
+                        dst_url));
+                goto error_expand;
+            }
+            globus_free(tmp_errstr);
         }
     }
     
