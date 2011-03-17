@@ -54,8 +54,8 @@ fi
 sudo rpm -hUv "$repopkg_url"
 
 # Create source packages for the tests
-./make-packages.pl -a -deporder -bundles=globus-data-management-test \
-        -flavor=gcc64 -packages=globus_core -skipbundle
+./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
+        -flavor=gcc64 -skipbundle
 
 for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
