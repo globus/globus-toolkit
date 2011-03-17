@@ -211,6 +211,9 @@ BUNDLE globus-data-management-client
 	globus_gass_copy
 	globus_gridftp_sshftp_setup
 
+BUNDLE	globus-data-management-test
+        globus_common_test
+
 BUNDLE	gram-gridftp-test
 	globus_test
 	globus_common_test
