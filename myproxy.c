@@ -750,43 +750,9 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 static int
 new_server_identity_check_behavior_needed()
 {
-   /* Based on globus_l_xio_gsi_activate() */
+   char *compat = NULL;
 
-   static gss_OID_desc gss_l_openssl_mech_oid =
-           {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
-   static gss_OID_desc * gss_l_openssl_mech = &gss_l_openssl_mech_oid;
-
-   static gss_OID_desc gss_nt_host_ip_oid =
-       { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
-   static gss_OID_desc * GLOBUS_GSS_C_NT_HOST_IP = &gss_nt_host_ip_oid;
-
-   OM_uint32                           major_status, minor_status;
-   gss_OID_set                         name_types;
-   globus_bool_t globus_l_gsi_host_ip_supported = GLOBUS_FALSE;
-
-   major_status = gss_inquire_names_for_mech(
-            &minor_status,
-            gss_l_openssl_mech ,
-            &name_types);
-
-   if (major_status == GSS_S_COMPLETE)
-   {
-       int   present = 0;
-        major_status = gss_test_oid_set_member(
-                &minor_status,
-                GLOBUS_GSS_C_NT_HOST_IP,
-                name_types,
-                &present);
-
-        if (major_status == GSS_S_COMPLETE && present)
-        {
-            globus_l_gsi_host_ip_supported = GLOBUS_TRUE;
-        }
-        gss_release_oid_set(&minor_status, &name_types);
-   }
-
-   char *compat = getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");
-
+   compat = getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");
    if (compat == NULL || strcmp(compat, "STRICT_RFC2818"))
    {
        return 0; /* Perform old checks */
