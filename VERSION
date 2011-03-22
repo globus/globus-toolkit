@@ -8,6 +8,7 @@ v5.4 XX Xxx 2011
   - support disabling reverse DNS lookup of server hostname in MyProxy clients
     by setting the environment variable GLOBUS_GSSAPI_NAME_COMPATIBILITY
     to STRICT_RFC2818
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6789)
   - prefer to link with libvomsapi instead of libvomsc
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7133)
   - fix double-free in myproxy_install_trusted_cert_files() on write error
@@ -22,6 +23,8 @@ v5.4 XX Xxx 2011
       cert_dir contains any regular files that are not world-readable.
     - Once started, the server will skip (i.e. will not return to client)
       any regular files found later to NOT have world-readable permissions.
+  - fix GPT dependency on globus_proxy_utils package
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7151)
 
 v5.3 17 Jan 2011
   - fix myproxy-logon bug in versions 5.0-5.2 that disabled
