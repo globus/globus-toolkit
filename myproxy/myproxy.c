@@ -787,11 +787,7 @@ new_server_identity_check_behavior_needed()
 
    char *compat = getenv("GLOBUS_GSSAPI_NAME_COMPATIBILITY");
 
-   if ( (globus_l_gsi_host_ip_supported == GLOBUS_FALSE &&
-         (compat == NULL || strcmp(compat, "STRICT_RFC2818")))
-       ||
-        (globus_l_gsi_host_ip_supported == GLOBUS_TRUE &&
-         compat != NULL && !strcmp(compat, "STRICT_GT2")) )
+   if (compat == NULL || strcmp(compat, "STRICT_RFC2818"))
    {
        return 0; /* Perform old checks */
    } else {
