@@ -47,10 +47,7 @@
 #   PermitLocalCommand no
 #   VisualHostKey no
 #   ProxyCommand ssh -q -W %h:%p gateway.example.com
-<<<<<<< ssh_config
 
 # GSI-OpenSSH defaults
 Protocol 2
 PreferredAuthentications gssapi-keyex,gssapi-with-mic
-=======
->>>>>>> 1.5

@@ -19,6 +19,7 @@ char *_PATH_SERVER_CONFIG_FILE		= STRINIT;
 char *_PATH_HOST_CONFIG_FILE		= STRINIT;
 char *_PATH_HOST_KEY_FILE		= STRINIT;
 char *_PATH_HOST_DSA_KEY_FILE		= STRINIT;
+char *_PATH_HOST_ECDSA_KEY_FILE		= STRINIT;
 char *_PATH_HOST_RSA_KEY_FILE		= STRINIT;
 char *_PATH_DH_MODULI			= STRINIT;
 char *_PATH_DH_PRIMES			= STRINIT;
@@ -77,6 +78,7 @@ init_pathnames()
     _PATH_HOST_CONFIG_FILE	= compose3(gl, SSHDIR, "/ssh_config");
     _PATH_HOST_KEY_FILE		= compose3(gl, SSHDIR, "/ssh_host_key");
     _PATH_HOST_DSA_KEY_FILE	= compose3(gl, SSHDIR, "/ssh_host_dsa_key");
+    _PATH_HOST_ECDSA_KEY_FILE	= compose3(gl, SSHDIR, "/ssh_host_ecdsa_key");
     _PATH_HOST_RSA_KEY_FILE	= compose3(gl, SSHDIR, "/ssh_host_rsa_key");
     _PATH_DH_MODULI		= compose3(gl, SSHDIR, "/moduli");
     _PATH_DH_PRIMES		= compose3(gl, SSHDIR, "/primes");

@@ -91,7 +91,7 @@ typedef struct {
 	gss_name_t name;
 	struct ssh_gssapi_mech_struct *mech;
 	ssh_gssapi_ccache store;
-    gss_ctx_id_t context;
+    gss_ctx_id_t context; /* needed for globus_gss_assist_map_and_authorize() */
 	int used;
 	int updated;
 } ssh_gssapi_client;

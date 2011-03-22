@@ -1,4 +1,4 @@
-/* $OpenBSD: pathnames.h,v 1.19 2010/02/11 20:37:47 djm Exp $ */
+/* $OpenBSD: pathnames.h,v 1.20 2010/08/31 11:54:45 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -35,6 +35,7 @@ extern char *_PATH_SERVER_CONFIG_FILE;
 extern char *_PATH_HOST_CONFIG_FILE;
 extern char *_PATH_HOST_KEY_FILE;
 extern char *_PATH_HOST_DSA_KEY_FILE;
+extern char *_PATH_HOST_ECDSA_KEY_FILE;
 extern char *_PATH_HOST_RSA_KEY_FILE;
 extern char *_PATH_DH_MODULI;
 /* Backwards compatibility */
@@ -69,6 +70,7 @@ extern char *_PATH_SSH_DAEMON_PID_FILE;
  */
 #define _PATH_SSH_CLIENT_IDENTITY	".ssh/identity"
 #define _PATH_SSH_CLIENT_ID_DSA		".ssh/id_dsa"
+#define _PATH_SSH_CLIENT_ID_ECDSA	".ssh/id_ecdsa"
 #define _PATH_SSH_CLIENT_ID_RSA		".ssh/id_rsa"
 
 /*

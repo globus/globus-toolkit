@@ -95,4 +95,8 @@ mysig_t mysignal(int sig, mysig_t act);
 
 #define signal(a,b) mysignal(a,b)
 
+#ifndef HAVE_ISBLANK
+int	isblank(int);
+#endif
+
 #endif /* _BSD_MISC_H */

@@ -213,6 +213,10 @@ char *user_from_uid(uid_t, int);
 char *group_from_gid(gid_t, int);
 #endif
 
+#ifndef HAVE_TIMINGSAFE_BCMP
+int timingsafe_bcmp(const void *, const void *, size_t);
+#endif
+
 void *xmmap(size_t size);
 char *xcrypt(const char *password, const char *salt);
 char *shadow_pw(struct passwd *pw);
