@@ -142,42 +142,16 @@ or X.509 certificate.
 .SH ENVIRONMENT
 .TP
 .B GLOBUS_GSSAPI_NAME_COMPATIBILITY
-.RS 5
-.TP
-.B On GT 4.0.x and earlier:
 This client will, by default, perform a reverse-DNS lookup to determine
 the FQHN (Fully Qualified Host Name) to use in verifying the identity
 of the server by checking the FQHN against the CN in server's certificate.
 Setting this variable to
 .B STRICT_RFC2818
 will cause the reverse-DNS lookup to NOT be performed
-and the user-specified name to be used instead. The values
-.B HYPRID
-and
-.B STRICT_GT2
-have no effect.
-.TP
-.B On GT 4.2.1 and later:
-By default (also made explicit with the value
-.B HYBRID
-), a reverse-DNS lookup is NOT performed; the user-specified
-host name is used instead. This name must match at least one
-of the names of type dNSName in the subjectAltName extension of the server's
-certificate or the CN (Common Name) in the certificate. Setting
-this variable to
-.B STRICT_GT2
-will cause this client to perform a reverse-DNS lookup to determine the
-FQHN and then to use that FQHN instead of the user-specified name in
-verifying the identity of the server. Setting this variable to
-.B STRICT_RFC2818
-will cause the client to NOT consider the CN (Common Name) if
-at least one name of type dNSName exists in the subjectAltName extension.
-This is per RFC 2818.
-.PP
+and the user-specified name to be used instead.
 This variable setting will be ignored if
 .B MYPROXY_SERVER_DN
 (described later) is set.
-.RE
 .TP
 .B MYPROXY_SERVER
 Specifies the hostname(s) where the

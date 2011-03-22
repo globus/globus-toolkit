@@ -5,31 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.4 XX Xxx 2011
-  - disable reverse DNS lookup of server hostname in MyProxy clients
-    (http://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=6789)
-    - On GT 4.0.x and earlier:
-      - reverse-DNS lookup will be performed by default but can be suppressed
-        by setting the environment variable GLOBUS_GSSAPI_NAME_COMPATIBILITY
-        to STRICT_RFC2818
-    - On GT 4.2.1 and later:
-      - reverse-DNS lookup will NOT be performed by default and user-specified
-        name is instead used for matching.
-      - by default, DNS names in subjectAltName extension in server's
-        certificate will be checked for at least one match and if none match
-        then the CN will be checked for a match.
-      - default behavior described above can also be explicitly assured
-        by setting the environment variable GLOBUS_GSSAPI_NAME_COMPATIBILITY
-        to HYBRID
-      - setting the environment variable GLOBUS_GSSAPI_NAME_COMPATIBILITY to
-        STRICT_GT2 will cause the client to perform the reverse-DNS lookup
-        and use that name for matching with names from server's certificate.
-      - setting the environment variable GLOBUS_GSSAPI_NAME_COMPATIBILITY to
-        STRICT_RFC2818 will cause the client to NOT look at the CN for matching
-        purposes if at least one DNS name exists in a subjectAltName extension
-        in the server's certificate. This is per RFC 2818.
-    - setting the environment variable MYPROXY_SERVER_DN will, as in the past,
-      obviate the need for a reverse-DNS lookup since the specified DN is
-      used for matching the DN from server's certificate.
+  - support disabling reverse DNS lookup of server hostname in MyProxy clients
+    by setting the environment variable GLOBUS_GSSAPI_NAME_COMPATIBILITY
+    to STRICT_RFC2818
   - prefer to link with libvomsapi instead of libvomsc
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7133)
   - fix double-free in myproxy_install_trusted_cert_files() on write error
