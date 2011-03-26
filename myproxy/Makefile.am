@@ -101,7 +101,7 @@ lib_LTLIBRARIES = libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
 
-libmyproxy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libmyproxy___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) -lcrypto
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
