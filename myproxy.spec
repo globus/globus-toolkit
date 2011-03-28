@@ -206,9 +206,8 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
-#FIXME: libmyproxy.la needed by %{flavor}_dev.filelist below! See if we
-# really need it! find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
-sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_rtl.filelist
+find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
+sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_dev.filelist
 
 # Remove static libraries (.a files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.a' -exec rm -v '{}' \;
@@ -351,8 +350,6 @@ fi
 %defattr(-,root,root,-)
 %{_datadir}/globus/packages/%{name}
 %{_libdir}/libmyproxy.so.*
-#FIXME: This is a custom addition. See earlier FIXME regarding libmyproxy.la
-%{_libdir}/libmyproxy.la
 
 %files server
 %defattr(-,root,root,-)
