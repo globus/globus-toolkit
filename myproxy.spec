@@ -7,8 +7,8 @@
 %endif
 
 Name:           myproxy
-Version:        5.3
-Release:        3%{?dist}
+Version:        5.4
+Release:        1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
