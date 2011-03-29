@@ -298,6 +298,8 @@ do
    done
 done
 
+PATH=.:$PATH ./myproxy-test -startserver -generatecerts
+
 
 
 %post libs -p /sbin/ldconfig
