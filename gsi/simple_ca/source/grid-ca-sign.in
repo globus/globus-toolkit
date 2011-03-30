@@ -20,114 +20,6 @@
 # catch the kill signal (ctrl-c) and do cleanup
 trap do_trap 1 2 3 6 9 13 15
 
-if test "`echo -n \"testecho\"`" = "testecho"; then
-    ECHOOPTION=" -n "
-    ECHOTAIL=""
-else
-    ECHOOPTION=""
-    ECHOTAIL='\c'
-fi
-
-recho() {
-
-    echo $ECHOOPTION $@ $ECHOTAIL
-}
-
-check_expired() {
-    
-    d=$@
-    
-    year=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:[0-9]*:[0-9]*[ ]\([0-9]*\).*|\1|"`
-
-    cyear=`${GLOBUS_SH_DATE-date} +%Y`
-    
-    if test ${year} -lt ${cyear}; then
-        echo "1"
-    elif test ${year} -gt ${cyear}; then
-        echo "0"
-    fi
-
-    month=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|\([^0-9]*\).*|\1|"`
-    if test "${month}" = "Jan"; then
-        monnum=01
-    elif test "${month}" = "Feb"; then
-        monnum=02
-    elif test "${month}" = "Mar"; then
-        monnum=03
-    elif test "${month}" = "Apr"; then
-        monnum=04
-    elif test "${month}" = "May"; then
-        monnum=05
-    elif test "${month}" = "Jun"; then
-        monnum=06
-    elif test "${month}" = "Jul"; then
-        monnum=07
-    elif test "${month}" = "Aug"; then
-        monnum=08
-    elif test "${month}" = "Sep"; then
-        monnum=09
-    elif test "${month}" = "Oct"; then
-        monnum=10
-    elif test "${month}" = "Nov"; then
-        monnum=11
-    elif test "${month}" = "Dec"; then
-        monnum=12
-    else
-        monnum=00
-    fi
-
-    cmonnum=`date +%m`
-
-    if test ${monnum} -lt ${cmonnum}; then
-       echo "1" 
-    elif test ${monnum} -gt ${cmonnum}; then
-       echo "0" 
-    fi
-
-    day=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*\([0-9]*\).*|\1|"`
-
-    cday=`date +%d`
-
-    if test ${day} -lt ${cday}; then
-       echo "1" 
-    elif test ${day} -gt ${cday}; then
-       echo "0" 
-    fi
- 
-    hour=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ]\([0-9]*\):[0-9]*:[0-9]*.*|\1|"`
-
-    chour=`date +%H`
-
-    if test ${hour} -lt ${chour}; then
-       echo "1" 
-    elif test ${hour} -gt ${chour}; then
-       echo "0"  
-    fi
-
-    min=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:\([0-9]*\):[0-9]*.*|\1|"`
-
-    cmin=`date +%M`
-
-    if test ${min} -lt ${cmin}; then
-        echo  "1"
-    elif test ${min} -gt ${cmin}; then
-        echo "0"
-    fi
-
-    sec=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:[0-9]*:\([0-9]*\).*|\1|"`
-
-    csec=`date +%S`
-
-    if test ${sec} -lt ${csec}; then
-        echo "1"
-    elif test ${sec} -gt ${csec}; then
-        echo  "0"
-    fi
-
-    echo "0"
-}
-
-
 ############################################################
 # main code section
 ############################################################
@@ -137,40 +29,70 @@ check_expired() {
 
 globus_source ${libexecdir}/globus-sh-tools.sh
 
-PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
+PROGRAM_NAME="${0##*/}"
+PROGRAM_VERSION="$(expr '$Revision$' : "\\\$Revision$")"
+PACKAGE="@PACKAGE@"
+VERSION="@VERSION@"
+DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
-short_usage="$PROGRAM_NAME [-help] -in <req> -out <cert> [ options ...]"
+
+short_usage="$PROGRAM_NAME [-help] -in REQUEST -out CERTIFICATE [options ...]"
 
 openssl_options=""
 
+
+printhelp() {
+    option="${1}"
+    helpstr="${2}"
+    optwidth="${optwidth:-$((${COLUMNS:-80} / 3))}"
+    if [ "$optwidth" -gt 30 ]; then
+        optwidth=30
+    fi
+    helpwidth="${helpwidth:-$((${COLUMNS:-80} - $optwidth - 6))}"
+    helpstrformatted="$(echo "${helpstr}" | tr -sd '\n\t' ' ' | \
+            fold -sw ${helpwidth})"
+
+    OLDIFS="$IFS"
+    IFS="
+"
+    first=1
+
+    for x in $helpstrformatted; do
+        printf "    %-${optwidth}s %-${helpwidth}s\n" "${first:+$option}" "$x"
+        first=""
+    done
+    if [ "$first" = "1" ]; then
+        printf "    %-${optwidth}s\n" "${first:+$option}"
+    fi
+    IFS="$OLDIFS"
+}
+
 long_usage () {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+    cat <<EOF
 
 ${short_usage}
 
-  Expects a certificate request as input from the -in argument, and prints
-  the signed certificate to file specified by -out.
+  Sign a certificate request located in the file named by the argument to the
+  -in parameter, writing the new certificate to the file named by the argument
+  to the -out parameter.
 
   Options:
-    -force                   : Sign a certificate request with subject that
-                               matches an already signed certificate.
-    -dir <cadir>             : Set the configure directory of the CA
-    -in  <cert req>          : The cert request to sign.
-    -out <signed cert>       : The newly signed cert.  
-
-    -<openssl option>        : Any of the options allowed with the 
-                               openssl ca command.  Example:
-                               
-			       -passin pass:<password>
-
-                               Specify the password for the CA private key if 
-                               you don't care about security.  
-                               Other -passin options also exist,
-			       see openssl manpage for further details.
-
-    -openssl-help            : List possible options to the openssl ca command and exit
-
 EOF
+    printhelp "-help, -h, -?, -usage" "Print this usage message and exit"
+    printhelp "-version" "Print $PROGRAM_NAME version number"
+    printhelp "-versions" "Print detailed package version for $PACKAGE"
+    printhelp "-in REQUEST" "Read the certificate request from
+            the file REQUEST"
+    printhelp "-out CERTIFICATE" "Write the new certificate to the path
+            CERTIFICATE"
+    printhelp "-force" "Sign a certificate request with subject that matches an
+            already signed certificate."
+    printhelp "-dir DIR" "Use the Simple CA certificate and configuration
+            located in the directory DIR"
+    printhelp "-openssl-help" "Print options to the openssl ca command"
+    printhelp "[OPENSSL-OPTIONS]" "Any of the options allowed with the 
+            openssl ca command, such as -passin pass:PASSWORD"
 }
 
 . $libexecdir/globus-args-parser-header
@@ -205,7 +127,7 @@ readCommandLine() {
                 ;;
             -openssl-help)
                 shift;
-		${bindir}/openssl ca -help
+		openssl ca -help
 		exit;
 		;;
 	    *)
@@ -249,8 +171,6 @@ do_trap() {
 do_cleanup() {
 
     ${GLOBUS_SH_RM-rm} -f ${tmp_output}
-
-    ${GLOBUS_SH_RM-rm} -f ${TMP_REQ_FILE} ${TMP_CERT_FILE}
 }
 
 do_password_input() {
@@ -258,7 +178,7 @@ do_password_input() {
         ${GLOBUS_SH_STTY-stty} -echo
         echo ""
         echo $@
-        recho "please enter the password for the CA key: "
+        printf "please enter the password for the CA key: "
     fi
 }        
 
@@ -274,7 +194,7 @@ do_sign() {
 do_password_input "To sign the request"
 tmp_output=/tmp/tmp_output.$$
 ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
-                  -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
+                  -in ${INPUT_REQ_FILE} -out ${SIGNED_OUTPUT_FILE} \
                   > $tmp_output 2>&1
 
 openssl_result=$?
@@ -349,9 +269,8 @@ if test ${openssl_result} != 0; then
         fi
 
         SIGNED_SUBJECT="${req_subj}"
-        exp_date=`${openssl_cmd} x509 -in ${SIGNED_CERT} -noout -enddate | \
-                         ${GLOBUS_SH_SED-sed} -e "s|notAfter=[ ]*||"`
-        expired=`check_expired ${exp_date}`
+        expired=`${openssl_cmd} x509 -in ${SIGNED_CERT} -checkend 0 > /dev/null; echo $?`
+
         if test -n "${force_sign}" || test "${expired}" = "0"; then
 
             echo ""
@@ -408,7 +327,7 @@ if test ${openssl_result} != 0; then
     echo ""
     echo " ${openssl_cmd} ca $openssl_options \\"
     echo "    -batch -config ${grid_ca_conf} \\"
-    echo "    -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE}"
+    echo "    -in ${INPUT_REQ_FILE} -out ${SIGNED_OUTPUT_FILE}"
     echo ""
     echo "========== ERROR MESSAGES FROM OPENSSL =========="
     cat ${tmp_output} 1>&2
@@ -464,22 +383,27 @@ fi
 readCommandLine "$@"
 
 if test -z "$GRID_CA_DIR"; then
-    GRID_CA_DIR=${HOME}/.globus/simpleCA/
-fi
-
-if test ! -d ${GRID_CA_DIR}; then
-    echo ""
-    echo "ERROR: No simple CA directory"
-    echo "found at ${GRID_CA_DIR}"
-    echo "Either specify a directory with -dir, or run"
-    echo "setup-simple-ca to create a CA"
-    echo ""
-    exit 1
+    if test -w "${localstatedir}/globus_simple_ca/."; then
+        GRID_CA_DIR="${localstatedir}/globus_simple_ca" 
+    elif test -d "${HOME}/.globus/simpleCA/."; then
+        GRID_CA_DIR="${HOME}/.globus/simpleCA"
+    else
+        exec 1>&2
+        echo ""
+        echo "ERROR: No usable Simple CA directory found at \${HOME}/.globus/simpleCA or "
+        echo "\${localstatedir}/simpleCA"
+        echo ""
+        echo "Either specify a directory with -dir, or run"
+        echo "grid-ca-create to create a CA"
+        echo ""
+        exit 1
+    fi
 fi
 
 if test ! -f ${GRID_CA_DIR}/cacert.pem; then
+    exec 1>&2
     echo ""
-    echo "ERROR: No simple CA setup found at ${GRID_CA_DIR}."
+    echo "ERROR: No CA certificate found at ${GRID_CA_DIR}/cacert.pem"
     echo "The CA certificate is missing!"
     echo "Please run setup-simple-ca before"
     echo "signing certificates."
@@ -488,17 +412,12 @@ if test ! -f ${GRID_CA_DIR}/cacert.pem; then
 fi
 
 grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
-openssl_cmd=${bindir}/openssl
+openssl_cmd=openssl
 
-TMP_REQ_FILE=/tmp/tmp_cert_req.pem.$$
-TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
-
-${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
-
-echo ${openssl_options} | grep "\-passin" > /dev/null
+echo "${openssl_options}" | grep -- -passin > /dev/null
 res1=$?
 if test ! $res1 = 0; then
-    echo ${openssl_options} | grep "\-key" > /dev/null
+    echo ${openssl_options} | grep -- -key > /dev/null
     res1=$?
 fi
 
@@ -509,37 +428,27 @@ fi
 
 do_sign;
 
-if test ! -f ${TMP_CERT_FILE}; then
-	echo "ERROR: ${TMP_CERT_FILE} does not exist.  Invalid internal state, exiting..."
+if test ! -f ${SIGNED_OUTPUT_FILE}; then
+        exec 1>&2
+	echo "ERROR: ${SIGNED_OUTPUT_FILE} does not exist.  Invalid internal state, exiting..."
 	echo ""
 	exit 1
 fi
 
-${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -serial > /dev/null 2>&1
+NEW_SERIAL="$(${openssl_cmd} x509 -in ${SIGNED_OUTPUT_FILE} -noout -serial)"
 res=$?
 if test $res != 0; then
+        exec 1>&2
 	echo ""
-	echo "ERROR: Failed to get serial number of newly signed cert at: ${TMP_CERT_FILE}"
+	echo "ERROR: Failed to get serial number of newly signed cert at: ${SIGNED_OUTPUT_FILE}"
 	echo ""
 fi
 
-NEW_SERIAL=`${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -serial | ${GLOBUS_SH_SED-sed} -e "s|serial=||"`
+NEW_SERIAL="${NEW_SERIAL##serial=}"
 
 echo ""
 echo "The new signed certificate is at: ${GRID_CA_DIR}/newcerts/${NEW_SERIAL}.pem"
 echo ""
-
-CERT_OUTPUT_DIR=`dirname ${SIGNED_OUTPUT_FILE}`
-if test -w "${CERT_OUTPUT_DIR}"; then
-    ${GLOBUS_SH_CP-cp} ${TMP_CERT_FILE} ${SIGNED_OUTPUT_FILE}
-else
-    echo ""
-    echo "ERROR: Cannot create the requested output certificate file"
-    echo "   ${SIGNED_OUTPUT_FILE}"
-    echo "Instead manually copy and rename the new signed certificate at"
-    echo "   ${GRID_CA_DIR}/newcerts/${NEW_SERIAL}.pem"
-    echo ""
-fi
 
 do_cleanup
 exit

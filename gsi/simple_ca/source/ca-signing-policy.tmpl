@@ -24,10 +24,10 @@
 #--------------|---------------|-----------------------------------------
 # EACL entry #1|
 
- access_id_CA      X509         'CA_SUBJECT_NAME'
+ access_id_CA      X509         '${GRID_CA_SUBJECT}'
 
  pos_rights        globus        CA:sign
 
- cond_subjects     globus       '"CA_SIGNING_POLICY"'
+ cond_subjects     globus       '"${GRID_CA_COND_SUBJECT}"'
 
 # end of EACL
