@@ -129,7 +129,6 @@ globus_user_env	user_env/source	gpt
 globus_gssapi_error	gsi/gssapi_error/source	gpt
 globus_gcs_b38b4d8c_setup       gsi/gcs/setup	gpt
 globus_simple_ca	gsi/simple_ca/source	gpt
-globus_simple_ca_setup	gsi/simple_ca/setup	gpt
 globus_icu4c 	icu4c/  tar
 globus_i18n	i18n/source	gpt
 globus_utp	utp/source	gpt
