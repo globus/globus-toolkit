@@ -30,7 +30,7 @@ trap do_trap 1 2 3 6 9 13 15
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME="${0##*/}"
-PROGRAM_VERSION="$(expr '$Revision$' : "\\\$Revision$")"
+PROGRAM_VERSION="$(expr '$Revision$' : ".Revision: \([0-9\.]*\) .")"
 PACKAGE="@PACKAGE@"
 VERSION="@VERSION@"
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
