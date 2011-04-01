@@ -1,12 +1,9 @@
 #! /usr/bin/perl
 
 use strict;
-use Test;
+use Test::More;
 use File::Temp;
-use Globus::Testing::Utilities;
 use Globus::Core::Paths;
-
-Globus::Testing::Utilities::testcred_setup(1) || die("Unable to set up creds");
 
 my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
 
@@ -18,45 +15,48 @@ sub test_proxy
     my $proxy_format = $case->[0];
     my $proxy_type = $case->[1];
     my $expect = $case->[2];
-    my $result;
+    my $testname = $case->[3];
+    my $result = '';
+    my $proxy_created = 1;
+    my $type_determined = 1;
 
-    system("$Globus::Core::Paths::bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null 2>/dev/null");
+    $proxy_created = system("$Globus::Core::Paths::bindir/grid-proxy-init $proxy_format $proxy_type > /dev/null");
 
-    if ($? != 0)
+    if ($proxy_created == 0)
     {
-        print STDERR "# Error creating proxy with grid-proxy-init $proxy_format $proxy_type\n";
-
-        ok($?, 0);
-        return;
+        chomp($result = `$Globus::Core::Paths::bindir/grid-proxy-info -type`);
+        $type_determined = $?;
     }
-    $result = `$Globus::Core::Paths::bindir/grid-proxy-info -type`;
 
-    if ($? != 0)
-    {
-        print STDERR "# Error getting proxy type\n";
-
-        ok($?, 0);
-    }
-    chomp($result);
-
-    ok($result, $expect);
+    ok($proxy_created==0 && $type_determined==0 && $result eq $expect,
+        $testname);
     truncate($proxy_fh, 0);
 }
 
 my @tests = (
-    [ "", "", "RFC 3820 compliant impersonation proxy" ],
-    [ "-draft", "", "Proxy draft (pre-RFC) compliant impersonation proxy" ],
-    [ "-rfc", "", "RFC 3820 compliant impersonation proxy" ],
-    [ "-old", "", "full legacy globus proxy" ],
+    [ "", "", "RFC 3820 compliant impersonation proxy", "default_proxy_type" ],
+    [ "-draft", "", "Proxy draft (pre-RFC) compliant impersonation proxy" ,
+        "draft_proxy_type"],
+    [ "-rfc", "", "RFC 3820 compliant impersonation proxy",
+        "rfc_proxy_type"],
+    [ "-old", "", "full legacy globus proxy",
+        "legacy_proxy_type"],
 
-    [ "", "-limited", "RFC 3820 compliant limited proxy" ],
-    [ "-draft", "-limited", "Proxy draft (pre-RFC) compliant limited proxy" ],
-    [ "-rfc", "-limited", "RFC 3820 compliant limited proxy" ],
-    [ "-old", "-limited", "limited legacy globus proxy" ],
+    [ "", "-limited", "RFC 3820 compliant limited proxy",
+        "default_limited_proxy_type"],
+    [ "-draft", "-limited", "Proxy draft (pre-RFC) compliant limited proxy",
+        "draft_limited_proxy_type"],
+    [ "-rfc", "-limited", "RFC 3820 compliant limited proxy",
+        "rfc_limited_proxy_type"],
+    [ "-old", "-limited", "limited legacy globus proxy",
+        "old_limited_proxy_type"],
 
-    [ "", "-independent", "RFC 3820 compliant independent proxy" ],
-    [ "-draft", "-independent", "Proxy draft (pre-RFC) compliant independent proxy" ],
-    [ "-rfc", "-independent", "RFC 3820 compliant independent proxy" ]
+    [ "", "-independent", "RFC 3820 compliant independent proxy",
+        "independent_proxy_type"],
+    [ "-draft", "-independent", "Proxy draft (pre-RFC) compliant independent proxy",
+        "draft_independent_proxy_type"],
+    [ "-rfc", "-independent", "RFC 3820 compliant independent proxy",
+        "rfc_independent_proxy_type"]
 );
 
 plan tests => scalar(@tests);
