@@ -11,12 +11,11 @@ in an X509 certificate.
 =cut
 
 use strict;
-use POSIX;
-use Test;
+use File::Compare;
+use Test::More;
 
 my $test_prog = 'test_pci';
 
-my $diff = 'diff';
 my @tests;
 my @todo;
 
@@ -26,50 +25,29 @@ sub basic_func
 
    my $test_index = shift;
    my $options = shift;
+   my $testname = shift;
 
    my $rc1 = system("./$test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout") / 256;
    my $rc2 = system("./$test_prog -in $test_prog.norm$test_index.der -out $test_prog.log$test_index.der 1> $test_prog.log2.stdout") / 256;
 
-   if($rc1 != 0 || $rc2 != 0)
-   {
-      $errors .= "Test exited with $rc. ";
-   }
+   ok($rc1 == 0 && $rc2 == 0 &&
+        File::Compare::compare("$test_prog.log$test_index.der",
+                               "$test_prog.norm$test_index.der") == 0 &&
+        File::Compare::compare("$test_prog.log1.stdout",
+                "$test_prog.log2.stdout") == 0,
+        $testname);
 
-   $rc1 = system("$diff $test_prog.log$test_index.der $test_prog.norm$test_index.der") / 256;
-   
-   if($rc1 != 0)
-   {
-       $errors .= "Test produced unexpected output, when compared to the correct output: $test_prog.norm$test_index.stdout\n\n";
-   } 
-
-   $rc1 = system("$diff $test_prog.log1.stdout $test_prog.log2.stdout 1>/dev/null 2>/dev/null") / 256;
-   
-   if($rc1 != 0)
-   {
-      $errors .= "Test produced unexpected output, see $test_prog.log2.stdout\n\n";
-   }
-
-   if($errors eq "")
-   {
-      ok('success', 'success');
+  if( -e "$test_prog.log2.stdout" || -e "$test_prog.log1.stdout")
+  {
+     unlink("$test_prog.log2.stdout");
+     unlink("$test_prog.log1.stdout");
+  }
       
-      if( -e "$test_prog.log2.stdout" || -e "$test_prog.log1.stdout")
-      {
-	 unlink("$test_prog.log2.stdout");
-         unlink("$test_prog.log1.stdout");
-      }
-      
-      if( -e "$test_prog.log2.stderr" || -e "$test_prog.log1.stderr")
-      {
-	 unlink("$test_prog.log2.stderr");
-         unlink("$test_prog.log1.stderr");
-      } 
-   }
-   else
-   {
-      ok($errors, 'success');
-   }
-
+  if( -e "$test_prog.log2.stderr" || -e "$test_prog.log1.stderr")
+  {
+     unlink("$test_prog.log2.stderr");
+     unlink("$test_prog.log1.stderr");
+  }
 }
 
 sub sig_handler
@@ -92,11 +70,11 @@ $SIG{'QUIT'} = 'sig_handler';
 $SIG{'KILL'} = 'sig_handler';
 
 
-push(@tests, "basic_func(1, \"-path 10 -rest POLICYLANGUAGE POLICY\");");
-push(@tests, "basic_func(2, \"-path 10\");");
-push(@tests, "basic_func(3, \"-path 0 -rest POLICYLANGUAGE POLICY\");");
-push(@tests, "basic_func(4, \"-rest POLICYLANGUAGE POLICY\");");
-push(@tests, "basic_func(5, \"-out test_pci5.der\");");
+push(@tests, "basic_func(1, \"-path 10 -rest POLICYLANGUAGE POLICY\", \"path10-policy\");");
+push(@tests, "basic_func(2, \"-path 10\", \"path10\");");
+push(@tests, "basic_func(3, \"-path 0 -rest POLICYLANGUAGE POLICY\", \"path0-policy\");");
+push(@tests, "basic_func(4, \"-rest POLICYLANGUAGE POLICY\", \"policy\");");
+push(@tests, "basic_func(5, \"-out test_pci5.der\", \"default\");");
 
 
 # Now that the tests are defined, set up the Test to deal with them.
