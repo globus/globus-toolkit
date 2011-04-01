@@ -15,33 +15,38 @@
 # limitations under the License.
 #
 
-@GLOBUS_PERL_INITIALIZER@
-
 require 5.005;
 
 use warnings;
 use strict;
-use Test::Harness;
+use TAP::Harness::JUnit;
 use vars qw(@tests);
-use Globus::Testing::Utilities;
 
-Globus::Testing::Utilities::testcred_setup
-    || die "Unable to set up test credentials\n";
-
-@tests = qw(gssapi-anonymous-test.pl
+if (system("grid-proxy-info -exists") != 0)
+{
+    print STDERR "Unable to run tests without a proxy\n";
+    exit(1);
+}
+@tests = qw(
+            gssapi-acquire-test.pl
+            gssapi-anonymous-test.pl
+            gssapi-context-test.pl 
+            gssapi-delegation-test.pl
+            gssapi-expimp-test.pl
+            gssapi-inquire-sec-ctx-by-oid-test.pl
+            gssapi-limited-delegation-test.pl
+            gssapi-delegation-compat-test.pl
             compare-name-test.pl
             compare-name-test-rfc2818.pl
             compare-name-test-gt2.pl
             duplicate-name-test.pl
             indicate-mechs-test.pl
             inquire-names-for-mech-test.pl
-            gssapi-delegation-test.pl
-            gssapi-limited-delegation-test.pl
-            gssapi-delegation-compat-test.pl
-            gssapi-acquire-test.pl
-            gssapi-context-test.pl gssapi-expimp-test.pl gssapi-inquire-sec-ctx-by-oid-test.pl
             gssapi-import-name.pl
             release-name-test.pl
            );
 
-runtests(@tests);
+my $harness = TAP::Harness::JUnit->new({
+        merge => 1,
+        xmlfile => 'globus-gssapi-gsi-test.xml' });
+$harness->runtests(@tests);

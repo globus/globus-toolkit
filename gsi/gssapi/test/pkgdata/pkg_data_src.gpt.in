@@ -21,11 +21,6 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_openssl_module">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -52,11 +47,6 @@
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">

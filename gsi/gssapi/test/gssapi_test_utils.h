@@ -80,7 +80,14 @@ globus_gsi_gssapi_test_print_result(
 
 
 typedef int (*test_case)(void);
+typedef struct
+{
+    const char * name;
+    test_case    func;
+}
+test_case_t;
 
+#define TEST_CASE(x) { #x, x }
 #define SIZEOF_ARRAY(a) (sizeof(a) / sizeof(a[0]))
 
 /* Stolen from oid_functions.c */

@@ -26,7 +26,7 @@ struct  sockaddr_un {
    char    sun_path[108];          /* path name (gag) */
    };
 #define pid_t int
-#define fork() NULL
+#define fork() -1
 #endif
 
 struct context_arg
@@ -53,6 +53,8 @@ main()
     struct sockaddr_un *                address;
     struct context_arg *                arg = NULL;
     pid_t                               pid;
+    int                                 childrc;
+    int                                 rc = EXIT_SUCCESS;
 
     /* ToDo: Make this run on windows */
 #   ifdef WIN32
@@ -105,7 +107,7 @@ main()
 
         client_func(arg);
     }
-    else
+    else if (pid > 0)
     {
         accept_fd = accept(listen_fd,NULL,0);
         
@@ -121,6 +123,30 @@ main()
 	arg->credential = credential;
 
         server_func(arg);
+
+
+        if (waitpid(pid, &childrc, 0) < 0)
+        {
+            int save_errno = errno;
+            fprintf(stderr, "[%d] Error determining process exit status: %s\n",
+                    save_errno,
+                    strerror(save_errno));
+            rc = EXIT_FAILURE;
+        } else if (!WIFEXITED(childrc))
+        {
+            fprintf(stderr, "Child process died\n");
+            rc = EXIT_FAILURE;
+        }
+        else if (WEXITSTATUS(childrc) != EXIT_SUCCESS)
+        {
+            fprintf(stderr, "Child process exited with exit status %d\n",
+                    (int) WEXITSTATUS(childrc));
+            rc = EXIT_FAILURE;
+        }
+    }
+    else
+    {
+        rc = EXIT_FAILURE;
     }
 
     /* close the listener */
@@ -139,7 +165,7 @@ main()
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 
-    exit(0);
+    exit(rc);
 }
 
 

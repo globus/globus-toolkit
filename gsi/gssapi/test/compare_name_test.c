@@ -46,6 +46,7 @@ static globus_bool_t                    gss_l_x509_support = GLOBUS_FALSE;
 
 typedef struct
 {
+    char *                              test_name;
     gss_l_test_name_type_t              name_type1;
     char *                              name_token1;
     gss_l_test_name_type_t              name_type2;
@@ -431,6 +432,8 @@ globus_l_gss_read_test_cases(char * filename)
                     name_type2, name_token2,
                     expectation);
 
+            test_case->test_name = strdup(line);
+
             compare_l_parse_name_type(
                     name_type1, name_token1,
                     &test_case->name_type1, &test_case->name_token1);
@@ -469,6 +472,7 @@ globus_l_gss_free_test_cases()
     while (!globus_list_empty(test_cases))
     {
         test_case = globus_list_first(test_cases);
+        free(test_case->test_name);
         name1 = test_case->name1;
         name2 = test_case->name2;
 
@@ -600,12 +604,12 @@ int main(int argc, char * argv[])
         c++;
         if (rc == 0)
         {
-            printf("ok\n");
+            printf("ok %s\n", test_case->test_name);
         }
         else
         {
             failed++;
-            printf("not ok %d\n", c);
+            printf("not ok %d %s\n", c, test_case->test_name);
         }
         fflush(stdout);
     }

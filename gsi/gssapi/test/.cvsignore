@@ -19,3 +19,4 @@ version.h
 *.lo
 *.la
 .libs
+VALGRIND-*

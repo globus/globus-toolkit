@@ -151,11 +151,11 @@ main()
         GLOBUS_GSI_GSSAPI_MODULE,
         NULL
     }, *failed_module = NULL;
-    test_case                           tests[] =
+    test_case_t                         tests[] =
     {
-        bad_param_test,
-        unsupported_mech_test,
-        name_types_test
+        TEST_CASE(bad_param_test),
+        TEST_CASE(unsupported_mech_test),
+        TEST_CASE(name_types_test)
     };
     int                                 i, failed = 0;
 
@@ -170,17 +170,15 @@ main()
 
     for (i = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = (*(tests[i]))();
+        rc = (*(tests[i].func))();
 
         if (rc != 0)
         {
             failed++;
         }
-        printf("%s\n", rc == 0 ? "ok" : "not ok");
+        printf("%s %s\n", rc == 0 ? "ok" : "not ok", tests[i].name);
     }
 
     globus_module_deactivate_all();
     exit(failed);
 }
-
-

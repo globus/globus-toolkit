@@ -35,7 +35,6 @@ int main()
     gss_buffer_desc                     send_tok;
     gss_buffer_desc                     recv_tok;
     gss_buffer_desc *                   token_ptr;
-    gss_buffer_desc                     output_name;
     gss_OID                             mech_type;
     gss_name_t                          target_name;
     gss_name_t                          source_name;
@@ -46,6 +45,9 @@ int main()
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       cred_handle;
     char *                              error_str;
+    int                                 rc = EXIT_SUCCESS;
+
+    printf("1..1\n");
 
     /* Initialize variables */
     
@@ -84,9 +86,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     /* get the subject name */
@@ -105,9 +108,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     /* set up the first security context */
@@ -133,9 +137,10 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     while(1)
@@ -155,9 +160,8 @@ int main()
                                                &mech_type,
                                                &recv_tok,
                                                &ret_flags,
-                                               /* ignore time_rec */
                                                NULL, 
-                                               GSS_C_NO_CREDENTIAL);
+                                               NULL);
 
         if(accept_maj_stat != GSS_S_COMPLETE &&
            accept_maj_stat != GSS_S_CONTINUE_NEEDED)
@@ -167,9 +171,10 @@ int main()
                                                  accept_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
         {
@@ -205,38 +210,12 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
     }
-
-    printf("%s:%d: Successfully established anonymous security context\n",
-           __FILE__,
-           __LINE__);
-
-
-    maj_stat = gss_display_name(&min_stat,
-                                source_name,
-                                (gss_buffer_t) &output_name,
-                                NULL);
-
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    printf("%s:%d: Received subject name: %s\n",
-           __FILE__,
-           __LINE__,
-           (char*) output_name.value);
 
     maj_stat = gss_delete_sec_context(&min_stat,
                                       &init_context,
@@ -248,9 +227,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     maj_stat = gss_delete_sec_context(&min_stat,
@@ -263,9 +243,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     maj_stat = gss_release_name(&min_stat,
@@ -277,9 +258,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     maj_stat = gss_release_cred(&min_stat,
@@ -291,37 +273,23 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
-    maj_stat = gss_release_buffer(&min_stat,
-                                &output_name);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    
-
+fail:
+    printf("%s gssapi_anonymous_test\n", rc == EXIT_SUCCESS ? "ok" : "no ok");
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
 
-    exit(0);
+    exit(rc);
 }
 
 void globus_print_error(
     globus_result_t                     error_result)
 {
     globus_object_t *                   error_obj = NULL;
-    globus_object_t *                   base_error_obj = NULL;
     char *                              error_string = NULL;
     
     error_obj = globus_error_get(error_result);

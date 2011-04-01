@@ -413,14 +413,14 @@ int main()
         NULL
     }, *failed_module = NULL;
 
-    test_case                           tests[] =
+    test_case_t                         tests[] =
     {
-        import_bad_params,
-        import_username,
-        import_anonymous,
-        import_hostbase_service,
-        import_host_ip,
-        import_x509
+        TEST_CASE(import_bad_params),
+        TEST_CASE(import_username),
+        TEST_CASE(import_anonymous),
+        TEST_CASE(import_hostbase_service),
+        TEST_CASE(import_host_ip),
+        TEST_CASE(import_x509)
     };
 
     rc = globus_module_activate_array(modules, &failed_module);
@@ -433,13 +433,13 @@ int main()
 
     for (i = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = (*(tests[i]))();
+        rc = (*(tests[i].func))();
 
         if (rc != 0)
         {
             failed++;
         }
-        printf("%s\n", rc == 0 ? "ok" : "not ok");
+        printf("%s %s\n", rc == 0 ? "ok" : "not ok", tests[i].name);
     }
 
     return 0;

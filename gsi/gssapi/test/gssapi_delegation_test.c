@@ -19,9 +19,6 @@
 #include "globus_gss_assist.h"
 #include "gssapi_openssl.h"
 
-int verify_cred(
-    gss_cred_id_t                       credential);
-
 void globus_print_error(
     globus_result_t                     error_result);
 
@@ -47,7 +44,9 @@ int main()
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
     char *                              error_str;
+    int                                 rc = EXIT_SUCCESS;
 
+    printf("1..1\n");
     /* Initialize variables */
     
     token_ptr = GSS_C_NO_BUFFER;
@@ -80,9 +79,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     
@@ -102,9 +102,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
 
@@ -132,9 +133,10 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     while(1)
@@ -163,9 +165,10 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
         {
@@ -196,16 +199,12 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
     }
-
-    printf("%s:%d: Successfully established initial security context\n",
-           __FILE__,
-           __LINE__);
-
 
     /* delegate our credential over the initial security context and
      * insert a restriction extension into the delegated credential.
@@ -231,9 +230,10 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     while(1)
@@ -258,9 +258,10 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
         {
@@ -287,16 +288,13 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
     }
     
-    printf("%s:%d: Successfully delegated credential\n",
-           __FILE__,
-           __LINE__);
-
     /* export and import the delegated credential */
     /* this can be done both to a buffer and to a file */
     /* New in GT 2.0 */
@@ -314,9 +312,10 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     /* Check delegated proxy type--should be RFC-compliant */
@@ -331,10 +330,11 @@ int main()
 
         if (result != GLOBUS_SUCCESS)
         {
-            printf("\nLINE %d ERROR: \%s\n\n",
+            fprintf(stderr, "\nLINE %d ERROR: \%s\n\n",
                    __LINE__,
                    globus_error_print_friendly(globus_error_peek(result)));
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
 
         b = BIO_new(BIO_s_mem());
@@ -348,22 +348,21 @@ int main()
         result = globus_gsi_cred_get_cert_type(cred_handle, &type);
         if (result != GLOBUS_SUCCESS)
         {
-            printf("\nLINE %d ERROR: \%s\n\n",
+            fprintf(stderr, "\nLINE %d ERROR: \%s\n\n",
                    __LINE__,
                    globus_error_print_friendly(globus_error_peek(result)));
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
         if (type != GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY)
         {
-            printf("\nLINE %d ERROR: Expected RFC Impersonation proxy, got %d\n",
+            fprintf(stderr, "\nLINE %d ERROR: Expected RFC Impersonation proxy, got %d\n",
                     __LINE__,
                     (int) type);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
 
-        printf("%s:%d: Successfully got expected RFC proxy type\n",
-               __FILE__,
-               __LINE__);
         globus_gsi_cred_handle_destroy(cred_handle);
     }
 
@@ -384,9 +383,10 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
     maj_stat = gss_release_buffer(&min_stat, &send_tok);
@@ -397,14 +397,11 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
-
-    printf("%s:%d: Successfully exported/imported the delegated credential\n",
-           __FILE__,
-           __LINE__);
 
     /* set up another security context using the delegated credential */
     init_maj_stat = gss_init_sec_context(&min_stat,
@@ -430,9 +427,10 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         globus_print_error((globus_result_t) min_stat);
-        exit(1);
+        rc = EXIT_FAILURE;
+        goto fail;
     }
 
 
@@ -460,9 +458,10 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
         {
@@ -492,9 +491,10 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            fprintf(stderr, "\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             globus_print_error((globus_result_t) min_stat);
-            exit(1);
+            rc = EXIT_FAILURE;
+            goto fail;
         }
     }
 
@@ -502,83 +502,13 @@ int main()
     maj_stat = gss_release_name(&min_stat, &target_name);
     maj_stat = gss_release_cred(&min_stat, &cred_handle);
 
-    printf("%s:%d: Successfully established security context with delegated credential\n",
-           __FILE__,
-           __LINE__);
-
+fail:
+    printf("%s gssapi_delegation_test\n",
+            (rc == EXIT_SUCCESS) ? "ok" : "not ok");
     globus_module_deactivate_all();
 
-    exit(0);
+    exit(rc);
 }
-
-
-
-int verify_cred(
-    gss_cred_id_t                       credential)
-{
-    gss_cred_id_desc *                  cred_handle;
-    X509 *                              cert;
-    X509 *                              previous_cert;
-    STACK_OF(X509) *                    cert_chain;
-    int                                 cert_count;
-    char *                              error_str;
-    globus_object_t *                   error_obj;
-    globus_result_t                     result;
-
-    cert_count = 1;
-    cred_handle = (gss_cred_id_desc *) credential;
-
-    result = globus_gsi_cred_get_cert_chain(
-        cred_handle->cred_handle,
-        &cert_chain);
-    if(result != GLOBUS_SUCCESS)
-    {
-        error_obj = globus_error_get(result);
-        error_str = globus_error_print_chain(error_obj);
-        fprintf(stderr, error_str);
-        globus_libc_free(error_str);
-        globus_object_free(error_obj);
-        exit(1);
-    }        
-    
-    if(cert_chain)
-    {
-        cert_count += sk_X509_num(cert_chain);
-    }
-
-    result = globus_gsi_cred_get_cert(cred_handle->cred_handle,
-                                      &cert);
-    if(result != GLOBUS_SUCCESS)
-    {
-        error_obj = globus_error_get(result);
-        error_str = globus_error_print_chain(error_obj);
-        fprintf(stderr, error_str);
-        globus_libc_free(error_str);
-        globus_object_free(error_obj);
-        exit(1);
-    }
-
-    previous_cert=NULL;
-    cert_count--;
-
-    do
-    {
-        if(previous_cert != NULL)
-        {
-            if(!X509_verify(previous_cert, X509_get_pubkey(cert)))
-            {
-                return 0;
-            }
-        }
-
-        previous_cert = cert;
-
-    } while(cert_count-- &&
-            (cert = sk_X509_value(cert_chain, cert_count)));
-
-    return 1;
-}
-
 
 void globus_print_error(
     globus_result_t                     error_result)

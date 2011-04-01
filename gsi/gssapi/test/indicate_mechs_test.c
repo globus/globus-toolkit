@@ -105,10 +105,10 @@ int main()
         NULL
     }, *failed_module = NULL;
 
-    test_case                           tests[] =
+    test_case_t                         tests[] =
     {
-        indicate_mechs_bad_params_test,
-        indicate_mechs_test
+        TEST_CASE(indicate_mechs_bad_params_test),
+        TEST_CASE(indicate_mechs_test)
     };
 
     rc = globus_module_activate_array(modules, &failed_module);
@@ -121,13 +121,13 @@ int main()
 
     for (i = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = (*(tests[i]))();
+        rc = (*(tests[i].func))();
 
         if (rc != 0)
         {
             failed++;
         }
-        printf("%s\n", rc == 0 ? "ok" : "not ok");
+        printf("%s %s\n", rc == 0 ? "ok" : "not ok", tests[i].name);
     }
 
     return 0;

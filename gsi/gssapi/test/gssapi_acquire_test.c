@@ -24,6 +24,9 @@ int main()
     OM_uint32                           major_status;
     gss_cred_id_t                       cred;
     char *                              error_str;
+    int                                 rc = EXIT_SUCCESS;
+
+    printf("1..1\n");
 
     globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
@@ -45,10 +48,10 @@ int main()
                                              major_status,
                                              minor_status,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         free(error_str);
-        globus_module_deactivate_all();
-        return 1;
+        rc = EXIT_FAILURE;
+        goto fail;
     }
     
     major_status = gss_release_cred(
@@ -62,13 +65,16 @@ int main()
                                              major_status,
                                              minor_status,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
+        fprintf(stderr, "\nLINE %d ERROR: %s\n", __LINE__, error_str);
         free(error_str);
-        globus_module_deactivate_all();
-        return 1;
+        rc = EXIT_FAILURE;
+        goto fail;
     }
     
+fail:
+    printf("%s gssapi_acquire_test\n",
+            (rc == EXIT_SUCCESS) ? "ok" : "not ok");
     globus_module_deactivate_all();
     
-    return 0;
+    return rc;
 }

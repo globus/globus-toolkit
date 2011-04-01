@@ -10,6 +10,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 Scripts= \
 	TESTS.pl \
+	TESTS-junit.pl \
         compare-name-test.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
@@ -36,15 +37,7 @@ Data= \
         test.example.org.pem \
         star.example.org.pem \
         192.168.1.1.example.org.pem \
-        192.168.1.1-2.example.org.pem \
-	gssapi-anonymous-test.stdout \
-	gssapi-delegation-test.stdout \
-	gssapi-limited-delegation-test.stdout \
-	gssapi-delegation-compat-test.stdout \
-	gssapi-anonymous-test.stderr \
-	gssapi-delegation-test.stderr \
-	gssapi-limited-delegation-test.stderr \
-	gssapi-delegation-compat-test.stderr
+        192.168.1.1-2.example.org.pem
 
 test_DATA = $(Data)
 
@@ -52,6 +45,7 @@ test_SCRIPTS = $(Scripts)
 
 EXTRA_DIST = $(Data) \
 	TESTS.pl.in \
+	TESTS-junit.pl \
         compare-name-test.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
@@ -150,6 +144,15 @@ duplicate_name_test_SOURCES = duplicate_name_test.c \
 indicate_mechs_test_SOURCES = indicate_mechs_test.c \
                                 gssapi_test_utils.c \
                                 gssapi_test_utils.h
+
+test:
+	chmod a+x $(Scripts)
+	perl ./TESTS.pl
+
+junit:
+	chmod a+x $(Scripts)
+	perl ./TESTS-junit.pl
+
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
