@@ -21,7 +21,6 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
         globus-io-authorization-test.pl
         globus-io-tcp-test.pl
-        run-io-tests.pl
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile

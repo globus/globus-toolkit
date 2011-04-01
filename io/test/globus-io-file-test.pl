@@ -26,44 +26,31 @@
 =cut
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
+use File::Compare;
 
-my $test_prog = './globus_io_file_test';
-my $diff = 'diff';
+my $test_prog = 'globus_io_file_test';
 my @tests;
-my @todo;
 
 
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
+    my $ok=0;
     
-    $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+    $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
 
     if($rc != 0)
     {
         $errors .= "Test exited with $rc. ";
     }
 
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-    
-    $rc = system("$diff $test_prog.log.stdout /etc/group") / 256;
-    
-    if($rc != 0)
-    {
-        $errors .= "Test produced unexpected output, see $test_prog.log.stdout";
-    }
+    ok(($rc == 0) && 
+        (File::Compare::compare("$test_prog.log.stdout", "/etc/group") == 0) &&
+        (! -s "$test_prog.stderr") && (($ok=1) ==1),
+        $test_prog);
 
-    if( -s "$test_prog.strderr")
-    {
-        $errors .= "Test produced unexpected output, see $test_prog.log.stderr";
-    }
-    
-    if($errors eq "")
+    if($ok == 1)
     {
         if( -e "$test_prog.log.stdout" )
         {
@@ -74,11 +61,6 @@ sub basic_func
         {
             unlink("$test_prog.log.stderr");
         } 
-        ok('success', 'success');
-    }
-    else
-    {
-        ok($errors, 'success');
     }
 }
 
@@ -100,11 +82,8 @@ $SIG{'QUIT'} = 'sig_handler';
 $SIG{'KILL'} = 'sig_handler';
 
 push(@tests, "basic_func();");
+plan tests => scalar(@tests);
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
 foreach (@tests)
 {
     eval "&$_";

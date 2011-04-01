@@ -24,16 +24,12 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 
 my @tests;
-my @todo;
 
-my $test_prog = './globus_io_authorization_test';
-
-my $diff = 'diff';
+my $test_prog = 'globus_io_authorization_test';
 
 sub basic_func
 {
@@ -41,38 +37,27 @@ sub basic_func
    my $args = shift;
    my $result;
    my $expect_failure = shift;
+   my $test_name = shift;
    
-   my $command = "$test_prog $args";
-   #print "Running: $command\n";
-   chomp($result = `$test_prog $args`);
+   chomp($result = `./$test_prog $args`);
    $rc = $?;
 
-   if($rc != 0 && !$expect_failure)
-   {
-      $errors .= "Test exited with $rc. ";
-   }
-
-   if(!$expect_failure)
-   {
-       ok($result, 'ok');
-   }
-   else
-   {
-       ok($result, "an authorization operation failed");
-   }
+   ok((($rc == 0) && !$expect_failure) ||
+      (($rc != 0) && $expect_failure),
+      $test_name);
 }
 
 my $identity = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
 chomp($identity);
 
-push(@tests, "basic_func('self',0);");
-push(@tests, "basic_func('identity \"$identity\"',0)");
-push(@tests, "basic_func('identity \"/CN=bad DN\"',1)");
-push(@tests, "basic_func('callback',0);");
-push(@tests, "basic_func('-callback',1);");
+push(@tests, "basic_func('self', 0, '$test_prog-self');");
+push(@tests, "basic_func('identity \"$identity\"',0, '$test_prog-identity')");
+push(@tests, "basic_func('identity \"/CN=bad DN\"',1, '$test_prog-bad-dn')");
+push(@tests, "basic_func('callback',0,'$test_prog-allowed-callback');");
+push(@tests, "basic_func('-callback',1, '$test_prog-disallowed-callback');");
 
 # Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
+plan tests => scalar(@tests);
 
 # And run them all.
 foreach (@tests)

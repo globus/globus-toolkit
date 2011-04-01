@@ -62,10 +62,19 @@ globus_io_authorization_test_LDADD = $(GPT_PGM_LINKS)
 
 EXTRA_DIST = \
 	TESTS.pl \
+	TESTS-junit.pl \
 	globus-io-authorization-test.pl.in \
         globus-io-file-test.pl \
         globus-io-tcp-test.pl.in \
         run-io-tests.pl.in
+
+test:
+	chmod a+x $(Scripts)
+	perl ./TESTS.pl
+
+junit:
+	chmod a+x $(Scripts)
+	perl ./TESTS-junit.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

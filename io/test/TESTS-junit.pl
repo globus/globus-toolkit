@@ -20,7 +20,7 @@ require 5.005;
 
 use warnings;
 use strict;
-use Test::Harness;
+use Tap::Harness::Junit;
 use vars qw(@tests);
 
 @tests = qw( globus-io-file-test.pl
@@ -28,5 +28,7 @@ use vars qw(@tests);
              globus-io-tcp-test.pl
              );
 
-runtests(@tests);
-
+my $harness = TAP::Harness::JUnit->new({
+        merge => 1,
+        xmlfile => 'globus-io-test.xml' });
+$harness->runtests(@tests);
