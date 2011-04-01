@@ -1,16 +1,16 @@
 #! /usr/bin/perl
 
-@GLOBUS_PERL_INITIALIZER@
 
 use strict;
 use warnings;
-use Test::Harness;
+use TAP::Harness::JUnit;
 require 5.005;
 use vars qw(@tests);
-use Globus::Testing::Utilities;
 
-Globus::Testing::Utilities::testcred_setup() ||
-    die "Unable to set up test certs"
+if (system("grid-proxy-info -exists") != 0)
+{
+    print "Cannot run tests without a GSI proxy\n";
+}
 
 @tests = qw(gss-assist-impexp-test.pl
             gss-assist-auth-test.pl
@@ -19,4 +19,8 @@ Globus::Testing::Utilities::testcred_setup() ||
             gridmap-tools-test.pl
             );
 
-runtests(@tests);
+my $harness = TAP::Harness::JUnit->new({
+        merge => 1,
+        xmlfile => 'globus-gss-assist-test.xml' });
+$harness->runtests(@tests);
+

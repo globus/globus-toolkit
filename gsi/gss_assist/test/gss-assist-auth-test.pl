@@ -1,18 +1,14 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 use strict;
 use POSIX;
 use POSIX "sys_wait_h";
-use Test;
-use Globus::Testing::Utilities;
+use Test::More;
 
 my @tests;
-my @todo;
 
 my $server_prog = './gss-assist-auth-accept';
 my $client_prog = './gss-assist-auth-init';
-
-Globus::Testing::Utilities::testcred_setup() || die "Unable to set up test certs";
 
 my ($valgrind_client, $valgrind_server) = ('', '');
 if (exists $ENV{VALGRIND})
@@ -31,6 +27,7 @@ sub basic_func
     my ($errors,$rc) = ("",0);
     my $expect_failure = shift;
     my $sec_env = shift;
+    my $test_name = shift;
     my $result;
     my $server_pid;
     my $client_pid;
@@ -38,11 +35,11 @@ sub basic_func
     
    if($sec_env == 1)
    {
-       $ENV{X509_CERT_DIR} = "";
+       $ENV{X509_CERT_DIR} = "/bogus";
    }
    elsif($sec_env == 2)
    {
-       $ENV{X509_USER_PROXY} = "";       
+       $ENV{X509_USER_PROXY} = "/bogus";
    }
 
    $server_pid = open(SERVER, "$valgrind_server $server_prog |");
@@ -90,22 +87,15 @@ sub basic_func
    close(CLIENT);
    close(SERVER);
 
-   if($errors eq "" || $expect_failure)
-   {
-       ok('success', 'success');
-   }
-   else
-   {
-       ok($errors, 'success');
-   }
+   ok(($errors eq "" && !$expect_failure) || $expect_failure, $test_name)
 }
 
-push(@tests, "basic_func(0,0);");
-push(@tests, "basic_func(1,1);");
-push(@tests, "basic_func(1,2);");
+push(@tests, "basic_func(0,0, \"auth-with-default-environment\");");
+push(@tests, "basic_func(1,1, \"auth-with-bogus-cert-dir\");");
+push(@tests, "basic_func(1,2, \"auth-with-bogus-proxy\");");
 
 # Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
+plan tests => scalar(@tests);
 
 # And run them all.
 foreach (@tests)

@@ -1,8 +1,7 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 use strict;
-use Test;
-use Globus::Testing::Utilities;
+use Test::More;
 use Globus::Core::Paths;
 
 my @tests;
@@ -13,7 +12,6 @@ my $delete = $Globus::Core::Paths::sbindir . "/grid-mapfile-delete-entry";
 my $check = $Globus::Core::Paths::sbindir . "/grid-mapfile-check-consistency";
 my $userok = "./gridmap-userok";
 
-Globus::Testing::Utilities::testcred_setup() || die "Unable to set up test certs";
 
 $ENV{GRIDMAP} = "gridmap.script-test";
 
@@ -45,7 +43,7 @@ sub add_test
             $errors = 1;
         }
     }
-    ok($errors, 0);
+    ok($errors == 0, "add_test");
 }
 
 sub delete_empty_test
@@ -60,7 +58,7 @@ sub delete_empty_test
         print STDERR "Unexpected success deleting \"$dn\" $username from gridmap\n";
         $errors = 1;
     }
-    ok($errors, 0)
+    ok($errors == 0, "delete_empty_test")
 }
 
 sub delete_entry_test
@@ -112,7 +110,7 @@ sub delete_entry_test
         goto END;
     }
 END:
-    ok($errors, 0);
+    ok($errors == 0, "delete_entry_test");
 }
 
 

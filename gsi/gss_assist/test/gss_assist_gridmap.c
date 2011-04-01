@@ -19,22 +19,25 @@
 int main(int argc, char * argv[])
 {
     char *                              local_user;
+    int                                 rc;
+
+    printf("1..3\n");
     
     globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     
-    if(globus_gss_assist_gridmap("/DC=org/DC=doegrids/OU=People/UserID=328453245/EMAIL=john@doe.com/EmailAddress=john@doe.com", &local_user))
-    {
-        exit(-1);
-    }
-    else if(strcmp(local_user, "jdoe"))
-    {
-        exit(-1);
-    }
+    rc = globus_gss_assist_gridmap(
+        "/DC=org/DC=doegrids/OU=People/UserID=328453245/EMAIL=john@doe.com/EmailAddress=john@doe.com", &local_user);
+    printf("%s globus_gss_assist_gridmap\n",  (rc==0) ? "ok" : "not ok");
 
-    if(globus_gss_assist_userok("/DC=org/DC=doegrids/OU=People/UID=328453245/Email=john@doe.com/E=john@doe.com", "john_doe"))
-    {
-        exit(-1);
-    }    
+    printf("%s default_user_match\n",
+        (strcmp(local_user?local_user:"", "jdoe") == 0) ? "ok" : "not ok");
+
+    
+    rc = globus_gss_assist_userok(
+            "/DC=org/DC=doegrids/OU=People/UID=328453245/Email=john@doe.com/E=john@doe.com",
+            "john_doe");
+    printf("%s userok\n", (rc == 0) ? "ok" : "not ok");
     globus_module_deactivate_all();
-    return 0;
+
+    return rc;
 }

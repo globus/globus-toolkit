@@ -20,6 +20,14 @@
 #define SIZEOF_ARRAY(a) (sizeof(a) / sizeof(a[0]))
 
 typedef int (*test_case)(void);
+typedef struct
+{
+    char * name;
+    test_case func;
+}
+test_case_t;
+
+#define TEST_CASE(x) {#x, x}
 
 static gss_ctx_id_t                     init_ctx;
 static gss_ctx_id_t                     accept_ctx;
@@ -687,18 +695,18 @@ setenv_failed:
 
 int main(int argc, char * argv[])
 {
-    test_case                           tests[] =
+    test_case_t                         tests[] =
     {
-        gridmap_bad_params_test,
-        userok_bad_params_test,
-        map_local_user_bad_params_test,
-        lookup_all_globusid_bad_params_test,
-        map_and_authorize_bad_params_test,
-        gridmap_test,
-        userok_test,
-        map_local_user_test,
-        lookup_all_globusid_test,
-        long_line_test
+        TEST_CASE(gridmap_bad_params_test),
+        TEST_CASE(userok_bad_params_test),
+        TEST_CASE(map_local_user_bad_params_test),
+        TEST_CASE(lookup_all_globusid_bad_params_test),
+        TEST_CASE(map_and_authorize_bad_params_test),
+        TEST_CASE(gridmap_test),
+        TEST_CASE(userok_test),
+        TEST_CASE(map_local_user_test),
+        TEST_CASE(lookup_all_globusid_test),
+        TEST_CASE(long_line_test)
     };
     int                                 i;
     int                                 failed = 0;
@@ -720,17 +728,11 @@ int main(int argc, char * argv[])
 
     for (i = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = (tests[i])();
+        rc = (tests[i].func)();
 
-        if (rc == 0)
-        {
-            printf("ok\n");
-        }
-        else
-        {
-            printf("not ok %d\n", i+1);
-            failed++;
-        }
+        printf("%s %s\n", (rc==0) ? "ok" : "not ok", tests[i].name);
+
+        failed += (rc != 0);
     }
 
     return failed;
