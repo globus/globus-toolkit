@@ -1683,7 +1683,7 @@ globus_i_gsi_gss_SSL_write_bio(
     BIO_write(bp, (char *) ssl_handle->s3->client_random, SSL3_RANDOM_SIZE);
     BIO_write(bp, (char *) ssl_handle->s3->server_random, SSL3_RANDOM_SIZE);
     
-    ssl3_setup_key_block(ssl_handle);
+    ssl_handle->method->ssl3_enc->setup_key_block(ssl_handle);
     
     /* DEBUG BLOCK */
     {

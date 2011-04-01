@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	8.2
+Version:	8.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
