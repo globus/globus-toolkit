@@ -18,7 +18,6 @@
 
 
 use strict;
-use POSIX;
 use Test;
 
  require "test-common.pl";
@@ -30,7 +29,6 @@ if(@ARGV == 1)
 }
 
 my @tests;
-my @todo;
 my $test_exec="./framework_test";
 
 my $inline_finish;
@@ -96,7 +94,7 @@ if($type == 1)
 else
 {
     my $cnt=0;
-    plan tests => scalar(@tests), todo => \@todo;
+    plan tests => scalar(@tests);
     foreach(@tests)
     {
         my $test_str="$test_name.$cnt";

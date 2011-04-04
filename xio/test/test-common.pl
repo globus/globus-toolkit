@@ -18,8 +18,7 @@
 
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 
 sub run_test
 {
@@ -78,11 +77,8 @@ sub run_test
         unlink($l_core);
     }
 
-    if($errors eq "")
-    {
-        ok('success', 'success');
-    }
-    else
+    ok($errors eq "", $test_str);
+    if ($errors ne '')
     {
         my $filename="$output_dir/$test_str.fail";
         open(FAIL, ">$filename");
@@ -98,6 +94,6 @@ sub run_test
         close(FAIL);
 
         $errors .= "\n# Test failed\n# $cmd\n# " . $errors;
-        ok($errors, 'success');
     }
-}1;
+}
+1;

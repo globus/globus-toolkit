@@ -19,8 +19,7 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 
 my $type = 0;
@@ -43,8 +42,16 @@ plan tests => scalar(@arg_sets);
 foreach (@arg_sets)
 {
     my $result;
+    my $case=$_;
+    my $clientorserver = $case;
+    my $which = $case;
 
-    $result = system("$test_exec $_");
+    $clientorserver =~ m/(client|server)/;
+    $clientorserver = $1;
+    $which =~ m/-(a|r)/;
+    $which = $1;
 
-    ok($result, 0);
+    $result = system("$test_exec $case");
+
+    ok($result == 0, "http_timeout_${clientorserver}_${which}");
 }

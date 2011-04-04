@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 # 
 # Copyright 1999-2006 University of Chicago
@@ -19,8 +19,7 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 
 my $type = 0;
@@ -30,7 +29,6 @@ if(@ARGV == 1)
 }
 
 my @tests;
-my @todo;
 my $test_exec="./http_pingpong_test";
 my $data_dir="$Globus::Core::Paths::datadir/globus_xio_test";
 
@@ -47,12 +45,12 @@ if($type == 1)
 }
 else
 {
-    plan tests => scalar(@tests), todo => \@todo;
+    plan tests => scalar(@tests);
     foreach(@tests)
     {
         my $result;
         chomp ($result = `$test_exec $_->[1]  | $test_exec $_->[0]`);
 
-        ok($result, 'Success');
+        ok($result eq 'Success', 'http_pingpong_test');
     }
 }

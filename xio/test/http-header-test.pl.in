@@ -19,8 +19,7 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 
 my $type = 0;
@@ -33,6 +32,11 @@ my @tests;
 my @todo;
 my $test_exec="./http_header_test";
 my $data_dir="$Globus::Core::Paths::datadir/globus_xio_test";
+
+if (! -d $data_dir && -r 'headers')
+{
+    $data_dir = '.';
+}
 
 push(@tests, "$data_dir/headers");
 push(@tests, "$data_dir/long-headers");
@@ -52,8 +56,10 @@ else
     foreach(@tests)
     {
         my $result;
+        my $test_name = $_;
         chomp ($result = `$test_exec -s -f "$_" | $test_exec -c -f "$_"`);
+        $test_name =~ s|.*/||;
 
-        ok($result, 'Success');
+        ok($result eq 'Success', $test_name);
     }
 }

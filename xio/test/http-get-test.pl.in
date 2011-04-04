@@ -20,8 +20,7 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 
 my $type = 0;
@@ -35,9 +34,16 @@ my @todo;
 my $test_exec="./http_get_test";
 my $data_dir="$Globus::Core::Paths::datadir/globus_xio_test";
 
-my @test_files = ("$data_dir/headers",
-             "$data_dir/long-headers",
-             "$data_dir/large-file");
+my @test_files;
+
+if (!-d "$data_dir" && -r 'headers')
+{
+    $data_dir = ".";
+}
+@test_files = ("$data_dir/headers",
+         "$data_dir/long-headers",
+         "$data_dir/large-file");
+
 my @versions = ('', 'HTTP/1.0', 'HTTP/1.1');
 my @buffers = (0, 256, 512, 1024, 1024*1024);
 
@@ -65,7 +71,12 @@ for my $file (@test_files) {
                         $server_args .= "-b $server_buffer ";
                     }
 
-                    push (@tests, [$client_args, $server_args]);
+                    my $name = "get-$file";
+                    $name =~ s|.*/||;
+
+                    my $name .= "Client:$client_version+$client_buffer-Server:$server_version+$server_buffer";
+                    $name =~ s|HTTP/||g;
+                    push (@tests, [$client_args, $server_args, $name]);
                 }
             }
         }
@@ -87,6 +98,6 @@ else
         my $result;
         chomp ($result = `$test_exec $_->[1]  | $test_exec $_->[0]`);
 
-        ok($result, 'Success');
+        ok($result eq 'Success', $_->[2]);
     }
 }

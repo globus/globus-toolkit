@@ -121,5 +121,24 @@ http_throughput_test_LDFLAGS = $(GPT_LDFLAGS)
 handle_create_from_url_test_SOURCES = handle_create_from_url_test.c
 handle_create_from_url_test_LDFLAGS = $(GPT_LDFLAGS)
 
+test: $(Scripts)
+	chmod a+x $(Scripts)
+	$(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la \
+        ./TESTS.pl
+
+junit: $(Scripts)
+	chmod a+x $(Scripts)
+	$(LIBTOOL) --mode=execute -dlopen drivers/libglobus_xio_test_drivers.la \
+        ./TESTS-junit.pl
+
+CLEANFILES = \
+	http-get-test.pl		\
+	http-header-test.pl		\
+	http-post-test.pl		\
+	http-put-test.pl		\
+        http-pingpong-test.pl		\
+	http-timeout-test.pl		\
+	http-throughput-test.pl
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
