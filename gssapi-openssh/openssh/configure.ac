@@ -106,7 +106,11 @@ if test "x$gsi_path" != "xno" ; then
                 AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
 	fi
 
-	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+  if test -z "$LOOK_FOR_FC_GLOBUS_INCLUDE" ; then
+	    GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+  else
+      GLOBUS_INCLUDE="${gsi_path}/include/globus"
+  fi
 	if test ! -d "$GLOBUS_INCLUDE" ; then
 		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
 	fi
