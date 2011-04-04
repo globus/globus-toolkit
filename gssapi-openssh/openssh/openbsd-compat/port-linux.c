@@ -213,7 +213,7 @@ ssh_selinux_setfscreatecon(const char *path)
 
 	if (!ssh_selinux_enabled())
 		return;
-	if (path == NULL)
+	if (path == NULL) {
 		setfscreatecon(NULL);
 		return;
 	}
