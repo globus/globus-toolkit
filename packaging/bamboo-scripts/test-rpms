@@ -57,6 +57,7 @@ sudo rpm -hUv "$repopkg_url"
 ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
         -flavor=gcc64 -skipbundle
 
+first=1
 for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-' || true) )"
@@ -80,6 +81,21 @@ for flavor in gcc64 gcc32; do
 
     # Install the binary RPMs that we will test
     $archcmd sudo yum -y install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
+
+    if [ $first = 1 ]; then
+        X509_USER_CERT="$HOME/.globus/usercert.pem"
+        export X509_USER_CERT
+        first=0
+        sudo grid-ca-create -noint -pass globus
+        sudo grid-default-ca -ca "$(openssl x509 -noout -hash -in /var/globus_simple_ca/cacert.pem)"
+        sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security"
+        grid-cert-request -cn "$(id -un)" -nopw
+        sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus
+        cp /tmp/usercert.pem "$X509_USER_CERT"
+        sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT)" -ln "$(id -un)"
+        sudo service globus-gridftp-server restart 
+        grid-proxy-init -hours 24
+    fi
 
     mkdir -p "$tmppath/$flavor"
     cd "$tmppath/$flavor"
