@@ -19,7 +19,6 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use Test::Harness;
 use Cwd;
 use Getopt::Long;
 use FtpTestLib;
@@ -28,7 +27,6 @@ use Globus::Core::Paths;
 require 5.005;
 use vars qw(@tests);
 
-#$Test::Harness::verbose = 1;
 
 
 @tests = qw(
@@ -59,12 +57,13 @@ if(defined($ENV{FTP_TEST_RANDOMIZE}))
 
 
 my $runserver;
-my $runwuserver;
 my $nogsi;
 my $server_pid;
+my $junit;
+my $harness;
 
 GetOptions( 'runserver' => \$runserver,
-            'runwuserver' => \$runwuserver,
+            'junit' => \$junit,
             'nogsi' => \$nogsi);
 
 if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
@@ -72,6 +71,31 @@ if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
     $nogsi = 1;
     $ENV{FTP_TEST_NO_GSI} = 1;
     print "Not using GSI security.\n";
+}
+
+if ($junit)
+{
+    require 'TAP/Harness/JUnit.pm';
+    TAP::Harness::JUnit->import(':DEFAULT');
+    my $xmlfile;
+    
+    if ($nogsi)
+    {
+        $xmlfile = 'globus-ftp-client-test-nogsi.xml';
+    }
+    else
+    {
+        $xmlfile = 'globus-ftp-client-test-gsi.xml';
+    }
+
+    $harness = TAP::Harness::JUnit->new({
+            merge=>1,
+            xmlfile=> $xmlfile});
+}
+else
+{
+    require 'Test/Harness.pm';
+    Test::Harness->import(':DEFAULT');
 }
 if(defined($runserver) && !defined($ENV{FTP_TEST_SSH_FTP}))
 {
@@ -82,10 +106,6 @@ if(defined($ENV{FTP_TEST_SSH_FTP}))
     $nogsi = 1;
 }
 
-elsif(defined($runwuserver))
-{
-    $server_pid = setup_wuserver();
-}
 
 if(run_command("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2", 0) && !defined($nogsi))
 {
@@ -127,7 +147,14 @@ print "Server appears sane, running tests\n";
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 
-eval runtests(@tests);
+if ($junit)
+{
+    eval $harness->runtests(@tests);
+}
+else
+{
+    runtests(@tests);
+}
 
 $@ && print "$@";
 
@@ -210,58 +237,3 @@ sub setup_server()
 
     return $server_pid;
 }
-sub setup_wuserver()
-{
-    my $server_pid;
-    my $server_prog = "$Globus::Core::Paths::sbindir/in.ftpd";
-    my $server_host = "localhost";
-    my $server_port = 0;
-    my $server_args = "-a -s -p $server_port";
-    my $subject;
-    
-    if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
-    {
-        $ENV{X509_CERT_DIR} = cwd();
-        $ENV{X509_USER_PROXY} = "testcred.pem";
-    }
-
-    system('chmod go-rw testcred.pem');
-     
-    $subject = `$Globus::Core::Paths::bindir/grid-proxy-info -identity`;
-    chomp($subject);
-    
-    $ENV{GRIDMAP}="gridmap";
-
-    if( ! -f $ENV{GRIDMAP} )
-    {
-        if( 0 != system("$Globus::Core::Paths::sbindir/grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
-        {
-   
-            print "Unable to create gridmap file\n";
-            exit 1;
-        }
-    }
-
-    $server_pid = open(SERVER, "$server_prog $server_args |");
-    if(!defined($server_pid))
-    {
-        print "Unable to start server\n";
-        exit 1;
-    }
-
-    select((select(SERVER), $| = 1)[0]);
-    $server_port = <SERVER>;
-    $server_port =~ s/Accepting connections on port (\d+)/\1/;
-    chomp($server_port);
-
-    # sleep a second, some hosts are slow....
-
-    sleep 5;
-    
-    $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
-    $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
-    $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
-
-    return $server_pid;
-}
-

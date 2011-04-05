@@ -28,7 +28,14 @@ use POSIX;
 use Test;
 use FtpTestLib;
 use File::Spec;
-use Globus::URL;
+if (-f "URL.pm")
+{
+    require "URL.pm";
+}
+else
+{
+    require "Globus/URL.pm";
+}
 use Globus::Core::Paths;
 
 my $test_exec = './globus-ftp-client-get-test';

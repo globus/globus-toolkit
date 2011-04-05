@@ -294,6 +294,8 @@ PROT with safe protection
 
 PROT with private protection
 
+=back
+
 =cut
 sub prot_test
 {
@@ -330,8 +332,6 @@ push(@tests, "prot_test('private', 0);");
 
 Do a simple put of /etc/group, enabling perf_plugin
 
-=back
-
 =cut
 sub perf_test
 {
@@ -357,8 +357,6 @@ push(@tests, "perf_test();");
 =head2 I<throughput_test> (Test 94)
 
 Do a simple put of /etc/group, enabling throughput_plugin
-
-=back
 
 =cut
 sub throughput_test
@@ -386,8 +384,6 @@ push(@tests, "throughput_test();");
 
 Do a get of $test_url, triggering server-side faults, and using
 the default restart plugin to cope with them.
-
-=back
 
 =cut
 sub restart_plugin_test

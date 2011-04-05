@@ -27,7 +27,14 @@ use POSIX;
 use Test;
 use FtpTestLib;
 use File::Spec;
-use Globus::URL;
+if (-f 'URL.pm')
+{
+    require 'URL.pm';
+}
+else
+{
+    require 'Globus/URL.pm';
+}
 
 my $test_exec = './globus-ftp-client-caching-get-test';
 my @tests;

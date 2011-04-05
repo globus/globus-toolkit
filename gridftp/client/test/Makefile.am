@@ -9,7 +9,7 @@ globusperldir = $(libdir)/perl/Globus
 globusperl_DATA = URL.pm
 
 Scripts= \
-	TESTS.pl \
+	TESTS.pl TESTS-junit.pl \
 	globus-ftp-client-many-server.pl \
 	FtpTestLib.pm \
 	globus-ftp-client-dir-test.pl \
@@ -46,7 +46,7 @@ Data = \
 test_DATA = $(Data) 
 
 EXTRA_DIST = $(Data) $(globusperl_DATA) \
-	TESTS.pl \
+	TESTS.pl TESTS-junit.pl \
 	globus-ftp-client-many-server.pl.in \
 	FtpTestLib.pm \
 	globus-ftp-client-dir-test.pl \
@@ -258,6 +258,14 @@ globus_ftp_client_plugin_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_read_all_test_SOURCES = globus_ftp_client_partial_read_all_test.c $(LibHeaders)
 globus_ftp_client_partial_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
+
+test: $(Scripts)
+	chmod a+x $(Scripts)
+	perl ./TESTS.pl
+
+junit: $(Scripts)
+	chmod a+x $(Scripts)
+	perl ./TESTS-junit.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
