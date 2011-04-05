@@ -208,6 +208,14 @@ BUNDLE globus-data-management-client
 BUNDLE	globus-data-management-test
         globus_common_test
         globus_openssl_error_test
+	globus_gssapi_gsi_test
+        globus_gss_assist_test
+        globus_proxy_utils_test
+        globus_proxy_ssl_test
+	globus_io_test
+        globus_xio_test
+	globus_ftp_client_test
+
 
 BUNDLE	gram-gridftp-test
 	globus_test
