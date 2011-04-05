@@ -221,7 +221,10 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
                etc.xinetd.myproxy myproxy-passphrase-policy \
                myproxy-certificate-mapapp myproxy-revoke \
                myproxy-accepted-credentials-mapapp \
-               myproxy-cert-checker myproxy-certreq-checker
+               myproxy-cert-checker myproxy-certreq-checker \
+               myproxy.init myproxy.sysconfig \
+               README.Fedora \
+               myproxy.spec
 
 myproxy-admin-addservice: myproxy-admin-adduser
 	$(LN_S) myproxy-admin-adduser myproxy-admin-addservice
