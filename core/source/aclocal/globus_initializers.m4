@@ -83,7 +83,7 @@ BEGIN
     \$libdir = eval_path('$libdir');
     \$sbindir = eval_path('$sbindir');
     \$bindir = eval_path('$bindir');
-    \$incluedir = eval_path('$includedir');
+    \$includedir = eval_path('$includedir');
     \$datarootdir = eval_path('$datarootdir');
     \$datadir = eval_path('$datadir');
     \$perlmoduledir = eval_path('$perlmoduledir');
