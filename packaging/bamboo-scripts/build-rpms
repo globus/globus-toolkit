@@ -87,8 +87,9 @@ packages_to_build=myproxy
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/packaging_tools/configure gpt/check-gpt-prereqs
 packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build | \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
+packages="$(echo "${packages}" | grep -v myproxy; echo myproxy)"
 
-./make-packages.pl -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
+./make-packages.pl -no-updates -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 cd gpt-3.3/packaging_tools
 make dist
 cp gpt-3.3.tar.gz ../../package-output
