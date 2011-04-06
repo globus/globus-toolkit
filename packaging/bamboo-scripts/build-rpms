@@ -77,18 +77,18 @@ cat <<EOF >> $topdir/.rpmmacros
 EOF
 
 # Remove everything prior to building
-pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm
 fi
 
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-simple-ca
-packages=myproxy
+packages_to_build=myproxy
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/packaging_tools/configure gpt/check-gpt-prereqs
-packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages | \
+packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build | \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
 
-./make-packages.pl -a -deps -deporder -bundles=$bundles -packages=$packages -a -flavor=gcc64dbg
+./make-packages.pl -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 cd gpt-3.3/packaging_tools
 make dist
 cp gpt-3.3.tar.gz ../../package-output
@@ -116,7 +116,7 @@ cd $topdir
 mv RPMS RPMS.x86_64
 mkdir RPMS
 
-pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm
 fi
@@ -181,7 +181,7 @@ echo "$allpkgs32" > packages.gcc32
 echo "$allpkgs64" > packages.gcc64
 
 # Remove what we built
-pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-' || true) )"
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm
 fi
