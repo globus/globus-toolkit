@@ -12,6 +12,7 @@
 #define GSISSHDIR "/etc/gsissh"
 #define SSHDIR "/etc/ssh"
 #define VARDIR "/var"
+#define VARRUN "/var/run"
 
 #define STRINIT "init_pathnames() not called!"
 
@@ -65,18 +66,18 @@ compose3(const char str1[], const char str2[], const char str3[])
 void
 init_pathnames()
 {
-    char *gl=NULL, *bindir=NULL, *libexec=NULL, *sshdir=NULL, *vardir=NULL;
+    char *gl=NULL, *bindir=NULL, *libexec=NULL, *sshdir=NULL, *piddir=NULL;
 
     gl = (char *)getenv("GLOBUS_LOCATION");
 
     if (gl) {
         bindir = compose2(gl, BINDIR);
         libexec = compose2(gl, LIBEXEC);
-        vardir = compose2(gl, VARDIR);
+        piddir = compose2(gl, VARDIR);
     } else {
         bindir = compose2(USRDIR, SSHDIR);
         libexec = compose2(USRDIR, LIBEXEC);
-        vardir = strdup(VARDIR);
+        piddir = strdup(VARRUN);
     }
 
     if (gl) {
@@ -103,7 +104,7 @@ init_pathnames()
     _PATH_DH_MODULI		= compose2(sshdir, "/moduli");
     _PATH_DH_PRIMES		= compose2(sshdir, "/primes");
     _PATH_SSH_PROGRAM		= compose2(bindir, "/gsissh");
-    _PATH_SSH_DAEMON_PID_FILE	= compose2(vardir, "/gsisshd.pid");
+    _PATH_SSH_DAEMON_PID_FILE	= compose2(piddir, "/gsisshd.pid");
     _PATH_SSH_SYSTEM_RC		= compose2(sshdir, "/sshrc");
     _PATH_SSH_HOSTS_EQUIV	= compose2(sshdir, "/shosts.equiv");
     _PATH_SSH_KEY_SIGN		= compose2(libexec, "/ssh-keysign");
@@ -115,5 +116,5 @@ init_pathnames()
     if (bindir) free(bindir);
     if (libexec) free(libexec);
     if (sshdir) free(sshdir);
-    if (vardir) free(vardir);
+    if (piddir) free(piddir);
 }

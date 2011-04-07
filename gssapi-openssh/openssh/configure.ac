@@ -32,6 +32,118 @@ AC_DEFUN([OPENSSH_CHECK_CFLAG_COMPILE], [{
 
 AC_CONFIG_HEADER(config.h)
 
+# Handle Globus configuration right away, because the Globus flavor
+# determines our compiler options.
+
+# Check whether the user wants GSI (Globus) support
+gsi_path="no"
+AC_ARG_WITH(gsi,
+	[  --with-gsi              Enable Globus GSI authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus,
+	[  --with-globus           Enable Globus GSI authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus-static,
+	[  --with-globus-static    Link statically with Globus GSI libraries],
+	[
+		gsi_static="-static"
+		if test "x$gsi_path" = "xno" ; then
+			gsi_path="$withval"
+		fi
+	]
+)
+
+# Check whether the user has a Globus flavor type
+globus_flavor_type="no"
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=TYPE  Specify Globus flavor type (ex: gcc32dbg)],
+	[
+		globus_flavor_type="$withval"
+		if test "x$gsi_path" = "xno" ; then
+			gsi_path="yes"
+		fi
+	]
+)
+
+if test "x$gsi_path" != "xno" ; then
+	# Globus GSSAPI configuration
+	AC_MSG_CHECKING(for Globus GSI)
+	AC_DEFINE(GSI, 1, [Define if you want GSI/Globus authentication support.])
+
+	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus GSI.])
+	fi
+	if test -z "$GSSAPI"; then
+		AC_DEFINE(GSSAPI)
+		GSSAPI="GSI"
+	fi
+
+	if test "x$gsi_path" = "xyes" ; then
+		if test -z "$GLOBUS_LOCATION" ; then
+			AC_MSG_ERROR(GLOBUS_LOCATION environment variable must be set.)
+		else
+			gsi_path="$GLOBUS_LOCATION"
+		fi
+	fi
+	GLOBUS_LOCATION="$gsi_path"
+	export GLOBUS_LOCATION
+	if test ! -d "$GLOBUS_LOCATION" ; then
+		AC_MSG_ERROR(Cannot find Globus installation.  Set GLOBUS_LOCATION environment variable.)
+	fi
+
+        if test "x$globus_flavor_type" = "xno" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must be specified)
+	fi
+        if test "x$globus_flavor_type" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
+	fi
+
+  if test -z "$LOOK_FOR_FC_GLOBUS_INCLUDE" ; then
+	    GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+  else
+      GLOBUS_INCLUDE="${gsi_path}/include/globus"
+  fi
+	if test ! -d "$GLOBUS_INCLUDE" ; then
+		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+	fi
+	
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
+	else
+		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
+	fi
+	. ./gpt_build_tmp.sh
+	if test -z "$GLOBUS_PKG_LIBS" ; then
+		AC_MSG_ERROR(globus-makefile-header failed)
+	fi
+
+    AC_MSG_RESULT($GLOBUS_LOCATION)
+	AC_DEFINE(HAVE_GSSAPI_H)
+
+    CC="$GLOBUS_CC"
+    CFLAGS="$GLOBUS_CFLAGS"
+    CPP="$GLOBUS_CPP"
+	CPPFLAGS="$GLOBUS_CPPFLAGS $GLOBUS_INCLUDES"
+	LIBS="$LIBS $GLOBUS_LIBS $GLOBUS_PKG_LIBS"
+    LD="$GLOBUS_LD"
+	LDFLAGS="$LDFLAGS $GLOBUS_LDFLAGS"
+
+	INSTALL_GSISSH="yes"
+else
+	INSTALL_GSISSH=""
+fi
+# End Globus/GSI section
+
 AC_PROG_CC
 AC_CANONICAL_HOST
 AC_C_BIGENDIAN
@@ -1225,201 +1337,6 @@ int main(void){struct dirent d;exit(sizeof(d.d_name)<=sizeof(char));}
 	]
 )
 
-# Check whether the user wants GSSAPI mechglue support
-AC_ARG_WITH(mechglue,
-	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
-	[
-		AC_MSG_CHECKING(for mechglue library)
-
-		if test -e ${withval}/libgssapi.a ; then
-		    mechglue_lib=${withval}/libgssapi.a
-		elif test -e ${withval}/lib/libgssapi.a ; then
-		    mechglue_lib=${withval}/lib/libgssapi.a
-		else
-		    AC_MSG_ERROR("Can't find libgssapi in ${withval}");
-		fi
-		LIBS="$LIBS ${mechglue_lib}"
-		AC_MSG_RESULT(${mechglue_lib})
-
-		AC_CHECK_LIB(dl, dlopen, , )
-		if test $ac_cv_lib_dl_dlopen = yes; then
-		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
-		fi
-
-		AC_DEFINE(GSSAPI)
-		AC_DEFINE(MECHGLUE, 1, [Define this if you're building with GSSAPI MechGlue.])
-		GSSAPI="mechglue"
-
-	]
-)
-
-
-# Check whether the user wants GSI (Globus) support
-gsi_path="no"
-AC_ARG_WITH(gsi,
-	[  --with-gsi              Enable Globus GSI authentication support],
-	[
-		gsi_path="$withval"
-	]
-)
-
-AC_ARG_WITH(globus,
-	[  --with-globus           Enable Globus GSI authentication support],
-	[
-		gsi_path="$withval"
-	]
-)
-
-AC_ARG_WITH(globus-static,
-	[  --with-globus-static    Link statically with Globus GSI libraries],
-	[
-		gsi_static=1
-		if test "x$gsi_path" = "xno" ; then
-			gsi_path="$withval"
-		fi
-	]
-)
-
-# Check whether the user has a Globus flavor type
-globus_flavor_type="no"
-AC_ARG_WITH(globus-flavor,
-	[  --with-globus-flavor=TYPE  Specify Globus flavor type (ex: gcc32dbg)],
-	[
-		globus_flavor_type="$withval"
-		if test "x$gsi_path" = "xno" ; then
-			gsi_path="yes"
-		fi
-	]
-)
-
-if test "x$gsi_path" != "xno" ; then
-	# Globus GSSAPI configuration
-	AC_MSG_CHECKING(for Globus GSI)
-	AC_DEFINE(GSI, 1, [Define if you want GSI/Globus authentication support.])
-
-	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
-		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus GSI.])
-	fi
-	if test -z "$GSSAPI"; then
-		AC_DEFINE(GSSAPI)
-		GSSAPI="GSI"
-	fi
-
-	if test "x$gsi_path" = "xyes" ; then
-		if test -z "$GLOBUS_LOCATION" ; then
-			AC_MSG_ERROR(GLOBUS_LOCATION environment variable must be set.)
-		else
-			gsi_path="$GLOBUS_LOCATION"
-		fi
-	fi
-	GLOBUS_LOCATION="$gsi_path"
-	export GLOBUS_LOCATION
-	if test ! -d "$GLOBUS_LOCATION" ; then
-		AC_MSG_ERROR(Cannot find Globus installation.  Set GLOBUS_LOCATION environment variable.)
-	fi
-
-        if test "x$globus_flavor_type" = "xno" ; then
-                AC_MSG_ERROR(--with-globus-flavor=TYPE must be specified)
-	fi
-        if test "x$globus_flavor_type" = "xyes" ; then
-                AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
-	fi
-	AC_MSG_RESULT(yes)
-
-	AC_MSG_CHECKING(for Globus include path)
-  if test -z "$LOOK_FOR_FC_GLOBUS_INCLUDE" ; then
-        GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
-  else
-        GLOBUS_INCLUDE="${gsi_path}/include/globus"
-  fi
-	if test ! -d "$GLOBUS_INCLUDE" ; then
-		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
-	fi
-	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
-	AC_MSG_RESULT(yes)
-
-	#
-	# Find GPT linkline helper
-	#
-
-	AC_MSG_CHECKING(for GPT linkline helper)
-	if test -x $GPT_LOCATION/sbin/gpt_build_config ; then
-		gpt_linkline_helper="$GPT_LOCATION/sbin/gpt_build_config"
-	elif test -x ${gsi_path}/sbin/gpt_build_config ; then
-		gpt_linkline_helper="${gsi_path}/sbin/gpt_build_config"
-	else
-		AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
-	fi
-	AC_MSG_RESULT(yes)
-
-	#
-	# Build Globus linkline
-	#
-
-	if test -n "${gsi_static}"; then
-		${gpt_linkline_helper} -f ${globus_flavor_type} -link static -src pkg_data_src.gpt
-	else
-		${gpt_linkline_helper} -f ${globus_flavor_type} -link shared -src pkg_data_src.gpt
-	fi
-	. ./gpt_build_temp.sh
-	if test -n "${need_dash_r}"; then
-		GSI_LDFLAGS="-L${gsi_path}/lib -R${gsi_path}/lib"
-	else
-		GSI_LDFLAGS="-L${gsi_path}/lib"
-	fi
-	GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
-	LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
-
-	#
-	# Test Globus linkline
-	#
-
-	AC_MSG_CHECKING(for Globus linkline)
-	if test -z "$GSI_LIBS" ; then
-		AC_MSG_ERROR(gpt_build_config failed)
-	fi
-	AC_MSG_RESULT(yes)
-
-	AC_DEFINE(HAVE_GSSAPI_H)
-
-	LIBS="$LIBS $GSI_LIBS $GPT_CONFIG_LIBS"
-	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
-	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS $GPT_CONFIG_INCLUDES"
-    CFLAGS="$CFLAGS $GPT_CONFIG_CFLAGS"
-
-	AC_MSG_CHECKING(that Globus linkline works)
-	# test that we got the libraries OK
-	AC_TRY_LINK(
-		[],
-		[],
-		[
-			AC_MSG_RESULT(yes)
-		],
-		[
-			AC_MSG_ERROR(link with Globus libraries failed)
-		]
-	)
-    AC_CHECK_FUNCS(globus_gss_assist_map_and_authorize)
-	INSTALL_GSISSH="yes"
-else
-	INSTALL_GSISSH=""
-fi
-
-dnl
-dnl Check for globus_usage_stats_send
-dnl
-AC_CHECK_FUNC(globus_usage_stats_send,
-              AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
-
-dnl
-dnl Check for globus_usage_stats_send_array
-dnl
-AC_CHECK_FUNC(globus_usage_stats_send_array,
-              AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1,
-                        [Have Globus Usage send_array]))
-
-# End Globus/GSI section
-
 AC_MSG_CHECKING([for /proc/pid/fd directory])
 if test -d "/proc/$$/fd" ; then
 	AC_DEFINE(HAVE_PROC_PID, 1, [Define if you have /proc/$pid/fd])
@@ -2228,8 +2145,7 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
-
-if test -z "$GSI_LIBS" ; then
+if test -z "$GLOBUS_LDFLAGS" ; then
 LIBS="-lcrypto $LIBS"
 fi
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL, 1,
@@ -2324,9 +2240,6 @@ int main(void) {
 	]
 )
 
-# Make OpenSSL header check nonfatal in GPT package 
-# because it happens a lot on MacOS.
-openssl_check_nonfatal=1 
 AC_ARG_WITH(openssl-header-check,
 	[  --without-openssl-header-check Disable OpenSSL version consistency check],
 	[  if test "x$withval" = "xno" ; then
@@ -2550,41 +2463,33 @@ AC_ARG_WITH(pam,
 			   test "x$ac_cv_header_pam_pam_appl_h" != "xyes" ; then
 				AC_MSG_ERROR([PAM headers not found])
 			fi
+
+			saved_LIBS="$LIBS"
+			AC_CHECK_LIB(dl, dlopen, , )
+			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
+			AC_CHECK_FUNCS(pam_getenvlist)
+			AC_CHECK_FUNCS(pam_putenv)
+			LIBS="$saved_LIBS"
+
 			PAM_MSG="yes"
-		fi
-	],
-	[
-		if test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
-		   test "x$ac_cv_header_pam_pam_appl_h" = "xyes"; then
-			PAM_MSG="yes"
+
+			SSHDLIBS="$SSHDLIBS -lpam"
+			AC_DEFINE(USE_PAM, 1,
+				[Define if you want to enable PAM support])
+
+			if test $ac_cv_lib_dl_dlopen = yes; then
+				case "$LIBS" in
+				*-ldl*)
+					# libdl already in LIBS
+					;;
+				*)
+					SSHDLIBS="$SSHDLIBS -ldl"
+					;;
+				esac
+			fi
 		fi
 	]
 )
-
-# Enable PAM support if requested/available
-if test "x$PAM_MSG" = "xyes" ; then
-	saved_LIBS="$LIBS"
-	AC_CHECK_LIB(dl, dlopen, , )
-	AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
-	AC_CHECK_FUNCS(pam_getenvlist)
-	AC_CHECK_FUNCS(pam_putenv)
-	LIBS="$saved_LIBS"
-
-	SSHDLIBS="$SSHDLIBS -lpam"
-	AC_DEFINE(USE_PAM, 1,
-		[Define if you want to enable PAM support])
-
-	if test $ac_cv_lib_dl_dlopen = yes; then
-		case "$LIBS" in
-		*-ldl*)
-			# libdl already in LIBS
-			;;
-		*)
-			SSHDLIBS="$SSHDLIBS -ldl"
-			;;
-		esac
-	fi
-fi
 
 # Check for older PAM
 if test "x$PAM_MSG" = "xyes" ; then
@@ -3748,6 +3653,68 @@ AC_ARG_WITH(selinux,
 AC_SUBST(SSHLIBS)
 AC_SUBST(SSHDLIBS)
 
+# Finish configuring Globus GSSAPI
+if test "x$gsi_path" != "xno" ; then
+	if test ! -z "$need_dash_r" ; then
+		LDFLAGS="$LDFLAGS -R${gsi_path}/lib"
+	fi
+	if test ! -z "$blibpath" ; then
+		blibpath="$blibpath:${gsi_path}/lib"
+	fi
+	# test that we got the libraries OK
+	AC_TRY_LINK(
+		[],
+		[],
+		[],
+		[
+			AC_MSG_ERROR(link with Globus libraries failed)
+		]
+	)
+    AC_CHECK_FUNCS(globus_gss_assist_map_and_authorize)
+fi
+AC_SUBST(INSTALL_GSISSH)
+
+dnl
+dnl Check for globus_usage_stats_send
+dnl
+AC_CHECK_FUNC(globus_usage_stats_send,
+              AC_DEFINE([HAVE_GLOBUS_USAGE], 1, [Have Globus Usage]))
+
+dnl
+dnl Check for globus_usage_stats_send_array
+dnl
+AC_CHECK_FUNC(globus_usage_stats_send_array,
+              AC_DEFINE([HAVE_GLOBUS_USAGE_SEND_ARRAY], 1,
+                        [Have Globus Usage send_array]))
+
+# Check whether the user wants GSSAPI mechglue support
+AC_ARG_WITH(mechglue,
+	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
+	[
+		AC_MSG_CHECKING(for mechglue library)
+
+		if test -e ${withval}/libgssapi.a ; then
+		    mechglue_lib=${withval}/libgssapi.a
+		elif test -e ${withval}/lib/libgssapi.a ; then
+		    mechglue_lib=${withval}/lib/libgssapi.a
+		else
+		    AC_MSG_ERROR("Can't find libgssapi in ${withval}");
+		fi
+		LIBS="${mechglue_lib} $LIBS"
+		AC_MSG_RESULT(${mechglue_lib})
+
+		AC_CHECK_LIB(dl, dlopen, , )
+		if test $ac_cv_lib_dl_dlopen = yes; then
+		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
+		fi
+
+		AC_DEFINE(GSSAPI)
+		AC_DEFINE(MECHGLUE, 1, [Define this if you're building with GSSAPI MechGlue.])
+		GSSAPI="mechglue"
+	]
+)
+
+
 # Check whether user wants Kerberos 5 support
 KRB5_MSG="no"
 AC_ARG_WITH(kerberos5,
@@ -3941,7 +3908,7 @@ AC_ARG_WITH(xauth,
 )
 
 # strip causes problems with GSI libraries...
-if test -z "$GSI_LIBS" ; then
+if test -z "$GLOBUS_LDFLAGS" ; then
 STRIP_OPT=-s
 fi
 AC_ARG_ENABLE(strip,
@@ -4193,6 +4160,22 @@ main()
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ],
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ]
 	)
+# make sure $bindir is in USER_PATH so scp will work
+		t_bindir=`eval echo ${bindir}`
+		case $t_bindir in
+			NONE/*) t_bindir=`echo $t_bindir | sed "s~NONE~$prefix~"` ;;
+		esac
+		case $t_bindir in
+			NONE/*) t_bindir=`echo $t_bindir | sed "s~NONE~$ac_default_prefix~"` ;;
+		esac
+		echo $user_path | grep ":$t_bindir"  > /dev/null 2>&1
+		if test $? -ne 0  ; then
+			echo $user_path | grep "^$t_bindir"  > /dev/null 2>&1
+			if test $? -ne 0  ; then
+				user_path=$user_path:$t_bindir
+				AC_MSG_RESULT(Adding $t_bindir to USER_PATH so scp will work)
+			fi
+		fi
 	fi ]
 )
 if test "x$external_path_file" != "x/etc/login.conf" ; then
@@ -4547,6 +4530,7 @@ C=`eval echo ${sbindir}` ; C=`eval echo ${C}`
 D=`eval echo ${sysconfdir}` ; D=`eval echo ${D}`
 E=`eval echo ${libexecdir}/ssh-askpass` ; E=`eval echo ${E}`
 F=`eval echo ${mandir}/${mansubdir}X` ; F=`eval echo ${F}`
+G=`eval echo ${piddir}` ; G=`eval echo ${G}`
 H=`eval echo ${PRIVSEP_PATH}` ; H=`eval echo ${H}`
 I=`eval echo ${user_path}` ; I=`eval echo ${I}`
 J=`eval echo ${superuser_path}` ; J=`eval echo ${J}`
@@ -4558,6 +4542,7 @@ echo "                   System binaries: $C"
 echo "               Configuration files: $D"
 echo "                   Askpass program: $E"
 echo "                      Manual pages: $F"
+echo "                          PID file: $G"
 echo "  Privilege separation chroot path: $H"
 if test "x$external_path_file" = "x/etc/login.conf" ; then
 echo "   At runtime, sshd will use the path defined in $external_path_file"
