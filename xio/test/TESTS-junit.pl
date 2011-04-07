@@ -18,7 +18,7 @@
 
 
 use strict;
-use Tap::Harness::JUnit;
+use TAP::Harness::JUnit;
 require 5.005;
 use vars qw(@tests);
 
