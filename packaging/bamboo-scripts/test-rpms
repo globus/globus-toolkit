@@ -92,7 +92,7 @@ for flavor in gcc64 gcc32; do
         grid-cert-request -cn "$(id -un)" -nopw
         sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus
         cp /tmp/usercert.pem "$X509_USER_CERT"
-        sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT)" -ln "$(id -un)"
+        sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
         sudo service globus-gridftp-server restart 
         grid-proxy-init -hours 24
     fi
