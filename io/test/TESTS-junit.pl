@@ -20,7 +20,7 @@ require 5.005;
 
 use warnings;
 use strict;
-use Tap::Harness::JUnit;
+use TAP::Harness::JUnit;
 use vars qw(@tests);
 
 @tests = qw( globus-io-file-test.pl
