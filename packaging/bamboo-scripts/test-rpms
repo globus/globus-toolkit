@@ -83,12 +83,15 @@ for flavor in gcc64 gcc32; do
     $archcmd sudo yum -y install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
 
     if [ $first = 1 ]; then
-        X509_USER_CERT="$HOME/.globus/usercert.pem"
-        export X509_USER_CERT
         first=0
         sudo grid-ca-create -noint -pass globus
         sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/globus_simple_ca/cacert.pem)"
         sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security"
+        X509_USER_CERT="$HOME/.globus/usercert.pem"
+        X509_USER_KEY="$HOME/.globus/userkey.pem"
+        export X509_USER_CERT
+        export X509_USER_KEY
+
         grid-cert-request -cn "$(id -un)" -nopw
         sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus
         cp /tmp/usercert.pem "$X509_USER_CERT"
