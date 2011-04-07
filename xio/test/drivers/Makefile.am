@@ -37,6 +37,6 @@ libglobus_xio_test_drivers_la_LIBADD = \
 libglobus_xio_test_drivers_la_SOURCES = \
 	$(Sources)
 libglobus_xio_test_drivers_la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)
+	@GPT_LDFLAGS@ -module -rpath ${libdir}
 
 include $(top_srcdir)/globus_automake_post
