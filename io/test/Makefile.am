@@ -11,8 +11,7 @@ Scripts = \
 	TESTS.pl \
 	globus-io-authorization-test.pl \
         globus-io-file-test.pl \
-        globus-io-tcp-test.pl \
-        run-io-tests.pl
+        globus-io-tcp-test.pl
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -65,8 +64,7 @@ EXTRA_DIST = \
 	TESTS-junit.pl \
 	globus-io-authorization-test.pl.in \
         globus-io-file-test.pl \
-        globus-io-tcp-test.pl.in \
-        run-io-tests.pl.in
+        globus-io-tcp-test.pl.in
 
 test:
 	chmod a+x $(Scripts)
