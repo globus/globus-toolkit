@@ -87,7 +87,7 @@ for flavor in gcc64 gcc32; do
         export X509_USER_CERT
         first=0
         sudo grid-ca-create -noint -pass globus
-        sudo grid-default-ca -ca "$(openssl x509 -noout -hash -in /var/globus_simple_ca/cacert.pem)"
+        sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/globus_simple_ca/cacert.pem)"
         sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security"
         grid-cert-request -cn "$(id -un)" -nopw
         sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus
