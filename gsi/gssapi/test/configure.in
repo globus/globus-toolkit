@@ -7,6 +7,8 @@ GLOBUS_INIT
 
 AM_PROG_LIBTOOL
 
+GLOBUS_OPENSSL
+
 dnl config header goes here
 
 dnl Initialize the automake rules the last argument
