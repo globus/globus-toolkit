@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define USRDIR "/usr"
 #define BINDIR "/bin"
@@ -111,7 +112,6 @@ init_pathnames()
     SSH_RAND_HELPER		= compose2(libexec, "/ssh-rand-helper");
     _PATH_STDPATH_WITH_SCP	= compose3(_PATH_STDPATH, ":", bindir);
 
-    if (gl) free(gl);
     if (bindir) free(bindir);
     if (libexec) free(libexec);
     if (sshdir) free(sshdir);
