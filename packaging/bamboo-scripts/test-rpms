@@ -86,14 +86,15 @@ for flavor in gcc64 gcc32; do
         first=0
         sudo grid-ca-create -noint -pass globus
         sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/globus_simple_ca/cacert.pem)"
-        sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security"
+        sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
+        sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
         X509_USER_CERT="$HOME/.globus/usercert.pem"
         X509_USER_KEY="$HOME/.globus/userkey.pem"
         export X509_USER_CERT
         export X509_USER_KEY
 
-        grid-cert-request -cn "$(id -un)" -nopw
-        sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus
+        grid-cert-request -cn "$(id -un)" -nopw -force
+        sudo grid-ca-sign -in "$HOME/.globus/usercert_request.pem" -out "/tmp/usercert.pem" -passin pass:globus -force
         cp /tmp/usercert.pem "$X509_USER_CERT"
         sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
         sudo service globus-gridftp-server restart 
