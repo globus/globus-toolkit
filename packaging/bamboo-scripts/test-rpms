@@ -3,7 +3,7 @@
 set -e
 umask 022
 
-PATH=$PATH:/usr/sbin
+PATH=$PATH:/usr/sbin:/sbin
 
 bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)
