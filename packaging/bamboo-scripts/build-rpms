@@ -91,6 +91,7 @@ packages="$(echo "${packages}" | grep -v myproxy; echo myproxy)"
 
 ./make-packages.pl -no-updates -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 cd gpt-3.3/packaging_tools
+./bootstrap
 make dist
 cp gpt-3.3.tar.gz ../../package-output
 cd ../../package-output
