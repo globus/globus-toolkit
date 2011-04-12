@@ -81,7 +81,7 @@ EOF
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm -e --allmatches $pkgs_to_rm < /dev/null
+    sudo rpm --noscripts -e --allmatches $pkgs_to_rm < /dev/null
 fi
 
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-simple-ca
@@ -114,7 +114,7 @@ for i in grid-packaging-tools $packages; do
                              -name "$i-devel-[0-9]*rpm" -o \
                              -name "$i-doc-[0-9]*rpm")"
         
-        sudo rpm -Uvh $rpms < /dev/null;
+        sudo rpm --noscripts -Uvh $rpms < /dev/null;
     fi
 done
 
@@ -125,7 +125,7 @@ mkdir RPMS
 
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm -e --allmatches $pkgs_to_rm < /dev/null
+    sudo rpm --noscripts -e --allmatches $pkgs_to_rm < /dev/null
 fi
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
@@ -141,7 +141,7 @@ for i in grid-packaging-tools $packages; do
                              -name "$i-devel-[0-9]*rpm" -o \
                              -name "$i-doc-[0-9]*rpm")"
         
-        sudo rpm -Uvh $rpms < /dev/null;
+        sudo rpm --noscripts -Uvh $rpms < /dev/null;
     fi
 done
 
@@ -193,5 +193,5 @@ echo "$allpkgs64" > packages.gcc64
 # Remove what we built
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm -e --allmatches $pkgs_to_rm  < /dev/null
+    sudo rpm --noscripts -e --allmatches $pkgs_to_rm  < /dev/null
 fi
