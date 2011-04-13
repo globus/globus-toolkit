@@ -30,7 +30,9 @@ my $gpath = $ENV{GLOBUS_LOCATION};
 
 if (!defined($gpath))
 {
-  die "GLOBUS_LOCATION needs to be set before running this script";
+  print "GLOBUS_LOCATION not defined in environment. Defaulting to /usr\n";
+  $ENV{GLOBUS_LOCATION} = '/usr';
+  $gpath = $ENV{GLOBUS_LOCATION};
 }
 
 # process the -option options
