@@ -213,6 +213,11 @@ sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_dev.filelist
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.a' -exec rm -v '{}' \;
 sed '/lib.*\.a$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_dev.filelist
 
+# No need for myproxy-server-setup since the rpm will perform
+# the needed setup
+rm $RPM_BUILD_ROOT%{_sbindir}/myproxy-server-setup
+sed '/myproxy-server-setup$/d' -i $GLOBUSPACKAGEDIR/%{name}/%{flavor}_pgm.filelist
+
 # Put documentation in Fedora defaults and alter GPT package lists.
 mkdir -p $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}-doc-%{version}/extras
 mv $RPM_BUILD_ROOT%{_defaultdocdir}/%{name}/{refman.pdf,html} \
@@ -378,7 +383,6 @@ fi
 %{_sbindir}/myproxy-admin-load-credential
 %{_sbindir}/myproxy-admin-query
 %{_sbindir}/myproxy-replicate
-%{_sbindir}/myproxy-server-setup
 %{_sbindir}/myproxy-test
 %{_sbindir}/myproxy-test-replicate
 %{_mandir}/man8/myproxy-admin-addservice.8.gz
