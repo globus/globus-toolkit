@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.75 $)
+AC_REVISION($Revision: 1.76 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -87,9 +87,19 @@ if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
 fi
 AC_SUBST(SYSLIBS)
 dnl
-dnl The following tests need GPT_LIBS
+dnl The following tests need/use GPT_LIBS
 dnl
 LIBS="$GPT_LIBS $LIBS"
+dnl
+dnl Check for libcrypto
+dnl
+AC_SEARCH_LIBS(ENGINE_init, crypto_$GLOBUS_FLAVOR_NAME crypto, ,
+			     AC_MSG_ERROR([ENGINE_init not found in libcrypto]) )
+dnl
+dnl Check for libssl
+dnl
+AC_SEARCH_LIBS(SSL_library_init, ssl_$GLOBUS_FLAVOR_NAME ssl, ,
+			     AC_MSG_ERROR([SSL_library_init not found in libssl]) )
 dnl
 dnl Check for globus_usage_stats_send
 dnl
