@@ -21,6 +21,8 @@ elif test ! -f /usr/lib/libssl.so -a -f /usr/sfw/lib/libssl.so; then
     OPENSSL_LIBS="-lssl -lcrypto"
     export PKG_CONFIG_PATH
     export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
+    PATH=/usr/sfw/bin:$PATH
+    export PATH
 fi
 if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     LIBPATH=$LD_LIBRARY_PATH
