@@ -19,7 +19,7 @@
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
 Version:	7.7
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -71,6 +71,7 @@ unset GPT_LOCATION
 	   --libexecdir='${datadir}/globus' \
 	   --with-flavor=%{flavor} \
 	   --enable-64bit=%{enable64} \
+           --enable-debug \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
 	   --with-setupdir='${datadir}/globus/setup' \
 	   --with-testdir='${datadir}/globus/test/${PACKAGE}' \
