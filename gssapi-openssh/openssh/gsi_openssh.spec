@@ -6,8 +6,9 @@
 %global WITH_SELINUX 1
 
 # OpenSSH privilege separation requires a user & group ID
-%global sshd_uid    74
-%global sshd_gid    74
+# Will let the system choose the UID/GID for the gsisshd user/group; see later
+#%global sshd_uid    74
+#%global sshd_gid    74
 
 # Build position-independent executables (requires toolchain support)?
 %global pie 1
@@ -270,6 +271,7 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 	--with-default-path=/usr/local/bin:/bin:/usr/bin \
 	--with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	--with-privsep-path=%{_var}/empty/gsisshd \
+	--with-privsep-user=gsisshd \
 	--enable-vendor-patchlevel="FC-%{version}-%{release}" \
 	--disable-strip \
 	--without-zlib-version-check \
@@ -364,15 +366,15 @@ rm -f README.nss
 rm -rf $RPM_BUILD_ROOT
 
 %pre server
-getent group sshd >/dev/null || groupadd -g %{sshd_uid} -r sshd || :
+getent group gsisshd >/dev/null || groupadd -r gsisshd || :
 %if %{nologin}
-getent passwd sshd >/dev/null || \
-  useradd -c "Privilege-separated SSH" -u %{sshd_uid} -g sshd \
-  -s /sbin/nologin -r -d /var/empty/sshd sshd 2> /dev/null || :
+getent passwd gsisshd >/dev/null || \
+  useradd -c "Privilege-separated GSISSH" -g gsisshd \
+  -s /sbin/nologin -r -d /var/empty/gsisshd gsisshd 2> /dev/null || :
 %else
-getent passwd sshd >/dev/null || \
-  useradd -c "Privilege-separated SSH" -u %{sshd_uid} -g sshd \
-  -s /dev/null -r -d /var/empty/sshd sshd 2> /dev/null || :
+getent passwd gsisshd >/dev/null || \
+  useradd -c "Privilege-separated GSISSH" -g gsisshd \
+  -s /dev/null -r -d /var/empty/gsisshd gsisshd 2> /dev/null || :
 %endif
 
 %post server
