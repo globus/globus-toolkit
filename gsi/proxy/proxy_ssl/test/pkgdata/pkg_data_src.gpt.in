@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_proxy_ssl_test" Format_Version="0.02">
 
-    <Aging_Version Major="2" Minor="2" Age="1"/>
+    <Aging_Version Major="2" Minor="3" Age="1"/>
     <Description> Proxy SSL Test</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -16,11 +16,6 @@
                     <Simple_Version Major="4"/>
                 </Version>
             </Dependency>                
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_gsi_proxy_ssl">
                 <Version>
                     <Simple_Version Major="1"/>
@@ -29,11 +24,6 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
-            <Dependency Name="globus_openssl">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_gsi_proxy_ssl">
                 <Version>
                     <Simple_Version Major="1"/>
