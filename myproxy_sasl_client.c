@@ -328,7 +328,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
                 result = SASL_FAIL;
                 goto error;
             }
-        } else if (result != SASL_OK) {
+        } else /* if (result != SASL_OK) */ {
             if (send_response_sasl_data(attrs, &server_response, "", 0) < 0) {
                 result = SASL_FAIL;
                 goto error;
