@@ -12,7 +12,7 @@
 
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.2
 Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 

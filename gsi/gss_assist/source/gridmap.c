@@ -418,6 +418,11 @@ gridmapdir_globusid(char *     useridp,
 {
      int              encodedptr = 0, decodedptr = 0;
      char             *encodedglobusidp;
+
+     if (useridp == NULL || globusidp == NULL)
+     {
+         return 1;
+     }
      
      if (useridp[0] == '/') return 1; /* must not be a subject DN */
      
