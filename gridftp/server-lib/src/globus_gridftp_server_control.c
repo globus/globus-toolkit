@@ -2763,7 +2763,7 @@ globus_gridftp_server_control_start(
         goto err;
     }
 
-    rc = fstat(STDIN_FILENO, &statbuf);
+    rc = fstat(system_handle, &statbuf);
     if(rc != 0)
     {
         res = GlobusGridFTPServerErrorParameter("system_handle");
