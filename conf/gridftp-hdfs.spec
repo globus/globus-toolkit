@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
 Version:        0.2.3
-Release:        5
+Release:        7
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -25,6 +25,7 @@ BuildRequires:  jdk >= 2000:1.6.0_07-fcs
 BuildRequires:  jpackage-utils
 BuildRequires: hadoop-0.20-libhdfs
 BuildRequires: globus-gridftp-server-devel
+BuildRequires: globus-common-devel
 
 Requires: hadoop-0.20-libhdfs
 Requires: globus-gridftp-server-progs
@@ -48,7 +49,7 @@ HDFS DSI plugin for GridFTP
 
 export JAVA_HOME=/usr/java/latest
 export PATH=$JAVA_HOME/bin:$PATH
-export CFLAGS="-I/usr/include/globus -I/usr/lib64/globus/include"
+export CFLAGS="-I/usr/include/globus -I/usr/lib64/globus/include -I/usr/lib/globus/include"
 %configure --with-java=/usr/java/latest/
 
 make
@@ -92,6 +93,13 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Fri Apr 01 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-7
+- Destroy HDFS handle only if it was initialized.  Fixes segfault on auth failure.
+
+* Wed Mar 30 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-6
+- Add explicit dep for globus-common
+- Rebuild to trigger a 32-bit build in Koji.
+
 * Mon Jan 31 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-4
 - Purposefully leak file handle due to lifetime and synchronization issues.
 

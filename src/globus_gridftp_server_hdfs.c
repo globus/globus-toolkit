@@ -287,16 +287,19 @@ globus_l_gfs_hdfs_destroy(
 {
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Destroying the HDFS connection.\n");
-    if (hdfs_handle->fs)
-        hdfsDisconnect(hdfs_handle->fs);
-    if (hdfs_handle->username)
-        globus_free(hdfs_handle->username);
-    if (hdfs_handle->local_host)
-        globus_free(hdfs_handle->local_host);
-    remove_file_buffer(hdfs_handle);
-    globus_mutex_destroy(&hdfs_handle->mutex);
-    globus_free(hdfs_handle);
+
+    if (hdfs_handle) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Destroying the HDFS connection.\n");
+        if (hdfs_handle->fs)
+            hdfsDisconnect(hdfs_handle->fs);
+        if (hdfs_handle->username)
+            globus_free(hdfs_handle->username);
+        if (hdfs_handle->local_host)
+            globus_free(hdfs_handle->local_host);
+        remove_file_buffer(hdfs_handle);
+        globus_mutex_destroy(&hdfs_handle->mutex);
+        globus_free(hdfs_handle);
+    }
     closelog();
 }
 
