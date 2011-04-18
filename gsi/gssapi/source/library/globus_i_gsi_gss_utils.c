@@ -1036,6 +1036,7 @@ globus_i_gsi_gss_handshake(
             }
 
             /* DEBUG BLOCK */
+	    if (globus_i_gsi_gssapi_debug_level >= 2)
             {
                 char                    cipher_description[256];
                 GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
@@ -1645,6 +1646,7 @@ globus_i_gsi_gss_SSL_write_bio(
     ssl_handle = context->gss_ssl;
 
     /* DEBUG BLOCK */
+    if (globus_i_gsi_gssapi_debug_level >= 2)
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "client_random=");
@@ -1667,9 +1669,10 @@ globus_i_gsi_gss_SSL_write_bio(
     BIO_write(bp, (char *) ssl_handle->s3->client_random, SSL3_RANDOM_SIZE);
     BIO_write(bp, (char *) ssl_handle->s3->server_random, SSL3_RANDOM_SIZE);
     
-    ssl3_setup_key_block(ssl_handle);
+    ssl_handle->method->ssl3_enc->setup_key_block(ssl_handle);
     
     /* DEBUG BLOCK */
+    if (globus_i_gsi_gssapi_debug_level >= 2)
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
@@ -1700,7 +1703,7 @@ globus_i_gsi_gss_SSL_write_bio(
         }
         
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nwrite_iv=");
-        for (index = 0; index < 8; ++index)
+        for (index = 0; index < EVP_MAX_IV_LENGTH; ++index)
         {
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
@@ -1708,7 +1711,7 @@ globus_i_gsi_gss_SSL_write_bio(
         }
         
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\nread_iv=");
-        for (index = 0; index < 8; index++)
+        for (index = 0; index < EVP_MAX_IV_LENGTH; index++)
         {
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
@@ -1776,6 +1779,7 @@ globus_i_gsi_gss_SSL_read_bio(
     BIO_read(bp, (char*) ssl_handle->s3->server_random, SSL3_RANDOM_SIZE);
 
     /* DEBUG BLOCK */
+    if (globus_i_gsi_gssapi_debug_level >= 2)
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "client_random=");
@@ -1860,6 +1864,7 @@ globus_i_gsi_gss_SSL_read_bio(
     }
 
     /* DEBUG BLOCK */
+    if (globus_i_gsi_gssapi_debug_level >= 2)
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
@@ -1880,7 +1885,8 @@ globus_i_gsi_gss_SSL_read_bio(
         &ssl_handle->s3->tmp.new_sym_enc,
         &ssl_handle->s3->tmp.new_hash,
 #if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
-        NULL, NULL,
+        &ssl_handle->s3->tmp.new_mac_pkey_type,
+        &ssl_handle->s3->tmp.new_mac_secret_size,
 #endif
         (SSL_COMP **) &ssl_handle->s3->tmp.new_compression);
     if (!ssl_result)
@@ -1911,7 +1917,8 @@ globus_i_gsi_gss_SSL_read_bio(
         &ssl_handle->s3->tmp.new_sym_enc,
         &ssl_handle->s3->tmp.new_hash,
 #if (OPENSSL_VERSION_NUMBER >= 0x10000000L)
-        NULL, NULL,
+        &ssl_handle->s3->tmp.new_mac_pkey_type,
+        &ssl_handle->s3->tmp.new_mac_secret_size,
 #endif
         (SSL_COMP **) &ssl_handle->s3->tmp.new_compression);
     if (!ssl_result)
@@ -1962,6 +1969,7 @@ globus_i_gsi_gss_SSL_read_bio(
     BIO_read(bp, (char*) ssl_handle->enc_read_ctx->iv,   EVP_MAX_IV_LENGTH);
     
     /* DEBUG BLOCK */
+    if (globus_i_gsi_gssapi_debug_level >= 2)
     {
         int index;
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "write_sequence=");
