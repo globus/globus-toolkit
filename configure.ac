@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-AC_INIT([gridftp-hdfs], [0.2.3], [osg-hadoop@opensciencegrid.org])
+AC_INIT([gridftp-hdfs], [0.2.4], [osg-hadoop@opensciencegrid.org])
 
-AM_INIT_AUTOMAKE([gridftp-hdfs], [0.2.3])
+AM_INIT_AUTOMAKE([gridftp-hdfs], [0.2.4])
 
 AC_CONFIG_SRCDIR([src/globus_gridftp_server_hdfs.c])
 #AC_CONFIG_HEADER([config.h])
@@ -25,6 +25,11 @@ AS_IF([ test -e ${JAVA_HOME}/jre/lib/i386 ], LDFLAGS=["$LDFLAGS -L${JAVA_HOME}/j
 AC_ARG_WITH(hadoop, [  --with-hadoop=HADOOP_HOME Location of $HADOOP_HOME], [HADOOPHOME=${withval}], [HADOOPHOME=$HADOOP_HOME])
 AC_CHECK_FILE(${HADOOPHOME}/src/c++/libhdfs/hdfs.h, INCLUDE=["$INCLUDE -I${HADOOPHOME}/src/c++/libhdfs"],)
 AC_CHECK_FILE(${HADOOPHOME}/build/libhdfs/libhdfs.so, LDFLAGS=["$LDFLAGS -L${HADOOPHOME}/build/libhdfs"],)
+
+# EPEL5 defaults
+AC_CHECK_FILE(/usr/include/globus, INCLUDE=["$INCLUDE -I/usr/include/globus"])
+AC_CHECK_FILE(/usr/lib64/globus/include, INCLUDE=["$INCLUDE -I/usr/lib64/globus/include"])
+AC_CHECK_FILE(/usr/lib/globus/include, INCLUDE=["$INCLUDE -I/usr/lib/globus/include"])
 
 AC_ARG_WITH(globus, [  --with-globus=GLOBUS_LOCATION Location of globus], [GLOBUSHOME=${withval}], [GLOBUSLOCATION=$GLOBUS_LOCATION])
 AC_CHECK_FILE(${GLOBUSLOCATION}, ,[GLOBUSLOCATION=/opt/globus])

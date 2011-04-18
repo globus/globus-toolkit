@@ -323,13 +323,26 @@ globus_l_gfs_file_copy_stat(
     stat_object->dev      = 0;
     stat_object->ino      = 0;
 
+    stat_object->name = NULL;
     if(filename && *filename)
     {
-        stat_object->name = strdup(filename);
-    }
-    else
-    {
-        stat_object->name = NULL;
+        // If the filename starts with hdfs://hostname/, strip out the hdfs://hostname
+        const char prefix[] = "hdfs://";
+        int prefix_len = strlen(prefix);
+        const char * real_filename = strstr(filename, prefix);
+        if (real_filename == filename) // Check if filename starts with hdfs://
+        {
+            real_filename += prefix_len;
+            real_filename = strchr(real_filename, '/');
+            if (real_filename != NULL)
+            {
+                stat_object->name = strdup(real_filename);
+            }
+        }
+        if (stat_object->name == NULL)
+        {
+            stat_object->name = strdup(filename);
+        }
     }
     if(symlink_target && *symlink_target)
     {
@@ -513,10 +526,10 @@ globus_l_gfs_hdfs_stat(
             goto error_alloc2;
         }
 
-        for(i = 0; stat_count; i++)
+        for(i = 0; i<stat_count; i++)
         {
             globus_l_gfs_file_copy_stat(
-                &stat_array[i], &dir[i], dir[i].mName, 0);
+                stat_array + i, dir + i, dir[i].mName, 0);
         }
         hdfsFreeFileInfo(dir, stat_count);
         

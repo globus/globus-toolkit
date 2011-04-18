@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
-Version:        0.2.3
-Release:        7
+Version:        0.2.4
+Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -49,7 +49,7 @@ HDFS DSI plugin for GridFTP
 
 export JAVA_HOME=/usr/java/latest
 export PATH=$JAVA_HOME/bin:$PATH
-export CFLAGS="-I/usr/include/globus -I/usr/lib64/globus/include -I/usr/lib/globus/include"
+
 %configure --with-java=/usr/java/latest/
 
 make
@@ -93,6 +93,12 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Mon Apr 18 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.4-1
+- Implement "ls" on directories.
+
+* Mon Apr 18 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-8
+- Fix generation of debuginfo RPM.
+
 * Fri Apr 01 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.2.3-7
 - Destroy HDFS handle only if it was initialized.  Fixes segfault on auth failure.
 
