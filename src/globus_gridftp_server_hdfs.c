@@ -686,10 +686,19 @@ globus_l_gfs_hdfs_dump_buffers(
 										  if (bytes_written > 0)
 													 wrote_something = 1;
 										  if (bytes_written != nbytes[i]) {
-													 rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
-													 snprintf(err_msg, MSG_SIZE, "Error from HDFS during write: %s\n", strerror(errno));
-													 hdfs_handle->done = GLOBUS_TRUE;
-													 return rc;
+											char * hostname = globus_malloc(sizeof(char)*256);
+											if (hostname != NULL) {
+												memset(hostname, '\0', sizeof(char)*256);
+												if (gethostname(hostname, 255) != 0) {
+													sprintf(hostname, "UNKNOWN");
+												}
+												snprintf(err_msg, MSG_SIZE, "write into HDFS failed (%u) on server %s", errno, hostname);
+											} else {
+												snprintf(err_msg, MSG_SIZE, "write from HDFS failed (%u) on unknown server", errno);
+											}
+											rc = GlobusGFSErrorSystemError(err_msg, errno);
+											hdfs_handle->done = GLOBUS_TRUE;
+											return rc;
 										  }
 										  hdfs_handle->used[i] = 0;
 										  hdfs_handle->offset += bytes_written;
@@ -969,8 +978,17 @@ globus_l_gfs_hdfs_write_to_storage_cb(
                 syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
             globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
             if (bytes_written != nbytes) {
-                rc = GlobusGFSErrorSystemError("Write into HDFS failed", errno);
-                snprintf(err_msg, MSG_SIZE, "Error from HDFS during write: %s\n", strerror(errno));
+                char * hostname = globus_malloc(sizeof(char)*256);
+                if (hostname != NULL) {
+                    memset(hostname, '\0', sizeof(char)*256);
+                    if (gethostname(hostname, 255) != 0) {
+                        sprintf(hostname, "UNKNOWN");
+                    }
+                    snprintf(err_msg, MSG_SIZE, "write into HDFS failed (%u) on server %s", errno, hostname);
+                } else {
+                    snprintf(err_msg, MSG_SIZE, "write from HDFS failed (%u) on unknown server", errno);
+                }
+                rc = GlobusGFSErrorSystemError(err_msg, errno);
                 hdfs_handle->done = GLOBUS_TRUE;
             } else {
                 hdfs_handle->offset += bytes_written;
