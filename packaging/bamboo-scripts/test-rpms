@@ -118,9 +118,11 @@ for flavor in gcc64 gcc32; do
         ./configure --with-flavor=${flavor}
         make 
         make junit || true
-        if [ -f ${testpkgname_no_ver}.xml ]; then
-            sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\"/" < ${testpkgname_no_ver}.xml > ${flavortestoutdir}/${testpkgname_no_ver}.xml 
-        fi
+        for x in "${testpkgname_no_ver}"*.xml; do
+            if [ -f "$x" ]; then
+                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\"/" < "$x" > "${flavortestoutdir}/${x}"
+            fi
+        done
         cd ..
     done
 done
