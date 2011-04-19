@@ -342,6 +342,7 @@ GSS_CALLCONV gss_import_name(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
                     (_GGSL("Bad name")));
+            goto release_name_out;
         }
         name_buffer = globus_common_create_string(
                 "/CN=%s",
