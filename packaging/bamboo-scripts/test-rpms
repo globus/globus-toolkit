@@ -120,7 +120,7 @@ for flavor in gcc64 gcc32; do
         make junit || true
         for x in "${testpkgname_no_ver}"*.xml; do
             if [ -f "$x" ]; then
-                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\"/" < "$x" > "${flavortestoutdir}/${x}"
+                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" < "$x" > "${flavortestoutdir}/${x}"
             fi
         done
         cd ..
