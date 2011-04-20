@@ -174,6 +174,7 @@ cp -R RPMS/i?86/* "${repodir}"/i386
 
 cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
 cp RPMS/noarch/*.rpm "${repodir}"/i386/
+cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
 cp -R SRPMS "${repodir}"
 
 createrepo "${reporoot}/$osname/$osver/SRPMS"
@@ -183,6 +184,7 @@ createrepo "${reporoot}/$osname/$osver/i386"
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
 allpkgs64="$(find "${reporoot}/${osname}/${osver}/"x86_64 -name '*.rpm' | \
+    grep -v '\.i386\.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
 allpkgs32="$(find "${reporoot}/${osname}/${osver}/"i386 -name '*.rpm' | \
     sed -e 's|.*/||' -e 's|\.rpm||')"
