@@ -307,14 +307,10 @@ rfc2253_to_ssl_config()
     IFS=","
     oucount=0
     ocount=0
-    _maxou=0
 
     _reversei=""
     for i in ${_name}; do
         _reversei="${i}${_reversei:+,${_reversei}}"
-        if expr "${i}" : ' *[Oo][Uu]=' > /dev/null; then
-            _maxou=$((${_maxou} + 1))
-        fi
     done
 
     for i in ${_reversei}; do
@@ -335,13 +331,15 @@ rfc2253_to_ssl_config()
                 ocount=$(($ocount+1))
                 ;;
             [Oo][Uu])
-                if [ "$_type" != "-host" -o "${oucount}" -lt "$((${_maxou} - 1))" ]; then
-                    printf "%-40s= %s\n" "$oucount.organizationalUnitName" "Level $oucount Organizational Unit"
-                    printf "%-40s= %s\n" "$oucount.organizationalUnitName_default" "${_value}"
-                    oucount=$(($oucount+1))
-                fi
+                printf "%-40s= %s\n" "$oucount.organizationalUnitName" "Level $oucount Organizational Unit"
+                printf "%-40s= %s\n" "$oucount.organizationalUnitName_default" "${_value}"
+                oucount=$(($oucount+1))
                 ;;
             [Cc][Nn])
+                if [ "$_type" = "-user" ]; then
+                    printf "%-40s= %s\n" "$oucount.organizationalUnitName" "Level $oucount Organizational Unit"
+                    printf "%-40s= %s\n" "$oucount.organizationalUnitName_default" "local"
+                fi
                 printf "%-40s= %s\n" "commonName" "Name (E.g., John M. Smith)"
                 printf "%-40s= %s\n" "commonName_max" "64"
                 ;;
@@ -812,7 +810,7 @@ fi
 cahash="$(openssl x509 -in "${_cadir}/cacert.pem" -noout -hash)"
 
 if [ -z "$nobuild" ]; then
-    grid-ca-package ${backward_compatible:+-b} ${gpt_package:+-g} -ca "${cahash}"
+    grid-ca-package ${backward_compatible:+-b} ${gpt_package:+-g} -cadir "${GRID_CA_DIR}"
 fi
 
 exit 0

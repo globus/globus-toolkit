@@ -115,8 +115,8 @@ create_source_rpm_tarball()
     _capath="${1}"
     _cadir="${2}"
     _casubject="${3}"
-    _cahash="${_capath##*/}"
-    _cahash="${_cahash%.0}"
+    _simpleca="${4}"
+    _cahash="$(openssl x509 -hash -noout -in "${_capath}")"
 
     _certdir="share/certificates"
     _srcdir="globus-simple-ca-${_cahash}"
@@ -137,16 +137,33 @@ create_source_rpm_tarball()
     cd "${_pkgdir}"
     mkdir "${_srcdir}"
 
-    cp "${_capath}" "${_srcdir}/${_cahash}.0"
-    cp "${_cadir}/${_cahash}.signing_policy" "${_srcdir}/${_cahash}.signing_policy"
-    if [ -r "${_cadir}/grid-security.conf.${_cahash}" ]; then
-        cp "${_cadir}/grid-security.conf.${_cahash}" "${_srcdir}/"
-    fi
-    if [ -r "${_cadir}/globus-user-ssl.conf.${_cahash}" ]; then
-        cp "${_cadir}/globus-user-ssl.conf.${_cahash}" "${_srcdir}/"
-    fi
-    if [ -r "${_cadir}/globus-host-ssl.conf.${_cahash}" ]; then
-        cp "${_cadir}/globus-host-ssl.conf.${_cahash}" "${_srcdir}/"
+    if [ "${_simpleca}" -eq 0 ]; then
+        cp "${_capath}" "${_srcdir}/${_cahash}.0"
+        cp "${_cadir}/${_cahash}.signing_policy" "${_srcdir}/${_cahash}.signing_policy"
+        if [ -r "${_cadir}/grid-security.conf.${_cahash}" ]; then
+            cp "${_cadir}/grid-security.conf.${_cahash}" "${_srcdir}/"
+        fi
+        if [ -r "${_cadir}/globus-user-ssl.conf.${_cahash}" ]; then
+            cp "${_cadir}/globus-user-ssl.conf.${_cahash}" "${_srcdir}/"
+        fi
+        if [ -r "${_cadir}/globus-host-ssl.conf.${_cahash}" ]; then
+            cp "${_cadir}/globus-host-ssl.conf.${_cahash}" "${_srcdir}/"
+        fi
+    else
+        cp "${_capath}" "${_srcdir}/${_cahash}.0"
+        cp "${_cadir}/signing-policy" "${_srcdir}/${_cahash}.signing_policy"
+        if [ -r "${_cadir}/grid-security.conf" ]; then
+            cp "${_cadir}/grid-security.conf" \
+                    "${_srcdir}/grid-security.conf.${_cahash}"
+        fi
+        if [ -r "${_cadir}/globus-user-ssl.conf" ]; then
+            cp "${_cadir}/globus-user-ssl.conf" \
+                    "${_srcdir}/globus-user-ssl.conf.${_cahash}"
+        fi
+        if [ -r "${_cadir}/globus-host-ssl.conf" ]; then
+            cp "${_cadir}/globus-host-ssl.conf" \
+                    "${_srcdir}/globus-host-ssl.conf.${_cahash}"
+        fi
     fi
 
     cat <<-EOF 1> "${_srcdir}/globus-simple-ca-${_cahash}.spec"
@@ -249,8 +266,8 @@ create_binary_gpt_package()
     _capath="${1}"
     _cadir="${2}"
     _casubject="${3}"
-    _cahash="${_capath##*/}"
-    _cahash="${_cahash%.0}"
+    _simpleca="${4}"
+    _cahash="$(openssl x509 -hash -noout -in "${_capath}")"
     _certdir="share/certificates"
     _binary_gpt_package="globus_simple_ca_${_cahash}-1.0-noflavor_data.tar.gz"
     if [ "${backward_compatible}" = 1 ]; then
@@ -284,21 +301,42 @@ create_binary_gpt_package()
     cp "${_capath}" "${_certdir}/${_cahash}.0"
     echo "${_certdir}/${_cahash}.0"
 
-    cp "${_cadir}/${_cahash}.signing_policy" "${_certdir}/"
-    echo "${_certdir}/${_cahash}.signing_policy"
+    if [ "${_simpleca}" -eq 0 ]; then
+        cp "${_cadir}/${_cahash}.signing_policy" "${_certdir}/"
+        echo "${_certdir}/${_cahash}.signing_policy"
+        if [ -r "${_cadir}/grid-security.conf.${_cahash}" ]; then
+            cp "${_cadir}/grid-security.conf.${_cahash}" "${_certdir}/"
+            echo "${_certdir}/grid-security.conf.${_cahash}"
+        fi
 
-    if [ -r "${_cadir}/grid-security.conf.${_cahash}" ]; then
-        cp "${_cadir}/grid-security.conf.${_cahash}" "${_certdir}/"
-        echo "${_certdir}/grid-security.conf.${_cahash}"
-    fi
+        if [ -r "${_cadir}/globus-user-ssl.conf.${_cahash}" ]; then
+            cp "${_cadir}/globus-user-ssl.conf.${_cahash}" "${_certdir}/"
+            echo "${_certdir}/globus-user-ssl.conf.${_cahash}"
+        fi
+        if [ -r "${_cadir}/globus-host-ssl.conf.${_cahash}" ]; then
+            cp "${_cadir}/globus-host-ssl.conf.${_cahash}" "${_certdir}/"
+            echo "${_certdir}/globus-host-ssl.conf.${_cahash}"
+        fi
+    else
+        cp "${_cadir}/signing-policy" "${_certdir}/${_cahash}.signing_policy"
+        echo "${_certdir}/${_cahash}.signing_policy"
 
-    if [ -r "${_cadir}/globus-user-ssl.conf.${_cahash}" ]; then
-        cp "${_cadir}/globus-user-ssl.conf.${_cahash}" "${_certdir}/"
-        echo "${_certdir}/globus-user-ssl.conf.${_cahash}"
-    fi
-    if [ -r "${_cadir}/globus-host-ssl.conf.${_cahash}" ]; then
-        cp "${_cadir}/globus-host-ssl.conf.${_cahash}" "${_certdir}/"
-        echo "${_certdir}/globus-host-ssl.conf.${_cahash}"
+        if [ -r "${_cadir}/grid-security.conf" ]; then
+            cp "${_cadir}/grid-security.conf" \
+                    "${_certdir}/grid-security.conf.${_cahash}"
+            echo "${_certdir}/grid-security.conf.${_cahash}"
+        fi
+
+        if [ -r "${_cadir}/globus-user-ssl.conf" ]; then
+            cp "${_cadir}/globus-user-ssl.conf" \
+                    "${_certdir}/globus-user-ssl.conf.${_cahash}"
+            echo "${_certdir}/globus-user-ssl.conf.${_cahash}"
+        fi
+        if [ -r "${_cadir}/globus-host-ssl.conf" ]; then
+            cp "${_cadir}/globus-host-ssl.conf" \
+                    "${_certdir}/globus-host-ssl.conf.${_cahash}"
+            echo "${_certdir}/globus-host-ssl.conf.${_cahash}"
+        fi
     fi
 
     echo "${_filelist}"
@@ -332,6 +370,7 @@ EOF
 
 create_rpm_tarball=1
 create_gpt_package=0
+cadir=""
 
 readCommandLine () {
     # Expects $* from the shell invocation
@@ -345,6 +384,10 @@ readCommandLine () {
                 ;;
             -ca)
                 ca_to_use="$2"
+                shift 2
+                ;;
+            -cadir)
+                cadir="$2"
                 shift 2
                 ;;
             -g)
@@ -460,52 +503,62 @@ if test -d "${datadir}/certificates/."; then
     set -- "$@" "${datadir}/certificates"
 fi
 
-found_ca=0
-for x in "$@"; do
-    if test -n "`get_hashes ${x}`"; then
-        found_ca=1
-        break
-    fi
-done
-
-if test $found_ca -eq 0; then
-    echo 
-    echo "There does not appear to be a valid CA"
-    echo "located in any of the following directories:"
-    echo ""
-    for x in "$@"; do
-        echo "    ${x}"
-    done
-    echo ""
-    echo "To specify a different location where the grid security"
-    echo "configuration files were installed, set the X509_CERT_DIR"
-    echo "set the GRID_SECURITY_DIR environment variables."
-    echo ""
-    exit 1
-fi
-
-if [ -z "$ca_to_use" ]; then
-    interactive "$@"
-else
-    CA_CERT_DIR=`find_ca_dir $ca_to_use "$@"`
-    CA_CERT="$CA_CERT_DIR/$ca_to_use.0"
-    if test ! -r "${CA_CERT}" ; then
-        echo
-        echo "Cannot find a CA with hash ${ca_to_use}."
-        echo "Use grid-default-ca -list to see a list of CA hashes "
-        echo "available on this machine."
-        echo 
-        exit 1
-    fi
+if [ -n "$cadir" ]; then
+    CA_CERT_DIR="$cadir"
+    CA_CERT="$CA_CERT_DIR/cacert.pem"
     TMP_SUBJECT="$(openssl x509 -in ${CA_CERT} -noout -subject)"
     CA_SUBJECT="/${TMP_SUBJECT#*/}"
+    simpleca=1
+else
+    found_ca=0
+    simpleca=0
+
+    for x in "$@"; do
+        if test -n "`get_hashes ${x}`"; then
+            found_ca=1
+            break
+        fi
+    done
+
+    if test $found_ca -eq 0; then
+        echo 
+        echo "There does not appear to be a valid CA"
+        echo "located in any of the following directories:"
+        echo ""
+        for x in "$@"; do
+            echo "    ${x}"
+        done
+        echo ""
+        echo "To specify a different location where the grid security"
+        echo "configuration files were installed, set the X509_CERT_DIR"
+        echo "set the GRID_SECURITY_DIR environment variables."
+        echo ""
+        exit 1
+    fi
+
+    if [ -z "$ca_to_use" ]; then
+        interactive "$@"
+    else
+        CA_CERT_DIR=`find_ca_dir $ca_to_use "$@"`
+        CA_CERT="$CA_CERT_DIR/$ca_to_use.0"
+        if test ! -r "${CA_CERT}" ; then
+            echo
+            echo "Cannot find a CA with hash ${ca_to_use}."
+            echo "Use grid-default-ca -list to see a list of CA hashes "
+            echo "available on this machine."
+            echo 
+            exit 1
+        fi
+        TMP_SUBJECT="$(openssl x509 -in ${CA_CERT} -noout -subject)"
+        CA_SUBJECT="/${TMP_SUBJECT#*/}"
+    fi
 fi
 
 if [ "$create_rpm_tarball" -eq 1 ]; then
-    create_source_rpm_tarball "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT"
+    create_source_rpm_tarball "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT" "${simpleca}"
 fi
 if [ "$create_gpt_package" -eq 1 ]; then
-    create_binary_gpt_package "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT"
+    create_binary_gpt_package "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT" "${simpleca}"
 fi
 
 exit 0
