@@ -7,6 +7,7 @@ sub commands;
 
 my ($gpt_location, $rpm_info) = ($ENV{'GPT_LOCATION'}, "");
 my ($perl_location, $verbose, $autotools, $boot, $help, $man, $version, $test);
+my $forceperlmodules;
 
 GetOptions( 'with-perl=s'=> \$perl_location,
             'prefix=s'=> \$gpt_location,
@@ -17,6 +18,7 @@ GetOptions( 'with-perl=s'=> \$perl_location,
             "verbose!" => \$verbose,
             "version!" => \$version,
             "autotools!" => \$autotools,
+            "force-perl-modules!" => \$forceperlmodules
           ) or pod2usage(1);
 
 pod2usage(0) if $help;
@@ -85,6 +87,16 @@ my %builddirections = (
                        'podparser' => 'perl',
                        'md5' => 'perl',
                        'gpt' => 'gpt',
+                      );
+
+my %builddirections_modules = (
+                       'perltest' => ['Test::Simple', '0.47'],
+                       'perltar' => ['Archive::Tar', '0.22'],
+                       'perlzlib' => ['Compress::Zlib', '1.21'],
+                       'perlzlibio' => ['IO::Zlib', '1.01'],
+                       'filespec' => [ 'File::Spec', '0.8'],
+                       'podparser' => ['Pod::Parser', '1.18'],
+                       'md5' => ['Digest::MD5', '2.20']
                       );
 
 # Assume -boot if packaging_tools/configure does not exist.
@@ -177,18 +189,30 @@ for my $s  (@{ $dist->get_keys() }) {
   my $dir = $dist->{'srcdirs'}->{$s};
 
   #
-  # we only want to build File::Spec if a version >= 0.8 doesn't already exist on the
-  # system.
+  # Skip building perl modules that are already installed
   #
-  
-  if ($s eq 'filespec')
-    {
-      eval { require File::Spec };
-      if(($File::Spec::VERSION || 0) >= 0.8)
-        {
-          next;
-        }
-    }
+  if ((!$forceperlmodules) && exists $builddirections_modules{$s})
+  {
+      my ($modname, $modmin) = @{$builddirections_modules{$s}};
+      my ($modminmaj, $modminmin) = split(/\./, $modmin);
+      $modminmaj =~ s/^0*//;
+      $modminmin =~ s/^0*//;
+
+      my $version = eval "require $modname; \$${modname}::VERSION; ";
+      if ($@ eq '')
+      {
+          my ($major, $minor) = split(/\./, $version);
+          $major =~ s/^0*// if defined($major);
+          $minor =~ s/^0*// if defined($minor);
+
+          if ((($major || 0) >= $modminmaj) &&
+              (($minor || 0) >= $modminmin))
+          {
+              $log->announce("Skipping $s as $modname $version is already installed"); 
+              next;
+          }
+      }
+  }
 
   my $instructions = $builddirections{$s};
   
@@ -204,9 +228,7 @@ for my $s  (@{ $dist->get_keys() }) {
     if defined $boot{$instructions} and defined $boot;
 
   for my $i (@{$commands{$instructions}}) {
-    {
       action($i, $dir);
-    }
   }
 
   next if ! defined $test;
