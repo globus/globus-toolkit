@@ -184,15 +184,16 @@ sub run_command
     {
         if(defined $FILTER_COMMAND)
         {
-            local $commandName = join(" ", $job_description->executable,
+            my $commandName = join(" ", $job_description->executable,
                                            $job_description->arguments);
-            local @filterArgs = split(/\s+/, $FILTER_COMMAND);
+            my @filterArgs = split(/\s+/, $FILTER_COMMAND);
             if(-x $filterArgs[0])  # Make sure program is executable
             {
-                local $rVal = (system(@filterArgs, $commandName)) >> 8;
+                my $rVal = (system(@filterArgs, $commandName)) >> 8;
                 if($rVal != 0)  # The filter command returned an error, so deny.
                 {
                     &fail(Globus::GRAM::Error::AUTHORIZATION_DENIED_EXECUTABLE);
+                    goto FILTERED;
                 }
             }
         }
@@ -207,6 +208,7 @@ sub run_command
     {
         $manager->respond($result);
     }
+FILTERED:
     if ($command eq 'interactive')
     {
         print "\n";
