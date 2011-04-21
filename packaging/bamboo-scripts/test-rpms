@@ -69,20 +69,17 @@ for flavor in gcc64 gcc32; do
 
     if [ "$flavor" = gcc64 ]; then
         arch="x86_64"
-        archcmd="x86_64"
     elif egrep -q 'CentOS|Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release; then
         arch="i386"
-        archcmd="i386"
     else
         arch="i686"
-        archcmd="i386"
     fi
 
     # yum clean will enable us to download 32-bit or 64-bit below
     sudo yum clean all
 
     # Install the binary RPMs that we will test
-    $archcmd sudo yum -y install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
+    sudo yum -y install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
 
     if [ $first = 1 ]; then
         first=0
