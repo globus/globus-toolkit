@@ -63,7 +63,8 @@ EOF
 
 target32=i686-redhat-linux
 
-if egrep 'CentOS|Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release; then
+if grep -Eq 'CentOS|Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release
+then
     target32=i386-redhat-linux
     echo "%rhel                  5" >> $topdir/.rpmmacros
 fi
@@ -174,7 +175,11 @@ cp -R RPMS/i?86/* "${repodir}"/i386
 
 cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
 cp RPMS/noarch/*.rpm "${repodir}"/i386/
-cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
+
+if grep -Eq 'Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release
+then
+    cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
+fi
 cp -R SRPMS "${repodir}"
 
 createrepo "${reporoot}/$osname/$osver/SRPMS"
