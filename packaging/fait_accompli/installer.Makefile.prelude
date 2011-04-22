@@ -44,7 +44,8 @@ drs: gpt common globus_rls_client wsjava gt4-delegation gt4-replicator
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
 @gptlocation@/sbin/gpt-postinstall:
-	cd gpt && OBJECT_MODE=32 ./build_gpt
+	cd gpt && OBJECT_MODE=32 ./configure; \
+	make; make install; make install-man;
 install: postinstall
 postinstall:
 	if [ ! -L ${GLOBUS_LOCATION}/etc/globus_packages ]; then \

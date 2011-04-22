@@ -3,18 +3,18 @@
 VERSION=`cat fait_accompli/version`
 INSTALLER=gt$VERSION-all-source-installer
 GPT=gpt*.tar.gz
-TARFILES=netlogger-c-4.0.2.tar.gz
 CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
 
 #GT5 bundles
 BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,cas_callout
 
-PACKAGES=globus_rls_client_jni,myproxy
+PACKAGES=myproxy
 
 echo Making configure/make installer
 
 echo Step: Checking out source code.
-./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+#./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+./checkout-specs.pl
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
@@ -60,7 +60,8 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
+#./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
+./installer_creation.pl
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
@@ -71,11 +72,11 @@ echo Bootstrapping done, about to copy source trees into installer.
 echo This may take a few minutes.
 
 mkdir $INSTALLER
-cat fait_accompli/installer.Makefile.prelude farfleblatt > $INSTALLER/Makefile.in
-rm farfleblatt
+cat fait_accompli/installer.Makefile.prelude fait_accompli/makefile_bundle_target.frag installer_makefile.frag > $INSTALLER/Makefile.in
+#rm farfleblatt
 
-sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt
-autoconf farfleblatt > $INSTALLER/configure
+sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt2
+autoconf farfleblatt2 > $INSTALLER/configure
 chmod +x $INSTALLER/configure
 cp fait_accompli/install-sh $INSTALLER
 cp fait_accompli/config.sub $INSTALLER
@@ -98,12 +99,4 @@ CPOPTS=RpL
 cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
 #rm -fr $INSTALLER/source-trees/autotools
 
-for f in $TARFILES; do
-   tar -C $INSTALLER/source-trees -xzf fait_accompli/$f
-done
-
 echo Done creating installer.
-
-# Creating source tarballs
-./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --deps --deporder --skipbundle $@ 
-
