@@ -2,6 +2,7 @@
 use Cwd;
 
   open(PKG, "etc/package-list-spec");
+  mkdir "./source-trees";
   chdir "./source-trees";
   my $topsrcdir=cwd();
     while ( <PKG> )
