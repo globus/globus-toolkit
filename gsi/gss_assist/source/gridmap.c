@@ -1920,7 +1920,7 @@ globus_l_gss_assist_line_length(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     fpos_t                              pos;
-    int                                 line_len;
+    int                                 line_len = -1;
     int                                 rc;
     static char *                       _function_name_ =
         "globus_l_gss_assist_line_length";
@@ -1938,6 +1938,12 @@ globus_l_gss_assist_line_length(
     }
 
     rc = fscanf(fp, "%*[^\n]%*1[\n]%n", &line_len);
+    if (line_len == -1 && rc == 0)
+    {
+       /* match failure; see if we have an empty line */
+       rc = fscanf(fp, "%*1[\n]%n", &line_len);
+    }
+
     if (rc < 0 && !feof(fp))
     {
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
