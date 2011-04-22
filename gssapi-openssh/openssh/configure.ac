@@ -1878,12 +1878,12 @@ fi
 
 dnl see whether mkstemp() requires XXXXXX
 if test "x$ac_cv_func_mkdtemp" = "xyes" ; then
-AC_MSG_CHECKING([for (overly) strict mkstemp])
+AC_MSG_CHECKING([for (overly) strict [m]kstemp])
 AC_RUN_IFELSE(
 	[AC_LANG_SOURCE([[
 #include <stdlib.h>
-main() { char template[]="conftest.mkstemp-test";
-if (mkstemp(template) == -1)
+main() { char template[]="conftest.[m]kstemp-test";
+if ([m]kstemp(template) == -1)
 	exit(1);
 unlink(template); exit(0);
 }
@@ -1893,7 +1893,7 @@ unlink(template); exit(0);
 	],
 	[
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_STRICT_MKSTEMP, 1, [Silly mkstemp()])
+		AC_DEFINE(HAVE_STRICT_MKSTEMP, 1, [Silly [m]kstemp()])
 	],
 	[
 		AC_MSG_RESULT(yes)

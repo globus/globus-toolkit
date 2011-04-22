@@ -11,7 +11,7 @@
 #%global sshd_gid    74
 
 # Build position-independent executables (requires toolchain support)?
-%global pie 1
+%global pie 0
 
 # Do we want kerberos5 support (1=yes 0=no)
 # It is not possible to support kerberos5 and GSI at the same time
@@ -21,7 +21,11 @@
 %global gsi 1
 
 # Do we want libedit support
+%if "%{?rhel}" == "5"
+%global libedit 0
+%else
 %global libedit 1
+%endif
 
 # Do we want NSS tokens support
 #NSS support is broken from 5.4p1
@@ -50,7 +54,7 @@ URL: http://www.openssh.com/portable.html
 # This package differs from the upstream OpenSSH tarball in that
 # the ACSS cipher is removed by running openssh-nukeacss.sh in
 # the unpacked source directory.
-Source0: http://downloads.sourceforge.net/cilogon/gsi_openssh-%{version}.tar.gz
+Source0: http://downloads.sourceforge.net/cilogon/gsi_openssh-%{version}-src.tar.gz
 #Source1: openssh-nukeacss.sh
 #Source2: gsisshd.pam
 #Source3: gsisshd.init
@@ -116,9 +120,14 @@ BuildRequires: autoconf, automake, perl, zlib-devel
 BuildRequires: audit-libs-devel
 BuildRequires: util-linux, groff
 BuildRequires: pam-devel
+%if "%{?rhel}" == "5"
+BuildRequires: tcp_wrappers
+BuildRequires: openssl-devel >= 0.9.8e
+%else
 BuildRequires: tcp_wrappers-devel
-BuildRequires: fipscheck-devel
 BuildRequires: openssl-devel >= 0.9.8j
+%endif
+BuildRequires: fipscheck-devel
 
 %if %{kerberos5}
 BuildRequires: krb5-devel
@@ -127,6 +136,8 @@ BuildRequires: krb5-devel
 %if %{gsi}
 BuildRequires: globus-gss-assist-devel
 BuildRequires: globus-usage-devel
+BuildRequires: globus-common-progs
+BuildRequires: grid-packaging-tools
 %endif
 
 %if %{libedit}
@@ -157,7 +168,11 @@ Group: System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires(post): chkconfig >= 0.9, /sbin/service
 Requires(pre): /usr/sbin/useradd
+%if "%{?rhel}" == "5"
+Requires: pam >= 0.99.6-2
+%else
 Requires: pam >= 1.0.1-3
+%endif
 
 %description
 SSH (Secure SHell) is a program for logging into and executing
@@ -190,8 +205,8 @@ securely connect to your SSH server.
 This version of OpenSSH has been modified to support GSI authentication.
 
 %prep
-#%setup -q -n gsi_openssh-%{version}-src
-%setup -q
+%setup -q -n gsi_openssh-%{version}-src
+#%setup -q
 #%patch0 -p1 -b .redhat
 #%patch2 -p1 -b .skip-initial
 #%patch4 -p1 -b .vendor
@@ -280,7 +295,6 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 %if %{nss}
 	--with-nss \
 %endif
-	--with-ldap \
 	--with-pam \
 %if %{WITH_SELINUX}
 	--with-selinux --with-linux-audit \
