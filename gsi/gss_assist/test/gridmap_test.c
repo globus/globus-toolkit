@@ -689,7 +689,7 @@ blank_line_test(void)
 {
     char *                              gridmap = "gridmap.blank_line";
     int                                 i;
-    int                                 failed;
+    int                                 failed = 0;
     int                                 rc;
 
     rc = setenv("GRIDMAP", gridmap, 1);
