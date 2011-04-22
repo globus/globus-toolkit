@@ -684,6 +684,34 @@ setenv_failed:
 }
 /* userok_test() */
 
+int
+blank_line_test(void)
+{
+    char *                              gridmap = "gridmap.blank_line";
+    int                                 i;
+    int                                 failed;
+    int                                 rc;
+
+    rc = setenv("GRIDMAP", gridmap, 1);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Error setting GRIDMAP location\n");
+        failed++;
+        goto setenv_failed;
+    }
+
+    rc = globus_gss_assist_userok(test_dn, "jdoe");
+    if (rc != 0)
+    {
+        fprintf(stderr, "globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", "jdoe", test_dn, gridmap);
+        failed++;
+    }
+
+setenv_failed:
+    return failed;
+}
+/* blank_line_test() */
+
 
 int main(int argc, char * argv[])
 {
@@ -698,7 +726,8 @@ int main(int argc, char * argv[])
         userok_test,
         map_local_user_test,
         lookup_all_globusid_test,
-        long_line_test
+        long_line_test,
+        blank_line_test
     };
     int                                 i;
     int                                 failed = 0;
