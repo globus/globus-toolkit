@@ -143,7 +143,7 @@ int gridmap_bad_params_test(void)
     char *                              userid = "userid";
     int                                 rc;
 
-    rc = globus_libc_setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", "grid-mapfile", 1);
 
     if (rc != 0)
     {
@@ -180,7 +180,7 @@ userok_bad_params_test(void)
     char *                              userid = "userid";
     int                                 rc;
 
-    rc = globus_libc_setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", "grid-mapfile", 1);
 
     if (rc != 0)
     {
@@ -217,7 +217,7 @@ map_local_user_bad_params_test(void)
     char *                              userid = "joe";
     int                                 rc;
 
-    rc = globus_libc_setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", "grid-mapfile", 1);
 
     if (rc != 0)
     {
@@ -255,7 +255,7 @@ lookup_all_globusid_bad_params_test(void)
     int                                 dn_count;
     int                                 rc;
 
-    rc = globus_libc_setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", "grid-mapfile", 1);
 
     if (rc != 0)
     {
@@ -302,7 +302,7 @@ map_and_authorize_bad_params_test(void)
     char *                              identity_buffer = "id";
     unsigned int                        identity_buffer_length = 2;
 
-    rc = globus_libc_setenv("GRIDMAP", "grid-mapfile", 1);
+    rc = setenv("GRIDMAP", "grid-mapfile", 1);
 
     if (rc != 0)
     {
@@ -359,7 +359,7 @@ gridmap_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = globus_libc_setenv("GRIDMAP", tests[i].gridmap, 1);
+        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "Error setting GRIDMAP location\n");
@@ -426,7 +426,7 @@ userok_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = globus_libc_setenv("GRIDMAP", tests[i].gridmap, 1);
+        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "Error setting GRIDMAP location\n");
@@ -477,7 +477,7 @@ map_local_user_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = globus_libc_setenv("GRIDMAP", tests[i].gridmap, 1);
+        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "Error setting GRIDMAP location\n");
@@ -548,7 +548,7 @@ lookup_all_globusid_test(void)
 
     for (i = 0, failed = 0; i < SIZEOF_ARRAY(tests); i++)
     {
-        rc = globus_libc_setenv("GRIDMAP", tests[i].gridmap, 1);
+        rc = setenv("GRIDMAP", tests[i].gridmap, 1);
         if (rc != 0)
         {
             fprintf(stderr, "Error setting GRIDMAP location\n");
@@ -655,7 +655,7 @@ long_line_test(void)
     int                                 rc;
     char                                localname[7];
 
-    rc = globus_libc_setenv("GRIDMAP", gridmap, 1);
+    rc = setenv("GRIDMAP", gridmap, 1);
     if (rc != 0)
     {
         fprintf(stderr, "Error setting GRIDMAP location\n");
@@ -692,6 +692,34 @@ setenv_failed:
 }
 /* userok_test() */
 
+int
+blank_line_test(void)
+{
+    char *                              gridmap = "gridmap.blank_line";
+    int                                 i;
+    int                                 failed = 0;
+    int                                 rc;
+
+    rc = setenv("GRIDMAP", gridmap, 1);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Error setting GRIDMAP location\n");
+        failed++;
+        goto setenv_failed;
+    }
+
+    rc = globus_gss_assist_userok(test_dn, "jdoe");
+    if (rc != 0)
+    {
+        fprintf(stderr, "globus_gss_assist_userok unexpectedly failed [userok %s for %s in %s]\n", "jdoe", test_dn, gridmap);
+        failed++;
+    }
+
+setenv_failed:
+    return failed;
+}
+/* blank_line_test() */
+
 
 int main(int argc, char * argv[])
 {
@@ -706,7 +734,8 @@ int main(int argc, char * argv[])
         TEST_CASE(userok_test),
         TEST_CASE(map_local_user_test),
         TEST_CASE(lookup_all_globusid_test),
-        TEST_CASE(long_line_test)
+        TEST_CASE(long_line_test),
+        TEST_CASE(blank_line_test)
     };
     int                                 i;
     int                                 failed = 0;

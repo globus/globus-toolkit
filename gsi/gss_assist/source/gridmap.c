@@ -591,6 +591,7 @@ globus_gss_assist_gridmap(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
                 (_GASL("Invalid (NULL) user id values")));
+            globus_i_gss_assist_gridmap_line_free(gline);
             goto exit;
 	}
 
@@ -1178,6 +1179,7 @@ globus_i_gss_assist_gridmap_find_local_user(
         
         if (fgets(line, line_len, gmap_stream) == NULL)
         {
+            free(line);
 	    break;		/* EOF or error */
         }
 
@@ -1258,7 +1260,7 @@ globus_i_gss_assist_gridmap_find_local_user(
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return result;
-} 
+}
 /* gridmap_find_local_user() */
 /* @} */
 
@@ -1832,7 +1834,7 @@ globus_gss_assist_lookup_all_globusid(
     int                                         max_ndx = 512;
     int                                         ndx = 0;
     char **                                     l_dns;
-    globus_i_gss_assist_gridmap_line_t *        gline;
+    globus_i_gss_assist_gridmap_line_t *        gline = NULL;
     char *                                      gridmap_filename = NULL;
     globus_result_t                             res = GLOBUS_SUCCESS;
     FILE *                                      gmap_stream = NULL;
@@ -1904,7 +1906,7 @@ globus_gss_assist_lookup_all_globusid(
         }
 
         if (fgets(line, line_len, gmap_stream) == NULL)
-    {
+        {
             free(line);
             break;
         }
@@ -1930,6 +1932,11 @@ globus_gss_assist_lookup_all_globusid(
                     break;
                 }
             }
+        }
+        if (gline != NULL)
+        {
+            globus_i_gss_assist_gridmap_line_free(gline);
+            gline = NULL;
         }
         free(line);
     }
@@ -2265,8 +2272,7 @@ globus_l_gss_assist_gridmap_lookup(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
                 (_GASL("Could not map %s\n"), peer_name_buffer.value));
-            gss_release_buffer(&minor_status, &peer_name_buffer);
-            goto error;
+            goto release_peer_name_buffer;
         }
 
         if(strlen(local_identity) + 1 > identity_buffer_length)
@@ -2295,7 +2301,7 @@ globus_l_gss_assist_gridmap_lookup(
                 (_GASL("Could not map %s to %s\n"),
                  peer_name_buffer.value,
                  desired_identity));
-            goto error;
+            goto release_peer_name_buffer;
         }
 
         if(strlen(desired_identity) + 1 > identity_buffer_length)
@@ -2312,6 +2318,7 @@ globus_l_gss_assist_gridmap_lookup(
         }
     }
 
+release_peer_name_buffer:
     gss_release_buffer(&minor_status, &peer_name_buffer);
 
  error:
@@ -2344,7 +2351,7 @@ globus_l_gss_assist_line_length(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     fpos_t                              pos;
-    int                                 line_len;
+    int                                 line_len = -1;
     int                                 rc;
     static char *                       _function_name_ =
         "globus_l_gss_assist_line_length";
@@ -2362,6 +2369,12 @@ globus_l_gss_assist_line_length(
     }
 
     rc = fscanf(fp, "%*[^\n]%*1[\n]%n", &line_len);
+    if (line_len == -1 && rc == 0)
+    {
+       /* match failure; see if we have an empty line */
+       rc = fscanf(fp, "%*1[\n]%n", &line_len);
+    }
+
     if (rc < 0 && !feof(fp))
     {
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
