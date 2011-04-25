@@ -2,12 +2,12 @@
 .\"     Title: grid-cert-diagnostics
 .\"    Author: University of Chicago
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/19/2010
+.\"      Date: 04/25/2011
 .\"    Manual: Globus Commands
-.\"    Source: Globus Toolkit 5.0.1
+.\"    Source: Globus Toolkit 5.0.2
 .\"  Language: English
 .\"
-.TH "GRID\-CERT\-DIAGNOST" "1" "03/19/2010" "Globus Toolkit 5.0.1" "Globus Commands"
+.TH "GRID\-CERT\-DIAGNOST" "1" "04/25/2011" "Globus Toolkit 5.0.2" "Globus Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +22,7 @@
 grid-cert-diagnostics \- Print diagnostic information about certificates and keys
 .SH "SYNOPSIS"
 .HP \w'\fBgrid\-cert\-diagnostics\fR\ 'u
-\fBgrid\-cert\-diagnostics\fR [\-h] | [\-help]  [\-p]
+\fBgrid\-cert\-diagnostics\fR [\-h] | [\-help]  [\-p] [\-n] [\-c\ \fICERTIFICATE\fR]
 .SH "DESCRIPTION"
 .PP
 The
@@ -47,6 +47,23 @@ Display a help message and exit\&.
 \fB\-p\fR
 .RS 4
 Display information about the personal certificate and key that is the current user\'s default credential\&.
+.RE
+.PP
+\fB\-n\fR
+.RS 4
+Check time synchronization with the
+\fBntpdate\fR
+command\&.
+.RE
+.PP
+\fB\-c \fR\fB\fICERTIFICATE\fR\fR, \fB\-c \fR\fB\-\fR
+.RS 4
+Check the validity of the certificate in the file named by
+\fICERTIFICATE\fR
+or standard input if the parameter to
+\fB\-c\fR
+is
+\-\&.
 .RE
 .SH "EXAMPLES"
 .PP
