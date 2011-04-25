@@ -14,7 +14,7 @@ echo Making configure/make installer
 
 echo Step: Checking out source code.
 #./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
-./checkout-specs.pl
+./checkout-specs.pl -f etc/package-list-spec -t globus_5_1_0
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8

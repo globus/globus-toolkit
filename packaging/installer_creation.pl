@@ -37,13 +37,13 @@ require Grid::GPT::PkgDist;
 my $dist = new Grid::GPT::PkgDist;
 #find(\&is_spec, './source-trees');
 read_package_list();
-print Dumper @packagelist;
+#print Dumper @packagelist;
 #$dist->load_dist_from_list(@packagelist);
 #to get the PkgDist object to actually read in metadata and sort it, we need to
 #put the packagelist into its structure.  This API sucks, but, well, it's legacy
 $dist->{'pkgs_gpt'}=\@packagelist;
 $dist->load_dist_from_list($dist);
-print Dumper $dist;
+#print Dumper $dist;
     $dist->cleardepenv();
     $dist->set_depenv('Build');
 	$dist->sort_pkgs();
@@ -61,8 +61,8 @@ print Dumper $dist;
 #  for my $p (@{ ($dist->sorted() )}){
 #    push (@sorted_package_names, $p->pkgname);
 #  }
-print "Sorted package names are:\n";
-print Dumper @sorted_package_names;
+#print "Sorted package names are:\n";
+#print Dumper @sorted_package_names;
 $dist->cleardepenv();
 $dist->set_depenv('Runtime');
 $dist->sort_pkgs();
@@ -133,7 +133,14 @@ sub read_package_list{
         my ($pkg, $subdir, $custom, $pnb, $pkgtag) = split(' ', $_);
 	print "package is ".$pkg." in ".$subdir."\n";
 	$packagemap{$pkg}="./source-trees/".$subdir;
+	if (-e "./source-trees/$subdir/pkgdata/pkg_data_src.gpt.in"){
 	push(@packagelist, "./source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
+	}else{
+	#gsi-openssh is a non-standard package
+	  if (-e "./source-trees/$subdir/pkg_data_src.gpt"){
+	    push(@packagelist, "./source-trees/".$subdir."\/pkg_data_src.gpt");
+	  }
+	}
     }
 
 
@@ -141,7 +148,7 @@ sub read_package_list{
 
 sub bootstrap{
    my @sorted_package_names = @_;
-   print Dumper @sorted_package_names;
+   #print Dumper @sorted_package_names;
    my $topsrcdir=cwd();
    chdir($packagemap{'globus_core'});
 	print "cwd is". cwd()."\n";
@@ -154,14 +161,20 @@ sub bootstrap{
 
 	chdir($packagemap{$pkg});
 	print "cwd is". cwd()."\n";
-	system("./bootstrap");
+	if (-e "./make_gpt_dist"){
+	#This is currently only for gsi_openssh
+	  system("./make_gpt_dist");
+	  #system("mv ${package}*.tar.gz $package_output");
+	}else{
+	  system("./bootstrap");
+	}
 	chdir($topsrcdir);
    }
 }
 
 sub build{
    my @sorted_package_names = @_;
-   print Dumper @sorted_package_names;
+   #print Dumper @sorted_package_names;
    my $topsrcdir=cwd();
    chdir($packagemap{'globus_core'});
 	print "cwd is". cwd()."\n";
@@ -248,7 +261,12 @@ my $installer="installer_makefile.frag";
          {
               $extras = "-static ";
          }
-
+	# if there are Build_Instructions, it's a patch-n-build, and we're going to punt and
+	# use gpt-build
+	if (defined $pkg->{'depnode'}->{'Build_Instructions'}){
+         print INS "${packname}-only: gpt\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+	}else{
          print INS "${packname}-only: gpt ${packname}-configure ${packname}-make ${packname}-makeinstall\n";
 	 print INS "${packname}-configure:";
 	 print INS "\t $packagemap{$pack}/config.status\n";
@@ -261,6 +279,7 @@ my $installer="installer_makefile.frag";
 	 print INS "${packname}-makeinstall:\n";
          print INS "\tcd $packagemap{$pack} \;";
 	 print INS "\tmake install\n\n";
+	}
 
          print INS "$packname: gpt ${packname}-runtime ${packname}-compile\n";
          print INS "${packname}-runtime: ";
