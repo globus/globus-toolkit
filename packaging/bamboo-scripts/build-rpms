@@ -1,6 +1,12 @@
 #! /bin/sh
 
 set -e
+
+usage()
+{
+    echo "Usage: $0 -n OSNAME -v OSVER [-a ARTIFACTROOT] [-S] [-t TAG]"
+}
+
 umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
@@ -9,10 +15,11 @@ bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:a:s $*)
+args=$(getopt n:v:a:St:h $*)
 set -- ${args}
 
 sign=1
+tag=""
 for i; do
     case "$i" in
         -n)
@@ -30,19 +37,27 @@ for i; do
             shift
             shift
             ;;
-	-s)
+	-S)
 	   sign=0 
 	   shift
 	    ;;
+        -t)
+           tag="$2"
+           shift 2
+           ;;
+        -h)
+           usage
+           exit 0
+           ;;
         --)
-            shift
-            break
-            ;;
+           shift
+           break
+           ;;
     esac
 done
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
-    echo "Usage: $0 -n OSNAME -v OSVER [-a ARTIFACTROOT]" 1>&2
+    usage 1>&2
     exit 1
 fi
 
@@ -99,7 +114,7 @@ fi
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-simple-ca
 packages_to_build=myproxy,gsi_openssh
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
-packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build | \
+packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"}| \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
