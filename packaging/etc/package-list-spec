@@ -29,3 +29,5 @@ globus_gsi_callback	gsi/callback/source	gpt
 globus_gridftp_server	gridftp/server/src	gpt
 globus_proxy_utils	gsi/proxy/proxy_utils/source	gpt
 myproxy			myproxy			gpt
+gsi_openssh     gssapi-openssh/openssh  make_gpt_dist null GPT-branch
+gsi_openssh_setup  gssapi-openssh/setup make_gpt_dist null HEAD
