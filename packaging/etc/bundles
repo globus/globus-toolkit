@@ -405,7 +405,6 @@ BUNDLE gt2-threaded THREADED
 BUNDLE globus-simple-ca
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_gsi_openssl_error
 	globus_openssl_module
 	globus_gsi_proxy_ssl
