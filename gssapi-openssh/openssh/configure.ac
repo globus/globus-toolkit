@@ -242,7 +242,8 @@ AC_ARG_WITH(stackprotect,
 if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wall])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wpointer-arith])
-	OPENSSH_CHECK_CFLAG_COMPILE([-Wuninitialized])
+    # cc1: warning: -Wuninitialized is not supported without -O
+    # OPENSSH_CHECK_CFLAG_COMPILE([-Wuninitialized])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wsign-compare])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wformat-security])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wno-pointer-sign])
