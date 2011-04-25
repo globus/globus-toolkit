@@ -15,7 +15,8 @@ bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:a:St:h $*)
+args=$(getopt n:v:a:St:hg: $*)
+globusversion=""
 set -- ${args}
 
 sign=1
@@ -48,6 +49,14 @@ for i; do
         -h)
            usage
            exit 0
+           ;;
+        -g)
+           if ! expr "$2" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
+               echo "Invalid GT version $2" 1>&2
+               exit 1
+           fi
+           globusversion="$2"
+           shift 2
            ;;
         --)
            shift
@@ -98,6 +107,11 @@ cat <<EOF >> $topdir/.rpmmacros
 # Override this, as it breaks documentation dependencies in some of the builds 
 %_excludedocs 0
 EOF
+
+if [ -n "$globusversion" ]; then
+    echo "%globus_version	$globusversion" >> "$topdir/.rpmmacros"
+fi
+
 if [ "$sign" = 1 ]; then
     cat <<EOF >> $topdir/.rpmmacros
 %_signature gpg
