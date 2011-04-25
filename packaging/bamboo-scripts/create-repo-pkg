@@ -5,38 +5,52 @@ if ! expr $bambooscriptdir ":" "/" ; then
     bambooscriptdir="$(pwd)/$bambooscriptdir"
 fi
 
-args=$(getopt n:v:b:s:r: $*)
+args=$(getopt n:v:b:s:r:g:S $*)
 set -- ${args}
 
-baseurl="http://www.mcs.anl.gov/~mlink/globusrepo/\$osname/\\\$releasever/\\\$basearch/"
-srcbaseurl="http://www.mcs.anl.gov/~mlink/globusrepo/\$osname/\\\$releasever/SRPMS/"
+baseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/\\\$basearch/"
+srcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/SRPMS/"
 
 reponame="Globus-repo-config"
+fullglobusversion="5.1.0"
+globusversion="${fullglobusversion%.*}"
+majorglobusversion="gt${globusversion%.*}"
+sign=1
+
 for i; do
     case "$i" in
         -n)
             osname="$2"
-            shift
-            shift
+            shift 2
             ;;
         -v)
             osver="$2"
-            shift
-            shift
+            shift 2
             ;;
         -b)
             baseurl="$2"
-            shift
-            shift
+            shift 2
             ;;
         -s)
             srcbaseurl="$2"
-            shift
-            shift
+            shift 2
             ;;
         -r)
             reponame="$2"
-            shift
+            shift 2
+            ;;
+        -g)
+            if ! expr "$2" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
+                echo "Invalid GT version $2" 1>&2
+                exit 1
+            fi
+            fullglobusversion="$2"
+            globusversion="${fullglobusversion%.*}"
+            majorglobusversion="gt${globusversion%.*}"
+            shift 2
+            ;;
+        -S)
+            sign=0
             shift
             ;;
         --)
@@ -58,6 +72,7 @@ for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
     mkdir -p ${HOME}/${x}
 done
 
+echo "Creating $HOME/SOURCES/${reponame}.$osname.repo"
 cat <<EOF > $HOME/SOURCES/${reponame}.$osname.repo
 [Globus]
 name=Globus
@@ -77,6 +92,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
 EOF
 cp "${bambooscriptdir}/RPM-GPG-KEY-Globus" $HOME/SOURCES
 
+echo "Creating $HOME/SPECS/$reponame.$osname.spec"
 cat <<EOF > $HOME/SPECS/$reponame.$osname.spec
 Name:           $reponame.$osname
 Version:        $osver
@@ -121,5 +137,7 @@ rm -rf \$RPM_BUILD_ROOT
 EOF
 
 rpmbuild -ba $HOME/SPECS/$reponame.$osname.spec
-expect ${bambooscriptdir}/sign-rpm $HOME/SRPMS/${reponame}.$osname*rpm
-expect ${bambooscriptdir}/sign-rpm $HOME/RPMS/noarch/${reponame}.$osname*rpm
+if [ $sign -eq 1 ]; then
+    expect ${bambooscriptdir}/sign-rpm $HOME/SRPMS/${reponame}.$osname*rpm
+    expect ${bambooscriptdir}/sign-rpm $HOME/RPMS/noarch/${reponame}.$osname*rpm
+fi
