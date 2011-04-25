@@ -101,7 +101,7 @@ if ( !defined($flavor) )
     pod2usage(1);
 }
 
-if ( defined(@ARGV) && ($ARGV[0] ne "") )
+if ( @ARGV && ($ARGV[0] ne "") )
 {
     push(@pkgs, @ARGV);
 }
@@ -112,7 +112,7 @@ if ( grep(/^ANY$/, @pkgs) )
     @pkgs = ("ANY");
 }
 
-if ( !defined(@pkgs) || (scalar(@pkgs) == 0) )
+if ( !@pkgs || (scalar(@pkgs) == 0) )
 {
     @pkgs = ("ANY");
 }

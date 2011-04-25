@@ -15,8 +15,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	13.1
-Release:	3%{?dist}
+Version:	13.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -158,11 +158,15 @@ unset GPT_LOCATION
 
 %{_datadir}/globus/globus-bootstrap.sh
 
-export GLOBUS_VERSION=5.2.0
+%if "%{?globus_version}" != ""
+GLOBUS_VERSION=%{globus_version}
+%else
+GLOBUS_VERSION=5.2.0
+%endif
+export GLOBUS_VERSION
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --disable-static
-
 
 make %{?_smp_mflags}
 
