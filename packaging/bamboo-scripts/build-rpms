@@ -80,7 +80,7 @@ fi
 HOME=$topdir
 
 mkdir -p $tmppath
-for x in BUILD  BUILDROOT  RPMS  SPECS  SRPMS; do
+for x in BUILD  BUILDROOT SOURCES RPMS  SPECS  SRPMS; do
     mkdir -p $topdir/$x
 done
 
@@ -144,7 +144,7 @@ cd ../../package-output
 for i in *.tar.gz; do rpmbuild -ts --nodeps $i || true; done
 
 # gsi-openssh doesn't quite work this way, so we do it explicitly
-cp gsi_openssh-*-src.tar.gz $HOME/SOURCES
+cp gsi_openssh-*-src.tar.gz $HOME/SOURCES/
 rpmbuild -bs --nodeps ../source-trees/gssapi-openssh/openssh/gsi_openssh.spec
 
 for i in grid-packaging-tools $packages; do
