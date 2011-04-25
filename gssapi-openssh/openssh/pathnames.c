@@ -89,11 +89,10 @@ init_pathnames()
         }
     }
     if (!sshdir) {
-        if (access(GSISSHDIR, X_OK) < 0) {
-            fatal("%s not found.", GSISSHDIR);
-        }
-        if (sshdir) free(sshdir);
         sshdir = strdup(GSISSHDIR);
+        if (access(sshdir, X_OK) < 0) {
+            fatal("%s not found.", sshdir);
+        }
     }
 
     /* lots of one time memory leaks here */
