@@ -81,14 +81,19 @@ init_pathnames()
     }
 
     if (gl) {
-        sshdir = compose2(gl, GSISSHDIR);
+        sshdir = compose2(gl, SSHDIR);
+        if (access(sshdir, X_OK) < 0) {
+            logit("%s not found.", sshdir);
+            free(sshdir);
+            sshdir = NULL;
+        }
     }
-    if (!gl || access(sshdir, X_OK) < 0) {
+    if (!sshdir) {
+        if (access(GSISSHDIR, X_OK) < 0) {
+            fatal("%s not found.", GSISSHDIR);
+        }
         if (sshdir) free(sshdir);
         sshdir = strdup(GSISSHDIR);
-    }
-    if (access(sshdir, X_OK) < 0) {
-        fatal("/etc/gsissh not found.");
     }
 
     /* lots of one time memory leaks here */
