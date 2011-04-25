@@ -12,7 +12,7 @@
 
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 

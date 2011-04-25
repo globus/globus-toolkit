@@ -77,8 +77,10 @@ int main(int argc, char * argv[])
     globus_bool_t                       personal = GLOBUS_FALSE;
     char *                              local_user = NULL;
     int                                 ch;
+    globus_bool_t                       do_ntp_check = GLOBUS_FALSE;
     FILE *                              ntpdate;
     char                                ntpbuffer[256];
+    char *                              cert_to_check = NULL;
     globus_module_descriptor_t *        modules[] =
     {
         GLOBUS_COMMON_MODULE,
@@ -88,21 +90,31 @@ int main(int argc, char * argv[])
         NULL
     };
 
-    while ((ch = getopt(argc, argv, "ph")) != -1)
+    while ((ch = getopt(argc, argv, "phc:n")) != -1)
     {
         switch (ch)
         {
         case 'p':
             personal = GLOBUS_TRUE;
             break;
+        case 'c':
+            cert_to_check = strdup(optarg);
+            break;
+        case 'n':
+            do_ntp_check = GLOBUS_TRUE;
+            break;
         default:
         case 'h':
-            printf("Usage: %s [-p] [-h]\n"
+            printf("Usage: %s [-p] [-h] [-c CERT] [-n]\n"
                    " OPTIONS:\n"
                    "   -p                         "
                    "Perform checks on use certificates [default: no]\n"
                    "   -h                         "
-                   "Print this help message\n", argv[0]);
+                   "Print this help message\n"
+                   "   -c CERT                    "
+                   "Check the validity of the certificate located in the file CERT, or standard input, if CERT is '-'\n"
+                   "   -n                         "
+                   "Enable NTP check for time synchronization\n", argv[0]);
             exit(1);
         }
     }
@@ -255,70 +267,73 @@ int main(int argc, char * argv[])
         goto out;
     }
 
-    printf("\nChecking clock synchronization\n"
-            "=============================\n");
-    printf("Running ntpdate -u -q 0.pool.ntp.org... ");
-    ntpdate = popen("ntpdate -u -q 0.pool.ntp.org", "r");
-    if (ntpdate == NULL)
+    if (do_ntp_check)
     {
-        printf("failed\n");
-    }
-    else
-    {
-        regex_t offset_regex;
-        globus_bool_t matched_good = GLOBUS_FALSE;
-        double offset;
-        double matched_good_offset;
-
-        if (regcomp(&offset_regex, "offset ([+.0-9-]+)", REG_EXTENDED) < 0)
+        printf("\nChecking clock synchronization\n"
+                "=============================\n");
+        printf("Running ntpdate -u -q 0.pool.ntp.org... ");
+        ntpdate = popen("ntpdate -u -q 0.pool.ntp.org", "r");
+        if (ntpdate == NULL)
         {
             printf("failed\n");
-            goto close_ntpdate;
-        }
-        while (fgets(ntpbuffer, sizeof(ntpbuffer)-1, ntpdate) != NULL)
-        {
-            regmatch_t offset_match[2];
-
-            if (regexec(&offset_regex,
-                        ntpbuffer,
-                        sizeof(offset_match)/sizeof(offset_match[0]),
-                        offset_match,
-                        0) != REG_NOMATCH)
-            {
-                offset = strtod(&ntpbuffer[offset_match[1].rm_so], NULL);
-
-                if (offset < 1.0 && offset > -1.0)
-                {
-                    matched_good = GLOBUS_TRUE;
-                    matched_good_offset = offset;
-                }
-                else
-                {
-                    printf("WARNING: clock skew %f seconds\n", offset);
-                    goto free_regex;
-                }
-            }
-        }
-free_regex:
-        regfree(&offset_regex);
-close_ntpdate:
-        rc = pclose(ntpdate);
-        if (rc != 0)
-        {
-            printf("WARNING: ntpdate failed\n");
-        }
-        else if (matched_good)
-        {
-            printf("ok (clock skew %f second)\n", offset);
-        }
-        else if (offset > 1 || offset < -1)
-        {
-            printf("ERROR: ntp skew greater than 1 second\n");
-            goto out;
         }
         else
         {
-            printf("WARNING: unable to parse ntpdate output\n");
+            regex_t offset_regex;
+            globus_bool_t matched_good = GLOBUS_FALSE;
+            double offset;
+            double matched_good_offset;
+
+            if (regcomp(&offset_regex, "offset ([+.0-9-]+)", REG_EXTENDED) < 0)
+            {
+                printf("failed\n");
+                goto close_ntpdate;
+            }
+            while (fgets(ntpbuffer, sizeof(ntpbuffer)-1, ntpdate) != NULL)
+            {
+                regmatch_t offset_match[2];
+
+                if (regexec(&offset_regex,
+                            ntpbuffer,
+                            sizeof(offset_match)/sizeof(offset_match[0]),
+                            offset_match,
+                            0) != REG_NOMATCH)
+                {
+                    offset = strtod(&ntpbuffer[offset_match[1].rm_so], NULL);
+
+                    if (offset < 1.0 && offset > -1.0)
+                    {
+                        matched_good = GLOBUS_TRUE;
+                        matched_good_offset = offset;
+                    }
+                    else
+                    {
+                        printf("WARNING: clock skew %f seconds\n", offset);
+                        goto free_regex;
+                    }
+                }
+            }
+    free_regex:
+            regfree(&offset_regex);
+    close_ntpdate:
+            rc = pclose(ntpdate);
+            if (rc != 0)
+            {
+                printf("WARNING: ntpdate failed\n");
+            }
+            else if (matched_good)
+            {
+                printf("ok (clock skew %f second)\n", offset);
+            }
+            else if (offset > 1 || offset < -1)
+            {
+                printf("ERROR: ntp skew greater than 1 second\n");
+                goto out;
+            }
+            else
+            {
+                printf("WARNING: unable to parse ntpdate output\n");
+            }
         }
     }
 
@@ -524,6 +539,117 @@ close_ntpdate:
             printf("no\n");
         }
 
+    }
+    if (cert_to_check)
+    {
+        printf("\nChecking Certificate\n"
+               "====================\n");
+        if (strcmp(cert_to_check, "-") == 0)
+        {
+            BIO * cert_bio;
+            x509_cert = NULL;
+            printf("Checking cert from stdin... ");
+
+            if((cert_bio = BIO_new_fp(stdin, BIO_NOCLOSE)) == NULL)
+            {
+                printf("failed\nError opening BIO to read from stdin\n");
+                goto out;
+            }
+            /* read in the cert */
+            if(!PEM_read_bio_X509(cert_bio, &x509_cert, NULL, NULL))
+            {
+                printf("failed\nError reading certificate from stdin\n");
+                goto out;
+            }
+
+            result = globus_gsi_cred_set_cert(handle, x509_cert);
+            if (result != GLOBUS_SUCCESS)
+            {
+                printf("failed\n%s\n",
+                        indent_string(
+                            globus_error_print_friendly(
+                                    globus_error_peek(result))));
+            }
+            else
+            {
+                printf("ok\n");
+            }
+            BIO_free(cert_bio);
+            X509_free(x509_cert);
+        }
+        else
+        {
+            printf("Checking cert at %s... ", cert_to_check);
+
+            result = globus_gsi_cred_read_cert(handle, cert_to_check);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                printf("failed\n%s\n",
+                        indent_string(
+                            globus_error_print_friendly(
+                                    globus_error_peek(result))));
+                goto out;
+            }
+            else
+            {
+                printf("ok\n");
+            }
+        }
+
+        printf("Checking Certificate Subject... ");
+        result = globus_gsi_cred_get_subject_name(handle, &subject_name);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("failed\n%s\n",
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
+        }
+        else
+        {
+            printf("\"%s\"\n", subject_name);
+        }
+
+        printf("Checking cert... ");
+        result = globus_gsi_cred_get_cert(handle, &x509_cert);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("failed\n%s\n",
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
+        }
+        else
+        {
+            printf("ok\n");
+        }
+
+        pubkey = X509_PUBKEY_get(X509_get_X509_PUBKEY(x509_cert));
+        printf("Checking that certificate contains an RSA key... ");
+        if (EVP_PKEY_type(pubkey->type) != EVP_PKEY_RSA)
+        {
+            printf("failed\nKey type is %d\n",
+                   EVP_PKEY_type(pubkey->type));
+            goto out;
+        }
+        else
+        {
+            printf("ok\n");
+        }
+
+        printf("Checking certificate trust chain... ");
+
+        result = globus_gsi_cred_verify_cert_chain(
+            handle, callback_data);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("failed\n%s\n",
+                    indent_string(
+                        globus_error_print_friendly(globus_error_peek(result))));
+        }
+        else
+        {
+            printf("ok\n");
+        }
     }
     rc = globus_fifo_init(&cert_list);
     if (rc != GLOBUS_SUCCESS)
