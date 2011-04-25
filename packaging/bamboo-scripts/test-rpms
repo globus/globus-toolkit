@@ -47,7 +47,7 @@ HOME=$topdir
 mkdir -p $tmppath
 
 # Remove all globus-related packages prior to testing
-pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy' || true) )"
+pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
     sudo rpm -e --allmatches $pkgs_to_rm
 fi
@@ -62,7 +62,7 @@ sudo rpm -hUv "$repopkg_url"
 first=1
 for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
-    pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy' || true) )"
+    pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi_openssh' || true) )"
     if [ -n "$pkgs_to_rm" ]; then
         sudo rpm -e --allmatches $pkgs_to_rm
     fi
