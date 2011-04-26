@@ -3,7 +3,7 @@ srcdir=@srcdir@
 CONFIG_SITE=@INSTALLER_ROOT@/config.site
 export CONFIG_SITE
 
-all: gpt gridftp prewsgram rls gsi-myproxy gsi-openssh @i18n@ prews-test globus-gsi-test done
+all: gpt gridftp prewsgram gsi-myproxy gsi-openssh @i18n@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
@@ -19,7 +19,6 @@ export GLOBUS_VERSION GLOBUS_VERSIONNAME
 
 BUILD_OPTS=@buildopts@
 FLAVOR=@flavor@
-THR=@thr@
 @aixargs@
 
 # Final info target
