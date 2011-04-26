@@ -217,6 +217,7 @@ static globus_hashtable_t               guc_l_alias_table;
 static globus_bool_t                    guc_l_aliases = GLOBUS_FALSE;
 static globus_l_guc_alias_t *           guc_l_src_alias_ent = NULL;
 static globus_l_guc_alias_t *           guc_l_dst_alias_ent = NULL;
+static globus_bool_t                    guc_l_newline_exit = GLOBUS_FALSE;
 
 /*****************************************************************************
                           Module specific prototypes
@@ -1905,6 +1906,11 @@ main(int argc, char **argv)
 
     globus_l_guc_info_destroy(&guc_info);
 
+    if(guc_l_newline_exit && !globus_l_globus_url_copy_ctrlc_handled)
+    {
+        globus_libc_fprintf(stdout, "\n");
+    }
+    
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     /* XXX fix hang globus_module_deactivate_all(); */
 
@@ -2010,6 +2016,7 @@ globus_l_gass_copy_performance_cb(
         avg_throughput / (1024 * 1024),
         instantaneous_throughput / (1024 * 1024));
     fflush(stdout);
+    guc_l_newline_exit = GLOBUS_TRUE;
 }
 
 void
@@ -2025,6 +2032,7 @@ globus_guc_copy_performance_update(
         avg_throughput / (1024 * 1024),
         instantaneous_throughput / (1024 * 1024));
     fflush(stdout);
+    guc_l_newline_exit = GLOBUS_TRUE;
 }
 
 void
