@@ -156,6 +156,8 @@ sub bootstrap{
 	#print `system("ls -al $ENV{'GPT_LOCATION'}/share/globus/globus_aclocal/#gpt_autoconf_macros.m4")`;
 	system("./bootstrap");
 	system("./configure --with-flavor=gcc32; make; make install");
+	#have to clean up after ourselves or core will never build in installer
+	system("make distclean");
 	chdir($topsrcdir);
    for my $pkg (@sorted_package_names){
 
@@ -265,7 +267,7 @@ my $installer="installer_makefile.frag";
 	# use gpt-build
 	if (defined $pkg->{'depnode'}->{'Build_Instructions'}){
          print INS "${packname}-only: gpt\n";
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $packagemap{$pack} . " \${FLAVOR}\n";
 	}else{
          print INS "${packname}-only: gpt ${packname}-configure ${packname}-make ${packname}-makeinstall\n";
 	 print INS "${packname}-configure:";
