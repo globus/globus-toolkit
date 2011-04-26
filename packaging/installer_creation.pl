@@ -166,6 +166,7 @@ sub bootstrap{
 	if (-e "./make_gpt_dist"){
 	#This is currently only for gsi_openssh
 	  system("./make_gpt_dist");
+	  system("autoconf");
 	  #system("mv ${package}*.tar.gz $package_output");
 	}else{
 	  system("./bootstrap");

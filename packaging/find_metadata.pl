@@ -32,7 +32,7 @@ if (($File::Find::name =~/pkg_data_src\.gpt\.in/)){
         require Grid::GPT::V1::Package;
         my $pkg = new Grid::GPT::V1::Package;
 
-        print "Reading in metadata for $pack.\n";
+        #print "Reading in metadata for $pack.\n";
         $pkg->read_metadata_file($_);
 
 	$packagemap{$pkg->{'Name'}}=$File::Find::dir;
@@ -45,7 +45,7 @@ if (($File::Find::name =~/\.spec$/)){
         require Grid::GPT::V1::Package;
         my $pkg = new Grid::GPT::V1::Package;
 
-        print "Reading in metadata for $File::Find::name.\n";
+        #print "Reading in metadata for $File::Find::name.\n";
 	if (-e "./pkgdata/pkg_data_src.gpt.in"){
           $pkg->read_metadata_file("\./pkgdata/pkg_data_src.gpt.in");
 
