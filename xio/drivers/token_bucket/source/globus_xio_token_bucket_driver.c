@@ -47,10 +47,9 @@ typedef enum
         ("[%s] Exiting\n", _xio_name))
 
 
-#define DEFAULT_PERIOD_US               100
-/* set to a gigabit per sec.  unit is kilabits */
+/* set to a gigabit per sec */
 #define DEFAULT_RATE                    (1024*1024*1024/8)
-#define DEFAULT_BURST                   (5000000)
+#define DEFAULT_PERIOD_US               1000
 
 static int
 globus_l_xio_token_bucket_activate();
@@ -126,6 +125,7 @@ typedef struct l_xio_token_bucket_data_s
 {
     globus_xio_operation_t              op;
     globus_xio_iovec_t *                iov;
+    globus_xio_iovec_t *                iov_ptr;
     int                                 iovc;
     globus_xio_iovec_t *                current_iov;
     int                                 current_iovc;
@@ -207,7 +207,7 @@ globus_l_xio_token_bucket_error_cb(
     }
     globus_mutex_unlock(&op_handle->mutex);
 
-    globus_free(data->iov);
+    globus_free(data->iov_ptr);
     globus_free(data->current_iov);
     globus_free(data);
     GlobusXIOTBDebugExit();
@@ -247,6 +247,7 @@ globus_l_xio_token_bucket_op_cb(
         if(op_handle->done)
         {
             globus_fifo_dequeue(&op_handle->q);
+            globus_free(data->iov_ptr);
             globus_free(data->current_iov);
             globus_free(data);
         }
@@ -747,6 +748,7 @@ globus_l_xio_token_bucket_read(
         data->current_iovc = iovec_count;
         data->iov = (globus_xio_iovec_t *)
             globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
+        data->iov_ptr = data->iov;
         data->current_iov = (globus_xio_iovec_t *)
             globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
         data->op_handle = handle->read_handle;
@@ -811,6 +813,7 @@ globus_l_xio_token_bucket_write(
         data->current_iovc = iovec_count;
         data->iov = (globus_xio_iovec_t *)
             globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
+        data->iov_ptr = data->iov;
         data->current_iov = (globus_xio_iovec_t *)
             globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
         data->op_handle = handle->write_handle;
