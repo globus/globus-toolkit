@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-AC_INIT([gridftp-hdfs], [0.3.0], [osg-hadoop@opensciencegrid.org])
+AC_INIT([gridftp-hdfs], [0.3.1], [osg-hadoop@opensciencegrid.org])
 
-AM_INIT_AUTOMAKE([gridftp-hdfs], [0.3.0])
+AM_INIT_AUTOMAKE([gridftp-hdfs], [0.3.1])
 
 AC_CONFIG_SRCDIR([src/gridftp_hdfs.c])
 #AC_CONFIG_HEADER([config.h])
@@ -38,6 +38,7 @@ AC_CHECK_FILE(${GLOBUSLOCATION}/include/gcc32, INCLUDE=["$INCLUDE -I${GLOBUSLOCA
 
 # Checks for libraries.
 AC_CHECK_LIB([hdfs], [hdfsRead], , [AC_MSG_ERROR(Could not find libhdfs)], [-ljvm])
+#AC_CHECK_LIB([jsig], [signal], ,   [AC_MSG_ERROR(Could not find libjsig)], )
 
 # Checks for header files.
 AC_CHECK_HEADERS([unistd.h], ,[AC_MSG_ERROR(Could not find unistd.h header)])

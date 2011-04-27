@@ -4,6 +4,13 @@
  * function.
 */
 
+#include <sys/resource.h>
+#include <sys/prctl.h>
+
+#include <sys/syscall.h>
+#include <signal.h>
+#include <execinfo.h>
+
 #include "gridftp_hdfs.h"
 
 /*
@@ -55,6 +62,70 @@ GlobusExtensionDefineModule(globus_gridftp_server_hdfs) =
     NULL,
     &gridftp_hdfs_local_version
 };
+
+void
+segv_handler (int sig)
+{
+  printf ("SEGV triggered in native code.\n");
+  const int max_trace = 32;
+  void *trace[max_trace];
+  char **messages = (char **)NULL;
+  int i, trace_size = 0;
+
+  trace_size = backtrace(trace, max_trace);
+  messages = backtrace_symbols(trace, trace_size);
+  for (i=0; i<trace_size; ++i) {
+	printf("[bt] %s\n", messages[i]);
+  }
+  raise (SIGQUIT);
+  signal (SIGSEGV, SIG_DFL);
+  raise (SIGSEGV);
+  //raise (SIGSYS);
+}
+/*
+ *  Check to see if cores can be produced by gridftp; if not, turn them on.
+ */
+void
+gridftp_check_core()
+{
+    int err;
+    struct rlimit rlim;
+/*
+    err = getrlimit(RLIMIT_CORE, &rlim);
+    if (err) {
+        snprintf(err_msg, MSG_SIZE, "Cannot get rlimits due to %s.\n", strerror(err));
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+        return;
+    }
+    snprintf(err_msg, MSG_SIZE, "Core limit %ld; %ld.\n", rlim.rlim_cur, rlim.rlim_max);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
+*/
+    rlim.rlim_cur = RLIM_INFINITY;
+    rlim.rlim_max = RLIM_INFINITY;
+    err = setrlimit(RLIMIT_CORE, &rlim);
+    if (err) {
+        snprintf(err_msg, MSG_SIZE, "Cannot set rlimits due to %s.\n", strerror(err));
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+    }
+
+    int isDumpable = prctl(PR_GET_DUMPABLE);
+
+    if (!isDumpable) {
+        err = prctl(PR_SET_DUMPABLE, 1);
+    }
+    if (err) {
+        snprintf(err_msg, MSG_SIZE, "Cannot set dumpable: %s.\n", strerror(errno));
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+    } else {
+        //globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Dumpable successfully set!\n");
+    }
+
+    // Reset signal handler:
+    sig_t sigerr = signal (SIGSEGV, segv_handler);
+    if (sigerr == SIG_ERR) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Unable to set core handler.\n");
+    }
+}
 
 /*
  *  Called when the HDFS module is activated.
@@ -351,6 +422,12 @@ globus_l_gfs_hdfs_start(
     }
 
     hdfs_handle->tmp_file_pattern = (char *)NULL;
+
+    // Handle core limits
+    gridftp_check_core();
+
+    // Force a SEGV to test the core file creation
+    //if (*(hdfs_handle->tmp_file_pattern) == 4) printf("Foo!\n");
 
     globus_gridftp_server_operation_finished(
         op, GLOBUS_SUCCESS, &finished_info);

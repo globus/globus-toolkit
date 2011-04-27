@@ -90,5 +90,5 @@ fi
 
 export CLASSPATH=$CLASSPATH
                                                                       
-exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
+LD_PRELOAD=libjsig.so exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp.conf -dsi hdfs -no-fork
 

@@ -49,7 +49,10 @@ globus_l_gfs_hdfs_stat(
     /* lstat is the same as stat when not operating on a link */
     if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, PathName)) == NULL)
     {
-        result = GlobusGFSErrorSystemError("stat", errno);
+        if (errno)
+            result = GlobusGFSErrorSystemError("stat", errno);
+        else
+            result = GlobusGFSErrorSystemError("stat", EINTERNAL);
         goto error_stat1;
     }
     snprintf(err_msg, MSG_SIZE, "Finished HDFS stat operation.\n");
@@ -58,7 +61,9 @@ globus_l_gfs_hdfs_stat(
     mode_t mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777) :  (S_IFREG | 0666);
 
     globus_l_gfs_file_partition_path(PathName, basepath, filename);
-    
+   
+    // TODO: cleanup of fileInfo is pretty horrid.
+ 
     if(!S_ISDIR(mode) || stat_info->file_only)
     {
         stat_array = (globus_gfs_stat_t *)
@@ -76,36 +81,48 @@ globus_l_gfs_hdfs_stat(
     }
     else
     {
-        int                             i;
+        int i;
     
         hdfsFileInfo * dir = hdfsListDirectory(hdfs_handle->fs, PathName, &stat_count);
         if(dir == NULL)
         {
-            result = GlobusGFSErrorSystemError("opendir", errno);
-            goto error_open;
-        }
-        
-        stat_array = (globus_gfs_stat_t *)
-            globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
-        if(!stat_array)
-        {
-            result = GlobusGFSErrorMemory("stat_array");
-            goto error_alloc2;
-        }
+            if (errno == 0)
+            { // Empty directory case
+                stat_array = (globus_gfs_stat_t *) globus_malloc(sizeof(globus_gfs_stat_t));
+                if(!stat_array)
+                {
+                    result = GlobusGFSErrorMemory("stat_array");
+                    goto error_alloc1;
+                }
 
-        for(i = 0; i<stat_count; i++)
-        {
-            globus_l_gfs_file_copy_stat(
-                stat_array + i, dir + i, dir[i].mName, 0);
+                stat_count = 0;
+            } else {
+                result = GlobusGFSErrorSystemError("opendir", errno);
+                goto error_open;
+            }
+        } else { 
+            hdfsFreeFileInfo(fileInfo, 1);
+            stat_array = (globus_gfs_stat_t *)
+                globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
+            if(!stat_array)
+            {
+                result = GlobusGFSErrorMemory("stat_array");
+                goto error_alloc2;
+            }
+
+            for(i = 0; i<stat_count; i++)
+            {
+                globus_l_gfs_file_copy_stat(
+                    stat_array + i, dir + i, dir[i].mName, 0);
+            }
+            hdfsFreeFileInfo(dir, stat_count);
+
+            if(i != stat_count)
+            {
+                result = GlobusGFSErrorSystemError("readdir", errno);
+                goto error_read;
+            }
         }
-        hdfsFreeFileInfo(dir, stat_count);
-        
-        if(i != stat_count)
-        {
-            result = GlobusGFSErrorSystemError("readdir", errno);
-            goto error_read;
-        }
-        
     }
     
     globus_gridftp_server_finished_stat(
@@ -215,14 +232,14 @@ globus_l_gfs_file_copy_stat(
 {
     GlobusGFSName(globus_l_gfs_file_copy_stat);
 
-    stat_object->mode     = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777) :  (S_IFREG | 0666);
-    stat_object->nlink    = (fileInfo->mKind == kObjectKindDirectory) ? 0 : 1;
+    stat_object->mode     = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | fileInfo->mPermissions) :  (S_IFREG | fileInfo->mPermissions);
+    stat_object->nlink    = (fileInfo->mKind == kObjectKindDirectory) ? 3 : 1;
     stat_object->uid      = default_id;
     stat_object->gid      = default_id;
     stat_object->size     = (fileInfo->mKind == kObjectKindDirectory) ? 4096 : fileInfo->mSize;
     stat_object->mtime    = fileInfo->mLastMod;
     stat_object->atime    = fileInfo->mLastMod;
-    stat_object->ctime    = fileInfo->mLastMod;
+    stat_object->ctime    = fileInfo->mLastAccess;
     stat_object->dev      = 0;
     stat_object->ino      = 0;
 
