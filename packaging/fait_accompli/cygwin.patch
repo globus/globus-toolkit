@@ -187,4 +187,66 @@ diff -N source-trees/database/c/sqlite/patches/sqlite-3.3.17-patch
 + 	$(INSTALL) -d $(DESTDIR)$(libdir)
 + 	$(LTINSTALL) libsqlite3.la $(DESTDIR)$(libdir)
 + 	$(INSTALL) -d $(DESTDIR)$(exec_prefix)/bin
-? source-trees/database/c/sqlite/sqlite-3.3.17
+Index: source-trees/gsi/sysconfig/source/library/globus_gsi_system_config.c
+===================================================================
+RCS file: /home/globdev/CVS/globus-packages/gsi/sysconfig/source/library/globus_gsi_system_config.c,v
+retrieving revision 1.83.4.2
+diff -u -r1.83.4.2 globus_gsi_system_config.c
+--- source-trees/gsi/sysconfig/source/library/globus_gsi_system_config.c     15 Feb 2010 01:21:00 -0000      1.83.4.2
++++ source-trees/gsi/sysconfig/source/library/globus_gsi_system_config.c     3 Apr 2011 23:23:22 -0000
+@@ -230,6 +230,11 @@
+ 
+ int globus_i_gsi_sysconfig_debug_level = 0;
+ 
++
++#ifdef TARGET_ARCH_CYGWIN
++static int globus_l_gsi_sysconfig_skip_check = 0;
++#endif
++
+ /**
+  * Module descriptor static initializer.
+  */
+@@ -291,6 +296,15 @@
+ 
+     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+ 
++#ifdef TARGET_ARCH_CYGWIN
++    /* windows permissions are a pain, and cygwin won't give reliable 
++    permissions when a non-posix path is used anyways */
++    if(getenv("GLOBUS_IGNORE_CRED_PERMS"))
++    {
++        globus_l_gsi_sysconfig_skip_check = 1;
++    }
++#endif
++
+     result = globus_module_activate(GLOBUS_COMMON_MODULE);
+ 
+     if(result != 0)
+@@ -4786,6 +4800,13 @@
+ 
+     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+ 
++#ifdef TARGET_ARCH_CYGWIN
++    if(globus_l_gsi_sysconfig_skip_check)
++    {
++        return globus_gsi_sysconfig_file_exists_unix(filename);
++    }
++#endif
++
+     if (stat(filename,&stx) == -1)
+     {
+         switch (errno)
+@@ -4919,6 +4940,13 @@
+         "globus_i_gsi_sysconfig_check_certfile_unix";
+ 
+     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
++
++#ifdef TARGET_ARCH_CYGWIN
++    if(globus_l_gsi_sysconfig_skip_check)
++    {
++        return globus_gsi_sysconfig_file_exists_unix(filename);
++    }
++#endif
+     
+     if (stat(filename,&stx) == -1)
+     {
