@@ -522,6 +522,7 @@ $log_levels
 -state-file-dir ${statefiledir}
 ${startargs}
 $single
+${X509_CERT_DIR:+-x509-cert-dir "$X509_CERT_DIR"}
 -globus-toolkit-version "$globus_toolkit_version"
 -service-tag "${file_prefix}.$$"
 EOF
