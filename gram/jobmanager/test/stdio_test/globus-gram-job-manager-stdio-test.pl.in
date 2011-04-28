@@ -11,10 +11,11 @@ use Sys::Hostname;
 use Test;
 use File::Path;
 use File::Compare;
+use File::Temp qw(tempdir);
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
-my $testtmp = &make_tmpdir();
+my $testtmp = tempdir(CLEANUP => 1);
 my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
 my $verbose = 0;
 
@@ -36,11 +37,17 @@ sub test_rsl
     my $rsl_list;
     my $out_count;
     my $all_rsl;
+    my $need_ftp = 0;
 
     $rsl_list = join('', <$test_rsl_fp>);
     $rsl_list =~ s/&//;
     $rsl_list =~ m/\(\*\s+(\d+)\s+\*\)/;
     $out_count = $1;
+
+    if ($rsl_list =~ m/TEST_FTP_PREFIX/)
+    {
+        $need_ftp = 1;
+    }
 
     $test_rsl_fp->close();
 
@@ -99,17 +106,26 @@ sub test_rsl
 	}
     }
 
-    ok("$testname:$rc", "$testname:0");
+    skip($need_ftp && !exists $ENV{TEST_FTP_PREFIX}, 
+            "$testname:$rc", "$testname:0");
 }
 
 foreach(@test_cases)
 {
+    my $test_ftp_prefix = $ENV{TEST_FTP_PREFIX};
+    my %rsl_substitutions = ();
+
+    $rsl_substitutions{TEST_STDOUT} = "$testtmp/$_.out";
+    $rsl_substitutions{TEST_STDERR} = "$testtmp/$_.err";
+    $rsl_substitutions{TEST_FTP_PREFIX} = "$ENV{TEST_FTP_PREFIX}/%2F" 
+        if exists $ENV{TEST_FTP_PREFIX};
+
     my $testtmprsl
-        = "(rsl_substitution = "
-        . "   (TEST_STDOUT \\\"$testtmp/$_.out\\\")"
-        . "   (TEST_STDERR \\\"$testtmp/$_.err\\\")"
-	. "   (TEST_FTP_PREFIX \\\"gsiftp://". hostname . "/%2F\\\")"
-	. ")";
+        = "(rsl_substitution = " 
+        . join('', 
+            map { "($_ \\\"$rsl_substitutions{$_}\\\")" } keys %rsl_substitutions)
+        . ")";
+
     push(@tests, "test_rsl(\"$_\", \"$testtmprsl\")");
 }
 if(@ARGV)
