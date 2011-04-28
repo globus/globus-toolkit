@@ -205,8 +205,9 @@ for my $s  (@{ $dist->get_keys() }) {
           $major =~ s/^0*// if defined($major);
           $minor =~ s/^0*// if defined($minor);
 
-          if ((($major || 0) >= $modminmaj) &&
-              (($minor || 0) >= $modminmin))
+          if ((($major || 0) > $modminmaj) ||
+              ((($major || 0) == $modminmaj) &&
+              (($minor || 0) >= $modminmin)))
           {
               $log->announce("Skipping $s as $modname $version is already installed"); 
               next;
