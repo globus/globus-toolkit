@@ -1,10 +1,12 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 
 use strict;
 use Test::Harness;
 use Cwd;
+use Sys::Hostname;
+
 require 5.005;
 use vars qw(@tests);
 use Globus::Core::Paths;
@@ -29,11 +31,13 @@ my $startargs = '-log never ';
 
 chdir $Globus::Core::Paths::exec_prefix . "/test/@PACKAGE@";
 
-if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
+if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
 {
     $ENV{X509_CERT_DIR} = cwd();
     $ENV{X509_USER_PROXY} = "testcred.pem";
     system('chmod go-rw testcred.pem'); 
+
+    $startargs .= "-x509-cert-dir $ENV{X509_CERT_DIR} ";
 }
 
 if(@ARGV)
@@ -60,6 +64,25 @@ else
     $kill_gatekeeper = 1;
 }
 
+if (!exists $ENV{TEST_FTP_PREFIX})
+{
+    my $hostname = hostname();
+    print "Checking to see if GridFTP server is running on the default port\n";
+    system("globus-url-copy /etc/group gsiftp://$hostname/dev/null 2>/dev/null");
+    if ($? == 0)
+    {
+        $ENV{TEST_FTP_PREFIX} = "gsiftp://$hostname";
+    }
+}
+
+if (exists $ENV{TEST_FTP_PREFIX})
+{
+    print "Using GridFTP Server at $ENV{TEST_FTP_PREFIX}\n";
+}
+else
+{
+    print "Skipping GridFTP tests\n";
+}
 $test_result = eval { runtests(@tests) };
 if(!defined($test_result))
 {
