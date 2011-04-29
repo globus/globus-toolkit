@@ -35,7 +35,7 @@ Data = \
 
 test_DATA=$(Data)
 
-test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
+test_SCRIPTS=$(Scripts) TESTS-junit.pl globus-gram-client-run-tests.pl
 
 test_PROGRAMS= \
         failed-job-two-phase-commit \
@@ -63,7 +63,7 @@ test_PROGRAMS= \
         stdio-update-test \
         version-test
 
-EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
+EXTRA_DIST = $(Scripts) $(Data) TESTS-junit.pl.in globus-gram-client-run-tests.pl.in
 
 INCLUDES = $(GPT_INCLUDES)
 
