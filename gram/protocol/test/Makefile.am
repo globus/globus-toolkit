@@ -8,7 +8,6 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 Scripts = \
 	TESTS.pl \
-	TESTS-junit.pl \
 	globus-gram-protocol-allow-attach-test.pl \
 	globus-gram-protocol-error-test.pl \
 	globus-gram-protocol-io-test.pl \
@@ -21,7 +20,7 @@ Scripts = \
         unpack-status-reply-with-extensions-test.pl
 
 
-pkgtest_SCRIPTS=$(Scripts) globus-gram-protocol-run-tests.pl
+pkgtest_SCRIPTS=$(Scripts) TESTS-junit.pl globus-gram-protocol-run-tests.pl
 
 pkgtest_PROGRAMS= \
 	globus-gram-protocol-allow-attach-test \
