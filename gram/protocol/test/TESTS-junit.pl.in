@@ -3,7 +3,7 @@
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 
 use strict;
-use TAP::Harness::Junit;
+use TAP::Harness::JUnit;
 use Cwd;
 require 5.005;
 use vars qw(@tests);
