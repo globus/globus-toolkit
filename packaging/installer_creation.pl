@@ -125,7 +125,7 @@ for my $package (@packages){
 
 sub read_package_list{
   print "in read_package_list\n";
-  open(PKG, "etc/package-list-spec");
+  open(PKG, "etc/package-list-5.1.0");
   my $topsrcdir=cwd();
     while ( <PKG> )
     {
@@ -165,9 +165,11 @@ sub bootstrap{
 	print "cwd is". cwd()."\n";
 	if (-e "./make_gpt_dist"){
 	#This is currently only for gsi_openssh
-	  system("./make_gpt_dist");
-	  system("make distprep");
+	  #system("./make_gpt_dist");
 	  system("autoconf");
+	  system("./configure");
+	  system("make distprep");
+	  system("make distclean");
 	  #system("mv ${package}*.tar.gz $package_output");
 	}else{
 	  system("./bootstrap");
@@ -267,7 +269,7 @@ my $installer="installer_makefile.frag";
          }
 	# if there are Build_Instructions, it's a patch-n-build, and we're going to punt and
 	# use gpt-build
-	if (defined $pkg->{'depnode'}->{'Build_Instructions'}){
+	if ((!defined $pkg->{'depnode'})||(defined $pkg->{'depnode'}->{'Build_Instructions'})){
          print INS "${packname}-only: gpt\n";
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=" . $packagemap{$pack} . " \${FLAVOR}\n";
 	}else{

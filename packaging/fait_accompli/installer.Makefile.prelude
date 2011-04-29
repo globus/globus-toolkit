@@ -3,7 +3,7 @@ srcdir=@srcdir@
 CONFIG_SITE=@INSTALLER_ROOT@/config.site
 export CONFIG_SITE
 
-all: gpt gridftp prewsgram gsi-myproxy gsi-openssh @i18n@ done
+all: gpt gridftp gsi-myproxy gsi-openssh done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
@@ -37,10 +37,7 @@ distclean: clean
 common: gpt globus_core globus_common
 i18n: gpt common globus-internationalization
 prews: gridftp prewsgram
-prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
 gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
-rls: gpt globus-rls-server
-drs: gpt common globus_rls_client wsjava gt4-delegation gt4-replicator
 
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
