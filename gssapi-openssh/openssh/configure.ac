@@ -95,6 +95,8 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 	GLOBUS_LOCATION="$gsi_path"
 	export GLOBUS_LOCATION
+    LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
 	if test ! -d "$GLOBUS_LOCATION" ; then
 		AC_MSG_ERROR(Cannot find Globus installation.  Set GLOBUS_LOCATION environment variable.)
 	fi
