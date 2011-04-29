@@ -82,7 +82,7 @@ sub test_rsl
 
     chomp($value);
 
-    $value =~ s/\(\*\s*(.*)\s*\*\)/\1/;
+    $value =~ s/\(\*\s*(.*)\s*\*\)/$1/;
 
     foreach my $s (split(/\s+/, $value))
     {
