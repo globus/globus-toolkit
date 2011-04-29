@@ -8,7 +8,7 @@ BEGIN
 use Globus::Core::Paths;
 use IO::File;
 use Sys::Hostname;
-use Test;
+use Test::More;
 use File::Path;
 use File::Compare;
 use File::Temp qw(tempdir);
@@ -33,7 +33,6 @@ sub test_rsl
     my $testrsl = "$testname.rsl";
     my $additionalrslfile = "$testtmp/$testname.rsl";
     my $test_rsl_fp = new IO::File("$testdatadir/$testrsl", '<');
-    my $out_rsl_fp = new IO::File($additionalrslfile, '>');
     my $rsl_list;
     my $out_count;
     my $all_rsl;
@@ -51,21 +50,16 @@ sub test_rsl
 
     $test_rsl_fp->close();
 
-    $out_rsl_fp->print('&');
     $all_rsl = '&';
 
     # need to put the RSL substitutions in the additional RSL
     # before the main RSL clauses
     if($additional_rsl ne '')
     {
-	$out_rsl_fp->print($additional_rsl . "\n");
 	$all_rsl .= "$additional_rsl\n";
     }
-    $out_rsl_fp->print($rsl_list);
     $all_rsl .= $rsl_list;
     
-    $out_rsl_fp->close();
-
     if($verbose)
     {
 	print "# Submitting job\n";
@@ -76,19 +70,33 @@ sub test_rsl
 	}
     }
 
-    system("globusrun -s -r \"$contact\" -f $additionalrslfile");
+    SKIP: {
+        skip "No ftp server available", 1, if
+            ($need_ftp && !exists $ENV{TEST_FTP_PREFIX});
+        ok(run_and_compare($testname, $all_rsl, $out_count) == 0, $testname);
+    }
+}
+
+sub run_and_compare
+{
+    my $testname = shift;
+    my $rsl = shift;
+    my $out_count = shift;
+    my $rc;
+
+    system("globusrun", "-s", "-r", $contact, $rsl);
 
     $rc = $? >> 8;
 
-    if($rc != 0)
+    if($rc == 0)
     {
 	for(my $i = 0; $i < $out_count; $i++)
 	{
 	    my $out_name = sprintf("%s.%03d",
-	                           "$testtmp/$testname.out.",
+	                           "$testtmp/$testname.out",
 				   $i+1);
 	    my $err_name = sprintf("%s.%03d",
-	                           "$testtmp/$testname.err.",
+	                           "$testtmp/$testname.err",
 				   $i+1);
             my $canonical_out = "$testdatadir/$testname.out";
             my $canonical_err = "$testdatadir/$testname.err";
@@ -96,18 +104,20 @@ sub test_rsl
 	    if(File::Compare::compare($out_name, $canonical_out) != 0)
 	    {
 		$rc = sprintf("comparison of output file %d failed", $i+1);
+                system("cat $out_name");
+                system("cat $canonical_out");
 		last;
 	    }
 	    if(File::Compare::compare($err_name, $canonical_err) != 0)
 	    {
 		$rc = sprintf("comparison of error file %d failed", $i+1);
+                system("cat $err_name");
+                system("cat $canonical_err");
 		last;
 	    }
 	}
     }
-
-    skip($need_ftp && !exists $ENV{TEST_FTP_PREFIX}, 
-            "$testname:$rc", "$testname:0");
+    return $rc;
 }
 
 foreach(@test_cases)

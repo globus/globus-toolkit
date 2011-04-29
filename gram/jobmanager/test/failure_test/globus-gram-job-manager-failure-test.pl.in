@@ -2,10 +2,11 @@
 
 use Globus::GRAM::Error;
 use IO::File;
-use Test;
+use Test::More;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
+my $lrm = $ENV{CONTACT_LRM} if exists($ENV{CONTACT_LRM});
 my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
 my $verbose = 0;
 
@@ -66,30 +67,6 @@ my @test_rsls=qw(
 	error_undefined_executable.rsl
 );
 
-my @todo_rsls=qw(
-);
-
-#my @todo_rsls=qw(
-#    error_invalid_file_cleanup.rsl
-#    error_invalid_host_count2.rsl
-#    error_invalid_host_count.rsl
-#    error_invalid_max_cpu_time.rsl
-#    error_invalid_max_memory.rsl
-#    error_invalid_maxtime.rsl
-#    error_invalid_max_wall_time.rsl
-#    error_invalid_min_memory.rsl
-#    error_invalid_project.rsl
-#    error_invalid_queue.rsl
-#    error_rsl_host_count.rsl
-#    error_rsl_max_cpu_time.rsl
-#    error_rsl_max_memory.rsl
-#    error_rsl_maxtime.rsl
-#    error_rsl_max_wall_time.rsl
-#    error_rsl_min_memory.rsl
-#    error_rsl_project.rsl
-#    error_rsl_queue.rsl
-#);
-
 sub test_rsl
 {
     my $rsl_file = shift;
@@ -97,34 +74,53 @@ sub test_rsl
     my @all_rsl = <$file>;
     my $error;
     my $value;
-    my @error_list;
+    my @error_list = ();
+    my @lrm_skip_list = ();
     my $ok=0;
 
     $value = $all_rsl[0];
 
     chomp($value);
 
-    $value =~ s/\(\*//;
-    $value =~ s/\*\)//;
-    $value =~ s/^\s*//;
-    $value =~ s/\s*$//;
+    $value =~ s/\(\*\s*(.*)\s*\*\)/\1/;
 
     foreach my $s (split(/\s+/, $value))
     {
-        $s =~ s/GLOBUS_GRAM_PROTOCOL_ERROR_//;
-        push(@error_list, eval "Globus::GRAM::Error::$s()");
+        if ($s =~ m/^GLOBUS_GRAM_PROTOCOL_ERROR_/)
+        {
+            $s =~ s/GLOBUS_GRAM_PROTOCOL_ERROR_//;
+            push(@error_list, eval "Globus::GRAM::Error::$s()");
+        }
+        elsif ($s =~ m/LRM_SKIP:(.*)/)
+        {
+            push(@lrm_skip_list, $1);
+        }
     }
 
-    if($verbose)
-    {
-	print "# Submitting RSL\n";
-	foreach(@all_rsl)
-	{
-	    print "#    $_";
-	}
-    }
+    SKIP: {
+        skip "Skipping test for $lrm", 1,
+            if (defined($lrm) && grep(/$lrm/, @lrm_skip_list));
 
-    system("globusrun -s -r \"$contact\" -f \"$testdatadir/$rsl_file\" >/dev/null 2>&1");
+        ok(submit_rsl("$testdatadir/$rsl_file", @error_list)==0, $rsl_file);
+    }
+}
+
+sub submit_rsl
+{
+    my $rsl_file = shift;
+    my @error_list = @_;
+    my @args = ("globusrun", "-s", "-r", "$contact", "-f", $rsl_file);
+    my ($saveout, $saveerr);
+
+    open($saveout, ">&STDOUT");
+    open($saveerr, ">&STDERR");
+
+    open(STDOUT, ">/dev/null");
+    open(STDERR, ">/dev/null");
+    system(@args);
+
+    open(STDOUT, ">&", $saveout);
+    open(STDERR, ">&", $saveerr);
 
     $rc = $? >> 8;
 
@@ -132,26 +128,15 @@ sub test_rsl
     {
         if ($_->value == $rc)
         {
-            ok("$rsl_file:$rc", "$rsl_file:" . $_->value);
-            $ok=1;
-            last;
+            return 0
         }
     }
-
-    if (!$ok)
-    {
-        ok("$rsl_file:$rc", "$rsl_file:" . $value);
-    }
+    return 1;
 }
 
 foreach(@test_rsls)
 {
     push(@tests, "test_rsl(\"$_\")");
-}
-foreach(@todo_rsls)
-{
-    push(@tests, "test_rsl(\"$_\")");
-    push(@todo, scalar(@tests));
 }
 
 if(@ARGV)
