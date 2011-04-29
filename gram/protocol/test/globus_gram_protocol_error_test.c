@@ -20,6 +20,7 @@
 int main(int argc, char * argv[])
 {
     int rc = 0;
+    int failed = 0;
     int i;
     char * str;
     int verbose = 0;
@@ -37,6 +38,7 @@ int main(int argc, char * argv[])
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
+        failed++;
 	goto out;
     }
     if(testno == 0 || testno == 1)
@@ -48,12 +50,15 @@ int main(int argc, char * argv[])
 	    if(str == NULL)
 	    {
 		rc = 1;
-		goto error_exit;
+                failed++;
+		break;
 	    }
 
-	    if(verbose) printf("%d: %s\n", i, str);
+	    if(verbose) printf("# %d: %s\n", i, str);
 	}
+        printf("%s non_null_error_strings\n", rc == 0 ? "ok" : "not ok");
     }
+    rc = 0;
     if(testno == 0 || testno == 2)
     {
 	char *error1 = "error1";
@@ -64,43 +69,47 @@ int main(int argc, char * argv[])
 	str = globus_gram_protocol_error_string(7);
 	if(verbose)
 	{
-	    printf("comparing %p:%s to %p:%s\n", 
+	    printf("# comparing %p:%s to %p:%s\n", 
 		    error1, error1, str, str);
 	}
 	if(strcmp(str, "error1") != 0)
 	{
-	    rc = GLOBUS_FAILURE;
+            failed++;
+            rc = 1;
+            goto failed_2;
 	}
 	globus_gram_protocol_error_7_hack_replace_message(error2);
 	str = globus_gram_protocol_error_string(7);
 	if(verbose)
 	{
-	    printf("comparing %p:%s to %p:%s\n", 
+	    printf("#comparing %p:%s to %p:%s\n", 
 		    error2, error2, str, str);
 	}
 	if(strcmp(str, error2) != 0)
 	{
-	    rc = GLOBUS_FAILURE;
+            failed++;
+            rc = 1;
+	    goto failed_2;
 	}
 	globus_gram_protocol_error_7_hack_replace_message(error3);
 	str = globus_gram_protocol_error_string(7);
 	if(verbose)
 	{
-	    printf("comparing %p:%s to %p:%s\n", 
+	    printf("# comparing %p:%s to %p:%s\n", 
 		    error3, error3, str, str);
 	}
 	if(strcmp(str, error3) != 0)
 	{
-	    rc = GLOBUS_FAILURE;
+            failed++;
+            rc = 1;
+            goto failed_2;
 	}
+    failed_2:
+        printf("%s hack_replace_message\n", rc == 0 ? "ok" : "not ok");
     }
 
 error_exit:
     globus_module_deactivate_all();
 out:
-    if(rc == 0)
-    {
-	printf("ok\n");
-    }
-    return rc;
+    return failed;
 }

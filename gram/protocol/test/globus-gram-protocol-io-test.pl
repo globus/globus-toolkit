@@ -2,8 +2,7 @@
 #
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 
 my $test_exec = './globus-gram-protocol-io-test';
 
@@ -22,33 +21,32 @@ my @todo;
 sub test
 {
     my ($errors,$rc) = ("",0);
-    my ($args, $expected_rc) = @_;
-    my $valgrind = '';
+    my ($arg, $expected_rc) = @_;
+    my @args=($test_exec);
+    my @valgrind_args = ();
+    my $testname = $test_exec;
+
+    $testname =~ s|^./||;
+
+    if ($arg ne '')
+    {
+        push(@args, $arg);
+        $testname .= "-$arg";
+    }
 
     if (exists $ENV{VALGRIND})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_protocol_io_test-$args.log";
+        @valgrind_args = ('valgrind', "--log-file=VALGRIND-$testname.log");
         if (exists $ENV{VALGRIND_OPTIONS})
         {
-            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+            push(@valgrind_args, split(/\s+/, $ENV{VALGRIND_OPTIONS}));
         }
     }
+    @args = (@valgrind_args, @args);
 
-    system("$valgrind $test_exec $args >/dev/null 2>/dev/null");
+    system(@args);
     $rc = $?>> 8;
-    if($rc != $expected_rc)
-    {
-        $errors .= "Test exited with $rc. ";
-    }
-
-    if($errors eq "")
-    {
-        ok('success', 'success');
-    }
-    else
-    {
-        ok($errors, 'success');
-    }
+    ok ($rc eq $expected_rc, $testname);
 }
 
 push(@tests, "test('', 0)");

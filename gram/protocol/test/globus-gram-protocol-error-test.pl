@@ -2,8 +2,6 @@
 #
 
 use strict;
-use POSIX;
-use Test;
 
 my $test_exec = './globus-gram-protocol-error-test';
 
@@ -25,30 +23,30 @@ sub test
     my $output;
     my $valgrind = '';
     my $arg = shift;
+    my $testname = $test_exec;
+    my @args = ($test_exec, $arg);
+
+    $testname =~ s|^\./||;
 
     if (exists $ENV{VALGRIND})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_protocol_error_test-$arg.log";
+        my @valgrind_args = ();
+        push (@valgrind_args, 'valgrind');
+        push (@valgrind_args, "--log-file=VALGRIND-$testname.log");
         if (exists $ENV{VALGRIND_OPTIONS})
         {
-            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+            push(@valgrind_args, split(/\s+/, $ENV{VALGRIND_OPTIONS}));
         }
+        unshift(@args, @valgrind_args);
     }
 
-    chomp($output = `$valgrind $test_exec $arg`);
-    $rc = $?>> 8;
-    if($rc != 0)
-    {
-        $output .= "Test exited with $rc. ";
-    }
-
-    ok($output, 'ok');
+    system(@args);
+    return $?>> 8;
 }
 
 push(@tests, "test(1)");
 push(@tests, "test(2)");
-
-plan tests => scalar(@tests), todo => \@todo;
+printf "1..%d\n", scalar(@tests);
 
 foreach (@tests)
 {

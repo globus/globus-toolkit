@@ -2,37 +2,22 @@
 #
 
 use strict;
-use POSIX;
 
-my $test_exec = './unpack-status-reply-with-extensions-test';
+my $test_exec = 'unpack-status-reply-with-extensions-test';
 
-my $gpath = $ENV{GLOBUS_LOCATION};
+my @args = ("./$test_exec");
 
-if (!defined($gpath))
+if (exists $ENV{VALGRIND})
 {
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
-
-sub test
-{
-    my ($errors,$rc) = ("",0);
-    my $output;
-    my $valgrind = '';
-
-    if (exists $ENV{VALGRIND})
+    my @valgrind_args = ();
+    push(@valgrind_args, "valgrind");
+    push(@valgrind_args, "--log-file=VALGRIND-$test_exec.log");
+    if (exists $ENV{VALGRIND_OPTIONS})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-unpack-to-hash-test.log";
-        if (exists $ENV{VALGRIND_OPTIONS})
-        {
-            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
-        }
+        push(@valgrind_args, split(/\s+/, $ENV{VALGRIND_OPTIONS}));
     }
-
-
-    system("$valgrind $test_exec");
-
+    unshift(@args, @valgrind_args);
 }
 
-test();
+system(@args);
+exit($? >> 8);

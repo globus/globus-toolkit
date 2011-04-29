@@ -202,25 +202,25 @@ int main(int argc, char **argv)
     if(test_num == 0 || test_num == 1)
     {
 	rc = test1();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok disallow_callbacks_from_bogus_contact\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 2)
     {
 	rc = test2();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok allow_and_then_disallow_callbacks\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 3)
     {
 	rc = test3();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok allow_and_then_disallow_multiple_callbacks\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 4)
     {
 	rc = test4();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok deactivate_without_disallow\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
 

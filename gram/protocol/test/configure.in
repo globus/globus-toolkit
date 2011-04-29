@@ -16,6 +16,7 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
+        TESTS-junit.pl
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	globus-gram-protocol-run-tests.pl

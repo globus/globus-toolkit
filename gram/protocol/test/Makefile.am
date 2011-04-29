@@ -8,6 +8,7 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 Scripts = \
 	TESTS.pl \
+	TESTS-junit.pl \
 	globus-gram-protocol-allow-attach-test.pl \
 	globus-gram-protocol-error-test.pl \
 	globus-gram-protocol-io-test.pl \
@@ -35,7 +36,7 @@ pkgtest_PROGRAMS= \
         unpack-job-request-reply-with-extensions-test \
         unpack-status-reply-with-extensions-test
 
-EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in
+EXTRA_DIST=$(Scripts) TESTS-junit.pl.in globus-gram-protocol-run-tests.pl.in
 
 INCLUDES = $(GPT_INCLUDES)
 

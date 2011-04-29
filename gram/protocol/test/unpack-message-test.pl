@@ -2,37 +2,25 @@
 #
 
 use strict;
-use POSIX;
 
-my $test_exec = './unpack-message-test';
+my $test_exec = 'unpack-message-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 
-if (!defined($gpath))
+my ($errors,$rc) = ("",0);
+my $output;
+my @args = ("./$test_exec");
+my @valgrind_args = ();
+
+if (exists $ENV{VALGRIND})
 {
-    die "GLOBUS_LOCATION needs to be set before running this script"
-}
-
-@INC = (@INC, "$gpath/lib/perl");
-
-sub test
-{
-    my ($errors,$rc) = ("",0);
-    my $output;
-    my $valgrind = '';
-
-    if (exists $ENV{VALGRIND})
+    push(@valgrind_args, "valgrind");
+    push(@valgrind_args, "--log-file=VALGRIND-$test_exec.log");
+    if (exists $ENV{VALGRIND_OPTIONS})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-unpack-message-test.log";
-        if (exists $ENV{VALGRIND_OPTIONS})
-        {
-            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
-        }
+        push(@valgrind_args, split(/\s+/, $ENV{VALGRIND_OPTIONS}));
     }
-
-
-    system("$valgrind $test_exec");
-
+    unshift(@args, @valgrind_args);
 }
 
-test();
+system(@args);

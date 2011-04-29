@@ -403,37 +403,37 @@ int main(int argc, char *argv[])
     if(test_num == 0 || test_num == 1)
     {
 	rc = test1();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok - pack_and_unpack_job_request\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 2)
     {
 	rc = test2();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok - pack_and_unpack_job_request_with_no_callback\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 3)
     {
 	rc = test3();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok - pack_job_request_reply\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 4)
     {
 	rc = test4();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok - pack_and_unpack_status_request\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 5)
     {
 	rc = test5();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok - pack_and_unpack_status_request_reply\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     if(test_num == 0 || test_num == 6)
     {
 	rc = test6();
-	printf("%sok\n", (rc == 0) ? "" : "not ");
+	printf("%sok - pack_and_unpack_status_update\n", (rc == 0) ? "" : "not ");
 	not_ok |= rc;
     }
     return not_ok;
