@@ -29,4 +29,5 @@ AC_OUTPUT(
 	submit_test/globus-gram-job-manager-submit-test.pl
 	failure_test/globus-gram-job-manager-failure-test.pl
         user_test/globus-gram-job-manager-user-test.pl
+	TESTS-junit.pl
 )

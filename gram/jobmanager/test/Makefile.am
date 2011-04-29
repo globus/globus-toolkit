@@ -8,6 +8,7 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 Scripts = \
 	TESTS.pl \
+	TESTS-junit.pl \
 	globus-gram-job-manager-run-tests.pl \
         job-manager-script-test.pl
 
@@ -20,7 +21,7 @@ pkgtest_SCRIPTS = $(Scripts)
 
 pkgtest_DATA=$(Data)
 
-EXTRA_DIST = TESTS.pl globus-gram-job-manager-run-tests.pl.in $(Data)
+EXTRA_DIST = TESTS.pl TESTS-junit.pl.in globus-gram-job-manager-run-tests.pl.in $(Data)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

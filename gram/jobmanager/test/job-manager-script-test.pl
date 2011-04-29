@@ -6,7 +6,7 @@ BEGIN
 }
 
 use strict;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 use IPC::Open2;
 use POSIX qw(pause);
@@ -35,7 +35,7 @@ sub test_interactive_quit
 
     print $child_in "quit\n\n";
     waitpid $pid, 0;
-    ok($?, 0);
+    ok($? == 0, "test_interactive_quit");
 }
 
 sub test_interactive_poll
@@ -44,6 +44,7 @@ sub test_interactive_poll
     my $pid;
     my $dummy_pid;
     my $out;
+    my $result;
 
     $pid = open2(
             $child_out, $child_in,
@@ -53,10 +54,10 @@ sub test_interactive_poll
 
     $dummy_pid = fork();
 
-    if (!defined($dummy_pid))
+    $result = defined($dummy_pid);
+    if (!$result)
     {
-        ok(defined($dummy_pid));
-        return;
+        goto FAIL;
     }
     elsif ($dummy_pid == 0)
     {
@@ -71,14 +72,14 @@ sub test_interactive_poll
         {
             next;
         }
-        if ($_ ne "GRAM_SCRIPT_JOB_STATE:2\n")
+        $result = ($_ eq "GRAM_SCRIPT_JOB_STATE:2\n");
+        if (!$result)
         {
-            ok($_, "GRAM_SCRIPT_JOB_STATE:2\n");
             kill 'TERM', $dummy_pid;
             waitpid($dummy_pid, 0);
             print $child_in "quit\n\n";
             waitpid($pid, 0);
-            return;
+            goto FAIL;
         }
     }
     kill 'TERM', $dummy_pid;
@@ -92,16 +93,20 @@ sub test_interactive_poll
         {
             next;
         }
-        if ($_ ne "GRAM_SCRIPT_JOB_STATE:8\n")
+        $result = $_ eq "GRAM_SCRIPT_JOB_STATE:8\n";
+
+        if (!$result)
         {
-            ok($_, "GRAM_SCRIPT_JOB_STATE:8\n");
-            return;
+            goto FAIL;
         }
     }
     print $child_in "quit\n\n";
 
     waitpid $pid, 0;
-    ok($?, 0);
+    $result = ($? == 0);
+
+FAIL:
+    ok($result, 'test_interactive_poll');
 }
 
 sub test_interactive_multipoll
@@ -110,6 +115,7 @@ sub test_interactive_multipoll
     my $pid;
     my $dummy_pid;
     my $out;
+    my $result;
 
     $pid = open2(
             $child_out, $child_in,
@@ -118,11 +124,11 @@ sub test_interactive_multipoll
             '-c', 'interactive');
 
     $dummy_pid = fork();
+    $result = defined($dummy_pid);
 
-    if (!defined($dummy_pid))
+    if (! $result)
     {
-        ok(defined($dummy_pid));
-        return;
+        goto FAIL;
     }
     elsif ($dummy_pid == 0)
     {
@@ -140,14 +146,15 @@ sub test_interactive_multipoll
             {
                 next;
             }
-            elsif ($_ ne "GRAM_SCRIPT_JOB_STATE:2\n")
+
+            $result = $_ eq "GRAM_SCRIPT_JOB_STATE:2\n";
+            if (!$result)
             {
-                ok($_, "GRAM_SCRIPT_JOB_STATE:2\n");
                 kill 'TERM', $dummy_pid;
                 waitpid($dummy_pid, 0);
                 print $child_in "quit\n\n";
                 waitpid($pid, 0);
-                return;
+                goto FAIL;
             }
         }
     }
@@ -162,14 +169,16 @@ sub test_interactive_multipoll
         {
             next;
         }
-        elsif ($_ ne "GRAM_SCRIPT_JOB_STATE:8\n")
+        $result = $_ eq "GRAM_SCRIPT_JOB_STATE:8\n";
+        if (!$result)
         {
-            ok($_, "GRAM_SCRIPT_JOB_STATE:8\n");
-            return;
+            goto FAIL;
         }
     }
     print $child_in "quit\n\n";
 
     waitpid $pid, 0;
-    ok($?, 0);
+    $result = ($? == 0);
+FAIL:
+    ok($result, 'test_interactive_multipoll');
 }

@@ -1,0 +1,109 @@
+#! /usr/bin/perl
+
+BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+
+use strict;
+use TAP::Harness::JUnit;
+use Cwd;
+use Sys::Hostname;
+
+require 5.005;
+use vars qw(@tests);
+use Globus::Core::Paths;
+
+my $test_result = 1;
+my $kill_gatekeeper = 0;
+my $personal_gatekeeper = $Globus::Core::Paths::bindir
+                        . "/globus-personal-gatekeeper";
+$|=1;
+
+my $contact;
+my $startargs = '-log never ';
+
+@tests = qw(
+    job-manager-script-test.pl
+    globus-gram-job-manager-stdio-test.pl
+    globus-gram-job-manager-submit-test.pl
+    globus-gram-job-manager-failure-test.pl
+    globus-gram-job-manager-rsl-size-test.pl
+    globus-gram-job-manager-user-test.pl
+);
+
+chdir $Globus::Core::Paths::exec_prefix . "/test/@PACKAGE@";
+
+if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
+{
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
+    system('chmod go-rw testcred.pem'); 
+
+    $startargs .= "-x509-cert-dir $ENV{X509_CERT_DIR} ";
+}
+
+if(@ARGV)
+{
+    $startargs .= join(' ', @ARGV);
+}
+
+if(exists($ENV{CONTACT_STRING}))
+{
+    print "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
+    $kill_gatekeeper = 0;
+}
+else
+{
+    $contact = `$personal_gatekeeper -start $startargs`;
+    if($? != 0)
+    {
+	print "Could not start gatekeeper\n";
+	exit 1;
+    }
+    chomp($contact);
+    $contact =~ s/^GRAM contact:\s*//;
+    $ENV{CONTACT_STRING} = $contact;
+    $kill_gatekeeper = 1;
+}
+
+if (!exists $ENV{TEST_FTP_PREFIX})
+{
+    my $hostname = hostname();
+    print "Checking to see if GridFTP server is running on the default port\n";
+    system("globus-url-copy /etc/group gsiftp://$hostname/dev/null 2>/dev/null");
+    if ($? == 0)
+    {
+        $ENV{TEST_FTP_PREFIX} = "gsiftp://$hostname";
+    }
+}
+
+if (exists $ENV{TEST_FTP_PREFIX})
+{
+    print "Using GridFTP Server at $ENV{TEST_FTP_PREFIX}\n";
+}
+else
+{
+    print "Skipping GridFTP tests\n";
+}
+my $harness = TAP::Harness::JUnit->new({
+        xmlfile => 'globus-gram-job-manager-test.xml',
+        merge => 1
+});
+$test_result = eval { $harness->runtests(@tests) };
+if(!defined($test_result))
+{
+    print $@;
+    $test_result=1;
+}
+else
+{
+    $test_result=0;
+}
+
+
+sub END {
+    if($kill_gatekeeper)
+    {
+        open(STDOUT, '>/dev/null'); 
+        system { $personal_gatekeeper } ($personal_gatekeeper, '-kill', $contact);
+    }
+    exit $test_result;
+}

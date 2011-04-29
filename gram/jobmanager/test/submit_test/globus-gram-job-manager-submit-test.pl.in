@@ -7,7 +7,7 @@ BEGIN
 
 use Globus::GRAM::Error;
 use IO::File;
-use Test;
+use Test::More;
 use File::Path;
 use File::Compare;
 
@@ -78,7 +78,7 @@ sub test_rsl
           File::Compare::compare("$testdatadir/$testname.out", $testout) ||
 	  File::Compare::compare("$testdatadir/$testname.err", $testerr);
 
-    ok("$testname:$additional_rsl:$rc", "$testname:$additional_rsl:0");
+    ok("$testname:$additional_rsl:$rc" eq "$testname:$additional_rsl:0", "$testname:$additional_rsl");
 }
 
 foreach(@test_cases)

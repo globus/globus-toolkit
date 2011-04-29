@@ -1,5 +1,6 @@
 #! /usr/bin/env perl
 
+BEGIN { push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl") if exists($ENV{GLOBUS_LOCATION}) }
 use Globus::GRAM::Error;
 use IO::File;
 use Test::More;
