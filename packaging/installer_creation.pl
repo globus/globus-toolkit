@@ -166,6 +166,7 @@ sub bootstrap{
 	if (-e "./make_gpt_dist"){
 	#This is currently only for gsi_openssh
 	  system("./make_gpt_dist");
+	  system("make distprep");
 	  system("autoconf");
 	  #system("mv ${package}*.tar.gz $package_output");
 	}else{
@@ -268,7 +269,7 @@ my $installer="installer_makefile.frag";
 	# use gpt-build
 	if (defined $pkg->{'depnode'}->{'Build_Instructions'}){
          print INS "${packname}-only: gpt\n";
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $packagemap{$pack} . " \${FLAVOR}\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=" . $packagemap{$pack} . " \${FLAVOR}\n";
 	}else{
          print INS "${packname}-only: gpt ${packname}-configure ${packname}-make ${packname}-makeinstall\n";
 	 print INS "${packname}-configure:";

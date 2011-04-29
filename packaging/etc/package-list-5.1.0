@@ -31,4 +31,5 @@ globus_gsi_callback	gsi/callback/source	gpt
 globus_gridftp_server_control	gridftp/server-lib/src	gpt
 globus_callout	callout/source	gpt
 gsi_openssh	gssapi-openssh/openssh	NULL	GPT-branch
+gsi_openssh_setup	gssapi-openssh/setup	gpt
 globus_gridftp_server	gridftp/server/src	gpt
