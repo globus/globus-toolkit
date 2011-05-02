@@ -83,7 +83,7 @@ cd ../globus_simple_ca*
 sudo -E ./setup-gsi
 
 grid-cert-request -host $(globus-hostname) -dir /tmp/host
-sudo grid-ca-sign -in /tmp/host/hostcert_request.pem \
+sudo -E $(which grid-ca-sign) -in /tmp/host/hostcert_request.pem \
         -out /tmp/host/hostcert.pem \
         -passin pass:globus
 
@@ -91,7 +91,7 @@ sudo cp /tmp/host/hostcert.pem /etc/grid-security/hostcert.pem
 sudo cp /tmp/host/hostkey.pem /etc/grid-security/hostkey.pem
 
 grid-cert-request -cn $(id -un) -nopw -dir $HOME/.globus
-sudo grid-ca-sign -in $HOME/.globus/usercert_request.pem \
+sudo -E $(which grid-ca-sign) -in $HOME/.globus/usercert_request.pem \
         -out $HOME/.globus/usercert.pem \
         -passin pass:globus
 
