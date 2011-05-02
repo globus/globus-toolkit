@@ -1,0 +1,147 @@
+#! /bin/sh
+
+set -e
+
+topdir="$(pwd)"
+artifactdir="${topdir}/artifacts"
+mkdir -p "${artifactdir}"
+CVSROOT=:pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
+export CVSROOT
+
+# set default values if command-line option not used
+branch=globus_5_0_branch
+lrms=fork
+flavor="gcc64dbg"
+nightly=0
+
+while getopts "f:b:nl:" arg; do
+    case "$arg" in
+        f)
+            flavor="$OPTARG"
+            ;;
+        b)
+            branch="$OPTARG"
+            ;;
+        n)
+            nightly=1
+            ;;
+        l)
+            lrms="$lrms $OPTARG"
+            ;;
+        *)
+            echo "Invalid option $arg" 1>&2
+            exit 1
+            ;;
+    esac
+done
+
+# Two modes of operation:
+# - cvs mode [default]
+#   Check out $branch, create a source installer, and install it
+# - nightly mode
+#   Download the latest source installer from
+#   http://www.globus.org/$branch/nightly.tar.gz and install it
+if [ "$nightly" -eq 0 ]; then
+    if [ "$branch" != "HEAD" ]; then
+        tag="-r $branch"
+        installertag="-t $branch"
+    fi
+
+    cvs co $tag packaging
+    cd packaging
+    installer="gt$(cat fait_accompli/version)-all-source-installer"
+    ./fait_accompli/installer.sh -a $installer_tag
+    tar zcf "../nightly.tar.gz" "$installer"
+    cd ..
+else
+    installer="http://www.globus.org/${branch}/nightly.tar.gz"
+    curl -s "$installer" > nightly.tar.gz
+fi
+tar zxf nightly.tar.gz
+installer_root="$(tar ztf nightly.tar.gz | head -n 1)"
+cd "$installer_root"
+
+export GLOBUS_LOCATION=/opt/globus
+export GPT_LOCATION=$GLOBUS_LOCATION
+
+./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
+# Make core and core-thr first, so we can use -j below
+sudo make globus_core globus_core-thr
+lrm_targets=""
+for lrm in $lrms; do
+    lrm_targets="${lrm_targets:+$lrm_targets }gram5-${lrm}"
+done
+sudo make -j2 prewsgram globus-data-management-server globus_simple_ca ${lrm_targets} prews-test
+sudo make install
+
+. $GLOBUS_LOCATION/etc/globus-user-env.sh
+
+# Set up temporary security environment with host and user certificates
+cd $GLOBUS_LOCATION/setup/globus
+sudo ./setup-simple-ca -noint
+cd ../globus_simple_ca*
+sudo -E ./setup-gsi
+
+grid-cert-request -host $(globus-hostname) -dir /tmp/host
+grid-ca-sign -in /tmp/host/hostcert_request.pem \
+        -out /tmp/host/hostcert.pem \
+        -passin pass:globus
+
+sudo cp /tmp/host/hostcert.pem /etc/grid-security/hostcert.pem
+sudo cp /tmp/host/hostkey.pem /etc/grid-security/hostkey.pem
+
+grid-cert-request -cn $(id -un) -nopw -dir $HOME/.globus
+grid-ca-sign -in $HOME/.globus/usercert_request.pem \
+        -out $HOME/.globus/usercert.pem \
+        -passin pass:globus
+
+grid-proxy-init -verify
+
+sudo -E $(which globus-gridftp-server) -S -p 2811
+
+sudo -E $(which grid-mapfile-add-entry) \
+        -dn "$(grid-cert-info -subject)" \
+        -ln "$(id -un)"
+
+cd "$GLOBUS_LOCATION/test"
+
+test_results=0
+# Run protocol tests only once---they don't depend on the job manager
+cd globus_gram_protocol_test
+./TESTS-junit.pl || test_results="$?"
+cp globus-gram-protocol-test.xml "${artifactdir}" || true
+cd "$OLDPWD"
+
+GATEKEEPER_CONTACT="$(sudo -E $(which globus-gatekeeper) \
+        -conf $GLOBUS_LOCATION/etc/globus-gatekeeper.conf)"
+GATEKEEPER_CONTACT="${GATEKEEPER_CONTACT#GRAM contact: }"
+# Run client and job manager tests for each lrm which is configured
+for lrm in $lrms; do
+    # remove first two colon-separated fields to get the DN
+    CONTACT_DN="${GATEKEEPER_CONTACT#*:*:}"
+    # everything before the DN is the host:port
+    CONTACT_HOST_PORT="${GATEKEEPER_CONTACT%:$CONTACT_DN}"
+
+    # Construct contact string with the lrm name added to it
+    CONTACT_STRING="${CONTACT_HOST_PORT}/jobmanager-${lrm}:${CONTACT_DN}"
+    # CONTACT_LRM can cause some tests to be skipped, if they use a feature
+    # that doesn't work with $lrm
+    CONTACT_LRM="${lrm}"
+    export CONTACT_STRING
+    export CONTACT_LRM
+
+    for test in globus_gram_client_test globus_gram_job_manager_test; do
+        cd "$test"
+        ./TESTS-junit.pl || test_results="$?"
+        for x in *.xml; do
+            if [ -r "$x" ]; then
+                xname="${x%.xml}-${lrm}.xml"
+                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${lrm}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${lrm}\"/"< "$x" > "${artifactdir}/$xname"
+            fi
+        done
+        cd "$OLDPWD"
+    done
+    globus-personal-gatekeeper -kill "$CONTACT_STRING"
+done
+
+exit "$test_results"
