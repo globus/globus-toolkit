@@ -113,8 +113,8 @@ sub check_installed_files {
 
 
     my @notpkgdata;
-    @notpkgdata = grep { ! m!$pkgdatasubdir!} 
-      grep { ! m!$altpkgdatasubdir!} @$list if defined $list;
+    @notpkgdata = grep { ! m!^$pkgdatasubdir!} 
+      grep { ! m!^$altpkgdatasubdir!} @$list if defined $list;
 
     #remove empty packages
     if (! @notpkgdata ) {
