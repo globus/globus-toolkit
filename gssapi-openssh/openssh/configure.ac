@@ -108,13 +108,12 @@ if test "x$gsi_path" != "xno" ; then
                 AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
 	fi
 
-  if test -z "$LOOK_FOR_FC_GLOBUS_INCLUDE" ; then
+  if test -d "${gsi_path}/include/${globus_flavor_type}" ; then
 	    GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
-  else
+  elif test -d "${gsi_path}/include/globus" ; then
       GLOBUS_INCLUDE="${gsi_path}/include/globus"
-  fi
-	if test ! -d "$GLOBUS_INCLUDE" ; then
-		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+  else
+		AC_MSG_ERROR(Cannot find Globus include directory in ${gsi_path}/include)
 	fi
 	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
