@@ -10,7 +10,7 @@
 
   <src_pkg >
 
-    <Version_Label>GSI-OpenSSH 5.3 / OpenSSH 5.8p1 / HPN13v11</Version_Label>
+    <Version_Label>GSI-OpenSSH 5.3 / OpenSSH 5.8p2 / HPN13v11</Version_Label>
 
     <With_Flavors build="no" />
 

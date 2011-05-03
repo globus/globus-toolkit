@@ -1409,6 +1409,9 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
 	extern char *__progname;
 
 	__progname = ssh_get_progname(argv[0]);
+	/* NB: No call to init_pathnames() here. The sftp-server doesn't
+	   use any fixed paths, which is good, because GLOBUS_LOCATION
+	   isn't defined in our environment. */
 	log_init(__progname, log_level, log_facility, log_stderr);
 
 	while (!skipargs && (ch = getopt(argc, argv, "f:l:u:cehR")) != -1) {

@@ -80,10 +80,8 @@
 # define SSH_PRNG_SEED_FILE      _PATH_SSH_USER_DIR"/prng_seed"
 #endif
 
-/* Path to PRNG commands list */
-#ifndef SSH_PRNG_COMMAND_FILE
-# define SSH_PRNG_COMMAND_FILE   SSHDIR "/ssh_prng_cmds"
-#endif
+/* Path to PRNG commands list (from pathnames.c) */
+extern char *SSH_PRNG_COMMAND_FILE;
 
 extern char *__progname;
 
@@ -822,6 +820,7 @@ main(int argc, char **argv)
 	LogLevel ll;
 
 	__progname = ssh_get_progname(argv[0]);
+	init_pathnames();
 	log_init(argv[0], SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_USER, 1);
 
 	ll = SYSLOG_LEVEL_INFO;

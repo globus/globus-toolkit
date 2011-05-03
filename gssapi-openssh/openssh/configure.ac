@@ -95,6 +95,8 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 	GLOBUS_LOCATION="$gsi_path"
 	export GLOBUS_LOCATION
+    LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
 	if test ! -d "$GLOBUS_LOCATION" ; then
 		AC_MSG_ERROR(Cannot find Globus installation.  Set GLOBUS_LOCATION environment variable.)
 	fi
@@ -106,13 +108,12 @@ if test "x$gsi_path" != "xno" ; then
                 AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
 	fi
 
-  if test -z "$LOOK_FOR_FC_GLOBUS_INCLUDE" ; then
+  if test -d "${gsi_path}/include/${globus_flavor_type}" ; then
 	    GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
-  else
+  elif test -d "${gsi_path}/include/globus" ; then
       GLOBUS_INCLUDE="${gsi_path}/include/globus"
-  fi
-	if test ! -d "$GLOBUS_INCLUDE" ; then
-		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+  else
+		AC_MSG_ERROR(Cannot find Globus include directory in ${gsi_path}/include)
 	fi
 	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
@@ -242,7 +243,8 @@ AC_ARG_WITH(stackprotect,
 if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wall])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wpointer-arith])
-	OPENSSH_CHECK_CFLAG_COMPILE([-Wuninitialized])
+    # cc1: warning: -Wuninitialized is not supported without -O
+    # OPENSSH_CHECK_CFLAG_COMPILE([-Wuninitialized])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wsign-compare])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wformat-security])
 	OPENSSH_CHECK_CFLAG_COMPILE([-Wno-pointer-sign])
@@ -1878,12 +1880,12 @@ fi
 
 dnl see whether mkstemp() requires XXXXXX
 if test "x$ac_cv_func_mkdtemp" = "xyes" ; then
-AC_MSG_CHECKING([for (overly) strict mkstemp])
+AC_MSG_CHECKING([for (overly) strict [m]kstemp])
 AC_RUN_IFELSE(
 	[AC_LANG_SOURCE([[
 #include <stdlib.h>
-main() { char template[]="conftest.mkstemp-test";
-if (mkstemp(template) == -1)
+main() { char template[]="conftest.[m]kstemp-test";
+if ([m]kstemp(template) == -1)
 	exit(1);
 unlink(template); exit(0);
 }
@@ -1893,7 +1895,7 @@ unlink(template); exit(0);
 	],
 	[
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_STRICT_MKSTEMP, 1, [Silly mkstemp()])
+		AC_DEFINE(HAVE_STRICT_MKSTEMP, 1, [Silly [m]kstemp()])
 	],
 	[
 		AC_MSG_RESULT(yes)

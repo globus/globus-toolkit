@@ -44,6 +44,7 @@
 #include "log.h"
 #include "atomicio.h"
 #include "misc.h"
+#include "pathnames.h"
 #include "hostfile.h"
 
 /* Flag indicating whether IPv4 or IPv6.  This can be set on the command line.
@@ -620,6 +621,7 @@ main(int argc, char **argv)
 	extern char *optarg;
 
 	__progname = ssh_get_progname(argv[0]);
+	init_pathnames();
 	init_rng();
 	seed_rng();
 	TAILQ_INIT(&tq);

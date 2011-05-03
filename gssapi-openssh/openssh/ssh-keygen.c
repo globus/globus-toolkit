@@ -1813,6 +1813,7 @@ main(int argc, char **argv)
 	sanitise_stdfd();
 
 	__progname = ssh_get_progname(argv[0]);
+	init_pathnames();
 
 	OpenSSL_add_all_algorithms();
 	log_init(argv[0], SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_USER, 1);

@@ -1,0 +1,30 @@
+GSI-OpenSSH 5.2, based on OpenSSH 5.6p1, is now available from:
+
+  http://grid.ncsa.uiuc.edu/ssh/download.html
+
+For installation instructions, please see:
+
+  http://grid.ncsa.uiuc.edu/ssh/install.html
+
+We appreciate your feedback and help in testing this version.
+Please use Bugzilla to report GSI-OpenSSH bugs:
+
+  http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH
+
+Major changes:
+
+  * Update to OpenSSH 5.6p1
+
+  * Add GSSAPIServerIdentity option
+    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7108
+
+  * Make all Globus Usage library errors non-fatal
+    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7111
+
+  * Updates for upcoming GT 5.2 threading model
+    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7081
+
+Checksums (gsi_openssh_bundle-5.2-src.tar.gz):
+
+  SHA1: 3a2f0e83f90c648f452cb40ad6b9602d357a1d55
+  MD5: f99403d3b90aaedfdfa7495ae80f01ec
