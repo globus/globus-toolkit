@@ -759,8 +759,15 @@ sub copySSHDConfigFile
     # set the sftp directive
     #
 
-    $text = "Subsystem\tsftp\t$gpath/libexec/sftp-server";
-    $data =~ s:^[\s|#]*Subsystem\s+sftp\s+.*$:$text:gm;
+    @sftp_dirs = ("$path/libexec", "$gpath/share/globus");
+    $sftp_server_path =
+      findExecutable("sftp-server", \@sftp_dirs);
+    if ($sftp_server_path ne "undef") {
+      $text = "Subsystem\tsftp\t$sftp_server_path";
+      $data =~ s:^[\s|#]*Subsystem\s+sftp\s+.*$:$text:gm;
+    } else {
+      debug0("\nWARNING: sftp-server not found. $fileOutput requires manual configuration for sftp subsystem.\n");
+    }
 
     #
     # set the privilege separation directive
