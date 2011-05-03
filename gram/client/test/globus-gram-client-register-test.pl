@@ -70,7 +70,7 @@ sub register_test
     }
 
     push(@args, $test_exec, $contact, $rsl);
-    if (defined($fullarg))
+    if (defined($fullarg) && $fullarg ne '')
     {
         push(@args, $fullarg);
     }
