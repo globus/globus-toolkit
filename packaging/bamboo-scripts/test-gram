@@ -149,5 +149,6 @@ killall globus-job-manager
 sudo rm -f /etc/grid-security/*
 rm -rf ~/.globus
 rm -f ~/.globus/usercert.pem ~/.globus/userkey.pem
+sudo rm -rf $GLOBUS_LOCATION
 
 exit "$test_results"
