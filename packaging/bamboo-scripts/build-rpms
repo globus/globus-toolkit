@@ -229,9 +229,29 @@ then
 fi
 cp -R SRPMS "${repodir}"
 
+# Generate group definition for globus-gridftp
+cat > globus-gridftp.xml <<EOF
+<comps>
+  <group>
+    <id>globus-gridftp</id>
+    <name>globus-gridftp</name>
+    <default>true</default>
+    <description>Globus GridFTP Server and Client RPMS</description>
+    <uservisible>true</uservisible>
+    <packagelist>
+      <packagereq type="default">globus-gridftp-server-progs</packagereq>
+      <packagereq type="default">globus-gass-copy-progs</packagereq>
+      <packagereq type="default">globus-common-progs</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-proxy-utils</packagereq>
+    </packagelist>
+  </group>
+</comps>
+EOF
+
 createrepo "${reporoot}/$osname/$osver/SRPMS"
-createrepo "${reporoot}/$osname/$osver/x86_64"
-createrepo "${reporoot}/$osname/$osver/i386"
+createrepo -g "$(pwd)/globus-gridftp.xml" "${reporoot}/$osname/$osver/x86_64"
+createrepo -g "$(pwd)/globus-gridftp.xml" "${reporoot}/$osname/$osver/i386"
 
 # Export the package lists for the full set of RPMS we generated (64- and
 # 32-bit forms)
