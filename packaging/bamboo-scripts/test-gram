@@ -61,37 +61,37 @@ tar zxf nightly.tar.gz
 installer_root="$(tar ztf nightly.tar.gz | head -n 1)"
 cd "$installer_root"
 
-export GLOBUS_LOCATION=/opt/globus
+export GLOBUS_LOCATION=$(pwd)/globus-location
 export GPT_LOCATION=$GLOBUS_LOCATION
 
 ./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
 # Make core and core-thr first, so we can use -j below
-sudo make globus_core globus_core-thr
+make globus_core globus_core-thr
 lrm_targets=""
 for lrm in $lrms; do
     lrm_targets="${lrm_targets:+$lrm_targets }gram5-${lrm}"
 done
-sudo make -j2 prewsgram globus-data-management-server globus_simple_ca ${lrm_targets} prews-test
-sudo make install
+make -j2 prewsgram globus-data-management-server globus_simple_ca ${lrm_targets} prews-test
+make install
 
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 
 # Set up temporary security environment with host and user certificates
 cd $GLOBUS_LOCATION/setup/globus
-sudo ./setup-simple-ca -noint
+./setup-simple-ca -noint
 cd ../globus_simple_ca*
 sudo -E ./setup-gsi
 
-grid-cert-request -host $(globus-hostname) -dir /tmp/host
-sudo -E $(which grid-ca-sign) -in /tmp/host/hostcert_request.pem \
-        -out /tmp/host/hostcert.pem \
+grid-cert-request -host $(globus-hostname) -dir ${GLOBUS_LOCATION}/tmp/host
+grid-ca-sign -in ${GLOBUS_LOCATION}/tmp/host/hostcert_request.pem \
+        -out ${GLOBUS_LOCATION}/tmp/host/hostcert.pem \
         -passin pass:globus
 
-sudo cp /tmp/host/hostcert.pem /etc/grid-security/hostcert.pem
-sudo cp /tmp/host/hostkey.pem /etc/grid-security/hostkey.pem
+sudo cp ${GLOBUS_LOCATION}/tmp/host/hostcert.pem /etc/grid-security/hostcert.pem
+sudo cp ${GLOBUS_LOCATION}/tmp/host/hostkey.pem /etc/grid-security/hostkey.pem
 
 grid-cert-request -cn $(id -un) -nopw -dir $HOME/.globus
-sudo -E $(which grid-ca-sign) -in $HOME/.globus/usercert_request.pem \
+grid-ca-sign -in $HOME/.globus/usercert_request.pem \
         -out $HOME/.globus/usercert.pem \
         -passin pass:globus
 
@@ -141,7 +141,13 @@ for lrm in $lrms; do
         done
         cd "$OLDPWD"
     done
-    globus-personal-gatekeeper -kill "$CONTACT_STRING"
 done
+
+sudo killall globus-gridftp-server
+sudo killall globus-gatekeeper
+sudo rm -f /etc/grid-security/hostcert.pem
+sudo rm -f /etc/grid-security/hostkey.pem
+rm -rf ~/.globus/simpleCA
+rm -f ~/.globus/usercert.pem ~/.globus/userkey.pem
 
 exit "$test_results"
