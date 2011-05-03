@@ -759,7 +759,7 @@ sub copySSHDConfigFile
     # set the sftp directive
     #
 
-    @sftp_dirs = ("$path/libexec", "$gpath/share/globus");
+    @sftp_dirs = ("$gpath/libexec", "$gpath/share/globus");
     $sftp_server_path =
       findExecutable("sftp-server", \@sftp_dirs);
     if ($sftp_server_path ne "undef") {
