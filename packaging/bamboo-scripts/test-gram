@@ -146,7 +146,7 @@ done
 sudo killall globus-gridftp-server
 sudo killall globus-gatekeeper
 killall globus-job-manager
-sudo rm -f /etc/grid-security/*
+sudo rm -rf /etc/grid-security/*
 rm -rf ~/.globus
 rm -f ~/.globus/usercert.pem ~/.globus/userkey.pem
 sudo rm -rf $GLOBUS_LOCATION
