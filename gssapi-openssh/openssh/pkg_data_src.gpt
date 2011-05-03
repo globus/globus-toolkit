@@ -15,12 +15,6 @@
     <Version_Label>GSI-OpenSSH 5.3 / OpenSSH 5.8p2 / HPN13v11</Version_Label>
 
     <Source_Dependencies Type="compile">
-      <Dependency Name="globus_openssl">
-        <Version>
-          <Version_Range Lower_Major="0" Lower_Minor="10" Upper_Major="0" Upper_Minor="40" />
-	  <Simple_Version Major="1"></Simple_Version>
-        </Version>
-      </Dependency>
       <Dependency Name="globus_gss_assist">
         <Version>
           <Simple_Version Major="2"></Simple_Version>
@@ -35,12 +29,6 @@
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_link">
-      <Dependency Name="globus_openssl">
-        <Version>
-          <Version_Range Lower_Major="0" Lower_Minor="10" Upper_Major="0" Upper_Minor="40" />
-	  <Simple_Version Major="1"></Simple_Version>
-        </Version>
-      </Dependency>
       <Dependency Name="globus_gss_assist">
         <Version>
           <Simple_Version Major="2"></Simple_Version>
