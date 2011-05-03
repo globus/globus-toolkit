@@ -18,10 +18,10 @@
 # Ping a valid and invalid gatekeeper contact.
 
 use strict;
-use POSIX;
-use Test;
+use Test::More;
 
 my $test_exec = './globus-gram-client-register-test';
+my $lrm = $ENV{CONTACT_LRM} if exists($ENV{CONTACT_LRM});
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 my $x509_certdir_string;
@@ -53,42 +53,46 @@ sub register_test
 {
     my ($errors,$rc) = ("",0);
     my ($output);
-    my ($contact, $rsl, $result, $fullarg) = @_;
+    my ($contact, $rsl, $result, $fullarg, @lrm_skip_list) = @_;
     my $valgrind = "";
+    my @args = ();
+    my $oldstdout;
+    my $testname = "globus_gram_client_register_test_" . $testno++;
 
     if (exists $ENV{VALGRIND})
     {
-        $valgrind = "valgrind --log-file=VALGRIND-globus_gram_client_register_test_" . $testno++ . ".log";
+        push(@args, "valgrind", "--log-file=VALGRIND-$testname.log");
+
         if (exists $ENV{VALGRIND_OPTIONS})
         {
-            $valgrind .= ' ' . $ENV{VALGRIND_OPTIONS};
+            push(@args, split(/\s+/, $ENV{VALGRIND_OPTIONS}));
         }
     }
 
-    if (! defined($fullarg))
+    push(@args, $test_exec, $contact, $rsl);
+    if (defined($fullarg))
     {
-        $fullarg='';
+        push(@args, $fullarg);
     }
 
-    system("$valgrind $test_exec '$contact' '$rsl' $fullarg >/dev/null");
-    $rc = $?>> 8;
-    if($rc != $result)
-    {
-        $errors .= "Test exited with $rc. ";
-    }
+    SKIP: {
+        skip "Skipping test for $lrm", 1
+            if (defined($lrm) && grep(/$lrm/, @lrm_skip_list));
 
-    if($errors eq "")
-    {
-        ok('success', 'success');
-    }
-    else
-    {
-        ok($errors, 'success');
+        open($oldstdout, ">&STDOUT");
+        open(STDOUT, ">/dev/null");
+
+        system(@args);
+        $rc = $?>> 8;
+
+        open(STDOUT, ">", $oldstdout);
+
+        ok($rc == $result, $testname)
     }
 }
 push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/bin/sleep)(arguments=1)', 0);");
 push(@tests, "register_test('$ENV{CONTACT_STRING}X', '&(executable=/bin/sleep)(arguments=1)', 7);");
-push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/no-such-bin/sleep)(arguments=1)', 5);");
+push(@tests, "register_test('$ENV{CONTACT_STRING}', '&(executable=/no-such-bin/sleep)(arguments=1)', 5, '', 'condor');");
 # Explanation for these test cases:
 # Both attempt to run the command
 # grid-proxy-info -type | grep limited && globusrun -k $GLOBUS_GRAM_JOB_CONTACT
