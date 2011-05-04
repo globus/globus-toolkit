@@ -169,7 +169,7 @@ verify_cert_hostname(X509 *cert, char *hostname) {
   CONF_VALUE            *nval;
   const unsigned char   *data;
   X509_EXTENSION        *ext;
-  const X509V3_EXT_METHOD     *meth;
+  X509V3_EXT_METHOD     *meth;
   STACK_OF(CONF_VALUE)  *val;
 
   if ((extcount = X509_get_ext_count(cert)) > 0) {
@@ -177,7 +177,7 @@ verify_cert_hostname(X509 *cert, char *hostname) {
       ext = X509_get_ext(cert, i);
       extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
       if (!strcasecmp(extstr, "subjectAltName")) {
-        if (!(meth = X509V3_EXT_get(ext))) break;
+        if (!(meth = (X509V3_EXT_METHOD *)X509V3_EXT_get(ext))) break;
         data = ext->value->data;
 
         val = meth->i2v(meth, meth->d2i(0, &data, ext->value->length), 0);
