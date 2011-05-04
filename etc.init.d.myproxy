@@ -26,7 +26,7 @@ PID_FILE=${localstatedir}/myproxy.pid
 #LISTEN="-l myserver.mydomain.com"
 #PORT="-p 7512"
 #CONFIG="-c ${GLOBUS_LOCATION}/etc/myproxy-server.config"
-#STORE="-s ${GLOBUS_LOCATION}/var/myproxy"
+#STORE="-s ${GLOBUS_LOCATION}/var/lib/myproxy"
 #VERBOSE="-verbose"
 
 # By default, the myproxy-server uses /etc/grid-security/hostcert.pem

@@ -152,7 +152,12 @@ check_storage_directory()
     if (storage_dir == NULL) { /* Choose a default storage directory */
 	char *GL;
 	GL = getenv("GLOBUS_LOCATION");
-	if (stat("/var/myproxy", &statbuf) == 0) {
+	if (stat("/var/lib/myproxy", &statbuf) == 0) {
+	    storage_dir = mystrdup("/var/lib/myproxy");
+	    if (!storage_dir) goto error;
+	}
+	/* if /var/lib/myproxy doesn't exist, look for /var/myproxy */
+	if (storage_dir == NULL && stat("/var/myproxy", &statbuf) == 0) {
 	    storage_dir = mystrdup("/var/myproxy");
 	    if (!storage_dir) goto error;
 	}
@@ -171,9 +176,16 @@ check_storage_directory()
 		gl_storage_dir = NULL;
 	    }
 	}
-	/* if neither exist, try creating one */
+	/* if none exist, try creating one */
 	if (storage_dir == NULL) {
-	    if (mkdir("/var/myproxy", 0700) == 0) {
+	    if (mkdir("/var/lib/myproxy", 0700) == 0) {
+		storage_dir = mystrdup("/var/lib/myproxy");
+		if (stat("/var/lib/myproxy", &statbuf) == -1) {
+		    verror_put_errno(errno);
+		    verror_put_string("could not stat directory /var/lib/myproxy");
+		    goto error;
+		}
+	    } else if (mkdir("/var/myproxy", 0700) == 0) {
 		storage_dir = mystrdup("/var/myproxy");
 		if (stat("/var/myproxy", &statbuf) == -1) {
 		    verror_put_errno(errno);

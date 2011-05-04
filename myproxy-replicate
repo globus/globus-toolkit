@@ -12,7 +12,7 @@ use IPC::Open3;
 require Pod::Usage;
 
 my $MYPROXY_DEFAULT_PORT     = "7512";
-my $MYPROXY_DEFAULT_LOCATION = "/var/myproxy";
+my $MYPROXY_DEFAULT_LOCATION = "/var/lib/myproxy";
 my $MYPROXY_REPLICATE_FILE   = "\.myproxy_replicate";
 my $MYPROXY_DELETED_FILE     = "\.myproxy_deleted";
 my $MYPROXY_PID_FILE         = "\.myproxy_pid";
@@ -680,7 +680,7 @@ Displays command usage text and exits.
 Specifies the location of the credential storage directory.
 The directory must be accessible only by the user running the
 B<myproxy-server> process for security reasons.  
-Default: /var/myproxy or $GLOBUS_LOCATION/var/myproxyA
+Default: /var/lib/myproxy or $GLOBUS_LOCATION/var/myproxy
 
 =item B<-c> I<file>, B<-config> I<file>
 
