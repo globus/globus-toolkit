@@ -58,7 +58,7 @@ configuration file.  Default: /etc/myproxy-server.config or $GLOBUS_LOCATION/etc
 Specifies the location of the credential storage directory.
 The directory must be accessible only by the user running the 
 .B myproxy-server
-process for security reasons.  Default: /var/myproxy or $GLOBUS_LOCATION/var/myproxy
+process for security reasons.  Default: /var/lib/myproxy or /var/myproxy or $GLOBUS_LOCATION/var/myproxy
 .SH FILES
 .TP
 .I /etc/myproxy-server.config
@@ -71,13 +71,15 @@ An alternate location can be specified by using the
 .B -c
 option.
 .TP
-.I /var/myproxy
+.I /var/lib/myproxy
 Default location of the credential storage directory.
 If not found, 
+.I /var/myproxy
+or
 .I $GLOBUS_LOCATION/var/myproxy
 will be used.
-If neither exist, the myproxy-server will first attempt to create
-.I /var/myproxy
+If none of these directories exist, the myproxy-server will first attempt to create
+.I /var/lib/myproxy
 and if that fails will attempt to create
 .I $GLOBUS_LOCATION/var/myproxy
 and use that.
