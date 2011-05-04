@@ -1471,6 +1471,7 @@ if ($startserver) { # only case we have direct access to repository
   print "MyProxy Test 43 (myproxy-admin-query): SKIPPED\n";
 }
 
+myproxy_header_test:
 #
 # Test 44
 #
@@ -1479,16 +1480,28 @@ if (-x $gcc &&
     defined($ENV{'GLOBUS_LOCATION'}) &&
     -d "$ENV{'GLOBUS_LOCATION'}/include") {
   &write_myproxy_header_test;
-  $includedirs = "-I$ENV{'GLOBUS_LOCATION'}/include";
-  opendir(DIRHANDLE, "$ENV{'GLOBUS_LOCATION'}/include")
-    || die "can't opendir $ENV{'GLOBUS_LOCATION'}/include: $!";
+  $basedir = "$ENV{'GLOBUS_LOCATION'}/include";
+  $includedirs = "-I$basedir";
+  opendir(DIRHANDLE, "$basedir")
+    || die "can't opendir $basedir: $!";
   while (defined($filename = readdir(DIRHANDLE))) {
 	next if $filename =~ /^\.\.?$/;     # skip . and ..
-    if (-d "$ENV{'GLOBUS_LOCATION'}/include/$filename") {
-      $includedirs .= " -I$ENV{'GLOBUS_LOCATION'}/include/$filename";
+    if (-d "$basedir/$filename") {
+      $includedirs .= " -I$basedir/$filename";
     }
   }
   closedir(DIRHANDLE);
+  # should really just make this a recursive search...
+  $basedir = "$ENV{'GLOBUS_LOCATION'}/include/globus";
+  if (opendir(DIRHANDLE, "$basedir")) {
+    while (defined($filename = readdir(DIRHANDLE))) {
+      next if $filename =~ /^\.\.?$/;     # skip . and ..
+      if (-d "$basedir/$filename") {
+        $includedirs .= " -I$basedir/$filename";
+      }
+    }
+    closedir(DIRHANDLE);
+  }
   ($exitstatus, $output) =
     &runcmd("$gcc $includedirs -o $tmpdir/myproxy-header $tmpdir/myproxy.c");
   print "MyProxy Test 44 (myproxy.h): ";
