@@ -95,13 +95,10 @@ $ make dist
      $ gpg -ab myproxy-*.tar.gz
 
 8. Upload the release notes and myproxy-*.tar.gz* files to
-   <https://sourceforge.net/project/admin/explorer.php?group_id=284117>.
+   <https://sourceforge.net/projects/cilogon/files/myproxy/>.
 
-   Just for backup, also upload to ftp.globus.org and
-   myproxy.ncsa.uiuc.edu:
+   Just for backup, also upload to myproxy.ncsa.uiuc.edu:
 
-    $ scp README LICENSE VERSION myproxy-*.tar.gz* \
-       cvs.globus.org:/disks/ftp.globus.org/pub/myproxy
     $ scp README LICENSE VERSION myproxy-*.tar.gz* \
       osage.ncsa.uiuc.edu:/afs/ncsa/web/grid.ncsa.uiuc.edu/htdocs/myproxy/dl
 
