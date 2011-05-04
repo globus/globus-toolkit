@@ -761,7 +761,7 @@ ssl_private_key_store_to_file(SSL_CREDENTIALS *creds,
     if (PEM_ASN1_write_bio((int (*)())i2d_PrivateKey,
 		(((creds->private_key)->type == EVP_PKEY_DSA)?
 				PEM_STRING_DSA:PEM_STRING_RSA),
-				 keybio, creds->private_key, cipher,
+                           keybio, (void *)creds->private_key, cipher,
                                  (unsigned char *) pass_phrase,
                                  pass_phrase_len,
                                  PEM_NO_CALLBACK) == SSL_ERROR)
@@ -1092,7 +1092,7 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
     if (PEM_ASN1_write_bio((int (*)())i2d_PrivateKey,
 		(((creds->private_key)->type == EVP_PKEY_DSA)?
 				PEM_STRING_DSA:PEM_STRING_RSA),
-				 bio, creds->private_key, cipher,
+                           bio, (void *)creds->private_key, cipher,
 				 (unsigned char *) pass_phrase,
 				 pass_phrase_len,
 				 PEM_NO_CALLBACK) == SSL_ERROR)
@@ -1803,7 +1803,7 @@ ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject)
    sk_X509_unshift(creds->certificate_chain, creds->certificate);
    globus_gsi_cert_utils_get_base_name(client_subject,
 				       creds->certificate_chain);
-   sk_X509_shift(creds->certificate_chain);
+   (void)sk_X509_shift(creds->certificate_chain);
 
    X509_NAME_oneline(client_subject, client, sizeof(client));
    *subject = strdup(client);
