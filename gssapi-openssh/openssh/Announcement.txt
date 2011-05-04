@@ -1,10 +1,10 @@
-GSI-OpenSSH 5.2, based on OpenSSH 5.6p1, is now available from:
+GSI-OpenSSH 5.3, based on OpenSSH 5.8p2, is now available from:
 
-  http://grid.ncsa.uiuc.edu/ssh/download.html
+  http://grid.ncsa.illinois.edu/ssh/download.html
 
 For installation instructions, please see:
 
-  http://grid.ncsa.uiuc.edu/ssh/install.html
+  http://grid.ncsa.illinois.edu/ssh/install.html
 
 We appreciate your feedback and help in testing this version.
 Please use Bugzilla to report GSI-OpenSSH bugs:
@@ -13,18 +13,26 @@ Please use Bugzilla to report GSI-OpenSSH bugs:
 
 Major changes:
 
-  * Update to OpenSSH 5.6p1
+  * Update to OpenSSH 5.8p2 [1]
+  * Update to 20110125 GSSKex patch [2]
+  * Update to HPN13v11 patch [3]
+  * Fix vendorcc64 AIX 6.1 build failure [4]
+  * Fixes for GT 5.1/5.2 install paths and RPMs [5]
 
-  * Add GSSAPIServerIdentity option
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7108
+Checksums/signatures:
 
-  * Make all Globus Usage library errors non-fatal
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7111
+  $ openssl sha1 < gsi_openssh_bundle-5.3-src.tar.gz
+  119592e50dbf5b7b3b779e908c7a7a1449294b1d
 
-  * Updates for upcoming GT 5.2 threading model
-    https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7081
+  $ gpg gsi_openssh_bundle-5.3-src.tar.gz.asc 
+  gpg: Signature made Tue May 3 11:51:33 2011 CDT
+       using RSA key ID 0A33BE15
+  gpg: Good signature from "Jim Basney <jbasney@ncsa.uiuc.edu>"
 
-Checksums (gsi_openssh_bundle-5.2-src.tar.gz):
+References:
 
-  SHA1: 3a2f0e83f90c648f452cb40ad6b9602d357a1d55
-  MD5: f99403d3b90aaedfdfa7495ae80f01ec
+  [1] http://www.openssh.org/txt/release-5.8p2
+  [2] http://www.sxw.org.uk/computing/patches/openssh-5.7p1-gsskex-all-20110125.patch
+  [3] http://www.psc.edu/networking/projects/hpn-ssh/openssh-5.8p1-hpn13v11.diff.gz 
+  [4] https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7143
+  [5] http://dev.globus.org/wiki/Globus_Toolkit/5.2
