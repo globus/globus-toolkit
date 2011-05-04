@@ -68,6 +68,9 @@ my $validate_queues     = 1;
 my $softenv_dir         = '';
 my $help                = 0;
 
+$non_cluster = 1 if (exists $ENV{PBS_NON_CLUSTER});
+$cpu_per_node = $ENV{PBS_CPU_PER_NODE} if (exists $ENV{PBS_CPU_PER_NODE});
+
 GetOptions('service-name|s=s' => \$name,
            'non-cluster' => \$non_cluster,
            'cpu-per-node=i' => \$cpu_per_node,
