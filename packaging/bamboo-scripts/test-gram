@@ -43,8 +43,9 @@ branch=globus_5_0_branch
 lrms="fork fork+"
 flavor="gcc64dbg"
 nightly=0
+installer_url=""
 
-while getopts "f:b:nl:" arg; do
+while getopts "f:b:nl:i:" arg; do
     case "$arg" in
         f)
             flavor="$OPTARG"
@@ -54,6 +55,9 @@ while getopts "f:b:nl:" arg; do
             ;;
         n)
             nightly=1
+            ;;
+        i)
+            installer_url="$OPTARG"
             ;;
         l)
             # if the argument to the -l parameter ends in "+", then we will
@@ -73,10 +77,10 @@ done
 # Two modes of operation:
 # - cvs mode [default]
 #   Check out $branch, create a source installer, and install it
-# - nightly mode
+# - source installer mode
 #   Download the latest source installer from
-#   http://www.globus.org/$branch/nightly.tar.gz and install it
-if [ "$nightly" -eq 0 ]; then
+#   http://www.globus.org/$branch/nightly.tar.gz or $installer_url
+if [ "$nightly" -eq 0 -a -z "$installer_url" ]; then
     if [ "$branch" != "HEAD" ]; then
         tag="-r $branch"
         installertag="-t $branch"
@@ -89,8 +93,10 @@ if [ "$nightly" -eq 0 ]; then
     tar zcf "../nightly.tar.gz" "$installer"
     cd ..
 else
-    installer="http://www.globus.org/${branch}/nightly.tar.gz"
-    curl -s "$installer" > nightly.tar.gz
+    if [ "${installer_url}" = "" ]; then
+        installer_url="http://www.globus.org/${branch}/nightly.tar.gz"
+    fi
+    curl -s "$installer_url" > nightly.tar.gz
 fi
 tar zxf nightly.tar.gz
 installer_root="$(tar ztf nightly.tar.gz | head -n 1)"
