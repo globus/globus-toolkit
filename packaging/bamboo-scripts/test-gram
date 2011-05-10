@@ -132,6 +132,7 @@ cd $GLOBUS_LOCATION/setup/globus
 push_cleanup_hook "rm -rf $HOME/.globus || true"
 cd ../globus_simple_ca*
 sudo -E ./setup-gsi
+sudo chown -R $(id -un) "$GLOBUS_LOCATION"
 
 grid-cert-request -host $(globus-hostname) -dir ${GLOBUS_LOCATION}/tmp/host
 grid-ca-sign -in ${GLOBUS_LOCATION}/tmp/host/hostcert_request.pem \
