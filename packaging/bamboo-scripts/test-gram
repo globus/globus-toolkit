@@ -9,7 +9,7 @@ cleanup()
     eval set -- "$cleanup_hooks"
 
     for x; do
-        eval $x
+        eval $x || true
     done
 }
 
@@ -129,7 +129,7 @@ make install
 # Set up temporary security environment with host and user certificates
 cd $GLOBUS_LOCATION/setup/globus
 ./setup-simple-ca -noint
-push_cleanup_hook "rm -rf ~/.globus"
+push_cleanup_hook "rm -rf $HOME/.globus || true"
 cd ../globus_simple_ca*
 sudo -E ./setup-gsi
 
@@ -146,7 +146,6 @@ grid-cert-request -cn $(id -un) -nopw -dir $HOME/.globus
 grid-ca-sign -in $HOME/.globus/usercert_request.pem \
         -out $HOME/.globus/usercert.pem \
         -passin pass:globus
-push_cleanup_hook "rm -f ~/.globus"
 
 grid-proxy-init -verify
 
@@ -196,7 +195,7 @@ for lrm in $lrms; do
             -scheduler "${lrm%+}" \
             -background \
             -pidfile "${seg_pidfile}"
-        push_cleanup_hook "(test -f \${seg_pidfile} && kill \$(cat \${seg_pidfile}) ) || true"
+        push_cleanup_hook "kill \$(cat ${seg_pidfile}) || true"
 
         testsuffix="${testsuffix}_SEG"
 
