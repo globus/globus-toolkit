@@ -196,7 +196,7 @@ for lrm in $lrms; do
             -scheduler "${lrm%+}" \
             -background \
             -pidfile "${seg_pidfile}"
-        push_cleanup_hook "kill \$(cat \${seg_pidfile})"
+        push_cleanup_hook "(test -f \${seg_pidfile} && kill \$(cat \${seg_pidfile}) ) || true"
 
         testsuffix="${testsuffix}_SEG"
 
