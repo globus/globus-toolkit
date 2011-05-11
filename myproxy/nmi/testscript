@@ -92,6 +92,12 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
     installerdir="gt5-src"
     BuildGT
 fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT52"; then
+    installer="gt5.1.0-all-source-installer.tar.gz"
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt52"
+    installerdir="gt52-src"
+    BuildGT
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installer="nightly.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt-nightly"
@@ -148,6 +154,11 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT5"; then
     MYPROXY_CONFIG_OPTS=$voms
     BuildMyProxyCVS
 fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT52"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt52
+    unset MYPROXY_CONFIG_OPTS
+    BuildMyProxyCVS
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGTNightly"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
     unset MYPROXY_CONFIG_OPTS
@@ -178,6 +189,11 @@ fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT5"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
     valgrindopt=$valgrind
+    TestMyProxyCVS
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGT52"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt52
+    valgrindopt=""
     TestMyProxyCVS
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xTestMyProxyCVSGTNightly"; then

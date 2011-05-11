@@ -81,6 +81,12 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
     installerdir="gt5-src"
     BuildGT
 fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT52"; then
+    installer="gt5.1.0-all-source-installer.tar.gz"
+    GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt52"
+    installerdir="gt52-src"
+    BuildGT
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installer="nightly.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt-nightly"
@@ -143,6 +149,10 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT5"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
     BuildGSISSHTrunk
 fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGT52"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt52
+    BuildGSISSHTrunk
+fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHTrunkGTNightly"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt-nightly
     BuildGSISSHTrunk
@@ -153,6 +163,10 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT4"; then
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT5"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt5
+    BuildGSISSHGPT
+fi
+if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGT52"; then
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt52
     BuildGSISSHGPT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGSISSHGPTGTNightly"; then
