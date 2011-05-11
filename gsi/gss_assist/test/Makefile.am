@@ -13,6 +13,7 @@ Scripts = \
         gridmap-tools-test.pl
 
 Data = grid-mapfile \
+       gridmap.blank_line \
        gridmap.empty \
        gridmap.long_line \
        gridmap.multiple-dns \
