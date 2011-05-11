@@ -183,7 +183,12 @@ for lrm in $lrms; do
 
     seg_pidfile="${GLOBUS_LOCATION}/var/seg-${lrm%+}.pid"
     servicefile="${servicedir}/jobmanager-${lrm%+}"
-    sed -i .bak -e "s/\$/ -disable-usagestats/" "$servicefile" 
+    if [ ! -f "${servicefile}.bak" ]; then
+        cp "${servicefile}" "${servicefile}.bak"
+        sed -e "s/\$/ -disable-usagestats/" \
+            < "${servicefile}.bak" \
+            > "${servicefile}"
+    fi
     testsuffix="${lrm%+}"
 
     if [ "${lrm%+}" != "${lrm}" ]; then
