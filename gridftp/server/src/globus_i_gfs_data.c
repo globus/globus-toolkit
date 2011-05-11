@@ -2759,7 +2759,8 @@ globus_i_gfs_data_request_command(
                 {
                     result = GlobusGFSErrorWrapFailed(
                         "Setting data channel driver stack", result);
-                }               
+                }
+                globus_gridftp_server_finished_command(op, result, NULL);
             }
             else
             {
@@ -2768,7 +2769,6 @@ globus_i_gfs_data_request_command(
             }
 
             call = GLOBUS_FALSE;
-            globus_gridftp_server_finished_command(op, result, NULL);
             break;
 
         case GLOBUS_GFS_CMD_SITE_SETDISKSTACK:
@@ -2785,6 +2785,7 @@ globus_i_gfs_data_request_command(
                     result = GlobusGFSErrorWrapFailed(
                         "Setting filesystem driver stack", result);
                 }
+                globus_gridftp_server_finished_command(op, result, NULL);
             }
             else
             {
@@ -2793,7 +2794,6 @@ globus_i_gfs_data_request_command(
             }
 
             call = GLOBUS_FALSE;
-            globus_gridftp_server_finished_command(op, result, NULL);
             break;
 
         case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
