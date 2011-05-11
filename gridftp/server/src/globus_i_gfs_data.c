@@ -1503,7 +1503,7 @@ globus_l_gfs_data_authorize(
     {
         if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
-            if(context != NULL)
+            if(context != NULL && globus_i_gfs_config_bool("cas"))
             {
                 if(session_info->map_user)
                 {
@@ -1621,7 +1621,7 @@ globus_l_gfs_data_authorize(
 
         gid = pwent->pw_gid;
         grent = globus_l_gfs_getgrgid(gid);
-        if(grent == NULL)
+        if(grent == NULL && !(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
         {
             GlobusGFSErrorGenericStr(res,
                 ("Invalid group id assigned to user '%s'.",
@@ -1873,7 +1873,10 @@ globus_l_gfs_data_authorize(
     }
 
     globus_l_gfs_pw_free(pwent);
-    globus_l_gfs_gr_free(grent);
+    if(grent)
+    {
+        globus_l_gfs_gr_free(grent);
+    }
 
     GlobusGFSDebugExit();
     return;

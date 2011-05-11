@@ -283,7 +283,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"control_idle_timeout", "control_idle_timeout", NULL, "control-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
+ {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 900, NULL,
     "Idle time in seconds before an unused ipc connection will close.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_connect_timeout", "ipc_connect_timeout", NULL, "ipc-connect-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 60, NULL,
     "Time in seconds before cancelling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE, NULL},
