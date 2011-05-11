@@ -246,6 +246,131 @@ cat > globus-gridftp.xml <<EOF
       <packagereq type="default">globus-proxy-utils</packagereq>
     </packagelist>
   </group>
+
+  <group>
+    <id>globus-data-management-server</id>
+    <name>globus-data-management-server</name>
+    <default>true</default>
+    <description>Globus Data Management Server</description>
+    <uservisible>true</uservisible>
+    <packagelist>
+      <packagereq type="default">globus-common-progs</packagereq>
+      <packagereq type="default">globus-gfork-progs</packagereq>
+      <packagereq type="default">globus-xio-pipe-driver</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-ftp-control</packagereq>
+      <packagereq type="default">globus-authz-callout-error</packagereq>
+      <packagereq type="default">globus-authz</packagereq>
+      <packagereq type="default">globus-usage</packagereq>
+      <packagereq type="default">globus-xioperf</packagereq>
+      <packagereq type="default">globus-gridftp-server-progs</packagereq>
+    </packagelist>
+  </group>
+
+  <group>
+    <id>globus-data-management-client</id>
+    <name>globus-data-management-client</name>
+    <default>true</default>
+    <description>Globus Data Management Client</description>
+    <uservisible>true</uservisible>
+    <packagelist>
+      <packagereq type="default">globus-common-progs</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-ftp-client</packagereq>
+      <packagereq type="default">globus-gass-copy-progs</packagereq>
+      <packagereq type="default">globus-proxy-utils-progs</packagereq>
+    </packagelist>
+  </group>
+
+  <group>
+    <id>globus-data-management-sdk</id>
+    <name>globus-data-management-sdk</name>
+    <default>true</default>
+    <description>Globus Data Management SDK</description>
+    <uservisible>true</uservisible>
+    <packagelist>
+      <packagereq type="default">globus-core</packagereq>
+      <packagereq type="default">globus-common</packagereq>
+      <packagereq type="default">globus-common-devel</packagereq>
+      <packagereq type="default">globus-common-doc</packagereq>
+      <packagereq type="default">globus-xio</packagereq>
+      <packagereq type="default">globus-xio-devel</packagereq>
+      <packagereq type="default">globus-xio-doc</packagereq>
+      <packagereq type="default">globus-gsi-openssl-error</packagereq>
+      <packagereq type="default">globus-gsi-openssl-error-devel</packagereq>
+      <packagereq type="default">globus-gsi-openssl-error-doc</packagereq>
+      <packagereq type="default">globus-gsi-proxy-devel</packagereq>
+      <packagereq type="default">globus-gsi-proxy-ssl-devel</packagereq>
+      <packagereq type="default">globus-gsi-proxy-ssl-doc</packagereq>
+      <packagereq type="default">globus-openssl-module</packagereq>
+      <packagereq type="default">globus-openssl-module-devel</packagereq>
+      <packagereq type="default">globus-openssl-module-doc</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils-devel</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils-doc</packagereq>
+      <packagereq type="default">globus-gsi-sysconfig</packagereq>
+      <packagereq type="default">globus-gsi-sysconfig-devel</packagereq>
+      <packagereq type="default">globus-gsi-sysconfig-doc</packagereq>
+      <packagereq type="default">globus-callout</packagereq>
+      <packagereq type="default">globus-callout-devel</packagereq>
+      <packagereq type="default">globus-callout-doc</packagereq>
+      <packagereq type="default">globus-gsi-callback</packagereq>
+      <packagereq type="default">globus-gsi-callback-devel</packagereq>
+      <packagereq type="default">globus-gsi-callback-doc</packagereq>
+      <packagereq type="default">globus-gsi-credential</packagereq>
+      <packagereq type="default">globus-gsi-credential-devel</packagereq>
+      <packagereq type="default">globus-gsi-credential-doc</packagereq>
+      <packagereq type="default">globus-gsi-proxy-core</packagereq>
+      <packagereq type="default">globus-gsi-proxy-core-devel</packagereq>
+      <packagereq type="default">globus-gsi-proxy-core-doc</packagereq>
+      <packagereq type="default">globus-gssapi-gsi</packagereq>
+      <packagereq type="default">globus-gssapi-gsi-devel</packagereq>
+      <packagereq type="default">globus-gssapi-gsi-doc</packagereq>
+      <packagereq type="default">globus-gss-assist</packagereq>
+      <packagereq type="default">globus-gss-assist-devel</packagereq>
+      <packagereq type="default">globus-gss-assist-doc</packagereq>
+      <packagereq type="default">globus-gssapi-error</packagereq>
+      <packagereq type="default">globus-gssapi-error-devel</packagereq>
+      <packagereq type="default">globus-gssapi-error-doc</packagereq>
+      <packagereq type="default">globus-xio-gsi-driver</packagereq>
+      <packagereq type="default">globus-xio-gsi-driver-devel</packagereq>
+      <packagereq type="default">globus-xio-gsi-driver-doc</packagereq>
+      <packagereq type="default">globus-io</packagereq>
+      <packagereq type="default">globus-io-devel</packagereq>
+      <packagereq type="default">globus-io-doc</packagereq>
+      <packagereq type="default">globus-gass-transfer</packagereq>
+      <packagereq type="default">globus-gass-transfer-devel</packagereq>
+      <packagereq type="default">globus-gass-transfer-doc</packagereq>
+      <packagereq type="default">globus-ftp-control</packagereq>
+      <packagereq type="default">globus-ftp-control-devel</packagereq>
+      <packagereq type="default">globus-ftp-control-doc</packagereq>
+      <packagereq type="default">globus-xio-popen-driver</packagereq>
+      <packagereq type="default">globus-xio-popen-driver-devel</packagereq>
+      <packagereq type="default">globus-xio-popen-driver-doc</packagereq>
+      <packagereq type="default">globus-ftp-client</packagereq>
+      <packagereq type="default">globus-ftp-client-devel</packagereq>
+      <packagereq type="default">globus-ftp-client-doc</packagereq>
+      <packagereq type="default">globus-gass-copy</packagereq>
+      <packagereq type="default">globus-gass-copy-devel</packagereq>
+      <packagereq type="default">globus-gass-copy-doc</packagereq>
+    </packagelist>
+  </group>
+
+  <group>
+    <id>globus-gsi</id>
+    <name>globus-gsi</name>
+    <default>true</default>
+    <description>Globus GSI Security Tools</description>
+    <uservisible>true</uservisible>
+    <packagelist>
+      <packagereq type="default">globus-common-progs</packagereq>
+      <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-proxy-utils-progs</packagereq>
+      <packagereq type="default">globus-user-env</packagereq>
+      <packagereq type="default">globus-simple-ca</packagereq>
+    </packagelist>
+  </group>
+
 </comps>
 EOF
 
