@@ -543,12 +543,17 @@ const char * long_usage =
 "      Use NetLogger to estimate speeds of disk and network read/write\n"
 "      system calls, and attempt to determine the bottleneck component\n"
 "  -src-pipe | -SP <command line>\n"
-"     Set the source end of a remote transfer to use piped in input\n"
-"     with the given command line.  do not use with -fsstack\n"
+"     This will use the popen xio driver on the server to run the given\n"
+"     command, and the output (stdout) produced will be the data transferred.\n"
+"     The path part of the source url is ignored and only the host/port is used.\n"
+"     Requires a server configured to allow both the popen driver and the\n"
+"     requested command.  Do not use with -src-fsstack.\n"
 "  -dst-pipe | -DP <command line>\n"
-"     Set the destination end of a remote transfer to write data to then"
-"     standard input of the program run via the given command line.  Do\n"
-"     not use with -fsstack\n"
+"     This will use the popen xio driver on the server to run the given\n"
+"     command, with the data transferred as its input (stdin).  The\n"
+"     path part of the dest url is ignored and only the host/port is used.\n"
+"     Requires a server configured to allow both the popen driver and the\n"
+"     requested command.  Do not use with -dst-fsstack.\n"
 "  -pipe <command line>\n"
 "     sets both -src-pipe and -dst-pipe to the same thing\n"
 "  -dcstack | -data-channel-stack\n"
@@ -588,9 +593,9 @@ const char * long_usage =
 "       not exist.  Level 1 will transfer if the size of the destination\n"
 "       does not match the size of the source.  Level 2 will transfer if\n"
 "       the timestamp of the destination is older than the timestamp of the\n"
-"       source.  Level 3 will perform a checksum of the source and\n"
-"       destination and transfer if the checksums do not match.\n"
-"       The default sync level is 2.\n"
+"       source, or the sizes do not match.  Level 3 will perform a checksum of\n"
+"       the source and destination and transfer if the checksums do not match,\n"
+"       or the sizes do not match.  The default sync level is 2.\n"
 "\n";
 
 /***********
@@ -4758,8 +4763,7 @@ globus_l_guc_check_sync(
         switch(guc_info->sync_level)
         {
             case GLOBUS_L_GUC_CKSM:
-                if(dest_urlinfo->mdtm >= src_urlinfo->mdtm &&
-                    dest_urlinfo->size == src_urlinfo->size)
+                if(dest_urlinfo->size == src_urlinfo->size)
                 {
                     globus_l_guc_cksm_info_t    src_cksm_info;
                     globus_l_guc_cksm_info_t    dst_cksm_info;
@@ -5047,8 +5051,7 @@ globus_l_guc_expand_single_url(
             /* if error code is not 5xx, or is 5xx and the error
              * is not "No such file or directory" or "File not found", fail.
              * ugly, but we can't rely on error codes. */
-            if(rc <= 0 || 
-                rc / 100 != 5 || 
+            if((rc > 0 && rc / 100 != 5) ||
                 (strstr(tmp_errstr, "no such file") == NULL &&
                 strstr(tmp_errstr, "file not found") == NULL))
             {
