@@ -4,7 +4,14 @@ use Getopt::Long;
 my $sourcelistfile, $tag;
 
 GetOptions( 'f|file=s' => \$sourcelistfile,
+	    'u|user=s' => \$cvsuser,
 	    't|tag=s' => \$tag);
+  if ($cvsuser){
+            $cvsroot = $cvsuser . "\@cvs.globus.org";
+ }else{
+        $cvsroot = ":pserver:anonymous\@cvs.globus.org"
+ }
+	
   if ($sourcelistfile ne ''){
     open(PKG, "$sourcelistfile");
   }else{
@@ -24,14 +31,13 @@ GetOptions( 'f|file=s' => \$sourcelistfile,
 	}else { #no overriding tag is given, default to HEAD unless there's a
 		#tag in the sourcelistfile
 	  if ($pkgtag eq ''){
-	    system("cvs -d blau\@cvs.globus.org:/home/globdev/CVS/globus-packages co $subdir ");}
+	    system("cvs -d $cvsroot:/home/globdev/CVS/globus-packages co $subdir ");}
 	  else {
-	    system("cvs -d blau\@cvs.globus.org:/home/globdev/CVS/globus-packages co -r $pkgtag $subdir");
+	    system("cvs -d $cvsroot:/home/globdev/CVS/globus-packages co -r $pkgtag $subdir");
 	  }
 	}
 	
     }
-
 
 
 
