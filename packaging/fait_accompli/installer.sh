@@ -1,4 +1,6 @@
 #!/bin/sh
+#Make sure we built GPT
+./build_gpt.pl
 
 VERSION=`cat fait_accompli/version`
 INSTALLER=gt$VERSION-all-source-installer
@@ -60,7 +62,6 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-#./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
 ./installer_creation.pl
 
 if [ $? -ne 0 ]; then
@@ -73,7 +74,6 @@ echo This may take a few minutes.
 
 mkdir $INSTALLER
 cat fait_accompli/installer.Makefile.prelude fait_accompli/makefile_bundle_target.frag installer_makefile.frag > $INSTALLER/Makefile.in
-#rm farfleblatt
 
 sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt2
 autoconf farfleblatt2 > $INSTALLER/configure
@@ -87,6 +87,8 @@ sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/READ
 
 # untar GPT into the installer dir
 tar -C $INSTALLER -xzf $GPT
+# installer wants gpt to not be in a versioned directory
+mv $INSTALLER/gpt-* $INSTALLER/gpt
 
 # copy quickstart into the installer dir
 cp -r quickstart $INSTALLER

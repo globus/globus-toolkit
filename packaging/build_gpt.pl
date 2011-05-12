@@ -4,7 +4,8 @@ my $gpt_dir;
     my $target;
     my $top_dir = `pwd`;
     chomp $top_dir;
-    my $log_dir = "/tmp/buildlog";
+    my $log_dir = $top_dir."/buildlog";
+    mkdir $log_dir;
 
 
     # we maintain a patched copy of gpt - find out what we call it
@@ -57,9 +58,9 @@ my $gpt_dir;
 
         #paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
         system("./make_gpt_dist >> $log_dir/$gpt_ver.log 2>&1");
-	#mkdir $package_output;
+	#mkdir $top_dir."/package_output";
         #system("mv ${gpt_ver}*.tar.gz $package_output");
-        system("mv ${gpt_ver}*.tar.gz $top_dir/package-output");
+        system("mv ${gpt_ver}*.tar.gz $top_dir");
     }
 
     @INC = (@INC, "$target/lib/perl", "$target/lib/perl/$Config{'archname'}");
