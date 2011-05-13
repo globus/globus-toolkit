@@ -6,6 +6,3 @@ BuildMyProxyCVSGT5
 TestMyProxyCVSGT5
 BuildVOMS
 ValgrindCheck
-BuildGT52
-BuildMyProxyCVSGT52
-TestMyProxyCVSGT52
