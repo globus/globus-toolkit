@@ -5,6 +5,10 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.5 XX Xxx 2011
+  - add myproxy-logon --certreq option, to accept an externally
+    generated certificate request rather than generating private key
+    and request internally
+    (http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=347)
   - use /var/lib/myproxy as first choice default storage directory,
     for Filesystem Hierarchy Standard compliance; still fallback to
     /var/myproxy and $GLOBUS_LOCATION/var/myproxy for alternatives

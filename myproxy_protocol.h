@@ -57,7 +57,8 @@ typedef struct
     char                         *trusted_retrievers;
     int                          want_trusted_certs; /* 1=yes, 0=no */
     char                         *voname;
-    char                         *vomses; 
+    char                         *vomses;
+    char                         *certreq;
 } myproxy_request_t;
 
 /* A server response object */
@@ -252,6 +253,21 @@ int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *delegfile,
 int myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs,
 				 char **credentials,
 				 int *credential_len, char *passphrase);
+
+/*
+ * myproxy_request_cert()
+ *
+ * An alternative to myproxy_accept_delegation_ex() that takes the
+ * location of a file containing a PEM-formatted certificate request
+ * (certreq) as input.
+ * Accepts delegated credentials into a newly allocated buffer.
+ * The caller must deallocate the buffer.
+ *
+ * return 0 on success, -1 on error
+ */
+int
+myproxy_request_cert(myproxy_socket_attrs_t *attrs, char *certreq,
+                     char **credentials, int *credential_len);
 
 /*
  * myproxy_accept_credentials()

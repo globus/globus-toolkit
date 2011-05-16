@@ -965,6 +965,18 @@ myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs, char **credentials,
 }
 
 int
+myproxy_request_cert(myproxy_socket_attrs_t *attrs, char *certreq,
+                     char **credentials, int *credential_len)
+{
+  assert(attrs);
+  assert(certreq);
+  GSI_SOCKET_delegation_set_certreq(attrs->gsi_socket, certreq);
+
+  return myproxy_accept_delegation_ex(attrs, credentials,
+                                      credential_len, NULL);
+}
+
+int
 myproxy_serialize_request(const myproxy_request_t *request, char *data,
 			  const int datalen) 
 {

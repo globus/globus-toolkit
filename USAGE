@@ -13,6 +13,7 @@ desperate attempt to maintain some consistency.
 -L | --local_proxy   Create a local proxy credential
 -N | --no_credentials       Authenticate only. Don't retrieve credentials.
 -P | --pidfile <path>       Specifies a file to write the pid to
+-Q | --certreq <path>       Use provided certificate request
 -R | --renewable_by    <dn>       Allow specified entity to renew credential
 -R | --renewable_by   <dn>        Allow specified entity to renew credential
 -R | --renewable_by   <dn>        Allow specified entity to renew credential
