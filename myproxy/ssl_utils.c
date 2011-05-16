@@ -1283,9 +1283,7 @@ ssl_credentials_new()
 	goto error;
     }
     
-    creds->certificate = NULL;
-    creds->private_key = NULL;
-    creds->certificate_chain = NULL;
+    memset(creds, 0, sizeof(SSL_CREDENTIALS));
     
   error:
     return creds;
