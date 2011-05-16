@@ -183,6 +183,19 @@ SSL_CREDENTIALS *ssl_credentials_new();
 
 /*
  *
+ * ssl_certreq_pem_to_der()
+ *
+ * Given the location of a file containing a PEM certificate request
+ * as input (certreq), return a DER encoded certificate request as
+ * output (buffer).
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
+ */
+int ssl_certreq_pem_to_der(char *certreq,
+                           unsigned char **buffer, int *buffer_length);
+
+/*
+ *
  * ssl_proxy_delegation_init()
  *
  * Generate a request for a proxy delegation in a buffer suitable for shipping

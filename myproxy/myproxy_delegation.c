@@ -97,11 +97,23 @@ int myproxy_get_delegation(
 	return(0);		/* if no outfile specified, just do auth */
     }
     
+    if (client_request->certreq) { /* client supplied cert request */
+
+        if (myproxy_request_cert(socket_attrs, client_request->certreq,
+                                 &credentials, &credential_len) < 0) {
+            return 1;
+        }
+
+    } else {
+
     /* Accept delegated credentials from server */
     if (myproxy_accept_delegation_ex(socket_attrs, &credentials,
 				     &credential_len, NULL) < 0) {
 	return(1);
     }      
+
+    }
+
 
 #if 0 /* response was lost in myproxy_accept_delegation() */
     if (myproxy_recv_response(socket_attrs, server_response) < 0) {

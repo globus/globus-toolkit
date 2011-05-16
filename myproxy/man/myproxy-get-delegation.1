@@ -192,6 +192,22 @@ For example, the
 environment variable may need to be set for 
 .B voms-proxy-init
 to run correctly.
+.TP
+.BI -Q " file, "  --certreq " file"
+Specify the path to a PEM formatted certificate request to use when
+requesting a certificate from the 
+.BR myproxy-server (8),
+rather than allowing 
+.B myproxy-logon
+to generate the private key and certificate request itself.
+In this case,
+.B myproxy-logon
+will not output a private key but will only output the signed
+certificate and (as needed) certificate chain.
+To read the certificate request from standard input rather than
+from a file, use
+.B -Q
+.BR - .
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH ENVIRONMENT

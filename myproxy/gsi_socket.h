@@ -253,6 +253,20 @@ int GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *gsi_socket,
 				     char *passphrase);
 
 /*
+ * GSI_SOCKET_delegation_set_certreq()
+ *
+ * Specify the location of a PEM-encoded certificate request to be
+ * used when accepting delegation via GSI_SOCKET_delegation_accept()
+ * or GSI_SOCKET_delegation_accept_ext(), rather than generating a new
+ * keypair and certificate request as part of delegation.
+ *
+ * Returns GSI_SOCKET_SUCCESS or GSI_SOCKET_ERROR.
+ */
+int
+GSI_SOCKET_delegation_set_certreq(GSI_SOCKET *gsi_socket,
+                                  char *certreq);
+
+/*
  * GSI_SOCKET_credentials_accept_ext()
  *
  * Accept credentials from the peer.

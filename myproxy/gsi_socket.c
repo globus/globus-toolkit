@@ -19,6 +19,7 @@ struct _gsi_socket
     char			*peer_name;
     int             limited_proxy; /* 1 if peer used a limited proxy */
     int             max_token_len;
+    char            *certreq;   /* path to a PEM encoded cert req */
 };
 
 #define DEFAULT_SERVICE_NAME		"host"
@@ -393,6 +394,11 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
     if (self->error_string)
     {
 	free(self->error_string);
+    }
+
+    if (self->certreq)
+    {
+        free(self->certreq);
     }
 
     free(self);
@@ -1500,6 +1506,17 @@ GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
 	return GSI_SOCKET_ERROR;
     }
 
+    if (self->certreq) {
+
+        creds = ssl_credentials_new();
+        if (ssl_certreq_pem_to_der(self->certreq, &output_buffer,
+                                   &output_buffer_len) == SSL_ERROR) {
+            GSI_SOCKET_set_error_from_verror(self);
+            goto error;
+        }
+        
+    } else {
+
     /* Generate proxy certificate request and send */
     if (ssl_proxy_delegation_init(&creds, &output_buffer, &output_buffer_len,
 				  0 /* default number of bits */,
@@ -1509,6 +1526,8 @@ GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
 	goto error;
     }
     
+    }
+
     if (GSI_SOCKET_write_buffer(self, (const char *)output_buffer,
 				output_buffer_len) == GSI_SOCKET_ERROR)
     {
@@ -1653,6 +1672,18 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     if (filename) free(filename);
 
     return return_value;
+}
+
+int
+GSI_SOCKET_delegation_set_certreq(GSI_SOCKET *self,
+                                  char *certreq)
+{
+    if (self->certreq) {
+        free(self->certreq);
+        self->certreq = NULL;
+    }
+    self->certreq = strdup(certreq);
+    return GSI_SOCKET_SUCCESS;
 }
 
 int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
