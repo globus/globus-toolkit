@@ -674,6 +674,11 @@ globus_l_gfs_free_session_handle(
         globus_xio_driver_list_destroy(
             session_handle->net_stack_list, GLOBUS_FALSE);
     }
+    if(session_handle->disk_stack_list)
+    {
+        globus_xio_driver_list_destroy(
+            session_handle->disk_stack_list, GLOBUS_FALSE);
+    }
     if(session_handle->dcsc_cred != GSS_C_NO_CREDENTIAL)
     {
         OM_uint32   min_rc;
@@ -1534,7 +1539,7 @@ globus_l_gfs_data_authorize(
     {
         if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
-            if(context != NULL)
+            if(context != NULL && globus_i_gfs_config_bool("cas"))
             {
                 if(session_info->map_user)
                 {
@@ -1652,7 +1657,7 @@ globus_l_gfs_data_authorize(
 
         gid = pwent->pw_gid;
         grent = globus_l_gfs_getgrgid(gid);
-        if(grent == NULL)
+        if(grent == NULL && !(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
         {
             GlobusGFSErrorGenericStr(res,
                 ("Invalid group id assigned to user '%s'.",
@@ -1904,7 +1909,10 @@ globus_l_gfs_data_authorize(
     }
 
     globus_l_gfs_pw_free(pwent);
-    globus_l_gfs_gr_free(grent);
+    if(grent)
+    {
+        globus_l_gfs_gr_free(grent);
+    }
 
     GlobusGFSDebugExit();
     return;
@@ -2569,6 +2577,59 @@ err:
 
 }
 
+static
+globus_result_t
+globus_l_gfs_data_load_stack(
+    char *                              driver_string_in,
+    globus_list_t **                    driver_list_out,
+    globus_hashtable_t *                allowed_drivers,
+    char *                              default_stack)
+{
+    char *                              parsed_driver_string;
+    char *                              driver_string;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusGFSName(globus_l_gfs_data_load_stack);
+    GlobusGFSDebugEnter();
+    
+    if(*driver_list_out)
+    {
+        globus_xio_driver_list_destroy(*driver_list_out, GLOBUS_FALSE);
+        *driver_list_out = NULL;
+    }
+
+    if(strcasecmp(driver_string_in, "default") == 0)
+    {        
+        driver_string = default_stack;
+    }
+    else
+    {
+        driver_string = driver_string_in;
+    }
+    
+    if(driver_string)
+    {
+        result = globus_l_gfs_data_approve_popen(
+            driver_string, &parsed_driver_string);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "Approving popen arguments", result);
+        }
+        else
+        {
+            result = globus_xio_driver_list_from_string(
+                parsed_driver_string,
+                driver_list_out,
+                allowed_drivers);
+            
+            globus_free(parsed_driver_string);
+        }
+    }
+    
+    GlobusGFSDebugExit();
+    return result;
+}
+
 void
 globus_i_gfs_data_request_command(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -2591,7 +2652,6 @@ globus_i_gfs_data_request_command(
     globus_gfs_acl_object_desc_t        object;
     char *                              tmp;
     char *                              starttag;
-    char *                              new_cmd;
     GlobusGFSName(globus_i_gfs_data_request_command);
     GlobusGFSDebugEnter();
 
@@ -2721,93 +2781,53 @@ globus_i_gfs_data_request_command(
             break;
 
         case GLOBUS_GFS_CMD_SITE_SETNETSTACK:
-            if(strcasecmp(cmd_info->pathname, "default") == 0)
+            if(session_handle->dsi->descriptor &
+                GLOBUS_GFS_DSI_DESCRIPTOR_SENDER)
             {
-                globus_xio_driver_list_destroy(
-                    op->session_handle->net_stack_list,
-                    GLOBUS_FALSE);
-                op->session_handle->net_stack_list = NULL;
-            }
-            else
-            {
-                if(op->session_handle->net_stack_list)
-                {
-                    globus_xio_driver_list_destroy(
-                        op->session_handle->net_stack_list,
-                        GLOBUS_FALSE);
-                    op->session_handle->net_stack_list = NULL;
-                }
-
-                result = globus_l_gfs_data_approve_popen(
-                        cmd_info->pathname, &new_cmd);
+                result = globus_l_gfs_data_load_stack(
+                    cmd_info->pathname,
+                    &op->session_handle->net_stack_list,
+                    &gfs_l_data_net_allowed_drivers,
+                    globus_i_gfs_config_string("dc_default"));
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusGFSErrorWrapFailed(
-                        "Approving popen arguments", result);
+                        "Setting data channel driver stack", result);
                 }
-                else
-                {
-                    result = globus_xio_driver_list_from_string(
-                        new_cmd,
-                        &op->session_handle->net_stack_list,
-                        &gfs_l_data_net_allowed_drivers);
-                    if(result != GLOBUS_SUCCESS)
-                    {
-                        result = GlobusGFSErrorWrapFailed(
-                            "Setting data channel driver stack", result);
-                    }
-                    
-                    globus_free(new_cmd);
-                }
+                globus_gridftp_server_finished_command(op, result, NULL);
+            }
+            else
+            {
+                op->session_handle->dsi->command_func(
+                    op, cmd_info, op->session_handle->session_arg);
             }
 
             call = GLOBUS_FALSE;
-            globus_gridftp_server_finished_command(op, result, NULL);
             break;
 
         case GLOBUS_GFS_CMD_SITE_SETDISKSTACK:
-            if(strcasecmp(cmd_info->pathname, "default") == 0)
+            if(session_handle->dsi->descriptor & 
+                GLOBUS_GFS_DSI_DESCRIPTOR_SENDER)
             {
-                globus_xio_driver_list_destroy(
-                    op->session_handle->disk_stack_list,
-                    GLOBUS_FALSE);
-                op->session_handle->disk_stack_list = NULL;
-            }
-            else
-            {                
-                if(op->session_handle->disk_stack_list)
-                {
-                    globus_xio_driver_list_destroy(
-                        op->session_handle->disk_stack_list,
-                        GLOBUS_FALSE);
-                    op->session_handle->disk_stack_list = NULL;
-                }
-                
-                result = globus_l_gfs_data_approve_popen(
-                        cmd_info->pathname, &new_cmd);
+                result = globus_l_gfs_data_load_stack(
+                    cmd_info->pathname,
+                    &op->session_handle->disk_stack_list,
+                    &gfs_l_data_disk_allowed_drivers,
+                    globus_i_gfs_config_string("fs_default"));
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusGFSErrorWrapFailed(
-                        "Approving popen arguments", result);
+                        "Setting filesystem driver stack", result);
                 }
-                else
-                {
-                    result = globus_xio_driver_list_from_string(
-                        new_cmd,
-                        &op->session_handle->disk_stack_list,
-                        &gfs_l_data_disk_allowed_drivers);
-                    if(result != GLOBUS_SUCCESS)
-                    {
-                        result = GlobusGFSErrorWrapFailed(
-                            "Setting filesystem driver stack", result);
-                    }
-                    
-                    globus_free(new_cmd);
-                }
+                globus_gridftp_server_finished_command(op, result, NULL);
+            }
+            else
+            {
+                op->session_handle->dsi->command_func(
+                    op, cmd_info, op->session_handle->session_arg);
             }
 
             call = GLOBUS_FALSE;
-            globus_gridftp_server_finished_command(op, result, NULL);
             break;
 
         case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
@@ -5044,31 +5064,24 @@ globus_l_gfs_data_begin_cb(
                     globus_error_print_friendly(globus_error_peek(res));
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_WARN,
-                    "Buffer size may not be properly set: %s\n",
+                    "Request to get socket buffer size failed: %s\n",
                     tmp_err_str);
                 free(tmp_err_str);
             }
-            if(op->writing)
-            {
-                if(op->data_handle->info.tcp_bufsize &&
-                    rcvbuf != op->data_handle->info.tcp_bufsize
-                    && res == GLOBUS_SUCCESS)
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_WARN,
-                        "RECV buffer size may not be properly set.  "
-                        "Requested size = %d, actualy size = %d\n",
-                        op->data_handle->info.tcp_bufsize, rcvbuf);
-                }
-                op->data_handle->info.tcp_bufsize = rcvbuf;
-            }
             else
             {
-                if(res != GLOBUS_SUCCESS)
+                if(op->writing)
                 {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_WARN,
-                        "Request to get socket buffer size failed\n");
+                    if(op->data_handle->info.tcp_bufsize &&
+                        rcvbuf != op->data_handle->info.tcp_bufsize)
+                    {
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_WARN,
+                            "RECV buffer size may not be properly set.  "
+                            "Requested size = %d, actualy size = %d\n",
+                            op->data_handle->info.tcp_bufsize, rcvbuf);
+                    }
+                    op->data_handle->info.tcp_bufsize = rcvbuf;
                 }
                 else
                 {
@@ -5084,7 +5097,7 @@ globus_l_gfs_data_begin_cb(
                     op->data_handle->info.tcp_bufsize = sndbuf;
                 }
             }
-
+            
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_INFO,
                 "Starting to transfer \"%s\".\n",
@@ -6691,6 +6704,38 @@ globus_i_gfs_data_session_start(
     op->callback = cb;
     op->user_arg = user_arg;
     op->info_struct = session_info;
+
+    result = globus_l_gfs_data_load_stack(
+        "default",
+        &op->session_handle->net_stack_list,
+        &gfs_l_data_net_allowed_drivers,
+        globus_i_gfs_config_string("dc_default"));
+    if(result != GLOBUS_SUCCESS)
+    {
+        char *                          msg;
+        msg = globus_error_print_friendly(globus_error_peek(result));
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
+            "Unable to set the default network stack: %s\n",
+            msg);
+        globus_free(msg);
+    }
+
+    result = globus_l_gfs_data_load_stack(
+        "default",
+        &op->session_handle->disk_stack_list,
+        &gfs_l_data_disk_allowed_drivers,
+        globus_i_gfs_config_string("fs_default"));
+    if(result != GLOBUS_SUCCESS)
+    {
+        char *                          msg;
+        msg = globus_error_print_friendly(globus_error_peek(result));
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
+            "Unable to set the default filesystem stack: %s\n",
+            msg);
+        globus_free(msg);
+    }
 
     if(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_IDENTIFY)
     {

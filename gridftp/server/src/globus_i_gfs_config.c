@@ -95,24 +95,24 @@ static const globus_l_gfs_config_option_t option_list[] =
     "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_allow_from", "ipc_allow_from", NULL, "ipc-allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
-    "seperated list of ip address fragments.  A match is any ip address that "
+    "separated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.1.' will match and "
     "allow a connection from 192.168.1.45.  Note that if this option is used "
     "any address not specifically allowed will be denied.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_deny_from", "ipc_deny_from", NULL, "ipc-deny-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Deny connections from these source ip addresses. Specify a comma "
-    "seperated list of ip address fragments.  A match is any ip address that "
+    "separated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.2.' will match and "
     "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
-    "seperated list of ip address fragments.  A match is any ip address that "
+    "separated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.1.' will match and "
     "allow a connection from 192.168.1.45.  Note that if this option is used "
     "any address not specifically allowed will be denied.", NULL, NULL, GLOBUS_FALSE, NULL},
  {"deny_from", "deny_from", NULL, "deny-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Deny connections from these source ip addresses. Specify a comma "
-    "seperated list of ip address fragments.  A match is any ip address that "
+    "separated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.2.' will match and "
     "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
@@ -129,7 +129,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
     "must also be set.  Disables ipc security.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"anonymous_names_allowed", "anonymous_names_allowed", NULL, "anonymous-names-allowed", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of names to treat as anonymous users when "
+    "Comma separated list of names to treat as anonymous users when "
     "allowing anonymous access.  If not set, the default names of 'anonymous' "
     "and 'ftp' will be allowed.  Use '*' to allow any username.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"anonymous_user", "anonymous_user", NULL, "anonymous-user", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -149,15 +149,15 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Custom message to be displayed to clients when the server is offline via the "
     "connections_disabled or connections_max = 0 options.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"disable_command_list", "disable_command_list", NULL, "disable-command-list", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma seperated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "A comma separated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"cas", "cas", NULL, "cas", "authz-callouts", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable the GSI authorization callout framework, for callouts such as CAS.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"acl", "acl", NULL, "acl", "em", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma seperated list of ACL or event modules to load.",
+    "A comma separated list of ACL or event modules to load.",
     NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_level", "log_level", NULL, "log-level", "d", GLOBUS_L_GFS_CONFIG_STRING, 0, "ERROR",
-    "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, TRANSFER, DUMP, ALL'. "
+    "Log level. A comma separated list of levels from: 'ERROR, WARN, INFO, TRANSFER, DUMP, ALL'. "
     "TRANSFER includes the same statistics that are sent to the seperate transfer "
     "log when -log-transfer is used.  Example: error,warn,info. You may also specify a numeric "
     "level of 1-255.  The default level is ERROR.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -190,7 +190,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Disable transmission of per-transfer usage statistics.  See the Usage Statistics "
     "section in the online documentation for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of contact strings (host:port) for usage statistics receivers.  The usage stats sent to "
+    "Comma separated list of contact strings (host:port) for usage statistics receivers.  The usage stats sent to "
     "a particular receiver may be customized by configuring it with a taglist (host:port!taglist)  The taglist is a list "
     "of characters that each correspond to a usage stats tag.  When this option is unset, stats are reported to "
     "usage-stats.globus.org:4810.  If you set your own receiver, and wish to continue reporting to the Globus receiver, "
@@ -223,7 +223,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Identifying tag to include in usage statistics data.", NULL, NULL, GLOBUS_FALSE, NULL},
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"remote_nodes", "remote_nodes", NULL, "remote-nodes", "r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of remote node contact strings.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Comma separated list of remote node contact strings.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"data_node", "data_node", NULL, "data-node", "dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "This server is a backend data node.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_blocksize", "stripe_blocksize", NULL, "stripe-blocksize", "sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
@@ -284,7 +284,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"control_idle_timeout", "control_idle_timeout", NULL, "control-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
+ {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 900, NULL,
     "Idle time in seconds before an unused ipc connection will close.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_connect_timeout", "ipc_connect_timeout", NULL, "ipc-connect-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 60, NULL,
     "Time in seconds before cancelling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -314,17 +314,25 @@ static const globus_l_gfs_config_option_t option_list[] =
     "[module name]:[configuration string] to this option.  The format of the configuration "
     "string is defined by the DSI being loaded.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allowed_modules", "allowed_modules", NULL, "allowed-modules", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of ERET/ESTO modules to allow, and optionally specify an alias for. "
+    "Comma separated list of ERET/ESTO modules to allow, and optionally specify an alias for. "
     "Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2).", NULL, NULL,GLOBUS_FALSE, NULL}, 
  {"dc_whitelist", "dc_whitelist", NULL, "dc-whitelist", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma seperated list of drivers allowed on the network stack.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "A comma separated list of drivers allowed on the network stack.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"fs_whitelist", "fs_whitelist", NULL, "fs-whitelist", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma seperated list of drivers allowed on the disk stack.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "A comma separated list of drivers allowed on the disk stack.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"popen_whitelist", "popen_whitelist", NULL, "popen-whitelist", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "A comma seperated list of programs that the popen driver is allowed to "
+    "A comma separated list of programs that the popen driver is allowed to "
     "execute, when used on the network or disk stack.  An alias may also be "
     "specified, so that a client does not need to specify the full path. "
     "Format is [alias:]prog,[alias:]prog. example: /bin/gzip,tar:/bin/tar", NULL, NULL, GLOBUS_FALSE, NULL},
+ {"dc_default", "dc_default", NULL, "dc-default", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma separated list of XIO drivers and options representing the default "
+    "network stack. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;...]. "
+    "The bottom of the stack, the transport driver, is always first.", NULL, NULL, GLOBUS_FALSE, NULL},
+ {"fs_default", "fs_default", NULL, "fs-default", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma separated list of XIO drivers and options representing the default "
+    "disk stack. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;...]. "
+    "The bottom of the stack, the transport driver, is always first.", NULL, NULL, GLOBUS_FALSE, NULL},
 {NULL, "Other", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"configfile", "configfile", NULL, "c", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      "Path to configuration file that should be loaded.  Otherwise will attempt "

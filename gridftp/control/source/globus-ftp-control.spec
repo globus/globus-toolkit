@@ -12,7 +12,7 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	3.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 

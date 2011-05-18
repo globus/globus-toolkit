@@ -46,6 +46,14 @@ PACKAGE=libtool
 VERSION=1.5.6
 TIMESTAMP=" (1.1220.2.95 2004/04/11 05:50:42) Debian$Rev: 224 $"
 
+# hack $echo vs $ECHO
+if test "X$echo" = X; then
+  if test "X$ECHO" = X; then
+    echo="echo"
+  else
+    echo="$ECHO"
+  fi
+fi
 
 # Check that we have a working $echo.
 if test "X$1" = X--no-reexec; then

@@ -626,6 +626,9 @@ typedef struct globus_ftp_cc_handle_s
     globus_bool_t                                    use_auth;
     globus_io_handle_t                               io_handle;
     globus_ftp_cc_state_t                            cc_state;
+    /* user supplied hostname or ip */
+    char                                             serverhostname[MAXHOSTNAMELEN];
+    /* ip address that was connected */
     char                                             serverhost[MAXHOSTNAMELEN];
     struct hostent                                   server;
     char                                             server_buffer[

@@ -19,10 +19,8 @@
 #include "globus_common.h"
 #include "globus_xio_rate_driver.h"
 
-GlobusDebugDefine(GLOBUS_XIO_TOKEN_BUCKET);
+GlobusDebugDefine(GLOBUS_XIO_RATE);
 GlobusXIODeclareDriver(rate);
-
-#define XIO_RATE_GROUP_TABLE_SIZE 64
 
 typedef enum
 {
@@ -33,24 +31,23 @@ typedef enum
 } globus_xio_rate_debug_levels_t;
 
 
-#define GlobusXIOTBDebugPrintf(level, message)                              \
-    GlobusDebugPrintf(GLOBUS_XIO_TOKEN_BUCKET, level, message)
+#define GlobusXIORateDebugPrintf(level, message)                              \
+    GlobusDebugPrintf(GLOBUS_XIO_RATE, level, message)
 
-#define GlobusXIOTBDebugEnter()                                             \
-    GlobusXIOTBDebugPrintf(                                                 \
+#define GlobusXIORateDebugEnter()                                             \
+    GlobusXIORateDebugPrintf(                                                 \
         GLOBUS_XIO_RATE_DEBUG_TRACE,                                          \
         ("[%s] Entering\n", _xio_name))
 
-#define GlobusXIOTBDebugExit()                                              \
-    GlobusXIOTBDebugPrintf(                                                 \
+#define GlobusXIORateDebugExit()                                              \
+    GlobusXIORateDebugPrintf(                                                 \
         GLOBUS_XIO_RATE_DEBUG_TRACE,                                          \
         ("[%s] Exiting\n", _xio_name))
 
 
-#define DEFAULT_PERIOD_US               50000
-/* set to a gigabit per sec.  unit is kilabits */
+/* set to a gigabit per sec */
 #define DEFAULT_RATE                    (1024*1024*1024/8)
-#define DEFAULT_BURST                   (5000000)
+#define DEFAULT_PERIOD_US               1000000
 
 static int
 globus_l_xio_rate_activate();
@@ -158,14 +155,14 @@ l_xio_rate_destroy_handle(
 {
     GlobusXIOName(l_xio_rate_destroy_handle);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
 
     l_xio_rate_destroy_op_handle(handle->read_handle);
     l_xio_rate_destroy_op_handle(handle->write_handle);
 
     globus_free(handle);
 
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 static
@@ -178,7 +175,7 @@ globus_l_xio_rate_error_cb(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_rate_error_cb);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     data = (l_xio_rate_data_t *) user_arg;
     op_handle = data->op_handle;
 
@@ -188,7 +185,7 @@ globus_l_xio_rate_error_cb(
 
     globus_free(data->iov);
     globus_free(data);
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 static
@@ -203,13 +200,13 @@ globus_l_xio_rate_op_cb(
     l_xio_rate_data_t *                 data;
     GlobusXIOName(globus_l_xio_rate_op_cb);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     data = (l_xio_rate_data_t *) user_arg;
     op_handle = data->op_handle;
 
     if(result != GLOBUS_SUCCESS)
     {
-        GlobusXIOTBDebugPrintf(GLOBUS_XIO_RATE_DEBUG_INFO,
+        GlobusXIORateDebugPrintf(GLOBUS_XIO_RATE_DEBUG_INFO,
             ("    error setting done true\n"));
     }
 
@@ -217,7 +214,7 @@ globus_l_xio_rate_op_cb(
     globus_free(data);
 
     globus_mutex_unlock(&op_handle->mutex);
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 
@@ -234,7 +231,7 @@ l_xio_rate_net_ops(
     l_xio_rate_data_t *         data;
     GlobusXIOName(l_xio_rate_net_ops);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     if(op_handle->outstanding)
     {
         return;
@@ -271,7 +268,7 @@ l_xio_rate_net_ops(
                 data);
         }
     }
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 static
@@ -282,7 +279,7 @@ l_xio_rate_ticker_cb(
     l_xio_rate_op_handle_t *    op_handle;
     GlobusXIOName(l_xio_rate_ticker_cb);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     op_handle = (l_xio_rate_op_handle_t *) user_arg;
 
     globus_mutex_lock(&op_handle->mutex);
@@ -296,7 +293,7 @@ l_xio_rate_ticker_cb(
         l_xio_rate_net_ops(op_handle);
     }
     globus_mutex_unlock(&op_handle->mutex);
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 /*
@@ -349,7 +346,7 @@ globus_l_xio_rate_open_cb(
     l_xio_rate_handle_t *       handle;
     GlobusXIOName(globus_l_xio_rate_open_cb);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) user_arg;
 
     globus_xio_driver_finished_open(handle, op, result);
@@ -369,7 +366,7 @@ globus_l_xio_rate_open_cb(
         }
         globus_mutex_unlock(&xio_l_rate_hash_mutex);
     }
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 static
@@ -424,7 +421,7 @@ globus_l_xio_rate_open(
     l_xio_rate_attr_rw_t *                attr;
     GlobusXIOName(globus_l_xio_rate_open);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     if(driver_attr == NULL)
     {
         attr = &l_xio_rate_default_attr;
@@ -456,7 +453,7 @@ globus_l_xio_rate_open(
         goto error;
     }
 
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
     return GLOBUS_SUCCESS;
 error:
     l_xio_rate_destroy_handle(handle);
@@ -499,14 +496,14 @@ l_xio_rate_write_unreg(
     l_xio_rate_handle_t *       handle;
     GlobusXIOName(l_xio_rate_read_unreg);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) user_arg;
 
     l_xio_rate_destroy_op_handle(handle->write_handle);
     globus_xio_driver_finished_close(handle->close_op, handle->close_result);
     globus_free(handle);
 
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 
 }
 
@@ -519,7 +516,7 @@ l_xio_rate_read_unreg(
     l_xio_rate_handle_t *       handle;
     GlobusXIOName(l_xio_rate_read_unreg);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) user_arg;
 
     globus_mutex_lock(&xio_l_rate_hash_mutex);
@@ -539,7 +536,7 @@ l_xio_rate_read_unreg(
         globus_free(handle);
     }
 
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 }
 
 static
@@ -553,7 +550,7 @@ globus_l_xio_rate_close_cb(
     l_xio_rate_handle_t *       handle;
     GlobusXIOName(globus_l_xio_rate_close_cb);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) user_arg;
     handle->close_result = result;
 
@@ -595,7 +592,7 @@ globus_l_xio_rate_close(
     l_xio_rate_handle_t *       handle;
     GlobusXIOName(globus_l_xio_rate_close);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) driver_specific_handle;
 
     handle->close_op = op;
@@ -606,7 +603,7 @@ globus_l_xio_rate_close(
         goto error;
     }
 
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 
     return GLOBUS_SUCCESS;
 error:
@@ -630,7 +627,7 @@ globus_l_xio_rate_read(
     l_xio_rate_data_t *         data;
     GlobusXIOName(globus_l_xio_rate_read);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) driver_specific_handle;
 
     if(handle->read_handle == NULL)
@@ -667,7 +664,7 @@ globus_l_xio_rate_read(
         }
         globus_mutex_unlock(&data->op_handle->mutex);
     }
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 
     return GLOBUS_SUCCESS;
 error:
@@ -690,7 +687,7 @@ globus_l_xio_rate_write(
     l_xio_rate_data_t *         data;
     GlobusXIOName(globus_l_xio_rate_write);
 
-    GlobusXIOTBDebugEnter();
+    GlobusXIORateDebugEnter();
     handle = (l_xio_rate_handle_t *) driver_specific_handle;
 
     if(handle->write_handle == NULL)
@@ -727,7 +724,7 @@ globus_l_xio_rate_write(
         }
         globus_mutex_unlock(&data->op_handle->mutex);
     }
-    GlobusXIOTBDebugExit();
+    GlobusXIORateDebugExit();
 
     return GLOBUS_SUCCESS;
 error:
@@ -928,7 +925,7 @@ globus_l_xio_rate_activate(void)
 {
     int                                 rc;
 
-    GlobusDebugInit(GLOBUS_XIO_TOKEN_BUCKET, TRACE);
+    GlobusDebugInit(GLOBUS_XIO_RATE, TRACE);
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     if(rc == GLOBUS_SUCCESS)

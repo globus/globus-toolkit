@@ -159,6 +159,7 @@ globus_ftp_control_handle_init(
     handle->cc_handle.quit_response.response_buffer = GLOBUS_NULL;
     handle->cc_handle.nl_handle_set = GLOBUS_FALSE;
     handle->cc_handle.signal_deactivate = GLOBUS_FALSE;
+    *handle->cc_handle.serverhostname = '\0';
     globus_io_tcpattr_init(&handle->cc_handle.io_attr);
 
     globus_ftp_control_auth_info_init(&(handle->cc_handle.auth_info),
@@ -520,6 +521,11 @@ globus_ftp_control_connect(
         element->callback = callback;
         element->arg = callback_arg;
                 
+        strncpy(handle->cc_handle.serverhostname, 
+            host, sizeof(handle->cc_handle.serverhostname));
+        handle->cc_handle.serverhostname[
+            sizeof(handle->cc_handle.serverhostname) - 1] = 0;
+               
         globus_io_attr_set_tcp_nodelay(&handle->cc_handle.io_attr, 
                                        GLOBUS_TRUE);
         rc=globus_io_tcp_register_connect(
@@ -2522,6 +2528,10 @@ return_error:
 
 #endif
 
+static gss_OID_desc gss_nt_host_ip_oid =
+    { 10, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x02" };
+static gss_OID_desc * GLOBUS_GSS_C_NT_HOST_IP = &gss_nt_host_ip_oid;
+
 static void 
 globus_l_ftp_control_send_cmd_cb(
     void *                                      callback_arg,
@@ -2589,12 +2599,29 @@ globus_l_ftp_control_send_cmd_cb(
 		        "No possible GSI subject.  If using a non TCP protocol and GSI you must specifiy a subject.");
                     goto return_error;
                 }
-	        rc = globus_gss_assist_authorization_host_name(
-                    handle->cc_handle.serverhost,
-                    &handle->cc_handle.auth_info.target_name);
-                if(rc != GLOBUS_SUCCESS)
+                
+                send_tok.value = globus_common_create_string(
+                    "%s/%s", 
+                    handle->cc_handle.serverhostname, 
+                    handle->cc_handle.serverhost);
+                send_tok.length = strlen(send_tok.value);
+                
+		maj_stat = gss_import_name(
+		    &min_stat, 
+                    &send_tok, 
+                    GLOBUS_GSS_C_NT_HOST_IP, 
+                    &(handle->cc_handle.auth_info.target_name));
+                if(maj_stat != GSS_S_COMPLETE) 
                 {
-                    error_obj = globus_error_get(rc);
+                    error_obj = globus_error_wrap_gssapi_error(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        maj_stat,
+                        min_stat,
+                        0,
+                        __FILE__,
+                        "globus_l_ftp_control_send_cmd_cb",
+                        __LINE__,
+                        "gss_import_name failed");
                     goto return_error;
                 }
 	    }

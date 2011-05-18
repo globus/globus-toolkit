@@ -1636,7 +1636,7 @@ globus_l_gass_copy_stat_file(
             globus_error_construct_string(
                 GLOBUS_GASS_COPY_MODULE,
                 GLOBUS_NULL,
-                "[%s]: invalid entry in dir: %s",
+                "[%s]: file not found in dir: %s",
                 myname,
                 parsed_url.url_path));
         goto error_stat;
