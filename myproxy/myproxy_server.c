@@ -521,7 +521,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                     client_request->command_type);
         respond_with_error_and_die(attrs, "UNKNOWN command in request.\n", context);
     }
-    if (client_request->username) {
+    if (client_request->username && client_request->username[0]) {
         myproxy_log("Received %s request for username %s",
                     command_name, client_request->username);
     } else {
