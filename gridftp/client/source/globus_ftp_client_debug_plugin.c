@@ -107,6 +107,39 @@ globus_l_ftp_client_debug_plugin_chmod(
 
 static
 void
+globus_l_ftp_client_debug_plugin_chgrp(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                group,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
+
+static
+void
+globus_l_ftp_client_debug_plugin_utime(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
+
+static
+void
+globus_l_ftp_client_debug_plugin_symlink(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                target_url,
+    const char *                link_url,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
+
+static
+void
 globus_l_ftp_client_debug_plugin_cksm(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
@@ -207,6 +240,16 @@ globus_l_ftp_client_debug_plugin_machine_list(
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
     globus_bool_t 				restart);
+
+static
+void
+globus_l_ftp_client_debug_plugin_recursive_list(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
 
 static
 void
@@ -499,6 +542,95 @@ globus_l_ftp_client_debug_plugin_chmod(
 
 static
 void
+globus_l_ftp_client_debug_plugin_chgrp(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                group,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart)
+{
+    globus_l_ftp_client_debug_plugin_t *    d;
+
+    d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
+
+    if(!d->stream)
+    {
+    return;
+    }
+
+    fprintf(d->stream, "%s%sstarting chgrp %s %s\n",
+        d->text ? d->text : "",
+        d->text ? ": " : "",
+        group,
+        url);
+}
+/* globus_l_ftp_client_debug_plugin_chgrp() */
+
+static
+void
+globus_l_ftp_client_debug_plugin_utime(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart)
+{
+    globus_l_ftp_client_debug_plugin_t *    d;
+
+    d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
+
+    if(!d->stream)
+    {
+    return;
+    }
+
+    fprintf(d->stream, "%s%sstarting utime %04d%02d%02d%02d%02d%02d %s\n",
+        d->text ? d->text : "",
+        d->text ? ": " : "",
+        utime_time->tm_year + 1900,
+        utime_time->tm_mon + 1,
+        utime_time->tm_mday,
+        utime_time->tm_hour,
+        utime_time->tm_min,
+        utime_time->tm_sec,
+        url);
+}
+/* globus_l_ftp_client_debug_plugin_utime() */
+
+static
+void
+globus_l_ftp_client_debug_plugin_symlink(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                target_url,
+    const char *                link_url,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart)
+{
+    globus_l_ftp_client_debug_plugin_t *    d;
+
+    d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
+
+    if(!d->stream)
+    {
+    return;
+    }
+
+    fprintf(d->stream, "%s%sstarting to symlink %s to %s\n",
+        d->text ? d->text : "",
+        d->text ? ": " : "",
+        target_url,
+        link_url);
+}
+/* globus_l_ftp_client_debug_plugin_symlink() */
+
+static
+void
 globus_l_ftp_client_debug_plugin_cksm(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
@@ -764,6 +896,32 @@ globus_l_ftp_client_debug_plugin_machine_list(
 	    url);
 }
 /* globus_l_ftp_client_debug_plugin_machine_list() */
+
+static
+void
+globus_l_ftp_client_debug_plugin_recursive_list(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart)
+{
+    globus_l_ftp_client_debug_plugin_t *    d;
+
+    d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
+
+    if(!d->stream)
+    {
+    return;
+    }
+
+    fprintf(d->stream, "%s%sstarting to recursive list %s\n",
+        d->text ? d->text : "",
+        d->text ? ": " : "",
+        url);
+}
+/* globus_l_ftp_client_debug_plugin_recursive_list() */
 
 static
 void
@@ -1260,6 +1418,9 @@ globus_ftp_client_debug_plugin_init(
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, chmod);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, chgrp);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, utime);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, symlink);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, cksm);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, feat);
@@ -1270,6 +1431,7 @@ globus_ftp_client_debug_plugin_init(
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, move);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, verbose_list);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, machine_list);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, recursive_list);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, mlst);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, stat);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, list);    

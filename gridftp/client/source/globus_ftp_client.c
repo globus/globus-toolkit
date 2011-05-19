@@ -357,9 +357,13 @@ globus_i_ftp_op_to_string(
     static const char * list     = "GLOBUS_FTP_CLIENT_LIST";
     static const char * nlst     = "GLOBUS_FTP_CLIENT_NLST";
     static const char * mlsd     = "GLOBUS_FTP_CLIENT_MLSD";
+    static const char * mlsr     = "GLOBUS_FTP_CLIENT_MLSR";
     static const char * mlst     = "GLOBUS_FTP_CLIENT_MLST";    
     static const char * stat     = "GLOBUS_FTP_CLIENT_STAT";    
     static const char * chmod    = "GLOBUS_FTP_CLIENT_CHMOD";
+    static const char * chgrp    = "GLOBUS_FTP_CLIENT_CHGRP";
+    static const char * utime    = "GLOBUS_FTP_CLIENT_UTIME";
+    static const char * symlink  = "GLOBUS_FTP_CLIENT_SYMLINK";
     static const char * delete   = "GLOBUS_FTP_CLIENT_DELETE";
     static const char * mkdir    = "GLOBUS_FTP_CLIENT_MKDIR";
     static const char * rmdir    = "GLOBUS_FTP_CLIENT_RMDIR";
@@ -395,12 +399,20 @@ globus_i_ftp_op_to_string(
 	return nlst;
     case GLOBUS_FTP_CLIENT_MLSD:
 	return mlsd;
+    case GLOBUS_FTP_CLIENT_MLSR:
+    return mlsr;
     case GLOBUS_FTP_CLIENT_MLST:
 	return mlst;
     case GLOBUS_FTP_CLIENT_STAT:
 	return stat;
     case GLOBUS_FTP_CLIENT_CHMOD:
 	return chmod;
+    case GLOBUS_FTP_CLIENT_CHGRP:
+    return chgrp;
+    case GLOBUS_FTP_CLIENT_UTIME:
+    return utime;
+    case GLOBUS_FTP_CLIENT_SYMLINK:
+    return symlink;
     case GLOBUS_FTP_CLIENT_DELETE:
 	return delete;
     case GLOBUS_FTP_CLIENT_GET:
@@ -478,6 +490,9 @@ globus_i_ftp_target_state_to_string(
     static const char * setup_transfer_dest     = "SETUP_TRANSFER_DEST";
     static const char * setup_delete            = "SETUP_DELETE";
     static const char * setup_chmod             = "SETUP_CHMOD";
+    static const char * setup_chgrp             = "SETUP_CHGRP";
+    static const char * setup_utime             = "SETUP_UTIME";
+    static const char * setup_symlink           = "SETUP_SYMLINK";
     static const char * setup_mkdir             = "SETUP_MKDIR";
     static const char * setup_rmdir             = "SETUP_RMDIR";
     static const char * setup_rnfr              = "SETUP_RNFR";
@@ -655,6 +670,15 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD:
             return setup_chmod;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_CHGRP:
+            return setup_chgrp;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_UTIME:
+            return setup_utime;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_SYMLINK:
+            return setup_symlink;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE:
             return setup_delete;

@@ -23,6 +23,10 @@ typedef enum
 {
     GLOBUS_FTP_CLIENT_IDLE,
     GLOBUS_FTP_CLIENT_CHMOD,
+    GLOBUS_FTP_CLIENT_CHGRP,
+    GLOBUS_FTP_CLIENT_UTIME,
+    GLOBUS_FTP_CLIENT_SYMLINK,
+    GLOBUS_FTP_CLIENT_MLSR,
     GLOBUS_FTP_CLIENT_CKSM,
     GLOBUS_FTP_CLIENT_DELETE,
     GLOBUS_FTP_CLIENT_MKDIR,
@@ -48,6 +52,8 @@ typedef struct
     globus_ftp_client_operationattr_t		dest_attr;
 
     int                                         chmod_file_mode;
+    char *                      chgrp_group;
+    struct tm                   utime_time;
     globus_off_t				checksum_offset;
     globus_off_t				checksum_length;
     const char *				checksum_alg;
@@ -207,6 +213,93 @@ globus_l_ftp_client_test_restart_plugin_chmod(
     else
     {
 	fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
+globus_l_ftp_client_test_restart_plugin_chgrp(
+    globus_ftp_client_plugin_t *            plugin,
+    void *                      plugin_specific,
+    globus_ftp_client_handle_t *            handle,
+    const char *                    url,
+    const char *                    group,
+    const globus_ftp_client_operationattr_t *       attr,
+    globus_bool_t                   restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *        d;
+    
+    if(!restart)
+    {
+    d = plugin_specific;
+    d->op = GLOBUS_FTP_CLIENT_CHGRP;
+    d->chgrp_group = globus_libc_strdup(group);
+    d->source_url = globus_libc_strdup(url);
+    
+    globus_ftp_client_operationattr_copy(&d->source_attr,
+                         attr);
+    }
+    else
+    {
+    fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
+globus_l_ftp_client_test_restart_plugin_utime(
+    globus_ftp_client_plugin_t *            plugin,
+    void *                      plugin_specific,
+    globus_ftp_client_handle_t *            handle,
+    const char *                    url,
+    const struct tm *               utime_time,
+    const globus_ftp_client_operationattr_t *       attr,
+    globus_bool_t                   restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *        d;
+    
+    if(!restart)
+    {
+    d = plugin_specific;
+    d->op = GLOBUS_FTP_CLIENT_UTIME;
+    d->utime_time = *utime_time;
+    d->source_url = globus_libc_strdup(url);
+    
+    globus_ftp_client_operationattr_copy(&d->source_attr,
+                         attr);
+    }
+    else
+    {
+    fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
+globus_l_ftp_client_test_restart_plugin_symlink(
+    globus_ftp_client_plugin_t *            plugin,
+    void *                      plugin_specific,
+    globus_ftp_client_handle_t *            handle,
+    const char *                    url,
+    const char *                    link_url,
+    const globus_ftp_client_operationattr_t *       attr,
+    globus_bool_t                   restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *        d;
+    
+    if(!restart)
+    {
+    d = plugin_specific;
+    d->op = GLOBUS_FTP_CLIENT_SYMLINK;
+    d->source_url = globus_libc_strdup(url);
+    d->dest_url = globus_libc_strdup(link_url);
+    
+    globus_ftp_client_operationattr_copy(&d->source_attr,
+                         attr);
+    }
+    else
+    {
+    fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -435,6 +528,33 @@ globus_l_ftp_client_test_restart_plugin_machine_list(
 
 static
 void
+globus_l_ftp_client_test_restart_plugin_recursive_list(
+    globus_ftp_client_plugin_t *            plugin,
+    void *                      plugin_specific,
+    globus_ftp_client_handle_t *            handle,
+    const char *                    url,
+    const globus_ftp_client_operationattr_t *       attr,
+    globus_bool_t                   restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *        d;
+    
+    if(!restart)
+    {
+    d = plugin_specific;
+    d->op = GLOBUS_FTP_CLIENT_MLSR;
+    d->source_url = globus_libc_strdup(url);
+    
+    globus_ftp_client_operationattr_copy(&d->source_attr,
+                         attr);
+    }
+    else
+    {
+    fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
 globus_l_ftp_client_test_restart_plugin_move(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
@@ -620,6 +740,15 @@ globus_l_ftp_client_test_restart_plugin_command(
 	}
 	d->next = FTP_RESTART_AT_MLSD_RESPONSE;
     }
+    else if(strncmp(command_name, "MLSR", strlen("MLSR")) == 0)
+    {
+    if(d->when == FTP_RESTART_AT_MLSR)
+    {
+        fprintf(stderr,"[restart plugin]: About to restart during MLSR\n");
+        globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+    }
+    d->next = FTP_RESTART_AT_MLSR_RESPONSE;
+    }
     else if(strncmp(command_name, "MLST", strlen("MLST")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_MLST)
@@ -664,6 +793,33 @@ globus_l_ftp_client_test_restart_plugin_command(
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_CHMOD_RESPONSE;
+    }
+    else if(strncmp(command_name, "SITE CHGRP", strlen("SITE CHGRP")) == 0)
+    {
+    if(d->when == FTP_RESTART_AT_CHGRP)
+    {
+        fprintf(stderr,"[restart plugin]: About to restart during CHGRP\n");
+        globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+    }
+    d->next = FTP_RESTART_AT_CHGRP_RESPONSE;
+    }
+    else if(strncmp(command_name, "SITE UTIME", strlen("SITE UTIME")) == 0)
+    {
+    if(d->when == FTP_RESTART_AT_UTIME)
+    {
+        fprintf(stderr,"[restart plugin]: About to restart during UTIME\n");
+        globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+    }
+    d->next = FTP_RESTART_AT_UTIME_RESPONSE;
+    }
+    else if(strncmp(command_name, "SITE SYMLINK", strlen("SITE SYMLINK")) == 0)
+    {
+    if(d->when == FTP_RESTART_AT_SYMLINK)
+    {
+        fprintf(stderr,"[restart plugin]: About to restart during SYMLINK\n");
+        globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+    }
+    d->next = FTP_RESTART_AT_SYMLINK_RESPONSE;
     }
     else if(strncmp(command_name, "CKSM", strlen("CKSM")) == 0)
     {
@@ -901,6 +1057,11 @@ globus_l_ftp_client_test_restart_plugin_complete(
 	globus_libc_free(d->dest_url);
         globus_ftp_client_operationattr_destroy(&d->dest_attr);
     }
+    if (d->chgrp_group) 
+    {
+        globus_libc_free(d->chgrp_group);
+        d->chgrp_group = GLOBUS_NULL;
+    }
  }
 
 
@@ -955,6 +1116,10 @@ globus_ftp_client_test_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, machine_list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mlst);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, chmod);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, chgrp);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, utime);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, symlink);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, recursive_list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, cksm);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mkdir);
@@ -1050,6 +1215,10 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
 		  d->op == GLOBUS_FTP_CLIENT_MLST   ||
 		  d->op == GLOBUS_FTP_CLIENT_MOVE   ||
 		  d->op == GLOBUS_FTP_CLIENT_CHMOD  ||
+          d->op == GLOBUS_FTP_CLIENT_CHGRP  ||
+          d->op == GLOBUS_FTP_CLIENT_UTIME  ||
+          d->op == GLOBUS_FTP_CLIENT_SYMLINK ||
+          d->op == GLOBUS_FTP_CLIENT_MLSR   ||
 		  d->op == GLOBUS_FTP_CLIENT_CKSM   ||
 		  d->op == GLOBUS_FTP_CLIENT_DELETE ||
 		  d->op == GLOBUS_FTP_CLIENT_MKDIR  ||
@@ -1079,6 +1248,13 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
 					      &d->source_attr,
 					      &delay);
     }
+    else if(d->op == GLOBUS_FTP_CLIENT_MLSR)
+    {
+    globus_ftp_client_plugin_restart_recursive_list(handle,
+                          d->source_url,
+                          &d->source_attr,
+                          &delay);
+    }
     else if(d->op == GLOBUS_FTP_CLIENT_MLST)
     {
 	globus_ftp_client_plugin_restart_mlst(handle,
@@ -1095,6 +1271,33 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
 						&d->source_attr,
 						&delay);
 	
+    }    
+    else if(d->op == GLOBUS_FTP_CLIENT_CHGRP)
+    {
+    globus_ftp_client_plugin_restart_chgrp(handle,
+                        d->source_url,
+                        d->chgrp_group,
+                        &d->source_attr,
+                        &delay);
+    
+    }    
+    else if(d->op == GLOBUS_FTP_CLIENT_UTIME)
+    {
+    globus_ftp_client_plugin_restart_utime(handle,
+                        d->source_url,
+                        &d->utime_time,
+                        &d->source_attr,
+                        &delay);
+    
+    }    
+    else if(d->op == GLOBUS_FTP_CLIENT_SYMLINK)
+    {
+    globus_ftp_client_plugin_restart_symlink(handle,
+                        d->source_url,
+                        d->dest_url,
+                        &d->source_attr,
+                        &delay);
+    
     }    
     else if(d->op == GLOBUS_FTP_CLIENT_CKSM)
     {

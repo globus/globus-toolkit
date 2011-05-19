@@ -743,7 +743,6 @@ globus_l_gfs_config_load_commandline(
     int                                 i;
     int                                 rc;
     int                                 len;
-    int                                 dash;
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
@@ -756,7 +755,6 @@ globus_l_gfs_config_load_commandline(
     {
         found = GLOBUS_FALSE;
         negate = GLOBUS_FALSE;
-        dash = 0;
 
         argp = argv[arg_num];
         len = strlen(argp);
@@ -765,13 +763,11 @@ globus_l_gfs_config_load_commandline(
         {
             argp++;
             len--;
-            dash++;
         }
         if(len && *argp == '-')
         {
             argp++;
             len--;
-            dash++;
         }
         if((len - 2) && strncasecmp(argp, "no-", 3) == 0)
         {
@@ -786,7 +782,7 @@ globus_l_gfs_config_load_commandline(
             negate = GLOBUS_TRUE;
         }
         
-        for(i = 0; i < option_count && !found && len && dash; i++)
+        for(i = 0; i < option_count && !found && len; i++)
         {
             if(option_list[i].option_name == NULL)
             {
@@ -878,8 +874,8 @@ globus_l_gfs_config_load_commandline(
             {
                 free(option);
             }
-            fprintf(stderr, 
-                "Unknown option on command line: %s\n", argv[arg_num]);
+            fprintf(stderr, "Unknown option on command line: %s%s\n",
+                negate ? "no-" : "", argp);
             return -1;
         }
     }

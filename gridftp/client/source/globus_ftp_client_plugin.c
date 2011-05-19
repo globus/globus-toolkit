@@ -37,9 +37,13 @@
     || ((op) == GLOBUS_FTP_CLIENT_NLST && (plugin)->list_func) \
     || ((op) == GLOBUS_FTP_CLIENT_LIST && (plugin)->verbose_list_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MLSD && (plugin)->machine_list_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_MLSR && (plugin)->recursive_list_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MLST && (plugin)->mlst_func) \
     || ((op) == GLOBUS_FTP_CLIENT_STAT && (plugin)->stat_func) \
     || ((op) == GLOBUS_FTP_CLIENT_CHMOD && (plugin)->chmod_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_CHGRP && (plugin)->chgrp_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_UTIME && (plugin)->utime_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_SYMLINK && (plugin)->symlink_func) \
     || ((op) == GLOBUS_FTP_CLIENT_DELETE && (plugin)->delete_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MKDIR && (plugin)->mkdir_func) \
     || ((op) == GLOBUS_FTP_CLIENT_RMDIR && (plugin)->rmdir_func) \
@@ -252,6 +256,68 @@ globus_ftp_client_plugin_restart_machine_list(
 /* globus_ftp_client_plugin_restart_machine_list() */
 
 /**
+ * Restart an existing recursive list.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing transfer operation
+ * to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and
+ * attributes. Any data buffers which are
+ * currently queued will be cleared and reused once the connection is
+ * re-established.
+ *
+ * The user will not receive any notification that a restart has
+ * happened. Each plugin which is interested in list events will
+ * receive a list callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the list.
+ * @param source_url
+ *        The destination URL of the transfer. This may be different than
+ *        the original list's URL, if the plugin decides to redirect to
+ *        another FTP server due to performance or reliability
+ *        problems with the original URL.
+ * @param source_attr
+ *        The attributes to use for the new transfer. This may be a
+ *        modified version of the original list's attribute set.
+ * @param when
+ *        Absolute time for when to restart the list. The current
+ *        control and data connections will be stopped
+ *        immediately. If this completes before <b>when</b>, then the
+ *    restart will be delayed until that time. Otherwise, it will
+ *        be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_recursive_list(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when)
+{
+    globus_object_t *               err;
+    globus_i_ftp_client_handle_t *      i_handle;
+    GlobusFuncName(globus_ftp_client_plugin_restart_recursive_list);
+
+    if(url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+    return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+                            url,
+                            attr,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            when);
+}
+/* globus_ftp_client_plugin_restart_recursive_list() */
+
+/**
  * Restart an existing MLST.
  * @ingroup globus_ftp_client_plugins
  *
@@ -446,6 +512,219 @@ globus_ftp_client_plugin_restart_chmod(
 							when);
 }
 /* globus_ftp_client_plugin_restart_chmod() */
+
+/**
+ * Restart an existing chgrp.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing chgrp operation
+ * to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and
+ * attributes. Any data buffers which are
+ * currently queued will be cleared and reused once the connection is
+ * re-established.
+ *
+ * The user will not receive any notification that a restart has
+ * happened. Each plugin which is interested in chgrp events will
+ * receive a chgrp callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the chgrp.
+ * @param url
+ *        The destination URL of the transfer. This may be different than
+ *        the original chgrp's URL, if the plugin decides to redirect to
+ *        another FTP server due to performance or reliability
+ *        problems with the original URL.
+ * @param group
+ *        The group name or ID to change the file to.
+ * @param attr
+ *        The attributes to use for the new transfer. This may be a
+ *        modified version of the original chgrp's attribute set.
+ * @param when
+ *        Absolute time for when to restart the chgrp. The current
+ *        control and data connections will be stopped
+ *        immediately. If this completes before <b>when</b>, then the
+ *    restart will be delayed until that time. Otherwise, it will
+ *        be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_chgrp(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                group,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when)
+{
+    globus_object_t *               err;
+    globus_i_ftp_client_handle_t *      i_handle;
+    GlobusFuncName(globus_ftp_client_plugin_restart_chgrp);
+
+    if(url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+    return globus_error_put(err);
+    }
+    if(group == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("group");
+
+    return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+                            url,
+                            attr,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            when);
+}
+/* globus_ftp_client_plugin_restart_chgrp() */
+
+/**
+ * Restart an existing utime.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing utime operation
+ * to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and
+ * attributes. Any data buffers which are
+ * currently queued will be cleared and reused once the connection is
+ * re-established.
+ *
+ * The user will not receive any notification that a restart has
+ * happened. Each plugin which is interested in utime events will
+ * receive a utime callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the chgrp.
+ * @param url
+ *        The destination URL of the transfer. This may be different than
+ *        the original utime's URL, if the plugin decides to redirect to
+ *        another FTP server due to performance or reliability
+ *        problems with the original URL.
+ * @param utime_time
+ *        The time value to change the file to.
+ * @param attr
+ *        The attributes to use for the new transfer. This may be a
+ *        modified version of the original utime's attribute set.
+ * @param when
+ *        Absolute time for when to restart the utime. The current
+ *        control and data connections will be stopped
+ *        immediately. If this completes before <b>when</b>, then the
+ *    restart will be delayed until that time. Otherwise, it will
+ *        be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_utime(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when)
+{
+    globus_object_t *               err;
+    globus_i_ftp_client_handle_t *      i_handle;
+    GlobusFuncName(globus_ftp_client_plugin_restart_utime);
+
+    if(url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+    return globus_error_put(err);
+    }
+    if(utime_time == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("utime_time");
+
+    return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+                            url,
+                            attr,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            when);
+}
+/* globus_ftp_client_plugin_restart_utime() */
+
+/**
+ * Restart an existing symlink.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing symlink operation
+ * to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and
+ * attributes. Any data buffers which are
+ * currently queued will be cleared and reused once the connection is
+ * re-established.
+ *
+ * The user will not receive any notification that a restart has
+ * happened. Each plugin which is interested in chgrp events will
+ * receive a chgrp callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the chgrp.
+ * @param url
+ *        The destination URL of the transfer. This may be different than
+ *        the original symlink's URL, if the plugin decides to redirect to
+ *        another FTP server due to performance or reliability
+ *        problems with the original URL.
+ * @param link_url
+ *        The URL to symbolically link the file to.
+ * @param attr
+ *        The attributes to use for the new transfer. This may be a
+ *        modified version of the original symlink's attribute set.
+ * @param when
+ *        Absolute time for when to restart the symlink. The current
+ *        control and data connections will be stopped
+ *        immediately. If this completes before <b>when</b>, then the
+ *    restart will be delayed until that time. Otherwise, it will
+ *        be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_symlink(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                link_url,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when)
+{
+    globus_object_t *               err;
+    globus_i_ftp_client_handle_t *      i_handle;
+    GlobusFuncName(globus_ftp_client_plugin_restart_symlink);
+
+    if(url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+    return globus_error_put(err);
+    }
+    if(link_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("link_url");
+
+    return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+                            url,
+                            attr,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            when);
+}
+/* globus_ftp_client_plugin_restart_symlink() */
 
 /**
  * Restart an existing cksm.
@@ -1602,6 +1881,9 @@ error_exit: \
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(copy)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(destroy)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(chmod)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(chgrp)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(utime)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(symlink)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(cksm)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(delete)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(feat)
@@ -1610,6 +1892,7 @@ GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(rmdir)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(move)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(verbose_list)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(machine_list)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(recursive_list)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(mlst)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(stat)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(list)
@@ -1992,7 +2275,168 @@ globus_i_ftp_client_plugin_notify_chmod(
 }
 
 void
+globus_i_ftp_client_plugin_notify_chgrp(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    const char *                group,
+    globus_i_ftp_client_operationattr_t *   attr)
+{
+    globus_i_ftp_client_plugin_t *      plugin;
+    globus_list_t *             tmp;
+    globus_bool_t               unlocked = GLOBUS_FALSE;
 
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+    plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+    tmp = globus_list_rest(tmp);
+
+    if(plugin->chgrp_func)
+    {
+        if(!unlocked)
+        {
+        globus_i_ftp_client_handle_unlock(handle);
+        unlocked = GLOBUS_TRUE;
+        }
+        (plugin->chgrp_func)(plugin->plugin,
+                  plugin->plugin_specific,
+                  handle->handle,
+                  url,
+                  group,
+                  &attr,
+                  GLOBUS_FALSE);
+    }
+    }
+    if(unlocked)
+    {
+    globus_i_ftp_client_handle_lock(handle);
+    }
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+    handle->notify_restart = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+    handle->notify_abort = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
+globus_i_ftp_client_plugin_notify_utime(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    globus_i_ftp_client_operationattr_t *   attr)
+{
+    globus_i_ftp_client_plugin_t *      plugin;
+    globus_list_t *             tmp;
+    globus_bool_t               unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+    plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+    tmp = globus_list_rest(tmp);
+
+    if(plugin->utime_func)
+    {
+        if(!unlocked)
+        {
+        globus_i_ftp_client_handle_unlock(handle);
+        unlocked = GLOBUS_TRUE;
+        }
+        (plugin->utime_func)(plugin->plugin,
+                  plugin->plugin_specific,
+                  handle->handle,
+                  url,
+                  utime_time,
+                  &attr,
+                  GLOBUS_FALSE);
+    }
+    }
+    if(unlocked)
+    {
+    globus_i_ftp_client_handle_lock(handle);
+    }
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+    handle->notify_restart = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+    handle->notify_abort = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
+globus_i_ftp_client_plugin_notify_symlink(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    const char *                link_url,
+    globus_i_ftp_client_operationattr_t *   attr)
+{
+    globus_i_ftp_client_plugin_t *      plugin;
+    globus_list_t *             tmp;
+    globus_bool_t               unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+    plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+    tmp = globus_list_rest(tmp);
+
+    if(plugin->symlink_func)
+    {
+        if(!unlocked)
+        {
+        globus_i_ftp_client_handle_unlock(handle);
+        unlocked = GLOBUS_TRUE;
+        }
+        (plugin->symlink_func)(plugin->plugin,
+                  plugin->plugin_specific,
+                  handle->handle,
+                  url,
+                  link_url,
+                  &attr,
+                  GLOBUS_FALSE);
+    }
+    }
+    if(unlocked)
+    {
+    globus_i_ftp_client_handle_lock(handle);
+    }
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+    handle->notify_restart = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+    handle->notify_abort = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
 globus_i_ftp_client_plugin_notify_cksm(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
@@ -2360,6 +2804,57 @@ globus_i_ftp_client_plugin_notify_machine_list(
 	handle->notify_abort = GLOBUS_FALSE;
 
 	globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
+globus_i_ftp_client_plugin_notify_recursive_list(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    globus_i_ftp_client_operationattr_t *   attr)
+{
+    globus_i_ftp_client_plugin_t *      plugin;
+    globus_list_t *             tmp;
+    globus_bool_t               unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+    plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+    tmp = globus_list_rest(tmp);
+    if(plugin->recursive_list_func)
+    {
+        if(!unlocked)
+        {
+        globus_i_ftp_client_handle_unlock(handle);
+        unlocked = GLOBUS_TRUE;
+        }
+        (plugin->recursive_list_func)(plugin->plugin,
+                    plugin->plugin_specific,
+                    handle->handle,
+                    url,
+                    &attr,
+                    GLOBUS_FALSE);
+    }
+    }
+    if(unlocked)
+    {
+    globus_i_ftp_client_handle_lock(handle);
+    }
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+    handle->notify_restart = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+    handle->notify_abort = GLOBUS_FALSE;
+
+    globus_i_ftp_client_plugin_notify_abort(handle);
     }
 }
 
@@ -3432,6 +3927,15 @@ globus_i_ftp_client_plugin_notify_restart(
 				    &handle->restart_info->source_attr,
 				    GLOBUS_TRUE);
 	    }
+        else if(handle->op == GLOBUS_FTP_CLIENT_MLSR)
+        {
+        (plugin->recursive_list_func)(plugin->plugin,
+                    plugin->plugin_specific,
+                    handle->handle,
+                    handle->restart_info->source_url,
+                    &handle->restart_info->source_attr,
+                    GLOBUS_TRUE);
+        }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_MLST)
 	    {
 		(plugin->mlst_func)(plugin->plugin,
@@ -3460,6 +3964,36 @@ globus_i_ftp_client_plugin_notify_restart(
 				      &handle->restart_info->source_attr,
 				      GLOBUS_TRUE);
 	    }
+        else if(handle->op == GLOBUS_FTP_CLIENT_CHGRP)
+        {
+        (plugin->chgrp_func)(plugin->plugin,
+                      plugin->plugin_specific,
+                      handle->handle,
+                      handle->restart_info->source_url,
+                      handle->chgrp_group,
+                      &handle->restart_info->source_attr,
+                      GLOBUS_TRUE);
+        }
+        else if(handle->op == GLOBUS_FTP_CLIENT_UTIME)
+        {
+        (plugin->utime_func)(plugin->plugin,
+                      plugin->plugin_specific,
+                      handle->handle,
+                      handle->restart_info->source_url,
+                      &handle->utime_time,
+                      &handle->restart_info->source_attr,
+                      GLOBUS_TRUE);
+        }
+        else if(handle->op == GLOBUS_FTP_CLIENT_SYMLINK)
+        {
+        (plugin->symlink_func)(plugin->plugin,
+                      plugin->plugin_specific,
+                      handle->handle,
+                      handle->restart_info->source_url,
+                      handle->restart_info->dest_url,
+                      &handle->restart_info->source_attr,
+                      GLOBUS_TRUE);
+        }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_DELETE)
 	    {
 		(plugin->delete_func)(plugin->plugin,

@@ -295,6 +295,9 @@ typedef enum
 {
     GLOBUS_FTP_CLIENT_IDLE,
     GLOBUS_FTP_CLIENT_CHMOD,
+    GLOBUS_FTP_CLIENT_CHGRP,
+    GLOBUS_FTP_CLIENT_UTIME,
+    GLOBUS_FTP_CLIENT_SYMLINK,
     GLOBUS_FTP_CLIENT_DELETE,
     GLOBUS_FTP_CLIENT_MKDIR,
     GLOBUS_FTP_CLIENT_RMDIR,
@@ -302,6 +305,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
     GLOBUS_FTP_CLIENT_MLSD,
+    GLOBUS_FTP_CLIENT_MLSR,
     GLOBUS_FTP_CLIENT_MLST,
     GLOBUS_FTP_CLIENT_STAT,
     GLOBUS_FTP_CLIENT_GET,
@@ -373,6 +377,9 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_DEST,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_CHGRP,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_UTIME,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_SYMLINK,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR,
@@ -639,6 +646,12 @@ typedef struct globus_i_ftp_client_handle_t
     /** file mode for CHMOD **/
     int                                         chmod_file_mode;
     
+    /** group name or ID for CHGRP */
+    char *                                      chgrp_group;
+    
+    /** modification time for UTIME */
+    struct tm                                   utime_time;
+    
     /** Thread safety */
     globus_mutex_t                              mutex;
 
@@ -822,6 +835,9 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_destroy_t		destroy_func; 
 
     globus_ftp_client_plugin_chmod_t	        chmod_func;
+    globus_ftp_client_plugin_chgrp_t            chgrp_func;
+    globus_ftp_client_plugin_utime_t            utime_func;
+    globus_ftp_client_plugin_symlink_t          symlink_func;
     globus_ftp_client_plugin_delete_t		delete_func;
     globus_ftp_client_plugin_mkdir_t		mkdir_func;
     globus_ftp_client_plugin_rmdir_t		rmdir_func;
@@ -829,6 +845,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_feat_t		feat_func;
     globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
     globus_ftp_client_plugin_machine_list_t     machine_list_func;
+    globus_ftp_client_plugin_recursive_list_t   recursive_list_func;
     globus_ftp_client_plugin_list_t		list_func;
     globus_ftp_client_plugin_mlst_t		mlst_func;
     globus_ftp_client_plugin_stat_t		stat_func;
@@ -1001,6 +1018,12 @@ globus_i_ftp_client_plugin_notify_machine_list(
     globus_i_ftp_client_operationattr_t *	attr);
     
 void
+globus_i_ftp_client_plugin_notify_recursive_list(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    globus_i_ftp_client_operationattr_t *   attr);
+
+void
 globus_i_ftp_client_plugin_notify_mlst(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
@@ -1018,6 +1041,27 @@ globus_i_ftp_client_plugin_notify_chmod(
     const char *				url,
     int                                         mode,
     globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_chgrp(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    const char *                group,
+    globus_i_ftp_client_operationattr_t *   attr);
+
+void
+globus_i_ftp_client_plugin_notify_utime(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    globus_i_ftp_client_operationattr_t *   attr);
+
+void
+globus_i_ftp_client_plugin_notify_symlink(
+    globus_i_ftp_client_handle_t *      handle,
+    const char *                url,
+    const char *                link_url,
+    globus_i_ftp_client_operationattr_t *   attr);
 
 void
 globus_i_ftp_client_plugin_notify_cksm(

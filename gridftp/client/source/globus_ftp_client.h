@@ -619,6 +619,33 @@ globus_ftp_client_chmod(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_client_chgrp(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                url,
+    const char *                group,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg);
+
+globus_result_t
+globus_ftp_client_utime(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg);
+
+globus_result_t
+globus_ftp_client_symlink(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                url,
+    const char *                link_url,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg);
+
+globus_result_t
 globus_ftp_client_cksm(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
@@ -677,6 +704,14 @@ globus_ftp_client_machine_list(
     globus_ftp_client_operationattr_t *		attr,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
+
+globus_result_t
+globus_ftp_client_recursive_list(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg);
 
 globus_result_t
 globus_ftp_client_mlst(
@@ -1113,7 +1148,7 @@ globus_ftp_client_operationattr_get_rfc1738_url(
  * globus_ftp_client_get(), globus_ftp_client_partial_get(),
  * globus_ftp_client_put(), globus_ftp_client_partial_put(),
  * globus_ftp_client_list(), globus_ftp_client_machine_list(), 
- * and globus_ftp_client_verbose_list().
+ * globus_ftp_client_recursive_list(), and globus_ftp_client_verbose_list().
  *
  * When doing these operations, the user must pass data buffers
  * to the FTP Client library. Data is read or written directly from
@@ -1193,6 +1228,9 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV,
     GLOBUS_FTP_CLIENT_FEATURE_GETPUT,
     GLOBUS_FTP_CLIENT_FEATURE_MLST,
+    GLOBUS_FTP_CLIENT_FEATURE_CHGRP,
+    GLOBUS_FTP_CLIENT_FEATURE_UTIME,
+    GLOBUS_FTP_CLIENT_FEATURE_SYMLINK,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,
     GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
     GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF,

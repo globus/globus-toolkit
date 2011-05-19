@@ -145,6 +145,19 @@ typedef enum globus_gsc_layout_e
     GLOBUS_GSC_LAYOUT_TYPE_BLOCKED
 } globus_gsc_layout_t;
 
+typedef enum globus_gridftp_server_control_stat_error_e 
+{
+    GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_SUCCESS = 0,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_OPENFAILED,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK,
+} globus_gridftp_server_control_stat_error_t;
+
+typedef enum globus_gfs_traversal_options_e {
+    GLOBUS_GFS_TRAVERSAL_CONTINUE = 1,
+    GLOBUS_GFS_TRAVERSAL_FOLLOW_SYMLINKS = 2
+} globus_gfs_traversal_options_t;
+
+
 /**
  *  stat structure
  *  --------------
@@ -167,6 +180,8 @@ typedef struct globus_gridftp_server_control_stat_s
     globus_time_t                           mtime;
     int                                     dev;
     int                                     ino;
+    int                                         link_mode;
+    globus_gridftp_server_control_stat_error_t  error;
 } globus_gridftp_server_control_stat_t;
 
 /**
@@ -309,12 +324,15 @@ typedef void
     void *                                  data_handle,
     const char *                            path,
     const char *                            fact_str,
+    int                                     depth,
+    int                                     traversal_options,
     void *                                  user_arg);
 
 globus_result_t
 globus_gridftp_server_control_list_buffer_alloc(
     const char *                            fact_str,
     uid_t                                   uid,
+    const char *                            base_path,
     globus_gridftp_server_control_stat_t *  stat_info_array,
     int                                     stat_count,
     globus_byte_t **                        out_buf,

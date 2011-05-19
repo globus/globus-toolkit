@@ -35,7 +35,7 @@ typedef struct
 
     char *                              scks_alg;
     char *                              scks_val;
-    char *                              rnfr_pathname;
+    char *                              from_pathname;
 
     globus_i_gfs_server_close_cb_t      close_func;
     void *                              close_arg;
@@ -831,7 +831,7 @@ globus_l_gfs_data_command_cb(
             globus_free(msg);
             break;
           case GLOBUS_GFS_CMD_RNFR:
-            request->instance->rnfr_pathname = info->pathname;
+            request->instance->from_pathname = info->pathname;
             info->pathname = NULL;
             globus_gsc_959_finished_command(op,
                 "350 OK. Send RNTO with destination name.\r\n");
@@ -870,9 +870,13 @@ globus_l_gfs_data_command_cb(
         {
             globus_free(info->cksm_alg);
         }
-        if(info->rnfr_pathname)
+        if(info->from_pathname)
         {
-            globus_free(info->rnfr_pathname);
+            globus_free(info->from_pathname);
+        }
+        if(info->chgrp_group)
+        {
+            globus_free(info->chgrp_group);
         }
         globus_free(info);
     }
@@ -1035,12 +1039,12 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
-        if(instance->rnfr_pathname == GLOBUS_NULL)
+        if(instance->from_pathname == GLOBUS_NULL)
         {
             goto err;
         }
-        command_info->rnfr_pathname = instance->rnfr_pathname;
-        instance->rnfr_pathname = GLOBUS_NULL;
+        command_info->from_pathname = instance->from_pathname;
+        instance->from_pathname = GLOBUS_NULL;
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "DCSC") == 0)
@@ -1167,6 +1171,100 @@ globus_l_gfs_request_command(
             if(command_info->pathname == NULL)
             {
                 goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "CHGRP") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_CHGRP;
+            globus_l_gfs_get_full_path(
+                instance, cmd_array[3], &command_info->pathname);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            command_info->chgrp_group = globus_libc_strdup(cmd_array[2]);
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "UTIME") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_UTIME;
+            globus_l_gfs_get_full_path(
+                instance, cmd_array[3], &command_info->pathname);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            if (strlen(cmd_array[2]) < 14)
+            {
+                goto err;   
+            }
+            {
+                char* tz;
+                struct tm modtime;
+                memset(&modtime, 0, sizeof(modtime));
+                if (sscanf(cmd_array[2], "%4d%2d%2d%2d%2d%2d", 
+                            &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
+                            &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
+                {
+                    goto err;
+                }
+                modtime.tm_year -= 1900;
+                modtime.tm_mon  -= 1;
+                /* This block converts the user-specified UTC time to a Unix time
+                 * value.  We have to do contortions here as there is no standard
+                 * inverse of the 'gmtime' function. */
+                tz = getenv("TZ");
+                setenv("TZ", "", 1);
+                tzset();
+                command_info->utime_time = mktime(&modtime);
+                if (tz)
+                    setenv("TZ", tz, 1);
+                else
+                    unsetenv("TZ");
+                tzset();
+                if (command_info->utime_time < 0)
+                {
+                    goto err;
+                }                        
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "SYMLINK") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINK;
+            globus_l_gfs_get_full_path(
+                instance, cmd_array[3], &command_info->pathname);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            globus_l_gfs_get_full_path(
+                instance, cmd_array[2], &command_info->from_pathname);
+            if (command_info->from_pathname == NULL)
+            {
+                goto err;
+            }
+            {
+                /* Un-escape the first path in case it contained spaces */
+                char*                   orig;
+                char*                   dest;
+                for(orig = command_info->from_pathname, dest=command_info->from_pathname; *orig; ++orig)
+                {
+                    if(*orig == '%')
+                    {
+                        unsigned int    c;
+                        ++orig;
+                        sscanf(orig, "%2X", &c);
+                        *dest++ = (char) c;
+                        ++orig;
+                    } 
+                    else
+                    {
+                        *dest++ = *orig;
+                    }   
+                }
+                *dest = '\0';
             }
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
         }
@@ -1670,6 +1768,8 @@ globus_l_gfs_request_list(
     void *                              data_handle,
     const char *                        path,
     const char *                        list_type,
+    int                                 list_depth,
+    int                                 traversal_options,
     void *                              user_arg)
 {
     char *                              tmp_str;
@@ -1693,6 +1793,8 @@ globus_l_gfs_request_list(
     }
 
     globus_l_gfs_get_full_path(instance, path, &list_info->pathname);
+    list_info->list_depth = list_depth;
+    list_info->traversal_options = traversal_options;
     list_info->list_type = globus_libc_strdup(list_type);
     list_info->data_arg = data_handle;
     list_info->stripe_count = 1;
@@ -2248,6 +2350,45 @@ globus_l_gfs_add_commands(
     }
     result = globus_gsc_959_command_add(
         control_handle,
+        "SITE CHGRP",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "SITE CHGRP <sp> group <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE UTIME",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "SITE UTIME <sp> YYYYMMDDHHMMSS <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE SYMLINK",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "SITE SYMLINK <sp> reference-path <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
         "CKSM",
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -2515,7 +2656,7 @@ globus_i_gfs_control_start(
     instance->close_func = close_func;
     instance->close_arg = close_arg;
     instance->xio_handle = handle;
-    instance->rnfr_pathname = NULL;
+    instance->from_pathname = NULL;
     instance->scks_alg = NULL;
     instance->scks_val = NULL;
     instance->remote_contact = globus_libc_strdup(remote_contact);

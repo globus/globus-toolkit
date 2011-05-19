@@ -327,6 +327,8 @@ globus_ftp_client_handle_init(
     i_handle->mlst_buffer_pointer = GLOBUS_NULL;
     i_handle->mlst_buffer_length_pointer = GLOBUS_NULL;
     i_handle->chmod_file_mode = 0;
+    i_handle->chgrp_group = GLOBUS_NULL;
+    memset(&i_handle->utime_time, 0, sizeof(struct tm));
     i_handle->checksum_alg = GLOBUS_NULL;
     i_handle->checksum_offset = 0;
     i_handle->checksum_length = -1;
@@ -1929,6 +1931,7 @@ globus_i_ftp_client_can_reuse_data_conn(
     case GLOBUS_FTP_CLIENT_LIST:
     case GLOBUS_FTP_CLIENT_NLST:
     case GLOBUS_FTP_CLIENT_MLSD:
+    case GLOBUS_FTP_CLIENT_MLSR:
 	if(source && source == source->cached_data_conn.source &&
 	   source->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
 	   source->cached_data_conn.operation == GLOBUS_FTP_CLIENT_GET)

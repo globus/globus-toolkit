@@ -117,7 +117,9 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_UNIXOWNER = 'O',
     GLOBUS_GSC_MLSX_FACT_UNIXGROUP = 'G',
     GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q',
-    GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L'
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L',
+    GLOBUS_GSX_MLSX_FACT_UNIXUID = 'I',
+    GLOBUS_GSX_MLSX_FACT_UNIXGID = 'D'
 } globus_i_gsc_mlsx_fact_t;
 
 typedef enum
@@ -190,7 +192,8 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
     GLOBUS_L_GSC_OP_TYPE_LIST,
     GLOBUS_L_GSC_OP_TYPE_NLST,
-    GLOBUS_L_GSC_OP_TYPE_MLSD
+    GLOBUS_L_GSC_OP_TYPE_MLSD,
+    GLOBUS_L_GSC_OP_TYPE_MLSR
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_event_data_s
@@ -224,6 +227,7 @@ typedef struct globus_i_gsc_handle_opts_s
     int                                     restart_frequency;
     globus_gsc_layout_t                     layout;
     globus_size_t                           block_size;
+    int                                     mlsr_traversal_options;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s
@@ -592,14 +596,16 @@ char *
 globus_i_gsc_mlsx_line_single(
     const char *                        mlsx_fact_str,
     int                                 uid,
-    globus_gridftp_server_control_stat_t *  stat_info);
+    globus_gridftp_server_control_stat_t *  stat_info,
+    const char *                        base_path);
 
 char *
 globus_i_gsc_mlsx_line(
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                 stat_count,
     const char *                        mlsx_fact_string,
-    uid_t                               uid);
+    uid_t                               uid,
+    const char *                        base_path);
 
 void
 globus_i_guc_command_data_destroy(

@@ -97,11 +97,15 @@ test_PROGRAMS= \
 	globus-ftp-client-ascii-list-test \
 	globus-ftp-client-ascii-verbose-list-test \
 	globus-ftp-client-ascii-machine-list-test \
+	globus-ftp-client-ascii-recursive-list-test \
 	globus-ftp-client-bad-buffer-test \
 	globus-ftp-client-cache-all-test \
 	globus-ftp-client-create-destroy-test \
 	globus-ftp-client-cksm-test \
 	globus-ftp-client-chmod-test \
+	globus-ftp-client-chgrp-test \
+	globus-ftp-client-utime-test \
+	globus-ftp-client-symlink-test \
 	globus-ftp-client-delete-test \
 	globus-ftp-client-exist-test \
 	globus-ftp-client-extended-get-test \
@@ -214,6 +218,15 @@ globus_ftp_client_restart_marker_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_ftp_client_chmod_test_SOURCES = globus_ftp_client_chmod_test.c $(LibHeaders)
 globus_ftp_client_chmod_test_LDFLAGS = $(GPT_LDFLAGS)
 
+globus_ftp_client_chgrp_test_SOURCES = globus_ftp_client_chgrp_test.c $(LibHeaders)
+globus_ftp_client_chgrp_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_utime_test_SOURCES = globus_ftp_client_utime_test.c $(LibHeaders)
+globus_ftp_client_utime_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_symlink_test_SOURCES = globus_ftp_client_symlink_test.c $(LibHeaders)
+globus_ftp_client_symlink_test_LDFLAGS = $(GPT_LDFLAGS)
+
 globus_ftp_client_cksm_test_SOURCES = globus_ftp_client_cksm_test.c $(LibHeaders)
 globus_ftp_client_cksm_test_LDFLAGS = $(GPT_LDFLAGS)
 
@@ -237,6 +250,9 @@ globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_ascii_machine_list_test_SOURCES = globus_ftp_client_ascii_machine_list_test.c $(LibHeaders)
 globus_ftp_client_ascii_machine_list_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_ascii_recursive_list_test_SOURCES = globus_ftp_client_ascii_recursive_list_test.c $(LibHeaders)
+globus_ftp_client_ascii_recursive_list_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_cache_all_test_SOURCES = globus_ftp_client_cache_all_test.c $(LibHeaders)
 globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_LDFLAGS)

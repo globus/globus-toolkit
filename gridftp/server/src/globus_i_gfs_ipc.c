@@ -624,9 +624,13 @@ globus_l_gfs_ipc_request_destroy(
                 {
                     globus_free(cmd_info->cksm_alg);
                 }
-                if(cmd_info->rnfr_pathname != NULL)
+                if(cmd_info->from_pathname != NULL)
                 {
-                    globus_free(cmd_info->rnfr_pathname);
+                    globus_free(cmd_info->from_pathname);
+                }
+                if (cmd_info->chgrp_group != NULL)
+                {
+                    globus_free(cmd_info->chgrp_group);
                 }
                 globus_free(cmd_info);
                 break;
@@ -3287,7 +3291,8 @@ globus_l_gfs_ipc_unpack_command(
     GFSDecodeUInt64(buffer, len, cmd_info->cksm_length);
     GFSDecodeString(buffer, len, cmd_info->cksm_alg);
     GFSDecodeUInt32(buffer, len, cmd_info->chmod_mode);
-    GFSDecodeString(buffer, len, cmd_info->rnfr_pathname);
+    GFSDecodeString(buffer, len, cmd_info->chgrp_group);
+    GFSDecodeString(buffer, len, cmd_info->from_pathname);
 
     GlobusGFSDebugExit();
     return cmd_info;
@@ -5760,7 +5765,9 @@ globus_gfs_ipc_request_command(
         GFSEncodeUInt32(
             buffer, ipc->buffer_size, ptr, cmd_info->chmod_mode);
         GFSEncodeString(
-            buffer, ipc->buffer_size, ptr, cmd_info->rnfr_pathname);
+            buffer, ipc->buffer_size, ptr, cmd_info->chgrp_group);
+        GFSEncodeString(
+            buffer, ipc->buffer_size, ptr, cmd_info->from_pathname);
 
         msg_size = ptr - buffer;
         /* now that we know size, add it in */

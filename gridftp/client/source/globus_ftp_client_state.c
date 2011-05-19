@@ -1470,6 +1470,7 @@ redo:
         client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
         client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
         client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+        client_handle->op == GLOBUS_FTP_CLIENT_MLSR ||
         client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER))
     {
         goto skip_bufsize;
@@ -1581,6 +1582,7 @@ redo:
 	if(target->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
 	    (client_handle->op == GLOBUS_FTP_CLIENT_GET ||
 	     client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+            client_handle->op == GLOBUS_FTP_CLIENT_MLSR ||
 	     client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
 	     client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
 	     (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
@@ -2200,6 +2202,18 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD;
 	}
+    else if(client_handle->op == GLOBUS_FTP_CLIENT_CHGRP)
+    {
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CHGRP;
+    }
+    else if(client_handle->op == GLOBUS_FTP_CLIENT_UTIME)
+    {
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_UTIME;
+    }
+    else if(client_handle->op == GLOBUS_FTP_CLIENT_SYMLINK)
+    {
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_SYMLINK;
+    }
 	else if(client_handle->op == GLOBUS_FTP_CLIENT_DELETE)
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE;
@@ -2646,7 +2660,8 @@ redo:
 	    {
                 if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
                    client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-                   client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+                   client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+                   client_handle->op == GLOBUS_FTP_CLIENT_MLSR)
                 {
         	    target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_GET;
                 }
@@ -2775,7 +2790,8 @@ redo:
 	    {
                 if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
                    client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-                   client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+                   client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+                   client_handle->op == GLOBUS_FTP_CLIENT_MLSR)
                 {
         	    target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_GET;
                 }
@@ -3055,6 +3071,7 @@ redo:
 	  case GLOBUS_FTP_CLIENT_LIST:
 	  case GLOBUS_FTP_CLIENT_NLST:
 	  case GLOBUS_FTP_CLIENT_MLSD:
+          case GLOBUS_FTP_CLIENT_MLSR:
 	    if(target->attr->cwd_first)
             {
                 target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_CWD;
@@ -3199,6 +3216,10 @@ redo:
 	    list_str = "MLSD";
 	    break;
 
+          case GLOBUS_FTP_CLIENT_MLSR:
+            list_str = "MLSR";
+            break;
+        
           default:
             globus_assert(0 && "Unexpected list op");
             break;
@@ -3350,6 +3371,203 @@ redo:
 	}
 	break;
 	
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_CHGRP:
+
+    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+
+    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+
+    globus_i_ftp_client_plugin_notify_command(
+        client_handle,
+        target->url_string,
+        target->mask,
+        "SITE CHGRP %s %s" CRLF,
+        client_handle->chgrp_group,
+        pathname);
+
+    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+        client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+        client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+    {
+        break;
+    }
+
+    globus_assert(client_handle->state ==
+              GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+
+    result =
+        globus_ftp_control_send_command(
+        handle,
+        "SITE CHGRP %s %s" CRLF,
+        globus_i_ftp_client_response_callback,
+        user_arg,
+        client_handle->chgrp_group,
+        pathname);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto result_fault;
+    }
+    break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_UTIME:
+
+    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+
+    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+
+    globus_i_ftp_client_plugin_notify_command(
+        client_handle,
+        target->url_string,
+        target->mask,
+        "SITE UTIME %04d%02d%02d%02d%02d%02d %s" CRLF,
+        client_handle->utime_time.tm_year + 1900,
+        client_handle->utime_time.tm_mon + 1,
+        client_handle->utime_time.tm_mday,
+        client_handle->utime_time.tm_hour,
+        client_handle->utime_time.tm_min,
+        client_handle->utime_time.tm_sec,
+        pathname);
+
+    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+        client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+        client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+    {
+        break;
+    }
+
+    globus_assert(client_handle->state ==
+              GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+
+    result =
+        globus_ftp_control_send_command(
+        handle,
+        "SITE UTIME %04d%02d%02d%02d%02d%02d %s" CRLF,
+        globus_i_ftp_client_response_callback,
+        user_arg,
+        client_handle->utime_time.tm_year + 1900,
+        client_handle->utime_time.tm_mon + 1,
+        client_handle->utime_time.tm_mday,
+        client_handle->utime_time.tm_hour,
+        client_handle->utime_time.tm_min,
+        client_handle->utime_time.tm_sec,
+        pathname);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto result_fault;
+    }
+    break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_SYMLINK:
+    {
+        globus_url_t                    dest_url;
+        globus_bool_t                   rfc1738_url;
+        globus_ftp_client_handleattr_t  handle_attr;
+        char *                          encoded_url;
+        int                             spaces;
+        
+        handle_attr = &client_handle->attr;
+    
+        target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+    
+        target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+    
+        result = globus_ftp_client_handleattr_get_rfc1738_url(&handle_attr, &rfc1738_url);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto result_fault;
+        }
+        
+        if(rfc1738_url==GLOBUS_TRUE)
+        {
+            result = (globus_result_t) globus_url_parse_rfc1738(client_handle->dest_url, &dest_url);
+        }
+        else
+        {
+            result = (globus_result_t) globus_url_parse(client_handle->dest_url, &dest_url);
+        }
+    
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto result_fault;
+        }
+    
+        encoded_url = dest_url.url_path;
+        {
+            char *                      s;
+            char *                      d;
+            
+            for(s = encoded_url, spaces = 0; *s; ++s)
+            {
+                if(*s == ' ')
+                {
+                    ++spaces;
+                }
+            }
+                
+            if(spaces)
+            {
+                encoded_url = (char *) globus_malloc(strlen(dest_url.url_path) + (2 * spaces) + 1);
+                if(!encoded_url)
+                {
+                    globus_url_destroy(&dest_url);
+                    goto result_fault;
+                }
+                for(s = dest_url.url_path, d = encoded_url; *s; ++s)
+                {
+                    if(*s == ' ')
+                    {
+                        *d++ = '%'; *d++ = '2'; *d++ = '0';
+                    }
+                    else
+                    {
+                        *d++ = *s;
+                    }
+                }
+                *d = '\0';
+            }
+        }
+        
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            target->url_string,
+            target->mask,
+            "SITE SYMLINK %s %s" CRLF,
+            encoded_url,
+            pathname);
+    
+        if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {
+            globus_url_destroy(&dest_url);
+            if (spaces) globus_free(encoded_url);
+            break;
+        }
+    
+        globus_assert(client_handle->state ==
+                  GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+    
+        result =
+            globus_ftp_control_send_command(
+            handle,
+            "SITE SYMLINK %s %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            user_arg,
+            encoded_url,
+            pathname);
+    
+        if (spaces) globus_free(encoded_url);
+        globus_url_destroy(&dest_url);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto result_fault;
+        }
+    }
+    break;
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
@@ -4431,7 +4649,8 @@ redo:
                 {
                     if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
                        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-                       client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+                        client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+                        client_handle->op == GLOBUS_FTP_CLIENT_MLSR)
                     {
                         target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_GET;
                     }
@@ -4517,6 +4736,7 @@ redo:
 	    if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
 	       client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
 	       client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+               client_handle->op == GLOBUS_FTP_CLIENT_MLSR ||
 	       client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
 	       client_handle->op == GLOBUS_FTP_CLIENT_PUT)
 	    {
@@ -5111,6 +5331,30 @@ globus_l_ftp_client_parse_site_help(
             GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
             GLOBUS_FTP_CLIENT_TRUE);
     }
+    if(((p = strstr((char *) response->response_buffer, "CHGRP")) != 0) &&
+    !isupper(*(p-1)))
+    {
+        globus_i_ftp_client_feature_set(
+            target->features,
+            GLOBUS_FTP_CLIENT_FEATURE_CHGRP,
+            GLOBUS_FTP_CLIENT_TRUE);
+    }    
+    if(((p = strstr((char *) response->response_buffer, "UTIME")) != 0) &&
+    !isupper(*(p-1)))
+    {
+        globus_i_ftp_client_feature_set(
+            target->features,
+            GLOBUS_FTP_CLIENT_FEATURE_UTIME,
+            GLOBUS_FTP_CLIENT_TRUE);
+    }    
+    if(((p = strstr((char *) response->response_buffer, "SYMLINK")) != 0) &&
+    !isupper(*(p-1)))
+    {
+        globus_i_ftp_client_feature_set(
+            target->features,
+            GLOBUS_FTP_CLIENT_FEATURE_SYMLINK,
+            GLOBUS_FTP_CLIENT_TRUE);
+    }    
     if(((p = strstr((char *) response->response_buffer, "AUTHZ_ASSERT")) != 0) 
         && !isupper(*(p-1)))
     {
@@ -5691,6 +5935,7 @@ globus_l_ftp_client_connection_error(
        client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
        client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+       client_handle->op == GLOBUS_FTP_CLIENT_MLSR ||
        client_handle->op == GLOBUS_FTP_CLIENT_PUT)
     {
         if(error)
@@ -5893,6 +6138,7 @@ globus_l_ftp_client_guess_buffer_command(
        handle->op == GLOBUS_FTP_CLIENT_LIST ||
        handle->op == GLOBUS_FTP_CLIENT_NLST ||
        handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+       handle->op == GLOBUS_FTP_CLIENT_MLSR ||
        (handle->op == GLOBUS_FTP_CLIENT_TRANSFER && handle->source == target))
     {
 	retr_desired = GLOBUS_TRUE;
@@ -5966,6 +6212,7 @@ globus_l_ftp_client_update_buffer_feature(
        handle->op == GLOBUS_FTP_CLIENT_LIST ||
        handle->op == GLOBUS_FTP_CLIENT_NLST ||
        handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+       handle->op == GLOBUS_FTP_CLIENT_MLSR ||
        (handle->op == GLOBUS_FTP_CLIENT_TRANSFER && handle->source == target))
     {
 	retr_desired = GLOBUS_TRUE;

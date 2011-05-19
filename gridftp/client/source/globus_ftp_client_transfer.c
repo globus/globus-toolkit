@@ -1275,6 +1275,63 @@ globus_ftp_client_machine_list(
 /* globus_ftp_client_machine_list() */
 /*@}*/
 
+/**
+ * Get a machine parseable recursive file listing from an FTP server.
+ * @ingroup globus_ftp_client_operations
+ *
+ * This function starts a "MLSR" transfer from an FTP server. If
+ * this function returns GLOBUS_SUCCESS, then the user may immediately
+ * begin calling globus_ftp_client_register_read() to retrieve the data
+ * associated with this listing.
+ *
+ * When all of the data associated with the listing is retrieved, and all 
+ * of the data callbacks have been called, or if the list request is
+ * aborted, the complete_callback will be invoked with the final
+ * status of the list.
+ *
+ * @param u_handle
+ *        An FTP Client handle to use for the list operation.
+ * @param url
+ *    The URL to list. The URL may be an ftp or gsiftp URL.
+ * @param attr
+ *    Attributes for this file transfer.
+ * @param complete_callback
+ *        Callback to be invoked once the "list" is completed.
+ * @param callback_arg
+ *    Argument to be passed to the complete_callback.
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
+ *        - complete_callback is GLOBUS_NULL
+ *        - handle already has an operation in progress
+ *
+ * @see globus_ftp_client_register_read()
+ */
+globus_result_t
+globus_ftp_client_recursive_list(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                url,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg)
+{
+    GlobusFuncName(globus_ftp_client_recursive_list);
+    
+    return globus_l_ftp_client_list_op(
+                u_handle,
+                url,
+                attr,
+                GLOBUS_FTP_CLIENT_MLSR,
+                complete_callback,
+                callback_arg);
+}
+/* globus_ftp_client_recursive_list() */
+/*@}*/
 
 /**
  * @name MLST
@@ -1330,15 +1387,800 @@ globus_ftp_client_mlst(
     globus_ftp_client_handle_t *		u_handle,
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
-    globus_byte_t **    			mlst_buffer,
+    globus_byte_t **                mlst_buffer,
     globus_size_t *                             mlst_buffer_length,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg)
+{
+    globus_object_t *               err;
+    globus_bool_t               registered;
+    globus_i_ftp_client_handle_t *      handle;
+    GlobusFuncName(globus_ftp_client_mlst);
+
+    /* Check arguments for validity */
+    if(u_handle == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
+
+    goto error_exit;
+    }
+    else if(url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+    goto error_exit;
+    }
+    else if(complete_callback == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
+
+    goto error_exit;
+    }
+    else if(mlst_buffer_length == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mlst_buffer_length");
+
+    goto error_exit;
+    }
+
+    else if(mlst_buffer == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mlst_buffer");
+
+    goto error_exit;
+    }
+
+    /* Check handle state */
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
+    goto error_exit;
+    }
+    
+    handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
+
+    globus_i_ftp_client_handle_lock(handle);
+    if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
+
+    goto unlock_exit;
+    }
+    /* Setup handle for the MLST */
+    handle->op = GLOBUS_FTP_CLIENT_MLST;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = complete_callback;
+    handle->callback_arg = callback_arg;
+    handle->source_url = globus_libc_strdup(url);
+    handle->mlst_buffer_pointer = mlst_buffer;
+    handle->mlst_buffer_length_pointer = mlst_buffer_length;
+    *mlst_buffer = GLOBUS_NULL;
+    
+    if(handle->source_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
+    goto reset_handle_exit;
+    }
+
+    /* Obtain a connection to the FTP server, maybe cached */
+    err = globus_i_ftp_client_target_find(handle,
+                      url,
+                      attr ? *attr : GLOBUS_NULL,
+                      &handle->source);
+    if(err != GLOBUS_SUCCESS)
+    {
+    goto free_url_exit;
+    }
+
+    /* Notify plugins that the MLST is happening */
+    globus_i_ftp_client_plugin_notify_mlst(handle,
+                       handle->source_url,
+                       handle->source->attr);
+
+    /* 
+     * check our handle state before continuing, because we just unlocked.
+     */
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+    goto abort;
+    }
+    else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+    goto restart;
+    }
+
+    err = globus_i_ftp_client_target_activate(handle, 
+                          handle->source,
+                          &registered);
+    if(registered == GLOBUS_FALSE)
+    {
+    /* 
+     * A restart or abort happened during activation, before any
+     * callbacks were registered. We must deal with them here.
+     */
+    globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+              handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+              err != GLOBUS_SUCCESS);
+
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+        goto abort;
+    }
+    else if (handle->state ==
+         GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+        goto restart;
+    }
+    else if(err != GLOBUS_SUCCESS)
+    {
+        goto source_problem_exit;
+    }
+    }
+
+    globus_i_ftp_client_handle_unlock(handle);
+
+    return GLOBUS_SUCCESS;
+
+    /* Error handling */
+source_problem_exit:
+    /* Release the target associated with this list. */
+    if(handle->source != GLOBUS_NULL)
+    {
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+    }
+
+ free_url_exit:
+    globus_libc_free(handle->source_url);
+
+reset_handle_exit:
+    /* Reset the state of the handle. */
+    handle->source_url = GLOBUS_NULL;
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    handle->mlst_buffer_pointer = GLOBUS_NULL;
+    handle->mlst_buffer_length_pointer = GLOBUS_NULL;
+    
+    /* Release the lock */
+unlock_exit:
+    globus_i_ftp_client_handle_unlock(handle);
+
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+    *mlst_buffer = GLOBUS_NULL;
+    *mlst_buffer_length = GLOBUS_NULL;
+    
+    /* And return our error */
+error_exit:
+    return globus_error_put(err);
+
+restart:
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+
+    err = globus_i_ftp_client_restart_register_oneshot(handle);
+
+    if(!err)
+    {
+    globus_i_ftp_client_handle_unlock(handle);
+    return GLOBUS_SUCCESS;
+    }
+    /* else fallthrough */
+abort:
+    if(handle->source)
+    {
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+    }
+
+    /* Reset the state of the handle. */
+    globus_libc_free(handle->source_url);
+    handle->source_url = GLOBUS_NULL;
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+    globus_i_ftp_client_handle_unlock(handle);
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    return globus_error_put(err);
+}
+/* globus_ftp_client_mlst() */
+/*@}*/
+
+/**
+ * @name Move
+ */
+/*@{*/
+/**
+ * Move a file on an FTP server.
+ * @ingroup globus_ftp_client_operations
+ *
+ * This function starts a move (rename) operation on an FTP
+ * server. Note that this function does not move files between FTP
+ * servers and that the host:port part of the destination url is
+ * ignored.
+ *
+ * When the response to the move request has been received the
+ * complete_callback will be invoked with the result of the move
+ * operation. 
+ *
+ * @param u_handle
+ *        An FTP Client handle to use for the move operation.
+ * @param source_url
+ *    The URL for the file to move.
+ * @param dest_url
+ *    The URL for the target of the move. The host:port part of
+ *        this URL is ignored. 
+ * @param attr
+ *    Attributes for this operation.
+ * @param complete_callback
+ *        Callback to be invoked once the move is completed.
+ * @param callback_arg
+ *    Argument to be passed to the complete_callback.
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - source_url is GLOBUS_NULL
+ *        - source_url cannot be parsed
+ *        - source_url is not a ftp or gsiftp url
+ *        - complete_callback is GLOBUS_NULL
+ *        - handle already has an operation in progress
+ */
+globus_result_t
+globus_ftp_client_move(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                source_url,
+    const char *                dest_url,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg)
+{
+    globus_object_t *               err;
+    int                                         rc;
+    globus_bool_t               registered;
+    globus_bool_t               rfc1738_url;
+    globus_url_t                                url;
+    globus_i_ftp_client_handle_t *      handle;
+    globus_ftp_client_handleattr_t      handleattr;
+    GlobusFuncName(globus_ftp_client_move);
+
+    /* Check arguments for validity */
+    if(u_handle == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
+
+    goto error_exit;
+    }
+    else if(source_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
+
+    goto error_exit;
+    }
+    else if(dest_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest_url");
+
+    goto error_exit;
+    }
+    else if(complete_callback == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
+
+    goto error_exit;
+    }
+
+    /* Check handle state */
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
+    goto error_exit;
+    }
+    
+    handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
+
+    globus_i_ftp_client_handle_lock(handle);
+    if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
+
+    goto unlock_exit;
+    }
+    /* Setup handle for the get operation */
+    handle->op = GLOBUS_FTP_CLIENT_MOVE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = complete_callback;
+    handle->callback_arg = callback_arg;
+    handle->source_url = globus_libc_strdup(source_url);
+
+    if(handle->source_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
+    goto reset_handle_exit;
+    }
+
+    handle->dest_url = globus_libc_strdup(dest_url);
+
+    if(handle->dest_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
+    goto free_source_url_exit;
+    }
+
+    handleattr=&(handle->attr);
+    globus_ftp_client_handleattr_get_rfc1738_url(&handleattr,
+                                &rfc1738_url);
+
+    if(rfc1738_url)
+    {
+     rc = globus_url_parse_rfc1738(dest_url,
+                       &url);
+    }
+    else
+    {
+         rc = globus_url_parse(dest_url,
+                               &url);
+    }
+    
+    if(rc != GLOBUS_SUCCESS)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dest_url");
+
+    goto free_urls_exit;
+    }
+
+    if(url.url_path == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dest_url");
+
+        globus_url_destroy(&url);
+    goto free_urls_exit;
+    }
+
+    globus_url_destroy(&url);
+
+    
+    /* Obtain a connection to the source FTP server, maybe cached */
+    err = globus_i_ftp_client_target_find(handle,
+                      source_url,
+                      attr ? *attr : GLOBUS_NULL,
+                      &handle->source);
+    if(err != GLOBUS_SUCCESS)
+    {
+    goto free_urls_exit;
+    }
+
+    /* Notify plugins that the GET is happening */
+    globus_i_ftp_client_plugin_notify_move(handle,
+                       handle->source_url,
+                       handle->dest_url,
+                       handle->source->attr);
+
+    /* 
+     * check our handle state before continuing, because we just unlocked.
+     */
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+    goto abort;
+    }
+    else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+    goto restart;
+    }
+
+    err = globus_i_ftp_client_target_activate(handle, 
+                          handle->source,
+                          &registered);
+    if(registered == GLOBUS_FALSE)
+    {
+    /* 
+     * A restart or abort happened during activation, before any
+     * callbacks were registered. We must deal with them here.
+     */
+    globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+              handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+              err != GLOBUS_SUCCESS);
+
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+        goto abort;
+    }
+    else if (handle->state ==
+         GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+        goto restart;
+    }
+    else if(err != GLOBUS_SUCCESS)
+    {
+        goto source_problem_exit;
+    }
+    }
+
+    globus_i_ftp_client_handle_unlock(handle);
+
+    return GLOBUS_SUCCESS;
+
+    /* Error handling */
+source_problem_exit:
+    /* Release the target associated with this get. */
+    if(handle->source != GLOBUS_NULL)
+    {
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+    }
+free_urls_exit:
+    globus_libc_free(handle->dest_url);
+free_source_url_exit:
+    globus_libc_free(handle->source_url);
+reset_handle_exit:
+    /* Reset the state of the handle. */
+    handle->source_url = GLOBUS_NULL;
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+unlock_exit:
+    /* Release the lock */
+    globus_i_ftp_client_handle_unlock(handle);
+
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    /* And return our error */
+error_exit:
+    return globus_error_put(err);
+
+restart:
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+
+    err = globus_i_ftp_client_restart_register_oneshot(handle);
+
+    if(!err)
+    {
+    globus_i_ftp_client_handle_unlock(handle);
+    return GLOBUS_SUCCESS;
+    }
+    /* else fallthrough */
+abort:
+    if(handle->source)
+    {
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+    }
+
+    /* Reset the state of the handle. */
+    globus_libc_free(handle->source_url);
+    handle->source_url = GLOBUS_NULL;
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+    globus_i_ftp_client_handle_unlock(handle);
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    return globus_error_put(err);
+}
+/* globus_ftp_client_move() */
+/*@}*/
+
+/**
+ * @name chmod
+ */
+/*@{*/
+/**
+ * Change permissions on a file.
+ * @ingroup globus_ftp_client_operations
+ *
+ * This function changes file permissions
+ * 
+ * 
+ * 
+ *
+ * When the response to the move request has been received the
+ * complete_callback will be invoked with the result of the
+ * operation. 
+ *
+ * @param u_handle
+ *        An FTP Client handle to use for the move operation.
+ * @param url
+ *    The URL of the file to modify permissions. 
+ * @param mode
+ *    The integer file mode to change to.  Be sure that the integer is 
+ *        in the proper base, i.e. 0777 (octal) vs 777 (decimal).           
+ * @param attr
+ *    Attributes for this operation.
+ * @param complete_callback
+ *        Callback to be invoked once the move is completed.
+ * @param callback_arg
+ *    Argument to be passed to the complete_callback.
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
+ *        - complete_callback is GLOBUS_NULL
+ *        - handle already has an operation in progress
+ */
+globus_result_t
+globus_ftp_client_chmod(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                url,
+    int                         mode,
+    globus_ftp_client_operationattr_t *     attr,
+    globus_ftp_client_complete_callback_t   complete_callback,
+    void *                  callback_arg)
+{
+    globus_object_t *               err;
+    globus_bool_t               registered;
+    globus_i_ftp_client_handle_t *      handle;
+    GlobusFuncName(globus_ftp_client_chmod);
+
+    /* Check arguments for validity */
+    if(u_handle == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
+
+    goto error_exit;
+    }
+    else if(url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+    goto error_exit;
+    }
+    else if(complete_callback == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
+
+    goto error_exit;
+    }
+
+    /* Check handle state */
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
+    goto error_exit;
+    }
+    
+    handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
+
+    globus_i_ftp_client_handle_lock(handle);
+    if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
+
+    goto unlock_exit;
+    }
+    /* Setup handle for the get operation */
+    handle->op = GLOBUS_FTP_CLIENT_CHMOD;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = complete_callback;
+    handle->callback_arg = callback_arg;
+    handle->source_url = globus_libc_strdup(url);
+    handle->chmod_file_mode = mode;
+
+    if(handle->source_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
+    goto reset_handle_exit;
+    }
+
+    
+    /* Obtain a connection to the source FTP server, maybe cached */
+    err = globus_i_ftp_client_target_find(handle,
+                      url,
+                          attr ? *attr : GLOBUS_NULL,
+                      &handle->source);
+    if(err != GLOBUS_SUCCESS)
+    {
+    goto free_url_exit;
+    }
+
+    /* Notify plugins that the CHMOD is happening */
+    globus_i_ftp_client_plugin_notify_chmod(handle,
+                       handle->source_url,
+                       handle->chmod_file_mode,
+                       handle->source->attr);
+
+    /* 
+     * check our handle state before continuing, because we just unlocked.
+     */
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+    goto abort;
+    }
+    else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+    goto restart;
+    }
+
+    err = globus_i_ftp_client_target_activate(handle, 
+                          handle->source,
+                          &registered);
+    if(registered == GLOBUS_FALSE)
+    {
+    /* 
+     * A restart or abort happened during activation, before any
+     * callbacks were registered. We must deal with them here.
+     */
+    globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+              handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+              err != GLOBUS_SUCCESS);
+
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+        goto abort;
+    }
+    else if (handle->state ==
+         GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+        goto restart;
+    }
+    else if(err != GLOBUS_SUCCESS)
+    {
+        goto source_problem_exit;
+    }
+    }
+
+    globus_i_ftp_client_handle_unlock(handle);
+
+    return GLOBUS_SUCCESS;
+
+    /* Error handling */
+source_problem_exit:
+    /* Release the target associated with this op. */
+    if(handle->source != GLOBUS_NULL)
+    {
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+    }
+free_url_exit:
+    globus_libc_free(handle->source_url);
+reset_handle_exit:
+    /* Reset the state of the handle. */
+    handle->source_url = GLOBUS_NULL;
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+unlock_exit:
+    /* Release the lock */
+    globus_i_ftp_client_handle_unlock(handle);
+
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    /* And return our error */
+error_exit:
+    return globus_error_put(err);
+
+restart:
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+
+    err = globus_i_ftp_client_restart_register_oneshot(handle);
+
+    if(!err)
+    {
+    globus_i_ftp_client_handle_unlock(handle);
+    return GLOBUS_SUCCESS;
+    }
+    /* else fallthrough */
+abort:
+    if(handle->source)
+    {
+    globus_i_ftp_client_target_release(handle,
+                       handle->source);
+    }
+
+    /* Reset the state of the handle. */
+    globus_libc_free(handle->source_url);
+    handle->source_url = GLOBUS_NULL;
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+    globus_i_ftp_client_handle_unlock(handle);
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    return globus_error_put(err);
+}
+/* globus_ftp_client_chmod() */
+/*@}*/
+
+/**
+ * @name chgrp
+ */
+/*@{*/
+/**
+ * Change group membership on a file.
+ * @ingroup globus_ftp_client_operations
+ *
+ * This function changes file group membership
+ * 
+ * 
+ * 
+ *
+ * When the response to the group change request has been received the
+ * complete_callback will be invoked with the result of the
+ * operation. 
+ *
+ * @param u_handle
+ *        An FTP Client handle to use for the change operation.
+ * @param url
+ *    The URL of the file to modify group membership. 
+ * @param group
+ *    The group name or numeric identifier for the group that the
+ *    file should become a member of.          
+ * @param attr
+ *    Attributes for this operation.
+ * @param complete_callback
+ *        Callback to be invoked once the change is completed.
+ * @param callback_arg
+ *    Argument to be passed to the complete_callback.
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
+ *        - complete_callback is GLOBUS_NULL
+ *        - handle already has an operation in progress
+ */
+globus_result_t
+globus_ftp_client_chgrp(
+    globus_ftp_client_handle_t *        u_handle,
+    const char *                url,
+    const char *                group,
+    globus_ftp_client_operationattr_t *     attr,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    GlobusFuncName(globus_ftp_client_mlst);
+    GlobusFuncName(globus_ftp_client_chgrp);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -1353,22 +2195,15 @@ globus_ftp_client_mlst(
 
 	goto error_exit;
     }
+    else if(group == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("group");
+
+	goto error_exit;
+    }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
-
-	goto error_exit;
-    }
-    else if(mlst_buffer_length == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mlst_buffer_length");
-
-	goto error_exit;
-    }
-
-    else if(mlst_buffer == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mlst_buffer");
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -1393,36 +2228,36 @@ globus_ftp_client_mlst(
 
 	goto unlock_exit;
     }
-    /* Setup handle for the MLST */
-    handle->op = GLOBUS_FTP_CLIENT_MLST;
+    /* Setup handle for the get operation */
+    handle->op = GLOBUS_FTP_CLIENT_CHGRP;
     handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
     handle->callback = complete_callback;
     handle->callback_arg = callback_arg;
     handle->source_url = globus_libc_strdup(url);
-    handle->mlst_buffer_pointer = mlst_buffer;
-    handle->mlst_buffer_length_pointer = mlst_buffer_length;
-    *mlst_buffer = GLOBUS_NULL;
+    handle->chgrp_group = globus_libc_strdup(group);
     
-    if(handle->source_url == GLOBUS_NULL)
+    if(handle->source_url == GLOBUS_NULL || handle->chgrp_group == GLOBUS_NULL)
     {
 	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
 
-    /* Obtain a connection to the FTP server, maybe cached */
+    
+    /* Obtain a connection to the source FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
 					  url,
 					  attr ? *attr : GLOBUS_NULL,
 					  &handle->source);
     if(err != GLOBUS_SUCCESS)
     {
-	goto free_url_exit;
+    goto reset_handle_exit;
     }
 
-    /* Notify plugins that the MLST is happening */
-    globus_i_ftp_client_plugin_notify_mlst(handle,
+    /* Notify plugins that the CHGRP is happening */
+    globus_i_ftp_client_plugin_notify_chgrp(handle,
 					   handle->source_url,
+                       handle->chgrp_group,
 					   handle->source->attr);
 
     /* 
@@ -1475,33 +2310,34 @@ globus_ftp_client_mlst(
 
     /* Error handling */
 source_problem_exit:
-    /* Release the target associated with this list. */
+    /* Release the target associated with this op. */
     if(handle->source != GLOBUS_NULL)
     {
 	globus_i_ftp_client_target_release(handle,
 					   handle->source);
     }
-
- free_url_exit:
-    globus_libc_free(handle->source_url);
-
 reset_handle_exit:
     /* Reset the state of the handle. */
+    if(handle->source_url != GLOBUS_NULL)
+    {
+        globus_libc_free(handle->source_url);
     handle->source_url = GLOBUS_NULL;
+    }
+    if(handle->chgrp_group != GLOBUS_NULL)
+    {
+        globus_libc_free(handle->chgrp_group);
+        handle->chgrp_group = GLOBUS_NULL;
+    }
     handle->op = GLOBUS_FTP_CLIENT_IDLE;
     handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
     handle->callback = GLOBUS_NULL;
     handle->callback_arg = GLOBUS_NULL;
-    handle->mlst_buffer_pointer = GLOBUS_NULL;
-    handle->mlst_buffer_length_pointer = GLOBUS_NULL;
     
-    /* Release the lock */
 unlock_exit:
+    /* Release the lock */
     globus_i_ftp_client_handle_unlock(handle);
 
     globus_i_ftp_client_handle_is_not_active(u_handle);
-    *mlst_buffer = GLOBUS_NULL;
-    *mlst_buffer_length = GLOBUS_NULL;
     
     /* And return our error */
 error_exit:
@@ -1529,6 +2365,8 @@ abort:
     /* Reset the state of the handle. */
     globus_libc_free(handle->source_url);
     handle->source_url = GLOBUS_NULL;
+    globus_libc_free(handle->chgrp_group);
+    handle->chgrp_group = GLOBUS_NULL;
     handle->op = GLOBUS_FTP_CLIENT_IDLE;
     handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
     handle->callback = GLOBUS_NULL;
@@ -1539,37 +2377,36 @@ abort:
 
     return globus_error_put(err);
 }
-/* globus_ftp_client_mlst() */
+/* globus_ftp_client_chgrp() */
 /*@}*/
 
 /**
- * @name Move
+ * @name utime
  */
 /*@{*/
 /**
- * Move a file on an FTP server.
+ * Set the modification time on a file.
  * @ingroup globus_ftp_client_operations
  *
- * This function starts a move (rename) operation on an FTP
- * server. Note that this function does not move files between FTP
- * servers and that the host:port part of the destination url is
- * ignored.
+ * This function changes file modification time
  *
- * When the response to the move request has been received the
- * complete_callback will be invoked with the result of the move
+ * 
+ * 
+ *
+ * When the response to the modification time request has been received the
+ * complete_callback will be invoked with the result of the
  * operation. 
  *
  * @param u_handle
- *        An FTP Client handle to use for the move operation.
- * @param source_url
- *	  The URL for the file to move.
- * @param dest_url
- *	  The URL for the target of the move. The host:port part of
- *        this URL is ignored. 
+ *        An FTP Client handle to use for the change operation.
+ * @param url
+ *    The URL of the file to modify group membership. 
+ * @param utime_time
+ *    The absolute time to which the file's modification time should be set.          
  * @param attr
  *	  Attributes for this operation.
  * @param complete_callback
- *        Callback to be invoked once the move is completed.
+ *        Callback to be invoked once the change is completed.
  * @param callback_arg
  *	  Argument to be passed to the complete_callback.
  *
@@ -1577,29 +2414,25 @@ abort:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  */
 globus_result_t
-globus_ftp_client_move(
+globus_ftp_client_utime(
     globus_ftp_client_handle_t *		u_handle,
-    const char *				source_url,
-    const char *				dest_url,
+    const char *                url,
+    const struct tm *           utime_time,
     globus_ftp_client_operationattr_t *		attr,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
     globus_object_t *				err;
-    int                                         rc;
     globus_bool_t				registered;
-    globus_bool_t  				rfc1738_url;
-    globus_url_t                                url;
     globus_i_ftp_client_handle_t *		handle;
-    globus_ftp_client_handleattr_t		handleattr;
-    GlobusFuncName(globus_ftp_client_move);
+    GlobusFuncName(globus_ftp_client_utime);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -1608,15 +2441,15 @@ globus_ftp_client_move(
 
 	goto error_exit;
     }
-    else if(source_url == GLOBUS_NULL)
+    else if(url == GLOBUS_NULL)
     {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
-    else if(dest_url == GLOBUS_NULL)
+    else if(utime_time == GLOBUS_NULL)
     {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest_url");
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("utime_time");
 
 	goto error_exit;
     }
@@ -1648,7 +2481,258 @@ globus_ftp_client_move(
 	goto unlock_exit;
     }
     /* Setup handle for the get operation */
-    handle->op = GLOBUS_FTP_CLIENT_MOVE;
+    handle->op = GLOBUS_FTP_CLIENT_UTIME;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = complete_callback;
+    handle->callback_arg = callback_arg;
+    handle->source_url = globus_libc_strdup(url);
+    handle->utime_time = *utime_time;
+
+    if(handle->source_url == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
+	goto reset_handle_exit;
+    }
+
+    
+    /* Obtain a connection to the source FTP server, maybe cached */
+    err = globus_i_ftp_client_target_find(handle,
+                      url,
+					  attr ? *attr : GLOBUS_NULL,
+					  &handle->source);
+    if(err != GLOBUS_SUCCESS)
+    {
+    goto reset_handle_exit;
+    }
+
+    /* Notify plugins that the CHGRP is happening */
+    globus_i_ftp_client_plugin_notify_utime(handle,
+					   handle->source_url,
+                       &handle->utime_time,
+					   handle->source->attr);
+
+    /* 
+     * check our handle state before continuing, because we just unlocked.
+     */
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+	goto abort;
+    }
+    else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+	goto restart;
+    }
+
+    err = globus_i_ftp_client_target_activate(handle, 
+					      handle->source,
+					      &registered);
+    if(registered == GLOBUS_FALSE)
+    {
+	/* 
+	 * A restart or abort happened during activation, before any
+	 * callbacks were registered. We must deal with them here.
+	 */
+	globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+		      handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+		      err != GLOBUS_SUCCESS);
+
+	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+	{
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+	    goto abort;
+	}
+	else if (handle->state ==
+		 GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	{
+	    goto restart;
+	}
+	else if(err != GLOBUS_SUCCESS)
+	{
+	    goto source_problem_exit;
+	}
+    }
+
+    globus_i_ftp_client_handle_unlock(handle);
+
+    return GLOBUS_SUCCESS;
+
+    /* Error handling */
+source_problem_exit:
+    /* Release the target associated with this op. */
+    if(handle->source != GLOBUS_NULL)
+    {
+	globus_i_ftp_client_target_release(handle,
+					   handle->source);
+    }
+reset_handle_exit:
+    /* Reset the state of the handle. */
+    if (handle->source_url != GLOBUS_NULL)
+    {
+        globus_libc_free(handle->source_url);
+    handle->source_url = GLOBUS_NULL;
+    }
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+unlock_exit:
+    /* Release the lock */
+    globus_i_ftp_client_handle_unlock(handle);
+
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    /* And return our error */
+error_exit:
+    return globus_error_put(err);
+
+restart:
+    globus_i_ftp_client_target_release(handle,
+				       handle->source);
+
+    err = globus_i_ftp_client_restart_register_oneshot(handle);
+
+    if(!err)
+    {
+	globus_i_ftp_client_handle_unlock(handle);
+	return GLOBUS_SUCCESS;
+    }
+    /* else fallthrough */
+abort:
+    if(handle->source)
+    {
+	globus_i_ftp_client_target_release(handle,
+					   handle->source);
+    }
+
+    /* Reset the state of the handle. */
+    globus_libc_free(handle->source_url);
+    handle->source_url = GLOBUS_NULL;
+    memset(&handle->utime_time, 0, sizeof(struct tm));
+    handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    handle->callback = GLOBUS_NULL;
+    handle->callback_arg = GLOBUS_NULL;
+    
+    globus_i_ftp_client_handle_unlock(handle);
+    globus_i_ftp_client_handle_is_not_active(u_handle);
+
+    return globus_error_put(err);
+}
+/* globus_ftp_client_utime() */
+/*@}*/
+
+/**
+ * @name symlink
+ */
+/*@{*/
+/**
+ * Create a symbolic link on the FTP server.
+ * @ingroup globus_ftp_client_operations
+ *
+ * This function creates a symbolic link on the FTP server pointing to a
+ * given path. Note that this function does not link files between FTP
+ * servers and that the host:port part of the link url is
+ * ignored.
+ *
+ * When the response to the symlink request has been received the
+ * complete_callback will be invoked with the result of the move
+ * operation. 
+ *
+ * @param u_handle
+ *        An FTP Client handle to use for the move operation.
+ * @param source_url
+ *    The URL for the symbolic link to create.
+ * @param link_url
+ *    The URL for the target of the link. The host:port part of
+ *        this URL is ignored. 
+ * @param attr
+ *	  Attributes for this operation.
+ * @param complete_callback
+ *        Callback to be invoked once the symlink is completed.
+ * @param callback_arg
+ *	  Argument to be passed to the complete_callback.
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - source_url is GLOBUS_NULL
+ *        - source_url cannot be parsed
+ *        - source_url is not a ftp or gsiftp url
+ *        - complete_callback is GLOBUS_NULL
+ *        - handle already has an operation in progress
+ */
+globus_result_t
+globus_ftp_client_symlink(
+    globus_ftp_client_handle_t *		u_handle,
+    const char *                source_url,
+    const char *                link_url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg)
+{
+    globus_object_t *				err;
+    int                                         rc;
+    globus_bool_t				registered;
+    globus_bool_t               rfc1738_url;
+    globus_url_t                                url;
+    globus_i_ftp_client_handle_t *		handle;
+    globus_ftp_client_handleattr_t      handleattr;
+    GlobusFuncName(globus_ftp_client_move);
+
+    /* Check arguments for validity */
+    if(u_handle == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
+
+	goto error_exit;
+    }
+    else if(source_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
+
+    goto error_exit;
+    }
+    else if(link_url == GLOBUS_NULL)
+    {
+    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("link_url");
+
+	goto error_exit;
+    }
+    else if(complete_callback == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
+
+	goto error_exit;
+    }
+
+    /* Check handle state */
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
+	goto error_exit;
+    }
+    
+    handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
+
+    globus_i_ftp_client_handle_lock(handle);
+    if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
+
+	goto unlock_exit;
+    }
+    /* Setup handle for the get operation */
+    handle->op = GLOBUS_FTP_CLIENT_SYMLINK;
     handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
     handle->callback = complete_callback;
     handle->callback_arg = callback_arg;
@@ -1661,43 +2745,43 @@ globus_ftp_client_move(
 	goto reset_handle_exit;
     }
 
-    handle->dest_url = globus_libc_strdup(dest_url);
+    handle->dest_url = globus_libc_strdup(link_url);
 
     if(handle->dest_url == GLOBUS_NULL)
     {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
-	goto free_source_url_exit;
+    goto free_source_url_exit;
     }
 
     handleattr=&(handle->attr);
     globus_ftp_client_handleattr_get_rfc1738_url(&handleattr,
-		    				    &rfc1738_url);
+                                &rfc1738_url);
 
     if(rfc1738_url)
     {
-	 rc = globus_url_parse_rfc1738(dest_url,
-			 	       &url);
+     rc = globus_url_parse_rfc1738(link_url,
+                       &url);
     }
     else
     {
-         rc = globus_url_parse(dest_url,
+         rc = globus_url_parse(link_url,
                                &url);
     }
     
     if(rc != GLOBUS_SUCCESS)
     {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dest_url");
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("link_url");
 
-	goto free_urls_exit;
+    goto free_urls_exit;
     }
 
     if(url.url_path == GLOBUS_NULL)
     {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dest_url");
+    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("link_url");
 
         globus_url_destroy(&url);
-	goto free_urls_exit;
+    goto free_urls_exit;
     }
 
     globus_url_destroy(&url);
@@ -1705,18 +2789,18 @@ globus_ftp_client_move(
     
     /* Obtain a connection to the source FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
-					  source_url,
-					  attr ? *attr : GLOBUS_NULL,
+                      source_url,
+	        			  attr ? *attr : GLOBUS_NULL,
 					  &handle->source);
     if(err != GLOBUS_SUCCESS)
     {
-	goto free_urls_exit;
+    goto free_urls_exit;
     }
 
     /* Notify plugins that the GET is happening */
-    globus_i_ftp_client_plugin_notify_move(handle,
+    globus_i_ftp_client_plugin_notify_symlink(handle,
 					   handle->source_url,
-					   handle->dest_url,
+                       handle->dest_url,
 					   handle->source->attr);
 
     /* 
@@ -1829,247 +2913,8 @@ abort:
 
     return globus_error_put(err);
 }
-/* globus_ftp_client_move() */
+/* globus_ftp_client_symlink() */
 /*@}*/
-
-/**
- * @name chmod
- */
-/*@{*/
-/**
- * Change permissions on a file.
- * @ingroup globus_ftp_client_operations
- *
- * This function changes file permissions
- * 
- * 
- * 
- *
- * When the response to the move request has been received the
- * complete_callback will be invoked with the result of the
- * operation. 
- *
- * @param u_handle
- *        An FTP Client handle to use for the move operation.
- * @param url
- *	  The URL of the file to modify permissions. 
- * @param mode
- *	  The integer file mode to change to.  Be sure that the integer is 
- *        in the proper base, i.e. 0777 (octal) vs 777 (decimal).           
- * @param attr
- *	  Attributes for this operation.
- * @param complete_callback
- *        Callback to be invoked once the move is completed.
- * @param callback_arg
- *	  Argument to be passed to the complete_callback.
- *
- * @return
- *        This function returns an error when any of these conditions are
- *        true:
- *        - handle is GLOBUS_NULL
- *        - url is GLOBUS_NULL
- *        - url cannot be parsed
- *        - url is not a ftp or gsiftp url
- *        - complete_callback is GLOBUS_NULL
- *        - handle already has an operation in progress
- */
-globus_result_t
-globus_ftp_client_chmod(
-    globus_ftp_client_handle_t *		u_handle,
-    const char *				url,
-    int         				mode,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_client_complete_callback_t	complete_callback,
-    void *					callback_arg)
-{
-    globus_object_t *				err;
-    globus_bool_t				registered;
-    globus_i_ftp_client_handle_t *		handle;
-    GlobusFuncName(globus_ftp_client_chmod);
-
-    /* Check arguments for validity */
-    if(u_handle == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
-
-	goto error_exit;
-    }
-    else if(url == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
-
-	goto error_exit;
-    }
-    else if(complete_callback == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
-
-	goto error_exit;
-    }
-
-    /* Check handle state */
-    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
-
-	goto error_exit;
-    }
-    
-    handle = *u_handle;
-    u_handle = handle->handle;
-    
-    globus_i_ftp_client_handle_is_active(u_handle);
-
-    globus_i_ftp_client_handle_lock(handle);
-    if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
-
-	goto unlock_exit;
-    }
-    /* Setup handle for the get operation */
-    handle->op = GLOBUS_FTP_CLIENT_CHMOD;
-    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
-    handle->callback = complete_callback;
-    handle->callback_arg = callback_arg;
-    handle->source_url = globus_libc_strdup(url);
-    handle->chmod_file_mode = mode;
-
-    if(handle->source_url == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
-
-	goto reset_handle_exit;
-    }
-
-    
-    /* Obtain a connection to the source FTP server, maybe cached */
-    err = globus_i_ftp_client_target_find(handle,
-					  url,
-	        			  attr ? *attr : GLOBUS_NULL,
-					  &handle->source);
-    if(err != GLOBUS_SUCCESS)
-    {
-	goto free_url_exit;
-    }
-
-    /* Notify plugins that the CHMOD is happening */
-    globus_i_ftp_client_plugin_notify_chmod(handle,
-					   handle->source_url,
-					   handle->chmod_file_mode,
-					   handle->source->attr);
-
-    /* 
-     * check our handle state before continuing, because we just unlocked.
-     */
-    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
-
-	goto abort;
-    }
-    else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
-    {
-	goto restart;
-    }
-
-    err = globus_i_ftp_client_target_activate(handle, 
-					      handle->source,
-					      &registered);
-    if(registered == GLOBUS_FALSE)
-    {
-	/* 
-	 * A restart or abort happened during activation, before any
-	 * callbacks were registered. We must deal with them here.
-	 */
-	globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-		      handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
-		      err != GLOBUS_SUCCESS);
-
-	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
-	{
-	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
-
-	    goto abort;
-	}
-	else if (handle->state ==
-		 GLOBUS_FTP_CLIENT_HANDLE_RESTART)
-	{
-	    goto restart;
-	}
-	else if(err != GLOBUS_SUCCESS)
-	{
-	    goto source_problem_exit;
-	}
-    }
-
-    globus_i_ftp_client_handle_unlock(handle);
-
-    return GLOBUS_SUCCESS;
-
-    /* Error handling */
-source_problem_exit:
-    /* Release the target associated with this op. */
-    if(handle->source != GLOBUS_NULL)
-    {
-	globus_i_ftp_client_target_release(handle,
-					   handle->source);
-    }
-free_url_exit:
-    globus_libc_free(handle->source_url);
-reset_handle_exit:
-    /* Reset the state of the handle. */
-    handle->source_url = GLOBUS_NULL;
-    handle->op = GLOBUS_FTP_CLIENT_IDLE;
-    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
-    handle->callback = GLOBUS_NULL;
-    handle->callback_arg = GLOBUS_NULL;
-    
-unlock_exit:
-    /* Release the lock */
-    globus_i_ftp_client_handle_unlock(handle);
-
-    globus_i_ftp_client_handle_is_not_active(u_handle);
-
-    /* And return our error */
-error_exit:
-    return globus_error_put(err);
-
-restart:
-    globus_i_ftp_client_target_release(handle,
-				       handle->source);
-
-    err = globus_i_ftp_client_restart_register_oneshot(handle);
-
-    if(!err)
-    {
-	globus_i_ftp_client_handle_unlock(handle);
-	return GLOBUS_SUCCESS;
-    }
-    /* else fallthrough */
-abort:
-    if(handle->source)
-    {
-	globus_i_ftp_client_target_release(handle,
-					   handle->source);
-    }
-
-    /* Reset the state of the handle. */
-    globus_libc_free(handle->source_url);
-    handle->source_url = GLOBUS_NULL;
-    handle->op = GLOBUS_FTP_CLIENT_IDLE;
-    handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
-    handle->callback = GLOBUS_NULL;
-    handle->callback_arg = GLOBUS_NULL;
-    
-    globus_i_ftp_client_handle_unlock(handle);
-    globus_i_ftp_client_handle_is_not_active(u_handle);
-
-    return globus_error_put(err);
-}
-/* globus_ftp_client_chmod() */
-/*@}*/
-
 
 /**
  * @name Get
@@ -5095,6 +5940,12 @@ globus_l_ftp_client_list_op(
 					   handle->source->attr);
         break;
         
+      case GLOBUS_FTP_CLIENT_MLSR:
+        globus_i_ftp_client_plugin_notify_recursive_list(handle,
+                       handle->source_url,
+                       handle->source->attr);
+        break;
+        
       default:
         globus_assert(0 && "unknown ftp client list operation");
         break;
@@ -5338,6 +6189,12 @@ globus_i_ftp_client_transfer_complete(
         client_handle->pasv_address = GLOBUS_NULL;
     }
     client_handle->num_pasv_addresses = 0;
+
+    if(client_handle->chgrp_group != GLOBUS_NULL) 
+    {
+        globus_free(client_handle->chgrp_group);
+        client_handle->chgrp_group = GLOBUS_NULL;
+    }
 
     globus_ftp_client_restart_marker_destroy(&client_handle->restart_marker);
     

@@ -79,7 +79,7 @@ typedef enum
     /** ALLO, REST */
     GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_MODIFIERS	= 1<<3,
 
-    /** STOR, RETR, ESTO, ERET, APPE, LIST, NLST, MLSD, GET, PUT */
+    /** STOR, RETR, ESTO, ERET, APPE, LIST, NLST, MLSD, MLSR, GET, PUT */
     GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS		= 1<<4,
 
     /** HELP, SITE HELP, FEAT, STAT, SYST, SIZE */
@@ -244,16 +244,16 @@ typedef void (*globus_ftp_client_plugin_chmod_t)(
     globus_bool_t				restart);
 
 /**
- * Plugin chmod notification callback.
+ * Plugin chgrp notification callback.
  * @ingroup globus_ftp_client_plugins
  *
- * This callback is used to notify a plugin that a chmod is being
+ * This callback is used to notify a plugin that a chgrp is being
  * requested  on a client handle. This notification happens both when
- * the user requests a chmod, and when a plugin restarts the currently
- * active chmod request.
+ * the user requests a chgrp, and when a plugin restarts the currently
+ * active chgrp request.
  *
  * If this function is not defined by the plugin, then no plugin
- * callbacks associated with the chmod will be called.
+ * callbacks associated with the chgrp will be called.
  *
  * @param plugin
  *        The plugin which is being notified.
@@ -262,7 +262,121 @@ typedef void (*globus_ftp_client_plugin_chmod_t)(
  * @param handle
  *        The handle associated with the delete operation.
  * @param url
- *        The url to chmod.
+ *        The url to chgrp.
+ * @param group
+ *        The group name or ID to change to.
+ * @param attr
+ *        The attributes to be used during this operation.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current delete operation;
+ *    otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_chgrp_t)(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                group,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
+
+/**
+ * Plugin utime notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a utime is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a utime, and when a plugin restarts the currently
+ * active utime request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the utime will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the utime operation.
+ * @param url
+ *        The url to utime.
+ * @param utime_time
+ *        The modification time to change the file to.
+ * @param attr
+ *        The attributes to be used during this operation.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current utime operation;
+ *    otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_utime_t)(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
+
+/**
+ * Plugin symlink notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a symlink is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a symlink, and when a plugin restarts the currently
+ * active symlink request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the symlink will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the symlink operation.
+ * @param url
+ *        The url of the new link.
+ * @param link_url
+ *        The url to which the new link should point.
+ * @param attr
+ *        The attributes to be used during this operation.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current utime operation;
+ *    otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_symlink_t)(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                utime_time,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
+
+/**
+ * Plugin cksm notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a cksm is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a cksm, and when a plugin restarts the currently
+ * active cksm request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the cksm will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the delete operation.
+ * @param url
+ *        The url to cksm.
  * @param offset
  *        File offset to start calculating checksum.    
  * @param length
@@ -535,6 +649,41 @@ typedef void (*globus_ftp_client_plugin_machine_list_t)(
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
     globus_bool_t				restart);
+
+/**
+ * Plugin recursive list notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a list is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a list, and when a plugin restarts the currently
+ * active list request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the list will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the list operation.
+ * @param url
+ *        The url of the list operation.
+ * @param attr
+ *        The attributes to be used during this transfer.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current list transfer;
+ *    otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_recursive_list_t)(
+    globus_ftp_client_plugin_t *        plugin,
+    void *                  plugin_specific,
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const globus_ftp_client_operationattr_t *   attr,
+    globus_bool_t               restart);
 
 /**
  * Plugin mlst notification callback.
@@ -1077,6 +1226,13 @@ globus_ftp_client_plugin_restart_machine_list(
     const globus_abstime_t *            	when);
 
 globus_result_t
+globus_ftp_client_plugin_restart_recursive_list(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when);
+
+globus_result_t
 globus_ftp_client_plugin_restart_mlst(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
@@ -1104,6 +1260,30 @@ globus_ftp_client_plugin_restart_chmod(
     int                                         mode,
     const globus_ftp_client_operationattr_t *	attr,
     const globus_abstime_t *            	when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_chgrp(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                group,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_utime(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const struct tm *           utime_time,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_symlink(
+    globus_ftp_client_handle_t *        handle,
+    const char *                url,
+    const char *                link_url,
+    const globus_ftp_client_operationattr_t *   attr,
+    const globus_abstime_t *                when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_cksm(
@@ -1237,6 +1417,21 @@ globus_ftp_client_plugin_set_chmod_func(
     globus_ftp_client_plugin_chmod_t		chmod_func);
 
 globus_result_t
+globus_ftp_client_plugin_set_chgrp_func(
+    globus_ftp_client_plugin_t *        plugin,
+    globus_ftp_client_plugin_chgrp_t        chgrp_func);
+
+globus_result_t
+globus_ftp_client_plugin_set_utime_func(
+    globus_ftp_client_plugin_t *        plugin,
+    globus_ftp_client_plugin_utime_t        utime_func);
+    
+globus_result_t
+globus_ftp_client_plugin_set_symlink_func(
+    globus_ftp_client_plugin_t *        plugin,
+    globus_ftp_client_plugin_symlink_t        symlink_func);
+
+globus_result_t
 globus_ftp_client_plugin_set_cksm_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_cksm_t		cksm_func);
@@ -1275,6 +1470,11 @@ globus_result_t
 globus_ftp_client_plugin_set_machine_list_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_machine_list_t	machine_list_func);
+
+globus_result_t
+globus_ftp_client_plugin_set_recursive_list_func(
+    globus_ftp_client_plugin_t *        plugin,
+    globus_ftp_client_plugin_recursive_list_t recursive_list_func);
 
 globus_result_t
 globus_ftp_client_plugin_set_list_func(

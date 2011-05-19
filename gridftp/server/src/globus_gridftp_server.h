@@ -110,6 +110,9 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_CKSM,
     GLOBUS_GFS_CMD_SITE_CHMOD,
     GLOBUS_GFS_CMD_SITE_DSI,
+    GLOBUS_GFS_CMD_SITE_CHGRP,
+    GLOBUS_GFS_CMD_SITE_UTIME,
+    GLOBUS_GFS_CMD_SITE_SYMLINK,
     GLOBUS_GFS_CMD_SITE_SETNETSTACK,
     GLOBUS_GFS_CMD_SITE_SETDISKSTACK,
     GLOBUS_GFS_CMD_SITE_CLIENTINFO,
@@ -387,6 +390,10 @@ typedef struct globus_gfs_transfer_info_s
     char *                              module_args;
     /** type of list requested */
     char *                              list_type;
+    /** levels to descend for listing (0 = no descent) */
+    int                                 list_depth;
+    /** directory traversal options */
+    int                                 traversal_options;
     
     /** offset of partial transfer */
     globus_off_t                        partial_offset;
@@ -439,8 +446,15 @@ typedef struct globus_gfs_command_info_s
     /** mode argument to the chmod command */
     mode_t                              chmod_mode;
     
-    /** pathname to rename from (to the above pathname)  */
-    char *                              rnfr_pathname;    
+    /** group argument to the chgrp command */
+    char *                              chgrp_group;
+    
+    /** time argument to the utime command */
+    time_t                              utime_time;
+    
+    /** pathname to rename from (to the above pathname) OR 
+     *  pathname to link to  */
+    char *                              from_pathname;    
 
     /** Authorization assertion */
     char *                              authz_assert; 
@@ -502,6 +516,10 @@ typedef struct globus_gfs_stat_info_s
 {
     /** if pathname is a directory, should stat report its info or its contents */
     globus_bool_t                       file_only;
+    /** whether to return symbolic link info or target info */
+    globus_bool_t                       use_symlink_info;
+    /** if pathname is a directory, should its stat info be included? */
+    globus_bool_t                       include_path_stat;
     /** this stat is requested internally -- bypasses authorization checks */
     globus_bool_t                       internal;
     /** pathname to stat */

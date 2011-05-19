@@ -19,6 +19,8 @@
 #include "globus_xio_file_driver.h"
 #include "openssl/md5.h"
 #include "version.h"
+#include <grp.h>
+#include <utime.h>
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 4096
@@ -603,7 +605,9 @@ globus_l_gfs_file_copy_stat(
     globus_gfs_stat_t *                 stat_object,
     struct stat *                       stat_buf,
     const char *                        filename,
-    const char *                        symlink_target)
+    const char *                                symlink_target,
+    int                                         link_mode,
+    globus_gridftp_server_control_stat_error_t  error)
 {
     GlobusGFSName(globus_l_gfs_file_copy_stat);
     GlobusGFSFileDebugEnter();
@@ -618,6 +622,8 @@ globus_l_gfs_file_copy_stat(
     stat_object->ctime    = stat_buf->st_ctime;
     stat_object->dev      = stat_buf->st_dev;
     stat_object->ino      = stat_buf->st_ino;
+    stat_object->link_mode = link_mode;
+    stat_object->error    = error;
     
     if(filename && *filename)
     {
@@ -664,7 +670,6 @@ globus_l_gfs_file_destroy_stat(
     GlobusGFSFileDebugExit();
 }
     
-
 static
 void
 globus_l_gfs_file_stat(
@@ -672,14 +677,17 @@ globus_l_gfs_file_stat(
     globus_gfs_stat_info_t *            stat_info,
     void *                              user_arg)
 {
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     struct stat                         stat_buf;
+    struct stat                         link_stat_buf;
     globus_gfs_stat_t *                 stat_array;
     int                                 stat_count = 0;
     DIR *                               dir;
     char                                basepath[MAXPATHLEN];
     char                                filename[MAXPATHLEN];
     char                                symlink_target[MAXPATHLEN];
+    globus_gridftp_server_control_stat_error_t  base_error = GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_SUCCESS;
+    
     GlobusGFSName(globus_l_gfs_file_stat);
     GlobusGFSFileDebugEnter();
     
@@ -695,15 +703,29 @@ globus_l_gfs_file_stat(
     *symlink_target = '\0';
     if(S_ISLNK(stat_buf.st_mode))
     {
-        if(stat(stat_info->pathname, &stat_buf) != 0)
+        int stat_result = 0;
+        
+        if(stat_info->use_symlink_info)
+        {
+            memset(&link_stat_buf, 0, sizeof(struct stat));
+            stat_result = stat(stat_info->pathname, &link_stat_buf);
+        } 
+        else if(stat(stat_info->pathname, &stat_buf) != 0)
         {
             result = GlobusGFSErrorSystemError("stat", errno);
             goto error_stat1;
         }
-        if(realpath(stat_info->pathname, symlink_target) == NULL)
+        
+        if(stat_result < 0 || realpath(stat_info->pathname, symlink_target) == NULL)
+        {
+            int nchars = readlink(stat_info->pathname, symlink_target, MAXPATHLEN);
+            if (nchars < 0) 
         {
             result = GlobusGFSErrorSystemError("realpath", errno);
             goto error_stat1;
+        }
+            symlink_target[nchars] = '\0';
+            base_error = GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK;
         }
     }    
     globus_l_gfs_file_partition_path(stat_info->pathname, basepath, filename);
@@ -719,7 +741,7 @@ globus_l_gfs_file_stat(
         }
         
         globus_l_gfs_file_copy_stat(
-            stat_array, &stat_buf, filename, symlink_target);
+            stat_array, &stat_buf, filename, symlink_target, link_stat_buf.st_mode, base_error);
         stat_count = 1;
     }
     else
@@ -728,14 +750,18 @@ globus_l_gfs_file_stat(
         int                             i;
         char                            dir_path[MAXPATHLEN];
     
+        stat_count = stat_info->include_path_stat ? 1 : 0;
+        
         dir = globus_libc_opendir(stat_info->pathname);
         if(!dir)
         {
             result = GlobusGFSErrorSystemError("opendir", errno);
+            if (!stat_info->include_path_stat)
             goto error_open;
         }
         
-        stat_count = 0;
+        if(dir)
+        {
         while(globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry)
         {
             stat_count++;
@@ -743,6 +769,7 @@ globus_l_gfs_file_stat(
         }
         
         globus_libc_rewinddir(dir);
+        }
         
         stat_array = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
@@ -761,19 +788,27 @@ globus_l_gfs_file_stat(
             
         dir_path[MAXPATHLEN - 1] = '\0';
         
-        for(i = 0;
-            globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry;
+        i = 0;
+        if(stat_info->include_path_stat) 
+        {
+            globus_l_gfs_file_copy_stat(&stat_array[i++], &stat_buf, filename, NULL, 0,
+                dir ? GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_SUCCESS : GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_OPENFAILED);
+        }
+        
+        if(dir)
+        {
+            for(; globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry;
             i++)
         {
             char                        path[MAXPATHLEN];
                 
+                base_error = GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_SUCCESS;
             snprintf(path, sizeof(path), "%s/%s", dir_path, dir_entry->d_name);
             path[MAXPATHLEN - 1] = '\0';
         
             /* lstat is the same as stat when not operating on a link */
             if(lstat(path, &stat_buf) != 0)
             {
-                result = GlobusGFSErrorSystemError("lstat", errno);
                 globus_free(dir_entry);
                 /* just skip invalid entries */
                 stat_count--;
@@ -786,29 +821,43 @@ globus_l_gfs_file_stat(
             *symlink_target = '\0';
             if(S_ISLNK(stat_buf.st_mode))
             {
-                if(stat(path, &stat_buf) != 0)
+                    int stat_result = 0;
+                    
+                    if(stat_info->use_symlink_info)
+                    {
+                        memset(&link_stat_buf, 0, sizeof(struct stat));
+                        stat_result = stat(path, &link_stat_buf);
+                    } 
+                    else if(stat(path, &stat_buf) != 0)
                 {
-                    result = GlobusGFSErrorSystemError("stat", errno);
                     globus_free(dir_entry);
                     /* just skip invalid entries */
                     stat_count--;
                     i--;
                     continue;
                 }
-                if(realpath(path, symlink_target) == NULL)
+                    if(stat_result < 0 || realpath(path, symlink_target) == NULL)
+                    {
+                        int nchars = readlink(path, symlink_target, MAXPATHLEN);
+                        if (nchars < 0) 
                 {
-                    result = GlobusGFSErrorSystemError("realpath", errno);
                     globus_free(dir_entry);
                     /* just skip invalid entries */
                     stat_count--;
                     i--;
                     continue;
                 }
+                        symlink_target[nchars] = '\0';
+                        base_error = GLOBUS_GRIDFTP_SERVER_CONTROL_STAT_INVALIDLINK;
+                    }
             }    
      
             globus_l_gfs_file_copy_stat(
-                &stat_array[i], &stat_buf, dir_entry->d_name, symlink_target);
+                    &stat_array[i], &stat_buf, dir_entry->d_name, symlink_target, link_stat_buf.st_mode, base_error);
             globus_free(dir_entry);
+        }
+        
+            closedir(dir);
         }
         
         if(i != stat_count)
@@ -817,12 +866,10 @@ globus_l_gfs_file_stat(
             goto error_read;
         }
         
-        closedir(dir);
     }
     
     globus_gridftp_server_finished_stat(
-        op, GLOBUS_SUCCESS, stat_array, stat_count);
-    
+        op, result, stat_array, stat_count);
     
     globus_l_gfs_file_destroy_stat(stat_array, stat_count);
     
@@ -1067,6 +1114,122 @@ globus_l_gfs_file_rename(
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("rename", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
+        
+    GlobusGFSFileDebugExit();
+    return GLOBUS_SUCCESS;
+    
+error:
+    GlobusGFSFileDebugExitWithError();
+    return result;
+}
+
+static
+globus_result_t
+globus_l_gfs_file_chgrp(
+    globus_gfs_operation_t   op,
+    const char *                        pathname,
+    const char *                        group)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    struct group *                      grp_info;
+    int                                 grp_id;
+    char*                               endpt;
+    
+    GlobusGFSName(globus_l_gfs_file_chgrp);
+    GlobusGFSFileDebugEnter();
+
+    grp_info = getgrnam(group);
+    if(grp_info != NULL)
+    {
+        grp_id = grp_info->gr_gid;
+    } 
+    else
+    {
+        grp_id = strtol(group, &endpt, 10);
+        if(*group == '\0' || *endpt != '\0')
+        {
+            result = GlobusGFSErrorSystemError("chgrp", EPERM);
+            goto error;
+        }
+    }
+    
+    if(grp_id < 0)
+    {
+        result = GlobusGFSErrorSystemError("chgrp", EPERM);
+        goto error;
+    }
+    
+    rc = chown(pathname, -1, grp_id);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("chgrp", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
+        
+    GlobusGFSFileDebugExit();
+    return GLOBUS_SUCCESS;
+    
+error:
+    GlobusGFSFileDebugExitWithError();
+    return result;
+}
+
+static
+globus_result_t
+globus_l_gfs_file_utime(
+    globus_gfs_operation_t   op,
+    const char *                        pathname,
+    time_t                              modtime)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    struct utimbuf                      ubuf;
+    GlobusGFSName(globus_l_gfs_file_utime);
+    GlobusGFSFileDebugEnter();
+
+    ubuf.actime = modtime;
+    ubuf.modtime = modtime;
+    
+    rc = utime(pathname, &ubuf);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("utime", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
+        
+    GlobusGFSFileDebugExit();
+    return GLOBUS_SUCCESS;
+    
+error:
+    GlobusGFSFileDebugExitWithError();
+    return result;
+}
+
+static
+globus_result_t
+globus_l_gfs_file_symlink(
+    globus_gfs_operation_t   op,
+    const char *                        reference_path,
+    const char *                        pathname)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_symlink);
+    GlobusGFSFileDebugEnter();
+
+    rc = symlink(reference_path, pathname);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("symlink", errno);
         goto error;
     }
     
@@ -1482,11 +1645,23 @@ globus_l_gfs_file_command(
         break;
       case GLOBUS_GFS_CMD_RNTO:
         result = globus_l_gfs_file_rename(
-            op, cmd_info->rnfr_pathname, cmd_info->pathname);
+            op, cmd_info->from_pathname, cmd_info->pathname);
         break;
       case GLOBUS_GFS_CMD_SITE_CHMOD:
         result = globus_l_gfs_file_chmod(
             op, cmd_info->pathname, cmd_info->chmod_mode);
+        break;
+      case GLOBUS_GFS_CMD_SITE_CHGRP:
+        result = globus_l_gfs_file_chgrp(
+            op, cmd_info->pathname, cmd_info->chgrp_group);
+        break;
+      case GLOBUS_GFS_CMD_SITE_UTIME:
+        result = globus_l_gfs_file_utime(
+            op, cmd_info->pathname, cmd_info->utime_time);
+        break;
+      case GLOBUS_GFS_CMD_SITE_SYMLINK:
+        result = globus_l_gfs_file_symlink(
+            op, cmd_info->from_pathname, cmd_info->pathname);
         break;
       case GLOBUS_GFS_CMD_CKSM:
         result = globus_l_gfs_file_cksm(

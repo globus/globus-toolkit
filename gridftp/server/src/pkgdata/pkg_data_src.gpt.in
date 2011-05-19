@@ -2,7 +2,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gridftp_server">
-    <Aging_Version Major="5" Minor="3" Age="5" />
+    <Aging_Version Major="5" Minor="4" Age="5" />
     <Description>Globus GridFTP Server</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
     <src_pkg>

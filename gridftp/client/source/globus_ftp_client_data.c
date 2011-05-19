@@ -171,7 +171,8 @@ globus_ftp_client_register_read(
     if(i_handle->op != GLOBUS_FTP_CLIENT_GET  &&
        i_handle->op != GLOBUS_FTP_CLIENT_LIST &&
        i_handle->op != GLOBUS_FTP_CLIENT_NLST &&
-       i_handle->op != GLOBUS_FTP_CLIENT_MLSD )
+       i_handle->op != GLOBUS_FTP_CLIENT_MLSD &&
+       i_handle->op != GLOBUS_FTP_CLIENT_MLSR)
     {
 	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(i_handle->op);
 
@@ -660,7 +661,8 @@ globus_l_ftp_client_data_callback(
     if(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
        client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-       client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+       client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+       client_handle->op == GLOBUS_FTP_CLIENT_MLSR)
     {
 	ptarget = &client_handle->source;
     }
@@ -736,7 +738,8 @@ globus_l_ftp_client_data_callback(
         (client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
         client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
         client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-        client_handle->op == GLOBUS_FTP_CLIENT_MLSD ))
+        client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+        client_handle->op == GLOBUS_FTP_CLIENT_MLSR ))
     {
         user_eof = GLOBUS_FALSE;
     }
@@ -895,7 +898,8 @@ globus_l_ftp_client_read_all_callback(
     globus_assert(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
 	          client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
               client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-	          client_handle->op == GLOBUS_FTP_CLIENT_MLSD );
+              client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+              client_handle->op == GLOBUS_FTP_CLIENT_MLSR );
     
     globus_i_ftp_client_debug_printf(3, (stderr, 
         "globus_l_ftp_client_read_all_callback() entering\n"));
@@ -1016,7 +1020,8 @@ globus_l_ftp_client_read_all_callback(
 	if(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
 	   client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-	   client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+       client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+       client_handle->op == GLOBUS_FTP_CLIENT_MLSR)
 	{
 	    eof = GLOBUS_FALSE;
 	    dispatch_final = GLOBUS_FALSE;
@@ -1130,7 +1135,8 @@ globus_i_ftp_client_data_dispatch_queue(
     if(handle->op == GLOBUS_FTP_CLIENT_GET  ||
        handle->op == GLOBUS_FTP_CLIENT_LIST ||
        handle->op == GLOBUS_FTP_CLIENT_NLST ||
-       handle->op == GLOBUS_FTP_CLIENT_MLSD)
+       handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+       handle->op == GLOBUS_FTP_CLIENT_MLSR)
     {
 	target = handle->source;
     }
@@ -1163,6 +1169,7 @@ globus_i_ftp_client_data_dispatch_queue(
 	globus_assert(handle->op == GLOBUS_FTP_CLIENT_LIST ||
 		      handle->op == GLOBUS_FTP_CLIENT_NLST ||
               handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+              handle->op == GLOBUS_FTP_CLIENT_MLSR ||
 		      handle->op == GLOBUS_FTP_CLIENT_GET  ||
 		      handle->op == GLOBUS_FTP_CLIENT_PUT);
 
@@ -1172,6 +1179,7 @@ globus_i_ftp_client_data_dispatch_queue(
 	case GLOBUS_FTP_CLIENT_LIST:
 	case GLOBUS_FTP_CLIENT_NLST:
 	case GLOBUS_FTP_CLIENT_MLSD:
+    case GLOBUS_FTP_CLIENT_MLSR:
 	    globus_i_ftp_client_plugin_notify_read(handle,
 						   data->buffer,
 						   data->buffer_length);
