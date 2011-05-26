@@ -242,11 +242,11 @@ globus_l_gfs_hdfs_read_from_storage(
     if (hdfs_handle->outstanding == 0)
     {
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS.\n");
-        if ((hdfs_handle->fd != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1))
+        if ((hdfs_handle->fd != NULL) && (hdfs_handle->fs != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1))
         {
+             hdfs_handle->fd = NULL;
              rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
              globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
-             hdfs_handle->fd = NULL;
         } else {
         globus_gridftp_server_finished_transfer(hdfs_handle->op, 
                                                 GLOBUS_SUCCESS);

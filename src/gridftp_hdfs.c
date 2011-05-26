@@ -449,8 +449,10 @@ globus_l_gfs_hdfs_destroy(
 
     if (hdfs_handle) {
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Destroying the HDFS connection.\n");
-        if (hdfs_handle->fs)
+        if (hdfs_handle->fs) {
             hdfsDisconnect(hdfs_handle->fs);
+            hdfs_handle->fs = NULL;
+        }
         if (hdfs_handle->username)
             globus_free(hdfs_handle->username);
         if (hdfs_handle->local_host)

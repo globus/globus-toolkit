@@ -1,5 +1,5 @@
 Name:           gridftp-hdfs
-Version:        0.3.1
+Version:        0.3.2
 Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -93,6 +93,9 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Thu May 26 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.3.2-1
+- Attempt to fix the race issue for closing files.
+
 * Tue Apr 26 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.3.1-1
 - Fix listing of empty directories; error is now higher in the globus stack
 - Fix listed modes in stat.

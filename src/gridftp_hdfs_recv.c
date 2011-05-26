@@ -300,7 +300,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         globus_free(hdfs_handle->nbytes);
         globus_free(hdfs_handle->offsets);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS; zero outstanding blocks.\n");
-        if ((hdfs_handle->fd != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1))
+        if ((hdfs_handle->fd != NULL) && (hdfs_handle->fs != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1))
         {
              if (rc == GLOBUS_SUCCESS)
                rc = GlobusGFSErrorGeneric("Failed to close file in HDFS.");
