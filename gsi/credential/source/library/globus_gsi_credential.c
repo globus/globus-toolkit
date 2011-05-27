@@ -1199,14 +1199,12 @@ globus_gsi_cred_read_key(
 /* @} */
 
 /**
- * @name Read Cert and chain from file
+ * @name Read Cert
  */
 /* @{ */
 /**
  * @ingroup globus_gsi_cred_operations
- * Read a cert from a file.  Cert should be in PEM format.  Will also
- * read additional certificates as chain if present.
-
+ * Read a cert from a file.  Cert should be in PEM format.
  *
  * @param handle
  *        the handle to set based on the certificate that is read
@@ -1222,6 +1220,7 @@ globus_result_t globus_gsi_cred_read_cert(
 {
     BIO *                               cert_bio = NULL;
     globus_result_t                     result;
+    int                                 i = 0;
     static char *                       _function_name_ =
         "globus_gsi_cred_read_cert";
 
@@ -1244,66 +1243,7 @@ globus_result_t globus_gsi_cred_read_cert(
             (_GCRSL("Can't open cert file: %s for reading"), cert_filename));
         goto exit;
     }
-
-    result = globus_gsi_cred_read_cert_bio(handle, cert_bio);
-
- exit:
-
-    if(cert_bio)
-    {
-        BIO_free(cert_bio);
-    }
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return result;
-}
-
-/**
- * @name Read Cert and chain from BIO stream
- */
-/* @{ */
-/**
- * @ingroup globus_gsi_cred_operations
- * Read a cert from a BIO.  Cert should be in PEM format.  Will also
- * read additional certificates as chain if present.
- *
- * @param handle
- *        the handle to set based on the certificate that is read
- * @param bio
- *        the bio to read the certificate from
- *
- * @return
- *        GLOBUS_SUCCESS or an error object identifier
- */
-globus_result_t globus_gsi_cred_read_cert_bio(
-    globus_gsi_cred_handle_t            handle,
-    BIO *                               bio)
-{
-    globus_result_t                     result;
-    int                                 i = 0;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_cert_bio";
-
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
-       goto exit;
-    }
-
-    if(bio == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            (_GCRSL("Null bio variable passed to function: %s"), _function_name_));
-        goto exit;
-    }
-
+    
     /* read in the cert */
     
     if(handle->cert != NULL)
@@ -1312,7 +1252,7 @@ globus_result_t globus_gsi_cred_read_cert_bio(
         handle->cert = NULL;
     }
 
-    if(!PEM_read_bio_X509(bio, &handle->cert, NULL, NULL))
+    if(!PEM_read_bio_X509(cert_bio, &handle->cert, NULL, NULL))
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
@@ -1335,10 +1275,10 @@ globus_result_t globus_gsi_cred_read_cert_bio(
         goto exit;
     }
     
-    while(!BIO_eof(bio))
+    while(!BIO_eof(cert_bio))
     {
         X509 *                          tmp_cert = NULL;
-        if(!PEM_read_bio_X509(bio, &tmp_cert, NULL, NULL))
+        if(!PEM_read_bio_X509(cert_bio, &tmp_cert, NULL, NULL))
         {
             ERR_clear_error();
             break;
@@ -1371,6 +1311,11 @@ globus_result_t globus_gsi_cred_read_cert_bio(
     result = GLOBUS_SUCCESS;
 
  exit:
+
+    if(cert_bio)
+    {
+        BIO_free(cert_bio);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
