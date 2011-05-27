@@ -1819,6 +1819,7 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
             result = globus_i_gsi_sysconfig_create_key_string(
                 user_key,
                 &env_user_key,
+                "%s",
                 getenv(X509_USER_KEY));
             if(result != GLOBUS_SUCCESS)
             {
@@ -2023,6 +2024,7 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
         result = globus_i_gsi_sysconfig_create_key_string(
             host_key,
             &env_host_key,
+            "%s",
             getenv(X509_USER_KEY));
         if(result != GLOBUS_SUCCESS)
         {
@@ -2306,6 +2308,7 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
         result = globus_i_gsi_sysconfig_create_key_string(
             service_key,
             &env_service_key,
+            "%s",
             getenv(X509_USER_KEY));
 
         if(result != GLOBUS_SUCCESS)
@@ -2616,6 +2619,7 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
             result = globus_i_gsi_sysconfig_create_key_string(
                 user_proxy,
                 &env_user_proxy,
+                "%s",
                 env_value);
             if(result != GLOBUS_SUCCESS)
             {
@@ -5299,6 +5303,7 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
             result = globus_i_gsi_sysconfig_create_key_string(
                 user_key,
                 &env_user_key,
+                "%s",
                 getenv(X509_USER_KEY));
             if(result != GLOBUS_SUCCESS)
             {
@@ -5503,6 +5508,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
         result = globus_i_gsi_sysconfig_create_key_string(
             host_key,
             &env_host_key,
+            "%s",
             getenv(X509_USER_KEY));
         if(result != GLOBUS_SUCCESS)
         {
@@ -5786,6 +5792,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
         result = globus_i_gsi_sysconfig_create_key_string(
             service_key,
             &env_service_key,
+            "%s",
             getenv(X509_USER_KEY));
 
         if(result != GLOBUS_SUCCESS)
@@ -6086,6 +6093,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
             result = globus_i_gsi_sysconfig_create_key_string(
                 user_proxy,
                 &env_user_proxy,
+                "%s",
                 env_value);
             if(result != GLOBUS_SUCCESS)
             {
