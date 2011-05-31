@@ -18,7 +18,7 @@
 #define MGLUE_VERSION	""
 #endif
 
-#define NCSA_VERSION	" GSI_GSSAPI_20110502"
+#define NCSA_VERSION	" GSI_GSSAPI_20110531"
 
 #define SSH_VERSION	"OpenSSH_5.8"
 
