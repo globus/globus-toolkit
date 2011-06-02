@@ -410,6 +410,7 @@ globus_l_gass_copy_glob_expand_file_url(
         snprintf(path, sizeof(path), 
             "%s/%s", parsed_url.url_path, dir_entry->d_name);
         path[MAXPATHLEN - 1] = '\0';
+#ifndef TARGET_ARCH_WIN32
         if(lstat(path, &stat_buf) != 0)
         {
             result = globus_error_put(
@@ -422,8 +423,10 @@ globus_l_gass_copy_glob_expand_file_url(
             globus_free(dir_entry);
             continue;
         }
+#endif
 
         *symlink_target = '\0';
+#ifndef TARGET_ARCH_WIN32
         if(S_ISLNK(stat_buf.st_mode))
         {
             if(stat(path, &stat_buf) != 0)
@@ -451,6 +454,7 @@ globus_l_gass_copy_glob_expand_file_url(
                 continue;
             }
         }    
+#endif
  
         if(S_ISDIR(stat_buf.st_mode))
         {
@@ -1630,6 +1634,7 @@ globus_l_gass_copy_stat_file(
         goto error_null_path;
     }
     
+#ifndef TARGET_ARCH_WIN32
     if(lstat(parsed_url.url_path, &stat_buf) != 0)
     {
         result = globus_error_put(
@@ -1641,8 +1646,10 @@ globus_l_gass_copy_stat_file(
                 parsed_url.url_path));
         goto error_stat;
     }
+#endif
 
     *symlink_target = '\0';
+#ifndef TARGET_ARCH_WIN32
     if(S_ISLNK(stat_buf.st_mode))
     {
         if(stat(parsed_url.url_path, &stat_buf) != 0)
@@ -1668,6 +1675,7 @@ globus_l_gass_copy_stat_file(
             goto error_stat;
         }
     }    
+#endif
 
     if(S_ISDIR(stat_buf.st_mode))
     {

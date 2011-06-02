@@ -16,7 +16,8 @@ MANUALS_SOURCE = manual.xml \
 User_Scripts = \
 	grid-cert-info \
 	grid-change-pass-phrase \
-	grid-cert-request \
+	grid-cert-request
+Admin_Scripts = \
 	grid-default-ca
 
 Dist_Scripts = \
@@ -26,6 +27,7 @@ Dist_Scripts = \
 	grid-default-ca.in
 
 bin_SCRIPTS = $(User_Scripts)
+sbin_SCRIPTS = $(Admin_Scripts)
 
 EXTRA_DIST = $(Dist_Scripts) $(MANUALS_SOURCE) $(man1_MANS) $(man8_MANS)
 
