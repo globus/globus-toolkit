@@ -1,0 +1,5 @@
+The source for this package was extracted from the upstream tarfile:
+
+http://www-unix.globus.org/ftppub/gt5/5.0/5.0.3/installers/src/gt5.0.3-all-source-installer.tar.bz2
+
+See the get-orig-source rule in the debian/rules file for details.
