@@ -1,3 +1,6 @@
+3.3 -> 3.4
+gpt-to-pkgconfig puts extlibs in Libs.private
+
 3.2 -> 3.3
 Remove some scripts that were never used
 Don't bundle external dependencies in GPT locations
