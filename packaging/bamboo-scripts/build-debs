@@ -28,12 +28,14 @@ topdir="$(pwd)/debbuild"
 releasename=""
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:R:a:St:hg: $*)
+args=$(getopt n:v:R:a:St:hg:f: $*)
 globusversion=""
 set -- ${args}
 
 sign=1
 tag=""
+flavor=gcc64dbg
+
 for i; do
     case "$i" in
         -n)
@@ -73,6 +75,10 @@ for i; do
                exit 1
            fi
            globusversion="$2"
+           shift 2
+           ;;
+	-f)
+           flavor="$2"
            shift 2
            ;;
         --)
@@ -115,7 +121,7 @@ packages="$(./make-packages.pl -ab -a -lp -deps -deporder -bundles=$bundles -pac
 	awk "/at version/ { print \$1 }" )"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
-./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg -ab
+./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
 cd gpt/packaging_tools
 sh ./bootstrap
 rm gpt*.tar.gz || true
@@ -132,6 +138,7 @@ for i in grid-packaging-tools $packages; do
     striplevel=1
     debout="$(awk -F: '/^Package: / { gsub("[ \t\r]", "", $2); print $2 }' "$debiandir/$debname/debian/control")"
     if [ "$i" = grid-packaging-tools ]; then
+	cp "${topdir}"/../gpt-*.tar.gz "${topdir}"/package-output/
         tarball="$(basename $topdir/../package-output/gpt-[0-9]*.tar.gz)"
 	pkgversion="$(expr "$tarball" : ".*-\([0-9\.]*\).*.tar.gz")"
     elif [ "$i" = gsi_openssh ]; then
