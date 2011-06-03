@@ -28,7 +28,7 @@ topdir="$(pwd)/debbuild"
 releasename=""
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:a:St:hg: $*)
+args=$(getopt n:v:R:a:St:hg: $*)
 globusversion=""
 set -- ${args}
 
@@ -88,9 +88,11 @@ if [ "$osname" = "" -o "$osver" = "" -o "$releasename" = "" ]; then
 fi
 
 if [ -d "${topdir}.old" ]; then
-	rm -rf "${topdir}.old"
+    rm -rf "${topdir}.old"
 fi
-mv "${topdir}" "${topdir}.old"
+if [ -d "${topdir}" ]; then
+    mv "${topdir}" "${topdir}.old"
+fi
 mkdir -p "$topdir"
 if [ "$sign" = 1 ]; then
     # Copy GPG keyring to $topdir
