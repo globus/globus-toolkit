@@ -125,6 +125,7 @@ packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; e
 cd gpt/packaging_tools
 sh ./bootstrap
 rm gpt*.tar.gz || true
+./configure
 make dist
 cp gpt*.tar.gz ../../package-output
 cd $topdir
@@ -138,7 +139,6 @@ for i in grid-packaging-tools $packages; do
     striplevel=1
     debout="$(awk -F: '/^Package: / { gsub("[ \t\r]", "", $2); print $2 }' "$debiandir/$debname/debian/control")"
     if [ "$i" = grid-packaging-tools ]; then
-	cp "${topdir}"/../gpt-*.tar.gz "${topdir}"/package-output/
         tarball="$(basename $topdir/../package-output/gpt-[0-9]*.tar.gz)"
 	pkgversion="$(expr "$tarball" : ".*-\([0-9\.]*\).*.tar.gz")"
     elif [ "$i" = gsi_openssh ]; then
