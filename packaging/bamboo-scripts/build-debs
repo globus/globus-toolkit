@@ -28,11 +28,12 @@ topdir="$(pwd)/debbuild"
 releasename=""
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:R:a:St:hg:f: $*)
+args=$(getopt n:v:R:a:St:hg:f:q $*)
 globusversion=""
 set -- ${args}
 
 sign=1
+quick=0
 tag=""
 flavor=gcc64dbg
 
@@ -81,6 +82,10 @@ for i; do
            flavor="$2"
            shift 2
            ;;
+	-q)
+	   quick=1
+	   shift
+	   ;;
         --)
            shift
            break
@@ -121,13 +126,17 @@ packages="$(./make-packages.pl -ab -a -lp -deps -deporder -bundles=$bundles -pac
 	awk "/at version/ { print \$1 }" )"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
-./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
-cd gpt/packaging_tools
-sh ./bootstrap
-rm gpt*.tar.gz || true
-./configure
-make dist
-cp gpt*.tar.gz ../../package-output
+if [ "$quick" -eq 1 ]; then
+	mv package-output.old package-output
+else
+	./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
+	cd gpt/packaging_tools
+	sh ./bootstrap
+	rm gpt*.tar.gz || true
+	./configure
+	make dist
+	cp gpt*.tar.gz ../../package-output
+fi
 cd $topdir
 
 for i in grid-packaging-tools $packages; do
