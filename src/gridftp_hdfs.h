@@ -8,6 +8,7 @@
  */
 
 #include "globus_gridftp_server.h"
+#include "gridftp_hdfs_error.h"
 
 #include <grp.h>
 #include <pwd.h>
@@ -64,13 +65,13 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char *                              remote_host; // The remote host connecting to us.
     char *                              local_host;  // Our local hostname.
     char                                syslog_msg[256];  // Message printed out to syslog.
+    unsigned int                        io_block_size;
+    unsigned long long                  io_count;
 } globus_l_gfs_hdfs_handle_t;
+typedef globus_l_gfs_hdfs_handle_t hdfs_handle_t;
 
 #define MSG_SIZE 1024
 extern char err_msg[MSG_SIZE];
-extern int local_io_block_size;
-extern int local_io_count ;
-
 
 // Boilerplate functions for Globus modules
 int
@@ -121,7 +122,7 @@ globus_l_gfs_hdfs_read_from_storage_cb(
 
 // Function for receiving a file from the client.
 void
-globus_l_gfs_hdfs_recv(
+hdfs_recv(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg);
@@ -130,11 +131,11 @@ int use_file_buffer(
     globus_l_gfs_hdfs_handle_t * hdfs_handle);
 
 void    
-globus_l_gfs_hdfs_write_to_storage(
+hdfs_write_to_storage(
     globus_l_gfs_hdfs_handle_t *      hdfs_handle);
 
 void    
-globus_l_gfs_hdfs_write_to_storage_cb(
+hdfs_write_to_storage_cb(
     globus_gfs_operation_t              op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
@@ -144,14 +145,14 @@ globus_l_gfs_hdfs_write_to_storage_cb(
     void *                              user_arg);
 
 globus_result_t
-globus_l_gfs_hdfs_store_buffer(
+hdfs_store_buffer(
     globus_l_gfs_hdfs_handle_t * hdfs_handle,
     globus_byte_t* buffer,
     globus_off_t offset,
     globus_size_t nbytes);
 
 globus_result_t
-globus_l_gfs_hdfs_dump_buffers(
+hdfs_dump_buffers(
     globus_l_gfs_hdfs_handle_t *      hdfs_handle);
 
 void
@@ -182,6 +183,16 @@ globus_l_gfs_file_copy_stat(
     hdfsFileInfo *                      fileInfo,
     const char *                        filename,
     const char *                        symlink_target);
+
+// Some helper functions
+void
+set_done(
+    hdfs_handle_t *    hdfs_handle,
+    globus_result_t    rc);
+
+globus_bool_t
+is_done(
+    hdfs_handle_t *    hdfs_handle);
 
 #pragma GCC visibility pop
 

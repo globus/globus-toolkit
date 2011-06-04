@@ -18,7 +18,6 @@ globus_l_gfs_hdfs_stat(
     globus_result_t                     result;
     globus_gfs_stat_t *                 stat_array;
     int                                 stat_count = 0;
-    DIR *                               dir;
     char                                basepath[MAXPATHLEN];
     char                                filename[MAXPATHLEN];
     char                                symlink_target[MAXPATHLEN];
@@ -107,6 +106,7 @@ globus_l_gfs_hdfs_stat(
             if(!stat_array)
             {
                 result = GlobusGFSErrorMemory("stat_array");
+                hdfsFreeFileInfo(dir, stat_count);
                 goto error_alloc2;
             }
 
@@ -136,8 +136,6 @@ error_read:
     globus_l_gfs_file_destroy_stat(stat_array, stat_count);
     
 error_alloc2:
-    closedir(dir);
-    
 error_open:
 error_alloc1:
 error_stat1:

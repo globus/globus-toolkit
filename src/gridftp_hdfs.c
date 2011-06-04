@@ -38,7 +38,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
     globus_l_gfs_hdfs_destroy,
     NULL, /* list */
     globus_l_gfs_hdfs_send,
-    globus_l_gfs_hdfs_recv,
+    hdfs_recv,
     NULL, /*globus_l_gfs_hdfs_trev, */ /* trev */
     NULL, /* active */
     NULL, /* passive */
@@ -63,6 +63,7 @@ GlobusExtensionDefineModule(globus_gridftp_server_hdfs) =
     &gridftp_hdfs_local_version
 };
 
+// Custom SEGV handler due to the presence of Java handlers.
 void
 segv_handler (int sig)
 {
@@ -80,7 +81,6 @@ segv_handler (int sig)
   raise (SIGQUIT);
   signal (SIGSEGV, SIG_DFL);
   raise (SIGSEGV);
-  //raise (SIGSYS);
 }
 /*
  *  Check to see if cores can be produced by gridftp; if not, turn them on.
@@ -90,16 +90,7 @@ gridftp_check_core()
 {
     int err;
     struct rlimit rlim;
-/*
-    err = getrlimit(RLIMIT_CORE, &rlim);
-    if (err) {
-        snprintf(err_msg, MSG_SIZE, "Cannot get rlimits due to %s.\n", strerror(err));
-        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
-        return;
-    }
-    snprintf(err_msg, MSG_SIZE, "Core limit %ld; %ld.\n", rlim.rlim_cur, rlim.rlim_max);
-    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
-*/
+
     rlim.rlim_cur = RLIM_INFINITY;
     rlim.rlim_max = RLIM_INFINITY;
     err = setrlimit(RLIMIT_CORE, &rlim);
@@ -116,8 +107,6 @@ gridftp_check_core()
     if (err) {
         snprintf(err_msg, MSG_SIZE, "Cannot set dumpable: %s.\n", strerror(errno));
         globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
-    } else {
-        //globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Dumpable successfully set!\n");
     }
 
     // Reset signal handler:
@@ -163,19 +152,19 @@ globus_l_gfs_hdfs_trev(
 )
 {
 
-		  globus_l_gfs_hdfs_handle_t *       hdfs_handle;
-		  GlobusGFSName(globus_l_gfs_hdfs_trev);
+    globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+    GlobusGFSName(globus_l_gfs_hdfs_trev);
 
-		  hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-		  globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Recieved a transfer event.\n");
+    hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
+    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Recieved a transfer event.\n");
 
-		  switch (event_info->type) {
-					 case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-								globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got an abort request to the HDFS client.\n");
-								break;
-					 default:
-								printf("Got some other transfer event.\n");
-		  }
+    switch (event_info->type) {
+        case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got an abort request to the HDFS client.\n");
+            break;
+        default:
+            printf("Got some other transfer event.\n");
+    }
 }
 
 /*************************************************************************
@@ -271,6 +260,7 @@ globus_l_gfs_hdfs_start(
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     globus_gfs_finished_info_t          finished_info;
     GlobusGFSName(globus_l_gfs_hdfs_start);
+    globus_result_t rc;
 
     int max_buffer_count = 200;
     int max_file_buffer_count = 1500;
@@ -289,6 +279,16 @@ globus_l_gfs_hdfs_start(
     finished_info.info.session.session_arg = hdfs_handle;
     finished_info.info.session.username = session_info->username;
     finished_info.info.session.home_dir = "/";
+
+    if (!hdfs_handle) {
+        MemoryError(hdfs_handle, "Unable to allocate a new HDFS handle.", rc);
+        finished_info.result = rc;
+        globus_gridftp_server_operation_finished(op, rc, &finished_info);
+        return;
+    }   
+
+    hdfs_handle->io_block_size = 0;
+    hdfs_handle->io_count = 0;
 
     // Copy the username from the session_info to the HDFS handle.
     size_t strlength = strlen(session_info->username)+1;
@@ -313,18 +313,20 @@ globus_l_gfs_hdfs_start(
     char * mount_point_char = getenv("GRIDFTP_HDFS_MOUNT_POINT");
     char * load_limit_char = getenv("GRIDFTP_LOAD_LIMIT");
 
-    // Pull syslog configuration from environment.
-    char * syslog_host_char = getenv("GRIDFTP_SYSLOG");
-    if (syslog_host_char == NULL) {
-        hdfs_handle->syslog_host = NULL;
-        hdfs_handle->local_host = NULL;
-    } else {
-        hdfs_handle->syslog_host = syslog_host_char;
-        hdfs_handle->local_host = globus_malloc(sizeof(char)*256);
+    // Get our hostname
+    hdfs_handle->local_host = globus_malloc(sizeof(char)*256);
+    if (hdfs_handle->local_host) {
         memset(hdfs_handle->local_host, '\0', sizeof(char)*256);
         if (gethostname(hdfs_handle->local_host, 255) != 0) {
             sprintf(hdfs_handle->local_host, "UNKNOWN");
         }
+    }
+
+    // Pull syslog configuration from environment.
+    char * syslog_host_char = getenv("GRIDFTP_SYSLOG");
+    if (syslog_host_char == NULL) {
+        hdfs_handle->syslog_host = NULL;
+    } else {
         hdfs_handle->remote_host = session_info->host_id;
         openlog("GRIDFTP", 0, LOG_LOCAL2);
         sprintf(hdfs_handle->syslog_msg, "%s %s %%s %%i %%i", hdfs_handle->local_host, hdfs_handle->remote_host);
@@ -462,5 +464,35 @@ globus_l_gfs_hdfs_destroy(
         globus_free(hdfs_handle);
     }
     closelog();
+}
+
+/*************************************************************************
+ *  is_done
+ *  -------
+ *  Check to see if a hdfs_handle is already done.
+ ************************************************************************/
+inline globus_bool_t
+is_done(
+    hdfs_handle_t *hdfs_handle)
+{
+    return hdfs_handle->done;
+}
+
+/*************************************************************************
+ *  set_done
+ *  --------
+ *  Set the handle as done for a given reason.
+ *  If the handle is already done, this is a no-op.
+ ************************************************************************/
+inline void
+set_done(
+    hdfs_handle_t *hdfs_handle, globus_result_t rc)
+{
+    // Ignore already-done handles.
+    if (is_done(hdfs_handle)) {
+        return;
+    }
+    hdfs_handle->done = GLOBUS_TRUE;
+    hdfs_handle->done_status = rc;
 }
 

@@ -191,33 +191,31 @@ globus_l_gfs_hdfs_read_from_storage(
         }
 
         if (hdfs_handle->syslog_host != NULL)
-            syslog(LOG_INFO, hdfs_handle->syslog_msg, "READ", read_length, local_io_count);
+            syslog(LOG_INFO, hdfs_handle->syslog_msg, "READ", read_length, hdfs_handle->io_count);
         nbytes = hdfsRead(hdfs_handle->fs, hdfs_handle->fd, buffer, read_length);
         if (nbytes == 0)    /* eof */
         {
             hdfs_handle->done = GLOBUS_TRUE;
-            snprintf(err_msg, MSG_SIZE, "send %d blocks of size %d bytes\n",
-                            local_io_count,local_io_block_size);
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
-            local_io_count = 0;
-            local_io_block_size = 0;
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "send %d blocks of size %d bytes\n",
+                            hdfs_handle->io_count, hdfs_handle->io_block_size);
+            hdfs_handle->io_count = 0;
+            hdfs_handle->io_block_size = 0;
         }
         else
         {
-            if (nbytes != local_io_block_size)
+            if (nbytes != hdfs_handle->io_block_size)
             {
-                 if (local_io_block_size != 0)
+                 if (hdfs_handle->io_block_size != 0)
                  {
-                      snprintf(err_msg, MSG_SIZE, "send %d blocks of size %d bytes\n",
-                                      local_io_count,local_io_block_size);
-                      globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
+                      globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "send %d blocks of size %d bytes\n",
+                                      hdfs_handle->io_count, hdfs_handle->io_block_size);
                  }
-                 local_io_block_size = nbytes;
-                 local_io_count=1;
+                 hdfs_handle->io_block_size = nbytes;
+                 hdfs_handle->io_count=1;
             }
             else
             {
-                 local_io_count++;
+                 hdfs_handle->io_count++;
             }
         }
         if (! hdfs_handle->done) 
