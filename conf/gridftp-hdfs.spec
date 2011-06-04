@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
 Version:        0.3.2
-Release:        1
+Release:        2
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -32,7 +32,6 @@ Requires: globus-gridftp-server-progs
 Requires: globus-mapping-osg
 Requires: xinetd
 Requires: osg-ca-certs fetch-crl
-Requires: gratia-probe-gridftp-transfer
 
 Requires(pre): shadow-utils
 Requires(post): /sbin/service
@@ -93,6 +92,9 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Thu Jun 2 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.3.2-2
+- Remove dependency on gratia probe.
+
 * Thu May 26 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.3.2-1
 - Attempt to fix the race issue for closing files.
 
