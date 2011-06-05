@@ -168,7 +168,7 @@ globus_l_gfs_hdfs_read_from_storage(
 
     GlobusGFSName(globus_l_gfs_hdfs_read_from_storage);
 
-    globus_mutex_lock(&hdfs_handle->mutex);
+    globus_mutex_lock(hdfs_handle->mutex);
     while (hdfs_handle->outstanding < hdfs_handle->optimal_count &&
            ! hdfs_handle->done) 
     {
@@ -250,7 +250,7 @@ globus_l_gfs_hdfs_read_from_storage(
                                                 GLOBUS_SUCCESS);
         }
     }
-    globus_mutex_unlock(&hdfs_handle->mutex);
+    globus_mutex_unlock(hdfs_handle->mutex);
     return;
 }
 

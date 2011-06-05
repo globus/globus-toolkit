@@ -3,6 +3,64 @@
 
 #define ADVANCE_SLASHES(x) {while (x[0] == '/' && x[1] == '/') x++;}
 
+// Forward declarations of local functions
+static void
+hdfs_handle_write_op(
+    globus_gfs_operation_t              op,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       nbytes,
+    globus_off_t                        offset,
+    globus_bool_t                       eof,
+    void *                              user_arg);
+
+static void
+hdfs_dispatch_write(
+    globus_l_gfs_hdfs_handle_t *      hdfs_handle);
+
+
+/*************************************************************************
+ *  close_and_clean
+ *  --------------
+ *  Close the HDFS file and clean up the write-related resources in the
+ *  handle.
+ *************************************************************************/
+globus_result_t close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
+
+    GlobusGFSName(close_and_clean);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS; zero outstanding blocks.\n");
+    if (is_close_done(hdfs_handle)) {
+        return hdfs_handle->done_status;
+    }
+
+    // Only close the file for successful transfers and if the handle is valid.
+    // This might cause long-term leaks, but Java has been crash-y when closing
+    // invalid handles.
+    if ((rc == GLOBUS_SUCCESS) &&
+            (hdfs_handle->fd != NULL) && (hdfs_handle->fs != NULL) && 
+            (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1)) {
+        GenericError(hdfs_handle, "Failed to close file in HDFS.", rc);
+        hdfs_handle->fd = NULL;
+    }
+
+    if (hdfs_handle->using_file_buffer == 0) {
+        globus_free(hdfs_handle->buffer);
+    } else {
+        munmap(hdfs_handle->buffer, hdfs_handle->block_size*hdfs_handle->buffer_count*sizeof(globus_byte_t));
+        hdfs_handle->using_file_buffer = 0;
+        close(hdfs_handle->tmpfilefd);
+    }
+    globus_free(hdfs_handle->used);
+    globus_free(hdfs_handle->nbytes);
+    globus_free(hdfs_handle->offsets);
+
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "receive %d blocks of size %d bytes\n",
+        hdfs_handle->io_count, hdfs_handle->io_block_size);
+
+    set_close_done(hdfs_handle, rc);
+    return rc;
+}
+
 /*************************************************************************
  * determine_replicas
  * ------------------
@@ -14,7 +72,7 @@ int determine_replicas (const char * path) {
     char * replica_map = getenv("GRIDFTP_HDFS_REPLICA_MAP");
     if (!replica_map) return num_replicas;
 
-    char *map_line = (char *)globus_malloc(sizeof(char) * DEFAULT_LINE_LENGTH);
+    char *map_line = (char *)globus_malloc(DEFAULT_LINE_LENGTH);
     if (!map_line) return num_replicas;
 
     size_t line_length = DEFAULT_LINE_LENGTH;
@@ -37,16 +95,26 @@ int determine_replicas (const char * path) {
         while(*map_line_index && *map_line_index == ' ') map_line_index++;
 
         // Try and match the map line and filename
-        while(*map_line_index && *filename_index && (*map_line_index == *filename_index)) { map_line_index++; filename_index++; }
+        while(*map_line_index && *filename_index && 
+                (*map_line_index == *filename_index)) {
+            map_line_index++;
+            filename_index++;
+        }
 
         /*
         * If we've reached the end of the pattern, then we've found
         * a match with the hdfs filename.  Snarf up the # replicas
         * from the remainder of the line.
         */
-        while (*map_line_index && (*map_line_index == ' ' || *map_line_index == '=' || *map_line_index == '\t')) map_line_index++;
+        while (*map_line_index && 
+                (*map_line_index == ' ' || 
+                 *map_line_index == '=' || 
+                 *map_line_index == '\t')) {
+            map_line_index++;
+        }
         if (sscanf(map_line_index, "%d", &num_replicas) != 1) {
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Unable to determine the number of replicas for %s", map_line);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+                "Unable to determine the number of replicas for %s", map_line);
         }
     }
 
@@ -73,7 +141,7 @@ globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     }
     ADVANCE_SLASHES(path);
 
-    hdfs_handle->pathname = (char*)globus_malloc(strlen(path));
+    hdfs_handle->pathname = (char*)globus_malloc(strlen(path)+1);
     if (!hdfs_handle->pathname) {MemoryError(hdfs_handle, "Unable to make a copy of the path name.", rc); return rc;}
     strcpy(hdfs_handle->pathname, path);
    
@@ -101,7 +169,8 @@ globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     for (i=0; i<hdfs_handle->buffer_count; i++)
         hdfs_handle->used[i] = 0;
     hdfs_handle->buffer = globus_malloc(hdfs_handle->buffer_count*hdfs_handle->block_size*sizeof(globus_byte_t));
-    if (hdfs_handle->buffer == NULL || hdfs_handle->nbytes==NULL || hdfs_handle->offsets==NULL || hdfs_handle->used==NULL) {
+    if (hdfs_handle->buffer == NULL || hdfs_handle->nbytes==NULL || 
+            hdfs_handle->offsets==NULL || hdfs_handle->used==NULL) {
         MemoryError(hdfs_handle, "Memory allocation error.", rc);
         return rc;
     }
@@ -127,9 +196,10 @@ hdfs_recv(
 
     GlobusGFSName(hdfs_recv);
 
-    globus_mutex_lock(&hdfs_handle->mutex);
 
     hdfs_handle = (hdfs_handle_t *) user_arg;
+    globus_mutex_lock(hdfs_handle->mutex);
+
     hdfs_handle->op = op;
     hdfs_handle->pathname = transfer_info->pathname;
 
@@ -141,7 +211,8 @@ hdfs_recv(
     if (num_replicas == 0) {
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Open file %s.\n", hdfs_handle->pathname);
     } else {
-	globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Open file %s with %d replicas.\n", hdfs_handle->pathname, num_replicas);
+	globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Open file %s with %d replicas.\n",
+            hdfs_handle->pathname, num_replicas);
     }
 
     hdfsFileInfo *fileInfo;
@@ -155,28 +226,45 @@ hdfs_recv(
     if (!hdfs_handle->fd)
     {
         if (errno == EINTERNAL) {
-            SystemError(hdfs_handle, "Failed to open file due to an internal HDFS error; could be a misconfiguration or bad installation at the site.", rc);
+            SystemError(hdfs_handle, 
+                "opening file due to an internal HDFS error; "
+                "could be a misconfiguration or bad installation at the site.",
+                rc);
         } else if (errno == EACCES) {
-            SystemError(hdfs_handle, "Permission error in HDFS.", rc);
+            SystemError(hdfs_handle, "opening file; permission error in HDFS.", rc);
         } else {
-            SystemError(hdfs_handle, "Failed to open file due to unknown error in HDFS.", rc);
+            SystemError(hdfs_handle, "opening file; failed to open file due to unknown error in HDFS.", rc);
         }
         goto cleanup;
     }
-    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Successfully opened file %s for user %s.\n", hdfs_handle->pathname, hdfs_handle->username);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, 
+        "Successfully opened file %s for user %s.\n", hdfs_handle->pathname,
+         hdfs_handle->username);
 
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
-    hdfs_write_to_storage(hdfs_handle);
+    hdfs_dispatch_write(hdfs_handle);
 
 cleanup:
     if (rc != GLOBUS_SUCCESS) {
         globus_gridftp_server_finished_transfer(op, rc);
     }
-    globus_mutex_unlock(&hdfs_handle->mutex);
+    globus_mutex_unlock(hdfs_handle->mutex);
 }
 
+// Allow injection of garbage errors, allowing us to test error-handling
+//#define FAKE_ERROR
+#ifdef FAKE_ERROR
+int block_count = 0;
+#endif
+
+/*************************************************************************
+ * hdfs_handle_write_op
+ * --------------------
+ * Callback for handling storage operations.
+ *************************************************************************/
+static
 void 
-hdfs_write_to_storage_cb(
+hdfs_handle_write_op(
     globus_gfs_operation_t              op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
@@ -188,64 +276,71 @@ hdfs_write_to_storage_cb(
     globus_result_t                     rc = GLOBUS_SUCCESS; 
     globus_l_gfs_hdfs_handle_t *        hdfs_handle;
                                                                                                                                            
-    GlobusGFSName(globus_l_gfs_hdfs_write_to_storage_cb);
+    GlobusGFSName(hdfs_handle_write_op);
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
-    globus_mutex_lock(&hdfs_handle->mutex);
+    globus_mutex_lock(hdfs_handle->mutex);
 
-    if (hdfs_handle->done && hdfs_handle->done_status != GLOBUS_SUCCESS) {
+#ifdef FAKE_ERROR
+    block_count ++;
+    if (block_count == 30) {
+        GenericError(hdfs_handle, "Got bored, threw an error.", rc);
+        goto cleanup;
+    }
+#endif
+
+    // If the transfer is done and not successful, don't bother saving this block
+    // If it is done and successful, maybe we're the last-to-arrive block?
+    if (is_done(hdfs_handle) && hdfs_handle->done_status != GLOBUS_SUCCESS) {
         rc = hdfs_handle->done_status;
         goto cleanup;
     }
 
     if (result != GLOBUS_SUCCESS) {
-        hdfs_handle->done = GLOBUS_TRUE;
-        hdfs_handle->done_status = rc;
+        rc = result;
         goto cleanup;
     } else if (eof) {
-        hdfs_handle->done = GLOBUS_TRUE;
+        set_done(hdfs_handle, GLOBUS_SUCCESS);
     }
 
-    if (nbytes > 0) {
-        // First, see if we can dump this block immediately.
-        if (offset == hdfs_handle->offset) {
-            globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Dumping this block immediately.\n");
-            if (hdfs_handle->syslog_host != NULL) {
-                syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
-            }
-            globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
-            if (bytes_written != nbytes) {
-                SystemError(hdfs_handle, "Write into HDFS failed", rc);
-                hdfs_handle->done = GLOBUS_TRUE;
-            } else {
-                hdfs_handle->offset += bytes_written;
-                // Try to write out as many buffers as we can to HDFS.
-                rc = hdfs_dump_buffers(hdfs_handle);
-                if (rc != GLOBUS_SUCCESS) {
-                    hdfs_handle->done = GLOBUS_TRUE;
-                }
-                globus_gridftp_server_update_bytes_written(op, offset, nbytes);
-            }
-        } else {
-            // Try to store the buffer into memory.
-            rc = hdfs_store_buffer(hdfs_handle, buffer, offset, nbytes);
-            if (rc != GLOBUS_SUCCESS) {
-                hdfs_handle->done = GLOBUS_TRUE;
-            } else {
-                // Try to write out as many buffers as we can to HDFS.
-                rc = hdfs_dump_buffers(hdfs_handle);
-                if (rc != GLOBUS_SUCCESS) {
-                    hdfs_handle->done = GLOBUS_TRUE;
-                }
-                globus_gridftp_server_update_bytes_written(op, offset, nbytes);
-            }
-        }
+    if (nbytes == 0) {
+        goto cleanup;
+    }
 
-        // Do some statistics
+    // First, see if we can dump this block immediately.
+    if (offset == hdfs_handle->offset) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Dumping this block immediately.\n");
+        if (hdfs_handle->syslog_host != NULL) {
+            syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
+        }
+        globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
+        if (bytes_written != nbytes) {
+            SystemError(hdfs_handle, "write into HDFS", rc);
+            goto cleanup;
+        }
+        hdfs_handle->offset += bytes_written;
+        globus_gridftp_server_update_bytes_written(op, offset, nbytes);
+    } else {
+        // Try to store the buffer into memory.
+        if ((rc = hdfs_store_buffer(hdfs_handle, buffer, offset, nbytes)) != GLOBUS_SUCCESS) {
+            goto cleanup;
+        }
+        globus_gridftp_server_update_bytes_written(op, offset, nbytes);
+    }
+
+    // Try to write out as many buffers as we can to HDFS.
+    if ((rc = hdfs_dump_buffers(hdfs_handle)) != GLOBUS_SUCCESS) {
+        goto cleanup;
+    }   
+
+cleanup:
+
+    // Do some statistics
+    if (rc == GLOBUS_SUCCESS) {
         if (nbytes != hdfs_handle->io_block_size) {
             if (hdfs_handle->io_block_size != 0) {
                 globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "receive %d blocks of size %d bytes\n",
-                                hdfs_handle->io_count,hdfs_handle->io_block_size);
+                    hdfs_handle->io_count,hdfs_handle->io_block_size);
             }
             hdfs_handle->io_block_size = nbytes;
             hdfs_handle->io_count=1;
@@ -253,59 +348,56 @@ hdfs_write_to_storage_cb(
             hdfs_handle->io_count++;
         }
     }
-    globus_free(buffer);
 
-cleanup:
-
-    hdfs_handle->outstanding--;
-    if (! hdfs_handle->done) {
-        hdfs_write_to_storage(hdfs_handle);
-    } else if (hdfs_handle->outstanding == 0) {
-
-        // Destroy handle. TODO: factor out
-        if (hdfs_handle->using_file_buffer == 0) {
-            globus_free(hdfs_handle->buffer);
-        } else {
-            munmap(hdfs_handle->buffer, hdfs_handle->block_size*hdfs_handle->buffer_count*sizeof(globus_byte_t));
-            hdfs_handle->using_file_buffer = 0;
-            close(hdfs_handle->tmpfilefd);
-        }
-        globus_free(hdfs_handle->used);
-        globus_free(hdfs_handle->nbytes);
-        globus_free(hdfs_handle->offsets);
-
-        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS; zero outstanding blocks.\n");
-        if ((hdfs_handle->fd != NULL) && (hdfs_handle->fs != NULL) && (hdfsCloseFile(hdfs_handle->fs, hdfs_handle->fd) == -1)) {
-             GenericError(hdfs_handle, "Failed to close file in HDFS.", rc);
-             set_done(hdfs_handle, rc);
-             hdfs_handle->fd = NULL;
-        }
-
-        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "receive %d blocks of size %d bytes\n",
-            hdfs_handle->io_count, hdfs_handle->io_block_size);
-
-        hdfs_handle->done_status = rc;
-
-        globus_gridftp_server_finished_transfer(op, rc);
-    } else if (rc != GLOBUS_SUCCESS) {  // Done is set, but we have outstanding I/O = failed somewhere.
-        // Don't close the file because the other transfers will want to finish up.
-        snprintf(err_msg, MSG_SIZE, "We failed to finish the transfer, but there are %i outstanding writes left over.\n", hdfs_handle->outstanding);
-        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
-        hdfs_handle->done_status = rc;
+    // Finish the transfer on failure
+    if (rc != GLOBUS_SUCCESS) {
+        set_done(hdfs_handle, rc);
     }
-    globus_mutex_unlock(&hdfs_handle->mutex);
+
+    if (buffer) {
+        globus_free(buffer);
+    }
+    hdfs_handle->outstanding--;
+
+    if (!is_done(hdfs_handle)) {
+        // Request more transfers.
+        hdfs_dispatch_write(hdfs_handle);
+    } else if (hdfs_handle->outstanding == 0) {
+        // No I/O in-flight, clean-up.
+        rc = close_and_clean(hdfs_handle, rc);
+    } else if (rc != GLOBUS_SUCCESS) {
+        // Don't close the file because the other transfers will want to finish up.
+        // However, do set the failure status.
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, 
+            "We failed to finish the transfer, but there are %i outstanding writes left over.\n",
+            hdfs_handle->outstanding);
+        globus_gridftp_server_finished_transfer(op, rc);
+    } else {
+        // Nothing to do if we are done and there was no error, but outstanding transfers exist.
+    }
+    globus_mutex_unlock(hdfs_handle->mutex);
 }
 
-// Note: The hdfs_handle mutex *must* be locked prior to calling
+/*************************************************************************
+ *  hdfs_dispatch_write
+ *  -------------------
+ *  Create requests for additional write operations.
+ *  Note: The hdfs_handle mutex *must* be locked prior to calling
+ *************************************************************************/
+static
 void
-hdfs_write_to_storage(
+hdfs_dispatch_write(
     globus_l_gfs_hdfs_handle_t *      hdfs_handle)
 {
     globus_byte_t *                     buffer;
     globus_result_t                     rc = GLOBUS_SUCCESS;
 
-    GlobusGFSName(hdfs_write_to_storage);
-    globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "hdfs_write_to_storage; outstanding %d, optimal %d.\n", hdfs_handle->outstanding, hdfs_handle->optimal_count);
+    GlobusGFSName(hdfs_dispatch_write);
+    globus_gridftp_server_get_optimal_concurrency(hdfs_handle->op,
+                                                  &hdfs_handle->optimal_count);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, 
+        "hdfs_dispatch_write; outstanding %d, optimal %d.\n",
+        hdfs_handle->outstanding, hdfs_handle->optimal_count);
 
     while (hdfs_handle->outstanding < hdfs_handle->optimal_count)  {
 
@@ -316,13 +408,11 @@ hdfs_write_to_storage(
         }
 
         rc = globus_gridftp_server_register_read(hdfs_handle->op,
-            buffer,
-            hdfs_handle->block_size,
-            hdfs_write_to_storage_cb,
+            buffer, hdfs_handle->block_size, hdfs_handle_write_op,
             hdfs_handle);
 
         if (rc != GLOBUS_SUCCESS) {
-            GenericError(hdfs_handle, "globus_gridftp_server_register_read() fail", rc);
+            //GenericError(hdfs_handle, "globus_gridftp_server_register_read() fail", rc);
             goto cleanup;
         }
         hdfs_handle->outstanding++;
@@ -331,6 +421,7 @@ hdfs_write_to_storage(
 
 cleanup:
     if (rc != GLOBUS_SUCCESS) {
+        set_done(hdfs_handle, rc);
         globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
     }
 }

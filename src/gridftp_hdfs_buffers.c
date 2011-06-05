@@ -9,15 +9,18 @@
  *  Returns 1 if we should use a file buffer.
  *  Else, returns 0.
  ************************************************************************/
-int use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
-        int buffer_count = hdfs_handle->buffer_count;
+inline int
+use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
+
+    unsigned int buffer_count = hdfs_handle->buffer_count;
  
-		  if (buffer_count >= hdfs_handle->max_buffer_count-1) {
+    if (buffer_count >= hdfs_handle->max_buffer_count-1) {
+        return 1;
+    }
+    if ((hdfs_handle->using_file_buffer == 1) && (buffer_count > hdfs_handle->max_buffer_count/2)) {
             return 1;
-		  }
-        if ((hdfs_handle->using_file_buffer == 1) && (buffer_count > hdfs_handle->max_buffer_count/2))
-            return 1;
-        return 0;
+    }
+    return 0;
 }
 
 /*************************************************************************
@@ -41,14 +44,14 @@ remove_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
  *  Store the current output to a buffer.
  */
 globus_result_t hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle, globus_byte_t* buffer, globus_off_t offset, globus_size_t nbytes) {
-		  GlobusGFSName(globus_l_gfs_hdfs_store_buffer);
-		  globus_result_t rc = GLOBUS_SUCCESS;
-		  int i, cnt = hdfs_handle->buffer_count;
-		  short wrote_something = 0;
-		  if (hdfs_handle == NULL) {
-					 rc = GlobusGFSErrorGeneric("Storing buffer for un-allocated transfer");
-					 return rc;
-		  }
+    GlobusGFSName(globus_l_gfs_hdfs_store_buffer);
+    globus_result_t rc = GLOBUS_SUCCESS;
+    int i, cnt = hdfs_handle->buffer_count;
+    short wrote_something = 0;
+    if (hdfs_handle == NULL) {
+        rc = GlobusGFSErrorGeneric("Storing buffer for un-allocated transfer");
+        return rc;
+    }
 
         // Determine the type of buffer to use; allocate or transfer buffers as necessary
         int use_buffer = use_file_buffer(hdfs_handle);

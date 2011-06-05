@@ -186,10 +186,10 @@ globus_l_gfs_hdfs_recv(
     }
 
     globus_gridftp_server_begin_transfer(hdfs_handle->op, 0, hdfs_handle);
-    globus_mutex_lock(&hdfs_handle->mutex);
+    globus_mutex_lock(hdfs_handle->mutex);
     if (rc == GLOBUS_SUCCESS)
         globus_l_gfs_hdfs_write_to_storage(hdfs_handle);
-    globus_mutex_unlock(&hdfs_handle->mutex);
+    globus_mutex_unlock(hdfs_handle->mutex);
     return;
 }
 
@@ -208,7 +208,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
                                                                                                                                            
     GlobusGFSName(globus_l_gfs_hdfs_write_to_storage_cb);
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
-    globus_mutex_lock(&hdfs_handle->mutex);
+    globus_mutex_lock(hdfs_handle->mutex);
     rc = GLOBUS_SUCCESS;
     if (hdfs_handle->done && hdfs_handle->done_status != GLOBUS_SUCCESS) {
         //globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
@@ -320,7 +320,7 @@ globus_l_gfs_hdfs_write_to_storage_cb(
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
         hdfs_handle->done_status = rc;
     }
-    globus_mutex_unlock(&hdfs_handle->mutex);
+    globus_mutex_unlock(hdfs_handle->mutex);
 }
 
 void

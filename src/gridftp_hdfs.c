@@ -257,7 +257,7 @@ globus_l_gfs_hdfs_start(
     globus_gfs_operation_t              op,
     globus_gfs_session_info_t *         session_info)
 {
-    globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+    hdfs_handle_t*       hdfs_handle;
     globus_gfs_finished_info_t          finished_info;
     GlobusGFSName(globus_l_gfs_hdfs_start);
     globus_result_t rc;
@@ -268,12 +268,10 @@ globus_l_gfs_hdfs_start(
     int replicas;
     int port;
 
-    hdfs_handle = (globus_l_gfs_hdfs_handle_t *)
-        globus_malloc(sizeof(globus_l_gfs_hdfs_handle_t));
+    hdfs_handle = (hdfs_handle_t *)globus_malloc(sizeof(hdfs_handle_t));
+    memset(hdfs_handle, 0, sizeof(hdfs_handle_t));
 
-    globus_mutex_init(&hdfs_handle->mutex, GLOBUS_NULL);
-
-    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    memset(&finished_info, 0, sizeof(globus_gfs_finished_info_t));
     finished_info.type = GLOBUS_GFS_OP_SESSION_START;
     finished_info.result = GLOBUS_SUCCESS;
     finished_info.info.session.session_arg = hdfs_handle;
@@ -285,7 +283,20 @@ globus_l_gfs_hdfs_start(
         finished_info.result = rc;
         globus_gridftp_server_operation_finished(op, rc, &finished_info);
         return;
-    }   
+    }
+
+    hdfs_handle->mutex = (globus_mutex_t *)malloc(sizeof(globus_mutex_t));
+    if (!(hdfs_handle->mutex)) {
+        MemoryError(hdfs_handle, "Unable to allocate a new mutex for HDFS.", rc);
+        finished_info.result = rc;
+        globus_gridftp_server_operation_finished(op, rc, &finished_info);
+        return;
+    }
+    if (globus_mutex_init(hdfs_handle->mutex, GLOBUS_NULL)) {
+        SystemError(hdfs_handle, "Unable to initialize mutex", rc);
+        globus_gridftp_server_operation_finished(op, rc, &finished_info);
+        return;
+    }
 
     hdfs_handle->io_block_size = 0;
     hdfs_handle->io_count = 0;
@@ -314,11 +325,11 @@ globus_l_gfs_hdfs_start(
     char * load_limit_char = getenv("GRIDFTP_LOAD_LIMIT");
 
     // Get our hostname
-    hdfs_handle->local_host = globus_malloc(sizeof(char)*256);
+    hdfs_handle->local_host = globus_malloc(256);
     if (hdfs_handle->local_host) {
-        memset(hdfs_handle->local_host, '\0', sizeof(char)*256);
-        if (gethostname(hdfs_handle->local_host, 255) != 0) {
-            sprintf(hdfs_handle->local_host, "UNKNOWN");
+        memset(hdfs_handle->local_host, 0, 256);
+        if (gethostname(hdfs_handle->local_host, 255)) {
+            strcpy(hdfs_handle->local_host, "UNKNOWN");
         }
     }
 
@@ -327,9 +338,12 @@ globus_l_gfs_hdfs_start(
     if (syslog_host_char == NULL) {
         hdfs_handle->syslog_host = NULL;
     } else {
+        hdfs_handle->syslog_host = syslog_host_char; 
         hdfs_handle->remote_host = session_info->host_id;
         openlog("GRIDFTP", 0, LOG_LOCAL2);
-        sprintf(hdfs_handle->syslog_msg, "%s %s %%s %%i %%i", hdfs_handle->local_host, hdfs_handle->remote_host);
+        hdfs_handle->syslog_msg = (char *)globus_malloc(256);
+        if (hdfs_handle->syslog_msg)
+            snprintf(hdfs_handle->syslog_msg, 255, "%s %s %%s %%i %%i", hdfs_handle->local_host, hdfs_handle->remote_host);
     }
 
     // Determine the maximum number of buffers; default to 200.
@@ -399,11 +413,9 @@ globus_l_gfs_hdfs_start(
         buf_ptr = buf;
         token = strsep(&buf_ptr, " ");
         load = strtod(token, NULL);
-        snprintf(err_msg, MSG_SIZE, "Detected system load %.2f.\n", load);
-        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Detected system load %.2f.\n", load);
         if ((load >= load_limit) && (load < 1000)) {
-            snprintf(err_msg, MSG_SIZE, "Preventing gridftp transfer startup due to system load of %.2f.\n", load);
-            globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,err_msg);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Preventing gridftp transfer startup due to system load of %.2f.\n", load);
             sleep(5);
         } else {
             break;
@@ -412,8 +424,9 @@ globus_l_gfs_hdfs_start(
         fd = open("/proc/loadavg", O_RDONLY);
     }
 
-    snprintf(err_msg, MSG_SIZE, "Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n", hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
-    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,err_msg);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+        "Start gridftp server; hadoop nameserver %s, port %i, replicas %i.\n",
+        hdfs_handle->host, hdfs_handle->port, hdfs_handle->replicas);
 
     hdfs_handle->fs = hdfsConnect("default", 0);
     if (!hdfs_handle->fs) {
@@ -428,25 +441,20 @@ globus_l_gfs_hdfs_start(
     // Handle core limits
     gridftp_check_core();
 
-    // Force a SEGV to test the core file creation
-    //if (*(hdfs_handle->tmp_file_pattern) == 4) printf("Foo!\n");
-
     globus_gridftp_server_operation_finished(
         op, GLOBUS_SUCCESS, &finished_info);
 }
 
-/*************************************************************************
+/************************************************************************ 
  *  destroy
  *  -------
  *  This is called when a session ends, ie client quits or disconnects.
- *  The dsi should clean up all memory they associated wit the session
- *  here. 
  ************************************************************************/
 void
 globus_l_gfs_hdfs_destroy(
     void *                              user_arg)
 {
-    globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+    hdfs_handle_t *       hdfs_handle;
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
     if (hdfs_handle) {
@@ -459,8 +467,13 @@ globus_l_gfs_hdfs_destroy(
             globus_free(hdfs_handle->username);
         if (hdfs_handle->local_host)
             globus_free(hdfs_handle->local_host);
+        if (hdfs_handle->syslog_msg)
+            globus_free(hdfs_handle->syslog_msg);
         remove_file_buffer(hdfs_handle);
-        globus_mutex_destroy(&hdfs_handle->mutex);
+        if (hdfs_handle->mutex) {
+            globus_mutex_destroy(hdfs_handle->mutex);
+            globus_free(hdfs_handle->mutex);
+        }
         globus_free(hdfs_handle);
     }
     closelog();
@@ -475,24 +488,59 @@ inline globus_bool_t
 is_done(
     hdfs_handle_t *hdfs_handle)
 {
-    return hdfs_handle->done;
+    return hdfs_handle->done > 0;
+}
+
+/*************************************************************************
+ *  is_close_done
+ *  -------------
+ *  Check to see if a hdfs_handle is already close-done.
+ ************************************************************************/
+inline globus_bool_t
+is_close_done(
+    hdfs_handle_t *hdfs_handle)
+{
+    return hdfs_handle->done == 2;
 }
 
 /*************************************************************************
  *  set_done
  *  --------
  *  Set the handle as done for a given reason.
- *  If the handle is already done, this is a no-op.
+ *  If the handle is already done with an error, this is a no-op.
+ *  If the handle is in a success state and gets a failure, we record it.
  ************************************************************************/
 inline void
 set_done(
     hdfs_handle_t *hdfs_handle, globus_result_t rc)
 {
     // Ignore already-done handles.
-    if (is_done(hdfs_handle)) {
+    if (is_done(hdfs_handle) && (hdfs_handle->done_status != GLOBUS_SUCCESS)) {
         return;
     }
-    hdfs_handle->done = GLOBUS_TRUE;
+    hdfs_handle->done = 1;
     hdfs_handle->done_status = rc;
+}
+
+/*************************************************************************
+ *  set_close_done
+ *  --------------
+ *  Set the handle as close-done for a given reason.
+ *  If the handle is already close-done, this is a no-op.
+ *  If the handle was done successfully, but the close was not a success,
+ *  then record it.
+ ************************************************************************/
+inline void
+set_close_done(
+    hdfs_handle_t *hdfs_handle, globus_result_t rc)
+{
+    // Ignore already-done handles.
+    if (is_close_done(hdfs_handle)) {
+        return;
+    }
+    hdfs_handle->done = 2;
+    if ((hdfs_handle->done_status == GLOBUS_SUCCESS) && (rc != GLOBUS_SUCCESS)) {
+        hdfs_handle->done_status = rc;
+    }
 }
 

@@ -39,7 +39,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     globus_size_t                       block_size;
     globus_off_t                        block_length;
     globus_off_t                        offset;
-    globus_bool_t                       done;
+    unsigned int                        done;
     globus_result_t                     done_status; // The status of the finished transfer.
     globus_gfs_operation_t              op;
     globus_byte_t *                     buffer;
@@ -47,24 +47,24 @@ typedef struct globus_l_gfs_hdfs_handle_s
     globus_size_t *                     nbytes; // The number of bytes in each buffer.
     short *                             used;
     int                                 optimal_count;
-    int                                 max_buffer_count;
-    int                                 max_file_buffer_count;
-    int                                 buffer_count; // Number of buffers we currently maintain in memory waiting to be written to HDFS.
-    int                                 outstanding;
-    globus_mutex_t                      mutex;
+    unsigned int                        max_buffer_count;
+    unsigned int                        max_file_buffer_count;
+    unsigned int                        buffer_count; // Number of buffers we currently maintain in memory waiting to be written to HDFS.
+    unsigned int                        outstanding;
+    globus_mutex_t *                    mutex;
     int                                 port;
     char *                              host;
     char *                              mount_point;
-    int                                 mount_point_len;
-    int                                 replicas;
+    unsigned int                        mount_point_len;
+    unsigned int                        replicas;
     char *                              username;
     char *                              tmp_file_pattern;
     int                                 tmpfilefd;
-    int                                 using_file_buffer;
+    globus_bool_t                       using_file_buffer;
     char *                              syslog_host; // The host to send syslog message to.
     char *                              remote_host; // The remote host connecting to us.
     char *                              local_host;  // Our local hostname.
-    char                                syslog_msg[256];  // Message printed out to syslog.
+    char *                              syslog_msg;  // Message printed out to syslog.
     unsigned int                        io_block_size;
     unsigned long long                  io_count;
 } globus_l_gfs_hdfs_handle_t;
@@ -130,20 +130,6 @@ hdfs_recv(
 int use_file_buffer(
     globus_l_gfs_hdfs_handle_t * hdfs_handle);
 
-void    
-hdfs_write_to_storage(
-    globus_l_gfs_hdfs_handle_t *      hdfs_handle);
-
-void    
-hdfs_write_to_storage_cb(
-    globus_gfs_operation_t              op,
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       nbytes,
-    globus_off_t                        offset,
-    globus_bool_t                       eof,
-    void *                              user_arg);
-
 globus_result_t
 hdfs_store_buffer(
     globus_l_gfs_hdfs_handle_t * hdfs_handle,
@@ -190,8 +176,17 @@ set_done(
     hdfs_handle_t *    hdfs_handle,
     globus_result_t    rc);
 
+void
+set_close_done(
+    hdfs_handle_t *    hdfs_handle,
+    globus_result_t    rc);
+
 globus_bool_t
 is_done(
+    hdfs_handle_t *    hdfs_handle);
+
+globus_bool_t
+is_close_done(
     hdfs_handle_t *    hdfs_handle);
 
 #pragma GCC visibility pop
