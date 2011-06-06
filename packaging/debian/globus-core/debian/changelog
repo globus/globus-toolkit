@@ -1,4 +1,4 @@
-globus-core (7.7-0GT5.1.1+1) UNRELEASED; urgency=low
+globus-core (7.7-0GT5.1.1+1) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 

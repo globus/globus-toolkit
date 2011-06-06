@@ -1,4 +1,4 @@
-globus-xio-gridftp-driver (0.3-0GT5.1.1+1) UNRELEASED; urgency=low
+globus-xio-gridftp-driver (0.3-0GT5.1.1+1) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
