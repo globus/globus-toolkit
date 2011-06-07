@@ -194,7 +194,7 @@ Description: Globus Toolkit Packages
 EOF
 
 for x in "${topdir}"/*.changes; do
-    reprrepro -b . include unstable "$x"
+    reprepro -b . include unstable "$x"
 done
 
 cp $topdir/*.* .
