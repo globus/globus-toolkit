@@ -77,9 +77,12 @@ $description =~ s!^\s+|\s+$!!g;
 $description =~ s!\s+! !g;
 
 my $version = "$gptmajorver.$gptminorver";
-my $libs = "-L\${libdir} $pkglibs $extlibs";
+my $libs = "-L\${libdir} $pkglibs";
 $libs =~ s!^\s+|\s+$!!g;
 $libs =~ s!\s+! !g;
+
+$extlibs =~ s!^\s+|\s+$!!g;
+$extlibs =~ s!\s+! !g;
 
 $cflags = "$cflags -I\${includedir} -I\${flavorincludedir} $extinc";
 $cflags =~ s!^\s+|\s+$!!g;
@@ -117,4 +120,5 @@ while (($key, $value) = each(%deps)) {
 }
 print OUTFILE "\n";
 print OUTFILE "Libs: $libs\n";
+print OUTFILE "Libs.private: $extlibs\n" if ($extlibs ne '');
 print OUTFILE "Cflags: $cflags\n";

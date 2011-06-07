@@ -12,7 +12,7 @@
 
 Name:		globus-xioperf
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - XIO Performance Tool
 

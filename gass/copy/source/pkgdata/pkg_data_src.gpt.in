@@ -23,7 +23,7 @@
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="5"/>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
@@ -56,7 +56,7 @@
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="5"/>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
@@ -89,7 +89,7 @@
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="5"/>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">

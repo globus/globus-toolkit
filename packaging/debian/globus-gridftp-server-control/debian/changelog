@@ -1,0 +1,36 @@
+globus-gridftp-server-control (1.2-0GT5.1.1a) unstable; urgency=low
+
+  * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
+
+ -- Globus Support <support@globus.org>  Fri, 27 May 2011 11:30:55 -0400
+
+globus-gridftp-server-control (0.43-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.2
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Mon, 19 Jul 2010 13:44:22 +0200
+
+globus-gridftp-server-control (0.42-2) unstable; urgency=low
+
+  * Converting to package format 3.0 (quilt)
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 04 Jun 2010 04:43:30 +0200
+
+globus-gridftp-server-control (0.42-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.1
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Thu, 15 Apr 2010 16:58:45 +0200
+
+globus-gridftp-server-control (0.40-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.0
+  * Add debug package
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Wed, 27 Jan 2010 13:53:23 +0100
+
+globus-gridftp-server-control (0.36-1) unstable; urgency=low
+
+  * Initial release (Closes: #540258).
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 07 Aug 2009 07:07:19 +0200

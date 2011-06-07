@@ -1,0 +1,95 @@
+globus-common (13.2-0GT5.1.1a) unstable; urgency=low
+
+  * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
+
+ -- Globus Support <support@globus.org>  Wed, 25 May 2011 01:08:37 -0400
+
+globus-common (11.5-2) unstable; urgency=low
+
+  * Add dependency on globus-common-progs to libglobus-common-dev
+  * Updated pthread exception patch for better compatibility with boost's
+    headers
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Mon, 06 Sep 2010 18:26:05 +0200
+
+globus-common (11.5-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.2
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Sun, 18 Jul 2010 19:30:43 +0200
+
+globus-common (11.4-2) unstable; urgency=low
+
+  * Converting to package format 3.0 (quilt)
+  * Add new build dependency on texlive-font-utils due to changes in texlive
+    packaging (epstopdf moved there) (Closes: #583049)
+  * Exclude ghost files from md5sum list (Closes: #578753)
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 04 Jun 2010 04:43:29 +0200
+
+globus-common (11.4-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.1
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Thu, 15 Apr 2010 09:26:16 +0200
+
+globus-common (11.2-2) unstable; urgency=low
+
+  * Make the globus-version script return the right value
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Wed, 24 Feb 2010 22:27:07 +0100
+
+globus-common (11.2-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.0.0
+  * Add debug package
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Mon, 25 Jan 2010 10:45:40 +0100
+
+globus-common (10.2-7) unstable; urgency=low
+
+  * Let globus-makefile-header fail gracefully without GPT (Closes: #552398).
+  * Workaround a bug in doxygen (Closes: #545654).
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Sun, 08 Nov 2009 15:18:32 +0100
+	
+globus-common (10.2-6) unstable; urgency=low
+
+  * Replace /usr/bin/env shebangs.
+  * Patch globus_location function to allow unset GLOBUS_LOCATION.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Sat, 08 Aug 2009 21:44:56 +0200
+
+globus-common (10.2-5) unstable; urgency=low
+
+  * Fix compilation on i386-hurd (Closes: #531609).
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Tue, 02 Jun 2009 23:57:07 +0200
+
+globus-common (10.2-4) unstable; urgency=low
+
+  * Fix rule dependencies in the debian/rules file.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Tue, 12 May 2009 15:28:36 +0200
+
+globus-common (10.2-3) unstable; urgency=low
+
+  * Rebuilt to correct libltdl dependency.
+  * Preparing for other 64bit platforms than amd64.
+  * Initial release (Closes: #512966).
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Sat, 18 Apr 2009 20:17:29 +0200
+
+globus-common (10.2-2) UNRELEASED; urgency=low
+
+  * Only quote the Apache-2.0 license if necessary.
+  * Move globus-makefile-header to dev package.
+  * Updated deprecated Source-Version in debian/control.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Thu, 26 Mar 2009 09:21:25 +0100
+
+globus-common (10.2-1) UNRELEASED; urgency=low
+
+  * First build.
+
+ -- Mattias Ellert <mattias.ellert@fysast.uu.se>  Fri, 02 Jan 2009 08:07:17 +0100

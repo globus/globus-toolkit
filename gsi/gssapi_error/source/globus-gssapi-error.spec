@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-error
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	3.1
 Release:	5%{?dist}
 Summary:	Globus Toolkit - GSSAPI Error Library
 

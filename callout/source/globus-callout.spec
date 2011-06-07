@@ -12,8 +12,8 @@
 
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	6%{?dist}
+Version:	1.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
 Group:		System Environment/Libraries

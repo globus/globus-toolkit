@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!/usr/bin/perl
 use Cwd;
 use Getopt::Long;
 my $sourcelistfile, $tag;
@@ -27,7 +27,7 @@ GetOptions( 'f|file=s' => \$sourcelistfile,
 	print cwd()."\n";
 	print $subdir."\n";
 	if ($tag ne ''){
-	  system("cvs -d blau\@cvs.globus.org:/home/globdev/CVS/globus-packages co -r $tag $subdir");
+	  system("cvs -d $cvsroot:/home/globdev/CVS/globus-packages co -r $tag $subdir");
 	}else { #no overriding tag is given, default to HEAD unless there's a
 		#tag in the sourcelistfile
 	  if ($pkgtag eq ''){

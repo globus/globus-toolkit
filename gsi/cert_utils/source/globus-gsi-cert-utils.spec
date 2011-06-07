@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
-Version:	7.1
+Version:	7.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 

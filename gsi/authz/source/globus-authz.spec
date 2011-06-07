@@ -12,8 +12,8 @@
 
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	2%{?dist}
+Version:	1.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus authz library
 
 Group:		System Environment/Libraries
