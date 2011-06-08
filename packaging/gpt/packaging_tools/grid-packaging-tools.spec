@@ -1,6 +1,6 @@
 Name:		grid-packaging-tools
 Version:	3.4
-Release:	21%{?dist}
+Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
 Group:		Development/Tools
@@ -43,7 +43,7 @@ packages defined by GPT are compatible with other packages and can be
 easily converted.
 
 %prep
-%setup -q -n gpt-3.3
+%setup -q -n gpt-%{version}
 
 %build
 
