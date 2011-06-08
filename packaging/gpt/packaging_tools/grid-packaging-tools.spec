@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.3
+Version:	3.4
 Release:	21%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 

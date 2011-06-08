@@ -133,10 +133,10 @@ packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -package
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
 ./make-packages.pl -no-updates -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
-cd gpt-3.3/packaging_tools
+cd gpt-*/packaging_tools
 sh ./bootstrap
 make dist
-cp gpt-3.3.tar.gz ../../package-output
+cp gpt-3.*.tar.gz ../../package-output
 cd ../../package-output
 
 # Some gpt packages are in the bundles but not packaged yet. We'll ignore
