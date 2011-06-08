@@ -34,6 +34,8 @@ v5.4 22 Apr 2011
       any regular files found later to NOT have world-readable permissions.
   - fix GPT dependency on globus_proxy_utils package
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7151)
+  - Allow empty SASL responses. Needed for Moonshot GS2.
+    (http://www.project-moonshot.org/devwiki//testing/myproxy/)
 
 v5.3 17 Jan 2011
   - fix myproxy-logon bug in versions 5.0-5.2 that disabled
