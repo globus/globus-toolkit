@@ -13,7 +13,7 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
 Version:	7.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
@@ -155,12 +155,6 @@ GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 # Remove libtool archives (.la files)
 find $RPM_BUILD_ROOT%{_libdir} -name 'lib*.la' -exec rm -v '{}' \;
 sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
-
-# Move admin binary to sbin
-mkdir -p $RPM_BUILD_ROOT%{_sbindir}
-mv $RPM_BUILD_ROOT%{_bindir}/grid-default-ca $RPM_BUILD_ROOT%{_sbindir}
-sed 's!/bin/grid-default-ca!/sbin/grid-default-ca!' \
-  -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist
 
 # Move client man pages to progs package
 grep '.[18]$' $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
