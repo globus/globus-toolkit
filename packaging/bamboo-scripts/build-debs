@@ -197,7 +197,8 @@ for x in "${topdir}"/*.changes; do
     reprepro -b . include unstable "$x"
 done
 
+cd "${packagingdir}"
 find repo -name '*.deb' -exec basename {} \; > all-packages
 
 mkdir -p debbuild-out
-cp $topdir/*.* debbuild-out
+cp "${topdir}"/*.* debbuild-out
