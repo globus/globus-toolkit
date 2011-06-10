@@ -25,7 +25,8 @@ hdfs_dispatch_write(
  *  Close the HDFS file and clean up the write-related resources in the
  *  handle.
  *************************************************************************/
-globus_result_t close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
+static globus_result_t
+close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
 
     GlobusGFSName(close_and_clean);
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Trying to close file in HDFS; zero outstanding blocks.\n");
@@ -155,7 +156,7 @@ globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     // HDFS cannot start transfers in the middle of a file.
     globus_gridftp_server_get_write_range(hdfs_handle->op,
                                           &hdfs_handle->offset,
-                                          &hdfs_handle->block_length);
+                                          &hdfs_handle->op_length);
 
     if (hdfs_handle->offset) {GenericError(hdfs_handle, "Non-zero offsets are not supported.", rc); return rc;}
 
@@ -365,6 +366,7 @@ cleanup:
     } else if (hdfs_handle->outstanding == 0) {
         // No I/O in-flight, clean-up.
         rc = close_and_clean(hdfs_handle, rc);
+        globus_gridftp_server_finished_transfer(op, rc);
     } else if (rc != GLOBUS_SUCCESS) {
         // Don't close the file because the other transfers will want to finish up.
         // However, do set the failure status.

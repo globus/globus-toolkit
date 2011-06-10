@@ -16,7 +16,7 @@
 /*
  *  Globals for this library.
  */
-const globus_version_t gridftp_hdfs_local_version =
+globus_version_t gridftp_hdfs_local_version =
 {
     0, /* major version number */
     30, /* minor/bug version number */
@@ -37,7 +37,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
     globus_l_gfs_hdfs_start,
     globus_l_gfs_hdfs_destroy,
     NULL, /* list */
-    globus_l_gfs_hdfs_send,
+    hdfs_send,
     hdfs_recv,
     NULL, /*globus_l_gfs_hdfs_trev, */ /* trev */
     NULL, /* active */

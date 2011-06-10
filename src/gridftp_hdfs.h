@@ -29,7 +29,9 @@
 // Data types and globals
 #define default_id 00;
 
-extern const globus_version_t gridftp_hdfs_local_version;
+// Note: This really should be const, but the globus module activation code
+// doesn't have this as const.
+extern globus_version_t gridftp_hdfs_local_version;
 
 typedef struct globus_l_gfs_hdfs_handle_s
 {
@@ -37,7 +39,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     hdfsFS                              fs;
     hdfsFile                            fd;
     globus_size_t                       block_size;
-    globus_off_t                        block_length;
+    globus_off_t                        op_length; // Length of the requested read/write size
     globus_off_t                        offset;
     unsigned int                        done;
     globus_result_t                     done_status; // The status of the finished transfer.
@@ -67,6 +69,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     char *                              syslog_msg;  // Message printed out to syslog.
     unsigned int                        io_block_size;
     unsigned long long                  io_count;
+    globus_bool_t                       eof;
 } globus_l_gfs_hdfs_handle_t;
 typedef globus_l_gfs_hdfs_handle_t hdfs_handle_t;
 
@@ -102,21 +105,9 @@ globus_l_gfs_hdfs_trev(
 
 // Function for sending a file to the client.
 void
-globus_l_gfs_hdfs_send(
+hdfs_send(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
-    void *                              user_arg);
-
-void
-globus_l_gfs_hdfs_read_from_storage( 
-    globus_l_gfs_hdfs_handle_t *      hdfs_handle);
-
-void
-globus_l_gfs_hdfs_read_from_storage_cb(
-    globus_gfs_operation_t              op,
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       nbytes,
     void *                              user_arg);
 
 
@@ -127,9 +118,7 @@ hdfs_recv(
     globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg);
 
-int use_file_buffer(
-    globus_l_gfs_hdfs_handle_t * hdfs_handle);
-
+// Buffer management for writes
 globus_result_t
 hdfs_store_buffer(
     globus_l_gfs_hdfs_handle_t * hdfs_handle,
@@ -144,6 +133,31 @@ hdfs_dump_buffers(
 void
 remove_file_buffer(
     globus_l_gfs_hdfs_handle_t * hdfs_handle);
+
+int use_file_buffer(
+    globus_l_gfs_hdfs_handle_t * hdfs_handle);
+
+// Buffer management for reads
+// TODO: unify the logic for reads and writes.
+inline globus_result_t
+allocate_buffers(
+    hdfs_handle_t *    hdfs_handle,
+    globus_size_t             num_buffers);
+    
+inline globus_ssize_t
+find_buffer(
+    hdfs_handle_t *    hdfs_handle,
+    globus_byte_t *    buffer); 
+            
+inline globus_ssize_t
+find_empty_buffer(
+    hdfs_handle_t *    hdfs_handle);
+
+inline void
+disgard_buffer(
+    hdfs_handle_t * hdfs_handle,
+    globus_ssize_t idx);
+
 
 // Metadata-related functions
 void
@@ -171,6 +185,7 @@ globus_l_gfs_file_copy_stat(
     const char *                        symlink_target);
 
 // Some helper functions
+// All must be called with the hdfs_handle mutex held
 void
 set_done(
     hdfs_handle_t *    hdfs_handle,

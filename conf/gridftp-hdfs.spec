@@ -1,5 +1,5 @@
 Name:           gridftp-hdfs
-Version:        0.3.2
+Version:        0.4.0
 Release:        2
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -92,6 +92,13 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Mon Jun 6 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.4.0-2
+- Decrease logging verbosity.
+
+* Mon Jun 6 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.4.0-1
+- Rewrite of send/recv to clean up logic and error handling.
+- Should improve multithreaded performance.
+
 * Thu Jun 2 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.3.2-2
 - Remove dependency on gratia probe.
 

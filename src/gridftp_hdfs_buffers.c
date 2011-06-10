@@ -188,8 +188,11 @@ globus_result_t hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle, glob
     // If wrote_something=0, then we have filled up all our buffers; allocate a new one.
     if (wrote_something == 0) {
         hdfs_handle->buffer_count += 1;
-        snprintf(err_msg, MSG_SIZE, "Initializing buffer number %d.\n", hdfs_handle->buffer_count);
-        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
+        if (hdfs_handle->buffer_count > hdfs_handle->max_buffer_count/2) {
+            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Initializing buffer number %d.\n", hdfs_handle->buffer_count);
+        } else {
+            globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Initializing buffer number %d.\n", hdfs_handle->buffer_count);
+        }
         // Refuse to allocate more than the max.
         if ((hdfs_handle->using_file_buffer == 0) && (hdfs_handle->buffer_count == hdfs_handle->max_buffer_count)) {
             // Out of memory buffers; we really shouldn't hit this code anymore.
@@ -302,5 +305,82 @@ hdfs_dump_buffers(hdfs_handle_t *hdfs_handle) {
     //    printf("Waiting on buffer %d\n", hdfs_handle->offset);
     //}
     return rc;
+}
+
+/**
+ *  Buffer management functions for the read workflow
+ */
+inline globus_result_t
+allocate_buffers( 
+    hdfs_handle_t * hdfs_handle, 
+    globus_size_t          num_buffers)
+{   
+    GlobusGFSName(allocate_buffers);
+    globus_result_t rc = GLOBUS_SUCCESS;
+    globus_ssize_t new_size = num_buffers-hdfs_handle->buffer_count;
+    if (new_size > 0) {
+        // Re-allocate our buffers
+        hdfs_handle->buffer = globus_realloc(hdfs_handle->buffer,
+            num_buffers*hdfs_handle->block_size*sizeof(globus_byte_t));
+        hdfs_handle->used = globus_realloc(hdfs_handle->used,
+            num_buffers*sizeof(globus_bool_t));
+        hdfs_handle->offsets = globus_realloc(hdfs_handle->offsets,
+            num_buffers*sizeof(globus_off_t));
+        hdfs_handle->nbytes = globus_realloc(hdfs_handle->nbytes,
+            num_buffers*sizeof(globus_size_t));
+        memset(hdfs_handle->used+hdfs_handle->buffer_count, 0, sizeof(short)*new_size);
+        hdfs_handle->buffer_count = num_buffers;
+
+        if (!hdfs_handle->buffer || !hdfs_handle->offsets
+                || !hdfs_handle->used || !hdfs_handle->nbytes) {
+            MemoryError(hdfs_handle, "Allocating buffers for read", rc)
+            return rc;
+        }
+    }
+    return rc;
+}   
+
+inline globus_ssize_t
+find_buffer(
+    hdfs_handle_t * hdfs_handle,
+    globus_byte_t * buffer)                       
+{
+    globus_ssize_t result = -1;
+    globus_size_t idx;
+    for (idx=0; idx<hdfs_handle->buffer_count; idx++) {
+        if (hdfs_handle->buffer+idx*hdfs_handle->block_size == buffer) {
+            result = idx;
+            break;
+        } 
+    }   
+    return result;
+}       
+
+inline globus_ssize_t
+find_empty_buffer(
+    hdfs_handle_t * hdfs_handle)
+{
+    globus_ssize_t result = -1;
+    globus_size_t idx = 0;
+    for (idx=0; idx<hdfs_handle->buffer_count; idx++) {
+        if (!hdfs_handle->used[idx]) {
+            result = idx;
+            break;
+        }
+    }
+    if (result >= 0) {
+        hdfs_handle->used[idx] = 1;
+    }
+    return result;
+}
+
+inline void
+disgard_buffer(
+    hdfs_handle_t * hdfs_handle,
+    globus_ssize_t idx)
+{
+    if (idx >= 0 && idx < hdfs_handle->buffer_count) {
+        hdfs_handle->used[idx] = 0;
+    }
 }
 
