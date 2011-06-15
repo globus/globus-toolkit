@@ -4,7 +4,7 @@ set -e
 
 usage()
 {
-    echo "Usage: $0 -n OSNAME -R RELEASENAME -v OSVER [-a ARTIFACTROOT] [-S] [-t TAG]"
+    echo "Usage: $0 [-a ARTIFACTROOT] [-S] [-t TAG]"
 }
 
 get_package_filenames()
@@ -28,75 +28,57 @@ topdir="$(pwd)/debbuild"
 releasename=""
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:R:a:St:hg:f:q $*)
 globusversion=""
-set -- ${args}
 
 sign=1
 quick=0
 tag=""
 flavor=gcc64dbg
+osname="$(lsb_release -is | tr '[[:upper:]]' '[[:lower:]]')"
+osver="$(lsb_release -rs)"
+releasename="$(lsb_release -cs)"
+artifactroot=""
 
-for i; do
+while getopts n:v:R:a:St:hg:f:q i; do
     case "$i" in
-        -n)
-            osname="$2"
-            shift
-            shift
+        n)
+            osname="$OPTARG"
             ;;
-        -v)
-            osver="$2"
-            shift
-            shift
+        v)
+            osver="$OPTARG"
             ;;
-	-R)
-	    releasename="$2"
-	    shift 2
+	R)
+	    releasename="$OPTARG"
 	    ;;
-        -a)
-            artifactroot="$2"
-            shift
-            shift
+        a)
+            artifactroot="$OPTARG"
             ;;
-	-S)
-	   sign=0 
-	   shift
+	S)
+	    sign=0 
 	    ;;
-        -t)
-           tag="$2"
-           shift 2
+        t)
+           tag="$OPTARG"
            ;;
-        -h)
+        h)
            usage
            exit 0
            ;;
-        -g)
-           if ! expr "$2" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
-               echo "Invalid GT version $2" 1>&2
+        g)
+           if ! expr "$OPTARG" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
+               echo "Invalid GT version $OPTARG" 1>&2
                exit 1
            fi
-           globusversion="$2"
-           shift 2
+           globusversion="$OPTARG"
            ;;
-	-f)
-           flavor="$2"
-           shift 2
+	f)
+           flavor="$OPTARG"
            ;;
-	-q)
+	q)
 	   quick=1
-	   shift
 	   ;;
-        --)
-           shift
-           break
-           ;;
     esac
 done
-
-if [ "$osname" = "" -o "$osver" = "" -o "$releasename" = "" ]; then
-    usage 1>&2
-    exit 1
-fi
+shift $(($OPTIND - 1))
 
 if [ -d "${topdir}.old" ]; then
     rm -rf "${topdir}.old"
@@ -114,7 +96,7 @@ fi
 HOME=$topdir
 
 # Remove everything prior to building
-pkgs_to_rm="$(dpkg-query -W -f="\${Package}\t\${Status}\n" '*globus*' 'grid-packaging*' | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
+pkgs_to_rm="$(dpkg-query -W -f="\${Package}\t\${Status}\n" '*globus*' 'grid-packaging*' '*myproxy*' 'gsi-openssh*' | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
 if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -r $pkgs_to_rm
 fi
@@ -166,19 +148,37 @@ for i in grid-packaging-tools $packages; do
 	cp $topdir/../package-output/$tarball "$topdir/${debname}_${pkgversion}.orig.tar.gz"
 
         cd "$debname";
-	fakeroot dpkg-buildpackage -uc -us
+	fakeroot dpkg-buildpackage
 	cd -
 	sudo dpkg -i $(get_package_filenames "$topdir" $debout)
     fi
 done
 
+# Build repo definition package
+cp -R "$debiandir/globus-repository" "$topdir/globus-repository"
+
+cd "$topdir/globus-repository"
+autoreconf -i
+
+if test -n "$artifactroot"; then
+	DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage
+else
+	DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage
+fi
+
+cd -
+
 # Remove what we built from the system
-pkgs_to_rm="$(dpkg-query -W -f="\${Package}\t\${Status}\n" '*globus*' 'grid-packaging*' | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
+pkgs_to_rm="$(dpkg-query -W -f="\${Package}\t\${Status}\n" '*globus*' 'grid-packaging*' '*myproxy*' 'gsi-openssh*' | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
 if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -r $pkgs_to_rm
 fi
 
 # Move the results into an artifact directory
+rm -rf "${packagingdir}/repo.old"
+if [ -d "${packagingdir}/repo" ]; then
+    mv "${packagingdir}/repo" "${packagingdir}/repo.old"
+fi
 mkdir "${packagingdir}/repo"
 cd "${packagingdir}/repo"
 mkdir conf
