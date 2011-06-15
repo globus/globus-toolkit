@@ -33,7 +33,7 @@ globusversion=""
 sign=1
 quick=0
 tag=""
-flavor=gcc64dbg
+flavor=unset
 osname="$(lsb_release -is | tr '[[:upper:]]' '[[:lower:]]')"
 osver="$(lsb_release -rs)"
 releasename="$(lsb_release -cs)"
@@ -90,6 +90,22 @@ mkdir -p "$topdir"
 if [ "$sign" = 1 ]; then
     # Copy GPG keyring to $topdir
     cp -R $HOME/.gnupg $topdir/.gnupg
+fi
+
+if [ "$flavor" = "unset" ]; then
+    debarch=$(dpkg-architecture -qDEB_BUILD_ARCH) 
+    case $debarch in
+	amd64|ia64)
+	    flavor=gcc64
+	    ;;
+	i386)
+	    flavor=gcc32
+	    ;;
+	*)
+	    echo "Don't know flavor for architecture ${debarch}, use -f FLAVOR" 1>&2
+	    exit 1
+	    ;;
+    esac
 fi
 
 # Reset home to this directory as it is a transient bamboo build dir
