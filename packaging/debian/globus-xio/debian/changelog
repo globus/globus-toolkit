@@ -2,7 +2,7 @@ globus-xio (2.9-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Wed, 25 May 2011 02:15:52 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 25 May 2011 02:15:52 -0400
 
 globus-xio (2.8-3) unstable; urgency=low
 

@@ -2,7 +2,7 @@ globus-gfork (2.0-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Wed, 25 May 2011 02:32:10 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 25 May 2011 02:32:10 -0400
 
 globus-gfork (0.2-4) unstable; urgency=low
 

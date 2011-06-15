@@ -2,7 +2,7 @@ globus-xio-popen-driver (1.1-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Thu, 26 May 2011 14:51:07 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 26 May 2011 14:51:07 -0400
 
 globus-xio-popen-driver (0.9-3) unstable; urgency=low
 

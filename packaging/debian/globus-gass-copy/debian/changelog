@@ -2,7 +2,7 @@ globus-gass-copy (7.3-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Mon, 06 Jun 2011 12:49:37 -0400
+ -- Globus Toolkit <support@globus.org>  Mon, 06 Jun 2011 12:49:37 -0400
 
 globus-gass-copy (5.10-2) unstable; urgency=low
 

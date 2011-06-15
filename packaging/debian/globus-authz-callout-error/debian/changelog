@@ -2,7 +2,7 @@ globus-authz-callout-error (1.0-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Thu, 26 May 2011 17:13:40 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 26 May 2011 17:13:40 -0400
 
 globus-authz-callout-error (0.5-3) unstable; urgency=low
 

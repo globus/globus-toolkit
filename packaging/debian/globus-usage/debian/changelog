@@ -2,7 +2,7 @@ globus-usage (2.1-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Thu, 26 May 2011 17:55:36 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 26 May 2011 17:55:36 -0400
 
 globus-usage (1.4-2) unstable; urgency=low
 

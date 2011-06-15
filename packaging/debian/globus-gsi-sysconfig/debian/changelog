@@ -2,7 +2,7 @@ globus-gsi-sysconfig (4.1-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Wed, 25 May 2011 17:20:47 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 25 May 2011 17:20:47 -0400
 
 globus-gsi-sysconfig (3.1-2) unstable; urgency=low
 

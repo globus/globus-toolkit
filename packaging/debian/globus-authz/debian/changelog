@@ -2,7 +2,7 @@ globus-authz (1.1-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Thu, 26 May 2011 17:42:48 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 26 May 2011 17:42:48 -0400
 
 globus-authz (0.7-4) unstable; urgency=low
 

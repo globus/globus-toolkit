@@ -2,7 +2,7 @@ globus-gsi-credential (4.0-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Wed, 25 May 2011 21:08:02 -0400
+ -- Globus Toolkit <support@globus.org>  Wed, 25 May 2011 21:08:02 -0400
 
 globus-gsi-credential (3.5-1) unstable; urgency=low
 

@@ -2,7 +2,7 @@ globus-gssapi-error (3.1-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
- -- Globus Support <support@globus.org>  Thu, 26 May 2011 13:32:28 -0400
+ -- Globus Toolkit <support@globus.org>  Thu, 26 May 2011 13:32:28 -0400
 
 globus-gssapi-error (2.5-8) unstable; urgency=low
 
