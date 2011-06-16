@@ -15,55 +15,51 @@ bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
 artifactroot=""
-args=$(getopt n:v:a:St:hg: $*)
 globusversion=""
-set -- ${args}
 
 sign=1
 tag=""
-for i; do
+while getopts n:v:a:St:hg: i; do
     case "$i" in
-        -n)
-            osname="$2"
+        n)
+            osname="$OPTARG"
             shift
             shift
             ;;
-        -v)
-            osver="$2"
+        v)
+            osver="$OPTARG"
             shift
             shift
             ;;
-        -a)
-            artifactroot="$2"
+        a)
+            artifactroot="$OPTARG"
             shift
             shift
             ;;
-	-S)
+	S)
 	   sign=0 
 	   shift
 	    ;;
-        -t)
-           tag="$2"
+        t)
+           tag="$OPTARG"
            shift 2
            ;;
-        -h)
+        h)
            usage
            exit 0
            ;;
-        -g)
-           if ! expr "$2" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
-               echo "Invalid GT version $2" 1>&2
+        g)
+           if ! expr "$OPTARG" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
+               echo "Invalid GT version $OPTARG" 1>&2
                exit 1
            fi
-           globusversion="$2"
+           globusversion="$OPTARG"
            shift 2
-           ;;
-        --)
-           shift
-           break
            ;;
     esac
 done
+
+shift $(($OPTIND - 1))
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
     usage 1>&2
@@ -75,6 +71,16 @@ if [ "$sign" = 1 ]; then
     # Copy GPG keyring to $topdir
     cp -R $HOME/.gnupg $topdir/.gnupg
 fi
+
+# Fedora 13's version of LaTeX is > 5 years old. It returns non-zero on
+# exit the first time it runs. We work around that by running it once in the
+# OS image, and then copying the generated output into the new home dir for
+# this build
+for x in "${HOME}"/.texlive*; do
+    if [ -d "${x}" ]; then
+        cp -R "${x}" "${topdir}"
+    fi
+done
 
 # Reset home to this directory as it is a transient bamboo build dir
 HOME=$topdir
