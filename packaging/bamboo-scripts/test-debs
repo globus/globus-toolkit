@@ -63,7 +63,7 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 
 # Download and install the repo definition package
-curl -q "$repopkg_url" > "${repopkg_url##*/}"
+curl -s "$repopkg_url" > "${repopkg_url##*/}"
 sudo dpkg -i "${repopkg_url##*/}"
 
 # Create source packages for the tests

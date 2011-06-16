@@ -98,7 +98,7 @@ if [ "$flavor" = "unset" ]; then
 	amd64|ia64)
 	    flavor=gcc64
 	    ;;
-	i386)
+	i?86)
 	    flavor=gcc32
 	    ;;
 	*)
