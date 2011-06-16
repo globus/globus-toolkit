@@ -23,26 +23,18 @@ while getopts n:v:a:St:hg: i; do
     case "$i" in
         n)
             osname="$OPTARG"
-            shift
-            shift
             ;;
         v)
             osver="$OPTARG"
-            shift
-            shift
             ;;
         a)
             artifactroot="$OPTARG"
-            shift
-            shift
             ;;
 	S)
 	   sign=0 
-	   shift
 	    ;;
         t)
            tag="$OPTARG"
-           shift 2
            ;;
         h)
            usage
@@ -54,7 +46,6 @@ while getopts n:v:a:St:hg: i; do
                exit 1
            fi
            globusversion="$OPTARG"
-           shift 2
            ;;
     esac
 done
