@@ -65,6 +65,7 @@ fi
 # Download and install the repo definition package
 curl -s "$repopkg_url" > "${repopkg_url##*/}"
 sudo dpkg -i "${repopkg_url##*/}"
+sudo aptitude -y update
 
 # Create source packages for the tests
 ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
