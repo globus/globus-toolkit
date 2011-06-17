@@ -1,4 +1,4 @@
-globus-gridftp-server (5.4-0GT5.1.1+1) unstable; urgency=low
+globus-gridftp-server (5.4-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
 
