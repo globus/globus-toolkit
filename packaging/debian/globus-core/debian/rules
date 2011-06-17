@@ -77,6 +77,7 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --libexecdir='$${datadir}/globus' \
 	   --docdir='$(_docdir)/globus-core' \
 	   --sysconfdir='/etc' \
+	   --localstatedir='/var' \
 	   --with-flavor=$(flavor) \
 	   --enable-64bit=$(enable64) \
 	   --enable-debug \
