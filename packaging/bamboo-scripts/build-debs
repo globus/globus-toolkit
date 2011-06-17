@@ -164,7 +164,7 @@ for i in grid-packaging-tools $packages; do
 	cp $topdir/../package-output/$tarball "$topdir/${debname}_${pkgversion}.orig.tar.gz"
 
         cd "$debname";
-	fakeroot dpkg-buildpackage
+	fakeroot dpkg-buildpackage -sa
 	cd -
 	sudo dpkg -i $(get_package_filenames "$topdir" $debout)
     fi
@@ -177,9 +177,9 @@ cd "$topdir/globus-repository"
 autoreconf -i
 
 if test -n "$artifactroot"; then
-	DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage
+	DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa
 else
-	DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage
+	DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa
 fi
 
 cd -
