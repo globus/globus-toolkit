@@ -1,3 +1,9 @@
+globus-proxy-utils (4.2-0GT5.1.1a) unstable; urgency=low
+
+  * add globus_gsi_cred_read_cert_bio
+
+ -- Globus Toolkit <support@globus.org>  Mon, 20 Jun 2011 15:51:00 -0400
+
 globus-proxy-utils (4.1-0GT5.1.1a) unstable; urgency=low
 
   * Non-Maintainer Upload -- Update to Globus Toolkit 5.1.1
