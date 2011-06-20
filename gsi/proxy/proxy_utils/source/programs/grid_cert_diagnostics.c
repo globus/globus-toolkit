@@ -547,7 +547,6 @@ int main(int argc, char * argv[])
         if (strcmp(cert_to_check, "-") == 0)
         {
             BIO * cert_bio;
-            x509_cert = NULL;
             printf("Checking cert from stdin... ");
 
             if((cert_bio = BIO_new_fp(stdin, BIO_NOCLOSE)) == NULL)
@@ -555,27 +554,23 @@ int main(int argc, char * argv[])
                 printf("failed\nError opening BIO to read from stdin\n");
                 goto out;
             }
-            /* read in the cert */
-            if(!PEM_read_bio_X509(cert_bio, &x509_cert, NULL, NULL))
-            {
-                printf("failed\nError reading certificate from stdin\n");
-                goto out;
-            }
 
-            result = globus_gsi_cred_set_cert(handle, x509_cert);
+            result = globus_gsi_cred_read_cert_bio(handle, cert_bio);
             if (result != GLOBUS_SUCCESS)
             {
                 printf("failed\n%s\n",
                         indent_string(
                             globus_error_print_friendly(
                                     globus_error_peek(result))));
+                BIO_free(cert_bio);
+                goto out;
             }
             else
             {
                 printf("ok\n");
             }
+
             BIO_free(cert_bio);
-            X509_free(x509_cert);
         }
         else
         {
