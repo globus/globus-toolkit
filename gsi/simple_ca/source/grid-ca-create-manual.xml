@@ -72,7 +72,7 @@ $Header$
     <para>
     If run as a privileged user, the &cmd; program creates the CA certificate
     and support files in
-    <filename><envar>${localstatedir}</envar>/globus_simple_ca</filename>
+    <filename><envar>${localstatedir}</envar>/lib/globus/simple_ca</filename>
     and the CA certificate and signing policy are installed in the
     <filename>/etc/grid-security</filename> directory. Otherwise,
     the files are created in the
