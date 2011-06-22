@@ -1,3 +1,9 @@
+globus-simple-ca (2.3-0GT5.1.1a) unstable; urgency=low
+
+  * use /var/lib/globus instead of /var
+
+ -- Globus Toolkit <support@globus.org>  Wed, 22 Jun 2011 10:01:00 -0400
+
 globus-simple-ca (2.2-0GT5.1.1b) unstable; urgency=low
 
   * Explicitly use /var
