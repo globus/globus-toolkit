@@ -639,8 +639,8 @@ EOF
             defaults for parameters or those specified on the command line
             without prompting. This option also implies -force. [unset]"
     printhelp "-dir DIRECTORY" "Create the SimpleCA in DIRECTORY.
-            [$( ([ -w "${localstatedir}/." ] &&  \
-                    echo \${localstatedir}/globus_simple_ca ) \
+            [$( ([ -w "${localstatedir}/lib/." ] &&  \
+                    echo \${localstatedir}/lib/globus/simple_ca ) \
                     || echo \${HOME}/.globus/simpleCA)]"
     printhelp "-subject SUBJECT" "Create CA with the subject name SUBJECT 
            [cn=Globus Simple CA, ou=$(generate_unique_name),
@@ -758,8 +758,8 @@ readCommandLine "$@"
 
 # setup variables used by the script
 if test -z "${GRID_CA_DIR}"; then
-    if [ -d "${localstatedir}" -a -w "${localstatedir}" ]; then
-        GRID_CA_DIR="$localstatedir/globus_simple_ca"
+    if [ -d "${localstatedir}/lib/." -a -w "${localstatedir}/lib/." ]; then
+        GRID_CA_DIR="$localstatedir/lib/globus/simple_ca"
         default_loc="yes"
     else
         GRID_CA_DIR="${HOME}/.globus/simpleCA"

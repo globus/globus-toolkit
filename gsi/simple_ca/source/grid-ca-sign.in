@@ -383,15 +383,15 @@ fi
 readCommandLine "$@"
 
 if test -z "$GRID_CA_DIR"; then
-    if test -w "${localstatedir}/globus_simple_ca/."; then
-        GRID_CA_DIR="${localstatedir}/globus_simple_ca" 
+    if test -w "${localstatedir}/lib/globus/simple_ca/."; then
+        GRID_CA_DIR="${localstatedir}/lib/globus/simple_ca" 
     elif test -d "${HOME}/.globus/simpleCA/."; then
         GRID_CA_DIR="${HOME}/.globus/simpleCA"
     else
         exec 1>&2
         echo ""
         echo "ERROR: No usable Simple CA directory found at \${HOME}/.globus/simpleCA or "
-        echo "\${localstatedir}/simpleCA"
+        echo "\${localstatedir}/lib/globus/simple_ca"
         echo ""
         echo "Either specify a directory with -dir, or run"
         echo "grid-ca-create to create a CA"

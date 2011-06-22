@@ -57,7 +57,7 @@ $Header$
     <para>
     If run as a privileged user, &cmd; uses the CA certificate and
     configuration located in
-    <filename><envar>${localstatedir}</envar>/globus_simple_ca</filename> to
+    <filename><envar>${localstatedir}</envar>/lib/globus/simple_ca</filename> to
     sign the certificate. For a non-privileged user, &cmd; uses the CA
     certificate and configuration located in
     <filename><envar>$HOME</envar>/.globus/simpleCA</filename>. The &cmd;
