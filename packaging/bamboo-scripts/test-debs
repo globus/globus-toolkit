@@ -77,7 +77,7 @@ sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" |
 # Set up security if we dont have it done already
 if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
     sudo grid-ca-create -noint -pass globus
-    sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/globus_simple_ca/cacert.pem)"
+    sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
     sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
     sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
     X509_USER_CERT="$HOME/.globus/usercert.pem"
