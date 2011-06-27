@@ -38,47 +38,69 @@ osname="$(lsb_release -is | tr '[[:upper:]]' '[[:lower:]]')"
 osver="$(lsb_release -rs)"
 releasename="$(lsb_release -cs)"
 artifactroot=""
+chroot=""
+in_chroot=0
+chroot_args=""
+binaryonly=0
 
-while getopts n:v:R:a:St:hg:f:q i; do
+while getopts ibc:n:v:R:a:St:hg:f:q i; do
     case "$i" in
+        i)
+           in_chroot=1
+           ;;
+        b)
+            binaryonly=1
+            chroot_args="${chroot_args:+$chroot_args}-b"
+           ;;
+        c)
+            chroot="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-i"
+            ;;
         n)
             osname="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-n $OPTARG"
             ;;
         v)
             osver="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-v $OPTARG"
             ;;
 	R)
 	    releasename="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-R $releasename"
 	    ;;
         a)
             artifactroot="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-a $artifactroot"
             ;;
 	S)
 	    sign=0 
+            chroot_args="${chroot_args:+$chroot_args }-S"
 	    ;;
         t)
-           tag="$OPTARG"
-           ;;
+            tag="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-t $OPTARG"
+            ;;
         h)
-           usage
-           exit 0
-           ;;
+            usage
+            exit 0
+            ;;
         g)
-           if ! expr "$OPTARG" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
-               echo "Invalid GT version $OPTARG" 1>&2
-               exit 1
-           fi
-           globusversion="$OPTARG"
-           ;;
+            if ! expr "$OPTARG" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
+                echo "Invalid GT version $OPTARG" 1>&2
+                exit 1
+            fi
+            globusversion="$OPTARG"
+            chroot_args="${chroot_args:+$chroot_args }-g $OPTARG"
+            ;;
 	f)
-           flavor="$OPTARG"
-           ;;
+            flavor="$OPTARG"
+            ;;
 	q)
-	   quick=1
-	   ;;
+           quick=1
+            chroot_args="${chroot_args:+$chroot_args }-q"
+           ;;
     esac
 done
-shift $(($OPTIND - 1))
 
 if [ -d "${topdir}.old" ]; then
     rm -rf "${topdir}.old"
@@ -121,7 +143,11 @@ bundles=globus-data-management-server,globus-data-management-client,globus-data-
 packages_to_build=myproxy,gsi_openssh
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 find debian \( -name rules -o -name '*.postinst' -o -name '*.init' \) -exec chmod a+x {} + 
-packages="$(./make-packages.pl -ab -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
+
+if [ "$quick" -eq 1 ]; then
+    lpopts="-no-updates"
+fi
+packages="$(./make-packages.pl -ab $lpopts -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
 	awk "/at version/ { print \$1 }" )"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
@@ -137,6 +163,26 @@ else
 	cp gpt*.tar.gz ../../package-output
 fi
 cd $topdir
+
+if [ "$chroot" != "" ]; then
+    chroot_path="$(schroot -i $chroot | awk "\$1 ~ /Path/ { print \$2 }")"
+    if [ -d "${chroot_path}/${packagingdir}" ]; then
+        if [ -d "${chroot_path}/${packagingdir}.old" ]; then
+            rm -rf "${chroot_path}/${packagingdir}.old" 
+        fi
+        mv "${chroot_path}/${packagingdir}" "${chroot_path}/${packagingdir}.old" 
+    fi
+    mkdir -p "${chroot_path}/${packagingdir}"
+    cp -R "${packagingdir}"/* "${chroot_path}/${packagingdir}"
+    if [ "${quick}" -eq 0 ]; then
+        chroot_args="$chroot_args -q"
+    fi
+    if [ "${binaryonly}" -eq 0 ]; then
+        chroot_args="$chroot_args -b"
+    fi
+        
+    schroot -c "$chroot" -d "$packagingdir" -- bash $0 $chroot_args 
+fi
 
 for i in grid-packaging-tools $packages; do
     debname="$(echo "$i" | tr _ -)"
@@ -164,22 +210,24 @@ for i in grid-packaging-tools $packages; do
 	cp $topdir/../package-output/$tarball "$topdir/${debname}_${pkgversion}.orig.tar.gz"
 
         cd "$debname";
-	fakeroot dpkg-buildpackage -sa
+       fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
 	cd -
 	sudo dpkg -i $(get_package_filenames "$topdir" $debout)
     fi
 done
 
-# Build repo definition package
-cp -R "$debiandir/globus-repository" "$topdir/globus-repository"
+# Build repo definition package if not in a chroot
+if [ $in_chroot = 0 ]; then
+    cp -R "$debiandir/globus-repository" "$topdir/globus-repository"
 
-cd "$topdir/globus-repository"
-autoreconf -i
+    cd "$topdir/globus-repository"
+    autoreconf -i
 
-if test -n "$artifactroot"; then
-	DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa
-else
-	DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa
+    if test -n "$artifactroot"; then
+           DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    else
+           DEB_CONFIGURE_USER_FLAGS=--with-toolkit-version=$(cat $packagingdir/fait_accompli/version) fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
+    fi
 fi
 
 cd -
@@ -213,6 +261,18 @@ EOF
 for x in "${topdir}"/*.changes; do
     reprepro -b . include unstable "$x"
 done
+
+if [ "$chroot" != "" ]; then
+    for x in "${chroot_path}/${topdir}"/*.changes; do
+        case "$(basename $x)" in
+            grid-packaging-tools*|globus-simple-ca*|globus-repository*)
+               ;;
+           *)
+               reprepro -b . include unstable "$x"
+               ;;
+       esac
+    done
+fi
 
 cd "${packagingdir}"
 find repo -name '*.deb' -exec basename {} \; > all-packages
