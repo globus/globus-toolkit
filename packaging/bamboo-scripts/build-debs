@@ -103,13 +103,16 @@ while getopts ibc:n:v:R:a:St:hg:f:q i; do
     esac
 done
 
-if [ -d "${topdir}.old" ]; then
-    rm -rf "${topdir}.old"
+if [ $in_chroot -eq 0 ]; then
+    if [ -d "${topdir}.old" ]; then
+        rm -rf "${topdir}.old"
+    fi
+    if [ -d "${topdir}" ]; then
+        mv "${topdir}" "${topdir}.old"
+    fi
+    mkdir -p "$topdir"
 fi
-if [ -d "${topdir}" ]; then
-    mv "${topdir}" "${topdir}.old"
-fi
-mkdir -p "$topdir"
+
 if [ "$sign" = 1 ]; then
     # Copy GPG keyring to $topdir
     cp -R $HOME/.gnupg $topdir/.gnupg
@@ -166,23 +169,16 @@ fi
 cd $topdir
 
 if [ "$chroot" != "" ]; then
-    chroot_path="$(schroot -i $chroot | awk "\$1 ~ /Path/ { print \$2 }")"
-    if [ -d "${chroot_path}/${packagingdir}" ]; then
-        if [ -d "${chroot_path}/${packagingdir}.old" ]; then
-            rm -rf "${chroot_path}/${packagingdir}.old" 
-        fi
-        mv "${chroot_path}/${packagingdir}" "${chroot_path}/${packagingdir}.old" 
-    fi
-    mkdir -p "${chroot_path}/${packagingdir}"
-    cp -R "${packagingdir}"/* "${chroot_path}/${packagingdir}"
-    if [ "${quick}" -eq 0 ]; then
-        chroot_args="$chroot_args -q"
-    fi
-    if [ "${binaryonly}" -eq 0 ]; then
-        chroot_args="$chroot_args -b"
-    fi
-        
     schroot -c "$chroot" -d "$packagingdir" -p -- bash $0 $chroot_args 
+    if [ -d "${topdir}-${chroot}" ]; then
+        if [ -d "${topdir}-${chroot}.old" ]; then
+            rm -rf "${topdir}-${chroot}.old"
+        fi
+        mv "${topdir}-${chroot}" "${topdir}-${chroot}.old"
+    fi
+    mv "${topdir}" "${topdir}-${chroot}"
+    mkdir "${topdir}"
+    cd "${topdir}"
 fi
 
 for i in grid-packaging-tools $packages; do
@@ -231,7 +227,7 @@ if [ $in_chroot = 0 ]; then
     fi
 fi
 
-cd -
+cd "${topdir}"
 
 # Remove what we built from the system
 pkgs_to_rm="$(dpkg-query -W -f="\${Package}\t\${Status}\n" '*globus*' 'grid-packaging*' '*myproxy*' 'gsi-openssh*' | awk -F"	" "\$2 ~ /^install/ { print \$1 }" || true)"
@@ -259,24 +255,26 @@ Description: Globus Toolkit Packages
 
 EOF
 
-for x in "${topdir}"/*.changes; do
-    reprepro -b . include unstable "$x"
-done
-
-if [ "$chroot" != "" ]; then
-    for x in "${chroot_path}/${topdir}"/*.changes; do
-        case "$(basename $x)" in
-            grid-packaging-tools*|globus-simple-ca*|globus-repository*)
-               ;;
-           *)
-               reprepro -b . include unstable "$x"
-               ;;
-       esac
+if [ "$in_chroot" -eq 0 ]; then
+    for x in "${topdir}"/*.changes; do
+        reprepro -b . include unstable "$x"
     done
+
+    if [ "$chroot" != "" ]; then
+        for x in "${topdir}-${chroot}"/*.changes; do
+            case "$(basename $x)" in
+                grid-packaging-tools*|globus-simple-ca*|globus-repository*)
+                   ;;
+               *)
+                   reprepro -b . include unstable "$x"
+                   ;;
+           esac
+        done
+    fi
+
+    cd "${packagingdir}"
+    find repo -name '*.deb' -exec basename {} \; > all-packages
+
+    mkdir -p debbuild-out
+    cp "${topdir}"/*.* debbuild-out
 fi
-
-cd "${packagingdir}"
-find repo -name '*.deb' -exec basename {} \; > all-packages
-
-mkdir -p debbuild-out
-cp "${topdir}"/*.* debbuild-out
