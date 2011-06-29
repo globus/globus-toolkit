@@ -181,6 +181,7 @@ if [ "$chroot" != "" ]; then
     fi
     mv "${topdir}" "${topdir}-${chroot}"
     mkdir "${topdir}"
+    cp -R "${orighome}/.gnupg" "${topdir}/.gnupg"
     cd "${topdir}"
 fi
 
