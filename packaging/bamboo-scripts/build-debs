@@ -22,6 +22,7 @@ get_package_filenames()
 umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
+orighome=$HOME
 packagingdir="$(pwd)"
 bamboodir=$(pwd)/bamboo-scripts
 debiandir=$(pwd)/debian
@@ -169,7 +170,9 @@ fi
 cd $topdir
 
 if [ "$chroot" != "" ]; then
+    HOME="$orighome"
     schroot -c "$chroot" -d "$packagingdir" -p -- bash $0 $chroot_args 
+    HOME="$topdir"
     if [ -d "${topdir}-${chroot}" ]; then
         if [ -d "${topdir}-${chroot}.old" ]; then
             rm -rf "${topdir}-${chroot}.old"
