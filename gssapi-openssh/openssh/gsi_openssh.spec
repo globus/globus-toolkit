@@ -127,7 +127,6 @@ BuildRequires: openssl-devel >= 0.9.8e
 BuildRequires: tcp_wrappers-devel
 BuildRequires: openssl-devel >= 0.9.8j
 %endif
-BuildRequires: fipscheck-devel
 
 %if %{kerberos5}
 BuildRequires: krb5-devel
@@ -318,15 +317,6 @@ LOOK_FOR_FC_GLOBUS_INCLUDE="yes"; export LOOK_FOR_FC_GLOBUS_INCLUDE
 
 make SSH_PROGRAM=%{_bindir}/gsissh \
      ASKPASS_PROGRAM=%{_libexecdir}/openssh/ssh-askpass
-
-# Add generation of HMAC checksums of the final stripped binaries
-%define __spec_install_post \
-    %{?__debug_package:%{__debug_install_post}} \
-    %{__arch_install_post} \
-    %{__os_install_post} \
-    fipshmac $RPM_BUILD_ROOT%{_bindir}/gsissh \
-    fipshmac $RPM_BUILD_ROOT%{_sbindir}/gsisshd \
-%{nil}
 
 %install
 rm -rf $RPM_BUILD_ROOT
