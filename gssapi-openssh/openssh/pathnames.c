@@ -75,7 +75,7 @@ init_pathnames()
         libexec = compose2(gl, LIBEXEC);
         piddir = compose2(gl, VARDIR);
     } else {
-        bindir = compose2(USRDIR, SSHDIR);
+        bindir = compose2(USRDIR, BINDIR);
         libexec = compose2(USRDIR, LIBEXEC);
         piddir = strdup(VARRUN);
     }
