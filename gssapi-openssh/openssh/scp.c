@@ -506,8 +506,8 @@ main(int argc, char **argv)
 
 	remin = remout = -1;
 	do_cmd_pid = -1;
-	/* Command to be executed on remote system using "ssh". */
-	(void) snprintf(cmd, sizeof cmd, "scp%s%s%s%s",
+	/* Command to be executed on remote system using "gsissh". */
+	(void) snprintf(cmd, sizeof cmd, "gsiscp%s%s%s%s",
 	    verbose_mode ? " -v" : "",
 	    iamrecursive ? " -r" : "", pflag ? " -p" : "",
 	    targetshouldbedirectory ? " -d" : "");
@@ -1216,7 +1216,7 @@ void
 usage(void)
 {
 	(void) fprintf(stderr,
-	    "usage: scp [-12346BCpqrv] [-c cipher] [-F ssh_config] [-i identity_file]\n"
+	    "usage: gsiscp [-12346BCpqrv] [-c cipher] [-F ssh_config] [-i identity_file]\n"
 	    "           [-l limit] [-o ssh_option] [-P port] [-S program]\n"
 	    "           [[user@]host1:]file1 ... [[user@]host2:]file2\n");
 	exit(1);
