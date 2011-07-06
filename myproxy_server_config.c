@@ -1223,8 +1223,8 @@ check_config(myproxy_server_context_t *context)
 	    rval = -1;
 	}
 	if (context->cert_dir == NULL)
-            myproxy_log("WARNING: cert_dir not specified in config file. "
-                        "No trustroots can be returned to clients!");
+            myproxy_log("cert_dir not specified in config file, so "
+                        "no trustroots will be provided to clients");
         else if (!myproxy_check_cert_dir(context->cert_dir)) {
 	    verror_put_string("The trustroots directory %s has failed sanity"
                         " checks.", context->cert_dir);
