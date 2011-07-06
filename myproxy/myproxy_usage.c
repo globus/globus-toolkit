@@ -91,7 +91,7 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
         verror_put_string("ERROR: strdup failure for target_str");
         goto error;
     }
-    myproxy_log("Processing usage_stats_target (%s)\n", target_str);
+    myproxy_debug("Processing usage_stats_target (%s)\n", target_str);
 
     if(target_str && (strchr(target_str, ',') || strchr(target_str, '!')))
     {
@@ -207,12 +207,12 @@ myproxy_usage_stats_init(myproxy_server_context_t *context)
             MYPROXY_USAGE_VER,
             usage_ent->target) != GLOBUS_SUCCESS)
         {
-            myproxy_log("USAGE-STATS: Error initializing (%s) (%s)",
+            myproxy_log("usage_stats: not initialized (%s) (%s)",
                      usage_ent->target?:"NULL",
                      usage_ent->taglist?:"NULL");
             result = GLOBUS_FAILURE;
         } else
-            myproxy_log("USAGE-STATS: Initialized (%s) (%s)",
+            myproxy_log("usage_stats: initialized (%s) (%s)",
                      usage_ent->target?:"NULL",
                      usage_ent->taglist?:"NULL");
     }
