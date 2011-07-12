@@ -542,6 +542,7 @@ BUNDLE globus-xio-extra-drivers
         globus_xio_netlogger_driver
         globus_xio_gridftp_multicast
 	globus_xio_token_bucket_driver
+        globus_xio_rate_driver
 
 BUNDLE globus-internationalization
         globus_icu4c
