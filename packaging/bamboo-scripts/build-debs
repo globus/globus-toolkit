@@ -224,6 +224,17 @@ if [ $in_chroot = 0 ]; then
     cd "$topdir/globus-repository"
     autoreconf -i
 
+    # Modify globus-repository to generate globus-repository-@RELEASENAME@
+    # packages
+    sed -e "s/@RELEASENAME@/${releasename}/g" \
+        < debian/control.in > debian/control
+    rm -f debian/control.in
+
+    mv debian/globus-repository.postinst \
+        debian/globus-repository-${releasename}.postinst
+    mv debian/globus-repository.postrm \
+        debian/globus-repository-${releasename}.postrm
+
     if test -n "$artifactroot"; then
            DEB_CONFIGURE_USER_FLAGS=--with-bamboo-artifact-url=$artifactroot fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
     else
