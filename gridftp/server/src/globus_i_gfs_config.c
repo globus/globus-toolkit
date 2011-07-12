@@ -151,6 +151,13 @@ static const globus_l_gfs_config_option_t option_list[] =
     "A comma separated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"cas", "cas", NULL, "cas", "authz-callouts", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable the GSI authorization callout framework, for callouts such as CAS.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"restrict_paths", "restrict_paths", NULL, "restrict-paths", "rp", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma separated list of paths that clients may access.  If a given path is a directory, "
+    "all contents and subdirectories will be allowed.  By default all paths are allowed, and access control is handled "
+    "by the OS."
+    , NULL, NULL,GLOBUS_FALSE, NULL},
+ {"rp_follow_symlinks", "rp_follow_symlinks", NULL, "rp-follow-symlinks", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Allow following symlinks that lead to restricted paths.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"acl", "acl", NULL, "acl", "em", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "A comma separated list of ACL or event modules to load.",
     NULL, NULL,GLOBUS_FALSE, NULL}, 

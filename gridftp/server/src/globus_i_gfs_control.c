@@ -67,6 +67,7 @@ static globus_bool_t                    globus_l_gfs_control_active = GLOBUS_FAL
 static globus_list_t *                  globus_l_gfs_server_handle_list;
 static globus_mutex_t                   globus_l_gfs_control_mutex;
 static globus_bool_t                    globus_l_gfs_control_got_done_cb = GLOBUS_FALSE;
+static globus_list_t *                  globus_l_gfs_path_alias_list = NULL;
 
 char *
 globus_i_gsc_string_to_959(
@@ -175,12 +176,19 @@ globus_l_gfs_conn_max_change_cb(
 
     GlobusGFSDebugExit();
 }
-
+typedef struct
+{
+    char *                              alias;
+    int                                 alias_len;
+    char *                              realpath;
+    int                                 realpath_len;
+} globus_l_gfs_alias_ent_t;
 
 void
 globus_i_gfs_control_init()
 {
     globus_i_gfs_config_option_cb_ent_t * cb_handle;
+    char *                                restrict_path;
     GlobusGFSName(globus_i_gfs_control_init);
     GlobusGFSDebugEnter();
 
@@ -193,6 +201,63 @@ globus_i_gfs_control_init()
         "connections_max",
         globus_l_gfs_conn_max_change_cb,
         NULL);
+     
+    if((restrict_path = globus_gfs_config_get_string("restrict_paths")) != NULL)
+    {
+        globus_list_t *                 list;
+        list = globus_list_from_string(restrict_path, ',', NULL);
+        
+        while(!globus_list_empty(list))
+        {
+            globus_l_gfs_alias_ent_t *      ent;
+            char *                          ent_str;
+            char *                          ptr;
+            
+            ent = (globus_l_gfs_alias_ent_t *)
+                globus_malloc(sizeof(globus_l_gfs_alias_ent_t));
+                
+            ent_str = (char *) globus_list_remove(&list, list);    
+            
+            if((ptr = strchr(ent_str, ':')) != NULL)
+            {
+                *ptr = '\0';
+                ptr++;
+                
+                ent->alias = globus_libc_strdup(ptr);
+                ent->alias_len = strlen(ent->alias);
+                
+                ent->realpath = ent_str;
+                ent->realpath_len = strlen(ent->realpath);
+            }
+            else
+            {
+                ent->alias = ent_str;
+                ent->alias_len = strlen(ent->alias);
+                
+                ent->realpath = NULL;
+                ent->realpath_len = 0;
+            }
+                        
+            if(*ent->alias != '/' || (ent->realpath && *ent->realpath != '/'))
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_ERR,
+                    "Path restriction entries must be full paths. "
+                    "Ignoring '%s' entry.\n", ent_str);
+                
+                globus_free(ent->alias);
+                if(ent->realpath)
+                {
+                    globus_free(ent->realpath);
+                }
+                globus_free(ent);
+            }
+            else
+            {
+                globus_list_insert(&globus_l_gfs_path_alias_list, ent);
+            }
+        }
+    }
     
     GlobusGFSDebugExit();
 }
@@ -273,6 +338,7 @@ globus_l_gfs_request_info_destroy(
     GlobusGFSDebugExit();
 }
 
+
 static
 globus_result_t
 globus_l_gfs_get_full_path(
@@ -295,6 +361,7 @@ globus_l_gfs_get_full_path(
         result = GlobusGFSErrorGeneric("invalid pathname");
         goto done;
     }
+    
     if(*in_path == '/')
     {
         strncpy(path, in_path, sizeof(path));
@@ -377,6 +444,100 @@ globus_l_gfs_get_full_path(
         globus_free(cwd);
     }
     path[MAXPATHLEN - 1] = '\0';
+{
+char * end;
+char *                                  next_sep;
+char *                                  prev_sep;
+char *                                  out_ptr;
+char *                                  in_ptr;
+
+out_ptr = path;
+end = path + strlen(path);
+for(in_ptr = path; in_ptr < end; in_ptr = next_sep + 1)
+{
+    int                                 len;
+    
+    next_sep = strchr(in_ptr, '/');
+    if(next_sep == NULL)
+    {
+        next_sep = end;
+        continue;
+    }
+    len = next_sep - in_ptr;
+    
+    switch(len)
+    {
+      case 1:
+        if(in_ptr[0] == '.')
+        {
+            continue;
+        }
+        break;
+        
+      case 2:
+        if(in_ptr[0] == '.' && in_ptr[1] == '.')
+        {
+            prev_sep = strrchr(path, '/');
+            if(prev_sep != NULL)
+            {
+                out_ptr = prev_sep;
+            }
+            continue;
+        }
+        break;
+        
+      default:
+        break;
+    }
+    
+    if(in_ptr > out_ptr)
+    {
+        memmove(out_ptr, in_ptr, len);
+        out_ptr += len;
+        *out_ptr = '\0';
+    }
+}
+}
+    if(!globus_list_empty(globus_l_gfs_path_alias_list))
+    {
+        globus_bool_t                   allowed = GLOBUS_FALSE;
+        char *                          tmp_path;
+        globus_list_t *                 list;
+        
+        tmp_path = globus_libc_strdup(path);
+        
+        for(list = globus_l_gfs_path_alias_list;
+            !globus_list_empty(list) && !allowed;
+            list = globus_list_rest(list))
+        {
+            globus_l_gfs_alias_ent_t *      alias_ent;
+            
+            alias_ent = globus_list_first(list);
+            
+            if(strncmp(tmp_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
+                (tmp_path[alias_ent->alias_len] == '\0' || 
+                    tmp_path[alias_ent->alias_len] == '/'))
+            {
+                allowed = GLOBUS_TRUE;
+                
+                if(alias_ent->realpath)
+                {
+                    strncpy(path, alias_ent->realpath, alias_ent->realpath_len);
+                    strcpy(path + alias_ent->realpath_len, 
+                        tmp_path + alias_ent->alias_len);
+                }
+            }
+        }
+        
+        if(!allowed)
+        {
+            result = GlobusGFSErrorGeneric(
+                "Path not allowed.");
+            goto done;
+        }
+        
+        path[MAXPATHLEN - 1] = '\0';
+    }
 
     *out_path = globus_libc_strdup(path);
 
