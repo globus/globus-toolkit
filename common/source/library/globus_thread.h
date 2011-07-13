@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/**
+/*
  * @file globus_thread.h
  *
  * Globus threads package which can work with either pthreads or without

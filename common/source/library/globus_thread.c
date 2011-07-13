@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/**
+/*
  * @file globus_thread.c Globus Threading Abstraction
  *
  * @details
