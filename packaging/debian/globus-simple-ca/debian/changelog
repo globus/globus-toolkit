@@ -1,3 +1,9 @@
+globus-simple-ca (2.4-0GT5.1.1a) unstable; urgency=low
+
+  * Fix binary gpt package generation
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Jul 2011 15:15:54 -0400
+
 globus-simple-ca (2.3-0GT5.1.1a) unstable; urgency=low
 
   * use /var/lib/globus instead of /var
