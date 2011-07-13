@@ -273,7 +273,7 @@ create_binary_gpt_package()
     if [ "${backward_compatible}" = 1 ]; then
         _gptdir="etc/gpt/packages/globus_simple_ca_${_cahash}"
     else
-        _gptdir="share/packages/globus_simple_ca_${_cahash}"
+        _gptdir="share/globus/packages/globus_simple_ca_${_cahash}"
     fi
     _filelist="${_gptdir}/noflavor_data.filelist"
     _metadata="${_gptdir}/pkg_data_noflavor_data.gpt"

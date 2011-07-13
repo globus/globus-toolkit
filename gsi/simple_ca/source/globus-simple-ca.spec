@@ -10,7 +10,7 @@
 
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
-Version:	2.3
+Version:	2.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
