@@ -5,16 +5,31 @@ umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
 
+packagingdir="$(pwd)"
 bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)
 tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 
-flavor='unset'
 chroot=""
 in_chroot=0
-while getopts "ic:r:a:f:" i; do
+
+arch="$(dpkg-architecture -qDEB_BUILD_GNU_CPU)"
+case "$arch" in
+    x86_64|ia64)
+        flavor=gcc64
+        ;;
+    i?86)
+        flavor=gcc32
+        ;;
+    *)
+        echo "Don't know how to determine flavor for $arch" 1>&2
+        exit 1
+        ;;
+esac
+
+while getopts "ic:r:a:" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -31,38 +46,13 @@ while getopts "ic:r:a:f:" i; do
             artifact_url="$OPTARG"
             chroot_args="${chroot_args:+"$chroot_args "}-a \"${OPTARG}\""
             ;;
-        f)
-            flavor="$OPTARG"
-            chroot_args="${chroot_args:+"$chroot_args "}-f \"${OPTARG}\""
-            ;;
     esac
 done
 shift $(($OPTIND - 1))
 
-if [ "$chroot" != "" ]; then
-    exec schroot -c "$chroot" -d "$(pwd)" -p -- bash $0 $chroot_args
-fi
-
-
 if [ "$repopkg_url" = "" -o "$artifact_url" = "" ]; then
     echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL" 1>&2
     exit 1
-fi
-
-if [ "$flavor" = "unset" ]; then
-    arch="$(dpkg-architecture -qDEB_BUILD_GNU_CPU)"
-    case "$arch" in
-        x86_64|ia64)
-            flavor=gcc64
-            ;;
-        i?86)
-            flavor=gcc32
-            ;;
-        *)
-            echo "Don't know how to determine flavor for $arch" 1>&2
-            exit 1
-            ;;
-    esac
 fi
 
 mkdir -p $topdir
@@ -79,21 +69,28 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -P $pkgs_to_rm
 fi
 
+# Create source packages for the tests
+if [ "$in_chroot" != 1 ]; then
+    ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
+        -flavor=${flavor} -skipbundle
+fi
+
+if [ "$chroot" != "" ]; then
+    schroot -c "$chroot" -d "$packagingdir" -p -- bash $0 $chroot_args
+fi
+    
 # Download and install the repo definition package
-curl -s "$repopkg_url" > "${repopkg_url##*/}"
-sudo dpkg -i "${repopkg_url##*/}"
+mkdir "$flavor"
+curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
+sudo dpkg -i "${flavor}/${repopkg_url##*/}"
 sudo aptitude -y update
 
-# Create source packages for the tests
-./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
-        -flavor=${flavor} -skipbundle
-
 # Install the binaries that we will test
-sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//")
+sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | sort -u)
 
 # Set up security if we dont have it done already
 if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
-    sudo grid-ca-create -noint -pass globus
+    sudo grid-ca-create -force -noint -pass globus
     sudo grid-default-ca -ca "$(sudo openssl x509 -noout -hash -in /var/lib/globus/simple_ca/cacert.pem)"
     sudo grid-cert-request -host "$(globus-hostname)" -dir "/etc/grid-security" -force
     sudo grid-ca-sign -in "/etc/grid-security/hostcert_request.pem" -force -out "/etc/grid-security/hostcert.pem" -passin pass:globus
