@@ -241,6 +241,7 @@ my $installer="installer_makefile.frag";
     # threaded and unthreaded versions.  Bootstrap the CVS directories
     # as we go so they can be built.
          
+my @subdirs="";
     foreach my $pack ( @sorted_package_names )
     {
          my $packname = $pack;
@@ -259,7 +260,6 @@ my $installer="installer_makefile.frag";
 
 	#print "PackageName is $packname\n";
 	#print Dumper @pkgdirs;
- 
 
          # This package gets run in a sudo environment that doesn't
          # have LD_LIBRARY_PATH set, so we want it to always be static.
@@ -269,7 +269,10 @@ my $installer="installer_makefile.frag";
          }
 	# if there are Build_Instructions, it's a patch-n-build, and we're going to punt and
 	# use gpt-build
-	if ((!defined $pkg->{'depnode'})||(defined $pkg->{'depnode'}->{'Build_Instructions'})){
+	# If the package is globus_core, we have to use gpt-build for the
+	# moment, since core isn't figuring out the right flavor_label stuff
+	# by itself (yet)
+	if ((!defined $pkg->{'depnode'})||(defined $pkg->{'depnode'}->{'Build_Instructions'})||($pack=~/globus_core/)){
          print INS "${packname}-only: gpt\n";
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=" . $packagemap{$pack} . " \${FLAVOR}\n";
 	}else{
@@ -314,7 +317,13 @@ my $installer="installer_makefile.frag";
          #print INS "\t$packname"."-only\n";
          print INS "\t$packname"."-only\n";
 
-    }
+	push(@subdirs,$packagemap{$pack});
 
+    }
+    print INS "SUBDIRS=";
+    foreach my $subdir ( @subdirs )
+    {
+	print INS "$subdir ";
+    }
     close(INS) if $installer;
 }

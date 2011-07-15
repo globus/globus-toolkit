@@ -29,8 +29,9 @@ done:
 
 # Cleanup targets
 clean:
-	:
-distclean: clean
+	-for d in $(SUBDIRS); do (cd $$d; $(MAKE) clean ); done
+distclean:
+	-for d in $(SUBDIRS); do (cd $$d; $(MAKE) distclean ); done
 	rm -f Makefile config.status config.log
 
 # Functional group dependencies, expressed in bundles.
