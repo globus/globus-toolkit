@@ -41,11 +41,11 @@ while getopts "ic:r:a:" i; do
             ;;
         r)
             repopkg_url="$OPTARG"
-            chroot_args="${chroot_args:+"$chroot_args "}-r \"${OPTARG}\""
+            chroot_args="${chroot_args:+"$chroot_args "}-r ${OPTARG}"
             ;;
         a)
             artifact_url="$OPTARG"
-            chroot_args="${chroot_args:+"$chroot_args "}-a \"${OPTARG}\""
+            chroot_args="${chroot_args:+"$chroot_args "}-a ${OPTARG}"
             ;;
     esac
 done
