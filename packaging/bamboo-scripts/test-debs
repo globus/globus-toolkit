@@ -12,20 +12,37 @@ testoutdir=$(pwd)/test-results
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 
 flavor='unset'
-while getopts "r:a:f:" i; do
+chroot=""
+in_chroot=0
+while getopts "ic:r:a:f:" i; do
     case "$i" in
+        i)
+            in_chroot=1
+            ;;
+        c)
+            chroot="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-i"
+            ;;
         r)
             repopkg_url="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-r \"${OPTARG}\""
             ;;
         a)
             artifact_url="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-a \"${OPTARG}\""
             ;;
         f)
             flavor="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-f \"${OPTARG}\""
             ;;
     esac
 done
 shift $(($OPTIND - 1))
+
+if [ "$chroot" != "" ]; then
+    exec schroot -c "$chroot" -d "$(pwd)" -p -- bash $0 $chroot_args
+fi
+
 
 if [ "$repopkg_url" = "" -o "$artifact_url" = "" ]; then
     echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL" 1>&2
