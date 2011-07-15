@@ -1,6 +1,7 @@
 #! /bin/sh
 
 set -e
+set -x
 umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
