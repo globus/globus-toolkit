@@ -43,7 +43,7 @@ gridftp: gpt globus-data-management-server globus-data-management-client globus-
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
 @gptlocation@/sbin/gpt-postinstall:
-	cd gpt && OBJECT_MODE=32 ./configure; \
+	cd gpt && OBJECT_MODE=32 ./configure --with-perlmoduledir=$(GPT_LOCATION)/lib/perl ; \
 	make; make install; make install-man;
 install: postinstall
 postinstall:
