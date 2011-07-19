@@ -274,7 +274,7 @@ my @subdirs="";
 	# by itself (yet)
 	if ((!defined $pkg->{'depnode'})||(defined $pkg->{'depnode'}->{'Build_Instructions'})||($pack=~/globus_core/)){
          print INS "${packname}-only: gpt\n";
-         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=" . $packagemap{$pack} . " \${FLAVOR}\n";
+         print INS "\t\$(LIBPATH_VARIABLE)=\${libdir} \$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=" . $packagemap{$pack} . " \${FLAVOR}\n";
 	}else{
          print INS "${packname}-only: gpt ${packname}-configure ${packname}-make ${packname}-makeinstall\n";
 	 print INS "${packname}-configure:";
