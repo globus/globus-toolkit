@@ -157,8 +157,8 @@ install: build-stamp
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)$(soname).install
 	grep '\.la$$' $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
-	  >> debian/lib$(name)-dev.install
-	grep -v '\.la\$$' $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
+	  | sed s!^!debian/tmp$(_prefix)! >> debian/lib$(name)$(soname).install
+	grep -v '\.la$$' $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)-dev.install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)-doc.install
