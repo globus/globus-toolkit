@@ -11,7 +11,11 @@ umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
 
-bamboodir=$(pwd)/bamboo-scripts
+bamboodir=$(dirname $0)
+
+cd "$bamboodir"
+cd ..
+
 topdir=$(pwd)/rpmbuild
 tmppath=$(pwd)/tmp
 artifactroot=""
