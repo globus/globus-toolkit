@@ -133,8 +133,8 @@ packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -package
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
-if [ -d source-tress/gssapi-openssh ]; then
-    cvs update -Pd -t GPT-branch
+if [ -d ${topdir}/source-tress/gssapi-openssh ]; then
+    cvs update -Pd -t GPT-branch ${topdir}/source-tress/gssapi-openssh 
 fi
 ./make-packages.pl -no-updates -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 cd gpt-*/packaging_tools
