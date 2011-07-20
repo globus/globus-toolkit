@@ -103,7 +103,7 @@ all -a \
         ws
 
 packaging/source-trees/xio/src xio/src
-packaging/source-trees/gridftp/gfork/source gridftp/gfork_source
+packaging/source-trees/gridftp/gfork/source gridftp/gfork/source
 packaging/source-trees/xio/drivers/pipe/source xio/drivers/pipe/source
 packaging/source-trees/core/source core/source
 packaging/source-trees/gsi/openssl_error/source gsi/openssl_error/source
