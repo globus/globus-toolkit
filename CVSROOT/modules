@@ -102,42 +102,41 @@ all -a \
         gp\
         ws
 
-globus_xio globus/packaging/source-trees/xio/src xio/src
-globus_gfork globus/packaging/source-trees/gridftp/gfork_source
-globus_xio_pipe_driver  xio/drivers/pipe/source
-globus_core globus/packaging/source-trees/core/source
-globus_gsi_openssl_error globus/packaging/source-trees/gsi/openssl_error/source
-globus_common globus/packaging/source-trees/common/source
-globus_gass_copy globus/packaging/source-trees/gass/copy/source
-globus_gsi_proxy_core globus/packaging/source-trees/gsi/proxy/proxy_core/source
-globus_simple_ca globus/packaging/source-trees/gsi/simple_ca/source
-globus_gssapi_gsi globus/packaging/source-trees/gsi/gssapi/source
-globus_gss_assist globus/packaging/source-trees/gsi/gss_assist/source
-globus_gsi_proxy_ssl globus/packaging/source-trees/gsi/proxy/proxy_ssl/source
-globus_io globus/packaging/source-trees/io/compat
-globus_gsi_cert_utils globus/packaging/source-trees/gsi/cert_utils/source
-globus_authz_callout_error globus/packaging/source-trees/gsi/authz/error
-globus_xio_gsi_driver globus/packaging/source-trees/xio/drivers/gsi
-globus_openssl_module globus/packaging/source-trees/gsi/openssl_module/source
-globus_gssapi_error globus/packaging/source-trees/gsi/gssapi_error/source
-myproxy globus/packaging/source-trees/myproxy
-globus_gsi_credential globus/packaging/source-trees/gsi/credential/source
-globus_proxy_utils globus/packaging/source-trees/gsi/proxy/proxy_utils/source
-globus_xioperf globus/packaging/source-trees/xio/xioperf/source
-globus_authz globus/packaging/source-trees/gsi/authz/source
-globus_ftp_client globus/packaging/source-trees/gridftp/client/source
-globus_ftp_control globus/packaging/source-trees/gridftp/control/source
-globus_usage globus/packaging/source-trees/usage/c/sender/source
-globus_xio_popen_driver globus/packaging/source-trees/xio/drivers/popen/source
-globus_gass_transfer globus/packaging/source-trees/gass/transfer/source
-globus_gsi_sysconfig globus/packaging/source-trees/gsi/sysconfig/source
-globus_gsi_callback globus/packaging/source-trees/gsi/callback/source
-globus_gridftp_server_control globus/packaging/source-trees/gridftp/server-lib/src
-globus_callout globus/packaging/source-trees/callout/source
-gsi_openssh globus/packaging/source-trees/gssapi-openssh/openssh
-gsi_openssh_setup globus/packaging/source-trees/gssapi-openssh/setup
-globus_gridftp_server globus/packaging/source-trees/gridftp/server/src
-globus_user_env globus/packaging/source-trees/user_env/source
-globus_packaging globus/packaging packaging
+packaging/source-trees/xio/src xio/src
+packaging/source-trees/gridftp/gfork_source gridftp/gfork_source
+packaging/source-trees/xio/drivers/pipe/source xio/drivers/pipe/source
+packaging/source-trees/core/source core/source
+packaging/source-trees/gsi/openssl_error/source gsi/openssl_error/source
+packaging/source-trees/common/source common/source
+packaging/source-trees/gass/copy/source gass/copy/source
+packaging/source-trees/gsi/proxy/proxy_core/source gsi/proxy/proxy_core/source
+packaging/source-trees/gsi/simple_ca/source gsi/simple_ca/source
+packaging/source-trees/gsi/gssapi/source gsi/gssapi/source
+packaging/source-trees/gsi/gss_assist/source gsi/gss_assist/source
+packaging/source-trees/gsi/proxy/proxy_ssl/source gsi/proxy/proxy_ssl/source
+packaging/source-trees/io/compat io/compat
+packaging/source-trees/gsi/cert_utils/source gsi/cert_utils/source
+packaging/source-trees/gsi/authz/error gsi/authz/error
+packaging/source-trees/xio/drivers/gsi xio/drivers/gsi
+packaging/source-trees/gsi/openssl_module/source gsi/openssl_module/source
+packaging/source-trees/gsi/gssapi_error/source gsi/gssapi_error/source
+packaging/source-trees/myproxy myproxy
+packaging/source-trees/gsi/credential/source gsi/credential/source
+packaging/source-trees/gsi/proxy/proxy_utils/source gsi/proxy/proxy_utils/source
+packaging/source-trees/xio/xioperf/source xio/xioperf/source
+packaging/source-trees/gsi/authz/source gsi/authz/source
+packaging/source-trees/gridftp/client/source gridftp/client/source
+packaging/source-trees/gridftp/control/source gridftp/control/source
+packaging/source-trees/usage/c/sender/source usage/c/sender/source
+packaging/source-trees/xio/drivers/popen/source xio/drivers/popen/source
+packaging/source-trees/gass/transfer/source gass/transfer/source
+packaging/source-trees/gsi/sysconfig/source gsi/sysconfig/source
+packaging/source-trees/gsi/callback/source gsi/callback/source
+packaging/source-trees/gridftp/server-lib/src gridftp/server-lib/src
+packaging/source-trees/callout/source callout/source
+packaging/source-trees/gssapi-openssh/openssh gssapi-openssh/openssh
+packaging/source-trees/gssapi-openssh/setup gssapi-openssh/setup
+packaging/source-trees/gridftp/server/src gridftp/server/src
+packaging/source-trees/user_env/source user_env/source
 
-globus &globus_packaging &globus_xio &globus_gfork &globus_xio_pipe_driver &globus_core &globus_gsi_openssl_error &globus_common &globus_gass_copy &globus_gsi_proxy_core &globus_simple_ca &globus_gssapi_gsi &globus_gss_assist &globus_gsi_proxy_ssl &globus_io &globus_gsi_cert_utils &globus_authz_callout_error &globus_xio_gsi_driver &globus_openssl_module &globus_gssapi_error &myproxy &globus_gsi_credential &globus_proxy_utils &globus_xioperf &globus_authz &globus_ftp_client &globus_ftp_control &globus_usage &globus_xio_popen_driver &globus_gass_transfer &globus_gsi_sysconfig &globus_gsi_callback &globus_gridftp_server_control &globus_callout &gsi_openssh &gsi_openssh_setup &globus_gridftp_server &globus_user_env
+globus packaging &packaging/source-trees/xio/src &packaging/source-trees/gridftp/gfork_source &packaging/source-trees/xio/drivers/pipe/source &packaging/source-trees/core/source &packaging/source-trees/gsi/openssl_error/source &packaging/source-trees/common/source &packaging/source-trees/gass/copy/source &packaging/source-trees/gsi/proxy/proxy_core/source &packaging/source-trees/gsi/simple_ca/source &packaging/source-trees/gsi/gssapi/source &packaging/source-trees/gsi/gss_assist/source &packaging/source-trees/gsi/proxy/proxy_ssl/source &packaging/source-trees/io/compat &packaging/source-trees/gsi/cert_utils/source &packaging/source-trees/gsi/authz/error &packaging/source-trees/xio/drivers/gsi &packaging/source-trees/gsi/openssl_module/source &packaging/source-trees/gsi/gssapi_error/source &packaging/source-trees/myproxy &packaging/source-trees/gsi/credential/source &packaging/source-trees/gsi/proxy/proxy_utils/source &packaging/source-trees/xio/xioperf/source &packaging/source-trees/gsi/authz/source &packaging/source-trees/gridftp/client/source &packaging/source-trees/gridftp/control/source &packaging/source-trees/usage/c/sender/source &packaging/source-trees/xio/drivers/popen/source &packaging/source-trees/gass/transfer/source &packaging/source-trees/gsi/sysconfig/source &packaging/source-trees/gsi/callback/source &packaging/source-trees/gridftp/server-lib/src &packaging/source-trees/callout/source &packaging/source-trees/gssapi-openssh/openssh &packaging/source-trees/gssapi-openssh/setup &packaging/source-trees/gridftp/server/src &packaging/source-trees/user_env/source
