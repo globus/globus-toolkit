@@ -16,8 +16,9 @@ chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt
 chroot=""
 in_chroot=0
 flavors=""
+tag=""
 
-while getopts "ic:r:f:" i; do
+while getopts "ic:r:f:t:" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -32,6 +33,10 @@ while getopts "ic:r:f:" i; do
             ;;
         f)
             flavors="${flavors:+"${flavors} "}${OPTARG}"
+            ;;
+        t)
+            tag="${OPTARG}"
+            chroot_args="${chroot_args:+"$chroot_args "}-t ${OPTARG}"
             ;;
     esac
 done
@@ -107,7 +112,7 @@ if [ "$in_chroot" != 1 ]; then
     fi
 
     if [ ! -d package-output ]; then
-        ./make-packages.pl -a --deps -deporder \
+        ./make-packages.pl ${tag:+-t $tag} -a --deps -deporder \
             -bundles=globus-data-management-test \
             -flavor=${flavors%% *} -skipbundle
     fi
