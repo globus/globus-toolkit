@@ -129,13 +129,13 @@ fi
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-simple-ca
 packages_to_build=myproxy,gsi_openssh
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
+if [ -d ${topdir}/source-tress/gssapi-openssh ]; then
+    cvs update -Pd -t GPT-branch ${topdir}/source-tress/gssapi-openssh/openssh
+fi
 packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"}| \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
-if [ -d ${topdir}/source-tress/gssapi-openssh ]; then
-    cvs update -Pd -t GPT-branch ${topdir}/source-tress/gssapi-openssh 
-fi
 ./make-packages.pl -no-updates -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 cd gpt-*/packaging_tools
 sh ./bootstrap
