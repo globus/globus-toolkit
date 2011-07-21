@@ -134,6 +134,9 @@ chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
     cvs update -Pd -r GPT-branch source-trees/gssapi-openssh/openssh
 fi
+
+find source-trees -name bootstrap -exec chmod a+x {} +
+
 packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"}| \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
