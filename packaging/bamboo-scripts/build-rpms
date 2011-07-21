@@ -12,7 +12,11 @@ umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
 
-bamboodir=$(dirname $0)
+if expr "$0" : / > /dev/null; then
+    bamboodir="$(dirname "$0")"
+else
+    bamboodir="$(pwd)/bamboo-scripts"
+fi
 
 cd "$bamboodir"
 cd ..
