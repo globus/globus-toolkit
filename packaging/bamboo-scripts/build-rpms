@@ -139,7 +139,7 @@ if [ -d ${packagingdir}/source-trees/gssapi-openssh/setup ]; then
     chmod  a+x ${packagingdir}/source-trees/gssapi-openssh/setup/setup-openssh
 fi
 
-find source-trees -name bootstrap -exec chmod a+x {} +
+[ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} +
 
 packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"}| \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
