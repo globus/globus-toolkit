@@ -166,6 +166,7 @@ create_source_rpm_tarball()
         fi
     fi
 
+    # RPM packaging
     cat <<-EOF 1> "${_srcdir}/globus-simple-ca-${_cahash}.spec"
 	# This spec file creates a binary RPM that can be used to deploy the CA
 	# and its related configuration files. The name of the package is based
@@ -251,6 +252,75 @@ create_source_rpm_tarball()
 	%defattr(-,root,root,-)
 	%{_sysconfdir}/grid-security/certificates
 	EOF
+
+    # Debian packaging
+    mkdir ${_srcdir}/debian
+    cat 1> ${_srcdir}/debian/control <<-EOF
+	Source: ${_srcdir}
+	Section: net
+	Priority: extra
+	Maintainer: ${LOGNAME}@${HOST}
+
+	Package: ${_srcdir}
+	Architecture: all
+	Depends: \${shlibs:Depends}, \${misc:Depends}
+	Description: CA Package for ${_casubject}
+	  This package contains the CA certificate and related policy files
+	  needed to allow the Globus Toolkit to trust the CA with the subject
+	  name:
+	  "${_casubject}"
+	  as well as request certificates from that CA.
+	EOF
+
+    cat 1> ${_srcdir}/debian/rules <<EOF
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+
+cahash=${_cahash}
+name=globus-simple-ca-\$(cahash)
+
+certdir = etc/grid-security/certificates
+certdirfiles = \\
+	\$(cahash).0 \\
+	\$(cahash).signing_policy \\
+	globus-host-ssl.conf.\$(cahash) \\
+	globus-user-ssl.conf.\$(cahash) \\
+	grid-security.conf.\$(cahash)
+
+
+
+install/\$(name)::
+	dh_testdir 
+	dh_testroot 
+	dh_clean -k
+
+	[ -d \$(CURDIR)/debian/tmp/\$(certdir) ] || \\
+	    mkdir -p \$(CURDIR)/debian/tmp/\$(certdir)
+	cp \$(certdirfiles) \$(CURDIR)/debian/tmp/\$(certdir)
+	rm -f debian/\$(name).install || true
+	touch debian/\$(name).install
+	for file in \$(certdirfiles); do \\
+	    echo debian/tmp/\$(certdir)/\$\$file \$(certdir) >> debian/\$(name).install; \\
+	done
+
+clean::
+	dh_clean debian/*.install
+
+EOF
+    chmod a+x ${_srcdir}/debian/rules
+
+    cat 1> ${_srcdir}/debian/changelog <<-EOF
+	${_srcdir} (0.0) UNRELEASED; urgency=low
+	  * Initial release.
+	
+	 -- ${LOGNAME} <${LOGNAME}@${HOST}>  $(date +"%a, %d %b %Y %H:%m:%S %z")
+	EOF
+
+    echo 5 1> ${_srcdir}/debian/compat
+
+    echo /etc/grid-security/certificates 1> ${_srcdir}/debian/dirs
+
 
     tar -c -f - ${_srcdir} | gzip > "${OLDPWD}/${_source_rpm_tarball}"
 

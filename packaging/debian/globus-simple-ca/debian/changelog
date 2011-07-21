@@ -1,3 +1,9 @@
+globus-simple-ca (2.5-0GT5.1.1a) unstable; urgency=low
+
+  * Add deb source package metadata to tarball
+
+ -- Globus Toolkit <support@globus.org>  Thu, 21 Jul 2011 11:07:41 -0400
+
 globus-simple-ca (2.4-0GT5.1.1a) unstable; urgency=low
 
   * Fix binary gpt package generation
