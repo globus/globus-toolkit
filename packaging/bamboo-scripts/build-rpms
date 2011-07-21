@@ -134,6 +134,10 @@ chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
     cvs update -Pd -r GPT-branch source-trees/gssapi-openssh/openssh
 fi
+if [ -d ${packagingdir}/source-trees/gssapi-openssh/setup ]; then
+    chmod  a+x ${packagingdir}/source-trees/gssapi-openssh/setup/make_gpt_dist
+    chmod  a+x ${packagingdir}/source-trees/gssapi-openssh/setup/setup-openssh
+fi
 
 find source-trees -name bootstrap -exec chmod a+x {} +
 
