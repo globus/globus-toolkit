@@ -36,6 +36,8 @@ $Header$
       <arg>-ca <replaceable>HASH</replaceable></arg>
       <arg>-g</arg>
       <arg>-b</arg>
+      <arg>-r</arg>
+      <arg>-d</arg>
     </cmdsynopsis>
   </refsynopsisdiv>
   <refsect1>
@@ -111,6 +113,20 @@ $Header$
             <filename><envar>${datadir}</envar>/globus/packages</filename>
             as used in Globus 5.2.x. This option overrides the
             <option>-g</option> command-line option.</simpara></listitem>
+        </varlistentry>
+
+        <varlistentry>
+            <term><option>-r</option></term>
+            <listitem><simpara>Create a binary RPM package for the
+            CA. This option currently only works on RPM-based
+            distributions.</simpara></listitem>
+        </varlistentry>
+
+        <varlistentry>
+            <term><option>-d</option></term>
+            <listitem><simpara>Create a binary Debian package for the CA.
+            This option currently only works on Debian-based
+            distributions.</simpara></listitem>
         </varlistentry>
     </variablelist>
 

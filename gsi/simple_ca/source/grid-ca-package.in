@@ -109,7 +109,7 @@ interactive() {
     CA_CERT_DIR=`echo $CA_CERT | ${GLOBUS_SH_SED-sed} -e "s|/[^\/]*$||"`
 }
 
-create_source_rpm_tarball()
+create_source_package_tarball()
 {
     _tmpdir="${TMPDIR:-/tmp}"
     _capath="${1}"
@@ -120,7 +120,7 @@ create_source_rpm_tarball()
 
     _certdir="share/certificates"
     _srcdir="globus-simple-ca-${_cahash}"
-    _source_rpm_tarball="globus_simple_ca_${_cahash}.tar.gz"
+    _source_package_tarball="globus_simple_ca_${_cahash}.tar.gz"
     _pkgdir=""
 
     printf "Creating RPM source tarball... "
@@ -188,8 +188,8 @@ create_source_rpm_tarball()
 	
 	Group: Development/Tools
 	License: ASL 2.0
-	Source: ${_source_rpm_tarball}
-	BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%{%__id_u} -n)
+	Source: ${_source_package_tarball}
+	BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 	BuildRequires: openssl
 	Requires: openssl
 	BuildArch: noarch
@@ -297,11 +297,13 @@ install/\$(name)::
 
 	[ -d \$(CURDIR)/debian/tmp/\$(certdir) ] || \\
 	    mkdir -p \$(CURDIR)/debian/tmp/\$(certdir)
-	cp \$(certdirfiles) \$(CURDIR)/debian/tmp/\$(certdir)
 	rm -f debian/\$(name).install || true
 	touch debian/\$(name).install
 	for file in \$(certdirfiles); do \\
-	    echo debian/tmp/\$(certdir)/\$\$file \$(certdir) >> debian/\$(name).install; \\
+	    if [ -f "\$\$file" ]; then \\
+	        cp "\$\$file" "\$(CURDIR)/debian/tmp/\$(certdir)" ; \\
+	        echo "debian/tmp/\$(certdir)/\$\$file" \$(certdir) >> debian/\$(name).install; \\
+	    fi ; \\
 	done
 
 clean::
@@ -322,14 +324,88 @@ EOF
     echo /etc/grid-security/certificates 1> ${_srcdir}/debian/dirs
 
 
-    tar -c -f - ${_srcdir} | gzip > "${OLDPWD}/${_source_rpm_tarball}"
+    tar -c -f - ${_srcdir} | gzip > "${OLDPWD}/${_source_package_tarball}"
 
     cd "${OLDPWD}"
     rm -rf "${_pkgdir}"
     echo "done"
-    printf "\t${_source_rpm_tarball}\n"
+    printf "\t${_source_package_tarball}\n"
 }
 
+create_rpm_binary_package()
+{
+    _tarball="${1}"
+    _cahash="${2}"
+    _pkgdir=""
+
+    if test ! -f /etc/redhat-release; then
+        echo "Skipping RPM binary"
+        return 0
+    fi
+    printf "Creating RPM binary..."
+    while [ -z "$_pkgdir" ]; do
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6 | tr / _)}"
+        rc=$?
+
+        if [ $rc != 0 -o ! -d "${_pkgdir}" ]; then
+            _pkgdir=""
+        fi
+    done
+
+    OLDHOME="$HOME"
+    HOME=${_pkgdir}
+    cd $HOME
+
+    mkdir rpmbuild tmp
+
+    for x in BUILD  BUILDROOT SOURCES RPMS  SPECS  SRPMS; do
+        mkdir -p "rpmbuild/$x"
+    done
+    cat <<-EOF > .rpmmacros
+	%_topdir $HOME/rpmbuild
+	%_tmppath $HOME/tmp
+	EOF
+
+    rpmbuild -tb "$_tarball"
+    HOME="$OLDHOME"
+    cd -
+    unset OLDHOME
+    find ${_pkgdir} -name '*.rpm' -exec cp "{}" "." ";"
+    rm -rf "$_pkgdir"
+}
+
+create_debian_binary_package()
+{
+    _tarball="${1}"
+    _cahash="${2}"
+    _pkgdir=""
+
+    if ! test -f /etc/debian_version; then
+        echo "Skipping debian binary"
+        return 0
+    fi
+
+    printf "Creating debian binary..."
+    while [ -z "$_pkgdir" ]; do
+        mkdir -m 0755 "${_pkgdir:=${_tmpdir}/globus_simple_ca.$(openssl rand -base64 6 | tr / _)}"
+        rc=$?
+
+        if [ $rc != 0 -o ! -d "${_pkgdir}" ]; then
+            _pkgdir=""
+        fi
+    done
+
+    olddir="$(pwd)"
+    cd ${_pkgdir}
+    gzip -dc ${_tarball} | tar xf -
+    cd globus-simple-ca-${_cahash}
+    fakeroot dpkg-buildpackage -uc -us
+    cd ${_pkgdir}
+    find . -name '*.deb' -exec cp "{}" "$olddir" ";"
+    cd $olddir
+
+    rm -rf "$_pkgdir"
+}
 create_binary_gpt_package()
 {
     _tmpdir="${TMPDIR:-/tmp}"
@@ -440,7 +516,8 @@ EOF
 
 create_rpm_tarball=1
 create_gpt_package=0
-cadir=""
+create_rpm_binary=0
+create_debian_binary=0
 
 readCommandLine () {
     # Expects $* from the shell invocation
@@ -462,6 +539,14 @@ readCommandLine () {
                 ;;
             -g)
                 create_gpt_package=1
+                shift;
+                ;;
+            -r)
+                create_rpm_binary=1
+                shift;
+                ;;
+            -d)
+                create_debian_binary=1
                 shift;
                 ;;
             -b)
@@ -522,6 +607,8 @@ long_usage () {
     printhelp "-g" "Create a GPT binary package [unset]"
     printhelp "-b" "Create a GPT binary package compatible with GPT 3.2 to be
             used with GT 2.0.x - 5.0.x [unset]"
+    printhelp "-r" "Create an RPM binary package [unset]"
+    printhelp "-d" "Create an debian binary package [unset]"
 }
 
 
@@ -625,7 +712,15 @@ else
 fi
 
 if [ "$create_rpm_tarball" -eq 1 ]; then
-    create_source_rpm_tarball "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT" "${simpleca}"
+    create_source_package_tarball "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT" "${simpleca}"
+    ca_cert_hash="$(openssl x509 -hash -noout -in "${CA_CERT}")"
+    source_package_tarball="globus_simple_ca_${ca_cert_hash}.tar.gz"
+    if [ "$create_rpm_binary" -eq 1 ]; then
+        create_rpm_binary_package "$(pwd)/${source_package_tarball}" "${ca_cert_hash}"
+    fi
+    if [ "$create_debian_binary" -eq 1 ]; then
+        create_debian_binary_package "$(pwd)/${source_package_tarball}" "${ca_cert_hash}"
+    fi
 fi
 if [ "$create_gpt_package" -eq 1 ]; then
     create_binary_gpt_package "$CA_CERT" "$CA_CERT_DIR" "$CA_SUBJECT" "${simpleca}"

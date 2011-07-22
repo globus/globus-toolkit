@@ -2,12 +2,12 @@
 .\"     Title: grid-ca-create
 .\"    Author: University of Chicago
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/30/2011
+.\"      Date: 07/22/2011
 .\"    Manual: Globus Commands
 .\"    Source: Globus Toolkit 5.2.0
 .\"  Language: English
 .\"
-.TH "GRID\-CA\-CREATE" "1" "03/30/2011" "Globus Toolkit 5.2.0" "Globus Commands"
+.TH "GRID\-CA\-CREATE" "1" "07/22/2011" "Globus Toolkit 5.2.0" "Globus Commands"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -47,7 +47,7 @@ program creates the self\-signed CA certificate, installs it on the current mach
 If run as a privileged user, the
 \fBgrid\-ca\-create\fR
 program creates the CA certificate and support files in
-\fB${localstatedir}\fR/globus_simple_ca
+\fB${localstatedir}\fR/lib/globus/simple_ca
 and the CA certificate and signing policy are installed in the
 /etc/grid\-security
 directory\&. Otherwise, the files are created in the
