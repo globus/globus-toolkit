@@ -24,8 +24,110 @@
 #
 
 if ( ! $?GLOBUS_LOCATION ) then
-    set GLOBUS_LOCATION='@prefix@'
+    set prefix="@prefix@"
+else
+    set prefix="$GLOBUS_LOCATION"
 endif
+
+set old=""
+set exec_prefix='@exec_prefix@'
+while ( $exec_prefix != $old)
+    set old="$exec_prefix"
+    eval "set exec_prefix=$exec_prefix"
+end
+
+set old=""
+set sbindir='@sbindir@'
+while ( $sbindir != $old )
+    set old="$sbindir"
+    eval "set sbindir=$sbindir"
+end
+
+set old=""
+set bindir='@bindir@'
+while ( $bindir != $old )
+    set old="$bindir"
+    eval "set bindir=$bindir"
+end
+
+set old=""
+set libdir='@libdir@'
+while ( $libdir != $old )
+    set old="$libdir"
+    eval "set libdir=$libdir"
+end
+
+set old=""
+set includedir='@includedir@'
+while ( $includedir != $old )
+    set old="$includedir"
+    eval "set includedir=$includedir"
+end
+
+set old=""
+set datarootdir='@datarootdir@'
+while ( $datarootdir != $old )
+    set old="$datarootdir"
+    eval "set datarootdir=$datarootdir"
+end
+
+set old=""
+set datadir='@datadir@'
+while ( $datadir != $old )
+    set old="$datadir"
+    eval "set datadir=$datadir"
+end
+
+set old=""
+set libexecdir='@libexecdir@'
+while ( $libexecdir != $old )
+    set old="$libexecdir"
+    eval "set libexecdir=$libexecdir"
+end
+
+set old=""
+set sysconfdir='@sysconfdir@'
+while ( $sysconfdir != $old )
+    set old="$sysconfdir"
+    eval "set sysconfdir=$sysconfdir"
+end
+
+set old=""
+set sharedstatedir='@sharedstatedir@'
+while ( $sharedstatedir != $old )
+    set old="$sharedstatedir"
+    eval "set sharedstatedir=$sharedstatedir"
+end
+
+set old=""
+set localstatedir='@localstatedir@'
+while ( $localstatedir != $old )
+    set old="$localstatedir"
+    eval "set localstatedir=$localstatedir"
+end
+
+set old=""
+set aclocaldir='@aclocaldir@'
+while ( $aclocaldir != $old )
+    set old="$aclocaldir"
+    eval "set aclocaldir=$aclocaldir"
+end
+
+if (! $?GLOBUS_LOCATION ) then
+    set old=""
+    setenv GLOBUS_LOCATION '@prefix@'
+    while ( $GLOBUS_LOCATION != $old )
+        set old="$GLOBUS_LOCATION"
+        eval "setenv GLOBUS_LOCATION $GLOBUS_LOCATION"
+    end
+endif
+
+set old=""
+set perlmoduledir='@perlmoduledir@'
+while ( $perlmoduledir != $old )
+    set old="$perlmoduledir"
+    eval "set perlmoduledir=$perlmoduledir"
+end
 
 if ( ! $?LD_LIBRARY_PATH ) then
     setenv LD_LIBRARY_PATH ''
