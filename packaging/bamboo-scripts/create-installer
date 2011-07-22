@@ -5,6 +5,15 @@ if [ -f build-number.txt ]; then
 else
     build_number=0
 fi
+
+if ! expr "$0" : / > /dev/null; then
+    bamboodir="$(pwd)/$(dirname $0)"
+else
+    bamboodir="$(dirname $0)"
+fi
+
+cd "$bamboodir/.."
+
 gtversion="$(cat fait_accompli/version)"
 
 # fix bamboo cvs checkout losing executable permissions
