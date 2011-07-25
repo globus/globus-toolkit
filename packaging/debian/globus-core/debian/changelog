@@ -1,3 +1,9 @@
+globus-core (7.8-0GT5.1.1a) unstable; urgency=low
+
+  * Disable PDF Hyperlinks in doxygen doc to avoid doc compile error
+
+ -- Globus Toolkit <support@globus.org>  Mon, 25 May 2011 14:57:07 -0400
+
 globus-core (7.7-0GT5.1.1b) unstable; urgency=low
 
   * Use /var instead of default ${prefix}/var

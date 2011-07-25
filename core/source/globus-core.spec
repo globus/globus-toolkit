@@ -18,7 +18,7 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	7.7
+Version:	7.8
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
