@@ -23,7 +23,7 @@ GetOptions( 'f|file=s' => \$sourcelistfile,
     while ( <PKG> )
     {
 	my $log;
-        my ($pkg, $subdir, $custom, $pnb, $pkgtag) = split(' ', $_);
+        my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
 	print cwd()."\n";
 	print $subdir."\n";
 	if ($tag ne ''){
