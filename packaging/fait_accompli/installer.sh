@@ -15,8 +15,21 @@ PACKAGES=myproxy
 echo Making configure/make installer
 
 echo Step: Checking out source code.
+tag=""
+user=""
+while getopts "t:u:" arg; do
+    case "$arg" in
+        t)
+	    tag="$OPTARG"
+	    ;;
+        u)
+	    user="$OPTARG"
+	    ;;
+    esac
+done
+
 #./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
-./checkout-specs.pl -f etc/package-list-5.1.0 -t globus_5_1_1
+./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"}
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
