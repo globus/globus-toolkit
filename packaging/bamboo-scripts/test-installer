@@ -88,7 +88,7 @@ elif test -f /etc/debian_version; then
                 flavors=gcc64
                 ;;
             i?86)
-                flavor=gcc32
+                flavors=gcc32
                 ;;
             *)
                 echo "Don't know how to determine flavor for $arch" 1>&2
