@@ -405,7 +405,11 @@ handle_config(myproxy_server_context_t *server_context)
     }
 
 #ifdef HAVE_GLOBUS_USAGE
-    myproxy_usage_stats_init(server_context);
+        if (myproxy_usage_stats_init(server_context) != GLOBUS_SUCCESS)
+        {
+            myproxy_log("Error initializing one or more Usage Stat target(s)!"
+				" But continuing ...");
+        }
 #endif
     }
 
@@ -517,7 +521,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                     client_request->command_type);
         respond_with_error_and_die(attrs, "UNKNOWN command in request.\n", context);
     }
-    if (client_request->username && client_request->username[0]) {
+    if (client_request->username) {
         myproxy_log("Received %s request for username %s",
                     command_name, client_request->username);
     } else {

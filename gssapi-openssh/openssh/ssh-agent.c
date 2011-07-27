@@ -74,6 +74,7 @@
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
+#include "pathnames.h"
 #include "misc.h"
 
 #ifdef ENABLE_PKCS11
@@ -1154,6 +1155,7 @@ main(int ac, char **av)
 	OpenSSL_add_all_algorithms();
 
 	__progname = ssh_get_progname(av[0]);
+	init_pathnames();
 	init_rng();
 	seed_rng();
 

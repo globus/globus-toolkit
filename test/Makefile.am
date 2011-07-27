@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre_top
 
 # Install perl module here:
 
-globustestingperldir = $(perlmoduledir)/Globus/Testing
+globustestingperldir = $(libdir)/perl/Globus/Testing
 
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's

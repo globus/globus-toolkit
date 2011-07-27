@@ -28,6 +28,9 @@
 
 #ifdef GSSAPI
 
+/* Need this include to fix GSI AIX 64-bit builds. */
+#include <unistd.h>
+
 #ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
 #elif defined(HAVE_GSSAPI_GSSAPI_H)

@@ -2086,7 +2086,7 @@ main(int argc, char **argv)
 	char *host = NULL, *userhost, *cp, *file2 = NULL;
 	int debug_level = 0, sshver = 2;
 	char *file1 = NULL, *sftp_server = NULL;
-	char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
+	char *ssh_program = NULL, *sftp_direct = NULL;
 	const char *errstr;
 	LogLevel ll = SYSLOG_LEVEL_INFO;
 	arglist args;
@@ -2101,6 +2101,8 @@ main(int argc, char **argv)
 	sanitise_stdfd();
 
 	__progname = ssh_get_progname(argv[0]);
+	init_pathnames();
+	ssh_program = _PATH_SSH_PROGRAM;
 	memset(&args, '\0', sizeof(args));
 	args.list = NULL;
 	addargs(&args, "%s", ssh_program);

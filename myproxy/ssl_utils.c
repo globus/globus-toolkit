@@ -443,60 +443,6 @@ my_pass_phrase_callback(char			*buffer,
 }
 	     
 
-/*
- * ssl_x509_request_to_buffer()
- *
- * Dump the given X509 request structure to an allocated buffer.
- *
- * Returns SSL_SUCCESS or SSL_ERROR
- */
-static int
-ssl_x509_request_to_buffer(X509_REQ		*request,
-			   unsigned char	**buffer,
-			   int			*buffer_length)
-{
-    int				return_status = SSL_ERROR;
-    BIO				*bio = NULL;
-    
-    assert(request != NULL);
-    assert(buffer != NULL);
-    assert(buffer_length != NULL);
-
-    bio = BIO_new(BIO_s_mem());
-    
-    if (bio == NULL)
-    {
-	verror_put_string("Failed dumping X509 request to buffer (BIO_new() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    
-    if (i2d_X509_REQ_bio(bio, request) == SSL_ERROR)
-    {
-	verror_put_string("Failed dumping X509 request to buffer");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR)
-    {
-	goto error;
-    }
-        
-    /* Success */
-    return_status = SSL_SUCCESS;
-    
-  error:
-    if (bio != NULL)
-    {
-	BIO_free(bio);
-    }
-    
-    return return_status;
-}
-
-
 /**********************************************************************
  *
  * API Functions
@@ -815,7 +761,7 @@ ssl_private_key_store_to_file(SSL_CREDENTIALS *creds,
     if (PEM_ASN1_write_bio((int (*)())i2d_PrivateKey,
 		(((creds->private_key)->type == EVP_PKEY_DSA)?
 				PEM_STRING_DSA:PEM_STRING_RSA),
-                           keybio, (void *)creds->private_key, cipher,
+				 keybio, creds->private_key, cipher,
                                  (unsigned char *) pass_phrase,
                                  pass_phrase_len,
                                  PEM_NO_CALLBACK) == SSL_ERROR)
@@ -1115,8 +1061,12 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
 	goto error;
     }
 
-    if (creds->private_key) {   /* just write certs if no private key */
-
+    if (creds->private_key == NULL)
+    {
+	verror_put_string("Malformed proxy credentials (No private key)");
+	goto error;
+    }
+    
     if (pass_phrase == NULL)
     {
 	/* No encryption */
@@ -1142,7 +1092,7 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
     if (PEM_ASN1_write_bio((int (*)())i2d_PrivateKey,
 		(((creds->private_key)->type == EVP_PKEY_DSA)?
 				PEM_STRING_DSA:PEM_STRING_RSA),
-                           bio, (void *)creds->private_key, cipher,
+				 bio, creds->private_key, cipher,
 				 (unsigned char *) pass_phrase,
 				 pass_phrase_len,
 				 PEM_NO_CALLBACK) == SSL_ERROR)
@@ -1150,8 +1100,6 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
 	verror_put_string("Error packing private key");
 	ssl_error_to_verror();
 	goto error;
-    }
-
     }
     
     if (creds->certificate_chain != NULL)
@@ -1283,58 +1231,12 @@ ssl_credentials_new()
 	goto error;
     }
     
-    memset(creds, 0, sizeof(SSL_CREDENTIALS));
+    creds->certificate = NULL;
+    creds->private_key = NULL;
+    creds->certificate_chain = NULL;
     
   error:
     return creds;
-}
-
-int
-ssl_certreq_pem_to_der(char *certreq,
-                       unsigned char **buffer, int *buffer_length)
-{
-    int return_status = SSL_ERROR;
-    BIO *bio = NULL;
-    X509_REQ *req = NULL;
-
-    my_init();
-    
-    assert(certreq != NULL);
-    assert(buffer != NULL);
-    assert(buffer_length != NULL);
-
-    if (certreq[0] == '-' && certreq[1] == '\0') {
-        bio = BIO_new_fp(stdin,BIO_NOCLOSE);
-    } else {
-        bio = BIO_new_file(certreq, "r");
-    }
-    if (!bio) {
-        ssl_error_to_verror();
-        goto error;
-    }
-
-    req=PEM_read_bio_X509_REQ(bio,NULL,NULL,NULL);
-    if (!req) {
-        ssl_error_to_verror();
-        goto error;
-    }
-
-    if (ssl_x509_request_to_buffer(req,
-                                   buffer,
-                                   buffer_length) == SSL_ERROR) {
-        ssl_error_to_verror();
-        goto error;
-    }
-
-    /* Success */
-    return_status = SSL_SUCCESS;
-
- error:
-    if (bio) BIO_free(bio);
-	if (req) X509_REQ_free(req);
-    
-    return return_status;
-    
 }
 
 int
@@ -1469,8 +1371,6 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
 	goto error;
     }
 
-    if (creds->proxy_req) {
-
     /* read the proxy certificate and certificate chain */
     local_result = globus_gsi_proxy_assemble_cred(creds->proxy_req,
 						  &cred_handle, bio);
@@ -1506,57 +1406,6 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
 	goto error;
     }
     globus_gsi_cred_handle_destroy(cred_handle);
-
-    } else {
-
-        X509			*proxy_cert = NULL;
-        int				cert_index = 0;
-        STACK			*cert_chain = NULL;
-
-        /* Now read the certificate */
-        proxy_cert = d2i_X509_bio(bio, NULL /* make new cert */);
-        if (proxy_cert == NULL)
-        {
-            verror_put_string("Failed unpacking certificate from buffer (reading certificate)");
-            ssl_error_to_verror();
-            goto error;
-        }	
-
-        cert_index++;
-    
-        /* Now read the certificate chain */
-        cert_chain = sk_new_null();
-    
-        while (cert_index < number_of_certs)
-        {
-            X509		*cert;
-	
-            cert = d2i_X509_bio(bio, NULL /* make new cert */);
-    
-            if (cert == NULL)
-            {
-                verror_put_string("Failed unpacking certificate from buffer (reading cert chain)");
-                ssl_error_to_verror();
-                goto error;
-            }
-
-            if (sk_push(cert_chain, (char *) cert) == SSL_ERROR)
-            {
-                verror_put_string("Failed unpacking certificate from buffer (building cert chain)");
-                ssl_error_to_verror();
-                X509_free(cert);
-                goto error;
-            }
-
-            cert_index++;
-        }
-    
-        /* Success */
-
-        /* XXX Should free any current contents first */
-        creds->certificate = proxy_cert;
-        creds->certificate_chain = cert_chain;
-    }
 
     return_status = SSL_SUCCESS;
     
@@ -1954,7 +1803,7 @@ ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject)
    sk_X509_unshift(creds->certificate_chain, creds->certificate);
    globus_gsi_cert_utils_get_base_name(client_subject,
 				       creds->certificate_chain);
-   (void)sk_X509_shift(creds->certificate_chain);
+   sk_X509_shift(creds->certificate_chain);
 
    X509_NAME_oneline(client_subject, client, sizeof(client));
    *subject = strdup(client);

@@ -286,6 +286,7 @@ main(int argc, char *argv[])
 	printf("Platform-independent login recording test driver\n");
 
 	__progname = ssh_get_progname(argv[0]);
+	init_pathnames();
 	if (argc == 2) {
 		if (strncmp(argv[1], "-i", 3) == 0)
 			compile_opts_only = 1;

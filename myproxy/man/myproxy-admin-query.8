@@ -38,7 +38,7 @@ Enables verbose debugging output to the terminal.
 .B -V, --version
 Displays version information and exits.
 .TP
-.BI -l " username, " --username " username"
+.BI -l " name, " --username " name"
 Return information on credentials for a single username.  By default,
 the command returns information on all credentials for all usernames.
 .TP
@@ -66,7 +66,7 @@ Return information on invalid (expired, revoked, etc.) credentials.
 Specifies the location of the credential storage directory.
 The directory must be accessible only by the user running the 
 .B myproxy-server
-process for security reasons.  Default: /var/lib/myproxy or /var/myproxy or $GLOBUS_LOCATION/var/myproxy
+process for security reasons.  Default: /var/myproxy or $GLOBUS_LOCATION/var/myproxy
 .TP
 .BI -c " file, " --config " file"
 Specifies the location of the

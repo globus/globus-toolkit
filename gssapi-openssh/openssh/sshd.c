@@ -151,7 +151,7 @@ extern char *__progname;
 ServerOptions options;
 
 /* Name of the server configuration file. */
-char *config_file_name = _PATH_SERVER_CONFIG_FILE;
+char *config_file_name;
 
 /*
  * Debug mode flag.  This can be set on the command line.  If debug
@@ -1324,6 +1324,8 @@ main(int ac, char **av)
 	(void)set_auth_parameters(ac, av);
 #endif
 	__progname = ssh_get_progname(av[0]);
+	init_pathnames();
+	config_file_name = _PATH_SERVER_CONFIG_FILE;
 	init_rng();
 
 	/* Save argv. Duplicate so setproctitle emulation doesn't clobber it */

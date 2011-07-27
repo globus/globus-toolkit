@@ -38,7 +38,6 @@ static char usage[] = \
 "                                         credentials.\n"
 "       -q | --quiet                      Only output on error\n"
 "       -m | --voms            <voms>     Include VOMS attributes\n"
-"       -Q | --certreq <path>             Use provided certificate request\n"
 "\n";
 
 struct option long_options[] =
@@ -62,11 +61,10 @@ struct option long_options[] =
     {"no_passphrase",          no_argument, NULL, 'N'},
     {"quiet",                  no_argument, NULL, 'q'},
     {"voms",            required_argument, NULL, 'm'},
-    {"certreq",          required_argument, NULL, 'Q'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:SnNTbqm:Q:";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:SnNTbqm:";
 
 static char version[] =
 "myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -301,9 +299,6 @@ init_arguments(int argc,
 	case 'q':
 	    quiet = 1;
 	    break;
-        case 'Q':
-            request->certreq = strdup(optarg);
-            break;
 	case 'b':
 	    bootstrap = 1;
 	    request->want_trusted_certs = 1; /* -b implies -T */
