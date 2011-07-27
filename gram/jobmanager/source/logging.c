@@ -197,7 +197,7 @@ globus_l_gram_logging_write(
 {
     static char *                       DATE_SYMBOL = "DATE";
     globus_gram_job_manager_config_t *  config = user_arg;
-    const char *                        log_pattern;
+    const char *                        log_pattern = NULL;
     time_t                              now;
     struct tm *                         now_tm;
     char                                now_str[9];
