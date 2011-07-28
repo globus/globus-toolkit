@@ -14,10 +14,15 @@ fi
 
 cd "$bamboodir/.."
 
+if [ ! -d fait_accompli ]; then
+    cvs update -Pd
+fi
+
 gtversion="$(cat fait_accompli/version)"
 
 # fix bamboo cvs checkout losing executable permissions
 chmod a+x *.pl fait_accompli/installer.sh \
+    fait_accompli/installer.sh 
     gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist \
     gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs \
     gpt/install-sh
@@ -46,7 +51,7 @@ if [ "$flavor" = "" ]; then
     esac
 fi
 
-./fait_accompli/installer.sh -a -flavor="$flavor" ${tag:+-t "$tag"}
+./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"}
 installer_dir="gt${gtversion}-all-source-installer"
 installer_dir_buildnumber="${installer_dir}-rc${build_number}"
 
