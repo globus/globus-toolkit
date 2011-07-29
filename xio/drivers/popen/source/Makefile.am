@@ -20,7 +20,7 @@ libglobus_xio_popen_driver_la_LDFLAGS = \
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = globus-xio-popen-driver.spec version.h.in $(doc_DATA)
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

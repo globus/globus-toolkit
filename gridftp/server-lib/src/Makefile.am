@@ -29,7 +29,7 @@ libglobus_gridftp_server_control_la_LDFLAGS = \
 libglobus_gridftp_server_control_la_LIBADD = \
 	$(GPT_LIB_LINKS)
 
-EXTRA_DIST = version.h.in globus-gridftp-server-control.spec $(doc_DATA)
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

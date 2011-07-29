@@ -13,8 +13,7 @@ doc_DATA = GLOBUS_LICENSE
 EXTRA_DIST= \
         version.h \
         dirt.sh \
-	$(doc_DATA) \
-	globus-gsi-cert-utils.spec
+	$(doc_DATA)
 
 distclean-local: 
 	-rm -f stamp-h.in

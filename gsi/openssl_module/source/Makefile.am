@@ -20,7 +20,6 @@ MANUAL_SOURCE = globus-update-certificate-dir-manual.xml \
 EXTRA_DIST = \
 	version.h.in \
 	globus-update-certificate-dir.in \
-	globus-openssl-module.spec \
 	$(man8_MANS) \
 	$(MANUAL_SOURCE) \
 	$(doc_DATA)

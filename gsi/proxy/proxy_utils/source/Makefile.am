@@ -7,7 +7,7 @@ SUBDIRS= \
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST= globus-proxy-utils.spec $(doc_DATA)
+EXTRA_DIST= $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

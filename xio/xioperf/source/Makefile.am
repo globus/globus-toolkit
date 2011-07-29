@@ -22,7 +22,7 @@ globus_xioperf_LDFLAGS = $(GPT_LDFLAGS)
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = globus-xioperf.spec version.h.in $(doc_DATA)
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

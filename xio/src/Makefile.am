@@ -57,7 +57,6 @@ EXTRA_DIST = \
 	globus_i_xio_win32_file.c \
 	globus_i_xio_win32_mode.c \
 	globus_i_xio_win32_socket.c \
-	globus-xio.spec \
 	version.h.in \
 	extensions.h.in \
 	configure.in.in \

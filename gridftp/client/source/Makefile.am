@@ -75,7 +75,6 @@ EXTRA_DIST = globus_ftp_client_restart_plugin.example \
 	globus_ftp_client_restart_marker_plugin.example \
 	globus_ftp_client_throughput_nl_plugin.h \
 	globus_ftp_client_throughput_nl_plugin.c \
-	globus-ftp-client.spec \
 	version.h.in \
 	gridftp-ssh.in \
 	$(doc_DATA)

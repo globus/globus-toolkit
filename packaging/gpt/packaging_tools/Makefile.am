@@ -5,6 +5,6 @@ gptexecsharedir = @gptexecsharedir@
 
 gptexecshare_SCRIPTS = config.guess
 
-EXTRA_DIST = $(gptexecshare_SCRIPTS) CHANGES LICENSE README grid-packaging-tools.spec
+EXTRA_DIST = $(gptexecshare_SCRIPTS) CHANGES LICENSE README 
 
 DISTCLEANFILES = gpt-perl-initializer

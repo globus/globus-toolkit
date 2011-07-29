@@ -153,16 +153,12 @@ packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; e
 cd gpt-*/packaging_tools
 sh ./bootstrap
 make dist
-cp gpt-3.*.tar.gz ../../package-output
-cd ../../package-output
+# Copy source tarballs into the rpmbuild source directory
+cp gpt-3.*.tar.gz ../../package-output/* $HOME/SOURCES
 
-# Some gpt packages are in the bundles but not packaged yet. We'll ignore
-# errors trying to generate srpms from those with || true below
-for i in *.tar.gz; do rpmbuild -ts --nodeps $i || true; done
-
-# gsi-openssh doesn't quite work this way, so we do it explicitly
-cp gsi_openssh-*-src.tar.gz $HOME/SOURCES/
-rpmbuild -bs --nodeps ../source-trees/gssapi-openssh/openssh/gsi_openssh.spec
+# Build source packages from spec files
+cd ../../fedora
+for i in *.spec; do rpmbuild -bs --nodeps $i || true; done
 
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
