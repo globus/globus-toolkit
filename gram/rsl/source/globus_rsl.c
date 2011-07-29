@@ -125,7 +125,7 @@ globus_l_rsl_deactivate(void)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_relation() function tests whether the 
+ *     The globus_rsl_is_relation() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is a relation. The
  *     RSL syntax supports the following relation operations:
  *     <dl>
@@ -161,7 +161,7 @@ globus_l_rsl_deactivate(void)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_relation() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_relation() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is a relation; otherwise,
  *     it returns GLOBUS_FALSE.
  */
@@ -181,7 +181,7 @@ globus_rsl_is_relation (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_boolean() function tests whether the 
+ *     The globus_rsl_is_boolean() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is a boolean composition
  *     of other RSL parse trees. The syntactically understood boolean
  *     compositions are "&" (conjunction), "|" (disjunction), and "+"
@@ -197,7 +197,7 @@ globus_rsl_is_relation (globus_rsl_t *ast)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_boolean() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_boolean() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is a boolean composition;
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -217,7 +217,7 @@ globus_rsl_is_boolean (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_relation_eq() function tests whether the 
+ *     The globus_rsl_is_relation_eq() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is an equality relation.
  *     An example of an equality relation is
  *     @code
@@ -228,7 +228,7 @@ globus_rsl_is_boolean (globus_rsl_t *ast)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_relation_eq() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_relation_eq() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is an equality relation; 
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -248,7 +248,7 @@ globus_rsl_is_relation_eq (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_relation_lessthan() function tests whether the 
+ *     The globus_rsl_is_relation_lessthan() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is a less-than relation.
  *     An example of a less-than relation is
  *     @code
@@ -259,7 +259,7 @@ globus_rsl_is_relation_eq (globus_rsl_t *ast)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_relation_lessthan() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_relation_lessthan() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is a less-than relation; 
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -279,7 +279,7 @@ globus_rsl_is_relation_lessthan (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_relation_attribute_equal() function tests whether
+ *     The globus_rsl_is_relation_attribute_equal() function tests whether
  *     the the RSL pointed to by the @a ast parameter is a relation with
  *     the attribute name which matches the string pointed to by the
  *     @a attribute parameter. This attribute name comparision is
@@ -291,7 +291,7 @@ globus_rsl_is_relation_lessthan (globus_rsl_t *ast)
  *     Name of the attribute to test
  *
  * @return
- *     The @a globus_rsl_is_relation_attribute_equal() function returns
+ *     The globus_rsl_is_relation_attribute_equal() function returns
  *     GLOBUS_TRUE if the RSL parse tree pointed to by @a ast is a relation
  *     and its attribute name matches the @a attribute parameter;
  *     otherwise, it returns GLOBUS_FALSE.
@@ -312,7 +312,7 @@ globus_rsl_is_relation_attribute_equal (globus_rsl_t *ast, char * attribute)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_boolean_and() function tests whether the 
+ *     The globus_rsl_is_boolean_and() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is a boolean "and"
  *     composition of RSL trees.
  *     An example of a boolean and relation is
@@ -324,7 +324,7 @@ globus_rsl_is_relation_attribute_equal (globus_rsl_t *ast, char * attribute)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_boolean_and() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_boolean_and() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is a boolean and of RSL
  *     parse trees; otherwise, it returns GLOBUS_FALSE.
  */
@@ -344,7 +344,7 @@ globus_rsl_is_boolean_and (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_boolean_or() function tests whether the 
+ *     The globus_rsl_is_boolean_or() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is a boolean "or" composition
  *     of RSL trees.
  *     An example of a boolean or relation is
@@ -356,7 +356,7 @@ globus_rsl_is_boolean_and (globus_rsl_t *ast)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_boolean_or() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_boolean_or() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is a boolean and of RSL
  *     parse trees; otherwise, it returns GLOBUS_FALSE.
  */
@@ -376,7 +376,7 @@ globus_rsl_is_boolean_or (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_is_boolean_multi() function tests whether the 
+ *     The globus_rsl_is_boolean_multi() function tests whether the 
  *     the RSL pointed to by the @a ast parameter is a boolean "multi-request"
  *     composition of RSL trees.
  *     An example of a boolean multie-request relation is
@@ -389,7 +389,7 @@ globus_rsl_is_boolean_or (globus_rsl_t *ast)
  *     Pointer to an RSL parse tree structure.
  *
  * @return
- *     The @a globus_rsl_is_boolean_multi() function returns GLOBUS_TRUE if
+ *     The globus_rsl_is_boolean_multi() function returns GLOBUS_TRUE if
  *     the RSL parse tree pointed to by @a ast is a boolean multi-request of
  *     RSL parse trees; otherwise, it returns GLOBUS_FALSE.
  */
@@ -409,7 +409,7 @@ globus_rsl_is_boolean_multi (globus_rsl_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_value_is_literal() function tests whether the 
+ *     The globus_rsl_value_is_literal() function tests whether the 
  *     the RSL value pointed to by the @a ast parameter is a literal string
  *     value.
  *     An example of a literal string is
@@ -421,7 +421,7 @@ globus_rsl_is_boolean_multi (globus_rsl_t *ast)
  *     Pointer to an RSL value structure.
  *
  * @return
- *     The @a globus_rsl_value_is_literal() function returns GLOBUS_TRUE if
+ *     The globus_rsl_value_is_literal() function returns GLOBUS_TRUE if
  *     the RSL value pointed to by @a ast is a literal string value;
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -441,7 +441,7 @@ globus_rsl_value_is_literal (globus_rsl_value_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_value_is_sequence() function tests whether the 
+ *     The globus_rsl_value_is_sequence() function tests whether the 
  *     the RSL value pointed to by the @a ast parameter is a sequence of
  *     RSL values. An example of a sequence of values is
  *     @code
@@ -452,7 +452,7 @@ globus_rsl_value_is_literal (globus_rsl_value_t *ast)
  *     Pointer to an RSL value structure.
  *
  * @return
- *     The @a globus_rsl_value_is_sequence() function returns GLOBUS_TRUE if
+ *     The globus_rsl_value_is_sequence() function returns GLOBUS_TRUE if
  *     the RSL value pointed to by @a ast is a value sequnce;
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -472,7 +472,7 @@ globus_rsl_value_is_sequence (globus_rsl_value_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_value_is_variable() function tests whether the 
+ *     The globus_rsl_value_is_variable() function tests whether the 
  *     the RSL value pointed to by the @a ast parameter is a variable reference.
  *     RSL values. An example of a variable reference is
  *     @code
@@ -483,7 +483,7 @@ globus_rsl_value_is_sequence (globus_rsl_value_t *ast)
  *     Pointer to an RSL value structure.
  *
  * @return
- *     The @a globus_rsl_value_is_sequence() function returns GLOBUS_TRUE if
+ *     The globus_rsl_value_is_sequence() function returns GLOBUS_TRUE if
  *     the RSL value pointed to by @a ast is a value sequnce;
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -503,7 +503,7 @@ globus_rsl_value_is_variable (globus_rsl_value_t *ast)
  * @ingroup globus_rsl_predicates
  *
  * @details
- *     The @a globus_rsl_value_is_concatenation() function tests whether the 
+ *     The globus_rsl_value_is_concatenation() function tests whether the 
  *     the RSL value pointed to by the @a ast parameter is a concatenation of
  *     RSL values. An example of an RSL value concatenation is
  *     @code
@@ -514,7 +514,7 @@ globus_rsl_value_is_variable (globus_rsl_value_t *ast)
  *     Pointer to an RSL value structure.
  *
  * @return
- *     The @a globus_rsl_value_is_concatenation() function returns GLOBUS_TRUE
+ *     The globus_rsl_value_is_concatenation() function returns GLOBUS_TRUE
  *     if the RSL value pointed to by @a ast is a value concatenation;
  *     otherwise, it returns GLOBUS_FALSE.
  */
@@ -538,7 +538,7 @@ globus_rsl_value_is_concatenation (globus_rsl_value_t *ast)
  * @ingroup globus_rsl_constructors
  *
  * @details
- *     The @a globus_rsl_make_boolean() function creates a boolean composition
+ *     The globus_rsl_make_boolean() function creates a boolean composition
  *     of the RSL nodes in the list pointed to by @a children. The new
  *     RSL node which is returned contains a reference to the list, not a copy.
  *
@@ -552,11 +552,11 @@ globus_rsl_value_is_concatenation (globus_rsl_value_t *ast)
  *     operation described by the @a operator parameter.
  *
  * @return
- *     The @a globus_rsl_make_boolean() function returns a new
+ *     The globus_rsl_make_boolean() function returns a new
  *     RSL parse tree node that contains a shallow reference to the 
  *     list of values pointed to by the @a children parameter joined by
  *     the operator value in the @a operator parameter. If an error occurs,
- *     @a globus_rsl_make_boolean() returns NULL.
+ *     globus_rsl_make_boolean() returns NULL.
  */
 globus_rsl_t *
 globus_rsl_make_boolean (int operator,
@@ -580,7 +580,7 @@ globus_rsl_make_boolean (int operator,
  * @ingroup globus_rsl_constructors
  *
  * @details
- *     The @a globus_rsl_make_relation() function creates a relation between
+ *     The globus_rsl_make_relation() function creates a relation between
  *     the attribute named by the @a attributename parameter and the values
  *     pointed to by the @a value_sequence list. The new RSL relation
  *     node which is returned contains a reference to the @a attributename 
@@ -598,11 +598,11 @@ globus_rsl_make_boolean (int operator,
  *     Pointer to a sequence of RSL values to use in the new RSL relation.
  *
  * @return
- *     The @a globus_rsl_make_relation() function returns a new
+ *     The globus_rsl_make_relation() function returns a new
  *     RSL parse tree node that contains a shallow reference to the 
  *     attribute name pointed to by the @a attributename parameter and the
  *     RSL value sequence pointed to by the @a value_sequence parameter.
- *     If an error occurs, @a globus_rsl_make_relation() returns NULL.
+ *     If an error occurs, globus_rsl_make_relation() returns NULL.
  */
 globus_rsl_t *
 globus_rsl_make_relation (int operator,
@@ -628,7 +628,7 @@ globus_rsl_make_relation (int operator,
  * @ingroup globus_rsl_constructors
  *
  * @details
- *     The @a globus_rsl_value_make_literal() function creates a string literal
+ *     The globus_rsl_value_make_literal() function creates a string literal
  *     RSL value node containing the value pointed to by the @a string
  *     parameter.  The new RSL value
  *     node which is returned contains a reference to the @a string
@@ -638,10 +638,10 @@ globus_rsl_make_relation (int operator,
  *     The literal string to be used in the new value. 
  *
  * @return
- *     The @a globus_rsl_value_make_literal() function returns a new
+ *     The globus_rsl_value_make_literal() function returns a new
  *     RSL value node that contains a shallow reference to the 
  *     string pointed to by the @a string parameter.
- *     If an error occurs, @a globus_rsl_value_make_literal() returns NULL.
+ *     If an error occurs, globus_rsl_value_make_literal() returns NULL.
  */
 globus_rsl_value_t *
 globus_rsl_value_make_literal (char *string)
@@ -664,7 +664,7 @@ globus_rsl_value_make_literal (char *string)
  * @ingroup globus_rsl_constructors
  *
  * @details
- *     The @a globus_rsl_value_make_sequence() function creates a value
+ *     The globus_rsl_value_make_sequence() function creates a value
  *     sequence RSL node referring to the values pointed to by the
  *     @a value_list parameter.  The new node returned by this function
  *     contains a reference to the @a value_list parameter, not a copy.
@@ -673,10 +673,10 @@ globus_rsl_value_make_literal (char *string)
  *     A pointer to a list of globus_rsl_value_t pointers.
  *
  * @return
- *     The @a globus_rsl_value_make_sequence() function returns a new
+ *     The globus_rsl_value_make_sequence() function returns a new
  *     RSL value node that contains a shallow reference to the 
  *     list pointed to by the @a value_list parameter.
- *     If an error occurs, @a globus_rsl_value_make_sequence() returns NULL.
+ *     If an error occurs, globus_rsl_value_make_sequence() returns NULL.
  */
 globus_rsl_value_t *
 globus_rsl_value_make_sequence (globus_list_t * value_list)
@@ -699,7 +699,7 @@ globus_rsl_value_make_sequence (globus_list_t * value_list)
  * @ingroup globus_rsl_constructors
  *
  * @details
- *     The @a globus_rsl_value_make_variable() function creates a variable
+ *     The globus_rsl_value_make_variable() function creates a variable
  *     reference RSL node referring to the variable name contained in the
  *     value pointed to by @a sequence parameter.  The new node returned by
  *     this function contains a reference to the @a sequence parameter, not a
@@ -709,10 +709,10 @@ globus_rsl_value_make_sequence (globus_list_t * value_list)
  *     A pointer to a RSL value sequnce.
  *
  * @return
- *     The @a globus_rsl_value_make_variable() function returns a new
+ *     The globus_rsl_value_make_variable() function returns a new
  *     RSL value node that contains a shallow reference to the 
  *     value sequence pointed to by the @a sequence parameter.
- *     If an error occurs, @a globus_rsl_value_make_variable() returns NULL.
+ *     If an error occurs, globus_rsl_value_make_variable() returns NULL.
  */
 globus_rsl_value_t *
 globus_rsl_value_make_variable (globus_rsl_value_t * sequence)
@@ -735,7 +735,7 @@ globus_rsl_value_make_variable (globus_rsl_value_t * sequence)
  * @ingroup globus_rsl_constructors
  *
  * @details
- *     The @a globus_rsl_value_make_concatenation() function creates a
+ *     The globus_rsl_value_make_concatenation() function creates a
  *     concatenation of the values pointed to by the @a left_value and 
  *     @a right_value parameters. The new node returned by
  *     this function contains a reference to these parameters' values, not a
@@ -749,10 +749,10 @@ globus_rsl_value_make_variable (globus_rsl_value_t * sequence)
  *     This must be a string literal or variable reference.
  *
  * @return
- *     The @a globus_rsl_value_make_concatenation() function returns a new
+ *     The globus_rsl_value_make_concatenation() function returns a new
  *     RSL value node that contains a shallow reference to the 
  *     values pointed to by the @a left_value and @a right_value parameters.
- *     If an error occurs, @a globus_rsl_value_make_concatenation() returns
+ *     If an error occurs, globus_rsl_value_make_concatenation() returns
  *     NULL.
  */
 globus_rsl_value_t *
@@ -782,7 +782,7 @@ globus_rsl_value_make_concatenation (globus_rsl_value_t *left_value,
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_copy_recursive() function performs a deep copy
+ *     The globus_rsl_copy_recursive() function performs a deep copy
  *     of the RSL syntax tree pointed to by the @a ast_node parameter. All
  *     RSL nodes, value nodes, variable names, attributes, and literals
  *     will be copied to the return value.
@@ -791,10 +791,10 @@ globus_rsl_value_make_concatenation (globus_rsl_value_t *left_value,
  *     An RSL syntax tree to copy.
  *
  * @return 
- *     The @a globus_rsl_copy_recursive() function returns a copy of its
+ *     The globus_rsl_copy_recursive() function returns a copy of its
  *     input parameter that that can be used after
  *     the @a ast_node and its values have been freed.
- *     If an error occurs, @a globus_rsl_copy_recursive() returns
+ *     If an error occurs, globus_rsl_copy_recursive() returns
  *     NULL.
  */
 globus_rsl_t *
@@ -883,7 +883,7 @@ globus_rsl_copy_recursive(globus_rsl_t * ast_node)
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_value_copy_recursive() function performs a deep copy
+ *     The globus_rsl_value_copy_recursive() function performs a deep copy
  *     of the RSL value pointed to by the @a globus_rsl_value_ptr parameter.
  *     All variable names, attributes, literals, and value lists will be copied
  *     to the return value.
@@ -892,10 +892,10 @@ globus_rsl_copy_recursive(globus_rsl_t * ast_node)
  *     A pointer to an RSL value to copy.
  *
  * @return 
- *     The @a globus_rsl_value_copy_recursive() function returns a copy of its
+ *     The globus_rsl_value_copy_recursive() function returns a copy of its
  *     input parameter that that can be used after
  *     the @a globus_rsl_value_ptr and its values have been freed.
- *     If an error occurs, @a globus_rsl_value_copy_recursive() returns
+ *     If an error occurs, globus_rsl_value_copy_recursive() returns
  *     NULL.
  */
 globus_rsl_value_t *
@@ -1000,16 +1000,16 @@ globus_rsl_value_copy_recursive(globus_rsl_value_t * globus_rsl_value_ptr)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_boolean_get_operator() function returns
+ *     The globus_rsl_boolean_get_operator() function returns
  *     the operator that is used by the boolean RSL composition.
  *
  * @param ast_node
  *     The RSL syntax tree to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_boolean_get_operator() returns one
+ *     Upon success, globus_rsl_boolean_get_operator() returns one
  *     of GLOBUS_RSL_AND, GLOBUS_RSL_OR, GLOBUS_RSL_MULTIREQ. If an error
- *     occurs, @a globus_rsl_boolean_get_operator() returns -1.
+ *     occurs, globus_rsl_boolean_get_operator() returns -1.
  */
 int
 globus_rsl_boolean_get_operator (globus_rsl_t *ast_node)
@@ -1025,7 +1025,7 @@ globus_rsl_boolean_get_operator (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_boolean_get_operand_list() function returns
+ *     The globus_rsl_boolean_get_operand_list() function returns
  *     the list of RSL syntax tree nodes that is joined by a boolean
  *     composition.
  *
@@ -1033,10 +1033,10 @@ globus_rsl_boolean_get_operator (globus_rsl_t *ast_node)
  *     The RSL syntax tree to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_boolean_get_operand_list() returns a
+ *     Upon success, globus_rsl_boolean_get_operand_list() returns a
  *     pointer to a list of RSL syntax tree nodes that are the operand of
  *     a boolean composition operation.  If an error
- *     occurs, @a globus_rsl_boolean_get_operand_list() returns NULL.
+ *     occurs, globus_rsl_boolean_get_operand_list() returns NULL.
  */
 globus_list_t *
 globus_rsl_boolean_get_operand_list (globus_rsl_t *ast_node)
@@ -1052,7 +1052,7 @@ globus_rsl_boolean_get_operand_list (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_boolean_get_operand_list_ref() function returns
+ *     The globus_rsl_boolean_get_operand_list_ref() function returns
  *     a pointer to the list of RSL syntax tree nodes that is joined by a
  *     boolean composition. If this list is modified, then the value of boolean
  *     syntax tree is modified.
@@ -1061,10 +1061,10 @@ globus_rsl_boolean_get_operand_list (globus_rsl_t *ast_node)
  *     The RSL syntax tree to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_boolean_get_operand_list_ref() returns a
+ *     Upon success, globus_rsl_boolean_get_operand_list_ref() returns a
  *     pointer to the list pointer in the RSL syntax tree data structure. This
  *     list can be modified to change the oprands of the boolean operation.
- *     If an error occurs, @a globus_rsl_boolean_get_operand_list_ref() returns
+ *     If an error occurs, globus_rsl_boolean_get_operand_list_ref() returns
  *     NULL.
  */
 globus_list_t **
@@ -1084,7 +1084,7 @@ globus_rsl_boolean_get_operand_list_ref (globus_rsl_t *boolean_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_relation_get_attribute() function returns
+ *     The globus_rsl_relation_get_attribute() function returns
  *     a pointer to the name of the attribute in an RSL relation. This
  *     return value is a shallow reference to the attribute name.
  *     
@@ -1092,9 +1092,9 @@ globus_rsl_boolean_get_operand_list_ref (globus_rsl_t *boolean_node)
  *     The RSL relation node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_relation_get_attribute() returns a
+ *     Upon success, globus_rsl_relation_get_attribute() returns a
  *     pointer to the name of the attribute of the relation. 
- *     If an error occurs, @a globus_rsl_relation_get_attribute() returns
+ *     If an error occurs, globus_rsl_relation_get_attribute() returns
  *     NULL.
  */
 char *
@@ -1111,7 +1111,7 @@ globus_rsl_relation_get_attribute (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_relation_get_operator() function returns
+ *     The globus_rsl_relation_get_operator() function returns
  *     the operation type represented by the RSL relation node pointed to by
  *     the @a ast_node parameter.
  *     
@@ -1119,10 +1119,10 @@ globus_rsl_relation_get_attribute (globus_rsl_t *ast_node)
  *     The RSL relation node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_relation_get_operator() returns one
+ *     Upon success, globus_rsl_relation_get_operator() returns one
  *     of GLOBUS_RSL_EQ, GLOBUS_RSL_NEQ, GLOBUS_RSL_GT, GLOBUS_RSL_GTEQ, 
  *     GLOBUS_RSL_LT, or GLOBUS_RSL_LTEQ.
- *     If an error occurs, @a globus_rsl_relation_get_operator() returns
+ *     If an error occurs, globus_rsl_relation_get_operator() returns
  *     -1.
  */
 int
@@ -1139,7 +1139,7 @@ globus_rsl_relation_get_operator (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_relation_get_value_sequence() function returns
+ *     The globus_rsl_relation_get_value_sequence() function returns
  *     the value of an RSL relation node pointed to by
  *     the @a ast_node parameter. 
  *     
@@ -1147,10 +1147,10 @@ globus_rsl_relation_get_operator (globus_rsl_t *ast_node)
  *     The RSL relation node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_relation_get_value_sequence() returns
+ *     Upon success, globus_rsl_relation_get_value_sequence() returns
  *     the value sequence pointer in the RSL relation pointed to by the
  *     @a ast_node parameter.
- *     If an error occurs, @a globus_rsl_relation_get_value_sequence() returns
+ *     If an error occurs, globus_rsl_relation_get_value_sequence() returns
  *     NULL.
  */
 globus_rsl_value_t *
@@ -1168,7 +1168,7 @@ globus_rsl_relation_get_value_sequence (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_relation_get_single_value() function returns
+ *     The globus_rsl_relation_get_single_value() function returns
  *     the value of an RSL relation node pointed to by
  *     the @a ast_node parameter if the value is a sequence of one value. 
  *     
@@ -1176,11 +1176,11 @@ globus_rsl_relation_get_value_sequence (globus_rsl_t *ast_node)
  *     The RSL relation node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_relation_get_single_value() returns
+ *     Upon success, globus_rsl_relation_get_single_value() returns
  *     the value pointer at the head of the RSL relation pointed to by the
  *     @a ast_node parameter. If the value sequence has more than one value
  *     or the @a ast_node points to an RSL syntax tree that is not a relation,
- *     @a globus_rsl_relation_get_value_sequence() returns
+ *     globus_rsl_relation_get_value_sequence() returns
  *     NULL.
  */
 globus_rsl_value_t *
@@ -1210,7 +1210,7 @@ globus_rsl_relation_get_single_value (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_literal_get_string() function returns
+ *     The globus_rsl_value_literal_get_string() function returns
  *     the string value of an RSL literal node pointed to by
  *     the @a literal_node parameter.
  *     
@@ -1218,10 +1218,10 @@ globus_rsl_relation_get_single_value (globus_rsl_t *ast_node)
  *     The RSL literal node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_literal_get_string() returns
+ *     Upon success, globus_rsl_value_literal_get_string() returns
  *     a pointer to the string value of the literal pointed to by the 
  *     @a literal_node parameter.  If the value is not a literal,
- *     @a globus_rsl_value_literal_get_string() returns
+ *     globus_rsl_value_literal_get_string() returns
  *     NULL.
  */
 char *
@@ -1238,7 +1238,7 @@ globus_rsl_value_literal_get_string (globus_rsl_value_t *literal_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_sequence_get_value_list() function returns
+ *     The globus_rsl_value_sequence_get_value_list() function returns
  *     the list of globus_rsl_value_t pointer values associated with
  *     the RSL value sequence pointed to by the @a sequence_node parameter.
  *     
@@ -1246,10 +1246,10 @@ globus_rsl_value_literal_get_string (globus_rsl_value_t *literal_node)
  *     The RSL sequence node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_sequence_get_value_list() returns
+ *     Upon success, globus_rsl_value_sequence_get_value_list() returns
  *     a pointer to the list of values pointed to by the 
  *     @a sequence_node parameter.  If the value is not a sequence,
- *     @a globus_rsl_value_literal_get_string() returns
+ *     globus_rsl_value_literal_get_string() returns
  *     NULL.
  */
 globus_list_t *
@@ -1266,7 +1266,7 @@ globus_rsl_value_sequence_get_value_list (globus_rsl_value_t *sequence_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_variable_get_sequence() function returns
+ *     The globus_rsl_value_variable_get_sequence() function returns
  *     the sequence value associated with the RSL variable reference pointed to
  *     by the @a variable_node parameter.
  *     
@@ -1274,10 +1274,10 @@ globus_rsl_value_sequence_get_value_list (globus_rsl_value_t *sequence_node)
  *     The RSL variable node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_variable_get_sequence() returns
+ *     Upon success, globus_rsl_value_variable_get_sequence() returns
  *     a pointer to the rsl value sequence pointed to by the 
  *     @a variable_node parameter.  If the value is not a variable reference,
- *     @a globus_rsl_value_variable_get_sequence() returns
+ *     globus_rsl_value_variable_get_sequence() returns
  *     NULL.
  */
 globus_rsl_value_t *
@@ -1294,7 +1294,7 @@ globus_rsl_value_variable_get_sequence (globus_rsl_value_t * variable_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_variable_get_name() function returns
+ *     The globus_rsl_value_variable_get_name() function returns
  *     a pointer to the name of the RSL variable name pointed to by the
  *     @a variable_node parameter.
  *     
@@ -1302,10 +1302,10 @@ globus_rsl_value_variable_get_sequence (globus_rsl_value_t * variable_node)
  *     The RSL variable node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_variable_get_name() returns
+ *     Upon success, globus_rsl_value_variable_get_name() returns
  *     a pointer to the string containing the name of the variable referenced
  *     by the @a variable_node parameter.  If the node is not a variable
- *     reference, @a globus_rsl_value_variable_get_sequence() returns
+ *     reference, globus_rsl_value_variable_get_sequence() returns
  *     NULL.
  */
 char *
@@ -1332,7 +1332,7 @@ globus_rsl_value_variable_get_name (globus_rsl_value_t *variable_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_variable_get_default() function returns
+ *     The globus_rsl_value_variable_get_default() function returns
  *     a pointer to the default value of the RSL variable pointed to by the 
  *     @a variable_node parameter to use if the
  *     variable's name is not bound in the current evaluation context.
@@ -1341,11 +1341,11 @@ globus_rsl_value_variable_get_name (globus_rsl_value_t *variable_node)
  *     The RSL variable node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_variable_get_default() returns
+ *     Upon success, globus_rsl_value_variable_get_default() returns
  *     a pointer to the string containing the default value of the variable
  *     referenced by the @a variable_node parameter.  If the node is not a
  *     variable reference or no default value exists in the RSL node,
- *     @a globus_rsl_value_variable_get_default() returns
+ *     globus_rsl_value_variable_get_default() returns
  *     NULL.
  */
 char *
@@ -1373,7 +1373,7 @@ globus_rsl_value_variable_get_default (globus_rsl_value_t *variable_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_variable_get_size() function returns
+ *     The globus_rsl_value_variable_get_size() function returns
  *     the number of nodes in the RSL variable reference node pointed to by the
  *     @a variable_node parameter.
  *     
@@ -1381,7 +1381,7 @@ globus_rsl_value_variable_get_default (globus_rsl_value_t *variable_node)
  *     The RSL variable node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_variable_get_size() returns
+ *     Upon success, globus_rsl_value_variable_get_size() returns
  *     the list of values within a RSL variable reference, or -1 if the
  *     node pointed to by @a variable_node is not a variable reference. If the
  *     return value is 1, then the variable has no default value included
@@ -1403,7 +1403,7 @@ globus_rsl_value_variable_get_size (globus_rsl_value_t *variable_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_concatenation_get_left() function returns
+ *     The globus_rsl_value_concatenation_get_left() function returns
  *     the left side of an RSL value concatenation pointed to by the
  *     @a concatenation_node parameter.
  *     
@@ -1411,10 +1411,10 @@ globus_rsl_value_variable_get_size (globus_rsl_value_t *variable_node)
  *     The RSL concatenation node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_concatenation_get_left() returns
+ *     Upon success, globus_rsl_value_concatenation_get_left() returns
  *     a pointer to the left value of the concatenation values pointed to by
  *     the @a concatenation_node parameter.  If an error occurs, 
- *     @a globus_rsl_value_concatenation_get_left() returns NULL.
+ *     globus_rsl_value_concatenation_get_left() returns NULL.
  */
 globus_rsl_value_t *
 globus_rsl_value_concatenation_get_left (globus_rsl_value_t *concatenation_node)
@@ -1430,7 +1430,7 @@ globus_rsl_value_concatenation_get_left (globus_rsl_value_t *concatenation_node)
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_concatenation_get_right() function returns
+ *     The globus_rsl_value_concatenation_get_right() function returns
  *     the right side of an RSL value concatenation pointed to by the
  *     @a concatenation_node parameter.
  *     
@@ -1438,10 +1438,10 @@ globus_rsl_value_concatenation_get_left (globus_rsl_value_t *concatenation_node)
  *     The RSL concatenation node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_concatenation_get_right() returns
+ *     Upon success, globus_rsl_value_concatenation_get_right() returns
  *     a pointer to the right value of the concatenation values pointed to by
  *     the @a concatenation_node parameter.  If an error occurs, 
- *     @a globus_rsl_value_concatenation_get_right() returns NULL.
+ *     globus_rsl_value_concatenation_get_right() returns NULL.
  */
 globus_rsl_value_t *
 globus_rsl_value_concatenation_get_right (globus_rsl_value_t *concatenation_node)
@@ -1457,7 +1457,7 @@ globus_rsl_value_concatenation_get_right (globus_rsl_value_t *concatenation_node
  * @ingroup globus_rsl_accessor
  *
  * @details
- *     The @a globus_rsl_value_sequence_get_list_ref() function returns
+ *     The globus_rsl_value_sequence_get_list_ref() function returns
  *     a reference to the list of values in a value sequence. Any changes to
  *     the elements of this list will affect the @a sequence_node
  *     parameter.
@@ -1466,10 +1466,10 @@ globus_rsl_value_concatenation_get_right (globus_rsl_value_t *concatenation_node
  *     The RSL sequence node to inspect.
  *
  * @return
- *     Upon success, @a globus_rsl_value_sequence_get_list_ref() returns
+ *     Upon success, globus_rsl_value_sequence_get_list_ref() returns
  *     a pointer to the list of the globus_rsl_value_t pointer values contained
  *     in the @a sequence_node parameter.  If an error occurs, 
- *     @a globus_rsl_value_sequence_get_list_ref() returns NULL.
+ *     globus_rsl_value_sequence_get_list_ref() returns NULL.
  */
 globus_list_t **
 globus_rsl_value_sequence_get_list_ref (globus_rsl_value_t *sequence_node)
@@ -1486,7 +1486,7 @@ globus_rsl_value_sequence_get_list_ref (globus_rsl_value_t *sequence_node)
  * @ingroup globus_rsl_param
  *
  * @details
- *     The @a globus_rsl_value_concatenation_set_left() sets the left hand side
+ *     The globus_rsl_value_concatenation_set_left() sets the left hand side
  *     of a concatenation pointed to by @a concatenation_node to the value
  *     pointed to by  @a new_left_node. If there was any
  *     previous value to the left hand side of the concatenation, it is
@@ -1498,11 +1498,11 @@ globus_rsl_value_sequence_get_list_ref (globus_rsl_value_t *sequence_node)
  *     A pointer to the new left hand side of the concatenation.
  *
  * @return
- *     Upon success, @a globus_rsl_value_concatenation_set_left() returns
+ *     Upon success, globus_rsl_value_concatenation_set_left() returns
  *     @a GLOBUS_SUCCESS and modifies the value pointed to by the
  *     @a concatenation_node parameter to use the value pointed to by the
  *     @a new_left_node parameter as its left hand side value. If an error
- *     occurs, @a globus_rsl_value_concatenation_set_left() returns -1.
+ *     occurs, globus_rsl_value_concatenation_set_left() returns -1.
  */
 int
 globus_rsl_value_concatenation_set_left (globus_rsl_value_t *concatenation_node,
@@ -1522,7 +1522,7 @@ globus_rsl_value_concatenation_set_left (globus_rsl_value_t *concatenation_node,
  * @ingroup globus_rsl_param
  *
  * @details
- *     The @a globus_rsl_value_concatenation_set_right() sets the right-hand
+ *     The globus_rsl_value_concatenation_set_right() sets the right-hand
  *     side of a concatenation pointed to by @a concatenation_node to the value
  *     pointed to by  @a new_right_node. If there was any
  *     previous value to the right-hand side of the concatenation, it is
@@ -1534,11 +1534,11 @@ globus_rsl_value_concatenation_set_left (globus_rsl_value_t *concatenation_node,
  *     A pointer to the new right hand side of the concatenation.
  *
  * @return
- *     Upon success, @a globus_rsl_value_concatenation_set_right() returns
+ *     Upon success, globus_rsl_value_concatenation_set_right() returns
  *     @a GLOBUS_SUCCESS and modifies the value pointed to by the
  *     @a concatenation_node parameter to use the value pointed to by the
  *     @a new_right_node parameter as its right hand side value. If an error
- *     occurs, @a globus_rsl_value_concatenation_set_right() returns -1.
+ *     occurs, globus_rsl_value_concatenation_set_right() returns -1.
  */
 int
 globus_rsl_value_concatenation_set_right (globus_rsl_value_t *concatenation_node,
@@ -1562,7 +1562,7 @@ globus_rsl_value_concatenation_set_right (globus_rsl_value_t *concatenation_node
  * @ingroup globus_list
  *
  * @details
- *     The @a globus_list_copy_reverse() function creates and returns a copy of
+ *     The globus_list_copy_reverse() function creates and returns a copy of
  *     its input parameter, with the order of the list elements reversed. This
  *     copy is a shallow copy of list nodes, so both the list pointed to by 
  *     @a orig and the returned list point to the same list element data.
@@ -1571,9 +1571,9 @@ globus_rsl_value_concatenation_set_right (globus_rsl_value_t *concatenation_node
  *     A pointer to the list to copy.
  *
  * @return
- *     Upon success, @a globus_list_copy_reverse() returns a new list
+ *     Upon success, globus_list_copy_reverse() returns a new list
  *     containing the same elements as the list pointed to by @a orig in 
- *     reverse order. If an error occurs, @a globus_list_copy_reverse() returns
+ *     reverse order. If an error occurs, globus_list_copy_reverse() returns
  *     NULL.
  */
 globus_list_t *
@@ -1597,7 +1597,7 @@ globus_list_copy_reverse (globus_list_t * orig)
  * @ingroup globus_rsl_memory
  * 
  * @details
- *     The @a globus_rsl_value_free() function frees the RSL value pointed to
+ *     The globus_rsl_value_free() function frees the RSL value pointed to
  *     by the @a val parameter. This only frees the RSL value node itself, and
  *     not any sequence or string values associated with that node.
  *
@@ -1605,7 +1605,7 @@ globus_list_copy_reverse (globus_list_t * orig)
  *     The RSL value node to free.
  *
  * @return
- *     The @a globus_rsl_value_free() function always returns GLOBUS_SUCCESS.
+ *     The globus_rsl_value_free() function always returns GLOBUS_SUCCESS.
  */
 int
 globus_rsl_value_free (globus_rsl_value_t *val)
@@ -1619,7 +1619,7 @@ globus_rsl_value_free (globus_rsl_value_t *val)
  * @ingroup globus_rsl_memory
  * 
  * @details
- *     The @a globus_rsl_free() function frees the RSL syntax tree node pointed
+ *     The globus_rsl_free() function frees the RSL syntax tree node pointed
  *     to by the @a ast_node parameter. This only frees the RSL syntax tree
  *     node itself, and not any boolean operands, relation names, or values
  *     associated with the node.
@@ -1628,7 +1628,7 @@ globus_rsl_value_free (globus_rsl_value_t *val)
  *     The RSL syntax tree node to free.
  *
  * @return
- *     The @a globus_rsl_value_free() function always returns GLOBUS_SUCCESS.
+ *     The globus_rsl_value_free() function always returns GLOBUS_SUCCESS.
  */
 int
 globus_rsl_free (globus_rsl_t *ast_node)
@@ -1642,17 +1642,17 @@ globus_rsl_free (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_free_recursive() function frees the RSL value
+ *     The globus_rsl_free_recursive() function frees the RSL value
  *     node pointed to by the @a globus_rsl_value_ptr, including all 
  *     literal strings, variable names, and value sequences.
  *     Any pointers to these are no longer valid after
- *     @a globus_rsl_value_free_recursive() returns.
+ *     globus_rsl_value_free_recursive() returns.
  *     
  * @param globus_rsl_value_ptr
  *     An RSL value node to free.
  *
  * @return
- *     The @a globus_rsl_value_free_recursive() function always returns
+ *     The globus_rsl_value_free_recursive() function always returns
  *     GLOBUS_SUCCESS.
  */
 int
@@ -1713,17 +1713,17 @@ globus_rsl_value_free_recursive (globus_rsl_value_t * globus_rsl_value_ptr)
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_free_recursive() function frees the RSL syntax tree
+ *     The globus_rsl_free_recursive() function frees the RSL syntax tree
  *     pointed to by the @a ast_node parameter, including all 
  *     boolean operands, attribute names, and values.
  *     Any pointers to these are no longer valid after
- *     @a globus_rsl_free_recursive() returns.
+ *     globus_rsl_free_recursive() returns.
  *     
  * @param ast_node
  *     An RSL parse tree to free.
  *
  * @return
- *     The @a globus_rsl_value_free_recursive() function always returns
+ *     The globus_rsl_value_free_recursive() function always returns
  *     GLOBUS_SUCCESS.
  */
 int
@@ -1776,7 +1776,7 @@ globus_rsl_free_recursive (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_value_list_literal_replace() function replaces
+ *     The globus_rsl_value_list_literal_replace() function replaces
  *     the first value in the list pointed to by the @a value_list parameter
  *     with a new value node that is a literal string node pointing to the
  *     value of the @a string_value parameter, freeing the old value.
@@ -1788,11 +1788,11 @@ globus_rsl_free_recursive (globus_rsl_t *ast_node)
  *     list pointed to by the @a value_list parameter.
  *
  * @return
- *     Upon success, @a globus_rsl_value_list_literal_replace() returns
+ *     Upon success, globus_rsl_value_list_literal_replace() returns
  *     @a GLOBUS_SUCCESS, frees the current first value of @a value_list and
  *     replaces it with a new literal string node pointing to the value of the
  *     @a string_value parameter. If an error occurs,
- *     @a globus_rsl_value_list_literal_replace() returns 1.
+ *     globus_rsl_value_list_literal_replace() returns 1.
  */
 int
 globus_rsl_value_list_literal_replace(globus_list_t * value_list,
@@ -1815,13 +1815,13 @@ globus_rsl_value_list_literal_replace(globus_list_t * value_list,
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_value_eval() function modifies the value pointed to
+ *     The globus_rsl_value_eval() function modifies the value pointed to
  *     by its @a ast_node parameter by replacing all RSL substitution
  *     variable reference nodes with the literal values those variables 
  *     evaluate to based on the current scope of the symbol table pointed to
  *     by the @a symbol_table parameter. It also combines string
  *     concatenations into literal string values. Any nodes which are replaced
- *     by this function are freed using @a globus_rsl_value_free_recursive().
+ *     by this function are freed using globus_rsl_value_free_recursive().
  *     
  * @param ast_node
  *     A pointer to the RSL value node to evaluate.
@@ -1838,12 +1838,12 @@ globus_rsl_value_list_literal_replace(globus_list_t * value_list,
  *     parameter defines RSL substition variables.
  *
  * @return
- *     Upon success, @a globus_rsl_value_eval() returns
+ *     Upon success, globus_rsl_value_eval() returns
  *     @a GLOBUS_SUCCESS, and replaces any RSL substitution values in the 
  *     node pointed to by the @a ast_node parameter. If the node evaluates
  *     to a single literal, the @a string_value parameter is modified to
  *     point to the value of that literal. If an error occurs,
- *     @a globus_rsl_value_eval() returns a non-zero value.
+ *     globus_rsl_value_eval() returns a non-zero value.
  */
 int
 globus_rsl_value_eval(globus_rsl_value_t * ast_node,
@@ -2075,13 +2075,13 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
  * @ingroup globus_rsl_memory
  *
  * @details
- *     The @a globus_rsl_eval() function modifies the RSL parse tree pointed
+ *     The globus_rsl_eval() function modifies the RSL parse tree pointed
  *     to by its @a ast_node parameter by replacing all RSL substitution
  *     variable reference nodes with the literal values those variables 
  *     evaluate to based on the current scope of the symbol table pointed to
  *     by the @a symbol_table parameter. It also combines string
  *     concatenations into literal string values. Any nodes which are replaced
- *     by this function are freed using @a globus_rsl_value_free_recursive().
+ *     by this function are freed using globus_rsl_value_free_recursive().
  *     
  * @param ast_node
  *     A pointer to the RSL syntax tree to evaluate.
@@ -2090,11 +2090,11 @@ globus_rsl_value_eval(globus_rsl_value_t * ast_node,
  *     which can occur in this evaluation scope.
  *
  * @return
- *     Upon success, @a globus_rsl_eval() returns
+ *     Upon success, globus_rsl_eval() returns
  *     @a GLOBUS_SUCCESS, and replaces all RSL substitution values and
  *     concatenations in @a ast_node or its child nodes with the evaluated
  *     forms described above.  If an error occurs,
- *     @a globus_rsl_eval() returns a non-zero value.
+ *     globus_rsl_eval() returns a non-zero value.
  */
 int
 globus_rsl_eval (globus_rsl_t *ast_node, 
@@ -2194,7 +2194,7 @@ globus_rsl_eval (globus_rsl_t *ast_node,
  * @ingroup globus_rsl_param
  *
  * @details
- *     The @a globus_rsl_value_list_param_get() function copies pointers to
+ *     The globus_rsl_value_list_param_get() function copies pointers to
  *     literal string values or string pairs associated with the list of
  *     globus_rsl_value_t pointers pointed to by the @a ast_node_list parameter
  *     to the output array pointed to by the @a value parameter. It modifies
@@ -2217,10 +2217,10 @@ globus_rsl_eval (globus_rsl_t *ast_node,
  *     for each string copied into the @a value array.
  *
  * @return
- *     Upon success, the @a globus_rsl_value_list_param_get() function returns
+ *     Upon success, the globus_rsl_value_list_param_get() function returns
  *     GLOBUS_SUCCESS and modifies the values pointed to by the @a value and
  *     @a value_ctr prameters as described above. If an error occurs,
- *     @a globus_rsl_value_list_param_get() returns a non-zero value.
+ *     globus_rsl_value_list_param_get() returns a non-zero value.
  */
 int
 globus_rsl_value_list_param_get(globus_list_t * ast_node_list,
@@ -2281,7 +2281,7 @@ globus_rsl_value_list_param_get(globus_list_t * ast_node_list,
  * @ingroup globus_rsl_param
  *
  * @details
- *     The @a globus_rsl_param_get_values() function searches the RSL parse
+ *     The globus_rsl_param_get_values() function searches the RSL parse
  *     tree pointed to by the @a ast_node parameter and returns the value list
  *     that is bound to the attribute named by the @a param parameter. 
  *     
@@ -2294,10 +2294,10 @@ globus_rsl_value_list_param_get(globus_list_t * ast_node_list,
  *     by the @a ast_node parameter.
  *
  * @return
- *     Upon success, the @a globus_rsl_param_get_values() function returns
+ *     Upon success, the globus_rsl_param_get_values() function returns
  *     a pointer to the list of values associated with the attribute named
  *     by @a param in the RSL parse tree pointed to by @a ast_node. 
- *     If an error occurs, @a globus_rsl_param_get_values() returns NULL.
+ *     If an error occurs, globus_rsl_param_get_values() returns NULL.
  */
 globus_list_t *
 globus_rsl_param_get_values(
@@ -2352,7 +2352,7 @@ globus_rsl_param_get_values(
  * @ingroup globus_rsl_param
  *
  * @details
- *     The @a globus_rsl_param_get() function searches the RSL parse
+ *     The globus_rsl_param_get() function searches the RSL parse
  *     tree pointed to by the @a ast_node parameter and returns an array of
  *     pointers to the strings bound to the attribute named by the @a param
  *     parameter.
@@ -2374,9 +2374,9 @@ globus_rsl_param_get_values(
  *     responsible for freeing this array, but not the strings in the array.
  *
  * @return
- *     Upon success, the @a globus_rsl_param_get() function returns
+ *     Upon success, the globus_rsl_param_get() function returns
  *     @a GLOBUS_SUCCESS and modifies the @a values parameter as described
- *     above. If an error occurs, @a globus_rsl_param_get() returns a non-zero
+ *     above. If an error occurs, globus_rsl_param_get() returns a non-zero
  *     value.
  */
 int
@@ -2498,7 +2498,7 @@ int lvl = 0;
  * @ingroup globus_rsl_print
  *
  * @details
- *     The @a globus_rsl_value_print_recursive() function prints a string
+ *     The globus_rsl_value_print_recursive() function prints a string
  *     representation of the RSL value node pointed to by the
  *     @a globus_rsl_value_ptr parameter to standard output. This function
  *     is not reentrant.
@@ -2507,7 +2507,7 @@ int lvl = 0;
  *     A pointer to the RSL value to display.
  * 
  * @return
- *     The @a globus_rsl_value_print_recursive() function always returns
+ *     The globus_rsl_value_print_recursive() function always returns
  *     @a GLOBUS_SUCCESS.
  */
 int
@@ -2585,16 +2585,16 @@ globus_rsl_value_print_recursive (globus_rsl_value_t * globus_rsl_value_ptr)
  * @ingroup globus_rsl_print
  *
  * @details
- *     The @a globus_rsl_get_operator() function returns a pointer to a
+ *     The globus_rsl_get_operator() function returns a pointer to a
  *     static string that represents the RSL operator passed in via the
  *     @a my_op parameter. If the operator is not value, then 
- *     @a globus_rsl_get_operator() returns a pointer to the string "??"
+ *     globus_rsl_get_operator() returns a pointer to the string "??"
  * 
  * @param my_op
  *     The RSL operator to return.
  * 
  * @return
- *     The @a globus_rsl_get_operator() function returns a pointer to the
+ *     The globus_rsl_get_operator() function returns a pointer to the
  *     string representation of the @a my_op parameter, or "??" if that value
  *     is not a value RSL operator.
  */
@@ -2620,7 +2620,7 @@ char * globus_rsl_get_operator(int my_op)
  * @ingroup globus_rsl_print
  *
  * @details
- *     The @a globus_rsl_print_recursive() function prints a string
+ *     The globus_rsl_print_recursive() function prints a string
  *     representation of the RSL syntax tree pointed to by the
  *     @a ast_node parameter to standard output. This function
  *     is not reentrant.
@@ -2629,7 +2629,7 @@ char * globus_rsl_get_operator(int my_op)
  *     A pointer to the RSL syntax tree to display.
  * 
  * @return
- *     The @a globus_rsl_print_recursive() function always returns
+ *     The globus_rsl_print_recursive() function always returns
  *     @a GLOBUS_SUCCESS.
  */
 int
@@ -2676,7 +2676,7 @@ globus_rsl_print_recursive (globus_rsl_t *ast_node)
  * @ingroup globus_rsl_print
  *
  * @details
- *     The @a globus_rsl_unparse() function returns a new string which
+ *     The globus_rsl_unparse() function returns a new string which
  *     can be parsed into the RSL syntax tree passed as the @a rsl_spec
  *     parameter. The caller is responsible for freeing this string.
  * 
@@ -2684,9 +2684,9 @@ globus_rsl_print_recursive (globus_rsl_t *ast_node)
  *     A pointer to the RSL syntax tree to unparse.
  * 
  * @return
- *     Upon success, the @a globus_rsl_unparse() function returns a new
+ *     Upon success, the globus_rsl_unparse() function returns a new
  *     string which represents the RSL parse tree passed as the @a rsl_spec
- *     parameter. If an error occurs, @a globus_rsl_unparse() returns NULL.
+ *     parameter. If an error occurs, globus_rsl_unparse() returns NULL.
  */
 char *
 globus_rsl_unparse (globus_rsl_t *rsl_spec)
@@ -2726,7 +2726,7 @@ unparse_exit:
  * @ingroup globus_rsl_print
  *
  * @details
- *     The @a globus_rsl_value_unparse() function returns a new string which
+ *     The globus_rsl_value_unparse() function returns a new string which
  *     can be parsed into the value of an RSL relation that has the same
  *     syntactic meaning as the @a rsl_value parameter.
  *     The caller is responsible for freeing this string.
@@ -2735,9 +2735,9 @@ unparse_exit:
  *     A pointer to the RSL value node to unparse.
  * 
  * @return
- *     Upon success, the @a globus_rsl_value_unparse() function returns a new
+ *     Upon success, the globus_rsl_value_unparse() function returns a new
  *     string which represents the RSL value ndoe passed as the @a rsl_value
- *     parameter. If an error occurs, @a globus_rsl_value_unparse() returns
+ *     parameter. If an error occurs, globus_rsl_value_unparse() returns
  *     NULL.
  */
 char *
