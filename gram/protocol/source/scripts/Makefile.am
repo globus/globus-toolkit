@@ -1,8 +1,8 @@
 include $(top_srcdir)/globus_automake_pre
 
 # Extra directories into which we install files
-globusperldir=$(libdir)/perl/Globus/GRAM
-perldocdir=$(datadir)/doc/perl/Globus/GRAM
+globusperldir=$(perlmoduledir)/Globus/GRAM
+perldocdir=$(docdir)/perl/Globus/GRAM
 
 # Not handled by automake, because of :: in the destination file names
 MAN_DIR=${mandir}/man3
@@ -36,14 +36,16 @@ install-data-local:
 		$(INSTALL_DATA) $$manpage $(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$manpage; \
 	done
 
-# The default filelist-noinstDATA rule will list each of the man pages
+# The default filelist rule will list each of the man pages
 # in the filelist in the root directory. This added dependency will add those
 # files in the correct place as well.
-filelist-noinstDATA: filelist-man
+filelist: filelist-man
 
 filelist-man:
-	@list='$(noinst_DATA)'; for p in $$list; do \
-	    echo "$(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$p" >> $(FILELIST_FILE); \
+	@filelistdir="`echo $(FILELIST_FILE) | sed -e 's!/[^/]*$$!!'`"; \
+	list='$(noinst_DATA)'; for p in $$list; do \
+	    p="`echo $(MAN_DIR) | sed -e 's!^$(prefix)!!' -e 's!$$!/Globus::GRAM::'$$p'!'`"; \
+	    echo "$$p" >> $$filelistdir/noflavor_doc.filelist; \
 	done
 
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)

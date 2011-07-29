@@ -18,8 +18,9 @@ BUILT_SOURCES = globus_gram_protocol_constants.h
 
 EXTRA_DIST = globus-gram-protocol-constants.sh \
 	     globus_gram_protocol.dox \
-		version.h.in \
-		dirt.sh
+	     version.h.in \
+	     GLOBUS_LICENSE \
+	     dirt.sh
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -37,6 +38,8 @@ include_HEADERS= \
 noinst_HEADERS = globus_i_gram_protocol.h
 
 libexec_SCRIPTS = globus-gram-protocol-constants.sh
+
+doc_DATA = GLOBUS_LICENSE
 
 globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
 	$(RM) globus_gram_protocol_constants

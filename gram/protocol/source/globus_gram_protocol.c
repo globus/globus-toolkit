@@ -183,7 +183,7 @@ globus_l_gram_protocol_deactivate(void)
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_setup_attr() function creates a new
+ * The globus_gram_protocol_setup_attr() function creates a new
  * globus_io attribute containing the default set of values needed for
  * communication between a GRAM client and a job manager. These attributes
  * include:
@@ -275,7 +275,7 @@ error_exit:
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_authorize_self() function implements a predicate
+ * The globus_gram_protocol_authorize_self() function implements a predicate
  * which returns true if the source and destination identities used to
  * establish the GSSAPI security context are the same.
  *

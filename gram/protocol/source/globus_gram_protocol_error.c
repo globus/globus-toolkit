@@ -213,7 +213,7 @@ enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
  * @ingroup globus_gram_protocol_error_messages
  *
  * @details
- * The @a globus_gram_protocol_error_string() function takes a GRAM error code
+ * The globus_gram_protocol_error_string() function takes a GRAM error code
  * value and returns the associated error code string for the message. The
  * string is statically allocated by the GRAM Protocol
  * library and should not be modified or freed by the caller. The string is
@@ -224,7 +224,7 @@ enum { GLOBUS_L_HACK_MESSAGE_MAX = 1024 };
  *        The error code to translate into a string.
  *
  * @return
- *     The @a globus_gram_protocol_error_string() function returns a static
+ *     The globus_gram_protocol_error_string() function returns a static
  *     string containing an explanation of the error.
  */
 const char *
@@ -260,11 +260,11 @@ globus_gram_protocol_error_string(
  * @ingroup globus_gram_protocol_error_messages
  *
  * @details
- * The @a globus_gram_protocol_error_7_hack_replace_message() function creates
+ * The globus_gram_protocol_error_7_hack_replace_message() function creates
  * a custom version of the error message for the error
  * @a GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION. The string pointed to by the
  * @a message parameter is copied to thread-local storage, and subsequent calls
- * to @a globus_gram_protocol_error_string() with this error number will return
+ * to globus_gram_protocol_error_string() with this error number will return
  * this copy of the string. Each time
  * globus_gram_protocol_error_7_hack_replace_message() is called for
  * a particular thread, the previous message is freed.
@@ -283,7 +283,7 @@ globus_gram_protocol_error_string(
  *     the value returned by globus_gram_protocol_error_string() for 
  *     GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION is that for the last
  *     authorization error where
- *     @a globus_gram_protocol_error_7_hack_replace_message() was called from
+ *     globus_gram_protocol_error_7_hack_replace_message() was called from
  *     this thread.
  */
 void
@@ -298,11 +298,11 @@ globus_gram_protocol_error_7_hack_replace_message(const char * message)
  * @ingroup globus_gram_protocol_error_messages
  *
  * @details
- * The @a globus_gram_protocol_error_10_hack_replace_message() function creates
+ * The globus_gram_protocol_error_10_hack_replace_message() function creates
  * a custom version of the error message for the error
  * @a GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED. The string pointed to by the
  * @a message parameter is copied to thread-local storage, and subsequent calls
- * to @a globus_gram_protocol_error_string() with this error number will return
+ * to globus_gram_protocol_error_string() with this error number will return
  * this copy of the string. Each time
  * globus_gram_protocol_error_10_hack_replace_message() is called for
  * a particular thread, the previous message is freed.
@@ -321,7 +321,7 @@ globus_gram_protocol_error_7_hack_replace_message(const char * message)
  *     the value returned by globus_gram_protocol_error_string() for 
  *     GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED is that for the last
  *     authorization error where
- *     @a globus_gram_protocol_error_10_hack_replace_message() was called from
+ *     globus_gram_protocol_error_10_hack_replace_message() was called from
  *     this thread.
  */
 void
