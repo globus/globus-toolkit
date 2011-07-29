@@ -26,7 +26,7 @@ libglobus_io_la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_io_la_SOURCES = $(Sources)
 
-EXTRA_DIST = globus-io.spec version.h.in $(doc_DATA)
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

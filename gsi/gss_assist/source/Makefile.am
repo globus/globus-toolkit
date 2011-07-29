@@ -34,7 +34,6 @@ INCLUDES = $(GPT_INCLUDES)
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = \
-       globus-gss-assist.spec \
        version.h.in \
        dirt.sh \
        $(doc_DATA)

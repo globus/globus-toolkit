@@ -11,7 +11,7 @@ Sources = \
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = version.h.in globus-authz-callout-error.spec $(doc_DATA)
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include_HEADERS= \
 	globus_gsi_authz_callout_error.h

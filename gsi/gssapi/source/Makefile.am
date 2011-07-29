@@ -9,7 +9,6 @@ SUBDIRS = \
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = \
-	globus-gssapi-gsi.spec \
 	version.h.in \
 	$(doc_DATA)
 

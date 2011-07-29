@@ -20,7 +20,7 @@ libglobus_xio_gsi_driver_la_SOURCES = \
 libglobus_xio_gsi_driver_la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
-EXTRA_DIST = version.h.in $(doc_DATA) globus-xio-gsi-driver.spec
+EXTRA_DIST = version.h.in $(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

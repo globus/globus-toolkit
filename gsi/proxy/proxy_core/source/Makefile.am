@@ -9,7 +9,6 @@ SUBDIRS= \
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST= \
-	globus-gsi-proxy-core.spec \
         version.h \
         dirt.sh \
 	$(doc_DATA)

@@ -9,7 +9,6 @@ SUBDIRS= \
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST= \
-	globus-callout.spec \
         version.h \
         dirt.sh \
 	GLOBUS_LICENSE

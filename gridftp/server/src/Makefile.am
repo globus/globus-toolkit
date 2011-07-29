@@ -18,7 +18,6 @@ gridftpconf_DATA = gridftp.conf.default
 EXTRA_DIST = \
     dsi_bones \
     embed \
-    globus-gridftp-server.spec \
     globus-gridftp-password.in \
     globus-gridftp-server-enable-sshftp.in \
     globus-gridftp-server-setup-chroot \

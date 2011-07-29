@@ -61,7 +61,6 @@ doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST = \
 	globus_gridftp_protocol_extensions.doc \
-	globus-ftp-control.spec \
 	version.h.in \
 	$(doc_DATA)
 

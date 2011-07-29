@@ -22,7 +22,6 @@ SUBDIRS = pkgdata
 
 EXTRA_DIST = $(pkgdata_DATA) $(doc_DATA) \
              grid-ca-sign.in grid-ca-create.in grid-ca-package.in \
-             globus-simple-ca.spec \
              $(man1_MANS) $(MANUALS_SOURCE)
 
 if GENERATE_MANPAGES
