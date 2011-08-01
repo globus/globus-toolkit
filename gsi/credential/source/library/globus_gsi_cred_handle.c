@@ -813,6 +813,16 @@ globus_gsi_cred_get_key(
         goto error_exit;
     }
 
+    if (handle->key == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_PRIVATE_KEY,
+            (_GCRSL("The handle's key is NULL")));
+
+        goto error_exit;
+    }
+
     pk_mem_bio = BIO_new(BIO_s_mem());
     len = i2d_PrivateKey_bio(pk_mem_bio, handle->key);
     if(len <= 0)
