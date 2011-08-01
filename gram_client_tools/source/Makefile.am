@@ -18,15 +18,7 @@ bin_SCRIPTS = \
 	globus-job-submit \
 	globus-job-cancel
 
-# EXTRA_DIST is used to include files in
-# a source distribution that automake fails to detect.
-EXTRA_DIST = globus-job-run.in \
-	     globus-job-status.in \
-	     globus-job-clean.in \
-	     globus-job-get-output.in \
-	     globus-job-get-output-helper \
-	     version.h.in \
-	     dirt.sh
+doc_DATA = GLOBUS_LICENSE
 
 bin_PROGRAMS = globusrun
 
@@ -54,6 +46,19 @@ MANUAL_SOURCE = globus-job-cancel-manual.xml \
                 globusrun-manual.xml \
                 manual.xml
 
+# EXTRA_DIST is used to include files in
+# a source distribution that automake fails to detect.
+EXTRA_DIST = globus-job-run.in \
+	     globus-job-status.in \
+	     globus-job-clean.in \
+	     globus-job-get-output.in \
+	     globus-job-get-output-helper \
+	     version.h.in \
+	     $(man1_MANS) \
+	     $(MANUAL_SOURCE) \
+	     $(doc_DATA) \
+	     dirt.sh
+
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
 
@@ -62,8 +67,8 @@ $(man1_MANS): $(MANUAL_SOURCE)
 	$(XSLTPROC) --xinclude http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl manual.xml
 endif
 
-DISTCLEANFILES = version.h
-
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
+
+DISTCLEANFILES += version.h
 
