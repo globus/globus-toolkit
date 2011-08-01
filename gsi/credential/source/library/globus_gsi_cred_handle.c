@@ -1898,8 +1898,10 @@ globus_gsi_cred_verify_cert_chain(
 
 /**
  * @ingroup globus_gsi_cred_handle
- * This function ensures that the certificate and private key in the credential
- * handle match.
+ * This function checks that the certificate is signed by the public key
+ * of the issuer cert (the first cert in the chain). Note that this function
+ * DOES NOT check the private key or the public of the certificate, as
+ * stated in a previous version of the documentation.
  *
  * @param handle
  *        The credential handle containing the certificate and key to
