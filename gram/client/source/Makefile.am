@@ -40,7 +40,10 @@ libglobus_gram_client_la_SOURCES = $(Sources)
 libglobus_gram_client_la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_gram_client_la_LIBADD = $(GPT_LIB_LINKS)
 
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST= resource_manager_contact.dox \
+	$(doc_DATA) \
 	version.h.in
 
 include $(top_srcdir)/globus_automake_post
