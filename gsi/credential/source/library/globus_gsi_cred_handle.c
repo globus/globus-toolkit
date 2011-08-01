@@ -813,6 +813,16 @@ globus_gsi_cred_get_key(
         goto error_exit;
     }
 
+    if (handle->key == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_PRIVATE_KEY,
+            (_GCRSL("The handle's key is NULL")));
+
+        goto error_exit;
+    }
+
     pk_mem_bio = BIO_new(BIO_s_mem());
     len = i2d_PrivateKey_bio(pk_mem_bio, handle->key);
     if(len <= 0)
@@ -1898,8 +1908,10 @@ globus_gsi_cred_verify_cert_chain(
 
 /**
  * @ingroup globus_gsi_cred_handle
- * This function ensures that the certificate and private key in the credential
- * handle match.
+ * This function checks that the certificate is signed by the public key
+ * of the issuer cert (the first cert in the chain). Note that this function
+ * DOES NOT check the private key or the public of the certificate, as
+ * stated in a previous version of the documentation.
  *
  * @param handle
  *        The credential handle containing the certificate and key to

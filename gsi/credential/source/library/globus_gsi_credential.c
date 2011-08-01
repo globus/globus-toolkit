@@ -922,8 +922,6 @@ globus_gsi_cred_read_proxy_bio(
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    certs = sk_X509_new_null();
-
     if(handle == NULL)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
@@ -958,6 +956,8 @@ globus_gsi_cred_read_proxy_bio(
         sk_X509_pop_free(handle->cert_chain, X509_free);
         handle->cert_chain = NULL;
     }
+
+    certs = handle->cert_chain = sk_X509_new_null();
 
     /* Read all the cert and key PEM data from the proxy BIO */
     while ((!BIO_eof(bio)) && PEM_read_bio(bio, &name, &header, &data, &len))
