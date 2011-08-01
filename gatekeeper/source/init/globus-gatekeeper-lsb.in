@@ -1,19 +1,5 @@
 #! /bin/sh
-#
-# Copyright 1999-2010 University of Chicago
-# 
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# 
-# http://www.apache.org/licenses/LICENSE-2.0
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+
 ### BEGIN INIT INFO
 # Provides:          globus-gatekeeper
 # Required-Start:    $network $time
@@ -24,7 +10,7 @@
 # Description:       The Globus Gatekeeper service authenticates network
 #                    connections using an SSL-based protocol and then
 #                    starts service instances on the remote user's behalf.
-#                    It is part of the Globus Toolkit(
+#                    It is part of the Globus Toolkit(tm)
 ### END INIT INFO
 
 @GLOBUS_SCRIPT_INITIALIZER@
@@ -40,6 +26,9 @@ test -f ${sbindir}/globus-gatekeeper || exit 0
 GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
 GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 
+test -f "${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}" || exit 0
+test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}" || exit 0
+
 case "$1" in
     start)
 
@@ -50,7 +39,7 @@ case "$1" in
         fi
 
         start_daemon -p "${GLOBUS_GATEKEEPER_PIDFILE}" \
-            ${$sbindir}/globus-gatekeeper \
+            ${sbindir}/globus-gatekeeper \
             -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
             ${GLOBUS_GATEKEEPER_PORT:+-p ${GLOBUS_GATEKEEPER_PORT}} \
             ${GLOBUS_GATEKEEPER_LOG:+-l "${GLOBUS_GATEKEEPER_LOG}"} \
