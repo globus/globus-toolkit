@@ -7,6 +7,8 @@ SUBDIRS = \
 
 INCLUDES = $(GPT_INCLUDES)
 
+doc_DATA = GLOBUS_LICENSE
+
 include_HEADERS= \
 	globus_gram_jobmanager_callout_error.h
 
@@ -20,7 +22,7 @@ libglobus_gram_job_manager_callout_error_la_SOURCES = \
 libglobus_gram_job_manager_callout_error_la_LDFLAGS = \
 	@GPT_LDFLAGS@
 
-EXTRA_DIST=
+EXTRA_DIST=$(doc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
