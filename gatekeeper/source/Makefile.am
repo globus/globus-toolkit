@@ -10,6 +10,8 @@ sbin_PROGRAMS= \
 	globus-gatekeeper \
 	globus-k5
 
+sbin_SCRIPTS = globus-gatekeeper-admin
+
 globus_gatekeeper_SOURCES = \
 	globus_gatekeeper.c \
 	globus_gatekeeper_utils.h \
@@ -27,7 +29,8 @@ MANUAL_Sources = manual.xml globus-gatekeeper-manual.xml globus-k5-manual.xml
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST=$(doc_DATA) $(man8_MANS) $(MANUAL_Sources)
+EXTRA_DIST=$(doc_DATA) $(man8_MANS) $(MANUAL_Sources) \
+	globus-gatekeeper-admin.in
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

@@ -10,9 +10,6 @@
 ## Gatekeeper Log Path
 # GLOBUS_GATEKEEPER_LOG="@localstatedir@/log/globus-gatekeeper.log"
 
-## Path to related Gatekeeper executables
-# GLOBUS_LIBEXECDIR="@libexecdir@"
-
 ## Path to directory containing grid service descriptions
 # GLOBUS_GATEKEEPER_GRID_SERVICES="@sysconfdir@/grid-services"
 

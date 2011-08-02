@@ -1,0 +1,126 @@
+#! /bin/sh
+# Copyright 1999-2011 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+@GLOBUS_SCRIPT_INITIALIZER@
+
+enable=""
+disable=""
+name=""
+
+while getopts "e:d:n:lh" arg; do
+    case $arg in
+        e)
+            if expr "$OPTARG" : "[^/]*/.*" > /dev/null 2>&1; then
+                echo "Illegal service name \"$OPTARG\"" 1>&2
+                exit 1
+            fi
+            if [ ! -f "$sysconfdir/grid-services/available/$OPTARG" ]; then
+                echo "Service \"$OPTARG\" does not exist" 1>&2
+                exit 1
+            fi
+            enable="$OPTARG"
+            if [ -n "$mode" ]; then
+                echo "Duplicate or incompatible options: $mode and -e" 1>&2
+                exit 1
+            fi
+            mode="-e"
+            ;;
+        d)
+            if expr "$OPTARG" : "[^/]*/.*" > /dev/null 2>&1; then
+                echo "Illegal service name \"$OPTARG\"" 1>&2
+                exit 1
+            fi
+            if [ ! -f "$sysconfdir/grid-services/$OPTARG" ]; then
+                echo "Service \"$OPTARG\" is not enabled" 1>&2
+                exit 1
+            fi
+            disable="$OPTARG"
+            if [ -n "$mode" ]; then
+                echo "Duplicate or incompatible options: $mode and -d" 1>&2
+                exit 1
+            fi
+            mode="-d"
+            ;;
+        n)
+            if expr "$OPTARG" : "[^/]*/.*" > /dev/null 2>&1; then
+                echo "Illegal service name \"$OPTARG\"" 1>&2
+                exit 1
+            fi
+            name="$OPTARG"
+            ;;
+        l)
+            if [ -n "$mode" ]; then
+                echo "Duplicate or incompatible options: $mode and -l" 1>&2
+                exit 1
+            fi
+            mode="-l"
+            ;;
+        h)
+            echo "Usage: $(basename $0) OPTIONS"
+            echo "  -e SERVICE                  Enable SERVICE"
+            echo "  -d SERVICE                  Disable SERVICE"
+            echo "  -n NAME                     Service name"
+            echo "  -l                          List services"
+            echo "  -h                          Print this help and exit"
+            exit 0
+            ;;
+        *)
+            echo "$(basename $0): illegal option: $arg"
+            echo "Usage: $(basename $0): [-e SERVICE] [-d SERVICE] [-l] [-h]"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$mode" ]; then
+    echo "Usage: $(basename $0): [-e SERVICE] [-d SERVICE] [-l] [-h]"
+    exit 1
+fi
+
+rc=0
+case $mode in
+    -e)
+        ln -sf "available/$enable" "$sysconfdir/grid-services/${name:-$enable}"
+        rc=$?
+        ;;
+    -d)
+        rm "$sysconfdir/grid-services/${disable}"
+        rc=$?
+        ;;
+    -l)
+        if [ -z "$name" ]; then
+            for service in "${sysconfdir}"/grid-services/available/*; do
+                if [ -f "$service" ]; then
+                    service_name="$(basename "$service")"
+                    if [ -h "$sysconfdir/grid-services/$service_name" ]; then
+                        echo "$service_name [ENABLED]"
+                    else
+                        echo "$service_name [DISABLED]"
+                    fi
+                fi
+            done
+        else
+            if [ -f "${sysconfdir}/grid-services/$name" ]; then
+                echo "$name [ENABLED]"
+            elif [ -f "${sysconfdir}/grid-services/available/$name" ]; then
+                echo "$name [DISABLED]"
+            else
+                echo "$name does not exist" 1>&2
+                rc=1
+            fi
+        fi
+        ;;
+esac
+exit $rc
