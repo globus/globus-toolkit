@@ -8,6 +8,9 @@ GLOBUS_INIT
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
+dnl Don't create a pkg-config file for program-only packages
+pkgconffile=""
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
@@ -15,6 +18,5 @@ AC_OUTPUT(
 	pkgdata/pkg_data_src.gpt
         Makefile
         JobDescription.pm
-        globus-job-manager-service
         globus-job-manager-script.pl
 )

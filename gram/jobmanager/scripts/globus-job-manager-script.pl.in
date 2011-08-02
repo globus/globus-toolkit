@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl
 
 # Copyright 1999-2006 University of Chicago
 # 
@@ -56,7 +56,7 @@ if ($help)
     my $managers;
     print "USAGE: $0 -m MANAGER -f FILE -c COMMAND\n";
     print "Installed managers:";
-    foreach (<$Globus::Core::Paths::libdir/perl/Globus/GRAM/JobManager/*.pm>)
+    foreach (<$Globus::Core::Paths::perlmoduledir/Globus/GRAM/JobManager/*.pm>)
     {
         my $manager = $_;
         chomp($manager);

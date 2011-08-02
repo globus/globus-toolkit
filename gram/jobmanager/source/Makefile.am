@@ -66,6 +66,8 @@ MANUAL_SOURCE = globus-personal-gatekeeper-manual.xml \
                 manual.xml \
                 rsl.xml
 
+doc_DATA = GLOBUS_LICENSE
+
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper.in \
 	     $(validation_DATA) \
@@ -80,6 +82,7 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
              $(man1_MANS) \
              $(man5_MANS) \
              $(man8_MANS) \
+	     $(doc_DATA) \
 	     main.dox \
 	     dirt.sh \
              libxml.m4
