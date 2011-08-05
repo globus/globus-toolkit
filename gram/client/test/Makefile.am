@@ -64,7 +64,11 @@ test_PROGRAMS= \
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in \
         globus-gram-client-two-phase-commit-test.pl.in \
 	globus-gram-client-register-ping-test.pl.in \
-        failed-job-two-phase-commit.pl.in
+        failed-job-two-phase-commit.pl.in \
+	TESTS-junit.pl
+
+junit: TESTS-junit.pl $(test_SCRIPTS) $(test_PROGRAMS)
+	PATH=${PATH}:. perl -I$(perlmoduledir) TESTS-junit.pl
 
 INCLUDES = $(GPT_INCLUDES)
 
@@ -142,5 +146,6 @@ restart_to_new_url_test_LDFLAGS = $(GPT_LDFLAGS)
 stdio_update_test_SOURCES = stdio_update_test.c
 stdio_update_test_LDFLAGS = $(GPT_LDFLAGS)
 
+.PHONY: junit
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
