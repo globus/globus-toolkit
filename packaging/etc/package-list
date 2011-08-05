@@ -147,7 +147,6 @@ globus_wsrf_gram_service_java_usage         ws-gram/service/java/usage	tar
 
 globus_wsrf_gram_service_java_setup_common  ws-gram/service/java/setup/common tar
 globus_wsrf_gram_service_java_setup_database ws-gram/service/java/setup/database tar
-globus_wsrf_gram_service_java_setup_fork    ws-gram/service/java/setup/fork tar
 globus_wsrf_gram_service_java_setup_multi   ws-gram/service/java/setup/multi tar
 globus_wsrf_gram_service_java_setup_pbs     ws-gram/service/java/setup/pbs tar
 globus_wsrf_gram_service_java_setup_lsf     ws-gram/service/java/setup/lsf tar
@@ -162,11 +161,8 @@ globus_wsrf_gram_client_java                ws-gram/client/java/source	tar
 globus_wsrf_gram_client_tools               ws-gram/client/c/tools/source gpt
 globus_wsrf_gram_client_tools_test          ws-gram/client/c/tools/test gpt
 globus_wsrf_gram_scheduler_test             ws-gram/client/test gpt
-globus_scheduler_event_generator_fork       ws-gram/job_monitoring/fork/c/source gpt
-globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup gpt
 globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source gpt
 globus_scheduler_event_generator_test       ws-gram/job_monitoring/common/c/test gpt
-globus_scheduler_event_generator_fork_test       ws-gram/job_monitoring/fork/c/test gpt
 globus_scheduler_event_generator_pbs        ws-gram/job_monitoring/pbs/c/source gpt
 globus_scheduler_event_generator_pbs_setup  ws-gram/job_monitoring/pbs/c/setup gpt
 globus_scheduler_event_generator_pbs_test   ws-gram/job_monitoring/pbs/c/test gpt
@@ -179,12 +175,10 @@ globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/s
 globus_wsrf_gram_service_java_test_scalability ws-gram/service/java/test/scalability	tar
 globus_wsrf_gram_service_java_test_throughput ws-gram/service/java/test/throughput	tar
 globus_wsrf_gram_service_java_test_unit     ws-gram/service/java/test/unit	tar
-globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
 globus_gridmap_and_execute                  ws-gram/service/gridmap_and_execute/source  gpt
 globus_gridmap_and_execute_test             ws-gram/service/gridmap_and_execute/test  gpt
 globus_gram_local_proxy_tool                ws-gram/service/proxy-tool/source  gpt
 globus_scheduler_provider_setup_pbs	ws-gram/discovery/providers/setup/pbs gpt
-globus_scheduler_provider_setup_fork	ws-gram/discovery/providers/setup/fork gpt
 globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
 globus_scheduler_provider_setup_condor	ws-gram/discovery/providers/setup/condor gpt
 #GRAM custom authorization, including XACML pieces
