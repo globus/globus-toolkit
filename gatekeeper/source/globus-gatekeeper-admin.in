@@ -19,6 +19,11 @@ enable=""
 disable=""
 name=""
 
+dealias()
+{
+    expr "$(ls -l "$1")" : ".* -> \(.*\)"
+}
+
 while getopts "e:d:n:lh" arg; do
     case $arg in
         e)
@@ -42,7 +47,7 @@ while getopts "e:d:n:lh" arg; do
                 echo "Illegal service name \"$OPTARG\"" 1>&2
                 exit 1
             fi
-            if [ ! -f "$sysconfdir/grid-services/$OPTARG" ]; then
+            if [ ! -L "$sysconfdir/grid-services/$OPTARG" ]; then
                 echo "Service \"$OPTARG\" is not enabled" 1>&2
                 exit 1
             fi
@@ -92,18 +97,31 @@ fi
 rc=0
 case $mode in
     -e)
-        ln -sf "available/$enable" "$sysconfdir/grid-services/${name:-$enable}"
+        ln -sf "available/$enable" "$sysconfdir/grid-services/${enable}"
+        if [ -n "${name}" ]; then
+            ln -sf "$enable" "$sysconfdir/grid-services/${name}"
+        fi
         rc=$?
         ;;
     -d)
+        for service in "$sysconfdir"/grid-services/*; do
+            if [ -f "$service" -o -L "$service" ]; then
+                linkname="$(dealias "$service")"
+                if [ "$linkname" = "$(basename "${disable}")" ]; then
+                    rm "$service"
+                fi
+            fi
+        done
         rm "$sysconfdir/grid-services/${disable}"
         rc=$?
         ;;
     -l)
         if [ -z "$name" ]; then
+            enabled=""
             for service in "${sysconfdir}"/grid-services/available/*; do
                 if [ -f "$service" ]; then
                     service_name="$(basename "$service")"
+                    enabled="${enabled:+"$enabled "}$service_name"
                     if [ -h "$sysconfdir/grid-services/$service_name" ]; then
                         echo "$service_name [ENABLED]"
                     else
@@ -111,9 +129,31 @@ case $mode in
                     fi
                 fi
             done
+            for service in "${sysconfdir}"/grid-services/*; do
+                if [ -f "$service" ]; then
+                    service_name="$(basename "$service")"
+                    found=0
+                    for i in $enabled; do
+                        if [ "$i" = "$service_name" ]; then
+                            found=1
+                        fi
+                    done
+                    if [ "$found" -eq 0 ]; then
+                        linkname="$(dealias "$service")"
+
+                        echo "$service_name [ALIAS to $(basename "$linkname")]"
+                    fi
+                fi
+            done
         else
             if [ -f "${sysconfdir}/grid-services/$name" ]; then
-                echo "$name [ENABLED]"
+                linkname="$(dealias "/etc/grid-services/$name")"
+
+                if [ "$(basename "$linkname")" != "$name" ]; then
+                    echo "$name [ALIAS to $(basename "$linkname")]"
+                else
+                    echo "$name [ENABLED]"
+                fi
             elif [ -f "${sysconfdir}/grid-services/available/$name" ]; then
                 echo "$name [DISABLED]"
             else

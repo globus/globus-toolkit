@@ -198,7 +198,7 @@ static char *   gatekeeperhome = NULL;
 static char *   libexecdir = NULL;
 static char *   logdir = NULL;
 static char *   service_name = NULL;
-static char *   grid_services = "etc/grid-services";
+static char *   grid_services = "${sysconfdir}/grid-services";
 static char *   gridmap = NULL;
 static char *   globuskmap = "/etc/globuskmap";
 static char *   globusnologin ="globus-nologin";
@@ -490,6 +490,7 @@ main(int xargc,
     OM_uint32 major_status = 0;
     OM_uint32 minor_status = 0;
 
+    globus_thread_set_model(GLOBUS_THREAD_MODEL_NONE);
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
