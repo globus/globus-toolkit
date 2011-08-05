@@ -34,3 +34,5 @@ gsi_openssh	gssapi-openssh/openssh	NULL	GPT-branch
 gsi_openssh_setup	gssapi-openssh/setup	gpt
 globus_gridftp_server	gridftp/server/src	gpt
 globus_user_env user_env/source gpt
+globus_gram_job_manager_fork	gram/jobmanager/lrms/fork/source	gpt
+globus_gram_job_manager_fork_test	gram/jobmanager/lrms/fork/test	gpt
