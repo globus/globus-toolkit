@@ -140,4 +140,14 @@ globus_i_gfs_data_session_stop(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_arg);
 
+globus_result_t
+globus_i_gfs_data_check_path(
+    void *                              session_arg,
+    char *                              in_path,
+    char **                             ret_path,
+    int                                 access_type);
+#define GFS_L_READ 0x1
+#define GFS_L_WRITE 0x2
+#define GFS_L_LIST 0x4
+
 #endif

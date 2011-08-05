@@ -67,7 +67,6 @@ static globus_bool_t                    globus_l_gfs_control_active = GLOBUS_FAL
 static globus_list_t *                  globus_l_gfs_server_handle_list;
 static globus_mutex_t                   globus_l_gfs_control_mutex;
 static globus_bool_t                    globus_l_gfs_control_got_done_cb = GLOBUS_FALSE;
-static globus_list_t *                  globus_l_gfs_path_alias_list = NULL;
 
 char *
 globus_i_gsc_string_to_959(
@@ -176,24 +175,11 @@ globus_l_gfs_conn_max_change_cb(
 
     GlobusGFSDebugExit();
 }
-typedef struct
-{
-    char *                              alias;
-    int                                 alias_len;
-    char *                              realpath;
-    int                                 realpath_len;
-    int                                 access;
-} globus_l_gfs_alias_ent_t;
-
-#define GFS_L_READ 0x1
-#define GFS_L_WRITE 0x2
-
 
 void
 globus_i_gfs_control_init()
 {
     globus_i_gfs_config_option_cb_ent_t * cb_handle;
-    char *                                restrict_path;
     GlobusGFSName(globus_i_gfs_control_init);
     GlobusGFSDebugEnter();
 
@@ -206,100 +192,7 @@ globus_i_gfs_control_init()
         "connections_max",
         globus_l_gfs_conn_max_change_cb,
         NULL);
-     
-    if((restrict_path = globus_gfs_config_get_string("restrict_paths")) != NULL)
-    {
-        globus_list_t *                 list;
-        list = globus_list_from_string(restrict_path, ',', NULL);
-        
-        while(!globus_list_empty(list))
-        {
-            globus_l_gfs_alias_ent_t *      ent;
-            char *                          ent_str;
-            char *                          ptr;
-            char *                          alias;
-            globus_bool_t                   done;
-            
-            ent = (globus_l_gfs_alias_ent_t *)
-                globus_malloc(sizeof(globus_l_gfs_alias_ent_t));
-            ent->access = 0;
-            
-            ent_str = (char *) globus_list_remove(&list, list);    
-            
-            ptr = ent_str;
-            done = GLOBUS_FALSE;
-            while(*ptr && !done)
-            {
-                switch(*ptr)
-                {
-                    case 'r':
-                    case 'R':
-                        ent->access |= GFS_L_READ;
-                        ptr++;
-                        break;
-                        
-                    case 'w':
-                    case 'W':
-                        ent->access |= GFS_L_WRITE;
-                        ptr++;
-                        break;
-                        
-                    case '/':
-                        if(ent->access == 0)
-                        {
-                           ent->access |= GFS_L_READ;
-                        }
-                        done = GLOBUS_TRUE;
-                        break;
-                        
-                    default:
-                        globus_gfs_log_message(
-                            GLOBUS_GFS_LOG_ERR,
-                            "Path restriction entries must be full paths, "
-                            "prefixed only with R, W, or RW. "
-                            "Ignoring '%s' entry.\n", ent_str);
-                        done = GLOBUS_TRUE;
-                        break;
-                }                
-            }
-            
-            if((alias = strchr(ptr, ':')) != NULL)
-            {
-                *alias = '\0';
-                alias++;
-                
-                ent->alias = globus_libc_strdup(alias);
-                ent->alias_len = strlen(ent->alias);
-                
-                ent->realpath = globus_libc_strdup(ptr);
-                ent->realpath_len = strlen(ent->realpath);
-            }
-            else
-            {
-                ent->alias = globus_libc_strdup(ptr);
-                ent->alias_len = strlen(ent->alias);
-                
-                ent->realpath = NULL;
-                ent->realpath_len = 0;
-            }
-            globus_free(ent_str);
-            
-            if(*ent->alias != '/' || (ent->realpath && *ent->realpath != '/'))
-            {                
-                globus_free(ent->alias);
-                if(ent->realpath)
-                {
-                    globus_free(ent->realpath);
-                }
-                globus_free(ent);
-            }
-            else
-            {
-                globus_list_insert(&globus_l_gfs_path_alias_list, ent);
-            }
-        }
-    }
-    
+         
     GlobusGFSDebugExit();
 }
 
@@ -461,7 +354,7 @@ globus_l_gfs_get_full_path(
             cwd = globus_libc_strdup(res_pwd->pw_dir);
         } 
         cwd_len = strlen(cwd);
-        if(cwd[cwd_len - 1] == '/')
+        if(cwd_len > 1 && cwd[cwd_len - 1] == '/')
         {
             cwd[--cwd_len] = '\0';
         }
@@ -557,50 +450,18 @@ globus_l_gfs_get_full_path(
     globus_free(out_path);
     
     }
-    if(!globus_list_empty(globus_l_gfs_path_alias_list))
-    {
-        globus_bool_t                   allowed = GLOBUS_FALSE;
-        char *                          tmp_path;
-        globus_list_t *                 list;
-        
-        tmp_path = globus_libc_strdup(path);
-        
-        for(list = globus_l_gfs_path_alias_list;
-            !globus_list_empty(list) && !allowed;
-            list = globus_list_rest(list))
-        {
-            globus_l_gfs_alias_ent_t *      alias_ent;
-            
-            alias_ent = globus_list_first(list);
-            
-            if(strncmp(tmp_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
-                (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
-                    tmp_path[alias_ent->alias_len] == '\0' || 
-                    tmp_path[alias_ent->alias_len] == '/') &&
-                    alias_ent->access & access_type)
-            {
-                allowed = GLOBUS_TRUE;
-                
-                if(alias_ent->realpath)
-                {
-                    strncpy(path, alias_ent->realpath, alias_ent->realpath_len);
-                    strcpy(path + alias_ent->realpath_len, 
-                        tmp_path + alias_ent->alias_len);
-                }
-            }
-        }
-        
-        if(!allowed)
-        {
-            result = GlobusGFSErrorGeneric(
-                "Path not allowed.");
-            goto done;
-        }
-        
-        path[MAXPATHLEN - 1] = '\0';
-    }
 
-    *ret_path = globus_libc_strdup(path);
+    result = globus_i_gfs_data_check_path(
+        instance->session_arg, path, ret_path, access_type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+    
+    if(*ret_path == NULL)
+    {
+        *ret_path = globus_libc_strdup(path);
+    }
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -984,7 +845,7 @@ globus_l_gfs_request_stat(
     }
 
     result = globus_l_gfs_get_full_path(
-        instance, path, &stat_info->pathname, GFS_L_READ);
+        instance, path, &stat_info->pathname, GFS_L_LIST);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_init;
@@ -1937,7 +1798,7 @@ globus_l_gfs_request_list(
     }
 
     result = globus_l_gfs_get_full_path(
-        instance, path, &list_info->pathname, GFS_L_READ);
+        instance, path, &list_info->pathname, GFS_L_LIST);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_init;
