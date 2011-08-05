@@ -15,7 +15,7 @@ GetOptions( 'f|file=s' => \$sourcelistfile,
   if ($sourcelistfile ne ''){
     open(PKG, "$sourcelistfile");
   }else{
-  open(PKG, "etc/package-list-spec");
+  open(PKG, "etc/package-list-5.1.0");
   }
   mkdir "./source-trees";
   chdir "./source-trees";
