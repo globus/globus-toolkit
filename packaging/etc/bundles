@@ -14,7 +14,6 @@ BUNDLE globus-resource-management-server
 	globus_gsi_proxy_ssl
 	globus_rsl
 	globus_openssl_module
-	globus_rsl_assist
 	globus_gsi_cert_utils
 	globus_simple_ca
 	globus_gsi_sysconfig
@@ -58,7 +57,6 @@ BUNDLE globus-resource-management-sdk
 	globus_gsi_proxy_ssl
 	globus_rsl
 	globus_openssl_module
-	globus_rsl_assist
 	globus_gsi_cert_utils
 	globus_simple_ca
 	globus_gsi_sysconfig
@@ -89,7 +87,6 @@ BUNDLE globus-resource-management-client
 	globus_gsi_proxy_ssl
 	globus_rsl
 	globus_openssl_module
-	globus_rsl_assist
 	globus_gsi_cert_utils
 	globus_simple_ca
 	globus_gsi_sysconfig
@@ -357,7 +354,6 @@ BUNDLE gt2-unthreaded
 	globus_openssl_module
 	globus_proxy_utils
 	globus_rsl
-	globus_rsl_assist
 	globus_simple_ca
 	globus_user_env
 	globus_xio
@@ -447,7 +443,6 @@ BUNDLE globus-common-libs
 
 BUNDLE globus-gram
         globus_gass_cache_program
-        globus_rsl_assist
         globus_gram_job_manager_setup
         globus_gram_job_manager_callout_error
 	globus_gram_job_manager_scripts
