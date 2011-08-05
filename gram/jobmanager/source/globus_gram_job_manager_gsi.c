@@ -1006,7 +1006,7 @@ skip_authz:
  * @ingroup globus_gram_gsi
  *
  * @details
- * The @a globus_gram_gsi_get_dn_hash() function inspects the credential 
+ * The globus_gram_gsi_get_dn_hash() function inspects the credential 
  * named by @a cred parameter to determine the identity of the credential.
  * It then computes the default hash on that name and assigns a copy of
  * that value to the @a hash parameter. The caller is responsible for freeing
@@ -1018,9 +1018,9 @@ skip_authz:
  *     Pointer to be set to the hash of the identity of @a cred.
  *
  * @return 
- *     On success, @a globus_gram_gsi_get_dn_hash() returns GLOBUS_SUCCESS
+ *     On success, globus_gram_gsi_get_dn_hash() returns GLOBUS_SUCCESS
  *     and modifies the @a hash parameter to point to a copy of the string
- *     representation of the hash. If an error occurs, @a
+ *     representation of the hash. If an error occurs,
  *     globus_gram_gsi_get_dn_hash() returns a non-zero error code and the
  *     the value of @a hash is undefined.
  */

@@ -850,7 +850,9 @@ globus_i_gram_send_session_stats(
                             GLOBUS_FLAVOR_NAME,
                             local_version.timestamp,
                             local_version.branch_id,
-                            manager->config->globus_version);
+                            manager->config->globus_version
+                                ? manager->config->globus_version
+                                : "unknown");
                     value = valstr;
                     break;
                   case GLOBUS_L_GRAM_USAGE_LRM:

@@ -410,30 +410,6 @@ globus_gram_job_manager_config_init(
         config->service_tag = strdup("untagged");
     }
 
-    if(strcasecmp(config->jobmanager_type, "condor") == 0)
-    {
-        if(config->condor_arch == NULL)
-        {
-            globus_gram_job_manager_log(
-                NULL,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.config level=ERROR path=\"%s\" argument=\"-condor-arch\" reason=\"Missing -condor-arch command-line option for condor LRM\"\n",
-                conf_path ? conf_path : "ARGV");
-
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONDOR_ARCH;
-            goto out;
-        }
-        if(config->condor_os == NULL)
-        {
-            globus_gram_job_manager_log(
-                NULL,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.config level=ERROR path=\"%s\" argument=\"-condor-os\" reason=\"Missing -condor-os command-line option for condor LRM\"\n",
-                conf_path ? conf_path : "ARGV");
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONDOR_OS;
-            goto out;
-        }
-    }
     /* Now initialize values from our environment */
     config->home = strdup(getenv("HOME"));
     if (config->home == NULL)
@@ -461,10 +437,10 @@ globus_gram_job_manager_config_init(
             goto out;
         }
     }
+
     if (config->target_globus_location == NULL)
     {
-        config->target_globus_location = strdup(
-                config->globus_location);
+        config->target_globus_location = strdup(config->globus_location);
         if (config->target_globus_location == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
@@ -474,10 +450,10 @@ globus_gram_job_manager_config_init(
     }
     if (config->job_state_file_dir == NULL)
     {
-        config->job_state_file_dir = globus_common_create_string(
-                "%s/tmp/gram_job_state/",
-                config->globus_location);
-        if (config->job_state_file_dir == NULL)
+        rc = globus_eval_path("${localstatedir}/lib/globus/gram_job_state",
+            &config->job_state_file_dir);
+
+        if (rc != 0 || config->job_state_file_dir == NULL)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 

@@ -10,13 +10,19 @@ AM_PROG_LIBTOOL
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
+dnl Don't create a pkg-config file for program-only packages
+pkgconffile=""
+
+
 LAC_DOXYGEN("../", "*.dox")
 LAC_DOXYGEN_EXAMPLE_DIR("../")
 
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
-    [  --with-xml-catalog=PATH       Path to XML catalog],
+    AC_HELP_STRING(
+        [--with-xml-catalog-path=PATH],
+        [Look for XML catalog in PATH]),
     [xml_catalog_path="$withval"],
     [xml_catalog_path="notset"])
 
@@ -31,6 +37,12 @@ if test "x$xml_catalog_path" != x"notset"; then
         AC_SUBST(XML_CATALOG_PATH)
     fi
 fi
+
+GLOBUS_TOOLKIT_VERSION="`globus-version`"
+if test "x$GLOBUS_TOOLKIT_VERSION" = "x"; then
+    GLOBUS_TOOLKIT_VERSION="UNKNOWN"
+fi
+AC_SUBST(GLOBUS_TOOLKIT_VERSION)
 
 AM_PATH_XML2([2.6.11],
     [ac_cv_have_libxml2=yes],
@@ -56,6 +68,7 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
         globus-personal-gatekeeper
+        globus-gram-job-manager.conf
         Makefile
         version.h
 )

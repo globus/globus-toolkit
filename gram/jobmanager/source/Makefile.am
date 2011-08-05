@@ -4,11 +4,15 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= pkgdata doxygen scripts
 
 # Extra directories we install files into
-validationdir = $(datadir)/$(PACKAGE)
+validationdir = $(datadir)/globus/$(PACKAGE)
+
+## globusconfig = [ DATA ]
+globusconfigdir = ${sysconfdir}/globus
+globusconfig_DATA = globus-gram-job-manager.conf
 
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager.la
-libexec_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
+sbin_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
 
 bin_SCRIPTS = globus-personal-gatekeeper
 validation_DATA = globus-gram-job-manager.rvf
@@ -50,7 +54,7 @@ globus_job_manager_LDADD = \
 
 globus_gram_streamer_LDFLAGS = $(GPT_LDFLAGS)
 globus_gram_streamer_LDADD = \
-	./libglobus_gram_job_manager.la -lglobus_gass_transfer $(GPT_PGM_LINKS) $(XML_LIBS)
+	./libglobus_gram_job_manager.la $(GPT_PGM_LINKS) $(XML_LIBS)
 
 ## man1dir = [ DOC ]
 man1_MANS = globus-personal-gatekeeper.1
@@ -71,7 +75,7 @@ doc_DATA = GLOBUS_LICENSE
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper.in \
 	     $(validation_DATA) \
-	     $(sysconf_DATA) version.h.in \
+	     version.h.in \
 	     configuration.dox \
 	     globus_gram_job_manager_rsl.dox \
 	     globus_gram_job_manager_script_interface.dox \
@@ -85,14 +89,19 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
 	     $(doc_DATA) \
 	     main.dox \
 	     dirt.sh \
+	     globus-gram-job-manager.conf.in \
              libxml.m4
 
-Makefile: $(BUILT_SOURCES)
+all: $(BUILT_SOURCES)
 
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	perl scripts/create_rsl_documentation.pl < $< > $@
 rsl.xml: globus-gram-job-manager.rvf
 	perl scripts/create_rsl_documentation.pl -x < $< > $@
+
+install-data-hook:
+	mkdir -p $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
+	chmod 1777 $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
 
 CLEANFILES = \
     globus-personal-gatekeeper \

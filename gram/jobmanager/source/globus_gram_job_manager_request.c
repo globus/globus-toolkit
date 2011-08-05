@@ -1696,8 +1696,8 @@ globus_i_gram_symbol_table_populate(
         { "GLOBUS_GATEKEEPER_PORT",config->globus_gatekeeper_port},
         { "GLOBUS_GATEKEEPER_SUBJECT",config->globus_gatekeeper_subject},
         { "GLOBUS_LOCATION", config->target_globus_location },
-        { "GLOBUS_CONDOR_OS", config->condor_os },
-        { "GLOBUS_CONDOR_ARCH", config->condor_arch },
+        { "GLOBUS_CONDOR_OS", config->condor_os } /* Deprecated */,
+        { "GLOBUS_CONDOR_ARCH", config->condor_arch } /* Deprecated */,
         /* Others are job dependent values inserted after they are computed:
          * - GLOBUS_GRAM_JOB_CONTACT
          * - GLOBUS_CACHED_STDOUT
@@ -1710,13 +1710,16 @@ globus_i_gram_symbol_table_populate(
 
     for (i = 0; symbols[i].symbol != NULL; i++)
     {
-        rc = globus_l_gram_symboltable_add(
-                symbol_table,
-                symbols[i].symbol,
-                symbols[i].value);
-        if (rc != GLOBUS_SUCCESS)
+        if (symbols[i].value != NULL)
         {
-            goto failed_insert_symbol;
+            rc = globus_l_gram_symboltable_add(
+                    symbol_table,
+                    symbols[i].symbol,
+                    symbols[i].value);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto failed_insert_symbol;
+            }
         }
     }
     if (rc != GLOBUS_SUCCESS)
@@ -2423,13 +2426,16 @@ globus_l_gram_populate_environment(
         goto add_gram_job_contact_failed;
     }
 
-    rc = globus_l_gram_add_environment(
-            request->rsl,
-            "GLOBUS_LOCATION",
-            request->config->target_globus_location);
-    if (rc != GLOBUS_SUCCESS)
+    if (request->config->target_globus_location)
     {
-        goto add_globus_location_failed;
+        rc = globus_l_gram_add_environment(
+                request->rsl,
+                "GLOBUS_LOCATION",
+                request->config->target_globus_location);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto add_globus_location_failed;
+        }
     }
 
     if (request->config->tcp_port_range)
