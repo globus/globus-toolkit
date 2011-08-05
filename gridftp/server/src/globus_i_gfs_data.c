@@ -570,6 +570,7 @@ globus_i_gfs_data_check_path(
     char *                              true_path;
     int                                 in_path_len;
     globus_l_gfs_data_session_t *       session_handle;
+    char *                              tmp_ptr;
     GlobusGFSName(globus_l_gfs_data_check_path);
     GlobusGFSDebugEnter();
     
@@ -578,13 +579,30 @@ globus_i_gfs_data_check_path(
     if(!globus_list_empty(globus_l_gfs_path_alias_list))
     {   
         if(!globus_i_gfs_config_bool("rp_follow_symlinks") && 
+            strcmp(in_path, "/") != 0 && 
             session_handle->dsi->realpath_func != NULL)
-        {
+        {            
             result = session_handle->dsi->realpath_func(
                 in_path, &true_path, session_handle->session_arg);
             if(result != GLOBUS_SUCCESS)
             {
-                true_path = globus_libc_strdup(in_path);
+                strncpy(path, in_path, sizeof(path));
+                path[MAXPATHLEN - 1] = '\0';
+                tmp_ptr = strrchr(path, '/');            
+                *(tmp_ptr++) = '\0';
+                if(*tmp_ptr == '\0')
+                {
+                    tmp_ptr = strrchr(path, '/');
+                    *(tmp_ptr++) = '\0';
+                }
+                result = session_handle->dsi->realpath_func(
+                    path, &true_path, session_handle->session_arg);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GLOBUS_SUCCESS;
+                    true_path = globus_libc_strdup(in_path);
+                }
+
             }
         }
         else
