@@ -449,6 +449,7 @@ generate_certificate( X509_REQ                 *request,
   int             return_value = 1;  
   int             not_after;
   int             lockfd = -1;
+  int             i;
   char          * userdn = NULL;
   char          * serial = NULL;
 
@@ -494,6 +495,30 @@ generate_certificate( X509_REQ                 *request,
       verror_put_string("globus_gsi_cert_utils_get_x509_name() failed");
       globus_error_to_verror(globus_result);
       goto error;
+  }
+
+  /* Verify that the subject has been correctly encoded and fix any
+     problems we find.*/
+  for (i = 0; i < X509_NAME_entry_count(subject); i++)
+  {
+      X509_NAME_ENTRY *ne = NULL;
+      ASN1_STRING *str = NULL;
+      ASN1_OBJECT *obj = NULL;
+
+      ne = X509_NAME_get_entry(subject, i);
+      str = X509_NAME_ENTRY_get_data(ne);
+      obj = X509_NAME_ENTRY_get_object(ne);
+
+      if ((OBJ_obj2nid(obj) == NID_domainComponent) &&
+          (str->type == V_ASN1_PRINTABLESTRING)) {
+          myproxy_debug("Setting DC type to IA5String.");
+          str->type = V_ASN1_IA5STRING;
+      }
+      if ((OBJ_obj2nid(obj) == NID_pkcs9_emailAddress) &&
+          (str->type == V_ASN1_PRINTABLESTRING)) {
+          myproxy_debug("Setting emailAddress type to IA5String.");
+          str->type = V_ASN1_IA5STRING;
+      }
   }
 
   /* issuer info */
