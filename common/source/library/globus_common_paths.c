@@ -168,6 +168,7 @@ globus_location( char **   bufp )
  *     - sysconfdir
  *     - sharedstatedir
  *     - localstatedir
+ *     - perlmoduledir
  *     These strings are based on the parameters passed to this package
  *     configure script, but modified so that if GLOBUS_LOCATION is
  *     set in the environment, it is used instead of the configured path.
