@@ -121,7 +121,7 @@ sub parse_options
             "scheduler=s" => \$scheduler,
             "help" => \$help,
             "background" => \$background,
-            "path" => \$scheduler_path,
+            "path=s" => \$scheduler_path,
             "pidfile=s" => \$pidfile))
     {
         exit(1);
