@@ -49,7 +49,7 @@ globus_gram_job_manager_callout_error   gram/jobmanager/callout_error	gpt
 globus_gram_job_manager_test	gram/jobmanager/test	gpt
 globus_gram_job_manager_fork	gram/jobmanager/lrms/fork/source	gpt
 globus_gram_job_manager_fork_test	gram/jobmanager/lrms/fork/test	gpt
-globus_gram_job_manager_setup_condor	gram/jobmanager/setup/condor	gpt
+globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
 globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt
 globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs	gpt
 globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote	gpt
@@ -150,7 +150,6 @@ globus_wsrf_gram_service_java_setup_database ws-gram/service/java/setup/database
 globus_wsrf_gram_service_java_setup_multi   ws-gram/service/java/setup/multi tar
 globus_wsrf_gram_service_java_setup_pbs     ws-gram/service/java/setup/pbs tar
 globus_wsrf_gram_service_java_setup_lsf     ws-gram/service/java/setup/lsf tar
-globus_wsrf_gram_service_java_setup_condor  ws-gram/service/java/setup/condor tar
 globus_wsrf_gram_utils_java                 ws-gram/utils/java/source	tar
 
 globus_wsrf_gram_common_java                ws-gram/common/java/source	tar
@@ -180,7 +179,6 @@ globus_gridmap_and_execute_test             ws-gram/service/gridmap_and_execute/
 globus_gram_local_proxy_tool                ws-gram/service/proxy-tool/source  gpt
 globus_scheduler_provider_setup_pbs	ws-gram/discovery/providers/setup/pbs gpt
 globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
-globus_scheduler_provider_setup_condor	ws-gram/discovery/providers/setup/condor gpt
 #GRAM custom authorization, including XACML pieces
 globus_wsrf_gram_authz_java                       ws-gram/authz/java/source	tar
 

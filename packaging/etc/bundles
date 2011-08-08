@@ -484,7 +484,7 @@ BUNDLE gram5-pbs
         globus_scheduler_event_generator_pbs_test
                 
 BUNDLE gram5-condor
-        globus_gram_job_manager_setup_condor
+        globus_gram_job_manager_condor
 
 BUNDLE gram5-lsf
         globus_scheduler_event_generator_lsf

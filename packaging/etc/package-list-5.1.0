@@ -47,5 +47,5 @@ globus_gram_job_manager_callout_error	gram/jobmanager/callout_error	gpt
 globus_gram_job_manager_scripts	gram/jobmanager/scripts	gpt
 globus_gram_job_manager_fork	gram/jobmanager/lrms/fork/source	gpt
 globus_gram_job_manager_fork_test	gram/jobmanager/lrms/fork/test	gpt
-globus_gram_job_manager_condor	gram/jobmanager/lrms/condor	gpt
+globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
 globus_gram_job_manager	gram/jobmanager/source	gpt
