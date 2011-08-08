@@ -8,7 +8,7 @@ LIBPATH_VARIABLE=@LIBPATH_VARIABLE@
 CONFIG_SITE=@INSTALLER_ROOT@/config.site
 export CONFIG_SITE
 
-all: gpt gridftp gsi-myproxy gsi-openssh done
+all: gpt gridftp gram gsi-myproxy gsi-openssh done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
@@ -44,6 +44,7 @@ common: gpt globus_core globus_common
 i18n: gpt common globus-internationalization
 prews: gridftp prewsgram
 gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
+gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env
 
 # GPT targets
 gpt: @gptlocation@/sbin/gpt-postinstall
