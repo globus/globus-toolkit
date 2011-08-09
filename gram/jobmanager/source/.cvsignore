@@ -12,9 +12,11 @@ config.status
 config.sub
 configure
 gptdata.sh
+libtool
 ltconfig
 ltmain.sh
 version.h
+globus-*-initializer
 globus_gram_job_manager-[0-9]*
 globus-gram-job-manager-print-validation
 globus-gram-job-manager

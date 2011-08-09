@@ -9,9 +9,6 @@ valid, the RSL validation file contains information about when the RSL
 attribute may be used, it's default value, and the format of the attribute's
 value.
 
-The validation file used by the job manager is located in the 
-@ref validation_file_example section of the manual.
-
 @section validation_file_format File Format
 
 @subsection validation_comments Comments
@@ -51,8 +48,8 @@ Example:
 
 @code
 Attribute: directory
-Description: "Specifies the path of the directory the jobmanager will use as
-              the default directory for the requested job."
+Description: "Specifies the path of the directory the jobmanager will
+              use as the default directory for the requested job."
 @endcode
 
 @subsection rsl_validation_record_types Defined PropertyNames
@@ -68,13 +65,11 @@ The name of the RSL parameter to which this record refers.
 A textual description of what the RSL parameter means.
  
 @par Default
-
 The default value of the RSL parameter if it is not found in the
 RSL. The default value is only used if the DefaultWhen value matches
 the current validation mode.
 
 @par Values
-
 A string containing whitespace-separated list of enumerated values
 which are valid for this RSL attribute. For example, for the "dryrun"
 parameter, this may be <b>"yes no"</b>.
@@ -89,7 +84,6 @@ indicating when then RSL's default value will be used if the RSL
 attribute is not present in the RSL.
 
 @par ValidWhen
-
 Some subset of the "when strings" (@ref when_strings "see below")
 indicating when then RSL attribute may be used.
 
@@ -98,20 +92,11 @@ indicating when then RSL attribute may be used.
 The set of when strings understood by the RSL validation file parser are
 
 @par GLOBUS_GRAM_JOB_SUBMIT
-
 The RSL attribute pertains to job submission.
 
 @par GLOBUS_GRAM_JOB_MANAGER_RESTART
-
 The RSL attribute pertains to job manager restart.
 
 @par GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
-
 The RSL attribute pertains to the STDIO_UPDATE signal.
-*/
-
-/** @page validation_file_example Job Manager RSL Validation File
-
-@verbinclude "globus-gram-job-manager.rvf"
-
 */

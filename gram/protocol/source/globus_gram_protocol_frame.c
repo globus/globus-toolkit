@@ -46,7 +46,7 @@ globus_l_gram_protocol_lookup_reason(
  * @ingroup globus_gram_protocol_framing
  *
  * @details
- * The @a globus_gram_protocol_frame_request() function adds HTTP 1.1
+ * The globus_gram_protocol_frame_request() function adds HTTP 1.1
  * framing around the input message. The framed message includes HTTP headers 
  * relating the the destination URL and the length of the message content.
  * The framed message is returned by modifying @a framedmsg to point to a
@@ -69,7 +69,7 @@ globus_l_gram_protocol_lookup_reason(
  *        framed message.
  *
  * @return
- *     Upon success, @a globus_gram_protocol_frame_request() will return
+ *     Upon success, globus_gram_protocol_frame_request() will return
  *     GLOBUS_SUCCESS and the @a framedmsg and @a framedsize parameters will be
  *     modified to point to the new framed message string and its length
  *     respectively. When this occurs, the caller is responsible for freeing
@@ -179,7 +179,7 @@ out:
  * @ingroup globus_gram_protocol_framing
  *
  * @details
- * The @a globus_gram_protocol_frame_reply() function adds HTTP 1.1
+ * The globus_gram_protocol_frame_reply() function adds HTTP 1.1
  * framing around the input message. The framed message includes HTTP headers 
  * relating the the status of the operation being replied to and the length of
  * the message content.  The framed message is returned by modifying
@@ -201,7 +201,7 @@ out:
  *        framed reply string pointed to by @a framedmsg.
  *
  * @return
- *     Upon success, @a globus_gram_protocol_frame_reply() will return
+ *     Upon success, globus_gram_protocol_frame_reply() will return
  *     GLOBUS_SUCCESS and the @a framedmsg and @a framedsize parameters will be
  *     modified to point to the new framed message string and its length
  *     respectively. When this occurs, the caller is responsible for freeing

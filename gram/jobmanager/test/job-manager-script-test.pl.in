@@ -3,7 +3,7 @@
 @GLOBUS_PERL_INITIALIZER@
 
 use strict;
-use Test;
+use Test::More;
 use Globus::Core::Paths;
 use IPC::Open2;
 use POSIX qw(pause);
@@ -32,7 +32,7 @@ sub test_interactive_quit
 
     print $child_in "quit\n\n";
     waitpid $pid, 0;
-    ok($?, 0);
+    ok($? == 0, "test_interactive_quit");
 }
 
 sub test_interactive_poll
@@ -98,7 +98,7 @@ sub test_interactive_poll
     print $child_in "quit\n\n";
 
     waitpid $pid, 0;
-    ok($?, 0);
+    ok($? == 0, "test_interactive_poll");
 }
 
 sub test_interactive_multipoll
@@ -168,5 +168,5 @@ sub test_interactive_multipoll
     print $child_in "quit\n\n";
 
     waitpid $pid, 0;
-    ok($?, 0);
+    ok($? == 0, "test_interactive_multipoll");
 }

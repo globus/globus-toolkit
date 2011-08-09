@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/**
+/*
  * @file globus_gram_streamer.c GRAM File Streamer Application
  *
  * @details

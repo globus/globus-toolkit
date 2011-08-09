@@ -35,7 +35,13 @@ pkgtest_PROGRAMS= \
         unpack-job-request-reply-with-extensions-test \
         unpack-status-reply-with-extensions-test
 
-EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in
+EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in TESTS-junit.pl
+
+test: $(pkgtest_PROGRAMS) $(pkgtest_SCRIPTS)
+	perl -I${perlmoduledir} TESTS.pl
+
+junit: $(pkgtest_PROGRAMS) $(pkgtest_SCRIPTS)
+	perl -I${perlmoduledir} TESTS-junit.pl
 
 INCLUDES = $(GPT_INCLUDES)
 

@@ -96,7 +96,7 @@ main(
     OM_uint32                           major_status, minor_status;
     pid_t                               forked_starter = 0;
 
-    if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
+    if ((sleeptime_str = getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
         sleeptime = atoi(sleeptime_str);
         sleep(sleeptime);
@@ -111,6 +111,9 @@ main(
     fcntl(STDIN_FILENO, F_SETFD, (int) 1);
     fcntl(STDOUT_FILENO, F_SETFD, (int) 1);
     fcntl(STDERR_FILENO, F_SETFD, (int) 1);
+
+    /* Force non-threaded execution for now */
+    globus_thread_set_model(GLOBUS_THREAD_MODEL_NONE);
 
     /* Activate a common before parsing command-line so that
      * things work. Note that we can't activate everything yet because we might

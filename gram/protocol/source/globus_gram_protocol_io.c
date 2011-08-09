@@ -206,13 +206,13 @@ globus_l_gram_protocol_free_old_credentials();
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_allow_attach() function creates a 
+ * The globus_gram_protocol_allow_attach() function creates a 
  * GRAM protocol listener to which other processes can send GRAM protocol
  * messages. The listener will automatically accept new connections on it's
  * TCP/IP port and parse GRAM requests.  The requests will be passed to the
  * function pointed to by the @a callback parameter for the
  * application to unpack, handle, and send a reply by calling
- * @a globus_gram_protocol_reply().
+ * globus_gram_protocol_reply().
  *
  * @param url
  *     An output parameter that will be initialized to point to a string
@@ -231,7 +231,7 @@ globus_l_gram_protocol_free_old_credentials();
  *     function as its first parameter.
  *
  * @return
- *     Upon success, @a globus_gram_protocol_allow_attach() returns
+ *     Upon success, globus_gram_protocol_allow_attach() returns
  *     @a GLOBUS_SUCCESS and modifies the @a url parameter to point to a newly
  *     allocated string. The caller is then responsible for freeing this
  *     string. If an error occurs, an integer error code will be returned and
@@ -362,21 +362,21 @@ globus_gram_protocol_allow_attach(
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_callback_disallow() function stops the
+ * The globus_gram_protocol_callback_disallow() function stops the
  * listener named by the value of the @a url parameter from receiving any
  * new requests. It also frees memory used internally by the GRAM protocol
  * implementation to handle requests for this listener.
  *
- * The @a globus_gram_protocol_callback_disallow() function will wait until
+ * The globus_gram_protocol_callback_disallow() function will wait until
  * all requests being processed by this listener have completed processing.
- * Once @a globus_gram_protocol_callback_disallow() returns, no further
+ * Once globus_gram_protocol_callback_disallow() returns, no further
  * request callbacks will occur for the listener.
  *
  * @param url
  *     A pointer to the URL string which names the listener to disable.
  *
  * @return
- *     Upon success, the @a globus_gram_protocol_callback_disallow() function
+ *     Upon success, the globus_gram_protocol_callback_disallow() function
  *     returns @a GLOBUS_SUCCESS and frees internal state associated with the
  *     listener named by the @a url parameter. If an error occurs, its integer
  *     error code value will be returned and no listener will be affected.
@@ -454,12 +454,12 @@ globus_gram_protocol_callback_disallow(
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_post() function initiates a GRAM protocol
+ * The globus_gram_protocol_post() function initiates a GRAM protocol
  * message exchange with a GRAM protocol listener. It returns after framing
  * the message and initiating the connection. When the message exchange is
  * complete, the function pointed to by @a callback is invoked either in
  * another thread or when a non-threaded application calls the 
- * @a globus_poll() or @a globus_cond_wait() functions.
+ * globus_poll() or globus_cond_wait() functions.
  *
  * @param url
  *     A pointer to a string containing the URL of the server to post the
@@ -500,7 +500,7 @@ globus_gram_protocol_callback_disallow(
  *     the pointer to establish its context in the callback.
  *
  * @return
- *    Upon success, @a globus_gram_protocol_post() returns GLOBUS_SUCCESS,
+ *    Upon success, globus_gram_protocol_post() returns GLOBUS_SUCCESS,
  *    initiates the message exchange, registers the function pointed to by
  *    @a callback to be called when the exchange completes or fails, and
  *    modifies the @a handle parameter if it is non-NULL. If an
@@ -521,7 +521,7 @@ globus_gram_protocol_callback_disallow(
  *
  * @note
  * There is no way to time out or cancel a service request that is
- * begun with @a globus_gram_protocol_post().
+ * begun with globus_gram_protocol_post().
  *
  * @see globus_gram_protocol_reply()
  */
@@ -558,15 +558,15 @@ globus_gram_protocol_post(
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_post_delegation() function initiates a GRAM
+ * The globus_gram_protocol_post_delegation() function initiates a GRAM
  * protocol delegation exchange with a GRAM protocol listener. The delegation
  * protocol is a custom mix of HTTP and SSL records.
  *
- * The @a globus_gram_protocol_post_delegation() function returns after framing
+ * The globus_gram_protocol_post_delegation() function returns after framing
  * the message and initiating the connection to be used for delegation. When
  * the message exchange is complete, the function pointed to by @a callback is
  * invoked either in another thread or when a non-threaded application calls
- * the @a globus_poll() or @a globus_cond_wait() functions.
+ * the globus_poll() or globus_cond_wait() functions.
  *
  * @param url
  *     A pointer to a string containing the URL of the server to post the
@@ -612,7 +612,7 @@ globus_gram_protocol_post(
  *     added to the credential.
  * @param req_flags
  *     A bitwise-or of GSSAPI flag values to use when delegating the
- *     credential using @a gss_init_delegation().
+ *     credential using gss_init_delegation().
  * @param time_req
  *     An integer value indicating the length of time (in seconds) that the
  *     delegated credential should be valid for. This is an advisory parameter:
@@ -630,7 +630,7 @@ globus_gram_protocol_post(
  *     the pointer to establish its context in the callback.
  *
  * @return
- *    Upon success, @a globus_gram_protocol_post_delegation() returns
+ *    Upon success, globus_gram_protocol_post_delegation() returns
  *    GLOBUS_SUCCESS, initiates the message exchange, registers the function
  *    pointed to by @a callback to be called when the exchange completes or
  *    fails, and modifies the @a handle parameter if it is non-NULL. If an
@@ -653,7 +653,7 @@ globus_gram_protocol_post(
  *
  * @note
  * There is no way to time out or cancel a service request that is
- * begun with @a globus_gram_protocol_post_delegation().
+ * begun with globus_gram_protocol_post_delegation().
  *
  * @see globus_gram_protocol_reply()
  */
@@ -760,12 +760,12 @@ globus_gram_protocol_reply(
  * @ingroup globus_gram_protocol_io
  *
  * @details
- * The @a globus_gram_protocol_accept_delegation() function performs the
+ * The globus_gram_protocol_accept_delegation() function performs the
  * service side accepting of a GRAM protocol delegation exchange with a GRAM
  * protocol client. This is performed after the delegation HTTP message has
  * been unpacked by the application. 
  *
- * The @a globus_gram_protocol_accept_delegation() function returns after
+ * The globus_gram_protocol_accept_delegation() function returns after
  * processing the GSSAPI handshake, passing the delegated credential or
  * error information to the function pointed to by the @a callback parameter.
  *
@@ -784,7 +784,7 @@ globus_gram_protocol_reply(
  *     added to the credential.
  * @param req_flags
  *     A bitwise-or of GSSAPI flag values to use when delegating the
- *     credential using @a gss_init_delegation().
+ *     credential using gss_init_delegation().
  * @param time_req
  *     An integer value indicating the length of time (in seconds) that the
  *     delegated credential should be valid for. This is an advisory parameter:
@@ -802,10 +802,10 @@ globus_gram_protocol_reply(
  *     the pointer to establish its context in the callback.
  *
  * @return
- *     Upon success, @a globus_gram_protocol_accept_delegation() returns 
+ *     Upon success, globus_gram_protocol_accept_delegation() returns 
  *     GLOBUS_SUCCESS and registers the function pointed to by @a callback 
  *     to be called after the delegation completes or fails. If an error
- *     occurs, @a globus_gram_protocol_accept_delegation() returns an integer
+ *     occurs, globus_gram_protocol_accept_delegation() returns an integer
  *     error code and the @a callback function is not registered.
  *
  * @retval GLOBUS_SUCCESS
@@ -2030,19 +2030,19 @@ globus_l_gram_protocol_free_old_credentials()
  * @brief Set GRAM default credential
  * @ingroup globus_gram_protocol_io
  * @details
- * The @a globus_gram_protocol_set_credentials() function causes subsequent
+ * The globus_gram_protocol_set_credentials() function causes subsequent
  * GRAM operations to use the GSSAPI credential @a new_credentials. After this
  * function returns, the caller must not use the credential, as it may be freed
  * by GRAM when it is no longer needed.
  *
- * As a side effect, @a globus_gram_protocol_set_credentials() may free any 
+ * As a side effect, globus_gram_protocol_set_credentials() may free any 
  * credential previously used by GRAM.
  *
  * @param new_credentials
  *     New GSSAPI credential to use.
  *
  * @return
- *     Upon success, @a globus_gram_protocol_set_credentials() returns
+ *     Upon success, globus_gram_protocol_set_credentials() returns
  *     GLOBUS_SUCCESS. There are currently no error cases handled by this
  *     function.
  *

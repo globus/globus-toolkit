@@ -50,7 +50,8 @@ globus_gram_job_manager_state_file_set(
     {
         *state_file = globus_common_create_string(
                 "%s/tmp/gram_job_state/%s.%s.%s",
-                request->config->globus_location,
+                request->config->globus_location ?
+                request->config->globus_location : "",
                 request->config->logname,
                 request->config->hostname,
                 request->uniq_id);

@@ -33,7 +33,7 @@
  * @ingroup globus_gram_client_attr
  *
  * @details
- * The @a globus_gram_client_attr_init() function creates a new opaque
+ * The globus_gram_client_attr_init() function creates a new opaque
  * structure that can be used to specify custom attributes for performing
  * GRAM client operations.
  * 
@@ -42,9 +42,9 @@
  *     attribute.
  *
  * @return
- *     Upon success, @a globus_gram_client_attr_init() modifies the @a attr
+ *     Upon success, globus_gram_client_attr_init() modifies the @a attr
  *     parameter to point to a new GRAM client attribute and returns
- *     @a GLOBUS_SUCCESS. If an error occurs, @a globus_gram_client_attr_init()
+ *     @a GLOBUS_SUCCESS. If an error occurs, globus_gram_client_attr_init()
  *     returns an integer error code and value of @a attr is undefined.
  *
  * @retval GLOBUS_SUCCESS
@@ -84,7 +84,7 @@ globus_gram_client_attr_init(
  * @ingroup globus_gram_client_attr
  *
  * @details
- * The @a globus_gram_client_attr_destroy() function destroys and frees
+ * The globus_gram_client_attr_destroy() function destroys and frees
  * a GRAM client attribute. After this function returns, the value pointed
  * to by @a attr is no longer valid and must not be used.
  *
@@ -93,9 +93,9 @@ globus_gram_client_attr_init(
  *     the attribute will be freed and it will be an invalid attribute.
  *
  * @return
- *     Upon success, @a globus_gram_client_attr_destroy() destroys the 
+ *     Upon success, globus_gram_client_attr_destroy() destroys the 
  *     attribute pointed to by the @a attr parameter and sets it to an invalid
- *     state.  If an error occurs, @a globus_gram_client_attr_destroy()
+ *     state.  If an error occurs, globus_gram_client_attr_destroy()
  *     returns an integer error code and value of @a attr is unchanged.
  *
  * @retval GLOBUS_SUCCESS
@@ -138,7 +138,7 @@ out:
  * @ingroup globus_gram_client_attr
  * 
  * @details
- * The @a globus_gram_client_attr_set_credential() function sets the 
+ * The globus_gram_client_attr_set_credential() function sets the 
  * value of the @b credential in an attribute to the GSSAPI credential
  * named by the @a credential parameter. This is done as a shallow copy, so 
  * the value of @a credential must not be freed until the attribute will
@@ -153,10 +153,10 @@ out:
  *     to use the default security credential.
  *
  * @return
- *     Upon success, @a globus_gram_client_attr_set_credential() modifies the
+ *     Upon success, globus_gram_client_attr_set_credential() modifies the
  *     the attribute pointed to by the @a attr parameter to use the credential
  *     specified by the @a credential parameter and returns @a GLOBUS_SUCCESS.
- *     If an error occurs, @a globus_gram_client_attr_set_credential()
+ *     If an error occurs, globus_gram_client_attr_set_credential()
  *     returns an integer error code and the attribute named by @a attr is
  *     unchanged.
  * 
@@ -190,7 +190,7 @@ out:
  * @ingroup globus_gram_client_attr
  *
  * @details
- * The @a globus_gram_client_attr_get_credential() function gets the 
+ * The globus_gram_client_attr_get_credential() function gets the 
  * value of the @b credential in an attribute and modifies the @a credential
  * parameter to point to it. This is a shallow copy.
  *
@@ -201,11 +201,11 @@ out:
  *     credential which the @a attr is currently using.
  *
  * @return
- *     Upon success, @a globus_gram_client_attr_get_credential() modifies the
+ *     Upon success, globus_gram_client_attr_get_credential() modifies the
  *     the value pointed to by the @a credential parameter to be the same
  *     credential as that being used by the attribute named by the @a attr
  *     parameter and returns @a GLOBUS_SUCCESS.
- *     If an error occurs, @a globus_gram_client_attr_get_credential()
+ *     If an error occurs, globus_gram_client_attr_get_credential()
  *     returns an integer error code and the value pointed to by the
  *     @a credential parameter is undefined.
  *
@@ -251,7 +251,7 @@ out:
  * @ingroup globus_gram_client_attr
  *
  * @details
- * The @a globus_gram_client_attr_set_delegation_mode() function sets the 
+ * The globus_gram_client_attr_set_delegation_mode() function sets the 
  * value of the @b delegation_mode in an attribute to the delegation mode
  * in the @a mode parameter.
  *
@@ -266,10 +266,10 @@ out:
  *     The new value of the delegation mode.
  *
  * @return
- *     Upon success, @a globus_gram_client_attr_set_delegation_mode() modifies
+ *     Upon success, globus_gram_client_attr_set_delegation_mode() modifies
  *     the the attribute named by the @a attr parameter to use the delegation
  *     mode in the @a mode parameter and returns GLOBUS_SUCCESS.
- *     If an error occurs, @a globus_gram_client_attr_set_delegation_mode()
+ *     If an error occurs, globus_gram_client_attr_set_delegation_mode()
  *     returns an integer error code and the @a delegation_mode attribute 
  *     value is unchanged.
  * 
@@ -310,7 +310,7 @@ out:
  * @ingroup globus_gram_client_attr
  * 
  * @details
- * The @a globus_gram_client_attr_get_delegation_mode() function gets the 
+ * The globus_gram_client_attr_get_delegation_mode() function gets the 
  * value of the @b delegation_mode in an attribute and modifies the
  * @a mode parameter to point to its value.
  *
@@ -321,10 +321,10 @@ out:
  *     which the @a attr is currently using.
  *
  * @return
- *     Upon success, @a globus_gram_client_attr_get_delegation_mode() modifies
+ *     Upon success, globus_gram_client_attr_get_delegation_mode() modifies
  *     the the value pointed to by the @a mode parameter as described above
  *     and returns @a GLOBUS_SUCCESS.
- *     If an error occurs, @a globus_gram_client_attr_get_delegation_mode()
+ *     If an error occurs, globus_gram_client_attr_get_delegation_mode()
  *     returns an integer error code and the value pointed to by the
  *     @a mode parameter is undefined.
  *

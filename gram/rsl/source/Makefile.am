@@ -16,12 +16,15 @@ SUBDIRS= \
 Sources= \
 	globus_rsl.c \
 	globus_rsl.h \
-	globus_rsl_parser.c
+	globus_rsl_parser.c \
+	globus_rsl_assist.h \
+	globus_rsl_assist.c
 
 doc_DATA = GLOBUS_LICENSE
 
 EXTRA_DIST= \
 	globus_rsl_parser.lex.c \
+	GLOBUS_LICENSE \
 	version.h.in \
 	$(doc_DATA)
 
@@ -35,7 +38,8 @@ INCLUDES = $(GPT_INCLUDES)
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
-	globus_rsl.h
+	globus_rsl.h \
+	globus_rsl_assist.h
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib

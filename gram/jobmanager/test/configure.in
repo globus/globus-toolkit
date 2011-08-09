@@ -28,7 +28,7 @@ AC_OUTPUT(
         failure_test/globus-gram-job-manager-failure-test.pl
         user_test/Makefile
         user_test/globus-gram-job-manager-user-test.pl
-        globus-gram-job-manager-run-tests.pl
         job-manager-script-test.pl
+        TESTS.pl
 
 )

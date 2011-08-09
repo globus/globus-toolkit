@@ -26,6 +26,8 @@ topdir=${packagingdir}/rpmbuild
 tmppath=${packagingdir}/tmp
 artifactroot=""
 globusversion=""
+skip_checkout=""
+skip_bootstrap=""
 
 sign=1
 tag=""
@@ -56,6 +58,10 @@ while getopts n:v:a:St:hg: i; do
                exit 1
            fi
            globusversion="$OPTARG"
+           ;;
+        q)
+           skip_checkout=1
+           skip_bootstrap=1
            ;;
     esac
 done
@@ -132,7 +138,7 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo rpm --noscripts -e --allmatches $pkgs_to_rm < /dev/null
 fi
 
-bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-simple-ca
+bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,globus-simple-ca
 packages_to_build=myproxy,gsi_openssh
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
@@ -145,11 +151,12 @@ fi
 
 [ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} +
 
-packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"}| \
+packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
+    ${skip_bootstrap:+-ab} | \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
-packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
+packages="$(echo "${packages}" | grep -Ev 'globus-gass-cache-program|globus-gram-job-manager$|globus-gram-job-manager-fork|globus-gram-job-manager-condor|myproxy|gsi_openssh'; printf "globus-gass-cache-program\nglobus-gram-job-manager\nglobus-gram-job-manager-fork\nglobus-gram-job-manager-condor\nmyproxy\ngsi_openssh\n")"
 
-./make-packages.pl -no-updates -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
+./make-packages.pl -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
 cd gpt-*/packaging_tools
 sh ./bootstrap
 make dist

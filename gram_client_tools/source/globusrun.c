@@ -131,26 +131,9 @@ globus_l_refresh_callback(
     globus_gram_protocol_job_state_t    job_state,
     globus_gram_protocol_error_t        job_failure_code);
 
-/**** Support for SIGINT handling ****/
-static RETSIGTYPE
-globus_l_globusrun_sigint_handler(int dummy);
-
-/**** add by bresnaha ******/
-static globus_callback_handle_t          globus_l_run_callback_handle;
-/**** end add by bresnaha ******/
-
-static int
-globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
-
-#if defined(BUILD_LITE)
-    static void globus_l_globusrun_signal_wakeup(
-                   void *                              user_args);
-
-#   define globus_l_globusrun_remove_cancel_poll()  \
-    globus_callback_unregister(globus_l_run_callback_handle, NULL, NULL, NULL);
-#else
-#   define globus_l_globusrun_remove_cancel_poll()
-#endif
+static
+void
+globus_l_globusrun_sigint_handler(void * user_arg);
 
 /*****************************************************************************
                           Module specific variables
@@ -836,7 +819,6 @@ main(int argc, char* argv[])
     }
 
 hard_exit:
-    globus_l_globusrun_signal(SIGINT, SIG_DFL);
 
     if ( (options & GLOBUSRUN_ARG_USE_GASS) &&
 	 (gass_port != 0U))
@@ -1277,27 +1259,6 @@ globus_l_globusrun_gramrun(char * request_string,
     int tmp1, tmp2;
     globus_gram_client_attr_t attr = NULL;
 
-    /* trap SIGINTs */
-    if(!(options & GLOBUSRUN_ARG_IGNORE_CTRLC))
-    {
-	globus_l_globusrun_signal(SIGINT,
-                                  globus_l_globusrun_sigint_handler);
-#       if defined(BUILD_LITE)
-	{
-            globus_reltime_t          delay_time;
-            globus_reltime_t          period_time;
-
-            GlobusTimeReltimeSet(delay_time, 0, 0);
-            GlobusTimeReltimeSet(period_time, 0, 500000);
-	    globus_callback_register_periodic(&globus_l_run_callback_handle,
-					      &delay_time,
-					      &period_time,
-	                                      globus_l_globusrun_signal_wakeup,
-					      NULL);
-	}
-#       endif
-    }
-
     if (globus_l_delegation_mode !=
                 GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY)
     {
@@ -1336,19 +1297,14 @@ globus_l_globusrun_gramrun(char * request_string,
     globus_mutex_init(&monitor.mutex, NULL);
     globus_cond_init(&monitor.cond, NULL);
 
-    if(options & GLOBUSRUN_ARG_IGNORE_CTRLC)
+    /* trap SIGINTs */
+    if(!(options & GLOBUSRUN_ARG_IGNORE_CTRLC))
     {
-        globus_l_globusrun_signal(SIGINT,
-                                  SIG_DFL);
-#       if defined(BUILD_LITE)
-	{
-	    globus_callback_unregister(
-	        globus_l_run_callback_handle,
-	        NULL,
-	        NULL, 
-	        NULL);
-	}
-#       endif
+        globus_callback_register_signal_handler(
+            SIGINT,
+            GLOBUS_FALSE,
+            globus_l_globusrun_sigint_handler,
+            &monitor);
     }
 
     err = globus_gram_client_info_callback_allow(
@@ -1490,12 +1446,19 @@ globus_l_globusrun_gramrun(char * request_string,
 	    {
 		printf("Cancelling job...\n");
 	    }
-	    globus_l_globusrun_remove_cancel_poll();
 	    globus_gram_client_job_cancel(monitor.job_contact_string);
 	    globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
 	}
     }
     globus_mutex_unlock(&monitor.mutex);
+    
+    if(!(options & GLOBUSRUN_ARG_IGNORE_CTRLC))
+    {
+        globus_callback_unregister_signal_handler(
+            SIGINT,
+            NULL,
+            NULL);
+    }
 
     /* If we're using two phase commits then we need to send commit end
      * signal if the job is DONE
@@ -1783,46 +1746,17 @@ globus_l_globusrun_status_job(
     return err;
 } /* globus_l_globusrun_status_job() */
 
-/******************************************************************************
-Function: globus_l_globusrun_sigint_handler()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static RETSIGTYPE
-globus_l_globusrun_sigint_handler(int dummy)
-{
-    globus_l_globusrun_ctrlc = GLOBUS_TRUE;
-
-    /* don't trap any more signals */
-    globus_l_globusrun_signal(SIGINT, SIG_DFL);
-} /* globus_l_globusrun_sigint_handler() */
-
-#if defined(BUILD_LITE)
-/******************************************************************************
-Function: globus_l_globusrun_signal_wakeup()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-static
+static 
 void
-globus_l_globusrun_signal_wakeup(
-    void *                              user_args)
+globus_l_globusrun_sigint_handler(void * user_arg)
 {
-    if(globus_l_globusrun_ctrlc)
-    {
-        globus_callback_signal_poll();
-    }
-} /* globus_l_globusrun_signal_wakeup() */
-#endif
+    globus_i_globusrun_gram_monitor_t * monitor = user_arg;
+    globus_mutex_lock(&monitor->mutex);
+    globus_l_globusrun_ctrlc = GLOBUS_TRUE;
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
 
+} /* globus_l_globusrun_sigint_handler() */
 
 /******************************************************************************
 Function: globus_l_globusrun_signal()

@@ -755,7 +755,6 @@ globus_gram_job_manager_script_poll_fast(
     char * job_contact_match = 0;
 
     if( ! request ||
-        ! request->config->globus_location ||
         !request->job_contact)
     {
         goto FAST_POLL_EXIT_FAILURE;
@@ -774,7 +773,8 @@ globus_gram_job_manager_script_poll_fast(
      */
     grid_monitor_files[0] = globus_common_create_string(
             "%s%s%d",
-            request->config->globus_location,
+            request->config->globus_location ?
+            request->config->globus_location : "",
             GRID_MONITOR_LOCATION_1,
             (int)this_uid);
     if( ! grid_monitor_files[0])
@@ -784,7 +784,8 @@ globus_gram_job_manager_script_poll_fast(
 
     grid_monitor_files[1] = globus_common_create_string(
             "%s%s%d",
-            request->config->globus_location,
+            request->config->globus_location ?
+            request->config->globus_location : "",
             GRID_MONITOR_LOCATION_2,
             (int)this_uid);
     if( ! grid_monitor_files[1])
@@ -1860,8 +1861,12 @@ globus_l_gram_request_validate(
     char *                              script_path_pattern;
     int                                 rc = GLOBUS_SUCCESS;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    static globus_bool_t                first = GLOBUS_TRUE;
 
-
+    if (!first)
+    {
+        return GLOBUS_SUCCESS;
+    }
 
     globus_gram_job_manager_request_log(
             request,
@@ -1942,7 +1947,7 @@ globus_l_gram_request_validate(
     script_path = NULL;
 
     script_path_pattern = globus_common_create_string(
-            "${libdir}/perl/Globus/GRAM/JobManager/%s.pm",
+            "${perlmoduledir}/Globus/GRAM/JobManager/%s.pm",
             request->config->jobmanager_type);
     if (script_path_pattern == NULL)
     {
@@ -1951,8 +1956,7 @@ globus_l_gram_request_validate(
         goto script_pattern_alloc_failed;
     }
 
-    /* Verify existence/executableness of scheduler specific script.  */
-
+    /* Verify existence of scheduler specific script.  */
     result = globus_eval_path(script_path_pattern, &script_path);
     if (result != GLOBUS_SUCCESS || script_path == NULL)
     {
@@ -1979,7 +1983,7 @@ globus_l_gram_request_validate(
                 "\n",
                 request->job_contact_path,
                 script_path,
-                "Script status failed",
+                "Module status failed",
                 -rc,
                 errno,
                 strerror(errno));
@@ -2013,6 +2017,10 @@ script_path_not_found:
         script_path = NULL;
     }
 eval_script_path_failed:
+    if (rc == GLOBUS_SUCCESS)
+    {
+        first = GLOBUS_FALSE;
+    }
     return rc;
 }
 /* globus_l_gram_request_validate() */
@@ -2577,9 +2585,12 @@ globus_gram_job_manager_script_handle_init(
 
     memset(env, 0, sizeof(env));
     i = 0;
-    env[i++] = globus_common_create_string(
-            "GLOBUS_LOCATION=%s",
-            manager->config->globus_location);
+    if (manager->config->globus_location)
+    {
+        env[i++] = globus_common_create_string(
+                "GLOBUS_LOCATION=%s",
+                manager->config->globus_location);
+    }
     env[i++] = globus_common_create_string(
             "GLOBUS_SPOOL_DIR=%s",
             manager->config->job_state_file_dir);

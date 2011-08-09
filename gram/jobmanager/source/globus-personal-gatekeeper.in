@@ -421,18 +421,18 @@ if [ $valgrind -eq 1 ]; then
         exit 1
     fi
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
-stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${libexecdir}/globus-job-manager -conf ${scratch}/jobmanager.conf
+stderr_log,local_cred - $valgrind valgrind --leak-check=full --leak-resolution=high --show-reachable=yes --log-file=${HOME}/valgrind.%p.log ${sbindir}/globus-job-manager -conf ${scratch}/jobmanager.conf
 EOF
 else
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager <<EOF
-stderr_log,local_cred - ${libexecdir}/globus-job-manager globus-job-manager -conf ${scratch}/jobmanager.conf
+stderr_log,local_cred - ${sbindir}/globus-job-manager globus-job-manager -conf ${scratch}/jobmanager.conf
 EOF
 fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
 -gridmap ${scratch}/gridmap
 -home ${GLOBUS_LOCATION:-@exec_prefix@}
--e libexec
+-e ${sbindir}
 -logfile ${scratch}/gatekeeper.log
 -grid_services ${scratch}
 -d 
@@ -447,7 +447,7 @@ if [ ! -z "${acctfile}" ]; then
 fi
 
 
-host_info=`${sbindir}/config.guess`
+host_info=`${libexecdir}/config.guess`
 host_cputype=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $1}'`
 host_manufacturer=`echo $host_info | ${GLOBUS_SH_AWK-awk} -F'-' '{print $2}'`
 host_osname=`${GLOBUS_SH_UNAME-uname} -s`
@@ -461,52 +461,6 @@ if [ -x "${bindir}/globus-version" ]; then
   globus_toolkit_version="`${bindir}/globus-version`"
 else
   globus_toolkit_version="Unknown"
-fi
-
-if test "${jmtype}" = condor; then
-    found_condor_arch=0
-    found_condor_os=0
-    set -- ${startargs}
-    while [ $# -gt 0 ]; do
-        if [ "$1" = "-condor-arch" ]; then
-            found_condor_arch=1
-            shift
-        elif [ "$1" = "-condor-os" ]; then
-            found_condor_os=1
-            shift
-        fi
-        shift
-    done
-
-    if [ $found_condor_arch = 0 -o $found_condor_os = 0 ]; then
-        setupdir="${GLOBUS_LOCATION}/setup/globus"
-        if [ -x "${setupdir}/globus-condor-print-config" ]; then
-            set -- `${setupdir}/globus-condor-print-config` 
-            while [ $# -gt 0 ]; do
-                case $1 in
-                  -condor-arch)
-                      shift
-                      if [ $found_condor_arch = 0 ]; then
-                          startargs="$startargs -condor-arch $1"
-                          found_condor_arch=1
-                      fi
-                  ;;
-                  -condor-os)
-                      shift
-                      if [ $found_condor_os = 0 ]; then
-                          startargs="$startargs -condor-os $1"
-                          found_condor_os=1
-                      fi
-                  ;;
-                esac
-                shift
-            done
-        else
-            printf "Unable to determine -condor-os and/or condor-arch\n" 1>&2
-            docleanup=true
-            exit 1
-        fi
-    fi
 fi
 
 ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF

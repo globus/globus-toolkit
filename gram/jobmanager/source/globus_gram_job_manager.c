@@ -288,6 +288,7 @@ globus_gram_job_manager_init(
         goto malloc_lock_path_failed;
     }
 
+    manager->socket_fd = -1;
     manager->socket_path = globus_common_create_string(
             "%s/%s.%s.sock",
             dir_prefix,
@@ -2067,7 +2068,7 @@ globus_gram_job_manager_stop_all_jobs(
 /**
  * Scan the job state directory for jobs to restart
  *
- * The @a globus_gram_job_manager_request_load_all() function scans the
+ * The globus_gram_job_manager_request_load_all() function scans the
  * job state directory named in the job manager configuration and then 
  * attempts to reload each job found in that directory. If the job is in 
  * a state where it will be immediately swapped out (waiting for SEG events)

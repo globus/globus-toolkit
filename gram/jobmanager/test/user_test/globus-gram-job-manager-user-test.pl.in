@@ -5,11 +5,19 @@
 use Globus::GRAM::Error;
 use Globus::Core::Paths;
 use IO::File;
-use Test;
+use Test::More;
 
 my (@tests) = ();
 my $contact = $ENV{CONTACT_STRING};
-my $testdatadir = "$Globus::Core::Paths::datadir/@PACKAGE@";
+my $testdatadir = $0;
+if ($testdatadir =~ m|/|)
+{
+    $testdatadir =~ s|/+[^/]*$||;
+}
+else
+{
+    $testdatadir = '.';
+}
 my $verbose = 0;
 my $me = (getpwuid($<))[0];
 
@@ -31,7 +39,22 @@ sub test_user
 	print "# Submitting job: $rsl\n";
     }
 
-    chomp($output = `$Globus::Core::Paths::bindir/globusrun -s -r "$contact" '$rsl' 2>/dev/null`);
+    {
+        local(*OLDERR, *PIPE);
+        local($/);
+
+        open(OLDERR, ">&STDERR");
+        open(STDERR, ">/dev/null");
+
+        open(PIPE, "-|",
+                "$Globus::Core::Paths::bindir/globusrun",
+                "-s", "-r", $contact, $rsl);
+        $output = <PIPE>;
+        open(STDERR, ">&OLDERR");
+        close(OLDERR);
+        close(PIPE);
+    }
+    chomp($output);
 
     $rc = $? >> 8;
 
@@ -39,7 +62,7 @@ sub test_user
         $username = '';
     }
 
-    ok("$output:$rc", "$username:$result");
+    ok("$output:$rc" eq "$username:$result", "test_user_$me");
 }
 
 push(@tests, "test_user('', 0)");
