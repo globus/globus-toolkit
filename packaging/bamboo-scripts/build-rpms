@@ -180,7 +180,9 @@ for i in grid-packaging-tools $packages; do
                              -name "$i-devel-[0-9]*rpm" -o \
                              -name "$i-doc-[0-9]*rpm")"
         
-        sudo rpm --noscripts -Uvh $rpms < /dev/null;
+        if ! echo "$rpms" | grep -q condor; then
+            sudo rpm --noscripts -Uvh $rpms < /dev/null;
+        fi
     fi
 done
 
