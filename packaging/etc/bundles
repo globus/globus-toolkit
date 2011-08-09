@@ -40,7 +40,6 @@ BUNDLE globus-resource-management-server
 	globus_gram_job_manager_scripts
 	globus_gram_job_manager
         globus_scheduler_event_generator
-        globus_scheduler_event_generator_job_manager
 
 
 # globus_gram_job_manager_auditing_setup_scripts

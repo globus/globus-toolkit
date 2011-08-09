@@ -291,8 +291,6 @@ globus_wsrf_replicator_common_java          ws-replica/replicator/common/java/so
 globus_wsrf_replicator_common_schema        ws-replica/replicator/common/schema	tar
 globus_wsrf_replicator_service_java         ws-replica/replicator/service/java/source	tar
 
-globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-manager/c/source gpt
-
 globus_wsrf_replicalocation_common_schema   ws-replica/location/common/schema	tar
 globus_wsrf_replicalocation_common_java     ws-replica/location/common/java/source	tar
 globus_wsrf_replicalocation_client_java     ws-replica/location/client/java/source	tar
