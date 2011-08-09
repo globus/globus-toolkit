@@ -1,7 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS= pkgdata doxygen scripts
+SUBDIRS= pkgdata doxygen scripts seg
 
 # Extra directories we install files into
 validationdir = $(datadir)/globus/$(PACKAGE)
