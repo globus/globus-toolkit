@@ -15,12 +15,12 @@ GLOBUS_FINALIZE
 
 AC_PATH_PROG(CONDOR_SUBMIT, condor_submit, no)
 if test "$CONDOR_SUBMIT" = "no" ; then
-    AC_MSG_ERROR([Cannot locate condor_submit])
+    AC_MSG_WARN([Cannot locate condor_submit])
 fi
 
 AC_PATH_PROG(CONDOR_RM, condor_rm, no)
 if test "$CONDOR_RM" = "no"; then
-    AC_MSG_ERROR([Cannot locate condor_rm])
+    AC_MSG_WARN([Cannot locate condor_rm])
 fi
 
 AC_ARG_WITH(condor-os,
