@@ -26,5 +26,12 @@ install-data-local:
 	chmod 0777 "$(DESTDIR)@globusstatedir@/globus-fork.log"
 endif
 
+# Install link to available file after all other install happens
+# native packages can remove this and use globus-gatekeeper-admin to deal
+# with the link
+install-data-hook:
+	cd $(DESTDIR)$(gridservicesdir)/..; \
+	[ -L "$(gridservices_DATA)" ] || ln -s available/$(gridservices_DATA) .
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

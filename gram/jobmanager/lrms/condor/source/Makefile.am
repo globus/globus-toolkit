@@ -21,8 +21,12 @@ gramperlmodule_DATA = condor.pm
 
 doc_DATA = GLOBUS_LICENSE
 
-install-data-local:
-	cd $(DESTDIR)$(gridservicesdir); ln -s available/jobmanager-condor .
+# Install link to available file after all other install happens
+# native packages can remove this and use globus-gatekeeper-admin to deal
+# with the link
+install-data-hook:
+	cd $(DESTDIR)$(gridservicesdir)/..; \
+	[ -L "$(gridservices_DATA)" ] || ln -s available/$(gridservices_DATA) .
 
 EXTRA_DIST = condor.pm condor.rvf globus-condor.conf.in jobmanager-condor.in \
 	GLOBUS_LICENSE
