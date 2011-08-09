@@ -92,6 +92,9 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
+# Remove jobmanager-fork from install dir so that it can be
+# added/removed by post scripts
+rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-fork
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 

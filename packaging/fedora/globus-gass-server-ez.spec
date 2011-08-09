@@ -20,8 +20,6 @@ Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
-#		README file
-Source8:	GLOBUS-GRIDFTP
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common

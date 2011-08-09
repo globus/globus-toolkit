@@ -135,8 +135,9 @@ sed -e '/_%{_name}-%{version}_.*\.3/d' \
 
 # Generate package filelists
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
+    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
+    $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
-    $GLOBUSPACKAGEDIR/%{_name}_setup/noflavor_pgm.filelist \
   | sed -e s!^!%{_prefix}! -e 's!.*/man/.*!%doc &*!' \
   | sed -e s!^%{_prefix}/etc!/etc!  > package.filelist
 
