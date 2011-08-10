@@ -28,7 +28,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-xio-gsi-driver%{?_isa}
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 5
-BuildRequires:	libtool-ltdl-devel%{?_isa} >= 2
+BuildRequires:	libtool-ltdl-devel%{?_isa} >= 1
 BuildRequires:	globus-common-devel%{?_isa} >= 3
 BuildRequires:	globus-xio-gsi-driver-devel%{?_isa}
 BuildRequires:	globus-xio-devel%{?_isa}
