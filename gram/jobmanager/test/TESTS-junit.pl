@@ -107,8 +107,18 @@ else
     $kill_gatekeeper = 1;
 }
 
+my $xmlfile;
+
+if (exists $ENV{CONTACT_LRM})
+{
+    $xmlfile = "globus-gram-job-manager-test-$ENV{CONTACT_LRM}.xml",
+}
+else
+{
+    $xmlfile = "globus-gram-job-manager-test.xml",
+}
 my $harness = TAP::Harness::JUnit->new({
-        xmlfile => "globus-gram-job-manager-test.xml",
+        xmlfile => $xmlfile,
         merge => 1});
 
 $harness->runtests(@tests);
