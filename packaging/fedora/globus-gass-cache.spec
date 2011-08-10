@@ -22,10 +22,10 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	openssl-devel%{?_isa} >= 1
+Requires:	openssl
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	openssl-devel%{?_isa} >= 1
+BuildRequires:	openssl-devel%{?_isa}
 BuildRequires:	globus-core%{?_isa} >= 4
 
 %package devel
@@ -33,7 +33,7 @@ Summary:	Globus Toolkit - Globus Gass Cache Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	openssl-devel%{?_isa} >= 1
+Requires:	openssl-devel%{?_isa}
 Requires:	globus-core%{?_isa} >= 4
 
 %description
