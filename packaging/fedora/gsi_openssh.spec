@@ -408,7 +408,6 @@ fi
 %files clients
 %defattr(-,root,root)
 %attr(0755,root,root) %{_bindir}/gsissh
-%attr(0644,root,root) %{_bindir}/.gsissh.hmac
 %attr(0644,root,root) %{_mandir}/man1/gsissh.1*
 %attr(0755,root,root) %{_bindir}/gsiscp
 %attr(0644,root,root) %{_mandir}/man1/gsiscp.1*
@@ -423,7 +422,6 @@ fi
 %defattr(-,root,root)
 %dir %attr(0711,root,root) %{_var}/empty/gsisshd
 %attr(0755,root,root) %{_sbindir}/gsisshd
-%attr(0644,root,root) %{_sbindir}/.gsisshd.hmac
 %attr(0755,root,root) %{_libexecdir}/gsissh/sftp-server
 %attr(0644,root,root) %{_mandir}/man5/gsisshd_config.5*
 %attr(0644,root,root) %{_mandir}/man5/gsimoduli.5*
