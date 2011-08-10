@@ -62,5 +62,5 @@ tar cf "${installer_dir_buildnumber}.tar" "${installer_dir_buildnumber}"
 gzip -9 "${installer_dir}.tar" 
 gzip -9 "${installer_dir_buildnumber}.tar" 
 
-cp "${installer_dir}.tar" "${bamboodir}"
-cp "${installer_dir}.tar" "${bamboodir}"
+cp "${installer_dir}.tar.gz" "${bamboodir}"
+cp "${installer_dir_buildnumber}.tar.gz" "${bamboodir}"
