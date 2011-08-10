@@ -23,6 +23,8 @@ Source:         %{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 11.5
+Requires:       lsb
+BuildRequires:  lsb
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
