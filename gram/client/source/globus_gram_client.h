@@ -73,7 +73,7 @@ EXTERN_C_BEGIN
  * @ingroup globus_gram_client_callback
  *
  * @details
- * The @a globus_gram_client_callback_func_t type describes the function
+ * The globus_gram_client_callback_func_t type describes the function
  * signature for job state callbacks.  A pointer to a function
  * of this type is passed to the globus_gram_client_callback_allow()
  * function to create a callback contact. The contact string can be passed to
@@ -88,7 +88,7 @@ EXTERN_C_BEGIN
  *     this callback is referring to. It should in most cases match the return
  *     value @a job_contact from a call to globus_gram_client_job_request()
  *     or in the @a job_contact parameter to the
- *     @a globus_gram_client_nonblocking_func_t used with
+ *     globus_gram_client_nonblocking_func_t used with
  *     globus_gram_client_register_job_request(). However, in some cases,
  *     the port number in the job contact URL may change if the job manager
  *     is restarted.
@@ -110,11 +110,11 @@ typedef void (* globus_gram_client_callback_func_t)(
  * @ingroup globus_gram_client_callback
  *
  * @details
- * The @a #globus_gram_client_job_info_t data type is used to pass protocol
+ * The #globus_gram_client_job_info_t data type is used to pass protocol
  * extensions along with the standard job status
  * information included in the GRAM2 protocol. This structure contains the
  * information returned in job state callbacks plus a hash table of extension
- * entries that contain @a #globus_gram_protocol_extension_t name-value pairs.
+ * entries that contain #globus_gram_protocol_extension_t name-value pairs.
  */
 typedef struct globus_gram_client_job_info_s
 {
@@ -143,7 +143,7 @@ globus_gram_client_job_info_t;
  * @ingroup globus_gram_client_callback
  *
  * @details
- * The @a #globus_gram_client_info_callback_func_t type describes the function
+ * The #globus_gram_client_info_callback_func_t type describes the function
  * signature for job state callbacks that carry any GRAM protocol extensions
  * beyond the set used in GRAM2.  A pointer to a function
  * of this type is passed to the globus_gram_client_info_callback_allow()
@@ -172,7 +172,7 @@ typedef void (* globus_gram_client_info_callback_func_t)(
  * @ingroup globus_gram_client_attr
  *
  * @details
- * The @a #globus_gram_client_attr_t type is an opaque type describing
+ * The #globus_gram_client_attr_t type is an opaque type describing
  * GRAM attributes. It can be accessed or modified by functions in the 
  * @ref globus_gram_client_attr documentation.
  */
@@ -184,7 +184,7 @@ typedef void * globus_gram_client_attr_t;
  * @ingroup globus_gram_client_attr
  * @hideinitializer
  * @details
- * The @a GLOBUS_GRAM_CLIENT_NO_ATTR macro defines a constant for use
+ * The GLOBUS_GRAM_CLIENT_NO_ATTR macro defines a constant for use
  * when a user of the GRAM client API does not want to specify any
  * non-default GRAM attributes.
  */
@@ -195,7 +195,7 @@ typedef void * globus_gram_client_attr_t;
  * @ingroup globus_gram_client_callback
  *
  * @details
- * The @a #globus_gram_client_info_callback_func_t type describes the function
+ * The #globus_gram_client_info_callback_func_t type describes the function
  * signature for callbacks which indicate that a GRAM operation has completed.
  * A pointer to a function of this type is passed to the
  * following functions:
