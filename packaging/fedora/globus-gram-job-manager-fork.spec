@@ -48,7 +48,9 @@ BuildRequires:	tetex-latex
 %package doc
 Summary:	Globus Toolkit - Fork Job Manager Documentation Files
 Group:		Documentation
+%if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:	noarch
+%endif
 Requires:	%{name} = %{version}-%{release}
 
 %description
