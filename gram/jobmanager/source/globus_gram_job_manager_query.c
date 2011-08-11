@@ -1816,7 +1816,8 @@ globus_l_gram_create_extensions(
         goto hashtable_init_failed;
     }
 
-    if (manager->config->seg_module != NULL &&
+    if ((manager->config->seg_module != NULL ||
+         strcmp(manager->config->jobmanager_type, "condor") == 0) &&
         status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
     {
         entry = globus_gram_protocol_create_extension(
