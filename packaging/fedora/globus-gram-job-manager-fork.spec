@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	0.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -33,6 +33,10 @@ Requires:	globus-gatekeeper >= 7.3
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-core
+BuildRequires:	globus-common-devel
+BuildRequires:	globus-scheduler-event-generator-devel
+BuildRequires:	globus-gram-protocol-devel
+BuildRequires:	globus-xio-devel
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
