@@ -19,4 +19,5 @@ AC_OUTPUT(
         Makefile
         JobDescription.pm
         globus-job-manager-script.pl
+        globus-gatekeeper-admin
 )

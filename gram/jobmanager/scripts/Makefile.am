@@ -4,6 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = pkgdata
 
 libexec_SCRIPTS = globus-job-manager-script.pl
+sbin_SCRIPTS = globus-gatekeeper-admin
 
 # Extra directories we install files into
 globusperldir=$(perlmoduledir)/Globus/GRAM

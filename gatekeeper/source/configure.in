@@ -111,7 +111,6 @@ AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
-	globus-gatekeeper-admin
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         init/Makefile
