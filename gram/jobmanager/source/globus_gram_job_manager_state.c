@@ -1709,6 +1709,58 @@ globus_l_gram_job_manager_set_restart_state(
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
         changed = GLOBUS_TRUE;
         break;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
+        if (request->failure_code ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED ||
+            request->failure_code ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT ||
+            request->failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR)
+        {
+            /* These failure types can be (possibly) remedied in the restart
+             * RSL changing stdout or stderr destinations, so these will
+             * be non-fatal. We'll clear the job status and procede.
+             */
+            request->failure_code = GLOBUS_SUCCESS;
+            globus_gram_job_manager_request_set_status(
+                request,
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE);
+            request->unsent_status_change = GLOBUS_TRUE;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+            changed = GLOBUS_TRUE;
+            break;
+        }
+        else if (request->failure_code ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_EXECUTABLE ||
+                request->failure_code ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_STDIN ||
+                request->failure_code ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED)
+        {
+            /* These failure types can be (possibly) remedied in the restart
+             * RSL changing stdin, staging, or executable destinations, so
+             * these will be non-fatal. We'll clear the job status and procede.
+             */
+            request->failure_code = GLOBUS_SUCCESS;
+            globus_gram_job_manager_request_set_status(
+                request,
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED);
+            request->unsent_status_change = GLOBUS_TRUE;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED;
+            changed = GLOBUS_TRUE;
+            break;
+        }
+        else
+        {
+            /* These types of failures can't be helped by a change in stdio,
+             * destination so we continue with the failure
+             */
+            globus_gram_job_manager_request_set_status(
+                request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+            request->unsent_status_change = GLOBUS_TRUE;
+            request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+            break;
+        }
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
@@ -1717,18 +1769,6 @@ globus_l_gram_job_manager_set_restart_state(
         globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE);
         request->unsent_status_change = GLOBUS_TRUE;
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-        changed = GLOBUS_TRUE;
-        break;
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
-        globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-        request->unsent_status_change = GLOBUS_TRUE;
-        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-        changed = GLOBUS_TRUE;
-        break;
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-        request->jobmanager_state =
-                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
-        request->unsent_status_change = GLOBUS_TRUE;
         changed = GLOBUS_TRUE;
         break;
     }

@@ -222,7 +222,7 @@ globus_l_job_manager_module_activate(void)
     else
     {
         char * log_dir_pattern = globus_common_create_string(
-                "${localstatedir}/globus-job-manager-seg-%s", scheduler);
+                "${localstatedir}/lib/globus/globus-seg-%s", scheduler);
 
         globus_eval_path(log_dir_pattern, &logfile_state->log_dir);
         free(log_dir_pattern);
