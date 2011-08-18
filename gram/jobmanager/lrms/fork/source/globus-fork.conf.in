@@ -5,7 +5,7 @@
 #
 # In order to use the fork starter, the job manager must be configured to use
 # the fork SEG module by the -seg-module fork option in its configuration file
-@SEG_ENABLED_COND_TRUE@log_path="@globusstatedir@/globus-fork.log"
+log_path="@globusstatedir@/globus-fork.log"
 
 # For the mpi jobtype, the fork LRM implementation supports both the
 # MPI 2-specified mpiexec command and the non-standard mpirun command common

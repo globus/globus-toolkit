@@ -34,7 +34,7 @@ package Globus::GRAM::JobManager::fork;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($mpirun, $mpiexec);
+my ($mpirun, $mpiexec, $log_path);
 my ($starter_in, $starter_out, $starter_index) = (undef, undef, 0);
 my %signo;
 
@@ -61,6 +61,7 @@ BEGIN
         $mpiexec = "no";
     }
     $softenv_dir = $config->get_attribute("softenv_dir") || "";
+    $log_path = $config->get_attribute("log_path") || "/dev/null";
 }
 
 sub new
@@ -102,27 +103,11 @@ sub submit
     my $fork_starter = "$Globus::Core::Paths::sbindir/globus-fork-starter";
     my $streamer = "$Globus::Core::Paths::sbindir/globus-gram-streamer";
     my $fork_conf = "$Globus::Core::Paths::sysconfdir/globus-fork.conf";
-    my $log_path = '/dev/null';
     my $is_grid_monitor = 0;
     my $soft_msc       = "$softenv_dir/bin/soft-msc";
     my $softenv_load   = "$softenv_dir/etc/softenv-load.sh";
 
     $starter_index++;
-
-    if (-r $fork_conf)
-    {
-        local(*IN);
-
-        open(IN, "<$fork_conf");
-
-        while (<IN>) {
-            if (m/log_path=(.*)$/) {
-                $log_path = $1;
-            }
-        }
-
-        close(IN);
-    }
 
     if(!defined($description->directory()))
     {

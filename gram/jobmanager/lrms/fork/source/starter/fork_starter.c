@@ -198,8 +198,23 @@ int main(int argc, char *argv[])
     }
     else
     {
+        char *confpath = NULL;
+
+        result = globus_eval_path(
+            "${sysconfdir}/globus/globus-fork.conf",
+            &confpath);
+        if (result != GLOBUS_SUCCESS || confpath == NULL)
+        {
+            errstr = globus_error_print_friendly(globus_error_peek(result));
+            globus_l_fork_error(
+                NULL,
+                GLOBUS_GRAM_PROTOCOL_ERROR_JOB_EXECUTION_FAILED,
+                "Error determining log_path: %s", errstr);
+
+            exit(EXIT_FAILURE);
+        }
         result = globus_common_get_attribute_from_config_file(
-                NULL, "etc/globus-fork.conf", "log_path",
+                NULL, confpath, "log_path",
                 &globus_l_fork_logfile_path);
 
         if (result != GLOBUS_SUCCESS)
@@ -222,6 +237,7 @@ int main(int argc, char *argv[])
                 "etc/globus-fork.conf\n");
             exit(1);
         }
+        free(confpath);
     }
 
     rc = globus_l_fork_log_open_and_lock(NULL);
