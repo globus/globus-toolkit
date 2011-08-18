@@ -1,0 +1,100 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          globus-scheduler-event-generator
+# Required-Start:    $network $time
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Globus Scheduler Event Generator
+# Description:       The Globus Scheduler Event Generator service 
+#                    process state from local resource managers (such as
+#                    torque or SGE) into a form that the globus-job-manager
+#                    process can easily parse.
+#                    It is part of the Globus Toolkit(tm)
+### END INIT INFO
+
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
+progname="$(basename $0)"
+
+GLOBUS_SEG_CONFIG=${GLOBUS_SEG_CONFIG:-@SEG_CONFIGDIR@/@SEG_CONFIGFILE@}
+test -f "${GLOBUS_SEG_CONFIG}" && . "${GLOBUS_SEG_CONFIG}"
+test -f ${sbindir}/$progname || exit 0
+
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+for lrm in "${GLOBUS_SEG_LRM_DIR}"/*; do
+    if [ -n "$2" -a "$(basename "$lrm")" != "$2" ]; then
+        continue
+    fi
+    if [ -f "$lrm" ]; then
+        lrms="${lrms:+$lrms }$(basename $lrm)"
+    fi
+done
+
+GLOBUS_SEG_PIDFMT="${GLOBUS_SEG_PIDFMT:-${localstatedir}/run/globus-scheduler-event-generator-%s.pid}"
+GLOBUS_SEG_LOGFMT="${GLOBUS_SEG_LOGFMT:-${localstatedir}/globus/globus-seg-%s}"
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+case "$1" in
+    start)
+        allrc=0
+        for lrm in $lrms; do
+            pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+            logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+            if [ ! -d "$logdir" ]; then
+                (umask 022; mkdir "$logdir")
+            fi
+            ${sbindir}/$progname -p "$pidfile" -d "$logdir" -b -s "$lrm"
+            if [ ! -f "${pidfile}" ]; then
+                sleep 1
+            fi
+            ok=0
+            if [ -f "${pidfile}" ]; then
+                pid="$(cat "$pidfile")"
+                if kill -0 "$pid" 2> /dev/null; then
+                    echo "Started $progname for $lrm"
+                    ok=1
+                fi
+            fi
+            if [ "$ok" -eq 0 ]; then
+                echo "Error starting $progname for $lrm"
+                allrc=1
+            fi
+        done
+        exit $allrc
+        ;;
+    stop)
+        for lrm in $lrms; do
+            pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+            logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+
+            if [ -f "$pidfile" ]; then
+                pid="$(cat "$pidfile")"
+                if [ "$pid" -gt 0 ] >/dev/null; then
+                    kill -TERM "$pid"
+                    sleep 1
+                    if ! kill -0 "${pid}" 2> /dev/null; then
+                        rm -f "${pidfile}"
+                        echo "Stopped $progname for $lrm"
+                    fi
+                else
+                    rm -f "${pidfile}"
+                    echo "Removed stale pidfile for $lrm"
+                fi
+            else
+                echo "No $progname running for $lrm"
+            fi
+        done
+        exit
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    force-reload)
+        $0 restart
+        ;;
+esac

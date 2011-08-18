@@ -1,0 +1,93 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          globus-scheduler-event-generator
+# Required-Start:    $network $time
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Globus Scheduler Event Generator
+# Description:       The Globus Scheduler Event Generator service 
+#                    process state from local resource managers (such as
+#                    torque or SGE) into a form that the globus-job-manager
+#                    process can easily parse.
+#                    It is part of the Globus Toolkit(tm)
+### END INIT INFO
+
+@GLOBUS_SCRIPT_INITIALIZER@
+
+. ${libexecdir}/globus-script-initializer
+
+GLOBUS_SEG_CONFIG=${GLOBUS_SEG_CONFIG:-@SEG_CONFIGDIR@/@SEG_CONFIGFILE@}
+test -f "${GLOBUS_SEG_CONFIG}" && . "${GLOBUS_SEG_CONFIG}"
+test -f ${sbindir}/globus-scheduler-event-generator || exit 0
+
+. /lib/lsb/init-functions
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+for lrm in "${GLOBUS_SEG_LRM_DIR}"/*; do
+    if [ -n "$2" -a "$(basename "$lrm")" != "$2" ]; then
+        continue
+    fi
+    if [ -f "$lrm" ]; then
+        lrms="${lrms:+$lrms }$(basename $lrm)"
+    fi
+done
+
+GLOBUS_SEG_PIDFMT="${GLOBUS_SEG_PIDFMT:-${localstatedir}/run/globus-scheduler-event-generator-%s.pid}"
+GLOBUS_SEG_LOGFMT="${GLOBUS_SEG_LOGFMT:-${localstatedir}/globus/globus-seg-%s}"
+GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
+
+case "$1" in
+    start)
+        allrc=0
+        for lrm in $lrms; do
+            pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+            logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+            if [ ! -d "$logdir" ]; then
+                (umask 022; mkdir "$logdir")
+            fi
+            start_daemon -p "$pidfile" \
+                ${sbindir}/globus-scheduler-event-generator \
+                -s "$lrm" \
+                -p "$pidfile" \
+                -d "$logdir" \
+                -b
+            rc=$?
+            if [ $rc = 0 ]; then
+                log_success_msg "Started globus-scheduler-event-generator for $lrm"
+            else
+                log_failure_msg "Failed to start globus-scheduler-event-generator for $lrm"
+                allrc=$rc
+            fi
+        done
+        exit $allrc
+        ;;
+    stop)
+        allrc=0
+        for lrm in $lrms; do
+            pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
+            logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
+
+            if [ -f "$pidfile" ]; then
+                killproc -p "$pidfile" \
+                    ${sbindir}/globus-scheduler-event-generator
+                rc=$?
+                if [ $rc = 0 ]; then
+                    log_success_msg "Stopped globus-scheduler-event-generator for $lrm"
+                else
+                    log_failure_msg "Failed to stop globus-scheduler-event-generator for $lrm"
+                    allrc=$rc
+                fi
+            fi
+        done
+        exit $allrc
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    force-reload)
+        $0 restart
+        ;;
+esac
