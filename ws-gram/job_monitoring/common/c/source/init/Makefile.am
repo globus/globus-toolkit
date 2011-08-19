@@ -8,7 +8,7 @@ globus-scheduler-event-generator: globus-scheduler-event-generator$(LSB)
 	cp globus-scheduler-event-generator$(LSB) $@
 
 install-data-hook:
-	mkdir -p $(sysconfdir)/globus/scheduler-event-generator/available
+	mkdir -p $(DESTDIR)$(sysconfdir)/globus/scheduler-event-generator/available
 
 CLEANFILES = globus-scheduler-event-generator
 
