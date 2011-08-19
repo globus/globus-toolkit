@@ -45,7 +45,7 @@
 
 
 Summary: An implementation of the SSH protocol with GSI authentication
-Name: gsi_openssh
+Name: gsi-openssh
 Version: %{gsi_openssh_ver}
 Release: %{gsi_openssh_rel}%{?dist}
 URL: http://www.openssh.com/portable.html
