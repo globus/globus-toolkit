@@ -51,13 +51,18 @@ BuildRequires:	tetex-latex
 %package doc
 Summary:	Globus Toolkit - PBS Job Manager Documentation Files
 Group:		Documentation
-BuildArch:	noarch
+%if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
+BuildArch:      noarch
+%endif
+
 Requires:	%{name} = %{version}-%{release}
 
 %package setup-poll
 Summary:        Globus Toolkit - PBS Job Manager Setup Files
 Group:		Applications/Internet
-BuildArch:	noarch
+%if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
+BuildArch:      noarch
+%endif
 Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
 Conflicts:      %{name}-setup-seg
