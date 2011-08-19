@@ -13,12 +13,12 @@ pkgconffile=""
 
 GLOBUS_FINALIZE
 
-AC_PATH_PROG(CONDOR_SUBMIT, condor_submit, no)
+AC_CHECK_PROG(CONDOR_SUBMIT, condor_submit)
 if test "$CONDOR_SUBMIT" = "no" ; then
     AC_MSG_WARN([Cannot locate condor_submit])
 fi
 
-AC_PATH_PROG(CONDOR_RM, condor_rm, no)
+AC_CHECK_PROG(CONDOR_RM, condor_rm)
 if test "$CONDOR_RM" = "no"; then
     AC_MSG_WARN([Cannot locate condor_rm])
 fi

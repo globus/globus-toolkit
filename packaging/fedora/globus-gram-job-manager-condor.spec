@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	0.0
-Release:	2%{?dist}
+Version:	0.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
