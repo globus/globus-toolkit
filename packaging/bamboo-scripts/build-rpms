@@ -329,6 +329,7 @@ cat > globus-gridftp.xml <<EOF
     <description>Globus Data Management SDK</description>
     <uservisible>true</uservisible>
     <packagelist>
+      <packagereq type="default">grid-packaging-tools</packagereq>
       <packagereq type="default">globus-core</packagereq>
       <packagereq type="default">globus-common</packagereq>
       <packagereq type="default">globus-common-devel</packagereq>
