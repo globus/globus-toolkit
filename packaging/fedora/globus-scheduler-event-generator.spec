@@ -12,7 +12,7 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	3.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -130,6 +130,8 @@ rm -rf autom4te.cache
 
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
+           --with-lsb \
+           --with-initscript-config-path=/etc/sysconfig/globus-scheduler-event-generator \
            --disable-static
 
 make %{?_smp_mflags}
@@ -157,7 +159,9 @@ sed -e '/_%{_name}-%{version}_.*\.3/d' \
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
   | sed s!^!%{_prefix}! > package.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
-  | sed s!^!%{_prefix}! > package-progs.filelist
+    $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
+  | sed s!^!%{_prefix}! \
+  | sed s!^%{_prefix}/etc!/etc! > package-progs.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
   | sed s!^!%{_prefix}! > package-devel.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
@@ -168,7 +172,14 @@ rm -rf $RPM_BUILD_ROOT
 
 %post -p /sbin/ldconfig
 
+%post progs
+chkconfig --add globus-scheduler-event-generator
+
 %postun -p /sbin/ldconfig
+
+%preun progs
+chkconfig --del globus-scheduler-event-generator
+service globus-scheduler-event-generator stop
 
 %files -f package.filelist
 %defattr(-,root,root,-)

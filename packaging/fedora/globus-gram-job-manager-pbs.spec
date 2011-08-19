@@ -13,11 +13,11 @@
 
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
-Name:		globus-gram-job-manager-fork
+Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	0.0
 Release:	1%{?dist}
-Summary:	Globus Toolkit - Fork Job Manager
+Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
@@ -26,10 +26,10 @@ Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-job-manager-scripts
-Requires:	globus-gass-cache-program >= 2
+Requires:	globus-gass-cache-program >= 4
 Requires:	globus-common-progs >= 2
+Requires:       torque-client
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-Requires:       %{name}-setup
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-core
 BuildRequires:	globus-common-devel
@@ -49,13 +49,13 @@ BuildRequires:	tetex-latex
 %endif
 
 %package doc
-Summary:	Globus Toolkit - Fork Job Manager Documentation Files
+Summary:	Globus Toolkit - PBS Job Manager Documentation Files
 Group:		Documentation
 BuildArch:	noarch
 Requires:	%{name} = %{version}-%{release}
 
 %package setup-poll
-Summary:	Globus Toolkit - Fork Job Manager Setup Files
+Summary:        Globus Toolkit - PBS Job Manager Setup Files
 Group:		Applications/Internet
 BuildArch:	noarch
 Provides:       %{name}-setup
@@ -63,11 +63,12 @@ Requires:	%{name} = %{version}-%{release}
 Conflicts:      %{name}-setup-seg
 
 %package setup-seg
-Summary:	Globus Toolkit - Fork Job Manager Setup Files
+Summary:	Globus Toolkit - PBS Job Manager Setup Files
 Group:		Applications/Internet
 Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 3.1
+Requires:       torque-server
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -77,7 +78,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-Fork Job Manager 
+PBS Job Manager 
 
 %description doc
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -86,7 +87,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name}-doc package contains:
-Fork Job Manager Documentation Files
+PBS Job Manager Documentation Files
 
 %description setup-poll
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -95,7 +96,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-Fork Job Manager Setup using polling to monitor job state
+PBS Job Manager Setup using polling to monitor job state
 
 %description setup-seg
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -104,7 +105,7 @@ many others all over the world. A growing number of projects and companies are
 using the Globus Toolkit to unlock the potential of grids for their cause.
 
 The %{name} package contains:
-Fork Job Manager Setup using SEG to monitor job state
+PBS Job Manager Setup using SEG to monitor job state
 
 %prep
 %setup -q -n %{_name}-%{version}
@@ -122,6 +123,7 @@ rm -rf autom4te.cache
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \
+           --with-log-path=/var/log/torque/server_logs \
            --disable-static
 
 make %{?_smp_mflags}
@@ -129,10 +131,9 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-
-# Remove jobmanager-fork from install dir so that it can be
+# Remove jobmanager-pbs from install dir so that it can be
 # added/removed by post scripts
-rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-fork
+rm $RPM_BUILD_ROOT/etc/grid-services/jobmanager-pbs
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
@@ -142,28 +143,28 @@ sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 
 
 # Generate package filelists
-# Main package: fork.pm and globus-fork.config
+# Main package: pbs.pm and globus-pbs.config
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep -E 'fork.pm|globus-fork.conf|pkg_data_|.filelist' > package.filelist
+  | grep -E 'pbs.pm|globus-pbs.conf|pkg_data_|.filelist' > package.filelist
 
-# setup-poll package: /etc/grid-services/available/job-manager-fork-poll
+# setup-poll package: /etc/grid-services/available/job-manager-pbs-poll
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep jobmanager-fork-poll > package-setup-poll.filelist
+  | grep jobmanager-pbs-poll > package-setup-poll.filelist
 
-# setup-seg package: /etc/grid-services/available/job-manager-fork-seg
-# plus fork starter and seg module
+# setup-seg package: /etc/grid-services/available/job-manager-pbs-seg
+# plus seg module
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep -Ev 'jobmanager-fork-poll|fork.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
+  | grep -Ev 'jobmanager-pbs-poll|pbs.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
 
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
   | sed 's!^!%doc %{_prefix}!' > package-doc.filelist
@@ -172,15 +173,15 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post setup-poll
-globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs
 
 %postun setup-poll
-globus-gatekeeper-admin -d jobmanager-fork-poll || true
+globus-gatekeeper-admin -d jobmanager-pbs-poll || true
 
 %post setup-seg
-globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork
-globus-scheduler-event-generator-admin -e fork
-service globus-scheduler-event-generator start fork
+globus-gatekeeper-admin -e jobmanager-pbs-seg -n jobmanager-pbs
+globus-scheduler-event-generator-admin -e pbs
+service globus-scheduler-event-generator start pbs
 
 %postun setup-seg
 globus-gatekeeper-admin -d jobmanager-fork-seg || true

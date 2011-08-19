@@ -21,8 +21,6 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-gram-job-manager-scripts
 Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
-Requires:	globus-gram-job-manager >= 10.59
-Requires:	globus-gatekeeper >= 7.3
 Requires:       condor
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	grid-packaging-tools
