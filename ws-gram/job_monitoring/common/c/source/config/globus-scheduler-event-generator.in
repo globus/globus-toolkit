@@ -1,0 +1,3 @@
+GLOBUS_SEG_PIDFMT="${localstatedir}/run/globus-scheduler-event-generator-%s.pid"
+GLOBUS_SEG_LOGFMT="${localstatedir}/lib/globus/globus-seg-%s"
+GLOBUS_SEG_LRM_DIR="${sysconfdir}/globus/scheduler-event-generator"
