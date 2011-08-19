@@ -146,8 +146,9 @@ globus_i_gfs_data_check_path(
     char *                              in_path,
     char **                             ret_path,
     int                                 access_type);
-#define GFS_L_READ 0x1
-#define GFS_L_WRITE 0x2
-#define GFS_L_LIST 0x4
+#define GFS_L_READ  1<<0
+#define GFS_L_WRITE 1<<1
+#define GFS_L_LIST  1<<2
+#define GFS_L_NONE  1<<3
 
 #endif

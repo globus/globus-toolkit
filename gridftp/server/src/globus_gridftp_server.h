@@ -683,7 +683,7 @@ typedef void
 
 typedef globus_result_t
 (*globus_gfs_storage_realpath_t)(
-    char *                              in_path,
+    const char *                        in_path,
     char **                             out_realpath,
     void *                              user_arg);
 

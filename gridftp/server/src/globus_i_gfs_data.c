@@ -563,6 +563,7 @@ globus_i_gfs_data_check_path(
     int                                 access_type)
 {
     globus_bool_t                       allowed = GLOBUS_FALSE;
+    globus_bool_t                       disallowed = GLOBUS_FALSE;
     char                                path[MAXPATHLEN];
     globus_list_t *                     list;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -586,23 +587,44 @@ globus_i_gfs_data_check_path(
                 in_path, &true_path, session_handle->session_arg);
             if(result != GLOBUS_SUCCESS)
             {
+                char *                  true_base;
+                char *                  end_slash = "";
+                int                     path_len;
+                
                 strncpy(path, in_path, sizeof(path));
                 path[MAXPATHLEN - 1] = '\0';
-                tmp_ptr = strrchr(path, '/');            
-                *(tmp_ptr++) = '\0';
-                if(*tmp_ptr == '\0')
+                
+                path_len = strlen(path);
+                if(path[path_len - 1] == '/')
                 {
-                    tmp_ptr = strrchr(path, '/');
-                    *(tmp_ptr++) = '\0';
+                    path[--path_len] = '\0';
+                    end_slash = "/";
                 }
-                result = session_handle->dsi->realpath_func(
-                    path, &true_path, session_handle->session_arg);
+                
+                tmp_ptr = strrchr(path, '/');
+                *(tmp_ptr++) = '\0';
+                
+                if(*path == '\0')
+                {
+                    result = GLOBUS_FAILURE;
+                }
+                else
+                {
+                    result = session_handle->dsi->realpath_func(
+                        path, &true_base, session_handle->session_arg);
+                }
+                
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GLOBUS_SUCCESS;
                     true_path = globus_libc_strdup(in_path);
                 }
-
+                else
+                {
+                    true_path = globus_common_create_string(
+                        "%s/%s%s", true_base, tmp_ptr, end_slash);
+                    globus_free(true_base);
+                }
             }
         }
         else
@@ -613,7 +635,7 @@ globus_i_gfs_data_check_path(
         in_path_len = strlen(true_path);
         
         for(list = globus_l_gfs_path_alias_list;
-            !globus_list_empty(list) && !allowed;
+            !globus_list_empty(list) && !allowed && !disallowed;
             list = globus_list_rest(list))
         {            
             alias_ent = globus_list_first(list);
@@ -621,10 +643,16 @@ globus_i_gfs_data_check_path(
             if(strncmp(true_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
                 (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
                     true_path[alias_ent->alias_len] == '\0' || 
-                    true_path[alias_ent->alias_len] == '/') &&
-                    alias_ent->access & access_type)
+                    true_path[alias_ent->alias_len] == '/'))
             {
-                allowed = GLOBUS_TRUE;
+                if(alias_ent->access & access_type)
+                {
+                    allowed = GLOBUS_TRUE;
+                }
+                else
+                {
+                    disallowed = GLOBUS_TRUE;
+                }
             }
             
             if(!allowed && access_type & GFS_L_LIST)
@@ -1591,6 +1619,93 @@ globus_libc_initgroups(
     return rc;
 }
 
+int
+globus_list_cmp_alias_ent(
+    void *                              a, 
+    void *                              b,
+    void *                              arg)
+{
+    globus_l_gfs_alias_ent_t *          a_ent;
+    globus_l_gfs_alias_ent_t *          b_ent;
+    int                                 cmp;
+    
+    a_ent = (globus_l_gfs_alias_ent_t *) a;
+    b_ent = (globus_l_gfs_alias_ent_t *) b;
+    
+    cmp = strcmp(
+        (a_ent && a_ent->alias) ? a_ent->alias : "",
+        (b_ent && b_ent->alias) ? b_ent->alias : "");
+    
+    return cmp >= 0;
+}
+
+static
+void
+globus_l_gfs_data_update_restricted_paths(
+    globus_l_gfs_data_session_t *           session_handle)
+{
+    globus_list_t *                     list;
+    globus_l_gfs_alias_ent_t *          alias_ent;
+    globus_bool_t                       resort = GLOBUS_FALSE;
+    char *                              tmp_ptr;
+    GlobusGFSName(globus_l_gfs_data_update_restricted_paths);
+    GlobusGFSDebugEnter();
+        
+    if(!globus_list_empty(globus_l_gfs_path_alias_list))
+    {   
+        for(list = globus_l_gfs_path_alias_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
+        {            
+            alias_ent = globus_list_first(list);
+            
+            if(alias_ent->alias[0] == '~')
+            {
+                if(alias_ent->alias[1] != '\0')
+                {
+                    tmp_ptr = alias_ent->alias;
+                    alias_ent->alias = globus_common_create_string(
+                        "%s%s", session_handle->home_dir, tmp_ptr + 1);
+                    globus_free(tmp_ptr);
+                }
+                else
+                {
+                    globus_free(alias_ent->alias);
+                    alias_ent->alias = 
+                        globus_libc_strdup(session_handle->home_dir);
+                }
+                alias_ent->alias_len = strlen(alias_ent->alias);
+                    
+                resort = GLOBUS_TRUE;
+            }
+
+            if(alias_ent->realpath && alias_ent->realpath[0] == '~')
+            {
+                if(alias_ent->realpath[1] != '\0')
+                {
+                    tmp_ptr = alias_ent->realpath;
+                    alias_ent->realpath = globus_common_create_string(
+                        "%s%s", session_handle->home_dir, tmp_ptr + 1);
+                    globus_free(tmp_ptr);
+                }
+                else
+                {
+                    globus_free(alias_ent->realpath);
+                    alias_ent->realpath = 
+                        globus_libc_strdup(session_handle->home_dir);
+                }
+                alias_ent->realpath_len = strlen(alias_ent->realpath);
+            }
+        }
+        
+        if(resort)
+        {
+            globus_l_gfs_path_alias_list = globus_list_sort_destructive(
+                globus_l_gfs_path_alias_list, globus_list_cmp_alias_ent, NULL);
+        }
+    }
+}
+
 
 static
 void
@@ -1961,6 +2076,9 @@ globus_l_gfs_data_authorize(
         op->session_handle->gid_count * sizeof(gid_t));
     getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
 
+    op->session_handle->home_dir = pwent->pw_dir;
+    globus_l_gfs_data_update_restricted_paths(op->session_handle);
+    
     if(globus_i_gfs_config_bool("use_home_dirs") && pwent->pw_dir != NULL 
         && (globus_i_gfs_data_check_path(op->session_handle,
             pwent->pw_dir, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS))
@@ -2125,6 +2243,7 @@ globus_l_gfs_load_safe(
     }
 }
 
+
 void
 globus_i_gfs_data_init()
 {
@@ -2203,6 +2322,7 @@ globus_i_gfs_data_init()
     if((restrict_path = globus_gfs_config_get_string("restrict_paths")) != NULL)
     {
         globus_list_t *                 list;
+        globus_list_t *                 tmp_list = NULL;
         list = globus_list_from_string(restrict_path, ',', NULL);
         
         while(!globus_list_empty(list))
@@ -2236,8 +2356,15 @@ globus_i_gfs_data_init()
                         ent->access |= GFS_L_WRITE;
                         ptr++;
                         break;
+
+                    case 'n':
+                    case 'N':
+                        ent->access |= GFS_L_NONE;
+                        ptr++;
+                        break;
                         
                     case '/':
+                    case '~':
                         if(ent->access == 0)
                         {
                            ent->access |= GFS_L_READ | GFS_L_WRITE;
@@ -2278,7 +2405,8 @@ globus_i_gfs_data_init()
             }
             globus_free(ent_str);
             
-            if(*ent->alias != '/' || (ent->realpath && *ent->realpath != '/'))
+            if((*ent->alias != '/' && *ent->alias != '~') ||
+                (ent->realpath && *ent->realpath != '/' && *ent->realpath != '~'))
             {                
                 globus_free(ent->alias);
                 if(ent->realpath)
@@ -2289,13 +2417,17 @@ globus_i_gfs_data_init()
             }
             else
             {
-                globus_list_insert(&globus_l_gfs_path_alias_list, ent);
+                globus_list_insert(&tmp_list, ent);
             }
         }
+        
+        globus_l_gfs_path_alias_list = globus_list_sort_destructive(
+            tmp_list, globus_list_cmp_alias_ent, NULL);
     }
 
     GlobusGFSDebugExit();
 }
+
 
 static
 globus_result_t
