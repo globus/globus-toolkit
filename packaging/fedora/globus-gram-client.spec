@@ -12,7 +12,7 @@
 
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	11.0
+Version:	11.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
