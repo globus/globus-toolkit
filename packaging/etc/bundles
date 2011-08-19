@@ -477,10 +477,7 @@ BUNDLE globus-internationalization
         globus_i18n
 
 BUNDLE gram5-pbs
-        globus_scheduler_event_generator_pbs
-        globus_scheduler_event_generator_pbs_setup
-        globus_gram_job_manager_setup_pbs
-        globus_scheduler_event_generator_pbs_test
+        globus_gram_job_manager_pbs
                 
 BUNDLE gram5-condor
         globus_gram_job_manager_condor

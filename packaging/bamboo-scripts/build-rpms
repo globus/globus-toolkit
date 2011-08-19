@@ -28,10 +28,11 @@ artifactroot=""
 globusversion=""
 skip_checkout=""
 skip_bootstrap=""
+skip_packaging=""
 
 sign=1
 tag=""
-while getopts n:v:a:St:hg: i; do
+while getopts n:v:a:St:hg:qp i; do
     case "$i" in
         n)
             osname="$OPTARG"
@@ -62,6 +63,11 @@ while getopts n:v:a:St:hg: i; do
         q)
            skip_checkout=1
            skip_bootstrap=1
+           ;;
+        p)
+           skip_checkout=1
+           skip_bootstrap=1
+           skip_packaging=1
            ;;
     esac
 done
@@ -94,6 +100,7 @@ HOME=$topdir
 
 mkdir -p $tmppath
 for x in BUILD  BUILDROOT SOURCES RPMS  SPECS  SRPMS; do
+    rm -rf $topdir/$x
     mkdir -p $topdir/$x
 done
 
@@ -135,14 +142,16 @@ fi
 # Remove everything prior to building
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm --noscripts -e --allmatches $pkgs_to_rm < /dev/null
+    sudo yum -y remove $pkgs_to_rm < /dev/null
 fi
 
-bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,globus-simple-ca
+bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,globus-simple-ca
 packages_to_build=myproxy,gsi_openssh
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
-    cvs update -Pd -r GPT-branch source-trees/gssapi-openssh/openssh
+    cd ${packagingdir}/source-trees/gssapi-openssh 
+    cvs update -Pd -r GPT-branch openssh
+    cd -
 fi
 if [ -d ${packagingdir}/source-trees/gssapi-openssh/setup ]; then
     chmod  a+x ${packagingdir}/source-trees/gssapi-openssh/setup/make_gpt_dist
@@ -151,21 +160,24 @@ fi
 
 [ ! -d source-trees ] || find source-trees -name bootstrap -exec chmod a+x {} +
 
-packages="$(./make-packages.pl -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
-    ${skip_bootstrap:+-ab} | \
+packages="$(./make-packages.pl -faster -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} ${skip_checkout:+-no-updates} \
+    ${skip_bootstrap:+-ab} -order-include-runtime-deps | \
     awk "/at version/ { gsub(/_/, \"-\", \$1); print \$1 }")"
-packages="$(echo "${packages}" | grep -Ev 'globus-gass-cache-program|globus-gram-job-manager$|globus-gram-job-manager-fork|globus-gram-job-manager-condor|myproxy|gsi_openssh'; printf "globus-gass-cache-program\nglobus-gram-job-manager\nglobus-gram-job-manager-fork\nglobus-gram-job-manager-condor\nmyproxy\ngsi_openssh\n")"
 
-./make-packages.pl -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
+if [ -z "$skip_packaging" ]; then
+    ./make-packages.pl -faster -no-updates ${skip_bootstrap:+-ab} -a -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=gcc64dbg
+fi
+
 cd gpt-*/packaging_tools
 sh ./bootstrap
 make dist
 # Copy source tarballs into the rpmbuild source directory
-cp gpt-3.*.tar.gz ../../package-output/* $HOME/SOURCES
+cp gpt-3.*.tar.gz ../../package-output/
+cp ../../package-output/* $HOME/SOURCES
 
 # Build source packages from spec files
 cd ../../fedora
-for i in *.spec; do rpmbuild -bs --nodeps $i || true; done
+for i in *.spec; do rpmbuild -bs --nodeps $i; done
 
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
@@ -178,13 +190,18 @@ for i in grid-packaging-tools $packages; do
                              -name "$i-admin-[0-9]*rpm" -o \
                              -name "$i-server-[0-9]*rpm" -o \
                              -name "$i-devel-[0-9]*rpm" -o \
-                             -name "$i-doc-[0-9]*rpm")"
+                             -name "$i-doc-[0-9]*rpm" -o \
+                             -name "$i-setup-poll-[0-9]*rpm" )"
         
-        if ! echo "$rpms" | grep -q condor; then
-            sudo rpm --noscripts -Uvh $rpms < /dev/null;
-        fi
+        sudo rpm -i $rpms < /dev/null;
     fi
 done
+
+# Remove everything prior to building
+pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
+if [ -n "$pkgs_to_rm" ]; then
+    sudo yum -y remove $pkgs_to_rm < /dev/null
+fi
 
 # Move rpms out of the way so that find can work when installing.
 cd $topdir
@@ -193,7 +210,7 @@ mkdir RPMS
 
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm --noscripts -e --allmatches $pkgs_to_rm < /dev/null
+    sudo yum -y remove $pkgs_to_rm < /dev/null
 fi
 for i in grid-packaging-tools $packages; do
     if test -f $topdir/SRPMS/$i-[0-9]*.rpm; then
@@ -207,11 +224,10 @@ for i in grid-packaging-tools $packages; do
                              -name "$i-admin-[0-9]*rpm" -o \
                              -name "$i-server-[0-9]*rpm" -o \
                              -name "$i-devel-[0-9]*rpm" -o \
-                             -name "$i-doc-[0-9]*rpm")"
+                             -name "$i-doc-[0-9]*rpm" -o \
+                             -name "$i-setup-poll-[0-9]*rpm" )"
         
-        if ! echo "$rpms" | grep -q condor; then
-            sudo rpm --noscripts -Uvh $rpms < /dev/null;
-        fi
+        sudo rpm -i $rpms < /dev/null;
     fi
 done
 
@@ -416,5 +432,5 @@ echo "$allpkgs64" > packages.gcc64
 # Remove what we built
 pkgs_to_rm="$(rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm --noscripts -e --allmatches $pkgs_to_rm  < /dev/null
+    sudo yum -y remove $pkgs_to_rm  < /dev/null
 fi
