@@ -105,6 +105,12 @@ BUNDLE globus-resource-management-client
 	globus_gram_client
 	globus_gram_client_tools
 
+BUNDLE globus-resource-management-test
+	globus_gram_client_test
+	globus_gram_client_tools_test
+	globus_gram_job_manager_test
+	globus_gram_protocol_test
+
 BUNDLE globus-data-management-server
 	globus_core
 	globus_common
