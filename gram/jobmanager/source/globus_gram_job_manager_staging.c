@@ -377,6 +377,13 @@ globus_l_staging_replace_stream(
             request->rsl,
             parameter);
 
+    if (list == NULL)
+    {
+        /* Attempting to replace something that was never in the job
+         * RSL---too bad
+         */
+        return GLOBUS_SUCCESS;
+    }
     from_cached.type = GLOBUS_RSL_VALUE_LITERAL;
     from_cached.value.literal.string = cached_destination;
 

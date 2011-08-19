@@ -202,9 +202,13 @@ globus_gram_job_manager_init_seg(
                     "module\"\n",
                     rc,
                     manager->config->seg_module);
+            free(manager->config->seg_module);
+            manager->config->seg_module = NULL;
+            goto failed_load;
         }
     }
     manager->seg_started = GLOBUS_TRUE;
+failed_load:
 failed_activate:
 failed_periodic:
     GlobusGramJobManagerUnlock(manager);
