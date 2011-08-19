@@ -681,7 +681,6 @@ globus_gram_job_manager_starter_send(
     gss_cred_id_t                       cred)
 {
     int                                 sock;
-    char                                sockpath[PATH_MAX != -1 ? PATH_MAX: _POSIX_PATH_MAX];
     char                                byte[1];
     int                                 rc = 0;
     struct sockaddr_un                  addr;
@@ -710,17 +709,10 @@ globus_gram_job_manager_starter_send(
             context_fd,
             response_fd);
 
-    sprintf(sockpath,
-            "%s/.globus/job/%s/%s.%s.sock",
-            manager->config->home,
-            manager->config->hostname,
-            manager->config->jobmanager_type,
-            manager->config->service_tag);
-
     /* create socket */
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, sockpath, sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
     sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sock < 0)
     {
@@ -797,7 +789,7 @@ globus_gram_job_manager_starter_send(
                 context_fd,
                 response_fd,
                 -rc,
-                sockpath,
+                manager->socket_path,
                 errno,
                 "Error making datagram connecting to Job Manager",
                 strerror(errno));

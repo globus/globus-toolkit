@@ -28,6 +28,7 @@
 
 #include "globus_gram_job_manager.h"
 #include "globus_common.h"
+#include <sys/stat.h>
 
 static int
 globus_l_gram_tokenize(
@@ -298,7 +299,32 @@ globus_gram_job_manager_config_init(
         {
             config->log_pattern = strdup(argv[++i]);
         }
-        else if (strcmp(argv[i], "-log-levels") == 0
+        else if ((strcmp(argv[i], "-globus-job-dir") == 0)
+                 && (i + 1 < argc))
+        {
+	    config->job_dir_home =
+                globus_common_create_string(
+                    "%s/%s",
+                    argv[++i],
+                    strdup(getenv("USER")));
+
+            if (config->job_dir_home == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+                goto out;
+            }
+	    globus_gram_job_manager_log(
+                NULL,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.config.info "
+                "level=TRACE "
+                "option=\"-globus-job-dir\" "
+                "path=\"%s\" "
+                "\n",
+                config->job_dir_home);
+        }
+	else if (strcmp(argv[i], "-log-levels") == 0
                 && (i+1 < argc))
         {
             rc = globus_i_gram_parse_log_levels(
@@ -361,6 +387,7 @@ globus_gram_job_manager_config_init(
                     "\t-globus-toolkit-version VERSION\n"
                     "\t-usagestats-targets <host:port>[!<default | all>],...\n"
                     "\t-enable-callout\n"
+		    "\t-globus-job-dir DIRECTORY\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"
@@ -404,6 +431,29 @@ globus_gram_job_manager_config_init(
         goto out;
     }
 
+    if(config->home == NULL)
+    {
+        config->home =  strdup(getenv("HOME"));
+	if (config->home == NULL)
+	    {
+	        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+		goto out;
+	    }
+    }
+
+    if (config->job_dir_home == NULL)
+    {
+        config->job_dir_home = strdup(getenv("HOME"));
+
+        if (config->job_dir_home == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto out;
+        }
+    }
+
     if (config->service_tag == NULL)
     {
         config->service_tag = strdup("untagged");
@@ -434,16 +484,8 @@ globus_gram_job_manager_config_init(
         }
     }
     /* Now initialize values from our environment */
-    config->home = strdup(getenv("HOME"));
-    if (config->home == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto out;
-    }
-
     config->logname = strdup(getenv("LOGNAME"));
-    if (config->home == NULL)
+    if (config->logname == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 

@@ -340,6 +340,12 @@ typedef struct
      */
     char *                              service_tag;
     /**
+     * This is the prefix to directory which will contain host+lrm specific
+     * state files. By default, it is $HOME/.globus/job, but can be 
+     * modified by -globus-job-dir command-line option
+     */
+    char *                              job_dir_home;
+    /**
      * Boolean flag indicating whether to enable GSI callouts
      * on GRAM operations or not. Default to no.
      */
