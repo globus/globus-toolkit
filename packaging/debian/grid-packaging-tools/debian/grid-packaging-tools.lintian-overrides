@@ -1,4 +1,0 @@
-# This is a script fragment that is combined with other fragments to create
-# a bootstrap script. Although the fragment should not be executed on its
-# own, the combined script is executable and needs the shebang.
-script-not-executable ./usr/share/globus/aclocal/bootstrap.frg
