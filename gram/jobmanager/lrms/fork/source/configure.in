@@ -35,7 +35,7 @@ AC_SUBST(SOFTENV_DIR)
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
-    [  --with-xml-catalog=PATH       Path to XML catalog],
+    AC_HELP_STRING([--with-xml-catalog=PATH], [Path to XML catalog]),
     [xml_catalog_path="$withval"],
     [xml_catalog_path="notset"])
 
@@ -91,7 +91,8 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	Makefile
 	globus-fork.conf
-	jobmanager-fork
+	jobmanager-fork-poll
+	jobmanager-fork-seg
 	starter/Makefile
 	seg/Makefile
 	pkgdata/Makefile

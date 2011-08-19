@@ -9,7 +9,7 @@ globussysconf_DATA = globus-fork.conf
 
 ## gridservices = [ DATA ]
 gridservicesdir = ${sysconfdir}/grid-services/available
-gridservices_DATA = jobmanager-fork
+gridservices_DATA = jobmanager-fork-poll jobmanager-fork-seg
 
 ## gramperlmodule = [ DATA ]
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
@@ -17,7 +17,7 @@ gramperlmodule_DATA = fork.pm
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = jobmanager-fork.in globus-fork.conf.in fork.pm $(doc_DATA)
+EXTRA_DIST = fork.pm $(doc_DATA)
 
 if SEG_ENABLED_COND
 install-data-local:
@@ -29,9 +29,18 @@ endif
 # Install link to available file after all other install happens
 # native packages can remove this and use globus-gatekeeper-admin to deal
 # with the link
+if SEG_ENABLED_COND
 install-data-hook:
 	cd $(DESTDIR)$(gridservicesdir)/..; \
-	[ -L "$(gridservices_DATA)" ] || ln -s available/$(gridservices_DATA) .
+	[ -L "jobmanager-fork" ] || \
+	ln -s available/jobmanager-fork-seg jobmanager-fork
+else
+install-data-hook:
+	cd $(DESTDIR)$(gridservicesdir)/..; \
+	[ -L "jobmanager-fork" ] || \
+	ln -s available/jobmanager-fork-poll jobmanager-fork
+endif
+
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
