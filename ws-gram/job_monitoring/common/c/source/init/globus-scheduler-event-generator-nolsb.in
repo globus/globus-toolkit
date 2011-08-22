@@ -87,9 +87,11 @@ start()
             allrc=$rc
         fi
     done
-    if [ "$allrc" -eq 0 ]; then
+    if [ "$allrc" -eq 0 -a "$lrms" != "" ]; then
         echo "Started globus-scheduler-event-generator${started:+ for ($started)}"
         touch "$lockfile"
+    elif [ "$allrc" -eq 0 ]; then
+        echo "$progname: no LRMS installed"
     elif [ "$started" = "" ]; then
         echo "Failed to start globus-scheduler-event-generator for ($failed)"
     else
@@ -130,7 +132,7 @@ stop()
         fi
     done
     if [ "$allrc" -eq 0 ]; then
-        echo "Stopped globus-scheduler-event-generator for ${stopped:+($stopped)}"
+        echo "Stopped globus-scheduler-event-generator${stopped:+ for ($stopped)}"
         rm -f "$lockfile"
     elif [ "$stopped" = "" ]; then
         echo "Failed to stop globus-scheduler-event-generator for $failed"
@@ -177,7 +179,7 @@ status()
     if [ "$stale" -ne 0 ]; then
         return 1
     fi
-    if [ "$running" -eq 0 -a "$stale" -eq 0 -a -f "${lockfile}" ]; then
+    if [ "$running" -eq 0 -a "$stale" -eq 0 -a "${lrms}" != "" -a -f "${lockfile}" ]; then
         echo "Stale lock file for $progname"
         return 2
     fi
@@ -185,6 +187,7 @@ status()
     if [ "$running" -eq 1 ]; then
         return 0
     else
+        echo "$progname not running, no LRMs installed"
         return 3
     fi
 }
