@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# checking for the GLOBUS_LOCATION
+#  checking for the GLOBUS_LOCATION
 
 
 if test "x$GLOBUS_LOCATION" = "x"; then
