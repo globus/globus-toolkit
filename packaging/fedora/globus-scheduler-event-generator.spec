@@ -12,8 +12,8 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
-Release:	2%{?dist}
+Version:	3.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -48,8 +48,12 @@ BuildRequires:	tetex-latex
 %package progs
 Summary:	Globus Toolkit - Scheduler Event Generator Programs
 Group:		Applications/Internet
+BuildRequires:  lsb
 Requires:	%{name}%{?_isa} = %{version}-%{release}
+Requires:	lsb
 Requires:	globus-xio-gsi-driver%{?_isa}
+Requires(post): globus-common-progs >= 13.4
+Requires(preun):globus-common-progs >= 13.4
 
 %package devel
 Summary:	Globus Toolkit - Scheduler Event Generator Development Files
@@ -131,7 +135,8 @@ rm -rf autom4te.cache
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --with-lsb \
-           --with-initscript-config-path=/etc/sysconfig/globus-scheduler-event-generator \
+           --with-initscript-config-path=/etc/sysconfig/%{name} \
+           --with-lockfile-path='${localstatedir}/lock/subsys/%{name}' \
            --disable-static
 
 make %{?_smp_mflags}
@@ -173,13 +178,21 @@ rm -rf $RPM_BUILD_ROOT
 %post -p /sbin/ldconfig
 
 %post progs
-chkconfig --add globus-scheduler-event-generator
+if [ $1 = 1 ]; then
+    /sbin/chkconfig --add %{name}
+fi
 
 %postun -p /sbin/ldconfig
 
 %preun progs
-chkconfig --del globus-scheduler-event-generator
-service globus-scheduler-event-generator stop
+if [ $1 = 0 ]; then
+    /sbin/chkconfig --del %{name}
+fi
+
+%postun progs
+if [ $1 -ge 1 ]; then
+    /sbin/service %{name} condrestart > /dev/null 2>&1 || :
+fi
 
 %files -f package.filelist
 %defattr(-,root,root,-)
@@ -188,6 +201,7 @@ service globus-scheduler-event-generator stop
 
 %files -f package-progs.filelist progs
 %defattr(-,root,root,-)
+%config(noreplace) /etc/sysconfig/globus-scheduler-event-generator
 
 %files -f package-devel.filelist devel
 %defattr(-,root,root,-)
