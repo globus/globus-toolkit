@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	7.4
+Version:	7.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -22,8 +22,10 @@ URL:		http://www.globus.org/
 Source:         %{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 11.5
+Requires:	globus-common >= 13.4
 Requires:       lsb
+Requires(post): globus-common-progs >= 13.4
+Requires(preun):globus-common-progs >= 13.4
 BuildRequires:  lsb
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
@@ -56,7 +58,8 @@ rm -rf autom4te.cache
 %configure --with-flavor=%{flavor} \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --disable-static \
-	   --with-initscript-config-path=/etc/sysconfig/globus-gatekeeper
+	   --with-initscript-config-path=/etc/sysconfig/globus-gatekeeper \
+           --with-lockfile-path='${localstatedir}/lock/subsys/globus-gatekeeper'
 
 make %{?_smp_mflags}
 
@@ -103,6 +106,7 @@ fi
 %dir %{_docdir}/%{name}-%{version}
 %dir /etc/grid-services
 %dir /etc/grid-services/available
+%config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.7-4
