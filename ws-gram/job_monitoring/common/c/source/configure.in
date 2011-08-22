@@ -31,6 +31,20 @@ AC_ARG_WITH(initscript-config-path,
 AC_SUBST(SEG_CONFIGDIR)
 AC_SUBST(SEG_CONFIGFILE)
 
+AC_ARG_WITH(lockfile-path,
+            AC_HELP_STRING([--with-lockfile-path=PATH],
+            [Set the path to init script lockfile]),
+            [if test "$withval" = "yes";  then
+                AC_MSG_ERROR([Invalid path: $withval])
+            else
+                LOCKFILE="$withval"
+            fi],
+            [
+                LOCKFILE="\${localstatedir}/lock/globus-scheduler-event-generator"
+            ])
+AC_SUBST(LOCKFILE)
+
+
 LSB="-nolsb"
 AC_ARG_WITH(lsb,
         AC_HELP_STRING(
