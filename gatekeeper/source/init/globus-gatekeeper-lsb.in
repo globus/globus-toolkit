@@ -37,6 +37,7 @@ GLOBUS_GATEKEEPER_CONFIG=${GLOBUS_GATEKEEPER_CONFIG:-@GATEKEEPER_CONFIGDIR@/@GAT
 test -f "${GLOBUS_GATEKEEPER_CONFIG}" && . "${GLOBUS_GATEKEEPER_CONFIG}"
 test -f ${sbindir}/globus-gatekeeper || exit 0
 prog="${sbindir}/globus-gatekeeper"
+progname="globus-gatekeeper"
 lockfile="@LOCKFILE@"
 
 . /lib/lsb/init-functions
@@ -72,10 +73,10 @@ start()
     rc=$?
     if [ $rc = 0 ]; then
         log_success_msg "Started globus-gatekeeper"
+        touch "$lockfile"
     else
         log_failure_msg "Failed to start globus-gatekeeper"
     fi
-    touch "$lockfile"
     return $rc
 }
 
@@ -100,13 +101,27 @@ restart()
 
 status()
 {
-    pidofproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}" > /dev/null
+    pid="$(pidofproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}")"
     rc=$?
-    if [ "$rc" -eq 0 ]; then
-        echo "globus-gatekeeper is running"
-    else
-        echo "globus-gatekeeper is not running"
-    fi
+    case $rc in
+        0)
+            echo "$progname is running (pid=$pid)"
+            ;;
+        1)
+            echo "Stale PID file for $progname"
+            ;;
+        2|3)
+            if [ -f "${lockfile}" ]; then
+                echo "Stale lock file for $progname"
+            else
+                echo "$progname is not running"
+            fi
+            ;;
+        *)
+            echo "Unknown status for $progname ($lrm)"
+            ;;
+    esac
+
     return $rc
 }
 

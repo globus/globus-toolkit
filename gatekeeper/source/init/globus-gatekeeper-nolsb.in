@@ -37,6 +37,7 @@ GLOBUS_GATEKEEPER_CONFIG=${GLOBUS_GATEKEEPER_CONFIG:-@GATEKEEPER_CONFIGDIR@/@GAT
 test -f "${GLOBUS_GATEKEEPER_CONFIG}" && . "${GLOBUS_GATEKEEPER_CONFIG}"
 test -f ${sbindir}/globus-gatekeeper || exit 0
 prog="${sbindir}/globus-gatekeeper"
+progname="globus-gatekeeper"
 lockfile="@LOCKFILE@"
 
 GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
@@ -47,6 +48,14 @@ test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}"
 
 start()
 {
+    status > /dev/null
+    rc=$?
+
+    if [ $rc -eq 0 ]; then
+        echo "$progname is already running"
+        return 0
+    fi
+
     if [ "${GLOBUS_GATEKEEPER_KERBEROS_ENABLED:-false}" = "true" ]; then
         kflag="-k"
     else
@@ -81,7 +90,7 @@ start()
 stop()
 {
     if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-        pid="$(cat "${GLOBUS_GATEKEEPER_PIDFILE}")"
+        read pid < "${GLOBUS_GATEKEEPER_PIDFILE}" 2> /dev/null
         if [ "$pid" -gt 0 ] 2> /dev/null; then
             if kill -0 "${pid}" 2> /dev/null; then
                 kill -TERM "${pid}"
@@ -102,6 +111,7 @@ stop()
         rm -f "${GLOBUS_GATEKEEPER_PIDFILE}"
         rm -f "$lockfile"
     else
+        echo "$progname is not running"
         return 0
     fi
 }
@@ -115,21 +125,21 @@ restart()
 status()
 {
     if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-        pid="$(cat "${GLOBUS_GATEKEEPER_PIDFILE}")"
+        read pid <"${GLOBUS_GATEKEEPER_PIDFILE}" 2>/dev/null
         if [ "$pid" -gt 0 ] 2> /dev/null; then
             if ps -p "$pid" > /dev/null; then
-                echo "globus-gatekeeper ($pid) is running"
+                echo "globus-gatekeeper is running (pid=$pid)"
                 return 0
             else
                 echo "Stale PID file for globus-gatekeeper"
                 return 1
             fi
         fi
-    elif test -f "${LOCKFILE}"; then
+    elif test -f "${lockfile}"; then
         echo "Stale lock file for globus-gatekeeper"
         return 2
     else
-        echo "globus-gatekeeper si not running"
+        echo "globus-gatekeeper is not running"
         return 3
     fi
 }
