@@ -101,7 +101,7 @@ for my $package (@packages){
 }
 
 sub read_package_list{
-  open(PKG, "etc/package-list-spec");
+  open(PKG, "etc/package-list-5.1.0");
   chdir "./source-trees";
   my $topsrcdir=cwd();
     while ( <PKG> )

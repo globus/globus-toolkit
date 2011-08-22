@@ -3,13 +3,12 @@ include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS = pkgdata
 
-libexec_SCRIPTS = \
-	globus-job-manager-service      \
-	globus-job-manager-script.pl
+libexec_SCRIPTS = globus-job-manager-script.pl
+sbin_SCRIPTS = globus-gatekeeper-admin
 
 # Extra directories we install files into
-globusperldir=$(libdir)/perl/Globus/GRAM
-perldocdir=$(datadir)/doc/perl/Globus/GRAM
+globusperldir=$(perlmoduledir)/Globus/GRAM
+perldocdir=$(docdir)/perl/Globus/GRAM
 
 # Where targets are installed
 globusperl_DATA = \
@@ -18,18 +17,20 @@ globusperl_DATA = \
     StdioMerger.pm
 perldoc_DATA = JobManager.html JobDescription.html
 
+doc_DATA = GLOBUS_LICENSE
+
 # Files which we want to put in the source package
-EXTRA_DIST = globus-job-manager-service.in globus-job-manager-script.pl.in \
+EXTRA_DIST = globus-job-manager-script.pl.in \
             JobDescription.pm.in \
-            JobManager.pm StdioMerger.pm $(perldoc_DATA) $(noinst_DATA)
+            JobManager.pm StdioMerger.pm $(perldoc_DATA) \
+	    $(doc_DATA)
 
 SUFFIXES = .pm .html
 
 .pm.html:
-	pod2html --noindex $*.pm | \
-	    sed -e 's,</HEAD>,<LINK REL="stylesheet" HREF="../../../../doxygen/globus.css"></HEAD>,' > $*.html
+	pod2html --noindex $*.pm > $*.html
 
-MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
+MAINTAINERCLEANFILES = $(perldoc_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

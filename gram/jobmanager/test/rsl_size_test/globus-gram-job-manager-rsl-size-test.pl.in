@@ -5,14 +5,22 @@
 use Globus::GRAM::Error;
 use Globus::Core::Paths;
 use IO::File;
-use Test;
+use Test::More;
 use File::Compare;
 use File::Temp;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = File::Temp::tempdir(CLEANUP => 1);
-my $testdatadir = "$Globus::Core::Paths::datadir/@PACKAGE@";
+my $testdatadir = $0;
+if ($testdatadir =~ m|/|)
+{
+    $testdatadir =~ s|/+[^/]*$||;
+}
+else
+{
+    $testdatadir = '.';
+}
 my $verbose = 0;
 
 die if $contact eq '';
@@ -47,7 +55,7 @@ sub test_rsl
           File::Compare::compare("$testdatadir/$testname.out", $testout) ||
 	  File::Compare::compare("$testdatadir/$testname.err", $testerr);
 
-    ok("$testname:$rc", "$testname:0");
+    ok($rc == 0, $testname);
 }
 
 foreach(@test_cases)

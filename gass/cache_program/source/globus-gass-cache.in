@@ -22,4 +22,4 @@
 
 globus_source ${libexecdir}/globus-sh-tools.sh
 
-exec $GLOBUS_SH_PERL ${libexecdir}/globus-gass-cache-util.pl ${1+"$@"}
+exec ${GLOBUS_SH_PERL:-perl} ${libexecdir}/globus-gass-cache-util.pl ${1+"$@"}

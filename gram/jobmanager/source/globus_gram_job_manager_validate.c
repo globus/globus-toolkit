@@ -135,7 +135,7 @@ globus_gram_job_manager_validation_init(
     manager->validation_records = NULL;
 
     result = globus_eval_path(
-            "${datadir}/globus_gram_job_manager/globus-gram-job-manager.rvf",
+            "${datadir}/globus/globus_gram_job_manager/globus-gram-job-manager.rvf",
             &validation_filename);
     if (result != GLOBUS_SUCCESS || validation_filename == NULL)
     {
@@ -143,7 +143,7 @@ globus_gram_job_manager_validation_init(
         goto validation_filename_failed;
     }
     scheduler_validation_filename_pattern = globus_common_create_string(
-            "${datadir}/globus_gram_job_manager/%s.rvf",
+            "${datadir}/globus/globus_gram_job_manager/%s.rvf",
             manager->config->jobmanager_type);
     if(scheduler_validation_filename_pattern == NULL)
     {

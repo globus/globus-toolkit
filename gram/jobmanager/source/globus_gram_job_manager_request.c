@@ -1042,6 +1042,7 @@ globus_gram_job_manager_request_start(
     if (request == NULL)
     {
         /* Reply to a bad request */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
         goto bad_request;
     }
     rc = globus_gram_job_manager_add_request(
@@ -1696,8 +1697,8 @@ globus_i_gram_symbol_table_populate(
         { "GLOBUS_GATEKEEPER_PORT",config->globus_gatekeeper_port},
         { "GLOBUS_GATEKEEPER_SUBJECT",config->globus_gatekeeper_subject},
         { "GLOBUS_LOCATION", config->target_globus_location },
-        { "GLOBUS_CONDOR_OS", config->condor_os },
-        { "GLOBUS_CONDOR_ARCH", config->condor_arch },
+        { "GLOBUS_CONDOR_OS", config->condor_os } /* Deprecated */,
+        { "GLOBUS_CONDOR_ARCH", config->condor_arch } /* Deprecated */,
         /* Others are job dependent values inserted after they are computed:
          * - GLOBUS_GRAM_JOB_CONTACT
          * - GLOBUS_CACHED_STDOUT
@@ -1710,13 +1711,16 @@ globus_i_gram_symbol_table_populate(
 
     for (i = 0; symbols[i].symbol != NULL; i++)
     {
-        rc = globus_l_gram_symboltable_add(
-                symbol_table,
-                symbols[i].symbol,
-                symbols[i].value);
-        if (rc != GLOBUS_SUCCESS)
+        if (symbols[i].value != NULL)
         {
-            goto failed_insert_symbol;
+            rc = globus_l_gram_symboltable_add(
+                    symbol_table,
+                    symbols[i].symbol,
+                    symbols[i].value);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto failed_insert_symbol;
+            }
         }
     }
     if (rc != GLOBUS_SUCCESS)
@@ -2140,6 +2144,7 @@ globus_l_gram_restart(
                 request->job_contact_path,
                 "restart",
                 old_job_request);
+
         if (rc != GLOBUS_SUCCESS)
         {
             /* OK. It's alive, but not our job. Let it be */
@@ -2156,6 +2161,7 @@ globus_l_gram_restart(
         }
         else
         {
+            /* Likely, we return GLOBUS_SUCCESS in this case, the wrong error value */
             rc = globus_gram_job_manager_remove_reference(
                     request->manager,
                     request->job_contact_path,
@@ -2197,16 +2203,6 @@ globus_l_gram_restart(
     if (restartcontacts != NULL)
     {
         globus_rsl_free_recursive(restartcontacts);
-    }
-
-    if (restart_contacts == GLOBUS_FALSE)
-    {
-        /* Remove the two-phase commit from the original RSL; if the
-         * new client wants it, they can put it in their RSL
-         */
-        globus_gram_job_manager_rsl_remove_attribute(
-                    original_rsl,
-                    GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
     }
 
     /*
@@ -2267,6 +2263,18 @@ globus_i_gram_request_stdio_update(
     globus_rsl_t *                      tmp_rsl;
     globus_rsl_t *                      stdout_position;
     globus_rsl_t *                      stderr_position;
+    globus_rsl_t *                      original_rsl;
+
+    /* TODO: We should almost certainly validate RSL here
+    rc = globus_gram_job_manager_validate_rsl(
+            request,
+            tmp_rsl,
+            GLOBUS_GRAM_VALIDATE_STDIO_UPDATE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto parse_original_rsl_failed;
+    }
+    */
 
     /*
      * Remove stdout_position and stderr_position. We don't do streaming
@@ -2289,8 +2297,16 @@ globus_i_gram_request_stdio_update(
         globus_rsl_free_recursive(stderr_position);
     }
 
+    original_rsl = globus_rsl_parse(request->rsl_spec);
+    if (!original_rsl)
+    {           
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto parse_original_rsl_failed;
+    }           
+
+    /* TODO: it appears tmp_rsl leaks if a failure occurs */
     tmp_rsl = globus_gram_job_manager_rsl_merge(
-        request->rsl,
+        original_rsl,
         update_rsl);
 
     if (tmp_rsl == GLOBUS_NULL)
@@ -2298,7 +2314,49 @@ globus_i_gram_request_stdio_update(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
         goto failed_rsl_merge;
     }
+
+    /* The update_rsl, for job restarts, contains a "restartcontacts"
+     * attribute.  This must be removed from the merged RSL prior to
+     * saving it to disk; otherwise, it will cause submits to choke.
+     * TODO: There should be a smarter way to do this with RSL validation.
+     */
+    if (globus_gram_job_manager_rsl_remove_attribute(tmp_rsl, "restartcontacts"))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto failed_rsl_merge;
+    }
+
+    char * tmp_rsl_spec;
+    if (!(tmp_rsl_spec = globus_rsl_unparse(tmp_rsl))) {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+        goto failed_rsl_merge;
+    }
+
+    rc = globus_rsl_eval(tmp_rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {   
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto failed_rsl_merge;
+    }
+    rc = globus_gram_job_manager_validate_rsl(
+            request,
+            tmp_rsl,
+            GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto failed_rsl_merge;
+    }
+    rc = globus_rsl_eval(tmp_rsl, &request->symbol_table);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+        goto failed_rsl_merge;
+    }
+
+    globus_rsl_free_recursive(request->rsl);
     request->rsl = tmp_rsl;
+    free(request->rsl_spec);
+    request->rsl_spec = tmp_rsl_spec;
 
     rc = globus_gram_job_manager_streaming_list_replace(request);
     if (rc != GLOBUS_SUCCESS)
@@ -2343,12 +2401,53 @@ globus_i_gram_request_stdio_update(
         rc = globus_i_gram_remote_io_url_update(request);
     }
 
+    /*
+    globus_gram_job_manager_request_log(
+            request,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.stdio_update.info "
+                "level=TRACE "
+                "gramid=%s "
+                "orig_rsl_spec=%s "
+                "rsl_spec=%s\n",
+                request->job_contact_path,
+                globus_rsl_unparse(original_rsl),
+                globus_rsl_unparse(request->rsl));
+    */
+
+    /* Now that we've recreated the stdio, redo the staging list. */
+    request->stage_in_todo = NULL;
+    request->stage_in_shared_todo = NULL;
+    request->stage_out_todo = NULL;
+    request->stage_stream_todo = NULL;
+    rc = globus_gram_job_manager_staging_create_list(request);
+    if (rc != GLOBUS_SUCCESS) {
+        globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.restart.info "
+                        "level=ERROR "
+                        "gramid=%s "
+                        "status=%d "
+                        "msg=\"%s\" "
+                        "reason=\"%s\" "
+                        "\n",
+                        request->job_contact_path,
+                        -rc,
+                        "Unable to recreate staging list",
+                        globus_gram_protocol_error_string(rc));
+        goto staging_list_replace_failed;
+    }
 
     globus_gram_job_manager_state_file_write(request);
 
-staging_list_replace_failed:
 get_remote_io_url_failed:
+staging_list_replace_failed:
 failed_rsl_merge:
+    if (original_rsl) {
+        globus_rsl_free_recursive(original_rsl);
+    }
+parse_original_rsl_failed:
     return rc;
 }
 /* globus_i_gram_request_stdio_update() */
@@ -2423,13 +2522,16 @@ globus_l_gram_populate_environment(
         goto add_gram_job_contact_failed;
     }
 
-    rc = globus_l_gram_add_environment(
-            request->rsl,
-            "GLOBUS_LOCATION",
-            request->config->target_globus_location);
-    if (rc != GLOBUS_SUCCESS)
+    if (request->config->target_globus_location)
     {
-        goto add_globus_location_failed;
+        rc = globus_l_gram_add_environment(
+                request->rsl,
+                "GLOBUS_LOCATION",
+                request->config->target_globus_location);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto add_globus_location_failed;
+        }
     }
 
     if (request->config->tcp_port_range)

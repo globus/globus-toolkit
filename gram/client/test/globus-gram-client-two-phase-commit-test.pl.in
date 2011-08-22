@@ -15,18 +15,6 @@
 # limitations under the License.
 #
 
-BEGIN
-{
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
-    }
-    else
-    {
-        push(@INC, '@libdir@/perl');
-    }
-}
-
 use strict;
 use Test;
 use IO::File;

@@ -25,7 +25,9 @@ globus_gatekeeper_CFLAGS = -DGLOBUS_LOCATION=\"$(prefix)\" -DGLOBUS_LOG_DIR=\"$(
 man8_MANS = globus-gatekeeper.8 globus-k5.8
 MANUAL_Sources = manual.xml globus-gatekeeper-manual.xml globus-k5-manual.xml
 
-EXTRA_DIST=$(man8_MANS) $(MANUAL_Sources)
+doc_DATA = GLOBUS_LICENSE
+
+EXTRA_DIST=$(doc_DATA) $(man8_MANS) $(MANUAL_Sources)
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)

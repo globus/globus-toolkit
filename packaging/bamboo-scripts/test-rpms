@@ -56,10 +56,15 @@ fi
 sudo rpm -hUv "$repopkg_url"
 
 # Create source packages for the tests
-./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
+./make-packages.pl -a --deps -deporder \
+        -bundles=globus-data-management-test,globus-resource-management-test \
         -flavor=gcc64 -skipbundle
 
 first=1
+lrms=""
+for x in /etc/grid-services/jobmanager-*; do
+    lrms="${lrms:+"$lrms "}$(basename $x)"
+done
 for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi_openssh' || true) )"
@@ -77,7 +82,7 @@ for flavor in gcc64 gcc32; do
     sudo yum clean all
 
     # Install the binary RPMs that we will test
-    $archcmd sudo yum -y install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
+    $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
 
     if [ $first = 1 ]; then
         first=0
@@ -96,6 +101,7 @@ for flavor in gcc64 gcc32; do
         sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
         sudo service globus-gridftp-server restart 
         grid-proxy-init -hours 24
+        globus_hostname=$(globus-hostname)
     fi
 
     mkdir -p "$tmppath/$flavor"
@@ -112,12 +118,30 @@ for flavor in gcc64 gcc32; do
         testpkgname_no_ver=$(echo $testpkgname | sed -e 's/-.*//' | sed -e 's/_/-/g')
         ./configure --with-flavor=${flavor}
         make 
-        make junit || true
-        for x in "${testpkgname_no_ver}"*.xml; do
-            if [ -f "$x" ]; then
-                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
-            fi
-        done
+        if expr "${testpkgname}" : ".*_gram_.*" > /dev/null; then
+            for lrm in $lrms; do
+                lrmname="$(echo $lrm | sed -e s/jobmanager-//)"
+                dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
+                export CONTACT_STRING="$globus_hostname/$lrm:$dn" 
+                export CONTACT_LRM="$lrmname"
+                make junit || true
+                unset CONTACT_STRING
+                unset CONTACT_LRM
+            done
+
+            for x in "${testpkgname_no_ver}"*.xml; do
+                if [ -f "$x" ]; then
+                    sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
+                fi
+            done
+        else
+            make junit || true
+            for x in "${testpkgname_no_ver}"*.xml; do
+                if [ -f "$x" ]; then
+                    sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
+                fi
+            done
+        fi
         cd ..
     done
 done

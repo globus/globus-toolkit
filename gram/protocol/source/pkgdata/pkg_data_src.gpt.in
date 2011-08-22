@@ -3,14 +3,14 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_protocol" >
 
-  <Aging_Version Age="6" Major="9" Minor="8" />
+  <Aging_Version Age="7" Major="10" Minor="0" />
   <Description >GRAM Protocol Library</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
 
   <src_pkg >
 
-    <With_Flavors build="yes" />
+    <With_Flavors ColocateLibraries="no" build="yes" />
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>

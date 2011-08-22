@@ -46,6 +46,7 @@ packages="$(echo "${packages}" | grep -Ev 'myproxy|gsi_openssh'; echo myproxy; e
 echo "$packages" > bamboo-package-list
 
 ./make-packages.pl -a -deps -deporder -bundles=$bundles -packages="$packages_to_build" -a -flavor=gcc64dbg ${tag:+-t "${tag}"}
-cd gpt-3.3/packaging_tools
+gpt_version=$(cat gpt/gpt_version)
+cd gpt-${gpt_version}/packaging_tools
 make dist
-cp gpt-3.3.tar.gz ../../package-output
+cp gpt-${gpt_version}.tar.gz ../../package-output

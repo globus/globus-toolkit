@@ -7,9 +7,7 @@ which can be used to implement scheduler-specific interfaces to the GRAM Job
 Manager. These are:
 <dl>
     <dt>
-	<b>
-	    <a href="../../perl/Globus/GRAM/Error.html">Globus::GRAM::Error</a>
-	</b>
+	Globus::GRAM::Error
     </dt>
     <dd>
 	This module implements the GRAM error results as objects. Methods
@@ -19,11 +17,7 @@ Manager. These are:
 	errors to the Job Manager program.
     </dd>
     <dt>
-	<b>
-	    <a href="../../perl/Globus/GRAM/JobState.html">
-		Globus::GRAM::JobState
-	    </a>
-	</b>
+	Globus::GRAM::JobState
     </dt>
     <dd>
 	This module defines the GRAM job state constants. A scheduler-specific
@@ -31,11 +25,7 @@ Manager. These are:
 	to indicate the managed job's current state.
     </dd>
     <dt>
-	<b>
-	    <a href="../../perl/Globus/GRAM/JobSignal.html">
-		Globus::GRAM::JobSignal
-	    </a>
-	</b>
+	Globus::GRAM::JobSignal
     </dt>
     <dd>
 	This module defines the GRAM job signal constant values. The Job
@@ -43,11 +33,7 @@ Manager. These are:
 	invoked in the manager's signal method.
     </dd>
     <dt>
-	<b>
-	    <a href="../../perl/Globus/GRAM/JobManager.html">
-		Globus::GRAM::JobManager
-	    </a>
-	</b>
+	Globus::GRAM::JobManager
     </dt>
     <dd>
 	This module defines the actual implementatoin of the Job Manager
@@ -56,11 +42,7 @@ Manager. These are:
 	default implementation's methods. 
     </dd>
     <dt>
-	<b>
-	    <a href="../../perl/Globus/GRAM/JobDescription.html">
-		Globus::GRAM::JobDescription
-	    </a>
-	</b>
+	Globus::GRAM::JobDescription
     </dt>
     <dd>
         This module mimics the RSL job description using perl syntax. The job
@@ -71,7 +53,7 @@ Manager. These are:
 	name (example: <code>$description-&gt;gram_my_job()</code>). Method names
 	are handled as if they were based on the canonical RSL representation
 	of the attribute name. For example, the <b>gram_my_job</b> may be 
-	equivalently referrred to as <b>GramMyJob</b>, <b>grammyjob</b>, or
+	equivalently referred to as <b>GramMyJob</b>, <b>grammyjob</b>, or
 	<b>GRAM_My_Job</b>.
     </dd>
 </dl>

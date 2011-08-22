@@ -3,8 +3,8 @@
 # checking for the GLOBUS_LOCATION
 
 if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
+    echo "Using default GLOBUS_LOCATION of /usr"
+    GLOBUS_LOCATION="/usr"
 fi
 
 if [ ! -f ${GLOBUS_LOCATION}/share/globus/globus-bootstrap.sh ]; then

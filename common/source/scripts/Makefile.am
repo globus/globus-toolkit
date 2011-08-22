@@ -14,7 +14,7 @@ bin_SCRIPTS = \
 globuscore_perlmoduledir = $(perlmoduledir)/Globus/Core
 ## globuscore_perlmodule = [ DATA ]
 
-globuscore_perlmodule_DATA = Paths.pm
+globuscore_perlmodule_DATA = Config.pm Paths.pm
 
 EXTRA_DIST = \
 	globus-args-parser-header \
@@ -22,7 +22,7 @@ EXTRA_DIST = \
 	globus-sh-tools-vars.sh.in \
 	globus-hostname.in \
 	globus-makefile-header.in \
-        Paths.pm.in globus-script-initializer.in
+        Config.pm Paths.pm.in globus-script-initializer.in
 
 install-exec-hook:
 	for script in $(libexec_SCRIPTS); do \

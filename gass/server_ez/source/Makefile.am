@@ -58,7 +58,10 @@ Scripts= \
 	globus-gass-server-shutdown
 
 bin_SCRIPTS = $(Scripts)
+doc_DATA = GLOBUS_LICENSE
+
 EXTRA_DIST = globus-gass-server-shutdown.in \
+	$(doc_DATA) \
 	version.h.in
 
 

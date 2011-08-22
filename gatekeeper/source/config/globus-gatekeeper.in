@@ -7,11 +7,8 @@
 ## Globus Installation Path
 # GLOBUS_LOCATION="@prefix@"
 
-## Gatekeeper Log Path
+## Gatekeeper Log Path. If not set, logging will be done via syslog
 # GLOBUS_GATEKEEPER_LOG="@localstatedir@/log/globus-gatekeeper.log"
-
-## Path to related Gatekeeper executables
-# GLOBUS_LIBEXECDIR="@libexecdir@"
 
 ## Path to directory containing grid service descriptions
 # GLOBUS_GATEKEEPER_GRID_SERVICES="@sysconfdir@/grid-services"
@@ -39,4 +36,7 @@
 
 ## Path to store the PID of the gatekeeper daemon. This is used to stop
 ## the gatekeeper service using the init script interface
-# GLOBUS_GATEKEEPER_PIDFILE="@localstatedir@/var/globus-gatekeeper.pid"
+# GLOBUS_GATEKEEPER_PIDFILE="@localstatedir@/run/globus-gatekeeper.pid"
+
+## Niceness level to run the gatekeeper at
+# GLOBUS_GATEKEEPER_NICE_LEVEL=0

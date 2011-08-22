@@ -5,14 +5,22 @@
 use Globus::GRAM::Error;
 use Globus::Core::Paths;
 use IO::File;
-use Test;
+use Test::More;
 use File::Compare;
 use File::Temp;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = File::Temp::tempdir(CLEANUP => 1);
-my $testdatadir = "$Globus::Core::Paths::datadir/@PACKAGE@";
+my $testdatadir = $0;
+if ($testdatadir =~ m|/|)
+{
+    $testdatadir =~ s|/+[^/]*$||;
+}
+else
+{
+    $testdatadir = '.';
+}
 my $verbose = 0;
 
 my @test_cases=qw(
@@ -70,13 +78,27 @@ sub test_rsl
     }
 
 
-    system("$Globus::Core::Paths::bindir/globusrun -s -r \"$contact\" -f $additionalrslfile >$testout 2>$testerr");
+    {
+        local(*OLDOUT, *OLDERR);
+        open(OLDOUT, ">&STDOUT");
+        open(OLDERR, ">&STDERR");
+        open(STDOUT, ">$testout");
+        open(STDERR, ">$testerr");
 
-    $rc = $? >> 8 ||
-          File::Compare::compare("$testdatadir/$testname.out", $testout) ||
-	  File::Compare::compare("$testdatadir/$testname.err", $testerr);
+        system("$Globus::Core::Paths::bindir/globusrun",
+                "-s", "-r", $contact, "-f", $additionalrslfile);
 
-    ok("$testname:$additional_rsl:$rc", "$testname:$additional_rsl:0");
+        $rc = $? >> 8 ||
+              File::Compare::compare("$testdatadir/$testname.out", $testout) ||
+              File::Compare::compare("$testdatadir/$testname.err", $testerr);
+
+        open(STDOUT, ">&OLDOUT");
+        open(STDERR, ">&OLDERR");
+        close(OLDOUT);
+        close(OLDERR);
+    }
+
+    ok("$testname:$additional_rsl:$rc" eq "$testname:$additional_rsl:0", "$testname:$additional_rsl");
 }
 
 foreach(@test_cases)

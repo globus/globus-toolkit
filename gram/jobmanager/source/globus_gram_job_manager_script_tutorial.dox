@@ -63,7 +63,7 @@ BEGIN
 }
 @endcode
 
-The values surrounded by the at-sign (such as <code>@MPIRUN@</code>)
+The values surrounded by the at-sign (such as <code>\@MPIRUN\@</code>)
 will be replaced by with the path to the named programs by
 the <code>find-lsf-tools</code> script described
 @ref system_specific_configuration "below".
@@ -681,7 +681,7 @@ isn't any compilation needed for this package. We just need to define
 what needs to be installed into which directory, and what source files
 need to be put inot our source distribution. For the LSF package, we
 need to list the <code>lsf.in</code>, <code>find-lsf-tools</code>, and
-code>setup-globus-job-manager-lsf.pl</code> scripts as files to be
+<code>setup-globus-job-manager-lsf.pl</code> scripts as files to be
 installed into the setup directory. We need to add those files plus our
 documentation source file to the EXTRA_LIST variable so that they
 will be included in source distributions. The rest of the lines in the

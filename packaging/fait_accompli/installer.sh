@@ -17,7 +17,7 @@ echo Making configure/make installer
 echo Step: Checking out source code.
 tag=""
 user=""
-while getopts "t:u:" arg; do
+while getopts "t:u:af:" arg; do
     case "$arg" in
         t)
 	    tag="$OPTARG"
@@ -25,10 +25,15 @@ while getopts "t:u:" arg; do
         u)
 	    user="$OPTARG"
 	    ;;
+        a)
+            user=":pserver:anonymous"
+            ;;
+        f)
+            flavor="$OPTARG"
+            ;;
     esac
 done
 
-#./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
 ./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"}
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
@@ -75,7 +80,7 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-./installer_creation.pl
+./installer_creation.pl ${flavor:+-f "$flavor"}
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.

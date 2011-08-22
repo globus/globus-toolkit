@@ -6,7 +6,7 @@ setup script. This section of the Job Manager manual describes all options
 which may be passed to the GRAM Job Manager in the configuration
 file <code>$GLOBUS_LOCATION/etc/globus-job-manager.conf</code>.
 
-@subsection globus_gram_job_manager_configuration_opts Configuration File Options
+@section globus_gram_job_manager_configuration_opts Configuration File Options
 
 @par -save-logfile always|on-error|never
 Create a file to store Job Manager log messages. This file will be created
@@ -102,18 +102,18 @@ Set the path to the X.509 trusted certificate directory on the job execution
 hosts. If not present, then the trusted certificate directory
 used by the job manager (usually set by the Gatekeeper) will be used
 
-@para -seg-module MODULE
+@par -seg-module MODULE
 Use the named module as a way to interact with the scheduler instead of polling
 for job status. 
 
-@para -audit-directory DIRECTORY
+@par -audit-directory DIRECTORY
 Store job auditing records in DIRECTORY. This directory should be sticky and group
 writable but not group readable. Audit records can be uploaded to a database by
 using the globus-gram-audit command.
 
-@para -globus-toolkit-version VERSION-STRING
+@par -globus-toolkit-version VERSION-STRING
 Use the string VERSION-STRING as the toolkit version in audit records.
 
-@para -single
+@par -single
 Use the single job manager per user/jobmanager type feature 
 */

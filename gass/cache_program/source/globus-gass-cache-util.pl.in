@@ -50,7 +50,7 @@ my $PerlOptions =<<END_OPTIONS;
 END_OPTIONS
 
 my $Program = $0;
-my $ProgramC = $Globus::Core::Paths::libexecdir . '/globus-gass-cache-util';
+my $ProgramC = $Globus::Core::Paths::bindir . '/globus-gass-cache-util';
 my $Verbose = 0;
 
 

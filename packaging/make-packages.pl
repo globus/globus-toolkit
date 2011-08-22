@@ -81,13 +81,13 @@ my ($install, $installer, $anonymous, $force,
     $skipbundle, $faster, $paranoia, $version, $uncool, $avoid_bootstrap,
     $binary, $deporder, $inplace, $restart_package, $doxygen,
     $deps, $graph, $listpack, $listbun, $cvsuser,
-    $gpt, $core, $enable_64bit ) =
+    $gpt, $core, $enable_64bit, $order_include_runtime_deps ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 0,
     0, 0, "no", 0, 0,
     0, 0, 0, 0, "",
-    1, 1, "");
+    1, 1, "", 0);
 
 my @user_bundles;
 my @user_packages;
@@ -125,6 +125,7 @@ GetOptions( 'i|install=s' => \$install,
             'cvs-user=s' => \$cvsuser,
             'help|?' => \$help,
             'man' => \$man,
+            'order-include-runtime-deps' => \$order_include_runtime_deps,
 ) or pod2usage(2);
 
 if ( $help or $man ) {
@@ -1256,16 +1257,23 @@ sub topol_sort
     my @deptypes = (keys %{$pkg->{'Source_Dependencies'}->{'deptype-list'}});
     for my $deptype (@deptypes)
     {
-        if ( ( $deptype eq "pgm_runtime" ) or ($deptype eq "Setup") )
-        {
-            for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
+        if (!$order_include_runtime_deps) {
+            if ( ( $deptype eq "pgm_runtime" ) or ($deptype eq "Setup") )
             {
-               $package_runtime_hash{$node}{$dep} = 1;
+                for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
+                {
+                   $package_runtime_hash{$node}{$dep} = 1;
+                }
             }
-        }
 
-        next unless ( ($deptype eq "compile") or ($deptype eq "pgm_link")
-                       or ($deptype eq "lib_link") );
+            next unless ( ($deptype eq "compile") or ($deptype eq "pgm_link")
+                           or ($deptype eq "lib_link"));
+        } else {
+            next unless ( ($deptype eq "compile") or ($deptype eq "pgm_link")
+                           or ($deptype eq "lib_link")
+                           or ($deptype eq 'pgm_runtime')
+                           or ($deptype eq 'Setup'));
+        }
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
         {
             $package_dep_hash{$node}{$dep} = 1;
@@ -1275,7 +1283,11 @@ sub topol_sort
             {
                 my $numdeps = scalar @{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}->{$dep}->{'ANY'}->{$pkgtype}->{'versions'}};
                 my %ref = %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}->{$dep}->{'ANY'}->{$pkgtype}->{'versions'}[$numdeps - 1]};
-		$package_require_hash{$dep}{$node} = $ref{'major'};
+                if (defined($ref{major})) {
+                    $package_require_hash{$dep}{$node} = $ref{'major'};
+                } elsif (defined($ref{lower_major})) {
+                    $package_require_hash{$dep}{$node} = $ref{'lower_major'};
+                }
             }
 
             if(exists $package_build_hash{$dep})
