@@ -35,81 +35,126 @@
 
 GLOBUS_GATEKEEPER_CONFIG=${GLOBUS_GATEKEEPER_CONFIG:-@GATEKEEPER_CONFIGDIR@/@GATEKEEPER_CONFIGFILE@}
 test -f "${GLOBUS_GATEKEEPER_CONFIG}" && . "${GLOBUS_GATEKEEPER_CONFIG}"
-
 test -f ${sbindir}/globus-gatekeeper || exit 0
+prog="${sbindir}/globus-gatekeeper"
+lockfile="@LOCKFILE@"
 
 GLOBUS_GATEKEEPER_PIDFILE="${GLOBUS_GATEKEEPER_PIDFILE:-${localstatedir}/run/globus-gatekeeper.pid}"
 GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 
+test -f "${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}" || exit 0
+test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}" || exit 0
+
+start()
+{
+    if [ "${GLOBUS_GATEKEEPER_KERBEROS_ENABLED:-false}" = "true" ]; then
+        kflag="-k"
+    else
+        kflag=""
+    fi
+
+    ${GLOBUS_GATEKEEPER_NICE_LEVEL:+nice -n "${GLOBUS_GATEKEEPER_NICE_LEVEL}"} \
+    ${sbindir}/globus-gatekeeper \
+        -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
+        ${GLOBUS_GATEKEEPER_PORT:+-p ${GLOBUS_GATEKEEPER_PORT}} \
+        ${GLOBUS_GATEKEEPER_LOG:+-l "${GLOBUS_GATEKEEPER_LOG}"} \
+        ${GLOBUS_GATEKEEPER_GRID_SERVICES:+-grid_services "${GLOBUS_GATEKEEPER_GRID_SERVICES}"} \
+        ${GLOBUS_GATEKEEPER_GRIDMAP:+-gridmap "${GLOBUS_GATEKEEPER_GRIDMAP}"} \
+        ${GLOBUS_GATEKEEPER_CERT_DIR:+-x509_cert_dir "${GLOBUS_GATEKEEPER_CERT_DIR}"} \
+        ${GLOBUS_GATEKEEPER_CERT_FILE:+-x509_user_cert "${GLOBUS_GATEKEEPER_CERT_FILE}"} \
+        ${GLOBUS_GATEKEEPER_KEY_FILE:+-x509_user_key "${GLOBUS_GATEKEEPER_KEY_FILE}"} \
+        $kflag \
+        ${GLOBUS_GATEKEEPER_KMAP:+-globuskmap "${GLOBUS_GATEKEEPER_KMAP}"} \
+        > /dev/null
+    rc=$?
+
+    if [ "$rc" = 0 ]; then
+        echo "Started globus-gatekeeper"
+        touch "$lockfile"
+    else
+        echo "Failed to start globus-gatekeeper"
+    fi
+
+    return $rc;
+}
+
+stop()
+{
+    if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
+        pid="`cat \"${GLOBUS_GATEKEEPER_PIDFILE}\"`"
+        if [ "$pid" -gt 0 ] 2> /dev/null; then
+            if kill -0 "${pid}" 2> /dev/null; then
+                kill -TERM "${pid}"
+
+                if kill -0 "${pid}" && sleep 3 && kill -0 "${pid}" 2> /dev/null;
+                    kill -KILL "${pid}"
+                fi
+
+                if kill -0 "${pid}"; then
+                    echo "Failed to stop globus-gatekeeper"
+                    return 1
+                fi
+            fi
+            rm -f "${GLOBUS_GATEKEEPER_PIDFILE}"
+            rm -f "$lockfile"
+        fi
+    else
+        return 0
+    fi
+}
+
+restart()
+{
+    stop
+    start
+}
+
+status()
+{
+    if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
+        pid="`cat \"${GLOBUS_GATEKEEPER_PIDFILE}\"`"
+        if [ "$pid" -gt 0 ] 2> /dev/null; then
+            if kill -0 "$pid" 2> /dev/null;
+                return 0
+            else
+                return 1
+            fi
+        fi
+    elif test -f "${LOCKFILE}"; then
+        return 2
+    else
+        return 3
+    fi
+}
 
 case "$1" in
     start)
-
-        if [ "${GLOBUS_GATEKEEPER_KERBEROS_ENABLED:-false}" = "true" ]; then
-            kflag="-k"
-        else
-            kflag=""
-        fi
-
-        ${sbindir}/globus-gatekeeper \
-            -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
-            ${GLOBUS_GATEKEEPER_PORT:+-p ${GLOBUS_GATEKEEPER_PORT}} \
-            ${GLOBUS_GATEKEEPER_LOG:+-l "${GLOBUS_GATEKEEPER_LOG}"} \
-            ${GLOBUS_GATEKEEPER_GRID_SERVICES:+-grid_services "${GLOBUS_GATEKEEPER_GRID_SERVICES}"} \
-            ${GLOBUS_GATEKEEPER_GRIDMAP:+-gridmap "${GLOBUS_GATEKEEPER_GRIDMAP}"} \
-            ${GLOBUS_GATEKEEPER_CERT_DIR:+-x509_cert_dir "${GLOBUS_GATEKEEPER_CERT_DIR}"} \
-            ${GLOBUS_GATEKEEPER_CERT_FILE:+-x509_user_cert "${GLOBUS_GATEKEEPER_CERT_FILE}"} \
-            ${GLOBUS_GATEKEEPER_KEY_FILE:+-x509_user_key "${GLOBUS_GATEKEEPER_KEY_FILE}"} \
-            $kflag \
-            ${GLOBUS_GATEKEEPER_KMAP:+-globuskmap "${GLOBUS_GATEKEEPER_KMAP}"}
-
-        if ! test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-            sleep 1
-        fi
-
-        if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-            pid=`cat "${GLOBUS_GATEKEEPER_PIDFILE}"` 
-            if kill -0 "$pid" 2> /dev/null; then
-                echo "Started globus-gatekeeper"
-                exit 0
-            fi
-        else
-            echo "Error starting globus-gatekeeper"
-            exit 1
-        fi
+        start
         ;;
 
     stop)
-        if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-            pid="`cat \"${GLOBUS_GATEKEEPER_PIDFILE}\"`"
-            if [ "$pid" -gt 0 ] 2> /dev/null; then
-                kill -TERM "${pid}"
-                sleep 1
-                if ! kill -0 "${pid}" 2> /dev/null; then
-                    rm "${GLOBUS_GATEKEEPER_PIDFILE}"
-                    echo "Stopped globus-gatekeeper"
-                    exit 0
-                else
-                    echo "Failed to stop globus-gatekeeper"
-                    exit 1
-                fi
-            else
-                rm "${GLOBUS_GATEKEEPER_PIDFILE}"
-                echo "Removed stale pidfile"
-                exit 0
-            fi
-        else
-            echo "No globus-gatekeeper running"
-            exit 0
-        fi
+        stop
         ;;
 
     restart)
-        $0 stop
-        $0 start
+        restart
+        ;;
+
+    reload)
+        exit 0
         ;;
 
     force-reload)
-        $0 restart
+        restart
         ;;
+    status)
+        status
+        ;;
+    condrestart|try-restart)
+        status || exit 0
+        restart
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+        exit 2
 esac
