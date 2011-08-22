@@ -81,23 +81,26 @@ start()
 stop()
 {
     if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-        pid="`cat \"${GLOBUS_GATEKEEPER_PIDFILE}\"`"
+        pid="$(cat "${GLOBUS_GATEKEEPER_PIDFILE}")"
         if [ "$pid" -gt 0 ] 2> /dev/null; then
             if kill -0 "${pid}" 2> /dev/null; then
                 kill -TERM "${pid}"
 
-                if kill -0 "${pid}" && sleep 3 && kill -0 "${pid}" 2> /dev/null;
+                if sleep 1 && kill -0 "${pid}" 2> /dev/null && sleep 3 && kill -0 "${pid}" 2> /dev/null;then
                     kill -KILL "${pid}"
                 fi
 
-                if kill -0 "${pid}"; then
+                if kill -0 "${pid}" 2> /dev/null; then
                     echo "Failed to stop globus-gatekeeper"
                     return 1
+                else
+                    echo "Stopped globus-gatekeeper"
                 fi
+
             fi
-            rm -f "${GLOBUS_GATEKEEPER_PIDFILE}"
-            rm -f "$lockfile"
         fi
+        rm -f "${GLOBUS_GATEKEEPER_PIDFILE}"
+        rm -f "$lockfile"
     else
         return 0
     fi
@@ -112,9 +115,9 @@ restart()
 status()
 {
     if test -f "${GLOBUS_GATEKEEPER_PIDFILE}"; then
-        pid="`cat \"${GLOBUS_GATEKEEPER_PIDFILE}\"`"
+        pid="$(cat "${GLOBUS_GATEKEEPER_PIDFILE}")"
         if [ "$pid" -gt 0 ] 2> /dev/null; then
-            if kill -0 "$pid" 2> /dev/null;
+            if ps -p "$pid" > /dev/null; then
                 return 0
             else
                 return 1

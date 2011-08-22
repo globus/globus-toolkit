@@ -100,7 +100,7 @@ restart()
 
 status()
 {
-    killproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}" -0
+    pidofproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}" > /dev/null
 }
 
 case "$1" in

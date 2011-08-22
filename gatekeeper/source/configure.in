@@ -63,7 +63,7 @@ AC_ARG_WITH(initscript-config-path,
             ])
 
 AC_ARG_WITH(lockfile-path,
-            AC_HELP_STRING([--with-lockfile=PATH],
+            AC_HELP_STRING([--with-lockfile-path=PATH],
             [Set the path to init script lockfile]),
             [if test "$withval" = "yes";  then
                 AC_MSG_ERROR([Invalid path: $withval])
