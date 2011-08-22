@@ -106,15 +106,15 @@ stop()
             killproc -p "$pidfile" "${prog}"
             rc=$?
             if [ $rc = 0 ]; then
-                stopped="${stopped:+$stopped }$lrm"
+                stopped="${stopped:+$stopped, }$lrm"
             else
-                failed="${failed:+$failed }$lrm"
+                failed="${failed:+$failed, }$lrm"
                 allrc=$rc
             fi
         fi
     done
     if [ "$allrc" -eq 0 ]; then
-        log_success_msg "Stopped globus-scheduler-event-generator for $stopped"
+        log_success_msg "Stopped globus-scheduler-event-generator${stopped:+ for ($stopped)}"
         rm -f "$lockfile"
     elif [ "$stopped" = "" ]; then
         log_failure_msg "Failed to stop globus-scheduler-event-generator for $failed"

@@ -64,10 +64,9 @@ start()
         pidfile="$(printf "$GLOBUS_SEG_PIDFMT" "$lrm")"
         logdir="$(printf "$GLOBUS_SEG_LOGFMT" "$lrm")"
 
-        status > /dev/null
+        status $lrm > /dev/null
         rc=$?
         if [ $rc -eq 0 ]; then
-            echo "$progname ($lrm) is already running"
             continue
         fi
 
@@ -89,7 +88,7 @@ start()
         fi
     done
     if [ "$allrc" -eq 0 ]; then
-        echo "Started globus-scheduler-event-generator for ($started)"
+        echo "Started globus-scheduler-event-generator${started:+ for ($started)}"
         touch "$lockfile"
     elif [ "$started" = "" ]; then
         echo "Failed to start globus-scheduler-event-generator for ($failed)"
