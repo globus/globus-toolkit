@@ -118,14 +118,18 @@ status()
         pid="$(cat "${GLOBUS_GATEKEEPER_PIDFILE}")"
         if [ "$pid" -gt 0 ] 2> /dev/null; then
             if ps -p "$pid" > /dev/null; then
+                echo "globus-gatekeeper ($pid) is running"
                 return 0
             else
+                echo "Stale PID file for globus-gatekeeper"
                 return 1
             fi
         fi
     elif test -f "${LOCKFILE}"; then
+        echo "Stale lock file for globus-gatekeeper"
         return 2
     else
+        echo "globus-gatekeeper si not running"
         return 3
     fi
 }

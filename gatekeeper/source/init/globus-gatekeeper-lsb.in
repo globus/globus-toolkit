@@ -101,6 +101,13 @@ restart()
 status()
 {
     pidofproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}" > /dev/null
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+        echo "globus-gatekeeper is running"
+    else
+        echo "globus-gatekeeper is not running"
+    fi
+    return $rc
 }
 
 case "$1" in
