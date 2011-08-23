@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	0.1
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -168,7 +168,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep -Ev 'jobmanager-fork-poll|fork.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
+  | grep -Ev 'jobmanager-fork-poll|fork.pm|globus-fork.conf|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
 
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
   | grep -F globus-fork-starter.8 \
@@ -183,34 +183,51 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post setup-poll
-globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+fi
 
-%postun setup-poll
-globus-gatekeeper-admin -d jobmanager-fork-poll || true
+%preun setup-poll
+if [ $1 -eq 0 ]; then
+    globus-gatekeeper-admin -d jobmanager-fork-poll > /dev/null 2>&1 || :
+fi
 
 %post setup-seg
-globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork
-globus-scheduler-event-generator-admin -e fork
-service globus-scheduler-event-generator start fork
 /sbin/ldconfig
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork
+    globus-scheduler-event-generator-admin -e fork
+    /sbin/service globus-scheduler-event-generator condrestart fork
+fi
 
+%preun setup-seg
+/sbin/ldconfig
+if [ $1 -eq 0 ]; then
+    globus-gatekeeper-admin -d jobmanager-fork-seg > /dev/null 2>&1 || :
+    globus-scheduler-event-generator-admin -d fork > /dev/null 2>&1 || :
+    service globus-scheduler-event-generator stop fork > /dev/null 2>&1 || :
+fi
 
 %postun setup-seg
-globus-gatekeeper-admin -d jobmanager-fork-seg || true
-globus-scheduler-event-generator-admin -d fork
-service globus-scheduler-event-generator stop fork
-/sbin/ldconfig
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-fork-seg > /dev/null 2>&1 || :
+    globus-scheduler-event-generator-admin -e fork > /dev/null 2>&1 || :
+    service globus-scheduler-event-generator condrestart fork > /dev/null 2>&1 || :
+fi
 
 %files -f package.filelist
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%config(noreplace) %{_sysconfdir}/globus/globus-fork.conf
 
 %files setup-poll -f package-setup-poll.filelist
 %defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-fork-poll
 
 %files setup-seg -f package-setup-seg.filelist
 %defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-fork-seg
 
 %files doc -f package-doc.filelist
 %defattr(-,root,root,-)
