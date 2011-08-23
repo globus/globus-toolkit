@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	0.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -65,6 +65,8 @@ BuildArch:      noarch
 %endif
 Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
+requires(post): globus-gram-job-manager-scripts
+requires(preun): globus-gram-job-manager-scripts
 Conflicts:      %{name}-setup-seg
 
 %package setup-seg
@@ -74,6 +76,8 @@ Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 3.1
 Requires:       torque-server
+requires(post): globus-gram-job-manager-scripts
+requires(preun): globus-gram-job-manager-scripts
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -169,7 +173,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep -Ev 'jobmanager-pbs-poll|pbs.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
+  | grep -Ev 'jobmanager-pbs-poll|globus-pbs.conf|pbs.pm|pkg_data_%{flavor}_rtl|pkg_data_noflavor_data|%{flavor}_rtl.filelist|noflavor_data.filelist' > package-setup-seg.filelist
 
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
   | sed 's!^!%doc %{_prefix}!' > package-doc.filelist
@@ -178,31 +182,56 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post setup-poll
-globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs > /dev/null 2>&1 || :
+fi
+
+%preun setup-poll
+if [ $1 -eq 0 ]; then
+    globus-gatekeeper-admin -d jobmanager-pbs-poll > /dev/null 2>&1 || :
+fi
 
 %postun setup-poll
-globus-gatekeeper-admin -d jobmanager-pbs-poll || true
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs > /dev/null 2>&1 || :
+fi
 
 %post setup-seg
-globus-gatekeeper-admin -e jobmanager-pbs-seg -n jobmanager-pbs
-globus-scheduler-event-generator-admin -e pbs
-service globus-scheduler-event-generator start pbs
+ldconfig
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-pbs-seg -n jobmanager-pbs > /dev/null 2>&1 || :
+    globus-scheduler-event-generator-admin -e pbs > /dev/null 2>&1 || :
+    service globus-scheduler-event-generator condrestart pbs
+fi
+
+%preun setup-seg
+ldconfig
+if [ $1 -eq 0 ]; then
+    globus-gatekeeper-admin -d jobmanager-pbs-seg > /dev/null 2>&1 || :
+    globus-scheduler-event-generator-admin -d pbs > /dev/null 2>&1 || :
+    service globus-scheduler-event-generator stop pbs > /dev/null 2>&1 || :
+fi
 
 %postun setup-seg
-globus-gatekeeper-admin -d jobmanager-fork-seg || true
-globus-scheduler-event-generator-admin -d fork
-service globus-scheduler-event-generator stop fork
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-pbs-seg > /dev/null 2>&1 || :
+    globus-scheduler-event-generator-admin -e pbs > /dev/null 2>&1 || :
+    service globus-scheduler-event-generator condrestart pbs > /dev/null 2>&1 || :
+fi
 
 %files -f package.filelist
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%config(noreplace) %{_sysconfdir}/globus/globus-pbs.conf
 
 %files setup-poll -f package-setup-poll.filelist
 %defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-pbs-poll
 
 %files setup-seg -f package-setup-seg.filelist
 %defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-pbs-seg
 
 %files doc -f package-doc.filelist
 %defattr(-,root,root,-)

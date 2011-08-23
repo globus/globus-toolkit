@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	0.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -23,6 +23,8 @@ Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
 Requires:       condor
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
+Requires(post): globus-gram-job-manager-scripts
+Requires(preun): globus-gram-job-manager-scripts
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-core
 BuildRequires:	doxygen
@@ -85,14 +87,19 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post
-globus-gatekeeper-admin -e jobmanager-condor
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-condor > /dev/null 2>&1 || :
+fi
 
-%postun
-globus-gatekeeper-admin -d jobmanager-condor || true
+%preun
+if [ $1 -eq 0 ]; then
+    globus-gatekeeper-admin -d jobmanager-condor > /dev/null 2>&1 || :
+fi
 
 %files -f package.filelist
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
