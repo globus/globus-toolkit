@@ -43,6 +43,10 @@ lockfile="@LOCKFILE@"
 . /lib/lsb/init-functions
 GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
 
+full=1
+if [ -n "$2" ]; then
+    full=0
+fi
 for lrm in "${GLOBUS_SEG_LRM_DIR}"/*; do
     if [ -n "$2" -a "$(basename "$lrm")" != "$2" ]; then
         continue
@@ -117,7 +121,9 @@ stop()
     done
     if [ "$allrc" -eq 0 ]; then
         log_success_msg "Stopped globus-scheduler-event-generator${stopped:+ for ($stopped)}"
-        rm -f "$lockfile"
+        if [ "$full" -eq 1 ]; then
+            rm -f "$lockfile"
+        fi
     elif [ "$stopped" = "" ]; then
         log_failure_msg "Failed to stop globus-scheduler-event-generator for $failed"
     else
