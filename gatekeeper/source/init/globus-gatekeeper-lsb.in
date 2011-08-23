@@ -118,7 +118,7 @@ status()
             fi
             ;;
         *)
-            echo "Unknown status for $progname ($lrm)"
+            echo "Unknown status for $progname"
             ;;
     esac
 

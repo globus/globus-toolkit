@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	7.5
+Version:	7.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -87,13 +87,14 @@ mkdir -p $RPM_BUILD_ROOT/etc/grid-services/available
 rm -rf $RPM_BUILD_ROOT
 
 %post
-if [ $1 = 1 ]; then
+if [ $1 -ge 1 ]; then
     /sbin/chkconfig --add %{name}
 fi
 
 %preun
-if [ $1 = 0 ]; then
+if [ $1 -eq 0 ]; then
     /sbin/chkconfig --del %{name}
+    /sbin/service %{name} stop > /dev/null 2>&1 || :
 fi
 
 %postun
