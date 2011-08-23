@@ -342,6 +342,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "and allows core dumps on bad signals instead of exiting cleanly. "
     "Not recommended for production servers.  Note that non-forked servers running "
     "as 'root' will only accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE, NULL}, 
+ {"pidfile", "pidfile", NULL, "pidfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Write PID of the GridFTP server to this path. May contain variable references to ${localstatedir}", NULL, NULL, GLOBUS_FALSE, NULL},
 
 /* internal use */
  {"globus_location", "globus_location", "GLOBUS_LOCATION", "G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
