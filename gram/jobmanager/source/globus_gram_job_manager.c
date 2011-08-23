@@ -202,7 +202,7 @@ globus_gram_job_manager_init(
         goto job_id_hashtable_init_failed;
     }
     dir_prefix = globus_common_create_string(
-            "%s/.globus/job/%s",
+            "%s/%s",
             manager->config->job_dir_home,
             manager->config->short_hostname);
     if (dir_prefix == NULL)

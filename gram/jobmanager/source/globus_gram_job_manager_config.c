@@ -442,18 +442,6 @@ globus_gram_job_manager_config_init(
 	    }
     }
 
-    if (config->job_dir_home == NULL)
-    {
-        config->job_dir_home = strdup(getenv("HOME"));
-
-        if (config->job_dir_home == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto out;
-        }
-    }
-
     if (config->service_tag == NULL)
     {
         config->service_tag = strdup("untagged");
@@ -501,6 +489,22 @@ globus_gram_job_manager_config_init(
             goto out;
         }
     }
+
+    if (config->job_dir_home == NULL)
+    {
+        config->job_dir_home = 
+            globus_common_create_string("%s/%s",
+                    config->job_state_file_dir,
+                    config->logname);
+
+        if (config->job_dir_home == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto out;
+        }
+    }
+
     if (config->scratch_dir_base == NULL)
     {
         config->scratch_dir_base = strdup(
