@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	0.1
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -30,6 +30,7 @@ Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires:       %{name}-setup
+Obsoletes:      globus-gram-job-manager-setup-fork < 4.3
 BuildRequires:	grid-packaging-tools
 BuildRequires:	globus-core
 BuildRequires:	globus-common-devel

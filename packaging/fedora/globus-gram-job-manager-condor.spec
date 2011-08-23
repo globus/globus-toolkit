@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	0.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -17,7 +17,7 @@ License:	ASL 2.0
 URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-
+Obsoletes:      globus-gram-job-manager-setup-condor < 4.5
 Requires:	globus-gram-job-manager-scripts
 Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
