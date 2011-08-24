@@ -65,7 +65,7 @@ globus_mutex_t globus_l_fork_lock;
 globus_cond_t globus_l_fork_cond;
 
 globus_bool_t globus_l_fork_signalled = GLOBUS_FALSE;
-static char * globus_l_fork_logfile_path;
+static char * globus_l_fork_logfile_path = NULL;
 
 /* Callbacks */
 static
@@ -168,6 +168,7 @@ int main(int argc, char *argv[])
     globus_xio_driver_t                 file_driver;
     globus_xio_stack_t                  file_stack;
     char *                              errstr;
+    int                                 i;
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -192,11 +193,40 @@ int main(int argc, char *argv[])
         goto deactivate_common_out;
     }
     
-    if (argc == 2)
+    for (i = 1; i < argc; i++)
     {
-        globus_l_fork_logfile_path = strdup(argv[1]);
+        if (strcmp(argv[i], "-h") == 0 ||
+            strcmp(argv[i], "-help") == 0 ||
+            strcmp(argv[i], "--help") == 0 ||
+            strcmp(argv[i], "-usage") == 0 ||
+            strcmp(argv[i], "--usage") == 0)
+        {
+            printf("Usage: globus-fork-starter [LOG-PATH]\n");
+            exit(EXIT_SUCCESS);
+        }
+        else if (argv[i][0] == '-')
+        {
+            printf("Unknown option: %s\n", argv[1]);
+            exit(EXIT_FAILURE);
+        }
+        else if (access(argv[1], W_OK) != 0)
+        {
+            int save_errno = errno;
+            printf("Unable to write to fork log file %s (%s)\n", argv[1],
+                    strerror(save_errno));
+            exit(EXIT_FAILURE);
+        }
+        else if (globus_l_fork_logfile_path == NULL)
+        {
+            globus_l_fork_logfile_path = strdup(argv[i]);
+        }
+        else
+        {
+            fprintf(stderr, "Unexpected command-line string %s\n", argv[i]);
+            exit(EXIT_FAILURE);
+        }
     }
-    else
+    if (globus_l_fork_logfile_path == NULL)
     {
         char *confpath = NULL;
 
@@ -214,7 +244,7 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
         result = globus_common_get_attribute_from_config_file(
-                NULL, confpath, "log_path",
+                "", confpath, "log_path",
                 &globus_l_fork_logfile_path);
 
         if (result != GLOBUS_SUCCESS)
