@@ -275,6 +275,8 @@ sub print_recursive
 	    print $fh "'$_' => ";
 	    $self->print_recursive($fh, $value->{$_});
 	}
+
+	print $fh ')';
     }
     elsif(!ref($value))
     {
