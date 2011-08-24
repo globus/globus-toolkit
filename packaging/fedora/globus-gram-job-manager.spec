@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	12.13
+Version:	12.14
 Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
