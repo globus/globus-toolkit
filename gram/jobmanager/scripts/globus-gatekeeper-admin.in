@@ -24,7 +24,7 @@ dealias()
     expr "$(ls -l "$1")" : ".* -> \(.*\)"
 }
 
-while getopts "e:d:n:lh" arg; do
+while getopts "e:d:En:lh" arg; do
     case $arg in
         e)
             if expr "$OPTARG" : "[^/]*/.*" > /dev/null 2>&1; then
@@ -42,6 +42,33 @@ while getopts "e:d:n:lh" arg; do
             fi
             mode="-e"
             ;;
+        E)
+            enable=""
+            if [ -f "${sysconfdir}/grid-services/available/jobmanager" ]; then
+                enable=jobmanager
+            else
+                for enable in "${sysconfdir}/grid-services/available/"*; do
+                    if [ -f "$enable" ]; then
+                        enable="$(basename "$enable")"
+                        break
+                    fi
+                done
+            fi
+            if [ "$enable" = "" ]; then
+                echo "No available jobmanager services to enable" 1>&2
+                exit 1
+            fi
+            if [ "$enable" != "jobmanager" ];then
+                name=jobmanager
+            fi
+
+            if [ -n "$mode" ]; then
+                echo "Duplicate or incompatible options: $mode and -E" 1>&2
+                exit 1
+            fi
+            mode="-e"
+            ;;
+
         d)
             if expr "$OPTARG" : "[^/]*/.*" > /dev/null 2>&1; then
                 echo "Illegal service name \"$OPTARG\"" 1>&2
@@ -77,6 +104,7 @@ while getopts "e:d:n:lh" arg; do
             echo "  -e SERVICE                  Enable SERVICE"
             echo "  -d SERVICE                  Disable SERVICE"
             echo "  -n NAME                     Service name"
+            echo "  -E                          Enable default jobmanager service"
             echo "  -l                          List services"
             echo "  -h                          Print this help and exit"
             exit 0

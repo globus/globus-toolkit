@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	0.2
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -25,7 +25,7 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-gram-job-manager-scripts
+Requires:	globus-gram-job-manager-scripts >= 3.4
 Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
@@ -66,6 +66,8 @@ BuildArch:      noarch
 %endif
 Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
+requires(post): globus-gram-job-manager-scripts >= 3.4
+requires(preun): globus-gram-job-manager-scripts >= 3.4
 Conflicts:      %{name}-setup-seg
 
 %package setup-seg
@@ -74,6 +76,8 @@ Group:		Applications/Internet
 Provides:       %{name}-setup
 Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 3.1
+requires(post): globus-gram-job-manager-scripts >= 3.4
+requires(preun): globus-gram-job-manager-scripts >= 3.4
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -186,11 +190,24 @@ rm -rf $RPM_BUILD_ROOT
 %post setup-poll
 if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+    if [ ! -f /etc/grid-services/jobmanager ]; then
+        globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager
+    fi
 fi
 
 %preun setup-poll
 if [ $1 -eq 0 ]; then
     globus-gatekeeper-admin -d jobmanager-fork-poll > /dev/null 2>&1 || :
+fi
+
+%postun setup-poll
+if [ $1 -ge 1 ]; then
+    globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
+    if [ ! -f /etc/grid-services/jobmanager ]; then
+        globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager
+    fi
+elif [ $i -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
+    globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
 %post setup-seg
@@ -199,6 +216,9 @@ if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork
     globus-scheduler-event-generator-admin -e fork
     /sbin/service globus-scheduler-event-generator condrestart fork
+    if [ ! -f /etc/grid-services/jobmanager ]; then
+        globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
+    fi
 fi
 
 %preun setup-seg
@@ -207,6 +227,10 @@ if [ $1 -eq 0 ]; then
     globus-gatekeeper-admin -d jobmanager-fork-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -d fork > /dev/null 2>&1 || :
     service globus-scheduler-event-generator stop fork > /dev/null 2>&1 || :
+    if [ ! -f /etc/grid-services/jobmanager ]; then
+        default="`globus-gatekeeper-admin -l | sed -e '/jobmanager/s/ .*//;q'`"
+        globus-gatekeeper-admin -d "$default" -n jobmanager
+    fi
 fi
 
 %postun setup-seg
@@ -214,6 +238,9 @@ if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e fork > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart fork > /dev/null 2>&1 || :
+    if [ ! -f /etc/grid-services/jobmanager ]; then
+        globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
+    fi
 fi
 
 %files -f package.filelist

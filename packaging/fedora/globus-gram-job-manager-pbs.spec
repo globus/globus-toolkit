@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	0.0
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -26,7 +26,7 @@ Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-pbs < 4.5
 
-Requires:	globus-gram-job-manager-scripts
+Requires:       globus-gram-job-manager-scripts >= 3.4
 Requires:	globus-gass-cache-program >= 4
 Requires:	globus-common-progs >= 2
 Requires:       torque-client
@@ -65,20 +65,22 @@ Group:		Applications/Internet
 BuildArch:      noarch
 %endif
 Provides:       %{name}-setup
+Provides:       globus-gram-job-manager-setup
 Requires:	%{name} = %{version}-%{release}
-requires(post): globus-gram-job-manager-scripts
-requires(preun): globus-gram-job-manager-scripts
+requires(post): globus-gram-job-manager-scripts >= 3.4
+requires(preun): globus-gram-job-manager-scripts >= 3.4
 Conflicts:      %{name}-setup-seg
 
 %package setup-seg
 Summary:	Globus Toolkit - PBS Job Manager Setup Files
 Group:		Applications/Internet
 Provides:       %{name}-setup
+Provides:       globus-gram-job-manager-setup
 Requires:	%{name} = %{version}-%{release}
 Requires:       globus-scheduler-event-generator-progs >= 3.1
 Requires:       torque-server
-requires(post): globus-gram-job-manager-scripts
-requires(preun): globus-gram-job-manager-scripts
+requires(post): globus-gram-job-manager-scripts >= 3.4
+requires(preun): globus-gram-job-manager-scripts >= 3.4
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -185,6 +187,9 @@ rm -rf $RPM_BUILD_ROOT
 %post setup-poll
 if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs > /dev/null 2>&1 || :
+    if [ ! -f /etc/grid-services/jobmanager ]; then
+        globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager
+    fi
 fi
 
 %preun setup-poll
@@ -195,6 +200,8 @@ fi
 %postun setup-poll
 if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs > /dev/null 2>&1 || :
+elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
+    globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
 %post setup-seg
@@ -218,6 +225,8 @@ if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e pbs > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart pbs > /dev/null 2>&1 || :
+elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
+    globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
 %files -f package.filelist
