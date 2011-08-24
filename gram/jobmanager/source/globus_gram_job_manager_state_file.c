@@ -1156,7 +1156,8 @@ error_exit:
             "\n",
             request->job_state_lock_file,
             -rc,
-            "Error reading state file");
+            "Error reading state file",
+            globus_gram_protocol_error_string(rc));
 
     fclose(fp);
 free_buffer_exit:
