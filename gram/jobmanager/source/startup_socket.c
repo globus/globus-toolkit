@@ -1146,10 +1146,10 @@ globus_l_gram_startup_socket_callback(
         while (tries > 0)
         { 
             rc = recvmsg(manager->socket_fd, &message, 0);
-            if (rc <= 0 && errno == EINPROGRESS)
+            if (rc <= 0 && errno == EAGAIN)
             {
                 tries--;
-                globus_libc_usleep(1000);
+                globus_libc_usleep(10000);
             }
             else
             {
