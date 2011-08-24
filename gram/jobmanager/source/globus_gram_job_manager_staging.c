@@ -329,6 +329,10 @@ globus_l_staging_replace_one_stream(
             free(evaled_to);
             goto bad_value;
         }
+        else
+        {
+            close(tmpfd);
+        }
     }
     if (evaled_to)
     {
