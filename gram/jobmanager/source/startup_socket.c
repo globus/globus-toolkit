@@ -1145,10 +1145,18 @@ globus_l_gram_startup_socket_callback(
         while (tries > 0)
         { 
             rc = recvmsg(manager->socket_fd, &message, 0);
-            if (rc <= 0 && errno == EINPROGRESS)
+            if (rc <= 0 && errno == EAGAIN)
             {
+                if (accepted > 0)
+                {
+                    /* We've already received the message we selected for,
+                     * no bonus messages to process here, so we'll break 
+                     * out to let the select tell us when the next occurs.
+                     */
+                    break;
+                }
                 tries--;
-                globus_libc_usleep(1000);
+                globus_libc_usleep(10000);
             }
             else
             {
