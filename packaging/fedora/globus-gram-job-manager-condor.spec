@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	0.1
-Release:	4%{?dist}
+Version:	0.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -62,9 +62,9 @@ rm -rf autom4te.cache
 
 %{_datadir}/globus/globus-bootstrap.sh
 
-CONDOR_RM=/usr/bin/condor_rm \
-CONDOR_SUBMIT=/usr/bin/condor_submit \
-    %configure --%{docdiroption}=%{_docdir}/%{name}-%{version}
+export CONDOR_RM=/usr/bin/condor_rm
+export CONDOR_SUBMIT=/usr/bin/condor_submit
+%configure --%{docdiroption}=%{_docdir}/%{name}-%{version}
 
 make %{?_smp_mflags}
 
