@@ -16,11 +16,11 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	0.0
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
-License:	ASL 2.0
+License:	LGPL 2.1 and Globus Toolkit Public License 3.0
 URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
