@@ -47,9 +47,9 @@ while getopts "e:d:En:lh" arg; do
             if [ -f "${sysconfdir}/grid-services/available/jobmanager" ]; then
                 enable=jobmanager
             else
-                for enable in "${sysconfdir}/grid-services/available/"*; do
-                    if [ -f "$enable" ]; then
-                        enable="$(basename "$enable")"
+                for f in "${sysconfdir}/grid-services/available/jobmanager"*; do
+                    if [ -f "$f" ]; then
+                        enable="$(basename "$f")"
                         break
                     fi
                 done
