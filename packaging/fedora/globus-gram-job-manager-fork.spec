@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	0.2
-Release:	6%{?dist}
+Release:	7%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -129,6 +129,8 @@ rm -rf autom4te.cache
 
 %{_datadir}/globus/globus-bootstrap.sh
 
+export MPIEXEC=no
+export MPIRUN=no
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \

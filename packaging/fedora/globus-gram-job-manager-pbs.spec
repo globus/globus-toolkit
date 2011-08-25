@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	0.0
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -132,6 +132,11 @@ rm -rf autom4te.cache
 
 %{_datadir}/globus/globus-bootstrap.sh
 
+export MPIEXEC=no
+export MPIRUN=no
+export QDEL=/usr/bin/qdel-torque
+export QSTAT=/usr/bin/qstat-torque
+export QSUB=/usr/bin/qsub-torque
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \
