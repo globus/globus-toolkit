@@ -72,6 +72,11 @@ globus_l_gram_process_pending_restarts(
     void *                              arg);
 
 static
+void
+globus_l_gram_cputype_and_manufacturer(
+    globus_gram_job_manager_config_t *  config);
+
+static
 globus_mutex_t                          globus_l_waitpid_callback_lock;
 static
 globus_callback_handle_t                globus_l_waitpid_callback_handle =
@@ -364,6 +369,9 @@ main(
          */
         if (manager.socket_fd != -1)
         {
+            /* Look up cputype/manufacturer if not known yet */
+            globus_l_gram_cputype_and_manufacturer(manager.config);
+
             GlobusTimeAbstimeGetCurrent(manager.usagetracker->jm_start_time);            
             globus_i_gram_usage_stats_init(&manager);
             globus_i_gram_usage_start_session_stats(&manager);
@@ -869,4 +877,53 @@ globus_l_gram_process_pending_restarts(
     }
     GlobusGramJobManagerUnlock(manager);
 }
+
+static
+void
+globus_l_gram_cputype_and_manufacturer(
+    globus_gram_job_manager_config_t *  config)
+{
+    char *config_guess_path = NULL;
+    FILE *config_guess = NULL;
+    char config_guessbuf[32];
+    char *hyphen, *hyphen2;
+
+    if (config->globus_host_manufacturer == NULL ||
+        config->globus_host_cputype == NULL)
+    {
+        /* No config.guess-$hostname yet */
+        globus_eval_path(
+                "${datadir}/globus/config.guess",
+                &config_guess_path);
+
+        if (config_guess_path != NULL)
+        {
+            config_guess = popen(config_guess_path, "r");
+            if (config_guess != NULL)
+            {
+                if (fgets(config_guessbuf,
+                        sizeof(config_guessbuf), config_guess) != NULL)
+                {
+                    hyphen = strchr(config_guessbuf, '-');
+                    if (config->globus_host_cputype == NULL && hyphen)
+                    {
+                        *hyphen = '\0';
+                        config->globus_host_cputype = strdup(config_guessbuf);
+                    }
+                    hyphen++;
+
+                    hyphen2 = strchr(hyphen, '-');
+                    if (config->globus_host_manufacturer == NULL && hyphen2)
+                    {
+                        *hyphen2 = '\0';
+                        config->globus_host_manufacturer = strdup(hyphen);
+                    }
+                }
+                pclose(config_guess);
+            }
+            free(config_guess_path);
+        }
+    }
+}
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -28,6 +28,7 @@
 
 #include "globus_gram_job_manager.h"
 #include "globus_common.h"
+#include <sys/utsname.h>
 
 static int
 globus_l_gram_tokenize(
@@ -62,6 +63,7 @@ globus_gram_job_manager_config_init(
     int                                 rc = 0;
     char *                              tmp;
     char                                hostname[MAXHOSTNAMELEN];
+    struct utsname                      utsname;
     char *                              conf_path = NULL;
     char *                              dot;
 
@@ -536,6 +538,32 @@ globus_gram_job_manager_config_init(
     if (dot != NULL)
     {
         *dot = 0;
+    }
+
+    rc = uname(&utsname);
+
+    if (rc == 0)
+    {
+        if (config->globus_host_osname == NULL)
+        {
+            config->globus_host_osname = strdup(utsname.sysname);
+        }
+        if (config->globus_host_osversion == NULL)
+        {
+            if (strcmp(utsname.sysname, "AIX") == 0)
+            {
+                config->globus_host_osversion = globus_common_create_string(
+                    "%s.%s",
+                    utsname.version,
+                    utsname.release);
+            }
+            else
+            {
+                config->globus_host_osversion = globus_common_create_string(
+                    "%s",
+                    utsname.release);
+            }
+        }
     }
 
     rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);

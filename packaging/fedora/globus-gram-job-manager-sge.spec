@@ -15,8 +15,8 @@
 
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
-Version:	0.0
-Release:	6%{?dist}
+Version:	0.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -172,7 +172,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep -E 'sge.pm|globus-sge.conf|pkg_data_|.filelist' > package.filelist
+  | grep -E 'sge\.pm|sge\.rvf|globus-sge\.conf|pkg_data_|\.filelist' > package.filelist
 
 # setup-poll package: /etc/grid-services/available/job-manager-sge-poll
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
