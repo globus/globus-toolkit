@@ -8,21 +8,29 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Attribute: emailonexecution
 Description: "Mail is sent at the beginning of the job"
 Values: yes no
+Default: no
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: emailontermination
 Description: "Mail is sent at the end of the job"
 Values: yes no
+Default: no
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: emailonabort
 Description: "Mail is sent when job has been aborted"
 Values: yes no
+Default: no
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: emailonsuspend
 Description: "Mail is sent when job has been suspended"
 Values: yes no
+Default: no
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: parallel_environment

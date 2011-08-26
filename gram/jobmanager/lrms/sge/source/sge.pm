@@ -30,7 +30,7 @@ package Globus::GRAM::JobManager::sge;
 our @ISA = qw(Globus::GRAM::JobManager);
 
 
-my ($qsub, $qstat, $qdel,
+my ($qsub, $qstat, $qdel, $qconf,
     $mpirun, $sun_mprun,
     $default_pe, $validate_pes, $available_pes,
     $default_queue, $validate_queues, $available_queues,
@@ -57,6 +57,54 @@ BEGIN
     $validate_queues = $config->get_attribute('validate_queues') || 'no';
     $available_queues = $config->get_attribute('available_queues') || '';
 
+    if(($mpirun eq "no") && ($sun_mprun eq "no")) {
+        $supported_job_types = "(single|multiple)";
+    } else {
+        $supported_job_types = "(mpi|single|multiple)";
+    }
+
+    $SGE_ROOT = $config->get_attribute("sge_root") || "undefined";
+    $SGE_CELL = $config->get_attribute("sge_cell") || "undefined";
+
+    $sge_config_name = $config->get_attribute('sge_config') || '';
+
+
+    if ($SGE_ROOT eq 'undefined')
+    {
+        if (defined($sge_config_name))
+        {
+            open($sge_config, ". $sge_config_name && echo \$SGE_ROOT|");
+
+            chomp($SGE_ROOT = <$sge_config>);
+            close($sge_config);
+        }
+
+        if (($SGE_ROOT eq 'undefined' || $SGE_ROOT eq '')
+            && exists($ENV{SGE_ROOT}))
+        {
+            $SGE_ROOT=$ENV{SGE_ROOT};
+        }
+    }
+    $ENV{SGE_ROOT} = $SGE_ROOT;
+
+    if ($SGE_CELL eq 'undefined')
+    {
+        if (defined($sge_config_name))
+        {
+            open($sge_config, ". $sge_config_name && echo \$SGE_CELL|");
+
+            chomp($SGE_CELL = <$sge_config>);
+            close($sge_config);
+        }
+
+        if (($SGE_CELL eq 'undefined' | $SGE_CELL eq '') 
+            && exists($ENV{SGE_CELL}))
+        {
+            $SGE_CELL=$ENV{SGE_CELL};
+        }
+    }
+
+    $ENV{SGE_CELL} = $SGE_CELL;
     if (-x $qconf && $available_pes eq '')
     {
         chomp($available_pes = `$qconf -spl`);
@@ -74,58 +122,6 @@ BEGIN
     if ($available_queues ne '')
     {
         $available_queues = "(" . join("|", split(/\s+/, $available_queues)) . ")";
-    }
-
-    if(($mpirun eq "no") && ($sun_mprun eq "no")) {
-        $supported_job_types = "(single|multiple)";
-    } else {
-        $supported_job_types = "(mpi|single|multiple)";
-    }
-
-    $SGE_ROOT = $config->get_attribute("sge_root") || "undefined";
-    $SGE_CELL = $config->get_attribute("sge_cell") || "undefined";
-
-    $sge_config_name = $config->get_attribute('sge_config') || '';
-
-    if ($sge_config_name ne '')
-    {
-        $sge_config = new Globus::Core::Config($sge_config_name);
-    }
-
-    if ($SGE_ROOT eq 'undefined')
-    {
-        if (exists($ENV{SGE_ROOT}))
-        {
-            $SGE_ROOT=$ENV{SGE_ROOT};
-        }
-        elsif (defined($sge_config))
-        {
-            $SGE_ROOT = $sge_config->get_attribute('SGE_ROOT');
-            $SGE_ROOT =~ s/;.*//;
-            $ENV{SGE_ROOT} = $SGE_ROOT;
-        }
-    }
-    else
-    {
-        $ENV{SGE_ROOT} = $SGE_ROOT;
-    }
-
-    if ($SGE_CELL eq 'undefined')
-    {
-        if (exists($ENV{SGE_CELL}))
-        {
-            $SGE_CELL=$ENV{SGE_CELL};
-        }
-        elsif (defined($sge_config))
-        {
-            $SGE_CELL = $sge_config->get_attribute('SGE_CELL');
-            $SGE_CELL =~ s/;.*//;
-            $ENV{SGE_CELL} = $SGE_CELL;
-        }
-    }
-    else
-    {
-        $ENV{SGE_CELL} = $SGE_CELL;
     }
 }
 
@@ -362,7 +358,7 @@ sub submit
     #####
     # Whom to send email and when
     #
-    if($description->email_address() ne '')
+    if($description->email_address())
     {
         $self->log("Monitoring job by email");
         $self->log("  email address: " . $description->email_address());
@@ -411,7 +407,9 @@ sub submit
     #####
     # Defines a list of queues used to execute this job
     #
-    if (($queue ne '' && $validate_queues && $available_queues ne '')
+    $queue = $description->queue() || '';
+
+    if ($queue ne '' && $validate_queues eq 'yes' && $available_queues ne '')
     {
         if ($queue !~ /^$available_queues$/)
         {
@@ -420,6 +418,8 @@ sub submit
                     Globus::GRAM::Error::INVALID_QUEUE());
         }
     }
+    $queue = $description->queue() || '';
+
     if ($queue eq '' && $default_queue ne '')
     {
         $queue = $default_queue;
@@ -428,7 +428,7 @@ sub submit
     if($queue ne '')
     {
         $self->log("Using the following queue: $queue");
-        $rc = $sge_job_script->print("#\$ -q " . $description->queue() . "\n");
+        $rc = $sge_job_script->print("#\$ -q " . $queue . "\n");
         if (!$rc)
         {
             return $self->respond_with_failure_extension(
@@ -770,14 +770,12 @@ sub submit
         #####
         # Check if RSL attribute parallel_environment is provided
         #
-        if($description->parallel_environment())
+        if ($description->parallel_environment())
         {
             $mpi_pe = $description->parallel_environment();
         }
 
-
-
-       	if((!$mpi_pe || $mpi_pe eq "NONE" || $mpi_pe eq 'no'))
+       	if((!$mpi_pe || $mpi_pe eq "NONE" || $mpi_pe eq 'no')) {
             if ($default_pe eq '') {
                 $self->log("ERROR: Parallel Environment (PE) failure!");
                 $self->log("  MPI job was submitted, but no PE set");

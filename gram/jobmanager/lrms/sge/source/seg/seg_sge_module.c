@@ -222,6 +222,8 @@ globus_l_sge_module_activate(void)
     globus_l_sge_logfile_state_t *      logfile_state;
     int                                 rc;
     globus_reltime_t                    delay;
+    char                               *globus_sge_conf= NULL;
+    char                               *sge_config = NULL;
     char                               *sge_root = NULL, *sge_cell = NULL;
     globus_result_t                     result;
 
@@ -281,57 +283,148 @@ globus_l_sge_module_activate(void)
 	    goto free_logfile_state_buffer_error;
 	}
     }
+
+    result = globus_eval_path(
+            "${sysconfdir}/globus/globus-sge.conf",
+            &globus_sge_conf);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto free_logfile_state_buffer_error;
+    }
+
     result = globus_common_get_attribute_from_config_file(
 	    "",
-	    "${sysconfdir}/globus/globus-sge.conf",
+	    globus_sge_conf,
 	    "log_path",
 	    &logfile_state->log_file);
 
-    /* If log_path is not defined in the configuration file, try to determine
-     * the path based on config file entries (sge_root, sge_cell) falling
-     * back to environment variables ($SGE_ROOT, $SGE_CELL)
+    /* Same algorithm for missing logfile finding as seg.pm:
+     * 1. If sge_root and sge_cell are set in globus-sge.conf, use those
+     * 2. If sge_config is set in globus-sge.conf, source it and echo out
+     *    $SGE_ROOT and $SGE_CELL as needed
+     * 3. If $SGE_ROOT or $SGE_CELL is set in environment, use them
      */
-    if (result != GLOBUS_SUCCESS)
+    if (result != GLOBUS_SUCCESS
+        || logfile_state->log_file == NULL
+        || logfile_state->log_file[0] == '\0')
     {
-        result = globus_common_get_attribute_from_config_file(
+        globus_common_get_attribute_from_config_file(
             "",
-            "${sysconfdir}/globus/globus-sge.conf",
+	    globus_sge_conf,
             "sge_root",
             &sge_root);
 
-        if (result != GLOBUS_SUCCESS)
+        if (sge_root != NULL && strcmp(sge_root, "undefined") == 0)
         {
-            char *tmpstr = getenv("SGE_ROOT");
-            if (tmpstr)
+            free(sge_root);
+            sge_root = NULL;
+        }
+
+        globus_common_get_attribute_from_config_file(
+            "",
+	    globus_sge_conf,
+            "sge_cell",
+            &sge_cell);
+        if (sge_cell != NULL && strcmp(sge_cell, "undefined") == 0)
+        {
+            free(sge_cell);
+            sge_cell = NULL;
+        }
+
+        globus_common_get_attribute_from_config_file(
+            "",
+	    globus_sge_conf,
+            "sge_config",
+            &sge_config);
+
+        if (sge_root == NULL || sge_cell == NULL)
+        {
+            if (sge_config != NULL)
             {
-                result = GLOBUS_SUCCESS;
-                sge_root = strdup(tmpstr);
-                if (sge_root == NULL)
+                FILE *tf;
+                int tfd;
+                char *cmd;
+                struct stat st;
+
+                tf = tmpfile();
+                if (tf)
                 {
-                    rc = SEG_SGE_ERROR_OUT_OF_MEMORY;
-                    goto free_logfile_state_path_error;
+                    tfd = fileno(tf);
+                    if (tfd > -1)
+                    {
+                        cmd = globus_common_create_string(
+                            ". \"%s\" && printf \"$SGE_ROOT\\n$SGE_CELL\\n\" 1>&%d",
+                            sge_config,
+                            tfd);
+                        system(cmd);
+                        free(cmd);
+                        fstat(tfd, &st);
+                        rewind(tf);
+
+                        if (sge_root == NULL)
+                        {
+                            sge_root = malloc((size_t) st.st_size);
+
+                            if (sge_root)
+                            {
+                                fgets(sge_root, (int) st.st_size, tf);
+                                sge_root[strlen(sge_root)-1] = 0;
+                            }
+                            else
+                            {
+                                fscanf(tf, "%*[^\n]\n");
+                            }
+                        }
+                        else
+                        {
+                            fscanf(tf, "%*[^\n]\n");
+                        }
+                        if (sge_cell == NULL)
+                        {
+                            sge_cell = malloc((size_t) st.st_size);
+
+                            if (sge_cell)
+                            {
+                                fgets(sge_cell, (int) st.st_size, tf);
+                                sge_cell[strlen(sge_cell)-1] = 0;
+                            }
+                            else
+                            {
+                                fscanf(tf, "%*[^\n]\n");
+                            }
+                        }
+                        else
+                        {
+                            fscanf(tf, "%*[^\n]\n");
+                        }
+                    }
+                    fclose(tf);
+                }
+            }
+            if (sge_root == NULL)
+            {
+                char * tmp = getenv("SGE_ROOT");
+
+                if (tmp)
+                {
+                    sge_root = strdup(tmp);
+                }
+            }
+            if (sge_cell == NULL)
+            {
+                char * tmp = getenv("SGE_CELL");
+
+                if (tmp)
+                {
+                    sge_cell = strdup(tmp);
                 }
             }
         }
-
-        result = globus_common_get_attribute_from_config_file(
-            "",
-            "${sysconfdir}/globus/globus-sge.conf",
-            "sge_cell",
-            &sge_cell);
-        if (result != GLOBUS_SUCCESS)
+        if (sge_root == NULL || sge_cell == NULL)
         {
-            char *tmpstr = getenv("SGE_CELL");
-            if (tmpstr)
-            {
-                result = GLOBUS_SUCCESS;
-                sge_cell = strdup(tmpstr);
-                if (sge_cell == NULL)
-                {
-                    rc = SEG_SGE_ERROR_OUT_OF_MEMORY;
-                    goto free_sge_root;
-                }
-            }
+            rc = SEG_SGE_ERROR_OUT_OF_MEMORY;
+            goto free_sge_cell;
         }
         logfile_state->log_file = globus_common_create_string(
             "%s/%s/common/reporting",
@@ -423,6 +516,10 @@ free_logfile_state_path_error:
     }
 free_logfile_state_buffer_error:
     globus_libc_free(logfile_state->buffer);
+    if (globus_sge_conf != NULL)
+    {
+        free(globus_sge_conf);
+    }
 free_logfile_state_error:
     globus_libc_free(logfile_state);
 destroy_cond_error:

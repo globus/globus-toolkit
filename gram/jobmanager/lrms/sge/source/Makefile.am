@@ -15,9 +15,13 @@ gridservices_DATA = jobmanager-sge-poll jobmanager-sge-seg
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
 gramperlmodule_DATA = sge.pm
 
-doc_DATA = AUTHORS CREDITS LICENSE LICENSE.GTPL LICENSE.LGPL README.txt
+## validation = [ DATA ]
+validationdir = $(datadir)/globus/globus_gram_job_manager
+validation_DATA = sge.rvf
 
-EXTRA_DIST = globus-sge.conf.in sge.pm $(doc_DATA)
+doc_DATA = AUTHORS CREDITS LICENSE LICENSE.GTPL LICENSE.LGPL
+
+EXTRA_DIST = globus-sge.conf.in sge.pm $(doc_DATA) $(validation_DATA)
 
 # Install link to available file after all other install happens
 # native packages can remove this and use globus-gatekeeper-admin to deal
