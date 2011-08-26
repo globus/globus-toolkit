@@ -107,6 +107,7 @@ else
     chomp($contact);
     $contact =~ s/^GRAM contact:\s*//;
     $ENV{CONTACT_STRING} = $contact;
+    $ENV{CONTACT_LRM} = 'fork';
     $kill_gatekeeper = 1;
 }
 
