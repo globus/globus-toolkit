@@ -25,7 +25,7 @@ require Exporter;
              $datarootdir
              $mandir
              $datadir $sysconfdir $sharedstatedir
-             $localstatedir, $perlmoduledir);
+             $localstatedir $perlmoduledir);
 
 sub eval_path
 {
