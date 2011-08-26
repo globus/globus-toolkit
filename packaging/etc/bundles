@@ -495,9 +495,7 @@ BUNDLE gram5-lsf
         globus_scheduler_event_generator_lsf_test
 
 BUNDLE gram5-sge
-        globus_scheduler_event_generator_sge
-        globus_scheduler_event_generator_sge_setup
-        globus_gram_job_manager_setup_sge
+        globus_gram_job_manager_sge
 
 BUNDLE gsi_openssh_bundle
 	gsi_openssh
