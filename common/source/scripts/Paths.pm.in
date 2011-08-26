@@ -25,7 +25,7 @@ require Exporter;
              $datarootdir
              $mandir
              $datadir $sysconfdir $sharedstatedir
-             $localstatedir);
+             $localstatedir, $perlmoduledir);
 
 sub eval_path
 {
@@ -69,5 +69,6 @@ $sysconfdir = eval_path('@sysconfdir@');
 $sharedstatedir = eval_path('@sharedstatedir@');
 $localstatedir = eval_path('@localstatedir@');
 $flavorincludedir = eval_path('@flavorincludedir@');
+$perlmoduledir = eval_path('@perlmoduledir@');
 
 1;

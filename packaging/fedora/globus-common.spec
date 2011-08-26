@@ -15,7 +15,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	13.4
+Version:	13.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
