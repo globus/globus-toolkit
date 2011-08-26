@@ -15,8 +15,8 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	0.0
-Release:	5%{?dist}
+Version:	0.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -165,7 +165,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! \
   | sed s!^%{_prefix}/etc!/etc! \
-  | grep -E 'pbs.pm|globus-pbs.conf|pkg_data_|.filelist' > package.filelist
+  | grep -E 'pbs\.pm|pbs\.rvf|globus-pbs\.conf|pkg_data_|.filelist' > package.filelist
 
 # setup-poll package: /etc/grid-services/available/job-manager-pbs-poll
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \

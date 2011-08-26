@@ -15,9 +15,13 @@ gridservices_DATA = jobmanager-pbs-poll jobmanager-pbs-seg
 gramperlmoduledir = ${perlmoduledir}/Globus/GRAM/JobManager
 gramperlmodule_DATA = pbs.pm
 
+## validation = [ DATA ]
+validationdir = $(datadir)/globus/globus_gram_job_manager
+validation_DATA = pbs.rvf
+
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = globus-pbs.conf.in pbs.pm $(doc_DATA)
+EXTRA_DIST = globus-pbs.conf.in pbs.pm $(doc_DATA) $(validation_DATA)
 
 if SEG_ENABLED_COND
 install-data-local:
