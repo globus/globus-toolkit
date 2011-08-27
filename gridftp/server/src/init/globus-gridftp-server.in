@@ -1,58 +1,224 @@
 #!/bin/bash
 #
-# globus-gridftp-sshftp	
-#
+# globus-gridftp-sshftp	- Globus GridFTP Server
 # chkconfig: - 20 80
-# description: Controls sshftp access to the globus-gridftp-server.
+# description: The Globus GridFTP server is a process which \
+#              implements the GridFTP protocol for secure, high-performance \
+#              file transfer.
 #
+## BEGIN INIT INFO
+# Provides: globus-gridftp-server
+# Required-Start: $network $local_fs
+# Short-Description: Globus GridFTP Server
+# Description: The Globus GridFTP server is a process which implements the
+# GridFTP protocol for secure, high-performance file transfer.
+## END INIT INFO
 
 @GLOBUS_SCRIPT_INITIALIZER@
+
+lsb=""
+if [ -f /lib/lsb/init-functions ]; then
+    lsb=_lsb
+    . /lib/lsb/init-functions
+fi
 
 rc=0
 conf=${sysconfdir}/gridftp.conf
 pidfile=${localstatedir}/run/globus-gridftp-server.pid
 gridftpd=${sbindir}/globus-gridftp-server
 
-start() {
-	echo -n "Starting globus-gridftp-server: "
-	if [ ! -f $conf ]; then
-	  cp $conf.default $conf;
-	fi
+start()
+{
+    printf "Starting globus-gridftp-server: "
+    rc=0
+    if [ ! -f $conf ]; then
+      cp $conf.default $conf;
+    fi
 
-        # add  -pidfile $pidfile
-        $gridftpd -S -c $conf 
-	rc=$?
-         
-	[ $rc -eq 0 ] && echo "OK" || echo "FAILED";
-	return $rc
+    if [ -f "$pidfile" ]; then
+        read pid < "$pidfile"
+
+        if ! kill -0 $pid; then
+            rm "$pidfile"
+        fi
+    fi
+
+    if [ ! -f "$pidfile" ]; then
+        $gridftpd -S -c $conf -pidfile "${pidfile}"
+        rc=$?
+    fi
+     
+    [ $rc -eq 0 ] && echo "OK" || echo "FAILED";
+    return $rc
 }	
 
-stop() {
-	echo -n "Stopping globus-gridftp-server: "
-	killall -s INT $gridftpd 2>/dev/null
-        rc=$?
-	sleep 2
-	killall -s KILL $gridftpd 2>/dev/null
+start_lsb()
+{
+    rc=0
+    if [ ! -f $conf ]; then
+      cp $conf.default $conf;
+    fi
 
-	[ $rc -eq 0 ] && echo "OK" || echo "FAILED";
-	return $rc
+    start_daemon -p "$pidfile" "$gridftpd" -S -c $conf \
+            -pidfile "${pidfile}"
+    rc=$?
+     
+    if [ $rc -eq 0 ]; then
+        log_success_msg "Started GridFTP Server"
+    else
+        log_failure_msg "Failed to start GridFTP Server"
+    fi
+
+    return $rc
 }
+
+stop()
+{
+    printf "Stopping globus-gridftp-server: "
+    if [ -f "$pidfile" ]; then
+        read pid < "$pidfile" 2> /dev/null
+
+        if [ "$pid" != "" -a "$pid" -gt 0 ]; then
+            if kill -0 "$pid" 2> /dev/null; then
+                kill -INT "$pid" 2>/dev/null
+                rc=$?
+                sleep 2
+                kill -0 "$pid" 2> /dev/null && kill -KILL "$pid"
+            fi
+        fi
+
+        rm -f "$pidfile"
+    fi
+
+    [ $rc -eq 0 ] && echo "OK" || echo "FAILED";
+    return $rc
+}
+
+stop_lsb()
+{
+    killproc -p "$pidfile" "$gridftpd"
+    rc=$?
+    if [ $rc -eq 0 ]; then
+        log_success_msg "Stopped GridFTP Server"
+    else
+        log_failure_msg "Failed to stopped GridFTP Server"
+    fi
+    return $rc
+}
+
+restart()
+{
+    stop
+    start
+}
+
+restart_lsb()
+{
+    stop_lsb
+    start_lsb
+}
+
+reload()
+{
+    printf "Reloading GridFTP configuration: "
+    read pid < "$pidfile" 2> /dev/null
+
+    if [ "$pid" != "" -a "$pid" -gt 0 ]; then
+        kill -HUP "$pid" 2>/dev/null
+        rc=$?
+    fi
+
+    [ $rc -eq 0 ] && echo "OK" || echo "FAILED";
+    return $rc
+}
+
+reload_lsb()
+{
+    killproc -p "$pidfile" "$gridftpd" -HUP
+    rc=$?
+    if [ $rc -eq 0 ]; then
+        log_success_msg "Reloaded GridFTP Server Configuration"
+    else
+        log_failure_msg "Failed to reload GridFTP Server Configuration"
+    fi
+    return $rc
+}
+
+status()
+{
+    if [ -f $pidfile ]; then
+        read pid < "$pidfile" 2> /dev/null
+
+        if [ "$pid" != "" -a "$pid" -gt 0 ]; then
+            if kill -0 "$pid" 2> /dev/null; then
+                echo "GridFTP server is running (pid=$pid)"
+                return 0
+            else
+                echo "Stale PID file $pidfile"
+                return 1
+            fi
+        else
+            echo "Invalid PID file $pidfile"
+            return 4
+        fi
+    else
+        echo "GridFTP server is not running"
+        return 3
+    fi
+}
+
+status_lsb()
+{
+    pid="$(pidofproc -p "$pidfile")"
+    rc=$?
+    case $rc in
+        0)
+            echo "GridFTP Server Running (pid=$pid)"
+            ;;
+        1)
+            echo "Stale PID file for GridFTP Server"
+            ;;
+        2|3)
+            if [ -f "${lockfile}" ]; then
+                echo "Stale lock file for GridFTP Server"
+            else
+                echo "GridFTP Server is not running"
+            fi
+            ;;
+        *)
+            echo "Unknown status for GridFTP Server"
+            ;;
+    esac
+
+    return $rc
+}
+
 
 case "$1" in
     start)
-	start
+	start${lsb}
 	;;
     stop)
-	stop
+	stop${lsb}
 	;;
+    restart)
+    	restart${lsb}
+        ;;
+    reload)
+        reload${lsb}
+        ;;
+    force-reload)
+        restart${lsb}
+        ;;
     status)
-	;;
-    restart|reload)
-    	stop
-	start
-	;;
+	status${lsb}
+        ;;
+    condrestart|try-restart)
+        status${lsb} || exit 0
+        restart${lsb}
+        ;;
     *)
-	echo "Usage: $0 {start|stop|status|restart|reload}"
+	echo "Usage: $0 {start|stop|restart|reload|force-reload|status|condrestart|try-restart}"
 	exit 1
 	;;
 esac

@@ -12,7 +12,7 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	3.3
+Version:	3.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -177,16 +177,17 @@ rm -rf $RPM_BUILD_ROOT
 
 %post -p /sbin/ldconfig
 
+%postun -p /sbin/ldconfig
+
 %post progs
-if [ $1 = 1 ]; then
+if [ $1 -ge 1 ]; then
     /sbin/chkconfig --add %{name}
 fi
 
-%postun -p /sbin/ldconfig
-
 %preun progs
-if [ $1 = 0 ]; then
+if [ $1 -eq 0 ]; then
     /sbin/chkconfig --del %{name}
+    /sbin/service %{name} stop > /dev/null 2>&1 || :
 fi
 
 %postun progs

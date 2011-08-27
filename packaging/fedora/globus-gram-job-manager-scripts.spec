@@ -8,7 +8,7 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
+Version:	3.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 

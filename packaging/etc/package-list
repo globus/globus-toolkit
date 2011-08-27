@@ -51,9 +51,8 @@ globus_gram_job_manager_fork	gram/jobmanager/lrms/fork/source	gpt
 globus_gram_job_manager_fork_test	gram/jobmanager/lrms/fork/test	gpt
 globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source	gpt
+globus_gram_job_manager_sge	gram/jobmanager/lrms/sge/source	gpt
 globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt
-globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote	gpt
-globus_gram_job_manager_setup_sge	gram/jobmanager/setup/sge	gpt
 globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt
 globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt
 globus_wsrf_gram_service_auditing_unit_test ws-gram/service/java/test/auditing tar
@@ -164,8 +163,6 @@ globus_scheduler_event_generator_test       ws-gram/job_monitoring/common/c/test
 globus_scheduler_event_generator_lsf        ws-gram/job_monitoring/lsf/c/source gpt
 globus_scheduler_event_generator_lsf_setup  ws-gram/job_monitoring/lsf/c/setup gpt
 globus_scheduler_event_generator_lsf_test   ws-gram/job_monitoring/lsf/c/test gpt
-globus_scheduler_event_generator_sge        ws-gram/job_monitoring/sge/c/source gpt
-globus_scheduler_event_generator_sge_setup  ws-gram/job_monitoring/sge/c/setup gpt
 globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/source	tar
 globus_wsrf_gram_service_java_test_scalability ws-gram/service/java/test/scalability	tar
 globus_wsrf_gram_service_java_test_throughput ws-gram/service/java/test/throughput	tar

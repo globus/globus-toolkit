@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	12.12
+Version:	12.17
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -151,6 +151,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %dir %{_localstatedir}/lib/globus/gram_job_state
+%config(noreplace) %{_sysconfdir}/globus/globus-gram-job-manager.conf
 
 %files doc -f package-doc.filelist
 %defattr(-,root,root,-)

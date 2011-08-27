@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	5.4
+Version:	5.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -130,23 +130,27 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 %post progs
-/sbin/chkconfig --add globus-gridftp-server
-/sbin/chkconfig --add globus-gridftp-sshftp
-/etc/init.d/globus-gridftp-sshftp start  >/dev/null
+if [ $1 -ge 1 ]; then
+    /sbin/chkconfig --add globus-gridftp-server
+    /sbin/chkconfig --add globus-gridftp-sshftp
+fi
 
 %preun progs
-if /etc/init.d/globus-gridftp-server status; then
-    /etc/init.d/globus-gridftp-server stop
+if [ $1 -eq 0 ]; then
+    /sbin/chkconfig --del globus-gridftp-server
+    /sbin/chkconfig --del globus-gridftp-sshftp
+    /sbin/service globus-gridftp-server stop
+    /sbin/service globus-gridftp-sshftp stop
 fi
-if /etc/init.d/globus-gridftp-sshftp status; then
-    /etc/init.d/globus-gridftp-sshftp stop
-fi
-/sbin/chkconfig --del globus-gridftp-server
-/sbin/chkconfig --del globus-gridftp-sshftp
 
-%postun -p /sbin/ldconfig
+%postun progs
+if [ $1 -ge 1 ]; then
+    /sbin/service globus-gridftp-server condrestart > /dev/null 2>&1 || :
+    /sbin/service globus-gridftp-sshftp condrestart > /dev/null 2>&1 || :
+fi
 
 %files -f package.filelist
 %defattr(-,root,root,-)

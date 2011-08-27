@@ -1336,6 +1336,26 @@ globus_l_gfs_server_detached()
     /* if parent just end */
     else if(pid != 0)
     {
+        char * pidfile = globus_i_gfs_config_string("pidfile");
+
+        if (pidfile != NULL)
+        {
+            globus_result_t result;
+            char * pidfile_evaled;
+
+            result = globus_eval_path(pidfile, &pidfile_evaled);
+
+            if (result == GLOBUS_SUCCESS)
+            {
+                FILE * fh = fopen(pidfile_evaled, "w");
+
+                if (fh != NULL)
+                {
+                    fprintf(fh, "%ld\n", (long) pid);
+                    fclose(fh);
+                }
+            }
+        }
         exit(0);
     }
     /* if child */
@@ -1501,7 +1521,7 @@ main(
     {
         setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1); 
     }
-    /* activte globus stuff */    
+    /* activate globus stuff */    
     if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(
