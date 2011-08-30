@@ -113,7 +113,7 @@ $name =~ tr/_/-/;
 
 my $version = $gptmajorver . '.' . $gptminorver;
 
-open(FH, "+< $specfilename") or print "Error opening: $specfilename\n"; next; 
+open(FH, "+< $specfilename") or do {print "Error opening: $specfilename\n"; next; };
 @ARRAY = <FH>; 
 # change ARRAY here 
 my $index;
