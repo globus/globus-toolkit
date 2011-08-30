@@ -1,0 +1,206 @@
+#!/usr/bin/perl
+
+use Getopt::Long;
+use POSIX;
+use XML::Parser;
+use User::pwent;
+use Sys::Hostname;
+use Pod::Usage;
+use Data::Dumper;
+
+my $gptfile;
+my $setupfile;
+my $email;
+my $nodoc;
+my $help;
+
+GetOptions('gptfile=s' => \$gptfile,
+	   'packagelistfile=s' => \$packagelistfile,
+	   'email=s' => \$email,
+	   'verbose' => \$verbose,
+	   'help' => \$help);
+
+Pod::Usage::pod2usage() if defined $help;
+
+setlocale(LC_TIME, 'C');
+
+my $login = getlogin || getpwuid($<);
+my $pw = getpwnam($login);
+my ($fullname, $location, $phone) = split(/,/, $pw->gecos);
+my $host = hostname;
+
+$email = "$login\@$host" unless defined $email;
+
+my @packagelist;
+if (!(defined $gptfile))
+{
+    if ($packagelistfile ne '') {
+        open(PKG, "$packagelistfile");
+    } else {
+        open(PKG, "etc/package-list-5.1.0");
+    }
+    while ( <PKG> )
+    {
+        my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
+        #print $subdir."\n";
+        push(@packagelist, "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
+    }
+}
+else
+{
+    push(@packagelist, $gptfile);
+}
+#print Dumper @packagelist;
+
+foreach my $gptmetadata (@packagelist)
+{
+my $parser = new XML::Parser(Style => 'Objects', Pkg => 'GPT');
+
+my %srcdeps;
+my %depsuntyped;
+my %setupdeps;
+
+my $gptdoc = $parser->parsefile($gptmetadata);
+
+my $gptmeta = $gptdoc->[0];
+my $gptname = $gptmeta->{Name};
+
+my $gptagingver = (grep {$_->isa('GPT::Aging_Version')} @{$gptmeta->{Kids}})[0];
+my $gptmajorver = $gptagingver->{Major};
+my $gptminorver = $gptagingver->{Minor};
+
+my $gptdesc =  (grep {$_->isa('GPT::Description')} @{$gptmeta->{Kids}})[0];
+my $description = $gptdesc->{Kids}->[0]->{Text};
+$description =~ s!^\s+|\s+$!!g;
+
+my $srcpkg = (grep {$_->isa('GPT::src_pkg')} @{$gptmeta->{Kids}})[0];
+for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$srcpkg->{Kids}})
+{
+    my $type = $srcdep->{Type};
+    $srcdeps{$type} = {} unless defined $srcdeps{$type};
+    for my $dep (grep {$_->isa('GPT::Dependency')} @{$srcdep->{Kids}})
+    {
+	my $depname = $dep->{Name};
+	my $deppkg = $dep->{Package} if defined $dep->{Package};
+	$depname = $depname . "-progs" if ($deppkg eq "pgm");
+	$depname = $depname . "-doc" if ($deppkg eq "doc");
+	$depname =~ tr/_/-/;
+        my $baz = (grep {$_->isa('GPT::Version')} @{$dep->{Kids}})[0];
+        my $depver_element = (grep {$_->isa('GPT::Simple_Version')}
+            @{$baz->{Kids}})[0];
+	my $depver = $depver_element->{Major};
+	$srcdeps{$type}{$depname} = $depver
+	    unless (defined $srcdeps{$type}{$depname}
+		    and $srcdeps{$type}{$depname} >= $depver);
+	$depsuntyped{$depname} = $depver
+	    unless (defined $depsuntyped{$depname}
+		    and $depsuntyped{$depname} >= $depver);
+    }
+}
+#print Dumper %depsuntyped;
+#print $gptname."\n";
+my $specfilename = "./fedora/" . $gptname . ".spec";
+$specfilename =~ tr/_/-/;
+
+if ($verbose){print "Acting on $specfilename \n";}
+
+my $name = $gptname;
+$name =~ tr/_/-/;
+
+my $version = $gptmajorver . '.' . $gptminorver;
+
+open(FH, "+< $specfilename") or print "Error opening: $specfilename\n"; next; 
+@ARRAY = <FH>; 
+# change ARRAY here 
+my $index;
+my $changelogindex;
+my $releaseindex;
+my $releaseversion;
+my $setreleaseversion;
+my $releasesuffix;
+my $specfile_changed = "";
+foreach my $specline (@ARRAY)
+{
+    if ($specline =~ m/Version:\s*(\d+\.\d+)/)
+    {
+	if ($1 ne $version)
+	{
+	   #$specline =~ s/Version:\s*(\d+\.\d+)/Version:\t$version/
+	   $specline = "Version:\t$version\n";
+	   $setreleaseversion = 1;
+	}
+    }
+    elsif ($specline =~ m/Release:\s*(\d+)(.*)/)
+    {  $releaseindex = $index;
+	$releaseversion = $1;
+	$releasesuffix = $2;
+    }
+    elsif ($specline =~ m/\%changelog/)
+    {
+	$changelogindex = $index;
+    }
+    else
+    {	
+      foreach my $deppackage (keys %depsuntyped)
+      {
+        if ($specline =~ m/(Requires:\s+$deppackage.*?>=\s*)(\d+)/) 
+	  {
+	   if ($2 != $depsuntyped{$deppackage}) 
+	   {
+      		$specline =~ s/(Requires:\s+$deppackage.*?>=\s*)\d+/$1 $depsuntyped{$deppackage}/;
+	#print "specline is: ".$specline."\n";
+		$specfile_changed = true;
+	   }
+	  }
+      }
+    }
+
+	$index++;
+}
+
+if ($specfile_changed)
+{
+  $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$release\n- Updated version numbers\n\n";
+    $releaseversion++;
+  print "Spec file $specfilename has been updated\n";
+}
+
+  $ARRAY[$releaseindex] = "Release:\t".(($setreleaseversion) ? $setreleaseversion : $releaseversion)."$releasesuffix\n";
+
+#Write back the spec file
+seek(FH,0,0) or die "Seeking: $!"; 
+print FH @ARRAY or die "Printing: $!"; 
+truncate(FH,tell(FH)) or die "Truncating: $!"; 
+close(FH) or die "Closing: $!";
+}
+
+__END__
+
+=head1 NAME
+
+B<rectify-spec-versions> - Rectify package versions from GPT metadata
+
+=head1 SYNOPSIS
+
+B<rectify-spec-versions> [options] 
+
+Options:
+
+=over
+
+=item B<-gptfile> filename
+
+The package's GPT source package description file (if you want to update only one package metadata)
+
+=item B<-packagelist> filename
+
+The list of packages/source locations to operate on.  Defaults to etc/package-list-5.1.0.  If gptfile is specified, it overrides any packagelist
+
+=item B<-email> emailaddress
+
+The packagers e-mail address (default: username@hostname)
+
+=item B<-verbose> 
+
+Output info about each spec file being considered instead of just those changed.
+
