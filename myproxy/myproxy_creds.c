@@ -1041,6 +1041,29 @@ error:
 }
 
 /*
+ * returns 1 if creds structure matches the query parameters; 0 otherwise
+ */
+static int
+myproxy_creds_match(struct myproxy_creds *creds,
+                    char *username, char *owner_name, char *credname,
+                    time_t start_time, time_t end_time)
+{
+    if (username && strcmp(username, creds->username))
+        return 0;
+    if (owner_name && strcmp(owner_name, creds->owner_name))
+        return 0;
+    if (credname &&
+        ((!creds->credname && credname[0] != '\0') ||
+         (creds->credname && strcmp(credname, creds->credname))))
+        return 0;
+    if ((start_time && start_time > creds->end_time) ||
+        (end_time && end_time < creds->end_time))
+        return 0;
+
+    return 1;
+}
+
+/*
  * We implement the query logic of both myproxy_creds_retrieve_all()
  * and myproxy_admin_retrieve_all() in this function here since
  * querying the repository has gotten sufficiently complex that we
@@ -1115,6 +1138,31 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
 
     new_cred = creds; /* new_cred is what we're filling in */
 
+    /*
+     * first add the credential w/o a credname, if one exists, because
+     * we always want it to be first on the list.
+     */
+    if (sterile_username &&
+        (!credname || credname[0] == '\0')) { /* only if no credname query */
+        assert(new_cred->username == NULL);
+        assert(new_cred->credname == NULL);
+        new_cred->username = strdup(sterile_username);
+        if (myproxy_creds_retrieve(new_cred) == 0) {
+            if (myproxy_creds_match(new_cred, username,
+                                    owner_name, credname,
+                                    start_time, end_time)) {
+                cur_cred = new_cred;
+                new_cred = malloc(sizeof(struct myproxy_creds));
+                memset(new_cred, 0, sizeof(struct myproxy_creds));
+                numcreds++;
+            }
+        }
+    }
+
+    /*
+     * next search for credentials with a credname, by scanning the
+     * entire directory...
+     */
     if ((dir = opendir(storage_dir)) == NULL) {
         verror_put_string("failed to open credential storage directory");
         goto error;
@@ -1146,18 +1194,13 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
                 new_cred->credname = NULL;
             }
             if (myproxy_creds_retrieve(new_cred) == 0) {
-                if (username && strcmp(username, new_cred->username))
+                if (sterile_username && !new_cred->credname)
+                    continue;   /* already handled cred w/o name */
+                if (!myproxy_creds_match(new_cred, username,
+                                         owner_name, credname,
+                                         start_time, end_time)) {
                     continue;
-                if (owner_name && strcmp(owner_name, new_cred->owner_name))
-                    continue;
-                if (credname &&
-                    ((!new_cred->credname && credname[0] != '\0') ||
-                     (new_cred->credname &&
-                      strcmp(credname, new_cred->credname))))
-                    continue;
-                if ((start_time && start_time > new_cred->end_time) ||
-                    (end_time && end_time < new_cred->end_time))
-                    continue;
+                }
                 if (cur_cred) cur_cred->next = new_cred;
                 cur_cred = new_cred;
                 new_cred = malloc(sizeof(struct myproxy_creds));
