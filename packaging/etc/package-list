@@ -53,9 +53,7 @@ globus_gram_job_manager_condor	gram/jobmanager/lrms/condor/source	gpt
 globus_gram_job_manager_pbs	gram/jobmanager/lrms/pbs/source	gpt
 globus_gram_job_manager_sge	gram/jobmanager/lrms/sge/source	gpt
 globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf	gpt
-globus_gram_job_manager_auditing        gram/jobmanager/auditing/source	gpt
-globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup	gpt
-globus_wsrf_gram_service_auditing_unit_test ws-gram/service/java/test/auditing tar
+globus_gram_audit        gram/jobmanager/auditing/source	gpt
 globus_gram_job_manager_auditing_test    gram/jobmanager/auditing/test gpt
 globus_gram_protocol	gram/protocol/source	gpt
 globus_gram_protocol_test	gram/protocol/test	gpt

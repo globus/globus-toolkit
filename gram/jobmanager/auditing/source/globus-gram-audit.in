@@ -1,4 +1,18 @@
-#! /usr/bin/env perl 
+#! /usr/bin/perl 
+
+# Copyright 1999-2011 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 require Pod::Usage;
 
@@ -8,7 +22,7 @@ globus-gram-audit - Upload audit records to a database.
 
 =head1 SYNOPSIS
 
-B<globus-gram-audit> [--conf I<CONFIG-FILE>] [--check] [--delete]
+B<globus-gram-audit> [--conf I<CONFIG-FILE>] [--create | --update=OLD-VERSION] [--check] [--delete]
                      [-audit-directory I<DIR>]
 
 =head1 DESCRIPTION
@@ -27,6 +41,10 @@ successfully, the audit files will be removed.
 =item B<--conf> I<CONFIG-FILE>
 
 Use CONFIG-FILE instead of the default for audit database information
+
+=item B<--create> | B<--update=OLD-VERSION>
+
+Create or update audit database tables.
 
 =item B<--check>
 
@@ -66,10 +84,13 @@ my $help = 0;
 my $conf_path = '';
 my %conf = ();
 my $query = undef;
+my $create = undef;
+my $update = undef;
 my $dbh;
 my $sth;
 my $check_sth;
 my $delete_sth;
+my $quiet = 0;
 
 GetOptions(
   'help' => \$help,
@@ -77,7 +98,11 @@ GetOptions(
   'check' => \$check,
   'delete' => \$delete,
   'query=s' => \$query,
-  'audit-directory=s' => \$audit_directory) || Pod::Usage::pod2usage(1);
+  'create' => \$create,
+  'update=s' => \$update,
+  'audit-directory=s' => \$audit_directory,
+  'quiet' => \$quiet)
+|| Pod::Usage::pod2usage(1);
 
 Pod::Usage::pod2usage(-verbose => 1, -exitval => 0) if $help;
 
@@ -85,16 +110,16 @@ Pod::Usage::pod2usage(-verbose => 1, -exitval => 0) if $help;
 # read it from job manager configuration file
 if ($audit_directory eq '') {
     $audit_directory = get_audit_directory();
-    if ($audit_directory eq '' && $query eq '') {
+    if ($audit_directory eq '' && $query eq '' && (!$create) && (!$update)) {
         print STDERR "No -audit-directory specified in job-manager.conf. " .
-            "Nothing to do\n";
+            "Nothing to do\n" unless ($quiet);
         exit(1);
     }
 }
 
 # Set default audit configuration path if not specified on command-line
 if ($conf_path eq '') {
-    $conf_path = "$Globus::Core::Paths::sysconfdir/globus-job-manager-audit.conf";
+    $conf_path = "$Globus::Core::Paths::sysconfdir/globus/gram-audit.conf";
 }
 
 # Parse configuration
@@ -110,18 +135,75 @@ if (!defined($dbh))
 # Implement query or else insert records from the audit directory
 if (defined($query))
 {
-    my $st;
-    my $rc;
-    $st = $dbh->prepare($query) || exit(1);
-    $rc = $st->execute;
+    &execute_query($dbh, $query);
+}
+elsif ($create)
+{
+    # Create DB table in the audit database. For SQLite, additionally create the
+    # directory for the table file if not present.
+    my $auditschemadir = "$Globus::Core::Paths::datadir/globus/gram-audit";
+    my $path;
+    my $fh;
+    my $table_sql;
 
-    if (defined($rc) && $rc ne '0E0') {
-        while (my @row = $st->fetchrow_array) {
-            print DBI::neat_list(\@row, 2560, ",") . "\n";
+    if ($conf{DRIVER} eq 'SQLite')
+    {
+        if ($conf{DATABASE} =~ m/dbname=([^;]*)/) {
+            my $dbdir = $1;
+            my $dbfile = $1;
+            $dbdir =~ s|/[^/]*$||;
+            mkdir $dbdir, 0700 if (! -d $dbdir);
         }
     }
 
-    $st->finish;
+    $path = "$auditschemadir/audit-$conf{DRIVER}-$conf{AUDITVERSION}.sql";
+
+    open($fh, "<$path")
+        || die "Unable to locate schema for driver $conf{DRIVER} and version $conf{AUDITVERSION} ($path)\n";
+
+    $table_sql = join('', <$fh>);
+
+    foreach (split(/;/, $table_sql)) {
+        chomp;
+        if ($_ ne '') {
+            &execute_query($dbh, $_) || die "Error creating table\n";
+        }
+    }
+    exit(1);
+}
+elsif ($update)
+{
+    # Update DB table in the audit database from $update version to currently
+    # configured version. For SQLite, additionally create the
+    # directory for the table file if not present.
+    my $auditschemadir = "$Globus::Core::Paths::datadir/globus/gram-audit";
+    my $path;
+    my $fh;
+    my $table_sql;
+
+    if ($conf{DRIVER} eq 'SQLite')
+    {
+        if ($conf{DATABASE} =~ m/dbname=([^;]*)/) {
+            my $dbdir = $1;
+            $dbdir =~ s|/[^/]*$||;
+            mkdir $dbdir, 0700 if (! -d $dbdir);
+        }
+    }
+
+    $path = "$auditschemadir/audit-$conf{DRIVER}-$update-$conf{AUDITVERSION}.sql";
+
+    open($fh, "<$path")
+        || die "Unable to locate upgrade schema for driver $conf{DRIVER} from version $update to $conf{AUDITVERSION} ($path)\n";
+
+    $table_sql = join('', <$fh>);
+
+    foreach (split(/;/, $table_sql)) {
+        chomp;
+        if ($_ ne '') {
+            &execute_query($dbh, $_) || die "Error updating tables\n";
+        }
+    }
+    exit(1);
 }
 else
 {
@@ -305,7 +387,7 @@ sub get_audit_directory {
     open(F, "<$jmconf");
     while(<F>) {
         if (m/-audit-directory\s+(\S+)\s+/) {
-            $audit_directory = $1;
+            $audit_directory = Globus::Core::Paths::eval_path($1);
             last;
         }
     }
@@ -331,7 +413,8 @@ sub parse_conf
 
     if (!open(CONF, "<$path"))
     {
-        print STDERR "Error opening configuration file \"$path\"\n";
+        print STDERR "Error opening configuration file \"$path\"\n"
+            unless ($quiet);
         return ();
     }
 
@@ -341,7 +424,7 @@ sub parse_conf
         chomp;
         ($key, $value) = split(/:/, $_, 2);
 
-        $result{$key} = $value;
+        $result{$key} = Globus::Core::Paths::eval_path($value);
     }
     return %result;
 }
@@ -370,7 +453,7 @@ sub dbconnect
     if (!$driver_ok)
     {
         print STDERR "Error connecting to database: driver "
-                   . "\"$conf->{DRIVER}\" not installed\n";
+                   . "\"$conf->{DRIVER}\" not installed\n" unless ($quiet);
         return undef;
     }
 
@@ -381,7 +464,7 @@ sub dbconnect
 
     if (!defined($dbh))
     {
-        print STDERR "Error connecting to database\n";
+        print STDERR "Error connecting to database\n" unless ($quiet);
         return undef;
     }
 
@@ -621,6 +704,24 @@ sub parse_timestamp
             sprintf("%04d-%02d-%02d %02d:%02d:%02d",
                    $7, $months{$2}, $3, $4, $5, $6);
     return $$timestamp_string_ref;
+}
+
+sub execute_query
+{
+    my ($dbh, $query) = @_;
+    my $st;
+    my $rc;
+
+    $st = $dbh->prepare($query) || exit(1);
+    $rc = $st->execute;
+
+    if (defined($rc) && $rc ne '0E0') {
+        while (my @row = $st->fetchrow_array) {
+            print DBI::neat_list(\@row, 2560, ",") . "\n";
+        }
+    }
+
+    $st->finish;
 }
 
 END {

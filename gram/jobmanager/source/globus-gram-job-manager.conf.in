@@ -1,1 +1,2 @@
 -globus-toolkit-version @GLOBUS_TOOLKIT_VERSION@
+-audit-directory @localstatedir@/lib/globus/gram-audit

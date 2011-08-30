@@ -42,10 +42,6 @@ BUNDLE globus-resource-management-server
         globus_scheduler_event_generator
 
 
-# globus_gram_job_manager_auditing_setup_scripts
-# globus_gram_job_manager_auditing
-# globus_gram_job_manager_auditing_test
-#
 BUNDLE globus-resource-management-sdk
 	globus_core
 	globus_common
@@ -236,7 +232,6 @@ BUNDLE	gram-gridftp-test
 	globus_authz_test
 	globus_xio_test
 	globus_proxy_utils_test
-	globus_gram_job_manager_auditing_test
 
 BUNDLE	prews-test
 	globus_test
@@ -255,7 +250,6 @@ BUNDLE	prews-test
 	globus_authz_test
         globus_xio_test
         globus_proxy_utils_test
-        globus_gram_job_manager_auditing_test
 
 BUNDLE globus-gsi
 	globus_gss_assist

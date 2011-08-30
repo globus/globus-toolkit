@@ -4,15 +4,52 @@ AC_INIT(Makefile.am)
 
 GLOBUS_INIT
 
-AM_PROG_LIBTOOL
-
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+pkgconffile=''
+
+AC_ARG_WITH(
+    [driver],
+    AC_HELP_STRING([--with-driver=DRIVER], [Set name of DBI Driver to use]),
+    [AUDIT_DRIVER="$withval"],
+    [AUDIT_DRIVER="SQLite"])
+
+AC_SUBST(AUDIT_DRIVER)
+
+AC_ARG_WITH(
+    [database],
+    AC_HELP_STRING([--with-database=DBNAME], [Set contact string for the database to use]),
+    [AUDIT_DATABASE="$withval"],
+    [AUDIT_DATABASE=dbname=${localstatedir}/lib/globus/gram-audit-database])
+AC_SUBST(AUDIT_DATABASE)
+
+AC_ARG_WITH(
+    [username],
+    AC_HELP_STRING([--with-username=USERNAME], [Set database username]),
+    [AUDIT_USERNAME="$withval"],
+    [AUDIT_USERNAME=""])
+AC_SUBST(AUDIT_USERNAME)
+
+AC_ARG_WITH(
+    [password],
+    AC_HELP_STRING([--with-password=PASSWORD], [Set database password]),
+    [AUDIT_PASSWORD="$withval"],
+    [AUDIT_PASSWORD=""])
+AC_SUBST(AUDIT_PASSWORD)
+
+AC_ARG_WITH(
+    [schema-version],
+    AC_HELP_STRING([--with-schema-version=1|1TG],
+        [Choose database schema version]),
+    [AUDIT_VERSION="$withval"],
+    [AUDIT_VERSION="1TG"])
+AC_SUBST(AUDIT_VERSION)
 
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,
-    [  --with-xml-catalog=PATH       Path to XML catalog],
+    AC_HELP_STRING([--with-xml-catalog=PATH], [Path to XML catalog]),
     [xml_catalog_path="$withval"],
     [xml_catalog_path="notset"])
 
@@ -35,6 +72,9 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
         globus-gram-audit
+        globus-gram-audit.cron
+        gram-audit.conf
+        schemas/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile

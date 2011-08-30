@@ -264,7 +264,7 @@ globus_gram_job_manager_config_init(
         else if ((strcmp(argv[i], "-audit-directory") == 0) 
                 && (i+1 < argc))
         {
-            config->auditing_dir = strdup(argv[++i]);
+            globus_eval_path(argv[++i], &config->auditing_dir);
         }
         else if ((strcmp(argv[i], "-globus-toolkit-version") == 0)
                 && (i+1 < argc))

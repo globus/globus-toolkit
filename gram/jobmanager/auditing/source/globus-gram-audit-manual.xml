@@ -22,9 +22,14 @@ $Header$
 <cmdsynopsis>
 <command>globus-gram-audit</command>
 <arg>--conf <replaceable>CONFIG_FILE</replaceable></arg>
+<group>
+    <arg>--create</arg>
+    <arg>--update=<replaceable>OLD-VERSION</replaceable></arg>
+</group>
 <arg>--check</arg>
 <arg>--delete</arg>
 <arg>--audit-directory <replaceable>AUDITDIR</replaceable></arg>
+<arg>--quiet</arg>
 </cmdsynopsis>
 </refsynopsisdiv>
 
@@ -76,6 +81,10 @@ consist of:
             <row>
                 <entry><option>--query <replaceable>SQL</replaceable></option></entry>
                 <entry>Perform the given SQL query on the audit database. This uses the database information from the configuration file to determine how to contact the database.</entry>
+            </row>
+            <row>
+                <entry><option>--quiet</option></entry>
+                <entry>Reduce the amount of output for common operations.</entry>
             </row>
         </tbody>
     </tgroup>

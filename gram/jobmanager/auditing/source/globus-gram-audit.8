@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: globus-gram-audit
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 10/28/2009
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 08/30/2011
 .\"    Manual: GRAM5 Commands
 .\"    Source: University of Chicago
 .\"  Language: English
 .\"
-.TH "GLOBUS\-GRAM\-AUDIT" "8" "10/28/2009" "University of Chicago" "GRAM5 Commands"
+.TH "GLOBUS\-GRAM\-AUDIT" "8" "08/30/2011" "University of Chicago" "GRAM5 Commands"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -22,7 +31,7 @@
 globus-gram-audit \- Load GRAM4 and GRAM5 audit records into a database
 .SH "SYNOPSIS"
 .HP \w'\fBglobus\-gram\-audit\fR\ 'u
-\fBglobus\-gram\-audit\fR [\-\-conf\ \fICONFIG_FILE\fR] [\-\-check] [\-\-delete] [\-\-audit\-directory\ \fIAUDITDIR\fR]
+\fBglobus\-gram\-audit\fR [\-\-conf\ \fICONFIG_FILE\fR] [[\-\-create] | [\-\-update=\fIOLD\-VERSION\fR]] [\-\-check] [\-\-delete] [\-\-audit\-directory\ \fIAUDITDIR\fR] [\-\-quiet]
 .SH "DESCRIPTION"
 .PP
 The
@@ -38,6 +47,7 @@ The full set of command\-line options to
 consist of:
 .TS
 tab(:);
+l l
 l l
 l l
 l l
@@ -69,6 +79,11 @@ T{
 \fB\-\-query \fR\fB\fISQL\fR\fR
 T}:T{
 Perform the given SQL query on the audit database\&. This uses the database information from the configuration file to determine how to contact the database\&.
+T}
+T{
+\fB\-\-quiet\fR
+T}:T{
+Reduce the amount of output for common operations\&.
 T}
 .TE
 .sp 1
