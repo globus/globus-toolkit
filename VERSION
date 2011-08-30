@@ -12,11 +12,15 @@ v5.5 XX Xxx 2011
     generated certificate request rather than generating private key
     and request internally
     (http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=347)
+  - in myproxy-server, fix abort when processing INFO response when
+    the user has stored credentials both with and without a credential
+    name; bug was introduced in myproxy-server v4.9
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7209)
   - use /var/lib/myproxy as first choice default storage directory,
     for Filesystem Hierarchy Standard compliance; still fallback to
     /var/myproxy and $GLOBUS_LOCATION/var/myproxy for alternatives
   - fix erroneous error message when no VOMS attributes found
-    (http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=7207)
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7207)
 
 v5.4 22 Apr 2011
   - support disabling reverse DNS lookup of server hostname in MyProxy clients
