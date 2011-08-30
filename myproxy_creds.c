@@ -1156,6 +1156,11 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
                 memset(new_cred, 0, sizeof(struct myproxy_creds));
                 numcreds++;
             }
+        } else {
+            verror_put_string("failed to retrieve credentials for "
+                              "username \"%s\"", new_cred->username);
+            myproxy_log_verror(); /* internal error; should not happen */
+            verror_clear();
         }
     }
 
