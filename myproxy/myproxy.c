@@ -888,7 +888,7 @@ myproxy_authenticate_accept_fqans(myproxy_socket_attrs_t *attrs, char *client_na
          GSI_SOCKET_ERROR)) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 	      			    sizeof(error_string));
-	verror_put_string("Error getting client VOMS attributes (%s). Continuing without attributes support.", error_string);
+        myproxy_debug("No client VOMS attributes (%s). Continuing without attributes support.\n", error_string);
     }
 
     return 0;
