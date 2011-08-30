@@ -54,6 +54,10 @@ else
 
 foreach my $gptmetadata (@packagelist)
 {
+if (!(-e $gptmetadata)){
+    print "$gptmetadata not found\n";
+    next;
+}
 my $parser = new XML::Parser(Style => 'Objects', Pkg => 'GPT');
 
 my %srcdeps;
