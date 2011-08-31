@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# globus-gridftp-sshftp	- Globus GridFTP Server
+# globus-gridftp-server	- Globus GridFTP Server
 # chkconfig: - 20 80
 # description: The Globus GridFTP server is a process which \
 #              implements the GridFTP protocol for secure, high-performance \

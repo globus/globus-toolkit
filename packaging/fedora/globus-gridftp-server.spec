@@ -108,6 +108,7 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
+mv %{_sysconfdir}/gridftp.conf.default %{_sysconfdir}/gridftp.conf
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
@@ -159,6 +160,7 @@ fi
 
 %files -f package-progs.filelist progs
 %defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/gridftp.conf
 
 %files -f package-devel.filelist devel
 %defattr(-,root,root,-)
