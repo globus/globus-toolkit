@@ -16,17 +16,27 @@ my $nodoc;
 my $help;
 my $packagelistfile;
 my $verbose;
+my $gtrelease = undef;
+my $gtreleaseuri = undef;
+my $changelog = undef;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
            'email=s' => \$email,
            'verbose' => \$verbose,
+           'release=s' => \$gtrelease,
+           'changelog=s' => \$changelog,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
 
 setlocale(LC_TIME, 'C');
 
+if ($gtrelease)
+{
+    my ($major, $minor, $micro) = split(/\./, $gtrelease);
+    $gtreleaseuri="http://www.globus.org/ftppub/gt$major/$major.$minor/$gtrelease/packages/src/";
+}
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
 my ($fullname, $location, $phone) = split(/,/, $pw->gecos);
@@ -187,14 +197,27 @@ foreach my $specline (@ARRAY)
             $specfile_changed = 1;
         }
     }
+    elsif ($specline =~ m/^Source:\s*(\S*)/ && $gtrelease)
+    {
+        if ($1 !~ m/$gtrelease/)
+        {
+            $specline =~ s/^(Source:\s*)(\S*)(.*)/$1$gtreleaseuri$2/;
+            $specfile_changed = 1;
+        }
+    }
 
     $index++;
+}
+
+if (!$changelog)
+{
+    $changelog = "Updated version numbers";
 }
 
 if ($specfile_changed)
 {
     $releaseversion++;
-    $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n- Updated version numbers\n\n";
+    $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n- $changelog\n\n";
     print "Spec file $specfilename has been updated\n";
 }
 
