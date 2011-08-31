@@ -15,11 +15,13 @@ MyProxy Credential Management Service
 <Dependency Name="globus_gss_assist" >
 <Version>
 <Simple_Version Major="3"/>
+<Simple_Version Major="8"/>
 </Version>
 </Dependency>
 <Dependency Name="globus_usage" >
 <Version>
 <Simple_Version Major="0"/>
+<Simple_Version Major="3"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
@@ -28,6 +30,7 @@ MyProxy Credential Management Service
 <Dependency Name="globus_gss_assist" >
 <Version>
 <Simple_Version Major="3"/>
+<Simple_Version Major="8"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
@@ -37,6 +40,7 @@ MyProxy Credential Management Service
 <Version>
 <Version_Range Lower_Minor="2" Upper_Minor="42" Upper_Major="3" Lower_Major="3" />
 <Simple_Version Major="4"/>
+<Simple_Version Major="9"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
@@ -45,11 +49,13 @@ MyProxy Credential Management Service
 <Dependency Name="globus_gss_assist" >
 <Version>
 <Simple_Version Major="3"/>
+<Simple_Version Major="8"/>
 </Version>
 </Dependency>
 <Dependency Name="globus_usage" >
 <Version>
 <Simple_Version Major="0"/>
+<Simple_Version Major="3"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
@@ -59,6 +65,7 @@ MyProxy Credential Management Service
 <Version>
 <Version_Range Lower_Minor="2" Upper_Minor="42" Upper_Major="0" Lower_Major="0" />
 <Simple_Version Major="1" />
+<Simple_Version Major="5" />
 </Version>
 </Dependency>
 </Source_Dependencies>
