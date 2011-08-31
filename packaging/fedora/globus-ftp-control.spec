@@ -12,7 +12,7 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	3.1
+Version:	4.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -33,11 +33,11 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-io-devel%{?_isa} >= 6
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-io-devel%{?_isa} >= 8
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -54,11 +54,11 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - GridFTP Control Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-gss-assist-devel%{?_isa} >= 3
-Requires:	globus-io-devel%{?_isa} >= 6
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 4
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-io-devel%{?_isa} >= 8
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - GridFTP Control Library Documentation Files
@@ -181,6 +181,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
+- Updated version numbers
+
 * Sat Jan 23 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 2.11-1
 - Update to Globus Toolkit 5.0.0
 

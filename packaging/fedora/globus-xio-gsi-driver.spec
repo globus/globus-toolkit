@@ -12,7 +12,7 @@
 
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.2
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
@@ -31,13 +31,13 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 2
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-xio-devel%{?_isa}
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 8
-BuildRequires:	globus-xio-doc
+Requires:	globus-common >= 14
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-xio-doc >= 3
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -54,10 +54,10 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus XIO GSI Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gssapi-error-devel%{?_isa} >= 2
-Requires:	globus-gss-assist-devel%{?_isa} >= 3
-Requires:	globus-xio-devel%{?_isa}
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 4
+Requires:	globus-gssapi-error-devel%{?_isa} >= 4
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 
 %package doc
 Summary:	Globus Toolkit - Globus XIO GSI Driver Documentation Files
@@ -182,6 +182,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
+- Updated version numbers
+
 * Wed Apr 14 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.6-5
 - Update to Globus Toolkit 5.0.1
 

@@ -12,8 +12,8 @@
 
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
-Release:	4%{?dist}
+Version:	3.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
@@ -30,7 +30,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-xio-devel%{?_isa} >= 2
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
 
 %package progs
 Summary:	Globus Toolkit - GFork Programs
@@ -41,7 +41,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Summary:	Globus Toolkit - GFork Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa} >= 2
+Requires:	globus-xio-devel%{?_isa} >= 3
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -144,6 +144,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-5
+- Updated version numbers
+
 * Sat Jan 23 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.2-4
 - Update to Globus Toolkit 5.0.0
 

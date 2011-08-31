@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	4.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -32,7 +32,7 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:  openssl-devel%{?_isa}
 BuildRequires:	graphviz
@@ -50,7 +50,7 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library Documentation Files
@@ -168,6 +168,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
+- Updated version numbers
+
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 2.3-1
 - Update to Globus Toolkit 5.0.2
 - Drop patch globus-gsi-proxy-ssl-oid.patch (fixed upstream)

@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
+Version:	5.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
@@ -31,11 +31,11 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-openssl-module-devel%{?_isa}
-BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-openssl-module-devel%{?_isa} >= 3
+BuildRequires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -52,10 +52,10 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus GSI System Config Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-openssl-module-devel%{?_isa}
-Requires:	globus-gsi-openssl-error-devel%{?_isa}
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-openssl-module-devel%{?_isa} >= 3
+Requires:	globus-gsi-openssl-error-devel%{?_isa} >=2
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus GSI System Config Library Documentation Files
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
+- Updated version numbers
+
 * Wed Apr 14 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 3.1-1
 - Update to Globus Toolkit 5.0.1
 - Drop patch globus-gsi-sysconfig-doxygen.patch (fixed upstream)

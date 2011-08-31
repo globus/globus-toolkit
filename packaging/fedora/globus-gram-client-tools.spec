@@ -12,8 +12,8 @@
 
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	9.0
-Release:	0%{?dist}
+Version:	10.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
@@ -22,14 +22,14 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common-progs >= 3
+Requires:	globus-common-progs >= 14
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-gass-server-ez-devel%{?_isa} >= 2
-BuildRequires:	globus-gram-client-devel%{?_isa} >= 9
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-rsl-devel%{?_isa} >= 8
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-gass-server-ez-devel%{?_isa} >= 4
+BuildRequires:	globus-gram-client-devel%{?_isa} >= 12
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-rsl-devel%{?_isa} >= 9
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -79,6 +79,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 10.0-1
+- Updated version numbers
+
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 8.2-3
 - Add README file
 

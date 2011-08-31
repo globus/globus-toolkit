@@ -16,7 +16,7 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	0%{?dist}
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -27,12 +27,12 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if %{?fedora}%{!?fedora:0} >= 10 || %{?rhel}%{!?rhel:0} >= 6
 BuildArch:      noarch
 %endif
-Requires:	globus-common >= 13
+Requires:	globus-common >= 14
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires:	perl(DBI)
 Requires:	crontabs
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-core
+BuildRequires:	globus-core >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -94,3 +94,6 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-1
+- Updated version numbers
+

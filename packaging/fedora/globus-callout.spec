@@ -12,7 +12,7 @@
 
 Name:		globus-callout
 %global _name %(tr - _ <<< %{name})
-Version:	1.1
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Callout Library
 
@@ -33,8 +33,8 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:	grid-packaging-tools
 BuildRequires:	libtool-ltdl-devel%{?_isa} >= 1
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -51,8 +51,8 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus Callout Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus Callout Library Documentation Files
@@ -170,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
+- Updated version numbers
+
 * Fri Jan 22 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.7-6
 - Update to Globus Toolkit 5.0.0
 

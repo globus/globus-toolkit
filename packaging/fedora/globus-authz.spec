@@ -12,7 +12,7 @@
 
 Name:		globus-authz
 %global _name %(tr - _ <<< %{name})
-Version:	1.1
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus authz library
 
@@ -31,11 +31,11 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
+Requires:	globus-common >= 14
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-authz-callout-error-devel%{?_isa}
-BuildRequires:	globus-callout-devel%{?_isa}
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
+BuildRequires:	globus-authz-callout-error-devel%{?_isa} >= 2
+BuildRequires:	globus-callout-devel%{?_isa} >= 2
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -54,7 +54,7 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-authz-callout-error-devel%{?_isa}
 Requires:	globus-callout-devel%{?_isa}
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 4
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 
 %package doc
 Summary:	Globus Toolkit - Globus authz library Documentation Files
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
+- Updated version numbers
+
 * Sat Jan 23 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.7-2
 - Update to Globus Toolkit 5.0.0
 

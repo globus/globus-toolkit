@@ -12,7 +12,7 @@
 
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
+Version:	5.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
@@ -29,20 +29,20 @@ Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
-Requires:	globus-gsi-credential%{?_isa} >= 3
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 1
-BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 3
-BuildRequires:	globus-gsi-callback-devel%{?_isa}
-BuildRequires:	globus-openssl-module-devel%{?_isa}
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
+Requires:	globus-gsi-credential%{?_isa} >= 5
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
+BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 5
+BuildRequires:	globus-gsi-callback-devel%{?_isa} >= 4
+BuildRequires:	globus-openssl-module-devel%{?_isa} >= 3
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 BuildRequires:	openssl-devel%{?_isa}
-BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 1
-BuildRequires:	globus-core%{?_isa} >= 4
-BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 1
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 1
+BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 6
+BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-gsi-sysconfig-devel%{?_isa} >= 5
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -95,6 +95,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
+- Updated version numbers
+
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 3.9-1
 - Update to Globus Toolkit 5.0.2
 - Drop patch globus-proxy-utils-oid.patch (fixed upstream)

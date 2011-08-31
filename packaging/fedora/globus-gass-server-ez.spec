@@ -12,7 +12,7 @@
 
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	3.0
+Version:	4.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -24,10 +24,10 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-gass-transfer-devel%{?_isa} >= 2
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-gass-transfer-devel%{?_isa} >= 7
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %package progs
 Summary:	Globus Toolkit - Globus Gass Server_ez Programs
@@ -38,10 +38,10 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Summary:	Globus Toolkit - Globus Gass Server_ez Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-gss-assist-devel%{?_isa} >= 3
-Requires:	globus-gass-transfer-devel%{?_isa} >= 2
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-gass-transfer-devel%{?_isa} >= 7
+Requires:	globus-core%{?_isa} >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -127,6 +127,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
+- Updated version numbers
+
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 2.6-3
 - Add README file
 

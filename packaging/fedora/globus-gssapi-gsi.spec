@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	8.5
+Version:	9.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -32,15 +32,15 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa} 
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 1
-BuildRequires:	globus-gsi-callback-devel%{?_isa} >= 3
-BuildRequires:	globus-openssl-module-devel%{?_isa}
-BuildRequires:	globus-gsi-openssl-error-devel%{?_isa}
-BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 1
-BuildRequires:	globus-core%{?_isa} >= 4
-BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 5
-BuildRequires:	globus-common-devel%{?_isa} >= 3
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 5
+BuildRequires:	globus-gsi-callback-devel%{?_isa} >= 4
+BuildRequires:	globus-openssl-module-devel%{?_isa} >= 3
+BuildRequires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
+BuildRequires:	globus-gsi-proxy-core-devel%{?_isa} >= 6
+BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
+BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -57,14 +57,14 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - GSSAPI library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gsi-credential-devel%{?_isa} >= 1
-Requires:	globus-gsi-callback-devel%{?_isa}
-Requires:	globus-openssl-module-devel%{?_isa}
-Requires:	globus-gsi-openssl-error-devel%{?_isa}
-Requires:	globus-gsi-proxy-core-devel%{?_isa} >= 1
-Requires:	globus-core%{?_isa} >= 4
-Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 5
-Requires:	globus-common-devel%{?_isa} >= 3
+Requires:	globus-gsi-credential-devel%{?_isa} >= 5
+Requires:	globus-gsi-callback-devel%{?_isa} >= 4
+Requires:	globus-openssl-module-devel%{?_isa} >= 3
+Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
+Requires:	globus-gsi-proxy-core-devel%{?_isa} >= 6
+Requires:	globus-core%{?_isa} >= 8
+Requires:	globus-gsi-cert-utils-devel%{?_isa} >= 8
+Requires:	globus-common-devel%{?_isa} >= 14
 
 %package doc
 Summary:	Globus Toolkit - GSSAPI library Documentation Files
@@ -184,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 9.0-2
+- Updated version numbers
+
 * Wed Apr 14 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 7.5-1
 - Update to Globus Toolkit 5.0.1
 - Drop patch globus-gssapi-gsi-openssl.patch (fixed upstream)

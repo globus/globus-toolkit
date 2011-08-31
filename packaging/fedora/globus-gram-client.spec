@@ -12,7 +12,7 @@
 
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	11.1
+Version:	12.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
@@ -25,15 +25,15 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 9
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-rsl-devel%{?_isa} >= 3
-BuildRequires:	globus-io-devel%{?_isa} >= 3
-BuildRequires:	globus-core%{?_isa} >= 4
-BuildRequires:	globus-gram-protocol-doc >= 3
-BuildRequires:	globus-common-doc
+Requires:	globus-common >= 14
+BuildRequires:	grid-packaging-tools >= 8
+BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-rsl-devel%{?_isa} >= 9
+BuildRequires:	globus-io-devel%{?_isa} >= 8
+BuildRequires:	globus-core%{?_isa} >= 8
+BuildRequires:	globus-gram-protocol-doc >= 11
+BuildRequires:	globus-common-doc >= 14
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -50,11 +50,11 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - GRAM Client Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gram-protocol-devel%{?_isa} >= 9
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-rsl-devel%{?_isa} >= 3
-Requires:	globus-io-devel%{?_isa} >= 3
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-gram-protocol-devel%{?_isa} >= 11
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-rsl-devel%{?_isa} >= 9
+Requires:	globus-io-devel%{?_isa} >= 8
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - GRAM Client Library Documentation Files
@@ -166,6 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 12.0-2
+- Updated version numbers
+
 * Sun Jun 05 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 10.4-4
 - Fix doxygen markup
 

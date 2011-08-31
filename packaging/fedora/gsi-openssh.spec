@@ -133,10 +133,10 @@ BuildRequires: krb5-devel
 %endif
 
 %if %{gsi}
-BuildRequires: globus-gss-assist-devel
-BuildRequires: globus-usage-devel
-BuildRequires: globus-common-progs
-BuildRequires: grid-packaging-tools
+BuildRequires: globus-gss-assist-devel >= 8
+BuildRequires: globus-usage-devel >= 3
+BuildRequires: globus-common-progs >= 14
+BuildRequires: grid-packaging-tools >= 3.4
 %endif
 
 %if %{libedit}

@@ -12,7 +12,7 @@
 
 Name:		globus-authz-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus authz error library
 
@@ -33,7 +33,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
+BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -50,7 +50,7 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus authz error library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
+Requires:	globus-common-devel%{?_isa} >= 14
 
 %package doc
 Summary:	Globus Toolkit - Globus authz error library Documentation Files
@@ -168,6 +168,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
+- Updated version numbers
+
 * Wed Apr 14 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.5-1
 - Update to Globus Toolkit 5.0.1
 - Drop patch globus-authz-callout-error.patch (fixed upstream)

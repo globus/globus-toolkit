@@ -12,7 +12,7 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	7.1
+Version:	8.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
@@ -28,21 +28,21 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-xio-gsi-driver%{?_isa}
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa}
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-xio-devel%{?_isa}
-BuildRequires:	globus-core%{?_isa} >= 4
+Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %package devel
 Summary:	Globus Toolkit - uniform I/O interface Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-gsi-driver-devel%{?_isa}
-Requires:	globus-gss-assist-devel%{?_isa} >= 3
-Requires:	globus-xio-devel%{?_isa}
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+Requires:	globus-gss-assist-devel%{?_isa} >= 8
+Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-core%{?_isa} >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
+- Updated version numbers
+
 * Sat Jan 23 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 6.3-4
 - Update to Globus Toolkit 5.0.0
 

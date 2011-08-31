@@ -12,7 +12,7 @@
 
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
+Version:	3.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Usage Library
 
@@ -28,17 +28,17 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-xio-devel%{?_isa}
-BuildRequires:	globus-core%{?_isa} >= 4
+Requires:	globus-common >= 14
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %package devel
 Summary:	Globus Toolkit - Usage Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa}
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-core%{?_isa} >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -113,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-2
+- Updated version numbers
+
 * Wed Apr 14 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 1.3-1
 - Update to Globus Toolkit 5.0.1
 

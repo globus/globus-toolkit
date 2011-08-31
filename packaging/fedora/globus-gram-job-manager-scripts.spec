@@ -8,7 +8,7 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	3.5
+Version:	4.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
@@ -19,10 +19,10 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common-progs >= 2
+Requires:	globus-common-progs >= 14
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-core
+BuildRequires:	globus-core >= 8
 
 %package doc
 Summary:	Globus Toolkit - GRAM Job ManagerScripts Documentation Files

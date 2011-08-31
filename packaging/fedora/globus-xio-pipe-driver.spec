@@ -12,7 +12,7 @@
 
 Name:		globus-xio-pipe-driver
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Pipe Driver
 
@@ -28,15 +28,15 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-xio-devel%{?_isa}
+Requires:	globus-common >= 14
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
 
 %package devel
 Summary:	Globus Toolkit - Globus Pipe Driver Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-devel%{?_isa}
+Requires:	globus-xio-devel%{?_isa} >= 3
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid

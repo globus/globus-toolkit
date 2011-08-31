@@ -7,8 +7,8 @@
 %endif
 
 Name:           myproxy
-Version:        5.5
-Release:        1%{?dist}
+Version:	6.0
+Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -28,8 +28,8 @@ Source0:        http://downloads.sourceforge.net/cilogon/myproxy-%{version}.tar.
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  globus-gss-assist-devel > 3
-BuildRequires:  globus-usage-devel
+BuildRequires:  globus-gss-assist-devel >= 8
+BuildRequires:  globus-usage-devel >= 3
 BuildRequires:  pam-devel
 BuildRequires:  graphviz
 BuildRequires:  voms-devel >= 1.9.12.1
@@ -55,7 +55,7 @@ BuildRequires:  tetex-latex
 %endif
 
 Requires:      myproxy-libs = %{version}-%{release}
-Requires:      globus-proxy-utils
+Requires:      globus-proxy-utils >= 5
 Requires:      voms-clients
 
 Obsoletes:     myproxy-client < 5.1-3
@@ -89,8 +89,8 @@ Requires:      myproxy-libs = %{version}-%{release}
 # in .el5 and 4 this dependency is not picked up
 # automatically via pkgconfig
 %if  0%{?el4}%{?el5}
-Requires:      globus-gss-assist-devel > 3
-Requires:      globus-usage-devel
+Requires:      globus-gss-assist-devel > 8
+Requires:      globus-usage-devel >= 3
 %endif
 
 Summary:       Develop X.509 Public Key Infrastructure (PKI) security credentials 
@@ -133,7 +133,7 @@ Package %{name}-server contains the MyProxy server.
 Requires:      myproxy-server = %{version}-%{release}
 Requires:      myproxy-libs   = %{version}-%{release}
 Requires:      myproxy = %{version}-%{release}
-Requires:      globus-gsi-cert-utils-progs
+Requires:      globus-gsi-cert-utils-progs >= 8
 Summary:       Server for X.509 Public Key Infrastructure (PKI) security credentials 
 Group:         System Environment/Daemons
 

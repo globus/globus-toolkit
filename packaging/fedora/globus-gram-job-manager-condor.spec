@@ -8,7 +8,7 @@
 
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
-Version:	0.2
+Version:	1.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
@@ -23,11 +23,11 @@ Requires:	globus-gass-cache-program >= 2
 Requires:	globus-common-progs >= 2
 Requires:       condor
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-Requires(post): globus-gram-job-manager-scripts >= 3.4
-Requires(preun): globus-gram-job-manager-scripts >= 3.4
+Requires(post): globus-gram-job-manager-scripts >= 4
+Requires(preun): globus-gram-job-manager-scripts >= 4
 Provides:       globus-gram-job-manager-setup
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-core
+BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"

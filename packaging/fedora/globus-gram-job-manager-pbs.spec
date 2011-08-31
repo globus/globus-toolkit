@@ -15,7 +15,7 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	0.1
+Version:	1.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
@@ -26,17 +26,17 @@ Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-pbs < 4.5
 
-Requires:       globus-gram-job-manager-scripts >= 3.4
-Requires:	globus-gass-cache-program >= 4
-Requires:	globus-common-progs >= 2
+Requires:       globus-gram-job-manager-scripts >= 4
+Requires:	globus-gass-cache-program >= 5
+Requires:	globus-common-progs >= 14
 Requires:       torque-client
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-core
-BuildRequires:	globus-common-devel
-BuildRequires:	globus-xio-devel
-BuildRequires:	globus-scheduler-event-generator-devel
-BuildRequires:	globus-gram-protocol-devel
+BuildRequires:	globus-core >= 8
+BuildRequires:	globus-common-devel >= 14
+BuildRequires:	globus-xio-devel >= 3
+BuildRequires:	globus-scheduler-event-generator-devel >= 4
+BuildRequires:	globus-gram-protocol-devel >= 11
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -77,10 +77,10 @@ Group:		Applications/Internet
 Provides:       %{name}-setup
 Provides:       globus-gram-job-manager-setup
 Requires:	%{name} = %{version}-%{release}
-Requires:       globus-scheduler-event-generator-progs >= 3.1
+Requires:       globus-scheduler-event-generator-progs >= 4
 Requires:       torque-server
-requires(post): globus-gram-job-manager-scripts >= 3.4
-requires(preun): globus-gram-job-manager-scripts >= 3.4
+Requires(post): globus-gram-job-manager-scripts >= 4
+Requires(preun): globus-gram-job-manager-scripts >= 4
 Conflicts:      %{name}-setup-poll
 
 %description
@@ -253,3 +253,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
+- Updated version numbers
+

@@ -12,7 +12,7 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	3.4
+Version:	4.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -25,14 +25,14 @@ Source:		%{_name}-%{version}.tar.gz
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-xio-gsi-driver%{?_isa}
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 5
+Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
 BuildRequires:	libtool-ltdl-devel%{?_isa}
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa}
-BuildRequires:	globus-xio-devel%{?_isa}
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -51,20 +51,20 @@ Group:		Applications/Internet
 BuildRequires:  lsb
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	lsb
-Requires:	globus-xio-gsi-driver%{?_isa}
-Requires(post): globus-common-progs >= 13.4
-Requires(preun):globus-common-progs >= 13.4
+Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+Requires(post): globus-common-progs >= 14
+Requires(preun):globus-common-progs >= 14
 
 %package devel
 Summary:	Globus Toolkit - Scheduler Event Generator Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gram-protocol-devel%{?_isa} >= 5
+Requires:	globus-gram-protocol-devel%{?_isa} >= 11
 Requires:	libtool-ltdl-devel%{?_isa}
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-xio-gsi-driver-devel%{?_isa}
-Requires:	globus-xio-devel%{?_isa}
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Scheduler Event Generator Documentation Files
@@ -212,6 +212,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
+- Updated version numbers
+
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 2.1-4
 - Add README file
 

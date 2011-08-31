@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	5.5
+Version:	6.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -28,33 +28,33 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-xio-gsi-driver%{?_isa} >= 1
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gridftp-server-control-devel%{?_isa}
-BuildRequires:	globus-usage-devel%{?_isa} >= 1
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 1
-BuildRequires:	globus-xio-devel%{?_isa}
-BuildRequires:	globus-authz-devel%{?_isa}
-BuildRequires:	globus-gfork-devel%{?_isa}
-BuildRequires:	globus-ftp-control-devel%{?_isa} >= 1
+Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-gridftp-server-control-devel%{?_isa} >= 2
+BuildRequires:	globus-usage-devel%{?_isa} >= 3
+BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-authz-devel%{?_isa} >= 2
+BuildRequires:	globus-gfork-devel%{?_isa} >= 3
+BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
 
 %package progs
 Summary:	Globus Toolkit - Globus GridFTP Server Programs
 Group:		Applications/Internet
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-gsi-driver%{?_isa}
+Requires:	globus-xio-gsi-driver%{?_isa} >= 2
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-gridftp-server-control-devel%{?_isa}
-Requires:	globus-usage-devel%{?_isa} >= 1
-Requires:	globus-xio-gsi-driver-devel%{?_isa}
-Requires:	globus-xio-devel%{?_isa}
-Requires:	globus-authz-devel%{?_isa}
-Requires:	globus-gfork-devel%{?_isa}
-Requires:	globus-ftp-control-devel%{?_isa} >= 1
+Requires:	globus-gridftp-server-control-devel%{?_isa} >= 2
+Requires:	globus-usage-devel%{?_isa} >= 3
+Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-authz-devel%{?_isa} >= 2
+Requires:	globus-gfork-devel%{?_isa} >= 3
+Requires:	globus-ftp-control-devel%{?_isa} >= 4
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -164,6 +164,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 6.0-2
+- Updated version numbers
+
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 3.23-1
 - Update to Globus Toolkit 5.0.2
 

@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	0%{?dist}
+Version:	2.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GRAM Jobmanager Callout Errors
 
 Group:		System Environment/Libraries
@@ -27,8 +27,8 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -45,8 +45,8 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus GRAM Jobmanager Callout Errors Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus GRAM Jobmanager Callout Errors Documentation Files
@@ -157,6 +157,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-1
+- Updated version numbers
+
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.2-4
 - Add README file
 

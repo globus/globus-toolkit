@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	1.3
+Version:	2.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
@@ -28,22 +28,22 @@ URL:		http://www.globus.org/
 Source:		%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-xio-pipe-driver%{?_isa}
-Requires:	globus-xio-gsi-driver%{?_isa}
-BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-xio-pipe-driver-devel%{?_isa}
-BuildRequires:	globus-common-devel%{?_isa} >= 5
-BuildRequires:	globus-xio-gsi-driver-devel%{?_isa}
-BuildRequires:	globus-xio-devel%{?_isa}
+Requires:	globus-xio-pipe-driver%{?_isa} >= 2
+Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+BuildRequires:	grid-packaging-tools >= 3.4
+BuildRequires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+BuildRequires:	globus-xio-devel%{?_isa} >= 3
 
 %package devel
 Summary:	Globus Toolkit - Globus GridFTP Server Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-xio-pipe-driver-devel%{?_isa}
-Requires:	globus-common-devel%{?_isa} >= 5
-Requires:	globus-xio-gsi-driver-devel%{?_isa}
-Requires:	globus-xio-devel%{?_isa}
+Requires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
+Requires:	globus-xio-devel%{?_isa} >=3
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
+- Updated version numbers
+
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.43-1
 - Update to Globus Toolkit 5.0.2
 

@@ -12,7 +12,7 @@
 
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	7.3
+Version:	8.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -33,13 +33,13 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-ftp-client-devel%{?_isa} >= 5
-BuildRequires:	globus-common-devel%{?_isa} >= 6
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
-BuildRequires:	globus-io-devel%{?_isa} >= 3
-BuildRequires:	globus-gass-transfer-devel%{?_isa} >= 2
-BuildRequires:	globus-ftp-control-devel%{?_isa} >= 1
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-ftp-client-devel%{?_isa} >= 7
+BuildRequires:	globus-common-devel%{?_isa} >= 14
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-io-devel%{?_isa} >= 8
+BuildRequires:	globus-gass-transfer-devel%{?_isa} >= 7
+BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -61,13 +61,13 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Summary:	Globus Toolkit - Globus Gass Copy Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-ftp-client-devel%{?_isa} >= 5
-Requires:	globus-common-devel%{?_isa} >= 6
-Requires:	globus-gssapi-gsi-devel%{?_isa} >= 4
-Requires:	globus-io-devel%{?_isa} >= 3
-Requires:	globus-gass-transfer-devel%{?_isa} >= 2
-Requires:	globus-ftp-control-devel%{?_isa} >= 1
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-ftp-client-devel%{?_isa} >= 7
+Requires:	globus-common-devel%{?_isa} >= 14
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+Requires:	globus-io-devel%{?_isa} >= 8
+Requires:	globus-gass-transfer-devel%{?_isa} >= 7
+Requires:	globus-ftp-control-devel%{?_isa} >= 4
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus Gass Copy Documentation Files
@@ -197,6 +197,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
+- Updated version numbers
+
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.7-1
 - Update to Globus Toolkit 5.0.2
 

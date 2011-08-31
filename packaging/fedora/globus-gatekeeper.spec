@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	7.6
+Version:	8.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -28,9 +28,9 @@ Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
 BuildRequires:  lsb
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-gss-assist-devel%{?_isa} >= 3
-BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 4
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
+BuildRequires:	globus-core%{?_isa} >= 8
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -111,6 +111,9 @@ fi
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
+- Updated version numbers
+
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.7-4
 - Add README file
 

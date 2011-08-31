@@ -12,8 +12,8 @@
 
 Name:		globus-gsi-openssl-error
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	6%{?dist}
+Version:	2.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling
 
 Group:		System Environment/Libraries
@@ -33,9 +33,9 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-common-devel%{?_isa} >= 3
+BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	openssl-devel%{?_isa}
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 %if "%{?rhel}" == "5"
@@ -52,9 +52,9 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Requires:	globus-common-devel%{?_isa} >= 3
+Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	openssl-devel%{?_isa} 
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-core%{?_isa} >= 8
 
 %package doc
 Summary:	Globus Toolkit - Globus OpenSSL Error Handling Documentation Files
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-7
+- Updated version numbers
+
 * Thu Jan 21 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.14-6
 - Update to Globus Toolkit 5.0.0
 

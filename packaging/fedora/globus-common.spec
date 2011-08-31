@@ -15,7 +15,7 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	13.5
+Version:	14.0
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
@@ -44,7 +44,7 @@ Obsoletes:	globus-duroc-common
 Obsoletes:	globus-duroc-control
 Obsoletes:	globus-libtool%{?_isa}
 BuildRequires:	grid-packaging-tools
-BuildRequires:	globus-core%{?_isa} >= 4
+BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz
 BuildRequires:	libtool-ltdl-devel
@@ -70,7 +70,7 @@ Summary:	Globus Toolkit - Common Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Obsoletes:	globus-libtool%{?_isa}
-Requires:	globus-core%{?_isa} >= 4
+Requires:	globus-core%{?_isa} >= 8
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
 Obsoletes:	globus-data-conversion-devel
 Obsoletes:	globus-mp-devel
@@ -240,6 +240,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 14.0-2
+- Updated version numbers
+
 * Mon Sep 06 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 11.5-3
 - Updated pthread exception patch for better compatibility with boost's headers
 
