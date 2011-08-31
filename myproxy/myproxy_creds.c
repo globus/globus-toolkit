@@ -1157,10 +1157,7 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
                 numcreds++;
             }
         } else {
-            verror_put_string("failed to retrieve credentials for "
-                              "username \"%s\"", new_cred->username);
-            myproxy_log_verror(); /* internal error; should not happen */
-            verror_clear();
+            verror_clear();     /* OK if we don't find creds w/o credname */
         }
     }
 
@@ -1214,8 +1211,7 @@ myproxy_creds_retrieve_all_ex(struct myproxy_creds *creds)
             } else {
                 verror_put_string("failed to retrieve credentials for "
                                   "username \"%s\", credname \"%s\"",
-                                  new_cred->username,
-                                  new_cred->credname ? new_cred->credname : "");
+                                  de->d_name, cname ? cname : "");
                 myproxy_log_verror(); /* internal error; should not happen */
                 verror_clear();
             }
