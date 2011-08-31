@@ -600,6 +600,33 @@ globus_l_gfs_file_partition_path(
 }
 
 static
+globus_result_t
+globus_l_gfs_file_realpath(
+    const char *                        in_path,
+    char **                             out_path,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    char                                resolved[MAXPATHLEN];
+    GlobusGFSName(globus_l_gfs_file_stat);
+    GlobusGFSFileDebugEnter();
+    
+    if(realpath(in_path, resolved) == NULL)
+    {
+        result = GlobusGFSErrorSystemError("realpath", errno);
+        goto error;
+    }
+    *out_path = globus_libc_strdup(resolved);
+
+    GlobusGFSFileDebugExit();
+    return GLOBUS_SUCCESS;
+
+error:
+    GlobusGFSFileDebugExitWithError();
+    return result;
+}
+
+static
 void
 globus_l_gfs_file_copy_stat(
     globus_gfs_stat_t *                 stat_object,
@@ -2880,7 +2907,8 @@ static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface =
     globus_l_gfs_file_command, 
     globus_l_gfs_file_stat,
     NULL,
-    NULL
+    NULL,
+    globus_l_gfs_file_realpath
 };
 
 GlobusExtensionDefineModule(globus_gridftp_server_file) =

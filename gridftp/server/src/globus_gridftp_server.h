@@ -691,6 +691,20 @@ typedef void
     void *                              user_arg);
 
 
+/*
+ *  realpath
+ *
+ * This defines the function that will be called to determine a true path
+ * free of symlinks or other obsfucation.
+ */
+
+typedef globus_result_t
+(*globus_gfs_storage_realpath_t)(
+    const char *                        in_path,
+    char **                             out_realpath,
+    void *                              user_arg);
+
+
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SENDER 0x01
 #define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING 0x02
 /*
@@ -725,8 +739,8 @@ typedef struct globus_gfs_storage_iface_s
 
     globus_gfs_storage_set_cred_t       set_cred_func;
     globus_gfs_storage_buffer_send_t    buffer_send_func;
+    globus_gfs_storage_realpath_t       realpath_func;
 } globus_gfs_storage_iface_t;
-
 
 /**
  * Notification Functions
