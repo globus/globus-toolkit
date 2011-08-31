@@ -27,6 +27,11 @@ globus_i_gfs_config_init(
     char **                             argv,
     globus_bool_t                       argv_only);
 
+void
+globus_i_gfs_config_init_envs(
+    int                                 argc,
+    char **                             argv);
+
 void *
 globus_i_gfs_config_get(
     const char *                        option_name);
