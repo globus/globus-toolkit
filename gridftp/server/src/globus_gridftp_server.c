@@ -1266,7 +1266,7 @@ globus_l_gfs_server_build_child_args(
     {
     }
     globus_l_gfs_child_argv = (char **)
-        globus_calloc(1, sizeof(char *) * (i + 2));
+        globus_calloc(1, sizeof(char *) * (i + 10));
     if(globus_l_gfs_child_argv == NULL)
     {
         globus_result_t             result;
@@ -1303,6 +1303,10 @@ globus_l_gfs_server_build_child_args(
         {
             continue;
         }
+        if(!strcmp(arg, "config_base_path"))
+        {
+            continue;
+        }
 
         globus_l_gfs_child_argv[j++] = prog_argv[i];
     }
@@ -1315,6 +1319,14 @@ globus_l_gfs_server_build_child_args(
     {
         globus_l_gfs_child_argv[j++] = "-inetd";
     }
+    
+    if(globus_i_gfs_config_string("config_base_path"))
+    {
+        globus_l_gfs_child_argv[j++] = "-config-base-path";
+        globus_l_gfs_child_argv[j++] = 
+            globus_i_gfs_config_string("config_base_path");
+    }
+    
     globus_l_gfs_child_argv[j] = NULL;
     globus_l_gfs_child_argc = j;
 }
@@ -1521,6 +1533,10 @@ main(
     {
         setenv("GLOBUS_CALLBACK_POLLING_THREADS", "1", 1); 
     }
+
+    /* parse and set envs from config file before loading modules */
+    globus_i_gfs_config_init_envs(argc, argv);
+
     /* activate globus stuff */    
     if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||
