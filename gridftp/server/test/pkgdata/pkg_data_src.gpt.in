@@ -10,21 +10,21 @@
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_gridftp_server">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_gridftp_server">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_gridftp_server">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
