@@ -109,6 +109,7 @@ make %{?_smp_mflags}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 install -m644 %{_sysconfdir}/gridftp.conf.default %{_sysconfdir}/gridftp.conf
+install -m644 %{_sysconfdir}/gridftp.gfork.default %{_sysconfdir}/gridftp.gfork
 install -D -m644 %{_sysconfdir}/gridftp.xinetd.default %{_sysconfdir}/xinetd.d/gridftp
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
@@ -162,6 +163,7 @@ fi
 %files -f package-progs.filelist progs
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/gridftp.conf
+%config(noreplace) %{_sysconfdir}/gridftp.gfork
 %config(noreplace) %{_sysconfdir}/xinetd.d/*
 
 %files -f package-devel.filelist devel
