@@ -1823,7 +1823,7 @@ globus_l_gfs_config_adjust_path(
 
     val = globus_i_gfs_config_string(opt_name);
     
-    if(val && *val != '/')
+    if(val && *val != '/' && *val != '$')
     {
         base_path = globus_i_gfs_config_string("config_base_path");
         new_val = globus_common_create_string("%s/%s", base_path, val);
@@ -1859,6 +1859,7 @@ globus_l_gfs_config_misc()
     globus_l_gfs_config_adjust_path("log_transfer", 1);
     globus_l_gfs_config_adjust_path("banner_file", 1);
     globus_l_gfs_config_adjust_path("login_msg_file", 1);
+    globus_l_gfs_config_adjust_path("pidfile", 1);
 
     if(globus_i_gfs_config_bool("detach") && 
         !globus_i_gfs_config_bool("daemon"))
