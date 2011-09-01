@@ -21,13 +21,13 @@
 #define globus_i_gfs_config_string  (char *) globus_i_gfs_config_get
 #define globus_i_gfs_config_bool    (globus_bool_t) globus_i_gfs_config_int
 
-void
+int
 globus_i_gfs_config_init(
     int                                 argc,
     char **                             argv,
     globus_bool_t                       argv_only);
 
-void
+int
 globus_i_gfs_config_init_envs(
     int                                 argc,
     char **                             argv);

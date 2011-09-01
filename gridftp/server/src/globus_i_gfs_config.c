@@ -708,7 +708,7 @@ globus_l_gfs_config_load_envs_from_file(
         {
             continue;
         }
-        *p++;
+        p++;
         
         rc = sscanf(p, "%s", env_option);
         if(rc != 1)
@@ -2266,7 +2266,7 @@ error_exit:
  * XXX need to allow config errors to log to syslog, stderr, etc
  */
  
-void
+int
 globus_i_gfs_config_init_envs(
     int                                 argc,
     char **                             argv)
@@ -2293,8 +2293,7 @@ globus_i_gfs_config_init_envs(
         tmp_argv = argv;
     }
     
-    cwd_str = malloc(PATH_MAX);
-    getcwd(cwd_str, PATH_MAX);
+    GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&cwd_str); 
 
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
@@ -2388,13 +2387,13 @@ globus_i_gfs_config_init_envs(
         free(base_str);
     }
     
-    return;
+    return 0;
 
 error:
-    exit(2);     
+    return -1;
 }
 
-void
+int
 globus_i_gfs_config_init(
     int                                 argc,
     char **                             argv,
@@ -2559,10 +2558,10 @@ globus_i_gfs_config_init(
     globus_mutex_init(&globus_i_gfs_config_mutex, NULL);
 
     GlobusGFSDebugExit();
-    return;
+    return 0;
 
 error:
-    exit(2);     
+    return -1;
 }
 
 

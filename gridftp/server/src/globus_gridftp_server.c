@@ -1535,8 +1535,12 @@ main(
     }
 
     /* parse and set envs from config file before loading modules */
-    globus_i_gfs_config_init_envs(argc, argv);
-
+    rc = globus_i_gfs_config_init_envs(argc, argv);
+    if(rc != 0)
+    {
+        fprintf(stderr, "Failed to initialize configuration. Exiting.\n");
+        return 2;
+    }
     /* activate globus stuff */    
     if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
         (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||
@@ -1551,7 +1555,13 @@ main(
     }
         
     /* init all the server modules */
-    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
+    rc = globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
+    if(rc != 0)
+    {
+        fprintf(stderr, "Failed to initialize configuration. Exiting.\n");
+        return 2;
+    }
+
     globus_i_gfs_log_open();
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();
