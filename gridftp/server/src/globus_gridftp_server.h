@@ -87,6 +87,7 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_DESTROY,
     GLOBUS_GFS_OP_TRANSFER,
     GLOBUS_GFS_OP_STAT,
+    GLOBUS_GFS_OP_STAT_PARTIAL,
     GLOBUS_GFS_OP_BUFFER_SEND,
     GLOBUS_GFS_OP_HANDSHAKE,
     GLOBUS_GFS_OP_SESSION_START_REPLY
@@ -828,6 +829,13 @@ globus_gridftp_server_finished_command(
  */ 
 void
 globus_gridftp_server_finished_stat(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    globus_gfs_stat_t *                 stat_array,
+    int                                 stat_count);
+
+void
+globus_gridftp_server_finished_stat_partial(
     globus_gfs_operation_t              op, 
     globus_result_t                     result,
     globus_gfs_stat_t *                 stat_array,

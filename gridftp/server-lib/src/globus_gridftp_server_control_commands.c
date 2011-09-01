@@ -814,7 +814,7 @@ globus_l_gsc_cmd_stat_cb(
             }
             stat_info->name = globus_libc_strdup(path);
             tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle->opts.mlsx_fact_str, uid, stat_info, NULL);
+                op->server_handle->opts.mlsx_fact_str, uid, stat_info, NULL, GLOBUS_TRUE);
         }
         msg =  globus_common_create_string(
             _FSMSL("status of %s\n %s\n"),
@@ -1534,9 +1534,16 @@ globus_l_gsc_cmd_opts(
             *tmp_ptr = GLOBUS_GSX_MLSX_FACT_UNIXGID;
             tmp_ptr++;
         }
+        if(strstr(cmd_a[2], "x.count"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_XCOUNT;
+            tmp_ptr++;
+        }
         msg = _FSMSL("200 OPTS Command Successful.\r\n");
-        if (tmp_ptr != opts->mlsx_fact_str || !mlsr_options)
+        if(tmp_ptr != opts->mlsx_fact_str || !mlsr_options)
+        {
             *tmp_ptr = '\0';
+        }
     }
     else
     {
@@ -3564,7 +3571,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
-    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;X.count;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    

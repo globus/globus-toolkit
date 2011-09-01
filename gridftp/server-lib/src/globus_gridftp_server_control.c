@@ -2941,7 +2941,7 @@ globus_gridftp_server_control_start(
         globus_free(server_handle->types);
     }
     /* default options */
-    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOIGDQL");
+    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOIGDQLN");
     server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.restart_frequency = 5;
@@ -3855,7 +3855,8 @@ globus_i_gsc_mlsx_line_single(
     const char *                        mlsx_fact_str,
     int                                 uid,
     globus_gridftp_server_control_stat_t *  stat_info,
-    const char*                         base_path)
+    const char *                        base_path,
+    globus_bool_t                       mlst)
 {
     char *                              out_buf;
     char *                              tmp_ptr;
@@ -3869,6 +3870,7 @@ globus_i_gsc_mlsx_line_single(
     int                                 is_readable = 0;
     int                                 is_writable = 0;
     int                                 is_executable = 0;
+    int                                 is_cdir = 0;
     GlobusGridFTPServerName(globus_i_gsc_mlsx_line_single);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -3904,9 +3906,10 @@ globus_i_gsc_mlsx_line_single(
                     {
                         sprintf(tmp_ptr, "Type=pdir;");
                     }
-                    else if(strcmp(dir_ptr, ".") == 0)
+                    else if(strcmp(dir_ptr, ".") == 0 && !mlst)
                     {
                         sprintf(tmp_ptr, "Type=cdir;");
+                        is_cdir = 1;
                     }
                     else
                     {
@@ -4076,6 +4079,13 @@ globus_i_gsc_mlsx_line_single(
                 }
                 break;
 
+            case GLOBUS_GSC_MLSX_FACT_XCOUNT:
+                if(is_cdir)
+                {
+                    sprintf(tmp_ptr, "X.count=%u;", stat_info->nlink);
+                }
+                break;
+
             default:
                 globus_assert(0 && "not a valid fact");
                 break;
@@ -4148,7 +4158,8 @@ globus_i_gsc_mlsx_line(
                 mlsx_fact_str,
                 uid,
                 &stat_info[ctr],
-                base_path);
+                base_path,
+                GLOBUS_FALSE);
         if(line != NULL)
         {
             tmp_i = strlen(line);
