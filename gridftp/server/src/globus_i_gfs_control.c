@@ -35,7 +35,8 @@ typedef struct
 
     char *                              scks_alg;
     char *                              scks_val;
-    char *                              from_pathname;
+    char *                              rnfr_pathname;
+    char *                              slfr_pathname;
 
     globus_i_gfs_server_close_cb_t      close_func;
     void *                              close_arg;
@@ -915,10 +916,16 @@ globus_l_gfs_data_command_cb(
             globus_free(msg);
             break;
           case GLOBUS_GFS_CMD_RNFR:
-            request->instance->from_pathname = info->pathname;
+            request->instance->rnfr_pathname = info->pathname;
             info->pathname = NULL;
             globus_gsc_959_finished_command(op,
                 "350 OK. Send RNTO with destination name.\r\n");
+            break;
+          case GLOBUS_GFS_CMD_SITE_SYMLINKFROM:
+            request->instance->slfr_pathname = info->pathname;
+            info->pathname = NULL;
+            globus_gsc_959_finished_command(op,
+                "350 OK. Send SITE SYMLINKTO with symlink name.\r\n");
             break;
           case GLOBUS_GFS_CMD_CKSM:
             msg = globus_common_create_string(
@@ -1123,12 +1130,12 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
-        if(instance->from_pathname == GLOBUS_NULL)
+        if(instance->rnfr_pathname == GLOBUS_NULL)
         {
             goto err;
         }
-        command_info->from_pathname = instance->from_pathname;
-        instance->from_pathname = GLOBUS_NULL;
+        command_info->from_pathname = instance->rnfr_pathname;
+        instance->rnfr_pathname = GLOBUS_NULL;
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "DCSC") == 0)
@@ -1314,43 +1321,52 @@ globus_l_gfs_request_command(
             }
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
         }
-        else if(strcmp(cmd_array[1], "SYMLINK") == 0)
-        {
-            command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINK;
-            globus_l_gfs_get_full_path(
-                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
+        else if(strcmp(cmd_array[1], "SYMLINKFROM") == 0)
+        {            
+            globus_gfs_stat_info_t *            stat_info;
+        
+            command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINKFROM;
+            result = globus_l_gfs_get_full_path(
+                instance, cmd_array[2], &command_info->pathname, GFS_L_READ);
             if(command_info->pathname == NULL)
             {
                 goto err;
             }
+            
+            stat_info = (globus_gfs_stat_info_t *) 
+                globus_calloc(1, sizeof(globus_gfs_stat_info_t));
+    
+            stat_info->file_only = GLOBUS_TRUE;
+            stat_info->pathname = globus_libc_strdup(command_info->pathname);
+            request->bounce_info = stat_info;
+            request->bounce_type = GLOBUS_GFS_OP_COMMAND;
+            request->bounce_cb = globus_l_gfs_data_command_cb;
+            globus_i_gfs_data_request_stat(
+                NULL,
+                instance->session_arg,
+                0,
+                stat_info,
+                globus_l_gfs_data_internal_stat_cb,
+                request);
+            done = GLOBUS_TRUE;
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
+        }
+        else if(strcmp(cmd_array[1], "SYMLINKTO") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINK;
             globus_l_gfs_get_full_path(
-                instance, cmd_array[2], &command_info->from_pathname, GFS_L_WRITE);
-            if (command_info->from_pathname == NULL)
+                instance, cmd_array[2], &command_info->pathname, GFS_L_WRITE);
+            if(command_info->pathname == NULL)
             {
                 goto err;
             }
+            if(instance->slfr_pathname == NULL)
             {
-                /* Un-escape the first path in case it contained spaces */
-                char*                   orig;
-                char*                   dest;
-                for(orig = command_info->from_pathname, dest=command_info->from_pathname; *orig; ++orig)
-                {
-                    if(*orig == '%')
-                    {
-                        unsigned int    c;
-                        ++orig;
-                        sscanf(orig, "%2X", &c);
-                        *dest++ = (char) c;
-                        ++orig;
-                    } 
-                    else
-                    {
-                        *dest++ = *orig;
-                    }   
-                }
-                *dest = '\0';
+                goto err;
             }
-            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+            command_info->from_pathname = instance->slfr_pathname;
+            instance->slfr_pathname = GLOBUS_NULL;
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
         }
         else
         {
@@ -2495,12 +2511,25 @@ globus_l_gfs_add_commands(
     }
     result = globus_gsc_959_command_add(
         control_handle,
-        "SITE SYMLINK",
+        "SITE SYMLINKFROM",
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
-        4,
-        4,
-        "SITE SYMLINK <sp> reference-path <sp> pathname",
+        3,
+        3,
+        "SITE SYMLINKFROM <sp> reference-path",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE SYMLINKTO",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE SYMLINKTO <sp> link-path",
         instance);
     if(result != GLOBUS_SUCCESS)
     {
@@ -2775,7 +2804,8 @@ globus_i_gfs_control_start(
     instance->close_func = close_func;
     instance->close_arg = close_arg;
     instance->xio_handle = handle;
-    instance->from_pathname = NULL;
+    instance->rnfr_pathname = NULL;
+    instance->slfr_pathname = NULL;
     instance->scks_alg = NULL;
     instance->scks_val = NULL;
     instance->remote_contact = globus_libc_strdup(remote_contact);
