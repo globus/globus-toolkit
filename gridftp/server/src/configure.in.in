@@ -88,6 +88,17 @@ fi
 AC_MSG_RESULT($GLOBUS_TOOLKIT_ID)
 AC_SUBST(GLOBUS_TOOLKIT_ID)
 
+conf_sbindir="`eval_path $sbindir`"
+conf_bindir="`eval_path $bindir`"
+conf_libdir="`eval_path $libdir`"
+conf_sysconfdir="`eval_path $sysconfdir`"
+conf_localstatedir="`eval_path $localstatedir`"
+AC_SUBST(conf_sbindir)
+AC_SUBST(conf_bindir)
+AC_SUBST(conf_libdir) 
+AC_SUBST(conf_sysconfdir) 
+AC_SUBST(conf_localstatedir)
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
@@ -102,6 +113,7 @@ AC_OUTPUT(
     init/globus-gridftp-server
     init/globus-gridftp-sshftp
     gridftp.conf.default
+    gridftp.gfork.default
     doxygen/Makefile
     doxygen/Doxyfile
     doxygen/Doxyfile-internal

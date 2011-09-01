@@ -1262,7 +1262,7 @@ globus_l_gfs_request_command(
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_CHGRP;
             globus_l_gfs_get_full_path(
-                instance, cmd_array[3], &command_info->pathname);
+                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
                 goto err;
@@ -1274,7 +1274,7 @@ globus_l_gfs_request_command(
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_UTIME;
             globus_l_gfs_get_full_path(
-                instance, cmd_array[3], &command_info->pathname);
+                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
                 goto err;
@@ -1318,13 +1318,13 @@ globus_l_gfs_request_command(
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_SYMLINK;
             globus_l_gfs_get_full_path(
-                instance, cmd_array[3], &command_info->pathname);
+                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
                 goto err;
             }
             globus_l_gfs_get_full_path(
-                instance, cmd_array[2], &command_info->from_pathname);
+                instance, cmd_array[2], &command_info->from_pathname, GFS_L_WRITE);
             if (command_info->from_pathname == NULL)
             {
                 goto err;

@@ -13,7 +13,7 @@ SUBDIRS = \
 doc_DATA = GLOBUS_LICENSE
 
 gridftpconfdir = ${sysconfdir}
-gridftpconf_DATA = gridftp.conf.default
+gridftpconf_DATA = gridftp.conf.default gridftp.gfork.default 
 
 EXTRA_DIST = \
     dsi_bones \
@@ -25,6 +25,7 @@ EXTRA_DIST = \
     extensions.h.in \
     configure.in.in \
     gridftp.conf.default.in \
+    gridftp.gfork.default.in \
     $(doc_DATA)
 
 # Sources contains all of the source files in the directory.
