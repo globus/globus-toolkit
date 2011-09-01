@@ -32,7 +32,7 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	openssl-devel%{?_isa}
 BuildRequires:	globus-core%{?_isa} >= 8

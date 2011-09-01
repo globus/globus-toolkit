@@ -31,7 +31,7 @@ Requires:	globus-common-progs >= 14
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires:       %{name}-setup
 Obsoletes:      globus-gram-job-manager-setup-fork < 4.3
-BuildRequires:	grid-packaging-tools >= 8
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3

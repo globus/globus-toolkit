@@ -43,7 +43,7 @@ Obsoletes:	globus-duct-control
 Obsoletes:	globus-duroc-common
 Obsoletes:	globus-duroc-control
 Obsoletes:	globus-libtool%{?_isa}
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz

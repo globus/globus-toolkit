@@ -26,7 +26,7 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires(post): globus-gram-job-manager-scripts >= 4
 Requires(preun): globus-gram-job-manager-scripts >= 4
 Provides:       globus-gram-job-manager-setup
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 BuildRequires:	doxygen
 BuildRequires:	graphviz

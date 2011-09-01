@@ -31,7 +31,7 @@ Requires:	globus-gass-cache-program >= 4
 Requires:	globus-common-progs >= 14
 Requires:       gridengine
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 BuildRequires:	globus-common-devel >= 14
 BuildRequires:	globus-xio-devel >= 3

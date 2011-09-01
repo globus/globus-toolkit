@@ -31,7 +31,7 @@ Requires:	globus-common >= 14
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Requires:	perl(DBI)
 Requires:	crontabs
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core >= 8
 
 %description

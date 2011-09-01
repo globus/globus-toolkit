@@ -28,7 +28,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
 Requires:   openssl
-BuildRequires:  grid-packaging-tools >= 3.3
+BuildRequires:  grid-packaging-tools >= 3.4
 BuildRequires:  globus-core >= 7.5
 BuildArch:      noarch
 

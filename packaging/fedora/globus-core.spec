@@ -37,7 +37,7 @@ Provides:	%{name}-devel = %{version}-%{release}
 Obsoletes:	%{name}-devel < 5.15-0.5
 Requires:	pkgconfig
 Requires:	perl(XML::Parser)
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	perl(XML::Parser)
 
 %description

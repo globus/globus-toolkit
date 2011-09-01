@@ -32,7 +32,7 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-popen-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-ftp-control-devel%{?_isa} >= 4

@@ -37,7 +37,7 @@ BuildRequires:  cyrus-sasl-devel
 %if "%{?rhel}" != "4"
 BuildRequires:  openldap-devel >= 2.3
 %endif
-BuildRequires:  grid-packaging-tools 
+BuildRequires:  grid-packaging-tools  >= 3.4
 BuildRequires:  doxygen
 
 %if "%{?rhel}" == "5"

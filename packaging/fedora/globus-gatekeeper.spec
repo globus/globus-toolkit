@@ -27,7 +27,7 @@ Requires:       lsb
 Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
 BuildRequires:  lsb
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
 BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 9
 BuildRequires:	globus-core%{?_isa} >= 8

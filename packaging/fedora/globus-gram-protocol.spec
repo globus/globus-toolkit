@@ -30,7 +30,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
-BuildRequires:	grid-packaging-tools
+BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-io-devel%{?_isa} >= 8
 BuildRequires:	globus-core%{?_isa} >= 8
