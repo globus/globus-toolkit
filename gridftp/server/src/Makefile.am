@@ -13,7 +13,7 @@ SUBDIRS = \
 doc_DATA = GLOBUS_LICENSE
 
 gridftpconfdir = ${sysconfdir}
-gridftpconf_DATA = gridftp.conf.default gridftp.gfork.default 
+gridftpconf_DATA = gridftp.conf.default gridftp.xinetd.default gridftp.gfork.default 
 
 EXTRA_DIST = \
     dsi_bones \
