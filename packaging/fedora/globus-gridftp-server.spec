@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.0
-Release:	1%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -25,7 +25,7 @@ URL:		http://www.globus.org/
 #		mv gt5.0.2-all-source-installer/source-trees/gridftp/server/src globus_gridftp_server-3.23
 #		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gridftp_server-3.23
 #		tar -zcf globus_gridftp_server-3.23.tar.gz globus_gridftp_server-3.23
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt-changelog/-changelog./-changelog/packages/src/http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
@@ -108,9 +108,10 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-install -m644 %{_sysconfdir}/gridftp.conf.default %{_sysconfdir}/gridftp.conf
-install -m644 %{_sysconfdir}/gridftp.gfork.default %{_sysconfdir}/gridftp.gfork
-install -D -m644 %{_sysconfdir}/gridftp.xinetd.default %{_sysconfdir}/xinetd.d/gridftp
+mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.conf.default $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.conf
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
+mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.xinetd.default $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/gridftp
+mv $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork.default $RPM_BUILD_ROOT%{_sysconfdir}/gridftp.gfork
 
 GLOBUSPACKAGEDIR=$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
@@ -124,6 +125,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
   | sed s!^!%{_prefix}! > package.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
+  | grep -Ev '(gridftp.conf.default|gridftp.xinetd.default|gridftp.gfork.default)' \
   | sed -e s!^!%{_prefix}! | sed -e s!^/usr/etc!/etc! \
   > package-progs.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
@@ -164,14 +166,15 @@ fi
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/gridftp.gfork
-%config(noreplace) %{_sysconfdir}/xinetd.d/*
+%config(noreplace) %{_sysconfdir}/xinetd.d/gridftp
 
 %files -f package-devel.filelist devel
 %defattr(-,root,root,-)
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 6.0-2
-- Updated version numbers
+* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 6.0-3
+- Add more config files for xinetd or gfork startup
+- Update to Globus Toolkit 5.1.2
 
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 3.23-1
 - Update to Globus Toolkit 5.0.2
