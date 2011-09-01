@@ -103,15 +103,22 @@ for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$srcpkg->{Kids}})
         $depname = $depname . "-doc" if ($deppkg eq "doc");
         $depname =~ tr/_/-/;
         my $baz = (grep {$_->isa('GPT::Version')} @{$dep->{Kids}})[0];
-        my $depver_element = (grep {$_->isa('GPT::Simple_Version')}
-            @{$baz->{Kids}})[0];
-        my $depver = $depver_element->{Major};
-        $srcdeps{$type}{$depname} = $depver
-            unless (defined $srcdeps{$type}{$depname}
-                    and $srcdeps{$type}{$depname} >= $depver);
-        $depsuntyped{$depname} = $depver
-            unless (defined $depsuntyped{$depname}
-                    and $depsuntyped{$depname} >= $depver);
+        my @depver_elements = (grep {$_->isa('GPT::Simple_Version')}
+            @{$baz->{Kids}});
+
+        for my $depver_element (@depver_elements)
+        {
+            # Handle the case where multiple Simple_Version elements live
+            # in the Dependency element. For now, we choose the largest number
+            # (We see this in the myproxy spec)
+            my $depver = $depver_element->{Major};
+            $srcdeps{$type}{$depname} = $depver
+                unless (defined $srcdeps{$type}{$depname}
+                        and $srcdeps{$type}{$depname} >= $depver);
+            $depsuntyped{$depname} = $depver
+                unless (defined $depsuntyped{$depname}
+                        and $depsuntyped{$depname} >= $depver);
+        }
     }
 }
 #print Dumper %depsuntyped;
@@ -140,6 +147,8 @@ my $releaseversion;
 my $setreleaseversion;
 my $releasesuffix;
 my $specfile_changed = "";
+my $version_changed = 0;
+
 foreach my $specline (@ARRAY)
 {
     if ($specline =~ m/Version:\s*(\d+\.\d+)/)
@@ -148,6 +157,7 @@ foreach my $specline (@ARRAY)
         {
             $specline = "Version:\t$version\n";
             $setreleaseversion = 1;
+            $version_changed = 1;
         }
     }
     elsif ($specline =~ m/Release:\s*(\d+)(.*)/)
@@ -217,6 +227,10 @@ if (!$changelog)
 if ($specfile_changed)
 {
     $releaseversion++;
+}
+
+if ($specfile_changed || $version_changed)
+{
     $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n- $changelog\n\n";
     print "Spec file $specfilename has been updated\n";
 }
