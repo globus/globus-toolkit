@@ -17,8 +17,12 @@ echo Making configure/make installer
 echo Step: Checking out source code.
 tag=""
 user=""
-while getopts "t:u:af:" arg; do
+no_updates=""
+while getopts "nt:u:af:" arg; do
     case "$arg" in
+        n)
+            no_updates=1
+            ;;
         t)
 	    tag="$OPTARG"
 	    ;;
@@ -34,21 +38,23 @@ while getopts "t:u:af:" arg; do
     esac
 done
 
-./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"}
-if [ $? -ne 0 ]; then
-	echo There was trouble checking out sources
-	exit 8
-fi
+if [ "$no_updates" -ne 1 ]; then
+    ./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"}
+    if [ $? -ne 0 ]; then
+            echo There was trouble checking out sources
+            exit 8
+    fi
 
-if [ "X$BRANCH" != "X" ]; then
-    echo Step: Updating source with branch $BRANCH.
-    mkdir tmp-branch
-    cd tmp-branch
-    cvs -Q co -r $BRANCH all
-    cd ..
-    cp -R tmp-branch/* source-trees/
-    rm -rf tmp-branch
-    INSTALLER=gt$BRANCH-all-source-installer
+    if [ "X$BRANCH" != "X" ]; then
+        echo Step: Updating source with branch $BRANCH.
+        mkdir tmp-branch
+        cd tmp-branch
+        cvs -Q co -r $BRANCH all
+        cd ..
+        cp -R tmp-branch/* source-trees/
+        rm -rf tmp-branch
+        INSTALLER=gt$BRANCH-all-source-installer
+    fi
 fi
 
 if [ -d scripts ]; then
