@@ -10,28 +10,28 @@ topdir=$(pwd)
 tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
+lrms=fork
 
-args=$(getopt r:a: $*)
-set -- ${args}
 
-for i; do
+while getopts "r:a:l:" i; do
     case "$i" in
-        -r)
-            repopkg_url="$2"
-            shift
-            shift
+        r)
+            repopkg_url="$OPTARG"
             ;;
-        -a)
-            artifact_url="$2"
-            shift
-            shift
+        a)
+            artifact_url="$OPTARG"
             ;;
-        --)
-            shift
-            break
+        l)
+            lrms="$OPTARG"
+            ;;
+        *)
+            echo "Unknown argument"
+            exit 1
             ;;
     esac
 done
+
+shift $(($OPTIND - 1))
 
 if [ "$repopkg_url" = "" -o "$artifact_url" = "" ]; then
     echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL" 1>&2
@@ -61,10 +61,6 @@ sudo rpm -hUv "$repopkg_url"
         -flavor=gcc64 -skipbundle
 
 first=1
-lrms=""
-for x in /etc/grid-services/jobmanager-*; do
-    lrms="${lrms:+"$lrms "}$(basename $x)"
-done
 for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi_openssh' || true) )"
@@ -82,7 +78,7 @@ for flavor in gcc64 gcc32; do
     sudo yum clean all
 
     # Install the binary RPMs that we will test
-    $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -v Globus-repo-config | grep -v Globus-bamboo-config)
+    $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus-repo-config|Globus-bamboo-config|globus-gram-job-manager-fork|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsb|globus-gram-job-manager-sge')
 
     if [ $first = 1 ]; then
         first=0
@@ -120,13 +116,16 @@ for flavor in gcc64 gcc32; do
         make 
         if expr "${testpkgname}" : ".*_gram_.*" > /dev/null; then
             for lrm in $lrms; do
-                lrmname="$(echo $lrm | sed -e s/jobmanager-//)"
-                dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
-                export CONTACT_STRING="$globus_hostname/$lrm:$dn" 
-                export CONTACT_LRM="$lrmname"
-                make junit || true
-                unset CONTACT_STRING
-                unset CONTACT_LRM
+                for mode in poll seg; do
+                    sudo yum -y install globus-gram-job-manager-$lrm-$mode || continue
+                    dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
+                    export CONTACT_STRING="$globus_hostname/jobmanager-$lrm:$dn" 
+                    export CONTACT_LRM="$lrmname"
+                    make junit || true
+                    unset CONTACT_STRING
+                    unset CONTACT_LRM
+                    sudo yum -y remove globus-gram-job-manager-$lrm-$mode
+                done
             done
 
             for x in "${testpkgname_no_ver}"*.xml; do
