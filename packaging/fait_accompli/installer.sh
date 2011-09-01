@@ -38,7 +38,7 @@ while getopts "nt:u:af:" arg; do
     esac
 done
 
-if [ "$no_updates" -ne 1 ]; then
+if [ "${no_updates:-0}" -ne 1 ]; then
     ./checkout-specs.pl -f etc/package-list-5.1.0 ${tag:+-t "$tag"} ${user:+-u "$user"}
     if [ $? -ne 0 ]; then
             echo There was trouble checking out sources
