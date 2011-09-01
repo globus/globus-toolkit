@@ -1,6 +1,7 @@
 #! /bin/sh
 
 set -e
+set -x
 
 if [ -f build-number.txt ]; then
     build_number="$(awk -F= "/build.number/ { print \$2 }" < build-number.txt)"
