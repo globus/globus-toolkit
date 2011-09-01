@@ -7252,11 +7252,14 @@ globus_gridftp_server_finished_stat_partial(
     globus_gfs_stat_t *                 stat_copy;
     int                                 i;
     char *                              base_path;
+    globus_gfs_stat_info_t *            stat_info;
     GlobusGFSName(globus_gridftp_server_finished_stat_partial);
     GlobusGFSDebugEnter();
 
     if(result == GLOBUS_SUCCESS)
     {        
+        stat_info = (globus_gfs_stat_info_t *) op->info_struct;
+        
         stat_copy = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
         if(stat_copy == NULL)
@@ -7265,9 +7268,9 @@ globus_gridftp_server_finished_stat_partial(
             goto error_alloc;
         }
         
-        base_path = ((globus_gfs_stat_info_t *) op->info_struct)->pathname;
+        base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
-        if(globus_i_gfs_data_check_path(op->session_handle,
+        if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
             base_path, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS)
         {
             memcpy(
@@ -7397,12 +7400,14 @@ globus_gridftp_server_finished_stat(
     globus_gfs_stat_t *                 stat_copy;
     int                                 i;
     char *                              base_path;
-
+    globus_gfs_stat_info_t *            stat_info;
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
     if(result == GLOBUS_SUCCESS)
     {        
+        stat_info = (globus_gfs_stat_info_t *) op->info_struct;
+        
         stat_copy = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
         if(stat_copy == NULL)
@@ -7411,9 +7416,9 @@ globus_gridftp_server_finished_stat(
             goto error_alloc;
         }
         
-        base_path = ((globus_gfs_stat_info_t *) op->info_struct)->pathname;
+        base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
-        if(globus_i_gfs_data_check_path(op->session_handle,
+        if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
             base_path, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS)
         {
             memcpy(

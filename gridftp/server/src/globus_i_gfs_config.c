@@ -705,7 +705,7 @@ globus_l_gfs_config_load_envs_from_file(
         {
             continue;
         }
-        *p++;
+        p++;
         
         rc = sscanf(p, "%s", env_option);
         if(rc != 1)
