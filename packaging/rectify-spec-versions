@@ -19,6 +19,7 @@ my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog = undef;
+my $fullname = undef;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -26,6 +27,7 @@ GetOptions('gptfile=s' => \$gptfile,
            'verbose' => \$verbose,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
+           'fullname=s' => \$fullname,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
@@ -39,9 +41,9 @@ if ($gtrelease)
 }
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
-my ($fullname, $location, $phone) = split(/,/, $pw->gecos);
+my ($location, $phone)
 my $host = hostname;
-
+($fullname, $location, $phone) = split(/,/, $pw->gecos) if (!$fullname);
 $email = "$login\@$host" unless defined $email;
 
 my @packagelist;
