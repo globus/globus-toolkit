@@ -1,4 +1,4 @@
-service gridftp2
+service gridftp
 {
     port = 2811
     instances = 100

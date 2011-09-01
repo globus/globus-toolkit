@@ -7714,11 +7714,15 @@ globus_gridftp_server_finished_stat_partial(
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
     globus_gfs_stat_t *                 stat_copy;
     int                                 i;
+    char *                              base_path;
+    globus_gfs_stat_info_t *            stat_info;
     GlobusGFSName(globus_gridftp_server_finished_stat_partial);
     GlobusGFSDebugEnter();
 
     if(result == GLOBUS_SUCCESS)
-    {
+    {        
+        stat_info = (globus_gfs_stat_info_t *) op->info_struct;
+        
         stat_copy = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
         if(stat_copy == NULL)
@@ -7726,24 +7730,78 @@ globus_gridftp_server_finished_stat_partial(
             result = GlobusGFSErrorMemory("stat_copy");
             goto error_alloc;
         }
-        memcpy(
-            stat_copy,
-            stat_array,
-            sizeof(globus_gfs_stat_t) * stat_count);
-        for(i = 0; i < stat_count; i++)
+        
+        base_path = stat_info->pathname;
+        /* if we have explicit access on the base path, no need to prune */
+        if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
+            base_path, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS)
         {
-            if(stat_array[i].name != NULL)
+            memcpy(
+                stat_copy,
+                stat_array,
+                sizeof(globus_gfs_stat_t) * stat_count);
+            for(i = 0; i < stat_count; i++)
             {
-                stat_copy[i].name = globus_libc_strdup(stat_array[i].name);
+                if(stat_array[i].name != NULL)
+                {
+                    stat_copy[i].name = globus_libc_strdup(stat_array[i].name);
+                }
+                else
+                {
+                    /* XXX probably not acceptable to proceed */
+                    stat_copy[i].name = globus_libc_strdup("(null)");
+                }
+                stat_copy[i].symlink_target =
+                    globus_libc_strdup(stat_array[i].symlink_target);
+            }
+        }
+        else
+        {
+            /* prune return based on restrictions */
+            int                         pruned_stat_count = 0;
+            char *                      nam;
+            char *                      full_path;
+            char *                      slash;
+            
+            if(base_path[strlen(base_path) - 1] != '/')
+            {
+                slash = "/";
             }
             else
             {
-                /* XXX probably not acceptable to proceed */
-                stat_copy[i].name = globus_libc_strdup("(null)");
+                slash = "";
             }
-            stat_copy[i].symlink_target =
-                globus_libc_strdup(stat_array[i].symlink_target);
+            for(i = 0; i < stat_count; i++)
+            {
+                nam = stat_array[i].name;
+                full_path = globus_common_create_string(
+                    "%s%s%s", base_path, slash, nam);
+                if(nam && ((nam[0] == '.' && 
+                    (nam[1] == '\0' || (nam[1] == '.' && nam[2] == '\0'))) ||
+                    (globus_i_gfs_data_check_path(op->session_handle,
+                    full_path, NULL, GFS_L_LIST) == GLOBUS_SUCCESS)))
+                {
+                    memcpy(
+                        &stat_copy[pruned_stat_count], 
+                        &stat_array[i],
+                        sizeof(globus_gfs_stat_t));
+                        
+                    stat_copy[pruned_stat_count].name = 
+                        globus_libc_strdup(stat_array[i].name);
+                    stat_copy[pruned_stat_count].symlink_target =
+                        globus_libc_strdup(stat_array[i].symlink_target);
+                    
+                    pruned_stat_count++;
+                }
+                globus_free(full_path);
+            }
+            stat_count = pruned_stat_count;
+            if(strcmp(stat_copy[0].name, ".") == 0)
+            {
+                stat_copy[0].nlink = pruned_stat_count;
+            }
         }
+            
     }
     else
     {
@@ -7806,12 +7864,14 @@ globus_gridftp_server_finished_stat(
     globus_gfs_stat_t *                 stat_copy;
     int                                 i;
     char *                              base_path;
-
+    globus_gfs_stat_info_t *            stat_info;
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
     if(stat_array != NULL && stat_count > 0)
     {
+        stat_info = (globus_gfs_stat_info_t *) op->info_struct;
+
         stat_copy = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
         if(stat_copy == NULL)
@@ -7820,9 +7880,9 @@ globus_gridftp_server_finished_stat(
             goto error_alloc;
         }
         
-        base_path = ((globus_gfs_stat_info_t *) op->info_struct)->pathname;
+        base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
-        if(globus_i_gfs_data_check_path(op->session_handle,
+        if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
             base_path, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS)
         {
             memcpy(
