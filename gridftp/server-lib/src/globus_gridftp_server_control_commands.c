@@ -772,9 +772,11 @@ globus_l_gsc_cmd_stat_cb(
     char *                                  msg;
     char *                                  tmp_ptr;
     char *                                  preline;
+    globus_bool_t                           partial = GLOBUS_FALSE;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stat_cb);
 
-    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS &&
+        response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
     {
         switch(response_type)
         {
@@ -803,6 +805,28 @@ globus_l_gsc_cmd_stat_cb(
         {
             code = 213;
             tmp_ptr = globus_i_gsc_list_single_line(stat_info);
+            msg =  globus_common_create_string(
+                _FSMSL("status of %s\n%s\n"),
+                op->path, tmp_ptr);
+            globus_free(tmp_ptr);
+        }
+        else if(user_arg == 2)
+        {
+            if(response_type == 
+                GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
+            {
+                partial = GLOBUS_TRUE;
+                code = 150;
+            }
+            else
+            {
+                code = 250;
+            }
+            tmp_ptr = globus_i_gsc_mlsx_line(
+                stat_info, stat_count, op->server_handle->opts.mlsx_fact_str, uid, NULL);
+            msg =  globus_common_create_string(
+                _FSMSL("Contents of %s\n%s"), op->path, tmp_ptr);
+            globus_free(tmp_ptr);
         }
         else
         {
@@ -815,12 +839,12 @@ globus_l_gsc_cmd_stat_cb(
             stat_info->name = globus_libc_strdup(path);
             tmp_ptr = globus_i_gsc_mlsx_line_single(
                 op->server_handle->opts.mlsx_fact_str, uid, stat_info, NULL, GLOBUS_TRUE);
+            msg =  globus_common_create_string(
+                _FSMSL("status of %s\n %s\n"),
+                op->path, tmp_ptr);
+            globus_free(tmp_ptr);
         }
-        msg =  globus_common_create_string(
-            _FSMSL("status of %s\n %s\n"),
-            op->path, tmp_ptr);
-        globus_free(tmp_ptr);
-        preline = "";
+        preline = " ";
     }
 
     if(response_msg != NULL)
@@ -829,9 +853,15 @@ globus_l_gsc_cmd_stat_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    /* set a blank preline -- mlst output already has the initial space */
     tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
-    globus_gsc_959_finished_command(op, tmp_ptr);
+    if(partial)
+    {
+        globus_i_gsc_intermediate_reply(op, tmp_ptr);
+    }
+    else
+    {
+        globus_gsc_959_finished_command(op, tmp_ptr);
+    }
     globus_free(tmp_ptr);
     globus_free(msg);
 }
@@ -867,6 +897,10 @@ globus_l_gsc_cmd_stat(
     }
     else
     {
+        if(user_arg == 2)
+        {
+            mask = GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST;
+        }
         if(argc != 2)
         {
             path = op->server_handle->cwd;
@@ -1539,6 +1573,7 @@ globus_l_gsc_cmd_opts(
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_XCOUNT;
             tmp_ptr++;
         }
+        *tmp_ptr = '\0';
         msg = _FSMSL("200 OPTS Command Successful.\r\n");
         if(tmp_ptr != opts->mlsx_fact_str || !mlsr_options)
         {
@@ -3199,6 +3234,16 @@ globus_i_gsc_add_commands(
 
     globus_gsc_959_command_add(
         server_handle,
+        "MLSC",
+        globus_l_gsc_cmd_stat,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "MLSC [<sp> <filename>]",
+        (void *) 2);
+
+    globus_gsc_959_command_add(
+        server_handle,
         "MLSD",
         globus_l_gsc_cmd_stor_retr,
         GLOBUS_GSC_COMMAND_PRE_AUTH | 
@@ -3572,6 +3617,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;X.count;");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLSC");
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    

@@ -5221,7 +5221,15 @@ globus_gridftp_server_control_finished_resource(
     }
     if(op->stat_cb != NULL)
     {
-        GlobusLGSCRegisterInternalCB(op);
+        if(response_code == 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
+        {
+            globus_l_gsc_internal_cb_kickout(op);
+        }
+        else
+        {
+            GlobusLGSCRegisterInternalCB(op);
+        }
     }
 
     GlobusGridFTPServerDebugExit();
