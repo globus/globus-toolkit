@@ -34,7 +34,7 @@
 # Whether or not /sbin/nologin exists.
 %global nologin 1
 
-%global gsi_openssh_rel 1
+%global gsi_openssh_rel 2
 %global gsi_openssh_ver 5.3
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
@@ -432,6 +432,10 @@ fi
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.3-2
+- Update to GT 5.1.2
+
 * Wed Mar 02 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.5p1-1
 - Initial packaging
 - Based on openssh-5.5p1-24.fc14.2
+

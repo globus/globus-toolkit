@@ -19,7 +19,7 @@
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
 Version:	8.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -30,7 +30,7 @@ URL:		http://www.globus.org/
 #		tar -jxf gt5.0.2-all-source-installer.tar.bz2
 #		mv gt5.0.2-all-source-installer/source-trees/core/cource globus_core-5.17
 #		tar -zcf globus_core-5.17.tar.gz globus_core-5.17
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Provides:	%{name}-devel = %{version}-%{release}
@@ -124,6 +124,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
+- Update for 5.1.2 release
+
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.17-1
 - Update to Globus Toolkit 5.0.2
 

@@ -13,7 +13,7 @@
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
 Version:	8.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
 Group:		System Environment/Libraries
@@ -25,7 +25,7 @@ URL:		http://www.globus.org/
 #		mv gt5.0.2-all-source-installer/source-trees/gass/copy/source globus_gass_copy-5.7
 #		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gass_copy-5.7
 #		tar -zcf globus_gass_copy-5.7.tar.gz globus_gass_copy-5.7
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -197,8 +197,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
-- Updated version numbers
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
+- Update for 5.1.2 release
 
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.7-1
 - Update to Globus Toolkit 5.0.2

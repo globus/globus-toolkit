@@ -16,13 +16,13 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-job-manager-scripts >= 4
@@ -264,6 +264,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-8
-- Updated version numbers
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
+- Update for 5.1.2 release
 

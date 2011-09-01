@@ -13,13 +13,13 @@
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
 Version:	8.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:         %{_name}-%{version}.tar.gz
+Source:         http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 13.4
@@ -111,8 +111,8 @@ fi
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
-- Updated version numbers
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
+- Update for 5.1.2 release
 
 * Mon Apr 25 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.7-4
 - Add README file

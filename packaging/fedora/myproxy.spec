@@ -7,7 +7,7 @@
 %endif
 
 Name:           myproxy
-Version:	6.0
+Version:	5.5
 Release:	1%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
@@ -414,6 +414,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.5-1
+- Update for 5.1.2 release
+
 * Tue Feb 22 2011 Steve Traylen <steve.traylen@cern.ch> - 5.3-3
 - myproxy-vomsc-vomsapi.patch to build against vomsapi rather
   than vomscapi.

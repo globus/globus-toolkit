@@ -13,7 +13,7 @@
 Name:		globus-usage
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Usage Library
 
 Group:		System Environment/Libraries
@@ -25,7 +25,7 @@ URL:		http://www.globus.org/
 #		mv gt5.0.1-all-source-installer/source-trees/usage/c/sender/source globus_usage-1.3
 #		cp -p gt5.0.1-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_usage-1.3
 #		tar -zcf globus_usage-1.3.tar.gz globus_usage-1.3
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -113,8 +113,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-2
-- Updated version numbers
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-2
+- Update for 5.1.2 release
 
 * Wed Apr 14 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 1.3-1
 - Update to Globus Toolkit 5.0.1

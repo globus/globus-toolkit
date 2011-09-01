@@ -9,14 +9,14 @@
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
 Version:	4.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
 BuildArch:	noarch
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs >= 14
@@ -96,6 +96,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
+- Update for 5.1.2 release
+
 * Sun Jun 05 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 2.12-1
 - Update to Globus Toolkit 5.0.4
 

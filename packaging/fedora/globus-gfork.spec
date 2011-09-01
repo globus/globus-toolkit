@@ -13,7 +13,7 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
@@ -25,7 +25,7 @@ URL:		http://www.globus.org/
 #		mv gt5.0.0-all-source-installer/source-trees/gridftp/gfork/source globus_gfork-0.2
 #		cp -p gt5.0.0-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gfork-0.2
 #		tar -zcf globus_gfork-0.2.tar.gz globus_gfork-0.2
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common
@@ -144,8 +144,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-5
-- Updated version numbers
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-2
+- Update for 5.1.2 release
 
 * Sat Jan 23 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 0.2-4
 - Update to Globus Toolkit 5.0.0

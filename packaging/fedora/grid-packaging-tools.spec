@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 3.4-1
+- Update for GT 5.1.2
+
 * Mon Aug 03 2009 Mattias Ellert <mattias.ellert@fysast.uu.se> - 3.2-20
 - Rename config.guess script
 

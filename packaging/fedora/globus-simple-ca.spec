@@ -11,7 +11,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -23,7 +23,7 @@ URL:		http://www.globus.org/
 #		mv gt5.0.2-all-source-installer/source-trees/common/source globus_common-11.5
 #		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_common-11.5
 #		tar -zcf globus_common-11.5.tar.gz globus_common-11.5
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
@@ -96,5 +96,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-2
+- Update for 5.1.2 release
+
 * Tue Mar 29 2011 - 2.0-1
 - Initial version

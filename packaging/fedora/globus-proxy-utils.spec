@@ -13,7 +13,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	5.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -25,7 +25,7 @@ URL:		http://www.globus.org/
 #		mv gt5.0.2-all-source-installer/source-trees/gsi/proxy/proxy_utils/source globus_proxy_utils-3.9
 #		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_proxy_utils-3.9
 #		tar -zcf globus_proxy_utils-3.9.tar.gz globus_proxy_utils-3.9
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
@@ -95,8 +95,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
-* Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
-- Updated version numbers
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
+- Update for 5.1.2 release
 
 * Sat Jul 17 2010 Mattias Ellert <mattias.ellert@fysast.uu.se> - 3.9-1
 - Update to Globus Toolkit 5.0.2
