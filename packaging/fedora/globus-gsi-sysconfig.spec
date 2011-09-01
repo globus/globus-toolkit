@@ -13,7 +13,7 @@
 Name:		globus-gsi-sysconfig
 %global _name %(tr - _ <<< %{name})
 Version:	5.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus GSI System Config Library
 
 Group:		System Environment/Libraries
@@ -54,7 +54,7 @@ Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-openssl-module-devel%{?_isa} >= 3
-Requires:	globus-gsi-openssl-error-devel%{?_isa} >=2
+Requires:	globus-gsi-openssl-error-devel%{?_isa} >= 2
 Requires:	globus-core%{?_isa} >= 8
 
 %package doc
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-3
+- Fix missing whitespace in Requires
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
 - Update for 5.1.2 release
 

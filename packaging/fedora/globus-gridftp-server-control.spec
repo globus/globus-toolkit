@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
 Version:	2.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
 Group:		System Environment/Libraries
@@ -43,7 +43,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-xio-pipe-driver-devel%{?_isa} >= 2
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
-Requires:	globus-xio-devel%{?_isa} >=3
+Requires:	globus-xio-devel%{?_isa} >= 3
 
 %description
 The Globus Toolkit is an open source software toolkit used for building Grid
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-3
+- Fix missing whitespace in Requires
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
 - Update for 5.1.2 release
 
