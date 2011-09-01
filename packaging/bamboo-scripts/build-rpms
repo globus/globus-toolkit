@@ -146,7 +146,7 @@ if [ -n "$pkgs_to_rm" ]; then
 fi
 
 bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,gram5-sge,globus-simple-ca
-packages_to_build=myproxy,gsi_openssh
+packages_to_build=myproxy,gsi_openssh,globus_gram_audit
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 if [ -d ${packagingdir}/source-trees/gssapi-openssh ]; then
     cd ${packagingdir}/source-trees/gssapi-openssh 
@@ -175,8 +175,10 @@ make dist
 cp gpt-3.*.tar.gz ../../package-output/
 cp ../../package-output/* $HOME/SOURCES
 
+cd ../..
+
 # Build source packages from spec files
-cd ../../fedora
+cd fedora
 for i in *.spec; do rpmbuild -bs --nodeps $i; done
 
 for i in grid-packaging-tools $packages; do
