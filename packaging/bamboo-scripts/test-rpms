@@ -137,7 +137,7 @@ for flavor in gcc64 gcc32; do
                     sudo service globus-scheduler-event-generator restart || true
                     dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
                     export CONTACT_STRING="$globus_hostname/jobmanager-$lrm:$dn" 
-                    export CONTACT_LRM="$lrmname"
+                    export CONTACT_LRM="$lrm"
                     make junit || true
                     unset CONTACT_STRING
                     unset CONTACT_LRM
