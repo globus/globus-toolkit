@@ -41,7 +41,7 @@ if ($gtrelease)
 }
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
-my ($location, $phone)
+my ($location, $phone);
 my $host = hostname;
 ($fullname, $location, $phone) = split(/,/, $pw->gecos) if (!$fullname);
 $email = "$login\@$host" unless defined $email;
