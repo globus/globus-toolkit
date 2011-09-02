@@ -11,9 +11,11 @@ tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 lrms=fork
+tag=""
+skip_checkout=0
 
 
-while getopts "r:a:l:" i; do
+while getopts "r:a:l:t:q" i; do
     case "$i" in
         r)
             repopkg_url="$OPTARG"
@@ -22,7 +24,13 @@ while getopts "r:a:l:" i; do
             artifact_url="$OPTARG"
             ;;
         l)
-            lrms="$OPTARG"
+            lrms="${lrms} OPTARG"
+            ;;
+        t)
+            tag="$OPTARG"
+            ;;
+        q)
+            skip_checkout=1
             ;;
         *)
             echo "Unknown argument"
@@ -49,23 +57,25 @@ mkdir -p $tmppath
 # Remove all globus-related packages prior to testing
 pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^[Gg]lobus-|^myproxy|^gsi_openssh' || true) )"
 if [ -n "$pkgs_to_rm" ]; then
-    sudo rpm -e --allmatches $pkgs_to_rm
+    sudo yum -y remove $pkgs_to_rm
 fi
 
 # Download and install the repo definition package
 sudo rpm -hUv "$repopkg_url"
 
+if [ "${skip_checkout}" = 0 -o ! -d package-output ]; then
 # Create source packages for the tests
-./make-packages.pl -a --deps -deporder \
-        -bundles=globus-data-management-test,globus-resource-management-test \
-        -flavor=gcc64 -skipbundle
+    ./make-packages.pl ${tag:+-t "$tag"} -a -verbose -deporder \
+            -bundles=globus-data-management-test,globus-resource-management-test \
+            -flavor=gcc64 -skipbundle
+fi
 
 first=1
 for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi_openssh' || true) )"
     if [ -n "$pkgs_to_rm" ]; then
-        sudo rpm -e --allmatches $pkgs_to_rm
+        sudo yum remove $pkgs_to_rm
     fi
 
     if [ "$flavor" = gcc64 ]; then
@@ -78,7 +88,7 @@ for flavor in gcc64 gcc32; do
     sudo yum clean all
 
     # Install the binary RPMs that we will test
-    $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus-repo-config|Globus-bamboo-config|globus-gram-job-manager-fork|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsb|globus-gram-job-manager-sge')
+    $archcmd sudo yum -y --skip-broken install $(curl -s "${artifact_url}/package-list/packages.${flavor}" | grep -Ev 'Globus-repo-config|Globus-bamboo-config|globus-gram-job-manager-fork|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge')
 
     if [ $first = 1 ]; then
         first=0
@@ -116,8 +126,15 @@ for flavor in gcc64 gcc32; do
         make 
         if expr "${testpkgname}" : ".*_gram_.*" > /dev/null; then
             for lrm in $lrms; do
-                for mode in poll seg; do
-                    sudo yum -y install globus-gram-job-manager-$lrm-$mode || continue
+                if [ "${lrm}" = "condor" ]; then
+                    modes=""
+                else
+                    modes="-setup-poll -setup-seg"
+                fi
+                for mode in $modes; do
+                    sudo yum -y install globus-gram-job-manager-$lrm$mode || continue
+                    sudo service globus-gatekeeper restart || true
+                    sudo service globus-scheduler-event-generator restart || true
                     dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
                     export CONTACT_STRING="$globus_hostname/jobmanager-$lrm:$dn" 
                     export CONTACT_LRM="$lrmname"
