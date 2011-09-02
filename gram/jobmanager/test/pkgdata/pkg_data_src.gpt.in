@@ -10,28 +10,28 @@
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_gram_job_manager" Package="pgm">
                 <Version>
-                    <Simple_Version Major="6"/>
+                    <Simple_Version Major="13"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_gatekeeper" Package="pgm">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_gram_client_tools" Package="pgm">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="10"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_gram_job_manager_test" Package="data">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
