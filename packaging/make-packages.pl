@@ -1174,6 +1174,12 @@ sub cvs_checkout_generic ()
 
             for my $f ( <*> )
             {
+                if (! -d "$f")
+                {
+                    print "Skipping non-directory $f\n";
+                    next;
+                }
+
                 chdir $f;
                 if ( -d "CVS" )
                 {
