@@ -141,7 +141,7 @@ for flavor in gcc64 gcc32; do
                     make junit || true
                     unset CONTACT_STRING
                     unset CONTACT_LRM
-                    sudo yum -y remove globus-gram-job-manager-$lrm-$mode
+                    sudo yum -y remove globus-gram-job-manager-$lrm$mode
                 done
             done
 
