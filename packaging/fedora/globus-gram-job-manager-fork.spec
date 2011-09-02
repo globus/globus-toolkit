@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -229,10 +229,6 @@ if [ $1 -eq 0 ]; then
     globus-gatekeeper-admin -d jobmanager-fork-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -d fork > /dev/null 2>&1 || :
     service globus-scheduler-event-generator stop fork > /dev/null 2>&1 || :
-    if [ ! -f /etc/grid-services/jobmanager ]; then
-        default="`globus-gatekeeper-admin -l | sed -e '/jobmanager/s/ .*//;q'`"
-        globus-gatekeeper-admin -d "$default" -n jobmanager
-    fi
 fi
 
 %postun setup-seg
