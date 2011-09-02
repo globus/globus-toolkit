@@ -65,7 +65,7 @@ sudo rpm -hUv "$repopkg_url"
 
 if [ "${skip_checkout}" = 0 -o ! -d package-output ]; then
 # Create source packages for the tests
-    ./make-packages.pl ${tag:+-t "$tag"} -a -verbose -deporder \
+    ./make-packages.pl ${tag:+-t "$tag"} -a -verbose \
             -bundles=globus-data-management-test,globus-resource-management-test \
             -flavor=gcc64 -skipbundle
 fi
