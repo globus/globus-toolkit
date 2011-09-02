@@ -9,27 +9,25 @@
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_proxy_utils" Package="pgm">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist" Package="pgm">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gram_job_manager" Package="pgm">
                 <Version>
-                    <Simple_Version Major="6"/>
+                    <Simple_Version Major="13"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gram_client_tools" Package="pgm">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="10"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
-        <Source_Setup_Dependency PkgType="pgm">
-        </Source_Setup_Dependency>
         <With_Flavors build="no"/>
         <Build_Environment>
             <cflags>@GPT_CFLAGS@</cflags>

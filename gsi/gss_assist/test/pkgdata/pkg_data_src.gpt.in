@@ -9,56 +9,56 @@
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_core">
                 <Version>
-                    <Simple_Version Major="4"/>
+                    <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_common">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_openssl_module">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
-                    <Simple_Version Major="4"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_common">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_openssl_module">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
-                    <Simple_Version Major="4"/>
+                    <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_gss_assist_test" Package="data">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_test" Package="rtl">

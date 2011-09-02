@@ -9,12 +9,17 @@
         <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_test" Package="pgm">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_proxy_utils" Package="pgm">
+                <Version>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_test" Package="rtl">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
