@@ -381,7 +381,7 @@ sub upload_record {
 #     Path of the audit directory, or an empty string if not present in the
 #     configuration
 sub get_audit_directory {
-    my $jmconf = "$Globus::Core::Paths::sysconfdir/globus-job-manager.conf";
+    my $jmconf = "$Globus::Core::Paths::sysconfdir/globus/globus-gram-job-manager.conf";
     my $audit_directory = '';
     local(*F);
     open(F, "<$jmconf");
