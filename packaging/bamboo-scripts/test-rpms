@@ -75,7 +75,7 @@ for flavor in gcc64 gcc32; do
     # Remove all globus-related packages prior to testing
     pkgs_to_rm="$( rpm -qa | (egrep '^grid-packaging-tools|^globus-|^myproxy|^gsi_openssh' || true) )"
     if [ -n "$pkgs_to_rm" ]; then
-        sudo yum remove $pkgs_to_rm
+        sudo yum -y remove $pkgs_to_rm
     fi
 
     if [ "$flavor" = gcc64 ]; then
