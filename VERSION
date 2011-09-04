@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.5 XX Xxx 2011
+  - in myproxy-server policy regular expressions, fix erroneous
+    escaping of '|' characters introduced in v5.1
+    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7211)
   - in MyProxy CA, ensure that any domainComponent or emailAddress
     components in the certificate subject are type IA5String per RFC 5280
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7201)

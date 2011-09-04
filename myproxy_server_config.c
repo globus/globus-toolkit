@@ -828,7 +828,6 @@ regex_compare(const char *regex,
 	case '^':
 	case '$':
 	case '+':
-	case '|':
 	    if (!escaped)
 	        *bufp++ = '\\';
 	/* fallthru to default */
