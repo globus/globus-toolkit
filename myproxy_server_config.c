@@ -800,39 +800,41 @@ regex_compare(const char *regex,
 	{
 
 	case '*':
-	    /* '*' turns into '.*' */
-	    *bufp++ = '.';
+	    /* unescaped '*' turns into '.*' */
+	    if (!escaped)
+		*bufp++ = '.';
 	    *bufp++ = '*';
+	    escaped = 0;
 	    break;
 
 	case '?':
-	    /* '?' turns into '.' */
-	    *bufp++ = '.';
-	    break;
-
-	   /* '\' might be escaping the succeeding meta-character */
-	case '\\':
-	    *bufp++ = *regex;
-	    escaped = !escaped;
-	    break;
-
-	   /* Need to escape other metacharacters if not already done
-	      manually by the user */
-	case '.':
-	case '[':
-	case ']':
-	case '(':
-	case ')':
-	case '{':
-	case '}':
-	case '^':
-	case '$':
-	case '+':
+	    /* unescaped '?' turns into '.' */
 	    if (!escaped)
-	        *bufp++ = '\\';
-	/* fallthru to default */
+		*bufp++ = '.';
+	    else
+		*bufp++ = '?';
+	    escaped = 0;
+	    break;
+
+	case '\\':
+	    /* '\' escapes the succeeding character */
+	    if (!escaped)
+		escaped = 1;
+	    else {
+		*bufp++ = '\\';
+		escaped = 0;
+	    }
+	    break;
+
+	case '.':
+	    /* '.' needs to be taken literally */
+	    escaped = 1;
+
+	    /* fallthru to default */
 
 	default:
+	    if (escaped)
+		*bufp++ = '\\';
 	    *bufp++ = *regex;
 	    escaped = 0;
 	}

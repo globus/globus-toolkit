@@ -5,8 +5,14 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.5 XX Xxx 2011
-  - in myproxy-server policy regular expressions, fix erroneous
-    escaping of '|' characters introduced in v5.1
+  - undo escaping of POSIX extended regular expression meta-characters
+    in myproxy-server authorization policies (introduced in v5.1)
+    to enable full use of POSIX ERE capabilities. For literal matching
+    of parentheses and brackets, the characters must again be
+    explicitly escaped (i.e., '\(' and '\)'). Non-POSIX handling of
+    wildcard characters ('*' and '?') is maintained for backward
+    compatibility, so these characters must be escaped if POSIX ERE
+    behavior is desired.
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7211)
   - in MyProxy CA, ensure that any domainComponent or emailAddress
     components in the certificate subject are type IA5String per RFC 5280
