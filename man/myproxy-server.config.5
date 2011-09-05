@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2009-12-1" "MyProxy" "MyProxy"
+.TH myproxy-server.config 5 "2011-09-05" "MyProxy" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -21,23 +21,12 @@ The
 .B myproxy-server -c
 option can be used to specify an alternative location.
 .PP
-The following lines in the configuration file use limited regular expressions
-for matching the distinguished names (DNs) of classes of users.
-The limited regular expressions support the shell-stype characters '*'
-and '?', where '*' matches any (zero or more) number of characters and '?' matches
-any single (zero or one) character.
-The DN limited regexes should be delimited with double quotes (\*(lqDN regex\*(rq).
-Internally MyProxy uses the POSIX Extended Regular
-Expression matching facilities where available. Hence, if any one of the metacharacters
-\*(lq. [ ] ( ) { } ^ $ + |\*(rq is used without being escaped with a '\\', it is
-automatically escaped by MyProxy to prevent it from being interpreted as an extended
-regular expression metacharacter. The user can also explicitly escape a metacharacter
-by immediately preceding it with an unescaped escape character '\\'. A '\\' can also
-be explicitly escaped by an immediately preceding unescaped escape character.
-For example, the metacharacter '|' in \*(lq\\\\|\*(rq would be automatically escaped as
-in \*(lq\\\\\\|\*(rq with the second '\\' considered escaped by the first '\\'. However
-the metacharacter '|' in \*(lq\\\\\\|\*(rq would NOT be automatically escaped since the
-third '\\' is considered to have explicitly escaped '|'.
+The following lines set access control policies according to the
+client's certificate subject distinguished name (DN).
+Note that MyProxy uses non-standard regular expressions for
+distinguished name (DN) matching. See the
+.B REGULAR EXPRESSIONS
+section below for details.
 .TP
 .BI accepted_credentials " \*(lqDN regex\*(rq"
 Each of these lines allows any clients whose DNs match the
@@ -904,6 +893,47 @@ If
 is not specified, a comma-separated list of targets (without any tags specified)
 if specified in the environment variable GLOBUS_USAGE_TARGETS will be used.
 
+.SH REGULAR EXPRESSIONS
+For matching distinguished names (DNs) in access control policies,
+MyProxy uses POSIX Extended Regular Expressions (see
+.BR re_format (7)),
+with custom processing of '*', '?', and '.' metacharacters
+to simulate Unix shell style wildcard processing
+(for backward compatibility and other historical reasons).
+MyProxy's custom regular expressions are converted to POSIX EREs
+according to the following rules:
+
+  [ MyProxy regex ] => [ POSIX ERE ]
+  ----------------------------------
+         '*'        =>      '.*'
+         '?'        =>      '.'
+         '.'        =>      '\\.'
+         '\\*'       =>      '*'
+         '\\?'       =>      '?'
+         '\\.'       =>      '.'
+
+Additionally, MyProxy wraps all regular expressions with '^' and '$'
+to require full DN matching.
+
+Be aware that parentheses are metacharacters according to POSIX,
+so escaping is required for literal matching. For example:
+
+  "*/CN=Jim Basney \\(admin\\)"
+
+The following examples illustrate how MyProxy regular expressions are
+converted to POSIX EREs:
+
+     [ MyProxy regex ]     =>    [ POSIX ERE ]
+  ------------------------------------------------------------
+  "*/CN=Jim Basney"        => "^.*/CN=Jim Basney$"
+  "*/CN=Test User ?"       => "^.*/CN=Test User .?$"
+  "*/CN=James A. Basney"   => "^.*/CN=James A\\. Basney$"
+  "/O=Test/CN=[:alnum:]\\*" => "^/O=Test/CN=[:alnum:]*$"
+
+  "*/CN=Jim Basney|*/CN=James Basney" =>
+      "^.*/CN=Jim Basney|.*/CN=James Basney$"
+
+.PD
 .SH EXAMPLES
 The following policy enables all credential repository features.
 .PP
