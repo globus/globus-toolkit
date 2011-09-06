@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.c,v 1.91 2010/11/29 23:45:51 djm Exp $ */
+/* $OpenBSD: auth.c,v 1.94 2011/05/23 03:33:38 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -374,18 +374,6 @@ expand_authorized_keys(const char *filename, struct passwd *pw)
 }
 
 char *
-authorized_keys_file(struct passwd *pw)
-{
-	return expand_authorized_keys(options.authorized_keys_file, pw);
-}
-
-char *
-authorized_keys_file2(struct passwd *pw)
-{
-	return expand_authorized_keys(options.authorized_keys_file2, pw);
-}
-
-char *
 authorized_principals_file(struct passwd *pw)
 {
 	if (options.authorized_principals_file == NULL)
@@ -487,7 +475,6 @@ secure_filename(FILE *f, const char *file, struct passwd *pw,
 		}
 		strlcpy(buf, cp, sizeof(buf));
 
-		debug3("secure_filename: checking '%s'", buf);
 		if (stat(buf, &st) < 0 ||
 		    (st.st_uid != 0 && st.st_uid != uid) ||
 		    (st.st_mode & 022) != 0) {
@@ -497,11 +484,9 @@ secure_filename(FILE *f, const char *file, struct passwd *pw,
 		}
 
 		/* If are past the homedir then we can stop */
-		if (comparehome && strcmp(homedir, buf) == 0) {
-			debug3("secure_filename: terminating check at '%s'",
-			    buf);
+		if (comparehome && strcmp(homedir, buf) == 0)
 			break;
-		}
+
 		/*
 		 * dirname should always complete with a "/" path,
 		 * but we can be paranoid and check for "." too
