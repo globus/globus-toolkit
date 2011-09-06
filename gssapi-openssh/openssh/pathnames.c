@@ -16,7 +16,6 @@
 
 #define STRINIT "init_pathnames() not called!"
 
-char *SSH_PRNG_COMMAND_FILE		= STRINIT;
 char *_PATH_SSH_SYSTEM_HOSTFILE		= STRINIT;
 char *_PATH_SSH_SYSTEM_HOSTFILE2	= STRINIT;
 char *_PATH_SERVER_CONFIG_FILE		= STRINIT;
@@ -34,7 +33,6 @@ char *_PATH_SSH_HOSTS_EQUIV		= STRINIT;
 char *_PATH_SSH_KEY_SIGN		= STRINIT;
 char *_PATH_SSH_PKCS11_HELPER	= STRINIT;
 char *_PATH_SFTP_SERVER			= STRINIT;
-char *SSH_RAND_HELPER			= STRINIT;
 char *_PATH_STDPATH_WITH_SCP		= STRINIT;
 
 static char *
@@ -96,7 +94,6 @@ init_pathnames()
     }
 
     /* lots of one time memory leaks here */
-    SSH_PRNG_COMMAND_FILE	= compose2(sshdir, "/ssh_prng_cmds");
     _PATH_SSH_SYSTEM_HOSTFILE	= compose2(sshdir, "/ssh_known_hosts");
     _PATH_SSH_SYSTEM_HOSTFILE2	= compose2(sshdir, "/ssh_known_hosts2");
     _PATH_SERVER_CONFIG_FILE	= compose2(sshdir, "/sshd_config");
@@ -114,7 +111,6 @@ init_pathnames()
     _PATH_SSH_KEY_SIGN		= compose2(libexec, "/ssh-keysign");
     _PATH_SSH_PKCS11_HELPER = compose2(libexec, "/ssh-pkcs11-helper");
     _PATH_SFTP_SERVER		= compose2(libexec, "/sftp-server");
-    SSH_RAND_HELPER		= compose2(libexec, "/ssh-rand-helper");
     _PATH_STDPATH_WITH_SCP	= compose3(_PATH_STDPATH, ":", bindir);
 
     if (bindir) free(bindir);
