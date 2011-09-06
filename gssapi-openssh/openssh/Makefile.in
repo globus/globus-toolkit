@@ -335,11 +335,10 @@ install-sysconf:
 #     o Destroy current/old gpt-install-files target.
 #     o Copy install-files target into gpt-install-files target.
 #     o Remove the following sections:
-#       o Copying the configuration files (ssh_config, sshd_config, ssh_prng_cmds, moduli).
+#       o Copying the configuration files (ssh_config, sshd_config, moduli).
 #       o The scard-install target.
 #       o Creating and chmod'ing PRIVSEP_PATH.
 #       o Stripping of installed binaries.
-#       o The conditionals around ssh-rand-helper*.
 #     o Install docs into $GL/doc/gsi_openssh by adding 'gpt-install-docs' target.
 #     o Add links for gsi tools (gsissh -> ssh, etc).
 #     o Refer to the new man and cat pages.
@@ -381,8 +380,6 @@ gpt-install-files: gpt-install-docs
 	echo $(DESTDIR)$(bindir)/ssh-keyscan | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 	$(INSTALL) -m 0755 $(STRIP_OPT) sshd $(DESTDIR)$(sbindir)/sshd
 	echo $(DESTDIR)$(sbindir)/sshd | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
-	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper
-	echo $(DESTDIR)$(libexecdir)/ssh-rand-helper | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 	$(INSTALL) -m 4711 $(STRIP_OPT) ssh-keysign $(DESTDIR)$(SSH_KEYSIGN)
 	echo $(DESTDIR)$(SSH_KEYSIGN) | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 	$(INSTALL) -m 0755 $(STRIP_OPT) sftp $(DESTDIR)$(bindir)/sftp
@@ -421,8 +418,6 @@ gpt-install-files: gpt-install-docs
 	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
 	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8; \
 	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
-	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8; \
-	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
 	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1; \
 	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
 	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8; \
@@ -468,8 +463,6 @@ gpt-install-files: gpt-install-docs
 	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
 	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8; \
 	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
-	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8; \
-	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
 	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1; \
 	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
 	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8; \
@@ -510,8 +503,6 @@ gpt-install-docs:
 	echo $(DESTDIR)$(docdir)/README.privsep | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 	$(INSTALL) -m 644 INSTALL $(DESTDIR)$(docdir)/INSTALL
 	echo $(DESTDIR)$(docdir)/INSTALL | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
-	$(INSTALL) -m 644 WARNING.RNG $(DESTDIR)$(docdir)/WARNING.RNG
-	echo $(DESTDIR)$(docdir)/WARNING.RNG | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 	$(INSTALL) -m 644 LICENCE $(DESTDIR)$(docdir)/LICENSE.OpenSSH
 	echo $(DESTDIR)$(docdir)/LICENSE.OpenSSH | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 	$(INSTALL) -m 644 CREDITS $(DESTDIR)$(docdir)/CREDITS
