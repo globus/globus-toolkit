@@ -134,9 +134,9 @@ RSA_get_default_method(void)
 
 #ifdef	USE_OPENSSL_ENGINE
 void
-ssh_SSLeay_add_all_algorithms(void)
+ssh_OpenSSL_add_all_algorithms(void)
 {
-	SSLeay_add_all_algorithms();
+	OpenSSL_add_all_algorithms();
 
 	/* Enable use of crypto hardware */
 	ENGINE_load_builtin_engines();
