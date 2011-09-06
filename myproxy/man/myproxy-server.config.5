@@ -912,7 +912,7 @@ according to the following rules:
          '\\?'       =>      '?'
          '\\.'       =>      '.'
 
-Additionally, MyProxy wraps all regular expressions with '^' and '$'
+Additionally, MyProxy wraps all regular expressions inside '^(' and ')$'
 to require full DN matching.
 
 Be aware that parentheses are metacharacters according to POSIX,
@@ -925,13 +925,13 @@ converted to POSIX EREs:
 
      [ MyProxy regex ]     =>    [ POSIX ERE ]
   ------------------------------------------------------------
-  "*/CN=Jim Basney"        => "^.*/CN=Jim Basney$"
-  "*/CN=Test User ?"       => "^.*/CN=Test User .$"
-  "*/CN=James A. Basney"   => "^.*/CN=James A\\. Basney$"
-  "/O=Test/CN=[:alnum:]\\*" => "^/O=Test/CN=[:alnum:]*$"
+  "*/CN=Jim Basney"        => "^(.*/CN=Jim Basney)$"
+  "*/CN=Test User ?"       => "^(.*/CN=Test User .)$"
+  "*/CN=James A. Basney"   => "^(.*/CN=James A\\. Basney)$"
+  "/O=Test/CN=[:alnum:]\\*" => "^(/O=Test/CN=[:alnum:]*)$"
 
   "*/CN=Jim Basney|*/CN=James Basney" =>
-      "^.*/CN=Jim Basney|.*/CN=James Basney$"
+      "^(.*/CN=Jim Basney|.*/CN=James Basney)$"
 
 .PD
 .SH EXAMPLES
