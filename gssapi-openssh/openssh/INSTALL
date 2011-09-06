@@ -16,9 +16,7 @@ The remaining items are optional.
 
 NB. If you operating system supports /dev/random, you should configure
 OpenSSL to use it. OpenSSH relies on OpenSSL's direct support of
-/dev/random, or failing that, either prngd or egd.  If you don't have
-any of these you will have to rely on ssh-rand-helper, which is inferior
-to a good kernel-based solution or prngd.
+/dev/random, or failing that, either prngd or egd
 
 PRNGD:
 
