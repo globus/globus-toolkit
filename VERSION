@@ -1,9 +1,12 @@
-This is MyProxy v5.5 5 Sep 2011.
+This is MyProxy v5.6 XX Xxx 2011.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v5.6 XX Xxx 2011
+  - ...
+
 v5.5 5 Sep 2011
   - undo escaping of POSIX extended regular expression meta-characters
     in myproxy-server authorization policies (introduced in v5.1)
