@@ -5,7 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.6 XX Xxx 2011
-  - ...
+  - allow escaping of '.' in regular expressions
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7213)
 
 v5.5 5 Sep 2011
   - undo escaping of POSIX extended regular expression meta-characters

@@ -827,10 +827,12 @@ regex_compare(const char *regex,
 	    break;
 
 	case '.':
-	    /* '.' needs to be taken literally */
-	    escaped = 1;
-
-	    /* fallthru to default */
+	    /* unescaped '.' turns into '\.' */
+	    if (!escaped)
+		*bufp++ = '\\';
+	    *bufp++ = '.';
+	    escaped = 0;
+	    break;
 
 	default:
 	    if (escaped)
