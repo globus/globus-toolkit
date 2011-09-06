@@ -778,10 +778,10 @@ regex_compare(const char *regex,
      * (e.g. ^.*\.domain\.com$).
      *
      * Make a buffer large enough to hold the largest possible converted
-     * regex from the string plus our extra characters (one at the
-     * begining, one at the end, plus a NULL).
+     * regex from the string plus our extra characters (two at the
+     * beginning, two at the end, plus a NULL).
      */
-    buf = (char *) malloc(2 * strlen(regex) + 3);
+    buf = (char *) malloc(2 * strlen(regex) + 5);
 
     if (!buf)
     {
@@ -792,6 +792,7 @@ regex_compare(const char *regex,
 
     bufp = buf;
     *bufp++ = '^';
+    *bufp++ = '(';
 
     while (*regex)
     {
@@ -844,6 +845,7 @@ regex_compare(const char *regex,
 	regex++;
     }
 
+    *bufp++ = ')';
     *bufp++ = '$';
     *bufp++ = '\0';
     myproxy_debug("TRANSLATED ERE (%s)", buf);
