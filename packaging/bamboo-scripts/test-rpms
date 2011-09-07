@@ -138,7 +138,7 @@ for flavor in gcc64 gcc32; do
         testpkgname_no_ver=$(echo $testpkgname | sed -e 's/-.*//' | sed -e 's/_/-/g')
         ./configure --with-flavor=${flavor}
         make 
-        if [ "${testpkgname}" = "globus_gram_job_manager_test" ]; then
+        if [ "${testpkgname_no_ver}" = "globus_gram_job_manager_test" ]; then
             for lrm in $lrms; do
                 if [ "${lrm}" = "condor" ]; then
                     modes=""
