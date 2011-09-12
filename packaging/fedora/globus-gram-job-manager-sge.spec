@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -134,9 +134,15 @@ rm -rf autom4te.cache
 %{_datadir}/globus/globus-bootstrap.sh
 
 # Explicitly set SGE-related command paths
+%if %{?rhel}%{!?rhel:0} == 5
+export QSUB=/usr/bin/qsub
+export QSTAT=/usr/bin/qstat
+export QDEL=/usr/bin/qdel
+%else
 export QSUB=/usr/bin/qsub-ge
 export QSTAT=/usr/bin/qstat-ge
 export QDEL=/usr/bin/qdel-ge
+%endif
 export QCONF=/usr/bin/qconf
 export MPIRUN=no
 export SUN_MPRUN=no
@@ -260,6 +266,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Sep 12 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
+- Update path to qsub, etc for RHEL5 / EPEL
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
 - Update for 5.1.2 release
 
