@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -137,10 +137,15 @@ export MPIRUN=no
 export QDEL=/usr/bin/qdel-torque
 export QSTAT=/usr/bin/qstat-torque
 export QSUB=/usr/bin/qsub-torque
+%if %{?fedora}%{!?fedora:0} == 13 || %{?rhel}%{!?rhel:0} == 5
+   %global pbs_log_path /var/torque/server_logs
+%else
+   %global pbs_log_path /var/log/torque/server_logs 
+%endif
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
            --with-globus-state-dir=%{_localstatedir}/lib/globus \
-           --with-log-path=/var/log/torque/server_logs \
+           --with-log-path=%{pbs_log_path} \
            --disable-static
 
 make %{?_smp_mflags}
@@ -253,6 +258,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Sep 12 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
+- Change pbs_log_path for fedora 13 and rhel 5
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
 - Update for 5.1.2 release
 
