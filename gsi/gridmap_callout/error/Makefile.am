@@ -7,7 +7,10 @@ SUBDIRS = \
 
 INCLUDES = $(GPT_INCLUDES)
 
-EXTRA_DIST=
+doc_DATA = GLOBUS_LICENSE
+
+EXTRA_DIST= $(doc_DATA)
+
 
 include_HEADERS= \
 	globus_gridmap_callout_error.h
