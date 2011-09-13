@@ -21,6 +21,7 @@
 #include <openssl/des.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fnmatch.h>
 #include "globus_io.h"
 #include "globus_xio.h"
 
@@ -661,7 +662,7 @@ globus_i_gfs_data_check_path(
             }
 
             /* check if we have an exact match */
-            if(strcspn(alias_ent->alias, "[]*?") != alias_ent->alias_len)
+            if(strcspn(alias_ent->alias, "[*?") != alias_ent->alias_len)
             {
                 rc = fnmatch(alias_ent->alias, true_path, 0);
                 if(rc == 0)
@@ -1671,13 +1672,67 @@ globus_list_cmp_alias_ent(
     globus_l_gfs_alias_ent_t *          a_ent;
     globus_l_gfs_alias_ent_t *          b_ent;
     int                                 cmp;
+    int                                 a_i;
+    int                                 b_i;
+    char *                              a_tmp;
+    char *                              b_tmp;
     
     a_ent = (globus_l_gfs_alias_ent_t *) a;
     b_ent = (globus_l_gfs_alias_ent_t *) b;
+
+    a_tmp = (a_ent && a_ent->alias) ? a_ent->alias : "";
+    b_tmp = (b_ent && b_ent->alias) ? b_ent->alias : "";
     
-    cmp = strcmp(
-        (a_ent && a_ent->alias) ? a_ent->alias : "",
-        (b_ent && b_ent->alias) ? b_ent->alias : "");
+    /* check for wildcard chars and replace the first one with a low value */
+    /* we want the reverse sorted order to be a, [abc], ?, *           */
+    a_i = strcspn(a_tmp, "[*?");
+    if(a_i < a_ent->alias_len)
+    {
+        a_tmp = globus_libc_strdup(a_ent->alias);
+        switch(a_tmp[a_i])
+        {
+            case '*':
+                a_tmp[a_i] = 1;
+                break;
+            case '?': 
+                a_tmp[a_i] = 2;
+                break;
+            case '[': 
+                a_tmp[a_i] = 3;
+                break;
+        }
+        a_i = 0;
+    } 
+
+    b_i = strcspn(b_tmp, "[*?");
+    if(b_i < b_ent->alias_len)
+    {
+        b_tmp = globus_libc_strdup(b_ent->alias);
+        switch(b_tmp[b_i])
+        {
+            case '*':
+                b_tmp[b_i] = 1;
+                break;
+            case '?': 
+                b_tmp[b_i] = 2;
+                break;
+            case '[': 
+                b_tmp[b_i] = 3;
+                break;
+        }
+        b_i = 0;
+    }
+    
+    cmp = strcmp(a_tmp, b_tmp);
+
+    if(!a_i)
+    {
+        globus_free(a_tmp);
+    } 
+    if(!b_i)
+    {
+        globus_free(b_tmp);
+    }    
     
     return cmp >= 0;
 }
