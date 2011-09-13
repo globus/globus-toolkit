@@ -149,6 +149,7 @@ globus_i_gfs_data_check_path(
 #define GFS_L_READ  1<<0
 #define GFS_L_WRITE 1<<1
 #define GFS_L_LIST  1<<2
-#define GFS_L_NONE  1<<3
+#define GFS_L_DIR   1<<3
+#define GFS_L_NONE  1<<4
 
 #endif
