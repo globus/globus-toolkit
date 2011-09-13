@@ -156,6 +156,13 @@ for flavor in gcc64 gcc32; do
                     unset CONTACT_STRING
                     unset CONTACT_LRM
                     sudo yum -y remove globus-gram-job-manager-$lrm$mode
+                    # Stop the job manager and remove all job state, so that
+                    # tests will have a clean state
+                    killall globus-job-manager
+                    rm -rf ~/.globus/job
+                    rm -rf /var/lib/globus/gram_job_state/bamboo/*
+                    rm -f /var/lib/globus/gram_job_state/job.*
+                    rm -rf ~/.globus/.gass_cache
                     xmlfile="${testpkgname_no_ver}-$lrm.xml"
                     if [ -f "$xmlfile" ]; then
                         sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
