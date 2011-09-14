@@ -114,11 +114,13 @@ EOF
 
 target32=i686-redhat-linux
 
-if grep -Eq 'CentOS|Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release
-then
-    target32=i386-redhat-linux
-    echo "%rhel                  5" >> $topdir/.rpmmacros
-fi
+case $(lsb_release -is):$(lsb_release -rs) in
+    CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
+        target32=i386-redhat-linux
+        echo "%rhel                  5" >> $topdir/.rpmmacros
+        rhel=5
+        ;;
+esac
 
 # Enable building of RPM packages in $topdir
 cat <<EOF >> $topdir/.rpmmacros
@@ -272,8 +274,7 @@ cp -R RPMS/i?86/* "${repodir}"/i386
 cp RPMS/noarch/*.rpm "${repodir}"/x86_64/
 cp RPMS/noarch/*.rpm "${repodir}"/i386/
 
-if grep -Eq 'Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release
-then
+if [ "$rhel" = 5 ]; then 
     cp RPMS/i?86/*.rpm "${repodir}"/x86_64/
 fi
 cp -R SRPMS "${repodir}"
