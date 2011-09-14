@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -221,6 +221,10 @@ if [ $1 -ge 1 ]; then
     if [ ! -f /etc/grid-services/jobmanager ]; then
         globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
     fi
+    if [ ! -f /var/lib/globus/globus-fork.log ]; then
+        touch /var/lib/globus/globus-fork.log
+        chmod 0622 /var/lib/globus/globus-fork.log
+    fi
 fi
 
 %preun setup-seg
@@ -260,6 +264,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Sep 14 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
+- Create globus-fork.log at postinstall time if it's not present
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
 - Update for 5.1.2 release
 
