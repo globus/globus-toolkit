@@ -12,6 +12,8 @@ v5.6 XX Xxx 2011
     '^' and '$' to ensure matching the entire DN using proper operator
     precedence
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7215)
+  - add liblber to link line when using --with-openldap
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7217)
 
 v5.5 5 Sep 2011
   - undo escaping of POSIX extended regular expression meta-characters
