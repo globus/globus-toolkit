@@ -80,11 +80,26 @@ for flavor in gcc64 gcc32; do
         sudo yum -y remove $pkgs_to_rm
     fi
 
-    if [ "$flavor" = gcc64 ]; then
-        arch="x86_64"
-    elif ! grep -Eq 'Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release; then
-        archcmd="i386"
-    fi
+    case $(lsb_release -is):$(lsb_release -rs) in
+        CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
+            if [ "$flavor" = gcc64 ]; then
+                arch="x86_64"
+                archcmd=""
+            else
+                arch="i386"
+                archcmd="i386"
+            fi
+            ;;
+        *)
+            if [ "$flavor" = gcc64 ]; then
+                arch="x86_64"
+                archcmd=""
+            else
+                arch="i686"
+                archcmd=""
+            fi
+            ;;
+    esac
 
     # yum clean will enable us to download 32-bit or 64-bit below
     sudo yum clean all
@@ -139,6 +154,7 @@ for flavor in gcc64 gcc32; do
         ./configure --with-flavor=${flavor}
         make 
         if [ "${testpkgname_no_ver}" = "globus-gram-job-manager-test" ]; then
+            sudo yum -y remove globus-gram-job-manager-fork-setup-poll
             for lrm in $lrms; do
                 if [ "${lrm}" = "condor" ]; then
                     modes=""
@@ -146,7 +162,7 @@ for flavor in gcc64 gcc32; do
                     modes="-setup-poll -setup-seg"
                 fi
                 for mode in $modes; do
-                    sudo yum -y install globus-gram-job-manager-$lrm$mode || continue
+                    sudo yum -y install globus-gram-job-manager-$lrm$mode.$arch || continue
                     sudo service globus-gatekeeper restart || true
                     sudo service globus-scheduler-event-generator restart || true
                     dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
@@ -170,6 +186,7 @@ for flavor in gcc64 gcc32; do
                     fi
                 done
             done
+            sudo yum -y install globus-gram-job-manager-fork-setup-poll
         else
             make junit || true
             for x in "${testpkgname_no_ver}"*.xml; do
