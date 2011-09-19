@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.76 $)
+AC_REVISION($Revision: 1.77 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -210,6 +210,8 @@ int main() { if (LDAP_VENDOR_VERSION < 20300) exit(1); else exit(0); }
           # below to fail
 		  LDFLAGS="-L${withval}/lib $LDFLAGS"
 		  AC_CHECK_HEADERS(ldap.h)
+		  AC_CHECK_LIB(lber, ber_free, ,
+				     AC_MSG_ERROR([ber_free not found in liblber]) )
 		  AC_CHECK_LIB(ldap, ldap_sasl_bind_s, ,
 				     AC_MSG_ERROR([ldap_sasl_bind_s not found in libldap]) )
 		  AC_CHECK_FUNC(ldap_search_ext_s, ,
