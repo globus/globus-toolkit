@@ -231,13 +231,18 @@ if ($specfile_changed)
     $releaseversion++;
 }
 
+if ($setreleaseversion)
+{
+    $releaseversion = $setreleaseversion;
+}
+
 if ($specfile_changed || $version_changed)
 {
     $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n- $changelog\n\n";
     print "Spec file $specfilename has been updated\n";
 }
 
-  $ARRAY[$releaseindex] = "Release:\t".(($setreleaseversion) ? $setreleaseversion : $releaseversion)."$releasesuffix\n";
+  $ARRAY[$releaseindex] = "Release:\t$releaseversion$releasesuffix\n";
 
 #Write back the spec file
 seek(FH,0,0) or die "Seeking: $!"; 
