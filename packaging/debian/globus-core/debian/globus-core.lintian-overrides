@@ -1,3 +1,0 @@
-# Renaming the script globus-vararg-enums-doxygen-filter.pl will break
-# the build instructions for other globus packages
-globus-core binary: script-with-language-extension */globus-vararg-enums-doxygen-filter.pl
