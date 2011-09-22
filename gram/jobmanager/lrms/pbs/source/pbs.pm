@@ -48,6 +48,11 @@ BEGIN
     {
         $cluster = undef;
     }
+    my $pbs_default = $config->get_attribute('pbs_default') || '';
+    if ($pbs_default ne '')
+    {
+        $ENV{PBS_DEFAULT} = $pbs_default;
+    }
 
     $cpu_per_node = $config->get_attribute('cpu_per_node') || 1;
     $remote_shell = $config->get_attribute('remote_shell') || undef;

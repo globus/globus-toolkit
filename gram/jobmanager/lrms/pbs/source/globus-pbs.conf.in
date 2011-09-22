@@ -2,6 +2,11 @@
 # log_path directory 
 log_path="@PBS_LOG_PATH@"
 
+# Some sites run the PBS server on a different node than GRAM is running.
+# If so, they might need to set the pbs_default variable to the name of 
+# the server so that GRAM will contact it
+pbs_default=""
+
 # For the mpi jobtype, the pbs LRM implementation supports both the
 # MPI 2-specified mpiexec command and the non-standard mpirun command common
 # in older mpi systems. If either of these is path to an executable, it will
