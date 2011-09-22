@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.1
+Version:	13.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -158,6 +158,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Sep 21 2011  <bester@mcs.anl.gov> - 13.2-1
+- GRAM-257: Set default values for GLOBUS_GATEKEEPER_*
+
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 13.1-1
 - Fix: GRAM-250
 

@@ -66,6 +66,7 @@ globus_gram_job_manager_config_init(
     struct utsname                      utsname;
     char *                              conf_path = NULL;
     char *                              dot;
+    char *                              gatekeeper_contact;
 
     memset(config, 0, sizeof(globus_gram_job_manager_config_t));
 
@@ -437,7 +438,7 @@ globus_gram_job_manager_config_init(
         config->home =  strdup(getenv("HOME"));
 	if (config->home == NULL)
 	    {
-	        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
 		goto out;
 	    }
@@ -563,6 +564,48 @@ globus_gram_job_manager_config_init(
                     utsname.release);
             }
         }
+    }
+    gatekeeper_contact = getenv("GLOBUS_GATEKEEPER_CONTACT_STRING");
+
+    if (gatekeeper_contact)
+    {
+	char *colon;
+	char *save = strdup(gatekeeper_contact);
+
+	gatekeeper_contact = save;
+
+	if (gatekeeper_contact)
+	{
+	    colon = strchr(gatekeeper_contact, ':');
+	    if (colon)
+	    {
+		if (!config->globus_gatekeeper_host)
+		{
+		    *colon = '\0';
+		    config->globus_gatekeeper_host = strdup(gatekeeper_contact);
+		}
+		gatekeeper_contact = colon + 1;
+
+		colon = strchr(gatekeeper_contact, ':');
+		if (colon)
+		{
+		    if (!config->globus_gatekeeper_port)
+		    {
+			*colon = '\0';
+			config->globus_gatekeeper_port =
+					strdup(gatekeeper_contact);
+		    }
+		    gatekeeper_contact = colon + 1;
+
+		    if (!config->globus_gatekeeper_subject)
+		    {
+			config->globus_gatekeeper_subject =
+			    strdup(gatekeeper_contact);
+		    }
+		}
+	    }
+	}
+	free(save);
     }
 
     rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
