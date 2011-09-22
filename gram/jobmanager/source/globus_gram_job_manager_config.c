@@ -282,7 +282,6 @@ globus_gram_job_manager_config_init(
         else if (strcmp(argv[i], "-enable-syslog") == 0)
         {
             config->syslog_enabled = GLOBUS_TRUE;
-            i++;
         }
         else if (strcmp(argv[i], "-stdio-log") == 0
                 && (i+1 < argc))
