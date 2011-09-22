@@ -15,8 +15,8 @@
 
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	4%{?dist}
+Version:	1.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -258,6 +258,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Sep 21 2011  <bester@mcs.anl.gov> - 1.1-1
+- GRAM-253
+
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-4
 - Change %post check for -eq 1
 
