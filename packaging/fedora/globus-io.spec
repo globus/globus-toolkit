@@ -12,8 +12,8 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
-Release:	2%{?dist}
+Version:	9.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -118,6 +118,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Sep 20 2011  <bester@mcs.anl.gov> - 9.0-1
+- Add channel mode GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP_SSL3 to force SSLv3
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
 - Update for 5.1.2 release
 

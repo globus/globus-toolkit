@@ -480,19 +480,21 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    if (globus_i_gsi_gssapi_force_tls)
-    {
-	/* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
-        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
-            2, "Forcing TLS.\n");
-	SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
-    }
-    else if (cred_usage == GSS_C_INITIATE && SSLeay() < 0x0090708fL)
+    if ((cred_usage == GSS_C_INITIATE &&
+            SSLeay() < 0x0090708fL) ||
+            context->req_flags & GSS_C_GLOBUS_FORCE_SSL3)
     {
 	/* For backward compatibility.  Older GSI GSSAPI accepters
 	   will fail if we try to negotiate TLSv1, so stick with SSLv3
 	   when initiating to be safe. */
 	SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
+    }
+    else if (globus_i_gsi_gssapi_force_tls)
+    {
+	/* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+            2, "Forcing TLS.\n");
+	SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
     }
     else
     {

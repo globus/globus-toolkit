@@ -12,8 +12,8 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	9.0
-Release:	2%{?dist}
+Version:	10.0
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -184,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Sep 20 2011  <bester@mcs.anl.gov> - 10.0-1
+- Add flag to force SSLv3 when initiating a security context
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 9.0-2
 - Update for 5.1.2 release
 
