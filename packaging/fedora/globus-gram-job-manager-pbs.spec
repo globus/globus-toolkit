@@ -258,7 +258,7 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Wed Sep 21 2011  <bester@mcs.anl.gov> - 1.1-1
+* Wed Sep 22 2011  <bester@mcs.anl.gov> - 1.1-1
 - GRAM-253
 
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-4
