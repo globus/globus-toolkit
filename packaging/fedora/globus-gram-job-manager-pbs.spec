@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -195,7 +195,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post setup-poll
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs > /dev/null 2>&1 || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
         globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager
@@ -216,14 +216,13 @@ fi
 
 %post setup-seg
 ldconfig
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-seg -n jobmanager-pbs > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e pbs > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart pbs
 fi
 
 %preun setup-seg
-ldconfig
 if [ $1 -eq 0 ]; then
     globus-gatekeeper-admin -d jobmanager-pbs-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -d pbs > /dev/null 2>&1 || :
@@ -231,6 +230,7 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-seg
+ldconfig
 if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e pbs > /dev/null 2>&1 || :
@@ -258,6 +258,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-4
+- Change %post check for -eq 1
+
 * Mon Sep 12 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
 - Change pbs_log_path for fedora 13 and rhel 5
 
