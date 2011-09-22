@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -88,7 +88,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-condor > /dev/null 2>&1 || :
     if [ ! -f /etc/grid-services/jobmanager ]; then
         globus-gatekeeper-admin -e jobmanager-condor -n jobmanager
@@ -112,6 +112,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-3
+- Fix: GRAM-243
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
 - Update for 5.1.2 release
 
