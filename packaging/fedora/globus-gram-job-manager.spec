@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.0
-Release:	2%{?dist}
+Version:	13.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -158,6 +158,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 13.1-1
+- Fix: GRAM-250
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 13.0-2
 - Update for 5.1.2 release
 
