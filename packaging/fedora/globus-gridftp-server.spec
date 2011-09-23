@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.0
-Release:	3%{?dist}
+Version:	6.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -172,6 +172,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 6.1-1
+- GRIDFTP-184: Detect and workaround bug in start_daemon for LSB < 4
+
 * Wed Aug 31 2011 Joseph Bester <bester@mcs.anl.gov> - 6.0-3
 - Add more config files for xinetd or gfork startup
 - Update to Globus Toolkit 5.1.2
