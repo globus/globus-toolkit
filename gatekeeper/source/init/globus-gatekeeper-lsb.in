@@ -48,6 +48,11 @@ GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 test -f "${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}" || exit 0
 test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}" || exit 0
 
+if ! lsb_release -v | grep -q 'core-[123]'; then
+    lsb_version_ge4=1
+fi
+
+
 start()
 {
     if [ "${GLOBUS_GATEKEEPER_KERBEROS_ENABLED:-false}" = "true" ]; then
@@ -56,7 +61,7 @@ start()
         kflag=""
     fi
 
-    start_daemon -p "${GLOBUS_GATEKEEPER_PIDFILE}" \
+    start_daemon ${lsb_version_ge4:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} \
         ${GLOBUS_GATEKEEPER_NICE_LEVEL:+-n "${GLOBUS_GATEKEEPER_NICE_LEVEL}"} \
         "$prog" \
         -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \

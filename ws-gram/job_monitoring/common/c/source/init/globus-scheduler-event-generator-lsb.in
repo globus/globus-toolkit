@@ -41,6 +41,11 @@ prog="${sbindir}/globus-scheduler-event-generator"
 lockfile="@LOCKFILE@"
 
 . /lib/lsb/init-functions
+
+if ! lsb_release -v | grep -q 'core-[123]'; then
+    lsb_version_ge4=1
+fi
+
 GLOBUS_SEG_LRM_DIR="${GLOBUS_SEG_LRM_DIR:-${sysconfdir}/globus/scheduler-event-generator}"
 
 full=1
@@ -72,7 +77,7 @@ start()
             (umask 022; mkdir "$logdir")
         fi
         start_daemon ${GLOBUS_SEG_NICE_LEVEL:+-n "${GLOBUS_SEG_NICE_LEVEL}"} \
-            -p "$pidfile" "${prog}" \
+            ${lsb_version_ge4:+-p "$pidfile"} "${prog}" \
             -s "$lrm" \
             -p "$pidfile" \
             -d "$logdir" \

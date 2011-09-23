@@ -20,6 +20,10 @@ lsb=""
 if [ -f /lib/lsb/init-functions ]; then
     lsb=_lsb
     . /lib/lsb/init-functions
+    if ! lsb_release -v | grep -q 'core-[123]'; then
+        lsb_version_ge4=1
+    fi
+
 fi
 
 rc=0
@@ -59,7 +63,7 @@ start_lsb()
       cp $conf.default $conf;
     fi
 
-    start_daemon -p "$pidfile" "$gridftpd" -S -c $conf \
+    start_daemon ${lsb_version_ge4:+-p "$pidfile"} "$gridftpd" -S -c $conf \
             -pidfile "${pidfile}"
     rc=$?
      
