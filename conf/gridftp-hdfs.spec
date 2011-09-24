@@ -94,6 +94,7 @@ fi
 %changelog
 * Mon Jun 6 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.4.0-2
 - Decrease logging verbosity.
+- Make sure we always finish up the transfer.
 
 * Mon Jun 6 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.4.0-1
 - Rewrite of send/recv to clean up logic and error handling.

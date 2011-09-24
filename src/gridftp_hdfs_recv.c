@@ -247,6 +247,7 @@ hdfs_recv(
 
 cleanup:
     if (rc != GLOBUS_SUCCESS) {
+        set_done(hdfs_handle, rc);
         globus_gridftp_server_finished_transfer(op, rc);
     }
     globus_mutex_unlock(hdfs_handle->mutex);
@@ -305,6 +306,9 @@ hdfs_handle_write_op(
     }
 
     if (nbytes == 0) {
+        // There were no bytes left; we don't have an EOF, but all bytes
+        // should be in-flight.
+        set_done(hdfs_handle, GLOBUS_SUCCESS);
         goto cleanup;
     }
 
