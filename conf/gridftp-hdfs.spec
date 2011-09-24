@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
-Version:        0.4.0
-Release:        2
+Version:        0.5.0
+Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -10,48 +10,40 @@ URL:            http://twiki.grid.iu.edu/bin/view/Storage/HadoopInstallation
 # for download.  That might simplify this a bit.
 # svn co svn://t2.unl.edu/brian/gridftp_hdfs
 # cd gridftp_hdfs
-# ln -s /usr/share/libtool/ltmain.sh
-# aclocal
-# automake -a -c
-# autoconf
+# ./bootstrap
 # ./configure
 # make dist
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-# RHEL4 doesn't have java-devel, so we build with Sun's jdk instead.
-# Use Sun's jdk on both RHEL4 and RHEL5 for consistency.
-BuildRequires:  jdk >= 2000:1.6.0_07-fcs
-BuildRequires:  jpackage-utils
+BuildRequires: java-devel
 BuildRequires: hadoop-0.20-libhdfs
 BuildRequires: globus-gridftp-server-devel
 BuildRequires: globus-common-devel
 
 Requires: hadoop-0.20-libhdfs
 Requires: globus-gridftp-server-progs
-Requires: globus-mapping-osg
 Requires: xinetd
-Requires: osg-ca-certs fetch-crl
 
 Requires(pre): shadow-utils
-Requires(post): /sbin/service
-Requires(postun): /sbin/chkconfig
-Requires(postun): /sbin/service
+Requires(preun): initscripts
+Requires(preun): chkconfig
+Requires(post): chkconfig
+Requires(postun): initscripts
+Requires(postun): xinetd
 
 %description
 HDFS DSI plugin for GridFTP 
 
 %prep
+
 %setup -q
 
 %build
 
-export JAVA_HOME=/usr/java/latest
-export PATH=$JAVA_HOME/bin:$PATH
+%configure --with-java=/etc/alternatives/java_sdk
 
-%configure --with-java=/usr/java/latest/
-
-make
+make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -68,30 +60,39 @@ rm -rf $RPM_BUILD_ROOT
 %post
 /sbin/ldconfig
 /sbin/chkconfig --add %{name}
-/sbin/service xinetd condrestart
 
 %preun
 if [ "$1" = "0" ] ; then
+    /sbin/service gridftp-hdfs stop >/dev/null 2>&1
     /sbin/chkconfig --del %{name}
 fi
 
 %postun
 /sbin/ldconfig
-/sbin/service xinetd condrestart
+if [ "$1" -ge "1" ]; then
+    /sbin/service xinetd condrestart
+    /sbin/service gridftp-hdfs condrestart || :
+fi
 
 %files
 %defattr(-,root,root,-)
-%{_bindir}/gridftp-hdfs-inetd
+%{_sbindir}/gridftp-hdfs-inetd
 %{_bindir}/gridftp-hdfs-standalone
-%config(noreplace) %{_sysconfdir}/xinetd.d/%{name}
 %{_libdir}/libglobus_gridftp_server_hdfs.so*
+%{_datadir}/%{name}/%{name}-environment
+%{_sysconfdir}/init.d/%{name}
+%config(noreplace) %{_sysconfdir}/xinetd.d/%{name}
+%config(noreplace) %{_sysconfdir}/%{name}/gridftp-debug.conf
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp-inetd.conf
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp.conf
-%config(noreplace) %{_sysconfdir}/%{name}/%{name}-local.conf
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
+%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
+* Sat Sep 24 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.0-1
+- Redo gridftp to allow either xinetd or init startup; link with GT 5.2.
+
 * Mon Jun 6 2011 Brian Bockelman <bbockelm@cse.unl.edu> 0.4.0-2
 - Decrease logging verbosity.
 - Make sure we always finish up the transfer.

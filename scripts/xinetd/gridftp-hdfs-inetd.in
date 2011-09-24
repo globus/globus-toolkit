@@ -1,4 +1,4 @@
-#!/bin/sh                                                            
+#!/bin/sh
 
 if [ -e @datadir_resolved@/gridftp-hdfs/gridftp-hdfs-environment ] ; then
     . @datadir_resolved@/gridftp-hdfs/gridftp-hdfs-environment
@@ -12,7 +12,5 @@ if [ -e @sysconfdir_resolved@/sysconfig/gridftp-hdfs ] ; then
     . @sysconfdir_resolved@/sysconfig/gridftp-hdfs
 fi
 
-export CLASSPATH=$CLASSPATH
-                                                                      
-LD_PRELOAD=libjsig.so exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-debug.conf -dsi hdfs -no-fork
+LD_PRELOAD=libjsig.so exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
 

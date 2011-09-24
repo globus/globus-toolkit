@@ -1,4 +1,6 @@
-#!/bin/sh
+
+# This file is designed to be sourced in bash to configure the 
+# basic Hadoop environment.
 
 HADOOP_CONF_DIR=/etc/hadoop-0.20/conf
 HADOOP_HOME=/usr/lib/hadoop-0.20
@@ -70,21 +72,15 @@ if [ $UID -eq 0 ]; then
   export LCAS_DB_FILE=/etc/lcas/lcas.db
   export LCAS_DIR=/etc/lcas
   export LCAS_MOD_HOME=/usr/lib64/modules
-
+ 
   # LCMAPS configuration
   export LCMAPS_LOG_LEVEL=0
   export LCMAPS_DEBUG_LEVEL=0
-  export LCMAPS_DB_FILE=/etc/lcmaps/lcmaps.db
+  export LCMAPS_DB_FILE=/etc/lcmaps.db
   export LCMAPS_DIR=/etc/lcmaps
   export LCMAPS_MOD_HOME=/usr/lib64/modules
   export LCMAPS_POLICY_NAME=globus_gridftp_mapping
 fi
 
-if [ -e @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf ] ; then
-    . @sysconfdir_resolved@/gridftp-hdfs/gridftp-hdfs-local.conf
-fi
-
 export CLASSPATH=$CLASSPATH
-                                                                      
-LD_PRELOAD=libjsig.so exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
 

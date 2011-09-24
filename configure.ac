@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-AC_INIT([gridftp-hdfs], [0.4.0], [osg-hadoop@opensciencegrid.org])
+AC_INIT([gridftp-hdfs], [0.5.0], [osg-hadoop@opensciencegrid.org])
 
-AM_INIT_AUTOMAKE([gridftp-hdfs], [0.4.0])
+AM_INIT_AUTOMAKE([gridftp-hdfs], [0.5.0])
 
 AC_CONFIG_SRCDIR([src/gridftp_hdfs.c])
 #AC_CONFIG_HEADER([config.h])
@@ -70,9 +70,15 @@ else
 fi
 
 if test "x${sysconfdir}" == "xNONE/etc" ; then
-    sysconfdir_resolved=${ac_default_prefix}
+    sysconfdir_resolved=${ac_default_prefix}/etc
 else
     eval "sysconfdir_resolved=\"${sysconfdir}\""
+fi
+
+if test "s${datadir}" == "xNONE" ; then
+    datadir_resolved=${ac_default_prefix}/share
+else
+    eval "datadir_resolved=\"${datadir}\""
 fi
 
 AC_SUBST(HADOOPHOME)
@@ -83,7 +89,8 @@ AC_SUBST(logdir)
 AC_SUBST(exec_prefix_resolved)
 AC_SUBST(prefix_resolved)
 AC_SUBST(sysconfdir_resolved)
+AC_SUBST(datadir_resolved)
 
-AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf conf/gridftp-hdfs scripts/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone])
+AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf scripts/xinetd/gridftp-hdfs scripts/xinetd/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone scripts/init/gridftp-hdfs])
 AC_OUTPUT
 
