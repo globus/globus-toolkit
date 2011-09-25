@@ -63,6 +63,10 @@ if [ "$HADOOP_CLASSPATH" != "" ]; then
   CLASSPATH=${CLASSPATH}:${HADOOP_CLASSPATH}
 fi
 
+export CLASSPATH=$CLASSPATH
+
+unset IFS
+
 # Configurations for the authz
 # Only applies to the root user due to ownership issues
 if [ $UID -eq 0 ]; then
@@ -81,6 +85,4 @@ if [ $UID -eq 0 ]; then
   export LCMAPS_MOD_HOME=/usr/lib64/modules
   export LCMAPS_POLICY_NAME=globus_gridftp_mapping
 fi
-
-export CLASSPATH=$CLASSPATH
 

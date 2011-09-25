@@ -75,7 +75,19 @@ else
     eval "sysconfdir_resolved=\"${sysconfdir}\""
 fi
 
-if test "s${datadir}" == "xNONE" ; then
+if test "x${sbindir}" == "xNONE" ; then
+    sbindir_resolved=${ac_default_prefix}/sbin
+else
+    eval "sbindir_resolved=\"${sbindir}\""
+fi
+
+if test "x${localstatedir}" == "xNONE" ; then
+    localstatedir_resolved=${ac_default_prefix}/var
+else
+    eval "localstatedir_resolved=\"${localstatedir}\""
+fi
+
+if test "x${datadir}" == "xNONE" ; then
     datadir_resolved=${ac_default_prefix}/share
 else
     eval "datadir_resolved=\"${datadir}\""
@@ -90,6 +102,8 @@ AC_SUBST(exec_prefix_resolved)
 AC_SUBST(prefix_resolved)
 AC_SUBST(sysconfdir_resolved)
 AC_SUBST(datadir_resolved)
+AC_SUBST(localstatedir_resolved)
+AC_SUBST(sbindir_resolved)
 
 AC_CONFIG_FILES([Makefile src/Makefile conf/Makefile scripts/Makefile conf/gridftp-inetd.conf scripts/xinetd/gridftp-hdfs scripts/xinetd/gridftp-hdfs-inetd scripts/gridftp-hdfs-standalone scripts/init/gridftp-hdfs])
 AC_OUTPUT

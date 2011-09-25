@@ -9,7 +9,7 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-exec="/usr/sbin/globus-gridftp-server"
+exec="@sbindir_resolved@/globus-gridftp-server"
 prog="gridftp-hdfs"
 config="@sysconfdir_resolved@/gridftp-hdfs/gridftp.conf"
 
@@ -17,13 +17,13 @@ config="@sysconfdir_resolved@/gridftp-hdfs/gridftp.conf"
 
 [ -e @sysconfdir_resolved@/sysconfig/$prog ] && . @sysconfdir_resolved@/sysconfig/$prog
 
-lockfile=/var/lock/subsys/$prog
+lockfile=@localstatedir_resolved@/lock/subsys/$prog
 
 start() {
     [ -x $exec ] || exit 5
     [ -f $config ] || exit 6
     echo -n $"Starting $prog: "
-    LD_PRELOAD=libjsig.so daemon $exec -c $config -dsi hdfs
+    LD_PRELOAD=libjsig.so daemon $exec -c $config -dsi hdfs -pidfile @localstatedir_resolved@/run/$prog.pid
     retval=$?
     echo
     [ $retval -eq 0 ] && touch $lockfile
@@ -32,7 +32,7 @@ start() {
 
 stop() {
     echo -n $"Stopping $prog: "
-    # stop it here, often "killproc $prog"
+    killproc $prog
     retval=$?
     echo
     [ $retval -eq 0 ] && rm -f $lockfile
