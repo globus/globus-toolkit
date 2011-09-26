@@ -13,7 +13,7 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	9.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -33,6 +33,7 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
+BuildRequires:	globus-gssapi-gsi-devel%{?_isa} >= 10
 BuildRequires:	globus-core%{?_isa} >= 8
 
 %package devel
@@ -42,6 +43,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-xio-gsi-driver-devel%{?_isa} >= 2
 Requires:	globus-gss-assist-devel%{?_isa} >= 8
 Requires:	globus-xio-devel%{?_isa} >= 3
+Requires:	globus-gssapi-gsi-devel%{?_isa} >= 10
 Requires:	globus-core%{?_isa} >= 8
 
 %description
@@ -118,6 +120,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Sep 26 2011 Joe Bester <bester@mcs.anl.gov> - 9.0-2
+- pick up new GSSAPI version dependency
+
 * Tue Sep 20 2011  <bester@mcs.anl.gov> - 9.0-1
 - Add channel mode GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP_SSL3 to force SSLv3
 
