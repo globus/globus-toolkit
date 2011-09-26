@@ -170,7 +170,7 @@ for flavor in gcc64 gcc32; do
                     # multi-cpu
                     if [ "$lrm" = "pbs" ]; then
                         sudo ed /etc/globus/globus-pbs.conf <<-EOF
-			/^cpu_per_node=/s/=.*/="$(grep -c /proc/cpuinfo)"/
+			/^cpu_per_node=/s/=.*/="$(grep -c processor /proc/cpuinfo)"/
 			w
 			q
 			EOF
