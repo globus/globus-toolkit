@@ -108,7 +108,7 @@ class PacketFile(object):
 
         if self.packet_file is None:
             if not os.path.exists(os.path.join(self.path, dstamp)):
-                os.mkdir(os.path.join(self.path, dstamp), 0755)
+                os.makedirs(os.path.join(self.path, dstamp), 0755)
             self.packet_file = open(
                 os.path.join(self.path, dstamp, hstamp + ".gup"), "a")
 

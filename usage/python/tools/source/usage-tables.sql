@@ -526,10 +526,18 @@ username	0
 -- having this table simplifies queries quite a bit.
 CREATE TABLE gram5_rsl_attribute_groups(
     -- Bitwise or of 2^(rsl attribute id)
-    bitfield BIGINT,
+    bitfield NUMERIC(64),
     -- String containing comma-separated list of attributes
     attributes VARCHAR(256) NOT NULL,
     PRIMARY KEY(bitfield));
+
+-- The bitwise operations didn't work to well in practice with > 62 RSL
+-- attributes + extension attributes defined. Replacing with this new
+-- way of deciding what's in an attribute bundle
+CREATE TABLE gram5_rsl_attribute_group_membership(
+    bitfield NUMERIC(64),
+    member_attribute INT REFERENCES gram5_rsl_attributes(id),
+    UNIQUE(bitfield, member_attribute));
 
 -- This table contains sensitive information about the GRAM executable.
 -- This data is not collected by default.
@@ -611,7 +619,7 @@ CREATE TABLE gram5_jobs(
     -- executable name
     executable_id INTEGER REFERENCES gram5_executable(id),
     -- bitwise-or of 2^(each gram5_rsl_attributes value present) 
-    rsl_bitfield BIGINT NOT NULL,
+    rsl_bitfield NUMERIC(64) NOT NULL,
     -- GRAM5 Job Type
     jobtype INTEGER NOT NULL references gram5_job_types(id),
     -- information about transfers associated with the job (if any transfers

@@ -669,6 +669,13 @@ class GRAM5Packet(CUsagePacket):
                             attributes)
                     VALUES(%s, %s)''', (bitfield, ','.join(attribute_list)))
             GRAM5Packet.__rsl_bitfields[bitfield] = bitfield
+            for (name, rslid) in GRAM5Packet.__rsl_attributes.items():
+                if (bitfield & (2**int(rslid))) != 0:
+                    cursor.execute('''
+                        INSERT INTO gram5_rsl_attribute_group_membership(
+                                bitfield,
+                                member_attribute)
+                        VALUES(%s, %s)''', (bitfield, int(rslid)))
 
         return bitfield
 
