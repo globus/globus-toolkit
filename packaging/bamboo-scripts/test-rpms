@@ -14,6 +14,14 @@ lrms=fork
 tag=""
 skip_checkout=0
 
+if [ ! -f ~/.ssh/id_rsa ]; then
+    echo | ssh-keygen -q -P ''
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+    chmod 600 ~/.ssh/authorized_keys
+fi
+
+ssh-keyscan -t dsa,rsa \
+    localhost $(hostname) $(hostname -f) >> ~/.ssh/known_hosts
 
 while getopts "r:a:l:t:q" i; do
     case "$i" in
@@ -52,7 +60,8 @@ mkdir -p $topdir
 mkdir -p $testoutdir
 
 # Reset home to this directory as it is a transient bamboo build dir
-HOME=$topdir
+ORIGHOME="$HOME"
+HOME="$topdir"
 
 mkdir -p $tmppath
 
@@ -134,6 +143,7 @@ for flavor in gcc64 gcc32; do
                 sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
             fi
         fi
+        cp -R "$ORIGHOME/.ssh" "$HOME/.ssh"
         sudo service globus-gridftp-server restart 
         grid-proxy-init -hours 24
         globus_hostname=$(globus-hostname)
