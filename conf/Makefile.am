@@ -2,7 +2,7 @@
 gridftpdir = $(sysconfdir)/gridftp-hdfs
 dist_gridftp_DATA = gridftp.conf gridftp-inetd.conf gridftp-debug.conf replica-map.conf
 
-sysconfigdir = $(sysconfdir)/sysconfig
+sysconfigdir = $(sysconfdir)/sysconfig/gridftp.conf.d
 dist_sysconfig_DATA = gridftp-hdfs
 
 logrotatedir = $(sysconfdir)/logrotate.d

@@ -86,3 +86,6 @@ if [ $UID -eq 0 ]; then
   export LCMAPS_POLICY_NAME=globus_gridftp_mapping
 fi
 
+# New gridftp.conf override in GT 5.2
+export GRIDFTP_CONF=/etc/gridftp-hdfs/gridftp.conf
+

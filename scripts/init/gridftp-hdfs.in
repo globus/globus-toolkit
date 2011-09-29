@@ -15,7 +15,7 @@ config="@sysconfdir_resolved@/gridftp-hdfs/gridftp.conf"
 
 . @datadir_resolved@/$prog/$prog-environment
 
-[ -e @sysconfdir_resolved@/sysconfig/$prog ] && . @sysconfdir_resolved@/sysconfig/$prog
+[ -e @sysconfdir_resolved@/sysconfig/gridftp.conf.d/$prog ] && . @sysconfdir_resolved@/sysconfig/gridftp.conf.d/$prog
 
 lockfile=@localstatedir_resolved@/lock/subsys/$prog
 
@@ -23,7 +23,7 @@ start() {
     [ -x $exec ] || exit 5
     [ -f $config ] || exit 6
     echo -n $"Starting $prog: "
-    LD_PRELOAD=libjsig.so daemon $exec -c $config -dsi hdfs -pidfile @localstatedir_resolved@/run/$prog.pid
+    LD_PRELOAD=libjsig.so daemon $exec -c $config -pidfile @localstatedir_resolved@/run/$prog.pid
     retval=$?
     echo
     [ $retval -eq 0 ] && touch $lockfile

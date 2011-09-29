@@ -54,6 +54,9 @@ make DESTDIR=$RPM_BUILD_ROOT install
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 
+# Remove the init script - in GT5.2, this gets bootstrapped appropriately
+rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -86,7 +89,7 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp-inetd.conf
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
+%config(noreplace) %{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
