@@ -380,6 +380,16 @@ See
 in
 .Xr ssh_config 5
 for more information on patterns.
+.It Cm DisableUsageStats
+This keyword can be followed by one of the keywords "true", "enabled", "yes",
+"on" or "1" to disable reporting of usage metrics. Or it can be set to "false",
+"disabled", "no", "off", "0" to enable reporting of usage metrics, which is the
+default. Setting the
+.Cm GLOBUS_USAGE_OPTOUT
+environment variable to "1" will also disable the reporting of usage metrics.
+Disabling reporting of usage metrics will cause the
+.Cm UsageStatsTargets
+setting to be ignored.
 .It Cm ForceCommand
 Forces the execution of the command specified by
 .Cm ForceCommand ,
@@ -422,7 +432,17 @@ The default is
 .It Cm GSSAPIAuthentication
 Specifies whether user authentication based on GSSAPI is allowed.
 The default is
-.Dq no .
+.Dq yes .
+Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIDelegateCredentials
+Specifies whether delegated credentials are stored in the user's environment.
+The default is
+.Dq yes .
+.It Cm GSSAPIKeyExchange
+Specifies whether key exchange based on GSSAPI is allowed. GSSAPI key exchange 
+doesn't rely on ssh keys to verify host identity.
+The default is
+.Dq yes .
 Note that this option applies to protocol version 2 only.
 .It Cm GSSAPICleanupCredentials
 Specifies whether to automatically destroy the user's credentials cache
@@ -430,6 +450,44 @@ on logout.
 The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
+.It Cm GSSAPICredentialsPath
+If specified, the delegated GSSAPI credential is stored in the
+given path, overwriting any existing credentials.  
+Paths can be specified with syntax similar to the AuthorizedKeysFile 
+option (i.e., accepting %h and %u tokens).  
+When using this option,
+setting 'GssapiCleanupCredentials no' is recommended,
+so logging out of one session
+doesn't remove the credentials in use by another session of
+the same user.
+Currently only implemented for the GSI mechanism.
+.It Cm GSIAllowLimitedProxy
+Specifies whether to accept limited proxy credentials for
+authentication.
+The default is
+.Dq no .
+.It Cm GSSAPIStrictAcceptorCheck
+Determines whether to be strict about the identity of the GSSAPI acceptor 
+a client authenticates against. If
+.Dq yes
+then the client must authenticate against the
+.Pa host
+service on the current hostname. If 
+.Dq no
+then the client may authenticate against any service key stored in the 
+machine's default store. This facility is provided to assist with operation 
+on multi homed machines. 
+The default is
+.Dq yes .
+Note that this option applies only to protocol version 2 GSSAPI connections,
+and setting it to 
+.Dq no
+may only work with recent Kerberos GSSAPI libraries.
+.It Cm GSSAPIStoreCredentialsOnRekey
+Controls whether the user's GSSAPI credentials should be updated following a 
+successful connection rekeying. This option can be used to accepted renewed 
+or updated credentials from a compatible client. The default is
+.Dq no .
 .It Cm HostbasedAuthentication
 Specifies whether rhosts or /etc/hosts.equiv authentication together
 with successful public key client host authentication is allowed
@@ -995,6 +1053,121 @@ This avoids infinitely hanging sessions.
 .Pp
 To disable TCP keepalive messages, the value should be set to
 .Dq no .
+.It Cm UsageStatsTargets
+This option can be used to specify the target collector hosts to which usage
+metrics should be reported. This setting will be ignored if
+.Cm DisableUsageStats
+is enabled. Multiple targets can be specified separated by comma(s), but no
+space(s). Each target specification is of the format
+.Pa host:port[!tags].
+Tags control what data elements are reported. The following list specifies
+the tags for the corresponding data elements.
+.Pp
+.Bl -item -offset indent -compact
+.It
+.Cm V
+.Sm off
+- OpenSSH version, reported by default.
+.Sm on
+.It
+.Cm v
+.Sm off
+- SSL version, reported by default.
+.Sm on
+.It
+.Cm M
+.Sm off
+- User authentication method used such as "gssapi-keyex", "gssapi-with-mic", etc. Reported by default.
+.Sm on
+.It
+.Cm m
+.Sm off
+- User authentication mechanism used such as "GSI", "Kerberos", etc. Reported by default.
+.Sm on
+.It
+.Cm I
+.Sm off
+- Client IP address. Not reported by default.
+.Sm on
+.It
+.Cm u
+.Sm off
+- User name. Not reported by default.
+.Sm on
+.It
+.Cm U
+.Sm off
+- User DN. Not reported by default.
+.Sm on
+.Pp
+In addition to the above selected information, the following data are
+reported to ALL the specified/default target collectors. There's no way to
+exclude these from being reported other than by disabling the reporting of
+usage metrics altogether:
+.Pp
+.It
+.Cm Component code
+.Sm off
+- 12 for GSI OpenSSH
+.Sm on
+.It
+.Cm Component Data Format version
+.Sm off
+- 0 currently
+.Sm on
+.It
+.Cm IP Address
+.Sm off
+- IP address of reporting server
+.Sm on
+.It
+.Cm Timestamp
+.It
+.Cm Hostname
+.Sm off
+- Host name of reporting server
+.Sm on
+.Pp
+If no tags are specified in a host spec, or the special string
+.Dq default
+is specified, the tags
+.Dq VvMm
+are assumed. A site could choose to allow a
+different set of data to be reported by specifying a different tag set. The
+last 3 tags
+.Dq I ,
+.Dq u
+and
+.Dq U
+above are more meant for a local collector that a
+site might like to deploy since they could be construed as private information.
+The special string
+.Dq all
+denotes all tags.
+.El
+.Pp
+By default, Usage Metrics reporting is sent to
+.Dq usage-stats.cilogon.org:4810 .
+This can be made explicit by specifying
+.Dq default
+(all by itself) for the
+target specification as in:
+.Pp
+.Bl -item -offset indent -compact
+.It
+.Cm UsageStatsTargets
+.Sm off
+default
+.Sm on
+.El
+.Pp
+If
+.Cm UsageStatsTargets
+is not specified, a comma-separated list of targets
+(without any tags specified) if specified in the environment variable
+.Cm GLOBUS_USAGE_TARGETS
+will be used.
+.Pp
 .It Cm TrustedUserCAKeys
 Specifies a file containing public keys of certificate authorities that are
 trusted to sign user certificates for authentication.
@@ -1061,6 +1234,12 @@ is enabled, you will not be able to run
 .Xr sshd 8
 as a non-root user.
 The default is
+.Dq no .
+.It Cm PermitPAMUserChange
+If set to
+.Dq yes
+this will enable PAM authentication to change the name of the user being
+authenticated.  The default is
 .Dq no .
 .It Cm UsePrivilegeSeparation
 Specifies whether
