@@ -258,13 +258,14 @@ sub update_control
         }
         elsif ($line =~ /^(Package:\s*lib$pkgmeta->{DEBNAME})(\d+)$/)
         {
+            my ($oldname, $oldsoname) = ($1, $2);
             print "Checking if Package name line needs update ($line)\n"
                 if ($verbose);
-            if ($2 && $soname != $2)
+	    print "Old soname is $oldsoname, new soname is $soname\n"
+                if ($verbose);
+            if ($oldsoname ne '' && $soname != int($oldsoname))
             {
-                print "soname changed from $2 to $soname, updating\n"
-                    if ($verbose);
-                $line =~s/^(Package:\s*lib$pkgmeta->{DEBNAME})(\d+)$/$1$soname/;
+                $line =~s/^(Package:\s*lib$pkgmeta->{DEBNAME})(\d+)$/$oldname$soname/;
                 print "new line ($line)\n" if ($verbose);
                 $changed = 1;
             }
@@ -396,16 +397,17 @@ sub update_control
                 elsif ($dep =~
                     m/^lib([a-z-]+)([0-9]+)?(-dev)?(\s* \(([<>=]+) ([^)]+)\))?$/)
                 {
-                    my ($basedep, $basedepsoname, $dev, $op, $depver) = ($1, $2, $3, $5, $6);
+                    my ($basedep, $basedepsoname, $dev, $op, $depver) =
+                        ($1, $2, $3, $5, $6);
                     my $newdep;
-                    if ($basedep && $basedepsoname)
+                    if ($basedep ne '' && $basedepsoname ne '')
                     {
                         if (exists $allpkgmeta->{$basedep}->{SONAME})
                         {
                             $basedepsoname = $allpkgmeta->{$basedep}->{SONAME};
                         }
                     }
-                    if ($depver && $depver =~ m/[0-9.]+/)
+                    if ($depver ne '' && $depver =~ m/[0-9.]+/)
                     {
                         $depver = $pkgmeta->{DEPSUNTYPED}->{$basedep};
                     }
@@ -526,17 +528,46 @@ Options:
 
 =item B<-gptfile> filename
 
-The package's GPT source package description file (if you want to update only one package metadata)
+The package's GPT source package description file (if you want to update only
+one package's metadata). Note that other GPT metadata will be parsed to
+determine library verions for debian dependencies.
 
-=item B<-packagelist> filename
+=item B<-packagelist> I<filename>
 
-The list of packages/source locations to operate on.  Defaults to etc/package-list-5.1.0.  If gptfile is specified, it overrides any packagelist
+The list of packages/source locations to operate on.  Defaults to
+etc/package-list-5.1.0.  If the -gptfile option is specified, then its 
+argument will be the only package updated; otherwise, all packages in
+I<filename> will be updated
 
-=item B<-email> emailaddress
+=item B<-email> I<emailaddress>
 
-The packagers e-mail address (default: username@hostname)
+The packager's e-mail address (default: username@hostname). This is included
+in the debian changelog
+
+=item B<-fullname> I<name>
+
+The packager's full name (default: determined from getpw*). This is included
+int he debian changelog.
+
+=item B<-release> I<version>
+
+Set the package source directory to one based on the Globus Toolkit version
+I<version>. If not specified, the source URL path will not be updated.
+
+=item B<-changelog> I<text>
+
+Set the package's changelog entry to be I<text>.
+
+=item B<-bumprelease>
+
+Increase the package's release number even if the package version or
+dependencies haven't changed.
+
+=item B<-help>
+
+Display this help text
 
 =item B<-verbose> 
 
-Output info about each spec file being considered instead of just those changed.
+Output info about files being considered for modification and reasons why.
 
