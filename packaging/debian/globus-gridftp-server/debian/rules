@@ -141,7 +141,7 @@ install: build-stamp
 	dh_clean -k
 
 	$(MAKE) install DESTDIR=$(INSTALLDIR)
-        mv $(_prefix)/etc/gridftp.conf.default $(_prefix)/etc/gridftp.conf
+	mv $(INSTALLDIR)/etc/gridftp.conf.default $(INSTALLDIR)/etc/gridftp.conf
 	
 	# Remove libtool archives (.la files)
 	find $(INSTALLDIR)$(_libdir) -name 'lib*.la' -exec rm -v '{}' \;
@@ -154,6 +154,7 @@ install: build-stamp
 	  | sed s!^!debian/tmp$(_prefix)! > debian/lib$(name)$(soname).install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
+	  | sed -e 's!gridftp.conf.default!gridftp.conf!' \
 	  | sed -e s!^!debian/tmp$(_prefix)! -e 's!$(_prefix)/etc!/etc!' \
 	  > debian/$(name)-progs.install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
