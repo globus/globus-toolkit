@@ -159,7 +159,7 @@ globus_ftp_control_handle_init(
     handle->cc_handle.quit_response.response_buffer = GLOBUS_NULL;
     handle->cc_handle.nl_handle_set = GLOBUS_FALSE;
     handle->cc_handle.signal_deactivate = GLOBUS_FALSE;
-    *handle->cc_handle.serverhostname = '\0';
+    *handle->cc_handle.serverhost = '\0';
     globus_io_tcpattr_init(&handle->cc_handle.io_attr);
 
     globus_ftp_control_auth_info_init(&(handle->cc_handle.auth_info),
@@ -521,10 +521,10 @@ globus_ftp_control_connect(
         element->callback = callback;
         element->arg = callback_arg;
                 
-        strncpy(handle->cc_handle.serverhostname, 
-            host, sizeof(handle->cc_handle.serverhostname));
-        handle->cc_handle.serverhostname[
-            sizeof(handle->cc_handle.serverhostname) - 1] = 0;
+        strncpy(handle->cc_handle.serverhost, 
+            host, sizeof(handle->cc_handle.serverhost));
+        handle->cc_handle.serverhost[
+            sizeof(handle->cc_handle.serverhost) - 1] = 0;
                
         globus_io_attr_set_tcp_nodelay(&handle->cc_handle.io_attr, 
                                        GLOBUS_TRUE);
@@ -608,10 +608,6 @@ globus_l_ftp_control_connect_cb(
     globus_ftp_control_rw_queue_element_t *   element;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
     globus_bool_t                             closing = GLOBUS_FALSE;
-    int                                       tmp_host[16];
-    int                                       tmp_hostlen;
-    unsigned short                            tmp_port;
-    char *                                    tmp_cs;
     
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_l_ftp_control_connect_cb() entering\n"));
@@ -657,29 +653,6 @@ globus_l_ftp_control_connect_cb(
         goto return_error;
     }
            
-    *cc_handle->serverhost = '\0';
-    /* get the actual host we connected to */            
-    rc = globus_io_tcp_get_remote_address_ex(
-        &cc_handle->io_handle,
-        tmp_host,
-        &tmp_hostlen,
-        &tmp_port);
-    if(rc == GLOBUS_SUCCESS)
-    {
-        tmp_cs = globus_libc_ints_to_contact_string(
-            tmp_host,
-            tmp_hostlen,
-            0);
-        if(tmp_cs != NULL)
-        {
-            strncpy(cc_handle->serverhost, 
-                tmp_cs, sizeof(cc_handle->serverhost));
-            cc_handle->serverhost[sizeof(cc_handle->serverhost) - 1] = 0;
-    
-            globus_free(tmp_cs);
-        }
-    }
-
     rc=globus_io_register_read(handle,
                                cc_handle->read_buffer,
                                GLOBUS_FTP_CONTROL_READ_BUFFER_SIZE,
@@ -2552,6 +2525,10 @@ globus_l_ftp_control_send_cmd_cb(
     char *                                      radix_buf;
     OM_uint32                                   max_input_size[2];
     OM_uint32                                   pbsz;
+    int                                         tmp_host[16];
+    int                                         tmp_hostlen;
+    unsigned short                              tmp_port;
+    char *                                      serverhost = NULL;
 
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_l_ftp_control_send_cmd_cb() entering\n"));
@@ -2588,22 +2565,37 @@ globus_l_ftp_control_send_cmd_cb(
 	    /* use a target_name based on either a supplied subject
 	     * string or the remote hostname
 	     */
+                
+            /* get the actual host we connected to */            
+            rc = globus_io_tcp_get_remote_address_ex(
+                &handle->cc_handle.io_handle,
+                tmp_host,
+                &tmp_hostlen,
+                &tmp_port);
+            if(rc == GLOBUS_SUCCESS)
+            {
+                serverhost = globus_libc_ints_to_contact_string(
+                    tmp_host,
+                    tmp_hostlen,
+                    0);
+            }
 	    
 	    if(handle->cc_handle.auth_info.auth_gssapi_subject == NULL)
 	    {
-                if(*handle->cc_handle.serverhost == '\0')
+                if(serverhost == NULL)
                 {
 		    error_obj = globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-		        "No possible GSI subject.  If using a non TCP protocol and GSI you must specifiy a subject.");
+		        "No possible GSI subject.  If using a non TCP "
+		        "protocol and GSI you must specifiy a subject.");
                     goto return_error;
                 }
                 
                 send_tok.value = globus_common_create_string(
                     "%s/%s", 
-                    handle->cc_handle.serverhostname, 
-                    handle->cc_handle.serverhost);
+                    handle->cc_handle.serverhost, 
+                    serverhost);
                 send_tok.length = strlen(send_tok.value);
                 
 		maj_stat = gss_import_name(
@@ -3026,9 +3018,29 @@ globus_l_ftp_control_send_cmd_cb(
             
 	    globus_ftp_control_local_pbsz(handle, pbsz);
 
+            /* copy actual host into handle */            
+            rc = globus_io_tcp_get_remote_address_ex(
+                &handle->cc_handle.io_handle,
+                tmp_host,
+                &tmp_hostlen,
+                &tmp_port);
+            if(rc == GLOBUS_SUCCESS)
+            {
+                serverhost = globus_libc_ints_to_contact_string(
+                    tmp_host,
+                    tmp_hostlen,
+                    0);
+                if(serverhost)
+                {
+                    strncpy(handle->cc_handle.serverhost, 
+                        serverhost, sizeof(handle->cc_handle.serverhost));
+                    handle->cc_handle.serverhost[
+                        sizeof(handle->cc_handle.serverhost) - 1] = 0;
+                }
+            }
+
 	    if(handle->cc_handle.auth_info.user != GLOBUS_NULL)
 	    {
-
 		rc = globus_ftp_control_send_command(
 		    handle,
 		    "USER %s\r\n",
@@ -3038,7 +3050,6 @@ globus_l_ftp_control_send_cmd_cb(
 	    }
 	    else
 	    {
-
 		rc = globus_ftp_control_send_command(
 		    handle,
 		    "USER :globus-mapping:\r\n",
