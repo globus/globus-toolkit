@@ -3,41 +3,41 @@
 # uncomment if you run a non bourne compatable shell. Ie. csh
 #SHELL = @SH@
 
+DISTPERL=perl
+DISTSED=sed
+DISTAWK=awk
 AUTORECONF=autoreconf
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-bindir=@bindir@
+bindir=@bindir@/ssh.d
 sbindir=@sbindir@
 libexecdir=@libexecdir@
 datadir=@datadir@
 datarootdir=@datarootdir@
 mandir=@mandir@
 mansubdir=@mansubdir@
-sysconfdir=@sysconfdir@
-piddir=@piddir@
+sysconfdir=$$GLOBUS_LOCATION/etc/ssh
+docdir=$$GLOBUS_LOCATION/doc/gsi_openssh
+piddir=$$GLOBUS_LOCATION/var
 srcdir=@srcdir@
 top_srcdir=@top_srcdir@
 
+globusbindir=@bindir@
+
 DESTDIR=
 VPATH=@srcdir@
-SSH_PROGRAM=@bindir@/ssh
+SSH_PROGRAM=$(bindir)/ssh
 ASKPASS_PROGRAM=$(libexecdir)/ssh-askpass
 SFTP_SERVER=$(libexecdir)/sftp-server
 SSH_KEYSIGN=$(libexecdir)/ssh-keysign
 SSH_PKCS11_HELPER=$(libexecdir)/ssh-pkcs11-helper
+RAND_HELPER=$(libexecdir)/ssh-rand-helper
 PRIVSEP_PATH=@PRIVSEP_PATH@
 SSH_PRIVSEP_USER=@SSH_PRIVSEP_USER@
 STRIP_OPT=@STRIP_OPT@
 
-PATHS= -DSSHDIR=\"$(sysconfdir)\" \
-	-D_PATH_SSH_PROGRAM=\"$(SSH_PROGRAM)\" \
-	-D_PATH_SSH_ASKPASS_DEFAULT=\"$(ASKPASS_PROGRAM)\" \
-	-D_PATH_SFTP_SERVER=\"$(SFTP_SERVER)\" \
-	-D_PATH_SSH_KEY_SIGN=\"$(SSH_KEYSIGN)\" \
-	-D_PATH_SSH_PKCS11_HELPER=\"$(SSH_PKCS11_HELPER)\" \
-	-D_PATH_SSH_PIDDIR=\"$(piddir)\" \
-	-D_PATH_PRIVSEP_CHROOT_DIR=\"$(PRIVSEP_PATH)\" \
+PATHS= -D_PATH_PRIVSEP_CHROOT_DIR=\"$(PRIVSEP_PATH)\"
 
 CC=@CC@
 LD=@LD@
@@ -59,9 +59,15 @@ LDFLAGS=-L. -Lopenbsd-compat/ @LDFLAGS@
 EXEEXT=@EXEEXT@
 MANFMT=@MANFMT@
 
-INSTALL_GSISSH=@INSTALL_GSISSH@
+INSTALL_SSH_PRNG_CMDS=@INSTALL_SSH_PRNG_CMDS@
+INSTALL_SSH_RAND_HELPER=@INSTALL_SSH_RAND_HELPER@
 
-TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keyscan${EXEEXT} ssh-keysign${EXEEXT} ssh-pkcs11-helper$(EXEEXT) ssh-agent$(EXEEXT) scp$(EXEEXT) sftp-server$(EXEEXT) sftp$(EXEEXT)
+TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keyscan${EXEEXT} ssh-keysign${EXEEXT} ssh-pkcs11-helper$(EXEEXT) ssh-agent$(EXEEXT) scp$(EXEEXT) ssh-rand-helper${EXEEXT} sftp-server$(EXEEXT) sftp$(EXEEXT)
+
+#
+# objects to add to LIBSSH_OBJS
+#   pathnames.o
+#
 
 LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o bufbn.o buffer.o \
 	canohost.o channels.o cipher.o cipher-acss.o cipher-aes.o \
@@ -72,6 +78,7 @@ LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o bufbn.o buffer.o \
 	atomicio.o key.o dispatch.o kex.o mac.o uidswap.o uuencode.o misc.o \
 	monitor_fdpass.o rijndael.o ssh-dss.o ssh-ecdsa.o ssh-rsa.o dh.o \
 	kexdh.o kexgex.o kexdhc.o kexgexc.o bufec.o kexecdh.o kexecdhc.o \
+	pathnames.o \
 	kexgssc.o \
 	msg.o progressmeter.o dns.o entropy.o gss-genr.o umac.o jpake.o \
 	schnorr.o ssh-pkcs11.o
@@ -94,17 +101,17 @@ SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
 	loginrec.o auth-pam.o auth-shadow.o auth-sia.o md5crypt.o \
 	sftp-server.o sftp-common.o \
 	ssh-globus-usage.o \
-	roaming_common.o roaming_serv.o \
-	sandbox-null.o sandbox-rlimit.o sandbox-systrace.o sandbox-darwin.o
+	roaming_common.o roaming_serv.o
 
-MANPAGES	= moduli.5.out scp.1.out ssh-add.1.out ssh-agent.1.out ssh-keygen.1.out ssh-keyscan.1.out ssh.1.out sshd.8.out sftp-server.8.out sftp.1.out ssh-keysign.8.out ssh-pkcs11-helper.8.out sshd_config.5.out ssh_config.5.out
-MANPAGES_IN	= moduli.5 scp.1 ssh-add.1 ssh-agent.1 ssh-keygen.1 ssh-keyscan.1 ssh.1 sshd.8 sftp-server.8 sftp.1 ssh-keysign.8 ssh-pkcs11-helper.8 sshd_config.5 ssh_config.5
+MANPAGES	= moduli.5.out scp.1.out ssh-add.1.out ssh-agent.1.out ssh-keygen.1.out ssh-keyscan.1.out ssh.1.out sshd.8.out sftp-server.8.out sftp.1.out ssh-rand-helper.8.out ssh-keysign.8.out ssh-pkcs11-helper.8.out sshd_config.5.out ssh_config.5.out
+MANPAGES_IN	= moduli.5 scp.1 ssh-add.1 ssh-agent.1 ssh-keygen.1 ssh-keyscan.1 ssh.1 sshd.8 sftp-server.8 sftp.1 ssh-rand-helper.8 ssh-keysign.8 ssh-pkcs11-helper.8 sshd_config.5 ssh_config.5
 MANTYPE		= @MANTYPE@
 
 CONFIGFILES=sshd_config.out ssh_config.out moduli.out
 CONFIGFILES_IN=sshd_config ssh_config moduli
 
 PATHSUBS	= \
+	-e 's|/etc/ssh/ssh_prng_cmds|$(sysconfdir)/ssh_prng_cmds|g' \
 	-e 's|/etc/ssh/ssh_config|$(sysconfdir)/ssh_config|g' \
 	-e 's|/etc/ssh/ssh_known_hosts|$(sysconfdir)/ssh_known_hosts|g' \
 	-e 's|/etc/ssh/sshd_config|$(sysconfdir)/sshd_config|g' \
@@ -123,8 +130,11 @@ PATHSUBS	= \
 	-e 's|/usr/bin:/bin:/usr/sbin:/sbin|@user_path@|g'
 
 FIXPATHSCMD	= $(SED) $(PATHSUBS)
+DISTFIXPATHSCMD	= $(DISTSED) $(PATHSUBS)
 
-all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
+all: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS)
+
+gpt-all: $(TARGETS)
 
 $(LIBSSH_OBJS): Makefile.in config.h
 $(SSHOBJS): Makefile.in config.h
@@ -175,6 +185,9 @@ sftp-server$(EXEEXT): $(LIBCOMPAT) libssh.a sftp.o sftp-common.o sftp-server.o s
 sftp$(EXEEXT): $(LIBCOMPAT) libssh.a sftp.o sftp-client.o sftp-common.o sftp-glob.o progressmeter.o
 	$(LD) -o $@ progressmeter.o sftp.o sftp-client.o sftp-common.o sftp-glob.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS) $(LIBEDIT)
 
+ssh-rand-helper${EXEEXT}: $(LIBCOMPAT) libssh.a ssh-rand-helper.o
+	$(LD) -o $@ ssh-rand-helper.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
+
 # test driver for the loginrec code - not built by default
 logintest: logintest.o $(LIBCOMPAT) libssh.a loginrec.o
 	$(LD) -o $@ logintest.o $(LDFLAGS) loginrec.o -lopenbsd-compat -lssh $(LIBS)
@@ -195,6 +208,11 @@ $(CONFIGFILES): $(CONFIGFILES_IN)
 	conffile=`echo $@ | sed 's/.out$$//'`; \
 	$(FIXPATHSCMD) $(srcdir)/$${conffile} > $@
 
+ssh_prng_cmds.out:	ssh_prng_cmds
+	if test ! -z "$(INSTALL_SSH_PRNG_CMDS)"; then \
+		$(PERL) $(srcdir)/fixprogs ssh_prng_cmds $(ENT); \
+	fi
+
 # fake rule to stop make trying to compile moduli.o into a binary "moduli.o"
 moduli:
 	echo
@@ -207,7 +225,7 @@ clean:	regressclean
 distclean:	regressclean
 	rm -f *.o *.a $(TARGETS) logintest config.cache config.log
 	rm -f *.out core opensshd.init openssh.xml
-	rm -f Makefile buildpkg.sh config.h config.status
+	rm -f Makefile buildpkg.sh config.h config.status ssh_prng_cmds
 	rm -f survey.sh openbsd-compat/regress/Makefile *~ 
 	rm -rf autom4te.cache
 	(cd openbsd-compat && $(MAKE) distclean)
@@ -218,27 +236,34 @@ distclean:	regressclean
 veryclean: distclean
 	rm -f configure config.h.in *.0
 
-cleandir: veryclean
-
 mrproper: veryclean
 
 realclean: veryclean
 
 catman-do:
+	mkdir -p ./cat/
+	mkdir -p ./man/
+	mkdir -p ./mdoc/
 	@for f in $(MANPAGES_IN) ; do \
-		base=`echo $$f | sed 's/\..*$$//'` ; \
-		echo "$$f -> $$base.0" ; \
-		$(MANFMT) $$f | cat -v | sed -e 's/.\^H//g' \
-			>$$base.0 ; \
+		echo -n "$$f -> mdoc.." ; \
+		$(DISTFIXPATHSCMD) $$f > ./mdoc/$$f ; \
+		echo -n "cat.." ; \
+		nroff -mandoc ./mdoc/$$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
+		echo -n "man.." ; \
+		cat ./mdoc/$$f | $(DISTAWK) -f ./mdoc2man.awk > ./man/$$f ; \
+		echo "done." ; \
 	done
 
 distprep: catman-do
 	$(AUTORECONF)
 	-rm -rf autom4te.cache
 
-install: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files install-sysconf host-key check-config
-install-nokeys: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files install-sysconf
-install-nosysconf: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files
+install: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS) install-files install-sysconf host-key check-config
+install-nokeys: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS) install-files install-sysconf
+install-nosysconf: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS) install-files
+
+gpt-install: gpt-all gpt-install-files
+gpt-install-nokeys: gpt-all gpt-install-files
 
 check-config:
 	-$(DESTDIR)$(sbindir)/sshd -t -f $(DESTDIR)$(sysconfdir)/sshd_config
@@ -259,6 +284,9 @@ install-files:
 	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-keygen$(EXEEXT) $(DESTDIR)$(bindir)/ssh-keygen$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-keyscan$(EXEEXT) $(DESTDIR)$(bindir)/ssh-keyscan$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) sshd$(EXEEXT) $(DESTDIR)$(sbindir)/sshd$(EXEEXT)
+	if test ! -z "$(INSTALL_SSH_RAND_HELPER)" ; then \
+		$(INSTALL) -m 0755 $(STRIP_OPT) ssh-rand-helper$(EXEEXT) $(DESTDIR)$(libexecdir)/ssh-rand-helper$(EXEEXT) ; \
+	fi
 	$(INSTALL) -m 4711 $(STRIP_OPT) ssh-keysign$(EXEEXT) $(DESTDIR)$(SSH_KEYSIGN)$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-pkcs11-helper$(EXEEXT) $(DESTDIR)$(SSH_PKCS11_HELPER)$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) sftp$(EXEEXT) $(DESTDIR)$(bindir)/sftp$(EXEEXT)
@@ -273,6 +301,9 @@ install-files:
 	$(INSTALL) -m 644 sshd_config.5.out $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
 	$(INSTALL) -m 644 ssh_config.5.out $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
 	$(INSTALL) -m 644 sshd.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
+	if [ ! -z "$(INSTALL_SSH_RAND_HELPER)" ]; then \
+		$(INSTALL) -m 644 ssh-rand-helper.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-rand-helper.8 ; \
+	fi
 	$(INSTALL) -m 644 sftp.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
 	$(INSTALL) -m 644 sftp-server.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
 	$(INSTALL) -m 644 ssh-keysign.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
@@ -281,20 +312,6 @@ install-files:
 	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
-		rm -f $(DESTDIR)$(bindir)/gsissh; \
-		ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/gsissh; \
-		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
-		ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
-		rm -f $(DESTDIR)$(bindir)/gsiscp; \
-		ln -s ./scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp; \
-		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
-		ln -s ./scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
-		rm -f $(DESTDIR)$(bindir)/gsisftp; \
-		ln -s ./sftp$(EXEEXT) $(DESTDIR)$(bindir)/gsisftp; \
-		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
-		ln -s ./sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
-	fi
 
 install-sysconf:
 	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
@@ -310,6 +327,13 @@ install-sysconf:
 	else \
 		echo "$(DESTDIR)$(sysconfdir)/sshd_config already exists, install will not overwrite"; \
 	fi
+	@if [ -f ssh_prng_cmds ] && [ ! -z "$(INSTALL_SSH_PRNG_CMDS)" ]; then \
+		if [ ! -f $(DESTDIR)$(sysconfdir)/ssh_prng_cmds ] ; then \
+			$(INSTALL) -m 644 ssh_prng_cmds.out $(DESTDIR)$(sysconfdir)/ssh_prng_cmds; \
+		else \
+			echo "$(DESTDIR)$(sysconfdir)/ssh_prng_cmds already exists, install will not overwrite"; \
+		fi ; \
+	fi
 	@if [ ! -f $(DESTDIR)$(sysconfdir)/moduli ]; then \
 		if [ -f $(DESTDIR)$(sysconfdir)/primes ]; then \
 			echo "moving $(DESTDIR)$(sysconfdir)/primes to $(DESTDIR)$(sysconfdir)/moduli"; \
@@ -320,6 +344,199 @@ install-sysconf:
 	else \
 		echo "$(DESTDIR)$(sysconfdir)/moduli already exists, install will not overwrite"; \
 	fi
+
+###
+#
+# Upon a new OpenSSH merge into the repository:
+#
+#   o Set up new catman-do.
+#   o Set up new gpt-all.
+#     o Remove $(MANPAGES) and $(CONFIGFILES) from target list.
+#   o Set up new gpt-install-files.
+#     o Destroy current/old gpt-install-files target.
+#     o Copy install-files target into gpt-install-files target.
+#     o Remove the following sections:
+#       o Copying the configuration files (ssh_config, sshd_config, ssh_prng_cmds, moduli).
+#       o The scard-install target.
+#       o Creating and chmod'ing PRIVSEP_PATH.
+#       o Stripping of installed binaries.
+#       o The conditionals around ssh-rand-helper*.
+#     o Install docs into $GL/doc/gsi_openssh by adding 'gpt-install-docs' target.
+#     o Add links for gsi tools (gsissh -> ssh, etc).
+#     o Refer to the new man and cat pages.
+#
+
+gpt-install-files: gpt-install-docs
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(globusbindir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(sbindir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(datadir)
+	docdir=man; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8/ssh.d
+	docdir=cat; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8/ssh.d
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh $(DESTDIR)$(bindir)/ssh
+	echo $(DESTDIR)$(bindir)/ssh | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) scp $(DESTDIR)$(bindir)/scp
+	echo $(DESTDIR)$(bindir)/scp | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-add $(DESTDIR)$(bindir)/ssh-add
+	echo $(DESTDIR)$(bindir)/ssh-add | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-agent $(DESTDIR)$(bindir)/ssh-agent
+	echo $(DESTDIR)$(bindir)/ssh-agent | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-keygen $(DESTDIR)$(bindir)/ssh-keygen
+	echo $(DESTDIR)$(bindir)/ssh-keygen | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-keyscan $(DESTDIR)$(bindir)/ssh-keyscan
+	echo $(DESTDIR)$(bindir)/ssh-keyscan | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) sshd $(DESTDIR)$(sbindir)/sshd
+	echo $(DESTDIR)$(sbindir)/sshd | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper
+	echo $(DESTDIR)$(libexecdir)/ssh-rand-helper | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 4711 $(STRIP_OPT) ssh-keysign $(DESTDIR)$(SSH_KEYSIGN)
+	echo $(DESTDIR)$(SSH_KEYSIGN) | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) sftp $(DESTDIR)$(bindir)/sftp
+	echo $(DESTDIR)$(bindir)/sftp | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 0755 $(STRIP_OPT) sftp-server $(DESTDIR)$(SFTP_SERVER)
+	echo $(DESTDIR)$(SFTP_SERVER) | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	-rm -f $(DESTDIR)$(bindir)/slogin
+	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
+	echo $(DESTDIR)$(bindir)/slogin | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	-rm -f $(DESTDIR)$(globusbindir)/gsissh
+	ln -s ./ssh.d/ssh$(EXEEXT) $(DESTDIR)$(globusbindir)/gsissh
+	echo $(DESTDIR)$(globusbindir)/gsissh | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	-rm -f $(DESTDIR)$(globusbindir)/gsiscp
+	ln -s ./ssh.d/scp$(EXEEXT) $(DESTDIR)$(globusbindir)/gsiscp
+	echo $(DESTDIR)$(globusbindir)/gsiscp | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	-rm -f $(DESTDIR)$(globusbindir)/gsisftp
+	ln -s ./ssh.d/sftp$(EXEEXT) $(DESTDIR)$(globusbindir)/gsisftp
+	echo $(DESTDIR)$(globusbindir)/gsisftp | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	# start man
+	docdir=man; \
+	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/scp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/scp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-add.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-add.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-agent.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-agent.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keygen.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keygen.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keyscan.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keyscan.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/sshd_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/sshd_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-keysign.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-keysign.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	ln -s ./ssh.d/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	ln -s ./ssh.d/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	ln -s ./ssh.d/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	ln -s ./ssh.d/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	# end man
+	# start cat
+	docdir=cat; \
+	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/scp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/scp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-add.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-add.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-agent.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-agent.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keygen.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keygen.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keyscan.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keyscan.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/sshd_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/sshd_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-keysign.8; \
+	echo $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-keysign.8 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	ln -s ./ssh.d/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	ln -s ./ssh.d/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	echo $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	ln -s ./ssh.d/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	ln -s ./ssh.d/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	echo $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5 | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	# end cat
+
+gpt-install-docs:
+	rm -f $(srcdir)/filelist
+	# make doc dir and copy docs into it
+	if [ ! -d $(DESTDIR)$(docdir) ]; then \
+		$(srcdir)/mkinstalldirs $(DESTDIR)$(docdir); \
+	fi
+	$(INSTALL) -m 644 README $(DESTDIR)$(docdir)/README
+	echo $(DESTDIR)$(docdir)/README | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 644 README.gpt $(DESTDIR)$(docdir)/README.gpt
+	echo $(DESTDIR)$(docdir)/README.gpt | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 644 README.privsep $(DESTDIR)$(docdir)/README.privsep
+	echo $(DESTDIR)$(docdir)/README.privsep | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 644 INSTALL $(DESTDIR)$(docdir)/INSTALL
+	echo $(DESTDIR)$(docdir)/INSTALL | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 644 WARNING.RNG $(DESTDIR)$(docdir)/WARNING.RNG
+	echo $(DESTDIR)$(docdir)/WARNING.RNG | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 644 LICENCE $(DESTDIR)$(docdir)/LICENSE.OpenSSH
+	echo $(DESTDIR)$(docdir)/LICENSE.OpenSSH | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
+	$(INSTALL) -m 644 CREDITS $(DESTDIR)$(docdir)/CREDITS
+	echo $(DESTDIR)$(docdir)/CREDITS | sed -e "s#$$GLOBUS_LOCATION/##" >> $(srcdir)/filelist
 
 host-key: ssh-keygen$(EXEEXT)
 	@if [ -z "$(DESTDIR)" ] ; then \
@@ -356,6 +573,7 @@ host-key-force: ssh-keygen$(EXEEXT)
 uninstallall:	uninstall
 	-rm -f $(DESTDIR)$(sysconfdir)/ssh_config
 	-rm -f $(DESTDIR)$(sysconfdir)/sshd_config
+	-rm -f $(DESTDIR)$(sysconfdir)/ssh_prng_cmds
 	-rmdir $(DESTDIR)$(sysconfdir)
 	-rmdir $(DESTDIR)$(bindir)
 	-rmdir $(DESTDIR)$(sbindir)
@@ -366,11 +584,9 @@ uninstallall:	uninstall
 
 uninstall:
 	-rm -f $(DESTDIR)$(bindir)/slogin
-	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
-		rm -f $(DESTDIR)$(bindir)/gsiscp; \
-		rm -f $(DESTDIR)$(bindir)/gsissh; \
-		rm -f $(DESTDIR)$(bindir)/gsisftp; \
-	fi
+	-rm -f $(DESTDIR)$(bindir)/gsiscp
+	-rm -f $(DESTDIR)$(bindir)/gsissh
+	-rm -f $(DESTDIR)$(bindir)/gsisftp
 	-rm -f $(DESTDIR)$(bindir)/ssh$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/scp$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/ssh-add$(EXEEXT)
@@ -382,19 +598,21 @@ uninstall:
 	-rm -r $(DESTDIR)$(SFTP_SERVER)$(EXEEXT)
 	-rm -f $(DESTDIR)$(SSH_KEYSIGN)$(EXEEXT)
 	-rm -f $(DESTDIR)$(SSH_PKCS11_HELPER)$(EXEEXT)
+	-rm -f $(DESTDIR)$(RAND_HELPER)$(EXEEXT)
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
-	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
-		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
-		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
-		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
-	fi
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
+	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-rand-helper.8
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-pkcs11-helper.8
@@ -464,7 +682,7 @@ survey: survey.sh ssh
 send-survey:	survey
 	mail portable-survey@mindrot.org <survey
 
-package: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
+package: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS)
 	if [ "@MAKE_PACKAGE_SUPPORTED@" = yes ]; then \
 		sh buildpkg.sh; \
 	fi

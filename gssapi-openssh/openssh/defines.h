@@ -45,8 +45,6 @@ enum
 /*
  * Definitions for IP type of service (ip_tos)
  */
-#include <netinet/in_systm.h>
-#include <netinet/ip.h>
 #ifndef IPTOS_LOWDELAY
 # define IPTOS_LOWDELAY          0x10
 # define IPTOS_THROUGHPUT        0x08
@@ -58,6 +56,8 @@ enum
 /*
  * Definitions for DiffServ Codepoints as per RFC2474
  */
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
 #ifndef IPTOS_DSCP_AF11
 # define	IPTOS_DSCP_AF11		0x28
 # define	IPTOS_DSCP_AF12		0x30
@@ -130,10 +130,6 @@ enum
 #if defined(HAVE_DECL_O_NONBLOCK) && HAVE_DECL_O_NONBLOCK == 0
 # define O_NONBLOCK      00004	/* Non Blocking Open */
 #endif
-
-#ifndef S_IFSOCK
-# define S_IFSOCK 0
-#endif /* S_IFSOCK */
 
 #ifndef S_ISDIR
 # define S_ISDIR(mode)	(((mode) & (_S_IFMT)) == (_S_IFDIR))
@@ -389,14 +385,21 @@ struct winsize {
 # define _PATH_DEVNULL "/dev/null"
 #endif
 
-/* user may have set a different path */
-#if defined(_PATH_MAILDIR) && defined(MAIL_DIRECTORY)
-# undef _PATH_MAILDIR MAILDIR
-#endif /* defined(_PATH_MAILDIR) && defined(MAIL_DIRECTORY) */
+#ifndef PATH_MAILDIR_IN_PATHS_H
 
-#ifdef MAIL_DIRECTORY
-# define _PATH_MAILDIR MAIL_DIRECTORY
+#ifndef MAIL_DIRECTORY
+# define MAIL_DIRECTORY "/var/spool/mail"
 #endif
+
+#ifndef MAILDIR
+# define MAILDIR MAIL_DIRECTORY
+#endif
+
+#if !defined(_PATH_MAILDIR) && defined(MAILDIR)
+# define _PATH_MAILDIR MAILDIR
+#endif /* !defined(_PATH_MAILDIR) && defined(MAILDIR) */
+
+#endif /* PATH_MAILDIR_IN_PATHS_H */
 
 #ifndef _PATH_NOLOGIN
 # define _PATH_NOLOGIN "/etc/nologin"

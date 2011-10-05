@@ -38,10 +38,6 @@
 #include <selinux/flask.h>
 #include <selinux/get_context_list.h>
 
-#ifndef SSH_SELINUX_UNCONFINED_TYPE
-# define SSH_SELINUX_UNCONFINED_TYPE ":unconfined_t:"
-#endif
-
 /* Wrapper around is_selinux_enabled() to log its return value once only */
 int
 ssh_selinux_enabled(void)
@@ -181,13 +177,12 @@ ssh_selinux_change_context(const char *newname)
 {
 	int len, newlen;
 	char *oldctx, *newctx, *cx;
-	void (*switchlog) (const char *fmt,...) = logit;
 
 	if (!ssh_selinux_enabled())
 		return;
 
 	if (getcon((security_context_t *)&oldctx) < 0) {
-		logit("%s: getcon failed with %s", __func__, strerror(errno));
+		logit("%s: getcon failed with %s", __func__, strerror (errno));
 		return;
 	}
 	if ((cx = index(oldctx, ':')) == NULL || (cx = index(cx + 1, ':')) ==
@@ -196,14 +191,6 @@ ssh_selinux_change_context(const char *newname)
 		return;
 	}
 
-	/*
-	 * Check whether we are attempting to switch away from an unconfined
-	 * security context.
-	 */
-	if (strncmp(cx, SSH_SELINUX_UNCONFINED_TYPE,
-	    sizeof(SSH_SELINUX_UNCONFINED_TYPE) - 1) == 0)
-		switchlog = debug3;
-
 	newlen = strlen(oldctx) + strlen(newname) + 1;
 	newctx = xmalloc(newlen);
 	len = cx - oldctx + 1;
@@ -211,11 +198,10 @@ ssh_selinux_change_context(const char *newname)
 	strlcpy(newctx + len, newname, newlen - len);
 	if ((cx = index(cx + 1, ':')))
 		strlcat(newctx, cx, newlen);
-	debug3("%s: setting context from '%s' to '%s'", __func__,
-	    oldctx, newctx);
+	debug3("%s: setting context from '%s' to '%s'", __func__, oldctx,
+	    newctx);
 	if (setcon(newctx) < 0)
-		switchlog("%s: setcon %s from %s failed with %s", __func__,
-		    newctx, oldctx, strerror(errno));
+		logit("%s: setcon failed with %s", __func__, strerror (errno));
 	xfree(oldctx);
 	xfree(newctx);
 }

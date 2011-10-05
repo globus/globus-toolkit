@@ -28,6 +28,7 @@
 
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
+#include "globus_xio_popen_driver.h"
 
 /* This value (in seconds) is the length of time after a job hits a waiting
  * for SEG state before freeing its memory
@@ -102,6 +103,11 @@ globus_l_gram_job_manager_remove_reference_locked(
     globus_gram_job_manager_t *         manager,
     const char *                        key,
     const char *                        reason);
+
+static
+int
+globus_l_gram_script_attr_init(
+    globus_gram_job_manager_t *         manager);
 
 static
 int
@@ -336,6 +342,13 @@ globus_gram_job_manager_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto state_callback_fifo_init_failed;
     }
+
+    rc = globus_l_gram_script_attr_init(manager);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto script_attr_init_failed;
+    }
+
     /* Default number of job state callback notifications that can
      * occur simultaneously
      */
@@ -356,6 +369,7 @@ globus_gram_job_manager_init(
 
     if (rc != GLOBUS_SUCCESS)
     {
+script_attr_init_failed:
 state_callback_fifo_init_failed:
         globus_fifo_destroy(&manager->script_handles);
 script_handles_fifo_init_failed:
@@ -2966,6 +2980,135 @@ fopen_failed:
     return rc;
 }
 /* globus_l_gram_read_job_manager_cred() */
+
+static
+int
+globus_l_gram_script_attr_init(
+    globus_gram_job_manager_t *         manager)
+{
+    globus_result_t                     result;
+    int                                 rc = GLOBUS_SUCCESS;
+    char *                              pipe_cmd[6];
+    char *                              env[7];
+    int                                 i;
+
+    result = globus_eval_path(
+            "${libexecdir}/globus-job-manager-script.pl",
+            &pipe_cmd[0]);
+    if (result != GLOBUS_SUCCESS || pipe_cmd[0] == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto script_path_malloc_failed;
+    }
+    globus_gram_job_manager_log(
+            NULL,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
+            "event=gram.script.start "
+            "level=DEBUG\n");
+
+    pipe_cmd[1] = "-m";
+    pipe_cmd[2] = manager->config->jobmanager_type;
+    pipe_cmd[3] = "-c";
+    pipe_cmd[4] = "interactive";
+    pipe_cmd[5] = NULL;
+
+    memset(env, 0, sizeof(env));
+    i = 0;
+    if (manager->config->globus_location)
+    {
+        env[i++] = globus_common_create_string(
+                "GLOBUS_LOCATION=%s",
+                manager->config->globus_location);
+    }
+    env[i++] = globus_common_create_string(
+            "GLOBUS_SPOOL_DIR=%s",
+            manager->config->job_state_file_dir);
+    env[i++] = globus_common_create_string(
+            "HOME=%s",
+            manager->config->home);
+    env[i++] = globus_common_create_string(
+            "LOGNAME=%s",
+            manager->config->logname);
+    if (manager->config->x509_cert_dir)
+    {
+        env[i++] = globus_common_create_string(
+                "X509_CERT_DIR=%s",
+                manager->config->x509_cert_dir);
+    }
+    if (manager->config->tcp_port_range)
+    {
+        env[i++] = globus_common_create_string(
+                "GLOBUS_TCP_PORT_RANGE=%s",
+                manager->config->tcp_port_range);
+    }
+    env[i] = NULL;
+    for (--i; i >= 0; i--)
+    {
+        if (!env[i])
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto env_strings_failed;
+        }
+    }
+
+    result = globus_xio_attr_init(&manager->script_attr);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto attr_init_failed;
+    }
+    result = globus_xio_attr_cntl(
+            manager->script_attr,
+            globus_i_gram_job_manager_popen_driver,
+            GLOBUS_XIO_POPEN_SET_PROGRAM,
+            pipe_cmd);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto attr_cntl_program_failed;
+    }
+    result = globus_xio_attr_cntl(
+            manager->script_attr,
+            globus_i_gram_job_manager_popen_driver,
+            GLOBUS_XIO_POPEN_SET_CHILD_ENV,
+            env);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+        goto attr_cntl_env_failed;
+    }
+    result = globus_xio_attr_cntl(
+            manager->script_attr,
+            globus_i_gram_job_manager_popen_driver,
+            GLOBUS_XIO_POPEN_SET_BLOCKING_IO,
+            1);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+
+attr_cntl_blocking_failed:
+attr_cntl_env_failed:
+attr_cntl_program_failed:
+        globus_xio_attr_destroy(manager->script_attr);
+    }
+
+attr_init_failed:
+env_strings_failed:
+    for (i = 0; i < 7; i++)
+    {
+        if (env[i] != NULL)
+        {
+            free(env[i]);
+        }
+    }
+    free(pipe_cmd[0]);
+script_path_malloc_failed:
+    return rc;
+}
+/* globus_l_gram_script_attr_init() */
+
 
 int
 globus_gram_split_subjobs(

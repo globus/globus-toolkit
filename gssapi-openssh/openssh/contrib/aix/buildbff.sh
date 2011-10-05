@@ -156,6 +156,13 @@ do
 	mv $FAKE_ROOT/$sysconfdir/$cfgfile $FAKE_ROOT/$sysconfdir/$cfgfile.default
 done
 
+# AIX 5.3 and newer have /dev/random and don't create ssh_prng_cmds
+if [ -f $FAKE_ROOT/$sysconfdir/ssh_prng_cmds ]
+then
+	mv $FAKE_ROOT/$sysconfdir/ssh_prng_cmds \
+		$FAKE_ROOT/$sysconfdir/ssh_prng_cmds.default
+fi
+
 #
 # Generate lpp control files.
 #	working dir is $FAKE_ROOT but files are generated in dir above
@@ -190,7 +197,7 @@ cat <<EOF >>../openssh.post_i
 #!/bin/sh
 
 echo Creating configs from defaults if necessary.
-for cfgfile in ssh_config sshd_config
+for cfgfile in ssh_config sshd_config ssh_prng_cmds
 do
 	if [ ! -f $sysconfdir/\$cfgfile ]
 	then

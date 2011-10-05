@@ -1,32 +1,10 @@
-This is MyProxy v5.6 XX Xxx 2011.
+This is MyProxy v5.5 XX Xxx 2011.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v5.6 XX Xxx 2011
-  - allow escaping of '.' in regular expressions
-    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7213)
-  - when converting to POSIX extended regular expressions for DN
-    matching, wrap the expression inside '^(' and ')$' instead of just
-    '^' and '$' to ensure matching the entire DN using proper operator
-    precedence
-    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7215)
-  - add liblber to link line when using --with-openldap
-    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7217)
-  - fix section number in myproxy-admin-query man page
-    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7219)
-
-v5.5 5 Sep 2011
-  - undo escaping of POSIX extended regular expression meta-characters
-    in myproxy-server authorization policies (introduced in v5.1)
-    to enable full use of POSIX ERE capabilities. For literal matching
-    of parentheses and brackets, the characters must again be
-    explicitly escaped (i.e., '\(' and '\)'). Non-POSIX handling of
-    wildcard characters ('*' and '?') is maintained for backward
-    compatibility, so these characters must be escaped if POSIX ERE
-    behavior is desired.
-    (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7211)
+v5.5 XX Xxx 2011
   - in MyProxy CA, ensure that any domainComponent or emailAddress
     components in the certificate subject are type IA5String per RFC 5280
     (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=7201)

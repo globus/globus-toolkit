@@ -96,10 +96,6 @@
 #include <kafs.h>
 #endif
 
-#ifdef WITH_SELINUX
-#include <selinux/selinux.h>
-#endif
-
 #define IS_INTERNAL_SFTP(c) \
 	(!strncmp(c, INTERNAL_SFTP_NAME, sizeof(INTERNAL_SFTP_NAME) - 1) && \
 	 (c[sizeof(INTERNAL_SFTP_NAME) - 1] == '\0' || \
@@ -1322,7 +1318,8 @@ do_setup_env(Session *s, const char *shell)
 		child_set_env(&env, &envsize, "HOME", pw->pw_dir);
 #ifdef HAVE_LOGIN_CAP
 		if (setusercontext(lc, pw, pw->pw_uid, LOGIN_SETPATH) < 0)
-			child_set_env(&env, &envsize, "PATH", _PATH_STDPATH);
+			child_set_env(&env, &envsize, "PATH",
+				      _PATH_STDPATH_WITH_SCP);
 		else
 			child_set_env(&env, &envsize, "PATH", getenv("PATH"));
 #else /* HAVE_LOGIN_CAP */
@@ -1340,7 +1337,7 @@ do_setup_env(Session *s, const char *shell)
 		if (path == NULL || *path == '\0') {
 			child_set_env(&env, &envsize, "PATH",
 			    s->pw->pw_uid == 0 ?
-				SUPERUSER_PATH : _PATH_STDPATH);
+				SUPERUSER_PATH : _PATH_STDPATH_WITH_SCP);
 		}
 # endif /* HAVE_CYGWIN */
 #endif /* HAVE_LOGIN_CAP */
@@ -1369,6 +1366,8 @@ do_setup_env(Session *s, const char *shell)
 			child_set_env(&env, &envsize, "LD_LIBRARYN32_PATH",cp);
 		if ((cp = getenv("LD_LIBRARY64_PATH")) != NULL)
 			child_set_env(&env, &envsize, "LD_LIBRARY64_PATH",cp);
+		if ((cp = getenv("GLOBUS_LOCATION")) != NULL)
+			child_set_env(&env, &envsize, "GLOBUS_LOCATION",cp);
 	}
 #endif
 
@@ -1511,10 +1510,11 @@ do_rc_files(Session *s, const char *shell)
 			fprintf(stderr, "Could not run %s\n",
 			    _PATH_SSH_USER_RC);
 	} else if (stat(_PATH_SSH_SYSTEM_RC, &st) >= 0) {
+		snprintf(cmd, sizeof cmd, "%s %s", _PATH_BSHELL,
+			 _PATH_SSH_SYSTEM_RC);
 		if (debug_flag)
-			fprintf(stderr, "Running %s %s\n", _PATH_BSHELL,
-			    _PATH_SSH_SYSTEM_RC);
-		f = popen(_PATH_BSHELL " " _PATH_SSH_SYSTEM_RC, "w");
+			fprintf(stderr, "Running %s\n", cmd);
+		f = popen(cmd, "w");
 		if (f) {
 			if (do_xauth)
 				fprintf(f, "%s %s\n", s->auth_proto,
@@ -1704,9 +1704,6 @@ do_pwchange(Session *s)
 	if (s->ttyfd != -1) {
 		fprintf(stderr,
 		    "You must change your password now and login again!\n");
-#ifdef WITH_SELINUX
-		setexeccon(NULL);
-#endif
 #ifdef PASSWD_NEEDS_USERNAME
 		execl(_PATH_PASSWD_PROG, "passwd", s->pw->pw_name,
 		    (char *)NULL);

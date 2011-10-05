@@ -778,10 +778,10 @@ regex_compare(const char *regex,
      * (e.g. ^.*\.domain\.com$).
      *
      * Make a buffer large enough to hold the largest possible converted
-     * regex from the string plus our extra characters (two at the
-     * beginning, two at the end, plus a NULL).
+     * regex from the string plus our extra characters (one at the
+     * begining, one at the end, plus a NULL).
      */
-    buf = (char *) malloc(2 * strlen(regex) + 5);
+    buf = (char *) malloc(2 * strlen(regex) + 3);
 
     if (!buf)
     {
@@ -792,7 +792,6 @@ regex_compare(const char *regex,
 
     bufp = buf;
     *bufp++ = '^';
-    *bufp++ = '(';
 
     while (*regex)
     {
@@ -801,43 +800,40 @@ regex_compare(const char *regex,
 	{
 
 	case '*':
-	    /* unescaped '*' turns into '.*' */
-	    if (!escaped)
-		*bufp++ = '.';
+	    /* '*' turns into '.*' */
+	    *bufp++ = '.';
 	    *bufp++ = '*';
-	    escaped = 0;
 	    break;
 
 	case '?':
-	    /* unescaped '?' turns into '.' */
-	    if (!escaped)
-		*bufp++ = '.';
-	    else
-		*bufp++ = '?';
-	    escaped = 0;
-	    break;
-
-	case '\\':
-	    /* '\' escapes the succeeding character */
-	    if (!escaped)
-		escaped = 1;
-	    else {
-		*bufp++ = '\\';
-		escaped = 0;
-	    }
-	    break;
-
-	case '.':
-	    /* unescaped '.' turns into '\.' */
-	    if (!escaped)
-		*bufp++ = '\\';
+	    /* '?' turns into '.' */
 	    *bufp++ = '.';
-	    escaped = 0;
 	    break;
+
+	   /* '\' might be escaping the succeeding meta-character */
+	case '\\':
+	    *bufp++ = *regex;
+	    escaped = !escaped;
+	    break;
+
+	   /* Need to escape other metacharacters if not already done
+	      manually by the user */
+	case '.':
+	case '[':
+	case ']':
+	case '(':
+	case ')':
+	case '{':
+	case '}':
+	case '^':
+	case '$':
+	case '+':
+	case '|':
+	    if (!escaped)
+	        *bufp++ = '\\';
+	/* fallthru to default */
 
 	default:
-	    if (escaped)
-		*bufp++ = '\\';
 	    *bufp++ = *regex;
 	    escaped = 0;
 	}
@@ -845,7 +841,6 @@ regex_compare(const char *regex,
 	regex++;
     }
 
-    *bufp++ = ')';
     *bufp++ = '$';
     *bufp++ = '\0';
     myproxy_debug("TRANSLATED ERE (%s)", buf);

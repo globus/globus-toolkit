@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /*
- * Copyright (c) 2000, 2001, 2011 Corinna Vinschen <vinschen@redhat.com>
+ * Copyright (c) 2000, 2001, Corinna Vinschen <vinschen@cygnus.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,11 +41,13 @@
 #include <io.h>
 
 int binary_open(const char *, int , ...);
+int binary_pipe(int fd[2]);
 int check_ntsec(const char *);
 char **fetch_windows_environment(void);
 void free_windows_environment(char **);
 
 #define open binary_open
+#define pipe binary_pipe
 
 #endif /* HAVE_CYGWIN */
 

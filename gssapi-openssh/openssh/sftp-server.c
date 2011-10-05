@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-server.c,v 1.94 2011/06/17 21:46:16 djm Exp $ */
+/* $OpenBSD: sftp-server.c,v 1.93 2010/12/04 00:18:01 djm Exp $ */
 /*
  * Copyright (c) 2000-2004 Markus Friedl.  All rights reserved.
  *
@@ -68,7 +68,7 @@ Buffer iqueue;
 Buffer oqueue;
 
 /* Version of client */
-u_int version;
+int version;
 
 /* Disable writes */
 int readonly;
@@ -522,7 +522,7 @@ process_init(void)
 	Buffer msg;
 
 	version = get_int();
-	verbose("received client version %u", version);
+	verbose("received client version %d", version);
 	buffer_init(&msg);
 	buffer_put_char(&msg, SSH2_FXP_VERSION);
 	buffer_put_int(&msg, SSH2_FILEXFER_VERSION);
@@ -1409,6 +1409,9 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
 	extern char *__progname;
 
 	__progname = ssh_get_progname(argv[0]);
+	/* NB: No call to init_pathnames() here. The sftp-server doesn't
+	   use any fixed paths, which is good, because GLOBUS_LOCATION
+	   isn't defined in our environment. */
 	log_init(__progname, log_level, log_facility, log_stderr);
 
 	while (!skipargs && (ch = getopt(argc, argv, "f:l:u:cehR")) != -1) {

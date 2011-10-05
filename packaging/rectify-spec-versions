@@ -20,7 +20,6 @@ my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog = undef;
 my $fullname = undef;
-my $bumprelease = undef;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -29,7 +28,6 @@ GetOptions('gptfile=s' => \$gptfile,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
            'fullname=s' => \$fullname,
-           'bumprelease' => \$bumprelease,
            'help' => \$help);
 
 Pod::Usage::pod2usage() if defined $help;
@@ -43,7 +41,7 @@ if ($gtrelease)
 }
 my $login = getlogin || getpwuid($<);
 my $pw = getpwnam($login);
-my ($location, $phone);
+my ($location, $phone)
 my $host = hostname;
 ($fullname, $location, $phone) = split(/,/, $pw->gecos) if (!$fullname);
 $email = "$login\@$host" unless defined $email;
@@ -228,23 +226,18 @@ if (!$changelog)
     $changelog = "Updated version numbers";
 }
 
-if ($specfile_changed || $bumprelease)
+if ($specfile_changed)
 {
     $releaseversion++;
 }
 
-if ($setreleaseversion)
-{
-    $releaseversion = $setreleaseversion;
-}
-
-if ($specfile_changed || $version_changed || $bumprelease)
+if ($specfile_changed || $version_changed)
 {
     $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n- $changelog\n\n";
     print "Spec file $specfilename has been updated\n";
 }
 
-  $ARRAY[$releaseindex] = "Release:\t$releaseversion$releasesuffix\n";
+  $ARRAY[$releaseindex] = "Release:\t".(($setreleaseversion) ? $setreleaseversion : $releaseversion)."$releasesuffix\n";
 
 #Write back the spec file
 seek(FH,0,0) or die "Seeking: $!"; 
@@ -279,23 +272,7 @@ The list of packages/source locations to operate on.  Defaults to etc/package-li
 
 The packagers e-mail address (default: username@hostname)
 
-=item B<-fullname> NAME
-
-The packager's full name (default: determine from getpwent)
-
 =item B<-verbose> 
 
 Output info about each spec file being considered instead of just those changed.
 
-=item B<-release> GT-RELEASE-VERSION
-
-Update the source URL to the source directory for the GT-RELEASE-VERSION
-
-=item B<-changelog> MESSAGE
-
-Use MESSAGE as the changelog message, instead of the default [Updated version numbers]
-
-=item B<-bumprelease>
-
-Increase the package release number and update the changelog, even if has changed in the
-GPT metadata.

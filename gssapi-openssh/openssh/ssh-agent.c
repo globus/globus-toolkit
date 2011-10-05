@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.172 2011/06/03 01:37:40 dtucker Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.171 2010/11/21 01:01:13 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -74,6 +74,7 @@
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
+#include "pathnames.h"
 #include "misc.h"
 
 #ifdef ENABLE_PKCS11
@@ -1097,11 +1098,7 @@ cleanup_handler(int sig)
 static void
 check_parent_exists(void)
 {
-	/*
-	 * If our parent has exited then getppid() will return (pid_t)1,
-	 * so testing for that should be safe.
-	 */
-	if (parent_pid != -1 && getppid() != parent_pid) {
+	if (parent_pid != -1 && kill(parent_pid, 0) < 0) {
 		/* printf("Parent has died - Authentication agent exiting.\n"); */
 		cleanup_socket();
 		_exit(2);
@@ -1158,6 +1155,8 @@ main(int ac, char **av)
 	OpenSSL_add_all_algorithms();
 
 	__progname = ssh_get_progname(av[0]);
+	init_pathnames();
+	init_rng();
 	seed_rng();
 
 	while ((ch = getopt(ac, av, "cdksa:t:")) != -1) {
