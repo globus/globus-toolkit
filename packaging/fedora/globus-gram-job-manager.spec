@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.2
+Version:	13.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -158,6 +158,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 04 2011 Joseph Bester <bester@mcs.anl.gov> - 13.3-1
+- GRAM-240: globus_xio_open in script code can recurse
+
 * Thu Sep 22 2011  <bester@mcs.anl.gov> - 13.2-1
 - GRAM-257: Set default values for GLOBUS_GATEKEEPER_*
 
