@@ -10,13 +10,16 @@
 %global docdiroption "docdir"
 %endif
 
+%if %{?fedora}%{!?fedora:0} <= 16 || %{?rhel}%{!?rhel:0} < 7
+%global backwardcompat "--with-backward-compatibility-hack"
+%end
 
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.0
-Release:	2%{?dist}
+Version:	14.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -42,7 +45,10 @@ Obsoletes:	globus-duct-common
 Obsoletes:	globus-duct-control
 Obsoletes:	globus-duroc-common
 Obsoletes:	globus-duroc-control
-Obsoletes:	globus-libtool%{?_isa}
+%if %{?fedora}%{!?fedora:0} <= 16 || %{?rhel}%{!?rhel:0} < 7
+Provides:	globus-libtool%{?_isa}
+%end
+Obsoletes:      globus-libtool%{?_isa} < 2
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen
@@ -62,14 +68,13 @@ BuildRequires:	tetex-latex
 Summary:	Globus Toolkit - Common Library Programs
 Group:		Applications/Internet
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Obsoletes:	globus-libtool%{?_isa}
 Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 
 %package devel
 Summary:	Globus Toolkit - Common Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Obsoletes:	globus-libtool%{?_isa}
+Obsoletes:	globus-libtool-devel%{?_isa}
 Requires:	globus-core%{?_isa} >= 8
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
 Obsoletes:	globus-data-conversion-devel
@@ -166,7 +171,7 @@ GLOBUS_VERSION=5.2.0
 export GLOBUS_VERSION
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
-           --disable-static
+           --disable-static %{backwardcompat}
 
 make %{?_smp_mflags}
 
@@ -203,7 +208,13 @@ cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! > package-progs.filelist
+
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
+  | grep libglobus_thread_pthread.so \
+  | sed s!^!%{_prefix}! >> package.filelist
+
+cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
+  | grep -v libglobus_thread_pthread.so \
   | sed s!^!%{_prefix}! > package-devel.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
   | grep -v GLOBUS_LICENSE \
@@ -240,6 +251,11 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 04 2011 Joseph Bester <bester@mcs.anl.gov> - 14.1-1
+- Move libglobus_thread_pthread.so symlink to globus-common package
+  from globus-common-devel
+- Add backward-compatibility hack
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 14.0-2
 - Update for 5.1.2 release
 

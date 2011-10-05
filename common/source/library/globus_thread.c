@@ -122,7 +122,8 @@ globus_thread_set_model(
         return GLOBUS_FAILURE;
     }
 
-    if (globus_l_thread_impl != NULL)
+    if (globus_l_thread_impl != NULL &&
+        strcmp(model, globus_l_thread_model) != 0)
     {
         return GLOBUS_FAILURE;
     }

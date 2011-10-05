@@ -1,0 +1,17 @@
+GLOBUS_COMMON_11 {
+  global:
+    globus_module_activate_proxy;
+    globus_module_activate;
+    globus_module_activate_array;
+  local:
+    globus_module_activate_proxy_compat;
+    globus_module_activate_compat;
+    globus_module_activate_array_compat;
+};
+
+GLOBUS_COMMON_14 {
+  local:
+    globus_module_activate_proxy_new;
+    globus_module_activate_new;
+    globus_module_activate_array_new;
+} GLOBUS_COMMON_11;
