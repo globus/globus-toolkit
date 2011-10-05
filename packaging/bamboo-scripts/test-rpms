@@ -14,14 +14,6 @@ lrms=fork
 tag=""
 skip_checkout=0
 
-if [ ! -f ~/.ssh/id_rsa ]; then
-    echo | ssh-keygen -q -P ''
-    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-    chmod 600 ~/.ssh/authorized_keys
-fi
-
-ssh-keyscan -t dsa,rsa \
-    localhost $(hostname) $(hostname -f) >> ~/.ssh/known_hosts
 
 while getopts "r:a:l:t:q" i; do
     case "$i" in
@@ -60,8 +52,7 @@ mkdir -p $topdir
 mkdir -p $testoutdir
 
 # Reset home to this directory as it is a transient bamboo build dir
-ORIGHOME="$HOME"
-HOME="$topdir"
+HOME=$topdir
 
 mkdir -p $tmppath
 
@@ -89,26 +80,11 @@ for flavor in gcc64 gcc32; do
         sudo yum -y remove $pkgs_to_rm
     fi
 
-    case $(lsb_release -is):$(lsb_release -rs) in
-        CentOS:5*|ScientificSL:5*|RedHatEnterpriseServer:5*)
-            if [ "$flavor" = gcc64 ]; then
-                arch="x86_64"
-                archcmd=""
-            else
-                arch="i386"
-                archcmd="i386"
-            fi
-            ;;
-        *)
-            if [ "$flavor" = gcc64 ]; then
-                arch="x86_64"
-                archcmd=""
-            else
-                arch="i686"
-                archcmd="i386"
-            fi
-            ;;
-    esac
+    if [ "$flavor" = gcc64 ]; then
+        arch="x86_64"
+    elif ! grep -Eq 'Scientific Linux|Red Hat Enterprise Linux' /etc/redhat-release; then
+        archcmd="i386"
+    fi
 
     # yum clean will enable us to download 32-bit or 64-bit below
     sudo yum clean all
@@ -143,7 +119,6 @@ for flavor in gcc64 gcc32; do
                 sudo grid-mapfile-add-entry -dn "$(grid-cert-info -subject -file "$X509_USER_CERT")" -ln "$(id -un)"
             fi
         fi
-        cp -R "$ORIGHOME/.ssh" "$HOME/.ssh"
         sudo service globus-gridftp-server restart 
         grid-proxy-init -hours 24
         globus_hostname=$(globus-hostname)
@@ -164,27 +139,16 @@ for flavor in gcc64 gcc32; do
         ./configure --with-flavor=${flavor}
         make 
         if [ "${testpkgname_no_ver}" = "globus-gram-job-manager-test" ]; then
-            sudo yum -y remove globus-gram-job-manager-fork-setup-poll
             for lrm in $lrms; do
                 if [ "${lrm}" = "condor" ]; then
                     modes=""
                 else
                     modes="-setup-poll -setup-seg"
                 fi
-
                 for mode in $modes; do
-                    sudo yum -y install globus-gram-job-manager-$lrm$mode.$arch || continue
+                    sudo yum -y install globus-gram-job-manager-$lrm$mode || continue
                     sudo service globus-gatekeeper restart || true
                     sudo service globus-scheduler-event-generator restart || true
-                    # Allow multiple processes per node if the nodes are
-                    # multi-cpu
-                    if [ "$lrm" = "pbs" ]; then
-                        sudo ed /etc/globus/globus-pbs.conf <<-EOF
-			/^cpu_per_node=/s/=.*/="$(grep -c processor /proc/cpuinfo)"/
-			w
-			q
-			EOF
-                    fi
                     dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
                     export CONTACT_STRING="$globus_hostname/jobmanager-$lrm:$dn" 
                     export CONTACT_LRM="$lrm"
@@ -206,7 +170,6 @@ for flavor in gcc64 gcc32; do
                     fi
                 done
             done
-            sudo yum -y install globus-gram-job-manager-fork-setup-poll
         else
             make junit || true
             for x in "${testpkgname_no_ver}"*.xml; do

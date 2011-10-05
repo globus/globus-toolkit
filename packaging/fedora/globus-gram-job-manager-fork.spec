@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	5%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -190,7 +190,7 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
 rm -rf $RPM_BUILD_ROOT
 
 %post setup-poll
-if [ $1 -eq 1 ]; then
+if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
     if [ ! -f /etc/grid-services/jobmanager ]; then
         globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager
@@ -214,21 +214,17 @@ fi
 
 %post setup-seg
 /sbin/ldconfig
-if [ $1 -eq 1 ]; then
+if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager-fork
     globus-scheduler-event-generator-admin -e fork
     /sbin/service globus-scheduler-event-generator condrestart fork
     if [ ! -f /etc/grid-services/jobmanager ]; then
         globus-gatekeeper-admin -e jobmanager-fork-seg -n jobmanager
     fi
-    if [ ! -f /var/lib/globus/globus-fork.log ]; then
-        mkdir -p /var/lib/globus
-        touch /var/lib/globus/globus-fork.log
-        chmod 0622 /var/lib/globus/globus-fork.log
-    fi
 fi
 
 %preun setup-seg
+/sbin/ldconfig
 if [ $1 -eq 0 ]; then
     globus-gatekeeper-admin -d jobmanager-fork-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -d fork > /dev/null 2>&1 || :
@@ -236,7 +232,6 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-seg
-/sbin/ldconfig
 if [ $1 -ge 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e fork > /dev/null 2>&1 || :
@@ -265,12 +260,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-5
-- Change %post check for -eq 1
-
-* Wed Sep 14 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
-- Create globus-fork.log at postinstall time if it's not present
-
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2
 - Update for 5.1.2 release
 

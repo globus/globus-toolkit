@@ -12,8 +12,8 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
-Release:	1%{?dist}
+Version:	4.0
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -212,9 +212,6 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 4.1-1
-- GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
-
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
 - Update for 5.1.2 release
 

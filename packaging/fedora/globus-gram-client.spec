@@ -12,8 +12,8 @@
 
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	12.1
-Release:	1%{?dist}
+Version:	12.0
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -30,7 +30,7 @@ BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gram-protocol-devel%{?_isa} >= 11
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-rsl-devel%{?_isa} >= 9
-BuildRequires:	globus-io-devel%{?_isa} >= 9
+BuildRequires:	globus-io-devel%{?_isa} >= 8
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	globus-gram-protocol-doc >= 11
 BuildRequires:	globus-common-doc >= 14
@@ -53,7 +53,7 @@ Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	globus-gram-protocol-devel%{?_isa} >= 11
 Requires:	globus-common-devel%{?_isa} >= 14
 Requires:	globus-rsl-devel%{?_isa} >= 9
-Requires:	globus-io-devel%{?_isa} >= 9
+Requires:	globus-io-devel%{?_isa} >= 8
 Requires:	globus-core%{?_isa} >= 8
 
 %package doc
@@ -166,9 +166,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Tue Sep 20 2011  <bester@mcs.anl.gov> - 12.1-1
-- Use GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP_SSL3 to force SSLv3 when sending a message to the gatekeeper
-
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 12.0-2
 - Update for 5.1.2 release
 
