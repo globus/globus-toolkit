@@ -15,7 +15,6 @@
  */
 
 #include "globus_gram_job_manager.h"
-#include "globus_xio_popen_driver.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -179,6 +178,19 @@ globus_l_script_writev_callback(
     globus_size_t                       nbytes,
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg);
+
+static
+void
+globus_l_gram_script_open_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+static
+int
+globus_l_gram_script_register_read_and_write(
+    globus_gram_job_manager_script_context_t * 
+                                        script_context);
 
 /**
  * Begin execution of a job manager script
@@ -2070,8 +2082,8 @@ globus_l_gram_enqueue_staging_list(
     globus_gram_job_manager_staging_type_t
                                         type)
 {
-    globus_list_t *                     tmp_list;
-    char *                              attribute;
+    globus_list_t *                     tmp_list = NULL;
+    char *                              attribute = NULL;
     char *                              from;
     char *                              to;
     globus_gram_job_manager_staging_info_t *
@@ -2092,7 +2104,7 @@ globus_l_gram_enqueue_staging_list(
         tmp_list = request->stage_out_todo;
         attribute = GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM;
         break;
-    case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_STREAMS:
         tmp_list = request->stage_stream_todo;
         attribute = "filestreamout";
         break;
@@ -2299,9 +2311,7 @@ globus_l_gram_process_script_queue_locked(
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_job_manager_script_context_t *
                                         head = NULL;
-    int                                 i, total_iov_contents;
     globus_result_t                     result;
-    globus_reltime_t                    delay;
 
     while ((!globus_priority_q_empty(&manager->script_queue)) &&
            (manager->script_slots_available > 0 ||
@@ -2329,6 +2339,12 @@ globus_l_gram_process_script_queue_locked(
                     "\n",
                     "Using script handle from fifo",
                     head->handle);
+            rc = globus_l_gram_script_register_read_and_write(head);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                rc = GLOBUS_SUCCESS;
+                continue;
+            }
         }
         else 
         {
@@ -2353,79 +2369,25 @@ globus_l_gram_process_script_queue_locked(
             {
                 continue;
             }
+
+            result = globus_xio_register_open(
+                head->handle->handle,
+                NULL,
+                manager->script_attr,
+                globus_l_gram_script_open_callback,
+                head);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                /* I think blocking call is safe here */
+                globus_xio_close(head->handle->handle, NULL);
+                head->handle->handle = NULL;
+                continue;
+            }
+
+            head->handle->pending_ops++;
             manager->script_slots_available--;
         }
-
-        for (i = 0, total_iov_contents = 0; i < head->iovcnt; i++)
-        {
-            total_iov_contents += head->iov[i].iov_len;
-        }
-        result = globus_xio_register_writev(
-                head->handle->handle,
-                head->iov,
-                head->iovcnt,
-                total_iov_contents,
-		NULL,
-                globus_l_script_writev_callback,
-		head->handle);
-        if (result != GLOBUS_SUCCESS)
-        {
-	    char *errstr = globus_error_print_friendly(
-                    globus_error_peek(result));
-            char *escaped_errstr;
-
-            escaped_errstr = globus_gram_prepare_log_string(errstr);
-
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.script.write.end level=ERROR "
-                    "msg=\"%s\" status=%d reason=\"%s\"\n",
-                    "error writing to script input",
-                    -1,
-		    escaped_errstr ? escaped_errstr : "");
-            if (errstr)
-            {
-                free(errstr);
-            }
-            if (escaped_errstr)
-            {
-                free(escaped_errstr);
-            }
-            globus_xio_register_close(
-                    head->handle->handle,
-                    NULL,
-                    globus_l_script_close_callback,
-                    head->handle);
-            head->handle = NULL;
-            manager->script_slots_available++;
-            continue;
-        }
-        head->handle->pending_ops++;
-
-        result = globus_xio_register_read(
-                head->handle->handle,
-                head->handle->return_buf,
-                sizeof(head->handle->return_buf),
-                1,
-                NULL,
-                globus_l_gram_job_manager_script_read,
-                head);
-        if (result != GLOBUS_SUCCESS)
-        {
-            GlobusTimeReltimeSet(delay, 0, 0);
-
-            globus_xio_register_close(
-                    head->handle->handle,
-                    NULL,
-                    globus_l_script_close_callback,
-                    head->handle);
-            head->handle = NULL;
-            manager->script_slots_available++;
-
-            continue;
-        }
-        head->handle->pending_ops++;
         globus_priority_q_dequeue(&manager->script_queue);
         head = NULL;
     }
@@ -2434,6 +2396,149 @@ globus_l_gram_process_script_queue_locked(
 }
 /* globus_l_gram_process_script_queue_locked() */
 
+static
+void
+globus_l_gram_script_open_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_gram_job_manager_script_context_t *
+                                        context = user_arg;
+    globus_gram_script_handle_t         script_handle = context->handle;
+    globus_gram_jobmanager_request_t *  request = context->request;
+    int                                 rc = GLOBUS_SUCCESS;
+    int                                 i;
+
+    script_handle->pending_ops--;
+
+    if (result == GLOBUS_SUCCESS)
+    {
+        rc = globus_l_gram_script_register_read_and_write(context);
+    }
+    else
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+    }
+
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        GlobusGramJobManagerLock(script_handle->manager);
+        globus_xio_register_close(
+                handle,
+                NULL,
+                globus_l_script_close_callback,
+                script_handle);
+        script_handle->manager->script_slots_available++;
+        GlobusGramJobManagerUnlock(script_handle->manager);
+
+        context->callback(
+            context->callback_arg,
+            request,
+            GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS,
+            context->starting_jobmanager_state,
+            NULL,
+            NULL);
+
+        globus_gram_job_manager_remove_reference(
+                request->manager,
+                request->job_contact_path,
+                "script");
+
+        for (i = 0; i < context->iovcnt; i++)
+        {
+            free(context->iov[i].iov_base);
+        }
+        free(context->iov);
+        free(context);
+    }
+}
+/* globus_l_gram_script_open_callback() */
+
+static
+int
+globus_l_gram_script_register_read_and_write(
+    globus_gram_job_manager_script_context_t * 
+                                        script_context)
+{
+    int                                 i, total_iov_contents;
+    globus_result_t                     result;
+    globus_gram_job_manager_t *         manager;
+    
+    manager = script_context->handle->manager;
+
+    for (i = 0, total_iov_contents = 0; i < script_context->iovcnt; i++)
+    {
+        total_iov_contents += script_context->iov[i].iov_len;
+    }
+    result = globus_xio_register_writev(
+            script_context->handle->handle,
+            script_context->iov,
+            script_context->iovcnt,
+            total_iov_contents,
+            NULL,
+            globus_l_script_writev_callback,
+            script_context->handle);
+    if (result != GLOBUS_SUCCESS)
+    {
+        char *errstr = globus_error_print_friendly(
+                globus_error_peek(result));
+        char *escaped_errstr;
+
+        escaped_errstr = globus_gram_prepare_log_string(errstr);
+
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "event=gram.script.write.end level=ERROR "
+                "msg=\"%s\" status=%d reason=\"%s\"\n",
+                "error writing to script input",
+                -1,
+                escaped_errstr ? escaped_errstr : "");
+        if (errstr)
+        {
+            free(errstr);
+        }
+        if (escaped_errstr)
+        {
+            free(escaped_errstr);
+        }
+        globus_xio_register_close(
+                script_context->handle->handle,
+                NULL,
+                globus_l_script_close_callback,
+                script_context->handle);
+        script_context->handle = NULL;
+        manager->script_slots_available++;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+    }
+    script_context->handle->pending_ops++;
+
+    result = globus_xio_register_read(
+            script_context->handle->handle,
+            script_context->handle->return_buf,
+            sizeof(script_context->handle->return_buf),
+            1,
+            NULL,
+            globus_l_gram_job_manager_script_read,
+            script_context);
+    if (result != GLOBUS_SUCCESS)
+    {
+        globus_xio_register_close(
+                script_context->handle->handle,
+                NULL,
+                globus_l_script_close_callback,
+                script_context->handle);
+        script_context->handle = NULL;
+        manager->script_slots_available++;
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
+    }
+    script_context->handle->pending_ops++;
+
+    return GLOBUS_SUCCESS;
+}
 /**
  * Convert a fifo of NULL-terminated strings into an array of iovec structs
  *
@@ -2560,106 +2665,13 @@ globus_gram_job_manager_script_handle_init(
 {
     globus_result_t                     result;
     int                                 rc = GLOBUS_SUCCESS;
-    globus_xio_attr_t                   attr;
-    char *                              pipe_cmd[6];
-    char *                              env[7];
-    int                                 i;
 
-    result = globus_eval_path("${libexecdir}/globus-job-manager-script.pl", &pipe_cmd[0]);
-    if (result != GLOBUS_SUCCESS || pipe_cmd[0] == NULL)
+    *handle = malloc(sizeof(struct globus_gram_script_handle_s));
+    if (*handle == NULL)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto script_path_malloc_failed;
+        goto fail;
     }
-    globus_gram_job_manager_log(
-            manager,
-            GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
-            "event=gram.script.start level=DEBUG\n");
-
-    pipe_cmd[1] = "-m";
-    pipe_cmd[2] = manager->config->jobmanager_type;
-    pipe_cmd[3] = "-c";
-    pipe_cmd[4] = "interactive";
-    pipe_cmd[5] = NULL;
-
-    memset(env, 0, sizeof(env));
-    i = 0;
-    if (manager->config->globus_location)
-    {
-        env[i++] = globus_common_create_string(
-                "GLOBUS_LOCATION=%s",
-                manager->config->globus_location);
-    }
-    env[i++] = globus_common_create_string(
-            "GLOBUS_SPOOL_DIR=%s",
-            manager->config->job_state_file_dir);
-    env[i++] = globus_common_create_string(
-            "HOME=%s",
-            manager->config->home);
-    env[i++] = globus_common_create_string(
-            "LOGNAME=%s",
-            manager->config->logname);
-    if (manager->config->x509_cert_dir)
-    {
-        env[i++] = globus_common_create_string(
-                "X509_CERT_DIR=%s",
-                manager->config->x509_cert_dir);
-    }
-    if (manager->config->tcp_port_range)
-    {
-        env[i++] = globus_common_create_string(
-                "GLOBUS_TCP_PORT_RANGE=%s",
-                manager->config->tcp_port_range);
-    }
-    env[i] = NULL;
-    for (--i; i >= 0; i--)
-    {
-        if (!env[i])
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-            goto env_strings_failed;
-        }
-    }
-
-    result = globus_xio_attr_init(&attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-        goto attr_init_failed;
-    }
-    result = globus_xio_attr_cntl(
-            attr,
-            globus_i_gram_job_manager_popen_driver,
-            GLOBUS_XIO_POPEN_SET_PROGRAM,
-            pipe_cmd);
-    if (result != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-        goto attr_cntl_program_failed;
-    }
-    result = globus_xio_attr_cntl(
-            attr,
-            globus_i_gram_job_manager_popen_driver,
-            GLOBUS_XIO_POPEN_SET_CHILD_ENV,
-            env);
-    if (result != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-        goto attr_cntl_env_failed;
-    }
-    result = globus_xio_attr_cntl(
-            attr,
-            globus_i_gram_job_manager_popen_driver,
-            GLOBUS_XIO_POPEN_SET_BLOCKING_IO,
-            1);
-    if (result != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-        goto attr_cntl_blocking_failed;
-    }
-    *handle = malloc(sizeof(struct globus_gram_script_handle_s));
     (*handle)->return_buf[0] = 0;
     (*handle)->result = GLOBUS_SUCCESS;
     (*handle)->manager = manager;
@@ -2673,67 +2685,13 @@ globus_gram_job_manager_script_handle_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
         goto handle_create_failed;
     }
-    result = globus_xio_open(
-            (*handle)->handle,
-            NULL,
-            attr);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        char *                          errstr;
-        char *                          escaped_errstr;
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-
-        errstr = globus_error_print_friendly(globus_error_peek(result));
-        escaped_errstr = globus_gram_prepare_log_string(errstr);
-
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                "event=gram.script.end "
-                "level=ERROR "
-                "msg=\"%s\" "
-                "status=%d "
-                "reason=\"%s\"\n",
-                "failed opening script handle",
-                -rc,
-                escaped_errstr ? escaped_errstr : "");
-
-        if (errstr)
-        {
-            free(errstr);
-        }
-        if (escaped_errstr)
-        {
-            free(escaped_errstr);
-        }
-
-        goto xio_open_failed;
-    }
 
     if (rc != GLOBUS_SUCCESS)
     {
-xio_open_failed:
-        globus_xio_close((*handle)->handle, NULL);
 handle_create_failed:
         free(*handle);
     }
-attr_cntl_blocking_failed:
-attr_cntl_env_failed:
-attr_cntl_program_failed:
-    globus_xio_attr_destroy(attr);
-
-attr_init_failed:
-env_strings_failed:
-    for (i = 0; i < 7; i++)
-    {
-        if (env[i] != NULL)
-        {
-            free(env[i]);
-        }
-    }
-    free(pipe_cmd[0]);
-script_path_malloc_failed:
+fail:
     if (rc != GLOBUS_SUCCESS)
     {
         *handle = NULL;

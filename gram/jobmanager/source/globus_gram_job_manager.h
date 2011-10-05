@@ -489,6 +489,7 @@ typedef struct globus_gram_job_manager_s
      * occur before a request is read.
      */
     char *                              gt3_failure_message;
+    globus_xio_attr_t                   script_attr;
 }
 globus_gram_job_manager_t;
 
