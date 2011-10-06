@@ -12,7 +12,7 @@
 
 %if %{?fedora}%{!?fedora:0} <= 16 || %{?rhel}%{!?rhel:0} < 7
 %global backwardcompat "--with-backward-compatibility-hack"
-%end
+%endif
 
 %{!?perl_vendorlib: %global perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)}
 
@@ -47,8 +47,10 @@ Obsoletes:	globus-duroc-common
 Obsoletes:	globus-duroc-control
 %if %{?fedora}%{!?fedora:0} <= 16 || %{?rhel}%{!?rhel:0} < 7
 Provides:	globus-libtool%{?_isa}
-%end
+Provides:       globus-common-setup%{?_isa}
+%endif
 Obsoletes:      globus-libtool%{?_isa} < 2
+Obsoletes:      globus-common-setup%{?_isa} < 3
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-core%{?_isa} >= 8
 BuildRequires:	doxygen

@@ -218,6 +218,34 @@ globus_thread_key_t;
  * @brief Thread once structure
  * @ingroup globus_thread_once
  */
+#if USE_SYMBOL_LABELS
+typedef union
+{
+    int32_t none;
+#if HAVE_PTHREAD
+    pthread_once_t pthread;
+#endif
+#if HAVE_WINDOWS_THREADS
+    int windows;
+#endif
+    int32_t dummy;
+}
+globus_thread_once_t;
+
+/**
+ * @def GLOBUS_THREAD_ONCE_INIT
+ * @brief Thread once initializer value
+ * @ingroup globus_thread_once
+ * @hideinitializer
+ */
+#if HAVE_PTHREAD
+#   define GLOBUS_THREAD_ONCE_INIT { .pthread = PTHREAD_ONCE_INIT }
+#elif HAVE_WINDOWS_THREADS
+#   define GLOBUS_THREAD_ONCE_INIT { .windows = 0 }
+#else
+#   define GLOBUS_THREAD_ONCE_INIT { .none = 0 }
+#endif
+#else
 typedef struct
 {
     int none;
@@ -244,9 +272,10 @@ globus_thread_once_t;
 #       define GLOBUS_THREAD_ONCE_INIT { 0, PTHREAD_ONCE_INIT, 0 }
 #   endif
 #elif HAVE_WINDOWS_THREADS
-#       define GLOBUS_THREAD_ONCE_INIT { 0, 0, 0 }
+#   define GLOBUS_THREAD_ONCE_INIT { 0, 0, 0 }
 #else
-#define GLOBUS_THREAD_ONCE_INIT { 0, 0 }
+#   define GLOBUS_THREAD_ONCE_INIT { 0, 0 }
+#endif
 #endif
 
 extern

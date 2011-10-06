@@ -156,6 +156,7 @@ libglobus_common_la_SOURCES = $(Sources)
 libglobus_common_la_LDFLAGS = @GPT_LDFLAGS@
 
 if USE_SYMBOL_LABELS
+libglobus_common_la_LIBADD += -lpthread
 libglobus_common_la_LDFLAGS += -Wl,--version-script,sym
 endif
 

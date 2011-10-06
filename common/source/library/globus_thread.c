@@ -31,6 +31,7 @@
  * $Author$
  */
 
+#include "config.h"
 #include "globus_thread.h"
 extern globus_result_t globus_eval_path(const char *, char **);
 
@@ -1024,6 +1025,22 @@ globus_thread_create(
 }
 /* globus_thread_create() */
 
+#if USE_SYMBOL_LABELS
+__asm__(".symver globus_thread_key_create_compat,"
+        "globus_thread_key_create@GLOBUS_COMMON_11");
+__asm__(".symver globus_thread_key_create_new,"
+        "globus_thread_key_create@@GLOBUS_COMMON_14");
+
+#define globus_thread_key_create globus_thread_key_create_new
+int
+globus_thread_key_create_compat(
+    pthread_key_t *                     key,
+    globus_thread_key_destructor_func_t destructor)
+{
+    return pthread_key_create(key, destructor);
+}
+/* globus_thread_getspecific_compat() */
+#endif
 /**
  * @defgroup globus_thread_key Thread-Specific Storage
  * @ingroup globus_thread
@@ -1132,6 +1149,24 @@ globus_thread_key_delete(
  *     to globus_thread_once().
  */
 
+#if USE_SYMBOL_LABELS
+__asm__(".symver globus_thread_once_compat,"
+        "globus_thread_once@GLOBUS_COMMON_11");
+__asm__(".symver globus_thread_once_new,"
+        "globus_thread_once@@GLOBUS_COMMON_14");
+
+#define globus_thread_once globus_thread_once_new
+
+int
+globus_thread_once_compat(
+    pthread_once_t *                    once, 
+    void                                (*init_routine)(void))
+{
+    return pthread_once(once, init_routine);
+}
+/* globus_thread_once_compat() */
+#endif
+
 /**
  * @brief Execute a function one time
  * @ingroup globus_thread_once
@@ -1184,6 +1219,22 @@ globus_thread_once(
 }
 /* globus_thread_once() */
 
+#if USE_SYMBOL_LABELS
+__asm__(".symver globus_thread_getspecific_compat,"
+        "globus_thread_getspecific@GLOBUS_COMMON_11");
+__asm__(".symver globus_thread_getspecific_new,"
+        "globus_thread_getspecific@@GLOBUS_COMMON_14");
+
+#define globus_thread_getspecific globus_thread_getspecific_new
+void *
+globus_thread_getspecific_compat(
+    pthread_key_t                       key)
+{
+    return pthread_getspecific(key);
+}
+/* globus_thread_getspecific_compat() */
+#endif
+
 /**
  * @brief Get a thread-specific data value
  * @ingroup globus_thread_key
@@ -1220,6 +1271,22 @@ globus_thread_getspecific(
 }
 /* globus_thread_getspecific() */
 
+#if USE_SYMBOL_LABELS
+__asm__(".symver globus_thread_setspecific_compat,"
+        "globus_thread_setspecific@GLOBUS_COMMON_11");
+__asm__(".symver globus_thread_setspecific_new,"
+        "globus_thread_setspecific@@GLOBUS_COMMON_14");
+
+#define globus_thread_setspecific globus_thread_setspecific_new
+int
+globus_thread_setspecific_compat(
+    pthread_key_t                       key,
+    void *                              value)
+{
+    return pthread_setspecific(key, value);
+}
+/* globus_thread_getspecific_compat() */
+#endif
 /**
  * @brief Set a thread-specific data value
  * @ingroup globus_thread_key
