@@ -364,7 +364,7 @@ globus_module_activate_array_compat(
                 "FATAL ERROR: mixing thread models activating %s\n"
                 "To remedy, update globus libraries or set the "
                 "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
-                module_descriptor->module_name);
+                module_array[0]->module_name);
         abort();
     }
 
