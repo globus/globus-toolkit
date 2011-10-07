@@ -1,7 +1,3 @@
-# [CREDIT: modified version of Mattias Ellert's gsissh.spec]
-# gsissh is openssh with support for GSI authentication
-# This gsissh specfile is based on the openssh specfile
-
 # Do we want SELinux & Audit
 %global WITH_SELINUX 1
 
@@ -35,7 +31,7 @@
 %global nologin 1
 
 %global gsi_openssh_rel 2
-%global gsi_openssh_ver 5.3
+%global gsi_openssh_ver 5.4
 
 %ifarch alpha ia64 ppc64 s390x sparc64 x86_64
 %global flavor gcc64
@@ -396,7 +392,7 @@ fi
 
 %files
 %defattr(-,root,root)
-%doc CREDITS ChangeLog INSTALL LICENCE LICENSE.globus_usage OVERVIEW PROTOCOL* README README.platform README.privsep README.tun README.dns TODO WARNING* ChangeLog.gssapi HPN-README
+%doc CREDITS ChangeLog INSTALL LICENCE LICENSE.globus_usage OVERVIEW PROTOCOL* README README.platform README.privsep README.tun README.dns TODO ChangeLog.gssapi HPN-README
 %attr(0755,root,root) %dir %{_sysconfdir}/gsissh
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/gsissh/moduli
 %attr(0755,root,root) %{_bindir}/gsissh-keygen
@@ -432,7 +428,7 @@ fi
 %attr(0755,root,root) /etc/rc.d/init.d/gsisshd
 
 %changelog
-* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.3-2
+* Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.4-2
 - Update to GT 5.1.2
 
 * Wed Mar 02 2011 Mattias Ellert <mattias.ellert@fysast.uu.se> - 5.5p1-1

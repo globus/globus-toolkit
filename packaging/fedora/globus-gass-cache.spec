@@ -12,8 +12,8 @@
 
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
-Release:	2%{?dist}
+Version:	8.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
@@ -106,6 +106,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
 - Update for 5.1.2 release
 

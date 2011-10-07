@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.1
+Version:	6.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -172,6 +172,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 6.2-1
+- Add backward-compatibility aging
+
 * Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 6.1-1
 - GRIDFTP-184: Detect and workaround bug in start_daemon for LSB < 4
 

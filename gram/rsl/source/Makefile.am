@@ -43,7 +43,7 @@ include_HEADERS= \
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
-lib_LTLIBRARIES = libglobus_rsl.la
+lib_LTLIBRARIES = libglobus_rsl.la libglobus_rsl_assist.la
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
@@ -63,6 +63,9 @@ libglobus_rsl_la_LDFLAGS = $(GPT_LDFLAGS)
 # GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 libglobus_rsl_la_LIBADD = $(GPT_LIB_LINKS)
+
+libglobus_rsl_assist_la_SOURCES = dummy.c
+libglobus_rsl_assist_la_LIBADD = $(GPT_LIB_LINKS) libglobus_rsl.la
 
 
 include $(top_srcdir)/globus_automake_post

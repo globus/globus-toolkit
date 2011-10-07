@@ -12,7 +12,7 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
+Version:	4.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
@@ -212,6 +212,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 4.2-1
+- Add backward-compatibility aging
+
 * Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 4.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
 

@@ -12,8 +12,8 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
-Release:	2%{?dist}
+Version:	4.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
 Group:		System Environment/Libraries
@@ -181,6 +181,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 4.2-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
 - Update for 5.1.2 release
 

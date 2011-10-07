@@ -12,7 +12,7 @@
 
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	12.1
+Version:	12.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
@@ -166,6 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 12.2-1
+- Add backward-compatibility aging
+
 * Tue Sep 20 2011  <bester@mcs.anl.gov> - 12.1-1
 - Use GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP_SSL3 to force SSLv3 when sending a message to the gatekeeper
 

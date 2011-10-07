@@ -12,8 +12,8 @@
 
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
-Release:	2%{?dist}
+Version:	8.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -201,6 +201,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
 - Update for 5.1.2 release
 

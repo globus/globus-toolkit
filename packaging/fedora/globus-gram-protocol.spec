@@ -15,8 +15,8 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	11.0
-Release:	2%{?dist}
+Version:	11.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
 Group:		System Environment/Libraries
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 11.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 11.0-2
 - Update for 5.1.2 release
 

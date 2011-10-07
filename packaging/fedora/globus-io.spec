@@ -12,8 +12,8 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.0
-Release:	2%{?dist}
+Version:	9.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -120,6 +120,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 9.1-1
+- Add backward-compatibility aging
+
 * Mon Sep 26 2011 Joe Bester <bester@mcs.anl.gov> - 9.0-2
 - pick up new GSSAPI version dependency
 

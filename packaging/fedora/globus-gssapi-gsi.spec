@@ -12,7 +12,7 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.0
+Version:	10.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
@@ -184,6 +184,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 10.1-1
+- Add backward-compatibility aging
+
 * Tue Sep 20 2011  <bester@mcs.anl.gov> - 10.0-1
 - Add flag to force SSLv3 when initiating a security context
 
