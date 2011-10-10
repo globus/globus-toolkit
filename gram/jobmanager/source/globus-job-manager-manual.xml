@@ -42,6 +42,7 @@ $Header$
 <arg>-log-levels <replaceable>LEVELS</replaceable></arg>
 <arg>-state-file-dir <replaceable>STATE_DIRECTORY</replaceable></arg>
 <arg>-globus-tcp-port-range <replaceable>PORT_RANGE</replaceable></arg>
+<arg>-globus-tcp-source-range <replaceable>SOURCE_RANGE</replaceable></arg>
 <arg>-x509-cert-dir <replaceable>TRUSTED_CERTIFICATE_DIRECTORY</replaceable></arg>
 <arg>-cache-location <replaceable>GASS_CACHE_DIRECTORY</replaceable></arg>
 <arg>-k</arg>
@@ -174,6 +175,11 @@ The full set of command-line options to
     <varlistentry>
         <term><option>-globus-tcp-port-range <replaceable>PORT_RANGE</replaceable></option></term>
         <listitem><simpara>Configure the job manager to restrict its TCP/IP communication to use ports in the range described by <replaceable>PORT_RANGE</replaceable>. This value is also made available in the job environment via the <varname>GLOBUS_TCP_PORT_RANGE</varname> environment variable.
+        </simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><option>-globus-tcp-source-range <replaceable>SOURCE_RANGE</replaceable></option></term>
+        <listitem><simpara>Configure the job manager to restrict its TCP/IP communication to use source ports in the range described by <replaceable>SOURCE_RANGE</replaceable>. This value is also made available in the job environment via the <varname>GLOBUS_TCP_SOURCE_RANGE</varname> environment variable.
         </simpara></listitem>
     </varlistentry>
     <varlistentry>
@@ -314,6 +320,18 @@ If the following variables affect the execution of <command>globus-job-manager</
         <term><envar>GLOBUS_USAGE_TARGETS</envar></term>
         <listitem><simpara>Default list of usagestats services to send usage
         packets to.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><envar>GLOBUS_TCP_PORT_RANGE</envar></term>
+        <listitem><simpara>Default range of allowed TCP ports to listen
+        on. The <option>-globus-tcp-port-range</option> command-line option
+        overrides this.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term><envar>GLOBUS_TCP_SOURCE_RANGE</envar></term>
+        <listitem><simpara>Default range of allowed TCP ports to bind to.
+        The <option>-globus-tcp-source-range</option> command-line option
+        overrides this.</simpara></listitem>
     </varlistentry>
 </variablelist>
 </para>

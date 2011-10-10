@@ -2531,6 +2531,12 @@ globus_gram_job_manager_script_handle_init(
                 "GLOBUS_TCP_PORT_RANGE=%s",
                 manager->config->tcp_port_range);
     }
+    if (manager->config->tcp_source_range)
+    {
+        env[i++] = globus_common_create_string(
+                "GLOBUS_TCP_SOURCE_RANGE=%s",
+                manager->config->tcp_source_range);
+    }
     env[i] = NULL;
     for (--i; i >= 0; i--)
     {
