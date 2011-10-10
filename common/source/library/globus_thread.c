@@ -38,6 +38,8 @@ extern globus_result_t globus_eval_path(const char *, char **);
 #include "ltdl.h"
 extern globus_module_descriptor_t globus_i_thread_none_module;
 
+const globus_thread_once_t GLOBUS_THREAD_ONCE_INIT_VALUE = GLOBUS_THREAD_ONCE_INIT;
+
 static
 int
 globus_l_thread_activate(void);
