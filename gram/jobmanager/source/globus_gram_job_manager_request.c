@@ -2546,6 +2546,18 @@ globus_l_gram_populate_environment(
         }
     }
 
+    if (request->config->tcp_source_range)
+    {
+        rc = globus_l_gram_add_environment(
+                request->rsl,
+                "GLOBUS_TCP_SOURCE_RANGE",
+                request->config->tcp_source_range);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto add_tcp_source_range_failed;
+        }
+    }
+
     if (request->remote_io_url_file)
     {
         rc = globus_l_gram_add_environment(
@@ -2597,6 +2609,7 @@ add_extra_envvar_failed:
 add_x509_user_proxy_failed:
 add_remote_io_url_file:
 add_tcp_port_range_failed:
+add_tcp_source_range_failed:
 add_globus_location_failed:
 add_gram_job_contact_failed:
 add_x509_cert_dir_failed:

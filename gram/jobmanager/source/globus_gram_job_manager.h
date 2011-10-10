@@ -263,6 +263,11 @@ typedef struct
      * traffic.
      */
     char *                              tcp_port_range;
+    /**
+     * Firewall-friendly range of TCP ports that will be used as sources for network
+     * traffic.
+     */
+    char *                              tcp_source_range;
     /** Directory to store job_state files */
     char *                              job_state_file_dir;
     /**

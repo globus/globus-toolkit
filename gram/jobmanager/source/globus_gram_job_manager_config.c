@@ -242,6 +242,11 @@ globus_gram_job_manager_config_init(
         {
             config->tcp_port_range = strdup(argv[++i]);
         }
+        else if ((strcmp(argv[i], "-globus-tcp-source-range") == 0)
+                 && (i + 1 < argc))
+        {
+            config->tcp_source_range = strdup(argv[++i]);
+        }
         else if ((strcmp(argv[i], "-state-file-dir") == 0)
                  && (i + 1 < argc))
         {
@@ -380,6 +385,7 @@ globus_gram_job_manager_config_init(
                     "\t-log-levels TRACE|INFO|DEBUG|WARN|ERROR|FATAL\n"
                     "\t-state-file-dir state-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
+                    "\t-globus-tcp-source-range <min port #>,<max port #>\n"
                     "\t-x509-cert-dir DIRECTORY\n"
                     "\t-cache-location PATH\n"
                     "\t-k\n"
@@ -447,6 +453,25 @@ globus_gram_job_manager_config_init(
     if (config->service_tag == NULL)
     {
         config->service_tag = strdup("untagged");
+    }
+
+    if (config->tcp_port_range == NULL)
+    {
+        char * ev = getenv("GLOBUS_TCP_PORT_RANGE");
+
+        if (ev != NULL)
+        {
+            config->tcp_port_range = strdup(ev);
+        }
+    }
+    if (config->tcp_source_range == NULL)
+    {
+        char * ev = getenv("GLOBUS_TCP_SOURCE_RANGE");
+
+        if (ev != NULL)
+        {
+            config->tcp_source_range = strdup(ev);
+        }
     }
 
     /* Now initialize values from our environment */
@@ -700,6 +725,10 @@ globus_gram_job_manager_config_destroy(
     if (config->tcp_port_range)
     {
         free(config->tcp_port_range);
+    }
+    if (config->tcp_source_range)
+    {
+        free(config->tcp_source_range);
     }
     if (config->job_state_file_dir)
     {

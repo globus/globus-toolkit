@@ -165,6 +165,12 @@ main(
                            config.tcp_port_range,
                            GLOBUS_TRUE);
     }
+    if(config.tcp_source_range != NULL)
+    {
+        globus_libc_setenv("GLOBUS_TCP_SOURCE_RANGE",
+                           config.tcp_source_range,
+                           GLOBUS_TRUE);
+    }
 
     /* Activate all of the modules we will be using */
     rc = globus_l_gram_job_manager_activate();
