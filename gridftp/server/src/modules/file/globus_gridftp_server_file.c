@@ -1180,7 +1180,7 @@ globus_l_gfs_file_delete_dir(
         rc = rmdir(pathname);
         if(rc != 0)
         {
-            result = GlobusGFSErrorSystemError("rmmdir", errno);
+            result = GlobusGFSErrorSystemError("rmdir", errno);
             goto error_rmdir;
         }
     } 
@@ -1188,7 +1188,6 @@ globus_l_gfs_file_delete_dir(
     GlobusGFSFileDebugExit();
     return GLOBUS_SUCCESS;
 
-error_rmdir:    
 error_recurse:
 error_unlink2:
         closedir(dir);
@@ -1196,6 +1195,7 @@ error_unlink2:
 error_open: 
 error_stat:
 error_unlink1:
+error_rmdir:    
     GlobusGFSFileDebugExitWithError();
     return result; 
 }
