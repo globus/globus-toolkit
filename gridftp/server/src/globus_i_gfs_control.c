@@ -1218,7 +1218,8 @@ globus_l_gfs_request_command(
         else if(strcmp(cmd_array[1], "RDEL") == 0)
         {
             command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
-            command_info->pathname = strdup(cmd_array[2]);
+            result = globus_l_gfs_get_full_path(
+                instance, cmd_array[2], &command_info->pathname, GFS_L_WRITE);
             if(command_info->pathname == NULL)
             {
                 goto err;

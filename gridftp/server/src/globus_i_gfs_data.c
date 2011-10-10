@@ -7728,9 +7728,17 @@ globus_gridftp_server_finished_stat_partial(
         if(stat_copy == NULL)
         {
             result = GlobusGFSErrorMemory("stat_copy");
-            goto error_alloc;
         }
         
+        if(!stat_info->file_only && stat_count == 1 && stat_array && 
+            !S_ISDIR(stat_array[0].mode))
+        {
+            result = GlobusGFSErrorGeneric("Path is not a directory.");
+        }
+    }
+    
+    if(result == GLOBUS_SUCCESS)
+    {        
         base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
         if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
