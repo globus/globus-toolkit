@@ -3680,10 +3680,12 @@ globus_gsc_string_to_959(
 
 static const char *hex_chars = "0123456789ABCDEF";
 
+
 /** Encode string using URL encoding from rfc1738 (sec 2.2).
-    used to encode paths in mlsx responses */
+    used to encode paths in mlsx responses.  Returns the number
+    characters encoded.  Only free out_string if returns > 0. */
 static
-void
+int
 globus_l_gsc_mlsx_urlencode(
     const char *                        in_string,
     char **                             out_string)
@@ -3692,6 +3694,7 @@ globus_l_gsc_mlsx_urlencode(
     char *                              in_ptr;
     char *                              out_ptr;
     char                                out_buf[MAXPATHLEN * 3];
+    int                                 enc_count = 0;
     GlobusGridFTPServerName(globus_l_gsc_mlsx_urlencode);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -3700,22 +3703,42 @@ globus_l_gsc_mlsx_urlencode(
     out_ptr = out_buf;
     len = strlen(in_string);
 
-    while(in_ptr < in_string + len)
+    while(in_ptr < in_string + len && !enc_count)
     {
         if(NEEDS_ENCODING(*in_ptr))
         {
-            *out_ptr++ = '%';
-            *out_ptr++ = hex_chars[(*in_ptr >> 4) & 0xF];
-            *out_ptr++ = hex_chars[*in_ptr & 0xF];
+            enc_count++;
         } 
-        else
-        {
-            *out_ptr++ = *in_ptr;
-        }
         in_ptr++;
     }
-    *out_ptr = '\0';
-    *out_string = globus_libc_strdup(out_buf);    
+    
+    if(enc_count)
+    {
+        enc_count = 0;
+        while(in_ptr < in_string + len)
+        {
+            if(NEEDS_ENCODING(*in_ptr))
+            {
+                *out_ptr++ = '%';
+                *out_ptr++ = hex_chars[(*in_ptr >> 4) & 0xF];
+                *out_ptr++ = hex_chars[*in_ptr & 0xF];
+                enc_count++;
+            } 
+            else
+            {
+                *out_ptr++ = *in_ptr;
+            }
+            in_ptr++;
+        }
+        *out_ptr = '\0';
+        *out_string = globus_libc_strdup(out_buf);
+    }
+    else
+    {
+        *out_string = in_string;
+    }
+    
+    return enc_count;
     GlobusGridFTPServerDebugInternalExit();
 }
 
@@ -3871,6 +3894,8 @@ globus_i_gsc_mlsx_line_single(
     int                                 is_writable = 0;
     int                                 is_executable = 0;
     int                                 is_cdir = 0;
+    int                                 cnt;
+    char *                              enc_str;
     GlobusGridFTPServerName(globus_i_gsc_mlsx_line_single);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -4037,26 +4062,50 @@ globus_i_gsc_mlsx_line_single(
                     (unsigned) (stat_info->mode & 07777));
                 break;
 
-            case GLOBUS_GSC_MLSX_FACT_UNIXOWNER:
-                pw = globus_libc_cached_getpwuid(stat_info->uid);
-                sprintf(tmp_ptr, "UNIX.owner=%s;",
-                    pw == NULL ? "(null)" : pw->pw_name);
-                break;
-
             case GLOBUS_GSX_MLSX_FACT_UNIXUID:
                 sprintf(tmp_ptr, "UNIX.uid=%d;", stat_info->uid);
                 break;
                 
-            case GLOBUS_GSC_MLSX_FACT_UNIXGROUP:
-                gr = globus_libc_cached_getgrgid(stat_info->gid);
-                sprintf(tmp_ptr, "UNIX.group=%s;",
-                    gr == NULL ? "(null)" : gr->gr_name);
-                break;
-
             case GLOBUS_GSX_MLSX_FACT_UNIXGID:
                 sprintf(tmp_ptr, "UNIX.gid=%d;", stat_info->gid);
                 break;
                 
+            case GLOBUS_GSC_MLSX_FACT_UNIXOWNER:
+                pw = globus_libc_cached_getpwuid(stat_info->uid);
+                enc_str = NULL;
+                if(pw)
+                {                    
+                    cnt = globus_l_gsc_mlsx_urlencode(pw->pw_name, &enc_str);
+                }
+                
+                if(enc_str)
+                {
+                    sprintf(tmp_ptr, "UNIX.owner=%s;", enc_str);
+                    if(cnt)
+                    {
+                        globus_free(enc_str);
+                    }
+                }
+                break;
+
+            case GLOBUS_GSC_MLSX_FACT_UNIXGROUP:
+                gr = globus_libc_cached_getgrgid(stat_info->gid);
+                enc_str = NULL;
+                if(gr)
+                {                    
+                    cnt = globus_l_gsc_mlsx_urlencode(gr->gr_name, &enc_str);
+                }
+                
+                if(enc_str)
+                {
+                    sprintf(tmp_ptr, "UNIX.group=%s;", enc_str);
+                    if(cnt)
+                    {
+                        globus_free(enc_str);
+                    }
+                }
+                break;
+
             case GLOBUS_GSC_MLSX_FACT_UNIQUE:
                 sprintf(tmp_ptr, "Unique=%lx-%lx;", 
                     (unsigned long) stat_info->dev,
@@ -4068,13 +4117,16 @@ globus_i_gsc_mlsx_line_single(
                     *stat_info->symlink_target != '\0')
                 {
                     encoded_symlink_target = NULL;
-                    globus_l_gsc_mlsx_urlencode(
+                    cnt = globus_l_gsc_mlsx_urlencode(
                         stat_info->symlink_target, &encoded_symlink_target);
                     if(encoded_symlink_target != NULL)
                     {
                         sprintf(tmp_ptr, 
                             "UNIX.slink=%s;", encoded_symlink_target);
-                        globus_free(encoded_symlink_target);
+                        if(cnt)
+                        {
+                            globus_free(encoded_symlink_target);
+                        }
                     }
                 }
                 break;

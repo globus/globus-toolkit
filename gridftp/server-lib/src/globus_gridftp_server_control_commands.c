@@ -1972,12 +1972,22 @@ globus_l_gsc_cmd_pasv_cb(
                 goto err;
             }
             
-            msg = globus_common_create_string(
-                "%d Entering Passive Mode (|%d|%s|%d|)\r\n",
-                    wrapper->reply_code,
-                    *cs[0] == '[' ? 2 : 1,
-                    h,
-                    (int) port);
+            if(0)
+            {
+                msg = globus_common_create_string(
+                    "%d Entering Passive Mode (|%d|%s|%d|)\r\n",
+                        wrapper->reply_code,
+                        *cs[0] == '[' ? 2 : 1,
+                        h,
+                        (int) port);
+            }
+            else
+            {
+                msg = globus_common_create_string(
+                    "%d Entering Passive Mode (|||%d|)\r\n",
+                        wrapper->reply_code,                    
+                        (int) port);
+            }
             globus_free(host);
         }
         else
