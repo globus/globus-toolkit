@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -253,6 +253,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 14.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
 * Tue Oct 04 2011 Joseph Bester <bester@mcs.anl.gov> - 14.1-1
 - Move libglobus_thread_pthread.so symlink to globus-common package
   from globus-common-devel

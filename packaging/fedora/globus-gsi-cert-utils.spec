@@ -13,7 +13,7 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
@@ -32,6 +32,10 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-openssl-module%{?_isa} >= 3
+Requires:	globus-gsi-openssl-error%{?_isa} >= 2
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-openssl-module-devel%{?_isa} >= 3
@@ -201,6 +205,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
 - Add backward-compatibility aging
 

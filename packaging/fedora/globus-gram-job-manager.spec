@@ -13,7 +13,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	13.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -23,13 +23,24 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
+Requires:	globus-scheduler-event-generator%{?_isa} >= 4
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
+Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	libxml2%{?_isa}
+Requires:	globus-gsi-sysconfig%{?_isa} >= 5
+Requires:	globus-callout%{?_isa} >= 2
+Requires:	globus-gram-job-manager-callout-error%{?_isa} >= 2
 Requires:	globus-gram-protocol >= 11
+Requires:	globus-usage%{?_isa} >= 3
+Requires:	globus-rsl%{?_isa} >= 9
+Requires:	globus-gass-cache%{?_isa} >= 8
+Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-gram-job-manager-scripts
 Requires:	globus-gass-copy-progs >= 8
 Requires:	globus-proxy-utils >= 5
 Requires:	globus-gass-cache-program >= 2
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-scheduler-event-generator-devel%{?_isa} >= 4
 BuildRequires:	globus-xio-popen-driver-devel%{?_isa} >= 2
@@ -158,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 13.3-2
+- Add explicit dependencies on >= 5.2 libraries
+
 * Tue Oct 04 2011 Joseph Bester <bester@mcs.anl.gov> - 13.3-1
 - GRAM-240: globus_xio_open in script code can recurse
 

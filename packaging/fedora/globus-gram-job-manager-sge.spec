@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -266,6 +266,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-4
 - Change %post check for -eq 1
 

@@ -16,7 +16,7 @@
 Name:		globus-gram-audit
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Auditing
 
 Group:		Applications/Internet
@@ -94,6 +94,9 @@ fi
 %config(noreplace) %{_sysconfdir}/globus/gram-audit.conf
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
 * Fri Sep 02 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-2
 - Fix incorrect path to globus-gram-job-manager.conf
 

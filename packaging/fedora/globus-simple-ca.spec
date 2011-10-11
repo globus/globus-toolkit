@@ -11,7 +11,7 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
@@ -96,6 +96,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-3
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-2
 - Update for 5.1.2 release
 

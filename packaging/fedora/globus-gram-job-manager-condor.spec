@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -112,6 +112,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-3
 - Fix: GRAM-243
 

@@ -25,7 +25,9 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
+Requires:	globus-common%{_isa} >= 14
+Requires:	globus-gssapi-error%{?_isa} >= 4
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4

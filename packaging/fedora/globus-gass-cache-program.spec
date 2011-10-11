@@ -13,7 +13,7 @@
 Name:		globus-gass-cache-program
 %global _name %(tr - _ <<< %{name})
 Version:	5.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Tools to manipulate local and remote GASS caches
 
 Group:		Applications/Internet
@@ -22,7 +22,12 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-gram-client%{?_isa} >= 12
+Requires:	globus-gass-server-ez%{?_isa} >= 4
+Requires:	globus-gass-copy%{?_isa} >= 8
+Requires:	globus-gass-cache%{?_isa} >= 8
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-gram-client-devel%{?_isa} >= 12
@@ -80,6 +85,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-3
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
 - Update for 5.1.2 release
 

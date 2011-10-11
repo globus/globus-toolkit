@@ -13,7 +13,7 @@
 Name:		globus-gass-cache
 %global _name %(tr - _ <<< %{name})
 Version:	8.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Cache
 
 Group:		System Environment/Libraries
@@ -23,6 +23,8 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl
+Requires:	globus-common%{?_isa} >= 14
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	openssl-devel%{?_isa}
@@ -106,6 +108,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-1
 - Add backward-compatibility aging
 
