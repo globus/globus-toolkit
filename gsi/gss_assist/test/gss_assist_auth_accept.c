@@ -97,6 +97,8 @@ int main(int argc, char * argv[])
     
     close(connect_sock);
 
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+
     /* ACCEPTOR PROCESS */
     major_status = globus_gss_assist_acquire_cred(&minor_status,
                                                   GSS_C_ACCEPT,
@@ -332,6 +334,7 @@ int main(int argc, char * argv[])
         perror("closing stream socket");
         exit(1);
     }
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 
     exit(0);
 }
