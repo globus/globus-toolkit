@@ -1471,57 +1471,39 @@ globus_l_gass_cache_names_init( const globus_gass_cache_t	 cache,
 
     if ( GLOBUS_SUCCESS == rc )
     {
-        int skip = 0;
-
         assert(mangle_prefix_end != NULL);
 
-        names->local_mangle_root = globus_libc_malloc(
-                strlen(names->local_root) +
-                strlen(names->separator) +
-                mangle_prefix_len + 1);
+        names->local_mangle_root = 
+                globus_common_create_string(
+                    "%s%s%.*s",
+                    names->local_root,
+                    names->separator,
+                    mangle_prefix_len,
+                    mangle_prefix);
 
         if (names->local_mangle_root == NULL)
         {
             rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
             MARK_ERROR( rc );
         }
-        else
-        {
-            sprintf(names->local_mangle_root, "%s%s%n",
-                    names->local_root, names->separator, &skip);
-            memcpy(&names->local_mangle_root[skip],
-                   mangle_prefix,
-                   mangle_prefix_len);
-            names->local_mangle_root[skip + mangle_prefix_len] = '\0';
-        }
     }
     if ( GLOBUS_SUCCESS == rc )
     {
-        int skip = 0;
-
         assert(mangle_prefix_end != NULL);
 
-        names->global_mangle_root = globus_libc_malloc(
-                strlen(names->global_root) +
-                strlen(names->separator) +
-                mangle_prefix_len + 1);
+        names->global_mangle_root = globus_common_create_string(
+                "%s%s%.*s",
+                names->global_root,
+                names->separator,
+                mangle_prefix_len,
+                mangle_prefix);
 
         if (names->global_mangle_root == NULL)
         {
             rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
             MARK_ERROR( rc );
         }
-        else
-        {
-            sprintf(names->global_mangle_root, "%s%s%n",
-                    names->global_root, names->separator, &skip);
-            memcpy(&names->global_mangle_root[skip],
-                   mangle_prefix,
-                   mangle_prefix_len);
-            names->global_mangle_root[skip + mangle_prefix_len] = '\0';
-        }
     }
-
 
     /* If we've had failures, free up all allocated memory */
     if ( GLOBUS_SUCCESS != rc )
