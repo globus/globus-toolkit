@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
 Version:        0.5.1
-Release:        0
+Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -92,6 +92,9 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}
 
 %changelog
+* Sat Oct 15 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.1-1
+Migrate as much of the RPM as possible to the OSG-style of gridftp initialization while maintaining GT 52 compatibility.
+
 * Sat Sep 24 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.0-1
 - Redo gridftp to allow either xinetd or init startup; link with GT 5.2.
 
