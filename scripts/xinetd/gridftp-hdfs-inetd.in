@@ -12,5 +12,5 @@ if [ -e @sysconfdir_resolved@/sysconfig/gridftp-hdfs ] ; then
     . @sysconfdir_resolved@/sysconfig/gridftp-hdfs
 fi
 
-LD_PRELOAD=libjsig.so exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
+exec /usr/sbin/globus-gridftp-server -c @sysconfdir_resolved@/gridftp-hdfs/gridftp-inetd.conf -dsi hdfs
 

@@ -70,22 +70,27 @@ unset IFS
 # Configurations for the authz
 # Only applies to the root user due to ownership issues
 if [ $UID -eq 0 ]; then
+  # Set defaults if they're not already available
   # LCAS configuration
-  export LCAS_LOG_LEVEL=0
-  export LCAS_DEBUG_LEVEL=0
-  export LCAS_DB_FILE=/etc/lcas/lcas.db
-  export LCAS_DIR=/etc/lcas
-  export LCAS_MOD_HOME=/usr/lib64/modules
+  export LCAS_LOG_LEVEL=${LCAS_LOG_LEVEL:=0}
+  export LCAS_DEBUG_LEVEL=${LCAS_DEBUG_LEVEL:=0}
+  export LCAS_DB_FILE=${LCAS_DB_FILE:=/etc/lcas/lcas.db}
+  export LCAS_DIR=${LCAS_DIR:=/etc/lcas}
+  export LCAS_MOD_HOME=${LCAS_MOD_HOME:=/usr/lib64/modules}
  
   # LCMAPS configuration
-  export LCMAPS_LOG_LEVEL=0
-  export LCMAPS_DEBUG_LEVEL=0
-  export LCMAPS_DB_FILE=/etc/lcmaps.db
-  export LCMAPS_DIR=/etc/lcmaps
-  export LCMAPS_MOD_HOME=/usr/lib64/modules
-  export LCMAPS_POLICY_NAME=globus_gridftp_mapping
+  export LCMAPS_LOG_LEVEL=${LCMAPS_LOG_LEVEL:=0}
+  export LCMAPS_DEBUG_LEVEL=${LCMAPS_DEBUG_LEVEL:=0}
+  export LCMAPS_DB_FILE=${LCMAPS_DB_FILE:=/etc/lcmaps.db}
+  export LCMAPS_DIR=${LCMAPS_DIR:=/etc/lcmaps}
+  export LCMAPS_MOD_HOME=${LCMAPS_MOD_HOME:=/usr/lib64/modules}
+  export LCMAPS_POLICY_NAME=${LCMAPS_POLICY_NAME:=globus_gridftp_mapping}
 fi
 
 # New gridftp.conf override in GT 5.2
-export GRIDFTP_CONF=/etc/gridftp-hdfs/gridftp.conf
+#export GRIDFTP_CONF=/etc/gridftp-hdfs/gridftp.conf
+export conf=/etc/gridftp-hdfs/gridftp.conf
+
+# Allow non-java-based signal handling
+export LD_PRELOAD=libjsig.so
 

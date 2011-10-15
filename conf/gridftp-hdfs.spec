@@ -1,6 +1,6 @@
 Name:           gridftp-hdfs
-Version:        0.5.0
-Release:        1
+Version:        0.5.1
+Release:        0
 Summary:        HDFS DSI plugin for GridFTP
 
 Group:          System Environment/Daemons
@@ -55,7 +55,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 
 # Remove the init script - in GT5.2, this gets bootstrapped appropriately
-rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
+# rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -73,8 +73,8 @@ fi
 %postun
 /sbin/ldconfig
 if [ "$1" -ge "1" ]; then
-    /sbin/service xinetd condrestart
-    /sbin/service gridftp-hdfs condrestart || :
+    /sbin/service xinetd condrestart >/dev/null 2>&1
+    /sbin/service gridftp-hdfs condrestart >/dev/null 2>&1 || :
 fi
 
 %files
@@ -90,7 +90,6 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}.logrotate
 
 %changelog
 * Sat Sep 24 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.0-1
