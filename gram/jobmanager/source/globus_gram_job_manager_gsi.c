@@ -825,9 +825,7 @@ globus_l_gram_job_manager_proxy_expiration(
             "event=gram.proxy_expire.end level=WARN "
             "msg=\"Proxy expired, stopping job manager\"\n");
 
-    GlobusGramJobManagerLock(manager);
     globus_gram_job_manager_stop_all_jobs(manager);
-    GlobusGramJobManagerUnlock(manager);
 }
 /* globus_l_gram_job_manager_proxy_expiration() */
 
