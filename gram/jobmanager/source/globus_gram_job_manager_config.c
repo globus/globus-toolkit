@@ -260,7 +260,34 @@ globus_gram_job_manager_config_init(
         else if ((strcmp(argv[i], "-extra-envvars") == 0)
                  && (i + 1 < argc))
         {
-            config->extra_envvars = strdup(argv[++i]);
+            char * extra_envvars = strdup(argv[++i]);
+            char *p, *q;
+
+            p = extra_envvars;
+
+            while (p && *p)
+            {
+                q = strchr(p, ',');
+
+                if (q)
+                {
+                    *q = 0;
+                }
+
+                globus_list_insert(
+                        &config->extra_envvars,
+                        strdup(p));
+
+                if (q)
+                {
+                    p = q+1;
+                }
+                else
+                {
+                    p = q;
+                }
+            }
+            free(extra_envvars);
         }
         else if ((strcasecmp(argv[i], "-seg-module" ) == 0)
                  && (i + 1 < argc))

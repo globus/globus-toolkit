@@ -199,8 +199,7 @@ The full set of command-line options to
     </varlistentry>
     <varlistentry>
         <term><option>-extra-envvars <replaceable>VAR=VAL,...</replaceable></option></term>
-        <listitem><simpara>Configure the job manager to define a set of environment variables in the job environment beyond those defined in the base job environment. The format of the parameter to this argument is a comma-separated sequence of VAR=VAL pairs, where <literal>VAR</literal> is the variable name and <literal>VAL</literal> is the variables value.
-        </simpara></listitem>
+        <listitem><simpara>Configure the job manager to define a set of environment variables in the job environment beyond those defined in the base job environment. The format of the parameter to this argument is a comma-separated sequence of VAR=VAL pairs, where <literal>VAR</literal> is the variable name and <literal>VAL</literal> is the variable's value. If the value is not specified, then the value of the variable in the job manager's environment is used. This option may be present multiple times on the command-line or the job manager configuration file to append multiple environment settings.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-seg-module <replaceable>SEG_MODULE</replaceable></option></term>

@@ -275,9 +275,11 @@ typedef struct
      */
     char *                              x509_cert_dir;
     /**
-     * Extra site-wide environment variables to add to the job environment.
+     * List of char * which are variables to be added to the job environment.
+     * They can be specified as just a name (in which case the value in the
+     * job manager's environment will be used, or a NAME=VALUE string.
      */
-    char *                              extra_envvars;
+    globus_list_t *                     extra_envvars;
     /**
      * SEG module to use instead of polling.
      */

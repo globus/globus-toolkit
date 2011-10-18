@@ -2583,25 +2583,45 @@ globus_l_gram_populate_environment(
     }
     if (request->config->extra_envvars)
     {
-        char *  p = request->config->extra_envvars;
-        while (p && *p)
+        globus_list_t *l = request->config->extra_envvars;
+
+        while (l)
         {
-            char * val = NULL;
-            char * q   = strchr(p,',');
-            if (q) *q = '\0';
-            if (*p && (val = getenv(p)))
+            char *p = globus_list_first(l);
+            char *q;
+            char *var, *val;
+            l = globus_list_rest(l);
+
+            if ((q = strchr(p, '=')) != NULL)
+            {
+                
+                var = globus_common_create_string("%.*s",
+                        (int) (q-p), p);
+                val = q+1;
+            }
+            else
+            {
+                var = strdup(p);
+                val = getenv(var);
+            }
+
+            if (var && val)
             {
                 rc = globus_l_gram_add_environment(
                         request->rsl,
-                        p,
+                        var,
                         val);
 
                 if (rc != GLOBUS_SUCCESS)
                 {
+                    free(var);
                     goto add_extra_envvar_failed;
                 }
             }
-            p = (q) ? q+1 : NULL;
+            if (var)
+            {
+                free(var);
+            }
         }
     }
 
