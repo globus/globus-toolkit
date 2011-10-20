@@ -3000,7 +3000,7 @@ globus_l_gram_script_attr_init(
     globus_result_t                     result;
     int                                 rc = GLOBUS_SUCCESS;
     char *                              pipe_cmd[6];
-    char *                              env[7];
+    char *                              env[8];
     int                                 i;
 
     result = globus_eval_path(
@@ -3041,6 +3041,10 @@ globus_l_gram_script_attr_init(
     env[i++] = globus_common_create_string(
             "LOGNAME=%s",
             manager->config->logname);
+    /* PATH is set in main, so we know it'll be non-null */
+    env[i++] = globus_common_create_string(
+            "PATH=%s",
+            getenv("PATH"));
     if (manager->config->x509_cert_dir)
     {
         env[i++] = globus_common_create_string(
@@ -3107,7 +3111,7 @@ attr_cntl_program_failed:
 
 attr_init_failed:
 env_strings_failed:
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < 8; i++)
     {
         if (env[i] != NULL)
         {

@@ -117,6 +117,33 @@ main(
     fcntl(STDOUT_FILENO, F_SETFD, (int) 1);
     fcntl(STDERR_FILENO, F_SETFD, (int) 1);
 
+    /*
+     * At least have minimal POSIX path for job environment via extra
+     * environment values
+     */
+    if(getenv("PATH") == NULL)
+    {
+        char * path;
+        char default_path[] = "/usr/bin:/bin";
+        size_t pathlen;
+
+        pathlen = confstr(_CS_PATH, NULL, (size_t) 0);
+
+        if (pathlen < sizeof(default_path))
+        {
+            pathlen = sizeof(default_path);
+        }
+        path = malloc(pathlen);
+        path[0] = 0;
+
+        (void) confstr(_CS_PATH, path, pathlen);
+        if (path[0] == 0)
+        {
+            strncpy(path, default_path, pathlen);
+        }
+        setenv("PATH", path, 1);
+    }
+
     /* Force non-threaded execution for now */
     globus_thread_set_model(GLOBUS_THREAD_MODEL_NONE);
 

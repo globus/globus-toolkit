@@ -36,6 +36,12 @@ globus_l_gram_tokenize(
     char **                             args,
     int *                               n);
 
+static
+int
+globus_l_env_present(
+    void *                              datum,
+    void *                              arg);
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
@@ -499,6 +505,20 @@ globus_gram_job_manager_config_init(
         {
             config->tcp_source_range = strdup(ev);
         }
+    }
+
+    if (! globus_list_search_pred(
+            config->extra_envvars, globus_l_env_present, "PATH"))
+    {
+        char * path = strdup("PATH");
+        if (!path)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto out;
+        }
+
+        globus_list_insert(&config->extra_envvars, path);
     }
 
     /* Now initialize values from our environment */
@@ -987,5 +1007,38 @@ error_exit:
     return rc;
 }
 /* globus_i_gram_parse_log_levels() */
+
+static
+int
+globus_l_env_present(
+    void *                              datum,
+    void *                              arg)
+{
+    char *datum_str = datum, *arg_str = arg;
+    char *equal;
+    size_t arglen;
+
+    if (datum != arg && ((!datum) || (!arg)))
+    {
+        return 0;
+    }
+
+    arglen = strlen(arg_str);
+    equal = strchr(datum_str, '=');
+
+    if (equal && arglen > 0)
+    {
+        if ((equal - datum_str) == arglen)
+        {
+            return (strncmp(datum_str, arg_str, equal-datum_str) == 0);
+        }
+    }
+    else
+    {
+        return (strcmp(datum_str, arg_str) == 0);
+    }
+    return 0;
+}
+/* globus_l_env_present() */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
