@@ -12,8 +12,8 @@
 
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
-Release:	2%{?dist}
+Version:	7.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Transfer
 
 Group:		System Environment/Libraries
@@ -172,6 +172,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-1
+- GRAM-220: GASS server may deadlock
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 7.0-2
 - Update for 5.1.2 release
 

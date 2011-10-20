@@ -734,9 +734,11 @@ globus_gass_transfer_authorize(
 	    req->length = total_length;
 	}
 
+        globus_i_gass_transfer_unlock();
+
 	req->proto->authorize(req->proto,
 			      request);
-	break;
+        goto unlocked_exit;
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL2:
 	req->status = GLOBUS_GASS_TRANSFER_REQUEST_FAILED;
 	/* delete our reference to this request and proto */
@@ -769,6 +771,7 @@ globus_gass_transfer_authorize(
     }
 
     globus_i_gass_transfer_unlock();
+unlocked_exit:
     return GLOBUS_SUCCESS;
 
   error_exit:
