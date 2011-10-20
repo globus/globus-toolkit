@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.4
+Version:	13.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -158,6 +158,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 13.5-1
+- GRAM-227: Manager double-locked
+
 * Tue Oct 18 2011 Joseph Bester <bester@mcs.anl.gov> - 13.4-1
 - GRAM-262: job manager -extra-envvars implementation doesn't match description
 

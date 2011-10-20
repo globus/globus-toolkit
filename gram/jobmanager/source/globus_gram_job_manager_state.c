@@ -389,7 +389,8 @@ globus_l_gram_job_manager_state_machine(
             rc = globus_gram_job_manager_register_job_id(
                     request->manager,
                     request->job_id_string,
-                    request);
+                    request,
+                    GLOBUS_FALSE);
             if (rc != GLOBUS_SUCCESS)
             {
                 request->failure_code = rc;

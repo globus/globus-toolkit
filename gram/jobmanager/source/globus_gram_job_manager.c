@@ -1209,6 +1209,9 @@ globus_l_gram_job_manager_remove_reference_locked(
  *     Job identifier
  * @param request
  *     Request to associate with this job id.
+ * @param prelocked
+ *     True if this is called from globus_gram_job_manager_request_load_all()
+ *     with the job manager mutex locked
  *
  * @retval GLOBUS_SUCCESS
  *     Success.
@@ -1219,7 +1222,8 @@ int
 globus_gram_job_manager_register_job_id(
     globus_gram_job_manager_t *         manager,
     char *                              job_id,
-    globus_gram_jobmanager_request_t *  request)
+    globus_gram_jobmanager_request_t *  request,
+    globus_bool_t                       prelocked)
 {
     int                                 rc = GLOBUS_SUCCESS;
     globus_gram_job_id_ref_t *          ref;
@@ -1272,7 +1276,10 @@ globus_gram_job_manager_register_job_id(
         }
     }
 
-    GlobusGramJobManagerLock(manager);
+    if (!prelocked)
+    {
+        GlobusGramJobManagerLock(manager);
+    }
     for (tmp_list = subjobs;
          tmp_list != NULL;
          tmp_list = globus_list_rest(tmp_list))
@@ -1462,7 +1469,10 @@ job_id_strdup_failed:
     }
 ref_malloc_failed:
 old_ref_exists:
-    GlobusGramJobManagerUnlock(manager);
+    if (!prelocked)
+    {
+        GlobusGramJobManagerUnlock(manager);
+    }
     globus_list_destroy_all(subjobs, free);
 insert_dup_failed:
 dup_job_id_failed:
@@ -2353,7 +2363,8 @@ globus_gram_job_manager_request_load_all(
                 rc = globus_gram_job_manager_register_job_id(
                         request->manager,
                         request->job_id_string,
-                        request);
+                        request,
+                        GLOBUS_TRUE);
                 if (rc != GLOBUS_SUCCESS)
                 {
                     globus_gram_job_manager_request_log(

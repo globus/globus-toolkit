@@ -1460,7 +1460,8 @@ int
 globus_gram_job_manager_register_job_id(
     globus_gram_job_manager_t *         manager,
     char *                              job_id,
-    globus_gram_jobmanager_request_t *  request);
+    globus_gram_jobmanager_request_t *  request,
+    globus_bool_t                       prelocked);
 
 int
 globus_gram_job_manager_unregister_job_id(
