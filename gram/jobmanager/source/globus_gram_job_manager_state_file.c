@@ -846,8 +846,11 @@ skip_single_check:
     {
         goto error_exit;
     }
+    /* We don't know when the job status in the state file was obtained.
+     * Set the time to 0 so that any new status will be used.
+     */
     globus_gram_job_manager_request_set_status_time(request,
-                atoi( buffer ), statbuf.st_mtime);
+                atoi( buffer ), 0);
 
     if (fgets( buffer, file_len, fp ) == NULL)
     {

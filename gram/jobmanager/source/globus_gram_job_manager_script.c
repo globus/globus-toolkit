@@ -881,6 +881,7 @@ globus_gram_job_manager_script_poll_fast(
     {
         size_t len = 0;
         char * line_bit = line;
+        int new_status = 0;
         if( ! fgets(line, sizeof(line), grid_monitor_file) )
         {
             /* end of file (or error), job isn't in file.  It might just not
@@ -927,7 +928,19 @@ globus_gram_job_manager_script_poll_fast(
             goto FAST_POLL_EXIT_FAILURE;
         }
 
-        local_globus_set_status(request, atoi(line_bit));
+        new_status = atoi(line_bit);
+        if ( new_status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED ) {
+            /* Condor's grid monitor doesn't report the GRAM failure code
+             * that usually accompanies a FAILED status. Let's call the
+             * poll function ourselves to get that status.
+             */
+            globus_gram_job_manager_request_log(request,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                "JMI: poll_fast: Monitoring file reports FAILED, "
+                "Reverting to normal polling to get failure code.\n");
+            goto FAST_POLL_EXIT_FAILURE;
+        }
+        local_globus_set_status(request, new_status);
 
         return_val = GLOBUS_SUCCESS;
         goto FAST_POLL_EXIT;
