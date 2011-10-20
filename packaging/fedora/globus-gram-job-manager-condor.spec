@@ -9,7 +9,7 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
@@ -101,7 +101,7 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun
-if [ $i -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
+if [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
@@ -112,6 +112,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
+- GRAM-259: globus-gram-job-manager-condor RPM does not uninstall cleanly
+
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-3
 - Fix: GRAM-243
 
