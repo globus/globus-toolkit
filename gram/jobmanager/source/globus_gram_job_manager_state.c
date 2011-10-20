@@ -2215,6 +2215,17 @@ globus_l_gram_file_cleanup(
 
         if (path)
         {
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                    "event=gram.file_cleanup.info "
+                    "level=TRACE "
+                    "gramid=%s "
+                    "path=\"%s\" "
+                    "msg=\"About to unlink\" "
+                    "\n",
+                    request->job_contact_path,
+                    path);
             remove(path);
         }
     }

@@ -3256,6 +3256,17 @@ globus_gram_job_manager_destroy_directory(
             }
             else
             {
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                        "event=gram.directory_destroy.info "
+                        "level=TRACE "
+                        "gramid=%s "
+                        "path=\"%s\" "
+                        "msg=\"About to unlink\" "
+                        "\n",
+                        request->job_contact_path,
+                        new_path);
                 rc = unlink(new_path);
                 if (rc < 0)
                 {
