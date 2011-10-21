@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	1.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
@@ -208,7 +208,7 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-poll
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-poll -n jobmanager-pbs > /dev/null 2>&1 || :
 elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
@@ -231,7 +231,7 @@ fi
 
 %postun setup-seg
 ldconfig
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-pbs-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e pbs > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart pbs > /dev/null 2>&1 || :
@@ -258,6 +258,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.1-2
+- Fix %post* scripts to check for -eq 1
+
 * Wed Sep 22 2011  <bester@mcs.anl.gov> - 1.1-1
 - GRAM-253
 
