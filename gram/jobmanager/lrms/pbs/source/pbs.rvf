@@ -3,12 +3,14 @@ Description: "Set the email address to receive notifications. See the
              email_on_abort, email_on_execution, and emailontermination
              attributes."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
 Attribute: email_on_abort
 Description: "Send email to the job submitter (or the address specified in the
              email_address RSL attribute if present) if the job is aborted by
              the local resource manager."
 Values: yes no
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
 Attribute: email_on_execution
 Description: "Send email to the job submitter (or the address specified in the
              email_address RSL attribute if present) when the job begins
@@ -24,4 +26,32 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: name
 Description: "The name of job to submit to the PBS batch system"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: xcount
+Description: "Defines the number of processes desired.  It is a list that is
+              relative to the RSL paramters host_xcount and host_types, or
+              host_names. Only applies to compute clusters."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: host_xcount
+Description: "Defines the number of nodes desired.  It is a list that is
+              relative to the RSL paramters xcount and host_types. Only applies
+              to compute clusters."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: host_types
+Description: "Defines the types of nodes desired.  It is a list that is
+              relative to the RSL paramters xcount and host_xcount. Only
+              applies to compute clusters."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: host_names
+Description: "Defines the names of nodes desired.  It is a list that is
+              relative to the RSL paramters xcount. Only applies to compute
+              clusters."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: reservation_id
+Description: "Defines the reservation this job should run under"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

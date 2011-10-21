@@ -15,6 +15,11 @@ pbs_default=""
 mpiexec=@MPIEXEC@
 mpirun=@MPIRUN@
 
+# As an alternative to the above, if mpisoftenv is set to 1, the LRM script will
+# attempt to find mpiexec and mpirun on the execution node based on the
+# job's execution environment.
+mpisoftenv=0
+
 # The qsub command is used to submit jobs to the pbs server. It is required
 # for the PBS LRM to function
 qsub="@QSUB@"
