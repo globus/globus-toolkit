@@ -606,7 +606,7 @@ EOF
                               . '  if [ $? == 0 ]; then' . "\n"
                               . "    mpirun -np " . $this_count . $machinefilearg
                               . " $cmd_script_name < " .  $description->stdin() . "\n"
-                              . '  else' . "\n"
+                              . '  else' . "\n";
                 if (!$rc)
                 {
                     return $self->respond_with_failure_extension(
