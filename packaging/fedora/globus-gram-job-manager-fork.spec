@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	5%{?dist}
+Release:	6%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
@@ -203,12 +203,12 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-poll
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager-fork
     if [ ! -f /etc/grid-services/jobmanager ]; then
         globus-gatekeeper-admin -e jobmanager-fork-poll -n jobmanager
     fi
-elif [ $i -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
+elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
 fi
 
@@ -237,7 +237,7 @@ fi
 
 %postun setup-seg
 /sbin/ldconfig
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-fork-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e fork > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart fork > /dev/null 2>&1 || :
@@ -265,6 +265,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-6
+- Apply OSG's globus-gram-job-manager-fork.spec patch to fix %post* scripts
+
 * Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-5
 - Change %post check for -eq 1
 
