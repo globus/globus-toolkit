@@ -50,6 +50,7 @@ int main(int argc, char * argv[])
     unsigned char                       int_buf[4];
     char *                              verbose_env = NULL;
     
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     verbose_env = getenv("GSS_ASSIST_VERBOSE_TEST");
 
     setbuf(stdout, NULL);
@@ -379,5 +380,6 @@ int main(int argc, char * argv[])
     fclose(infd);
     fclose(outfd);
                 
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     exit(0);
 }
