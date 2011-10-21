@@ -13,7 +13,7 @@
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
 Version:	4.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -180,7 +180,7 @@ rm -rf $RPM_BUILD_ROOT
 %postun -p /sbin/ldconfig
 
 %post progs
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     /sbin/chkconfig --add %{name}
 fi
 
@@ -191,7 +191,7 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun progs
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     /sbin/service %{name} condrestart > /dev/null 2>&1 || :
 fi
 
@@ -212,6 +212,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-2
+- Fix %post* scripts to check for -eq 1
+
 * Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 4.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4
 
