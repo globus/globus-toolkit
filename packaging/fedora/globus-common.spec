@@ -16,18 +16,12 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.2/installers/src/gt5.0.2-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.2-all-source-installer.tar.bz2
-#		mv gt5.0.2-all-source-installer/source-trees/common/source globus_common-11.5
-#		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_common-11.5
-#		tar -zcf globus_common-11.5.tar.gz globus_common-11.5
 Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
@@ -69,7 +63,7 @@ Requires:	perl(:MODULE_COMPAT_%(eval "`perl -V:version`"; echo $version))
 Summary:	Globus Toolkit - Common Library Development Files
 Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
-Obsoletes:	globus-libtool%{?_isa}
+Obsoletes:	globus-libtool-devel%{?_isa}
 Requires:	globus-core%{?_isa} >= 8
 #		Obsolete dropped packages from Globus Toolkit 4.2.1
 Obsoletes:	globus-data-conversion-devel
@@ -240,6 +234,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 14.0-3
+- Obsolete globus-libtool-devel instead of globus-libtool in devel package
+- Remove text about extracting source from installer
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 14.0-2
 - Update for 5.1.2 release
 
