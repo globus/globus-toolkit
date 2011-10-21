@@ -16,7 +16,7 @@
 Name:		globus-gram-job-manager-sge
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - SGE Job Manager
 
 Group:		Applications/Internet
@@ -216,7 +216,7 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun setup-poll
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-sge-poll -n jobmanager-sge > /dev/null 2>&1 || :
 elif [ $1 -eq 0 -a ! -f /etc/grid-services/jobmanager ]; then
     globus-gatekeeper-admin -E > /dev/null 2>&1 || :
@@ -239,7 +239,7 @@ fi
 
 %postun setup-seg
 ldconfig
-if [ $1 -ge 1 ]; then
+if [ $1 -eq 1 ]; then
     globus-gatekeeper-admin -e jobmanager-sge-seg > /dev/null 2>&1 || :
     globus-scheduler-event-generator-admin -e sge > /dev/null 2>&1 || :
     service globus-scheduler-event-generator condrestart sge > /dev/null 2>&1 || :
@@ -266,7 +266,10 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-4
+* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
+- Fix %post* scripts to check for -eq 1
+
+* Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
 - Change %post check for -eq 1
 
 * Mon Sep 12 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3

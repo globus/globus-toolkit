@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -327,7 +327,7 @@ if [ $1 = 0 ] ; then
 fi
 
 %postun server
-if [ "$1" -ge "1" ] ; then
+if [ "$1" -eq "1" ] ; then
     /sbin/service myproxy-server condrestart >/dev/null 2>&1 || :
 fi
 
@@ -414,6 +414,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 5.5-2
+- Fix %post* scripts to check for -eq 1
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.5-1
 - Update for 5.1.2 release
 
