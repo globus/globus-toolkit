@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR *)
-&(executable=/bin/sh)
- (stderr=/etc/no/such/file)
