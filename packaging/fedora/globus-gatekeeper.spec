@@ -23,6 +23,9 @@ Source:         http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 13.4
+Requires:	globus-gss-assist%{?_isa} >= 8
+Requires:	globus-gssapi-gsi%{?_isa} >= 9
+
 Requires:       lsb
 Requires(post): globus-common-progs >= 13.4
 Requires(preun):globus-common-progs >= 13.4
@@ -113,6 +116,7 @@ fi
 %changelog
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-2
 - Fix %post* scripts to check for -eq 1
+- Add explicit dependencies on >= 5.2 libraries
 
 * Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 8.1-1
 - GRAM-260: Detect and workaround bug in start_daemon for LSB < 4

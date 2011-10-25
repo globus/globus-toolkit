@@ -13,7 +13,7 @@
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
 Version:	13.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -23,13 +23,24 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
+Requires:	globus-scheduler-event-generator%{?_isa} >= 4
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
+Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	libxml2%{?_isa}
+Requires:	globus-gsi-sysconfig%{?_isa} >= 5
+Requires:	globus-callout%{?_isa} >= 2
+Requires:	globus-gram-job-manager-callout-error%{?_isa} >= 2
 Requires:	globus-gram-protocol >= 11
+Requires:	globus-usage%{?_isa} >= 3
+Requires:	globus-rsl%{?_isa} >= 9
+Requires:	globus-gass-cache%{?_isa} >= 8
+Requires:	globus-gass-transfer%{?_isa} >= 7
 Requires:	globus-gram-job-manager-scripts
 Requires:	globus-gass-copy-progs >= 8
 Requires:	globus-proxy-utils >= 5
 Requires:	globus-gass-cache-program >= 2
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-scheduler-event-generator-devel%{?_isa} >= 4
 BuildRequires:	globus-xio-popen-driver-devel%{?_isa} >= 2
@@ -98,7 +109,7 @@ rm -f pkgdata/Makefile.am
 rm -f globus_automake*
 rm -rf autom4te.cache
 
-%{_datadir}/globus/globus-bootstrap.sh
+aclocal_includes="-I ." %{_datadir}/globus/globus-bootstrap.sh
 
 %configure --with-flavor=%{flavor} --enable-doxygen \
            --%{docdiroption}=%{_docdir}/%{name}-%{version} \
@@ -158,11 +169,17 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Oct 24 2011 Joseph Bester <bester@mcs.anl.gov> - 13.5-2
+- set aclocal_includes="-I ." prior to bootsrap
+
 * Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 13.5-1
 - GRAM-227: Manager double-locked
 
 * Tue Oct 18 2011 Joseph Bester <bester@mcs.anl.gov> - 13.4-1
 - GRAM-262: job manager -extra-envvars implementation doesn't match description
+
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 13.3-2
+- Add explicit dependencies on >= 5.2 libraries
 
 * Tue Oct 04 2011 Joseph Bester <bester@mcs.anl.gov> - 13.3-1
 - GRAM-240: globus_xio_open in script code can recurse
@@ -170,7 +187,7 @@ rm -rf $RPM_BUILD_ROOT
 * Thu Sep 22 2011  <bester@mcs.anl.gov> - 13.2-1
 - GRAM-257: Set default values for GLOBUS_GATEKEEPER_*
 
-* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 13.1-1
+* Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 13.1-1
 - Fix: GRAM-250
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 13.0-2

@@ -12,20 +12,22 @@
 
 Name:		globus-gridmap-callout-error
 %global _name %(tr - _ <<< %{name})
-Version:	1.1
+Version:	1.2
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gridmap Callout Errors
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-gssapi-error%{?_isa} >= 4
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-gssapi-error-devel%{?_isa} >= 4
@@ -162,6 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 1.2-1
+- Add backward-compatibility aging
+
 * Tue Sep 13 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-1
 - Update for Globus Toolkit 5.1.2
 

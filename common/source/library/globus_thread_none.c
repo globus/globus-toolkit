@@ -187,9 +187,9 @@ globus_l_thread_none_once(
     {
         return EINVAL;
     }
-    if (once_control->none == 0)
+    if (once_control->none == GLOBUS_THREAD_ONCE_INIT_VALUE.none)
     {
-        once_control->none = 1;
+        once_control->none = !GLOBUS_THREAD_ONCE_INIT_VALUE.none;
         (*init_routine)();
     }
     return 0;

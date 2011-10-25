@@ -267,8 +267,9 @@ fi
 %changelog
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-6
 - Apply OSG's globus-gram-job-manager-fork.spec patch to fix %post* scripts
+- Add explicit dependencies on >= 5.2 libraries
 
-* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-5
+* Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
 - Change %post check for -eq 1
 
 * Wed Sep 14 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3

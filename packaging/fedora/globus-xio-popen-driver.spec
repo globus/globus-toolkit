@@ -12,7 +12,7 @@
 
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.0
+Version:	2.1
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
@@ -28,7 +28,9 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 14
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-xio%{?_isa} >= 3
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-devel%{?_isa} >= 3
 
@@ -117,6 +119,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 2.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 2.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 2.0-2
 - Update for 5.1.2 release
 

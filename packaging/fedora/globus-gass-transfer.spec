@@ -13,7 +13,7 @@
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
 Version:	7.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Transfer
 
 Group:		System Environment/Libraries
@@ -31,7 +31,10 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-io%{?_isa} >= 8
+Requires:	globus-gssapi-gsi%{?_isa} >= 9
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-io-devel%{?_isa} >= 8
@@ -172,8 +175,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
-* Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-1
+* Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-2
+- Add explicit dependencies on >= 5.2 libraries
 - GRAM-220: GASS server may deadlock
+
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-1
+- Add backward-compatibility aging
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 7.0-2
 - Update for 5.1.2 release

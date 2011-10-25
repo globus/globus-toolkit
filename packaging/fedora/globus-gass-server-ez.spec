@@ -12,7 +12,7 @@
 
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
@@ -22,7 +22,10 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-gss-assist%{?_isa} >= 8
+Requires:	globus-gass-transfer%{?_isa} >= 7
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-common-devel%{?_isa} >= 14
 BuildRequires:	globus-gss-assist-devel%{?_isa} >= 8
@@ -127,6 +130,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
 - Update for 5.1.2 release
 

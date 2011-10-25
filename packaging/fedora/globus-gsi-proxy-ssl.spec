@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-proxy-ssl
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy SSL Library
 
@@ -168,6 +168,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
 - Update for 5.1.2 release
 

@@ -114,8 +114,9 @@ fi
 %changelog
 * Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
 - GRAM-259: globus-gram-job-manager-condor RPM does not uninstall cleanly
+- Add explicit dependencies on >= 5.2 libraries
 
-* Thu Sep 22 2011 Joe Bester <jbester@mactop2.local> - 1.0-3
+* Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
 - Fix: GRAM-243
 
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-2

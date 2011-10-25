@@ -12,7 +12,7 @@
 
 Name:		globus-gsi-callback
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
+Version:	4.1
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Callback Library
 
@@ -30,6 +30,12 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+Requires:	globus-openssl-module%{?_isa} >= 3
+Requires:	globus-gsi-openssl-error%{?_isa} >= 2
+Requires:	globus-gsi-cert-utils%{?_isa} >= 8
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-gsi-sysconfig%{?_isa} >= 5
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	openssl-devel%{?_isa}
@@ -183,6 +189,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-2
 - Update for 5.1.2 release
 

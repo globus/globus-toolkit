@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "config.h"
 #include "globus_extension.h"
 #include "globus_debug.h"
 #include "globus_thread.h"
@@ -387,6 +388,26 @@ globus_l_extension_dlopen(
         library[1023] = 0;
         dlhandle = lt_dlopenext(library);
     }
+
+#if USE_SYMBOL_LABELS
+    if (!dlhandle)
+    {
+        snprintf(library, 1024, "lib%s_%s",
+            name,
+            (sizeof(long) == 8) ? "gcc64pthr" : "gcc32pthr");
+        library[1023] = 0;
+        dlhandle = lt_dlopenext(library);
+
+        if(!dlhandle)
+        {
+            /* older libtools dont search the extensions correctly */
+            snprintf(library, 1024, "lib%s_%s" MY_LIB_EXT, name,
+                (sizeof(long) == 8) ? "gcc64pthr" : "gcc32pthr");
+            library[1023] = 0;
+            dlhandle = lt_dlopenext(library);
+        }
+    }
+#endif
 
     if(!dlhandle)
     {

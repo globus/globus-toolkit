@@ -12,7 +12,7 @@
 
 Name:		globus-ftp-client
 %global _name %(tr - _ <<< %{name})
-Version:	7.0
+Version:	7.1
 Release:	2%{?dist}
 Summary:	Globus Toolkit - GridFTP Client Library
 
@@ -32,6 +32,9 @@ Source9:	epstopdf-2.9.5gw
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-xio-popen-driver%{?_isa} >= 2
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-ftp-control%{?_isa} >= 4
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-xio-popen-driver-devel%{?_isa} >= 2
 BuildRequires:	globus-common-devel%{?_isa} >= 14
@@ -178,6 +181,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-2
+- Add explicit dependencies on >= 5.2 libraries
+
+* Thu Oct 06 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-1
+- Add backward-compatibility aging
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 7.0-2
 - Update for 5.1.2 release
 

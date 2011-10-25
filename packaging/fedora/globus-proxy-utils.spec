@@ -13,7 +13,7 @@
 Name:		globus-proxy-utils
 %global _name %(tr - _ <<< %{name})
 Version:	5.0
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus GSI Proxy Utility Programs
 
 Group:		Applications/Internet
@@ -29,7 +29,18 @@ Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{vers
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	openssl%{?_isa}
+Requires:	globus-gsi-proxy-ssl%{?_isa} >= 4
 Requires:	globus-gsi-credential%{?_isa} >= 5
+Requires:	globus-gsi-callback%{?_isa} >= 4
+Requires:	globus-openssl-module%{?_isa} >= 3
+Requires:	globus-gss-assist%{?_isa} >= 8
+Requires:	globus-gsi-openssl-error%{?_isa} >= 2
+Requires:	globus-gsi-proxy-core%{?_isa} >= 6
+Requires:	globus-gsi-cert-utils%{?_isa} >= 8
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-gsi-sysconfig%{?_isa} >= 5
+
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gsi-proxy-ssl-devel%{?_isa} >= 4
 BuildRequires:	globus-gsi-credential-devel%{?_isa} >= 5
@@ -95,6 +106,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-3
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 5.0-2
 - Update for 5.1.2 release
 

@@ -268,9 +268,9 @@ fi
 %changelog
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
 - Fix %post* scripts to check for -eq 1
+- Add explicit dependencies on >= 5.2 libraries
 
 * Thu Sep 22 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
-- Change %post check for -eq 1
 
 * Mon Sep 12 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-3
 - Update path to qsub, etc for RHEL5 / EPEL

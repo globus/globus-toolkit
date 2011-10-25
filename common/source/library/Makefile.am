@@ -155,6 +155,11 @@ libglobus_common_la_LIBADD = @GPT_LIB_LINKS@
 libglobus_common_la_SOURCES = $(Sources)
 libglobus_common_la_LDFLAGS = @GPT_LDFLAGS@
 
+if USE_SYMBOL_LABELS
+libglobus_common_la_LIBADD += -lpthread
+libglobus_common_la_LDFLAGS += -Wl,--version-script,sym
+endif
+
 if BUILD_PTHREADS
 libglobus_thread_pthread_la_LIBADD = libglobus_common.la @GPT_LIB_LINKS@ @PTHREAD_LIBS@
 libglobus_thread_pthread_la_SOURCES = globus_thread_pthreads.c globus_thread_pthreads.h
@@ -171,6 +176,7 @@ EXTRA_DIST = \
 	globus_callback_nothreads.c \
 	globus_callback_threads.c \
         $(pthreads_sources) \
-        $(windowsthreads_sources)
+        $(windowsthreads_sources) \
+        sym
 
 include $(top_srcdir)/globus_automake_post

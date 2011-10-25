@@ -18,8 +18,8 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.0
-Release:	2%{?dist}
+Version:	8.1
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -77,7 +77,8 @@ unset GPT_LOCATION
 	   --with-testdir='${datadir}/globus/test/${PACKAGE}' \
 	   --with-flavorincludedir='${libdir}/globus/include' \
 	   --with-perlmoduledir=%{perl_vendorlib} \
-	   --with-doxygendir='${datadir}/globus/doxygen'
+	   --with-doxygendir='${datadir}/globus/doxygen' \
+           --with-initializer-libdir-based-on-machine-type
 
 make %{?_smp_mflags}
 
@@ -124,6 +125,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Oct 25 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-5
+- RIC-199: Can't install 32 and 64 bit Globus RPMs at the same time
+- --with-initializer-libdir-based-on-machine-type
+
+* Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-3
+- Add explicit dependencies on >= 5.2 libraries
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 8.0-2
 - Update for 5.1.2 release
 

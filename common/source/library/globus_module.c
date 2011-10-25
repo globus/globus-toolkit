@@ -31,6 +31,7 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#include "config.h"
 #include "globus_common_include.h"
 #include "globus_common.h"
 #include "globus_module.h"
@@ -44,8 +45,6 @@ CVS Information:
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
-
-#define UNNECESSARY 0
 
 /*
  * global vars
@@ -145,25 +144,32 @@ static void
 globus_l_module_mutex_lock(
     globus_l_module_mutex_t *		mutex);
 
-#if UNNECESSARY
-static int
-globus_l_module_mutex_get_level(
-    globus_l_module_mutex_t *		mutex);
-#endif
-
 static void
 globus_l_module_mutex_unlock(
     globus_l_module_mutex_t *		mutex);
     
-#if UNNECESSARY
-static void
-globus_l_module_mutex_destroy(
-    globus_l_module_mutex_t *		mutex);
-#endif
-
 /******************************************************************************
 			   API function definitions
 ******************************************************************************/
+
+#if USE_SYMBOL_LABELS
+__asm__(".symver globus_module_activate_proxy_compat,"
+        "globus_module_activate_proxy@GLOBUS_COMMON_11");
+__asm__(".symver globus_module_activate_proxy_new,"
+        "globus_module_activate_proxy@@GLOBUS_COMMON_14");
+__asm__(".symver globus_module_activate_compat,"
+        "globus_module_activate@GLOBUS_COMMON_11");
+__asm__(".symver globus_module_activate_new,"
+        "globus_module_activate@@GLOBUS_COMMON_14");
+__asm__(".symver globus_module_activate_array_compat,"
+        "globus_module_activate_array@GLOBUS_COMMON_11");
+__asm__(".symver globus_module_activate_array_new,"
+        "globus_module_activate_array@@GLOBUS_COMMON_14");
+
+#define globus_module_activate_proxy globus_module_activate_proxy_new
+#define globus_module_activate globus_module_activate_new
+#define globus_module_activate_array globus_module_activate_array_new
+#endif
 
 /*
  * globus_module_activate()
@@ -299,6 +305,74 @@ deactivate_out:
     return rc;
 }
 /* globus_module_activate_array() */
+
+#if USE_SYMBOL_LABELS
+int
+globus_module_activate_proxy_compat(
+    globus_module_descriptor_t *	module_descriptor,
+    globus_module_deactivate_proxy_cb_t deactivate_cb,
+    void *                              user_arg)
+{
+    int rc;
+    rc = globus_thread_set_model("pthread");
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "FATAL ERROR: mixing thread models activating %s\n"
+                "To remedy, update globus libraries or set the "
+                "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
+                module_descriptor->module_name);
+        abort();
+    }
+    return globus_module_activate_proxy(
+        module_descriptor, deactivate_cb, user_arg);
+}
+/* globus_module_activate_proxy_compat() */
+
+int
+globus_module_activate_compat(
+    globus_module_descriptor_t *	module_descriptor)
+{
+    int rc;
+    rc = globus_thread_set_model("pthread");
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "FATAL ERROR: mixing thread models activating %s\n"
+                "To remedy, update globus libraries or set the "
+                "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
+                module_descriptor->module_name);
+        abort();
+    }
+    return globus_module_activate(module_descriptor);
+}
+/* globus_module_activate_compat() */
+
+int
+globus_module_activate_array_compat(
+    globus_module_descriptor_t *        module_array[],
+    globus_module_descriptor_t **       failed_module)
+{
+    int rc;
+    rc = globus_thread_set_model("pthread");
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "FATAL ERROR: mixing thread models activating %s\n"
+                "To remedy, update globus libraries or set the "
+                "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
+                module_array[0]->module_name);
+        abort();
+    }
+
+    return globus_module_activate_array(module_array, failed_module);
+}
+/* globus_module_activate_array_compat() */
+
+#endif
 
 /*
  * globus_module_deactivate()
@@ -1065,19 +1139,6 @@ globus_l_module_mutex_lock(
 }
 /* globus_l_module_mutex_lock() */
 
-#if UNNECESSARY
-/*
- * globus_l_module_mutex_get_level()
- */
-static int
-globus_l_module_mutex_get_level(
-	globus_l_module_mutex_t *		mutex)
-{
-    return mutex->level;
-}
-/* globus_l_module_mutex_get_level() */
-#endif
-
 /*
  * globus_l_module_mutex_unlock()
  */
@@ -1099,20 +1160,6 @@ globus_l_module_mutex_unlock(
     globus_mutex_unlock(&mutex->mutex);
 }
 /* globus_l_module_mutex_unlock() */
-
-#if UNNECESSARY
-/*
- * globus_l_module_mutex_destroy()
- */
-static void
-globus_l_module_mutex_destroy(
-	globus_l_module_mutex_t *		mutex)
-{
-    globus_mutex_destroy(&mutex->mutex);
-    globus_cond_destroy(&mutex->cond);
-}
-/* globus_l_module_mutex_destroy() */
-#endif
 
 void
 globus_module_set_args(

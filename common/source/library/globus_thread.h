@@ -197,7 +197,7 @@ typedef void (* globus_thread_key_destructor_func_t)(void * value);
  * @brief Thread-specific data key
  * @ingroup globus_thread
  */
-typedef struct
+typedef union
 {
     int none;
 #if HAVE_PTHREAD
@@ -210,7 +210,11 @@ typedef struct
         globus_thread_key_destructor_func_t destructorFunction;
     } windows;
 #endif
-    intptr_t dummy;
+    /*
+     * Backward-compatibility hack for fedora/debian bnaries, must not
+     * be bigger than sizeof(pthread_key_t)
+     */
+    int32_t dummy;
 }
 globus_thread_key_t;
 
@@ -218,16 +222,16 @@ globus_thread_key_t;
  * @brief Thread once structure
  * @ingroup globus_thread_once
  */
-typedef struct
+typedef union
 {
-    int none;
+    int32_t none;
 #if HAVE_PTHREAD
     pthread_once_t pthread;
 #endif
 #if HAVE_WINDOWS_THREADS
     int windows;
 #endif
-    intptr_t dummy;
+    int32_t dummy;
 }
 globus_thread_once_t;
 
@@ -237,16 +241,13 @@ globus_thread_once_t;
  * @ingroup globus_thread_once
  * @hideinitializer
  */
+extern const globus_thread_once_t GLOBUS_THREAD_ONCE_INIT_VALUE;
 #if HAVE_PTHREAD
-#   if HAVE_WINDOWS_THREADS
-#       define GLOBUS_THREAD_ONCE_INIT { 0, PTHREAD_ONCE_INIT, 0, 0 }
-#   else
-#       define GLOBUS_THREAD_ONCE_INIT { 0, PTHREAD_ONCE_INIT, 0 }
-#   endif
+#   define GLOBUS_THREAD_ONCE_INIT { .pthread = PTHREAD_ONCE_INIT }
 #elif HAVE_WINDOWS_THREADS
-#       define GLOBUS_THREAD_ONCE_INIT { 0, 0, 0 }
+#   define GLOBUS_THREAD_ONCE_INIT { .windows = 0 }
 #else
-#define GLOBUS_THREAD_ONCE_INIT { 0, 0 }
+#   define GLOBUS_THREAD_ONCE_INIT { .none = 0 }
 #endif
 
 extern

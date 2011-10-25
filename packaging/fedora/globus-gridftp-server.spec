@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.1
+Version:	6.2
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -28,7 +28,15 @@ URL:		http://www.globus.org/
 Source:		http://www.globus.org/ftppub/gt-changelog/-changelog./-changelog/packages/src/http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+Requires:	globus-common%{?_isa} >= 14
+Requires:	globus-gridftp-server-control%{?_isa} >= 2
+Requires:	globus-usage%{?_isa} >= 3
+Requires:	globus-xio%{?_isa} >= 3
+Requires:	globus-authz%{?_isa} >= 2
+Requires:	globus-gfork%{?_isa} >= 3
+Requires:	globus-ftp-control%{?_isa} >= 4
 Requires:	globus-xio-gsi-driver%{?_isa} >= 2
+
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-gridftp-server-control-devel%{?_isa} >= 2
 BuildRequires:	globus-usage-devel%{?_isa} >= 3
@@ -172,7 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
-* Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 6.1-2
+* Mon Oct 24 2011 Joseph Bester <bester@mcs.anl.gov> - 6.2-2
+- Add explicit dependencies on >= 5.2 libraries
+- Add backward-compatibility aging
 - Fix %post* scripts to check for -eq 1
 
 * Fri Sep 23 2011 Joe Bester <bester@mcs.anl.gov> - 6.1-1
