@@ -76,6 +76,11 @@ case $guess_libdir:${host}:${libdir} in
         ;;
 esac
 
+echo "$libdir_choice" > libdir-choice
+GLOBUS_LIBDIR_CHOICE="libdir-choice"
+
+AC_SUBST_FILE(GLOBUS_LIBDIR_CHOICE)
+
 cat > globus-script-initializer << EOF
 eval_path()
 {
