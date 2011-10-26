@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.5
-Release:	2%{?dist}
+Version:	13.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Oct 26 2011 Joseph Bester <bester@mcs.anl.gov> - 13.6-1
+- GRAM-265: GRAM logging.c sets FD_CLOEXEC incorrectly
+
 * Mon Oct 24 2011 Joseph Bester <bester@mcs.anl.gov> - 13.5-2
 - set aclocal_includes="-I ." prior to bootsrap
 

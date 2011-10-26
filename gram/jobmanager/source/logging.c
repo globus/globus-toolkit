@@ -289,11 +289,11 @@ globus_l_gram_logging_write(
         if (globus_l_gram_log_fp)
         {
             fd = fileno(globus_l_gram_log_fp);
-            flags = fcntl(fd, F_GETFL);
+            flags = fcntl(fd, F_GETFD);
             if (flags >= 0)
             {
                 flags |= FD_CLOEXEC;
-                rc = fcntl(fd, F_SETFL, flags);
+                rc = fcntl(fd, F_SETFD, flags);
             }
         }
     }
