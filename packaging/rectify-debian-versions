@@ -400,7 +400,7 @@ sub update_control
                     my ($basedep, $basedepsoname, $dev, $op, $depver) =
                         ($1, $2, $3, $5, $6);
                     my $newdep;
-                    if ($basedep ne '' && $basedepsoname ne '')
+                    if ($basedep ne '')
                     {
                         if (exists $allpkgmeta->{$basedep}->{SONAME})
                         {
@@ -411,7 +411,7 @@ sub update_control
                     {
                         $depver = $pkgmeta->{DEPSUNTYPED}->{$basedep};
                     }
-                    $newdep = "lib$basedep" . ($basedepsoname?$basedepsoname:"")
+                    $newdep = "lib$basedep" . ($basedepsoname ne ''?$basedepsoname:"")
                             . $dev . ($depver?" ($op $depver)" : "");
                     if ($newdep ne $dep)
                     {
