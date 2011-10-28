@@ -169,6 +169,7 @@ __asm__(".symver globus_module_activate_array_new,"
 #define globus_module_activate_proxy globus_module_activate_proxy_new
 #define globus_module_activate globus_module_activate_new
 #define globus_module_activate_array globus_module_activate_array_new
+extern int WARNING_USING_MIXED_THREAD_MODELS = 0;
 #endif
 
 /*
@@ -318,12 +319,7 @@ globus_module_activate_proxy_compat(
 
     if (rc != GLOBUS_SUCCESS)
     {
-        fprintf(stderr,
-                "FATAL ERROR: mixing thread models activating %s\n"
-                "To remedy, update globus libraries or set the "
-                "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
-                module_descriptor->module_name);
-        abort();
+        WARNING_USING_MIXED_THREAD_MODELS = 1;
     }
     return globus_module_activate_proxy(
         module_descriptor, deactivate_cb, user_arg);
@@ -339,12 +335,7 @@ globus_module_activate_compat(
 
     if (rc != GLOBUS_SUCCESS)
     {
-        fprintf(stderr,
-                "FATAL ERROR: mixing thread models activating %s\n"
-                "To remedy, update globus libraries or set the "
-                "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
-                module_descriptor->module_name);
-        abort();
+        WARNING_USING_MIXED_THREAD_MODELS = 1;
     }
     return globus_module_activate(module_descriptor);
 }
@@ -360,11 +351,8 @@ globus_module_activate_array_compat(
 
     if (rc != GLOBUS_SUCCESS)
     {
-        fprintf(stderr,
-                "FATAL ERROR: mixing thread models activating %s\n"
-                "To remedy, update globus libraries or set the "
-                "GLOBUS_THREAD_MODEL\nenvironment variable to pthread\n",
-                module_array[0]->module_name);
+        WARNING_USING_MIXED_THREAD_MODELS = 1;
+
         abort();
     }
 

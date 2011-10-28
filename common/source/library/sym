@@ -26,4 +26,5 @@ GLOBUS_COMMON_14 {
     globus_thread_key_create_new;
     globus_thread_key_setspecific_new;
     globus_thread_key_getspecific_new;
+    WARNING_USING_MIXED_THREAD_MODELS;
 } GLOBUS_COMMON_11;

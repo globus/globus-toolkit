@@ -18,8 +18,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.1
-Release:	2%{?dist}
+Version:	14.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -247,6 +247,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 14.2-1
+- Allow pthread extensions to be activated, but warn in globus_extension_activate debug output
+
 * Mon Oct 24 2011 Joseph Bester <bester@mcs.anl.gov> - 14.1-2
 - Add explicit dependencies on >= 5.2 libraries
 - Move libglobus_thread_pthread.so symlink to globus-common package

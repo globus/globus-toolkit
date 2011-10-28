@@ -35,6 +35,10 @@
 #define MY_LIB_EXT ".so"
 #endif
 
+#if USE_SYMBOL_LABELS
+extern int WARNING_USING_MIXED_THREAD_MODELS;
+#endif
+
 extern globus_result_t
 globus_location(char **   bufp);
 
@@ -645,10 +649,26 @@ globus_extension_activate(
                 globus_thread_getspecific(globus_l_extension_owner_key);
             globus_thread_setspecific(globus_l_extension_owner_key, extension);
             
+#if USE_SYMBOL_LABELS
+            {
+                int pre_warned = WARNING_USING_MIXED_THREAD_MODELS;
+#endif
             rc = globus_module_activate_proxy(
                 extension->module,
                 globus_l_extension_deactivate_proxy,
                 extension);
+#if USE_SYMBOL_LABELS
+                if ((!pre_warned) && WARNING_USING_MIXED_THREAD_MODELS)
+                {
+                    GlobusExtensionDebugPrintf(
+                        GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
+                        (_GCSL("[%s] Warning: extension %s was compiled with pthreads for GT 5.0.x and may not work correctly\n"),
+                            _globus_func_name,
+                            extension->name));
+
+                }
+            }
+#endif
             
             globus_thread_setspecific(
                 globus_l_extension_owner_key, last_extension);
