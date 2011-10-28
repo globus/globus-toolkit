@@ -66,9 +66,13 @@ my $gptagingver = (grep {$_->isa('GPT::Aging_Version')} @{$gptmeta->{Kids}})[0];
 my $gptmajorver = $gptagingver->{Major};
 my $gptminorver = $gptagingver->{Minor};
 
-my $gptdesc =  (grep {$_->isa('GPT::Description')} @{$gptmeta->{Kids}})[0];
+my $gptdesc = (grep {$_->isa('GPT::Description')} @{$gptmeta->{Kids}})[0];
 my $description = $gptdesc->{Kids}->[0]->{Text};
 $description =~ s!^\s+|\s+$!!g;
+
+my $gptfuncgroup = (grep {$_->isa('GPT::Functional_Group')} @{$gptmeta->{Kids}})[0];
+my $funcgroup = $gptfuncgroup->{Kids}->[0]->{Text}; 
+$funcgroup =~ s!^\s+|\s+$!!g;
 
 my $srcpkg = (grep {$_->isa('GPT::src_pkg')} @{$gptmeta->{Kids}})[0];
 for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$srcpkg->{Kids}})
@@ -82,9 +86,10 @@ for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$srcpkg->{Kids}})
 	$depname = $depname . "-progs" if ($deppkg eq "pgm");
 	$depname = $depname . "-doc" if ($deppkg eq "doc");
 	$depname =~ tr/_/-/;
-        my $depver_element = (grep {$_->isa('GPT::Simple_Version')}
-            @{dep->{Kids}})[0];
-	my $depver = $depver_element->{Major};
+	my $depversion = (grep {$_->isa('GPT::Version')} @{$dep->{Kids}})[0];
+	my $depverel = (grep {$_->isa('GPT::Simple_Version')}
+	    @{$depversion->{Kids}})[0];
+	my $depver = $depverel->{Major};
 	$srcdeps{$type}{$depname} = $depver
 	    unless (defined $srcdeps{$type}{$depname}
 		    and $srcdeps{$type}{$depname} >= $depver);
@@ -92,7 +97,7 @@ for my $srcdep (grep {$_->isa('GPT::Source_Dependencies')} @{$srcpkg->{Kids}})
 }
 
 for my $setupdep (grep {$_->isa('GPT::Source_Setup_Dependency')}
-        @{$gptmeta->{Kids}})
+    @{$gptmeta->{Kids}})
 {
     my $type = $setupdep->{PkgType};
     $setupdeps{$type} = {} unless defined $setupdeps{$type};
@@ -100,17 +105,19 @@ for my $setupdep (grep {$_->isa('GPT::Source_Setup_Dependency')}
     {
 	my $depname = $dep->{Name};
 	$depname =~ tr/_/-/;
-	my $depver_el = (grep {$_->isa("GPT::Simple_Version")} @{$dep->{Kids}})[0];
-        my $depver = $depver_el->{Major};
+	my $depversion = (grep {$_->isa('GPT::Version')} @{$dep->{Kids}})[0];
+	my $depverel = (grep {$_->isa('GPT::Simple_Version')}
+	    @{$depversion->{Kids}})[0];
+	my $depver = $depverel->{Major};
 	$setupdeps{$type}{$depname} = $depver
 	    unless (defined $setupdeps{$type}{$depname}
 		    and $setupdeps{$type}{$depname} >= $depver);
     }
 }
 
-my $buildenv = grep {$_->isa('GPT::Build_Environment')} @{$srcpkg->{Kids}};
-my $pkglibs = (grep {$_->isa('GPT::pkg_libs')} @{$buildenv->{Kids}})[0];
-$pkglibs = $pkglibs->{Kids}->[0]->{Text} if defined $pkglibs;
+my $buildenv = (grep {$_->isa('GPT::Build_Environment')} @{$srcpkg->{Kids}})[0];
+my $pkglibsel = (grep {$_->isa('GPT::pkg_libs')} @{$buildenv->{Kids}})[0];
+$pkglibs = $pkglibsel->{Kids}->[0]->{Text} if defined $pkglibsel;
 
 my $setupname;
 my $setupversion;
@@ -128,7 +135,7 @@ if (defined $setupfile) {
 	if ($setupname ne $gptname . '_setup');
 
     my $setupagingver = (grep {$_->isa('GPT::Aging_Version')}
-            @{$setupmeta->{Kids}})[0];
+	@{$setupmeta->{Kids}})[0];
     my $setupmajorver = $setupagingver->{Major};
     my $setupminorver = $setupagingver->{Minor};
 
@@ -142,14 +149,17 @@ if (defined $setupfile) {
 	my $type = $srcdep->{Type};
 	$srcdeps{$type} = {} unless defined $srcdeps{$type};
 	for my $dep (grep {$_->isa('GPT::Dependency')} @{$srcdep->{Kids}})
-        {
+	{
 	    my $depname = $dep->{Name};
 	    my $deppkg = $dep->{Package}
 		if defined $dep->{Package};
 	    $depname = $depname . "-progs" if ($deppkg eq "pgm");
 	    $depname =~ tr/_/-/;
-	    my $depverel = (grep {$_->isa('GPT::Simple_Version')} @{$dep->{Kids}})[0];
-            my $depver = $depverel->{Major};
+	    my $depversion = (grep {$_->isa('GPT::Version')}
+		@{$dep->{Kids}})[0];
+	    my $depverel = (grep {$_->isa('GPT::Simple_Version')}
+		@{$depversion->{Kids}})[0];
+	    my $depver = $depverel->{Major};
 	    $srcdeps{$type}{$depname} = $depver
 		unless (defined $srcdeps{$type}{$depname}
 			and $srcdeps{$type}{$depname} >= $depver);
@@ -161,10 +171,13 @@ if (defined $setupfile) {
 	my $type = $setupdep->{PkgType};
 	$setupdeps{$type} = {} unless defined $setupdeps{$type};
 	for my $dep (grep {$_->isa('GPT::Setup_Dependency')} @{$setupdep->{Kids}})
-        {
+	{
 	    my $depname = $dep->{Name};
 	    $depname =~ tr/_/-/;
-	    my $depverel = (grep {$_->isa('GPT::Simple_Version')} @{$dep->{Kids}})[0];
+	    my $depversion = (grep {$_->isa('GPT::Version')}
+		@{$dep->{Kids}})[0];
+	    my $depverel = (grep {$_->isa('GPT::Simple_Version')}
+		@{$depversion->{Kids}})[0];
 	    my $depver = $depverel->{Major};
 	    $setupdeps{$type}{$depname} = $depver
 		unless (defined $setupdeps{$type}{$depname}
@@ -186,7 +199,7 @@ $name =~ tr/_/-/;
 my $version = $gptmajorver . '.' . $gptminorver;
 
 my $libs = 1;
-if (!%{$srcdeps{'lib_link'}} and !%{$srcdeps{'rtl_runtime'}}) {
+if (!defined $srcdeps{'lib_link'} and !defined $srcdeps{'rtl_runtime'}) {
     $libs = 0;
 }
 
@@ -200,7 +213,8 @@ if (!$libs) {
 }
 else {
     $docpkg = 0 if defined $nodoc;
-    $progspkg = 1 if (%{$srcdeps{'pgm_link'}} or %{$srcdeps{'pgm_runtime'}});
+    $progspkg = 1 if (defined $srcdeps{'pgm_link'} or
+		      defined $srcdeps{'pgm_runtime'});
 }
 
 print "%ifarch alpha ia64 ppc64 s390x sparc64 x86_64\n";
@@ -225,10 +239,24 @@ else {
 }
 print "License:\tASL 2.0\n";
 print "URL:\t\thttp://www.globus.org/\n";
-print "Source:\t\t%{_name}-%{version}.tar.gz\n";
+print "Source:\t\thttp://www.globus.org/ftppub/$sourcedir/packages/src/%{_name}-%{version}.tar.gz\n";
 if (defined $setupfile) {
-    print "Source1:\t%{_name}_setup-%{setupversion}.tar.gz\n";
+    print "Source1:\thttp://www.globus.org/ftppub/$sourcedir/packages/src/%{_name}_setup-%{setupversion}.tar.gz\n";
 }
+print "#\t\tREADME file\n";
+print "Source8:\t";
+print "GLOBUS-CCOMMONLIB" if ($funcgroup eq 'Common');
+print "GLOBUS-CCOMMONLIB" if ($funcgroup eq 'Core');
+print "GLOBUS-GRAM5"      if ($funcgroup eq 'GRAM');
+print "GLOBUS-GRAM5"      if ($funcgroup eq 'Pre-WS GRAM');
+print "GLOBUS-GRAM5"      if ($funcgroup eq 'ResourceManagement');
+print "GLOBUS-GRAM5"      if ($funcgroup eq 'WS GRAM');
+print "GLOBUS-GRIDFTP"    if ($funcgroup eq 'FileAccess');
+print "GLOBUS-GRIDFTP"    if ($funcgroup eq 'GridFTP');
+print "GLOBUS-GSIC"       if ($funcgroup eq 'Security');
+print "GLOBUS-RLS"        if ($funcgroup eq 'Data');
+print "GLOBUS-XIO"        if ($funcgroup eq 'Communication');
+print "\n";
 if ($docpkg) {
     print "#\t\tThis is a workaround for the broken epstopdf script in RHEL5\n";
     print "#\t\tSee: https://bugzilla.redhat.com/show_bug.cgi?id=450388\n";
@@ -270,8 +298,8 @@ if (!$libs) {
 	print "Requires:\t$key" . ($value > 0 ? " >= $value\n" : "\n")
 	    unless $key eq 'trusted-ca-setup';
     }
-    print "BuildRequires:\tgrid-packaging-tools >= 3.3\n";
-    print "BuildRequires:\tglobus-core >= 7.5\n";
+    print "BuildRequires:\tgrid-packaging-tools >= 3.4\n";
+    print "BuildRequires:\tglobus-core%{?_isa} >= 8\n";
     while (($key, $value) = each(%{$srcdeps{'compile'}})) {
 	if ($key ne "globus-core") {
 	    print "BuildRequires:\t$key-devel%{?_isa}" .
@@ -300,8 +328,8 @@ else {
 	print "Requires:\t$key" . ($value > 0 ? " >= $value\n" : "\n")
 	    unless $key eq 'trusted-ca-setup';
     }
-    print "BuildRequires:\tgrid-packaging-tools >= 3.3\n";
-    print "BuildRequires:\tglobus-core >= 7.5\n";
+    print "BuildRequires:\tgrid-packaging-tools >= 3.4\n";
+    print "BuildRequires:\tglobus-core%{?_isa} >= 8\n";
     while (($key, $value) = each(%{$srcdeps{'compile'}})) {
 	if ($key ne "globus-core") {
 	    print "BuildRequires:\t$key-devel%{?_isa}" .
@@ -464,9 +492,7 @@ rm -f doxygen/Makefile.am
 rm -f pkgdata/Makefile.am
 rm -f globus_automake*
 rm -rf autom4te.cache
-";
 
-print "
 unset GLOBUS_LOCATION
 unset GPT_LOCATION
 %{_datadir}/globus/globus-bootstrap.sh
@@ -475,17 +501,20 @@ unset GPT_LOCATION
 if ($docpkg) {
     print "
 %configure --disable-static --with-flavor=%{flavor} \\
-           --enable-doxygen --docdir=%{_docdir}/%{name}-%{version}
+	   --enable-doxygen --with-docdir=%{_docdir}/%{name}-%{version}
 ";
 }
 else {
     print "
 %configure --disable-static --with-flavor=%{flavor} \\
-           --docdir=%{_docdir}/%{name}-%{version}
+	   --with-docdir=%{_docdir}/%{name}-%{version}
 ";
 }
 
 print "
+# Reduce overlinking
+sed 's!CC -shared !CC \\\${wl}--as-needed -shared !g' -i libtool
+
 make %{?_smp_mflags}
 ";
 
@@ -502,7 +531,7 @@ rm -rf autom4te.cache
 
 %{_datadir}/globus/globus-bootstrap.sh
 
-%configure --without-flavor --docdir=%{_docdir}/%{name}-%{version}
+%configure --without-flavor --with-docdir=%{_docdir}/%{name}-%{version}
 
 make %{?_smp_mflags}
 
@@ -547,15 +576,16 @@ GLOBUSPACKAGEDIR=\$RPM_BUILD_ROOT%{_datadir}/globus/packages
 
 if (not defined $pkglibs) {
     print "
-# This library is opened using lt_dlopenext, so the libtool archives
-# (.la files) can not be removed - fix the libdir...
+# This library is opened using lt_dlopenext, so the libtool archive
+# (.la file) can not be removed - fix the libdir and clear dependency_libs
+# ... and move it to the main package
 for lib in `find \$RPM_BUILD_ROOT%{_libdir} -name 'lib*.la'` ; do
   sed -e \"s!^libdir=.*!libdir=\\'%{_libdir}\\'!\" \\
       -e \"s!^dependency_libs=.*!dependency_libs=\\'\\'!\" -i \$lib
 done
 grep 'lib.*\\.la\$' \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \\
   >> \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist
-sed /lib.*\\.la\$/d -i \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
+sed '/lib.*\\.la\$/d' -i \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 " if ($libs);
 }
 else {
@@ -571,9 +601,7 @@ print "
 grep GLOBUS_LICENSE \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\
   >> \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist
 sed /GLOBUS_LICENSE/d -i \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist
-" if ($libs);
 
-print "
 # Remove unwanted documentation (needed for RHEL4)
 rm -f \$RPM_BUILD_ROOT%{_mandir}/man3/*_%{_name}-%{version}_*.3
 sed -e '/_%{_name}-%{version}_.*\\.3/d' \\
@@ -581,12 +609,15 @@ sed -e '/_%{_name}-%{version}_.*\\.3/d' \\
 " if ($docpkg);
 
 print "
+# Install README file
+install -m 644 -p %{SOURCE8} \\
+  \$RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}/README
+
 # Generate package filelists
 ";
 
 if (!$libs) {
     print "cat \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \\\n";
-    print "    \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\\n";
     print "    \$GLOBUSPACKAGEDIR/%{_name}_setup/noflavor_pgm.filelist \\\n"
 	if defined $setupfile;
     print "  | sed s!^!%{_prefix}! > package.filelist\n";
@@ -594,6 +625,11 @@ if (!$libs) {
 else {
     print "cat \$GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \\\n";
     print "  | sed s!^!%{_prefix}! > package.filelist\n";
+}
+
+if (!$docpkg) {
+    print "cat \$GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \\\n";
+    print "  | sed -e 's!/man/.*!&\*!' -e 's!^!%doc %{_prefix}!' >> package.filelist\n";
 }
 
 if ($progspkg) {
@@ -629,6 +665,7 @@ print "
 %defattr(-,root,root,-)
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
+%doc %{_docdir}/%{name}-%{version}/README
 ";
 
 print "

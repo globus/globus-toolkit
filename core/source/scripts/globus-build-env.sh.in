@@ -29,8 +29,6 @@ eval_path()
 
 prefix="${GLOBUS_LOCATION:-@prefix@}"
 exec_prefix='@exec_prefix@'
-
-test "$exec_prefix" = NONE && exec_prefix='$prefix'
 sbindir='@sbindir@'
 bindir='@bindir@'
 libdir='@libdir@'
@@ -61,10 +59,8 @@ CPP="@CPP@"
 CPPFLAGS="`eval_path '@CPPFLAGS@'`"
 CFLAGS="`eval_path '@CFLAGS@'`"
 
-
 LDFLAGS="`eval_path '@LDFLAGS@'`"
 LIBS="`eval_path '@LIBS@'`"
-STATIC_LDFLAGS="`eval_path '@STATIC_LDFLAGS@'`" 
 
 CXX="@CXX@"
 CXXCPP="@CXXCPP@"
@@ -107,10 +103,8 @@ GLOBUS_CPP="@CPP@"
 GLOBUS_CPPFLAGS="`eval_path '@CPPFLAGS@'`"
 GLOBUS_CFLAGS="`eval_path '@CFLAGS@'`"
 
-
 GLOBUS_LDFLAGS="`eval_path '@LDFLAGS@'`"
 GLOBUS_LIBS="`eval_path '@LIBS@'`"
-GLOBUS_STATIC_LDFLAGS="`eval_path '@STATIC_LDFLAGS@'`" 
 
 GLOBUS_CXX="@CXX@"
 GLOBUS_CXXCPP="@CXXCPP@"

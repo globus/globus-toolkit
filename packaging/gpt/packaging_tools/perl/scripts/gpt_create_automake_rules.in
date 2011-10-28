@@ -99,7 +99,7 @@ sub find_makefile_am {
     my $file = $_;
     my $dir = $File::Find::dir;
 #    print "find_makefile_am: $dir\n";
-    $dir =~ s!$topdir/+!!;
+    $dir =~ s!\Q$topdir\E/+!!;
     process_automake_file($file) if ! defined $excluded_dirs{$dir};
 }
 

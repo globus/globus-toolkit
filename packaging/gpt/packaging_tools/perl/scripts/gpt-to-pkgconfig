@@ -70,7 +70,7 @@ my $extlibselem = (grep { $_->isa('GPT::external_libs') } @{$buildenv->{Kids}})[
 my $extlibs = $extlibselem->{Kids}->[0]->{Text};
 
 
-my $name = gptname;
+my $name = $gptname;
 $name =~ tr/_/-/;
 
 $description =~ s!^\s+|\s+$!!g;
@@ -114,11 +114,11 @@ print OUTFILE "\n";
 print OUTFILE "Name: $name\n";
 print OUTFILE "Description: Globus Toolkit - $description\n";
 print OUTFILE "Version: $version\n";
-print OUTFILE "Requires:";
+print OUTFILE "Requires.private:";
 while (($key, $value) = each(%deps)) {
         print OUTFILE ($value > 0 ? " $key >= $value" : " $key");
 }
 print OUTFILE "\n";
 print OUTFILE "Libs: $libs\n";
-print OUTFILE "Libs.private: $extlibs\n" if ($extlibs ne '');
+print OUTFILE "Libs.private: $extlibs\n";
 print OUTFILE "Cflags: $cflags\n";

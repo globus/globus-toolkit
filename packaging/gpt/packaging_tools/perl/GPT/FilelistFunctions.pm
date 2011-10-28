@@ -106,10 +106,10 @@ sub check_installed_files {
                                            pkgtype => $pkgtype);
 
     my $pkgdatasubdir = $pkgdatadir;
-    $pkgdatasubdir =~ s!$installdir/!!;
+    $pkgdatasubdir =~ s!\Q$installdir\E/!!;
 
     my $altpkgdatasubdir = $altpkgdatadir;
-    $altpkgdatasubdir =~ s!$installdir/!!;
+    $altpkgdatasubdir =~ s!\Q$installdir\E/!!;
 
 
     my @notpkgdata;
@@ -548,7 +548,7 @@ sub install_pkgdata {
   mkinstalldir($pkgdatadir);
 
   my $pkgdatasubdir = $pkgdatadir;
-  $pkgdatasubdir =~ s!$installdir/!!;
+  $pkgdatasubdir =~ s!\Q$installdir\E/!!;
 
   my ($filelistname, $pkgdataname) = 
     ("$pkgdatasubdir/$ {flavor}_$ {pkgtype}.filelist",

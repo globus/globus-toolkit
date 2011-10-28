@@ -18,8 +18,8 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
-Release:	5%{?dist}
+Version:	8.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -125,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 8.2-1
+- Minor fixes to build env sand spec creator scripts
+
 * Tue Oct 25 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-5
 - RIC-199: Can't install 32 and 64 bit Globus RPMs at the same time
 - --with-initializer-libdir-based-on-machine-type

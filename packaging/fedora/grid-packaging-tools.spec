@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.4
+Version:	3.5
 Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
@@ -84,6 +84,10 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 3.5-1
+- Quote paths in regular expressions
+- Fix bugs in pkgconfig file generator
+
 * Thu Sep 01 2011 Joseph Bester <bester@mcs.anl.gov> - 3.4-1
 - Update for GT 5.1.2
 

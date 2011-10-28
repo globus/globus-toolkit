@@ -95,13 +95,13 @@ my $prefix = $locations->{'installdir'};
 # but the pkgdir value will.  Strip it out so we can inspect
 # the filelists later.
 my $pkgdatasubdir = "$locations->{'pkgdir'}";
-$pkgdatasubdir =~ s!$prefix/!!;
+$pkgdatasubdir =~ s!\Q$prefix\E/!!;
 my $altpkgdatasubdir = "$locations->{'altpkgdir'}";
-$altpkgdatasubdir =~ s!$prefix/!!;
+$altpkgdatasubdir =~ s!\Q$prefix\E/!!;
 
 my @list;
 for my $line (<MASTER>) {
-  $line =~ s!^.*$prefix!!;
+  $line =~ s!^.*\Q$prefix\E!!;
   push @list, $line;
 #  print $line;
 }
@@ -137,8 +137,8 @@ for my $typ (sort keys %funcs) {
 
     # If this filelist only has package metadata, don't write it!
     my @notpkgdata;
-    @notpkgdata = grep { ! m!$pkgdatasubdir!}
-      grep { ! m!$altpkgdatasubdir!} @$outlines;
+    @notpkgdata = grep { ! m!\Q$pkgdatasubdir\E!}
+      grep { ! m!\Q$altpkgdatasubdir\E!} @$outlines;
     next if (! @notpkgdata );
 
     my $out = "$prefix/$ {type_flavor}_$ {typ}.filelist";
