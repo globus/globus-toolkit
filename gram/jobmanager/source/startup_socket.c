@@ -196,7 +196,7 @@ globus_gram_job_manager_startup_lock(
                 "\n",
                 -rc,
                 manager->lock_path,
-                "Error locking file",
+                "Unable to lock file, perhaps another job manager is running",
                 errno,
                 strerror(errno));
         goto lock_failed;
