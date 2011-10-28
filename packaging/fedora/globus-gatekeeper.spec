@@ -12,8 +12,8 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
-Release:	2%{?dist}
+Version:	8.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -114,6 +114,9 @@ fi
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
+* Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 8.2-1
+- GRAM-267: globus-gatekeeper uses inappropriate Default-Start in init script
+
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-2
 - Fix %post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries

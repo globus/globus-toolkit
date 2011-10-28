@@ -4,8 +4,6 @@
 # Provides:          globus-gatekeeper
 # Required-Start:    $network $time
 # Required-Stop:     $network
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
 # Short-Description: Globus Gatekeeper
 # Description:       The Globus Gatekeeper service authenticates network
 #                    connections using an SSL-based protocol and then
