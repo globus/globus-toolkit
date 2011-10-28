@@ -303,8 +303,6 @@ sub getDevLines
 sub getBuildEnvLines
 {
     my($header) = @_;
-    my($copy);
-    my ($in_initializer) = (0);
 
     open(IN, "/bin/sh $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh makefile-header|") || die "ERROR: Cannot open $Globus::Core::Paths::libexecdir/globus-build-env-$flavor.sh!\n$common_error\n";
 
