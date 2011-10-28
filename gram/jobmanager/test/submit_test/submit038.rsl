@@ -1,4 +1,0 @@
-&(executable = /bin/sh)
- (environment = (GLOBUSRUN_GASS_URL $(GLOBUSRUN_GASS_URL)))
- (remote_io_url = $(GLOBUSRUN_GASS_URL))
- (arguments  = -c 'read remote_io_url < "$GLOBUS_REMOTE_IO_URL"; if [ "$remote_io_url" = "$GLOBUSRUN_GASS_URL" ]; then echo 1;  else echo 0; fi')
