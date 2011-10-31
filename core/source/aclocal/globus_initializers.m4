@@ -72,7 +72,7 @@ case $guess_libdir:${host}:${libdir} in
         ;;
     *)
         libdir_choice="libdir=\"\`eval_path $libdir\`\""
-        perl_libdir_choice="\$libdir = eval_path('$libdir')";
+        perl_libdir_choice="\$libdir = eval_path('$libdir');";
         ;;
 esac
 
