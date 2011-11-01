@@ -89,20 +89,20 @@ GSS_CALLCONV gss_export_sec_context(
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
-#ifdef WIN32
+#if WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API
     major_status = GSS_S_UNAVAILABLE;
     GLOBUS_GSI_GSSAPI_ERROR_RESULT(
         minor_status,
         GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-        (_GGSL("This function does not currently support the "
-         "Windows platform")));
+        (_GGSL("This function is not currently supported on this platform")));
     goto exit;
-#endif
+#else /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
 
     context = *context_handle_P;
 
     if (context_handle_P == NULL || 
-        context == (gss_ctx_id_t) GSS_C_NO_CONTEXT)
+        context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
+        !(context->ret_flags & GSS_C_TRANS_FLAG))
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
@@ -264,6 +264,7 @@ GSS_CALLCONV gss_export_sec_context(
 
     globus_mutex_unlock(&context->mutex);
     
+#endif /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
  exit:
     
     if(bp)
