@@ -1627,6 +1627,7 @@ globus_i_gsi_gss_create_cred(
 /* @} */
 
 
+#if LINK_WITH_INTERNAL_OPENSSL_API
 OM_uint32
 globus_i_gsi_gss_SSL_write_bio(
     OM_uint32 *                         minor_status,
@@ -2021,7 +2022,7 @@ globus_i_gsi_gss_SSL_read_bio(
     return major_status;
 }
 /* @} */
-
+#endif /* LINK_WITH_INTERNAL_OPENSSL_API */
 
 /**
  * @name Init SSL Context

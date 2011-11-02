@@ -323,6 +323,9 @@ GSS_CALLCONV gss_init_sec_context(
         {
             context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
         }
+#       if LINK_WITH_INTERNAL_OPENSSL_API
+        context->ret_flags |= GSS_C_TRANS_FLAG;
+#       endif
 
         /* 
          * IF we are talking to a real SSL server,

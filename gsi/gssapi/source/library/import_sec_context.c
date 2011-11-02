@@ -78,15 +78,15 @@ GSS_CALLCONV gss_import_sec_context(
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
-#ifdef WIN32
+#if WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API
         major_status = GSS_S_UNAVAILABLE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-            (_GGSL("This function does not currently support the "
-             "Windows platform")));
+            (_GGSL("This function is not implemented on this platform")));
         goto exit;
-#endif
+
+#else /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
 
     /* module activation if not already done by calling
      * globus_module_activate
@@ -360,6 +360,7 @@ GSS_CALLCONV gss_import_sec_context(
     *context_handle_P = context;
     context = GSS_C_NO_CONTEXT;
 
+#endif /* WIN32 || !LINK_WITH_INTERNAL_OPENSSL_API */
 exit:
 
     if(session)
