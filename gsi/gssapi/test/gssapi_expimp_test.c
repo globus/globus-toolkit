@@ -29,6 +29,8 @@ struct  sockaddr_un {
 #define fork() -1
 #endif
 
+static int skip_test = 0;
+
 struct context_arg
 {
     gss_cred_id_t                       credential;
@@ -36,11 +38,11 @@ struct context_arg
     struct sockaddr_un *                address;
 };
 
-void *
+int
 server_func(
     void *                              arg);
 
-void *
+void
 client_func(
     void *                              arg);
 
@@ -91,7 +93,8 @@ main()
     if(credential == GSS_C_NO_CREDENTIAL)
     {
         fprintf(stderr,"Unable to aquire credential\n");
-        exit(-1);
+        rc = EXIT_FAILURE;
+        goto done;
     }
 
     pid = fork();
@@ -122,8 +125,7 @@ main()
         
 	arg->credential = credential;
 
-        server_func(arg);
-
+        rc = server_func(arg);
 
         if (waitpid(pid, &childrc, 0) < 0)
         {
@@ -149,6 +151,15 @@ main()
         rc = EXIT_FAILURE;
     }
 
+    if (pid != 0)
+    {
+done:
+        printf("%sok gssapi_expimp_test%s\n",
+            (rc == 0) ? "" : "not ",
+            (rc == 0 && skip_test)
+                ? " # skip GSS_C_TRANS_FLAG not in context" :"");
+    }
+
     /* close the listener */
 
     close(listen_fd);
@@ -169,7 +180,7 @@ main()
 }
 
 
-void *
+int
 server_func(
     void *                              arg)
 {
@@ -178,6 +189,9 @@ server_func(
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
     char *                              user_id = NULL;
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    OM_uint32                           flags;
     
     server_args = (struct context_arg *) arg;
 
@@ -192,7 +206,27 @@ server_func(
     if(result == GLOBUS_FALSE)
     {
 	fprintf(stderr, "SERVER: Authentication failed\n");
-        exit(1);
+        return EXIT_FAILURE;
+    }
+
+    major_status = gss_inquire_context(
+            &minor_status,
+            context_handle,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            &flags,
+            NULL,
+            NULL);
+
+    if (major_status == GSS_S_COMPLETE)
+    {
+        if (!(flags & GSS_C_TRANS_FLAG))
+        {
+            skip_test = 1;
+            return EXIT_SUCCESS;
+        }
     }
 
     result = globus_gsi_gssapi_test_export_context("context.dat",
@@ -201,7 +235,7 @@ server_func(
     if(result == GLOBUS_FALSE)
     {
 	fprintf(stderr, "SERVER: Export failed\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     context_handle = GSS_C_NO_CONTEXT;
@@ -212,7 +246,7 @@ server_func(
     if(result == GLOBUS_FALSE)
     {
 	fprintf(stderr, "SERVER: Import failed\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     result = globus_gsi_gssapi_test_send_hello(server_args->fd,
@@ -221,7 +255,7 @@ server_func(
     if(result == GLOBUS_FALSE)
     {
 	fprintf(stderr, "SERVER: Send hello failed\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     close(server_args->fd);
@@ -232,10 +266,10 @@ server_func(
 				   user_id,
 				   &delegated_cred);
     
-    return NULL;
+    return EXIT_SUCCESS;
 }
 
-void *
+void
 client_func(
     void *                              arg)
 {
@@ -246,6 +280,9 @@ client_func(
     int                                 connect_fd;
     globus_bool_t                       result;
     int                                 rc;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    OM_uint32                           flags;
     
     client_args = (struct context_arg *) arg;
 
@@ -274,6 +311,26 @@ client_func(
         fprintf(stderr, "CLIENT: Authentication failed\n");
         exit(1);
     }
+
+    major_status = gss_inquire_context(
+            &minor_status,
+            context_handle,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            &flags,
+            NULL,
+            NULL);
+
+
+    if (major_status == GSS_S_COMPLETE)
+    {
+        if (!(flags & GSS_C_TRANS_FLAG))
+        {
+            return;
+        }
+    }
     
 
     result = globus_gsi_gssapi_test_receive_hello(connect_fd,
@@ -294,5 +351,5 @@ client_func(
 
     free(client_args);
 
-    return NULL;
+    return;
 }

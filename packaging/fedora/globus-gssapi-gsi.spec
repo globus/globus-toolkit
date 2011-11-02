@@ -12,8 +12,8 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.1
-Release:	2%{?dist}
+Version:	10.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
@@ -192,6 +192,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Nov 02 2011 Joseph Bester <bester@mcs.anl.gov> - 10.2-1
+- Bug 7159 - globus-gssapi-gsi uses openssl symbols that are not part of the
+  API
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 10.1-2
 - Add explicit dependencies on >= 5.2 libraries
 

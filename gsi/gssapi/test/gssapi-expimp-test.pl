@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More;
+use Test;
 
 my $test_prog = 'gssapi-expimp-test';
 
@@ -17,13 +17,9 @@ if (exists $ENV{VALGRIND})
     }
 }
 
-push(@tests, "ok(system(\"$valgrind ./$test_prog\") == 0, \"$test_prog\")");
+
 
 # Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests);
+plan tests => 1;
 
-# And run them all.
-foreach (@tests)
-{
-    eval "$_";
-}
+system("$valgrind ./$test_prog");

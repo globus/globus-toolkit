@@ -273,10 +273,12 @@ GSS_CALLCONV gss_accept_sec_context(
             context->ret_flags |= GSS_C_MUTUAL_FLAG;
             context->ret_flags |= GSS_C_PROT_READY_FLAG;
             context->ret_flags |= GSS_C_INTEG_FLAG  
-                               |  GSS_C_TRANS_FLAG
                                |  GSS_C_REPLAY_FLAG
                                |  GSS_C_SEQUENCE_FLAG;
 
+#           if LINK_WITH_INTERNAL_OPENSSL_API
+            context->ret_flags |=  GSS_C_TRANS_FLAG;
+#           endif
             /* 
              * IF we are talking to a real SSL client,
              * we dont want to do delegation, so we are done
