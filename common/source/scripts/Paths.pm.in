@@ -59,7 +59,7 @@ else
 $exec_prefix = eval_path('@exec_prefix@');
 $sbindir = eval_path('@sbindir@');
 $bindir = eval_path('@bindir@');
-$libdir = eval_path('@libdir@');
+@GLOBUS_PERL_LIBDIR_CHOICE@
 $includedir = eval_path('@includedir@');
 $datarootdir = eval_path('@datarootdir@');
 $datadir = eval_path('@datadir@');

@@ -79,7 +79,11 @@ esac
 echo "$libdir_choice" > libdir-choice
 GLOBUS_LIBDIR_CHOICE="libdir-choice"
 
+echo "$perl_libdir_choice" > perl-libdir-choice
+GLOBUS_PERL_LIBDIR_CHOICE="perl-libdir-choice"
+
 AC_SUBST_FILE(GLOBUS_LIBDIR_CHOICE)
+AC_SUBST_FILE(GLOBUS_PERL_LIBDIR_CHOICE)
 
 cat > globus-script-initializer << EOF
 eval_path()
