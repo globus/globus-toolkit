@@ -102,7 +102,10 @@ sed /GLOBUS_LICENSE/d -i $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
+  | grep -v noflavor_data.filelist \
   | sed s!^!%{_prefix}! > package.filelist
+
+rm $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist
 
 # man_MANS may get compressed
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \

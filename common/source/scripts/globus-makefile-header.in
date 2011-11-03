@@ -19,30 +19,6 @@
 
 @GLOBUS_PERL_INITIALIZER@
 
-BEGIN
-{
-    use Config;
-    if (exists $ENV{GLOBUS_LOCATION})
-    {
-        push(@INC, 
-                $ENV{GLOBUS_LOCATION} . "/lib/perl",
-                $ENV{GLOBUS_LOCATION} . "/lib/perl/$Config{archname}");
-    }
-    if (exists $ENV{GPT_LOCATION})
-    {
-        push(@INC, 
-                $ENV{GPT_LOCATION} . "/lib/perl",
-                $ENV{GPT_LOCATION} . "/lib/perl/$Config{archname}");
-    }
-
-    if ((! exists($ENV{GLOBUS_LOCATION})) && (! exists($ENV{GPT_LOCATION})))
-    {
-        push(@INC, 
-                "@libdir@/perl",
-                "@libdir@/perl/$Config{archname}");
-    }
-}
-
 use strict;
 use Globus::Core::Paths;
 use Getopt::Long;

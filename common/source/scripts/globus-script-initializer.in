@@ -20,7 +20,7 @@ fi
 exec_prefix="`eval_path '@exec_prefix@'`"
 sbindir="`eval_path '@sbindir@'`"
 bindir="`eval_path '@bindir@'`"
-libdir="`eval_path '@libdir@'`"
+@GLOBUS_LIBDIR_CHOICE@
 libexecdir="`eval_path '@libexecdir@'`"
 includedir="`eval_path '@includedir@'`"
 datarootdir="`eval_path '@datarootdir@'`"
