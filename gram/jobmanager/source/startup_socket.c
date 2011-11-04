@@ -26,6 +26,7 @@
  */
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
+#include "globus_gsi_credential.h"
 #include "globus_xio.h"
 
 #include <unistd.h>
@@ -45,6 +46,10 @@
 #error "CMSG_LEN not defined, unknown data padding needed for struct cmsghdr"
 #endif
 
+static const char * globus_l_gatekeeper_env[] = {
+                "REMOTE_ADDR", "REQUEST_METHOD", "SCRIPT_NAME",
+                "CONTENT_LENGTH", "GATEWAY_INTERFACE", "SSL_CLIENT_CERT",
+                NULL };
 static
 globus_result_t
 globus_l_gram_create_handle(
@@ -61,6 +66,26 @@ globus_l_gram_startup_socket_callback(
     globus_size_t                       nbytes,
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg);
+
+static
+int
+globus_l_create_starter_connect_socket(
+    globus_gram_job_manager_t *         manager,
+    int *                               sockptr);
+
+static
+int
+globus_l_encode_gatekeeper_env(
+    struct iovec                       *iov);
+
+static
+int
+globus_l_decode_gatekeeper_env(
+    const char                         *p,
+    size_t                              len,
+    char                              **remote_addr,
+    size_t                             *content_length,
+    globus_gsi_cred_handle_t           *cred_handle);
 
 globus_xio_driver_t                     globus_i_gram_job_manager_file_driver;
 globus_xio_stack_t                      globus_i_gram_job_manager_file_stack;
@@ -374,7 +399,7 @@ globus_gram_job_manager_startup_socket_init(
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
 
-    sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+    sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
@@ -523,6 +548,8 @@ globus_gram_job_manager_startup_socket_init(
 
         goto fcntl_failed;
     }
+
+    listen(sock, 8);
 
     result = globus_l_gram_create_handle(
             sock,
@@ -684,18 +711,14 @@ globus_gram_job_manager_starter_send(
     int                                 sock;
     char                                byte[1];
     int                                 rc = 0;
-    struct sockaddr_un                  addr;
     struct msghdr                       message;
     struct iovec                        iov[1];
     struct cmsghdr *                    cmsg;
     int *                               fdptr;
     void *                              cmsgbuf = NULL;
     gss_buffer_desc                     cred_buffer;
-    int                                 acksock[2];
     OM_uint32                           major_status, minor_status;
-    int                                 sndbuf;
     enum { GRAM_RETRIES = 100 };
-    struct linger                       linger;
 
     globus_gram_job_manager_log(
             manager,
@@ -711,132 +734,11 @@ globus_gram_job_manager_starter_send(
             response_fd);
 
     /* create socket */
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
-    sock = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (sock < 0)
+    rc = globus_l_create_starter_connect_socket(manager, &sock);
+    if (rc != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.send_job.end "
-                "level=WARN "
-                "http_body_fd=%d "
-                "context_fd=%d "
-                "response_fd=%d "
-                "status=%d "
-                "errno=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                http_body_fd,
-                context_fd,
-                response_fd,
-                -rc,
-                errno,
-                "Error creating datagram socket",
-                strerror(errno));
         goto socket_failed;
     }
-    sndbuf = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
-    rc = setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf));
-    if (rc < 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.send_job.end "
-                "level=WARN "
-                "http_body_fd=%d "
-                "context_fd=%d "
-                "response_fd=%d "
-                "status=%d "
-                "errno=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                http_body_fd,
-                context_fd,
-                response_fd,
-                -rc,
-                errno,
-                "Error setting datagram socket buffer",
-                strerror(errno));
-        goto setsockopt_failed;
-    }
-    rc = connect(sock, (struct sockaddr *) &addr, sizeof(addr));
-    if (rc < 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.send_job.end "
-                "level=WARN "
-                "http_body_fd=%d "
-                "context_fd=%d "
-                "response_fd=%d "
-                "status=%d "
-                "address=\"%s\" "
-                "errno=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                http_body_fd,
-                context_fd,
-                response_fd,
-                -rc,
-                manager->socket_path,
-                errno,
-                "Error making datagram connecting to Job Manager",
-                strerror(errno));
-        goto connect_failed;
-    }
-    /* create acksocks */
-    rc = socketpair(AF_UNIX, SOCK_STREAM, 0, acksock);
-    if (rc < 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-        globus_gram_job_manager_log(
-                manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                "event=gram.send_job.end "
-                "level=WARN "
-                "http_body_fd=%d "
-                "context_fd=%d "
-                "response_fd=%d "
-                "status=%d "
-                "errno=%d "
-                "msg=\"%s\" "
-                "reason=\"%s\" "
-                "\n",
-                http_body_fd,
-                context_fd,
-                response_fd,
-                -rc,
-                errno,
-                "Error creating ack socket pair",
-                strerror(errno));
-        goto socketpair_failed;
-    }
-    linger.l_onoff = 1;
-    linger.l_linger = 5;
-    setsockopt(
-            acksock[0],
-            SOL_SOCKET,
-            SO_LINGER,
-            &linger,
-            sizeof(linger));
-    setsockopt(
-            acksock[1],
-            SOL_SOCKET,
-            SO_LINGER,
-            &linger,
-            sizeof(linger));
 
     /* Export credential to be sent to active job manager */
     major_status = gss_export_cred(
@@ -907,17 +809,16 @@ globus_gram_job_manager_starter_send(
     message.msg_iovlen = 1;
     message.msg_flags = 0;
     message.msg_control = cmsgbuf;
-    message.msg_controllen = CMSG_SPACE(4*sizeof(int));
+    message.msg_controllen = CMSG_SPACE(3*sizeof(int));
 
     cmsg = CMSG_FIRSTHDR(&message);
     cmsg->cmsg_level = SOL_SOCKET;
     cmsg->cmsg_type = SCM_RIGHTS;
-    cmsg->cmsg_len = CMSG_LEN(4 * sizeof(int));
+    cmsg->cmsg_len = CMSG_LEN(3 * sizeof(int));
     fdptr = (int *)CMSG_DATA(cmsg);
     fdptr[0] = http_body_fd;
     fdptr[1] = context_fd;
     fdptr[2] = response_fd;
-    fdptr[3] = acksock[0];
 
     /* Send message */
     rc = sendmsg(sock, &message, 0);
@@ -951,10 +852,8 @@ globus_gram_job_manager_starter_send(
     iov[0].iov_len = 1;
     message.msg_iov = iov;
     message.msg_iovlen = 1;
-    close(acksock[0]);
-    acksock[0] = -1;
     errno = 0;
-    rc = recvmsg(acksock[1], &message, 0);
+    rc = recvmsg(sock, &message, 0);
     if (rc <= 0 || byte[0] != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
@@ -990,7 +889,7 @@ globus_gram_job_manager_starter_send(
     byte[0]++;
     message.msg_iov = iov;
     message.msg_iovlen = 1;
-    rc = sendmsg(acksock[1], &message, 0);
+    rc = sendmsg(sock, &message, 0);
     if (rc < 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
@@ -1044,20 +943,259 @@ cred_too_big:
             &minor_status,
             &cred_buffer);
 export_cred_failed:
-    if (acksock[0] != -1)
-    {
-        close(acksock[0]);
-    }
-    close(acksock[1]);
-socketpair_failed:
-connect_failed:
-setsockopt_failed:
     close(sock);
 socket_failed:
 
     return rc;
 }
-/* globus_gram_job_manager_starter_send_fds() */
+/* globus_gram_job_manager_starter_send() */
+
+int
+globus_gram_job_manager_starter_send_v2(
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred)
+{
+    int                                 sock;
+    char                                byte[1];
+    int                                 rc = 0;
+    struct msghdr                       message;
+    struct iovec                        iov[5];
+    struct cmsghdr *                    cmsg;
+    int *                               fdptr;
+    void *                              cmsgbuf = NULL;
+    gss_buffer_desc                     cred_buffer;
+    OM_uint32                           major_status, minor_status;
+    unsigned char                       int_buf[4];
+    unsigned char                       content_length_buf[4];
+    char *                              content_length_str;
+    size_t                              content_length;
+    enum { GRAM_RETRIES = 100 };
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+            "event=gram.send_job.start "
+            "level=INFO "
+            "\n");
+
+    content_length_str = getenv("CONTENT_LENGTH");
+    sscanf(content_length_str, "%zu", &content_length);
+
+    rc = globus_l_create_starter_connect_socket(manager, &sock);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto socket_failed;
+    }
+
+    /* Export credential to be sent to active job manager */
+    major_status = gss_export_cred(
+            &minor_status,
+            cred,
+            GSS_C_NO_OID,
+            0,
+            &cred_buffer);
+    if (GSS_ERROR(major_status))
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                "Error exporting proxy");
+        goto export_cred_failed;
+    }
+
+    if (cred_buffer.length > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "status=%d "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                "Proxy larger than protocol allows");
+        goto cred_too_big;
+    }
+
+    /* Don't define cmsgbuf as a static char[]---CMSG_SPACE isn't guaranteed to
+     * be a constant expression, and alignment issues can occur
+     * with some compilers
+     */
+    cmsgbuf = malloc(CMSG_SPACE(2 * sizeof(int)));
+    memset(cmsgbuf, 0, CMSG_SPACE(2 * sizeof(int)));
+
+    /* network order 4-byte size of the credential token */
+    int_buf[0] = cred_buffer.length >> 24   & 0xff;
+    int_buf[1] = (cred_buffer.length >> 16) & 0xff;
+    int_buf[2] = (cred_buffer.length >> 8)  & 0xff;
+    int_buf[3] = (cred_buffer.length)       & 0xff;
+
+    content_length_buf[0] =  content_length >> 24  & 0xff;
+    content_length_buf[1] = (content_length >> 16) & 0xff;
+    content_length_buf[2] = (content_length >> 8)  & 0xff;
+    content_length_buf[3] = (content_length)       & 0xff;
+
+    /* New message format:
+     * "msg2"
+     * 4 bytes: length of credential in network byte order
+     * credential blob
+     * remainder is a sequence of name=value pairs that form the environment
+     * passed from the gatekeeper, separated by \0
+     * REMOTE_ADDR=%s
+     * REQUEST_METHOD=%s
+     * SCRIPT_NAME=%s
+     * CONTENT_LENGTH=%s
+     * GATEWAY_INTERFACE=%s
+     * SSL_CLIENT_CERT=%s
+     * SSL_CLIENT_CERT_CHAIN%d=%s
+     */
+    iov[0].iov_base = "msg2";
+    iov[0].iov_len = 4;
+
+    iov[1].iov_base = int_buf;
+    iov[1].iov_len = 4;
+
+    iov[2].iov_base = cred_buffer.value;
+    iov[2].iov_len = cred_buffer.length;
+
+    globus_l_encode_gatekeeper_env(&iov[3]);
+
+
+    /* Message metadata */
+    message.msg_name = NULL;
+    message.msg_namelen = 0;
+    message.msg_iov = iov;
+    message.msg_iovlen = 4;
+    message.msg_flags = 0;
+    message.msg_control = cmsgbuf;
+    message.msg_controllen = CMSG_SPACE(2*sizeof(int));
+
+    /* Send two descriptors:
+     * the socket to/from the gatekeeper 
+     */
+    cmsg = CMSG_FIRSTHDR(&message);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(2 * sizeof(int));
+    fdptr = (int *)CMSG_DATA(cmsg);
+    fdptr[0] = 0;
+    fdptr[1] = 1;
+
+    /* Send message */
+    rc = sendmsg(sock, &message, 0);
+    if (rc < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                "Error sending datagram",
+                errno,
+                strerror(errno));
+        goto sendmsg_failed;
+    }
+    memset(&message, 0, sizeof(struct msghdr));
+    iov[0].iov_base = &byte;
+    iov[0].iov_len = 1;
+    message.msg_iov = iov;
+    message.msg_iovlen = 1;
+    errno = 0;
+    rc = recvmsg(sock, &message, 0);
+    if (rc <= 0 || byte[0] != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                "Error receiving ack",
+                errno,
+                strerror(errno));
+    }
+    else
+    {
+        rc = GLOBUS_SUCCESS;
+    }
+    memset(&message, 0, sizeof(struct msghdr));
+    iov[0].iov_base = &byte;
+    iov[0].iov_len = 1;
+    byte[0]++;
+    message.msg_iov = iov;
+    message.msg_iovlen = 1;
+    rc = sendmsg(sock, &message, 0);
+    if (rc < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "status=%d "
+                "msg=\"%s\" "
+                "errno=%d "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                "Error sending ack",
+                errno,
+                strerror(errno));
+    }
+    else
+    {
+        rc = GLOBUS_SUCCESS;
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                "event=gram.send_job.end "
+                "level=INFO "
+                "status=%d "
+                "\n",
+                0);
+    }
+
+sendmsg_failed:
+    if (cmsgbuf == NULL)
+    {
+        free(cmsgbuf);
+    }
+cred_too_big:
+    gss_release_buffer(
+            &minor_status,
+            &cred_buffer);
+export_cred_failed:
+    close(sock);
+socket_failed:
+
+    return rc;
+}
+/* globus_gram_job_manager_starter_send_v2() */
+
 
 
 static
@@ -1080,7 +1218,6 @@ globus_l_gram_startup_socket_callback(
     int                                 http_body_fd = -1;
     int                                 context_fd = -1;
     int                                 response_fd = -1;
-    int                                 acksock = -1;
     int                                 rc;
     gss_ctx_id_t                        context;
     char *                              contact;
@@ -1102,11 +1239,18 @@ globus_l_gram_startup_socket_callback(
     gss_buffer_desc                     output_name;
     struct linger                       linger;
     char *                              gt3_failure_message = NULL;
+    char *                              peername = NULL;
+    size_t                              content_length;
+    int                                 newsock;
+    globus_sockaddr_t                   addr;
+    globus_socklen_t                    addrlen = sizeof(addr);
+    globus_gsi_cred_handle_t            peer_cred_handle = NULL;
 
     cred_buffer.value = cred_buffer_value;
 
     for (accepted = 0; !done && accepted < MAX_NEW_PER_SELECT; accepted++)
     {
+        int flags;
         globus_gram_job_manager_log(
                 manager,
                 GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG,
@@ -1115,6 +1259,16 @@ globus_l_gram_startup_socket_callback(
                 "fd=%d "
                 "\n",
                 manager->socket_fd);
+
+        newsock = accept(manager->socket_fd, (struct sockaddr *) &addr, &addrlen);
+        if (newsock < 0)
+        {
+            break;
+        }
+
+        flags = fcntl(newsock, F_GETFL);
+        flags &= ~O_NONBLOCK;
+        fcntl(newsock, F_SETFL, flags);
 
         cred_buffer.length = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
         memset(cred_buffer.value, 0, cred_buffer.length);
@@ -1145,7 +1299,7 @@ globus_l_gram_startup_socket_callback(
         tries = 10;
         while (tries > 0)
         { 
-            rc = recvmsg(manager->socket_fd, &message, 0);
+            rc = recvmsg(newsock, &message, 0);
             if (rc <= 0 && errno == EAGAIN)
             {
                 tries--;
@@ -1192,7 +1346,7 @@ globus_l_gram_startup_socket_callback(
                     "reason=\"%s\" "
                     "\n",
                     levelstr,
-                    manager->socket_fd,
+                    newsock,
                     "recvmsg failed",
                     -rc,
                     errno,
@@ -1200,60 +1354,160 @@ globus_l_gram_startup_socket_callback(
 
             goto failed_receive;
         }
-        cred_buffer.length = rc;
 
-        http_body_fd = -1;
-        context_fd = -1;
-        response_fd = -1;
-        acksock = -1;
-
-        for (control_message = CMSG_FIRSTHDR(&message);
-             control_message != NULL;
-             control_message = CMSG_NXTHDR(&message, control_message))
+        if (strncmp((char *) cred_buffer_value, "msg2", 4) == 0)
         {
-            if (control_message->cmsg_level == SOL_SOCKET &&
-                control_message->cmsg_type == SCM_RIGHTS)
+            size_t msgoff = 4;
+
+            cred_buffer.length  = cred_buffer_value[msgoff++] << 24;
+            cred_buffer.length += cred_buffer_value[msgoff++] << 16;
+            cred_buffer.length += cred_buffer_value[msgoff++] << 8;
+            cred_buffer.length += cred_buffer_value[msgoff++];
+
+            cred_buffer.value = &cred_buffer_value[msgoff];
+            msgoff += cred_buffer.length;
+
+            globus_l_decode_gatekeeper_env(
+                (char *) cred_buffer_value + msgoff,
+                rc - msgoff,
+                &peername,
+                &content_length,
+                &peer_cred_handle);
+
+            http_body_fd = -1;
+            response_fd = -1;
+
+            for (control_message = CMSG_FIRSTHDR(&message);
+                 control_message != NULL;
+                 control_message = CMSG_NXTHDR(&message, control_message))
             {
-                sent_fds = (int *) CMSG_DATA(control_message);
-                http_body_fd = sent_fds[0];
-                context_fd = sent_fds[1];
-                response_fd = sent_fds[2];
-                acksock = sent_fds[3];
-                break;
+                if (control_message->cmsg_level == SOL_SOCKET &&
+                    control_message->cmsg_type == SCM_RIGHTS)
+                {
+                    sent_fds = (int *) CMSG_DATA(control_message);
+                    http_body_fd = sent_fds[0];
+                    response_fd = sent_fds[1];
+                    break;
+                }
+            }
+
+            if (http_body_fd < 0 || response_fd < 0)
+            {
+                done = GLOBUS_TRUE;
+
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.new_request.end "
+                        "level=ERROR "
+                        "fd=%d "
+                        "status=%d "
+                        "msg=\"%s\" "
+                        "http_body_fd=%d "
+                        "response_fd=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        newsock,
+                        -rc,
+                        "Message did not contain required descriptors",
+                        http_body_fd,
+                        response_fd,
+                        globus_gram_protocol_error_string(rc));
+
+                goto failed_get_data;
             }
         }
-
-        if (http_body_fd < 0 || context_fd < 0 ||
-            response_fd < 0 || acksock < 0)
+        else
         {
-            done = GLOBUS_TRUE;
+            struct stat                     stat;
 
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+            cred_buffer.length = rc;
 
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.new_request.end "
-                    "level=ERROR "
-                    "fd=%d "
-                    "status=%d "
-                    "msg=\"%s\" "
-                    "http_body_fd=%d "
-                    "context_fd=%d "
-                    "response_fd=%d "
-                    "acksock=%d "
-                    "reason=\"%s\" "
-                    "\n",
-                    manager->socket_fd,
-                    -rc,
-                    "Message did not contain required descriptors",
-                    http_body_fd,
-                    context_fd,
-                    response_fd,
-                    acksock,
-                    globus_gram_protocol_error_string(rc));
+            http_body_fd = -1;
+            context_fd = -1;
+            response_fd = -1;
 
-            goto failed_get_data;
+            for (control_message = CMSG_FIRSTHDR(&message);
+                 control_message != NULL;
+                 control_message = CMSG_NXTHDR(&message, control_message))
+            {
+                if (control_message->cmsg_level == SOL_SOCKET &&
+                    control_message->cmsg_type == SCM_RIGHTS)
+                {
+                    sent_fds = (int *) CMSG_DATA(control_message);
+                    http_body_fd = sent_fds[0];
+                    context_fd = sent_fds[1];
+                    response_fd = sent_fds[2];
+                    break;
+                }
+            }
+
+            if (http_body_fd < 0 || context_fd < 0 || response_fd < 0)
+            {
+                done = GLOBUS_TRUE;
+
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.new_request.end "
+                        "level=ERROR "
+                        "fd=%d "
+                        "status=%d "
+                        "msg=\"%s\" "
+                        "http_body_fd=%d "
+                        "context_fd=%d "
+                        "response_fd=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        newsock,
+                        -rc,
+                        "Message did not contain required descriptors",
+                        http_body_fd,
+                        context_fd,
+                        response_fd,
+                        globus_gram_protocol_error_string(rc));
+
+                goto failed_get_data;
+            }
+
+            rc = fstat(http_body_fd, &stat);
+
+            if (rc < 0)
+            {
+                done = GLOBUS_TRUE;
+
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
+                        "event=gram.new_request.end "
+                        "level=ERROR "
+                        "fd=%d "
+                        "status=%d "
+                        "msg=\"%s\" "
+                        "http_body_fd=%d "
+                        "context_fd=%d "
+                        "response_fd=%d "
+                        "errno=%d "
+                        "reason=\"%s\" "
+                        "\n",
+                        newsock,
+                        -rc,
+                        "Failed determining message length",
+                        http_body_fd,
+                        context_fd,
+                        response_fd,
+                        errno,
+                        strerror(errno));
+
+                goto ackfailed;
+            }
+            content_length = (size_t) stat.st_size;
         }
 
         linger.l_onoff = 1;
@@ -1272,7 +1526,7 @@ globus_l_gram_startup_socket_callback(
         message.msg_iov = iov;
         message.msg_iovlen = 1;
         errno = 0;
-        rc = sendmsg(acksock, &message, 0);
+        rc = sendmsg(newsock, &message, 0);
         if (rc < 0)
         {
             done = GLOBUS_TRUE;
@@ -1290,17 +1544,15 @@ globus_l_gram_startup_socket_callback(
                     "http_body_fd=%d "
                     "context_fd=%d "
                     "response_fd=%d "
-                    "acksock=%d "
                     "errno=%d "
                     "reason=\"%s\" "
                     "\n",
-                    manager->socket_fd,
+                    newsock,
                     -rc,
                     "Failed sending ack",
                     http_body_fd,
                     context_fd,
                     response_fd,
-                    acksock,
                     errno,
                     strerror(errno));
 
@@ -1318,7 +1570,7 @@ globus_l_gram_startup_socket_callback(
         tries = 10;
         while (rc < 1 && tries > 0)
         {
-            rc = recvmsg(acksock, &message, 0);
+            rc = recvmsg(newsock, &message, 0);
             tries--;
         }
         if (rc < 0 || byte[0] != 1)
@@ -1336,19 +1588,17 @@ globus_l_gram_startup_socket_callback(
                     "http_body_fd=%d "
                     "context_fd=%d "
                     "response_fd=%d "
-                    "acksock=%d "
                     "errno=%d "
                     "reason=\"%s\" "
                     "rc=%d "
                     "byte=%d "
                     "\n",
-                    manager->socket_fd,
+                    newsock,
                     -GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED,
                     "Failed receiving ack",
                     http_body_fd,
                     context_fd,
                     response_fd,
-                    acksock,
                     errno,
                     strerror(errno),
                     (int) rc,
@@ -1392,16 +1642,14 @@ globus_l_gram_startup_socket_callback(
                     "http_body_fd=%d "
                     "context_fd=%d "
                     "response_fd=%d "
-                    "acksock=%d "
                     "msg=\"%s\" "
                     "reason=\"%s\" "
                     "\n",
-                    manager->socket_fd,
+                    newsock,
                     -rc,
                     http_body_fd,
                     context_fd,
                     response_fd,
-                    acksock,
                     "Error importing credential",
                     errstr_escaped ? errstr_escaped : "");
 
@@ -1417,12 +1665,16 @@ globus_l_gram_startup_socket_callback(
             done = GLOBUS_TRUE;
             goto failed_import_cred;
         }
+
         /* Load request data */
         rc = globus_gram_job_manager_request_load(
                 manager,
                 http_body_fd,
                 context_fd,
                 cred,
+                peername,
+                peer_cred_handle,
+                content_length,
                 &request,
                 &context,
                 &contact,
@@ -1729,14 +1981,13 @@ request_load_failed:
 ackfailed:
 failed_import_cred:
 failed_get_data:
-        if (acksock != -1)
-        {
-            close(acksock);
-            acksock = -1;
-        }
         if (http_body_fd != -1)
         {
             close(http_body_fd);
+            if (response_fd == http_body_fd)
+            {
+                response_fd = -1;
+            }
             http_body_fd = -1;
         }
         if (context_fd != -1)
@@ -1756,14 +2007,13 @@ failed_receive:
     {
         free(cmsgbuf);
     }
-    if (acksock != -1)
-    {
-        close(acksock);
-        acksock = -1;
-    }
     if (http_body_fd != -1)
     {
         close(http_body_fd);
+        if (response_fd == http_body_fd)
+        {
+            response_fd = -1;
+        }
         http_body_fd = -1;
     }
     if (context_fd != -1)
@@ -1775,6 +2025,11 @@ failed_receive:
     {
         close(response_fd);
         response_fd = -1;
+    }
+    if (newsock != -1)
+    {
+        close(newsock);
+        newsock = -1;
     }
 
     result = globus_xio_register_read(
@@ -1840,3 +2095,193 @@ attr_init_failed:
 }
 /* globus_l_gram_create_handle() */
 
+static
+int
+globus_l_create_starter_connect_socket(
+    globus_gram_job_manager_t *         manager,
+    int *                               sockptr)
+{
+    int                                 rc;
+    struct sockaddr_un                  addr;
+    int                                 sock = -1;
+    char *                              msg = "";
+    int                                 sndbuf;
+    int                                 save_errno = 0;
+
+    /* create socket */
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, manager->socket_path, sizeof(addr.sun_path)-1);
+    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        save_errno = errno;
+        msg = "Error creating datagram socket";
+
+        goto socket_failed;
+    }
+    sndbuf = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
+    rc = setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf));
+    if (rc < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        save_errno = errno;
+        msg = "Error setting datagram socket buffer";
+
+        goto setsockopt_failed;
+    }
+    rc = connect(sock, (struct sockaddr *) &addr, sizeof(addr));
+    if (rc < 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        save_errno = errno;
+        msg = "Error making datagram connecting to Job Manager";
+
+setsockopt_failed:
+        close(sock);
+        sock = -1;
+socket_failed:
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                "event=gram.send_job.end "
+                "level=WARN "
+                "status=%d "
+                "errno=%d "
+                "msg=\"%s\" "
+                "reason=\"%s\" "
+                "\n",
+                -rc,
+                save_errno,
+                "Error creating datagram socket",
+                strerror(save_errno));
+    }
+    *sockptr = sock;
+    return rc;
+}
+/* globus_l_create_starter_connect_socket() */
+
+static
+int
+globus_l_encode_gatekeeper_env(
+    struct iovec                       *iov)
+{
+    int envno;
+    char *p;
+    char cert_chain_name[] = "SSL_CLIENT_CERT_CHAINXX"; 
+    int rc;
+
+    iov->iov_len = 0;
+    for (envno = 0; globus_l_gatekeeper_env[envno] != NULL; envno++)
+    {
+        const char * tmpstr = getenv(globus_l_gatekeeper_env[envno]);
+
+        if (tmpstr != NULL)
+        {
+            iov->iov_len += strlen(globus_l_gatekeeper_env[envno]) + strlen(tmpstr) + 2;
+        }
+    }
+
+    for (envno = 0; envno < 100; envno++)
+    {
+        const char * tmpstr;
+        sprintf(cert_chain_name, "SSL_CLIENT_CERT_CHAIN%d", envno);
+
+        tmpstr = getenv(cert_chain_name);
+        if (tmpstr != NULL)
+        {
+            iov->iov_len += strlen(cert_chain_name) + strlen(tmpstr) + 2;
+        }
+    }
+
+    iov->iov_base = malloc(iov->iov_len);
+    p = iov->iov_base;
+
+    for (envno = 0; globus_l_gatekeeper_env[envno] != NULL; envno++)
+    {
+        const char * tmpstr = getenv(globus_l_gatekeeper_env[envno]);
+
+        if (tmpstr != NULL)
+        {
+            rc = sprintf(p, "%s=%s", globus_l_gatekeeper_env[envno], tmpstr);
+            p += rc;
+            *(p++) = 0;
+        }
+    }
+    for (envno = 0; envno < 100; envno++)
+    {
+        const char * tmpstr;
+        sprintf(cert_chain_name, "SSL_CLIENT_CERT_CHAIN%d", envno);
+
+        tmpstr = getenv(cert_chain_name);
+        if (tmpstr != NULL)
+        {
+            rc = sprintf(p, "%s=%s", cert_chain_name, tmpstr);
+            p += rc;
+            *(p++) = 0;
+        }
+    }
+    return GLOBUS_SUCCESS;
+}
+
+static
+int
+globus_l_decode_gatekeeper_env(
+    const char                         *p,
+    size_t                              len,
+    char                              **remote_addr,
+    size_t                             *content_length,
+    globus_gsi_cred_handle_t           *cred_handle)
+{
+    const char * endp = p + len;
+    const char * cert_pem;
+    X509 * cert;
+    BIO * b;
+    STACK_OF(X509) * chain;
+
+    chain = sk_X509_new_null();
+
+    globus_gsi_cred_handle_init(cred_handle, NULL);
+
+    b = BIO_new(BIO_s_mem());
+
+    while (p < endp)
+    {
+        if (strncmp(p, "REMOTE_ADDR=", 12) == 0)
+        {
+            *remote_addr = globus_common_create_string("%s", p+13);
+        }
+        else if (strncmp(p, "CONTENT_LENGTH", 14) == 0)
+        {
+            sscanf(p+15, "%zu", content_length);
+        }
+        /* SSL_CLIENT_CERT_CHAIN must be before SSL_CLIENT_CERT */
+        else if (strncmp(p, "SSL_CLIENT_CERT_CHAIN", 21) == 0)
+        {
+            int chain_index;
+
+            sscanf(p + 21, "%d", &chain_index);
+
+            cert_pem = strchr(p, '=') + 1;
+            BIO_write(b, cert_pem, strlen(cert_pem));
+            cert = PEM_read_bio_X509(b, NULL, 0, NULL);
+
+            sk_X509_insert(chain, cert, chain_index);
+        }
+        else if (strncmp(p, "SSL_CLIENT_CERT", 15) == 0)
+        {
+            cert_pem = p + 16;
+            BIO_write(b, cert_pem, strlen(cert_pem));
+            cert = PEM_read_bio_X509(b, NULL, 0, NULL);
+
+            globus_gsi_cred_set_cert(*cred_handle, cert);
+        }
+        p += strlen(p) + 1;
+    }
+    globus_gsi_cred_set_cert_chain(*cred_handle, chain);
+    sk_X509_pop_free(chain, X509_free);
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_l_decode_gatekeeper_env() */

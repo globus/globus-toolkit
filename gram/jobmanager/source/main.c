@@ -56,11 +56,6 @@ globus_l_gram_create_stack(
 
 static
 void
-globus_l_waitpid_callback(
-    void *                              user_arg);
-
-static
-void
 reply_and_exit(
     globus_gram_job_manager_t *         manager,
     int                                 rc,
@@ -76,11 +71,6 @@ void
 globus_l_gram_cputype_and_manufacturer(
     globus_gram_job_manager_config_t *  config);
 
-static
-globus_mutex_t                          globus_l_waitpid_callback_lock;
-static
-globus_callback_handle_t                globus_l_waitpid_callback_handle =
-        GLOBUS_NULL_HANDLE;
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 int
@@ -100,11 +90,16 @@ main(
     gss_cred_id_t                       cred = GSS_C_NO_CREDENTIAL;
     OM_uint32                           major_status, minor_status;
     pid_t                               forked_starter = 0;
+    globus_bool_t                       cgi_invoked = GLOBUS_FALSE;
 
     if ((sleeptime_str = getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
         sleeptime = atoi(sleeptime_str);
         sleep(sleeptime);
+    }
+    if (getenv("GATEWAY_INTERFACE"))
+    {
+        cgi_invoked = GLOBUS_TRUE;
     }
     /*
      * Stdin and stdout point at socket to client
@@ -175,7 +170,7 @@ main(
     {
         exit(1);
     }
-    if (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL)
+    if (getenv("GRID_SECURITY_HTTP_BODY_FD") == NULL && !cgi_invoked)
     {
         debug_mode_service = GLOBUS_TRUE;
     }
@@ -269,7 +264,12 @@ main(
      * Pull out file descriptor numbers for security context and job request
      * from the environment (set by the gatekeeper)
      */
-    if (!debug_mode_service)
+    if (cgi_invoked)
+    {
+        http_body_fd = 0;
+        context_fd = -1;
+    }
+    else if (!debug_mode_service)
     {
         char * fd_env = getenv("GRID_SECURITY_HTTP_BODY_FD");
 
@@ -295,7 +295,10 @@ main(
     /* Redirect stdin from /dev/null, we'll handle stdout after the reply is
      * sent
      */
-    freopen("/dev/null", "r", stdin);
+    if (!cgi_invoked)
+    {
+        freopen("/dev/null", "r", stdin);
+    }
 
     /* Here we'll either become the active job manager to process all
      * jobs for this user/host/lrm combination, or we'll hand off the
@@ -480,7 +483,7 @@ main(
                         
             }
         }
-        else if (http_body_fd)
+        else if (http_body_fd >= 0)
         {
             /* If manager.socket_fd == -1 then we are either the child from the
              * fork or another process started somehow (either command-line
@@ -491,17 +494,29 @@ main(
              * If this succeeds, we set located_active_jm and leave the loop.
              * Otherwise, we try again.
              */
-            rc = globus_gram_job_manager_starter_send(
-                    &manager,
-                    http_body_fd,
-                    context_fd,
-                    fileno(stdout),
-                    cred);
+            if (context_fd >= 0)
+            {
+                rc = globus_gram_job_manager_starter_send(
+                        &manager,
+                        http_body_fd,
+                        context_fd,
+                        fileno(stdout),
+                        cred);
+            }
+            else
+            {
+                rc = globus_gram_job_manager_starter_send_v2(
+                        &manager,
+                        cred);
+            }
             if (rc == GLOBUS_SUCCESS)
             {
                 located_active_jm = GLOBUS_TRUE;
                 close(http_body_fd);
-                close(context_fd);
+                if (context_fd >= 0)
+                {
+                    close(context_fd);
+                }
                 manager.done = GLOBUS_TRUE;
             }
             else
@@ -526,27 +541,22 @@ main(
         }
     }
 
-    globus_mutex_init(&globus_l_waitpid_callback_lock, NULL);
-
-    /*
-     * Register periodic event to clean up zombie if we forked a child
-     * process
+    /* Ignore SIGCHILD, and automatically reap child processes. Because of the
+     * fork() above to delegate to another job manager process, and the use of
+     * sub-processes to invoke the perl modules, we create some other
+     * processes. We don't care too much how they exit, so we'll just make sure
+     * we don't create zombies out of them.
      */
-    if (forked_starter != 0)
     {
-        globus_reltime_t                delay, period;
+        struct sigaction act;
 
-        GlobusTimeReltimeSet(delay, 0, 0);
-        GlobusTimeReltimeSet(period, 10, 0);
-
-        globus_callback_register_periodic(
-                &globus_l_waitpid_callback_handle,
-                &delay,
-                &period,
-                globus_l_waitpid_callback,
-                &forked_starter);
+        act.sa_handler = SIG_IGN;
+        sigemptyset(&act.sa_mask);
+        sigaddset(&act.sa_mask, SIGCHLD);
+        act.sa_flags = SA_NOCLDWAIT;
+        sigaction(SIGCHLD, &act, NULL);
     }
-
+    
     GlobusGramJobManagerLock(&manager);
     if (manager.socket_fd != -1 &&
         globus_hashtable_empty(&manager.request_hash) &&
@@ -565,19 +575,6 @@ main(
         GlobusGramJobManagerWait(&manager);
     }
     GlobusGramJobManagerUnlock(&manager);
-
-    globus_mutex_lock(&globus_l_waitpid_callback_lock);
-    if (globus_l_waitpid_callback_handle != GLOBUS_NULL_HANDLE)
-    {
-        globus_callback_unregister(
-                globus_l_waitpid_callback_handle,
-                NULL,
-                NULL,
-                0);
-        globus_l_waitpid_callback_handle = GLOBUS_NULL_HANDLE;
-    }
-    globus_mutex_unlock(&globus_l_waitpid_callback_lock);
-
 
     globus_gram_job_manager_log(
             &manager,
@@ -763,31 +760,6 @@ driver_load_failed:
 }
 /* globus_l_gram_create_stack() */
 
-
-static
-void
-globus_l_waitpid_callback(
-    void *                              user_arg)
-{
-    pid_t                               childpid = *(pid_t *) user_arg;
-    int                                 statint;
-
-    globus_mutex_lock(&globus_l_waitpid_callback_lock);
-    if (waitpid(childpid, &statint, WNOHANG) > 0)
-    {
-        *(pid_t *) user_arg = 0;
-
-        globus_callback_unregister(
-                globus_l_waitpid_callback_handle,
-                NULL,
-                NULL,
-                0);
-        globus_l_waitpid_callback_handle = GLOBUS_NULL_HANDLE;
-    }
-
-    globus_mutex_unlock(&globus_l_waitpid_callback_lock);
-}
-/* globus_l_waitpid_callback() */
 
 static
 void

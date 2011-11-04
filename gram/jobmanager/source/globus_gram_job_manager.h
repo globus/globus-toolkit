@@ -33,6 +33,7 @@
 #include "globus_gram_protocol.h"
 #include "globus_rsl.h"
 #include "globus_gass_cache.h"
+#include "globus_gsi_credential.h"
 
 /* Defines */
 
@@ -865,6 +866,7 @@ globus_gram_job_manager_request_init(
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
+    globus_gsi_cred_handle_t            peer_cred,
     globus_bool_t                       reinit,
     char **                             old_job_contact,
     globus_gram_jobmanager_request_t ** old_job_request,
@@ -920,6 +922,9 @@ globus_gram_job_manager_request_load(
     int                                 http_body_fd,
     int                                 context_fd,
     gss_cred_id_t                       credential,
+    const char *                        peer_address,
+    globus_gsi_cred_handle_t            peer_cred_handle,
+    size_t                              content_length,
     globus_gram_jobmanager_request_t ** request,
     gss_ctx_id_t *                      context,
     char **                             contact,
@@ -1026,6 +1031,7 @@ int
 globus_gram_job_manager_read_request(
     globus_gram_job_manager_t *         manager,
     int                                 fd,
+    size_t                              content_length,
     char **                             rsl,
     char **                             client_contact,
     int *                               job_state_mask,
@@ -1565,6 +1571,11 @@ globus_gram_job_manager_starter_send(
     int                                 response_fd,
     gss_cred_id_t                       cred);
 
+int
+globus_gram_job_manager_starter_send_v2(
+    globus_gram_job_manager_t *         manager,
+    gss_cred_id_t                       cred);
+
 extern globus_xio_driver_t              globus_i_gram_job_manager_file_driver;
 extern globus_xio_stack_t               globus_i_gram_job_manager_file_stack;
 
@@ -1572,6 +1583,7 @@ extern globus_xio_stack_t               globus_i_gram_job_manager_file_stack;
 int
 globus_i_gram_get_tg_gateway_user(
     gss_ctx_id_t                        context,
+    globus_gsi_cred_handle_t            peer_cred,
     char **                             gateway_user);
 
 

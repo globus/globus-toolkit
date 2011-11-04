@@ -492,6 +492,8 @@ if test $seg -eq 1; then
     echo "-seg-module $jmtype" >> ${scratch}/jobmanager.conf
 fi
 
+echo "-globus-job-dir ${TMPDIR:-/tmp}/${LOGNAME}/" >> ${scratch}/jobmanager.conf
+
 docleanup=false
  
 ${sbindir}/globus-gatekeeper -c ${scratch}/gatekeeper.conf -test \
