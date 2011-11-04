@@ -410,7 +410,7 @@ globus_l_xio_popen_handle_destroy(
 static
 void
 globus_l_xio_popen_child(
-    xio_l_popen_attr_t *                attr,
+    const xio_l_popen_attr_t *          attr,
     const globus_xio_contact_t *        contact_info,
     int *                               infds,
     int *                               outfds,
@@ -535,7 +535,7 @@ globus_l_xio_popen_open(
     int                                 outfds[2];
     int                                 errfds[2];
     xio_l_popen_handle_t *              handle;
-    xio_l_popen_attr_t *                attr;
+    const xio_l_popen_attr_t *          attr;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_popen_open);
     
@@ -544,7 +544,7 @@ globus_l_xio_popen_open(
 #ifdef WIN32
     result = GlobusXIOErrorSystemResource("not available for windows");
 #else
-    attr = (xio_l_popen_attr_t *) 
+    attr = (const xio_l_popen_attr_t *) 
         driver_attr ? driver_attr : &xio_l_popen_attr_default;
 
     /* check that program exists and is exec=able first */
@@ -788,7 +788,15 @@ globus_l_popen_waitpid(
     }
     else if(rc < 0 || opts == 0)
     {
-        result = GlobusXIOErrorSystemError("waitpid", errno);
+        /* If the errno is ECHILD, either some other thread or part of the
+         * program called wait and got this pid's exit status, or sigaction
+         * with SA_NOCLDWAIT prevented the process from becoming a zombie. Not
+         * really an error case.
+         */
+        if (errno != ECHILD)
+        {
+            result = GlobusXIOErrorSystemError("waitpid", errno);
+        }
 
         globus_xio_system_file_close(handle->errfd);
         globus_xio_system_file_destroy(handle->err_system);

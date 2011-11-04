@@ -12,8 +12,8 @@
 
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.1
-Release:	2%{?dist}
+Version:	2.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
@@ -119,6 +119,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Nov 04 2011 Joseph Bester <bester@mcs.anl.gov> - 2.2-1
+- Allow ECHILD in close without causing an error
+- Pass const down stack to avoid bad cast
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 2.1-2
 - Add explicit dependencies on >= 5.2 libraries
 
