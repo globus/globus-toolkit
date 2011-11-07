@@ -13,6 +13,7 @@ ia.
 #include "globus_common.h"
 #include "gssapi.h"
 #include "globus_gram_protocol.h"
+#include "globus_gsi_credential.h"
 
 #if HAVE_LIBXML2
 #include "libxml/parser.h"
@@ -39,6 +40,7 @@ globus_l_tg_saml_assertion_is_self_issued(
 int
 globus_i_gram_get_tg_gateway_user(
     gss_ctx_id_t                        context,
+    globus_gsi_cred_handle_t            peer_cred,
     char **                             gateway_user)
 {
 #if HAVE_LIBXML2
@@ -52,56 +54,160 @@ globus_i_gram_get_tg_gateway_user(
     xmlXPathContextPtr                  xpath_ctx;
     xmlXPathObjectPtr                   xresult;
     int                                 rc;
+    ASN1_OBJECT *                       asn1_desired_object;
+    int                                 cert_count;
+    int                                 found_index;
+    int                                 chain_index;
+    X509                               *cert;
+    X509_EXTENSION *                    extension;
+    ASN1_OCTET_STRING                  *asn1_oct_string;
+    STACK_OF(X509)                     *chain;
 
     *gateway_user = NULL;
 
-    maj_stat =  gss_inquire_sec_context_by_oid(
-            &min_stat,
-            context,
-            globus_saml_oid,
-            &data_set);
-
-    if (GSS_ERROR(maj_stat))
+    if (context == GSS_C_NO_CONTEXT && peer_cred != NULL)
     {
-        globus_gram_protocol_error_7_hack_replace_message(
-                "Error extracting SAML assertion");
+        globus_result_t result;
+        /* This basically duplicates the gss_inquire_sec_context_by_oid(), but
+         * instead uses a gsi credential object
+         */
+        rc = GLOBUS_SUCCESS;
+        asn1_desired_object = ASN1_OBJECT_new();
+        if (asn1_desired_object == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto no_extension_in_cred_chain;
+        }
 
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+        asn1_desired_object->length = globus_l_saml_oid_desc.length;
+        asn1_desired_object->data = globus_l_saml_oid_desc.elements;
 
-        goto inquire_failed;
+        result = globus_gsi_cred_get_cert_chain(peer_cred, &chain);
+        if (result != GLOBUS_SUCCESS)
+        {
+            char * msg;
+            
+            msg = globus_error_print_friendly(
+                globus_error_peek(result));
+            globus_gram_protocol_error_7_hack_replace_message(
+                    msg);
+
+            free(msg);
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+
+            ASN1_OBJECT_free(asn1_desired_object);
+            goto no_extension_in_cred_chain;
+        }
+
+        cert_count = sk_X509_num(chain);
+        found_index = -1;
+        for (chain_index = 0; chain_index < cert_count; chain_index++)
+        {
+            cert = sk_X509_value(chain, chain_index);
+            found_index = X509_get_ext_by_OBJ(cert, asn1_desired_object, found_index);
+            if (found_index >= 0)
+            {
+                extension = X509_get_ext(cert, found_index);
+                if (extension == NULL)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+                    globus_gram_protocol_error_7_hack_replace_message(
+                        "Unable to extract SAML assertion extension from certificate chain");
+                    ASN1_OBJECT_free(asn1_desired_object);
+                    goto no_extension_in_cred_chain;
+                }
+                asn1_oct_string = X509_EXTENSION_get_data(extension);
+                if (asn1_oct_string == NULL)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+                    globus_gram_protocol_error_7_hack_replace_message(
+                        "Unable to extract SAML assertion extension from certificate chain");
+                    ASN1_OBJECT_free(asn1_desired_object);
+                    goto no_extension_in_cred_chain;
+                }
+                p = asn1_oct_string->data;
+
+                asn1_str = d2i_ASN1_UTF8STRING(NULL, (void *)&p, asn1_oct_string->length);
+                if (asn1_str == NULL)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+                    globus_gram_protocol_error_7_hack_replace_message(
+                        "Unable to convert SAML assertion text from DER to UTF8");
+                    ASN1_OBJECT_free(asn1_desired_object);
+                    goto no_extension_in_cred_chain;
+                }
+                assertion_string = malloc(asn1_str->length + 1);
+                if (assertion_string == NULL)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                    ASN1_OBJECT_free(asn1_desired_object);
+                    goto no_extension_in_cred_chain;
+                }
+                memcpy(assertion_string, asn1_str->data, asn1_str->length);
+                assertion_string[asn1_str->length] = 0;
+                break;
+            }
+        }
+        if (chain_index == cert_count)
+        {
+            goto no_extension_in_cred_chain;
+        }
     }
-
-    /* We'll process only the first SAML assertion bound in the X.509 chain */
-    if (data_set->count < 1)
+    else if (context == GSS_C_NO_CONTEXT)
     {
         rc = GLOBUS_SUCCESS;
-
-        goto empty_data_set;
+        goto no_context;
     }
-
-    p = data_set->elements[0].value;
-    pl = data_set->elements[0].length;
-
-    /* Convert DER-Encoded string to UTF8 */
-    asn1_str = d2i_ASN1_UTF8STRING(NULL, (void *) &p, pl);
-    if (!asn1_str)
+    else
     {
-        globus_gram_protocol_error_7_hack_replace_message(
-                "Error decoding SAML assertion");
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+        maj_stat =  gss_inquire_sec_context_by_oid(
+                &min_stat,
+                context,
+                globus_saml_oid,
+                &data_set);
 
-        goto utfstring_failed;
+        if (GSS_ERROR(maj_stat))
+        {
+            globus_gram_protocol_error_7_hack_replace_message(
+                    "Error extracting SAML assertion");
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+
+            goto inquire_failed;
+        }
+
+        /* We'll process only the first SAML assertion bound in the X.509 chain */
+        if (data_set->count < 1)
+        {
+            rc = GLOBUS_SUCCESS;
+
+            goto empty_data_set;
+        }
+
+        p = data_set->elements[0].value;
+        pl = data_set->elements[0].length;
+
+        /* Convert DER-Encoded string to UTF8 */
+        asn1_str = d2i_ASN1_UTF8STRING(NULL, (void *) &p, pl);
+        if (!asn1_str)
+        {
+            globus_gram_protocol_error_7_hack_replace_message(
+                    "Error decoding SAML assertion");
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+
+            goto utfstring_failed;
+        }
+
+        assertion_string = malloc(asn1_str->length + 1);
+        if (assertion_string == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto assertion_string_malloc_failed;
+        }
+        memcpy(assertion_string, asn1_str->data, asn1_str->length);
+        assertion_string[asn1_str->length] = 0;
     }
-
-    assertion_string = malloc(asn1_str->length + 1);
-    if (assertion_string == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto assertion_string_malloc_failed;
-    }
-    memcpy(assertion_string, asn1_str->data, asn1_str->length);
-    assertion_string[asn1_str->length] = 0;
 
     /* Parse SAML assertion */
     doc = xmlParseDoc(BAD_CAST assertion_string);
@@ -203,6 +309,8 @@ utfstring_failed:
 empty_data_set:
     gss_release_buffer_set(&min_stat, &data_set);
 inquire_failed:
+no_extension_in_cred_chain:
+no_context:
     return rc;
 #else
     *gateway_user = NULL;

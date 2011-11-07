@@ -1,4 +1,4 @@
-/*
+/*24.25.5.60
  * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1325,6 +1325,21 @@ globus_gram_job_manager_reply(
     {
         free(reply);
     }
+
+    if (! response_context)
+    {
+        /*
+         * No response context, the gatekeeper will supply HTTP response line,
+         * so we skip the first line of the framed reply
+         */
+        reply = strstr(sendbuf, "\r\n");
+
+        reply += 2;
+        sendsize -= (reply - sendbuf);
+
+        memmove(sendbuf, reply, sendsize);
+    }
+
     if(rc == GLOBUS_SUCCESS)
     {
         if (response_context != GSS_C_NO_CONTEXT)
@@ -1406,8 +1421,21 @@ globus_gram_job_manager_reply(
         }
         else
         {
-            printf("Job Manager Response: %s\n", sendbuf);
-            major_status = 0;
+            ssize_t written = 0, rc = 0;
+
+            do
+            {
+                errno = 0;
+                rc = write(response_fd, sendbuf + written, sendsize - written);
+                if (rc < 0 && errno != EINTR)
+                {
+                    break;
+                }
+                written += rc;
+            }
+            while (written < sendsize);
+
+            major_status = GSS_S_COMPLETE;
         }
 
         free(sendbuf);
@@ -1466,13 +1494,13 @@ int
 globus_gram_job_manager_read_request(
     globus_gram_job_manager_t *         manager,
     int                                 fd,
+    size_t                              content_length,
     char **                             rsl,
     char **                             client_contact,
     int *                               job_state_mask,
     globus_bool_t *                     version_only)
 {
     int                                 rc;
-    globus_size_t                       jrbuf_size;
     globus_hashtable_t                  extensions;
     globus_gram_protocol_extension_t *  entry;
     globus_byte_t                       buffer[
@@ -1491,9 +1519,7 @@ globus_gram_job_manager_read_request(
     *job_state_mask = 0;
     *version_only = GLOBUS_FALSE;
 
-    jrbuf_size = (globus_size_t) lseek(fd, 0, SEEK_END);
-    (void) lseek(fd, 0, SEEK_SET);
-    if (jrbuf_size > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
+    if (content_length > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
@@ -1509,7 +1535,7 @@ globus_gram_job_manager_read_request(
                 "RSL too large");
         return rc;
     }
-    if ((rc = read(fd, buffer, jrbuf_size)) != jrbuf_size)
+    if ((rc = read(fd, buffer, content_length)) != content_length)
     {
         if (rc < 0)
         {
@@ -1538,12 +1564,12 @@ globus_gram_job_manager_read_request(
                     "level=ERROR "
                     "status=%d "
                     "msg=\"%s\" "
-                    "size=%ld "
+                    "size=%zd "
                     "read=%ld "
                     "\n"
                     -GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED,
                     "Short read of rsl",
-                    jrbuf_size,
+                    content_length,
                     rc);
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
         }
@@ -1573,7 +1599,7 @@ globus_gram_job_manager_read_request(
 
     rc = globus_gram_protocol_unpack_job_request(
             buffer,
-            jrbuf_size,
+            content_length,
             job_state_mask,
             client_contact,
             rsl);
@@ -1581,7 +1607,7 @@ globus_gram_job_manager_read_request(
     {
         rc = globus_gram_protocol_unpack_message(
                 (const char *) buffer,
-                jrbuf_size,
+                content_length,
                 &extensions);
 
         if (rc == GLOBUS_SUCCESS)

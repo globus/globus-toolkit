@@ -1,5 +1,8 @@
 #! /bin/sh
 
+# globua-gatekeeper Authorize and execute a grid service
+# chkconfig:- 20 80
+
 ### BEGIN INIT INFO
 # Provides:          globus-gatekeeper
 # Required-Start:    $network $time

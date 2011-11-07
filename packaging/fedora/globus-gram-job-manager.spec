@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.7
+Version:	13.8
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -169,8 +169,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 07 2011 Joseph Bester <bester@mcs.anl.gov> - 13.8-1
+- GRAM-268: GRAM requires gss_export_sec_context to work
+
 * Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 13.7-1
-- GRAM-266: Do not issue "Error locking file" warning if another jobmanager exists
+- GRAM-266: Do not issue "Error locking file" warning if another jobmanager
+  exists
 
 * Wed Oct 26 2011 Joseph Bester <bester@mcs.anl.gov> - 13.6-1
 - GRAM-265: GRAM logging.c sets FD_CLOEXEC incorrectly

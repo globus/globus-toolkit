@@ -59,6 +59,7 @@
 #include <sys/ioctl.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+#include <regex.h>
 
 
 #include "globus_common.h"
@@ -76,8 +77,6 @@
 #else
 #define netlen_t int
 #endif
-
-#include <arpa/inet.h> /* for inet_ntoa() */
 
 #if HAVE_STRINGS_H
 #include <strings.h>
@@ -98,6 +97,14 @@ extern void unsetenv();
 #include "globus_gatekeeper_utils.h"
 #include "globus_gsi_system_config.h"
 
+#include "openssl/bio.h"
+#include "openssl/pem.h"
+
+
+static gss_OID_desc gss_ext_x509_cert_chain_oid_desc =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
+static gss_OID_desc * gss_ext_x509_cert_chain_oid =
+                &gss_ext_x509_cert_chain_oid_desc;
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -118,17 +125,22 @@ extern void unsetenv();
 static void doit(void);
 static int logging_startup(void);
 static int logging_phase2(void);
-static void failure(short failure_type, char *s);
+static void failure(int failure_type, char *s);
 static void notice(int, char *s);
 static int net_accept(int socket);
 static void net_setup_listener(int backlog, int *port, int *socket);
 static void error_check(int val, char *string);
 static char *timestamp(void);
-static void null_terminate_string(char ** s, size_t len);
+
+static void
+read_header_and_body(
+    gss_ctx_id_t                        context,
+    char **                             header_out,
+    char **                             body_out,
+    size_t *                            bodylen_out);
 
 static char * genfilename(char * prefix, char * path, char * sufix);
 
-static int get_content_length(char * http_message, char * http_body);
 /*
  * GSSAPI - credential handle for this process
  */
@@ -153,12 +165,17 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #define LOGFILE ""
 #endif
 
-#define FAILED_AUTHORIZATION        1
-#define FAILED_SERVICELOOKUP        2
-#define FAILED_SERVER               3
-#define FAILED_NOLOGIN              4
-#define FAILED_AUTHENTICATION       5
-#define FAILED_PING                 6
+enum
+{
+    FAILED_AUTHORIZATION = 1,
+    FAILED_SERVICELOOKUP,
+    FAILED_SERVER,
+    FAILED_NOLOGIN,
+    FAILED_AUTHENTICATION,
+    FAILED_PING,
+    FAILED_TOOLARGE
+};
+
 
 static char     tmpbuf[1024];
 #define notice2(i,a,b) {sprintf(tmpbuf, a,b); notice(i,tmpbuf);}
@@ -169,10 +186,15 @@ static char     tmpbuf[1024];
 #define failure3(t,a,b,c) {sprintf(tmpbuf, a,b,c); failure(t,tmpbuf);}
 #define failure4(t,a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(t,tmpbuf);}
 
-#define FORK_AND_EXIT	1
-#define FORK_AND_WAIT	2
-#define DONT_FORK	3
-static int	launch_method = FORK_AND_EXIT;
+enum gatekeeper_launch_method
+{
+    FORK_AND_EXIT = 1,
+    FORK_AND_WAIT = 2,
+    DONT_FORK = 3,
+    FORK_AND_PROXY = 4
+};
+
+static enum gatekeeper_launch_method launch_method = FORK_AND_EXIT;
 
 extern int      errno;
 
@@ -288,27 +310,6 @@ terminate(int s)
     }
     failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
 }
-
-/**
- * @brief Wait for any child processes that have terminated
- */
-void 
-reaper(int s)
-{
-#   ifdef HAS_WAIT_UNION_WAIT
-    union wait status;
-#   else
-    int status;
-#   endif
-
-    if (launch_method == DONT_FORK) return;
-
-#   ifdef HAS_WAIT3
-    while (wait3(&status, WNOHANG, NULL) > 0) ;
-#   else
-    while (waitpid(-1, &status, WNOHANG) > 0) ;
-#   endif
-} /* reaper() */
 
 /******************************************************************************
 Function:       rotatelog()
@@ -482,8 +483,8 @@ main(int xargc,
     int    pid;
     int    ttyfd;
     int    rc;
-    netlen_t   namelen;
-    struct sockaddr_in name;
+    globus_socklen_t   namelen;
+    globus_sockaddr_t name;
     char *pidpath = NULL;
 
     /* GSSAPI status vaiables */
@@ -751,14 +752,18 @@ main(int xargc,
 	else if ((strcmp(argv[i], "-launch_method") == 0)
 		 && (i + 1 < argc))
 	{
-	    if(!run_from_inetd)
+	    if (strcmp(argv[i + 1], "fork_and_exit") == 0)
+	    {
+		launch_method = FORK_AND_EXIT;
+	    }
+            else if (strcmp(argv[i + 1], "fork_and_proxy") == 0)
+            {
+                launch_method = FORK_AND_PROXY;
+            }
+	    else if(!run_from_inetd)
 	    {
 		fprintf(stderr, "Gatekeeper running as daemon, "
 			"ignoring -launch_method!\n");
-	    }
-	    else if (strcmp(argv[i + 1], "fork_and_exit") == 0)
-	    {
-		launch_method = FORK_AND_EXIT;
 	    }
 	    else if (strcmp(argv[i + 1], "fork_and_wait") == 0)
 	    {
@@ -790,7 +795,7 @@ main(int xargc,
                     argv[0], 
                     "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port]\n"
                     "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path]\n"
-                    "[-launch_method fork_and_exit|fork_and_wait|dont_fork]\n"
+                    "[-launch_method fork_and_exit|fork_and_wait|dont_fork|fork_and_proxy]\n"
                     "[-grid_services file]\n"
                     "[-globusid globusid] [-gridmap file]\n"
                     "[-x509_cert_dir path]\n"
@@ -897,10 +902,10 @@ main(int xargc,
      */
     {
         struct sigaction act;
-        act.sa_handler = reaper;
+        act.sa_handler = SIG_IGN;
         sigemptyset(&act.sa_mask);
         sigaddset(&act.sa_mask, SIGCHLD);
-        act.sa_flags = 0;
+        act.sa_flags = SA_NOCLDWAIT;
         sigaction(SIGCHLD, &act, NULL);
         if (!run_from_inetd)
         {
@@ -1196,7 +1201,6 @@ static void doit()
     char **                             args;
     char *                              argnp;
     char *                              execp;
-    char **                             argi;
     int                                 num_service_args = SERVICE_ARGS_MAX;
     char *                              service_args[SERVICE_ARGS_MAX];
     int                                 num_service_options =
@@ -1210,14 +1214,11 @@ static void doit()
     char *                              service_line = NULL;
     char *                              service_path;
     char *                              gram_k5_path; 
-    struct sockaddr_in                  peer;
-    netlen_t                            peerlen;
+    globus_sockaddr_t                   peer;
+    globus_socklen_t                    peerlen;
     char *                              peernum = "";
     char *                              x509_delegate;
     size_t                              length;
-    char *                              http_message;
-    size_t                              http_length;
-    char *                              http_body;
     FILE *                              http_body_file;
     /* GSSAPI assist variables */
     OM_uint32                           major_status = 0;
@@ -1235,11 +1236,14 @@ static void doit()
     char *                              userid = NULL;
     struct passwd *                     pw;
     char *                              mapping = NULL;
+    int                                 proxy_socket[2] = {-1, -1};
+
+    /* HTTP messaging */
+    char                               *header, *body;
+    size_t                              body_length;
 
 
-    /* Now do stdout, so it points at the socket too */
-    /* needed for the grid-services */
-                        
+    /* TODO: Stop mucking with stdin and stdout file streams */
     fclose(stdout);
     close(1);
     dup2(0,1);
@@ -1249,10 +1253,12 @@ static void doit()
     peerlen = sizeof(peer);
     if (getpeername(0, (struct sockaddr *) &peer, &peerlen) == 0)
     {
-        if (peer.sin_family == AF_INET)
-            peernum = inet_ntoa(peer.sin_addr);
-        else
-            peernum = "";
+
+        if (getnameinfo((struct sockaddr *) &peer, peerlen, &buf[0], (globus_socklen_t) sizeof(buf),
+                NULL, 0, NI_NUMERICHOST) == 0)
+        {
+            peernum = strdup(buf);
+        }
     }
 
     fdout = fdopen(1,"w"); /* establish an output stream */
@@ -1317,6 +1323,12 @@ static void doit()
                  "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
                  major_status,minor_status,token_status);
     }
+
+    if (!(ret_flags & GSS_C_TRANS_FLAG))
+    {
+        /* Can't export context, must proxy the connection */
+        launch_method = FORK_AND_PROXY;
+    }
     
     /* now OK to send wrapped error message */
     ok_to_send_errmsg = 1;
@@ -1330,74 +1342,52 @@ static void doit()
 
     /* End of authentication */
 
-    /* 
-     * Read from the client the service it would like to use
-     * For now this is a null terminated string which has been
-     * wrapped.
-     */
+    read_header_and_body(context_handle, &header, &body, &body_length);
 
-    /*
-     * read HTTP message, extract service name from the header.
-     */
-    major_status = globus_gss_assist_get_unwrap(&minor_status,
-                                                context_handle,
-                                                &http_message,
-                                                &http_length,
-                                                &token_status,
-                                                globus_gss_assist_token_get_fd,
-                                                stdin,
-                                                logging_usrlog?usrlog_fp:NULL);
-    
-    if (major_status != GSS_S_COMPLETE)
+    /* parse of HTTP post line */
     {
-        failure4(FAILED_SERVICELOOKUP,
-                 "Reading incoming message GSS failed Major:%8.8x "
-                 "Minor:%8.8x Token:%8.8x\n",
-                 major_status,
-                 minor_status,
-                 token_status);
-    }
+        char * parse_re = "^POST (ping)?/([^@ ]+)(@([^ \n]+))?";
+        regex_t reg;
+        regmatch_t matches[5];
 
-    if (http_message != NULL) 
-    {
-        null_terminate_string(&http_message, http_length);
-    }
-
-    for (length=0; length<http_length && http_message[length]!='\n'; length++)
-        ;
-
-    if ((length==0) || (length>=http_length))
-    {
-        failure2(FAILED_SERVICELOOKUP,
-                 "Incoming message has invalid first-line length %ld\n",
-                 (long) length);
-    }
-
-    {
-        char    save = http_message[length];
-        char *  tmpbuf = (char *) malloc(length);
-        char *  p;
-
-        http_message[length] = '\0';
-        if ((1 != sscanf(http_message, "POST %s", tmpbuf)) ||
-            (! (p = strchr(tmpbuf, '/'))))
+        rc = regcomp(&reg, parse_re, REG_EXTENDED);
+        if (rc < 0)
         {
-            failure(FAILED_SERVICELOOKUP, 
-                    "Unable to extract service name from incoming message\n");
+            failure(FAILED_SERVICELOOKUP,
+                    "Error compiling parser expression\n");
         }
-        http_message[length] = save;
+        rc = regexec(&reg, header, 5, matches, 0);
+        if (rc < 0)
+        {
+            failure(FAILED_SERVICELOOKUP,
+                    "Error parsing service line\n");
+        }
 
-        if (strncmp(tmpbuf,"ping/",5)==0)
+        if (matches[1].rm_so != -1)
+        {
             got_ping_request = 1;
-
-        if ((mapping = strchr(tmpbuf, '@')) != NULL)
-        {
-            *mapping = '\0';
-            mapping = strdup(++mapping);
         }
 
-        service_name = strdup(++p);
-        free(tmpbuf);
+        if (matches[2].rm_so != -1)
+        {
+            size_t matchlen = matches[2].rm_eo - matches[2].rm_so;
+            service_name = malloc(matchlen + 1);
+            memcpy(service_name, header + matches[2].rm_so, matchlen);
+            service_name[matchlen] = 0;
+        }
+        else
+        {
+            failure(FAILED_SERVICELOOKUP, "Error parsing service_line\n");
+        }
+
+        if (matches[4].rm_so != -1)
+        {
+            size_t matchlen = matches[4].rm_eo - matches[4].rm_so;
+            mapping = malloc(matchlen + 1);
+
+            memcpy(mapping, header + matches[4].rm_so, matchlen);
+            mapping[matchlen] = 0;
+        }
     }
 
     /*
@@ -1454,85 +1444,6 @@ static void doit()
 
     userid = identity_buffer;
     
-    /* find body of message and forward it to the service */
-    {
-        char *  end_of_header = "\015\012\015\012";
-        int     content_length;
-
-        http_body = strstr(http_message, end_of_header);
-        
-        if (!http_body)
-        {
-            failure(FAILED_SERVER, "Could not find http message body");
-        }
-
-        content_length = get_content_length(http_message, http_body);
-
-        http_body += 4;  /* CR LF CR LF */
-
-        if (! got_ping_request)
-        {
-            http_body_file = tmpfile();
-            if (http_body_file)
-            {
-                size_t body_length;
-
-                setbuf(http_body_file,NULL);
-                fcntl(fileno(http_body_file), F_SETFD, 0);
-                sprintf(buf, "%d", fileno(http_body_file));
-                setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
-                notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
-
-                body_length = (size_t)(&http_message[http_length] - http_body);
-
-                do
-                {
-                    fwrite(http_body,
-                           1,
-                           body_length,
-                           http_body_file);
-
-                    if((content_length > 0) &&
-                            ((content_length -= body_length) > 0))
-                    {
-                        free(http_message);
-
-                        major_status = globus_gss_assist_get_unwrap(
-                                &minor_status,
-                                context_handle,
-                                &http_message,
-                                &http_length,
-                                &token_status,
-                                globus_gss_assist_token_get_fd,
-                                stdin,
-                                logging_usrlog?usrlog_fp:NULL);
-                        if (major_status != GSS_S_COMPLETE)
-                        {
-                            failure4(FAILED_SERVICELOOKUP,
-                                     "Reading incoming message GSS failed "
-                                     "Major:%8.8x "
-                                     "Minor:%8.8x Token:%8.8x\n",
-                                     major_status,
-                                     minor_status,
-                                     token_status);
-                        }
-                        null_terminate_string(&http_message, http_length);
-                        http_body = http_message;
-                        body_length = http_length;
-                    }
-                }
-                while(content_length > 0);
-
-                lseek(fileno(http_body_file), 0, SEEK_SET);
-            }    
-            else
-            {
-                failure(FAILED_SERVER, "Unable to create http body tmpfile");
-            }
-        }
-    }
-    
-    free(http_message);
     length = strlen(service_name);
     
     if (length > 256)
@@ -1566,7 +1477,6 @@ static void doit()
     /* 
      * Parse the command line.
      */ 
-    
     if (globus_gatekeeper_util_tokenize(service_line,
                                         service_args, 
                                         &num_service_args,
@@ -1847,23 +1757,6 @@ static void doit()
         unsetenv("X509_USER_DELEG_PROXY");
     }
 
-#if 0
-    /*
-     * finally do environment variable substitution 
-     * on the args
-     */
-        
-    for (argi = &service_args[SERVICE_ARG1_INDEX]; *argi; argi++)
-    {
-        if(globus_gatekeeper_util_envsub(argi))
-        {
-            notice(LOG_ERR,"ERROR: Failed env substitution in services");
-            failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
-        }
-    }
-#endif
-                        
-
     if (gatekeeper_uid == 0)
     {
 
@@ -1881,63 +1774,99 @@ static void doit()
         }
     }
 
-    /* 
-     * export the security context which will destroy it. 
-     * This will also destroy the ability to wrap any error
-     * messages, so we do this very late. 
-     * First we get an temp file, open it, and delete it. 
-     */
-
-    context_tmpfile = tmpfile();
-    if (context_tmpfile) 
+    if ((ret_flags & GSS_C_TRANS_FLAG) && (launch_method != FORK_AND_PROXY))
     {
-        setbuf(context_tmpfile,NULL);
-        fcntl(fileno(context_tmpfile), F_SETFD, 0);
-        sprintf(buf, "%d", fileno(context_tmpfile));
-        setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
-        notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf);
-    }
-    else
-    {
-        failure(FAILED_SERVER, "Unable to create context tmpfile");
-    }
+        /* 
+         * export the security context which will destroy it. 
+         * This will also destroy the ability to wrap any error
+         * messages, so we do this very late. 
+         * First we get an temp file, open it, and delete it. 
+         */
 
-    major_status = gss_export_sec_context(&minor_status,
-                                          &context_handle, 
-                                          &context_token);
+        context_tmpfile = tmpfile();
+        if (context_tmpfile) 
+        {
+            setbuf(context_tmpfile,NULL);
+            fcntl(fileno(context_tmpfile), F_SETFD, 0);
+            sprintf(buf, "%d", fileno(context_tmpfile));
+            setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
+            notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf);
+        }
+        else
+        {
+            failure(FAILED_SERVER, "Unable to create context tmpfile");
+        }
 
-    if (major_status != GSS_S_COMPLETE) 
-    {
-        globus_gss_assist_display_status(stderr,
-                                         "GSS failed exporting context: ",
-                                         major_status,
-                                         minor_status,
-                                         0);
-        failure(FAILED_SERVER, "GSS Failed exporting context");
-    }
+        major_status = gss_export_sec_context(&minor_status,
+                                              &context_handle, 
+                                              &context_token);
+
+        if (major_status != GSS_S_COMPLETE) 
+        {
+            globus_gss_assist_display_status(stderr,
+                                             "GSS failed exporting context: ",
+                                             major_status,
+                                             minor_status,
+                                             0);
+            failure(FAILED_SERVER, "GSS Failed exporting context");
+        }
+            
+        int_buf[0] = (unsigned char)(((context_token.length)>>24)&0xff);
+        int_buf[1] = (unsigned char)(((context_token.length)>>16)&0xff);
+        int_buf[2] = (unsigned char)(((context_token.length)>> 8)&0xff);
+        int_buf[3] = (unsigned char)(((context_token.length)    )&0xff);
         
-    int_buf[0] = (unsigned char)(((context_token.length)>>24)&0xff);
-    int_buf[1] = (unsigned char)(((context_token.length)>>16)&0xff);
-    int_buf[2] = (unsigned char)(((context_token.length)>> 8)&0xff);
-    int_buf[3] = (unsigned char)(((context_token.length)    )&0xff);
-    
-    if (fwrite(int_buf,4,1,context_tmpfile) != 1)
-    {
-        failure(FAILED_SERVER, "Failure writing context length");
+        if (fwrite(int_buf,4,1,context_tmpfile) != 1)
+        {
+            failure(FAILED_SERVER, "Failure writing context length");
+        }
+        if (fwrite(context_token.value,
+                   context_token.length,
+                   1,
+                   context_tmpfile) != 1)
+        {
+            failure(FAILED_SERVER, "Failure writing context token");
+        }
+
+        gss_release_buffer(&minor_status,&context_token);
+
+        /* reposition so service can read */
+
+        lseek(fileno(context_tmpfile), 0, SEEK_SET);
     }
-    if (fwrite(context_token.value,
-               context_token.length,
-               1,
-               context_tmpfile) != 1)
+    if (launch_method == FORK_AND_PROXY)
     {
-        failure(FAILED_SERVER, "Failure writing context token");
+        rc = socketpair(AF_UNIX, SOCK_STREAM, 0, proxy_socket);
+        if (rc != GLOBUS_SUCCESS ||
+                proxy_socket[0] == -1 || proxy_socket[1] == -1)
+        {
+            failure(FAILED_SERVER, "Failed creating proxy socket");
+        }
     }
 
-    gss_release_buffer(&minor_status,&context_token);
+    if (! got_ping_request)
+    {
+        http_body_file = tmpfile();
+        if (http_body_file)
+        {
+            setbuf(http_body_file,NULL);
+            fcntl(fileno(http_body_file), F_SETFD, 0);
+            sprintf(buf, "%d", fileno(http_body_file));
+            setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
+            notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
 
-    /* reposition so service can read */
+            fwrite(body,
+                   1,
+                   body_length,
+                   http_body_file);
 
-    lseek(fileno(context_tmpfile), 0, SEEK_SET);
+            lseek(fileno(http_body_file), 0, SEEK_SET);
+        }    
+        else
+        {
+            failure(FAILED_SERVER, "Unable to create http body tmpfile");
+        }
+    }
 
     chdir(pw->pw_dir);
 
@@ -1989,6 +1918,107 @@ static void doit()
             (void) setbuf(stderr,NULL);
         }
 
+        if (launch_method == FORK_AND_PROXY)
+        {
+            char *tmp, *tmp2;
+            const char * host = "\r\nHost:";
+            gss_buffer_set_t buffer_set;
+
+            setenv("REMOTE_ADDR", peernum, 1);
+            setenv("REQUEST_METHOD", "POST", 1);
+            setenv("SCRIPT_NAME", service_name, 1);
+
+            tmp = globus_common_create_string("%zu", body_length);
+            setenv("CONTENT_LENGTH", tmp, 1);
+            notice2(0, "Set CONTENT_LENGTH=%s", tmp);
+
+            setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+            notice(0, "Set GATEWAY_INTERFACE to CGI/1.1");
+
+            /*
+             * returns a sequence of DER-encoded certificates in the buffer_set
+             */
+            major_status = gss_inquire_sec_context_by_oid(
+                &minor_status,
+                context_handle,
+                gss_ext_x509_cert_chain_oid,
+                &buffer_set);
+
+            if (major_status == GSS_S_COMPLETE)
+            {
+                const unsigned char * p;
+                X509 *c;
+                BIO *b;
+                BUF_MEM *bptr;
+                char * pemtext;
+                b = BIO_new(BIO_s_mem());
+
+                for (i = 0; i < buffer_set->count; i++)
+                {
+                    char * varname;
+                    
+                    if (i == 0)
+                    {
+                        varname = "SSL_CLIENT_CERT";
+                    }
+                    else
+                    {
+                        varname = globus_common_create_string(
+                                "SSL_CLIENT_CERT_CHAIN%d",
+                                i);
+                    }
+                    p = buffer_set->elements[i].value;
+                    c = d2i_X509(NULL, &p, buffer_set->elements[i].length);
+
+                    PEM_write_bio_X509(b, c);
+
+                    BIO_get_mem_ptr(b, &bptr);
+                    pemtext = globus_common_create_string(
+                            "%.*s",
+                            bptr->length,
+                            bptr->data);
+                    setenv(varname, pemtext, 1);
+                    if (i == 0)
+                    {
+                        setenv("SSL_CLIENT_CERT_CHAIN0", pemtext, 1);
+                    }
+                    (void) BIO_reset(b);
+                }
+                BIO_free(b);
+            }
+
+            tmp = strstr(header, host);
+            if (tmp != NULL)
+            {
+                tmp += strlen(host);
+                while (isspace(*tmp))
+                {
+                    tmp++;
+                }
+                tmp2 = strstr(tmp, "\r");
+                if (tmp && tmp2)
+                {
+                    tmp = globus_common_create_string("%.*s", (int)(tmp2-tmp), tmp);
+                    setenv("SERVER_NAME", tmp, 1);
+                    notice2(0, "Set SERVER_NAME to %s", tmp);
+                }
+            }
+            tmp = globus_common_create_string("%d", daemon_port);
+            setenv("SERVER_PORT", tmp, 1);
+            notice2(0, "Set SERVER_PORT to %s", tmp);
+
+
+            close(proxy_socket[0]);
+            /* stdin and stdout point to proxy socket, stderr may be the log */
+            dup2(proxy_socket[1], 0);
+            dup2(proxy_socket[1], 1);
+
+            if (proxy_socket[1] > 1)
+            {
+                close(proxy_socket[1]);
+            }
+        }
+
         if (execv(execp, args) != 0)
         {
             sprintf(tmpbuf, "Exec failed: %s\n", strerror(errno));
@@ -2001,6 +2031,7 @@ static void doit()
     }
 
     close(close_on_exec_write_fd);
+    close(proxy_socket[1]);
     
     /*
      * If the read_fd is closed without any data, then the
@@ -2022,35 +2053,83 @@ static void doit()
     {
         failure(FAILED_SERVER, "child failed: error reading child fd");
     }
+
+    if (launch_method == FORK_AND_PROXY)
+    {
+        ssize_t written = 0;
+
+        do
+        {
+            ssize_t s = 0;
+            s = write(proxy_socket[0], body + written, body_length - written);
+
+            if (s > 0)
+            {
+                written += s;
+            }
+            if (s < 0 && errno != EINTR)
+            {
+                break;
+            }
+
+        } while (written < body_length);
+
+        written = 0;
+        while ((n = read(proxy_socket[0], buf, sizeof(buf))) > 0)
+        {
+            char header[] = "HTTP/1.1 200 Ok\r\n";
+            if (written == 0)
+            {
+                char * reply = malloc(sizeof(header) + n);
+
+                strcpy(reply, header);
+                memcpy(reply + sizeof(header) - 1, buf, n);
+                globus_gss_assist_wrap_send(&minor_status,
+                                            context_handle,
+                                            reply,
+                                            sizeof(header) + n - 1,
+                                            &token_status,
+                                            globus_gss_assist_token_send_fd,
+                                            fdout,
+                                            logging_usrlog?usrlog_fp:NULL);
+                written = sizeof(header) + n - 1;
+                free(reply);
+                
+            }
+            else
+            {
+                globus_gss_assist_wrap_send(&minor_status,
+                                            context_handle,
+                                            buf,
+                                            n,
+                                            &token_status,
+                                            globus_gss_assist_token_send_fd,
+                                            fdout,
+                                            logging_usrlog?usrlog_fp:NULL);
+                written += n;
+            }
+        }
+        notice2(0, "Read %d bytes from proxy pipe", (int) written);
+        if (written == 0 && n == 0)
+        {
+            char reply[] = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n";
+            notice(0, "Writing bad request reply\n");
+            globus_gss_assist_wrap_send(&minor_status,
+                                        context_handle,
+                                        reply,
+                                        sizeof(reply)-1,
+                                        &token_status,
+                                        globus_gss_assist_token_send_fd,
+                                        fdout,
+                                        logging_usrlog?usrlog_fp:NULL);
+        }
+        close(proxy_socket[0]);
+    }
     close(close_on_exec_read_fd);
 
     if (launch_method != DONT_FORK)
     {
 	notice2(0, "Child %d started", pid);
-    }
-
-    if (launch_method == FORK_AND_WAIT)
-    {
-	/* wait until child is reaped */
-	int dead_pid;
-#       ifdef HAS_WAIT_UNION_WAIT
-	union wait status;
-#       else
-	int status;
-#       endif
-
-	do
-	{
-#           ifdef HAS_WAIT3
-	    dead_pid = wait3(&status, 0, NULL);
-#           else
-	    dead_pid = waitpid(-1, &status, 0);
-#           endif
-	    if (dead_pid < 0 && errno != EINTR)
-	    {
-		break;
-	    }
-	} while (dead_pid != pid);
     }
 
     ok_to_send_errmsg = 0;
@@ -2175,35 +2254,34 @@ net_setup_listener(int backlog,
                    int * port,
                    int * skt)
 {
-    netlen_t        sinlen;
-    struct sockaddr_in sin;
-	long flags;
-    int one=1;
+    globus_socklen_t                    addrlen;
+    struct sockaddr_in6                 addr;
+    long                                flags;
+    int                                 one=1;
 
-    *skt = socket(AF_INET, SOCK_STREAM, 0);
+    *skt = socket(AF_INET6, SOCK_STREAM, 0);
     error_check(*skt,"net_setup_anon_listener socket");
 
-	flags = fcntl(*skt, F_GETFL, 0);
-	flags |= O_NONBLOCK;
-	fcntl(*skt, F_SETFL, flags);
+    flags = fcntl(*skt, F_GETFL, 0);
+    flags |= O_NONBLOCK;
+    fcntl(*skt, F_SETFL, flags);
 
     error_check(setsockopt(*skt, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)),
                 "net_setup_anon_listener setsockopt");
 
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(*port);
+    addr.sin6_family = AF_INET6;
+    addr.sin6_addr = in6addr_any;
+    addr.sin6_port = htons(*port);
 
-    sinlen = sizeof(sin);
+    addrlen = sizeof(addr);
 
-    error_check(bind(*skt,(struct sockaddr *) &sin,sizeof(sin)),
+    error_check(bind(*skt,(struct sockaddr *) &addr, sizeof(addr)),
                 "net_setup_anon_listener bind");
-
 
     error_check(listen(*skt, backlog), "net_setup_anon_listener listen");
 
-    getsockname(*skt, (struct sockaddr *) &sin, &sinlen);
-    *port = ntohs(sin.sin_port);
+    getsockname(*skt, (struct sockaddr *) &addr, &addrlen);
+    *port = ntohs(addr.sin6_port);
 }
 
 /******************************************************************************
@@ -2325,7 +2403,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-failure(short failure_type, char * s)
+failure(int failure_type, char * s)
 {
 
     OM_uint32        minor_status = 0;
@@ -2369,6 +2447,14 @@ failure(short failure_type, char * s)
                         "\015\012");
             break;
 
+        case FAILED_TOOLARGE:
+            response = ("HTTP/1.1 200 OK\015\012"
+                        "Content-Type: application/x-globus-gram\015\012"
+                        "Content-Length: 33\015\012"
+                        "\015\012"
+                        "protocol-version: 2\015\012"
+                        "status: 10\015\012");
+            break;
         case FAILED_SERVER:
         case FAILED_NOLOGIN:
         case FAILED_AUTHENTICATION:
@@ -2416,7 +2502,7 @@ notice(int prty, char * s)
 {
     if (logging_syslog && prty)
     {
-        syslog(prty, s);
+        syslog(prty, "%s", s);
     }
     if (logging_usrlog)
     {
@@ -2468,43 +2554,122 @@ timestamp(void)
 } /* timestamp() */
 
 static
-int
-get_content_length(char * http_message, char * http_body)
-{
-    char save = *http_body;
-    char * content_header;
-    int content_length = -1;
-    *http_body = '\0';
-
-    content_header = strstr(http_message, "\012Content-Length:");
-
-    if(content_header != NULL)
-    {
-        content_header += 16;
-        while(*content_header && isspace(*content_header))
-        {
-            content_header++;
-        }
-        if(*content_header)
-        {
-            content_length = atoi(content_header);
-        }
-    }
-    *http_body = save;
-    return content_length;
-} /* get_content_length() */
-
-
-static
 void
-null_terminate_string(char ** s, size_t len)
+read_header_and_body(
+    gss_ctx_id_t                        context,
+    char **                             header_out,
+    char **                             body_out,
+    size_t *                            bodylen_out)
 {
+    OM_uint32                           major_status, minor_status;
+    char *                              tmp;
+    size_t                              tmplen;
+    char *                              header = NULL;
+    size_t                              header_len = 0;
+    char *                              body = NULL;
+    size_t                              body_len = 0;
+    int                                 have_header = 0;
+    char *                              content_header;
+    size_t                              content_length;
+    int                                 token_status;
 
-    *s = realloc(*s, len+1);
-
-    if ((*s) == NULL)
+    do
     {
-        failure(FAILED_SERVER, "Error NULL-terminating string");
+        major_status = globus_gss_assist_get_unwrap(
+            &minor_status,
+            context,
+            &tmp,
+            &tmplen,
+            &token_status,
+            globus_gss_assist_token_get_fd,
+            stdin,
+            logging_usrlog?usrlog_fp:NULL);
+
+        if (!have_header)
+        {
+            char * t;
+
+            t = realloc(header, header_len + tmplen + 1);
+            if (!t)
+            {
+                failure(FAILED_SERVER, "Out of memory\n");
+            }
+
+            header = t;
+            memcpy(header + header_len, tmp, tmplen);
+            header_len += tmplen;
+            header[header_len] = 0;
+
+            if ((t = strstr(header, "\r\n\r\n")) != NULL)
+            {
+                int rc;
+                have_header = 1;
+
+                content_header = strstr(header, "\r\nContent-Length:");
+                rc = sscanf(content_header + 2, "Content-Length: %zd", &content_length);
+                if (rc < 1)
+                {
+                    failure(FAILED_SERVER, "No content-length header\n");
+                }
+
+                *t = '\0';
+
+                if ((t + 4) <= header + header_len)
+                {
+                    t += 4;
+
+                    body_len = header_len - (t - header);
+
+                    body = malloc(body_len + 1);
+                    memcpy(body, t, body_len);
+                    body[body_len] = 0;
+
+                    if (body_len >= content_length)
+                    {
+                        body_len = content_length;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            char * t;
+
+            t = realloc(body, body_len + tmplen + 1);
+            if (!t)
+            {
+                failure(FAILED_SERVER, "Out of memory\n");
+            }
+            body = t;
+            memcpy(body + body_len, tmp, tmplen);
+            body_len += tmplen;
+
+            if (body_len >= content_length)
+            {
+                body_len = content_length;
+                break;
+            }
+        }
     }
-    (*s)[len] = 0;
+    while ((!GSS_ERROR(major_status)) && (body_len < 64000));
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        failure4(FAILED_SERVICELOOKUP,
+                 "Reading incoming message GSS failed Major:%8.8x "
+                 "Minor:%8.8x Token:%8.8x\n",
+                 major_status,
+                 minor_status,
+                 token_status);
+    }
+    else if (body_len >= 64000)
+    {
+        failure(FAILED_TOOLARGE, "Incoming message too large\n");
+    }
+     
+    *header_out = header;
+    *body_out = body;
+    *bodylen_out = body_len;
 }
+/* read_header_and_body() */

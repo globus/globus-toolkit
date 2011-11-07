@@ -192,6 +192,7 @@ globus_gram_job_manager_request_init(
     char *                              rsl,
     gss_cred_id_t                       delegated_credential,
     gss_ctx_id_t                        response_ctx,
+    globus_gsi_cred_handle_t            peer_cred,
     globus_bool_t                       reinit,
     char **                             old_job_contact,
     globus_gram_jobmanager_request_t ** old_job_request,
@@ -447,6 +448,7 @@ globus_gram_job_manager_request_init(
         }
         rc = globus_i_gram_get_tg_gateway_user(
                 response_ctx,
+                peer_cred,
                 &r->gateway_user);
         if(rc != GLOBUS_SUCCESS)
         {
@@ -947,6 +949,9 @@ globus_gram_job_manager_request_load(
     int                                 http_body_fd,
     int                                 context_fd,
     gss_cred_id_t                       cred,
+    const char *                        peer_address,
+    globus_gsi_cred_handle_t            peer_cred,
+    size_t                              content_length,
     globus_gram_jobmanager_request_t ** request,
     gss_ctx_id_t *                      context,
     char **                             contact,
@@ -965,18 +970,22 @@ globus_gram_job_manager_request_load(
     *job_state_mask = 0;
     *version_only = GLOBUS_FALSE;
 
-    rc = globus_gram_job_manager_import_sec_context(
-            manager,
-            context_fd,
-            context);
-    if (rc != GLOBUS_SUCCESS)
+    if (context_fd != -1)
     {
-        goto import_context_failed;
+        rc = globus_gram_job_manager_import_sec_context(
+                manager,
+                context_fd,
+                context);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto import_context_failed;
+        }
     }
 
     rc = globus_gram_job_manager_read_request(
             manager,
             http_body_fd,
+            content_length,
             &rsl,
             contact,
             job_state_mask,
@@ -993,6 +1002,7 @@ globus_gram_job_manager_request_load(
                 rsl,
                 cred,
                 *context,
+                peer_cred,
                 GLOBUS_FALSE,
                 old_job_contact,
                 old_job_request,
@@ -1100,8 +1110,8 @@ username_denied:
 authz_denied:
 add_request_failed:
 bad_request:
-    /* Reply to request with unsubmitted (and optionally two-phase-commit
-     * needed)
+    /* Reply to request with unsubmitted (and optionally
+     * two-phase-commit needed)
      */
     switch (request->failure_code)
     {

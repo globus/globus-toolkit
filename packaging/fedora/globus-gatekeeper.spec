@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	8.2
+Version:	9.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -114,6 +114,12 @@ fi
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
+* Mon Nov 07 2011 Joseph Bester <bester@mcs.anl.gov> - 9.1-1
+- Add default chkconfig line
+
+* Mon Nov 07 2011 Joseph Bester <bester@mcs.anl.gov> - 9.0-1
+- GRAM-268: GRAM requires gss_export_sec_context to work
+
 * Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 8.2-1
 - GRAM-267: globus-gatekeeper uses inappropriate Default-Start in init script
 
