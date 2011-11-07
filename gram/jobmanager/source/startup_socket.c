@@ -1234,7 +1234,7 @@ globus_l_gram_startup_socket_callback(
     char *                              old_job_contact = NULL;
     globus_gram_jobmanager_request_t *  old_job_request = NULL;
     globus_bool_t                       version_only = GLOBUS_FALSE;
-    static unsigned char                cred_buffer_value[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    static unsigned char                cred_buffer_value[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE+16*1024];
     gss_name_t                          name;
     gss_buffer_desc                     output_name;
     struct linger                       linger;
