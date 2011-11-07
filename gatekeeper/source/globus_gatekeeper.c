@@ -125,7 +125,7 @@ static gss_OID_desc * gss_ext_x509_cert_chain_oid =
 static void doit(void);
 static int logging_startup(void);
 static int logging_phase2(void);
-static void failure(short failure_type, char *s);
+static void failure(int failure_type, char *s);
 static void notice(int, char *s);
 static int net_accept(int socket);
 static void net_setup_listener(int backlog, int *port, int *socket);
@@ -165,12 +165,17 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #define LOGFILE ""
 #endif
 
-#define FAILED_AUTHORIZATION        1
-#define FAILED_SERVICELOOKUP        2
-#define FAILED_SERVER               3
-#define FAILED_NOLOGIN              4
-#define FAILED_AUTHENTICATION       5
-#define FAILED_PING                 6
+enum
+{
+    FAILED_AUTHORIZATION = 1,
+    FAILED_SERVICELOOKUP,
+    FAILED_SERVER,
+    FAILED_NOLOGIN,
+    FAILED_AUTHENTICATION,
+    FAILED_PING,
+    FAILED_TOOLARGE
+};
+
 
 static char     tmpbuf[1024];
 #define notice2(i,a,b) {sprintf(tmpbuf, a,b); notice(i,tmpbuf);}
@@ -1341,7 +1346,7 @@ static void doit()
 
     /* parse of HTTP post line */
     {
-        char * parse_re = "^POST (ping)?/([^@ ]+)(@(^ \n]+))?";
+        char * parse_re = "^POST (ping)?/([^@ ]+)(@([^ \n]+))?";
         regex_t reg;
         regmatch_t matches[5];
 
@@ -1977,7 +1982,7 @@ static void doit()
                     {
                         setenv("SSL_CLIENT_CERT_CHAIN0", pemtext, 1);
                     }
-                    BIO_reset(b);
+                    (void) BIO_reset(b);
                 }
                 BIO_free(b);
             }
@@ -2056,8 +2061,6 @@ static void doit()
         do
         {
             ssize_t s = 0;
-            notice3(0, "Writing %.*s to proxy socket",
-                    (int) (body_length - written), body+written);
             s = write(proxy_socket[0], body + written, body_length - written);
 
             if (s > 0)
@@ -2078,9 +2081,6 @@ static void doit()
             if (written == 0)
             {
                 char * reply = malloc(sizeof(header) + n);
-
-                notice3(0, "Read %.*s from proxy socket",
-                        (int) n, buf); 
 
                 strcpy(reply, header);
                 memcpy(reply + sizeof(header) - 1, buf, n);
@@ -2130,30 +2130,6 @@ static void doit()
     if (launch_method != DONT_FORK)
     {
 	notice2(0, "Child %d started", pid);
-    }
-
-    if (launch_method == FORK_AND_WAIT || launch_method == FORK_AND_PROXY)
-    {
-	/* wait until child is reaped */
-	int dead_pid;
-#       ifdef HAS_WAIT_UNION_WAIT
-	union wait status;
-#       else
-	int status;
-#       endif
-
-	do
-	{
-#           ifdef HAS_WAIT3
-	    dead_pid = wait3(&status, 0, NULL);
-#           else
-	    dead_pid = waitpid(-1, &status, 0);
-#           endif
-	    if (dead_pid < 0 && errno != EINTR)
-	    {
-		break;
-	    }
-	} while (dead_pid != pid);
     }
 
     ok_to_send_errmsg = 0;
@@ -2427,7 +2403,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-failure(short failure_type, char * s)
+failure(int failure_type, char * s)
 {
 
     OM_uint32        minor_status = 0;
@@ -2471,6 +2447,14 @@ failure(short failure_type, char * s)
                         "\015\012");
             break;
 
+        case FAILED_TOOLARGE:
+            response = ("HTTP/1.1 200 OK\015\012"
+                        "Content-Type: application/x-globus-gram\015\012"
+                        "Content-Length: 33\015\012"
+                        "\015\012"
+                        "protocol-version: 2\015\012"
+                        "status: 10\015\012");
+            break;
         case FAILED_SERVER:
         case FAILED_NOLOGIN:
         case FAILED_AUTHENTICATION:
@@ -2585,7 +2569,6 @@ read_header_and_body(
     char *                              body = NULL;
     size_t                              body_len = 0;
     int                                 have_header = 0;
-    int                                 have_body = 0;
     char *                              content_header;
     size_t                              content_length;
     int                                 token_status;
@@ -2643,7 +2626,6 @@ read_header_and_body(
 
                     if (body_len >= content_length)
                     {
-                        have_body = 1;
                         body_len = content_length;
                         break;
                     }
@@ -2665,13 +2647,12 @@ read_header_and_body(
 
             if (body_len >= content_length)
             {
-                have_body = 1;
                 body_len = content_length;
                 break;
             }
         }
     }
-    while ((!GSS_ERROR(major_status)) && (body_len + header_len) < 64000);
+    while ((!GSS_ERROR(major_status)) && (body_len < 64000));
 
     if (major_status != GSS_S_COMPLETE)
     {
@@ -2682,9 +2663,9 @@ read_header_and_body(
                  minor_status,
                  token_status);
     }
-    else if ((body_len + header_len) >= 64000)
+    else if (body_len >= 64000)
     {
-        failure(FAILED_SERVICELOOKUP, "Incoming message too large\n");
+        failure(FAILED_TOOLARGE, "Incoming message too large\n");
     }
      
     *header_out = header;
