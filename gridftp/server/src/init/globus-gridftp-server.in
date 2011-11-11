@@ -28,6 +28,7 @@ fi
 
 rc=0
 conf=${sysconfdir}/gridftp.conf
+confdir=${sysconfdir}/gridftp.d
 pidfile=${localstatedir}/run/globus-gridftp-server.pid
 gridftpd=${sbindir}/globus-gridftp-server
 
@@ -47,8 +48,12 @@ start()
         fi
     fi
 
+    if [ ! -d $confdir ]; then
+        mkdir $confdir;
+    fi
+
     if [ ! -f "$pidfile" ]; then
-        $gridftpd -S -c $conf -pidfile "${pidfile}"
+        $gridftpd -S -c $conf -C $confdir -pidfile "${pidfile}"
         rc=$?
     fi
      
@@ -62,9 +67,12 @@ start_lsb()
     if [ ! -f $conf ]; then
       cp $conf.default $conf;
     fi
+    if [ ! -d $confdir ]; then
+        mkdir $confdir;
+    fi
 
     start_daemon ${lsb_version_ge4:+-p "$pidfile"} "$gridftpd" -S -c $conf \
-            -pidfile "${pidfile}"
+            -C $confdir -pidfile "${pidfile}"
     rc=$?
      
     if [ $rc -eq 0 ]; then

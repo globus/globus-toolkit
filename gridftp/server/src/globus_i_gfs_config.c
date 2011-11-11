@@ -17,6 +17,7 @@
 #include "globus_i_gridftp_server.h"
 #include "globus_gsi_system_config.h"
 #include "version.h"
+#include "dirent.h"
 
 #define GLOBUS_GFS_HELP_ROWS            60
 #define GLOBUS_GFS_HELP_COLS            45
@@ -350,9 +351,14 @@ static const globus_l_gfs_config_option_t option_list[] =
     "disk stack. Format is of each driver entry is driver1[:opt1=val1;opt2=val2;...]. "
     "The bottom of the stack, the transport driver, is always first.", NULL, NULL, GLOBUS_FALSE, NULL},
 {NULL, "Other", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
- {"configfile", "configfile", NULL, "c", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-     "Path to configuration file that should be loaded.  Otherwise will attempt "
+ {"configfile", NULL, NULL, "c", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+     "Path to main configuration file that should be loaded.  Otherwise will attempt "
      "to load $GLOBUS_LOCATION/etc/gridftp.conf and /etc/grid-security/gridftp.conf.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"config_dir", "config_dir", NULL, "C", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+     "Path to directory holding configuration files that should be loaded. Files "
+     "will be loaded in alphabetical order, and in the event of duplcate parameters "
+     "the last loaded file will take precedence.  Note that the main configuration"
+     "file, if one exists, will always be loaded last.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"config_base_path", "config_base_path", NULL, "config-base-path", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      "Base path to use when config and log path options are not full paths. "
      "By default this is the current directory when the process is started.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -501,6 +507,7 @@ error:
     GlobusGFSDebugExitWithError();
     return 1;             
 }
+
 
 static
 globus_result_t
@@ -769,6 +776,67 @@ error_parse:
         filename, line_num);
 
     return -1;
+}
+
+static
+globus_result_t
+globus_l_gfs_config_load_config_dir(
+    char *                              conf_dir)
+{
+    struct dirent **                    entries;
+    int                                 count;
+    int                                 i;
+    int                                 rc = 0;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    GlobusGFSName(globus_l_gfs_config_load_config_dir);
+    GlobusGFSDebugEnter();
+
+    count = scandir(conf_dir, &entries, 0, alphasort);
+    if(count >= 0)
+    {
+       
+        for(i = 0; i < count; i++)
+        {
+            char *                      full_path;
+            
+            /* skip hidden and . or ..
+             and files possibly created by updates .rpmsave or .rpmnew */
+            if(*entries[i]->d_name == '.' || 
+                strstr(entries[i]->d_name, ".rpm") != NULL)
+            {
+                free(entries[i]);
+                continue;
+            }
+            
+            full_path = globus_common_create_string(
+                "%s/%s", conf_dir, entries[i]->d_name); 
+
+            rc = globus_l_gfs_config_load_config_file(full_path);
+            if(rc == -2)
+            {
+                fprintf(stderr, "Problem parsing config file %s: "
+                    "Unable to open file.\n", full_path);
+            }
+            if(rc < 0)
+            {
+                result = GLOBUS_FAILURE;
+            }
+            globus_l_gfs_config_load_envs_from_file(full_path);
+            
+            free(entries[i]);
+            globus_free(full_path);
+        }
+        free(entries);
+    }
+    else
+    {
+        fprintf(stderr, "Problem reading files from config dir %s.\n", conf_dir);
+        result = GLOBUS_FAILURE;
+    }
+
+    GlobusGFSDebugExit();
+    return result;
 }
 
 static
@@ -2402,6 +2470,7 @@ globus_i_gfs_config_init(
 {
     char *                              tmp_str;
     char *                              exec_name;
+    char *                              conf_dir;
     char *                              local_config_file;
     char *                              global_config_file;
     globus_bool_t                       cmdline_config = GLOBUS_FALSE;
@@ -2456,41 +2525,49 @@ globus_i_gfs_config_init(
 
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
-    
+    conf_dir = NULL;
     
     for(arg_num = 0; arg_num < argc; arg_num++)
     {
         argp = tmp_argv[arg_num];
-        if(argp[0] == '-' && argp[1] == 'c' && argp[2] == '\0' 
-            && tmp_argv[arg_num + 1])
+        if(*argp != '-')
+        {
+            continue;
+        }
+        while(*argp == '-')
+        {
+            argp++;
+        }
+        
+        if(argp[0] == 'c' && argp[1] == '\0' && tmp_argv[arg_num + 1])
         {
             local_config_file = globus_libc_strdup(tmp_argv[arg_num + 1]);
-            arg_num = argc;
             cmdline_config = GLOBUS_TRUE;
+            arg_num++;
+            continue;
+        }
+        
+        if(argp[0] == 'C' && argp[1] == '\0' && tmp_argv[arg_num + 1])
+        {
+            conf_dir = globus_libc_strdup(tmp_argv[arg_num + 1]);
+            arg_num++;
+            continue;
+        }
+
+        if(!strcmp(argp, "config-base-path") && tmp_argv[arg_num + 1])
+        {
+            base_str = globus_libc_strdup(tmp_argv[arg_num + 1]);
+            continue;
         }
     }
+    
     if(local_config_file == NULL && !argv_only)
     {
         globus_eval_path("${sysconfdir}/gridftp.conf", &local_config_file);
     }
 
     globus_l_gfs_config_load_defaults();
-    
-    for(arg_num = 0; arg_num < argc; arg_num++)
-    {
-        argp = tmp_argv[arg_num];
-        while(*argp == '-')
-        {
-            argp++;
-        }
-
-        if(!strcmp(argp, "config-base-path") && tmp_argv[arg_num + 1])
-        {
-            base_str = globus_libc_strdup(tmp_argv[arg_num + 1]);
-            arg_num = argc;
-        }
-    }
-    
+        
     if(base_str)
     {
         globus_free(cwd_str);
@@ -2502,6 +2579,22 @@ globus_i_gfs_config_init(
         globus_l_gfs_config_set("config_base_path", 0, cwd_str);
     }
 
+    if(conf_dir != NULL)
+    {
+        if(*conf_dir != '/')
+        {
+            tmp_str = globus_common_create_string(
+                "%s/%s", base_str, conf_dir);
+            globus_free(conf_dir);
+            conf_dir = tmp_str;
+        }
+        rc = globus_l_gfs_config_load_config_dir(conf_dir);
+        if(rc < 0)
+        {
+            goto error;
+        }
+    }
+    
     if(local_config_file != NULL)
     {
         if(*local_config_file != '/')

@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.2
+Version:	6.3
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
