@@ -29,7 +29,7 @@ while ( <PKG> )
     my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
     print cwd()."\n";
     print $subdir."\n";
-    if ($tag ne '') {
+    if ($tag ne '' && $pkgtag eq '') {
         $pkgtag = $tag;
     } elsif ($pkgtag eq '') {
         # no overriding tag is given, default to HEAD unless there's a
