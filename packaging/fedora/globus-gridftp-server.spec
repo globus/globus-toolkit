@@ -13,7 +13,7 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.3
-Release:	2%{?dist}
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -180,6 +180,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Fri Nov 11 2011 Joseph Bester <bester@mcs.anl.gov> - 6.3-1
+- GRIDFTP-190: add in config dir loading
+
 * Mon Oct 24 2011 Joseph Bester <bester@mcs.anl.gov> - 6.2-2
 - Add explicit dependencies on >= 5.2 libraries
 - Add backward-compatibility aging

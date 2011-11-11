@@ -19,7 +19,7 @@
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
 Version:	14.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -162,7 +162,7 @@ unset GPT_LOCATION
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.2.0
+GLOBUS_VERSION=5.1.3
 %endif
 export GLOBUS_VERSION
 %configure --with-flavor=%{flavor} --enable-doxygen \
@@ -247,6 +247,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Fri Nov 11 2011 Joseph Bester <bester@mcs.anl.gov> - 14.3-2
+- Set default GLOBUS_VERSION to version 5.1.3
+
 * Thu Nov 03 2011 Joseph Bester <bester@mcs.anl.gov> - 14.3-1
 - RIC-199: Can't install 32 and 64 bit Globus RPMs at the same time (missed
   perl libdir change)
