@@ -1060,7 +1060,7 @@ globus_l_gram_condor_poll_callback(
                     (long) st.st_uid);
             goto close_log;
         }
-        if (st.st_mtime < ref->seg_last_timestamp)
+        if (st.st_size <= ref->seg_last_size)
         {
             globus_gram_job_manager_log(
                     manager,
@@ -1069,13 +1069,13 @@ globus_l_gram_condor_poll_callback(
                     "level=TRACE "
                     "message=\"%s\" "
                     "file=\"%s\" "
-                    "timestamp.poll=%ld "
-                    "timestamp.file=%ld "
+                    "size.last_poll=%lld "
+                    "size.file=%lld "
                     "\n",
-                    "file older than last poll",
+                    "file hasn't grown since last poll",
                     path,
-                    (long) last_poll_time,
-                    (long) st.st_mtime);
+                    (long long) ref->seg_last_size,
+                    (long long) st.st_size);
 
             goto close_log;
         }
@@ -1134,6 +1134,7 @@ globus_l_gram_condor_poll_callback(
                 ref,
                 &events);
         munmap(condor_log_data, (size_t) st.st_size);
+        ref->seg_last_size = st.st_size;
 close_log:
         close(condor_log_fd);
         free(path);

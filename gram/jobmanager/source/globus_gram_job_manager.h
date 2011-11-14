@@ -802,11 +802,18 @@ typedef struct globus_gram_job_manager_ref_s
      * completed execution.
      */
     globus_bool_t                       loaded_only;
+
+    /* The following are used for the internal fakeseg stuff for condor*/
+
     /**
      * Timestamp of the last SEG event we've completely processed. Initially
      * set to the time of the job submission.
      */
     time_t                              seg_last_timestamp;
+    /**
+     * Size of the Condor log file last time we polled.
+     */
+    globus_off_t                        seg_last_size;
 }
 globus_gram_job_manager_ref_t;
 

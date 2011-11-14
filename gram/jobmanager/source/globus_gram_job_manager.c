@@ -770,6 +770,7 @@ globus_l_gram_job_manager_add_ref_stub(
     (*ref)->status_count = 0;
     (*ref)->loaded_only = GLOBUS_FALSE;
     (*ref)->seg_last_timestamp = request ? request->seg_last_timestamp : 0;
+    (*ref)->seg_last_size = 0;
 
     (*ref)->key = strdup(key);
     if ((*ref)->key == NULL)
