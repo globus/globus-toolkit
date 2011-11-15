@@ -12,14 +12,14 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.2
+Version:	9.1
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:         http://www.globus.org/ftppub/gt5/5.1/5.1.4/packages/src/http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:         http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 13.4
@@ -114,9 +114,6 @@ fi
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
-* Tue Nov 15 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-1
-- GRAM-276: Increase backlog for gatekeeper
-
 * Mon Nov 07 2011 Joseph Bester <bester@mcs.anl.gov> - 9.1-1
 - Add default chkconfig line
 

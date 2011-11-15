@@ -998,7 +998,7 @@ main(int xargc,
         {
             logging_phase2(); /* now set stderr to logfile after gss prompts */
 
-            net_setup_listener(256, &daemon_port, &listener_fd);
+            net_setup_listener(2, &daemon_port, &listener_fd);
         }
       
         /* ajr,vs --changed printf to sprintf, and added setenv
