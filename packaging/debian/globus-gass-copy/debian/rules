@@ -13,9 +13,9 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gass-copy
 _name = globus_gass_copy
-version = 7.3
+version = 8.1
 soname = 2
-toolkit_version = 5.1.1
+toolkit_version = 5.1.3
 toolkit_major = $(shell expr $(toolkit_version) : "\([0-9]*\)")
 toolkit_major_minor = $(shell expr $(toolkit_version) : "\([0-9]*.[0-9]*\)")
 source_packages_url = http://www.globus.org/ftppub/gt$(toolkit_major)/$(toolkit_major_minor)/$(toolkit_version)/packages/src

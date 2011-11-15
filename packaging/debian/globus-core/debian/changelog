@@ -1,3 +1,9 @@
+globus-core (8.3-0) unstable; urgency=low
+
+  * Update to 5.1.3
+
+ -- Globus Toolkit <support@globus.org>  Tue, 15 Nov 2011 16:26:12 -0500
+
 globus-core (7.8-0GT5.1.1a) unstable; urgency=low
 
   * Disable PDF Hyperlinks in doxygen doc to avoid doc compile error

@@ -1,7 +1,7 @@
 Source: globus-gridftp-server-control
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-xio-pipe-driver-dev, libglobus-common-dev (>= 13), libglobus-xio-gsi-driver-dev, libglobus-xio-dev, globus-core (>= 7.7)
+Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, libglobus-xio-pipe-driver-dev, libglobus-common-dev (>= 14), libglobus-xio-gsi-driver-dev, libglobus-xio-dev, globus-core (>= 7.7)
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
@@ -26,7 +26,7 @@ Description: Globus Toolkit - Globus GridFTP Server Library
 Package: libglobus-gridftp-server-control-dev
 Section: libdevel
 Architecture: any
-Depends: libglobus-gridftp-server-control0 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-pipe-driver-dev, libglobus-common-dev (>= 13), libglobus-xio-gsi-driver-dev, libglobus-xio-dev
+Depends: libglobus-gridftp-server-control0 (= ${binary:Version}), ${misc:Depends}, libglobus-xio-pipe-driver-dev, libglobus-common-dev, libglobus-xio-gsi-driver-dev, libglobus-xio-dev
 Description: Globus Toolkit - Globus GridFTP Server Library Development Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
