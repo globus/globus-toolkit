@@ -12,8 +12,8 @@
 
 Name:		globus-gram-client
 %global _name %(tr - _ <<< %{name})
-Version:	12.2
-Release:	2%{?dist}
+Version:	12.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Client Library
 
 Group:		System Environment/Libraries
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Nov 15 2011 Joseph Bester <bester@mcs.anl.gov> - 12.3-1
+- Enable IPv6 support
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 12.2-2
 - Add explicit dependencies on >= 5.2 libraries
 

@@ -2964,7 +2964,10 @@ globus_l_gram_protocol_setup_connect_attr(
 			&auth_data))
 	 || (res = globus_io_attr_set_secure_channel_mode(
 	                attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP))
+         || (res = globus_io_attr_set_tcp_allow_ipv6(
+                        attr,
+                        GLOBUS_TRUE)) )
     {
         globus_io_tcpattr_destroy(attr);
 

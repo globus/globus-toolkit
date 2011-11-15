@@ -568,6 +568,14 @@ globus_l_gram_client_setup_gatekeeper_attr(
     {
         goto destroy_2;
     }
+    res = globus_io_attr_set_tcp_allow_ipv6(
+        attrp,
+        GLOBUS_TRUE);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+
     if(gatekeeper_dn)
     {
         res = globus_io_secure_authorization_data_set_identity(
@@ -656,6 +664,13 @@ globus_l_gram_client_setup_jobmanager_attr(
         (credential != GSS_C_NO_CREDENTIAL)
             ? credential
             : globus_i_gram_protocol_credential);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_tcp_allow_ipv6(
+        attr,
+        GLOBUS_TRUE);
     if (res != GLOBUS_SUCCESS)
     {
         goto destroy_2;
