@@ -1,5 +1,0 @@
-#! /bin/sh
-
-. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
-
-$GLOBUS_SH_PERL ${GLOBUS_LOCATION}/setup/globus/setup-globus-job-manager-remote.pl "$@"
