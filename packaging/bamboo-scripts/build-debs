@@ -144,22 +144,22 @@ if [ -n "$pkgs_to_rm" ]; then
     sudo dpkg -r $pkgs_to_rm
 fi
 
-bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-simple-ca
-packages_to_build=myproxy,gsi_openssh
+bundles=globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,gram5-condor,gram5-pbs,gram5-sge,globus-simple-ca
+packages_to_build=myproxy,gsi_openssh,globus_gram_audit
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 find debian \( -name rules -o -name '*.postinst' -o -name '*.init' \) -exec chmod a+x {} + 
 
 if [ "$quick" -eq 1 ]; then
     lpopts="-no-updates"
 fi
-packages="$(./make-packages.pl -ab $lpopts -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build ${tag:+-t "${tag}"} | \
+packages="$(./make-packages.pl $lpopts -ab -a -lp -deps -deporder -bundles=$bundles -packages=$packages_to_build -flavor=${flavor} ${tag:+-t "${tag}"} | \
 	awk "/at version/ { print \$1 }" )"
 packages="$(echo "${packages}" | egrep -v 'myproxy|gsi_openssh'; echo myproxy; echo gsi_openssh)"
 
 if [ "$quick" -eq 1 ]; then
 	mv package-output.old package-output
 else
-	./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor} -ab
+	./make-packages.pl -no-updates -deps -deporder -bundles=$bundles -packages=$packages_to_build -a -flavor=${flavor}
 	cd gpt/packaging_tools
 	sh ./bootstrap
 	rm gpt*.tar.gz || true
@@ -258,14 +258,18 @@ fi
 mkdir "${packagingdir}/repo"
 cd "${packagingdir}/repo"
 mkdir conf
+if [ $sign = 1 ]; then
+    signwithline="$(printf "\nSignWith: yes")"
+else
+    signwithline=""
+fi
 cat > conf/distributions <<EOF
 Label: Globus Toolkit
 Suite: unstable
 Codename: $releasename
 Version: $osver
 Architectures: amd64 i386 source
-Components: contrib
-SignWith: yes
+Components: contrib$signwithline
 Description: Globus Toolkit Packages
 
 EOF
