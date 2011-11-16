@@ -416,6 +416,7 @@ cat > globus.xml <<EOF
     <packagelist>
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-gsi-cert-utils-progs</packagereq>
+      <packagereq type="default">globus-gss-assist-progs</packagereq>
       <packagereq type="default">globus-proxy-utils-progs</packagereq>
       <packagereq type="default">globus-user-env</packagereq>
       <packagereq type="default">globus-simple-ca</packagereq>
@@ -451,6 +452,7 @@ cat > globus.xml <<EOF
       <packagereq type="default">globus-core</packagereq>
       <packagereq type="default">globus-common-progs</packagereq>
       <packagereq type="default">globus-callout</packagereq>
+      <packagereq type="default">globus-gram-job-manager</packagereq>
       <packagereq type="default">globus-gram-job-manager-fork-setup-poll</packagereq>
       <packagereq type="default">globus-gass-cache</packagereq>
       <packagereq type="default">globus-gsi-openssl-error</packagereq>
