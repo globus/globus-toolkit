@@ -18,7 +18,7 @@ use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
         return 1;
     }
     if ((hdfs_handle->using_file_buffer == 1) && (buffer_count > hdfs_handle->max_buffer_count/2)) {
-            return 1;
+        return 1;
     }
     return 0;
 }
@@ -32,19 +32,95 @@ use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
 void
 remove_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
     if (hdfs_handle->tmp_file_pattern) {
-	snprintf(err_msg, MSG_SIZE, "Removing file buffer %s.\n", hdfs_handle->tmp_file_pattern);
-	globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
-        unlink(hdfs_handle->tmp_file_pattern);
+        snprintf(err_msg, MSG_SIZE, "Removing file buffer %s.\n", hdfs_handle->tmp_file_pattern);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
         globus_free(hdfs_handle->tmp_file_pattern);
 	hdfs_handle->tmp_file_pattern = (char *)NULL;
     }
 }
 
 /**
+ *  Initialize backing store
+ */
+static globus_result_t hdfs_initialize_file(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
+    int i, cnt;
+    globus_result_t rc = GLOBUS_SUCCESS;
+    // Initial file buffer.
+    GlobusGFSName(globus_l_gfs_hdfs_initialize_file);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from memory buffer to file buffer.\n");
+
+    char *tmpdir=getenv("TMPDIR");
+    if (tmpdir == NULL) {
+                tmpdir = "/tmp";
+    }
+    hdfs_handle->tmp_file_pattern = globus_malloc(sizeof(char) * (strlen(tmpdir) + 32));
+    sprintf(hdfs_handle->tmp_file_pattern, "%s/gridftp-hdfs-buffer-XXXXXX", tmpdir);
+
+    hdfs_handle->tmpfilefd = mkstemp(hdfs_handle->tmp_file_pattern);
+    int filedes = hdfs_handle->tmpfilefd;
+    if (filedes == -1) {
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to determine file descriptor of temporary file.\n");
+            rc = GlobusGFSErrorGeneric("Failed to determine file descriptor of temporary file.");
+            remove_file_buffer(hdfs_handle);
+            return rc;
+    }
+    unlink(hdfs_handle->tmp_file_pattern);
+    snprintf(err_msg, MSG_SIZE, "Created file buffer %s.\n", hdfs_handle->tmp_file_pattern);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
+    char * tmp_write = globus_calloc(hdfs_handle->block_size, sizeof(globus_byte_t));
+    if (tmp_write == NULL) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Could not allocate memory for dumping file buffer.\n");
+        rc = GlobusGFSErrorGeneric("Could not allocate memory for dumping file buffer.");
+        return rc;
+    }
+    /* Write into the file to create its initial size */
+    cnt = hdfs_handle->buffer_count;
+    for (i=0; i<cnt; i++) {
+        if (write(filedes, tmp_write, sizeof(globus_byte_t)*hdfs_handle->block_size) < 0) {
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to initialize backing file.\n");
+            rc = GlobusGFSErrorGeneric("Failed to initialize backing file.");
+            globus_free(tmp_write);
+            return rc; 
+        }   
+    }
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Pre-filled file buffer with empty data.\n");
+    globus_free(tmp_write);
+    return rc;
+}
+
+static globus_result_t hdfs_populate_mmap(globus_l_gfs_hdfs_handle_t* hdfs_handle) {
+    GlobusGFSName(hdfs_populate_mmap);
+    int filedes = hdfs_handle->tmpfilefd, cnt;
+    globus_result_t rc = GLOBUS_SUCCESS;
+    globus_byte_t * file_buffer = mmap(0, hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t),
+        PROT_READ | PROT_WRITE, MAP_SHARED, filedes, 0);
+    if (file_buffer == (globus_byte_t *)-1) {
+        if (errno == ENOMEM) {
+            snprintf(err_msg, MSG_SIZE, "Error mmapping the file buffer (%ld bytes): errno=ENOMEM\n",
+                hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t));
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+        } else {
+            snprintf(err_msg, MSG_SIZE, "Error mmapping the file buffer: errno=%d\n", errno);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
+        }
+        remove_file_buffer(hdfs_handle);
+        rc = GlobusGFSErrorGeneric("Failed to mmap() the file buffer.");
+        return rc;
+    }
+    cnt = hdfs_handle->buffer_count;
+    memcpy(file_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Memory buffers copied to disk buffer.\n");
+    globus_free(hdfs_handle->buffer);
+    hdfs_handle->buffer = file_buffer;
+    hdfs_handle->using_file_buffer = 1;
+    return GLOBUS_SUCCESS;
+}
+
+/**
  *  Store the current output to a buffer.
  */
 globus_result_t hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle, globus_byte_t* buffer, globus_off_t offset, globus_size_t nbytes) {
-    GlobusGFSName(globus_l_gfs_hdfs_store_buffer);
+    GlobusGFSName(hdfs_store_buffer);
     globus_result_t rc = GLOBUS_SUCCESS;
     int i, cnt = hdfs_handle->buffer_count;
     short wrote_something = 0;
@@ -53,92 +129,41 @@ globus_result_t hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle, glob
         return rc;
     }
 
-        // Determine the type of buffer to use; allocate or transfer buffers as necessary
-        int use_buffer = use_file_buffer(hdfs_handle);
-        if ((use_buffer == 1) && (hdfs_handle->using_file_buffer == 0)) {
-            // Turn on file buffering, copy data from the current memory buffer.
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from memory buffer to file buffer.\n");
-
-            char *tmpdir=getenv("TMPDIR");
-            if (tmpdir == NULL) {
-                tmpdir = "/tmp";
-            }
-            hdfs_handle->tmp_file_pattern = globus_malloc(sizeof(char) * (strlen(tmpdir) + 32));
-            sprintf(hdfs_handle->tmp_file_pattern, "%s/gridftp-hdfs-buffer-XXXXXX", tmpdir);
-
-            hdfs_handle->tmpfilefd = mkstemp(hdfs_handle->tmp_file_pattern);
-            int filedes = hdfs_handle->tmpfilefd;
-            if (filedes == -1) {
-                globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to determine file descriptor of temporary file.\n");
-                rc = GlobusGFSErrorGeneric("Failed to determine file descriptor of temporary file.");
-                return rc;
-            }
-            snprintf(err_msg, MSG_SIZE, "Created file buffer %s.\n", hdfs_handle->tmp_file_pattern);
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
-            char * tmp_write = globus_calloc(hdfs_handle->block_size, sizeof(globus_byte_t));
-            if (tmp_write == NULL) {
-                globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Could not allocate memory for dumping file buffer.\n");
-            }
-            /* Write into the file to create its initial size */
-            for (i=0; i<cnt; i++) {
-                if (write(filedes, tmp_write, sizeof(globus_byte_t)*hdfs_handle->block_size) < 0) {
-                    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to initialize backing file.\n");
-                    rc = GlobusGFSErrorGeneric("Failed to initialize backing file.");
-                    return rc;
-                }
-            }
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Pre-filled file buffer with empty data.\n");
-            globus_free(tmp_write);
-            globus_byte_t * file_buffer = mmap(0, hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t), PROT_READ | PROT_WRITE, MAP_SHARED, filedes, 0);
-            if (file_buffer == (globus_byte_t *)-1) {
-                if (errno == ENOMEM) {
-                    snprintf(err_msg, MSG_SIZE, "Error mmapping the file buffer (%ld bytes): errno=ENOMEM\n", hdfs_handle->block_size*hdfs_handle->max_file_buffer_count*sizeof(globus_byte_t));
-                    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
-                } else {
-                    snprintf(err_msg, MSG_SIZE, "Error mmapping the file buffer: errno=%d\n", errno);
-                    globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, err_msg);
-                }
-                /*
-                 * Regardless of the error, remove the file buffer.
-                 */
-                remove_file_buffer(hdfs_handle);
-                /*
-                 * Is this the proper way to exit from here?
-                 */
-                rc = GlobusGFSErrorGeneric("Failed to mmap() the file buffer.");
-                return rc;
-            }
-            memcpy(file_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Memory buffers copied to disk buffer.\n");
-            globus_free(hdfs_handle->buffer);
-            hdfs_handle->buffer = file_buffer;
-            hdfs_handle->using_file_buffer = 1;
-        } else if (use_buffer == 1) {
-            // Do nothing.  Continue to use the file buffer for now.
-        } else if (hdfs_handle->using_file_buffer == 1 && cnt < hdfs_handle->max_buffer_count) {
-            // Turn off file buffering; copy data to a new memory buffer
-            globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from file buffer to memory buffer.\n");
-            globus_byte_t * tmp_buffer = globus_malloc(sizeof(globus_byte_t)*hdfs_handle->block_size*cnt);
-            if (tmp_buffer == NULL) {
-                rc = GlobusGFSErrorGeneric("Memory allocation error.");
-                globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Memory allocation error.");
-                return rc;
-            }
-            memcpy(tmp_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
-            munmap(hdfs_handle->buffer, hdfs_handle->block_size*hdfs_handle->buffer_count*sizeof(globus_byte_t));
-            hdfs_handle->using_file_buffer = 0;
-            close(hdfs_handle->tmpfilefd);
-	    remove_file_buffer(hdfs_handle);
-            hdfs_handle->buffer = tmp_buffer;
-        } else {
-            // Do nothing.  Continue to use the file buffer for now.
+    // Determine the type of buffer to use; allocate or transfer buffers as necessary
+    int use_buffer = use_file_buffer(hdfs_handle);
+    if ((use_buffer == 1) && (hdfs_handle->using_file_buffer == 0)) {
+        if ((rc = hdfs_initialize_file(hdfs_handle)) != GLOBUS_SUCCESS) {
+            return rc;
         }
+        if ((rc = hdfs_populate_mmap(hdfs_handle)) != GLOBUS_SUCCESS) {
+            return rc;
+        }
+    } else if (use_buffer == 1) {
+        // Do nothing.  Continue to use the file buffer for now.
+    } else if (hdfs_handle->using_file_buffer == 1 && cnt < hdfs_handle->max_buffer_count) {
+        // Turn off file buffering; copy data to a new memory buffer
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Switching from file buffer to memory buffer.\n");
+        globus_byte_t * tmp_buffer = globus_malloc(sizeof(globus_byte_t)*hdfs_handle->block_size*cnt);
+        if (tmp_buffer == NULL) {
+            rc = GlobusGFSErrorGeneric("Memory allocation error.");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Memory allocation error.");
+            return rc;
+        }
+        memcpy(tmp_buffer, hdfs_handle->buffer, cnt*hdfs_handle->block_size*sizeof(globus_byte_t));
+        munmap(hdfs_handle->buffer, hdfs_handle->block_size*hdfs_handle->buffer_count*sizeof(globus_byte_t));
+        hdfs_handle->using_file_buffer = 0;
+        close(hdfs_handle->tmpfilefd);
+	remove_file_buffer(hdfs_handle);
+        hdfs_handle->buffer = tmp_buffer;
+    } else {
+            // Do nothing.  Continue to use the file buffer for now.
+    }
 
-        // Search for a free space in our buffer, and then actually make the copy.
-		  for (i = 0; i<cnt; i++) {
-					 if (hdfs_handle->used[i] == 0) {
-								snprintf(err_msg, MSG_SIZE, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
-								globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
+    // Search for a free space in our buffer, and then actually make the copy.
+    for (i = 0; i<cnt; i++) {
+        if (hdfs_handle->used[i] == 0) {
+            snprintf(err_msg, MSG_SIZE, "Stored some bytes in buffer %d; offset %lu.\n", i, offset);
+            globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, err_msg);
             hdfs_handle->nbytes[i] = nbytes;
             hdfs_handle->offsets[i] = offset;
             hdfs_handle->used[i] = 1;
@@ -215,7 +240,7 @@ globus_result_t hdfs_store_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle, glob
             snprintf(err_msg, MSG_SIZE, "Allocated all %i file-backed buffers on server %s; aborting transfer.", hdfs_handle->max_file_buffer_count, hostname);
             globus_free(hostname);
             rc = GlobusGFSErrorGeneric(err_msg);
-            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS buffer.\n");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to store data into HDFS file buffer.\n");
         } else {
             // Increase the size of all our buffers which track memory usage
             hdfs_handle->nbytes = globus_realloc(hdfs_handle->nbytes, hdfs_handle->buffer_count*sizeof(globus_size_t));
