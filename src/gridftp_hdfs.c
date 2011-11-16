@@ -28,6 +28,9 @@ char err_msg[MSG_SIZE];
 int local_io_block_size = 0;
 int local_io_count = 0;
 
+static void hdfs_trev(globus_gfs_event_info_t *, void *);
+inline void set_done(hdfs_handle_t *, globus_result_t);
+
 /*
  *  Interface definitions for HDFS
  */
@@ -39,7 +42,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
     NULL, /* list */
     hdfs_send,
     hdfs_recv,
-    NULL, /*globus_l_gfs_hdfs_trev, */ /* trev */
+    hdfs_trev, /* trev */
     NULL, /* active */
     NULL, /* passive */
     NULL, /* data destroy */
@@ -145,8 +148,9 @@ globus_l_gfs_hdfs_deactivate(void)
     return 0;
 }
 
+static
 void
-globus_l_gfs_hdfs_trev(
+hdfs_trev(
     globus_gfs_event_info_t *           event_info,
     void *                              user_arg
 )
@@ -161,9 +165,10 @@ globus_l_gfs_hdfs_trev(
     switch (event_info->type) {
         case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got an abort request to the HDFS client.\n");
+            set_done(hdfs_handle, GLOBUS_FAILURE);
             break;
         default:
-            printf("Got some other transfer event.\n");
+            globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Got some other transfer event %d.\n", event_info->type);
     }
 }
 

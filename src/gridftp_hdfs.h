@@ -43,6 +43,7 @@ typedef struct globus_l_gfs_hdfs_handle_s
     globus_off_t                        offset;
     unsigned int                        done;
     globus_result_t                     done_status; // The status of the finished transfer.
+    globus_bool_t                       sent_finish; // Whether or not we have sent the client an abort.
     globus_gfs_operation_t              op;
     globus_byte_t *                     buffer;
     globus_off_t *                      offsets; // The offset of each buffer.

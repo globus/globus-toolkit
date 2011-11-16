@@ -133,6 +133,7 @@ int determine_replicas (const char * path) {
 globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     GlobusGFSName(prepare_handle);
     globus_result_t rc;
+    hdfs_handle->sent_finish = GLOBUS_FALSE;
 
     const char *path = hdfs_handle->pathname;
 
@@ -248,7 +249,10 @@ hdfs_recv(
 cleanup:
     if (rc != GLOBUS_SUCCESS) {
         set_done(hdfs_handle, rc);
-        globus_gridftp_server_finished_transfer(op, rc);
+        if (!hdfs_handle->sent_finish) {
+            globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
+            hdfs_handle->sent_finish = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(hdfs_handle->mutex);
 }
@@ -282,6 +286,8 @@ hdfs_handle_write_op(
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
     globus_mutex_lock(hdfs_handle->mutex);
+
+    globus_gridftp_server_update_bytes_written(op, offset, nbytes);
 
 #ifdef FAKE_ERROR
     block_count ++;
@@ -324,13 +330,11 @@ hdfs_handle_write_op(
             goto cleanup;
         }
         hdfs_handle->offset += bytes_written;
-        globus_gridftp_server_update_bytes_written(op, offset, nbytes);
     } else {
         // Try to store the buffer into memory.
         if ((rc = hdfs_store_buffer(hdfs_handle, buffer, offset, nbytes)) != GLOBUS_SUCCESS) {
             goto cleanup;
         }
-        globus_gridftp_server_update_bytes_written(op, offset, nbytes);
     }
 
     // Try to write out as many buffers as we can to HDFS.
@@ -370,14 +374,20 @@ cleanup:
     } else if (hdfs_handle->outstanding == 0) {
         // No I/O in-flight, clean-up.
         rc = close_and_clean(hdfs_handle, rc);
-        globus_gridftp_server_finished_transfer(op, rc);
+        if (!hdfs_handle->sent_finish) {
+            globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
+            hdfs_handle->sent_finish = GLOBUS_TRUE;
+        }
     } else if (rc != GLOBUS_SUCCESS) {
         // Don't close the file because the other transfers will want to finish up.
         // However, do set the failure status.
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, 
             "We failed to finish the transfer, but there are %i outstanding writes left over.\n",
             hdfs_handle->outstanding);
-        globus_gridftp_server_finished_transfer(op, rc);
+        if (!hdfs_handle->sent_finish) {
+            globus_gridftp_server_finished_transfer(op, hdfs_handle->done_status);
+            hdfs_handle->sent_finish = GLOBUS_TRUE;
+        }
     } else {
         // Nothing to do if we are done and there was no error, but outstanding transfers exist.
     }
@@ -399,6 +409,11 @@ hdfs_dispatch_write(
     globus_result_t                     rc = GLOBUS_SUCCESS;
 
     GlobusGFSName(hdfs_dispatch_write);
+/*
+    if (is_done(hdfs_handle)) {
+        return;
+    }
+*/
     globus_gridftp_server_get_optimal_concurrency(hdfs_handle->op,
                                                   &hdfs_handle->optimal_count);
     globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, 
@@ -428,7 +443,9 @@ hdfs_dispatch_write(
 cleanup:
     if (rc != GLOBUS_SUCCESS) {
         set_done(hdfs_handle, rc);
-        globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
+        if (!hdfs_handle->sent_finish) {
+            globus_gridftp_server_finished_transfer(hdfs_handle->op, hdfs_handle->done_status);
+        }
     }
 }
 
