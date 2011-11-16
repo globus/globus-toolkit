@@ -50,6 +50,7 @@ typedef struct
     int               load;
     int               num_threads;
     int               test_duration;
+    globus_bool_t     two_phase;
 
 } globus_i_info_t;
 
@@ -80,6 +81,7 @@ globus_l_submit_job(
     const char *                        callback_contact,
     const char *                        resource_manager,
     int                                 job_duration,
+    globus_bool_t                       two_phase,
     char **                             job_contact);
 
 void
@@ -92,7 +94,7 @@ void
 globus_l_test_duration_timeout(
     void *                              user_arg);
 
-void
+void *
 globus_l_client_thread(
     void *                              user_arg);
 

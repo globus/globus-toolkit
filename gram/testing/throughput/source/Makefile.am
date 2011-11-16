@@ -16,10 +16,7 @@ noinst_HEADERS = \
 
 INCLUDES = $(GPT_INCLUDES)
 
-# EXTRA_DIST is used to include files in
-# a source distribution that automake fails to detect.
-EXTRA_DIST = \
-	version.h.in
+EXTRA_DIST = version.h.in
 
 bin_PROGRAMS = prews-gram-throughput-test
 

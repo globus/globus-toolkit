@@ -17,6 +17,10 @@
 #include "globus_i_prews_gram_throughput_test.h"
 
 
+void
+globus_i_print_gram_error(
+    int                                 rc);
+
 
 /* global to let threads know when to stop submitting jobs */
 struct test_monitor_s   test_monitor;
@@ -57,6 +61,7 @@ globus_l_submit_job(
     const char *                        callback_contact,
     const char *                        resource_manager,
     int                                 job_duration,
+    globus_bool_t                       two_phase,
     char **                             job_contact)
 {
     char                                rsl[300];
@@ -65,16 +70,30 @@ globus_l_submit_job(
     int                                 rc = 0;
 
     globus_libc_sprintf(rsl,
-            "&(executable=/bin/sleep)(arguments=%d)",
-            job_duration);
+            "&(executable=/bin/sleep)(arguments=%d)%s",
+            job_duration,
+            two_phase ? "(save_state=yes)(two_phase=600)" : "");
 
-    globus_gram_client_job_request(resource_manager,
+    rc = globus_gram_client_job_request(
+            resource_manager,
             rsl,
             0,
             callback_contact,
             job_contact);
 
-    rc = globus_gram_client_job_callback_register(*job_contact,
+    if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
+    {
+        int tmp1, tmp2;
+        rc = globus_gram_client_job_signal(
+                *job_contact,
+                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
+                "commit",
+                &tmp1,
+                &tmp2);
+    }
+
+    rc = globus_gram_client_job_callback_register(
+            *job_contact,
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED | 
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
             callback_contact,
@@ -84,7 +103,7 @@ globus_l_submit_job(
     {
         fprintf(stderr, "Unable to register callback for %s\n", 
                 *job_contact);
-        globus_i_print_error(rc);
+        globus_i_print_gram_error(rc);
     }
 
     return GLOBUS_SUCCESS;
@@ -115,23 +134,35 @@ globus_l_gram_client_callback(
 {
     globus_i_client_thread_t *          client_thread;
     globus_list_t *                     list_entry;
-    int                                 job_status;
-    int                                 failure_code;
     int                                 rc = 0;
 
     client_thread = (globus_i_client_thread_t *)user_callback_arg;
 
+    /*
     rc = globus_gram_client_job_status(job_contact,
             &job_status, 
             &failure_code);
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_i_print_error(rc);
+        globus_i_print_gram_error(rc);
     }
+    */
 
-    if (job_status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+    if (state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
     {
         globus_i_stats_job_succeeded();
+    }
+    else if (state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
+             errorcode == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
+    {
+        int tmp1, tmp2;
+        globus_gram_client_job_signal(
+                job_contact,
+                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+                "commit",
+                &tmp1, 
+                &tmp2);
+        return;
     }
     else
     {
@@ -162,12 +193,12 @@ globus_l_gram_client_callback(
 }
 
 
-void
+void *
 globus_l_client_thread(
     void *                              user_arg)
 {
     globus_i_info_t *                   info;
-    globus_i_client_thread_t            client_thread;
+    globus_i_client_thread_t            client_thread = {{0}};
     char *                              callback_contact;
     char *                              job_contact;
     int                                 rc = 0;
@@ -180,7 +211,6 @@ globus_l_client_thread(
     test_monitor.active_threads++;
     globus_mutex_unlock(&test_monitor.mutex);
 
-    memset(&client_thread, 0, sizeof(client_thread));
     globus_mutex_init(&client_thread.mutex, NULL);
     globus_cond_init(&client_thread.cond, NULL);
 
@@ -191,7 +221,7 @@ globus_l_client_thread(
                                            &callback_contact);
     if (rc != GLOBUS_SUCCESS)
     {
-        globus_i_print_error(rc);
+        globus_i_print_gram_error(rc);
         exit(1);
     }
 
@@ -204,11 +234,12 @@ globus_l_client_thread(
             rc = globus_l_submit_job(callback_contact,
                     info->resource_manager,
                     info->job_duration,
+                    info->two_phase,
                     &job_contact);
             if (rc != GLOBUS_SUCCESS)
             {
-                /* should a failed sbumit be a fatal error for the test? */
-                globus_i_print_error(rc);
+                /* should a failed submit be a fatal error for the test? */
+                globus_i_print_gram_error(rc);
                 globus_i_stats_job_failed();
             }
             else
@@ -243,6 +274,7 @@ globus_l_client_thread(
     globus_mutex_unlock(&test_monitor.mutex);
 
     printf("Client thread finished successfully\n");
+    return NULL;
 }
 
 
@@ -255,6 +287,16 @@ globus_i_print_error(
     tmp = globus_error_print_friendly(globus_error_peek(result));
     fprintf(stderr, "prews-gram-throughput-test: %s", tmp);
     globus_free(tmp);
+}
+
+void
+globus_i_print_gram_error(
+    int                                 rc)
+{
+    const char *                        tmp;
+
+    tmp = globus_gram_client_error_string(rc);
+    fprintf(stderr, "prews-gram-throughput-test: %s", tmp);
 }
 
 void
@@ -274,20 +316,19 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    globus_i_info_t                     info;
+    globus_i_info_t                     info = {0};
     int                                 rc = 0;
     int                                 i;
     globus_reltime_t                    delay;
     globus_thread_t *                   thread;
 
+    globus_thread_set_model("pthread");
     globus_l_module_activate(GLOBUS_COMMON_MODULE);
     globus_l_module_activate(GLOBUS_POLL_MODULE);
     globus_l_module_activate(GLOBUS_IO_MODULE);
     globus_l_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_l_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     globus_l_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-
-    memset(&info, 0, sizeof(info));
 
     /* defaults */
     info.resource_manager = globus_common_create_string("localhost");

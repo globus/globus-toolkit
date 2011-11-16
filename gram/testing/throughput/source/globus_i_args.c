@@ -21,9 +21,10 @@ static const char * usage =
 "prews-gram-throughput-test [-help] \n"
 "    [-resource-manager <resource manager>]\n"
 "    [-job-duration <job duration in seconds>]\n"
-"    [-load <load per thread in seconds>]\n"
+"    [-load <load (number of active jobs) per thread>]\n"
 "    [-num-threads <number of job submittion threads>]\n"
 "    [-test-duration <total test duration in seconds>]\n"
+"    [-two-phase]\n"
 "\n";
 
 
@@ -63,7 +64,8 @@ enum
     arg_load,
     arg_num_threads,
     arg_test_duration,
-    arg_num = arg_test_duration
+    arg_two_phase,
+    arg_num = arg_two_phase
 };
 
 
@@ -93,6 +95,7 @@ oneargdef(arg_job_duration, "-d", "-job-duration");
 oneargdef(arg_load, "-l", "-load");
 oneargdef(arg_num_threads, "-n", "-num-threads");
 oneargdef(arg_test_duration, "-t", "-test-duration");
+flagdef(arg_two_phase, "-p", "-two-phase");
 
 
 #define setupopt(id) args_options[id-1] = defname(id)
@@ -101,7 +104,8 @@ oneargdef(arg_test_duration, "-t", "-test-duration");
     setupopt(arg_job_duration);                                             \
     setupopt(arg_load);                                                     \
     setupopt(arg_num_threads);                                              \
-    setupopt(arg_test_duration);
+    setupopt(arg_test_duration);                                            \
+    setupopt(arg_two_phase);
 
 static globus_args_option_descriptor_t  args_options[arg_num];
 
@@ -162,6 +166,9 @@ globus_i_parse_arguments(
           case arg_test_duration:
             info->test_duration = atoi(instance->values[0]);
             break;
+          case arg_two_phase:
+            info->two_phase = GLOBUS_TRUE;
+            break;
           default:
             globus_l_args_error_fmt(
                 "parse panic, arg id = %d", instance->id_number);
@@ -172,6 +179,3 @@ globus_i_parse_arguments(
     globus_args_option_instance_list_free(&options_found);
 
 }
-
-
-
