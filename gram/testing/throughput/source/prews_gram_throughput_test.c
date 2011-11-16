@@ -62,6 +62,7 @@ globus_l_submit_job(
     const char *                        resource_manager,
     int                                 job_duration,
     globus_bool_t                       two_phase,
+    const char *                        extra_rsl,
     char **                             job_contact)
 {
     char                                rsl[300];
@@ -70,9 +71,10 @@ globus_l_submit_job(
     int                                 rc = 0;
 
     globus_libc_sprintf(rsl,
-            "&(executable=/bin/sleep)(arguments=%d)%s",
+            "&(executable=/bin/sleep)(arguments=%d)%s%s",
             job_duration,
-            two_phase ? "(save_state=yes)(two_phase=600)" : "");
+            two_phase ? "(save_state=yes)(two_phase=60)" : "",
+            extra_rsl ? extra_rsl : "");
 
     rc = globus_gram_client_job_request(
             resource_manager,
@@ -235,6 +237,7 @@ globus_l_client_thread(
                     info->resource_manager,
                     info->job_duration,
                     info->two_phase,
+                    info->extra_rsl,
                     &job_contact);
             if (rc != GLOBUS_SUCCESS)
             {

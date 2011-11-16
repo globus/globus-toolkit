@@ -51,6 +51,7 @@ typedef struct
     int               num_threads;
     int               test_duration;
     globus_bool_t     two_phase;
+    char *            extra_rsl;
 
 } globus_i_info_t;
 
@@ -82,6 +83,7 @@ globus_l_submit_job(
     const char *                        resource_manager,
     int                                 job_duration,
     globus_bool_t                       two_phase,
+    const char *                        extra_rsl,
     char **                             job_contact);
 
 void

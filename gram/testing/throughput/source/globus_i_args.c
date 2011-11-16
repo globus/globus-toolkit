@@ -19,12 +19,13 @@
 
 static const char * usage =
 "prews-gram-throughput-test [-help] \n"
-"    [-resource-manager <resource manager>]\n"
-"    [-job-duration <job duration in seconds>]\n"
-"    [-load <load (number of active jobs) per thread>]\n"
-"    [-num-threads <number of job submittion threads>]\n"
-"    [-test-duration <total test duration in seconds>]\n"
-"    [-two-phase]\n"
+"    [-r|-resource-manager <resource manager>]\n"
+"    [-d|-job-duration <job duration in seconds>]\n"
+"    [-l|-load <load (number of active jobs) per thread>]\n"
+"    [-n|-num-threads <number of job submittion threads>]\n"
+"    [-t|-test-duration <total test duration in seconds>]\n"
+"    [-p|-two-phase]\n"
+"    [-x|-extra-rsl <extra RSL attributes>]\n"
 "\n";
 
 
@@ -65,7 +66,8 @@ enum
     arg_num_threads,
     arg_test_duration,
     arg_two_phase,
-    arg_num = arg_two_phase
+    arg_extra_rsl,
+    arg_num = arg_extra_rsl
 };
 
 
@@ -96,6 +98,7 @@ oneargdef(arg_load, "-l", "-load");
 oneargdef(arg_num_threads, "-n", "-num-threads");
 oneargdef(arg_test_duration, "-t", "-test-duration");
 flagdef(arg_two_phase, "-p", "-two-phase");
+oneargdef(arg_extra_rsl, "-x", "-extra-rsl");
 
 
 #define setupopt(id) args_options[id-1] = defname(id)
@@ -105,7 +108,8 @@ flagdef(arg_two_phase, "-p", "-two-phase");
     setupopt(arg_load);                                                     \
     setupopt(arg_num_threads);                                              \
     setupopt(arg_test_duration);                                            \
-    setupopt(arg_two_phase);
+    setupopt(arg_two_phase);                                                \
+    setupopt(arg_extra_rsl);
 
 static globus_args_option_descriptor_t  args_options[arg_num];
 
@@ -168,6 +172,9 @@ globus_i_parse_arguments(
             break;
           case arg_two_phase:
             info->two_phase = GLOBUS_TRUE;
+            break;
+          case arg_extra_rsl:
+            info->extra_rsl = instance->values[0];
             break;
           default:
             globus_l_args_error_fmt(
