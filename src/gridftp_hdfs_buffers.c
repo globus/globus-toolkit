@@ -308,27 +308,42 @@ hdfs_dump_buffers(hdfs_handle_t *hdfs_handle) {
         // For each of our buffers.
         for (i=0; i<cnt; i++) {
             if (hdfs_handle->used[i] == 1 && offsets[i] == hdfs_handle->offset) {
-                //printf("Flushing %d bytes at offset %d from buffer %d.\n", nbytes[i], hdfs_handle->offset, i);
-                if (hdfs_handle->syslog_host != NULL) {
-                    syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes[i], hdfs_handle->offset);
-                }
-                bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, hdfs_handle->buffer+i*hdfs_handle->block_size, nbytes[i]*sizeof(globus_byte_t));
-                if (bytes_written > 0) {
-                    wrote_something = 1;
-                }
-                if (bytes_written != nbytes[i]) {
-                    SystemError(hdfs_handle, "Write into HDFS failed", rc);
-                    set_done(hdfs_handle, rc);
+                globus_byte_t *tmp_buffer = hdfs_handle->buffer+i*hdfs_handle->block_size;
+                globus_size_t tmp_nbytes = nbytes[i]*sizeof(globus_byte_t);
+                if ((rc = hdfs_dump_buffer_immed(hdfs_handle, tmp_buffer, tmp_nbytes)) != GLOBUS_SUCCESS) {
                     return rc;
                 }
+                if (tmp_nbytes > 0) {
+                    wrote_something = 1;
+                }
                 hdfs_handle->used[i] = 0;
-                hdfs_handle->offset += bytes_written;
             }
+            //if (hdfs_handle->used[i]) {
+            //    globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Occupied buffer %i with offset %lu.\n", i, offsets[i]);
+            //}
         }
     }
-    //if (hdfs_handle->buffer_count > 10) {
-    //    printf("Waiting on buffer %d\n", hdfs_handle->offset);
-    //}
+    return rc;
+}
+
+globus_result_t hdfs_dump_buffer_immed(hdfs_handle_t *hdfs_handle, globus_byte_t *buffer, globus_size_t nbytes) {
+    globus_result_t rc = GLOBUS_SUCCESS;
+
+    GlobusGFSName(hdfs_dump_buffer_immed);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Dumping buffer at %lu.\n", hdfs_handle->offset);
+    if (hdfs_handle->syslog_host != NULL) {
+        syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
+    }
+    if (hdfs_handle->expected_cksm_alg) {
+        MD5_Update(&hdfs_handle->mdctx, buffer, nbytes);
+    }
+    globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
+    if (bytes_written != nbytes) {
+        SystemError(hdfs_handle, "write into HDFS", rc);
+        set_done(hdfs_handle, rc);
+        return rc;
+    }
+    hdfs_handle->offset += bytes_written;
     return rc;
 }
 

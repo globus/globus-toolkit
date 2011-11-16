@@ -7,6 +7,8 @@
  * http://www.apache.org/licenses/LICENSE-2.0.html.
  */
 
+#include <openssl/md5.h>
+
 #include "globus_gridftp_server.h"
 #include "gridftp_hdfs_error.h"
 
@@ -71,6 +73,9 @@ typedef struct globus_l_gfs_hdfs_handle_s
     unsigned int                        io_block_size;
     unsigned long long                  io_count;
     globus_bool_t                       eof;
+    const char *                        expected_cksm;
+    const char *                        expected_cksm_alg;
+    MD5_CTX                             mdctx;
 } globus_l_gfs_hdfs_handle_t;
 typedef globus_l_gfs_hdfs_handle_t hdfs_handle_t;
 
@@ -130,6 +135,12 @@ hdfs_store_buffer(
 globus_result_t
 hdfs_dump_buffers(
     globus_l_gfs_hdfs_handle_t *      hdfs_handle);
+
+globus_result_t
+hdfs_dump_buffer_immed(
+    hdfs_handle_t *                   hdfs_handle,
+    globus_byte_t *                   buffer,
+    globus_size_t                     nbytes);
 
 void
 remove_file_buffer(

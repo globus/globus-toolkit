@@ -18,6 +18,19 @@ static void
 hdfs_dispatch_write(
     globus_l_gfs_hdfs_handle_t *      hdfs_handle);
 
+// Taken from globus_gridftp_server_file.c
+// Assume md5_human is length MD5_DIGEST_LENGTH*2+1
+// Assume md5_openssl is length MD5_DIGEST_LENGTH
+static void human_readable_md5(unsigned char *md5_human, const unsigned char *md5_openssl) {
+    unsigned int i;
+    unsigned char * md5ptr = md5_human;
+    for (i = 0; i < MD5_DIGEST_LENGTH; i++) {
+        sprintf(md5ptr, "%02x", md5_openssl[i]);
+        md5ptr++;
+        md5ptr++;
+    }
+    md5ptr = '\0';
+}
 
 /*************************************************************************
  *  close_and_clean
@@ -57,6 +70,20 @@ close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
 
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "receive %d blocks of size %d bytes\n",
         hdfs_handle->io_count, hdfs_handle->io_block_size);
+
+    unsigned char final_cksm[MD5_DIGEST_LENGTH];
+    unsigned char final_cksm_human[2*MD5_DIGEST_LENGTH+1];
+    
+    if (hdfs_handle->expected_cksm_alg) {
+        MD5_Final(final_cksm, &hdfs_handle->mdctx);
+        human_readable_md5(final_cksm_human, final_cksm);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Calculated checksum: %s\n", final_cksm_human);
+        if ((hdfs_handle->done_status == GLOBUS_SUCCESS) && (hdfs_handle->expected_cksm)) {
+            if (strncmp(final_cksm_human, hdfs_handle->expected_cksm, 2*MD5_DIGEST_LENGTH) != 0) {
+                GenericError(hdfs_handle, "Calculated checksum %s does not match expected checksum %s.\n", rc);
+            }
+        }
+    }
 
     set_close_done(hdfs_handle, rc);
     return rc;
@@ -146,7 +173,10 @@ globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     hdfs_handle->pathname = (char*)globus_malloc(strlen(path)+1);
     if (!hdfs_handle->pathname) {MemoryError(hdfs_handle, "Unable to make a copy of the path name.", rc); return rc;}
     strcpy(hdfs_handle->pathname, path);
-   
+
+    hdfs_handle->expected_cksm = NULL;
+    hdfs_handle->expected_cksm_alg = "MD5";
+  
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "We are going to open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->outstanding = 0;
     hdfs_handle->done = GLOBUS_FALSE;
@@ -206,6 +236,22 @@ hdfs_recv(
     hdfs_handle->pathname = transfer_info->pathname;
 
     if ((rc = prepare_handle(hdfs_handle)) != GLOBUS_SUCCESS) goto cleanup;
+
+    if (transfer_info->expected_checksum) {
+        hdfs_handle->expected_cksm =
+            globus_libc_strdup(transfer_info->expected_checksum);
+    }
+    if (transfer_info->expected_checksum_alg) {
+        hdfs_handle->expected_cksm_alg =
+            globus_libc_strdup(transfer_info->expected_checksum_alg);
+    }
+
+    if (hdfs_handle->expected_cksm_alg && strcmp(hdfs_handle->expected_cksm_alg, "MD5") != 0) {
+        GenericError(hdfs_handle, "Only MD5 checksums are supported currently", rc);
+        goto cleanup;
+    }
+
+    MD5_Init(&hdfs_handle->mdctx);
 
     int num_replicas = determine_replicas(hdfs_handle->pathname);
     if (!num_replicas && hdfs_handle->replicas) num_replicas = hdfs_handle->replicas;
@@ -321,15 +367,9 @@ hdfs_handle_write_op(
     // First, see if we can dump this block immediately.
     if (offset == hdfs_handle->offset) {
         globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Dumping this block immediately.\n");
-        if (hdfs_handle->syslog_host != NULL) {
-            syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
-        }
-        globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
-        if (bytes_written != nbytes) {
-            SystemError(hdfs_handle, "write into HDFS", rc);
+        if ((rc = hdfs_dump_buffer_immed(hdfs_handle, buffer, nbytes)) != GLOBUS_SUCCESS) {
             goto cleanup;
         }
-        hdfs_handle->offset += bytes_written;
     } else {
         // Try to store the buffer into memory.
         if ((rc = hdfs_store_buffer(hdfs_handle, buffer, offset, nbytes)) != GLOBUS_SUCCESS) {
