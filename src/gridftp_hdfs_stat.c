@@ -31,7 +31,7 @@ globus_l_gfs_file_copy_stat(
  *  a file exists and has the proper permissions, etc.
  ************************************************************************/
 void
-globus_l_gfs_hdfs_stat(
+hdfs_stat(
     globus_gfs_operation_t              op,
     globus_gfs_stat_info_t *            stat_info,
     void *                              user_arg)

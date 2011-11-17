@@ -29,9 +29,9 @@ use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
  *  This is called when cleaning up a file buffer. The file on disk is removed and
  *  the internal memory for storing the filename is freed.
  ************************************************************************/
-static
+
 void
-remove_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
+remove_file_buffer(hdfs_handle_t * hdfs_handle) {
     if (hdfs_handle->tmp_file_pattern) {
         snprintf(err_msg, MSG_SIZE, "Removing file buffer %s.\n", hdfs_handle->tmp_file_pattern);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, err_msg);
@@ -335,8 +335,8 @@ globus_result_t hdfs_dump_buffer_immed(hdfs_handle_t *hdfs_handle, globus_byte_t
     if (hdfs_handle->syslog_host != NULL) {
         syslog(LOG_INFO, hdfs_handle->syslog_msg, "WRITE", nbytes, hdfs_handle->offset);
     }
-    if (hdfs_handle->expected_cksm_alg) {
-        MD5_Update(&hdfs_handle->mdctx, buffer, nbytes);
+    if (hdfs_handle->cksm_types) {
+        hdfs_update_checksums(hdfs_handle, buffer, nbytes);
     }
     globus_size_t bytes_written = hdfsWrite(hdfs_handle->fs, hdfs_handle->fd, buffer, nbytes);
     if (bytes_written != nbytes) {

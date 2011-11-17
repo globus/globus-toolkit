@@ -35,6 +35,11 @@
 // doesn't have this as const.
 extern globus_version_t gridftp_hdfs_local_version;
 
+#define HDFS_CKSM_TYPE_CKSUM   1
+#define HDFS_CKSM_TYPE_CRC32   2
+#define HDFS_CKSM_TYPE_ADLER32 4
+#define HDFS_CKSM_TYPE_MD5     8
+
 typedef struct globus_l_gfs_hdfs_handle_s
 {
     char *                              pathname;
@@ -73,9 +78,15 @@ typedef struct globus_l_gfs_hdfs_handle_s
     unsigned int                        io_block_size;
     unsigned long long                  io_count;
     globus_bool_t                       eof;
-    const char *                        expected_cksm;
-    const char *                        expected_cksm_alg;
-    MD5_CTX                             mdctx;
+
+    // Checksumming support
+    char *                              expected_cksm;
+    unsigned char                       cksm_types;
+    MD5_CTX                             md5;
+    char                                md5_output[MD5_DIGEST_LENGTH*2+1];
+    uint32_t                            adler32;
+    uint32_t                            crc32;
+    uint32_t                            cksum;
 } globus_l_gfs_hdfs_handle_t;
 typedef globus_l_gfs_hdfs_handle_t hdfs_handle_t;
 
@@ -135,6 +146,10 @@ disgard_buffer(
     hdfs_handle_t * hdfs_handle,
     globus_ssize_t idx);
 
+void
+remove_file_buffer(
+    hdfs_handle_t * hdfs_handle);
+
 
 // Metadata-related functions
 void
@@ -161,6 +176,26 @@ is_done(
 
 globus_bool_t
 is_close_done(
+    hdfs_handle_t *    hdfs_handle);
+
+// Checksumming support
+void
+hdfs_parse_checksum_types(
+    hdfs_handle_t *    hdfs_handle,
+    const char *       types);
+
+void
+hdfs_initialize_checksums(
+    hdfs_handle_t *    hdfs_handle);
+
+void
+hdfs_update_checksums(
+    hdfs_handle_t *    hdfs_handle,
+    globus_byte_t *    buffer,
+    globus_size_t      nbytes);
+
+void
+hdfs_finalize_checksums(
     hdfs_handle_t *    hdfs_handle);
 
 #pragma GCC visibility pop

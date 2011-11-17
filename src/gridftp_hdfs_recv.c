@@ -74,9 +74,9 @@ close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
     unsigned char final_cksm[MD5_DIGEST_LENGTH];
     unsigned char final_cksm_human[2*MD5_DIGEST_LENGTH+1];
     
-    if (hdfs_handle->expected_cksm_alg) {
-        MD5_Final(final_cksm, &hdfs_handle->mdctx);
-        human_readable_md5(final_cksm_human, final_cksm);
+    if (hdfs_handle->cksm_types) {
+        hdfs_finalize_checksums(hdfs_handle);
+        human_readable_md5(final_cksm_human, hdfs_handle->md5_output);
         globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Calculated checksum: %s\n", final_cksm_human);
         if ((hdfs_handle->done_status == GLOBUS_SUCCESS) && (hdfs_handle->expected_cksm)) {
             if (strncmp(final_cksm_human, hdfs_handle->expected_cksm, 2*MD5_DIGEST_LENGTH) != 0) {
@@ -175,7 +175,7 @@ globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     strcpy(hdfs_handle->pathname, path);
 
     hdfs_handle->expected_cksm = NULL;
-    hdfs_handle->expected_cksm_alg = "MD5";
+    hdfs_handle->cksm_types = HDFS_CKSM_TYPE_MD5;
   
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "We are going to open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->outstanding = 0;
@@ -242,16 +242,15 @@ hdfs_recv(
             globus_libc_strdup(transfer_info->expected_checksum);
     }
     if (transfer_info->expected_checksum_alg) {
-        hdfs_handle->expected_cksm_alg =
-            globus_libc_strdup(transfer_info->expected_checksum_alg);
+        hdfs_parse_checksums(hdfs_handle, transfer_info->expected_checksum_alg);
     }
 
-    if (hdfs_handle->expected_cksm_alg && strcmp(hdfs_handle->expected_cksm_alg, "MD5") != 0) {
+    if (hdfs_handle->cksm_types && (hdfs_handle->cksm_types ^ HDFS_CKSM_TYPE_MD5)) {
         GenericError(hdfs_handle, "Only MD5 checksums are supported currently", rc);
         goto cleanup;
     }
 
-    MD5_Init(&hdfs_handle->mdctx);
+    hdfs_initialize_checksums(hdfs_handle);
 
     int num_replicas = determine_replicas(hdfs_handle->pathname);
     if (!num_replicas && hdfs_handle->replicas) num_replicas = hdfs_handle->replicas;
