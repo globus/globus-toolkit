@@ -30,6 +30,24 @@ int local_io_count = 0;
 
 static void hdfs_trev(globus_gfs_event_info_t *, void *);
 inline void set_done(hdfs_handle_t *, globus_result_t);
+static int  hdfs_activate(void);
+static int  hdfs_deactivate(void);
+static void hdfs_command(globus_gfs_operation_t, globus_gfs_command_info_t *, void *);
+static void hdfs_start(globus_gfs_operation_t, globus_gfs_session_info_t *);
+
+void
+hdfs_destroy(
+    void *                              user_arg);
+
+void
+hdfs_start(
+    globus_gfs_operation_t              op,
+    globus_gfs_session_info_t *         session_info);
+
+void
+hdfs_destroy(
+    void *                              user_arg);
+
 
 /*
  *  Interface definitions for HDFS
@@ -37,8 +55,8 @@ inline void set_done(hdfs_handle_t *, globus_result_t);
 static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface = 
 {
     GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING | GLOBUS_GFS_DSI_DESCRIPTOR_SENDER,
-    globus_l_gfs_hdfs_start,
-    globus_l_gfs_hdfs_destroy,
+    hdfs_start,
+    hdfs_destroy,
     NULL, /* list */
     hdfs_send,
     hdfs_recv,
@@ -46,8 +64,8 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
     NULL, /* active */
     NULL, /* passive */
     NULL, /* data destroy */
-    globus_l_gfs_hdfs_command, 
-    globus_l_gfs_hdfs_stat,
+    hdfs_command, 
+    hdfs_stat,
     NULL,
     NULL
 };
@@ -59,8 +77,8 @@ static globus_gfs_storage_iface_t       globus_l_gfs_hdfs_dsi_iface =
 GlobusExtensionDefineModule(globus_gridftp_server_hdfs) =
 {
     "globus_gridftp_server_hdfs",
-    globus_l_gfs_hdfs_activate,
-    globus_l_gfs_hdfs_deactivate,
+    hdfs_activate,
+    hdfs_deactivate,
     NULL,
     NULL,
     &gridftp_hdfs_local_version
@@ -124,7 +142,7 @@ gridftp_check_core()
  *  Completely boilerplate.
  */
 int
-globus_l_gfs_hdfs_activate(void)
+hdfs_activate(void)
 {
     globus_extension_registry_add(
         GLOBUS_GFS_DSI_REGISTRY,
@@ -140,7 +158,7 @@ globus_l_gfs_hdfs_activate(void)
  *  Completely boilerplate
  */
 int
-globus_l_gfs_hdfs_deactivate(void)
+hdfs_deactivate(void)
 {
     globus_extension_registry_remove(
         GLOBUS_GFS_DSI_REGISTRY, "hdfs");
@@ -156,7 +174,7 @@ hdfs_trev(
 )
 {
 
-    globus_l_gfs_hdfs_handle_t *       hdfs_handle;
+    hdfs_handle_t *       hdfs_handle;
     GlobusGFSName(globus_l_gfs_hdfs_trev);
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
@@ -191,15 +209,14 @@ hdfs_trev(
  *      GLOBUS_GFS_CMD_SITE_CHMOD,
  *      GLOBUS_GFS_CMD_SITE_DSI
  ************************************************************************/
-void
-globus_l_gfs_hdfs_command(
+static void
+hdfs_command(
     globus_gfs_operation_t              op,
     globus_gfs_command_info_t *         cmd_info,
     void *                              user_arg)
 {
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
-     //printf("Globus HDFS command.\n");
-    GlobusGFSName(globus_l_gfs_hdfs_command);
+    GlobusGFSName(hdfs_command);
 
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
@@ -258,13 +275,13 @@ globus_l_gfs_hdfs_command(
  *        The DSI developer should jsut follow this template for now
  ************************************************************************/
 void
-globus_l_gfs_hdfs_start(
+hdfs_start(
     globus_gfs_operation_t              op,
     globus_gfs_session_info_t *         session_info)
 {
     hdfs_handle_t*       hdfs_handle;
     globus_gfs_finished_info_t          finished_info;
-    GlobusGFSName(globus_l_gfs_hdfs_start);
+    GlobusGFSName(hdfs_start);
     globus_result_t rc;
 
     int max_buffer_count = 200;
@@ -456,7 +473,7 @@ globus_l_gfs_hdfs_start(
  *  This is called when a session ends, ie client quits or disconnects.
  ************************************************************************/
 void
-globus_l_gfs_hdfs_destroy(
+hdfs_destroy(
     void *                              user_arg)
 {
     hdfs_handle_t *       hdfs_handle;

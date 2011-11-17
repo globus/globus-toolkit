@@ -1,6 +1,27 @@
 
 #include "gridftp_hdfs.h"
 
+/* Forward decls for this file.
+ * Copied from the Globus file plugin implementation.
+ */
+static void
+globus_l_gfs_file_partition_path(
+    const char *                        pathname,
+    char *                              basepath,
+    char *                              filename);
+
+static void
+globus_l_gfs_file_destroy_stat(
+    globus_gfs_stat_t *                 stat_array,
+    int                                 stat_count);
+
+static void
+globus_l_gfs_file_copy_stat(
+    globus_gfs_stat_t *                 stat_object,
+    hdfsFileInfo *                      fileInfo,
+    const char *                        filename,
+    const char *                        symlink_target);
+
 /*************************************************************************
  *  stat
  *  ----
@@ -146,7 +167,7 @@ error_stat1:
 
 /* basepath and filename must be MAXPATHLEN long
  * the pathname may be absolute or relative, basepath will be the same */
-void
+static void
 globus_l_gfs_file_partition_path(
     const char *                        pathname,
     char *                              basepath,
@@ -199,7 +220,7 @@ globus_l_gfs_file_partition_path(
     }
 }
 
-void
+static void
 globus_l_gfs_file_destroy_stat(
     globus_gfs_stat_t *                 stat_array,
     int                                 stat_count)
@@ -221,7 +242,7 @@ globus_l_gfs_file_destroy_stat(
     globus_free(stat_array);
 }
 
-void
+static void
 globus_l_gfs_file_copy_stat(
     globus_gfs_stat_t *                 stat_object,
     hdfsFileInfo *                      fileInfo,

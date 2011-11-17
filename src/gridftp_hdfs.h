@@ -82,33 +82,6 @@ typedef globus_l_gfs_hdfs_handle_t hdfs_handle_t;
 #define MSG_SIZE 1024
 extern char err_msg[MSG_SIZE];
 
-// Boilerplate functions for Globus modules
-int
-globus_l_gfs_hdfs_activate(void);
-
-int
-globus_l_gfs_hdfs_deactivate(void);
-
-void
-globus_l_gfs_hdfs_command(
-    globus_gfs_operation_t              op,
-    globus_gfs_command_info_t *         cmd_info,
-    void *                              user_arg);
-
-void
-globus_l_gfs_hdfs_start(
-    globus_gfs_operation_t              op,
-    globus_gfs_session_info_t *         session_info);
-
-void
-globus_l_gfs_hdfs_destroy(
-    void *                              user_arg);
-
-void
-globus_l_gfs_hdfs_trev(
-    globus_gfs_event_info_t *           event_info,
-    void *                              user_arg);
-
 // Function for sending a file to the client.
 void
 hdfs_send(
@@ -142,15 +115,7 @@ hdfs_dump_buffer_immed(
     globus_byte_t *                   buffer,
     globus_size_t                     nbytes);
 
-void
-remove_file_buffer(
-    globus_l_gfs_hdfs_handle_t * hdfs_handle);
-
-int use_file_buffer(
-    globus_l_gfs_hdfs_handle_t * hdfs_handle);
-
 // Buffer management for reads
-// TODO: unify the logic for reads and writes.
 inline globus_result_t
 allocate_buffers(
     hdfs_handle_t *    hdfs_handle,
@@ -173,28 +138,10 @@ disgard_buffer(
 
 // Metadata-related functions
 void
-globus_l_gfs_hdfs_stat(
+hdfs_stat(
     globus_gfs_operation_t              op,
     globus_gfs_stat_info_t *            stat_info,
     void *                              user_arg);
-
-void            
-globus_l_gfs_file_partition_path(
-    const char *                        pathname,
-    char *                              basepath,
-    char *                              filename);
-
-void
-globus_l_gfs_file_destroy_stat(
-    globus_gfs_stat_t *                 stat_array,
-    int                                 stat_count);
-
-void        
-globus_l_gfs_file_copy_stat(
-    globus_gfs_stat_t *                 stat_object,
-    hdfsFileInfo *                      fileInfo,
-    const char *                        filename,
-    const char *                        symlink_target);
 
 // Some helper functions
 // All must be called with the hdfs_handle mutex held

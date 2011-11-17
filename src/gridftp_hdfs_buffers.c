@@ -9,7 +9,7 @@
  *  Returns 1 if we should use a file buffer.
  *  Else, returns 0.
  ************************************************************************/
-inline int
+static inline int
 use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
 
     unsigned int buffer_count = hdfs_handle->buffer_count;
@@ -29,6 +29,7 @@ use_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
  *  This is called when cleaning up a file buffer. The file on disk is removed and
  *  the internal memory for storing the filename is freed.
  ************************************************************************/
+static
 void
 remove_file_buffer(globus_l_gfs_hdfs_handle_t * hdfs_handle) {
     if (hdfs_handle->tmp_file_pattern) {
