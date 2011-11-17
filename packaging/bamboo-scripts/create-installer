@@ -56,6 +56,7 @@ fi
 ./fait_accompli/installer.sh -a -f "$flavor" ${tag:+-t "$tag"}
 installer_dir="gt${gtversion}-all-source-installer"
 installer_dir_buildnumber="${installer_dir}-rc${build_number}"
+find "${installer_dir}" -name install-sh -exec chmod a+x {} +
 
 tar cf "${installer_dir}.tar" "${installer_dir}"
 mv "${installer_dir}" "${installer_dir_buildnumber}"
