@@ -415,6 +415,8 @@ hdfs_start(
 
     hdfs_handle->using_file_buffer = 0;
 
+    hdfs_handle->cksm_root = "/cksums";
+
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Checking current load on the server.\n");
     // Stall stall stall!
     int fd = open("/proc/loadavg", O_RDONLY);

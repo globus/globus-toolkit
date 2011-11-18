@@ -81,10 +81,13 @@ typedef struct globus_l_gfs_hdfs_handle_s
 
     // Checksumming support
     char *                              expected_cksm;
+    const char *                        cksm_root;
     unsigned char                       cksm_types;
     MD5_CTX                             md5;
-    char                                md5_output[MD5_DIGEST_LENGTH*2+1];
+    char                                md5_output[MD5_DIGEST_LENGTH];
+    char                                md5_output_human[MD5_DIGEST_LENGTH*2+1];
     uint32_t                            adler32;
+    char                                adler32_human[2*sizeof(uint32_t)+1];
     uint32_t                            crc32;
     uint32_t                            cksum;
 } globus_l_gfs_hdfs_handle_t;
@@ -196,6 +199,10 @@ hdfs_update_checksums(
 
 void
 hdfs_finalize_checksums(
+    hdfs_handle_t *    hdfs_handle);
+
+globus_result_t
+hdfs_save_checksum(
     hdfs_handle_t *    hdfs_handle);
 
 #pragma GCC visibility pop
