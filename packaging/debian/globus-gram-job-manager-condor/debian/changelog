@@ -1,0 +1,5 @@
+globus-gram-job-manager-condor (1.0-1) unstable; urgency=low
+
+  * Update to Globus Toolkit 5.1.3
+
+ -- Globus Toolkit <support@globus.org>  Fri, 18 Nov 2011 10:56:59 -0500
