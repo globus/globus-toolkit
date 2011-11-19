@@ -460,6 +460,16 @@ hdfs_start(
         return;
     }
 
+    // Parse the checksum request information
+    const char * checksums_char = getenv("GRIDFTP_HDFS_CHECKSUMS");
+    if (checksums_char) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+            "Checksum algorithms in use: %s.\n", checksums_char);
+        hdfs_parse_checksum_types(hdfs_handle, checksums_char);
+    } else {
+        hdfs_handle->cksm_types = 0;
+    }
+
     hdfs_handle->tmp_file_pattern = (char *)NULL;
 
     // Handle core limits

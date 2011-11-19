@@ -77,11 +77,13 @@ close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
     if (hdfs_handle->cksm_types) {
         hdfs_finalize_checksums(hdfs_handle);
         human_readable_md5(final_cksm_human, hdfs_handle->md5_output);
-        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Calculated checksum: %s\n", final_cksm_human);
         if ((hdfs_handle->done_status == GLOBUS_SUCCESS) && (hdfs_handle->expected_cksm)) {
             if (strncmp(final_cksm_human, hdfs_handle->expected_cksm, 2*MD5_DIGEST_LENGTH) != 0) {
                 GenericError(hdfs_handle, "Calculated checksum %s does not match expected checksum %s.\n", rc);
             }
+        }
+        if ((hdfs_handle->done_status == GLOBUS_SUCCESS) && (rc == GLOBUS_SUCCESS)) {
+            rc = hdfs_save_checksum(hdfs_handle);
         }
     }
 
@@ -175,7 +177,6 @@ globus_result_t prepare_handle(hdfs_handle_t *hdfs_handle) {
     strcpy(hdfs_handle->pathname, path);
 
     hdfs_handle->expected_cksm = NULL;
-    hdfs_handle->cksm_types = HDFS_CKSM_TYPE_MD5;
   
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "We are going to open file %s.\n", hdfs_handle->pathname);
     hdfs_handle->outstanding = 0;
@@ -243,11 +244,6 @@ hdfs_recv(
     }
     if (transfer_info->expected_checksum_alg) {
         hdfs_parse_checksums(hdfs_handle, transfer_info->expected_checksum_alg);
-    }
-
-    if (hdfs_handle->cksm_types && (hdfs_handle->cksm_types ^ HDFS_CKSM_TYPE_MD5)) {
-        GenericError(hdfs_handle, "Only MD5 checksums are supported currently", rc);
-        goto cleanup;
     }
 
     hdfs_initialize_checksums(hdfs_handle);

@@ -85,7 +85,7 @@ static void human_readable_adler32(unsigned char *adler32_human, uint32_t adler3
     unsigned char * adler32_char = (unsigned char*)&adler32;
     unsigned char * adler32_ptr = adler32_human;
     for (i = 0; i < sizeof(uint32_t); i++) { 
-        sprintf(adler32_ptr, "%02x", adler32_char[i]);
+        sprintf(adler32_ptr, "%02x", adler32_char[sizeof(uint32_t)-1-i]);
         adler32_ptr++;
         adler32_ptr++;
     }
@@ -132,7 +132,6 @@ void hdfs_update_checksums(hdfs_handle_t *hdfs_handle, globus_byte_t *buffer, gl
     }
     if (hdfs_handle->cksm_types & HDFS_CKSM_TYPE_ADLER32) {
         hdfs_handle->adler32 = adler32(hdfs_handle->adler32, buffer, nbytes);
-        human_readable_adler32(hdfs_handle->adler32_human, hdfs_handle->adler32);
     }
     if (hdfs_handle->cksm_types & HDFS_CKSM_TYPE_MD5) {
         MD5_Update(&hdfs_handle->md5, buffer, nbytes);
@@ -151,14 +150,25 @@ void hdfs_finalize_checksums(hdfs_handle_t *hdfs_handle) {
         for (length = hdfs_handle->offset; length; length >>= 8) {
             crc = (crc << 8) ^ crctab[((crc >> 24) ^ length) & 0xFF];
         }
+        crc = ~crc & 0xFFFFFFFF;
         hdfs_handle->cksum = crc;
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+            "Checksum CKSUM: %u\n", hdfs_handle->cksum);
     }
     if (hdfs_handle->cksm_types & HDFS_CKSM_TYPE_ADLER32) {
-        human_readble_adler32(hdfs_handle->adler32_human, hdfs_handle->adler32);
+        human_readable_adler32(hdfs_handle->adler32_human, hdfs_handle->adler32);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+            "Checksum ADLER32: %s\n", hdfs_handle->adler32_human);
     }
     if (hdfs_handle->cksm_types & HDFS_CKSM_TYPE_MD5) {
         MD5_Final(hdfs_handle->md5_output, &hdfs_handle->md5);
         human_readable_md5(hdfs_handle->md5_output_human, hdfs_handle->md5_output);
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+            "Checksum MD5: %s\n", hdfs_handle->md5_output_human);
+    }
+    if (hdfs_handle->cksm_types & HDFS_CKSM_TYPE_CRC32) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+            "Checksum CRC32: %u\n", hdfs_handle->crc32);
     }
 
 }
@@ -194,6 +204,7 @@ globus_result_t hdfs_save_checksum(hdfs_handle_t *hdfs_handle) {
     memcpy(filename, hdfs_handle->cksm_root, cksm_len);
     filename[cksm_len] = '/';
     memcpy(filename+cksm_len+1, hdfs_handle->pathname, path_len);
+    filename[filelen-1] = '\0';
 
     hdfsFile fh = hdfsOpenFile(fs, filename, O_WRONLY, 0, 0, 0);
     if (fh == NULL) {
@@ -227,7 +238,30 @@ globus_result_t hdfs_save_checksum(hdfs_handle_t *hdfs_handle) {
         SystemError(hdfs_handle, "Failed to close checksum file", rc);
     }
 
+    if (rc == GLOBUS_SUCCESS) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Saved checksums to %s.\n", filename);
+    }
+
     // Note we purposely leak the filesystem handle, as Hadoop has disconnect issues.
     return rc;
 }
 
+
+void
+hdfs_parse_checksum_types(hdfs_handle_t * hdfs_handle, const char * types) {
+
+    hdfs_handle->cksm_types = 0;
+    if (strstr(types, "MD5") != NULL) {
+        hdfs_handle->cksm_types |= HDFS_CKSM_TYPE_MD5;
+    }
+    if (strstr(types, "CKSUM")) {
+        hdfs_handle->cksm_types |= HDFS_CKSM_TYPE_CKSUM;
+    }
+    if (strstr(types, "CRC32")) {
+        hdfs_handle->cksm_types |= HDFS_CKSM_TYPE_CRC32;
+    }
+    if (strstr(types, "ADLER32")) {
+        hdfs_handle->cksm_types |= HDFS_CKSM_TYPE_ADLER32;
+    }
+
+}
