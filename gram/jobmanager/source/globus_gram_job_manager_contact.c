@@ -950,7 +950,7 @@ globus_gram_job_manager_contact_state_callback(
                 "level=WARN "
                 "gramid=%s "
                 "state=%d "
-                "status=%d"
+                "status=%d "
                 "msg=\"%s\" "
                 "reason=\"%s\"\n",
                 request->job_contact_path,
