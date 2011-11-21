@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.9
+Version:	13.10
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -169,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 21 2011 Joseph Bester <bester@mcs.anl.gov> - 13.10-1
+- GRAM-282: Add hooks to job manager to handle log rotation
+
 * Mon Nov 14 2011 Joseph Bester <bester@mcs.anl.gov> - 13.9-1
 - GRAM-271: GRAM Condor polling overpolls
 

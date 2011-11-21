@@ -556,6 +556,16 @@ main(
         act.sa_flags = SA_NOCLDWAIT;
         sigaction(SIGCHLD, &act, NULL);
     }
+
+    /* Enable log rotation via SIGUSR1 */
+    {
+        struct sigaction act;
+        act.sa_handler = globus_i_job_manager_log_rotate;
+        sigemptyset(&act.sa_mask);
+        sigaddset(&act.sa_mask, SIGUSR1);
+        act.sa_flags = 0;
+        sigaction(SIGUSR1, &act, NULL);
+    }
     
     GlobusGramJobManagerLock(&manager);
     if (manager.socket_fd != -1 &&

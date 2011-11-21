@@ -28,7 +28,7 @@ globus_logging_handle_t                 globus_i_gram_job_manager_log_sys;
 static globus_symboltable_t             globus_l_gram_log_symboltable;
 static FILE *                           globus_l_gram_log_fp = NULL;
 globus_thread_key_t                     globus_i_gram_request_key;
-
+static globus_bool_t                    globus_l_gram_reopen_log;
 
 static
 void
@@ -188,6 +188,12 @@ globus_gram_prepare_log_string(
 }
 /* globus_gram_prepare_log_string() */
 
+void
+globus_i_job_manager_log_rotate(int sig)
+{
+    globus_l_gram_reopen_log = GLOBUS_TRUE;
+}
+
 static
 void
 globus_l_gram_logging_write(
@@ -264,12 +270,17 @@ globus_l_gram_logging_write(
         return;
     }
 
-    if (last_path == NULL || strcmp(path, last_path) != 0)
+    if (last_path == NULL ||
+        globus_l_gram_reopen_log ||
+        strcmp(path, last_path) != 0)
     {
+        globus_l_gram_reopen_log = GLOBUS_FALSE;
+
         if (last_path)
         {
             free(last_path);
         }
+
         last_path = path;
         path = NULL;
 
