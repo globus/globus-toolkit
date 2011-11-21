@@ -9,11 +9,9 @@ NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
 MAKEFLAGS += -j$(NUMJOBS)
 endif
 
-include /usr/share/quilt/quilt.make
-
-name = globus-gram-job-manager-fork
-_name = globus_gram_job_manager_fork
-version = 1.0
+name = globus-gram-job-manager-pbs
+_name = globus_gram_job_manager_pbs
+version = 1.1
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -39,7 +37,7 @@ perl_vendorlib = $(shell eval "`perl -V:installvendorlib`"; echo $$installvendor
 configure: configure-stamp
 	:
 
-configure-stamp: $(QUILT_STAMPFN)
+configure-stamp:
 	dh_testdir
 
 	/usr/share/globus/globus-bootstrap.sh
@@ -51,16 +49,22 @@ configure-stamp: $(QUILT_STAMPFN)
 	  fi ; \
 	done
 
-	./configure \
+	MPIEXEC=no \
+        MPIRUN=no \
+        QDEL=/usr/bin/qdel \
+        QSTAT=/usr/bin/qstat \
+        QSUB=/usr/bin/qsub \
+        ./configure \
 	   --host=$(DEB_HOST_GNU_TYPE) \
 	   --build=$(DEB_BUILD_GNU_TYPE) \
 	   --prefix=$(_prefix) \
 	   --mandir='$${datadir}/man' \
 	   --infodir='$${datadir}/info' \
-	   --with-flavor=$(flavor) \
-	   --enable-doxygen \
-	   --docdir='$${datadir}/doc/$(name)' \
-	   --disable-static
+           --docdir='$(_docdir)/$(name)' \
+           --with-globus-state-dir='/var/lib/globus' \
+           --disable-static \
+           --with-log-path=/var/spool/torque/server_logs  \
+	   --with-flavor=$(flavor)
 
 	touch $@
 
@@ -74,9 +78,7 @@ build-stamp: configure-stamp
 
 	touch $@
 
-unpatch: cleanup
-
-clean: unpatch
+clean: cleanup
 	:
 
 cleanup:
@@ -108,8 +110,6 @@ cleanup:
 	rm -f globus_automake*
 	rm -rf autom4te.cache
 
-	rm -rf doxygen/doc
-
 	find . -name Makefile.in -exec rm {} ';'
 
 	rm -f build-stamp configure-stamp
@@ -123,61 +123,55 @@ install: build-stamp
 
 	$(MAKE) install DESTDIR=$(INSTALLDIR)
 
-	# Remove jobmanager-fork from install dir so that it can be
-	# added/removed by post scripts
-	rm $(INSTALLDIR)/etc/grid-services/jobmanager-fork
-
-	# Remove .pc and .la file
-	rm $(INSTALLDIR)/$(_libdir)/pkgconfig/globus-gram-job-manager-fork.pc
+	# Remove .pc and .la files
+	rm $(INSTALLDIR)/$(_libdir)/pkgconfig/globus-gram-job-manager-pbs.pc
 	rm $(INSTALLDIR)/$(_libdir)/*.la
-	sed -i -e '/globus-gram-job-manager-fork.pc/d' \
-	       -e '/\.la$$/d' \
-	   $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist
+	sed -i -e '/\.la$$/d' -e '/\.pc$$/d' \
+	  $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist
 
-	# Generate package filelists. Move seg-related things into the 
-	# setup-seg package
-	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_pgm.filelist \
-	    $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
-	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
-	  | grep -v 'libglobus' \
-	  | grep -v '^/etc' \
+	# Remove jobmanager-pbs file
+	rm $(INSTALLDIR)/etc/grid-services/jobmanager-pbs
+
+	# Generate package filelists
+	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
+	  | grep -Ev 'available|^/etc' \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name).install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
+	  | grep -v 'available' \
 	  | grep '^/etc' \
-	  | grep -v '/available' \
 	  | sed s!^!debian/tmp! >> debian/$(name).install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
-	  | grep 'libglobus' \
-	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-setup-seg.install
+	  | grep '\.pm$$' \
+	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name).install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_dev.filelist \
-	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name)-setup-seg.install
+	    $(GLOBUSPACKAGEDIR)/$(_name)/$(flavor)_rtl.filelist \
+	  | grep -v '\.pm$$' \
+	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-setup-seg.install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
-	  | grep -E 'seg|scheduler-event-generator' \
-	  | sed s!^!debian/tmp! >> debian/$(name)-setup-seg.install
+          | grep -E 'scheduler-event-generator|-seg' \
+          | sed s!^!debian/tmp! >> debian/$(name)-setup-seg.install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
-	  | grep poll \
-	  | sed s!^!debian/tmp! > debian/$(name)-setup-poll.install
+	  | grep 'pbs-poll' \
+	  | sed s!^!debian/tmp! >> debian/$(name)-setup-poll.install
 
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-doc.install
 
-binary-arch: install
+binary-indep: install
 	dh_testdir
 	dh_testroot
-	mkdir -p debian/$(name)-doc$(_docdir)
-	ln -s $(name) debian/$(name)-doc$(_docdir)/$(name)-doc
 	dh_installchangelogs
 	dh_installdocs
 	dh_install --fail-missing
 	dh_installman
 	dh_link
 	dh_strip
-	dh_compress -X .tag
+	dh_compress
 	dh_fixperms
 	dh_perl
 	dh_makeshlibs
@@ -187,8 +181,10 @@ binary-arch: install
 	dh_md5sums
 	dh_builddeb
 
+binary-arch:
+#	:
 
-binary: binary binary-arch
+binary: binary-indep binary-arch
 	:
 
-.PHONY: build clean binary binary-arch binary install configure
+.PHONY: build clean binary-indep binary-arch binary install configure

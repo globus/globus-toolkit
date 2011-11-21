@@ -1,64 +1,63 @@
-Source: globus-gram-job-manager-fork
+Source: globus-gram-job-manager-pbs
 Priority: optional
 Maintainer: Mattias Ellert <mattias.ellert@fysast.uu.se>
-Build-Depends: debhelper (>= 5), autotools-dev, quilt, grid-packaging-tools, globus-core, doxygen (<< 1.6.2-1) | doxygen (>> 1.6.2-1), graphviz, texlive-latex-recommended, texlive-latex-extra, texlive-extra-utils, texlive-fonts-recommended, texlive-font-utils, ghostscript | gs-gpl
+Build-Depends: debhelper (>= 5), autotools-dev, grid-packaging-tools, globus-core, libglobus-scheduler-event-generator-dev
 Standards-Version: 3.9.0
 Section: net
 DM-Upload-Allowed: yes
 Homepage: http://www.globus.org/
 
-Package: globus-gram-job-manager-fork
+Package: globus-gram-job-manager-pbs
 Section: net
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-setup-fork
-Recommends: globus-gram-job-manager-fork-doc (= ${binary:Version})
-Description: Globus Toolkit - Fork Job Manager
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gass-cache-program, globus-common-progs, globus-gram-job-manager, globus-gram-job-manager-setup-pbs
+Description: Globus Toolkit - PBS Job Manager Adapter
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
  Globus Alliance and many others all over the world. A growing number
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gram-job-manager-fork package contains:
- Fork Job Manager
+ The globus-gram-job-manager-setup-pbs package contains:
+ PBS Job Manager
 
-Package: globus-gram-job-manager-fork-setup-poll
+Package: globus-gram-job-manager-pbs-setup-poll
 Section: net
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-fork
-Recommends: globus-gram-job-manager-fork-doc (= ${binary:Version})
-Provides: globus-gram-job-manager-setup-fork
-Description: Globus Toolkit - Fork Job Manager
+Provides: globus-gram-job-manager-setup-pbs
+Conflicts: globus-gram-job-manager-pbs-setup-seg
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gass-cache-program, globus-common-progs, globus-gram-job-manager-pbs
+Description: Globus Toolkit - PBS Job Manager Polling Setup
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
  Globus Alliance and many others all over the world. A growing number
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gram-job-manager-fork package contains:
- Fork Job Manager
+ The globus-gram-job-manager-setup-pbs package contains:
+ PBS Job Manager
 
-Package: globus-gram-job-manager-fork-setup-seg
+Package: globus-gram-job-manager-pbs-setup-seg
 Section: net
 Architecture: any
-Depends: ${misc:Depends}, ${perl:Depends}, globus-gram-job-manager-fork
-Provides: globus-gram-job-manager-setup-fork
-Recommends: globus-gram-job-manager-fork-doc (= ${binary:Version})
-Description: Globus Toolkit - Fork Job Manager
+Depends: ${misc:Depends}, ${perl:Depends}, globus-gass-cache-program, globus-common-progs, globus-gram-job-manager-pbs, globus-scheduler-event-generator-progs
+Provides: globus-gram-job-manager-setup-pbs
+Conflicts: globus-gram-job-manager-pbs-setup-poll
+Description: Globus Toolkit - PBS Job Manager SEG Setup
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
  Globus Alliance and many others all over the world. A growing number
  of projects and companies are using the Globus Toolkit to unlock the
  potential of grids for their cause.
  .
- The globus-gram-job-manager-fork package contains:
- Fork Job Manager
+ The globus-gram-job-manager-setup-pbs package contains:
+ PBS Job Manager SEG Setup
 
-Package: globus-gram-job-manager-fork-doc
+Package: globus-gram-job-manager-pbs-doc
 Section: doc
 Architecture: all
-Depends: globus-gram-job-manager-fork (= ${binary:Version}), ${misc:Depends}
-Description: Globus Toolkit - Fork Job Manager Documentation Files
+Depends: globus-gram-job-manager-pbs (= ${binary:Version}), ${misc:Depends}
+Description: Globus Toolkit - PBS Job Manager Documentation Files
  The Globus Toolkit is an open source software toolkit used for
  building Grid systems and applications. It is being developed by the
  Globus Alliance and many others all over the world. A growing number
@@ -66,4 +65,4 @@ Description: Globus Toolkit - Fork Job Manager Documentation Files
  potential of grids for their cause.
  .
  The globus-gram-job-manager-fork-doc package contains:
- Fork Job Manager Documentation Files
+ PBS Job Manager Documentation Files
