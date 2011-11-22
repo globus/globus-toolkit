@@ -113,6 +113,23 @@ sub new
     return $self;
 }
 
+sub getenv
+{
+    my $self = shift;
+    my $varname = shift;
+    my $description = $self->{JobDescription};
+    my @result;
+    my @environment = $description->environment();
+
+    @result = grep { $_->[0] eq $varname } @environment;
+
+    if (exists($result[0]))
+    {
+        return $result[0]->[1];
+    }
+    return undef;
+}
+
 =item $manager->log($string)
 
 Log a message to the job manager log file. The message is preceded by
@@ -478,9 +495,13 @@ sub rewrite_urls
     my $self = shift;
     my $description = $self->{JobDescription};
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $cache_location = $self->getenv('GLOBUS_GASS_CACHE_DEFAULT');
     my $url;
     my $filename;
     my $filestreamout = [];
+
+    local %ENV = %ENV;
+    $ENV{GLOBUS_GASS_CACHE_DEFAULT} = $cache_location if ($cache_location);
 
     foreach ('stdin', 'executable')
     {
@@ -587,9 +608,13 @@ sub stage_in
     my $self = shift;
     my $description = $self->{JobDescription};
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $cache_location = $self->getenv('GLOBUS_GASS_CACHE_DEFAULT');
     my ($remote, $local, $local_resolved, $cached, $stderr, $rc, @arg);
 
     $self->log("stage_in(enter)");
+
+    local %ENV = %ENV;
+    $ENV{GLOBUS_GASS_CACHE_DEFAULT} = $cache_location if ($cache_location);
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
     {
@@ -747,12 +772,16 @@ sub stage_out
     my $description = $self->{JobDescription};
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $cache_location = $self->getenv('GLOBUS_GASS_CACHE_DEFAULT');
     my ($local, $remote);
     my ($local_path, $remote_path);
     my ($stderr, $rc);
     my @arg;
 
     $self->log("stage_out(enter)");
+
+    local %ENV = %ENV;
+    $ENV{GLOBUS_GASS_CACHE_DEFAULT} = $cache_location if ($cache_location);
 
     if (exists($self->{STDIO_MERGER}) && ref($self->{STDIO_MERGER}))
     {
@@ -898,11 +927,15 @@ sub cache_cleanup
 {
     my $self = shift;
     my $description = $self->{JobDescription};
+    my $cache_location = $self->getenv('GLOBUS_GASS_CACHE_DEFAULT');
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $job_path = $self->job_dir();
     my ($stderr, $rc);
 
     $self->log("cache_cleanup(enter)");
+
+    local %ENV = %ENV;
+    $ENV{GLOBUS_GASS_CACHE_DEFAULT} = $cache_location if ($cache_location);
 
     if ( defined $tag )
     {
