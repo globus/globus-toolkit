@@ -75,8 +75,8 @@ my $gptpkgname;
 
 # Parse the metadata into an object that contains the name, version,
 # and dependencies
-$gptfile =~ s!^./!!;
-$gptfile =~ s!/./|//!!g;
+$gptfile =~ s!^\./!!;
+$gptfile =~ s!/\./|//!!g;
 foreach my $gptmetadata (@packagelist)
 {
     my $pkgmeta = parse_package($gptmetadata);
@@ -208,6 +208,7 @@ sub update_debian
 
     $changed |= update_rules($pkgmeta);
     $changed |= update_control($pkgmeta, $allpkgmeta);
+    $changed |= check_if_version_is_different($pkgmeta);
     update_changelog($pkgmeta) if ($changed);
 }
 
@@ -469,6 +470,32 @@ sub update_rules
     }
 
     return $changed;
+}
+sub check_if_version_is_different
+{
+    my $pkgmeta = shift;
+    my $package = $pkgmeta->{DEBNAME};
+    my $version = "$pkgmeta->{MAJOR}.$pkgmeta->{MINOR}";
+    my $old_version;
+    my @oldchanges;
+    my $fd;
+    my $changelogpath = "debian/$package/debian/changelog";
+    my $update;
+    my $release = 0;
+
+    open($fd, "<$changelogpath") || return 0;
+    @oldchanges = <$fd>;
+    close($fd);
+
+    if ($oldchanges[0] =~ /\S\s+\(([0-9.]*)-.*\)/)
+    {
+        $old_version = $1;
+        if ($old_version ne $version)
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 sub update_changelog
