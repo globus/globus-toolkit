@@ -213,7 +213,10 @@ for i in grid-packaging-tools $packages; do
         cd "$debname";
        fakeroot dpkg-buildpackage -sa ${binaryonly:+-b}
 	cd -
-	sudo dpkg -i $(get_package_filenames "$topdir" $debout | grep -Ev 'condor|pbs|sge|-fork')
+        thisinstall="$(get_package_filenames "$topdir" $debout | grep -Ev 'condor|pbs|sge|-fork')"
+        if [ "$thisinstall" != "" ]; then
+            sudo dpkg -i $thisinstall
+        fi
     fi
 done
 
