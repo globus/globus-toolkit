@@ -955,6 +955,8 @@ globus_l_gram_condor_poll_callback(
     int                                 rc;
     time_t                              last_poll_time;
     time_t                              poll_time;
+    double                              poll_length;
+    globus_reltime_t                    delay;
     globus_gram_job_manager_t *         manager = user_arg;
     globus_scheduler_event_t *          event;
     globus_fifo_t                       events;
@@ -991,6 +993,13 @@ globus_l_gram_condor_poll_callback(
          ref != NULL;
          ref = globus_hashtable_next(&manager->request_hash))
     {
+        if (ref->request &&
+            ref->request->job_id_string &&
+            *ref->request->job_id_string == 0)
+        {
+            /* Skip jobs which have no outstanding subjobs to poll */
+            continue;
+        }
         rc = sscanf(ref->key, "/%" SCNu64 "/%" SCNu64 "/", &uniq1, &uniq2);
         if (rc != 2)
         {
@@ -1140,6 +1149,23 @@ close_log:
         free(path);
         path = NULL;
     }
+
+    /*
+     * Adjust poll interval based on polling time. If things are going slowly,
+     * wait for a multiple of the poll time, otherwise reset the clock to
+     * 5 seconds to avoid globus_callback scheduling this to run fewer than 5
+     * seconds from now.
+     */
+    poll_length = difftime(time(NULL), poll_time);
+    if (poll_length > 1.0)
+    {
+        GlobusTimeReltimeSet(delay, (time_t) poll_length, 0);
+    }
+    else
+    {
+        GlobusTimeReltimeSet(delay, (time_t) 5, 0);
+    }
+    globus_callback_adjust_period(manager->fork_callback_handle, &delay);
     GlobusGramJobManagerUnlock(manager);
 
     while (!globus_fifo_empty(&events))

@@ -1409,6 +1409,18 @@ globus_gram_job_manager_reply(
                         0);
             }
 
+            if ((!request) ||
+                    (request && request->response_context != response_context))
+            {
+                /* In the case of a job restart via RSL, the response context
+                 * will not be the same as the request context, but still must
+                 * be freed
+                 */
+                gss_delete_sec_context(
+                        &minor_status,
+                        &response_context,
+                        GSS_C_NO_BUFFER);
+            }
             if (request && !manager->config->enable_callout)
             {
                 /* Save a some memory by freeing this while the job runs */

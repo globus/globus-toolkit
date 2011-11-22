@@ -809,6 +809,11 @@ get_gateway_user_failed:
         free(r->cache_tag);
 cache_tag_alloc_failed:
 failed_restart:
+        if (r->job_state_lock_fd >= 0 &&
+            r->job_state_lock_fd != r->manager->lock_fd)
+        {
+            close(r->job_state_lock_fd);
+        }
         free(r->job_state_lock_file);
         free(r->job_state_file);
 failed_state_file_set:
