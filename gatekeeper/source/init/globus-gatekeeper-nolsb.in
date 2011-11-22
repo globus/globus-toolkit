@@ -1,12 +1,14 @@
 #! /bin/sh
 
 # globua-gatekeeper Authorize and execute a grid service
-# chkconfig:- 20 80
+# chkconfig: @CHKCONFIG_DEFAULT@ 20 80
 
 ### BEGIN INIT INFO
 # Provides:          globus-gatekeeper
 # Required-Start:    $network $time
 # Required-Stop:     $network
+@DEFAULT_START_LINE@
+@DEFAULT_STOP_LINE@
 # Short-Description: Globus Gatekeeper
 # Description:       The Globus Gatekeeper service authenticates network
 #                    connections using an SSL-based protocol and then

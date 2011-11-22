@@ -67,6 +67,52 @@ AC_ARG_WITH(lsb,
 
 AC_SUBST(LSB)
 
+AC_ARG_WITH(default-runlevels,
+        AC_HELP_STRING(
+            [--with-default-runlevels=RUNLEVELS],
+            [Choose which System-V style runlevels the
+            globus-scheduler-event-generator service will be started on.]),
+            [ case "$withval" in
+                yes)
+                  AC_MSG_WARN([Invalid parameter to --with-default-runlevels])
+                  ;;
+                no)
+                  CHKCONFIG_DEFAULT="-"
+                  DEFAULT_START=""
+                  DEFAULT_STOP=""
+                  ;;
+                *)
+                  CHKCONFIG_DEFAULT="$withval"
+                  for r in 0 1 2 3 4 5 6; do
+                      if expr $withval : ".*$r.*" > /dev/null; then
+                          DEFAULT_START="${DEFAULT_START:+$DEFAULT_START }$r"
+                      else
+                          DEFAULT_STOP="${DEFAULT_STOP:+$DEFAULT_STOP }$r"
+                      fi
+                  done
+              esac],
+            [
+                CHKCONFIG_DEFAULT="-"
+                DEFAULT_START=""
+                DEFAULT_STOP=""
+            ])
+
+if test "$DEFAULT_START" = ""; then
+    DEFAULT_START_LINE="#"
+else
+    DEFAULT_START_LINE="# Default-Start:     $DEFAULT_START"
+fi
+if test "$DEFAULT_STOP" = ""; then
+    DEFAULT_STOP_LINE="#"
+else
+    DEFAULT_STOP_LINE="# Default-Stop:      $DEFAULT_STOP"
+fi
+
+AC_SUBST(CHKCONFIG_DEFAULT)
+AC_SUBST(DEFAULT_START_LINE)
+AC_SUBST(DEFAULT_STOP_LINE)
+
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(

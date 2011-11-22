@@ -1,11 +1,14 @@
 #! /bin/sh
+# globus-scheduler-event-generator Parse LRM events into a common log format
+# for the GRAM job manager to use
+# chkconfig: @CHKCONFIG_DEFAULT@ 20 80
 
 ### BEGIN INIT INFO
 # Provides:          globus-scheduler-event-generator
 # Required-Start:    $network $time
 # Required-Stop:     $network
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
+@DEFAULT_START_LINE@
+@DEFAULT_STOP_LINE@
 # Short-Description: Globus Scheduler Event Generator
 # Description:       The Globus Scheduler Event Generator service 
 #                    process state from local resource managers (such as
