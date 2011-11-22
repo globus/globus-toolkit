@@ -135,6 +135,24 @@ globus_gram_job_manager_logging_init(
 }
 /* globus_gram_job_manager_logging_init() */
 
+void
+globus_gram_job_manager_logging_destroy(void)
+{
+    if (globus_i_gram_job_manager_log_sys)
+    {
+        globus_logging_destroy(globus_i_gram_job_manager_log_sys);
+	globus_i_gram_job_manager_log_sys = NULL;
+    }
+    if (globus_i_gram_job_manager_log_stdio)
+    {
+        globus_logging_destroy(globus_i_gram_job_manager_log_stdio);
+	globus_i_gram_job_manager_log_stdio = NULL;
+    }
+    globus_symboltable_destroy(
+            &globus_l_gram_log_symboltable);
+    globus_l_gram_log_symboltable = NULL;
+}
+
 char *
 globus_gram_prepare_log_string(
     const char *                        instr)

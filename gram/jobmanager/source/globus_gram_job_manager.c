@@ -499,7 +499,7 @@ globus_gram_job_manager_log(
         logged = GLOBUS_TRUE;
     }
     
-    if (!logged)
+    if ((!logged) && (manager && !manager->done))
     {
         /* Hack to write to stderr in the case the error happens before we
          * have parsed command-line options to figure out where log messages

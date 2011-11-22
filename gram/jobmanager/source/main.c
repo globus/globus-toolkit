@@ -604,6 +604,7 @@ main(
         remove(manager.socket_path);
         remove(manager.lock_path);
     }
+    globus_gram_job_manager_logging_destroy();
     globus_gram_job_manager_destroy(&manager);
     globus_gram_job_manager_config_destroy(&config);
 

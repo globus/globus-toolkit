@@ -1608,6 +1608,10 @@ globus_gram_job_manager_logging_init(
     globus_gram_job_manager_config_t *  config);
 
 extern
+void
+globus_gram_job_manager_logging_destroy(void);
+
+extern
 char *
 globus_gram_prepare_log_string(
     const char *                        instr);
