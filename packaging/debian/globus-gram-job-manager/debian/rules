@@ -72,7 +72,7 @@ build-stamp: configure-stamp
 
 	touch $@
 
-clean:
+clean: cleanup
 	:
 
 cleanup:
@@ -134,8 +134,7 @@ install: build-stamp
 	# Fix doxygen glitches
 	for f in globus_gram_job_manager_configuration.3 \
 		 globus_gram_job_manager_job_execution_environment.3 \
-		 globus_gram_job_manager_rsl_validation_file.3 \
-		 globus_gram_job_manager_rsl.3 ; do \
+		 globus_gram_job_manager_rsl_validation_file.3; do \
 	  sed 's/P\.RS/P\n.RS/' -i $(INSTALLDIR)$(_mandir)/man3/$$f ; \
 	done
 
@@ -171,6 +170,7 @@ binary-arch: install
 	dh_strip --dbg-package=globus-gram-job-manager-dbg
 	dh_compress -X .tag
 	dh_fixperms
+	chmod 1777 debian/$(name)/var/lib/globus/gram_job_state
 	dh_perl
 	dh_makeshlibs
 	dh_installdeb
