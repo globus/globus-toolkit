@@ -1,0 +1,15 @@
+#! /bin/sh
+
+if which invoke-rc.d >/dev/null 2>&1; then
+	invoke-rc.d globus-gatekeeper stop
+else
+	/etc/init.d/globus-gatekeeper stop
+fi
+
+if [ "$1" = purge ]; then
+    if which insserv > /dev/null 2>&1; then
+	insserv -r globus-gatekeeper
+    else
+    	update-rc.d globus-gatekeeper remove
+    fi
+fi
