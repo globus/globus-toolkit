@@ -1,4 +1,4 @@
-globus-gram-job-manager-pbs (1.0-2) unstable; urgency=low
+globus-gram-job-manager-condor (1.0-2) unstable; urgency=low
 
   * Change architecture of LRM doc packages
 
