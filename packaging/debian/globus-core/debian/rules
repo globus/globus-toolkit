@@ -85,7 +85,8 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --with-testdir='$${datadir}/globus/test/$${PACKAGE}' \
 	   --with-flavorincludedir='$${libdir}/globus/include' \
 	   --with-perlmoduledir=$(perl_vendorlib) \
-	   --with-doxygendir='$${datadir}/globus/doxygen'
+	   --with-doxygendir='$${datadir}/globus/doxygen' \
+	   --with-initializer-libdir-based-on-machine-type
 
 	touch $@
 

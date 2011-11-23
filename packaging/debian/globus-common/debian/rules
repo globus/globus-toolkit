@@ -72,7 +72,8 @@ configure-stamp: sed-stamp
 	   --with-flavor=$(flavor) \
 	   --disable-static \
 	   --docdir='$(_docdir)/$(name)' \
-	   --enable-doxygen
+	   --enable-doxygen \
+	   --with-backward-compatibility-hack
 
 	touch $@
 
