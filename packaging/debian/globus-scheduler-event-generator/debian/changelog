@@ -1,5 +1,11 @@
 globus-scheduler-event-generator (4.3-0) unstable; urgency=low
 
+  * Dependency on libltdl3-dev
+
+ -- Globus Toolkit <support@globus.org>  Tue, 22 Nov 2011 21:53:38 -0500
+
+globus-scheduler-event-generator (4.3-0) unstable; urgency=low
+
   * GRAM-284: init defaults for debian
 
  -- Globus Toolkit <support@globus.org>  Tue, 22 Nov 2011 10:36:30 -0500
