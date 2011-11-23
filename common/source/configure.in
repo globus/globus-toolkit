@@ -73,6 +73,8 @@ AM_CONDITIONAL(USE_SYMBOL_LABELS, test "$use_symbol_labels" = "yes")
 
 if test "$use_symbol_labels" = yes; then
     AC_DEFINE(USE_SYMBOL_LABELS, 1, [Use backward-compatibility symbol labels])
+    GPT_EXTERNAL_LIBS=-lpthread
+    AC_SUBST(GPT_EXTERNAL_LIBS)
 fi
 
 GLOBUS_FINALIZE

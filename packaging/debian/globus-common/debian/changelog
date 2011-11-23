@@ -1,3 +1,9 @@
+globus-common (14.4-0) unstable; urgency=low
+
+  * make GPT_EXTERNAL_LIBS=-lpthread for backward-compatibility hack
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Nov 2011 09:45:17 -0500
+
 globus-common (14.3-1) unstable; urgency=low
 
   * Backward compatibility and script initializer fixes

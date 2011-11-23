@@ -18,8 +18,8 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.3
-Release:	2%{?dist}
+Version:	14.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
@@ -247,6 +247,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Nov 23 2011 Joseph Bester <bester@mcs.anl.gov> - 14.4-1
+- make GPT_EXTERNAL_LIBS=-lpthread for backward-compatibility hack
+
 * Fri Nov 11 2011 Joseph Bester <bester@mcs.anl.gov> - 14.3-2
 - Set default GLOBUS_VERSION to version 5.1.3
 
