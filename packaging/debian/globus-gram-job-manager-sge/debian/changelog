@@ -1,3 +1,9 @@
+globus-gram-job-manager-sge (1.0-0) unstable; urgency=low
+
+  * Change architecture of LRM doc packages
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Nov 2011 11:39:40 -0500
+
 globus-gram-job-manager-sge (1.0-1) unstable; urgency=low
 
   * Update to Globus Toolkit 5.1.3
