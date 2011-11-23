@@ -209,6 +209,7 @@ sub update_debian
     $changed |= update_rules($pkgmeta);
     $changed |= update_control($pkgmeta, $allpkgmeta);
     $changed |= check_if_version_is_different($pkgmeta);
+    $changed |= check_if_debian_metadata_changed($pkgmeta);
     update_changelog($pkgmeta) if ($changed);
 }
 
@@ -481,7 +482,6 @@ sub check_if_version_is_different
     my $fd;
     my $changelogpath = "debian/$package/debian/changelog";
     my $update;
-    my $release = 0;
 
     open($fd, "<$changelogpath") || return 0;
     @oldchanges = <$fd>;
@@ -498,6 +498,26 @@ sub check_if_version_is_different
     return 0;
 }
 
+sub check_if_debian_metadata_changed
+{
+    my $pkgmeta = shift;
+    my $package = $pkgmeta->{DEBNAME};
+    my $debianpath = "debian/$package/debian";
+    my $changelogpath = "debian/$package/debian/changelog";
+    my $changelogmtime;
+
+    $changelogmtime = int((stat($changelogpath))[9]);
+
+    for my $filename (<$debianpath/*>)
+    {
+        if (int((stat($filename))[9]) > $changelogmtime)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 sub update_changelog
 {
     my $pkgmeta = $_[0];
@@ -507,7 +527,7 @@ sub update_changelog
     my $fd;
     my $changelogpath = "debian/$package/debian/changelog";
     my $update;
-    my $release = 0;
+    my $release = 1;
 
     open($fd, "<$changelogpath") || return 0;
     @oldchanges = <$fd>;
