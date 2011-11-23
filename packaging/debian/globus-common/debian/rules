@@ -223,4 +223,4 @@ binary-arch: install
 binary: binary-indep binary-arch
 	:
 
-.PHONY: build clean binary-indep binary-arch binary install configure get-orig-source
+.PHONY: build clean binary-indep binary-arch binary install configure

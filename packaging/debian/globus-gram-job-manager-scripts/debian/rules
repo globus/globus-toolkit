@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gram-job-manager-scripts
 _name = globus_gram_job_manager_scripts
-version = 4.0
+version = 4.1
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -147,4 +147,4 @@ binary-arch:
 binary: binary-indep binary-arch
 	:
 
-.PHONY: build clean binary-indep binary-arch binary install configure get-orig-source
+.PHONY: build clean binary-indep binary-arch binary install configure

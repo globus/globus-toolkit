@@ -188,13 +188,4 @@ binary-arch: install
 binary: binary-indep binary-arch
 	:
 
-get-orig-source:
-	if [ -r $(name)_$(version).orig.tar.gz ]; then \
-	    echo "$(name)_$(version).orig.tar.gz already exists" ; \
-	else \
-	    echo "Fetching upstream version"; \
-	    wget $(source_packages_url)/$(_name)-$(version).tar.gz; \
-	    mv $(_name)-$(version).tar.gz $(name)_$(version).orig.tar.gz; \
-	fi
-
-.PHONY: build clean binary-indep binary-arch binary install configure get-orig-source
+.PHONY: build clean binary-indep binary-arch binary install configure

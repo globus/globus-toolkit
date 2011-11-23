@@ -15,10 +15,6 @@ name = globus-xio
 _name = globus_xio
 version = 3.1
 soname = 0
-toolkit_version = 5.1.3
-toolkit_major = $(shell expr $(toolkit_version) : "\([0-9]*\)")
-toolkit_major_minor = $(shell expr $(toolkit_version) : "\([0-9]*.[0-9]*\)")
-source_packages_url = http://www.globus.org/ftppub/gt$(toolkit_major)/$(toolkit_major_minor)/$(toolkit_version)/packages/src
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -187,13 +183,4 @@ binary-arch: install
 binary: binary-indep binary-arch
 	:
 
-get-orig-source:
-	if [ -r $(name)_$(version).orig.tar.gz ]; then \
-	    echo "$(name)_$(version).orig.tar.gz already exists" ; \
-	else \
-	    echo "Fetching upstream version"; \
-	    wget $(source_packages_url)/$(_name)-$(version).tar.gz; \
-	    mv $(_name)-$(version).tar.gz $(name)_$(version).orig.tar.gz; \
-        fi
-
-.PHONY: build clean binary-indep binary-arch binary install configure get-orig-source
+.PHONY: build clean binary-indep binary-arch binary install configure

@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (4.3-1) unstable; urgency=low
+
+  * Remove obsolete get-orig-source rules
+
+ -- Globus Toolkit <support@globus.org>  Wed, 23 Nov 2011 14:54:53 -0500
+
 globus-scheduler-event-generator (4.3-0) unstable; urgency=low
 
   * Dependency on libltdl3-dev
