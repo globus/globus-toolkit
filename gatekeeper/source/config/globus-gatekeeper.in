@@ -8,7 +8,7 @@
 # GLOBUS_LOCATION="@prefix@"
 
 ## Gatekeeper Log Path. If not set, logging will be done via syslog
-# GLOBUS_GATEKEEPER_LOG="@localstatedir@/log/globus-gatekeeper.log"
+GLOBUS_GATEKEEPER_LOG="@localstatedir@/log/globus-gatekeeper.log"
 
 ## Path to directory containing grid service descriptions
 # GLOBUS_GATEKEEPER_GRID_SERVICES="@sysconfdir@/grid-services"

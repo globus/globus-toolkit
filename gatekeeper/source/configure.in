@@ -165,6 +165,9 @@ AC_SUBST(DEFAULT_START_LINE)
 AC_SUBST(DEFAULT_STOP_LINE)
 AC_SUBST(LSB)
 
+LOGDIR="`eval_path $localstatedir/log`"
+AC_SUBST(LOGDIR)
+
 AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
 
 GLOBUS_FINALIZE
@@ -178,5 +181,6 @@ AC_OUTPUT(
         config/Makefile
         config/globus-gatekeeper
         config/$GATEKEEPER_CONFIGFILE:config/globus-gatekeeper.in
+        gatekeeper.logrotate
         Makefile
 )

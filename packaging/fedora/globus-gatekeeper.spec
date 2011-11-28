@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.4
+Version:	9.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -25,6 +25,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:	globus-common >= 13.4
 Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
+Requires:       psmisc
 
 Requires:       lsb
 Requires(post): globus-common-progs >= 13.4
@@ -112,8 +113,12 @@ fi
 %dir /etc/grid-services
 %dir /etc/grid-services/available
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
+%config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Mon Nov 28 2011 Joseph Bester <bester@mcs.anl.gov> - 9.5-1
+- GRAM-285: Set default gatekeeper log in native packages
+
 * Mon Nov 28 2011 Joseph Bester <bester@mcs.anl.gov> - 9.4-1
 - GRAM-287: Hang of globus-gatekeeper process
 

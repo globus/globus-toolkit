@@ -164,7 +164,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_datadir}/globus/packages/%{_name}
 %dir %{_docdir}/%{name}-%{version}
 %dir %{_localstatedir}/lib/globus/gram_job_state
+%dir %{_localstatedir}/log/globus
 %config(noreplace) %{_sysconfdir}/globus/globus-gram-job-manager.conf
+%config(noreplace) %{_sysconfdir}/logrotate.d/globus-job-manager
 
 %files doc -f package-doc.filelist
 %defattr(-,root,root,-)

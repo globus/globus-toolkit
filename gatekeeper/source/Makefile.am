@@ -6,6 +6,9 @@ SUBDIRS= pkgdata config init
 INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS) @LIBOBJS@
 
+logdir = ${localstatedir}/log
+logrotatedir = ${sysconfdir}/logrotate.d
+
 sbin_PROGRAMS= \
 	globus-gatekeeper \
 	globus-k5
@@ -27,7 +30,12 @@ MANUAL_Sources = manual.xml globus-gatekeeper-manual.xml globus-k5-manual.xml
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST=$(doc_DATA) $(man8_MANS) $(MANUAL_Sources)
+install-data-hook:
+	mkdir -p $(DESTDIR)$(logdir)
+	mkdir -p $(DESTDIR)$(logrotatedir)
+	cp gatekeeper.logrotate $(DESTDIR)$(logrotatedir)/globus-gatekeeper
+
+EXTRA_DIST=$(doc_DATA) $(man8_MANS) $(MANUAL_Sources) gatekeeper.logrotate.in
 
 if GENERATE_MANPAGES
 export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
