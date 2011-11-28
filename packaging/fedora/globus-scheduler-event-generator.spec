@@ -12,8 +12,8 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.2
-Release:	2%{?dist}
+Version:	4.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -216,6 +216,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Nov 22 2011 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
+- GRAM-284: init defaults for debian
+
 * Mon Oct 24 2011 Joseph Bester <bester@mcs.anl.gov> - 4.2-2
 - Add explicit dependencies on >= 5.2 libraries
 - Add backward-compatibility aging
