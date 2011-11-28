@@ -153,6 +153,10 @@ install: build-stamp
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-doc.install
 	echo "debian/tmp/var/lib/globus/gram_job_state" \
 	    >> debian/$(name).install
+	echo "debian/tmp/etc/logrotate.d/globus-job-manager" \
+	    >> debian/$(name).install
+	echo "debian/tmp/var/log/globus" \
+	    >> debian/$(name).install
 
 binary-indep:
 	:
@@ -171,6 +175,7 @@ binary-arch: install
 	dh_compress -X .tag
 	dh_fixperms
 	chmod 1777 debian/$(name)/var/lib/globus/gram_job_state
+	chmod 1777 debian/$(name)/var/log/globus
 	dh_perl
 	dh_makeshlibs
 	dh_installdeb
