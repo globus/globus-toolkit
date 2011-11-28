@@ -1242,6 +1242,14 @@ static void doit()
     char                               *header, *body;
     size_t                              body_length;
 
+    {
+        struct sigaction act;
+        act.sa_handler = terminate;
+        sigemptyset(&act.sa_mask);
+        sigaddset(&act.sa_mask, SIGALRM);
+        act.sa_flags = 0;
+        sigaction(SIGALRM, &act, NULL);
+    }
 
     /* TODO: Stop mucking with stdin and stdout file streams */
     fclose(stdout);
@@ -1294,6 +1302,7 @@ static void doit()
      * to be used for some services, like GARA
      */
     
+    alarm(600);
     major_status = globus_gss_assist_accept_sec_context(
         &minor_status,
         &context_handle,
@@ -2019,6 +2028,7 @@ static void doit()
             }
         }
 
+        alarm(0);
         if (execv(execp, args) != 0)
         {
             sprintf(tmpbuf, "Exec failed: %s\n", strerror(errno));
@@ -2131,6 +2141,7 @@ static void doit()
     {
 	notice2(0, "Child %d started", pid);
     }
+    alarm(0);
 
     ok_to_send_errmsg = 0;
 } /* doit() */  

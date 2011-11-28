@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.2
+Version:	9.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -114,6 +114,12 @@ fi
 %config(noreplace) /etc/sysconfig/globus-gatekeeper
 
 %changelog
+* Mon Nov 28 2011 Joseph Bester <bester@mcs.anl.gov> - 9.4-1
+- GRAM-287: Hang of globus-gatekeeper process
+
+* Wed Nov 23 2011 Joseph Bester <bester@mcs.anl.gov> - 9.3-1
+- Updated version numbers
+
 * Tue Nov 15 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-1
 - GRAM-276: Increase backlog for gatekeeper
 

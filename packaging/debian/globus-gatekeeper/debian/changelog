@@ -1,3 +1,9 @@
+globus-gatekeeper (9.4-1) unstable; urgency=low
+
+  * GRAM-287: Hang of globus-gatekeeper process
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Nov 2011 10:15:25 -0500
+
 globus-gatekeeper (9.3-1) unstable; urgency=low
 
   * Remove obsolete get-orig-source rules
