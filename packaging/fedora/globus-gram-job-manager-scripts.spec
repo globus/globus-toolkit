@@ -8,8 +8,8 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	4.0
-Release:	3%{?dist}
+Version:	4.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
@@ -96,6 +96,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Mon Nov 28 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-1
+- GRAM-278: GASS cache location not set in the perl environment
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 4.0-3
 - Add explicit dependencies on >= 5.2 libraries
 
