@@ -133,6 +133,8 @@ install: build-stamp
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
 	  | grep '^/etc' \
 	  | sed s!^!debian/tmp! >> debian/$(name).install
+	echo "debian/tmp/etc/logrotate.d/globus-gatekeeper" \
+	  >> debian/$(name).install
 
 binary-indep:
 	:
