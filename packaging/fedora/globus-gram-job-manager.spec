@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.10
+Version:	13.11
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -40,6 +40,8 @@ Requires:	globus-gram-job-manager-scripts
 Requires:	globus-gass-copy-progs >= 8
 Requires:	globus-proxy-utils >= 5
 Requires:	globus-gass-cache-program >= 2
+Requires:	globus-gatekeeper >= 9
+Requires:	psmisc
 
 BuildRequires:	grid-packaging-tools >= 3.4
 BuildRequires:	globus-scheduler-event-generator-devel%{?_isa} >= 4
@@ -169,6 +171,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Nov 28 2011 Joseph Bester <bester@mcs.anl.gov> - 13.11-1
+- GRAM-286: Set default jobmanager log in native packages
+- Add gatekeeper and psmisc dependencies
+
 * Mon Nov 21 2011 Joseph Bester <bester@mcs.anl.gov> - 13.10-1
 - GRAM-282: Add hooks to job manager to handle log rotation
 

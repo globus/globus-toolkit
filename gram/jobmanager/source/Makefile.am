@@ -10,6 +10,8 @@ validationdir = $(datadir)/globus/$(PACKAGE)
 globusconfigdir = ${sysconfdir}/globus
 globusconfig_DATA = globus-gram-job-manager.conf
 
+logrotatedir = ${sysconfdir}/logrotate.d
+
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager.la
 sbin_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
@@ -90,6 +92,7 @@ EXTRA_DIST = globus-personal-gatekeeper.in \
 	     main.dox \
 	     dirt.sh \
 	     globus-gram-job-manager.conf.in \
+             gram.logrotate.in \
              libxml.m4
 
 all: $(BUILT_SOURCES)
@@ -102,6 +105,10 @@ rsl.xml: globus-gram-job-manager.rvf
 install-data-hook:
 	mkdir -p $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
 	chmod 1777 $(DESTDIR)$(localstatedir)/lib/globus/gram_job_state
+	mkdir -p $(DESTDIR)$(logrotatedir)
+	cp $(srcdir)/gram.logrotate $(DESTDIR)$(logrotatedir)/globus-job-manager
+	mkdir -p $(DESTDIR)@LOGDIR@
+	chmod 1777 $(DESTDIR)@LOGDIR@
 
 CLEANFILES = \
     globus-personal-gatekeeper \

@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.11-0) unstable; urgency=low
+
+  * GRAM-286: Set default jobmanager log in native packages
+
+ -- Globus Toolkit <support@globus.org>  Mon, 28 Nov 2011 11:12:20 -0500
+
 globus-gram-job-manager (13.10-1) unstable; urgency=low
 
   * Remove obsolete get-orig-source rules

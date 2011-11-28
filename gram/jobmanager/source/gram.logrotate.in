@@ -1,0 +1,13 @@
+@LOGDIR@/gram_*.log {
+    daily
+    dateext
+    compress
+    missingok
+    notifempty
+    nocreate
+    rotate 4
+    sharedscripts
+    postrotate
+        /usr/bin/killall -USR1 globus-job-manager || true
+    endscript
+}
