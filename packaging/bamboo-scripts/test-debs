@@ -87,7 +87,7 @@ sudo dpkg -i "${flavor}/${repopkg_url##*/}"
 sudo aptitude -y update
 
 # Install the binaries that we will test
-sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | sort -u)
+sudo aptitude -y install $(curl -s "${artifact_url}/all-packages/all-packages" | sed -e /globus-repository/d -e "s/_.*//" | grep -Ev 'globus-gram-job-manager-fork-setup-seg|globus-gram-job-manager-condor|globus-gram-job-manager-pbs|globus-gram-job-manager-lsf|globus-gram-job-manager-sge' | sort -u)
 
 # Set up security if we dont have it done already
 if [ ! -f /etc/grid-security/hostcert.pem -o ! -f $HOME/.globus/usercert.pem ]; then
@@ -122,11 +122,57 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
     testpkgname_no_ver=$(echo $testpkgname | sed -e 's/-.*//' -e 's/_/-/g')
     ./configure --with-flavor=${flavor}
     make 
-    make junit || true
-    for x in "${testpkgname_no_ver}"*.xml; do
-        if [ -f "$x" ]; then
-            sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
-        fi
-    done
+    if [ "${testpkgname_no_ver}" = "globus-gram-job-manager-test" ]; then
+        sudo apt-get remove globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
+        for lrm in $lrms; do
+            if [ "${lrm}" = "condor" ]; then
+                modes=""
+            else
+                modes="-setup-poll -setup-seg"
+            fi
+
+            for mode in $modes; do
+                sudo apt-get install globus-gram-job-manager-$lrm$mode || continue
+                sudo service globus-gatekeeper restart || true
+                sudo service globus-scheduler-event-generator restart || true
+                # Allow multiple processes per node if the nodes are
+                # multi-cpu
+                if [ "$lrm" = "pbs" ]; then
+                    sudo ed /etc/globus/globus-pbs.conf <<-EOF
+			/^cpu_per_node=/s/=.*/="$(grep -c processor /proc/cpuinfo)"/
+			w
+			q
+			EOF
+                fi
+                dn="$(grid-cert-info -subject -file /etc/grid-security/hostcert.pem)"
+                export CONTACT_STRING="$globus_hostname/jobmanager-$lrm:$dn" 
+                export CONTACT_LRM="$lrm"
+                make junit || true
+                unset CONTACT_STRING
+                unset CONTACT_LRM
+                sudo apt-get remove globus-gram-job-manager-$lrm$mode
+                # Stop the job manager and remove all job state, so that
+                # tests will have a clean state
+                killall globus-job-manager
+                rm -rf ~/.globus/job
+                rm -rf /var/lib/globus/gram_job_state/bamboo/*
+                rm -f /var/lib/globus/gram_job_state/job.*
+                rm -rf ~/.globus/.gass_cache
+                xmlfile="${testpkgname_no_ver}-$lrm.xml"
+                if [ -f "$xmlfile" ]; then
+                    sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}-$lrm$mode\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}-$lrm$mode\"/"< "$xmlfile" > "${flavortestoutdir}/${xmlfile%%.*}$mode.xml"
+                        mv "$xmlfile" "${xmlfile%%.*}$mode.xml"
+                fi
+            done
+        done
+        sudo apt-get install globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
+    else
+        make junit || true
+        for x in "${testpkgname_no_ver}"*.xml; do
+            if [ -f "$x" ]; then
+                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
+            fi
+        done
+    fi
     cd ..
 done
