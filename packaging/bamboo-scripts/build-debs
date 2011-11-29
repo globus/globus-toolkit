@@ -1,7 +1,6 @@
 #! /bin/sh
 
 set -e
-set -x
 
 usage()
 {
@@ -30,7 +29,6 @@ topdir="$(pwd)/debbuild"
 releasename=""
 tmppath=$(pwd)/tmp
 artifactroot=""
-globusversion=""
 
 sign=1
 quick=0
@@ -85,14 +83,6 @@ while getopts ibc:n:v:R:a:St:hg:f:q i; do
         h)
             usage
             exit 0
-            ;;
-        g)
-            if ! expr "$OPTARG" : "[0-9]*\.[0-9]*\.[0-9]*" > /dev/null; then
-                echo "Invalid GT version $OPTARG" 1>&2
-                exit 1
-            fi
-            globusversion="$OPTARG"
-            chroot_args="${chroot_args:+$chroot_args }-g $OPTARG"
             ;;
 	f)
             flavor="$OPTARG"
@@ -261,32 +251,34 @@ fi
 mkdir "${packagingdir}/repo"
 cd "${packagingdir}/repo"
 mkdir conf
+if [ "$sign" = 1 ] ; then
+    sign_with_line="$(printf "\nSignWith: yes")"
+else
+    sign_with_line=""
+fi
+
 cat > conf/distributions <<EOF
 Label: Globus Toolkit
 Suite: unstable
 Codename: $releasename
 Version: $osver
 Architectures: amd64 i386 source
-Components: contrib
-SignWith: yes
+Components: contrib$sign_with_line
 Description: Globus Toolkit Packages
 
 EOF
 
 if [ "$in_chroot" -eq 0 ]; then
+    # outside of chroot, include all packages
     for x in "${topdir}"/*.changes; do
         reprepro -b . include unstable "$x"
     done
 
     if [ "$chroot" != "" ]; then
-        for x in "${topdir}-${chroot}"/*.changes; do
-            case "$(basename $x)" in
-                grid-packaging-tools*|globus-simple-ca*|globus-repository*)
-                   ;;
-               *)
-                   reprepro -b . include unstable "$x"
-                   ;;
-           esac
+        # include only chroot-specific packages to avoid conflicts with
+        # _all.deb packages having different tarballs
+        for x in "${topdir}-${chroot}"/*${chroot}*deb; do
+           reprepro -b . includedeb unstable "$x"
         done
     fi
 
