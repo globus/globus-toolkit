@@ -55,7 +55,7 @@ Description: Globus Toolkit - PBS Job Manager SEG Setup
 
 Package: globus-gram-job-manager-pbs-doc
 Section: doc
-Architecture: any
+Architecture: all
 Depends: globus-gram-job-manager-pbs (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - PBS Job Manager Documentation Files
  The Globus Toolkit is an open source software toolkit used for

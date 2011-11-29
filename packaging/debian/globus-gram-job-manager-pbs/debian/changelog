@@ -1,5 +1,11 @@
 globus-gram-job-manager-pbs (1.1-1) unstable; urgency=low
 
+  * Restore all type for doc packages for gram LRMS
+
+ -- Globus Toolkit <support@globus.org>  Tue, 29 Nov 2011 13:33:23 -0500
+
+globus-gram-job-manager-pbs (1.1-1) unstable; urgency=low
+
   * Remove obsolete get-orig-source rules
 
  -- Globus Toolkit <support@globus.org>  Wed, 23 Nov 2011 14:54:53 -0500

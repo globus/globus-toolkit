@@ -55,7 +55,7 @@ Description: Globus Toolkit - Oracle Grid Engine Job Manager SEG Setup
 
 Package: globus-gram-job-manager-sge-doc
 Section: doc
-Architecture: any
+Architecture: all
 Depends: globus-gram-job-manager-sge (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Oracle Grid Engine Job Manager Documentation Files
  The Globus Toolkit is an open source software toolkit used for

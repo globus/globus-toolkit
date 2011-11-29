@@ -23,7 +23,7 @@ Description: Globus Toolkit - Condor Job Manager Adapter
 
 Package: globus-gram-job-manager-condor-doc
 Section: doc
-Architecture: any
+Architecture: all
 Depends: globus-gram-job-manager-condor (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Condor Job Manager Documentation Files
  The Globus Toolkit is an open source software toolkit used for

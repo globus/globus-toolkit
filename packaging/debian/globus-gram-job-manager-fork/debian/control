@@ -56,7 +56,7 @@ Description: Globus Toolkit - Fork Job Manager
 
 Package: globus-gram-job-manager-fork-doc
 Section: doc
-Architecture: any
+Architecture: all
 Depends: globus-gram-job-manager-fork (= ${binary:Version}), ${misc:Depends}
 Description: Globus Toolkit - Fork Job Manager Documentation Files
  The Globus Toolkit is an open source software toolkit used for
