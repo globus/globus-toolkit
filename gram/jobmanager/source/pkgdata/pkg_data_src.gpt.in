@@ -184,6 +184,11 @@
                     <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gatekeeper" Package="pgm">
+                <Version>
+                    <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
         <Build_Environment>
             <cflags>@GPT_PKG_CFLAGS@</cflags>
