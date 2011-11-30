@@ -1,7 +1,6 @@
 #! /bin/sh
 
 set -e
-set -x
 umask 022
 
 PATH=$PATH:/usr/sbin:/sbin
@@ -11,6 +10,7 @@ bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)
 tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
+lrms="fork"
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 
 chroot=""
@@ -30,7 +30,7 @@ case "$arch" in
         ;;
 esac
 
-while getopts "ic:r:a:" i; do
+while getopts "ic:r:a:l:" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -47,12 +47,15 @@ while getopts "ic:r:a:" i; do
             artifact_url="$OPTARG"
             chroot_args="${chroot_args:+"$chroot_args "}-a ${OPTARG}"
             ;;
+        l)
+            lrms="$lrms $OPTARG"
+            ;;
     esac
 done
 shift $(($OPTIND - 1))
 
 if [ "$repopkg_url" = "" -o "$artifact_url" = "" ]; then
-    echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL" 1>&2
+    echo "Usage: $0 -r REPO-PACKAGE-URL -a ARTIFACT-URL [-c CHROOT] [-l LRM]..." 1>&2
     exit 1
 fi
 
