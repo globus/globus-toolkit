@@ -123,7 +123,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
     ./configure --with-flavor=${flavor}
     make 
     if [ "${testpkgname_no_ver}" = "globus-gram-job-manager-test" ]; then
-        sudo apt-get remove globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
+        sudo apt-get -y remove globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
         for lrm in $lrms; do
             if [ "${lrm}" = "condor" ]; then
                 modes=""
@@ -132,7 +132,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
             fi
 
             for mode in $modes; do
-                sudo apt-get install globus-gram-job-manager-$lrm$mode || continue
+                sudo apt-get -y install globus-gram-job-manager-$lrm$mode || continue
                 sudo service globus-gatekeeper restart || true
                 sudo service globus-scheduler-event-generator restart || true
                 # Allow multiple processes per node if the nodes are
@@ -150,7 +150,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
                 make junit || true
                 unset CONTACT_STRING
                 unset CONTACT_LRM
-                sudo apt-get remove globus-gram-job-manager-$lrm$mode
+                sudo apt-get -y remove globus-gram-job-manager-$lrm$mode
                 # Stop the job manager and remove all job state, so that
                 # tests will have a clean state
                 killall globus-job-manager
@@ -165,7 +165,7 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
                 fi
             done
         done
-        sudo apt-get install globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
+        sudo apt-get -y install globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
     else
         make junit || true
         for x in "${testpkgname_no_ver}"*.xml; do
