@@ -165,7 +165,8 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
                 sudo apt-get -y remove globus-gram-job-manager-$lrm$mode
                 # Stop the job manager and remove all job state, so that
                 # tests will have a clean state
-                killall globus-job-manager
+                kill $(ps -u $(id -un) -o pid,args | grep '[g]lobus-job-manager' | cut -d' ' -f1)
+                #killall globus-job-manager
                 rm -rf ~/.globus/job
                 rm -rf /var/lib/globus/gram_job_state/bamboo/*
                 rm -f /var/lib/globus/gram_job_state/job.*
