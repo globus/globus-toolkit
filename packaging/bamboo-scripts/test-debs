@@ -72,7 +72,7 @@ fi
 
 # Create source packages for the tests
 if [ "$in_chroot" != 1 ]; then
-    ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test \
+    ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
         -flavor=${flavor} -skipbundle
 fi
 
