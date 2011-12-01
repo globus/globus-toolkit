@@ -1042,6 +1042,22 @@ globus_l_io_bounce_authz_cb(
                         0,
                         0));
             }
+            else if (globus_xio_driver_error_match(
+                        globus_l_io_gsi_driver,
+                        error,
+                        GLOBUS_XIO_GSI_ERROR_WRAP_GSSAPI))
+            {
+                /* Some other GSSAPI error, assume authentication failure here
+                 */
+                result = globus_error_put(
+                    globus_io_error_construct_authentication_failed(
+                        GLOBUS_IO_MODULE,
+                        error,
+                        ihandle->io_handle,
+                        0,
+                        0,
+                        0));
+            }
             else
             {
                 result = globus_error_put(error);

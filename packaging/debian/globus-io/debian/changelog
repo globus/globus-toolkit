@@ -1,3 +1,9 @@
+globus-io (9.2-1) unstable; urgency=low
+
+  * GRAM-290: GRAM protocol misinterprets some GSSAPI errors as connection errors
+
+ -- Globus Toolkit <support@globus.org>  Thu, 01 Dec 2011 14:42:14 -0500
+
 globus-io (9.1-1) unstable; urgency=low
 
   * Remove obsolete get-orig-source rules

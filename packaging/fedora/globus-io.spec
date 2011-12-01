@@ -12,8 +12,8 @@
 
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
-Version:	9.1
-Release:	2%{?dist}
+Version:	9.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
@@ -125,6 +125,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Thu Dec 01 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-1
+- GRAM-290: GRAM protocol misinterprets some GSSAPI errors as connection errors
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 9.1-2
 - Add explicit dependencies on >= 5.2 libraries
 
