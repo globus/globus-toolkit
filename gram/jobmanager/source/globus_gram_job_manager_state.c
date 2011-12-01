@@ -404,10 +404,9 @@ globus_l_gram_job_manager_state_machine(
         globus_gram_job_manager_history_file_create(request);
         request->job_history_status = request->status;
 
-        request->restart_state = request->jobmanager_state;
-        globus_gram_job_manager_state_file_write(request);
-        request->jobmanager_state =
+        request->restart_state = request->jobmanager_state =
             GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+        globus_gram_job_manager_state_file_write(request);
         first_poll = GLOBUS_TRUE;
         
         /* FALLSTHROUGH so we can act on a job state change returned from

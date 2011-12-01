@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.11
+Version:	13.12
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Dec 01 2011 Joseph Bester <bester@mcs.anl.gov> - 13.12-1
+- GRAM-289: GRAM jobs resubmitted
+
 * Mon Nov 28 2011 Joseph Bester <bester@mcs.anl.gov> - 13.11-1
 - GRAM-286: Set default jobmanager log in native packages
 - Add gatekeeper and psmisc dependencies

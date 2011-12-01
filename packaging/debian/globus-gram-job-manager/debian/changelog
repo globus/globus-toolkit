@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.12-1) unstable; urgency=low
+
+  * GRAM-289: GRAM jobs resubmitted
+
+ -- Globus Toolkit <support@globus.org>  Thu, 01 Dec 2011 12:01:13 -0500
+
 globus-gram-job-manager (13.11-0) unstable; urgency=low
 
   * GRAM-286: Set default jobmanager log in native packages
