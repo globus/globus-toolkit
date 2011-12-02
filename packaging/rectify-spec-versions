@@ -19,6 +19,7 @@ my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog = undef;
+my $prompt_for_changelog;
 my $fullname = undef;
 my $bumprelease = undef;
 
@@ -28,6 +29,7 @@ GetOptions('gptfile=s' => \$gptfile,
            'verbose' => \$verbose,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
+           'prompt-for-changelog' => \$prompt_for_changelog,
            'fullname=s' => \$fullname,
            'bumprelease' => \$bumprelease,
            'help' => \$help);
@@ -225,7 +227,28 @@ foreach my $specline (@ARRAY)
 
 if (!$changelog)
 {
-    $changelog = "Updated version numbers";
+    if ($prompt_for_changelog)
+    {
+        print "Changelog entry [empty line to end]: ";
+        $changelog = '';
+
+        while (<>)
+        {
+            if ($_ eq "\n")
+            {
+                last;
+            }
+            $changelog .= "- $_";
+        }
+    }
+    if ($changelog eq '')
+    {
+        $changelog = "- Updated version numbers\n";
+    }
+}
+else
+{
+    $changelog = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
 }
 
 if ($specfile_changed || $bumprelease)
@@ -240,7 +263,7 @@ if ($setreleaseversion)
 
 if ($specfile_changed || $version_changed || $bumprelease)
 {
-    $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n- $changelog\n\n";
+    $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n$changelog\n";
     print "Spec file $specfilename has been updated\n";
 }
 
