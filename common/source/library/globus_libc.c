@@ -67,6 +67,7 @@ extern int h_errno;
 #else
 #   define NAME_MAX 255
 #endif
+#endif
 
 extern globus_bool_t globus_i_module_initialized;
 /******************************************************************************
