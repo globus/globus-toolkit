@@ -3215,7 +3215,37 @@ globus_ftp_client_operationattr_set_data_security(
         }
         i_attr->dcsc_p_cred = credential;
     }
-    if(type == 'P' || type == 'D')
+    if(type == 'p')
+    {
+        globus_size_t                   blob_len;
+        gss_buffer_desc *               buf;
+        buf = (gss_buffer_desc* ) credential;
+        blob_len = buf->length * 2;
+        i_attr->dcsc_blob = globus_calloc(1, blob_len);
+        result = globus_l_ftp_base64_encode(
+            buf->value,
+            buf->length,
+            i_attr->dcsc_blob,
+            &blob_len);
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
+        maj_rc = gss_import_cred(
+            &min_rc,
+            &i_attr->dcsc_p_cred,
+            GSS_C_NO_OID,
+            0,
+            buf,
+            0,
+            NULL);
+        if(maj_rc != GSS_S_COMPLETE)
+        {
+            result = min_rc;
+        }
+    }
+    if(type == 'P' || type == 'D' || type == 'p')
     {
         i_attr->dcsc_type = type;
         i_attr->dcsc_cred = credential;
