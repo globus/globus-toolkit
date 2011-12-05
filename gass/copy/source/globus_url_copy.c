@@ -53,6 +53,107 @@ CVS Information:
 #include "openssl/applink.c"
 #endif
 
+
+#include <openssl/pem.h>
+#include <openssl/conf.h>
+#include <openssl/x509v3.h>
+
+/* adapted from openssl 'mkcert.c' example */
+int guc_mkcert(X509 **x509p, EVP_PKEY **pkeyp, int bits, int serial, int days)
+{
+    X509 *x;
+    EVP_PKEY *pk;
+    RSA *rsa;
+    X509_NAME *name = NULL;
+
+    if((pkeyp == NULL) || (*pkeyp == NULL))
+    {
+        if((pk=EVP_PKEY_new()) == NULL)
+        {
+            abort();
+            return(0);
+        }
+    }
+    else
+    pk = *pkeyp;
+
+    if((x509p == NULL) || (*x509p == NULL))
+    {
+        if((x=X509_new()) == NULL)
+        goto err;
+    }
+    else
+    x = *x509p;
+
+    rsa = RSA_generate_key(bits,RSA_F4,NULL,NULL);
+    if(!EVP_PKEY_assign_RSA(pk,rsa))
+    {
+        abort();
+        goto err;
+    }
+    rsa = NULL;
+
+    X509_set_version(x,2);
+    ASN1_INTEGER_set(X509_get_serialNumber(x),serial);
+    X509_gmtime_adj(X509_get_notBefore(x),0);
+    X509_gmtime_adj(X509_get_notAfter(x),(long)60*60*24*days);
+    X509_set_pubkey(x,pk);
+
+    name = X509_get_subject_name(x);
+
+    /* This function creates and adds the entry, working out the
+    * correct string type and performing checks on its length.
+    * Normally we'd check the return value for errors...
+    */
+    X509_NAME_add_entry_by_txt(name,"C",
+    MBSTRING_ASC, "US", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name,"CN",
+    MBSTRING_ASC, "Globus DCSC Cert", -1, -1, 0);
+
+    /* Its self signed so set the issuer name to be the same as the
+    * subject.
+    */
+    X509_set_issuer_name(x,name);
+
+    if (!X509_sign(x,pk,EVP_md5()))
+        goto err;
+
+    *x509p=x;
+    *pkeyp=pk;
+    return(1);
+err:
+    return(0);
+}
+
+
+int guc_gencert(gss_buffer_desc * buf)
+{
+    X509 *x509 = NULL;
+    EVP_PKEY *pkey = NULL;
+    BIO *bio;
+    char *ptr;
+    
+    guc_mkcert(&x509, &pkey, 1024, 0, 100);
+
+    bio = BIO_new(BIO_s_mem());
+    PEM_write_bio_X509(bio, x509);
+    PEM_write_bio_RSAPrivateKey(
+        bio, EVP_PKEY_get1_RSA(pkey), NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_X509(bio, x509);
+
+    X509_free(x509);
+    EVP_PKEY_free(pkey);
+   
+    buf->length = BIO_get_mem_data(bio, &ptr);
+    buf->value = strdup(ptr);
+    BIO_free(bio);
+
+    return 0;
+}
+    
+
+        
+        
 #define GUC_URL_ENC_CHAR "#;:=+ ,"
 
 /******************************************************************************
@@ -177,6 +278,7 @@ typedef struct
     gss_cred_id_t                       src_cred;
     gss_cred_id_t                       dst_cred;
     gss_cred_id_t                       data_cred;
+    gss_buffer_desc                     auto_data;
     char *                              src_cred_subj;
     char *                              dst_cred_subj;
     char *                              data_cred_subj;
@@ -222,6 +324,7 @@ static globus_bool_t                    guc_l_aliases = GLOBUS_FALSE;
 static globus_l_guc_alias_t *           guc_l_src_alias_ent = NULL;
 static globus_l_guc_alias_t *           guc_l_dst_alias_ent = NULL;
 static globus_bool_t                    guc_l_newline_exit = GLOBUS_FALSE;
+static gss_buffer_desc                  auto_data = GSS_C_EMPTY_BUFFER;
 
 /*****************************************************************************
                           Module specific prototypes
@@ -579,6 +682,10 @@ const char * long_usage =
 "  -dst-cred | -dc <path to credentials or proxy file>\n"
 "     Set the credentials to use for source, destination, \n"
 "     or both ftp connections.\n"
+"  -data-cred <path to credentials or proxy file>\n"
+"     Set the credential to use for data connection.  A value of 'auto' will\n" 
+"     generate a temporary self-signed credential.  This may be used with\n"
+"     any authentication method, but the server must support the DCSC command.\n"
 "  -af <filename> | -alias-file <filename>\n"
 "       File with mapping of logical host aliases to lists of physical\n"
 "       hosts.  When used with multiple concurrent connections, each\n"
@@ -3378,23 +3485,33 @@ globus_l_guc_load_cred(
 
     if(path)
     {
-        buf.value = globus_common_create_string("X509_USER_PROXY=%s", path);
-        buf.length = strlen(buf.value);
-    
-        maj_stat = gss_import_cred(
-            &min_stat,
-            &cred,
-            GSS_C_NO_OID,
-            1, /* GSS_IMPEXP_MECH_SPECIFIC */
-            &buf,
-            0,
-            NULL);
-        if(maj_stat != GSS_S_COMPLETE)
+        if(strcasecmp(path, "auto") == 0)
         {
-            goto error;
+            guc_gencert(&buf);
+            auto_data.length = buf.length;
+            auto_data.value = buf.value;
+            return result;       
         }
-    
-        globus_free(buf.value);
+        else
+        {            
+            buf.value = globus_common_create_string("X509_USER_PROXY=%s", path);
+            buf.length = strlen(buf.value);
+        
+            maj_stat = gss_import_cred(
+                &min_stat,
+                &cred,
+                GSS_C_NO_OID,
+                1, /* GSS_IMPEXP_MECH_SPECIFIC */
+                &buf,
+                0,
+                NULL);
+            if(maj_stat != GSS_S_COMPLETE)
+            {
+                goto error;
+            }
+        
+            globus_free(buf.value);
+        }
     }
     else
     {
@@ -5771,6 +5888,12 @@ globus_l_guc_gass_attr_init(
             globus_ftp_client_operationattr_set_data_security(
                 ftp_attr, 'P', guc_info->data_cred);
         }
+        else if(auto_data.length > 0)
+        {
+            globus_ftp_client_operationattr_set_data_security(
+                ftp_attr, 'p', &auto_data);            
+        }
+        
         if(guc_info->no_dcau)
         {
             dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
