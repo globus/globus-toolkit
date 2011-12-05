@@ -13,19 +13,13 @@
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
 Version:	6.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.2/installers/src/gt5.0.2-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.2-all-source-installer.tar.bz2
-#		mv gt5.0.2-all-source-installer/source-trees/gridftp/server/src globus_gridftp_server-3.23
-#		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gridftp_server-3.23
-#		tar -zcf globus_gridftp_server-3.23.tar.gz globus_gridftp_server-3.23
-Source:		http://www.globus.org/ftppub/gt-changelog/-changelog./-changelog/packages/src/http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -180,6 +174,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 6.4-2
+- Last sync prior to 5.2.0
+
 * Fri Nov 11 2011 Joseph Bester <bester@mcs.anl.gov> - 6.3-1
 - GRIDFTP-190: add in config dir loading
 

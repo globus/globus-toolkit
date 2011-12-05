@@ -16,13 +16,13 @@
 Name:		globus-gram-job-manager-pbs
 %global _name %(tr - _ <<< %{name})
 Version:	1.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - PBS Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-pbs < 4.5
 
@@ -258,6 +258,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.1-3
+- Last sync prior to 5.2.0
+
 * Fri Oct 21 2011 Joseph Bester <bester@mcs.anl.gov> - 1.1-2
 - Fix %post* scripts to check for -eq 1
 - Add explicit dependencies on >= 5.2 libraries

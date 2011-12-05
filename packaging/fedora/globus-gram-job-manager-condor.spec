@@ -9,13 +9,13 @@
 Name:		globus-gram-job-manager-condor
 %global _name %(tr - _ <<< %{name})
 Version:	1.0
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Condor Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Obsoletes:      globus-gram-job-manager-setup-condor < 4.5
 Requires:	globus-gram-job-manager-scripts >= 3.4
@@ -112,6 +112,9 @@ fi
 %config(noreplace) %{_sysconfdir}/grid-services/available/jobmanager-condor
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-5
+- Last sync prior to 5.2.0
+
 * Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-4
 - GRAM-259: globus-gram-job-manager-condor RPM does not uninstall cleanly
 - Add explicit dependencies on >= 5.2 libraries

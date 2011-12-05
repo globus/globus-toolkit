@@ -13,19 +13,13 @@
 Name:		globus-io
 %global _name %(tr - _ <<< %{name})
 Version:	9.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - uniform I/O interface
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.0-all-source-installer.tar.bz2
-#		mv gt5.0.0-all-source-installer/source-trees/io/compat globus_io-6.3
-#		cp -p gt5.0.0-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_io-6.3
-#		tar -zcf globus_io-6.3.tar.gz globus_io-6.3
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -125,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-2
+- Last sync prior to 5.2.0
+
 * Thu Dec 01 2011 Joseph Bester <bester@mcs.anl.gov> - 9.2-1
 - GRAM-290: GRAM protocol misinterprets some GSSAPI errors as connection errors
 

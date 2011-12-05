@@ -18,14 +18,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.4
+Version:	14.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -247,6 +247,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 14.5-1
+- Last sync prior to 5.2.0
+
 * Wed Nov 23 2011 Joseph Bester <bester@mcs.anl.gov> - 14.4-1
 - make GPT_EXTERNAL_LIBS=-lpthread for backward-compatibility hack
 

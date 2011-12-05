@@ -13,19 +13,13 @@
 Name:		globus-xio-popen-driver
 %global _name %(tr - _ <<< %{name})
 Version:	2.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus XIO Pipe Open Driver
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.1/installers/src/gt5.0.1-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.1-all-source-installer.tar.bz2
-#		mv gt5.0.1-all-source-installer/source-trees/xio/drivers/popen/source globus_xio_popen_driver-0.9
-#		cp -p gt5.0.1-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_xio_popen_driver-0.9
-#		tar -zcf globus_xio_popen_driver-0.9.tar.gz globus_xio_popen_driver-0.9
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -119,6 +113,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 2.2-2
+- Last sync prior to 5.2.0
+
 * Fri Nov 04 2011 Joseph Bester <bester@mcs.anl.gov> - 2.2-1
 - Allow ECHILD in close without causing an error
 - Pass const down stack to avoid bad cast

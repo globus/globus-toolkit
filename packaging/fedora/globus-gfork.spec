@@ -13,19 +13,13 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.0-all-source-installer.tar.bz2
-#		mv gt5.0.0-all-source-installer/source-trees/gridftp/gfork/source globus_gfork-0.2
-#		cp -p gt5.0.0-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gfork-0.2
-#		tar -zcf globus_gfork-0.2.tar.gz globus_gfork-0.2
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -146,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-3
+- Last sync prior to 5.2.0
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-2
 - Add explicit dependencies on >= 5.2 libraries
 

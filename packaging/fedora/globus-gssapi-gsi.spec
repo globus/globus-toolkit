@@ -13,19 +13,13 @@
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
 Version:	10.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.1/installers/src/gt5.0.1-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.1-all-source-installer.tar.bz2
-#		mv gt5.0.1-all-source-installer/source-trees/gsi/gssapi/source globus_gssapi_gsi-7.5
-#		cp -p gt5.0.1-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gssapi_gsi-7.5
-#		tar -zcf globus_gssapi_gsi-7.5.tar.gz globus_gssapi_gsi-7.5
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -192,6 +186,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 10.2-2
+- Last sync prior to 5.2.0
+
 * Wed Nov 02 2011 Joseph Bester <bester@mcs.anl.gov> - 10.2-1
 - Bug 7159 - globus-gssapi-gsi uses openssl symbols that are not part of the
   API

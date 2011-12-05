@@ -13,19 +13,13 @@
 Name:		globus-gass-transfer
 %global _name %(tr - _ <<< %{name})
 Version:	7.1
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Globus Toolkit - Globus Gass Transfer
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.0-all-source-installer.tar.bz2
-#		mv gt5.0.0-all-source-installer/source-trees/gass/transfer/source globus_gass_transfer-4.3
-#		cp -p gt5.0.0-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_gass_transfer-4.3
-#		tar -zcf globus_gass_transfer-4.3.tar.gz globus_gass_transfer-4.3
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -175,6 +169,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-3
+- Last sync prior to 5.2.0
+
 * Thu Oct 20 2011 Joseph Bester <bester@mcs.anl.gov> - 7.1-2
 - Add explicit dependencies on >= 5.2 libraries
 - GRAM-220: GASS server may deadlock

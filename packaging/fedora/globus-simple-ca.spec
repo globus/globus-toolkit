@@ -11,19 +11,13 @@
 Name:		globus-simple-ca
 %global _name %(tr - _ <<< %{name})
 Version:	3.0
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - Simple CA
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-#		Source is extracted from the globus toolkit installer:
-#		wget -N http://www-unix.globus.org/ftppub/gt5/5.0/5.0.2/installers/src/gt5.0.2-all-source-installer.tar.bz2
-#		tar -jxf gt5.0.2-all-source-installer.tar.bz2
-#		mv gt5.0.2-all-source-installer/source-trees/common/source globus_common-11.5
-#		cp -p gt5.0.2-all-source-installer/source-trees/core/source/GLOBUS_LICENSE globus_common-11.5
-#		tar -zcf globus_common-11.5.tar.gz globus_common-11.5
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   globus-common
 Requires:   globus-common-progs
@@ -96,6 +90,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/GLOBUS_LICENSE
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-4
+- Last sync prior to 5.2.0
+
 * Tue Oct 11 2011 Joseph Bester <bester@mcs.anl.gov> - 3.0-3
 - Add explicit dependencies on >= 5.2 libraries
 
