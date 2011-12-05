@@ -1,33 +1,4 @@
-
-eval_path()
-{
-    _pathval="$1"
-    _old_pathval=""
-
-    while test "$_pathval" != "$_old_pathval"; do
-        _old_pathval="$_pathval"
-        eval _pathval="$_pathval"
-    done
-    echo "$_pathval"
-}
-
-if test -n "${GLOBUS_LOCATION}" ; then
-    prefix="${GLOBUS_LOCATION}"
-else
-    prefix='@prefix@'
-fi
-
-exec_prefix="`eval_path '@exec_prefix@'`"
-sbindir="`eval_path '@sbindir@'`"
-bindir="`eval_path '@bindir@'`"
-@GLOBUS_LIBDIR_CHOICE@
-libexecdir="`eval_path '@libexecdir@'`"
-includedir="`eval_path '@includedir@'`"
-datarootdir="`eval_path '@datarootdir@'`"
-datadir="`eval_path '@datadir@'`"
-sysconfdir="`eval_path '@sysconfdir@'`"
-sharedstatedir="`eval_path '@sharedstatedir@'`"
-localstatedir="`eval_path '@localstatedir@'`"
+@GLOBUS_SCRIPT_INITIALIZER@
 
 if [ x$prefix != "x/usr" ]; then
     if [ `uname 2> /dev/null` = Linux -o \
