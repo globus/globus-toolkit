@@ -737,13 +737,21 @@ globus_i_gfs_data_check_path(
                     }
                 }
             }
-            if(!check_again && allowed && strcmp(in_path, true_path))
+            if(!check_again)
             {
-                check_again = GLOBUS_TRUE;
-                check_path = in_path;
+                if(allowed && strcmp(in_path, true_path))
+                {
+                    check_again = GLOBUS_TRUE;
+                    check_path = in_path;
+                    allowed = GLOBUS_FALSE;
+                }
             }
             else
             {
+                if(!disallowed)
+                {
+                    allowed = GLOBUS_TRUE;
+                }
                 check_again = GLOBUS_FALSE;
             }
         } while(check_again);
