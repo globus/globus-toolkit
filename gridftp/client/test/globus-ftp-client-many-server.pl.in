@@ -17,6 +17,8 @@
 
 @GLOBUS_PERL_INITIALIZER@
 
+push(@INC, eval_path('${prefix}') . "/test/globus_gridftp_server_test");
+
 use strict;
 require 5.005;
 
