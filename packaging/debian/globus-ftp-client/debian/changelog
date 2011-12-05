@@ -1,3 +1,9 @@
+globus-ftp-client (7.2-2) unstable; urgency=low
+
+  * Update for 5.2.0 release
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500
+
 globus-ftp-client (7.2-1) unstable; urgency=low
 
   * sync prior to 5.2.0 branch

@@ -14,7 +14,7 @@ updatebaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion
 updatesrcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/updates/rpm/\$osname/\\\$releasever/SRPMS/"
 
 reponame="Globus-repo-config"
-fullglobusversion="5.1.0"
+fullglobusversion="5.2.0"
 globusversion="${fullglobusversion%.*}"
 majorglobusversion="gt${globusversion%.*}"
 sign=1

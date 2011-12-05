@@ -19,13 +19,13 @@
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
 Version:	8.4
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Provides:	%{name}-devel = %{version}-%{release}
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 8.4-2
+- Update for 5.2.0 release
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 8.4-1
 - Last sync prior to 5.2.0
 

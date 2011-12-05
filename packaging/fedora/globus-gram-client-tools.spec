@@ -13,13 +13,13 @@
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
 Version:	10.0
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/http://www.globus.org/ftppub/gt5/5.1/5.1.2/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs%{?_isa} >= 14
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 10.0-5
+- Update for 5.2.0 release
+
 * Mon Nov 21 2011 Joseph Bester <bester@mcs.anl.gov> - 10.0-4
 - GRAM-281: Missing dependency in globus-gram-client-tools RPM
 

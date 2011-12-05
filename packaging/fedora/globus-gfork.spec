@@ -13,13 +13,13 @@
 Name:		globus-gfork
 %global _name %(tr - _ <<< %{name})
 Version:	3.1
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Globus Toolkit - GFork
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.1/5.1.3/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -140,6 +140,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-4
+- Update for 5.2.0 release
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.1-3
 - Last sync prior to 5.2.0
 

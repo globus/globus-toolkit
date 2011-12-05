@@ -12,7 +12,7 @@ PACKAGES=myproxy
 echo Making configure/make installer
 
 echo Step: Checking out source code.
-tag=""
+tag="globus_5_2_branch"
 user=""
 no_updates=""
 while getopts "nt:u:af:" arg; do
