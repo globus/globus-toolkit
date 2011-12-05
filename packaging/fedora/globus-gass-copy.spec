@@ -12,7 +12,7 @@
 
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
+Version:	8.2
 Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
