@@ -108,6 +108,7 @@ sub read_package_list{
     {
         my $log;
         my ($pkg, $subdir, $custom, $pnb, $pkgtag) = split(' ', $_);
+        next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
         print cwd()."\n";
         print $subdir."\n";
         chdir "./$subdir";

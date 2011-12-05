@@ -66,6 +66,8 @@ else
 while ( <PKG> )
 {
     my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
+    next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
+
     next if ($pkg =~ m/openssh/);
     push(@packagelist, "source-trees/".$subdir."\/pkgdata\/pkg_data_src.gpt.in");
 }

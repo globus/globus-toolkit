@@ -27,6 +27,7 @@ while ( <PKG> )
 {
     my $log;
     my ($pkg, $subdir, $pnb, $pkgtag) = split(' ', $_);
+    next if ($pkg =~ m/^#/ || $pkg =~ m/^$/);
     print cwd()."\n";
     print $subdir."\n";
     if ($tag ne '' && $pkgtag eq '') {

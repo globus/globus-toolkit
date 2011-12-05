@@ -7,9 +7,6 @@ INSTALLER=gt$VERSION-all-source-installer
 GPT=gpt*.tar.gz
 CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
 
-#GT5 bundles
-BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-xio-extra-drivers,globus-rls-server,prews-test,globus-gsi,gsi_openssh_bundle,globus-gsi-test,gram5-condor,gram5-lsf,gram5-pbs,cas_callout
-
 PACKAGES=myproxy
 
 echo Making configure/make installer
@@ -86,7 +83,7 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-./installer_creation.pl ${flavor:+-f "$flavor"}
+./installer_creation.pl -p etc/package-list-5.1.0 ${flavor:+-f "$flavor"}
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
