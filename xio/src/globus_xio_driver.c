@@ -337,6 +337,19 @@ globus_i_xio_op_destroy(
         }
     }
 
+    if(op->user_open_sbj)
+    {
+        globus_free(op->user_open_sbj);
+    }
+    if(op->user_open_username)
+    {
+        globus_free(op->user_open_username);
+    }
+    if(op->user_open_pw)
+    {
+        globus_free(op->user_open_pw);
+    }
+
     globus_memory_push_node(&context->op_memory, op);
 
     if(handle != NULL)
