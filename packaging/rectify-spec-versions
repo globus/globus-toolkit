@@ -217,7 +217,9 @@ foreach my $specline (@ARRAY)
     {
         if ($1 !~ m/$gtrelease/)
         {
-            $specline =~ s/^(Source:\s*)(\S*)(.*)/$1$gtreleaseuri$2/;
+            my $filename = $1;
+            $filename =~ s/.*\///;
+            $specline =~ s/^(Source:\s*)(\S*)(.*)/$1$gtreleaseuri$filename/;
             $specfile_changed = 1;
         }
     }
@@ -225,12 +227,14 @@ foreach my $specline (@ARRAY)
     $index++;
 }
 
+my $changelogstring;
+
 if (!$changelog)
 {
     if ($prompt_for_changelog)
     {
         print "Changelog entry [empty line to end]: ";
-        $changelog = '';
+        $changelogstring = '';
 
         while (<>)
         {
@@ -238,17 +242,17 @@ if (!$changelog)
             {
                 last;
             }
-            $changelog .= "- $_";
+            $changelogstring .= "- $_";
         }
     }
-    if ($changelog eq '')
+    if ($changelogstring eq '')
     {
-        $changelog = "- Updated version numbers\n";
+        $changelogstring = "- Updated version numbers\n";
     }
 }
 else
 {
-    $changelog = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
+    $changelogstring = "- " . join("\n- ", split(/\n/, $changelog)) . "\n";
 }
 
 if ($specfile_changed || $bumprelease)
@@ -263,7 +267,7 @@ if ($setreleaseversion)
 
 if ($specfile_changed || $version_changed || $bumprelease)
 {
-    $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n$changelog\n";
+    $ARRAY[$changelogindex] = "%changelog\n* " . strftime('%a %b %d %Y', localtime) . " $fullname <$email> - $version-$releaseversion\n$changelogstring\n";
     print "Spec file $specfilename has been updated\n";
 }
 
