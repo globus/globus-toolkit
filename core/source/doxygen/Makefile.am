@@ -6,11 +6,12 @@ doxygen_DATA = Doxyfile-internal.include \
 	globus_head.html
 
 nodist_sbin_SCRIPTS = \
+    globus-update-doxygen-index \
     globus-build-doxygen-dependencies
 
 sbin_SCRIPTS = \
-    globus-update-doxygen-index \
     globus-vararg-enums-doxygen-filter.pl
 
 EXTRA_DIST = $(doxygen_DATA) $(sbin_SCRIPTS) \
+    globus-update-doxygen-index.in \
     globus-build-doxygen-dependencies.in

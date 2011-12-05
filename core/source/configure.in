@@ -115,6 +115,24 @@ AC_SUBST(aclocaldir)
 AC_SUBST(pkgdir)
 AC_SUBST(flavordir)
 
+AC_ARG_WITH([initializer-libdir-based-on-machine-type],
+AC_HELP_STRING([--with-initializer-libdir-based-on-machine-type],
+[Guess that the libdir might be lib or lib64 depending on the machine type]),
+[
+    case $withval in
+        yes)
+            guess_libdir=1
+            ;;
+        *)
+            guess_libdir=0
+            ;;
+    esac
+],
+[
+    guess_libdir=0
+])
+AC_SUBST(guess_libdir)
+
 GLOBUS_FLAVOR_NAME="$globus_cv_flavor"
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
@@ -214,6 +232,7 @@ AC_OUTPUT(Makefile
 	aclocal/automake_config
 	config/Makefile
 	doxygen/Makefile
+	doxygen/globus-update-doxygen-index
 	doxygen/globus-build-doxygen-dependencies
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
