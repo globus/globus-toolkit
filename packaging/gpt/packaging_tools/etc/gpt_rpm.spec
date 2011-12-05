@@ -31,7 +31,7 @@ GPT_DESCRIPTION_GPT
 %build
 GPT_INSTALL_LOCATION=${RPM_BUILD_ROOT}GPT_PREFIX_GPT; export GPT_INSTALL_LOCATION; $GPT_LOCATION/sbin/gpt-install --force ${RPM_SOURCE_DIR}/GPT_BIN_PKG_NAME_GPT
 
-rm -f ${RPM_BUILD_ROOT}GPT_PREFIX_GPT/etc/gpt/packages/GPT_NAME_GPT/GPT_FLAVOR_GPTGPT_PKGTYPE_GPT.format
+rm -f ${RPM_BUILD_ROOT}GPT_PREFIX_GPT/share/globus/packages/GPT_NAME_GPT/GPT_FLAVOR_GPTGPT_PKGTYPE_GPT.format
 
 
 #########################################################################

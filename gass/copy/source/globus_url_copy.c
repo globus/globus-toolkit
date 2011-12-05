@@ -2009,6 +2009,11 @@ main(int argc, char **argv)
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
     globus_l_guc_destroy_url_list(&guc_info.dump_url_list);
 
+    if(guc_l_newline_exit && !globus_l_globus_url_copy_ctrlc_handled)
+    {
+        globus_libc_fprintf(stdout, "\n");
+    }
+
     if(guc_info.udt)
     {
         /* sidestep udt shutdown issues */
@@ -2030,11 +2035,6 @@ main(int argc, char **argv)
     globus_cond_destroy(&g_monitor.cond);
 
     globus_l_guc_info_destroy(&guc_info);
-
-    if(guc_l_newline_exit && !globus_l_globus_url_copy_ctrlc_handled)
-    {
-        globus_libc_fprintf(stdout, "\n");
-    }
     
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     /* XXX fix hang globus_module_deactivate_all(); */
