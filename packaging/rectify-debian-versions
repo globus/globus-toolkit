@@ -425,12 +425,15 @@ sub update_control
             $line = "Depends: " . join(", ", @dependencies);
         }
     }
-    open($fd, ">$controlpath") || return 0;
-    for my $line (@old_control)
+    if ($changed)
     {
-        print $fd "$line\n";
+        open($fd, ">$controlpath") || return 0;
+        for my $line (@old_control)
+        {
+            print $fd "$line\n";
+        }
+        close($fd);
     }
-    close($fd);
     return $changed;
 }
 
@@ -449,7 +452,7 @@ sub update_rules
     @oldrules = <$fd>;
     close($fd);
 
-    open($fd, ">$rulespath") || return $changed;
+    open($fd, ">$rulespath.new") || return $changed;
 
     for my $line (@oldrules)
     {
@@ -468,6 +471,15 @@ sub update_rules
             $line =~ s|^(toolkit_version\s*=\s*)([0-9\.]+)|$1$gtrelease|;
         }
         print $fd $line;
+    }
+
+    if ($changed)
+    {
+        rename "$rulespath.new", $rulespath;
+    }
+    else
+    {
+        unlink "$rulespath.new";
     }
 
     return $changed;
@@ -512,6 +524,7 @@ sub check_if_debian_metadata_changed
     {
         if (int((stat($filename))[9]) > $changelogmtime)
         {
+            print "$filename is newer than changelog\n" if $verbose;
             return 1;
         }
     }
@@ -533,7 +546,7 @@ sub update_changelog
     @oldchanges = <$fd>;
     close($fd);
 
-    if ($oldchanges[0] =~ /\(([0-9\.])-([^)]*)\)/)
+    if ($oldchanges[0] =~ /\(([0-9\.]+)-([^)]*)\)/)
     {
         my ($oldversion, $oldrelease) = ($1, $2);
 
