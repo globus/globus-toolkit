@@ -3182,7 +3182,8 @@ globus_i_gsc_add_commands(
         server_handle,
         "FEAT", 
         globus_l_gsc_cmd_feat,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_PRE_AUTH | 
+            GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         1,
         "FEAT",
@@ -3203,8 +3204,7 @@ globus_i_gsc_add_commands(
         server_handle,
         "LIST", 
         globus_l_gsc_cmd_stor_retr,
-        GLOBUS_GSC_COMMAND_PRE_AUTH | 
-            GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         2,
         "LIST [<sp> <filename>]",
@@ -3214,8 +3214,7 @@ globus_i_gsc_add_commands(
         server_handle,
         "MDTM", 
         globus_l_gsc_cmd_mdtm,
-        GLOBUS_GSC_COMMAND_PRE_AUTH | 
-            GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
         "MDTM <sp> <filename>",
@@ -3235,8 +3234,7 @@ globus_i_gsc_add_commands(
         server_handle,
         "NLST", 
         globus_l_gsc_cmd_stor_retr,
-        GLOBUS_GSC_COMMAND_PRE_AUTH | 
-            GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         2,
         "NLST [<sp> <filename>]",
@@ -3256,8 +3254,7 @@ globus_i_gsc_add_commands(
         server_handle,
         "MLSD",
         globus_l_gsc_cmd_stor_retr,
-        GLOBUS_GSC_COMMAND_PRE_AUTH | 
-            GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         2,
         "MLSD [<sp> <filename>]",
@@ -3267,8 +3264,7 @@ globus_i_gsc_add_commands(
         server_handle,
         "MLSR",
         globus_l_gsc_cmd_stor_retr,
-        GLOBUS_GSC_COMMAND_PRE_AUTH | 
-            GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         2,
         "MLSR [<sp> <filename>]",
@@ -3278,8 +3274,7 @@ globus_i_gsc_add_commands(
         server_handle,
         "MLST",
         globus_l_gsc_cmd_stat,
-        GLOBUS_GSC_COMMAND_PRE_AUTH | 
-            GLOBUS_GSC_COMMAND_POST_AUTH,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
         2,
         "MLST [<sp> <filename>]",
@@ -3627,7 +3622,6 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.uid*;UNIX.group*;UNIX.gid*;Unique*;UNIX.slink*;X.count;");    
-    globus_gridftp_server_control_add_feature(server_handle, "MLSC");
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    

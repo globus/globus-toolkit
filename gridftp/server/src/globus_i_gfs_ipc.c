@@ -3449,7 +3449,7 @@ globus_l_gfs_ipc_unpack_stat(
     GlobusGFSDebugEnter();
 
     stat_info = (globus_gfs_stat_info_t *)
-        globus_malloc(sizeof(globus_gfs_stat_info_t));
+        globus_calloc(1, sizeof(globus_gfs_stat_info_t));
     if(stat_info == NULL)
     {
         goto error;

@@ -378,6 +378,7 @@ error_write_convert:
 error_read_convert:
 error_write_env:
 error_read_env:
+    globus_fifo_destroy(&handle->write_q);
     globus_mutex_destroy(&handle->mutex);
     globus_free(handle);
 

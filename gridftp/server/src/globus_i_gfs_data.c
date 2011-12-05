@@ -21,6 +21,7 @@
 #include <openssl/des.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fnmatch.h>
 #include "globus_io.h"
 #include "globus_xio.h"
 
@@ -593,6 +594,9 @@ globus_i_gfs_data_check_path(
     int                                 in_path_len;
     globus_l_gfs_data_session_t *       session_handle;
     char *                              tmp_ptr;
+    int                                 rc = 0;
+    char *                              check_path;
+    globus_bool_t                       check_again = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_check_path);
     GlobusGFSDebugEnter();
     
@@ -653,42 +657,97 @@ globus_i_gfs_data_check_path(
             true_path = globus_libc_strdup(in_path);
         }
 
-        in_path_len = strlen(true_path);
         
-        for(list = globus_l_gfs_path_alias_list;
-            !globus_list_empty(list) && !allowed && !disallowed;
-            list = globus_list_rest(list))
-        {            
-            alias_ent = globus_list_first(list);
+        check_path = true_path;
+        do
+        {
+            in_path_len = strlen(check_path);
             
-            if(strncmp(true_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
-                (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
-                    true_path[alias_ent->alias_len] == '\0' || 
-                    true_path[alias_ent->alias_len] == '/'))
-            {
-                if(alias_ent->access & access_type)
+            for(list = globus_l_gfs_path_alias_list;
+                !globus_list_empty(list) && !allowed && !disallowed;
+                list = globus_list_rest(list))
+            {            
+                alias_ent = globus_list_first(list);
+                
+                /* disallow if this a dir check and any contents are denied */
+                if(access_type & GFS_L_DIR && alias_ent->access & GFS_L_NONE)
                 {
-                    allowed = GLOBUS_TRUE;
+                    if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
+                        (check_path[in_path_len - 1] == '/' ||
+                            alias_ent->alias[in_path_len] == '\0' || 
+                            alias_ent->alias[in_path_len] == '/'))
+                    {
+                        disallowed = GLOBUS_TRUE;
+                        continue;
+                    }
+                    else if(fnmatch(alias_ent->alias, check_path, 0) == 0)
+                    {
+                        disallowed = GLOBUS_TRUE;
+                        continue;
+                    }
                 }
-                else
+    
+                /* check if we have an exact match */
+                if(strcspn(alias_ent->alias, "[*?") != alias_ent->alias_len)
                 {
-                    disallowed = GLOBUS_TRUE;
+                    rc = fnmatch(alias_ent->alias, check_path, 0);
+                    if(rc == 0)
+                    {
+                        if(alias_ent->access & access_type)
+                        {
+                            allowed = GLOBUS_TRUE;
+                        }
+                        else
+                        {
+                            disallowed = GLOBUS_TRUE;
+                        }
+                    }
+                }
+                else if(strncmp(check_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
+                    (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
+                        check_path[alias_ent->alias_len] == '\0' || 
+                        check_path[alias_ent->alias_len] == '/'))
+                {
+                    if(alias_ent->access & access_type)
+                    {
+                        allowed = GLOBUS_TRUE;
+                    }
+                    else
+                    {
+                        disallowed = GLOBUS_TRUE;
+                    }
+                }
+                
+                /* check if we are a parent of an exact match */
+                if(!allowed && !disallowed && access_type & GFS_L_LIST)
+                {
+                    if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
+                        (check_path[in_path_len - 1] == '/' ||
+                            alias_ent->alias[in_path_len] == '\0' || 
+                            alias_ent->alias[in_path_len] == '/'))
+                    {
+                        if(alias_ent->access & access_type)
+                        {
+                            allowed = GLOBUS_TRUE;
+                        }
+                        else
+                        {
+                           // disallowed = GLOBUS_TRUE;
+                        }
+                    }
                 }
             }
-            
-            if(!allowed && access_type & GFS_L_LIST)
+            if(!check_again && allowed && strcmp(in_path, true_path))
             {
-                if(strncmp(true_path, alias_ent->alias, in_path_len) == 0 &&
-                    (true_path[in_path_len - 1] == '/' ||
-                        alias_ent->alias[in_path_len] == '\0' || 
-                        alias_ent->alias[in_path_len] == '/') &&
-                        alias_ent->access & access_type)
-                {
-                    allowed = GLOBUS_TRUE;
-                }
+                check_again = GLOBUS_TRUE;
+                check_path = in_path;
             }
-        }
-        
+            else
+            {
+                check_again = GLOBUS_FALSE;
+            }
+        } while(check_again);
+
         if(!allowed)
         {
             result = GlobusGFSErrorGeneric(
@@ -1686,13 +1745,67 @@ globus_list_cmp_alias_ent(
     globus_l_gfs_alias_ent_t *          a_ent;
     globus_l_gfs_alias_ent_t *          b_ent;
     int                                 cmp;
+    int                                 a_i;
+    int                                 b_i;
+    char *                              a_tmp;
+    char *                              b_tmp;
     
     a_ent = (globus_l_gfs_alias_ent_t *) a;
     b_ent = (globus_l_gfs_alias_ent_t *) b;
+
+    a_tmp = (a_ent && a_ent->alias) ? a_ent->alias : "";
+    b_tmp = (b_ent && b_ent->alias) ? b_ent->alias : "";
     
-    cmp = strcmp(
-        (a_ent && a_ent->alias) ? a_ent->alias : "",
-        (b_ent && b_ent->alias) ? b_ent->alias : "");
+    /* check for wildcard chars and replace the first one with a low value */
+    /* we want the reverse sorted order to be a, [abc], ?, *           */
+    a_i = strcspn(a_tmp, "[*?");
+    if(a_i < a_ent->alias_len)
+    {
+        a_tmp = globus_libc_strdup(a_ent->alias);
+        switch(a_tmp[a_i])
+        {
+            case '*':
+                a_tmp[a_i] = 1;
+                break;
+            case '?': 
+                a_tmp[a_i] = 2;
+                break;
+            case '[': 
+                a_tmp[a_i] = 3;
+                break;
+        }
+        a_i = 0;
+    } 
+
+    b_i = strcspn(b_tmp, "[*?");
+    if(b_i < b_ent->alias_len)
+    {
+        b_tmp = globus_libc_strdup(b_ent->alias);
+        switch(b_tmp[b_i])
+        {
+            case '*':
+                b_tmp[b_i] = 1;
+                break;
+            case '?': 
+                b_tmp[b_i] = 2;
+                break;
+            case '[': 
+                b_tmp[b_i] = 3;
+                break;
+        }
+        b_i = 0;
+    }
+    
+    cmp = strcmp(a_tmp, b_tmp);
+
+    if(!a_i)
+    {
+        globus_free(a_tmp);
+    } 
+    if(!b_i)
+    {
+        globus_free(b_tmp);
+    }    
     
     return cmp >= 0;
 }
@@ -2120,6 +2233,13 @@ globus_l_gfs_data_authorize(
             }
         }
 
+        if(pwent->pw_uid == 0 && !globus_i_gfs_config_bool("allow_root"))
+        {
+            res = GlobusGFSErrorGeneric(
+                "User was mapped as root but root is not allowed.");
+            goto uid_error;
+        }
+
         rc = setuid(pwent->pw_uid);
         if(rc != 0)
         {
@@ -2139,7 +2259,7 @@ globus_l_gfs_data_authorize(
     
     if(globus_i_gfs_config_bool("use_home_dirs") && pwent->pw_dir != NULL 
         && (globus_i_gfs_data_check_path(op->session_handle,
-            pwent->pw_dir, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS))
+            pwent->pw_dir, NULL, GFS_L_LIST) == GLOBUS_SUCCESS))
     {
         op->session_handle->home_dir = strdup(pwent->pw_dir);
     }
@@ -2423,6 +2543,9 @@ globus_i_gfs_data_init()
                         
                     case '/':
                     case '~':
+                    case '*':
+                    case '?':
+                    case '[':
                         if(ent->access == 0)
                         {
                            ent->access |= GFS_L_READ | GFS_L_WRITE;
@@ -2441,6 +2564,11 @@ globus_i_gfs_data_init()
                 }                
             }
             ent->access |= GFS_L_LIST;
+            
+            if(ent->access & GFS_L_NONE)
+            {
+                ent->access = GFS_L_NONE;
+            }
             
             if((alias = strchr(ptr, ':')) != NULL)
             {
@@ -7551,7 +7679,7 @@ globus_i_gfs_data_session_start(
         pwent = getpwuid(op->session_handle->uid);
         if(globus_i_gfs_config_bool("use_home_dirs") && pwent->pw_dir != NULL
             && (globus_i_gfs_data_check_path(op->session_handle,
-                pwent->pw_dir, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS))
+                pwent->pw_dir, NULL, GFS_L_LIST) == GLOBUS_SUCCESS))
         {
             op->session_handle->home_dir = strdup(pwent->pw_dir);
         }
@@ -7742,7 +7870,7 @@ globus_gridftp_server_finished_stat_partial(
         base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
         if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
-            base_path, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS)
+            base_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR) == GLOBUS_SUCCESS)
         {
             memcpy(
                 stat_copy,
@@ -7891,7 +8019,7 @@ globus_gridftp_server_finished_stat(
         base_path = stat_info->pathname;
         /* if we have explicit access on the base path, no need to prune */
         if(stat_info->file_only || globus_i_gfs_data_check_path(op->session_handle,
-            base_path, NULL, GFS_L_READ | GFS_L_WRITE) == GLOBUS_SUCCESS)
+            base_path, NULL, GFS_L_READ | GFS_L_WRITE | GFS_L_DIR) == GLOBUS_SUCCESS)
         {
             memcpy(
                 stat_copy,

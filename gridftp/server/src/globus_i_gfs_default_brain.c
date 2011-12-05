@@ -574,8 +574,8 @@ globus_l_gfs_default_brain_init(
         if(result != GLOBUS_SUCCESS)
         {
             globus_gfs_log_result(
-                GLOBUS_GFS_LOG_WARN, 
-                "GFork functionality not enabled: globus_gfork_child_worker_start() failed",
+                GLOBUS_GFS_LOG_INFO, 
+                "GFork functionality not enabled.",
                 result);
 
             globus_l_gfs_gfork_ready = GLOBUS_TRUE;
