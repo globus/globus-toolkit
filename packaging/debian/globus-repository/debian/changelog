@@ -1,3 +1,9 @@
+globus-repository (0.0.2) unstable; urgency=low
+
+  * Add updates repo paths
+
+ -- Globus Toolkit <support@globus.org>  Mon, 5 Dec 2011 12:46:57 -0500
+
 globus-repository (0.0.1) unstable; urgency=low
 
   * Initial Release.
