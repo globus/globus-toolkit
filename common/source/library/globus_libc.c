@@ -61,6 +61,13 @@ extern int h_errno;
 #define geteuid() 0
 #endif
 
+#ifndef NAME_MAX
+#ifdef _XOPEN_NAME_MAX
+#   define NAME_MAX _XOPEN_NAME_MAX
+#else
+#   define NAME_MAX 255
+#endif
+
 extern globus_bool_t globus_i_module_initialized;
 /******************************************************************************
 		       Define module specific variables
@@ -124,7 +131,6 @@ globus_libc_unlock(void)
     }
     return GLOBUS_FAILURE;
 } /* globus_libc_unlock() */
-
 
 
 /******************************************************************************
