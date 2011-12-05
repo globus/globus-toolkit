@@ -10,6 +10,8 @@ set -- ${args}
 
 baseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/\\\$basearch/"
 srcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/SRPMS/"
+updatebaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/updates/rpm/\$osname/\\\$releasever/\\\$basearch/"
+updatesrcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/updates/rpm/\$osname/\\\$releasever/SRPMS/"
 
 reponame="Globus-repo-config"
 fullglobusversion="5.1.0"
@@ -60,6 +62,13 @@ for i; do
     esac
 done
 
+if [ "$osname" = "" ]; then
+    osname="$(lsb_release -is)"
+fi
+if [ "$osver" = "" ]; then
+    osver="$(lsb_release -rs)"
+fi
+
 if [ "$osname" = "" -o "$osver" = "" ]; then
     echo "Usage: $0 -n OSNAME -v OSVER [-b baseurl] [-s srcbaseurl] [-r repopkgname]" 1>&2
     exit 1
@@ -67,6 +76,8 @@ fi
 
 baseurlresolved="$(eval echo $baseurl)"
 srcbaseurlresolved="$(eval echo $srcbaseurl)"
+updatebaseurl="$(eval echo $updatebaseurl)"
+updatesrcbaseurl="$(eval echo $updatesrcbaseurl)"
 
 for x in BUILD BUILDROOT RPMS SOURCES SPECS SRPMS; do
     mkdir -p ${HOME}/${x}
@@ -82,9 +93,25 @@ enabled=1
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
  
+[Globus-Updates]
+name=Globus - Updates
+baseurl=$updatebaseurl
+failovermethod=priority
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+ 
 [Globus-source]
 name=Globus - Source
 baseurl=$srcbaseurlresolved
+failovermethod=priority
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Globus
+ 
+[Globus-Updates-source]
+name=Globus - Updates Source
+baseurl=$updatesrcbaseurl
 failovermethod=priority
 enabled=0
 gpgcheck=1
