@@ -10,8 +10,6 @@ set -- ${args}
 
 baseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/\\\$basearch/"
 srcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/packages/rpm/\$osname/\\\$releasever/SRPMS/"
-updatebaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/updates/rpm/\$osname/\\\$releasever/\\\$basearch/"
-updatesrcbaseurl="http://www.globus.org/ftppub/\$majorglobusversion/\$globusversion/\$fullglobusversion/updates/rpm/\$osname/\\\$releasever/SRPMS/"
 
 reponame="Globus-repo-config"
 fullglobusversion="5.2.0"
@@ -68,6 +66,9 @@ fi
 if [ "$osver" = "" ]; then
     osver="$(lsb_release -rs)"
 fi
+
+updatebaseurl="$(echo $baseurl | sed -e 's/packages/updates/')"
+updatesrcbaseurl="$(echo $srcbaseurl | sed -e 's/packages/updates/')"
 
 if [ "$osname" = "" -o "$osver" = "" ]; then
     echo "Usage: $0 -n OSNAME -v OSVER [-b baseurl] [-s srcbaseurl] [-r repopkgname]" 1>&2
