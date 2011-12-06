@@ -1,8 +1,8 @@
 globus-gatekeeper (9.5-2) unstable; urgency=low
 
-  * disable lsb init script
+  * Update for 5.2.0 release
 
- -- Globus Support <support@globus.org>  Mon, 05 Dec 2011 23:19:03 -0500
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500
 
 globus-gatekeeper (9.5-1) unstable; urgency=low
 
