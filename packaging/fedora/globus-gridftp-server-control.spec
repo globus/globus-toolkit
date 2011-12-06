@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
+Version:	2.3
 Release:	4%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
