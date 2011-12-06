@@ -1,3 +1,9 @@
+globus-gatekeeper (9.5-2) unstable; urgency=low
+
+  * disable lsb init script
+
+ -- Globus Support <support@globus.org>  Mon, 05 Dec 2011 23:19:03 -0500
+
 globus-gatekeeper (9.5-1) unstable; urgency=low
 
   * GRAM-285: Set default gatekeeper log in native packages
