@@ -128,7 +128,6 @@ BUNDLE globus-data-management-server
 	globus_io
 	globus_gssapi_error
 	globus_ftp_control
-        gaa_util
 	gaa_core
 	gaa_plugin
 	gaa_debug
@@ -314,7 +313,6 @@ BUNDLE gt2-unthreaded
 	gaa_debug
 	gaa_gss_generic
 	gaa_plugin
-	gaa_util
 	globus_authz
 	globus_authz_callout_error
 	globus_authz_null_callout
@@ -449,7 +447,6 @@ BUNDLE globus-gram
 
 BUNDLE globus-gridftp
         gaa_core
-        gaa_util
         gaa_plugin
         globus_xio_popen_driver
         globus_xio_pipe_driver
