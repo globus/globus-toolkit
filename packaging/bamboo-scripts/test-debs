@@ -15,6 +15,7 @@ chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt
 
 chroot=""
 in_chroot=0
+test_from_bamboo=0
 
 arch="$(dpkg-architecture -qDEB_BUILD_GNU_CPU)"
 case "$arch" in
@@ -29,8 +30,7 @@ case "$arch" in
         exit 1
         ;;
 esac
-
-while getopts "ic:r:a:l:" i; do
+while getopts "ic:r:a:l:b" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -49,6 +49,10 @@ while getopts "ic:r:a:l:" i; do
             ;;
         l)
             lrms="$lrms $OPTARG"
+            ;;
+        b)
+            test_from_bamboo=1
+            chroot_args="${chroot_args:+"$chroot_args "}-b"
             ;;
     esac
 done
@@ -87,6 +91,9 @@ fi
 mkdir "$flavor"
 curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
 sudo dpkg -i "${flavor}/${repopkg_url##*/}"
+if [ "$test_from_bamboo" = 1 ]; then
+    sudo sed -i /etc/apt/sources.list.d/globus.list -e "s|http://www.globus.org/ftppub/gt[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}/[a-z]\{1,\}/deb/debian/[0-9]\{1,\}|${artifact_url}/repo|"
+fi
 sudo aptitude -y update
 
 # Install the binaries that we will test
