@@ -34,6 +34,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             globus-ftp-client-caching-get-test.pl
             globus-ftp-client-caching-transfer-test.pl
             globus-ftp-client-create-destroy-test.pl
+            globus-ftp-client-dir-test.pl
             globus-ftp-client-exist-test.pl 
             globus-ftp-client-extended-get-test.pl
             globus-ftp-client-extended-put-test.pl
