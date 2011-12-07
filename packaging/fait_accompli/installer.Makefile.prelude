@@ -41,8 +41,7 @@ distclean:
 
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_common
-i18n: gpt common globus-internationalization
-prews: gridftp prewsgram
+prews: gridftp gram
 gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk @netlogger@
 gram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus_user_env
 
