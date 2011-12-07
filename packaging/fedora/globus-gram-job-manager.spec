@@ -12,8 +12,8 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.12
-Release:	2%{?dist}
+Version:	13.13
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Wed Dec 07 2011  <bester@centos55.local> - 13.13-1
+- GRAM-292: GRAM crashes when parsing partial condor log
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 13.12-2
 - Update for 5.2.0 release
 

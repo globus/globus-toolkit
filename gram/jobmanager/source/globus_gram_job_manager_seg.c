@@ -21,7 +21,6 @@
 
 #include <sys/types.h>
 #include <utime.h>
-#include <sys/mman.h>
 #include <regex.h>
 
 typedef struct globus_gram_seg_resume_s
@@ -1115,25 +1114,77 @@ globus_l_gram_condor_poll_callback(
             }
         } while (rc == -1);
 
-        condor_log_data = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_SHARED,
-                condor_log_fd, 0);
-
-        if (condor_log_data == MAP_FAILED)
         {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                    "event=gram.condor_poll.info "
-                    "level=WARN "
-                    "message=\"%s\" "
-                    "filename=\"%s\" "
-                    "errno=%d "
-                    "reason=%s\n",
-                    "Error mapping condor log into memory",
-                    path,
-                    errno,
-                    strerror(errno));
-            goto close_log;
+            ssize_t read_res;
+            size_t amt_to_read = st.st_size;
+            size_t amt_read = 0;
+
+            condor_log_data = malloc((size_t) st.st_size + 1);
+            if (condor_log_data == NULL)
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.condor_poll.info "
+                        "level=WARN "
+                        "message=\"%s\" "
+                        "filename=\"%s\" "
+                        "size=%llu "
+                        "errno=%d "
+                        "reason=%s\n",
+                        "Error allocating memory for condor log",
+                        path,
+                        (unsigned long long) st.st_size,
+                        errno,
+                        strerror(errno));
+                goto close_log;
+            }
+            condor_log_data[(size_t) st.st_size] = 0;
+
+            while (amt_to_read > amt_read)
+            {
+                read_res = read(
+                        condor_log_fd,
+                        condor_log_data + amt_read,
+                        amt_to_read - amt_read);
+
+                if (read_res < 0 && errno == EINTR)
+                {
+                    continue;
+                }
+                else if (read_res > 0)
+                {
+                    amt_read += read_res;
+                }
+                else
+                {
+                    /* Some other error or short read */
+                    break;
+                }
+            }
+
+            if (amt_to_read != amt_read)
+            {
+                globus_gram_job_manager_log(
+                        manager,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                        "event=gram.condor_poll.info "
+                        "level=WARN "
+                        "message=\"%s\" "
+                        "filename=\"%s\" "
+                        "size=%llu "
+                        "amt_read=%llu "
+                        "errno=%d "
+                        "reason=%s\n",
+                        "Error reading condor log",
+                        path,
+                        (unsigned long long) st.st_size,
+                        (unsigned long long) amt_read,
+                        errno,
+                        strerror(errno));
+                free(condor_log_data);
+                goto close_log;
+            }
         }
 
         rc = globus_l_condor_parse_log(
@@ -1142,7 +1193,8 @@ globus_l_gram_condor_poll_callback(
                 poll_time,
                 ref,
                 &events);
-        munmap(condor_log_data, (size_t) st.st_size);
+
+        free(condor_log_data);
         ref->seg_last_size = st.st_size;
 close_log:
         close(condor_log_fd);

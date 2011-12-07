@@ -1,3 +1,9 @@
+globus-gram-job-manager (13.13-1) unstable; urgency=low
+
+  * GRAM-292: GRAM crashes when parsing partial condor log
+
+ -- Globus Toolkit <support@globus.org>  Wed, 07 Dec 2011 08:56:24 -0500
+
 globus-gram-job-manager (13.12-2) unstable; urgency=low
 
   * Update for 5.2.0 release
