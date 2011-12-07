@@ -167,13 +167,31 @@ for flavor in gcc64 gcc32; do
             sudo yum -y remove globus-gram-job-manager-fork-setup-poll
             for lrm in $lrms; do
                 if [ "${lrm}" = "condor" ]; then
-                    modes=""
+                    modes="none"
                 else
-                    modes="-setup-poll -setup-seg"
+                    modes="poll seg"
                 fi
 
                 for mode in $modes; do
-                    sudo yum -y install globus-gram-job-manager-$lrm$mode.$arch || continue
+                    lrmpkgs=""
+                    case $lrm:$mode in
+                        condor:none)
+                            lrmpkgs="globus-gram-job-manager-$lrm.$arch"
+                            ;;
+                        *:poll)
+                            lrmpkgs="globus-gram-job-manager-$lrm.$arch globus-gram-job-manager-$lrm-setup-$mode"
+                            ;;
+                        *:seg)
+                            lrmpkgs="globus-gram-job-manager-$lrm.$arch globus-gram-job-manager-$lrm-setup-$mode.$arch"
+                            ;;
+                        *:*)
+                            echo "Unexpected lrm:mode $lrm:$mode" 1>&2
+                            ;;
+                    esac
+                    if [ "$lrmpkgs" = "" ]; then
+                        continue
+                    fi
+                    sudo yum -y install $lrmpkgs || continue
                     sudo service globus-gatekeeper restart || true
                     sudo service globus-scheduler-event-generator restart || true
                     # Allow multiple processes per node if the nodes are
@@ -191,7 +209,7 @@ for flavor in gcc64 gcc32; do
                     make junit || true
                     unset CONTACT_STRING
                     unset CONTACT_LRM
-                    sudo yum -y remove globus-gram-job-manager-$lrm$mode
+                    sudo yum -y remove $lrmpkgs
                     # Stop the job manager and remove all job state, so that
                     # tests will have a clean state
                     killall globus-job-manager
