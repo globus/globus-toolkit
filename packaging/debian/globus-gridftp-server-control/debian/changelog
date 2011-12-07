@@ -1,3 +1,9 @@
+globus-gridftp-server-control (2.3-1) unstable; urgency=low
+
+  * fix mlst double space
+
+ -- Globus Toolkit <support@globus.org>  Tue, 06 Dec 2011 22:18:53 -0500
+
 globus-gridftp-server-control (2.2-2) unstable; urgency=low
 
   * Update for 5.2.0 release
