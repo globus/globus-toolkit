@@ -11,7 +11,7 @@ use strict;
 
 my $gptfile;
 my $setupfile;
-my $email;
+my $email = "support\@globus.org";
 my $nodoc;
 my $help;
 my $packagelistfile;
@@ -19,7 +19,7 @@ my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog = undef;
-my $fullname = undef;
+my $fullname = "Globus Toolkit";
 my $bumprelease = 0;
 
 GetOptions('gptfile=s' => \$gptfile,
