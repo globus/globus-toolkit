@@ -1,2 +1,0 @@
-&(executable = /bin/echo)
- (arguments  = back-ticks "(`)" are useful)
