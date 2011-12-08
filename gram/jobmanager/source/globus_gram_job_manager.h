@@ -1375,6 +1375,11 @@ void
 globus_gram_job_manager_seg_resume(
     globus_gram_job_manager_t *         manager);
 
+int
+globus_gram_job_manager_seg_parse_condor_id(
+    globus_gram_jobmanager_request_t *  request,
+    char **                             condor_id);
+
 /* globus_gram_job_manager_auditing.c */
 int
 globus_gram_job_manager_auditing_file_write(
