@@ -1,3 +1,9 @@
+globus-core (8.5-1) unstable; urgency=low
+
+  * Fix @INC handling for GLOBUS_LOCATION
+
+ -- Globus Toolkit <support@globus.org>  Thu, 08 Dec 2011 16:36:04 -0500
+
 globus-core (8.4-2) unstable; urgency=low
 
   * Update for 5.2.0 release

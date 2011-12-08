@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Dec 08 2011 Joseph Bester <bester@mcs.anl.gov> - 8.5-2
+- Fix @INC handling for GLOBUS_LOCATION
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 8.4-2
 - Update for 5.2.0 release
 
