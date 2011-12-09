@@ -287,11 +287,16 @@ globus_result_t hdfs_get_checksum(hdfs_handle_t *hdfs_handle, const char * pathn
     if (hdfsRead(fs, fh, buffer, OUTPUT_BUFFER_SIZE-1) <= 0) {
         SystemError(hdfs_handle, "Failed to read checksum file", rc);
     }
-    unsigned short length = 0;
+    unsigned length = 0;
     const char * ptr = buffer;
     *cksm_value = NULL;
     // Raise your hand if you hate string parsing in C.
     while (sscanf(ptr, "%s%n", cksm, &length) == 1) {
+        //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Checksum line: %s.\n", cksm);
+        if (strlen(cksm) < 2) {
+            GenericError(hdfs_handle, "Too-short entry for checksum", rc);
+            break;
+        }
         val = strchr(cksm, ':');
         if (val == NULL) {
             GenericError(hdfs_handle, "Invalid format of checksum entry.", rc);

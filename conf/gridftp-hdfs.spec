@@ -2,6 +2,8 @@
 # OSG packaging is a bit different from Globus
 %if "0%{?dist}" == "0.osg"
 %define _osg 1
+%else
+%define _osg 0
 %endif
 
 
@@ -65,7 +67,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 %if %_osg
 rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
 %else
-rm $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}-environment
+rm $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}-environment-bootstrap
 %endif
 
 %clean
@@ -75,12 +77,14 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/ldconfig
 
 %if %_osg
+/sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
 %else
 /sbin/chkconfig --add %{name}
 %endif
 
 %preun
 if [ "$1" = "0" ] ; then
+    /sbin/service xinetd condrestart >/dev/null 2>&1
 %if %_osg
     /sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
 %else
@@ -92,10 +96,10 @@ fi
 %postun
 /sbin/ldconfig
 if [ "$1" -ge "1" ]; then
+    /sbin/service xinetd condrestart >/dev/null 2>&1
 %if %_osg
     /sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
 %else
-    /sbin/service xinetd condrestart >/dev/null 2>&1
     /sbin/service gridftp-hdfs condrestart >/dev/null 2>&1 || :
 %endif
 fi
@@ -113,7 +117,7 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}
 %if %_osg
-%{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}-environment
+%{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}-environment-bootstrap
 %else
 %{_sysconfdir}/init.d/%{name}
 %endif

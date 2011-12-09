@@ -71,7 +71,6 @@ close_and_clean(hdfs_handle_t *hdfs_handle, globus_result_t rc) {
     globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "receive %d blocks of size %d bytes\n",
         hdfs_handle->io_count, hdfs_handle->io_block_size);
 
-    unsigned char final_cksm[MD5_DIGEST_LENGTH];
     unsigned char final_cksm_human[2*MD5_DIGEST_LENGTH+1];
     
     if (hdfs_handle->cksm_types) {
@@ -243,7 +242,7 @@ hdfs_recv(
             globus_libc_strdup(transfer_info->expected_checksum);
     }
     if (transfer_info->expected_checksum_alg) {
-        hdfs_parse_checksums(hdfs_handle, transfer_info->expected_checksum_alg);
+        hdfs_parse_checksum_types(hdfs_handle, transfer_info->expected_checksum_alg);
     }
 
     hdfs_initialize_checksums(hdfs_handle);

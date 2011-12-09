@@ -278,6 +278,16 @@ hdfs_command(
         break;
     case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
         break;
+    case GLOBUS_GFS_CMD_SITE_CHGRP:
+        break;
+    case GLOBUS_GFS_CMD_SITE_UTIME:
+        break;
+    case GLOBUS_GFS_CMD_SITE_SYMLINKFROM:
+        break;
+    case GLOBUS_GFS_CMD_SITE_SYMLINK:
+        break;
+    case GLOBUS_GFS_CMD_DCSC:
+        break;
     }
 
     globus_gridftp_server_finished_command(op, result, return_value);
