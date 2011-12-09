@@ -215,14 +215,29 @@ hdfs_command(
     globus_gfs_command_info_t *         cmd_info,
     void *                              user_arg)
 {
+    globus_result_t                    result;
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     GlobusGFSName(hdfs_command);
 
+    char * return_value = GLOBUS_NULL;
+
     hdfs_handle = (globus_l_gfs_hdfs_handle_t *) user_arg;
 
-    int success = GLOBUS_FALSE;
+    GlobusGFSErrorSystemError("command", ENOSYS);
     switch (cmd_info->command) {
     case GLOBUS_GFS_CMD_MKD:
+{
+        errno = 0;
+        if (hdfsCreateDirectory(hdfs_handle->fs, cmd_info->pathname) == -1) {
+            if (errno) {
+                result = GlobusGFSErrorSystemError("mkdir", errno);
+            } else {
+                GenericError(hdfs_handle, "Unable to create directory (reason unknown)", result);
+            }
+        } else {
+            result = GLOBUS_SUCCESS;
+        }
+}
         break;
     case GLOBUS_GFS_CMD_RMD:
         break;
@@ -233,6 +248,21 @@ hdfs_command(
     case GLOBUS_GFS_CMD_RNFR:
         break;
     case GLOBUS_GFS_CMD_CKSM:
+{
+        if ((cmd_info->cksm_offset != 0) || (cmd_info->cksm_length != -1)) {
+            GenericError(hdfs_handle, "Unable to retrieve partial checksums", result);
+            break;
+        }
+        char * value = NULL;
+        if ((result = hdfs_get_checksum(hdfs_handle, cmd_info->pathname, cmd_info->cksm_alg, &value)) != GLOBUS_SUCCESS) {
+            break;
+        }
+        if (value == NULL) {
+            GenericError(hdfs_handle, "Unable to retrieve check", result);
+            break;
+        }
+        return_value = value;
+}
         break;
     case GLOBUS_GFS_CMD_SITE_CHMOD:
         break;
@@ -249,10 +279,12 @@ hdfs_command(
     case GLOBUS_GFS_CMD_SITE_CLIENTINFO:
         break;
     }
-    if (success)
-        globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, GLOBUS_NULL);
-    else
-        globus_gridftp_server_finished_command(op, GLOBUS_FAILURE, GLOBUS_NULL);
+
+    globus_gridftp_server_finished_command(op, result, return_value);
+
+    if (return_value) {
+        free(return_value);
+    }
 }
 
 /*************************************************************************

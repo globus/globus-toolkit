@@ -205,5 +205,12 @@ globus_result_t
 hdfs_save_checksum(
     hdfs_handle_t *    hdfs_handle);
 
+globus_result_t
+hdfs_get_checksum(
+    hdfs_handle_t *    hdfs_handle,
+    const char *       pathname,
+    const char *       requested_cksm, 
+    char **            cksm_value);
+
 #pragma GCC visibility pop
 

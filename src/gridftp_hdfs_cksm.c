@@ -246,6 +246,102 @@ globus_result_t hdfs_save_checksum(hdfs_handle_t *hdfs_handle) {
     return rc;
 }
 
+/*
+ *  Retrieve checksums.
+ */
+globus_result_t hdfs_get_checksum(hdfs_handle_t *hdfs_handle, const char * pathname, const char * requested_cksm, char**cksm_value) {
+
+    globus_result_t rc = GLOBUS_SUCCESS;
+
+    GlobusGFSName(hdfs_get_checksum);
+
+    hdfsFS fs = hdfsConnectAsUser("default", 0, "root");
+    if (fs == NULL) {
+        SystemError(hdfs_handle, "Failure in connecting to HDFS for checksum upload", rc);
+        return rc;
+    }
+
+    // Not used in this function except in the contents of the error message.
+    hdfs_handle->pathname = strdup(pathname);
+
+    size_t cksm_len = strlen(hdfs_handle->cksm_root);
+    size_t path_len = strlen(pathname);
+    size_t filelen = cksm_len + path_len + 2;
+    char * filename = malloc(filelen);
+    if (!filename) {
+        MemoryError(hdfs_handle, "Unable to allocate new filename", rc);
+    }
+    memcpy(filename, hdfs_handle->cksm_root, cksm_len);
+    filename[cksm_len] = '/';
+    memcpy(filename+cksm_len+1, pathname, path_len);
+    filename[filelen-1] = '\0';
+
+    hdfsFile fh = hdfsOpenFile(fs, filename, O_RDONLY, 0, 0, 0);
+    if (fh == NULL) {
+        SystemError(hdfs_handle, "Failed to open checksum file", rc);
+        return rc;
+    }
+
+    char buffer[OUTPUT_BUFFER_SIZE], cksm[OUTPUT_BUFFER_SIZE], *val;
+    buffer[OUTPUT_BUFFER_SIZE-1] = '\0';
+    if (hdfsRead(fs, fh, buffer, OUTPUT_BUFFER_SIZE-1) <= 0) {
+        SystemError(hdfs_handle, "Failed to read checksum file", rc);
+    }
+    unsigned short length = 0;
+    const char * ptr = buffer;
+    *cksm_value = NULL;
+    // Raise your hand if you hate string parsing in C.
+    while (sscanf(ptr, "%s%n", cksm, &length) == 1) {
+        val = strchr(cksm, ':');
+        if (val == NULL) {
+            GenericError(hdfs_handle, "Invalid format of checksum entry.", rc);
+            break;
+        }
+        *val = '\0';
+        val++;
+        if (*val == '\0') {
+            GenericError(hdfs_handle, "Checksum value not specified", rc);
+            break;
+        }
+        if (strcmp(cksm, requested_cksm) == 0) {
+            *cksm_value = strdup(val);
+            break;
+        }
+        ptr += length;
+        if (*ptr == '\0') {
+            break;
+        }
+        if (*ptr != '\n') {
+            // Error;
+            GenericError(hdfs_handle, "Invalid format of checksum entry (Not a newline)", rc);
+            break;
+        }
+        ptr += 1;
+        if (*ptr == '\0') {
+            GenericError(hdfs_handle, "Unexpected null", rc);
+            break;
+        }
+    }
+
+    if (*cksm_value == NULL) {
+        GenericError(hdfs_handle, "Failed to retrieve checksum", rc);
+    }
+
+    // return -1 on err
+    if (hdfsCloseFile(fs, fh) < 0) {
+        SystemError(hdfs_handle, "Failed to close checksum file", rc);
+    }
+
+    if (rc == GLOBUS_SUCCESS) {
+        globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "Got checksum (%s:%s) for %s.\n", requested_cksm, *cksm_value, filename);
+    }
+
+    if (hdfs_handle->pathname) {
+        free(hdfs_handle->pathname);
+    }
+    // Note we purposely leak the filesystem handle (fs), as Hadoop has disconnect issues.
+    return rc;
+}
 
 void
 hdfs_parse_checksum_types(hdfs_handle_t * hdfs_handle, const char * types) {

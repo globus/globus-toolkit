@@ -41,7 +41,6 @@ hdfs_stat(
     int                                 stat_count = 0;
     char                                basepath[MAXPATHLEN];
     char                                filename[MAXPATHLEN];
-    char                                symlink_target[MAXPATHLEN];
     char *                              PathName;
     globus_l_gfs_hdfs_handle_t *       hdfs_handle;
     GlobusGFSName(globus_l_gfs_hdfs_stat);
@@ -66,7 +65,6 @@ hdfs_stat(
 
     hdfsFileInfo * fileInfo = NULL;
 
-    /* lstat is the same as stat when not operating on a link */
     if((fileInfo = hdfsGetPathInfo(hdfs_handle->fs, PathName)) == NULL)
     {
         if (errno)
@@ -95,7 +93,7 @@ hdfs_stat(
         }
         
         globus_l_gfs_file_copy_stat(
-            stat_array, fileInfo, filename, symlink_target);
+            stat_array, fileInfo, filename, NULL);
         hdfsFreeFileInfo(fileInfo, 1);
         stat_count = 1;
     }
@@ -265,23 +263,15 @@ globus_l_gfs_file_copy_stat(
     stat_object->name = NULL;
     if(filename && *filename)
     {
-        // If the filename starts with hdfs://hostname/, strip out the hdfs://hostname
-        const char prefix[] = "hdfs://";
-        int prefix_len = strlen(prefix);
-        const char * real_filename = strstr(filename, prefix);
-        if (real_filename == filename) // Check if filename starts with hdfs://
-        {
-            real_filename += prefix_len;
-            real_filename = strchr(real_filename, '/');
-            if (real_filename != NULL)
-            {
-                stat_object->name = strdup(real_filename);
+        const char * real_filename = filename;
+        while (strchr(real_filename, '/')) {
+            if (*(real_filename+1) != '\0') {
+                real_filename++;
+            } else {
+                break;
             }
         }
-        if (stat_object->name == NULL)
-        {
-            stat_object->name = strdup(filename);
-        }
+        stat_object->name = strdup(real_filename);
     }
     if(symlink_target && *symlink_target)
     {

@@ -1,5 +1,12 @@
+
+# OSG packaging is a bit different from Globus
+%if "0%{?dist}" == "0.osg"
+%define _osg 1
+%endif
+
+
 Name:           gridftp-hdfs
-Version:        0.5.1
+Version:        0.5.3
 Release:        1
 Summary:        HDFS DSI plugin for GridFTP
 
@@ -55,26 +62,42 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 
 # Remove the init script - in GT5.2, this gets bootstrapped appropriately
-# rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
+%if %_osg
+rm $RPM_BUILD_ROOT%{_sysconfdir}/init.d/%{name}
+%else
+rm $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}-environment
+%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/ldconfig
+
+%if %_osg
+%else
 /sbin/chkconfig --add %{name}
+%endif
 
 %preun
 if [ "$1" = "0" ] ; then
-    /sbin/service gridftp-hdfs stop >/dev/null 2>&1
+%if %_osg
+    /sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
+%else
+    /sbin/service %{name} stop >/dev/null 2>&1 || :
     /sbin/chkconfig --del %{name}
+%endif
 fi
 
 %postun
 /sbin/ldconfig
 if [ "$1" -ge "1" ]; then
+%if %_osg
+    /sbin/service globus-gridftp-server condrestart >/dev/null 2>&1 || :
+%else
     /sbin/service xinetd condrestart >/dev/null 2>&1
     /sbin/service gridftp-hdfs condrestart >/dev/null 2>&1 || :
+%endif
 fi
 
 %files
@@ -83,15 +106,25 @@ fi
 %{_bindir}/gridftp-hdfs-standalone
 %{_libdir}/libglobus_gridftp_server_hdfs.so*
 %{_datadir}/%{name}/%{name}-environment
-%{_sysconfdir}/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/xinetd.d/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp-debug.conf
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp-inetd.conf
 %config(noreplace) %{_sysconfdir}/%{name}/gridftp.conf
 %config(noreplace) %{_sysconfdir}/%{name}/replica-map.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}
+%if %_osg
+%{_sysconfdir}/sysconfig/gridftp.conf.d/%{name}-environment
+%else
+%{_sysconfdir}/init.d/%{name}
+%endif
 
 %changelog
+* Tue Dec 06 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.3-1
+- Initial support for GlobusOnline.
+
+* Sat Nov 19 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.2-1
+- Implement checksum support for gridftp-hdfs.
+
 * Sat Oct 15 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.1-1
 Migrate as much of the RPM as possible to the OSG-style of gridftp initialization while maintaining GT 52 compatibility.
 
