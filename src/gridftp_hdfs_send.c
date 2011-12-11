@@ -214,6 +214,7 @@ hdfs_finish_read_cb(
     }
     if (nbytes == 0) {
         rc = result;
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Read of size zero.\n");
         goto cleanup;
     }
 
@@ -251,7 +252,7 @@ cleanup:
     if (!is_done(hdfs_handle)) {
         hdfs_dispatch_read(hdfs_handle);
     } else if (hdfs_handle->outstanding == 0) {
-
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Transfer has finished!\n");
         rc = close_and_clean(hdfs_handle, rc);
         globus_gridftp_server_finished_transfer(hdfs_handle->op, rc);
         
@@ -264,6 +265,9 @@ cleanup:
         globus_gridftp_server_finished_transfer(op, rc);
     } else {
         // Nothing to do if we are done and there was no error, but outstanding transfers exist.
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,
+            "Transfer finished successfully; %i outstanding reads left over.\n", hdfs_handle->outstanding);
+        // Note we do NOT call globus_gridftp_server_finished_transfer yet!
     }
     globus_mutex_unlock(hdfs_handle->mutex);
 
@@ -277,8 +281,9 @@ hdfs_perform_read_cb(
     hdfs_read_t *read_op = (hdfs_read_t*) user_arg;
     hdfs_handle_t *hdfs_handle = read_op->hdfs_handle;
     globus_size_t idx = read_op->idx;
+    //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Starting read for buffer %u.\n", idx);
     globus_result_t rc = GLOBUS_SUCCESS;
-    globus_size_t read_length, cur_read_length;
+    globus_size_t read_length, remaining_read;
     globus_off_t offset, cur_offset;
     globus_ssize_t nbytes;
 
@@ -290,22 +295,27 @@ hdfs_perform_read_cb(
     // Check to see if we can short-circuit
     globus_bool_t short_circuit = GLOBUS_FALSE;
     globus_mutex_lock(hdfs_handle->mutex);
-    if (is_done(hdfs_handle) && hdfs_handle->done_status != GLOBUS_SUCCESS) short_circuit = GLOBUS_TRUE;
+    if (is_done(hdfs_handle) && (hdfs_handle->done_status != GLOBUS_SUCCESS)) {
+        short_circuit = GLOBUS_TRUE;
+    }
     globus_mutex_unlock(hdfs_handle->mutex);
-    if (short_circuit) goto cleanup;
+    if (short_circuit) {
+        goto cleanup;
+    }
 
     if (hdfs_handle->syslog_host != NULL) {
         syslog(LOG_INFO, hdfs_handle->syslog_msg, "READ", read_length, hdfs_handle->io_count);
     }
-    globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,
-        "hdfs_perform_read_cb for %d@%d.\n", read_length, offset);
+    //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP,
+    //    "hdfs_perform_read_cb for %u@%lu.\n", read_length, offset);
 
-    cur_read_length = read_length;
+    remaining_read = read_length;
     cur_offset = offset;
-    while (cur_read_length != 0) {
-       nbytes = hdfsPread(hdfs_handle->fs, hdfs_handle->fd, cur_offset, cur_buffer_pos, cur_read_length);
+    while (remaining_read != 0) {
+       nbytes = hdfsPread(hdfs_handle->fs, hdfs_handle->fd, cur_offset, cur_buffer_pos, remaining_read);
        if (nbytes == 0) {    /* eof */
            // No error
+           globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "hdfs_perform_read_cb EOF.\n");
            globus_mutex_lock(hdfs_handle->mutex);
            set_done(hdfs_handle, GLOBUS_SUCCESS);
            globus_mutex_unlock(hdfs_handle->mutex);
@@ -314,17 +324,19 @@ hdfs_perform_read_cb(
            SystemError(hdfs_handle, "reading from HDFS", rc)
            goto cleanup;
        }
-       globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Read size %d of %d\n", nbytes, cur_read_length);
-       cur_read_length -= nbytes;
+       //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Read size %d of %d requested\n", nbytes, remaining_read);
+       remaining_read -= nbytes;
        cur_buffer_pos += nbytes;
        cur_offset += nbytes;
     }
 
-    globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Read length: %d; remaining: %d\n", read_length, read_length - cur_read_length);
-    if (read_length != cur_read_length) {
+    //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Read length: %d; remaining: %d\n", read_length, remaining_read);
+    if (read_length != remaining_read) {
+        // If we read anything at all, write it out to the client.
+        // When the write to the network is finished, hdfs_finish_read_cb will be called.
         rc = globus_gridftp_server_register_write(hdfs_handle->op,
             buffer_pos,
-            read_length - cur_read_length,
+            read_length - remaining_read,
             offset,
             -1, // Stripe index
             hdfs_finish_read_cb,
@@ -334,6 +346,7 @@ hdfs_perform_read_cb(
             goto cleanup;
         }
     } else {
+        //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Zero-length read; call finish_read_cb directly.\n");
         hdfs_finish_read_cb(hdfs_handle->op, rc, NULL, 0, (void*)hdfs_handle);
     }
 
@@ -342,8 +355,10 @@ cleanup:
     free(read_op);
 
     if (short_circuit || (rc != GLOBUS_SUCCESS)) {
+        globus_mutex_lock(hdfs_handle->mutex);
         set_done(hdfs_handle, rc);
         globus_mutex_unlock(hdfs_handle->mutex);
+        //globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Short-circuit read.\n");
         // Call finish_read_op directly.
         hdfs_finish_read_cb(hdfs_handle->op, rc, buffer_pos,
             read_length, (void*)hdfs_handle);
@@ -405,12 +420,13 @@ hdfs_dispatch_read(
             NULL,
             hdfs_perform_read_cb,
             hdfs_read_handle);
-        hdfs_handle->outstanding++;
 
         if (rc != GLOBUS_SUCCESS) {
             globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, "Failed to create callback\n");
             break;
         }
+        hdfs_handle->outstanding++;
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "Issued read from buffer %u (outstanding=%u).\n", idx, hdfs_handle->outstanding);
 
         hdfs_handle->offset += read_length;
         if (hdfs_handle->op_length != -1) { 
