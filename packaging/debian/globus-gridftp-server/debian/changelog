@@ -1,3 +1,9 @@
+globus-gridftp-server (6.5-1) unstable; urgency=low
+
+  * Fix init script problems
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500
+
 globus-gridftp-server (6.4-2) unstable; urgency=low
 
   * Update for 5.2.0 release

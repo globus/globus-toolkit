@@ -1,5 +1,11 @@
 globus-common (14.5-2) unstable; urgency=low
 
+  * Fix globus-version command
+
+ -- Globus Toolkit <support@globus.org>  Mon, 12 Dec 2011 10:42:37 -0500
+
+globus-common (14.5-2) unstable; urgency=low
+
   * Update for 5.2.0 release
 
  -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500

@@ -12,8 +12,8 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.4
-Release:	3%{?dist}
+Version:	6.5
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
@@ -174,6 +174,9 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 6.5-1
+- init script fixes
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 6.4-3
 - Update for 5.2.0 release
 

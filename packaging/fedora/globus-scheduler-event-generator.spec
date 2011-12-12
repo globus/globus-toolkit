@@ -12,8 +12,8 @@
 
 Name:		globus-scheduler-event-generator
 %global _name %(tr - _ <<< %{name})
-Version:	4.3
-Release:	3%{?dist}
+Version:	4.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Scheduler Event Generator
 
 Group:		System Environment/Libraries
@@ -216,6 +216,9 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 4.4-1
+- init script fixes
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 4.3-3
 - Update for 5.2.0 release
 

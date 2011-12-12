@@ -1,3 +1,9 @@
+globus-gatekeeper (9.6-1) unstable; urgency=low
+
+  * Fix debian/init script interaction
+
+ -- Globus Toolkit <support@globus.org>  Mon, 12 Dec 2011 09:40:38 -0500
+
 globus-gatekeeper (9.5-2) unstable; urgency=low
 
   * Update for 5.2.0 release

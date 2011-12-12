@@ -12,8 +12,8 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.5
-Release:	3%{?dist}
+Version:	9.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
@@ -116,6 +116,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 9.6-1
+- init script fixes
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 9.5-3
 - Update for 5.2.0 release
 
