@@ -1,3 +1,15 @@
+globus-scheduler-event-generator (4.4-1) unstable; urgency=low
+
+  * Fix init scripts
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 11:55:42 -0500
+
+globus-scheduler-event-generator (4.3-2) unstable; urgency=low
+
+  * Update for 5.2.0 release
+
+ -- Globus Toolkit <support@globus.org>  Mon, 05 Dec 2011 17:42:01 -0500
+
 globus-scheduler-event-generator (4.3-1) unstable; urgency=low
 
   * Remove obsolete get-orig-source rules

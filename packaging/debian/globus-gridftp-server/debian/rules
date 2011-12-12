@@ -71,6 +71,7 @@ configure-stamp: sed-stamp
 	   --mandir='$${datadir}/man' \
 	   --infodir='$${datadir}/info' \
 	   --sysconfdir=/etc/$(name) \
+	   --with-default-runlevels=2345 \
 	   --disable-static \
 	   --with-flavor=$(flavor)
 
