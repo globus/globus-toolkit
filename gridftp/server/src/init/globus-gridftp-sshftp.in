@@ -2,8 +2,16 @@
 #
 # globus-gridftp-sshftp	
 #
-# chkconfig: 2345 20 80
+# chkconfig: @CHKCONFIG_DEFAULT@ 20 80
 # description: Controls sshftp access to the globus-gridftp-server.
+### BEGIN INIT INFO
+# Provides:          globus-gridftp-sshftp
+# Required-Start:    $network $time
+# Required-Stop:
+@DEFAULT_START_LINE@
+@DEFAULT_STOP_LINE@
+# Short-Description: Globus GridFTP SSHFTP
+### END INIT INFO
 #
 
 @GLOBUS_SCRIPT_INITIALIZER@
