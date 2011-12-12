@@ -1,27 +1,32 @@
 #!/bin/bash
 #
 # globus-gridftp-server	- Globus GridFTP Server
-# chkconfig: - 20 80
+# chkconfig: @CHKCONFIG_DEFAULT@ 20 80
 # description: The Globus GridFTP server is a process which \
 #              implements the GridFTP protocol for secure, high-performance \
 #              file transfer.
 #
-## BEGIN INIT INFO
+
+### BEGIN INIT INFO
 # Provides: globus-gridftp-server
 # Required-Start: $network $local_fs
+# Required-Stop:
+@DEFAULT_START_LINE@
+@DEFAULT_STOP_LINE@
 # Short-Description: Globus GridFTP Server
 # Description: The Globus GridFTP server is a process which implements the
 # GridFTP protocol for secure, high-performance file transfer.
-## END INIT INFO
+### END INIT INFO
 
 @GLOBUS_SCRIPT_INITIALIZER@
 
 lsb=""
 if [ -f /lib/lsb/init-functions ]; then
     lsb=_lsb
+    lsb_ok=1
     . /lib/lsb/init-functions
-    if ! lsb_release -v | grep -q 'core-[123]'; then
-        lsb_version_ge4=1
+    if [ -f /etc/redhat-release ] && lsb_release -v | grep -q 'core-[123]'; then
+        unset lsb_ok
     fi
 
 fi
@@ -71,7 +76,7 @@ start_lsb()
         mkdir $confdir;
     fi
 
-    start_daemon ${lsb_version_ge4:+-p "$pidfile"} "$gridftpd" -S -c $conf \
+    start_daemon ${lsb_ok:+-p "$pidfile"} "$gridftpd" -S -c $conf \
             -C $confdir -pidfile "${pidfile}"
     rc=$?
      
@@ -108,7 +113,7 @@ stop()
 
 stop_lsb()
 {
-    killproc -p "$pidfile" "$gridftpd"
+    killproc ${lsb_ok:+-p "$pidfile"} "$gridftpd"
     rc=$?
     if [ $rc -eq 0 ]; then
         log_success_msg "Stopped GridFTP Server"
@@ -146,7 +151,7 @@ reload()
 
 reload_lsb()
 {
-    killproc -p "$pidfile" "$gridftpd" -HUP
+    killproc ${lsb_ok:+-p "$pidfile"} "$gridftpd" -HUP
     rc=$?
     if [ $rc -eq 0 ]; then
         log_success_msg "Reloaded GridFTP Server Configuration"
@@ -181,7 +186,7 @@ status()
 
 status_lsb()
 {
-    pid="$(pidofproc -p "$pidfile")"
+    pid="$(pidofproc ${lsb_ok:+-p "$pidfile"} "$gridftpd")"
     rc=$?
     case $rc in
         0)
@@ -195,6 +200,12 @@ status_lsb()
                 echo "Stale lock file for GridFTP Server"
             else
                 echo "GridFTP Server is not running"
+            fi
+            ;;
+        4)
+            if [ -n "$lsb_ok" -a ! -f "${pidfile}" ]; then
+                echo "$gridftpd is not running"
+                rc=0
             fi
             ;;
         *)

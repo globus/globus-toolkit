@@ -101,6 +101,7 @@ extern void unsetenv();
 #include "openssl/pem.h"
 
 
+char *pidpath = NULL;
 static gss_OID_desc gss_ext_x509_cert_chain_oid_desc =
      {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
 static gss_OID_desc * gss_ext_x509_cert_chain_oid =
@@ -308,6 +309,11 @@ terminate(int s)
         }
         listener_fd = -1;
     }
+    if (pidpath)
+    {
+        remove(pidpath);
+    }
+
     failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
 }
 
@@ -485,7 +491,6 @@ main(int xargc,
     int    rc;
     globus_socklen_t   namelen;
     globus_sockaddr_t name;
-    char *pidpath = NULL;
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
@@ -1126,6 +1131,7 @@ main(int xargc,
 
             if (pid == 0)
             {
+                pidpath = NULL;
                 (void) setsid();
 #               if defined(__hpux) || defined(TARGET_ARCH_SOLARIS)
                 {

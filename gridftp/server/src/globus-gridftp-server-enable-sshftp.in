@@ -21,11 +21,11 @@ BEGIN
 {
     if(exists $ENV{GLOBUS_LOCATION})
     {
-        push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+        unshift(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
     }
     else
     {
-        push(@INC, '@libdir@/perl');
+        unshift(@INC, '@perlmoduledir@');
     }
 }
 

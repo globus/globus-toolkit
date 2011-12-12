@@ -5,8 +5,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          globus-scheduler-event-generator
-# Required-Start:    $network $time
-# Required-Stop:     $network
+# Required-Start:    $time
+# Required-Stop:
 @DEFAULT_START_LINE@
 @DEFAULT_STOP_LINE@
 # Short-Description: Globus Scheduler Event Generator
