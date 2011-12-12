@@ -35,6 +35,7 @@ int main(int argc, char * argv[])
     int                                 token_status;
     gss_ctx_id_t                        accept_context = GSS_C_NO_CONTEXT;
     OM_uint32                           ret_flags = 0;
+    OM_uint32                           flags = 0;
     int                                 sock, connect_sock;
     FILE *                              infd;
     FILE *                              outfd;
@@ -145,43 +146,27 @@ int main(int argc, char * argv[])
                 " for initiator: %s\n", __LINE__, init_name);
     }
 
-    /*
-    
-    major_status = globus_gss_assist_get_unwrap(
-        &minor_status,
-        accept_context,
-        &recv_buffer,
-        &buffer_length,
-        &token_status,
-        globus_gss_assist_token_get_fd,
-        (void *) (infd),
-        stdout);
-    if(GSS_ERROR(major_status))
+    major_status = gss_inquire_context(
+            &minor_status,
+            accept_context,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            &flags,
+            NULL,
+            NULL);
+
+    if (major_status == GSS_S_COMPLETE)
     {
-        globus_gss_assist_display_status(
-            stdout,
-            "ACCEPTOR: Couldn't get encrypted message from initiator\n",
-            major_status,
-            minor_status,
-            0);
-        exit(1);
+        if (!(flags & GSS_C_TRANS_FLAG))
+        {
+            fprintf(stderr, "Skipping gss-assist-expimp-test: not implemented\n");
+            return EXIT_SUCCESS;
+        }
     }
 
-    print_buffer = malloc(buffer_length + 1);
-    globus_libc_snprintf(print_buffer, buffer_length + 1, "%s", recv_buffer);
-    
-    if(verbose_env)
-    {
-        fprintf(stdout,
-                "ACCEPTOR: "__FILE__":%d"
-                ": received: %s\n", __LINE__, print_buffer);
-    }
 
-    free(print_buffer);
-    free(recv_buffer);
-
-    */
-    
     context_outfile = fopen(ACCEPT_CONTEXT_FILE, "w");
     if(!context_outfile)
     {
