@@ -8,15 +8,15 @@
 
 Name:		globus-gram-job-manager-scripts
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
-Release:	3%{?dist}
+Version:	4.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Job ManagerScripts
 
 Group:		Applications/Internet
 BuildArch:	noarch
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/updates/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs >= 14
@@ -76,7 +76,12 @@ cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | sed s!^!%{_prefix}! > package.filelist
+
+grep /man/ $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
+  | sed -e 's!/man/.*!&*!' -e 's!^!%doc %{_prefix}!' >> package.filelist
+
 cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
+  | grep -v /man/ \
   | sed 's!^!%doc %{_prefix}!' > package-doc.filelist
 
 %clean
@@ -96,8 +101,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
-* Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-3
-- Update for 5.2.0 release
+* Tue Dec 13 2011 Joseph Bester <bester@mcs.anl.gov> - 4.2-1
+- Add manpage for globus-gatekeeper-admin.8
 
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-2
 - Last sync prior to 5.2.0
