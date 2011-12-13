@@ -13,7 +13,7 @@ include /usr/share/quilt/quilt.make
 
 name = globus-gram-job-manager-scripts
 _name = globus_gram_job_manager_scripts
-version = 4.1
+version = 4.2
 
 INSTALLDIR = $(CURDIR)/debian/tmp
 GLOBUSPACKAGEDIR = $(INSTALLDIR)$(_datadir)/globus/packages
@@ -117,7 +117,10 @@ install: build-stamp
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_data.filelist \
 	    $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_pgm.filelist \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name).install
+	grep /man/ $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
+	  | sed s!^!debian/tmp$(_prefix)! >> debian/$(name).install
 	cat $(GLOBUSPACKAGEDIR)/$(_name)/noflavor_doc.filelist \
+	  | grep -v /man/ \
 	  | sed s!^!debian/tmp$(_prefix)! > debian/$(name)-doc.install
 
 binary-indep: install

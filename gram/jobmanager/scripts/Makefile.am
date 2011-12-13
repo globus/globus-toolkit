@@ -18,11 +18,14 @@ globusperl_DATA = \
 perldoc_DATA = JobManager.html JobDescription.html
 
 doc_DATA = GLOBUS_LICENSE
+man_MANS = globus-gatekeeper-admin.8
 
 # Files which we want to put in the source package
 EXTRA_DIST = globus-job-manager-script.pl.in \
             JobDescription.pm.in \
             JobManager.pm StdioMerger.pm $(perldoc_DATA) \
+            globus-gatekeeper-admin-manual.xml \
+            globus-gatekeeper-admin.8 \
 	    $(doc_DATA)
 
 SUFFIXES = .pm .html
