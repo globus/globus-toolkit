@@ -30,7 +30,7 @@ my @cleanup_pids;
 my @cleanup_files;
 my $gfs_working_dir=$ENV{GLOBUS_LOCATION}."/test/globus_gridftp_server_test";
 my $gfs_subject;
-my $g_server_args="-disable-usage-stats -no-fork -control-interface 127.0.0.1";
+my $g_server_args="-disable-usage-stats -no-fork -control-interface 127.0.0.1 -c none";
 
 sub gfs_next_test()
 {
