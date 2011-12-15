@@ -16,6 +16,7 @@ chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt
 chroot=""
 in_chroot=0
 test_from_bamboo=0
+tag=""
 
 arch="$(dpkg-architecture -qDEB_BUILD_GNU_CPU)"
 case "$arch" in
@@ -30,7 +31,7 @@ case "$arch" in
         exit 1
         ;;
 esac
-while getopts "ic:r:a:l:b" i; do
+while getopts "ic:r:a:l:bt:" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -49,6 +50,10 @@ while getopts "ic:r:a:l:b" i; do
             ;;
         l)
             lrms="$lrms $OPTARG"
+            ;;
+        t)
+            tag="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-t $OPTARG"
             ;;
         b)
             test_from_bamboo=1
@@ -79,7 +84,7 @@ fi
 
 # Create source packages for the tests
 if [ "$in_chroot" != 1 ]; then
-    ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
+    ./make-packages.pl ${tag:+-t "$tag"} -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
         -flavor=${flavor} -skipbundle
 fi
 
