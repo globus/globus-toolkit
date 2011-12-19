@@ -55,6 +55,15 @@ if test "$ac_cv_have_libxml2" = "yes"; then
     AC_DEFINE(HAVE_LIBXML2)
 fi
 
+dnl Some preprocessor tricks to get CMSG_SPACE and co. defined in <sys/socket.h>
+case $host in
+       *solaris*)
+           AC_DEFINE(__EXTENSIONS__)
+           AC_DEFINE(_XOPEN_SOURCE)
+           AC_DEFINE(_XOPEN_SOURCE_EXTENDED)
+       ;;
+esac
+
 AM_CONDITIONAL([GENERATE_MANPAGES], [test "$xml_catalog_path" != "notset"])
 AC_DEFINE_UNQUOTED(GLOBUS_FLAVOR_NAME, "$GLOBUS_FLAVOR_NAME")
 
