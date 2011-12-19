@@ -14,7 +14,7 @@ logrotatedir = ${sysconfdir}/logrotate.d
 
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager.la
-sbin_PROGRAMS = globus-job-manager globus-gram-streamer globus-job-manager-lock-test
+sbin_PROGRAMS = globus-job-manager globus-gram-streamer
 
 bin_SCRIPTS = globus-personal-gatekeeper
 validation_DATA = globus-gram-job-manager.rvf
@@ -44,7 +44,6 @@ libglobus_gram_job_manager_la_SOURCES = \
         tg_gateway.c
 
 globus_job_manager_SOURCES = main.c
-globus_job_manager_lock_test_SOURCES = lock_test.c
 
 # Compiler flags
 INCLUDES = $(GPT_INCLUDES) $(XML_CPPFLAGS)
