@@ -31,7 +31,6 @@ localstatedir='@localstatedir@'
 
 setupdir='@setupdir@'
 testdir='@testdir@'
-includedir='@includedir@'
 flavorincludedir='@flavorincludedir@'
 pkgdir='@pkgdir@'
 aclocaldir='@aclocaldir@'
