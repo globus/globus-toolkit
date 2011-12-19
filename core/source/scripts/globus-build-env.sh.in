@@ -40,6 +40,7 @@ mandir='@mandir@'
 sysconfdir='@sysconfdir@'
 sharedstatedir='@sharedstatedir@'
 localstatedir='@localstatedir@'
+GLOBUS_FLAVOR_NAME='@GLOBUS_FLAVOR_NAME@'
 
 setupdir='@setupdir@'
 testdir='@testdir@'
@@ -100,6 +101,7 @@ GLOBUS_MP_LIBS="@MP_LIBS@"
 
 GLOBUS_CC="@CC@"
 GLOBUS_CPP="@CPP@"
+GLOBUS_FLAVOR_NAME='@GLOBUS_FLAVOR_NAME@'
 GLOBUS_CPPFLAGS="`eval_path '@CPPFLAGS@'`"
 GLOBUS_CFLAGS="`eval_path '@CFLAGS@'`"
 
