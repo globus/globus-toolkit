@@ -8,19 +8,16 @@ file <code>$GLOBUS_LOCATION/etc/globus-job-manager.conf</code>.
 
 @section globus_gram_job_manager_configuration_opts Configuration File Options
 
-@par -save-logfile always|on-error|never
-Create a file to store Job Manager log messages. This file will be created
-in the user's home directory. If the argument to this option is @a on-error ,
-then the file will be removed if the job manager completes successfully. If
-the argument to this optionis @a always , the file will not be deleted by
-the job manager.
-
 @par -k
 Indicate that the job manager was built with the kerberos GSSAPI instead of
 GSI. This disables checks for a delegated GSI credential.
 
 @par -home GLOBUS_LOCATION
 Set the GLOBUS_LOCATION environment variable to the specified Globus-Location.
+
+@par -target-globus-location GLOBUS_LOCATION
+Set the GLOBUS_LOCATION environment variable to the execution node's
+GLOBUS_LOCATION, if different than the GRAM node's GLOBUS_LOCATION
 
 @par -type JOB_MANAGER_TYPE
 Set the type of scheduler interface to use for this job manager. A similarly
@@ -37,7 +34,7 @@ RSL substitutions (such as $(HOME) and $(LOGNAME)) may be used in this
 path. See @ref globus_gram_job_manager_rsl_subs for a list of available
 RSL substitutions.
 
-@par -extra-envvars VAR1,VAR2,...
+@par -extra-envvars VAR1[=VAL],VAR2,...
 The Job manager will attempt to get the listed VARs from its environment and
 set them the same for the job's environment.
 For example, -extra-envvars LD_LIBRARY_PATH,GLOBUS_TCP_PORT_RANGE
@@ -53,11 +50,11 @@ the user's home directory.
 
 @par -condor-arch ARCH
 Set the condor architecture for this job manager to be the specified ARCH.
-This is required when the job manager type is @a condor.
+This is optional when the job manager type is @a condor.
 
 @par -condor-os OSNAME
 Set the condor operating system name for this job manager to be the specified
-OSNAME.  This is required when the job manager type is @a condor.
+OSNAME.  This is optional when the job manager type is @a condor.
 
 @par -globus-gatekeeper-host HOST
 Set the name of the gatekeeper host. This will be made available in the
@@ -119,6 +116,19 @@ using the globus-gram-audit command.
 @par -globus-toolkit-version VERSION-STRING
 Use the string VERSION-STRING as the toolkit version in audit records.
 
-@par -single
-Use the single job manager per user/jobmanager type feature 
+@par -enable-syslog
+Send log messages to the system log.
+
+@par -stdio-log LOG_DIRECTORY
+Obsolete way to set the directory for writing log messages. Messages will
+be written to LOG_DIRECTORY/gram_DATE.log. Use -log-pattern instead
+
+@par -log-pattern PATTERN
+RSL-substituted pattern for naming log files. Possible variables are
+HOME, LOGNAME, DATE. The -stdio-log is equivalent to -log-pattern
+$(HOME)/gram_$(DATE).log
+
+@par -log-levels [FATAL|ERROR|WARN|DEBUG|INFO|TRACE]
+List of log levels to enable site-wide. These may be joined by the '|'
+character.
 */
