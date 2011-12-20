@@ -1,9 +1,0 @@
-Document: globus-scheduler-event-generator
-Title: Debian globus-scheduler-event-generator Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Scheduler Event Generator
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-scheduler-event-generator-dev/html/index.html
-Files: /usr/share/doc/libglobus-scheduler-event-generator-dev/html/*.html
