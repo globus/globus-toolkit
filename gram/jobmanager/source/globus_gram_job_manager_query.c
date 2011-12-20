@@ -479,7 +479,7 @@ globus_l_gram_job_manager_query_reply(
         replysize = 0;
     }
     if (request == NULL ||
-            request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
+            request->job_log_level & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
     {
         char *                          replystring;
 
