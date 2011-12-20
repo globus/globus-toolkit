@@ -415,7 +415,7 @@ globus_l_gram_job_manager_script_read(
 
         *p = '\0';
 
-        if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
+        if (request->job_log_level & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
         {
             escaped = globus_gram_prepare_log_string(
                     (char *) &script_handle->return_buf[0]);
@@ -1369,7 +1369,7 @@ globus_l_gram_job_manager_default_done(
     }
     else if(strcmp(variable, "GRAM_SCRIPT_LOG") == 0)
     {
-        if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
+        if (request->job_log_level & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
         {
             globus_gram_job_manager_request_log(
                     request,
@@ -1492,7 +1492,7 @@ globus_l_gram_job_manager_query_done(
     }
     else if(strcmp(variable, "GRAM_SCRIPT_LOG") == 0)
     {
-        if (request->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
+        if (request->job_log_level & GLOBUS_GRAM_JOB_MANAGER_LOG_DEBUG)
         {
             globus_gram_job_manager_request_log(
                     request,
