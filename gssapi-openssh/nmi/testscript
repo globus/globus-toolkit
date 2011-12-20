@@ -73,24 +73,28 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
     installer="gt4.0.8-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt4"
     installerdir="gt4-src"
+    configopts=""
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
     installer="gt5.0.4-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
     installerdir="gt5-src"
+    configopts="--without-openssl-header-check"
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT52"; then
-    installer="gt5.1.0-all-source-installer.tar.gz"
+    installer="gt5.2.0-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt52"
     installerdir="gt52-src"
+    configopts=""
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGTNightly"; then
     installer="nightly.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt-nightly"
     installerdir="gt-nightly-src"
+    configopts=""
     BuildGT
 fi
 BuildGSISSHTrunk()
@@ -112,7 +116,7 @@ BuildGSISSHTrunk()
   autoreconf
   ./configure --prefix=$GLOBUS_LOCATION \
     --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
-    --with-zlib=$ZLIB_LOCATION \
+    --with-zlib=$ZLIB_LOCATION $configopts \
     --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
   make install-nokeys # nonroot
   cd ..
@@ -137,7 +141,7 @@ BuildGSISSHGPT()
     rm -f gsi_openssh-*.tar.gz
     ./make_gpt_dist
     gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
-      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION $configopts"
   cd ..
   rm -rf openssh.build
 }
