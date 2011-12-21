@@ -59,7 +59,7 @@ BuildGT()
     mv gt*-installer $installerdir
     cd $installerdir
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
-                --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
+                --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION $configopts"
     make globus_usage gsi-openssh install
     cd ..
     rm -rf $installerdir # limit scratch space use
@@ -116,7 +116,7 @@ BuildGSISSHTrunk()
   autoreconf
   ./configure --prefix=$GLOBUS_LOCATION \
     --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
-    --with-zlib=$ZLIB_LOCATION $configopts \
+    --with-zlib=$ZLIB_LOCATION --without-openssl-header-check \
     --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
   make install-nokeys # nonroot
   cd ..
@@ -141,7 +141,7 @@ BuildGSISSHGPT()
     rm -f gsi_openssh-*.tar.gz
     ./make_gpt_dist
     gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
-      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION $configopts"
+      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
   cd ..
   rm -rf openssh.build
 }
