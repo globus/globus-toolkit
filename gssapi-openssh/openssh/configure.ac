@@ -94,38 +94,69 @@ if test "x$gsi_path" != "xno" ; then
         if test "x$globus_flavor_type" = "xyes" ; then
                 AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
 	fi
-
-  if test -z "$LOOK_FOR_FC_GLOBUS_INCLUDE" ; then
-	    GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
-  else
-      GLOBUS_INCLUDE="${gsi_path}/include/globus"
-  fi
-	if test ! -d "$GLOBUS_INCLUDE" ; then
-		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
-	fi
-	
-	if test -x ${gsi_path}/bin/globus-makefile-header ; then
-		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
-	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
-		${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
-	else
-		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
-	fi
-	. ./gpt_build_tmp.sh
-	if test -z "$GLOBUS_PKG_LIBS" ; then
-		AC_MSG_ERROR(globus-makefile-header failed)
-	fi
-
     AC_MSG_RESULT($GLOBUS_LOCATION)
+
+	AC_MSG_CHECKING(for Globus include path)
+  if test -d "${gsi_path}/include/${globus_flavor_type}" ; then
+	    GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+  elif test -d "${gsi_path}/include/globus" ; then
+      GLOBUS_INCLUDE="${gsi_path}/include/globus"
+  else
+		AC_MSG_ERROR(Cannot find Globus include directory in ${gsi_path}/include)
+	fi
+	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
+	AC_MSG_RESULT(yes)
+	
+	AC_MSG_CHECKING(for globus-makefile-header)
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage 2>/dev/null | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist globus_usage 2>/dev/null | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
+	fi
+    if test -f ./gpt_build_tmp.sh ; then
+    	. ./gpt_build_tmp.sh
+    fi
+	if test -z "$GLOBUS_PKG_LIBS" ; then
+    	AC_MSG_RESULT(no)
+        AC_MSG_CHECKING(for gpt_build_config)
+        # globus-makefile-header failed so try gpt_build_config
+        # likely this is because gpt-postinstall hasn't been run yet
+        # (i.e., this is a fresh Globus Toolkit install)
+        if test -x $GPT_LOCATION/sbin/gpt_build_config ; then
+        	gpt_linkline_helper="$GPT_LOCATION/sbin/gpt_build_config"
+        elif test -x ${gsi_path}/sbin/gpt_build_config ; then
+        	gpt_linkline_helper="${gsi_path}/sbin/gpt_build_config"
+        else
+            AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
+        fi
+        if test -n "${gsi_static}"; then
+           ${gpt_linkline_helper} -f ${globus_flavor_type} -link static -src pkg_data_src.gpt
+        else
+        	${gpt_linkline_helper} -f ${globus_flavor_type} -link shared -src pkg_data_src.gpt
+        fi
+        . ./gpt_build_temp.sh
+        if test -z "$GPT_CONFIG_PGM_LINKS" ; then
+        	AC_MSG_ERROR(gpt_build_config failed)
+        fi
+       	GSI_LDFLAGS="-L${gsi_path}/lib"
+    fi
+   	AC_MSG_RESULT(yes)
+
 	AC_DEFINE(HAVE_GSSAPI_H)
 
-    CC="$GLOBUS_CC"
-    CFLAGS="$GLOBUS_CFLAGS"
-    CPP="$GLOBUS_CPP"
-	CPPFLAGS="$GLOBUS_CPPFLAGS $GLOBUS_INCLUDES"
-	LIBS="$LIBS $GLOBUS_LIBS $GLOBUS_PKG_LIBS"
-    LD="$GLOBUS_LD"
-	LDFLAGS="$LDFLAGS $GLOBUS_LDFLAGS"
+    if test -n "$GLOBUS_CC" ; then
+        CC="$GLOBUS_CC"
+    fi
+    CFLAGS="$CFLAGS $GLOBUS_CFLAGS $GPT_CONFIG_CFLAGS"
+    if test -n "$GLOBUS_CPP" ; then
+        CPP="$GLOBUS_CPP"
+    fi
+	CPPFLAGS="$CPPFLAGS $GLOBUS_CPPFLAGS $GLOBUS_INCLUDES $GSI_CPPFLAGS $GPT_CONFIG_INCLUDES"
+	LIBS="$LIBS $GLOBUS_LIBS $GLOBUS_PKG_LIBS $GPT_CONFIG_LIBS $GPT_CONFIG_PGM_LINKS"
+    if test -n "$GLOBUS_LD" ; then
+        LD="$GLOBUS_LD"
+    fi
+	LDFLAGS="$LDFLAGS $GLOBUS_LDFLAGS $GSI_LDFLAGS"
 
 	INSTALL_GSISSH="yes"
 else
@@ -3510,10 +3541,13 @@ if test "x$gsi_path" != "xno" ; then
 		blibpath="$blibpath:${gsi_path}/lib"
 	fi
 	# test that we got the libraries OK
+	AC_MSG_CHECKING(Globus linkline)
 	AC_TRY_LINK(
 		[],
 		[],
-		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
 		[
 			AC_MSG_ERROR(link with Globus libraries failed)
 		]
