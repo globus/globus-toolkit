@@ -1,9 +1,0 @@
-Document: globus-gsi-proxy-core
-Title: Debian globus-gsi-proxy-core Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Globus GSI Proxy Core Library
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-gsi-proxy-core-dev/html/index.html
-Files: /usr/share/doc/libglobus-gsi-proxy-core-dev/html/*.html

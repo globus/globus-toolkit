@@ -1,3 +1,0 @@
-# Avoid race condition when renaming the libtool file:
-# http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=6575
-##globus-core-libtool.patch
