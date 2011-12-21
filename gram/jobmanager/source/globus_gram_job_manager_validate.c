@@ -478,9 +478,8 @@ globus_l_gram_job_manager_read_validation_file(
         }
         if(*token_start == '"')
         {
-            token_start++;
-
             token_end = token_start;
+            token_start++;
 
             do
             {
