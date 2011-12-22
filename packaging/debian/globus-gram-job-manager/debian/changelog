@@ -1,7 +1,13 @@
-globus-gram-job-manager (13.14-1) unstable; urgency=low
+globus-gram-job-manager (13.19-1) unstable; urgency=low
+  * GRAM-232: Incorrect directory permissions cause an infinite loop
+  * GRAM-302: Incorrect error when state file write fails
+  * GRAM-301: GRAM validation file parser doesn't handle empty quoted values
+            correctly
+  * GRAM-300: GRAM job manager doxygen refers to obsolete command-line options
+  * GRAM-299: Not all job log messages obey loglevel RSL attribute
+  * GRAM-296: Compile Failure on Solaris
 
-
- -- Globus Toolkit <support@globus.org>  Thu, 08 Dec 2011 15:28:24 -0500
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Dec 2011 10:43:36 -0500
 
 globus-gram-job-manager (13.13-1) unstable; urgency=low
 

@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.14
+Version:	13.19
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,15 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 13.19-1
+- GRAM-232: Incorrect directory permissions cause an infinite loop
+- GRAM-302: Incorrect error when state file write fails
+- GRAM-301: GRAM validation file parser doesn't handle empty quoted values
+            correctly
+- GRAM-300: GRAM job manager doxygen refers to obsolete command-line options
+- GRAM-299: Not all job log messages obey loglevel RSL attribute
+- GRAM-296: Compile Failure on Solaris
+
 * Thu Dec 08 2011 Joseph Bester <bester@mcs.anl.gov> - 13.14-1
 - Fix some cases of multiple submits of a GRAM job to condor
 

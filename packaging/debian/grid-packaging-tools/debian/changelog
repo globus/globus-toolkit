@@ -1,3 +1,9 @@
+grid-packaging-tools (3.6-1) unstable; urgency=low
+
+  * RIC-207: pkg-config files have undefined variable GLOBUS_FLAVOR_NAME
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Dec 2011 10:43:36 -0500
+
 grid-packaging-tools (3.5-2) unstable; urgency=low
 
   * Update for 5.2.0 release

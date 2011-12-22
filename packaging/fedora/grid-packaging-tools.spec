@@ -1,5 +1,5 @@
 Name:		grid-packaging-tools
-Version:	3.5
+Version:	3.6
 Release:	1%{?dist}
 Summary:	Grid Packaging Tools (GPT)
 
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
+* Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 3.6-1
+- RIC-207: pkg-config files have undefined variable GLOBUS_FLAVOR_NAME
+
 * Fri Oct 28 2011 Joseph Bester <bester@mcs.anl.gov> - 3.5-1
 - Quote paths in regular expressions
 - Fix bugs in pkgconfig file generator

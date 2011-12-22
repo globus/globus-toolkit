@@ -12,8 +12,8 @@
 
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	8.1
-Release:	4%{?dist}
+Version:	8.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
 Group:		System Environment/Libraries
@@ -200,6 +200,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 8.2-1
+- Doxygen markup errors (bugzilla #7185)
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 8.1-4
 - Update for 5.2.0 release
 

@@ -18,8 +18,8 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.5
-Release:	2%{?dist}
+Version:	8.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
@@ -123,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 8.6-1
+- RIC-206: globus-makefile-header doesn't set flavor header dir correctly
+
 * Thu Dec 08 2011 Joseph Bester <bester@mcs.anl.gov> - 8.5-2
 - Fix @INC handling for GLOBUS_LOCATION
 

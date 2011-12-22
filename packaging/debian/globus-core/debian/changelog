@@ -1,3 +1,8 @@
+globus-core (8.6-1) unstable; urgency=low
+  * RIC-206: globus-makefile-header doesn't set flavor header dir correctly
+
+ -- Globus Toolkit <support@globus.org>  Thu, 22 Dec 2011 10:43:36 -0500
+
 globus-core (8.5-1) unstable; urgency=low
 
   * Fix @INC handling for GLOBUS_LOCATION
