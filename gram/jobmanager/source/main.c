@@ -91,6 +91,7 @@ main(
     OM_uint32                           major_status, minor_status;
     pid_t                               forked_starter = 0;
     globus_bool_t                       cgi_invoked = GLOBUS_FALSE;
+    int                                 lock_tries_left = 10;
 
     if ((sleeptime_str = getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -395,6 +396,11 @@ main(
         else if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
         {
             /* Some system error. Try again */
+            if (--lock_tries_left == 0)
+            {
+                reply_and_exit(NULL, rc, "Unable to create lock file");
+            }
+            sleep(1);
             continue;
         }
 
