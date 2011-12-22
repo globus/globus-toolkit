@@ -109,6 +109,7 @@ print OUTFILE "prefix=\@prefix\@\n";
 print OUTFILE "exec_prefix=\@exec_prefix\@\n";
 print OUTFILE "libdir=\@libdir\@\n";
 print OUTFILE "includedir=\@includedir\@\n";
+print OUTFILE "GLOBUS_FLAVOR_NAME=\@GLOBUS_FLAVOR_NAME\@\n";
 print OUTFILE "flavorincludedir=\@flavorincludedir\@\n";
 print OUTFILE "\n";
 print OUTFILE "Name: $name\n";
