@@ -1,4 +1,0 @@
-bin/globus-usage-receiver
-bin/globus-usage-babysitter
-lib/globus_usage_receiver.jar
-lib/mysql-connector-java-3.1.6-bin.jar
