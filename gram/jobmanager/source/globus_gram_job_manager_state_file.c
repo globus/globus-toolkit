@@ -543,7 +543,7 @@ rename_failed:
         remove(tmp_file);
     }
 
-    return GLOBUS_FAILURE;
+    return rc;
 }
 /* globus_gram_job_manager_state_file_write() */
 
