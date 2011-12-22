@@ -1,9 +1,0 @@
-Document: globus-rsl
-Title: Debian globus-rsl Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Resource Specification Language Library
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-rsl-dev/html/index.html
-Files: /usr/share/doc/libglobus-rsl-dev/html/*.html

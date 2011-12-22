@@ -1,3 +1,0 @@
-# The package name is given by the upstream GPT package
-# Changing it would confuse the users
-libglobus-gsi-proxy-ssl1 binary: package-name-doesnt-match-sonames
