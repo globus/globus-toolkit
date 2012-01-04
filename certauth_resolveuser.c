@@ -493,6 +493,8 @@ int user_dn_lookup( char * username, char ** dn,
     }
   }
 
+  myproxy_debug("username \"%s\" mapped to DN \"%s\"", username, userdn);
+
   *dn = userdn;
 
   /* keep cache of last result so we don't need to call-out multiple times */
