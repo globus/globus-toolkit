@@ -6,7 +6,7 @@ use strict;
 use Test::Harness;
 
 my $globus_location = $ENV{GLOBUS_LOCATION};
-my @tests = qw(grid-proxy-utils-test.pl);
+my @tests = qw(grid-proxy-utils-test.pl proxy-order-test.pl);
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 

@@ -1025,6 +1025,33 @@ globus_gsi_cred_read_proxy_bio(
                 goto exit;
             }
         }
+        else if (strcmp(name, PEM_STRING_PKCS8INF) == 0)
+        {
+            PKCS8_PRIV_KEY_INFO *p8inf = NULL;
+
+            p8inf = d2i_PKCS8_PRIV_KEY_INFO(p8inf, &data, len);
+            if (p8inf == NULL)
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't read pkcs8 key info from bio")));
+
+                goto exit;
+            }
+            handle->key = EVP_PKCS82PKEY(p8inf);
+
+            PKCS8_PRIV_KEY_INFO_free(p8inf);
+            if (handle->key == NULL)
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
+                    (_GCRSL("Couldn't parse pkcs8 key")));
+
+                goto exit;
+            }
+        }
         else
         {
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(

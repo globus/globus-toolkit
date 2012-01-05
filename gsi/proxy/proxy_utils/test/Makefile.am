@@ -7,7 +7,8 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 pkgtest_SCRIPTS = \
         TESTS.pl \
-        grid-proxy-utils-test.pl
+        grid-proxy-utils-test.pl \
+        proxy-order-test.pl
 
 EXTRA_DIST = $(pkgtest_SCRIPTS)
 
