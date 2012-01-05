@@ -12,8 +12,8 @@
 
 Name:		globus-gsi-credential
 %global _name %(tr - _ <<< %{name})
-Version:	5.1
-Release:	3%{?dist}
+Version:	5.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GSI Credential Library
 
 Group:		System Environment/Libraries
@@ -180,6 +180,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Jan 05 2012 Joseph Bester <bester@mcs.anl.gov> - 5.2-1
+- RIC-213: support for private keys in PKCS8 format broken
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 5.1-3
 - Last sync prior to 5.2.0
 

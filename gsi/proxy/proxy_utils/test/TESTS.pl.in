@@ -11,7 +11,7 @@ use Globus::Testing::Utilities;
 
 Globus::Testing::Utilities::testcred_setup(1) || die("Unable to set up creds");
 
-my @tests = qw(grid-proxy-utils-test.pl);
+my @tests = qw(grid-proxy-utils-test.pl proxy-order-test.pl);
 
 runtests(@tests);
 
