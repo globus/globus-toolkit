@@ -1,5 +1,0 @@
-#!/bin/sh
-
-echo "PATH: $1"
-shift
-echo "FILES: $@"
