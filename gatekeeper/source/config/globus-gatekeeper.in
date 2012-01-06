@@ -10,6 +10,11 @@
 ## Gatekeeper Log Path. If not set, logging will be done via syslog
 GLOBUS_GATEKEEPER_LOG="@localstatedir@/log/globus-gatekeeper.log"
 
+## Log facility to use for gatekeeper log messages. May be either a
+## symbolic name of a POSIX.1 syslog facility, or an integer log
+## facility constant
+# GLOBUS_GATEKEEPER_LOG_FACILITY="LOG_DAEMON"
+
 ## Path to directory containing grid service descriptions
 # GLOBUS_GATEKEEPER_GRID_SERVICES="@sysconfdir@/grid-services"
 
