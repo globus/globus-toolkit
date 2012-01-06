@@ -1,3 +1,9 @@
+globus-gatekeeper (9.7-1) unstable; urgency=low
+
+  * GRAM-303: Gatekeeper's syslog output cannot be controlled
+
+ -- Joseph Bester <bester@mcs.anl.gov>  Fri, 06 Jan 2012 11:58:44 -0500
+
 globus-gatekeeper (9.6-1) unstable; urgency=low
 
   * Fix debian/init script interaction

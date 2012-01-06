@@ -12,7 +12,7 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.6
+Version:	9.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
@@ -116,6 +116,9 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Fri Jan 06 2012 Joe Bester <jbester@mactop2.local> - 9.7-1
+- GRAM-303: Gatekeeper's syslog output cannot be controlled
+
 * Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 9.6-1
 - init script fixes
 
