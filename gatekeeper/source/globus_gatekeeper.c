@@ -211,6 +211,7 @@ static unsigned reqnr;
 static int      gatekeeper_test;
 static int      gatekeeper_uid;
 static int      daemon_port;
+static int      log_facility = LOG_DAEMON;
 static int      logging_syslog;
 static int      logging_usrlog;
 static int      debug;
@@ -655,6 +656,53 @@ main(int xargc,
             logfile =  argv[i+1];
             i++;
         }
+        else if ((strcmp(argv[i], "-lf") == 0) && (i + 1 < argc))
+        {
+            char * facilitystring = argv[++i];
+            int fi;
+
+            struct facmap {
+                char * facility_name;
+                int facility;
+            } facilities[] = {
+                /* POSIX.1 facilities */
+                {"LOG_KERN", LOG_KERN},
+                {"LOG_USER", LOG_USER},
+                {"LOG_MAIL", LOG_MAIL},
+                {"LOG_NEWS", LOG_NEWS},
+                {"LOG_UUCP", LOG_UUCP},
+                {"LOG_DAEMON", LOG_DAEMON},
+                {"LOG_AUTH", LOG_AUTH},
+                {"LOG_CRON", LOG_CRON},
+                {"LOG_LPR", LOG_LPR},
+                {"LOG_LOCAL0", LOG_LOCAL0},
+                {"LOG_LOCAL1", LOG_LOCAL1},
+                {"LOG_LOCAL2", LOG_LOCAL2},
+                {"LOG_LOCAL3", LOG_LOCAL3},
+                {"LOG_LOCAL4", LOG_LOCAL4},
+                {"LOG_LOCAL5", LOG_LOCAL5},
+                {"LOG_LOCAL6", LOG_LOCAL6},
+                {"LOG_LOCAL7", LOG_LOCAL7},
+                {NULL, 0}
+            };
+
+            for (fi = 0; facilities[fi].facility_name != NULL; fi++)
+            {
+                if (strcmp(facilitystring, facilities[fi].facility_name) == 0)
+                {
+                    log_facility = facilities[fi].facility;
+                    break;
+                }
+            }
+
+            if (facilities[fi].facility_name == NULL)
+            {
+                if (isdigit(facilitystring[0]))
+                {
+                    log_facility = atoi(facilitystring);
+                }
+            }
+        }
         else if ((strcmp(argv[i], "-acctfile") == 0)
                  && (i + 1 < argc))
         {
@@ -799,7 +847,7 @@ main(int xargc,
             fprintf(stderr, "Usage: %s\n%s\n",
                     argv[0], 
                     "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port]\n"
-                    "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path]\n"
+                    "[-home path] [-l[ogfile] logfile] [-lf LOG-FACILITY] [-acctfile acctfile] [-e path]\n"
                     "[-launch_method fork_and_exit|fork_and_wait|dont_fork|fork_and_proxy]\n"
                     "[-grid_services file]\n"
                     "[-globusid globusid] [-gridmap file]\n"
@@ -2328,7 +2376,7 @@ logging_startup(void)
 	     * The messages will be treated like any other system daemon.
 	     */
 	    logging_syslog = 1;
-	    openlog("GRAM-gatekeeper", LOG_PID, LOG_DAEMON);
+	    openlog("GRAM-gatekeeper", LOG_PID, log_facility);
 	}
 
         if (strlen(logfile) > 0) 
