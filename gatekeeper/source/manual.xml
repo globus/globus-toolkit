@@ -45,6 +45,7 @@ $Header$
     <arg choice="plain">-l <replaceable>LOGFILE</replaceable></arg>
     <arg choice="plain">-logfile <replaceable>LOGFILE</replaceable></arg>
 </group>
+<arg>-lf <replaceable>LOG_FACILITY</replaceable></arg>
 <sbr/>
 <arg>-acctfile <replaceable>ACCTFILE</replaceable></arg>
 <sbr/>
