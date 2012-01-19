@@ -1,10 +1,13 @@
-This is MyProxy v5.6 XX Xxx 2011.
+This is MyProxy v5.6 XX Xxx 2012.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v5.6 XX Xxx 2011
+v5.6 XX Xxx 2012
+  - on myproxy-server daemon startup, don't exit original process
+    until daemon child has completed initialization
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7240)
   - allow escaping of '.' in regular expressions
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7213)
   - when converting to POSIX extended regular expressions for DN
