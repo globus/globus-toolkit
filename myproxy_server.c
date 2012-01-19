@@ -110,6 +110,7 @@ static char *timestamp(void);
 
 static int become_daemon_step1(void);
 static int become_daemon_step2(void);
+static int become_daemon_step3(void);
 
 static void write_pidfile(const char path[]);
 
@@ -168,6 +169,7 @@ void check_and_store_credentials(const char              path[],
 
 static int debug = 0;
 static int readconfig = 1;      /* do we need to read config file? */
+static int startup_pipe[2];
 
 int
 main(int argc, char *argv[]) 
@@ -297,6 +299,10 @@ main(int argc, char *argv[])
        /* Re-read configuration file on SIGHUP */
        my_signal(SIGHUP, sig_hup);
        sigaddset(&mysigset, SIGHUP);
+
+       if (!debug) {
+           become_daemon_step3(); /* all done with initialization */
+       }
 
        /* Set up concurrent server */
        while (1) {
@@ -1471,6 +1477,15 @@ static int
 become_daemon_step2()
 {
     pid_t childpid;
+    char byte;
+
+    /* Create a pipe to notify the original process when
+      initialization is complete per
+      http://0pointer.de/public/systemd-man/daemon.html */
+    if (pipe(startup_pipe) < 0) {
+        perror("Error in pipe()");
+        return -1;
+    }
 
     /* 1. Fork off a child so the new process is not a process group leader */
     childpid = fork();
@@ -1481,6 +1496,7 @@ become_daemon_step2()
       perror("Error in fork()");
       return -1;
     default:        /* exit the original process */
+      read(startup_pipe[0], &byte, 1); /* wait for child to signal */
       _exit(0);
     }
 
@@ -1506,6 +1522,16 @@ become_daemon_step2()
 	_exit(0);
     }
 
+    return 0;
+}
+
+/* We're all done starting up, so signal the original process to exit. */
+static int
+become_daemon_step3()
+{
+    write(startup_pipe[1], "0", 1);
+    close(startup_pipe[0]);
+    close(startup_pipe[1]);
     return 0;
 }
 
