@@ -200,7 +200,7 @@ myproxy_admin_change_pass_LDFLAGS = $(GPT_LDFLAGS)
 myproxy_admin_change_pass_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 pkgdata_DATA = README INSTALL myproxy-server.config \
-               LICENSE LICENSE.sasl LICENSE.netbsd \
+               LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                LICENSE.safefile LICENSE.pubcookie LICENSE.globus \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
@@ -211,7 +211,7 @@ pkgdata_DATA = README INSTALL myproxy-server.config \
                myproxy-accepted-credentials-mapapp \
                myproxy-cert-checker myproxy-certreq-checker
 
-EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
+EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd LICENSE.pidfile \
                LICENSE.safefile LICENSE.pubcookie LICENSE.globus \
                VERSION PROTOCOL \
                myproxy-server.config \
