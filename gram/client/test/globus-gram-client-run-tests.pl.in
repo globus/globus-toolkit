@@ -61,6 +61,8 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
     restart-to-new-url-test.pl
     stdio-update-test.pl
     version-test.pl
+    local-stdio-size-test.pl
+    stdio-update-after-failure-test.pl
 );
 
 chdir "$Globus::Core::Paths::exec_prefix/test/@PACKAGE@";

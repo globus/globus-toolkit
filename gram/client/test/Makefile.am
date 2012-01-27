@@ -59,6 +59,8 @@ test_PROGRAMS= \
         register-version-test \
         restart-to-new-url-test \
         stdio-update-test \
+        stdio-update-after-failure-test \
+        local-stdio-size-test \
         version-test
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in \
@@ -145,6 +147,12 @@ restart_to_new_url_test_LDFLAGS = $(GPT_LDFLAGS)
 
 stdio_update_test_SOURCES = stdio_update_test.c
 stdio_update_test_LDFLAGS = $(GPT_LDFLAGS)
+
+stdio_update_after_failure_test_SOURCES = stdio_update_after_failure_test.c
+stdio_update_after_failure_test_LDFLAGS = $(GPT_LDFLAGS)
+
+local_stdio_size_test_SOURCES = local_stdio_size_test.c
+local_stdio_size_test_LDFLAGS = $(GPT_LDFLAGS)
 
 .PHONY: junit
 include $(top_srcdir)/globus_automake_post
