@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_ENVIRONMENT *)
-&(executable=/bin/sh)
- (environment=just_a_scalar)

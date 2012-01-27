@@ -1,4 +1,0 @@
-(* LRM_SKIP:pbs *)
-&(executable=/bin/echo)
- (arguments=hello world)
- (count=2)
