@@ -1791,7 +1791,7 @@ globus_l_gram_job_manager_set_restart_state(
             request->failure_code = GLOBUS_SUCCESS;
             globus_gram_job_manager_request_set_status(
                 request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE);
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT);
             request->unsent_status_change = GLOBUS_TRUE;
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
             changed = GLOBUS_TRUE;

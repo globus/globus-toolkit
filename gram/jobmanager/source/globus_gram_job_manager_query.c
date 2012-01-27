@@ -1454,7 +1454,8 @@ globus_l_gram_job_manager_signal(
                 }
                 local_size_stderr = st.st_size;
             }
-            else if (out_size >= 0 && out_size != local_size_stdout)
+
+            if (out_size >= 0 && out_size != local_size_stdout)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
                 globus_gram_job_manager_request_log(
@@ -1475,7 +1476,7 @@ globus_l_gram_job_manager_signal(
                         args,
                         globus_i_gram_job_manager_state_strings[
                                 request->jobmanager_state],
-                        "Stdout size mismatch"
+                        "Stdout size mismatch",
                         -rc,
                         out_size,
                         local_size_stdout,
@@ -1494,15 +1495,15 @@ globus_l_gram_job_manager_signal(
                         "jmstate=%s "
                         "msg=\"%s\" "
                         "status=%d "
-                        "stdout_signal_size=%d "
-                        "stdout_actual_size=%d "
+                        "stderr_signal_size=%d "
+                        "stderr_actual_size=%d "
                         "reason=\"%s\" "
                         "\n",
                         request->job_contact_path,
                         args,
                         globus_i_gram_job_manager_state_strings[
                                 request->jobmanager_state],
-                        "Stderr size mismatch"
+                        "Stderr size mismatch",
                         -rc,
                         err_size,
                         local_size_stderr,
