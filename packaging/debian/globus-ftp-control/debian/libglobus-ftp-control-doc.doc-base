@@ -1,9 +1,0 @@
-Document: globus-ftp-control
-Title: Debian globus-ftp-control Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, GridFTP Control Library
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-ftp-control-dev/html/index.html
-Files: /usr/share/doc/libglobus-ftp-control-dev/html/*.html

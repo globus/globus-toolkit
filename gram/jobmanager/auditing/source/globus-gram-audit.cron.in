@@ -1,7 +1,0 @@
-#! /bin/sh
-
-@GLOBUS_SCRIPT_INITIALIZER@
-
-@sbindir@/globus-gram-audit --quiet
-
-exit 0
