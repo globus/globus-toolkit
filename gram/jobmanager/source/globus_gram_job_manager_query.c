@@ -1454,7 +1454,8 @@ globus_l_gram_job_manager_signal(
                 }
                 local_size_stderr = st.st_size;
             }
-            else if (out_size >= 0 && out_size != local_size_stdout)
+
+            if (out_size >= 0 && out_size != local_size_stdout)
             {
                 rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
                 globus_gram_job_manager_request_log(
