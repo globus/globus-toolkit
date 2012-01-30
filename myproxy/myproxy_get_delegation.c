@@ -95,6 +95,7 @@ static int bootstrap = 0;
 static int no_credentials = 0;
 static char **voms = NULL;
 static char **vomses = NULL;
+static int debug = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -310,6 +311,7 @@ init_arguments(int argc,
         myproxy_debug("Requesting trusted certificates.\n");
 	    break;
 	case 'v':
+        debug = 1;
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V':       /* print version and exit */
@@ -383,7 +385,7 @@ voms_proxy_init()
     int i, hours, minutes, cred_lifetime, rc;
     time_t cred_expiration;
     const char *argv[40];
-    char hourstr[11], bits[11], vomslife[14];
+    char bits[11], vomslife[14];
     int argc = 0;
     pid_t childpid;
     const char *command = "voms-proxy-init";
@@ -447,11 +449,10 @@ voms_proxy_init()
     setenv("X509_USER_PROXY", outputfile, 1);
 
     argv[argc++] = command;
-    argv[argc++] = "-hours";
-    snprintf(hourstr, sizeof(hourstr), "%d", hours);
-    argv[argc++] = hourstr;
-    argv[argc++] = "-vomslife";
+    argv[argc++] = "-valid";
     snprintf(vomslife, sizeof(vomslife), "%d:%d", hours, minutes);
+    argv[argc++] = vomslife;
+    argv[argc++] = "-vomslife";
     argv[argc++] = vomslife;
     for (i=0; voms[i] && i < 10; i++) {
         argv[argc++] = "-voms";
@@ -477,6 +478,13 @@ voms_proxy_init()
         argv[argc++] = "-proxyver=2";
     }
     argv[argc++] = NULL;
+
+    if (debug) {
+        char *cmdbuf = NULL;
+        join_array(&cmdbuf, (char **)argv, " ");
+        myproxy_debug("running: %s", cmdbuf);
+        free(cmdbuf);
+    }
 
     if ((childpid = fork()) < 0) {
         verror_put_string("fork() failed");
