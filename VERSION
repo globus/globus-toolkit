@@ -5,6 +5,10 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v5.6 XX Xxx 2012
+  - in myproxy-logon --voms, use voms-proxy-init -valid H:M rather
+    than voms-proxy-init -hours H so proxy lifetime matches assertion
+    lifetime
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7244)
   - on myproxy-server daemon startup, don't exit original process
     until daemon child has completed initialization
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7240)
