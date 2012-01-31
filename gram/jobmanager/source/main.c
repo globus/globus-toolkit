@@ -605,7 +605,7 @@ main(
     }
     if (manager.expiration_handle != GLOBUS_NULL_HANDLE)
     {
-        globus_callback_unregister(&manager.expiration_handle, NULL, NULL, NULL);
+        globus_callback_unregister(manager.expiration_handle, NULL, NULL, NULL);
     }
     GlobusGramJobManagerUnlock(&manager);
 
