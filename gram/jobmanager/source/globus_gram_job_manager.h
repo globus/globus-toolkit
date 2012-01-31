@@ -41,6 +41,8 @@
 
 EXTERN_C_BEGIN
 
+#define GLOBUS_GRAM_JOB_MANAGER_EXPIRATION_ATTR "expiration"
+
 /** Pointer to the current request to allow per-job logging to occur */
 extern globus_thread_key_t globus_i_gram_request_key;
 
@@ -498,6 +500,13 @@ typedef struct globus_gram_job_manager_s
      */
     char *                              gt3_failure_message;
     globus_xio_attr_t                   script_attr;
+
+    /**
+     * Periodic callback handle to expire jobs which completed or failed
+     * but didn't have two-phase end happen.
+     */
+    globus_callback_handle_t            expiration_handle;
+    
 }
 globus_gram_job_manager_t;
 
@@ -802,6 +811,14 @@ typedef struct globus_gram_job_manager_ref_s
      * completed execution.
      */
     globus_bool_t                       loaded_only;
+
+    /**
+     * Timestamp of when to auto-destroy this job. Thsi will be 0 unless
+     * the job has completed and failed to have it's two-phase commit end.
+     * A periodic event will poll through the refs that have this attribute
+     * set, and will reload them with a fake commit to get them cleaned up.
+     */
+    time_t                              expiration_time;
 
     /* The following are used for the internal fakeseg stuff for condor*/
 
@@ -1506,6 +1523,10 @@ globus_gram_job_manager_request_exists(
 void
 globus_gram_job_manager_set_grace_period_timer(
     globus_gram_job_manager_t *         manager);
+
+void
+globus_gram_job_manager_expire_old_jobs(
+    void *                              arg);
 
 int
 globus_gram_job_manager_set_status(
