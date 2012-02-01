@@ -108,6 +108,7 @@ install-data-hook:
 	cp $(srcdir)/gram.logrotate $(DESTDIR)$(logrotatedir)/globus-job-manager
 	mkdir -p $(DESTDIR)@LOGDIR@
 	chmod 1777 $(DESTDIR)@LOGDIR@
+	mkdir -p $(DESTDIR)$(sysconfdir)/globus/gram
 
 CLEANFILES = \
     globus-personal-gatekeeper \

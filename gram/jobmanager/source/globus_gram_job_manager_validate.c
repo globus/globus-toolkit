@@ -124,8 +124,11 @@ globus_gram_job_manager_validation_init(
     globus_gram_job_manager_t *         manager)
 {
     char *                              validation_filename;
+    char *                              site_validation_filename;
     char *                              scheduler_validation_filename;
     char *                              scheduler_validation_filename_pattern;
+    char *                              site_scheduler_validation_filename;
+    char *                              site_scheduler_validation_filename_pattern;
     int                                 rc = GLOBUS_SUCCESS;
     globus_result_t                     result;
     globus_list_t *                     tmp_list;
@@ -142,6 +145,15 @@ globus_gram_job_manager_validation_init(
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
         goto validation_filename_failed;
     }
+    result = globus_eval_path(
+            "${sysconfdir}/globus/gram/job-manager.rvf",
+            &site_validation_filename);
+    if (result != GLOBUS_SUCCESS || site_validation_filename == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto site_validation_filename_failed;
+    }
     scheduler_validation_filename_pattern = globus_common_create_string(
             "${datadir}/globus/globus_gram_job_manager/%s.rvf",
             manager->config->jobmanager_type);
@@ -157,6 +169,22 @@ globus_gram_job_manager_validation_init(
         goto scheduler_validation_filename_failed;
     }
 
+    site_scheduler_validation_filename_pattern = globus_common_create_string(
+            "${sysconfdir}/globus/gram/%s.rvf",
+            manager->config->jobmanager_type);
+    if(site_scheduler_validation_filename_pattern == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto site_scheduler_validation_filename_pattern_failed;
+    }
+
+    result = globus_eval_path(site_scheduler_validation_filename_pattern,
+        &site_scheduler_validation_filename);
+    if (result != GLOBUS_SUCCESS || site_scheduler_validation_filename == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto site_scheduler_validation_filename_failed;
+    }
     /* Read in validation files. Do the generic job manager one first,
      * as the scheduler-specific one overrides it.
      */
@@ -174,6 +202,32 @@ globus_gram_job_manager_validation_init(
         rc = globus_l_gram_job_manager_read_validation_file(
                 manager,
                 scheduler_validation_filename);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto read_scheduler_validation_filename_failed;
+        }
+    }
+
+    if (access(site_validation_filename, R_OK) == 0)
+    {
+        rc = globus_l_gram_job_manager_read_validation_file(
+                manager,
+                site_validation_filename);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto read_site_validation_filename_failed;
+        }
+    }
+
+    if (access(site_scheduler_validation_filename, R_OK) == 0)
+    {
+        rc = globus_l_gram_job_manager_read_validation_file(
+                manager,
+                site_scheduler_validation_filename);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto read_site_scheduler_validation_filename_failed;
+        }
     }
 
     if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
@@ -230,6 +284,9 @@ globus_gram_job_manager_validation_init(
             }
         }
     }
+read_site_scheduler_validation_filename_failed:
+read_site_validation_filename_failed:
+read_scheduler_validation_filename_failed:
     if(rc != GLOBUS_SUCCESS)
     {
         while(!globus_list_empty(manager->validation_records))
@@ -240,12 +297,17 @@ globus_gram_job_manager_validation_init(
         }
         manager->validation_records = NULL;
     }
-
 read_validation_failed:
+    free(site_scheduler_validation_filename);
+site_scheduler_validation_filename_failed:
+    free(site_scheduler_validation_filename_pattern);
+site_scheduler_validation_filename_pattern_failed:
     free(scheduler_validation_filename);
 scheduler_validation_filename_failed:
     free(scheduler_validation_filename_pattern);
 scheduler_validation_filename_pattern_failed:
+    free(site_validation_filename);
+site_validation_filename_failed:
     free(validation_filename);
 validation_filename_failed:
     return rc;
