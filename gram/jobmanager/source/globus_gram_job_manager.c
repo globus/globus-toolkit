@@ -178,11 +178,11 @@ globus_gram_job_manager_init(
     manager->seg_last_timestamp = 0;
     manager->seg_started = GLOBUS_FALSE;
 
-    rc = globus_gram_job_manager_validation_init(manager);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto validation_init_failed;
-    }
+    /* After addition of site specific rvf files, reload validation
+     * files when changed
+     */
+    manager->validation_record_timestamp = (time_t) 0;
+    manager->validation_records = NULL;
 
     rc = globus_hashtable_init(
             &manager->request_hash,

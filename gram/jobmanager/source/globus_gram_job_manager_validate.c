@@ -44,17 +44,29 @@
 #include <string.h>
 #include <ctype.h>
 
+static char *                           validation_filename;
+static char *                           site_validation_filename;
+static char *                           lrm_validation_filename;
+static char *                           lrm_validation_filename_pattern;
+static char *                           site_lrm_validation_filename;
+static char *                           site_lrm_validation_filename_pattern;
+
 static
 int
 globus_l_gram_job_manager_read_validation_file(
     globus_gram_job_manager_t *         manager,
-    const char *                        validation_filename);
+    const char *                        filename);
 
 static
 int
 globus_l_gram_job_manager_attribute_match(
     void *                              datum,
     void *                              args);
+
+static
+int
+globus_gram_job_manager_validation_init(
+    globus_gram_job_manager_t *         manager);
 
 static
 globus_bool_t
@@ -112,79 +124,188 @@ int
 globus_l_gram_job_manager_missing_value_error(
     const char *                        attribute);
 
+extern
+int
+globus_gram_job_manager_validation_update(
+    globus_gram_job_manager_t *         manager)
+{
+    time_t                              validation_timestamp = time(NULL);
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_result_t                     result;
+    struct stat                         st;
+    globus_bool_t                       do_update = GLOBUS_FALSE;
+
+    if (validation_timestamp <= manager->validation_record_timestamp)
+    {
+        goto skip_update_check;
+    }
+
+    if (validation_filename == NULL)
+    {
+        result = globus_eval_path(
+                "${datadir}/globus/globus_gram_job_manager/globus-gram-job-manager.rvf",
+                &validation_filename);
+        if (result != GLOBUS_SUCCESS || validation_filename == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto validation_filename_failed;
+        }
+    }
+
+    if (site_validation_filename == NULL)
+    {
+        result = globus_eval_path(
+                "${sysconfdir}/globus/gram/job-manager.rvf",
+                &site_validation_filename);
+        if (result != GLOBUS_SUCCESS || site_validation_filename == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto site_validation_filename_failed;
+        }
+    }
+    if (lrm_validation_filename_pattern == NULL)
+    {
+        lrm_validation_filename_pattern = globus_common_create_string(
+                "${datadir}/globus/globus_gram_job_manager/%s.rvf",
+                manager->config->jobmanager_type);
+        if(lrm_validation_filename_pattern == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto lrm_validation_filename_pattern_failed;
+        }
+    }
+
+    if (lrm_validation_filename == NULL)
+    {
+        result = globus_eval_path(
+                lrm_validation_filename_pattern,
+                &lrm_validation_filename);
+        if (result != GLOBUS_SUCCESS || lrm_validation_filename == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto lrm_validation_filename_failed;
+        }
+    }
+
+    if (site_lrm_validation_filename_pattern == NULL)
+    {
+        site_lrm_validation_filename_pattern = globus_common_create_string(
+                "${sysconfdir}/globus/gram/%s.rvf",
+                manager->config->jobmanager_type);
+        if(site_lrm_validation_filename_pattern == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto site_lrm_validation_filename_pattern_failed;
+        }
+    }
+
+    if (site_lrm_validation_filename == NULL)
+    {
+        result = globus_eval_path(site_lrm_validation_filename_pattern,
+            &site_lrm_validation_filename);
+        if (result != GLOBUS_SUCCESS || site_lrm_validation_filename == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto site_lrm_validation_filename_failed;
+        }
+    }
+
+    rc = stat(validation_filename, &st);
+    if ((rc == GLOBUS_SUCCESS
+            && ((!manager->validation_file_exists[0]) ||
+                st.st_mtime > manager->validation_record_timestamp)) ||
+        (rc != GLOBUS_SUCCESS
+            && errno == ENOENT && manager->validation_file_exists[0]))
+    {
+        do_update = GLOBUS_TRUE;
+    }
+
+    if (!do_update)
+    {
+        rc = stat(lrm_validation_filename, &st);
+        if ((rc == GLOBUS_SUCCESS
+                && ((!manager->validation_file_exists[1]) ||
+                    st.st_mtime > manager->validation_record_timestamp)) ||
+            (rc != GLOBUS_SUCCESS
+                && errno == ENOENT && manager->validation_file_exists[1]))
+        {
+            do_update = GLOBUS_TRUE;
+        }
+    }
+
+    if (!do_update)
+    {
+        rc = stat(site_validation_filename, &st);
+        if ((rc == GLOBUS_SUCCESS
+                && ((!manager->validation_file_exists[2]) ||
+                    st.st_mtime > manager->validation_record_timestamp)) ||
+            (rc != GLOBUS_SUCCESS
+                && errno == ENOENT && manager->validation_file_exists[2]))
+        {
+            do_update = GLOBUS_TRUE;
+        }
+    }
+
+    if (!do_update)
+    {
+        rc = stat(site_lrm_validation_filename, &st);
+        if ((rc == GLOBUS_SUCCESS
+                && ((!manager->validation_file_exists[3]) ||
+                    st.st_mtime > manager->validation_record_timestamp)) ||
+            (rc != GLOBUS_SUCCESS
+                && errno == ENOENT && manager->validation_file_exists[3]))
+        {
+            do_update = GLOBUS_TRUE;
+        }
+    }
+
+    if (do_update)
+    {
+        /* Free old validation entries */
+        globus_gram_job_manager_validation_destroy(
+                manager->validation_records);
+        manager->validation_records = NULL;
+
+        rc = globus_gram_job_manager_validation_init(manager);
+    }
+    else
+    {
+        rc = GLOBUS_SUCCESS;
+    }
+
+site_lrm_validation_filename_failed:
+site_lrm_validation_filename_pattern_failed:
+lrm_validation_filename_failed:
+lrm_validation_filename_pattern_failed:
+site_validation_filename_failed:
+validation_filename_failed:
+skip_update_check:
+    return rc;
+}
+/* globus_gram_job_manager_validation_update() */
+
 /**
- * @param request
+ * @param manager
  *        A job request. The validation field of this job request will be
  *        updated with a list of validation records constructed from the
  *        rsl validation files associated with the job manager.
  */
-extern
+static
 int
 globus_gram_job_manager_validation_init(
     globus_gram_job_manager_t *         manager)
 {
-    char *                              validation_filename;
-    char *                              site_validation_filename;
-    char *                              scheduler_validation_filename;
-    char *                              scheduler_validation_filename_pattern;
-    char *                              site_scheduler_validation_filename;
-    char *                              site_scheduler_validation_filename_pattern;
+    time_t                              validation_timestamp = time(NULL);
     int                                 rc = GLOBUS_SUCCESS;
     globus_result_t                     result;
-    globus_list_t *                     tmp_list;
-    globus_gram_job_manager_validation_record_t *
-                                        record;
 
     manager->validation_records = NULL;
+    manager->validation_file_exists[0] = GLOBUS_FALSE;
+    manager->validation_file_exists[1] = GLOBUS_FALSE;
+    manager->validation_file_exists[2] = GLOBUS_FALSE;
+    manager->validation_file_exists[3] = GLOBUS_FALSE;
 
-    result = globus_eval_path(
-            "${datadir}/globus/globus_gram_job_manager/globus-gram-job-manager.rvf",
-            &validation_filename);
-    if (result != GLOBUS_SUCCESS || validation_filename == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto validation_filename_failed;
-    }
-    result = globus_eval_path(
-            "${sysconfdir}/globus/gram/job-manager.rvf",
-            &site_validation_filename);
-    if (result != GLOBUS_SUCCESS || site_validation_filename == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-        goto site_validation_filename_failed;
-    }
-    scheduler_validation_filename_pattern = globus_common_create_string(
-            "${datadir}/globus/globus_gram_job_manager/%s.rvf",
-            manager->config->jobmanager_type);
-    if(scheduler_validation_filename_pattern == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto scheduler_validation_filename_pattern_failed;
-    }
-    result = globus_eval_path(scheduler_validation_filename_pattern, &scheduler_validation_filename);
-    if (result != GLOBUS_SUCCESS || scheduler_validation_filename == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto scheduler_validation_filename_failed;
-    }
-
-    site_scheduler_validation_filename_pattern = globus_common_create_string(
-            "${sysconfdir}/globus/gram/%s.rvf",
-            manager->config->jobmanager_type);
-    if(site_scheduler_validation_filename_pattern == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto site_scheduler_validation_filename_pattern_failed;
-    }
-
-    result = globus_eval_path(site_scheduler_validation_filename_pattern,
-        &site_scheduler_validation_filename);
-    if (result != GLOBUS_SUCCESS || site_scheduler_validation_filename == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-        goto site_scheduler_validation_filename_failed;
-    }
     /* Read in validation files. Do the generic job manager one first,
      * as the scheduler-specific one overrides it.
      */
@@ -196,16 +317,18 @@ globus_gram_job_manager_validation_init(
     {
         goto read_validation_failed;
     }
+    manager->validation_file_exists[0] = GLOBUS_TRUE;
 
-    if(access(scheduler_validation_filename, R_OK) == 0)
+    if(access(lrm_validation_filename, R_OK) == 0)
     {
         rc = globus_l_gram_job_manager_read_validation_file(
                 manager,
-                scheduler_validation_filename);
+                lrm_validation_filename);
         if (rc != GLOBUS_SUCCESS)
         {
-            goto read_scheduler_validation_filename_failed;
+            goto read_lrm_validation_filename_failed;
         }
+        manager->validation_file_exists[1] = GLOBUS_TRUE;
     }
 
     if (access(site_validation_filename, R_OK) == 0)
@@ -217,99 +340,33 @@ globus_gram_job_manager_validation_init(
         {
             goto read_site_validation_filename_failed;
         }
+        manager->validation_file_exists[2] = GLOBUS_TRUE;
     }
 
-    if (access(site_scheduler_validation_filename, R_OK) == 0)
+    if (access(site_lrm_validation_filename, R_OK) == 0)
     {
         rc = globus_l_gram_job_manager_read_validation_file(
                 manager,
-                site_scheduler_validation_filename);
+                site_lrm_validation_filename);
         if (rc != GLOBUS_SUCCESS)
         {
-            goto read_site_scheduler_validation_filename_failed;
+            goto read_site_lrm_validation_filename_failed;
         }
+        manager->validation_file_exists[3] = GLOBUS_TRUE;
     }
 
-    if (manager->config->log_levels & GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE)
-    {
-        tmp_list = manager->validation_records;
+    manager->validation_record_timestamp = validation_timestamp;
 
-        while(!globus_list_empty(tmp_list))
-        {
-            char * description_escaped = NULL;
-            char * default_escaped = NULL;
-            char * enum_escaped = NULL;
-
-            record = globus_list_first(tmp_list);
-            tmp_list = globus_list_rest(tmp_list);
-
-            description_escaped = globus_gram_prepare_log_string(
-                    record->description);
-            default_escaped = globus_gram_prepare_log_string(
-                    record->default_value);
-            enum_escaped = globus_gram_prepare_log_string(
-                    record->enumerated_values);
-
-            /*
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.validation_record.info "
-                    "level=TRACE "
-                    "attribute=%s "
-                    "description=\"%s\" "
-                    "required_when=%d "
-                    "default_when=%d "
-                    "default_value=\"%s\" "
-                    "enumerated_values=\"%s\" "
-                    "\n",
-                    record->attribute,
-                    description_escaped,
-                    record->required_when,
-                    record->default_when,
-                    (default_escaped != NULL) ? default_escaped : "",
-                    (enum_escaped != NULL) ? enum_escaped : "");
-            */
-            if (description_escaped)
-            {
-                free(description_escaped);
-            }
-            if (default_escaped)
-            {
-                free(default_escaped);
-            }
-            if (enum_escaped)
-            {
-                free(enum_escaped);
-            }
-        }
-    }
-read_site_scheduler_validation_filename_failed:
+read_site_lrm_validation_filename_failed:
 read_site_validation_filename_failed:
-read_scheduler_validation_filename_failed:
+read_lrm_validation_filename_failed:
     if(rc != GLOBUS_SUCCESS)
     {
-        while(!globus_list_empty(manager->validation_records))
-        {
-            globus_l_gram_job_manager_validation_record_free(
-                    globus_list_remove(&manager->validation_records,
-                                       manager->validation_records));
-        }
+        globus_gram_job_manager_validation_destroy(
+                manager->validation_records);
         manager->validation_records = NULL;
     }
 read_validation_failed:
-    free(site_scheduler_validation_filename);
-site_scheduler_validation_filename_failed:
-    free(site_scheduler_validation_filename_pattern);
-site_scheduler_validation_filename_pattern_failed:
-    free(scheduler_validation_filename);
-scheduler_validation_filename_failed:
-    free(scheduler_validation_filename_pattern);
-scheduler_validation_filename_pattern_failed:
-    free(site_validation_filename);
-site_validation_filename_failed:
-    free(validation_filename);
-validation_filename_failed:
     return rc;
 }
 /* globus_gram_job_manager_validation_init() */
@@ -374,6 +431,12 @@ globus_gram_job_manager_validate_rsl(
         return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
 
+    rc = globus_gram_job_manager_validation_update(request->manager);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
+
     /*
      * Make sure all of the attributes match defined RSL validation records.
      */
@@ -422,7 +485,7 @@ rsl_check_failed:
  *        The request structure containing information about the
  *        scheduler we will be using, and into which the validation
  *        records will be read.
- * @param validation_filename
+ * @param filename
  *        The name of the validation file to parse.
  *
  * @note This parser isn't very strict in what it accepts. The
@@ -438,7 +501,7 @@ static
 int
 globus_l_gram_job_manager_read_validation_file(
     globus_gram_job_manager_t *         manager,
-    const char *                        validation_filename)
+    const char *                        filename)
 {
     FILE *                              fp;
     int                                 length;
@@ -456,7 +519,7 @@ globus_l_gram_job_manager_read_validation_file(
     int                                 j;
     int                                 rc = GLOBUS_SUCCESS;
 
-    fp = fopen(validation_filename, "r");
+    fp = fopen(filename, "r");
 
     if(fp == NULL)
     {

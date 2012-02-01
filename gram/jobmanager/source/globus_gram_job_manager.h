@@ -434,8 +434,12 @@ typedef struct globus_gram_job_manager_s
      * Callback handle for fork SEG-like polling
      */
     globus_callback_handle_t            fork_callback_handle;
-    /** Scheduler-specific set of validation records */
+    /** LRM-specific set of validation records */
     globus_list_t *                     validation_records;
+    /** Newest validation file timestamp */
+    time_t                              validation_record_timestamp;
+    /** Track when validation files are added or removed */
+    globus_bool_t                       validation_file_exists[4];
     /** GRAM job manager listener contact string */
     char *                              url_base;
     /** Time when the job manager-wide proxy will expire */
@@ -981,11 +985,6 @@ typedef enum
     GLOBUS_GRAM_VALIDATE_STDIO_UPDATE = 4
 }
 globus_gram_job_manager_validation_when_t;
-
-extern
-int
-globus_gram_job_manager_validation_init(
-    globus_gram_job_manager_t *         config);
 
 extern
 int
