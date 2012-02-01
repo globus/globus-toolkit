@@ -312,9 +312,10 @@ Description: "Override the default log path pattern for this job. The value of
              RSL substitution), it will be reevaluated at log time."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
+# default value is 4 hours
 Attribute: expiration
-Description: "Time (in seconds) after a a job failes to receive a two-phase
+Description: "Time (in seconds) after a a job fails to receive a two-phase
               commit end signal before it is cleaned up."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
-Default: 60
+Default: 14400
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
