@@ -36,9 +36,8 @@
 
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
-#include "globus_gram_job_manager_validation.h"
 #include "globus_rsl.h"
-#include "globus_rsl_assist.h"
+#include "globus_rvf_parser.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -50,12 +49,6 @@ static char *                           lrm_validation_filename;
 static char *                           lrm_validation_filename_pattern;
 static char *                           site_lrm_validation_filename;
 static char *                           site_lrm_validation_filename_pattern;
-
-static
-int
-globus_l_gram_job_manager_read_validation_file(
-    globus_gram_job_manager_t *         manager,
-    const char *                        filename);
 
 static
 int
@@ -97,14 +90,13 @@ globus_l_gram_job_manager_insert_default_rsl(
                                         when);
 
 static
-globus_gram_job_manager_validation_record_t *
+globus_rvf_record_t *
 globus_l_gram_job_manager_validation_record_new(void);
 
 static
 void
 globus_l_gram_job_manager_validation_record_free(
-    globus_gram_job_manager_validation_record_t *
-                                        record);
+    globus_rvf_record_t *               record);
 
 static
 int
@@ -298,7 +290,7 @@ globus_gram_job_manager_validation_init(
 {
     time_t                              validation_timestamp = time(NULL);
     int                                 rc = GLOBUS_SUCCESS;
-    globus_result_t                     result;
+    globus_list_t *                     l;
 
     manager->validation_records = NULL;
     manager->validation_file_exists[0] = GLOBUS_FALSE;
@@ -309,9 +301,10 @@ globus_gram_job_manager_validation_init(
     /* Read in validation files. Do the generic job manager one first,
      * as the scheduler-specific one overrides it.
      */
-    rc = globus_l_gram_job_manager_read_validation_file(
-            manager,
-            validation_filename);
+    rc = globus_rvf_parse_file(
+        validation_filename,
+        &manager->validation_records,
+        &manager->gt3_failure_message);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -321,9 +314,10 @@ globus_gram_job_manager_validation_init(
 
     if(access(lrm_validation_filename, R_OK) == 0)
     {
-        rc = globus_l_gram_job_manager_read_validation_file(
-                manager,
-                lrm_validation_filename);
+        rc = globus_rvf_parse_file(
+                lrm_validation_filename,
+                &manager->validation_records,
+                &manager->gt3_failure_message);
         if (rc != GLOBUS_SUCCESS)
         {
             goto read_lrm_validation_filename_failed;
@@ -333,9 +327,11 @@ globus_gram_job_manager_validation_init(
 
     if (access(site_validation_filename, R_OK) == 0)
     {
-        rc = globus_l_gram_job_manager_read_validation_file(
-                manager,
-                site_validation_filename);
+        rc = globus_rvf_parse_file(
+                site_validation_filename,
+                &manager->validation_records,
+                &manager->gt3_failure_message);
+
         if (rc != GLOBUS_SUCCESS)
         {
             goto read_site_validation_filename_failed;
@@ -345,14 +341,37 @@ globus_gram_job_manager_validation_init(
 
     if (access(site_lrm_validation_filename, R_OK) == 0)
     {
-        rc = globus_l_gram_job_manager_read_validation_file(
-                manager,
-                site_lrm_validation_filename);
+        rc = globus_rvf_parse_file(
+                site_lrm_validation_filename,
+                &manager->validation_records,
+                &manager->gt3_failure_message);
         if (rc != GLOBUS_SUCCESS)
         {
             goto read_site_lrm_validation_filename_failed;
         }
         manager->validation_file_exists[3] = GLOBUS_TRUE;
+    }
+
+    for(l = manager->validation_records; l != NULL; l = globus_list_rest(l))
+    {
+        globus_rvf_record_t *           record = globus_list_first(l);
+
+        if (record->valid_when == -1)
+        {
+            record->valid_when = 0;
+        }
+        if (record->default_when == -1)
+        {
+            record->default_when = 0;
+        }
+        if (record->required_when == -1)
+        {
+            record->required_when = 0;
+        }
+        if (record->publishable == -1)
+        {
+            record->publishable = 1;
+        }
     }
 
     manager->validation_record_timestamp = validation_timestamp;
@@ -376,8 +395,7 @@ globus_gram_job_manager_validation_destroy(
     globus_list_t *                     validation_records)
 {
     globus_list_t *                     tmp;
-    globus_gram_job_manager_validation_record_t *
-                                        record;
+    globus_rvf_record_t *               record;
 
     tmp = validation_records;
 
@@ -467,461 +485,6 @@ rsl_check_failed:
     return rc;
 }
 /* globus_gram_job_manager_validate_rsl() */
-
-/**
- * Parse a validation file.
- *
- * Parse the contents of a validation file, storing validation records
- * into the list pointed to by the request's @a validation_records datum.
- * Each record consists of a set of attribute-value pairs. All except
- * "attribute" are optional. Unrecognized attributes will be ignored.
- *
- * If an attribute appears twice in a validation file, or if it appears
- * in both the job manager and the scheduler-specific validation file,
- * then the second definition will be used, completely overriding the
- * initial definition.
- *
- * @param request
- *        The request structure containing information about the
- *        scheduler we will be using, and into which the validation
- *        records will be read.
- * @param filename
- *        The name of the validation file to parse.
- *
- * @note This parser isn't very strict in what it accepts. The
- * parser ignores unrecognized attibutes, so a misplaced quote could
- * it to ignore large portions of the file.
- *
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_VALIDATION_FILE
- *         The validation file could not be opened.
- * @retval GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE
- *         The validation file could not be read or parsed.
- */
-static
-int
-globus_l_gram_job_manager_read_validation_file(
-    globus_gram_job_manager_t *         manager,
-    const char *                        filename)
-{
-    FILE *                              fp;
-    int                                 length;
-    globus_gram_job_manager_validation_record_t *
-                                        tmp = NULL;
-    char *                              token_start;
-    char *                              token_end;
-    char *                              attribute;
-    char *                              value = NULL;
-    globus_list_t *                     node;
-    globus_gram_job_manager_validation_record_t *
-                                        old_record = NULL;
-    char *                              data = NULL;
-    int                                 i;
-    int                                 j;
-    int                                 rc = GLOBUS_SUCCESS;
-
-    fp = fopen(filename, "r");
-
-    if(fp == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_VALIDATION_FILE;
-
-        goto error_exit;
-    }
-
-    if(fseek(fp, 0, SEEK_END) == -1)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-        goto close_exit;
-    }
-    if((length = ftell(fp)) == -1)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-        goto close_exit;
-    }
-    if(fseek(fp, 0, SEEK_SET) == -1)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-        goto close_exit;
-    }
-
-    token_start = data = malloc((size_t) length + 1);
-
-    if(token_start == NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-        goto close_exit;
-    }
-
-    if(fread(token_start, 1, (size_t) length, fp) != length)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-        goto close_exit;
-    }
-    token_start[(size_t) length] = '\0';
-
-    while(*token_start)
-    {
-        while(*token_start)
-        {
-            if(isspace(*token_start))
-            {
-                token_start++;
-            }
-            else if(*token_start == '#')
-            {
-                token_start = strchr(token_start, '\n');
-            }
-            else
-            {
-                break;
-            }
-        }
-        token_end = strchr(token_start, ':');
-
-        if(!token_end)
-        {
-            break;
-        }
-        attribute = malloc(token_end - token_start + 1);
-        if(attribute == NULL)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-            goto close_exit;
-        }
-        memcpy(attribute, token_start, token_end - token_start);
-        attribute[token_end-token_start] = '\0';
-        token_start = token_end + 1; /* skip : */
-
-        while(*token_start && isspace(*token_start))
-        {
-            token_start++;
-        }
-        if(*token_start == '"')
-        {
-            token_end = token_start;
-            token_start++;
-
-            do
-            {
-                token_end++;
-                token_end = strchr(token_end, '"');
-            }
-            while((*token_end) && *(token_end-1) == '\\');
-
-            value = malloc(token_end - token_start + 1);
-            if(value == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-                goto free_attribute_exit;
-            }
-            for(i = 0, j = 0; token_start + i < token_end; i++)
-            {
-                if(token_start[i] == '\\' && token_start[i+1] == '"')
-                {
-                    value[j++] = token_start[++i];
-                }
-                else if(!(isspace(token_start[i]) && isspace(token_start[i+1])))
-                {
-                    value[j++] = token_start[i];
-                }
-            }
-            value[j] = '\0';
-            token_end++;
-
-            while(*token_end && *token_end != '\n')
-            {
-                token_end++;
-            }
-            if(*token_end == '\n')
-            {
-                token_end++;
-            }
-        }
-        else
-        {
-            token_end = strchr(token_start, '\n');
-            if(token_end != NULL)
-            {
-                value = malloc(token_end - token_start + 1);
-                if(value == NULL)
-                {
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-                    goto free_attribute_exit;
-                }
-                memcpy(value, token_start, token_end - token_start);
-                value[token_end - token_start] = '\0';
-                token_end++;
-            }
-            else
-            {
-                value = strdup(token_start);
-                token_end = token_start + strlen(token_start);
-            }
-        }
-        if(tmp == GLOBUS_NULL)
-        {
-            tmp = globus_l_gram_job_manager_validation_record_new();
-            if(tmp == NULL)
-            {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-                goto free_value_exit;
-            }
-        }
-        /* Compare token names against known attributes */
-        if(strcasecmp(attribute, "attribute") == 0)
-        {
-            tmp->attribute = value;
-            value = NULL;
-            globus_rsl_assist_string_canonicalize(tmp->attribute);
-        }
-        else if(strcasecmp(attribute, "description") == 0)
-        {
-            tmp->description = value;
-            value = NULL;
-        }
-        else if(strcasecmp(attribute, "requiredwhen") == 0)
-        {
-            tmp->required_when = 0;
-
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING))
-            {
-                tmp->required_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
-            }
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
-            {
-                tmp->required_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
-            }
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING))
-            {
-                tmp->required_when |= GLOBUS_GRAM_VALIDATE_STDIO_UPDATE;
-            }
-            free(value);
-            value = GLOBUS_NULL;
-        }
-        else if(strcasecmp(attribute, "defaultwhen") == 0)
-        {
-            tmp->default_when = 0;
-
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING))
-            {
-                tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
-            }
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
-            {
-                tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
-            }
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING))
-            {
-                tmp->default_when |= GLOBUS_GRAM_VALIDATE_STDIO_UPDATE;
-            }
-            free(value);
-            value = GLOBUS_NULL;
-        }
-        else if(strcasecmp(attribute, "validwhen") == 0)
-        {
-            tmp->valid_when = 0;
-
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING))
-            {
-                tmp->valid_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
-            }
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
-            {
-                tmp->valid_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
-            }
-            if(strstr(value, GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING))
-            {
-                tmp->valid_when |= GLOBUS_GRAM_VALIDATE_STDIO_UPDATE;
-            }
-            free(value);
-            value = GLOBUS_NULL;
-        }
-        else if(strcasecmp(attribute, "default") == 0)
-        {
-            tmp->default_value = value;
-            value = NULL;
-        }
-        else if(strcasecmp(attribute, "values") == 0)
-        {
-            tmp->enumerated_values = value;
-            value = NULL;
-        }
-        else if(strcasecmp(attribute, "publish") == 0)
-        {
-            if(strcasecmp(value, "true") == 0)
-            {
-                tmp->publishable = GLOBUS_TRUE;
-            }
-            else
-            {
-                tmp->publishable = GLOBUS_FALSE;
-            }
-            free(value);
-            value = GLOBUS_NULL;
-        }
-        else
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_ERROR,
-                    "event=gram.validation_record.info "
-                    "level=ERROR "
-                    "msg=\"Unknown attribute in validation file\" "
-                    "path=\"%s\" "
-                    "attribute=\"%s\" "
-                    "value=\"%s\" "
-                    "\n",
-                    validation_filename,
-                    attribute,
-                    value);
-
-            if (manager->gt3_failure_message == NULL)
-            {
-                manager->gt3_failure_message = globus_common_create_string(
-                        "the job manager is misconfigured with an unknown property \"%s\" is in the RSL validation file at \"%s\"",
-                        attribute,
-                        validation_filename);
-            }
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
-
-            /* unknown attribute.... error */
-            goto free_value_exit;
-        }
-        free(attribute);
-        attribute = GLOBUS_NULL;
-
-        token_start = token_end;
-
-        /* Eat whitespace on end of record entry */
-        while(*token_start && isspace(*token_start))
-        {
-            if(*token_start == '\n')
-            {
-                break;
-            }
-            else
-            {
-                token_start++;
-            }
-        }
-        /* If record entry is followed by blank line or eof, then
-         * store entry in list
-         */
-        if(*token_start == '\0' || *token_start == '\n')
-        {
-            node = globus_list_search_pred(
-                    manager->validation_records,
-                    globus_l_gram_job_manager_attribute_match,
-                    tmp->attribute);
-
-            if(node)
-            {
-                /*
-                 * Validation record already exists; override changed
-                 * values.
-                 */
-                old_record = globus_list_first(node);
-
-                if(tmp->description)
-                {
-                    if(old_record->description)
-                    {
-                        free(old_record->description);
-                    }
-                    old_record->description = tmp->description;
-                    tmp->description = NULL;
-                }
-                if(tmp->default_value)
-                {
-                    if(old_record->default_value)
-                    {
-                        free(old_record->default_value);
-                    }
-                    old_record->default_value = tmp->default_value;
-                    tmp->default_value = NULL;
-                }
-                if(tmp->enumerated_values)
-                {
-                    if(old_record->enumerated_values)
-                    {
-                        free(old_record->enumerated_values);
-                    }
-                    old_record->enumerated_values = tmp->enumerated_values;
-                    tmp->enumerated_values = NULL;
-                }
-                if(tmp->required_when != -1)
-                {
-                    old_record->required_when = tmp->required_when;
-                }
-                if(tmp->default_when != -1)
-                {
-                    old_record->default_when = tmp->default_when;
-                }
-                if(tmp->valid_when != -1)
-                {
-                    old_record->valid_when = tmp->valid_when;
-                }
-                if(tmp->publishable)
-                {
-                    old_record->publishable = tmp->publishable;
-                }
-                globus_l_gram_job_manager_validation_record_free(tmp);
-                tmp = GLOBUS_NULL;
-            }
-            else
-            {
-                if(tmp->required_when == -1)
-                {
-                    tmp->required_when = 0;
-                }
-                if(tmp->default_when == -1)
-                {
-                    tmp->default_when = 0;
-                }
-                if(tmp->valid_when == -1)
-                {
-                    tmp->valid_when = 0;
-                }
-                /* Insert into validation record list */
-                globus_list_insert(&manager->validation_records, tmp);
-                tmp = GLOBUS_NULL;
-            }
-        }
-    }
-
-free_value_exit:
-    if (value)
-    {
-        free(value);
-    }
-free_attribute_exit:
-    if (attribute)
-    {
-        free(attribute);
-    }
-close_exit:
-    fclose(fp);
-error_exit:
-    if(data)
-    {
-        free(data);
-    }
-    if(tmp)
-    {
-        globus_l_gram_job_manager_validation_record_free(tmp);
-    }
-    return rc;
-}
-/* globus_l_gram_job_manager_read_validation_file() */
-
 /**
  * Attribute name matching search predicate.
  *
@@ -936,11 +499,10 @@ error_exit:
 static
 int
 globus_l_gram_job_manager_attribute_match(
-    void *                                datum,
-    void *                                args)
+    void *                             datum,
+    void *                             args)
 {
-    globus_gram_job_manager_validation_record_t *
-                                        tmp = datum;
+    globus_rvf_record_t *               tmp = datum;
 
     return globus_l_gram_job_manager_validation_string_match(
                 tmp->attribute,
@@ -984,8 +546,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
     globus_rsl_t *                      relation;
     char *                              attribute;
     char *                              value_str;
-    globus_gram_job_manager_validation_record_t *
-                                        record;
+    globus_rvf_record_t *               record;
     globus_rsl_value_t *                value;
     int                                 rc = GLOBUS_SUCCESS;
     static const char *                 operation_types[] =
@@ -1217,8 +778,7 @@ globus_l_gram_job_manager_insert_default_rsl(
     globus_gram_job_manager_validation_when_t
                                         when)
 {
-    globus_gram_job_manager_validation_record_t *
-                                        record;
+    globus_rvf_record_t *               record;
     globus_list_t **                    attributes;
     globus_rsl_t *                      new_relation;
     char *                              new_relation_str;
@@ -1327,14 +887,13 @@ globus_l_gram_job_manager_attribute_exists(
 /* globus_l_gram_job_manager_attribute_exists() */
 
 static
-globus_gram_job_manager_validation_record_t *
+globus_rvf_record_t *
 globus_l_gram_job_manager_validation_record_new(void)
 {
-    globus_gram_job_manager_validation_record_t *
-                                        tmp;
+    globus_rvf_record_t *               tmp;
 
     tmp = malloc(
-            sizeof(globus_gram_job_manager_validation_record_t));
+            sizeof(globus_rvf_record_t));
 
     tmp->attribute = NULL;
     tmp->description = NULL;
@@ -1361,8 +920,7 @@ globus_l_gram_job_manager_validation_record_new(void)
 static
 void
 globus_l_gram_job_manager_validation_record_free(
-    globus_gram_job_manager_validation_record_t *
-                                            record)
+    globus_rvf_record_t *               record)
 {
     if(!record)
     {

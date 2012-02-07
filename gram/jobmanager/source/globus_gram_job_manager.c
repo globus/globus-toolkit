@@ -183,6 +183,10 @@ globus_gram_job_manager_init(
      */
     manager->validation_record_timestamp = (time_t) 0;
     manager->validation_records = NULL;
+    manager->validation_file_exists[0] = 0;
+    manager->validation_file_exists[1] = 0;
+    manager->validation_file_exists[2] = 0;
+    manager->validation_file_exists[3] = 0;
 
     rc = globus_hashtable_init(
             &manager->request_hash,
