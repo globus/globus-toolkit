@@ -21,7 +21,6 @@
 
 #include <sys/types.h>
 #include <utime.h>
-#include <sys/mman.h>
 #include <regex.h>
 
 typedef struct globus_gram_seg_resume_s
@@ -61,6 +60,15 @@ globus_l_condor_parse_log(
     time_t                              poll_time,
     globus_gram_job_manager_ref_t *     ref,
     globus_fifo_t *                     events);
+
+static
+int
+globus_l_condor_read_log(
+    globus_gram_job_manager_t          *manager,
+    const char                         *path,
+    size_t                              last_size,
+    char                              **data,
+    size_t                             *new_size);
 
 static
 void
@@ -960,13 +968,11 @@ globus_l_gram_condor_poll_callback(
     globus_gram_job_manager_t *         manager = user_arg;
     globus_scheduler_event_t *          event;
     globus_fifo_t                       events;
-    struct stat                         st;
-    int                                 condor_log_fd;
     char *                              condor_log_data;
-    struct flock                        flock_data;
     globus_gram_job_manager_ref_t *     ref;
     uint64_t                            uniq1, uniq2;
     char *                              path = NULL;
+    size_t                              stat_size;
 
     GlobusGramJobManagerLock(manager);
     poll_time = time(NULL);
@@ -1019,121 +1025,24 @@ globus_l_gram_condor_poll_callback(
         path = globus_common_create_string("%s/condor.%"PRIu64".%"PRIu64,
                 manager->config->job_state_file_dir,
                 uniq1, uniq2);
-        condor_log_fd = open(path, O_RDONLY);
-        if (condor_log_fd < 0)
+        if (path == NULL)
         {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.condor_poll.info "
-                    "level=TRACE "
-                    "message=\"%s\" "
-                    "errno=%d "
-                    "errstr=\"%s\" "
-                    "\n",
-                    "open failed",
-                    errno,
-                    strerror(errno));
             continue;
         }
-        rc = fstat(condor_log_fd, &st);
-        if (rc != GLOBUS_SUCCESS)
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.condor_poll.info "
-                    "level=TRACE "
-                    "message=\"%s\" "
-                    "errno=%d "
-                    "errstr=\"%s\" "
-                    "\n",
-                    "fstat failed",
-                    errno,
-                    strerror(errno));
-            goto close_log;
-        }
-        if (st.st_uid != getuid())
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.condor_poll.info "
-                    "level=TRACE "
-                    "message=\"%s\" "
-                    "uid.me=%ld "
-                    "uid.file=%ld "
-                    "\n",
-                    "uid mismatch",
-                    (long) getuid(),
-                    (long) st.st_uid);
-            goto close_log;
-        }
-        if (st.st_size <= ref->seg_last_size)
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                    "event=gram.condor_poll.info "
-                    "level=TRACE "
-                    "message=\"%s\" "
-                    "file=\"%s\" "
-                    "size.last_poll=%lld "
-                    "size.file=%lld "
-                    "\n",
-                    "file hasn't grown since last poll",
-                    path,
-                    (long long) ref->seg_last_size,
-                    (long long) st.st_size);
 
-            goto close_log;
-        }
-
-        flock_data.l_type = F_RDLCK;
-        flock_data.l_whence = SEEK_SET;
-        flock_data.l_start = 0;
-        flock_data.l_len = 0;
-        flock_data.l_pid = getpid();
-
-        globus_gram_job_manager_log(
+        rc = globus_l_condor_read_log(
                 manager,
-                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
-                "event=gram.condor_poll.info "
-                "level=TRACE "
-                "message=\"%s\" "
-                "file=\"%s\" "
-                "\n",
-                "Checking file for new events",
-                path);
+                path,
+                ref->seg_last_size,
+                &condor_log_data,
+                &stat_size);
 
-        do
+        /* condor_log_data is null if the file hasn't changed since
+         * seg_last_size or an error happened.
+         */
+        if (rc != GLOBUS_SUCCESS || condor_log_data == NULL)
         {
-            rc = fcntl(condor_log_fd, F_SETLKW, &flock_data);
-            if (rc != 0 && errno != EINTR)
-            {
-                goto close_log;
-            }
-        } while (rc == -1);
-
-        condor_log_data = mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_SHARED,
-                condor_log_fd, 0);
-
-        if (condor_log_data == MAP_FAILED)
-        {
-            globus_gram_job_manager_log(
-                    manager,
-                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
-                    "event=gram.condor_poll.info "
-                    "level=WARN "
-                    "message=\"%s\" "
-                    "filename=\"%s\" "
-                    "errno=%d "
-                    "reason=%s\n",
-                    "Error mapping condor log into memory",
-                    path,
-                    errno,
-                    strerror(errno));
-            goto close_log;
+            goto read_failed;
         }
 
         rc = globus_l_condor_parse_log(
@@ -1142,10 +1051,10 @@ globus_l_gram_condor_poll_callback(
                 poll_time,
                 ref,
                 &events);
-        munmap(condor_log_data, (size_t) st.st_size);
-        ref->seg_last_size = st.st_size;
-close_log:
-        close(condor_log_fd);
+
+        free(condor_log_data);
+        ref->seg_last_size = stat_size;
+read_failed:
         free(path);
         path = NULL;
     }
@@ -1534,3 +1443,359 @@ globus_l_condor_parse_log(
     return 0;
 }
 /* globus_l_condor_parse_log() */
+
+static
+int
+globus_l_condor_read_log(
+    globus_gram_job_manager_t          *manager,
+    const char                         *path,
+    size_t                              last_size,
+    char                              **data,
+    size_t                             *new_size)
+{
+    int                                 condor_log_fd;
+    char                               *condor_log_data;
+    struct stat                         st;
+    struct flock                        flock_data;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    *data = NULL;
+    if (new_size)
+    {
+        *new_size = last_size;
+    }
+
+    condor_log_fd = open(path, O_RDONLY);
+    if (condor_log_fd < 0)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.condor_poll.info "
+                "level=TRACE "
+                "message=\"%s\" "
+                "errno=%d "
+                "errstr=\"%s\" "
+                "\n",
+                "open failed",
+                errno,
+                strerror(errno));
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+
+        goto open_failed;
+    }
+    rc = fstat(condor_log_fd, &st);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.condor_poll.info "
+                "level=TRACE "
+                "message=\"%s\" "
+                "errno=%d "
+                "errstr=\"%s\" "
+                "\n",
+                "fstat failed",
+                errno,
+                strerror(errno));
+
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+        goto fstat_failed;
+    }
+
+    if (st.st_uid != getuid())
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.condor_poll.info "
+                "level=TRACE "
+                "message=\"%s\" "
+                "uid.me=%ld "
+                "uid.file=%ld "
+                "\n",
+                "uid mismatch",
+                (long) getuid(),
+                (long) st.st_uid);
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+        goto uid_mismatch;
+    }
+
+    if (st.st_size <= last_size)
+    {
+        globus_gram_job_manager_log(
+                manager,
+                GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+                "event=gram.condor_poll.info "
+                "level=TRACE "
+                "message=\"%s\" "
+                "file=\"%s\" "
+                "size.last_poll=%lld "
+                "size.file=%lld "
+                "\n",
+                "file hasn't grown since last poll",
+                path,
+                (long long) last_size,
+                (long long) st.st_size);
+
+        goto not_grown;
+    }
+
+    flock_data.l_type = F_RDLCK;
+    flock_data.l_whence = SEEK_SET;
+    flock_data.l_start = 0;
+    flock_data.l_len = 0;
+    flock_data.l_pid = getpid();
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.condor_poll.info "
+            "level=TRACE "
+            "message=\"%s\" "
+            "file=\"%s\" "
+            "\n",
+            "Checking file for new events",
+            path);
+
+    do
+    {
+        rc = fcntl(condor_log_fd, F_SETLKW, &flock_data);
+        if (rc != 0 && errno != EINTR)
+        {
+            goto fcntl_lock_failed;
+        }
+    } while (rc == -1);
+
+    {
+        ssize_t read_res;
+        size_t amt_to_read = st.st_size;
+        size_t amt_read = 0;
+
+        condor_log_data = malloc((size_t) st.st_size + 1);
+        if (condor_log_data == NULL)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.condor_poll.info "
+                    "level=WARN "
+                    "message=\"%s\" "
+                    "filename=\"%s\" "
+                    "size=%llu "
+                    "errno=%d "
+                    "reason=%s\n",
+                    "Error allocating memory for condor log",
+                    path,
+                    (unsigned long long) st.st_size,
+                    errno,
+                    strerror(errno));
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto malloc_data_failed;
+        }
+        condor_log_data[(size_t) st.st_size] = 0;
+
+        while (amt_to_read > amt_read)
+        {
+            read_res = read(
+                    condor_log_fd,
+                    condor_log_data + amt_read,
+                    amt_to_read - amt_read);
+
+            if (read_res < 0 && errno == EINTR)
+            {
+                continue;
+            }
+            else if (read_res > 0)
+            {
+                amt_read += read_res;
+            }
+            else
+            {
+                /* Some other error or short read */
+                break;
+            }
+        }
+
+        if (amt_to_read != amt_read)
+        {
+            globus_gram_job_manager_log(
+                    manager,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_WARN,
+                    "event=gram.condor_poll.info "
+                    "level=WARN "
+                    "message=\"%s\" "
+                    "filename=\"%s\" "
+                    "size=%llu "
+                    "amt_read=%llu "
+                    "errno=%d "
+                    "reason=%s\n",
+                    "Error reading condor log",
+                    path,
+                    (unsigned long long) st.st_size,
+                    (unsigned long long) amt_read,
+                    errno,
+                    strerror(errno));
+            goto read_failed;
+        }
+        *data = condor_log_data;
+        if (new_size)
+        {
+            *new_size = st.st_size;
+        }
+        rc = GLOBUS_SUCCESS;
+    }
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+read_failed:
+        free(condor_log_data);
+    }
+malloc_data_failed:
+fcntl_lock_failed:
+not_grown:
+uid_mismatch:
+fstat_failed:
+    close(condor_log_fd);
+open_failed:
+    return rc;
+}
+
+int
+globus_gram_job_manager_seg_parse_condor_id(
+    globus_gram_jobmanager_request_t *  request,
+    char **                             condor_idp)
+{
+    char *                              condor_name;
+    char *                              condor_data;
+    globus_fifo_t                       events;
+    int                                 rc = GLOBUS_SUCCESS;
+    time_t                              now = time(NULL);
+    time_t                              old_last_timestamp;
+    char *                              condor_id;
+    globus_gram_job_manager_ref_t *     ref;
+    globus_scheduler_event_t *          event;
+
+    GlobusGramJobManagerLock(request->manager);
+    ref = globus_hashtable_lookup(
+            &request->manager->request_hash,
+            request->job_contact_path);
+    if (!ref)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+
+        goto no_ref;
+    }
+    condor_name = globus_common_create_string(
+            "%s/condor.%s",
+            request->config->job_state_file_dir,
+            request->uniq_id);
+
+    if (condor_name == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto name_malloc_fail;
+    }
+
+    rc = globus_l_condor_read_log(
+        request->manager,
+        condor_name,
+        0,
+        &condor_data,
+        NULL);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto read_failed;
+    }
+
+    rc = globus_fifo_init(&events);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto fifo_init_failed;
+    }
+
+    /* Don't want to affect the ref timestamp for these events, just
+     * pull out the jobid value
+     */
+    old_last_timestamp = ref->seg_last_timestamp;
+    globus_l_condor_parse_log(
+        condor_data,
+        0,
+        now,
+        ref,
+        &events);
+    ref->seg_last_timestamp = old_last_timestamp;
+
+    /* If there's any event in this file, then we'll assume that's the
+     * job id base for this job and construct the subjob ids based on the
+     * rsl count attribute
+     */
+    if (!globus_fifo_empty(&events))
+    {
+        event = globus_fifo_peek(&events);
+        if (event->job_id != NULL)
+        {
+            int cluster;
+            int count;
+            int i;
+            char *p;
+
+            rc = globus_gram_job_manager_rsl_attribute_get_int_value(
+                request->rsl,
+                GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
+                &count);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                goto bad_count;
+            }
+            sscanf(event->job_id, "%d", &cluster);
+
+            condor_id = malloc(12 * count + 1);
+            if (condor_id == NULL)
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                goto condor_id_malloc_failed;
+            }
+            condor_id[0] = 0;
+            p = condor_id;
+
+            for (i = 0; i < count; i++)
+            {
+                sprintf(p, "%03d.%03d.%03d,",
+                        cluster, i, 0);
+                p += 12;
+            }
+            *(p-1) = 0;
+            *condor_idp = condor_id;
+        }
+    }
+
+condor_id_malloc_failed:
+bad_count:
+    /*
+     * Should probably put these directly into the request's SEG event queue,
+     * but for simplicity, just discard these here and let the regular poll
+     * callback handle them.
+     */
+    while (!globus_fifo_empty(&events))
+    {
+        event = globus_fifo_dequeue(&events);
+
+        globus_scheduler_event_destroy(event);
+    }
+    globus_fifo_destroy(&events);
+fifo_init_failed:
+    free(condor_data);
+read_failed:
+    free(condor_name);
+name_malloc_fail:
+no_ref:
+    GlobusGramJobManagerUnlock(request->manager);
+    return rc;
+}
+/* globus_gram_job_manager_seg_parse_condor_id() */

@@ -74,6 +74,7 @@ configure-stamp: sed-stamp
 	   --docdir='$${datadir}/doc/$(name)' \
 	   --disable-static \
            --with-lsb \
+           --with-default-runlevels=2345 \
            --with-initscript-config-path=/etc/default/$(name) \
            --with-lockfile-path='$${localstatedir}/lock/$(name)'
 

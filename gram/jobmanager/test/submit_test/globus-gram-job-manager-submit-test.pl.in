@@ -12,6 +12,7 @@ use File::Temp;
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = File::Temp::tempdir(CLEANUP => 1);
+my $lrm = $ENV{CONTACT_LRM} if exists($ENV{CONTACT_LRM});
 my $testdatadir = $0;
 if ($testdatadir =~ m|/|)
 {
@@ -49,7 +50,9 @@ sub test_rsl
     my $testerr = "$testtmp/$testname.err";
     my $test_rsl_fp = new IO::File("$testdatadir/$testrsl", '<');
     my $out_rsl_fp = new IO::File($additionalrslfile, '>');
+    my $skiplist='';
     my @all_rsl;
+    my @lrm_skip_list=();
 
     while(<$test_rsl_fp>)
     {
@@ -66,39 +69,57 @@ sub test_rsl
     }
     $out_rsl_fp->close();
 
-    if($verbose)
-    {
-	print "# Submitting job\n";
+#
+    $skiplist = join('', @all_rsl);
+    $skiplist =~ m/\S*\(\*\s*(.*)\s*\*\)\S*/;
+    $skiplist = $1;
 
-	foreach(@all_rsl)
-	{
-	    print "#    $_";
-	}
-	print "\n" if($_ !~ /\n/m);
+    foreach my $s (split(/\s+/, $skiplist))
+    {
+        if ($s =~ m/LRM_SKIP:(.*)/)
+        {
+            push(@lrm_skip_list, $1);
+        }
     }
 
+    SKIP: {
+        skip "Skipping test for $lrm", 1,
+            if (defined($lrm) && grep(/$lrm/, @lrm_skip_list));
 
-    {
-        local(*OLDOUT, *OLDERR);
-        open(OLDOUT, ">&STDOUT");
-        open(OLDERR, ">&STDERR");
-        open(STDOUT, ">$testout");
-        open(STDERR, ">$testerr");
+        if($verbose)
+        {
+            print "# Submitting job\n";
 
-        system("$Globus::Core::Paths::bindir/globusrun",
-                "-s", "-r", $contact, "-f", $additionalrslfile);
+            foreach(@all_rsl)
+            {
+                print "#    $_";
+            }
+            print "\n" if($_ !~ /\n/m);
+        }
 
-        $rc = $? >> 8 ||
-              File::Compare::compare("$testdatadir/$testname.out", $testout) ||
-              File::Compare::compare("$testdatadir/$testname.err", $testerr);
 
-        open(STDOUT, ">&OLDOUT");
-        open(STDERR, ">&OLDERR");
-        close(OLDOUT);
-        close(OLDERR);
+        {
+            local(*OLDOUT, *OLDERR);
+            open(OLDOUT, ">&STDOUT");
+            open(OLDERR, ">&STDERR");
+            open(STDOUT, ">$testout");
+            open(STDERR, ">$testerr");
+
+            system("$Globus::Core::Paths::bindir/globusrun",
+                    "-s", "-r", $contact, "-f", $additionalrslfile);
+
+            $rc = $? >> 8 ||
+                  File::Compare::compare("$testdatadir/$testname.out", $testout) ||
+                  File::Compare::compare("$testdatadir/$testname.err", $testerr);
+
+            open(STDOUT, ">&OLDOUT");
+            open(STDERR, ">&OLDERR");
+            close(OLDOUT);
+            close(OLDERR);
+        }
+
+        ok("$testname:$additional_rsl:$rc" eq "$testname:$additional_rsl:0", "$testname:$additional_rsl");
     }
-
-    ok("$testname:$additional_rsl:$rc" eq "$testname:$additional_rsl:0", "$testname:$additional_rsl");
 }
 
 foreach(@test_cases)

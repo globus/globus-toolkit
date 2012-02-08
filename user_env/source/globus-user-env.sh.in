@@ -25,7 +25,7 @@
 
 @GLOBUS_SCRIPT_INITIALIZER@
 
-perlmoduledir="$(eval_path '@perlmoduledir@')"
+perlmoduledir="@perlmoduledir@"
 
 if [ -z "${GLOBUS_LOCATION}" ]; then
     GLOBUS_LOCATION="$prefix"

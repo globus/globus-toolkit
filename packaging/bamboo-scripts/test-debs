@@ -15,6 +15,8 @@ chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt
 
 chroot=""
 in_chroot=0
+test_from_bamboo=0
+tag=""
 
 arch="$(dpkg-architecture -qDEB_BUILD_GNU_CPU)"
 case "$arch" in
@@ -29,8 +31,7 @@ case "$arch" in
         exit 1
         ;;
 esac
-
-while getopts "ic:r:a:l:" i; do
+while getopts "ic:r:a:l:bt:" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -49,6 +50,14 @@ while getopts "ic:r:a:l:" i; do
             ;;
         l)
             lrms="$lrms $OPTARG"
+            ;;
+        t)
+            tag="$OPTARG"
+            chroot_args="${chroot_args:+"$chroot_args "}-t $OPTARG"
+            ;;
+        b)
+            test_from_bamboo=1
+            chroot_args="${chroot_args:+"$chroot_args "}-b"
             ;;
     esac
 done
@@ -75,7 +84,7 @@ fi
 
 # Create source packages for the tests
 if [ "$in_chroot" != 1 ]; then
-    ./make-packages.pl -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
+    ./make-packages.pl ${tag:+-t "$tag"} -a --deps -deporder -bundles=globus-data-management-test,globus-resource-management-test \
         -flavor=${flavor} -skipbundle
 fi
 
@@ -87,6 +96,9 @@ fi
 mkdir "$flavor"
 curl -s "$repopkg_url" > "${flavor}/${repopkg_url##*/}"
 sudo dpkg -i "${flavor}/${repopkg_url##*/}"
+if [ "$test_from_bamboo" = 1 ]; then
+    sudo sed -i /etc/apt/sources.list.d/globus.list -e "s|http://www.globus.org/ftppub/gt[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}/[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}/[a-z]\{1,\}/deb/[a-z]\{1,\}/[0-9\.]\{1,\}|${artifact_url}/repo|"
+fi
 sudo aptitude -y update
 
 # Install the binaries that we will test
@@ -133,12 +145,15 @@ for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
         sudo apt-get -y remove globus-gram-job-manager-fork globus-gram-job-manager-fork-setup-poll
         for lrm in $lrms; do
             if [ "${lrm}" = "condor" ]; then
-                modes=""
+                modes="none"
             else
                 modes="-setup-poll -setup-seg"
             fi
 
             for mode in $modes; do
+                if [ $mode = none ]; then
+                    mode=""
+                fi
                 sudo apt-get -y install globus-gram-job-manager-$lrm$mode || continue
                 if which invoke-rc.d > /dev/null 2>&1; then
                     sudo invoke-rc.d globus-gatekeeper restart

@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# globua-gatekeeper Authorize and execute a grid service
+# globus-gatekeeper Authorize and execute a grid service
 # chkconfig: @CHKCONFIG_DEFAULT@ 20 80
 
 ### BEGIN INIT INFO
@@ -51,8 +51,12 @@ GLOBUS_GATEKEEPER_PORT="${GLOBUS_GATEKEEPER_PORT:-2119}"
 test -f "${GLOBUS_GATEKEEPER_CERT_FILE:-${sysconfdir}/grid-security/hostcert.pem}" || exit 0
 test -f "${GLOBUS_GATEKEEPER_KEY_FILE:-${sysconfdir}/grid-security/hostkey.pem}" || exit 0
 
-if ! lsb_release -v | grep -q 'core-[123]'; then
-    lsb_version_ge4=1
+lsb_ok=1
+
+# Old versions of RH LSB init scripts cause infinite loops with the -p
+# parameter
+if [ -f /etc/redhat-release ] && lsb_release -v | grep -q 'core-[123]'; then
+    unset lsb_ok
 fi
 
 
@@ -64,10 +68,11 @@ start()
         kflag=""
     fi
 
-    start_daemon ${lsb_version_ge4:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} \
+    start_daemon ${lsb_ok:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} \
         ${GLOBUS_GATEKEEPER_NICE_LEVEL:+-n "${GLOBUS_GATEKEEPER_NICE_LEVEL}"} \
         "$prog" \
         -pidfile ${GLOBUS_GATEKEEPER_PIDFILE} \
+        ${GLOBUS_GATEKEEPER_LOG_FACILITY:+-lf "$GLOBUS_GATEKEEPER_LOG_FACILITY"} \
         ${GLOBUS_GATEKEEPER_PORT:+-p ${GLOBUS_GATEKEEPER_PORT}} \
         ${GLOBUS_GATEKEEPER_LOG:+-l "${GLOBUS_GATEKEEPER_LOG}"} \
         ${GLOBUS_GATEKEEPER_GRID_SERVICES:+-grid_services "${GLOBUS_GATEKEEPER_GRID_SERVICES}"} \
@@ -90,7 +95,7 @@ start()
 
 stop()
 {
-    killproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}"
+    killproc ${lsb_ok:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} "${prog}"
     rc=$?
     if [ $rc = 0 ]; then
         log_success_msg "Stopped globus-gatekeeper"
@@ -109,7 +114,7 @@ restart()
 
 status()
 {
-    pid="$(pidofproc -p "${GLOBUS_GATEKEEPER_PIDFILE}" "${prog}")"
+    pid="$(pidofproc ${lsb_ok:+-p "${GLOBUS_GATEKEEPER_PIDFILE}"} "${prog}")"
     rc=$?
     case $rc in
         0)
@@ -123,6 +128,17 @@ status()
                 echo "Stale lock file for $progname"
             else
                 echo "$progname is not running"
+            fi
+            ;;
+        4)
+            # Debian pidofproc returns 4 when pid file is specified
+            # but does not exist. LSB Spec says:
+            # If the -p pidfile option is specified and the named pidfile
+            # does not exist, the functions shall assume that the daemon is
+            # not running.
+            if [ -n "$lsb_ok" -a ! -f "${GLOBUS_GATEKEEPER_PIDFILE}" ]; then
+                echo "$progname is not running"
+                rc=0
             fi
             ;;
         *)

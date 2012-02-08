@@ -19,9 +19,19 @@ gramperlmodule_DATA = pbs.pm
 validationdir = $(datadir)/globus/globus_gram_job_manager
 validation_DATA = pbs.rvf
 
+AT=@
+jobmanager-pbs-poll: jobmanager-pbs-poll.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
+jobmanager-pbs-seg: jobmanager-pbs-seg.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = globus-pbs.conf.in pbs.pm $(doc_DATA) $(validation_DATA)
+EXTRA_DIST = globus-pbs.conf.in pbs.pm $(doc_DATA) $(validation_DATA) \
+    jobmanager-pbs-poll.in jobmanager-seg-poll.in 
 
 if SEG_ENABLED_COND
 install-data-local:

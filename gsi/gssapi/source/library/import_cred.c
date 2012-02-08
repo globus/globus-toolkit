@@ -137,7 +137,7 @@ GSS_CALLCONV gss_import_cred(
     }
 
     if(desired_mech != NULL &&
-       desired_mech != (gss_OID) gss_mech_globus_gssapi_openssl)
+        !g_OID_equal(desired_mech, gss_mech_globus_gssapi_openssl))
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,

@@ -49,6 +49,8 @@ my $personal_gatekeeper = $Globus::Core::Paths::bindir
     restart-to-new-url-test.pl
     stdio-update-test.pl
     version-test.pl
+    local-stdio-size-test.pl
+    stdio-update-after-failure-test.pl
 );
 
 if(0 != system("$Globus::Core::Paths::bindir/grid-proxy-info -exists -hours 2 2>/dev/null") / 255)

@@ -120,12 +120,12 @@ $perl_libdir_choice
     \$localstatedir = "$localstatedir";
     \$aclocaldir = "$aclocaldir";
 
-    push(@INC, "\${perlmoduledir}");
-
     if (exists \$ENV{GPT_LOCATION})
     {
-        push(@INC, "\$ENV{GPT_LOCATION}/lib/perl");
+        unshift(@INC, "\$ENV{GPT_LOCATION}/lib/perl");
     }
+
+    unshift(@INC, "\${perlmoduledir}");
 }
 EOF
 

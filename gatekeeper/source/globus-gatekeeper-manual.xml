@@ -48,6 +48,7 @@ $Header$
     <arg choice="plain">-l <replaceable>LOGFILE</replaceable></arg>
     <arg choice="plain">-logfile <replaceable>LOGFILE</replaceable></arg>
 </group>
+<arg>-lf <replaceable>LOG_FACILITY</replaceable></arg>
 <sbr/>
 <arg>-acctfile <replaceable>ACCTFILE</replaceable></arg>
 <sbr/>
@@ -171,7 +172,14 @@ The full set of command-line options to &cmd; consists of:
         <term>-l <replaceable>LOGFILE</replaceable></term>
         <term>-logfile <replaceable>LOGFILE</replaceable></term>
         <listitem><simpara>Write log entries to
-        <replaceable>LOGFILE</replaceable>.</simpara></listitem>
+        <replaceable>LOGFILE</replaceable>. If
+        <replaceable>LOGFILE</replaceable> is equal to
+        <literal>logoff</literal> or <literal>LOGOFF</literal>, then logging
+        will be disabled, both to file and to syslog.</simpara></listitem>
+    </varlistentry>
+    <varlistentry>
+        <term>-lf <replaceable>LOG_FACILITY</replaceable></term>
+        <listitem><simpara>Open syslog using the <replaceable>LOG_FACILITY</replaceable>. If not specified, <literal>LOG_DAEMON</literal> will be used as the default when using syslog.</simpara></listitem>
     </varlistentry>
     <varlistentry>
         <term><option>-acctfile <replaceable>ACCTFILE</replaceable></option></term>

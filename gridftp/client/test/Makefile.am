@@ -5,7 +5,7 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
-globusperldir = $(libdir)/perl/Globus
+globusperldir = $(perlmoduledir)/Globus
 globusperl_DATA = URL.pm
 
 Scripts= \

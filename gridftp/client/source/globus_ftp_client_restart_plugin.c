@@ -838,6 +838,8 @@ globus_l_ftp_client_restart_plugin_mlst(
 }
 /* globus_l_ftp_client_restart_plugin_mlst() */
 
+static
+void
 globus_l_ftp_client_restart_plugin_stat(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,

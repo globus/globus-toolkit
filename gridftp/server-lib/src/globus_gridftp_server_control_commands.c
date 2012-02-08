@@ -840,7 +840,7 @@ globus_l_gsc_cmd_stat_cb(
             tmp_ptr = globus_i_gsc_mlsx_line_single(
                 op->server_handle->opts.mlsx_fact_str, uid, stat_info, NULL, GLOBUS_TRUE);
             msg =  globus_common_create_string(
-                _FSMSL("status of %s\n %s\n"),
+                _FSMSL("status of %s\n%s\n"),
                 op->path, tmp_ptr);
             globus_free(tmp_ptr);
         }

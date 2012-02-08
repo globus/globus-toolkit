@@ -101,6 +101,7 @@ extern void unsetenv();
 #include "openssl/pem.h"
 
 
+char *pidpath = NULL;
 static gss_OID_desc gss_ext_x509_cert_chain_oid_desc =
      {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
 static gss_OID_desc * gss_ext_x509_cert_chain_oid =
@@ -210,6 +211,7 @@ static unsigned reqnr;
 static int      gatekeeper_test;
 static int      gatekeeper_uid;
 static int      daemon_port;
+static int      log_facility = LOG_DAEMON;
 static int      logging_syslog;
 static int      logging_usrlog;
 static int      debug;
@@ -308,6 +310,11 @@ terminate(int s)
         }
         listener_fd = -1;
     }
+    if (pidpath)
+    {
+        remove(pidpath);
+    }
+
     failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
 }
 
@@ -485,7 +492,6 @@ main(int xargc,
     int    rc;
     globus_socklen_t   namelen;
     globus_sockaddr_t name;
-    char *pidpath = NULL;
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
@@ -650,6 +656,53 @@ main(int xargc,
             logfile =  argv[i+1];
             i++;
         }
+        else if ((strcmp(argv[i], "-lf") == 0) && (i + 1 < argc))
+        {
+            char * facilitystring = argv[++i];
+            int fi;
+
+            struct facmap {
+                char * facility_name;
+                int facility;
+            } facilities[] = {
+                /* POSIX.1 facilities */
+                {"LOG_KERN", LOG_KERN},
+                {"LOG_USER", LOG_USER},
+                {"LOG_MAIL", LOG_MAIL},
+                {"LOG_NEWS", LOG_NEWS},
+                {"LOG_UUCP", LOG_UUCP},
+                {"LOG_DAEMON", LOG_DAEMON},
+                {"LOG_AUTH", LOG_AUTH},
+                {"LOG_CRON", LOG_CRON},
+                {"LOG_LPR", LOG_LPR},
+                {"LOG_LOCAL0", LOG_LOCAL0},
+                {"LOG_LOCAL1", LOG_LOCAL1},
+                {"LOG_LOCAL2", LOG_LOCAL2},
+                {"LOG_LOCAL3", LOG_LOCAL3},
+                {"LOG_LOCAL4", LOG_LOCAL4},
+                {"LOG_LOCAL5", LOG_LOCAL5},
+                {"LOG_LOCAL6", LOG_LOCAL6},
+                {"LOG_LOCAL7", LOG_LOCAL7},
+                {NULL, 0}
+            };
+
+            for (fi = 0; facilities[fi].facility_name != NULL; fi++)
+            {
+                if (strcmp(facilitystring, facilities[fi].facility_name) == 0)
+                {
+                    log_facility = facilities[fi].facility;
+                    break;
+                }
+            }
+
+            if (facilities[fi].facility_name == NULL)
+            {
+                if (isdigit(facilitystring[0]))
+                {
+                    log_facility = atoi(facilitystring);
+                }
+            }
+        }
         else if ((strcmp(argv[i], "-acctfile") == 0)
                  && (i + 1 < argc))
         {
@@ -794,7 +847,7 @@ main(int xargc,
             fprintf(stderr, "Usage: %s\n%s\n",
                     argv[0], 
                     "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port]\n"
-                    "[-home path] [-l[ogfile] logfile] [-acctfile acctfile] [-e path]\n"
+                    "[-home path] [-l[ogfile] logfile] [-lf LOG-FACILITY] [-acctfile acctfile] [-e path]\n"
                     "[-launch_method fork_and_exit|fork_and_wait|dont_fork|fork_and_proxy]\n"
                     "[-grid_services file]\n"
                     "[-globusid globusid] [-gridmap file]\n"
@@ -1126,6 +1179,7 @@ main(int xargc,
 
             if (pid == 0)
             {
+                pidpath = NULL;
                 (void) setsid();
 #               if defined(__hpux) || defined(TARGET_ARCH_SOLARIS)
                 {
@@ -2266,11 +2320,21 @@ net_setup_listener(int backlog,
                    int * skt)
 {
     globus_socklen_t                    addrlen;
-    struct sockaddr_in6                 addr;
+    int                                 family;
+    struct sockaddr *                   addr;
+    struct sockaddr_in6                 addr6;
+    struct sockaddr_in                  addr4;
     long                                flags;
     int                                 one=1;
 
-    *skt = socket(AF_INET6, SOCK_STREAM, 0);
+    family = AF_INET6;
+    *skt = socket(family, SOCK_STREAM, 0);
+    if (*skt < 0 && errno == EAFNOSUPPORT)
+    {
+        /* Fall back to ipv4 */
+        family = AF_INET;
+        *skt = socket(family, SOCK_STREAM, 0);
+    }
     error_check(*skt,"net_setup_anon_listener socket");
 
     flags = fcntl(*skt, F_GETFL, 0);
@@ -2280,19 +2344,39 @@ net_setup_listener(int backlog,
     error_check(setsockopt(*skt, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)),
                 "net_setup_anon_listener setsockopt");
 
-    addr.sin6_family = AF_INET6;
-    addr.sin6_addr = in6addr_any;
-    addr.sin6_port = htons(*port);
+    switch (family)
+    {
+        case AF_INET6:
+            addr6.sin6_family = AF_INET6;
+            addr6.sin6_addr = in6addr_any;
+            addr6.sin6_port = htons(*port);
 
-    addrlen = sizeof(addr);
-
-    error_check(bind(*skt,(struct sockaddr *) &addr, sizeof(addr)),
-                "net_setup_anon_listener bind");
+            addrlen = sizeof(addr6);
+            addr = (struct sockaddr *) &addr6;
+            break;
+        case AF_INET:
+            addr4.sin_family = AF_INET;
+            addr4.sin_addr.s_addr = INADDR_ANY;
+            addr4.sin_port = htons(*port);
+            addrlen = sizeof(addr4);
+            addr = (struct sockaddr *) &addr4;
+            break;
+    }
+    error_check(bind(*skt, addr, addrlen), "net_setup_anon_listener bind");
 
     error_check(listen(*skt, backlog), "net_setup_anon_listener listen");
 
-    getsockname(*skt, (struct sockaddr *) &addr, &addrlen);
-    *port = ntohs(addr.sin6_port);
+    getsockname(*skt, addr, &addrlen);
+
+    switch (family)
+    {
+        case AF_INET6:
+            *port = ntohs(addr6.sin6_port);
+            break;
+        case AF_INET:
+            *port = ntohs(addr4.sin_port);
+            break;
+    }
 }
 
 /******************************************************************************
@@ -2322,7 +2406,7 @@ logging_startup(void)
 	     * The messages will be treated like any other system daemon.
 	     */
 	    logging_syslog = 1;
-	    openlog("GRAM-gatekeeper", LOG_PID, LOG_DAEMON);
+	    openlog("GRAM-gatekeeper", LOG_PID, log_facility);
 	}
 
         if (strlen(logfile) > 0) 

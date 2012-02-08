@@ -1,4 +1,4 @@
-/*24.25.5.60
+/*
  * Copyright 1999-2009 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -325,6 +325,9 @@ globus_l_gram_job_manager_state_machine(
                     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
             break;
         }
+        /* write submit state, so that condor job id recovery can work */
+        request->restart_state = GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
+        globus_gram_job_manager_state_file_write(request);
 
         globus_gram_job_manager_seg_pause(request->manager);
         /*
@@ -1734,8 +1737,34 @@ globus_l_gram_job_manager_set_restart_state(
 
     switch(request->restart_state)
     {
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
+        if (strcmp(request->config->jobmanager_type, "condor") == 0)
+        {
+            int rc;
+            /*
+             * Check if the condor submit happened prior to writing the
+             * job state. if so, we'll have a log we can bootstrap the
+             * job from without resubmitting
+             */
+            rc = globus_gram_job_manager_seg_parse_condor_id(
+                request,
+                &request->original_job_id_string);
+
+            if (rc == GLOBUS_SUCCESS &&
+                request->original_job_id_string != NULL)
+            {
+                request->job_id_string = strdup(
+                        request->original_job_id_string );
+
+                globus_gram_job_manager_seg_pause(request->manager);
+                request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;
+                request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
+                changed = GLOBUS_TRUE;
+            }
+        }
+        break;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
@@ -1762,7 +1791,7 @@ globus_l_gram_job_manager_set_restart_state(
             request->failure_code = GLOBUS_SUCCESS;
             globus_gram_job_manager_request_set_status(
                 request,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE);
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT);
             request->unsent_status_change = GLOBUS_TRUE;
             request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
             changed = GLOBUS_TRUE;

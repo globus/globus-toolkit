@@ -91,6 +91,7 @@ main(
     OM_uint32                           major_status, minor_status;
     pid_t                               forked_starter = 0;
     globus_bool_t                       cgi_invoked = GLOBUS_FALSE;
+    int                                 lock_tries_left = 10;
 
     if ((sleeptime_str = getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
@@ -395,6 +396,11 @@ main(
         else if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
         {
             /* Some system error. Try again */
+            if (--lock_tries_left == 0)
+            {
+                reply_and_exit(NULL, rc, "Unable to create lock file");
+            }
+            sleep(1);
             continue;
         }
 
@@ -481,6 +487,19 @@ main(
                         globus_l_gram_process_pending_restarts,
                         &manager);
                         
+            }
+
+            {
+                globus_reltime_t        expire_period;
+
+                GlobusTimeReltimeSet(expire_period, 1, 0);
+
+                rc = globus_callback_register_periodic(
+                    &manager.expiration_handle,
+                    NULL,
+                    &expire_period,
+                    globus_gram_job_manager_expire_old_jobs,
+                    &manager);
             }
         }
         else if (http_body_fd >= 0)
@@ -583,6 +602,10 @@ main(
     while (! manager.done)
     {
         GlobusGramJobManagerWait(&manager);
+    }
+    if (manager.expiration_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(manager.expiration_handle, NULL, NULL, NULL);
     }
     GlobusGramJobManagerUnlock(&manager);
 

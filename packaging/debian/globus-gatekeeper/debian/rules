@@ -58,6 +58,7 @@ configure-stamp: $(QUILT_STAMPFN)
 	   --with-flavor=$(flavor) \
 	   --docdir='$${datadir}/doc/$(name)' \
 	   --disable-static \
+	   --without-lsb \
 	   --with-initscript-config-path=/etc/default/globus-gatekeeper
 
 	touch $@

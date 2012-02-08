@@ -1,3 +1,9 @@
+globus-gsi-credential (5.2-1) unstable; urgency=low
+
+  * RIC-213: support for private keys in PKCS8 format broken
+
+ -- Globus Toolkit <support@globus.org>  Thu, 05 Jan 2012 11:25:19 -0500
+
 globus-gsi-credential (5.1-1) unstable; urgency=low
 
   * Remove obsolete get-orig-source rules

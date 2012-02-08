@@ -8,7 +8,8 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 pkgtest_SCRIPTS = \
         TESTS.pl \
         TESTS-junit.pl \
-        grid-proxy-utils-test.pl
+        grid-proxy-utils-test.pl \
+        proxy-order-test.pl
 
 pkgtest_DATA = \
         b38b4d8c.0 b38b4d8c.signing_policy \

@@ -33,6 +33,7 @@ int main(int argc, char * argv[])
     int                                 token_status;
     gss_ctx_id_t                        init_context = GSS_C_NO_CONTEXT;
     OM_uint32                           ret_flags;
+    OM_uint32                           flags;
     int                                 sock;
     FILE *                              infd;
     FILE *                              outfd;
@@ -127,6 +128,26 @@ int main(int argc, char * argv[])
         fprintf(stdout, 
                 "INITIATOR: "__FILE__":%d"
                 ": Initiator successfully created context\n", __LINE__);
+    }
+
+    major_status = gss_inquire_context(
+            &minor_status,
+            init_context,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            &flags,
+            NULL,
+            NULL);
+
+    if (major_status == GSS_S_COMPLETE)
+    {
+        if (!(flags & GSS_C_TRANS_FLAG))
+        {
+            fprintf(stderr, "Skipping gss-assist-expimp-test: not implemented\n");
+            return EXIT_SUCCESS;
+        }
     }
     /* export sec context doesn't work for init */
     context_outfile = fopen(INIT_CONTEXT_FILE, "w");
