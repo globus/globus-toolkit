@@ -1,5 +1,8 @@
+#ifndef GLOBUS_RVF_PARSER_H
+#define GLOBUS_RVF_PARSER_H 1
+
 /*
- * Copyright 1999-2009 University of Chicago
+ * Copyright 1999-2012 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +17,9 @@
  * limitations under the License.
  */
 
-#ifndef GLOBUS_GRAM_JOB_MANAGER_VALIDATION_H
-#define GLOBUS_GRAM_JOB_MANAGER_VALIDATION_H
+#include "globus_common.h"
+
+EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
@@ -87,8 +91,17 @@ typedef struct
      */
     globus_bool_t                       publishable;
 }
-globus_gram_job_manager_validation_record_t;
+globus_rvf_record_t;
+
+extern int
+globus_rvf_parse_file(
+    char *                              rvf_path,
+    globus_list_t **                    out_attr_list,
+    char **                             error_string);
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-#endif /* GLOBUS_GRAM_JOB_MANAGER_VALIDATION_H */
+
+EXTERN_C_END
+
+#endif /* GLOBUS_RVF_PARSER_H */

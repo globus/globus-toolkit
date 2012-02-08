@@ -41,6 +41,8 @@
 
 EXTERN_C_BEGIN
 
+#define GLOBUS_GRAM_JOB_MANAGER_EXPIRATION_ATTR "expiration"
+
 /** Pointer to the current request to allow per-job logging to occur */
 extern globus_thread_key_t globus_i_gram_request_key;
 
@@ -434,8 +436,12 @@ typedef struct globus_gram_job_manager_s
      * Callback handle for fork SEG-like polling
      */
     globus_callback_handle_t            fork_callback_handle;
-    /** Scheduler-specific set of validation records */
+    /** LRM-specific set of validation records */
     globus_list_t *                     validation_records;
+    /** Newest validation file timestamp */
+    time_t                              validation_record_timestamp;
+    /** Track when validation files are added or removed */
+    globus_bool_t                       validation_file_exists[4];
     /** GRAM job manager listener contact string */
     char *                              url_base;
     /** Time when the job manager-wide proxy will expire */
@@ -498,6 +504,13 @@ typedef struct globus_gram_job_manager_s
      */
     char *                              gt3_failure_message;
     globus_xio_attr_t                   script_attr;
+
+    /**
+     * Periodic callback handle to expire jobs which completed or failed
+     * but didn't have two-phase end happen.
+     */
+    globus_callback_handle_t            expiration_handle;
+    
 }
 globus_gram_job_manager_t;
 
@@ -803,6 +816,14 @@ typedef struct globus_gram_job_manager_ref_s
      */
     globus_bool_t                       loaded_only;
 
+    /**
+     * Timestamp of when to auto-destroy this job. Thsi will be 0 unless
+     * the job has completed and failed to have it's two-phase commit end.
+     * A periodic event will poll through the refs that have this attribute
+     * set, and will reload them with a fake commit to get them cleaned up.
+     */
+    time_t                              expiration_time;
+
     /* The following are used for the internal fakeseg stuff for condor*/
 
     /**
@@ -981,11 +1002,6 @@ typedef enum
     GLOBUS_GRAM_VALIDATE_STDIO_UPDATE = 4
 }
 globus_gram_job_manager_validation_when_t;
-
-extern
-int
-globus_gram_job_manager_validation_init(
-    globus_gram_job_manager_t *         config);
 
 extern
 int
@@ -1506,6 +1522,10 @@ globus_gram_job_manager_request_exists(
 void
 globus_gram_job_manager_set_grace_period_timer(
     globus_gram_job_manager_t *         manager);
+
+void
+globus_gram_job_manager_expire_old_jobs(
+    void *                              arg);
 
 int
 globus_gram_job_manager_set_status(
