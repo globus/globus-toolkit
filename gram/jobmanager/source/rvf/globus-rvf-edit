@@ -55,6 +55,15 @@ if [ -z "$path" ]; then
     exit 1
 fi
 
+if [ ! -x "$checker" ]; then
+    echo "Configuration error: Missing $checker" 1>&2
+    exit 1
+fi
+
+if [ ! -w "$(dirname $path)" ]; then
+    echo "Permission denied: unable to write to $(dirname $path)" 1>&2
+    exit 1
+fi
 
 cleanup_tmp()
 {
@@ -65,7 +74,7 @@ cleanup_tmp()
 
 trap "cleanup_tmp" 0
 
-tmpdir="$(mktemp -d -t globus-rvf-edit)"
+tmpdir="$(mktemp -d -t globus-rvf-edit.XXXXXX)"
 if [ $? != 0 ]; then
     tmpdir="${TMPDIR-/tmp}/globus-rvf-edit.$$"
     mkdir "$tmpdir"
