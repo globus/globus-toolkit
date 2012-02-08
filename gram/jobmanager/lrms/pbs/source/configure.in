@@ -157,8 +157,6 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	Makefile
 	globus-pbs.conf
-	jobmanager-pbs-poll
-	jobmanager-pbs-seg
 	seg/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt

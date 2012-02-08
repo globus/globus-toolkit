@@ -148,7 +148,6 @@ AC_SUBST(CONDOR_MPI_SCRIPT)
 
 AC_OUTPUT(
 	Makefile
-        jobmanager-condor
         globus-condor.conf
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
