@@ -21,7 +21,19 @@ validation_DATA = sge.rvf
 
 doc_DATA = AUTHORS CREDITS LICENSE LICENSE.GTPL LICENSE.LGPL
 
-EXTRA_DIST = globus-sge.conf.in sge.pm $(doc_DATA) $(validation_DATA)
+AT=@
+jobmanager-sge-poll: jobmanager-sge-poll.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
+jobmanager-sge-seg: jobmanager-sge-seg.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
+
+
+EXTRA_DIST = globus-sge.conf.in sge.pm $(doc_DATA) $(validation_DATA) \
+        jobmanager-sge-poll.in jobmanager-sge-seg.in
 
 # Install link to available file after all other install happens
 # native packages can remove this and use globus-gatekeeper-admin to deal

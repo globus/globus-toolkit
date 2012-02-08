@@ -17,7 +17,17 @@ gramperlmodule_DATA = fork.pm
 
 doc_DATA = GLOBUS_LICENSE
 
-EXTRA_DIST = fork.pm $(doc_DATA)
+AT=@
+
+jobmanager-fork-poll: jobmanager-fork-poll.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+            -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
+jobmanager-fork-seg: jobmanager-fork-seg.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+            -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
+EXTRA_DIST = fork.pm jobmanager-fork-poll.in jobmanager-fork-seg.in $(doc_DATA)
 
 if SEG_ENABLED_COND
 install-data-local:

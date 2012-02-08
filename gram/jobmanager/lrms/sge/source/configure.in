@@ -129,14 +129,18 @@ AC_SUBST(SGE_CONFIG)
 
 AC_PATH_PROGS(MPIRUN, mpirun, no)
 AC_PATH_PROGS(SUN_MPRUN, mprun, no)
-AC_PATH_PROGS(QSUB, qsub,
-    AC_MSG_ERROR([Required SGE executable qsub not found]))
-AC_PATH_PROGS(QSTAT, qstat,
-    AC_MSG_ERROR([Required SGE executable qstat not found]))
-AC_PATH_PROGS(QDEL, qdel,
-    AC_MSG_ERROR([Required SGE executable qdel not found]))
-AC_PATH_PROGS(QCONF, qconf,
-    AC_MSG_WARN([SGE executable qconf not found]))
+AC_PATH_PROGS(QSUB, qsub, no)
+AC_PATH_PROGS(QSTAT, qstat, no)
+AC_PATH_PROGS(QDEL, qdel, no)
+AC_PATH_PROGS(QCONF, qconf, no)
+
+
+for cmd in QSUB QSTAT QDEL QCONF; do
+    eval "cmdval=\${$cmd}"
+    if test "$cmdval" = "no"; then
+        AC_MSG_ERROR([Required SGE executable $cmd not found])
+    fi
+done
 
 if test "$disable_sunmpi" = yes; then
     SUN_MPRUN=no
@@ -150,8 +154,6 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	Makefile
         globus-sge.conf
-        jobmanager-sge-poll
-        jobmanager-sge-seg
         version.h
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
