@@ -157,6 +157,7 @@ globus_gram_job_manager_init(
     manager->config = config;
     manager->stop = GLOBUS_FALSE;
     manager->pending_restarts = NULL;
+    manager->expiration_handle = GLOBUS_NULL_HANDLE;
 
     rc = globus_mutex_init(&manager->mutex, NULL);
     if (rc != GLOBUS_SUCCESS)
@@ -178,11 +179,15 @@ globus_gram_job_manager_init(
     manager->seg_last_timestamp = 0;
     manager->seg_started = GLOBUS_FALSE;
 
-    rc = globus_gram_job_manager_validation_init(manager);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto validation_init_failed;
-    }
+    /* After addition of site specific rvf files, reload validation
+     * files when changed
+     */
+    manager->validation_record_timestamp = (time_t) 0;
+    manager->validation_records = NULL;
+    manager->validation_file_exists[0] = 0;
+    manager->validation_file_exists[1] = 0;
+    manager->validation_file_exists[2] = 0;
+    manager->validation_file_exists[3] = 0;
 
     rc = globus_hashtable_init(
             &manager->request_hash,
@@ -771,6 +776,7 @@ globus_l_gram_job_manager_add_ref_stub(
     (*ref)->loaded_only = GLOBUS_FALSE;
     (*ref)->seg_last_timestamp = request ? request->seg_last_timestamp : 0;
     (*ref)->seg_last_size = 0;
+    (*ref)->expiration_time = 0;
 
     (*ref)->key = strdup(key);
     if ((*ref)->key == NULL)
@@ -1953,6 +1959,106 @@ globus_gram_job_manager_set_grace_period_timer(
 /* globus_gram_job_manager_set_grace_period_timer() */
 
 void
+globus_gram_job_manager_expire_old_jobs(
+    void *                              arg)
+{
+    globus_gram_job_manager_t *         manager = arg;
+    globus_gram_job_manager_ref_t *     ref;
+    globus_gram_jobmanager_request_t *  request;
+    int                                 rc;
+    time_t                              now;
+    int                                 expired = 0;
+
+    now = time(NULL);
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.expire_jobs.start\n");
+
+    GlobusGramJobManagerLock(manager);
+    for (ref = globus_hashtable_first(&manager->request_hash);
+         ref != NULL;
+         ref = globus_hashtable_next(&manager->request_hash))
+    {
+        if (ref->reference_count == 0
+            && ref->expiration_time != 0 && now > ref->expiration_time)
+        {
+            rc = globus_l_gram_add_reference_locked(
+                    manager,
+                    ref->key,
+                    "expire",
+                    &request);
+            if (rc != GLOBUS_SUCCESS)
+            {
+                continue;
+            }
+            ref->expiration_time = 0;
+
+            if (request->jobmanager_state ==
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
+                request->jobmanager_state ==
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE)
+            {
+                /* Fake the commit */
+                globus_gram_job_manager_request_log(
+                        request,
+                        GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                        "event=gram.expire_jobs.info "
+                        "level=INFO "
+                        "gramid=%s "
+                        "\n",
+                        ref->key);
+
+                request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
+
+                rc = globus_l_gram_add_reference_locked(
+                        manager,
+                        ref->key,
+                        "state machine",
+                        NULL);
+                if (request->poll_timer == GLOBUS_NULL_HANDLE)
+                {
+                    globus_result_t result;
+                    result = globus_callback_register_oneshot(
+                            &request->poll_timer,
+                            &globus_i_reltime_zero,
+                            globus_gram_job_manager_state_machine_callback,
+                            request);
+                    if (result != GLOBUS_SUCCESS)
+                    {
+                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+                        goto oneshot_failed;
+                    }
+                }
+                
+                expired++;
+            }
+oneshot_failed:
+            rc = globus_l_gram_job_manager_remove_reference_locked( 
+                    manager,
+                    ref->key,
+                    "expire");
+            if (rc != GLOBUS_SUCCESS)
+            {
+            }
+        }
+    }
+    GlobusGramJobManagerUnlock(manager);
+
+    globus_gram_job_manager_log(
+            manager,
+            GLOBUS_GRAM_JOB_MANAGER_LOG_TRACE,
+            "event=gram.expire_jobs.end "
+            "expired_count=%d "
+            "\n",
+            expired);
+}
+/* globus_gram_job_manager_stop_all_jobs() */
+
+
+void
 globus_gram_job_manager_stop_all_jobs(
     globus_gram_job_manager_t *         manager)
 {
@@ -2676,6 +2782,33 @@ globus_l_gram_ref_swap_out(
     {
         request = ref->request;
         request->manager->usagetracker->count_current_jobs--;
+        if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_STOP
+            && request->stop_reason ==
+                    GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT)
+        {
+            int expire = -1;
+
+            globus_gram_job_manager_rsl_attribute_get_int_value(
+                request->rsl,
+                GLOBUS_GRAM_JOB_MANAGER_EXPIRATION_ATTR,
+                &expire);
+
+            globus_gram_job_manager_request_log(
+                    request,
+                    GLOBUS_GRAM_JOB_MANAGER_LOG_INFO,
+                    "event=gram.job_ref_swap_out.info "
+                    "level=INFO "
+                    "gramid=%s "
+                    "expire=%d "
+                    "\n",
+                    ref->key,
+                    expire);
+
+            if (expire != -1)
+            {
+                ref->expiration_time = time(NULL) + (time_t) expire;
+            }
+        }
 
         globus_gram_job_manager_request_log(
                 request,
