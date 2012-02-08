@@ -11,6 +11,12 @@ globussysconf_DATA = globus-condor.conf
 gridservicesdir = ${sysconfdir}/grid-services/available
 gridservices_DATA = jobmanager-condor
 
+AT=@
+
+jobmanager-condor: jobmanager-condor.in
+	sed -e "s|$(AT)sbindir$(AT)|$(sbindir)|" \
+	    -e "s|$(AT)sysconfdir$(AT)|$(sysconfdir)|" < $< > $@
+
 ## validation = [ DATA ]
 validationdir = $(datadir)/globus/globus_gram_job_manager
 validation_DATA = condor.rvf
