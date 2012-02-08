@@ -2320,11 +2320,21 @@ net_setup_listener(int backlog,
                    int * skt)
 {
     globus_socklen_t                    addrlen;
-    struct sockaddr_in6                 addr;
+    int                                 family;
+    struct sockaddr *                   addr;
+    struct sockaddr_in6                 addr6;
+    struct sockaddr_in                  addr4;
     long                                flags;
     int                                 one=1;
 
-    *skt = socket(AF_INET6, SOCK_STREAM, 0);
+    family = AF_INET6;
+    *skt = socket(family, SOCK_STREAM, 0);
+    if (*skt < 0 && errno == EAFNOSUPPORT)
+    {
+        /* Fall back to ipv4 */
+        family = AF_INET;
+        *skt = socket(family, SOCK_STREAM, 0);
+    }
     error_check(*skt,"net_setup_anon_listener socket");
 
     flags = fcntl(*skt, F_GETFL, 0);
@@ -2334,19 +2344,39 @@ net_setup_listener(int backlog,
     error_check(setsockopt(*skt, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)),
                 "net_setup_anon_listener setsockopt");
 
-    addr.sin6_family = AF_INET6;
-    addr.sin6_addr = in6addr_any;
-    addr.sin6_port = htons(*port);
+    switch (family)
+    {
+        case AF_INET6:
+            addr6.sin6_family = AF_INET6;
+            addr6.sin6_addr = in6addr_any;
+            addr6.sin6_port = htons(*port);
 
-    addrlen = sizeof(addr);
-
-    error_check(bind(*skt,(struct sockaddr *) &addr, sizeof(addr)),
-                "net_setup_anon_listener bind");
+            addrlen = sizeof(addr6);
+            addr = (struct sockaddr *) &addr6;
+            break;
+        case AF_INET:
+            addr4.sin_family = AF_INET;
+            addr4.sin_addr.s_addr = INADDR_ANY;
+            addr4.sin_port = htons(*port);
+            addrlen = sizeof(addr4);
+            addr = (struct sockaddr *) &addr4;
+            break;
+    }
+    error_check(bind(*skt, addr, addrlen), "net_setup_anon_listener bind");
 
     error_check(listen(*skt, backlog), "net_setup_anon_listener listen");
 
-    getsockname(*skt, (struct sockaddr *) &addr, &addrlen);
-    *port = ntohs(addr.sin6_port);
+    getsockname(*skt, addr, &addrlen);
+
+    switch (family)
+    {
+        case AF_INET6:
+            *port = ntohs(addr6.sin6_port);
+            break;
+        case AF_INET:
+            *port = ntohs(addr4.sin_port);
+            break;
+    }
 }
 
 /******************************************************************************
