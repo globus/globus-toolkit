@@ -62,17 +62,15 @@
             </listitem>
         </varlistentry>
         <varlistentry>
-            <term>
-                <option>-list (-l)</option>
-            </term>
+            <term><option>-list</option></term>
+            <term><option>-l</option></term>
             <listitem>
                 <para>Lists the defined GLOBUS_ variables and exits</para>
             </listitem>
         </varlistentry>
         <varlistentry>
-            <term>
-                <option>-exec (-e)</option>
-            </term>
+            <term><option>-exec</option></term>
+            <term><option>-e</option></term>
             <listitem>
                 <para>Commands are read from the argument line</para>
             </listitem>

@@ -11,7 +11,7 @@
             </affiliation>
         </author>
         <copyright>
-            <year>1999-2010</year>
+            <year>1999-2012</year>
             <holder>University of Chicago</holder>
         </copyright>
     </refentryinfo>
@@ -24,7 +24,7 @@
 
     <refnamediv>
         <refname>globus-hostname</refname>
-        <refpurpose>globus-hostname returns the system hostname</refpurpose>
+        <refpurpose>globus-hostname returns the system host name</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
         <cmdsynopsis>
@@ -36,7 +36,14 @@
     </refsynopsisdiv>
     <refsect1>
         <title>DESCRIPTION</title>
-        <para>globus-hostname returns the system hostname and makes some additional checks to ensure a fully qualified hostname. Setting the environment variable GLOBUS_HOSTNAME will cause globus-hostname to return a valule based on this variable. This is useful for specifying the use of certain network interfaces when communicating etc.</para>
+        <para><command>globus-hostname</command> attempts to determine a
+        fully-qualified name for the host it is executing on. It performs
+        the same name checks that the C globus_common library uses, including
+        checking for the <envar>GLOBUS_HOSTNAME</envar> environment variable,
+        and optionally performing a name server lookup of the local host name.
+        </para>
+
+        <para>Options to <command>globus-hostname</command> are:
 
     <variablelist>
         <varlistentry>
@@ -56,6 +63,7 @@
             </listitem>
         </varlistentry>
     </variablelist>
+    </para>
     </refsect1>
 
     <refsect1>

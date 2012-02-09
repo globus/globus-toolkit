@@ -19,13 +19,20 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-globus-hostname \- globus\-hostname returns the system hostname
+globus-hostname \- globus\-hostname returns the system host name
 .SH "SYNOPSIS"
 .HP \w'\fBglobus\-hostname\fR\ 'u
 \fBglobus\-hostname\fR [\fBoptions\fR]
 .SH "DESCRIPTION"
 .PP
-globus\-hostname returns the system hostname and makes some additional checks to ensure a fully qualified hostname\&. Setting the environment variable GLOBUS_HOSTNAME will cause globus\-hostname to return a valule based on this variable\&. This is useful for specifying the use of certain network interfaces when communicating etc\&.
+\fBglobus\-hostname\fR
+attempts to determine a fully\-qualified name for the host it is executing on\&. It performs the same name checks that the C globus_common library uses, including checking for the
+\fBGLOBUS_HOSTNAME\fR
+environment variable, and optionally performing a name server lookup of the local host name\&.
+.PP
+Options to
+\fBglobus\-hostname\fR
+are:
 .PP
 \fB\-help\fR
 .RS 4
@@ -51,5 +58,5 @@ Author.
 .RE
 .SH "COPYRIGHT"
 .br
-Copyright \(co 1999-2010 University of Chicago
+Copyright \(co 1999-2012 University of Chicago
 .br

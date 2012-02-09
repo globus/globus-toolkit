@@ -22,7 +22,7 @@
     </refmeta>
     <refnamediv>
         <refname>globus-domainname</refname>
-        <refpurpose>globus-domainname tries to return the system domainname</refpurpose>
+        <refpurpose>Print the local system's DNS domain name</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
         <cmdsynopsis>
@@ -34,7 +34,11 @@
     </refsynopsisdiv>
     <refsect1>
         <title>DESCRIPTION</title>
-        <para>Setting the environment variable GLOBUS_HOSTNAME will cause globus-domainname to return a valule based on this variable. This is useful for specifying the use of certain network interfaces when communicating etc.</para>
+        <para>The <command>globus-domainname</command> program prints the
+        domain name of the host it is running on. It uses the same algorithm
+        as the <command>globus-hostname</command> command. Setting the
+        <envar>GLOBUS_HOSTNAME</envar> environment variable will override
+        values returned from gethostname() and gethostbyname().</para>
         <variablelist>
             <varlistentry>
                 <term>

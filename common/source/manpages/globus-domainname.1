@@ -19,13 +19,19 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-globus-domainname \- globus\-domainname tries to return the system domainname
+globus-domainname \- Print the local system\'s DNS domain name
 .SH "SYNOPSIS"
 .HP \w'\fBglobus\-domainname\fR\ 'u
 \fBglobus\-domainname\fR [\fBoptions\fR]
 .SH "DESCRIPTION"
 .PP
-Setting the environment variable GLOBUS_HOSTNAME will cause globus\-domainname to return a valule based on this variable\&. This is useful for specifying the use of certain network interfaces when communicating etc\&.
+The
+\fBglobus\-domainname\fR
+program prints the domain name of the host it is running on\&. It uses the same algorithm as the
+\fBglobus\-hostname\fR
+command\&. Setting the
+\fBGLOBUS_HOSTNAME\fR
+environment variable will override values returned from gethostname() and gethostbyname()\&.
 .PP
 \fB\-help\fR
 .RS 4
