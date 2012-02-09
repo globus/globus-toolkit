@@ -14,6 +14,8 @@ if ( ! ( defined eval "require 5.005" ) )
 my $extradev_map =
 {
     'linux' => [ '\.so$' ],
+    'gnu' => [ '\.so$' ],
+    'gnukfreebsd' => [ '\.so$' ],
     'solaris' => [ '\.so$' ],
     'darwin' => [ '^lib[^\.]*.dylib$' ],
 };
