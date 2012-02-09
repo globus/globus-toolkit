@@ -1,0 +1,55 @@
+'\" t
+.\"     Title: globus-hostname
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 02/09/2012
+.\"    Manual: Globus Tookit
+.\"    Source: The Globus Alliance
+.\"  Language: English
+.\"
+.TH "GLOBUS\-HOSTNAME" "1" "02/09/2012" "The Globus Alliance" "Globus Tookit"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+globus-hostname \- globus\-hostname returns the system hostname
+.SH "SYNOPSIS"
+.HP \w'\fBglobus\-hostname\fR\ 'u
+\fBglobus\-hostname\fR [\fBoptions\fR]
+.SH "DESCRIPTION"
+.PP
+globus\-hostname returns the system hostname and makes some additional checks to ensure a fully qualified hostname\&. Setting the environment variable GLOBUS_HOSTNAME will cause globus\-hostname to return a valule based on this variable\&. This is useful for specifying the use of certain network interfaces when communicating etc\&.
+.PP
+\fB\-help\fR
+.RS 4
+Show usage information and exit\&.
+.RE
+.PP
+\fB\-version\fR
+.RS 4
+Show version information and exit\&.
+.RE
+.SH "EXIT STATUS"
+.PP
+\fB0\fR
+.RS 4
+Successful program execution\&.
+.RE
+.SH "AUTHOR"
+.br
+.br
+The Globus Alliance, http://www\&.globus\&.org/
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br
+Copyright \(co 1999-2010 University of Chicago
+.br

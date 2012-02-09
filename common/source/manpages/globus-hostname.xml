@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<refentry>
+    <refentryinfo>
+        <author>
+            <affiliation>
+                <shortaffil/>
+                <jobtitle/>
+                <orgname>The Globus Alliance</orgname>
+                <orgdiv>http://www.globus.org/</orgdiv>
+            </affiliation>
+        </author>
+        <copyright>
+            <year>1999-2010</year>
+            <holder>University of Chicago</holder>
+        </copyright>
+    </refentryinfo>
+
+    <refmeta>
+        <refentrytitle>globus-hostname</refentrytitle>
+        <manvolnum>1</manvolnum>
+        <refmiscinfo class="manual">Globus Tookit</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+        <refname>globus-hostname</refname>
+        <refpurpose>globus-hostname returns the system hostname</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+            <command>globus-hostname</command>
+            <arg choice="opt">
+                <option>options</option>
+            </arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>globus-hostname returns the system hostname and makes some additional checks to ensure a fully qualified hostname. Setting the environment variable GLOBUS_HOSTNAME will cause globus-hostname to return a valule based on this variable. This is useful for specifying the use of certain network interfaces when communicating etc.</para>
+
+    <variablelist>
+        <varlistentry>
+            <term>
+                <option>-help</option>
+            </term>
+            <listitem>
+                <para>Show usage information and exit.</para>
+            </listitem>
+        </varlistentry>
+        <varlistentry>
+            <term>
+                <option>-version</option>
+            </term>
+            <listitem>
+                <para>Show version information and exit.</para>
+            </listitem>
+        </varlistentry>
+    </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>EXIT STATUS</title>
+        <variablelist>
+            <varlistentry>
+                <term>
+                    <option>0</option>
+                </term>
+                <listitem>
+                    <para>Successful program execution.
+                        </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
