@@ -99,7 +99,7 @@ if test "x$xml_catalog_path" != x"notset"; then
 fi
 
 AM_CONDITIONAL(BUILD_MANPAGES, [
-                test "$xml_catalog_path" != 0 && \
+                test "$xml_catalog_path" != "notset" && \
                 test "$XSLTPROC" != "no" && \
                 test "$XMLLINT" != "no"])
 
