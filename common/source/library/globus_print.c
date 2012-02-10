@@ -353,7 +353,7 @@ globus_panic(
     }
     else
     {
-        fprintf(stderr, _GCSL("PANIC\n"));
+        fprintf(stderr, "%s", _GCSL("PANIC\n"));
     }
     
     va_start(ap, message);

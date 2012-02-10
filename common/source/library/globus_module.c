@@ -849,7 +849,7 @@ globus_version_print(
     }
     else
     {
-        globus_libc_fprintf(stream, _GCSL("<no version>\n"));
+        globus_libc_fprintf(stream, "%s", _GCSL("<no version>\n"));
     }
 }
 
