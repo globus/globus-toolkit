@@ -15,6 +15,10 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+#ifndef GLOBUS_I_INCLUDE_ERRNO_ERROR_H
+#define GLOBUS_I_INCLUDE_ERRNO_ERROR_H
+
 /**
  * @file globus_i_error_errno.h
  * Globus Errno Error
@@ -25,10 +29,6 @@
  */
 
 #include "globus_common_include.h"
-
-#ifndef GLOBUS_I_INCLUDE_ERRNO_ERROR_H
-#define GLOBUS_I_INCLUDE_ERRNO_ERROR_H
-
 
 EXTERN_C_BEGIN
 

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_I_GSI_GSS_UTILS_H
+#define GLOBUS_I_GSI_GSS_UTILS_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_gsi_gss_utils.c
@@ -24,9 +27,6 @@
  * $Date$
  */
 #endif
-
-#ifndef GLOBUS_I_GSI_GSS_UTILS_H
-#define GLOBUS_I_GSI_GSS_UTILS_H
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"

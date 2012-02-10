@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef _GLOBUS_CALLOUT_H_
+#define _GLOBUS_CALLOUT_H_
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_callout.c
@@ -25,9 +28,6 @@
  * $Date$
  */
 #endif
-
-#ifndef _GLOBUS_CALLOUT_H_
-#define _GLOBUS_CALLOUT_H_
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus

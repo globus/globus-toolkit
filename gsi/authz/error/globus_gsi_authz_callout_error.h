@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_H
+#define GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_authz_callout_error.h
@@ -27,9 +30,6 @@
  * Basically copied from globus_gram_jobmanager_callout_error.h
  */
 #endif
-
-#ifndef GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_H
-#define GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_H
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus

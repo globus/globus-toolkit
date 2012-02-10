@@ -15,6 +15,10 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+#ifndef GLOBUS_I_GSS_ASSIST_H
+#define GLOBUS_I_GSS_ASSIST_H
+
 /**
  * @file globus_i_gss_assist.h
  * Globus GSI GSS Assist Library
@@ -24,9 +28,6 @@
  * $Revision$
  * $Date$
  */
-
-#ifndef GLOBUS_I_GSS_ASSIST_H
-#define GLOBUS_I_GSS_ASSIST_H
 
 #include "globus_gss_assist.h"
 #include "globus_common.h"

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
+#define GLOBUS_XIO_GSI_DRIVER_INCLUDE
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_xio_gsi.h
@@ -24,9 +27,6 @@
  * $Date$
  */
 #endif
-
-#ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
-#define GLOBUS_XIO_GSI_DRIVER_INCLUDE
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus

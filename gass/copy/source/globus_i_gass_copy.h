@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
+#define GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_gass_copy.h
@@ -24,9 +27,6 @@
 #include "globus_gass_copy.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
-
-#ifndef GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
-#define GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
