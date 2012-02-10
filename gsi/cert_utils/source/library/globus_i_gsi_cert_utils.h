@@ -55,7 +55,7 @@ extern FILE *                           globus_i_gsi_cert_utils_debug_fstream;
            char *                          _tmp_str_ = \
                globus_common_create_nstring _MESSAGE_; \
            globus_libc_fprintf(globus_i_gsi_cert_utils_debug_fstream, \
-                               _tmp_str_); \
+                               "%s", _tmp_str_); \
            globus_libc_free(_tmp_str_); \
         } \
     }
