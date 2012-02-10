@@ -28,6 +28,11 @@
                     <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="7"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gass_server_ez">
                 <Version>
                     <Simple_Version Major="4"/>

@@ -13,8 +13,6 @@
                     <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
-        </Source_Dependencies>
-        <Source_Dependencies Type="compile">
             <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="3"/>
@@ -28,6 +26,26 @@
             <Dependency Name="globus_xio_pipe_driver">
                 <Version>
                     <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gss_assist">
+                <Version>
+                    <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_openssl_error">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_error">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -47,11 +65,29 @@
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
-        </Source_Dependencies>
-        <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_common">
                 <Version>
                     <Simple_Version Major="14"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gss_assist">
+                <Version>
+                    <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_openssl_error">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_error">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

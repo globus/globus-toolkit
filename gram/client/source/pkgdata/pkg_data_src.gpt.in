@@ -33,6 +33,11 @@
                     <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gss_assist">
+                <Version>
+                    <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_common">
@@ -55,11 +60,21 @@
                     <Simple_Version Major="9"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gss_assist">
+                <Version>
+                    <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="doc_runtime">
             <Dependency Name="globus_gram_protocol" Package="doc">
                 <Version>
                     <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_common" Package="doc">
+                <Version>
+                    <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

@@ -22,6 +22,16 @@
                     <Simple_Version Major="12"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gram_protocol">
+                <Version>
+                    <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="7"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gass_server_ez">
                 <Version>
                     <Simple_Version Major="4"/>
@@ -47,6 +57,16 @@
             <Dependency Name="globus_gram_client">
                 <Version>
                     <Simple_Version Major="12"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gram_protocol">
+                <Version>
+                    <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="7"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gass_server_ez">

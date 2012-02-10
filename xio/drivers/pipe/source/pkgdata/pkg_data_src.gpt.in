@@ -6,6 +6,11 @@
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
     <src_pkg>
         <Source_Dependencies Type="compile">
+            <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="14"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="3"/>
@@ -13,6 +18,11 @@
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="lib_link">
+            <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="14"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_xio">
                 <Version>
                     <Simple_Version Major="3"/>

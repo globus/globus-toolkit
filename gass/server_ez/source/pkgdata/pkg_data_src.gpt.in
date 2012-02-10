@@ -23,6 +23,11 @@
                     <Simple_Version Major="7"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
                     <Simple_Version Major="8"/>
@@ -50,6 +55,11 @@
             <Dependency Name="globus_gass_transfer">
                 <Version>
                     <Simple_Version Major="7"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
