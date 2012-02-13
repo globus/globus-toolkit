@@ -54,21 +54,21 @@ if (exists $ENV{GLOBUS_LOCATION})
 }
 else
 {
-    $prefix = '@prefix@';
+    $prefix = "@prefix@";
 }
-$exec_prefix = eval_path('@exec_prefix@');
-$sbindir = eval_path('@sbindir@');
-$bindir = eval_path('@bindir@');
+$exec_prefix = "@exec_prefix@";
+$sbindir = "@sbindir@";
+$bindir = "@bindir@";
 @GLOBUS_PERL_LIBDIR_CHOICE@
-$includedir = eval_path('@includedir@');
-$datarootdir = eval_path('@datarootdir@');
-$datadir = eval_path('@datadir@');
-$mandir = eval_path('@mandir@');
-$libexecdir = eval_path('@libexecdir@');
-$sysconfdir = eval_path('@sysconfdir@');
-$sharedstatedir = eval_path('@sharedstatedir@');
-$localstatedir = eval_path('@localstatedir@');
-$flavorincludedir = eval_path('@flavorincludedir@');
-$perlmoduledir = eval_path('@perlmoduledir@');
+$includedir = "@includedir@";
+$datarootdir = "@datarootdir@";
+$datadir = "@datadir@";
+$mandir = "@mandir@";
+$libexecdir = "@libexecdir@";
+$sysconfdir = "@sysconfdir@";
+$sharedstatedir = "@sharedstatedir@";
+$localstatedir = "@localstatedir@";
+$flavorincludedir = "@flavorincludedir@";
+$perlmoduledir = "@perlmoduledir@";
 
 1;
