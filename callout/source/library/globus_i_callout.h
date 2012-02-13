@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef _GLOBUS_I_CALLOUT_H_
+#define _GLOBUS_I_CALLOUT_H_
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_callout.h
@@ -24,9 +27,6 @@
  * $Revision$
  * $Date$
  */
-
-#ifndef _GLOBUS_I_CALLOUT_H_
-#define _GLOBUS_I_CALLOUT_H_
 
 #include "globus_callout.h"
 
