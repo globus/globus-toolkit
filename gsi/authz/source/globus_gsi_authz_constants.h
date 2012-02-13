@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_GSI_AUTHZ_CONSTANTS_H
+#define GLOBUS_GSI_AUTHZ_CONSTANTS_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cred_constants.h
@@ -21,9 +24,6 @@
  *
  */
 #endif
-
-#ifndef GLOBUS_GSI_AUTHZ_CONSTANTS_H
-#define GLOBUS_GSI_AUTHZ_CONSTANTS_H
 
 /**
  * @defgroup globus_gsi_authz_constants GSI Credential Constants
