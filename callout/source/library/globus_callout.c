@@ -30,11 +30,7 @@
 #include "globus_i_callout.h"
 
 #ifndef BUILD_STATIC_ONLY
-#ifdef WIN32
-#include "globus_libtool_windows.h"
-#else
 #include <ltdl.h>
-#endif
 #endif
 
 #include "version.h"
