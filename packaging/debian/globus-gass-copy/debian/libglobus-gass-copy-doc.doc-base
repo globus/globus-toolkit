@@ -1,9 +1,0 @@
-Document: globus-gass-copy
-Title: Debian globus-gass-copy Manual
-Author: Globus Alliance
-Abstract: The Globus toolkit, Globus Gass Copy
-Section: Programming
-
-Format: HTML
-Index: /usr/share/doc/libglobus-gass-copy-dev/html/index.html
-Files: /usr/share/doc/libglobus-gass-copy-dev/html/*.html
