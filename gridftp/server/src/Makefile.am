@@ -11,6 +11,8 @@ SUBDIRS = \
     doxygen
 
 doc_DATA = GLOBUS_LICENSE
+man_MANS = globus-gridftp-server.8
+man_xml_source = globus-gridftp-server.xml
 
 gridftpconfdir = ${sysconfdir}
 gridftpconf_DATA = gridftp.conf.default gridftp.xinetd.default gridftp.gfork.default 
@@ -26,7 +28,9 @@ EXTRA_DIST = \
     configure.in.in \
     gridftp.conf.default.in \
     gridftp.gfork.default.in \
-    $(doc_DATA)
+    $(doc_DATA) \
+    $(man_MANS) \
+    $(man_xml_source)
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
@@ -144,6 +148,19 @@ gfs_gfork_master_LDADD = $(GPT_PGM_LINKS)
 gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
 gfs_dynbe_client_LDFLAGS = $(GPT_LDFLAGS)
 gfs_dynbe_client_LDADD = $(GPT_PGM_LINKS)
+
+if BUILD_MANPAGES
+export XML_CATALOG_FILES :=  $(XML_CATALOG_PATH)
+
+MAN_XSL=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
+DOCBOOK_DTD=http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd
+
+
+%.8: %.xml
+	$(XMLLINT) --nonet --dtdvalid $(DOCBOOK_DTD) $< > /dev/null
+	$(XSLTPROC) --nonet $(MAN_XSL) $<
+CLEANFILES = $(man_MANS)
+endif
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

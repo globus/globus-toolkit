@@ -23,6 +23,10 @@
 #define GLOBUS_GFS_HELP_COLS            45
 #define GLOBUS_GFS_HELP_WIDTH           80
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 typedef enum
 {
     GLOBUS_L_GFS_CONFIG_BOOL,
