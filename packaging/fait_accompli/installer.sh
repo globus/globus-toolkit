@@ -3,6 +3,8 @@
 ./build_gpt.pl
 
 VERSION=`cat fait_accompli/version`
+MAJOR=$(expr $VERSION : "\([0-9]*\)")
+MINOR=$(expr $VERSION : "[0-9]*\.\([0-9]*\)")
 INSTALLER=gt$VERSION-all-source-installer
 GPT=gpt*.tar.gz
 CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
@@ -96,15 +98,24 @@ echo This may take a few minutes.
 mkdir $INSTALLER
 cat fait_accompli/installer.Makefile.prelude fait_accompli/makefile_bundle_target.frag installer_makefile.frag > $INSTALLER/Makefile.in
 
-sed -e "s/@version@/$VERSION/g" fait_accompli/installer.configure.in > farfleblatt2
+sed -e "s/@version@/$VERSION/g" \
+    -e "s/@major@/$MAJOR/g" \
+    -e "s/@minor@/$MINOR/g" \
+    fait_accompli/installer.configure.in > farfleblatt2
 autoconf farfleblatt2 > $INSTALLER/configure
 chmod +x $INSTALLER/configure
 cp fait_accompli/install-sh $INSTALLER
 cp fait_accompli/config.sub $INSTALLER
 cp fait_accompli/config.guess $INSTALLER
 cp fait_accompli/config.site.in $INSTALLER
-sed -e "s/@version@/$VERSION/g" fait_accompli/installer.INSTALL > $INSTALLER/INSTALL
-sed -e "s/@version@/$VERSION/g" fait_accompli/installer.README > $INSTALLER/README
+sed -e "s/@version@/$VERSION/g" \
+    -e "s/@major@/$MAJOR/g" \
+    -e "s/@minor@/$MINOR/g" \
+    fait_accompli/installer.INSTALL > $INSTALLER/INSTALL
+sed -e "s/@version@/$VERSION/g" \
+    -e "s/@major@/$MAJOR/g" \
+    -e "s/@minor@/$MINOR/g" \
+    fait_accompli/installer.README > $INSTALLER/README
 
 # untar GPT into the installer dir
 tar -C $INSTALLER -xzf $GPT
