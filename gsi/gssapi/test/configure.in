@@ -9,8 +9,6 @@ AM_PROG_LIBTOOL
 
 GLOBUS_OPENSSL
 
-dnl config header goes here
-
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
@@ -21,6 +19,14 @@ else
 fi
 
 AC_SUBST(FLAVORED_TESTS)
+
+dnl Get WIFEXITED defined on solaris
+case $host in
+   *solaris*)
+       AC_DEFINE(__EXTENSIONS__)
+       ;;
+esac
+
 
 GLOBUS_FINALIZE
 
