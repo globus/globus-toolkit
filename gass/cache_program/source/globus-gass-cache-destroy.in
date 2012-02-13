@@ -56,7 +56,7 @@ TMPSCRIPT="${local_tmpdir}/cdscript$$"
 ${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
 ${GLOBUS_SH_CAT-cat} > $TMPSCRIPT  <<MYEND
 
-(\${GLOBUS_SH_SLEEP} \$CACHE_SLEEP_TIME; \${GLOBUS_SH_RM}  -rf \$HOME/.globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
+(\${GLOBUS_SH_SLEEP-sleep} \$CACHE_SLEEP_TIME; \${GLOBUS_SH_RM-rm}  -rf \$HOME/.globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
 
 if test "\$CACHE_SLEEP_TIME" = "0"; then
     wait
