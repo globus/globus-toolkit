@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Name="globus_gss_assist" Format_Version="0.02">
-    <Aging_Version Major="8" Minor="2" Age="5"/>
+    <Aging_Version Major="8" Minor="3" Age="5"/>
     <Description>GSSAPI Assist library</Description>
     <Functional_Group>Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -16,6 +16,7 @@
                 <Version>
                     <Simple_Version Major="14"/>
                 </Version>
+            </Dependency>
                 <Dependency Name="globus_gsi_sysconfig">
                     <Version>
                         <Simple_Version Major="5"/>
@@ -26,7 +27,6 @@
                         <Simple_Version Major="8"/>
                     </Version>
                 </Dependency>
-            </Dependency>
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
                     <Simple_Version Major="9"/>

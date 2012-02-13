@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef _GLOBUS_I_GSI_CALLBACK_H_
+#define _GLOBUS_I_GSI_CALLBACK_H_
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_gsi_callback.h
@@ -24,9 +27,6 @@
  * $Revision$
  * $Date$
  */
-
-#ifndef _GLOBUS_I_GSI_CALLBACK_H_
-#define _GLOBUS_I_GSI_CALLBACK_H_
 
 #include "globus_gsi_callback.h"
 #include "globus_gsi_cert_utils.h"

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef _GSSAPI_OPENSSL_H
+#define _GSSAPI_OPENSSL_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file gssapi_openssl.h
@@ -24,9 +27,6 @@
  * $Date$
  */
 #endif
-
-#ifndef _GSSAPI_OPENSSL_H
-#define _GSSAPI_OPENSSL_H
 
 #if defined(WIN32)
 #define _WINSOCKAPI_  //rcg 9/23/03

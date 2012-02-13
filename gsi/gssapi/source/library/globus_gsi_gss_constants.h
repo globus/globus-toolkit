@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
+#define _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_gssapi_constants.h
@@ -24,9 +27,6 @@
  * $Date$
  */
 #endif
-
-#ifndef _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
-#define _GLOBUS_GSI_GSSAPI_CONSTANTS_H_
 
 extern char *                globus_l_gsi_gssapi_error_strings[];
 

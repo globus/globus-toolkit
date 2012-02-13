@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef _GLOBUS_GSS_ASSIST_H
+#define _GLOBUS_GSS_ASSIST_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gss_assist.h
@@ -25,9 +28,6 @@
  */
 #endif
  
-#ifndef _GLOBUS_GSS_ASSIST_H
-#define _GLOBUS_GSS_ASSIST_H
-
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
 #        define EXTERN_C_BEGIN extern "C" {

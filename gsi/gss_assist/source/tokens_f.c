@@ -120,7 +120,7 @@ globus_gss_assist_token_get_fd(
         {
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    _GASL("FAILED READING EXTRA BYTE\n")));
+                    "%s", _GASL("FAILED READING EXTRA BYTE\n")));
             return_value =  GLOBUS_GSS_ASSIST_TOKEN_EOF;
             goto exit;
         }
@@ -384,7 +384,7 @@ globus_gss_assist_token_send_fd_ex(
             
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    _GASL("with 4 byte length")));
+                    "%s", _GASL("with 4 byte length")));
             
             if (fwrite(int_buf ,1 ,4 , fd) != 4)
             {

@@ -13,6 +13,8 @@ AM_CONFIG_HEADER(library/oldgaa/config.h)
 
 AC_CHECK_HEADERS(malloc.h sys/time.h unistd.h)
 
+GLOBUS_OPENSSL
+
 LAC_DOXYGEN(["../library"])
 
 GLOBUS_FINALIZE
