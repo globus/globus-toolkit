@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gatekeeper">
-    <Aging_Version Major="9" Minor="8" Age="1"/>
+    <Aging_Version Major="9" Minor="9" Age="1"/>
     <Description>Globus Gatekeeper</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -11,6 +11,11 @@
             <Dependency Name="globus_core">
                 <Version>
                     <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="14"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gss_assist">
@@ -25,6 +30,11 @@
             </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_link">
+            <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="14"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gss_assist">
                 <Version>
                     <Simple_Version Major="8"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_ftp_client">
-    <Aging_Version Major="7" Minor="2" Age="5"/>
+    <Aging_Version Major="7" Minor="3" Age="5"/>
     <Description>GridFTP Client Library</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -21,6 +21,31 @@
             <Dependency Name="globus_ftp_control">
                 <Version>
                     <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_callback">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_xio_popen_driver">
@@ -45,6 +70,31 @@
             <Dependency Name="globus_ftp_control">
                 <Version>
                     <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_callback">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_credential">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="10"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_xio_popen_driver">

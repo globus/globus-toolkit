@@ -21,6 +21,8 @@ if test "x$GLOBUS_THREADS" != "xnone"; then
     AC_MSG_ERROR(Cannot build gatekeeper with threads)
 fi
 
+GLOBUS_OPENSSL
+
 AC_CHECK_HEADERS(proj.h)
 AC_CHECK_HEADERS(netinet/tcp.h)
 AC_CHECK_HEADERS(string.h)
