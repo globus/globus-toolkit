@@ -12,7 +12,7 @@ man8_MANS = globus-update-certificate-dir.8
 
 doc_DATA = GLOBUS_LICENSE
 
-bin_SCRIPTS = globus-update-certificate-dir
+sbin_SCRIPTS = globus-update-certificate-dir
 
 MANUAL_SOURCE = globus-update-certificate-dir-manual.xml \
                 manual.xml
