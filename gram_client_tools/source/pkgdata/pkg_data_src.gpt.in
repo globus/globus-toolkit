@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Name="globus_gram_client_tools" Format_Version="0.02">
-    <Aging_Version Major="10" Minor="0" Age="0"/>
+    <Aging_Version Major="10" Minor="1" Age="0"/>
     <Description>Job Management Tools (globusrun)</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -20,6 +20,16 @@
             <Dependency Name="globus_gram_client">
                 <Version>
                     <Simple_Version Major="12"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gram_protocol">
+                <Version>
+                    <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="7"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gass_server_ez">
@@ -47,6 +57,16 @@
             <Dependency Name="globus_gram_client">
                 <Version>
                     <Simple_Version Major="12"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gram_protocol">
+                <Version>
+                    <Simple_Version Major="11"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gass_transfer">
+                <Version>
+                    <Simple_Version Major="7"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gass_server_ez">

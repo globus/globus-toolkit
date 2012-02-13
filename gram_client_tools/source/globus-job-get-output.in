@@ -154,7 +154,7 @@ if [ "${followopt}" != no -a "${tailopt}" != no ]; then
 fi
 
 if [ -z "${resource}" ]; then
-    resource=`echo ${jobid} | ${GLOBUS_SH_AWK} -F: '{print $2}' | \
+    resource=`echo ${jobid} | ${GLOBUS_SH_AWK-awk} -F: '{print $2}' | \
 	${GLOBUS_SH_SED-sed} 's|/||g'`
 fi
 
