@@ -416,7 +416,7 @@ sub generate_pkgdata {
     # Found a package specific file sorting module
 
     # Add srcdir to package search path
-    push @INC, $srcdir;
+    unshift(@INC, $srcdir);
 
     require MyFilelists;
     $sort = new MyFilelists(list => $master_filelist, flavor => $flavor,

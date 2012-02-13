@@ -4,7 +4,7 @@ AC_DEFUN([GPT_INIT], [
 
 	dnl --with-docdir for older autoconf (<2.60)
 	AC_ARG_WITH([docdir],
-	AC_HELP_STRING([--with-docdir=DIR], [Install documentation in DIR [[default: ${datadir}/doc/$PACKAGE]]]),
+	AC_HELP_STRING([--with-docdir=DIR], [Install documentation in DIR [[DATADIR/doc/PACKAGE]]]),
         [case $withval in 
 	  yes|no)
 		AC_MSG_ERROR([Invalid DIR])
