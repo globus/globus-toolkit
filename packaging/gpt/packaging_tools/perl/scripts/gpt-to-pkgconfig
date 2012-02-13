@@ -48,8 +48,9 @@ for my $bindep (grep
     {
         my $depname = $dep->{Name};
         $depname =~ tr/_/-/;
-        my $depverelement = (grep { $_->isa('GPT::Simple_Version') }
-                @{$dep->{Kids}})[0];
+        my $depversion = (grep {$_->isa('GPT::Version')} @{$dep->{Kids}})[0];
+        my $depverelement = (grep {$_->isa('GPT::Simple_Version')}
+            @{$depversion->{Kids}})[0];
         my $depver = $depverelement->{Major};
         $deps{$depname} = $depver;
     }

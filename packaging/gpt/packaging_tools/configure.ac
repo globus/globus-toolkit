@@ -1,5 +1,5 @@
 AC_REVISION($Revision$)
-AC_INIT(gpt, 3.6)
+AC_INIT(gpt, 3.6.1)
 AC_CONFIG_SRCDIR(Makefile.am)
 AM_INIT_AUTOMAKE([foreign])
 
@@ -79,34 +79,13 @@ my (\$prefix, \$globus_prefix, \$exec_prefix, \$bindir, \$sbindir, \$libdir);
 my (\$datarootdir, \$datadir, \$perlmoduledir, \$gptdatadir);
 my (\$gptexecsharedir, \$amdir, \$pkg_confdir, \$aclocaldir);
 
-sub eval_path
-{
-    my \$path = shift;
-    my \$last = \$path;
-
-    while (\$path =~ m/\\\${([[^}]]*)}/)
-    {
-        my \$varname = \${1};
-        my \$evaluated;
-        eval "\\\$evaluated = \\\${\$varname}";
-
-        \$path =~ s/\\\${\$varname}/\$evaluated/g;
-        if (\$path eq \$last)
-        {
-            die "Error evaluating \$last\n";
-        }
-        \$last = \$path;
-    }
-    return \$path;
-}
-
 if (exists \$ENV{GPT_LOCATION})
 {
     \$prefix = \$ENV{GPT_LOCATION};
 }
 else
 {
-    \$prefix = '$initializer_prefix';
+    \$prefix = "$initializer_prefix";
 }
 
 if (exists \$ENV{GLOBUS_LOCATION})
@@ -115,23 +94,23 @@ if (exists \$ENV{GLOBUS_LOCATION})
 }
 else
 {
-    \$globus_prefix = '$initializer_prefix';
+    \$globus_prefix = "$initializer_prefix";
 }
 
-\$exec_prefix = eval_path('$initializer_exec_prefix');
-\$bindir = eval_path('$bindir');
-\$sbindir = eval_path('$sbindir');
-\$libdir = eval_path('$libdir');
-\$datarootdir = eval_path('$datarootdir');
-\$datadir = eval_path('$datadir');
-\$perlmoduledir = eval_path('$perlmoduledir');
-\$gptdatadir = eval_path('$gptdatadir');
-\$gptexecsharedir = eval_path('$gptexecsharedir');
-\$amdir = eval_path('$amdir');
-\$pkg_confdir = eval_path('$pkg_confdir');
-\$aclocaldir = eval_path('$aclocaldir');
+\$exec_prefix = "$initializer_exec_prefix";
+\$bindir = "$bindir";
+\$sbindir = "$sbindir";
+\$libdir = "$libdir";
+\$datarootdir = "$datarootdir";
+\$datadir = "$datadir";
+\$perlmoduledir = "$perlmoduledir";
+\$gptdatadir = "$gptdatadir";
+\$gptexecsharedir = "$gptexecsharedir";
+\$amdir = "$amdir";
+\$pkg_confdir = "$pkg_confdir";
+\$aclocaldir = "$aclocaldir";
 
-push(@INC, "\${perlmoduledir}");
+unshift(@INC, "\${perlmoduledir}");
 EOF
 
 GPT_PERL_INITIALIZER=gpt-perl-initializer
