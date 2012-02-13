@@ -1905,13 +1905,13 @@ main(int argc, char **argv)
         if(globus_l_guc_init_gass_copy_handle(
                &guc_info.handles[i]->gass_copy_handle, &guc_info, i) != 0)
         {
-            fprintf(stderr, _GASCSL("Failed to initialize handle.\n"));
+            fprintf(stderr, "%s", _GASCSL("Failed to initialize handle.\n"));
             return 1;
         }
         if(globus_l_guc_init_gass_copy_handle(
                &guc_info.handles[i]->cksm_gass_copy_handle, &guc_info, i) != 0)
         {
-            fprintf(stderr, _GASCSL("Failed to initialize handle.\n"));
+            fprintf(stderr, "%s", _GASCSL("Failed to initialize handle.\n"));
             return 1;
         }
 
@@ -2472,14 +2472,14 @@ globus_l_guc_parse_file(
 
         if(strcmp(src_url, "-") == 0 && strcmp(dst_url, "-") == 0)
         {
-            fprintf(stderr, _GASCSL("stdin and stdout cannot be used together.\n"));
+            fprintf(stderr, "%s", _GASCSL("stdin and stdout cannot be used together.\n"));
             goto error_parse;
         }
         if(strcmp(src_url, "-") == 0)
         {
             if(stdin_used)
             {
-                fprintf(stderr, _GASCSL("stdin can only be used once.\n"));
+                fprintf(stderr, "%s", _GASCSL("stdin can only be used once.\n"));
                 goto error_parse;
             }
             stdin_used = GLOBUS_TRUE;
@@ -2976,7 +2976,7 @@ globus_l_guc_transfer_files(
         if(globus_l_globus_url_copy_ctrlc &&
            !globus_l_globus_url_copy_ctrlc_handled)
         {
-            fprintf(stderr, _GASCSL("\nCancelling copy...\n"));
+            fprintf(stderr, "%s", _GASCSL("\nCancelling copy...\n"));
             guc_info->cancelled = GLOBUS_TRUE;
             
             if(guc_info->dumpfile || guc_info->dump_only_file)
@@ -3883,7 +3883,7 @@ globus_l_guc_parse_arguments(
         sc = sscanf(instance->values[0], "%d", &guc_info->nl_interval);
         if(sc != 1)
         {
-            fprintf(stderr,
+            fprintf(stderr, "%s",
                _GASCSL("Error: Argument to nl-bottleneck must be a 4 bit mask"
                 "\n"));
             return -1;
@@ -5696,7 +5696,7 @@ globus_l_guc_init_gass_copy_handle(
                 _GASCSL("Error: Unable to register performance handler %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
-            fprintf(stderr, _GASCSL("Continuing without performance info\n"));
+            fprintf(stderr, "%s", _GASCSL("Continuing without performance info\n"));
         }
     }
 
