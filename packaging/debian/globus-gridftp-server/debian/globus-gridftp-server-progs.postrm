@@ -1,8 +1,0 @@
-#! /bin/sh
-
-if [ "$1" = purge ]; then
-    if which update-rc.d > /dev/null 2>&1; then
-    	update-rc.d globus-gridftp-server remove
-    	update-rc.d globus-gridftp-sshftp remove
-    fi
-fi
