@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_INCLUDE_GLOBUS_URL_H_
+#define GLOBUS_INCLUDE_GLOBUS_URL_H_
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_url.h URL Parsing.
@@ -31,8 +34,6 @@
  * These functions are part of the Globus common library. The GLOBUS_COMMON
  * module must be activated in order to use them.
  */
-#ifndef GLOBUS_INCLUDE_GLOBUS_URL_H_
-#define GLOBUS_INCLUDE_GLOBUS_URL_H_
 
 #include "globus_common_include.h"
 

@@ -424,7 +424,7 @@ void thread_print(char * s, ...)
     x = strlen(tmp);
     vsprintf(&tmp[x], s, ap);
 
-    globus_libc_printf(tmp);
+    globus_libc_printf("%s", tmp);
     globus_thread_yield();
    
     fflush(stdin);

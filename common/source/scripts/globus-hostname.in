@@ -57,7 +57,7 @@ EOF
 
 ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
     Setting the environment variable GLOBUS_HOSTNAME will cause
-    ${PROGRAM_NAME} to return a valule based on this variable.
+    ${PROGRAM_NAME} to return a value based on this variable.
     This is useful for specifying the use of certain network interfaces when
     communicating etc.
 

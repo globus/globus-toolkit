@@ -7,7 +7,8 @@ SUBDIRS= \
 	scripts \
 	pkgdata \
 	config \
-	doxygen
+	doxygen \
+        manpages
 
 libexec_SCRIPTS= \
 	config.guess
