@@ -17,6 +17,8 @@ pkgconffile=""
 LAC_DOXYGEN("../", "*.dox")
 LAC_DOXYGEN_EXAMPLE_DIR("../")
 
+GLOBUS_OPENSSL
+
 xml_catalog_path="notset"
 AC_ARG_WITH(
     xml-catalog,

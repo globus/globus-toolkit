@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_ftp_control">
-    <Aging_Version Major="4" Minor="2" Age="3"/>
+    <Aging_Version Major="4" Minor="3" Age="3"/>
     <Description>GridFTP Control Library</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -33,6 +33,16 @@
                     <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_error">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_common">
@@ -48,6 +58,16 @@
             <Dependency Name="globus_io">
                 <Version>
                     <Simple_Version Major="8"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_error">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
