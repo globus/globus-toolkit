@@ -213,7 +213,7 @@ EOF
 
 	push(@subdirs,$packagemap{$pack});
     }
-    print INS "SUBDIRS=", join(" ", @subdirs), "\n";
-    print INS "dist: ", join(" ", @dist_rules), "\n";
+    print INS "SUBDIRS=", join(" \\\n\t\t", @subdirs), "\n";
+    print INS "dist: ", join(" \\\n\t\t", @dist_rules), "\n";
     close(INS) if $installer;
 }
