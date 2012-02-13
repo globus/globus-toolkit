@@ -28,6 +28,10 @@
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
+
 #define GFSDataOpDec(_op, _d_op, _d_s)                                  \
 do                                                                      \
 {                                                                       \
