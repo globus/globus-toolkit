@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_I_GSI_GSS_UTILS_H
+#define GLOBUS_I_GSI_GSS_UTILS_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_gsi_gss_utils.c
@@ -24,9 +27,6 @@
  * $Date$
  */
 #endif
-
-#ifndef GLOBUS_I_GSI_GSS_UTILS_H
-#define GLOBUS_I_GSI_GSS_UTILS_H
 
 #include "gssapi.h"
 #include "gssapi_openssl.h"
@@ -159,7 +159,7 @@ extern globus_bool_t                    globus_i_gssapi_active;
            char *                       _tmp_str_ = \
                globus_common_create_nstring _MESSAGE_; \
            globus_libc_fprintf(globus_i_gsi_gssapi_debug_fstream, \
-                               _tmp_str_); \
+                               "%s", _tmp_str_); \
            globus_libc_free(_tmp_str_); \
         } \
 }
@@ -170,7 +170,7 @@ extern globus_bool_t                    globus_i_gssapi_active;
     {                                                       \
         globus_libc_fprintf(                                \
             globus_i_gsi_gssapi_debug_fstream,              \
-            _MESSAGE_);                                     \
+            "%s", _MESSAGE_);                               \
     }                                                       \
 }
  

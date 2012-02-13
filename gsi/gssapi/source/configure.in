@@ -21,6 +21,8 @@ case "$GLOBUS_HOST" in
     ;;
 esac
 
+GLOBUS_OPENSSL
+
 AC_MSG_CHECKING([if we can link with internal OpenSSL APIs])
 oldlibs="$LIBS"
 LIBS="$GPT_CONFIG_LIBS"

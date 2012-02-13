@@ -273,10 +273,12 @@ GSS_CALLCONV gss_compare_name(
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, _GGSL("Comparing names:\n"));
-    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, (_GGSL("Name 1 is of type %s:\n"),
-                                    gss_l_name_types[type1]));
-    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, (_GGSL("Name 2 is of type %s:\n"),
-                                    gss_l_name_types[type2]));
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(2, (globus_i_gsi_gssapi_debug_fstream,
+                                      _GGSL("Name 1 is of type %s:\n"),
+                                      gss_l_name_types[type1]));
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(2, (globus_i_gsi_gssapi_debug_fstream,
+                                      _GGSL("Name 2 is of type %s:\n"),
+                                      gss_l_name_types[type2]));
 
     /* Normalize order of name1 and name2 so we can have fewer comparisons 
      * below

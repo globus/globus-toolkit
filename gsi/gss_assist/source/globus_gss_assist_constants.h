@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
+#define GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gss_assist_constants.h
@@ -25,9 +28,6 @@
  * $Date$
  */
 #endif
-
-#ifndef GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
-#define GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus

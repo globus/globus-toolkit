@@ -15,6 +15,10 @@
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+#ifndef GLOBUS_I_GSS_ASSIST_H
+#define GLOBUS_I_GSS_ASSIST_H
+
 /**
  * @file globus_i_gss_assist.h
  * Globus GSI GSS Assist Library
@@ -24,9 +28,6 @@
  * $Revision$
  * $Date$
  */
-
-#ifndef GLOBUS_I_GSS_ASSIST_H
-#define GLOBUS_I_GSS_ASSIST_H
 
 #include "globus_gss_assist.h"
 #include "globus_common.h"
@@ -60,7 +61,7 @@ extern globus_mutex_t                   globus_i_gsi_gss_assist_mutex;
           char *                        _tmp_str_ = \
               globus_common_create_nstring _MESSAGE_; \
           globus_libc_fprintf(globus_i_gsi_gss_assist_debug_fstream, \
-                              _tmp_str_); \
+                              "%s", _tmp_str_); \
           globus_libc_free(_tmp_str_); \
         } \
     }

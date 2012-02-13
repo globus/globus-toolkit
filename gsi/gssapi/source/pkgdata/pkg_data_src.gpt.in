@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Name="globus_gssapi_gsi" Format_Version="0.02">
-    <Aging_Version Major="10" Minor="3" Age="6"/>
+    <Aging_Version Major="10" Minor="4" Age="6"/>
     <Description>GSSAPI library</Description>
     <Functional_Group>Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -47,6 +47,11 @@
                     <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_common">
@@ -82,6 +87,11 @@
             <Dependency Name="globus_gsi_proxy_core">
                 <Version>
                     <Simple_Version Major="6"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
