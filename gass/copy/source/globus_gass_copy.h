@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
+#define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
+
  /** 
  * @file
  *  Header file for the gass copy library 
@@ -47,9 +50,6 @@
 #include "globus_gass_transfer.h"
 #include "globus_ftp_client.h"
 #include "globus_io.h"
-
-#ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
-#define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus

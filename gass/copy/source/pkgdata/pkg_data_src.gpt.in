@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_copy">
-    <Aging_Version Major="8" Minor="2" Age="6"/>
+    <Aging_Version Major="8" Minor="3" Age="6"/>
     <Description>Globus Gass Copy</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -27,6 +27,11 @@
                     <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
             <Dependency Name="globus_gass_transfer">
                 <Version>
                     <Simple_Version Major="7"/>
@@ -40,6 +45,11 @@
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
                     <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_error">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -69,11 +79,6 @@
                     <Simple_Version Major="8"/>
                 </Version>
             </Dependency>
-            <Dependency Name="globus_gssapi_gsi">
-                <Version>
-                    <Simple_Version Major="9"/>
-                </Version>
-            </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_common">
@@ -87,6 +92,11 @@
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gsi_sysconfig">
                 <Version>
                     <Simple_Version Major="4"/>
                 </Version>
@@ -109,6 +119,11 @@
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
                     <Simple_Version Major="9"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gssapi_error">
+                <Version>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
