@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_GSI_SYSTEM_CONFIG_H
+#define GLOBUS_GSI_SYSTEM_CONFIG_H
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_system_config.h
@@ -24,9 +27,6 @@
  * $Date$
  */
 #endif
-
-#ifndef GLOBUS_GSI_SYSTEM_CONFIG_H
-#define GLOBUS_GSI_SYSTEM_CONFIG_H
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
