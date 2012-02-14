@@ -557,6 +557,7 @@ globus_l_gfs_data_post_transfer_event_cb(
 }    
 
 globus_result_t
+globus_result_t
 globus_i_gfs_data_check_path(
     void *                              session_arg,
     char *                              in_path,
@@ -574,6 +575,8 @@ globus_i_gfs_data_check_path(
     globus_l_gfs_data_session_t *       session_handle;
     char *                              tmp_ptr;
     int                                 rc = 0;
+    char *                              check_path;
+    globus_bool_t                       check_again = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_check_path);
     GlobusGFSDebugEnter();
     
@@ -634,38 +637,56 @@ globus_i_gfs_data_check_path(
             true_path = globus_libc_strdup(in_path);
         }
 
-        in_path_len = strlen(true_path);
         
-        for(list = globus_l_gfs_path_alias_list;
-            !globus_list_empty(list) && !allowed && !disallowed;
-            list = globus_list_rest(list))
-        {            
-            alias_ent = globus_list_first(list);
+        check_path = true_path;
+        do
+        {
+            in_path_len = strlen(check_path);
             
-            
-            /* disallow if this a dir check and any contents are denied */
-            if(access_type & GFS_L_DIR && alias_ent->access & GFS_L_NONE)
-            {
-                if(strncmp(true_path, alias_ent->alias, in_path_len) == 0 &&
-                    (true_path[in_path_len - 1] == '/' ||
-                        alias_ent->alias[in_path_len] == '\0' || 
-                        alias_ent->alias[in_path_len] == '/'))
+            for(list = globus_l_gfs_path_alias_list;
+                !globus_list_empty(list) && !allowed && !disallowed;
+                list = globus_list_rest(list))
+            {            
+                alias_ent = globus_list_first(list);
+                
+                /* disallow if this a dir check and any contents are denied */
+                if(access_type & GFS_L_DIR && alias_ent->access & GFS_L_NONE)
                 {
-                    disallowed = GLOBUS_TRUE;
-                    continue;
+                    if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
+                        (check_path[in_path_len - 1] == '/' ||
+                            alias_ent->alias[in_path_len] == '\0' || 
+                            alias_ent->alias[in_path_len] == '/'))
+                    {
+                        disallowed = GLOBUS_TRUE;
+                        continue;
+                    }
+                    else if(fnmatch(alias_ent->alias, check_path, 0) == 0)
+                    {
+                        disallowed = GLOBUS_TRUE;
+                        continue;
+                    }
                 }
-                else if(fnmatch(alias_ent->alias, true_path, 0) == 0)
+    
+                /* check if we have an exact match */
+                if(strcspn(alias_ent->alias, "[*?") != alias_ent->alias_len)
                 {
-                    disallowed = GLOBUS_TRUE;
-                    continue;
+                    rc = fnmatch(alias_ent->alias, check_path, 0);
+                    if(rc == 0)
+                    {
+                        if(alias_ent->access & access_type)
+                        {
+                            allowed = GLOBUS_TRUE;
+                        }
+                        else
+                        {
+                            disallowed = GLOBUS_TRUE;
+                        }
+                    }
                 }
-            }
-
-            /* check if we have an exact match */
-            if(strcspn(alias_ent->alias, "[*?") != alias_ent->alias_len)
-            {
-                rc = fnmatch(alias_ent->alias, true_path, 0);
-                if(rc == 0)
+                else if(strncmp(check_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
+                    (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
+                        check_path[alias_ent->alias_len] == '\0' || 
+                        check_path[alias_ent->alias_len] == '/'))
                 {
                     if(alias_ent->access & access_type)
                     {
@@ -676,42 +697,45 @@ globus_i_gfs_data_check_path(
                         disallowed = GLOBUS_TRUE;
                     }
                 }
+                
+                /* check if we are a parent of an exact match */
+                if(!allowed && !disallowed && access_type & GFS_L_LIST)
+                {
+                    if(strncmp(check_path, alias_ent->alias, in_path_len) == 0 &&
+                        (check_path[in_path_len - 1] == '/' ||
+                            alias_ent->alias[in_path_len] == '\0' || 
+                            alias_ent->alias[in_path_len] == '/'))
+                    {
+                        if(alias_ent->access & access_type)
+                        {
+                            allowed = GLOBUS_TRUE;
+                        }
+                        else
+                        {
+                           // disallowed = GLOBUS_TRUE;
+                        }
+                    }
+                }
             }
-            else if(strncmp(true_path, alias_ent->alias, alias_ent->alias_len) == 0 &&
-                (alias_ent->alias[alias_ent->alias_len - 1] == '/' ||
-                    true_path[alias_ent->alias_len] == '\0' || 
-                    true_path[alias_ent->alias_len] == '/'))
+            if(!check_again)
             {
-                if(alias_ent->access & access_type)
+                if(allowed && strcmp(in_path, true_path))
+                {
+                    check_again = GLOBUS_TRUE;
+                    check_path = in_path;
+                    allowed = GLOBUS_FALSE;
+                }
+            }
+            else
+            {
+                if(!disallowed)
                 {
                     allowed = GLOBUS_TRUE;
                 }
-                else
-                {
-                    disallowed = GLOBUS_TRUE;
-                }
+                check_again = GLOBUS_FALSE;
             }
-            
-            /* check if we are a parent of an exact match */
-            if(!allowed && !disallowed && access_type & GFS_L_LIST)
-            {
-                if(strncmp(true_path, alias_ent->alias, in_path_len) == 0 &&
-                    (true_path[in_path_len - 1] == '/' ||
-                        alias_ent->alias[in_path_len] == '\0' || 
-                        alias_ent->alias[in_path_len] == '/'))
-                {
-                    if(alias_ent->access & access_type)
-                    {
-                        allowed = GLOBUS_TRUE;
-                    }
-                    else
-                    {
-                       // disallowed = GLOBUS_TRUE;
-                    }
-                }
-            }
-        }
-        
+        } while(check_again);
+
         if(!allowed)
         {
             result = GlobusGFSErrorGeneric(
@@ -740,6 +764,7 @@ globus_i_gfs_data_check_path(
     GlobusGFSDebugExit();
     return result;
 }
+
 
 static
 void
@@ -2158,6 +2183,13 @@ globus_l_gfs_data_authorize(
                     "Unable to chroot.");
                     goto uid_error;
             }
+        }
+
+        if(pwent->pw_uid == 0 && !globus_i_gfs_config_bool("allow_root"))
+        {
+            res = GlobusGFSErrorGeneric(
+                "User was mapped as root but root is not allowed.");
+            goto uid_error;
         }
 
         rc = setuid(pwent->pw_uid);
