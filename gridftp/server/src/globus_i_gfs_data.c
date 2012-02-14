@@ -736,7 +736,7 @@ globus_i_gfs_data_check_path(
                         }
                         else
                         {
-                           // disallowed = GLOBUS_TRUE;
+                           /* disallowed = GLOBUS_TRUE; */
                         }
                     }
                 }
