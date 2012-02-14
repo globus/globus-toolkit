@@ -557,7 +557,6 @@ globus_l_gfs_data_post_transfer_event_cb(
 }    
 
 globus_result_t
-globus_result_t
 globus_i_gfs_data_check_path(
     void *                              session_arg,
     char *                              in_path,
@@ -712,7 +711,7 @@ globus_i_gfs_data_check_path(
                         }
                         else
                         {
-                           // disallowed = GLOBUS_TRUE;
+                           /* disallowed = GLOBUS_TRUE; */
                         }
                     }
                 }
