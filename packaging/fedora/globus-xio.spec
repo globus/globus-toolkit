@@ -13,13 +13,13 @@
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
 Version:	3.2
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -171,6 +171,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-5
+- Updated version numbers
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 3.2-4
 - Update for 5.2.0 release
 

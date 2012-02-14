@@ -12,14 +12,14 @@
 
 Name:		globus-gram-client-tools
 %global _name %(tr - _ <<< %{name})
-Version:	10.0
-Release:	5%{?dist}
+Version:	10.1
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Job Management Tools (globusrun)
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common-progs%{?_isa} >= 14
@@ -84,6 +84,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 10.1-1
+- GRAM-311: Undefined variable defaults in shell scripts
+- RIC-226: Some dependencies are missing in GPT metadata
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 10.0-5
 - Update for 5.2.0 release
 

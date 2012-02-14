@@ -19,9 +19,11 @@ my $verbose;
 my $gtrelease = undef;
 my $gtreleaseuri = undef;
 my $changelog = undef;
-my $prompt_for_changelog;
+my $prompt_for_changelog = undef;
+my $cvs_changelog = undef;
 my $fullname = undef;
 my $bumprelease = undef;
+my $new_release = undef;
 
 GetOptions('gptfile=s' => \$gptfile,
            'packagelistfile=s' => \$packagelistfile,
@@ -30,6 +32,7 @@ GetOptions('gptfile=s' => \$gptfile,
            'release=s' => \$gtrelease,
            'changelog=s' => \$changelog,
            'prompt-for-changelog' => \$prompt_for_changelog,
+           'cvs-changelog' => \$cvs_changelog,
            'fullname=s' => \$fullname,
            'bumprelease' => \$bumprelease,
            'help' => \$help);
@@ -230,6 +233,23 @@ foreach my $specline (@ARRAY)
 
 my $changelogstring;
 
+if ($cvs_changelog && $gtrelease)
+{
+    my ($major, $minor, $micro) = split(/\./, $gtrelease);
+    my $old_tag = "globus_${major}_${minor}_" . ($micro-1);
+    my $new_tag = "globus_${major}_${minor}_branch";
+
+    my $changelogdir = $specfilename;
+    $changelogdir = $gptmetadata;
+    $changelogdir =~ s|(/pkgdata)?/pkg_data_src.gpt(.in)?||;
+    chomp($changelog = `cvs -q log -N -r$old_tag::$new_tag $changelogdir 2> /dev/null | grep -E '^[A-Z]+-[0-9]+'  | sort -u`);
+
+    if ($changelog eq '')
+    {
+        $changelog = undef;
+    }
+}
+
 if (!$changelog)
 {
     if ($prompt_for_changelog)
@@ -246,6 +266,7 @@ if (!$changelog)
             $changelogstring .= "- $_";
         }
     }
+
     if ($changelogstring eq '')
     {
         $changelogstring = "- Updated version numbers\n";

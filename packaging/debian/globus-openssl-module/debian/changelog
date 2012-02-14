@@ -1,3 +1,9 @@
+globus-openssl-module (3.2-1) unstable; urgency=low
+
+  * RIC-233: Move admin tool globus-update-certificate-dir to sbindir
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:28 -0500
+
 globus-openssl-module (3.1-2) unstable; urgency=low
 
   * Update for 5.2.0 release

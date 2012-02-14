@@ -1,3 +1,10 @@
+globus-gass-cache-program (5.1-1) unstable; urgency=low
+
+  * GRAM-311: Undefined variable defaults in shell scripts
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:09 -0500
+
 globus-gass-cache-program (5.0-2) unstable; urgency=low
 
   * Update for 5.2.0 release

@@ -1,3 +1,10 @@
+globus-callout (2.2-1) unstable; urgency=low
+
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-230: Remove obsolete globus_libtool_windows code
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:11 -0500
+
 globus-callout (2.1-2) unstable; urgency=low
 
   * Update for 5.2.0 release

@@ -12,17 +12,17 @@
 
 Name:		globus-gatekeeper
 %global _name %(tr - _ <<< %{name})
-Version:	9.7
+Version:	9.9
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gatekeeper
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:         http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:         http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Requires:	globus-common >= 13.4
+Requires:	globus-common >= 14
 Requires:	globus-gss-assist%{?_isa} >= 8
 Requires:	globus-gssapi-gsi%{?_isa} >= 9
 Requires:       psmisc
@@ -116,6 +116,11 @@ fi
 %config(noreplace) /etc/logrotate.d/globus-gatekeeper
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 9.9-1
+- GRAM-303: Gatekeeper's syslog output cannot be controlled
+- GRAM-309: GRAM5 doesn't work with IPv4 only gatekeepers
+- RIC-226: Some dependencies are missing in GPT metadata
+
 * Fri Jan 06 2012 Joe Bester <jbester@mactop2.local> - 9.7-1
 - GRAM-303: Gatekeeper's syslog output cannot be controlled
 

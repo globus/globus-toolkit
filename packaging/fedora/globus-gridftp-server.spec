@@ -12,14 +12,14 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.5
+Version:	6.6
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -174,6 +174,12 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 6.6-1
+- GRIDFTP-209: Add manpage for globus-gridftp-server
+- GRIDFTP-212: GridFTP server doesn't build if PATH_MAX is not defined
+- RIC-226: Some dependencies are missing in GPT metadata
+- RIC-229: Clean up GPT metadata
+
 * Mon Dec 12 2011 Joseph Bester <bester@mcs.anl.gov> - 6.5-1
 - init script fixes
 

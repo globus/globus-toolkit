@@ -12,14 +12,14 @@
 
 Name:		globus-gass-server-ez
 %global _name %(tr - _ <<< %{name})
-Version:	4.1
-Release:	4%{?dist}
+Version:	4.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Server_ez
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common%{?_isa} >= 14
@@ -130,6 +130,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
+- RIC-218: Fd leak in gass server when file read fails
+- RIC-226: Some dependencies are missing in GPT metadata
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 4.1-4
 - Update for 5.2.0 release
 

@@ -12,14 +12,14 @@
 
 Name:		globus-gssapi-gsi
 %global _name %(tr - _ <<< %{name})
-Version:	10.2
-Release:	3%{?dist}
+Version:	10.4
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -186,6 +186,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 10.4-1
+- RIC-215: gss_import_cred() doesn't match properly the OID passed
+- RIC-224: Eliminate some doxygen warnings
+- RIC-226: Some dependencies are missing in GPT metadata
+- RIC-227: Potentially unsafe format strings in GSI
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 10.2-3
 - Update for 5.2.0 release
 

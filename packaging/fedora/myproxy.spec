@@ -8,7 +8,7 @@
 
 Name:           myproxy
 Version:	5.5
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:        Manage X.509 Public Key Infrastructure (PKI) security credentials
 
 Group:          System Environment/Daemons
@@ -414,6 +414,9 @@ fi
 %{_libdir}/pkgconfig/myproxy.pc
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 5.5-4
+- Updated version numbers
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 5.5-3
 - Update for 5.2.0 release
 

@@ -1,3 +1,11 @@
+globus-gss-assist (8.3-1) unstable; urgency=low
+
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-227: Potentially unsafe format strings in GSI
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:37 -0500
+
 globus-gss-assist (8.2-1) unstable; urgency=low
 
   * Doxygen markup errors (bugzilla #7185)

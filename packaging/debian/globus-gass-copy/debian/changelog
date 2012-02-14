@@ -1,3 +1,12 @@
+globus-gass-copy (8.3-1) unstable; urgency=low
+
+  * GRIDFTP-208: Add manpage for globus-url-copy
+  * GRIDFTP-211: potentially unsafe format strings in globus-url-copy
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:43:52 -0500
+
 globus-gass-copy (8.2-2) unstable; urgency=low
 
   * Update for 5.2.0 release

@@ -12,14 +12,14 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.19
+Version:	13.21
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-common >= 14
@@ -173,6 +173,20 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.21-1
+- GRAM-232: Incorrect directory permissions cause an infinite loop
+- GRAM-272: Allow site-specific RVF entries
+- GRAM-292: GRAM crashes when parsing partial condor log
+- GRAM-294: GRAM should clean up files better
+- GRAM-296: Compile Failure on Solaris
+- GRAM-299: Not all job log messages obey loglevel RSL attribute
+- GRAM-300: GRAM job manager doxygen refers to obsolete command-line options
+- GRAM-301: GRAM validation file parser doesn't handle empty quoted values correctly
+- GRAM-302: Incorrect error when state file write fails
+- GRAM-305: Jobmanager reporting DONE status when stage-out failed
+- GRAM-306: Job Manager stdio_size query logging crash
+- RIC-226: Some dependencies are missing in GPT metadata
+
 * Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 13.19-1
 - GRAM-232: Incorrect directory permissions cause an infinite loop
 - GRAM-302: Incorrect error when state file write fails

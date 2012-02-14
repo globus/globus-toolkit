@@ -1,3 +1,11 @@
+globus-gsi-cert-utils (8.2-1) unstable; urgency=low
+
+  * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-227: Potentially unsafe format strings in GSI
+  * RIC-231: grid-cert-request prints incorrect path in diagnostic message
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:43 -0500
+
 globus-gsi-cert-utils (8.1-2) unstable; urgency=low
 
   * Update for 5.2.0 release

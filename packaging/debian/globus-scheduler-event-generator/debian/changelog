@@ -1,3 +1,9 @@
+globus-scheduler-event-generator (4.4-2) unstable; urgency=low
+
+  * Update version for 5.2.1
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:43:45 -0500
+
 globus-scheduler-event-generator (4.4-1) unstable; urgency=low
 
   * Fix init scripts

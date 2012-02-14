@@ -12,7 +12,7 @@ endif
 include /usr/share/quilt/quilt.make
 
 name = grid-packaging-tools
-version = 3.6
+version = 5.2
 
 _prefix = /usr
 

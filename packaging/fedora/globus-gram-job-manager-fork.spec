@@ -15,14 +15,14 @@
 
 Name:		globus-gram-job-manager-fork
 %global _name %(tr - _ <<< %{name})
-Version:	1.0
-Release:	8%{?dist}
+Version:	1.2
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Fork Job Manager
 
 Group:		Applications/Internet
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Requires:	globus-gram-job-manager-scripts >= 4
@@ -265,6 +265,11 @@ fi
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 1.2-1
+- GRAM-297: job manager service definitions contain unresolved variables
+- GRAM-310: sge configure script error
+- RIC-229: Clean up GPT metadata
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 1.0-8
 - Update for 5.2.0 release
 

@@ -1,3 +1,12 @@
+globus-gssapi-gsi (10.4-1) unstable; urgency=low
+
+  * RIC-215: gss_import_cred() doesn't match properly the OID passed
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-227: Potentially unsafe format strings in GSI
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:12 -0500
+
 globus-gssapi-gsi (10.2-2) unstable; urgency=low
 
   * Update for 5.2.0 release

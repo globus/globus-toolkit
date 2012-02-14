@@ -15,14 +15,14 @@
 
 Name:		globus-gram-protocol
 %global _name %(tr - _ <<< %{name})
-Version:	11.2
-Release:	3%{?dist}
+Version:	11.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Protocol Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -178,6 +178,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/perl/Globus/GRAM
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 11.3-1
+- RIC-226: Some dependencies are missing in GPT metadata
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 11.2-3
 - Update for 5.2.0 release
 

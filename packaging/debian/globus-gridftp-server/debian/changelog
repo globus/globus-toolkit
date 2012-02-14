@@ -1,3 +1,12 @@
+globus-gridftp-server (6.6-1) unstable; urgency=low
+
+  * GRIDFTP-209: Add manpage for globus-gridftp-server
+  * GRIDFTP-212: GridFTP server doesn't build if PATH_MAX is not defined
+  * RIC-226: Some dependencies are missing in GPT metadata
+  * RIC-229: Clean up GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:53 -0500
+
 globus-gridftp-server (6.5-1) unstable; urgency=low
 
   * Fix init script problems

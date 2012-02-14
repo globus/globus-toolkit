@@ -1,3 +1,9 @@
+globus-gram-client (12.4-1) unstable; urgency=low
+
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:36 -0500
+
 globus-gram-client (12.3-2) unstable; urgency=low
 
   * Update for 5.2.0 release

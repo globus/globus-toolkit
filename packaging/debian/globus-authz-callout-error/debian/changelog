@@ -1,3 +1,9 @@
+globus-authz-callout-error (2.2-1) unstable; urgency=low
+
+  * RIC-224: Eliminate some doxygen warnings
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:33 -0500
+
 globus-authz-callout-error (2.1-2) unstable; urgency=low
 
   * Update for 5.2.0 release

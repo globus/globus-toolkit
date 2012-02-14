@@ -1,3 +1,9 @@
+globus-xio-popen-driver (2.3-1) unstable; urgency=low
+
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:23 -0500
+
 globus-xio-popen-driver (2.2-2) unstable; urgency=low
 
   * Update for 5.2.0 release

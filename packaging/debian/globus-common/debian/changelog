@@ -1,3 +1,14 @@
+globus-common (14.6-1) unstable; urgency=low
+
+  * RIC-221: Remove unnecessary evals of path components from script initializers
+  * RIC-223: Some commands in globus_common have no manpage
+  * RIC-224: Eliminate some doxygen warnings
+  * RIC-228: potentially unsafe format strings in common
+  * RIC-230: Remove obsolete globus_libtool_windows code
+  * RIC-255: Missing default value for shell script variable in globus-sh-exec
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:15 -0500
+
 globus-common (14.5-2) unstable; urgency=low
 
   * Fix globus-version command

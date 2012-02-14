@@ -18,14 +18,14 @@
 
 Name:		globus-common
 %global _name %(tr - _ <<< %{name})
-Version:	14.5
-Release:	2%{?dist}
+Version:	14.6
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Common Library
 
 Group:		System Environment/Libraries
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 #		This is a workaround for the broken epstopdf script in RHEL5
 #		See: https://bugzilla.redhat.com/show_bug.cgi?id=450388
 Source9:	epstopdf-2.9.5gw
@@ -162,7 +162,7 @@ unset GPT_LOCATION
 %if "%{?globus_version}" != ""
 GLOBUS_VERSION=%{globus_version}
 %else
-GLOBUS_VERSION=5.1.3
+GLOBUS_VERSION=5.2.1
 %endif
 export GLOBUS_VERSION
 %configure --with-flavor=%{flavor} --enable-doxygen \
@@ -247,6 +247,14 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 14.6-1
+- RIC-221: Remove unnecessary evals of path components from script initializers
+- RIC-223: Some commands in globus_common have no manpage
+- RIC-224: Eliminate some doxygen warnings
+- RIC-228: potentially unsafe format strings in common
+- RIC-230: Remove obsolete globus_libtool_windows code
+- RIC-255: Missing default value for shell script variable in globus-sh-exec
+
 * Mon Dec 05 2011 Joseph Bester <bester@mcs.anl.gov> - 14.5-2
 - Update for 5.2.0 release
 

@@ -1,3 +1,10 @@
+globus-gsi-credential (5.3-1) unstable; urgency=low
+
+  * RIC-213: support for private keys in PKCS8 format broken
+  * RIC-226: Some dependencies are missing in GPT metadata
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:05 -0500
+
 globus-gsi-credential (5.2-1) unstable; urgency=low
 
   * RIC-213: support for private keys in PKCS8 format broken

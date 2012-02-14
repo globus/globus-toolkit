@@ -1,3 +1,20 @@
+grid-packaging-tools (5.2-1) unstable; urgency=low
+
+  * GRAM-292: GRAM crashes when parsing partial condor log
+  * GRAM-303: Gatekeeper's syslog output cannot be controlled
+  * RIC-103: installer INSTALL instructions out of date
+  * RIC-207: pkg-config files have undefined variable GLOBUS_FLAVOR_NAME
+  * RIC-209: GT 5.2.0 installer gives confusing error when a previous version is
+  * RIC-210: Installer Makefile contains long lines
+  * RIC-212: Installer configure script doesn't come up with default flavor for Mac
+  * RIC-213: support for private keys in PKCS8 format broken
+  * RIC-219: GPT-created pkg-config files are missing major versions in dependencies
+  * RIC-220: GPT doesn't know about shared library extensions on some platforms
+  * RIC-221: Remove unneccessary evals of path components from GPT initializer
+  * RIC-222: Make GPT configure help message have standard autotools format
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:44:46 -0500
+
 grid-packaging-tools (3.6-1) unstable; urgency=low
 
   * RIC-207: pkg-config files have undefined variable GLOBUS_FLAVOR_NAME

@@ -1,3 +1,9 @@
+globus-xio-gridftp-driver (1.0-2) unstable; urgency=low
+
+  * Update version for 5.2.1
+
+ -- Globus Toolkit <support@globus.org>  Tue, 14 Feb 2012 14:43:42 -0500
+
 globus-xio-gridftp-driver (1.0-1) unstable; urgency=low
 
   * Update for 5.2.0 release

@@ -18,14 +18,14 @@
 
 Name:		globus-core
 %global _name %(tr - _ <<< %{name})
-Version:	8.6
+Version:	8.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Core
 
 Group:		Development/Tools
 License:	ASL 2.0
 URL:		http://www.globus.org/
-Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.0/packages/src/%{_name}-%{version}.tar.gz
+Source:		http://www.globus.org/ftppub/gt5/5.2/5.2.1/packages/src/%{_name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Provides:	%{name}-devel = %{version}-%{release}
@@ -123,6 +123,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}
 
 %changelog
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.7-1
+- RIC-206: globus-makefile-header doesn't set flavor header dir correctly
+- RIC-232: Simplify search for OpenSSL headers and libraries
+
 * Thu Dec 22 2011 Joseph Bester <bester@mcs.anl.gov> - 8.6-1
 - RIC-206: globus-makefile-header doesn't set flavor header dir correctly
 
