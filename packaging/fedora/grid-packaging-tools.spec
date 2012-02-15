@@ -84,7 +84,7 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Grid
 
 %changelog
-% Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.6.1-1
+* Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.6.1-1
 - RIC-207: pkg-config files have undefined variable GLOBUS_FLAVOR_NAME
 - RIC-219: GPT-created pkg-config files are missing major versions in
            dependencies
