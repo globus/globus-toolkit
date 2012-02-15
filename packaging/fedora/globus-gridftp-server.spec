@@ -124,12 +124,18 @@ sed '/lib.*\.la$/d' -i $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist
 # Generate package filelists
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_rtl.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
+  | sed -e '/\/man[0-9]/d' \
   | sed s!^!%{_prefix}! > package.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_pgm.filelist \
     $GLOBUSPACKAGEDIR/%{_name}/noflavor_data.filelist \
   | grep -Ev '(gridftp.conf.default|gridftp.xinetd.default|gridftp.gfork.default)' \
   | sed -e s!^!%{_prefix}! | sed -e s!^/usr/etc!/etc! \
   > package-progs.filelist
+cat $GLOBUSPACKAGEDIR/%{_name}/noflavor_doc.filelist \
+  | grep '/man[0-9]/' \
+  | sed -e s!^!%{_prefix}! | sed -e s!^/usr/etc!/etc! \
+  | sed -e 's!/man[0-9]/.*!&.gz!' \
+  >> package-progs.filelist
 cat $GLOBUSPACKAGEDIR/%{_name}/%{flavor}_dev.filelist \
   | sed s!^!%{_prefix}! > package-devel.filelist
 
