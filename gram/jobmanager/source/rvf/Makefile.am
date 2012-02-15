@@ -10,7 +10,7 @@ libglobus_rvf_la_SOURCES = \
     globus_i_rvf_scanner.h lex.globus_i_rvf_.c
 
 globus_rvf_check_SOURCES=globus_rvf_check.c
-globus_rvf_check_LDADD=libglobus_rvf.la -lglobus_rsl_assist -lglobus_rsl
+globus_rvf_check_LDADD=libglobus_rvf.la -lglobus_rsl_assist -lglobus_rsl -lglobus_common
 
 if REBUILD_PARSER
 # developed with bison 2.3 and uses some bison-specific features
