@@ -1166,6 +1166,50 @@ globus_l_gfs_request_command(
 
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
+    else if(strcmp(cmd_array[0], "MFMT") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_UTIME;
+        globus_l_gfs_get_full_path(
+            instance, cmd_array[2], &command_info->pathname, GFS_L_WRITE);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+        if (strlen(cmd_array[1]) < 14)
+        {
+            goto err;   
+        }
+        {
+            char* tz;
+            struct tm modtime;
+            memset(&modtime, 0, sizeof(modtime));
+            if (sscanf(cmd_array[1], "%4d%2d%2d%2d%2d%2d", 
+                        &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
+                        &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
+            {
+                goto err;
+            }
+            modtime.tm_year -= 1900;
+            modtime.tm_mon  -= 1;
+            /* This block converts the user-specified UTC time to a Unix time
+             * value.  We have to do contortions here as there is no standard
+             * inverse of the 'gmtime' function. */
+            tz = getenv("TZ");
+            setenv("TZ", "", 1);
+            tzset();
+            command_info->chmod_mode = mktime(&modtime);
+            if (tz)
+                setenv("TZ", tz, 1);
+            else
+                unsetenv("TZ");
+            tzset();
+            if (command_info->chmod_mode < 0)
+            {
+                goto err;
+            }                        
+        }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+    }
     else if(strcmp(cmd_array[0], "SITE") == 0)
     {
         if(strcmp(cmd_array[1], "CHMOD") == 0)
@@ -1248,6 +1292,50 @@ globus_l_gfs_request_command(
             if(command_info->pathname == NULL)
             {
                 goto err;
+            }
+            type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        }
+        else if(strcmp(cmd_array[1], "UTIME") == 0)
+        {
+            command_info->command = GLOBUS_GFS_CMD_SITE_UTIME;
+            globus_l_gfs_get_full_path(
+                instance, cmd_array[3], &command_info->pathname, GFS_L_WRITE);
+            if(command_info->pathname == NULL)
+            {
+                goto err;
+            }
+            if (strlen(cmd_array[2]) < 14)
+            {
+                goto err;   
+            }
+            {
+                char* tz;
+                struct tm modtime;
+                memset(&modtime, 0, sizeof(modtime));
+                if (sscanf(cmd_array[2], "%4d%2d%2d%2d%2d%2d", 
+                            &modtime.tm_year, &modtime.tm_mon, &modtime.tm_mday,
+                            &modtime.tm_hour, &modtime.tm_min, &modtime.tm_sec) != 6)
+                {
+                    goto err;
+                }
+                modtime.tm_year -= 1900;
+                modtime.tm_mon  -= 1;
+                /* This block converts the user-specified UTC time to a Unix time
+                 * value.  We have to do contortions here as there is no standard
+                 * inverse of the 'gmtime' function. */
+                tz = getenv("TZ");
+                setenv("TZ", "", 1);
+                tzset();
+                command_info->chmod_mode = mktime(&modtime);
+                if (tz)
+                    setenv("TZ", tz, 1);
+                else
+                    unsetenv("TZ");
+                tzset();
+                if (command_info->chmod_mode < 0)
+                {
+                    goto err;
+                }                        
             }
             type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
         }
@@ -2357,6 +2445,32 @@ globus_l_gfs_add_commands(
         4,
         4,
         "SITE CHMOD <sp> mode <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE UTIME",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "SITE UTIME <sp> YYYYMMDDHHMMSS <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "MFMT",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "MFMT <sp> YYYYMMDDHHMMSS <sp> pathname",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

@@ -223,6 +223,7 @@ typedef struct globus_l_gfs_data_operation_s
     char *                              cksm_response;
     mode_t                              chmod_mode;
     char *                              rnfr_pathname;
+    time_t                              utime_time;
     /**/
 
     void *                              event_arg;
@@ -3416,6 +3417,10 @@ globus_i_gfs_data_request_command(
             break;
 
         case GLOBUS_GFS_CMD_SITE_CHMOD:
+            action = GFS_ACL_ACTION_WRITE;
+            break;
+
+        case GLOBUS_GFS_CMD_SITE_UTIME:
             action = GFS_ACL_ACTION_WRITE;
             break;
 
@@ -7357,6 +7362,7 @@ globus_gridftp_server_finished_command(
       case GLOBUS_GFS_CMD_DELE:
       case GLOBUS_GFS_CMD_RNTO:
       case GLOBUS_GFS_CMD_SITE_CHMOD:
+      case GLOBUS_GFS_CMD_SITE_UTIME:
       default:
         break;
     }

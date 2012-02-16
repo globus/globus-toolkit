@@ -19,6 +19,11 @@
 #include "globus_xio_file_driver.h"
 #include "openssl/md5.h"
 #include "version.h"
+#include <utime.h>
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 4096
+#endif
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_FILE);
 
@@ -1272,6 +1277,39 @@ error:
 
 static
 globus_result_t
+globus_l_gfs_file_utime(
+    globus_gfs_operation_t              op,
+    const char *                        pathname,
+    time_t                              modtime)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    struct utimbuf                      ubuf;
+    GlobusGFSName(globus_l_gfs_file_utime);
+    GlobusGFSFileDebugEnter();
+
+    ubuf.actime = modtime;
+    ubuf.modtime = modtime;
+    
+    rc = utime(pathname, &ubuf);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("utime", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, NULL);
+        
+    GlobusGFSFileDebugExit();
+    return GLOBUS_SUCCESS;
+    
+error:
+    GlobusGFSFileDebugExitWithError();
+    return result;
+}
+
+static
+globus_result_t
 globus_l_gfs_file_chmod(
     globus_gfs_operation_t   op,
     const char *                        pathname,
@@ -1676,6 +1714,10 @@ globus_l_gfs_file_command(
         break;
       case GLOBUS_GFS_CMD_SITE_CHMOD:
         result = globus_l_gfs_file_chmod(
+            op, cmd_info->pathname, cmd_info->chmod_mode);
+        break;
+      case GLOBUS_GFS_CMD_SITE_UTIME:
+        result = globus_l_gfs_file_utime(
             op, cmd_info->pathname, cmd_info->chmod_mode);
         break;
       case GLOBUS_GFS_CMD_CKSM:
