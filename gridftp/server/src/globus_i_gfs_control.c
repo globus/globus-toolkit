@@ -2508,6 +2508,11 @@ globus_l_gfs_add_commands(
     {
         goto error;
     }
+    result = globus_gridftp_server_control_add_feature(control_handle, "MFMT");
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
     result = globus_gsc_959_command_add(
         control_handle,
         "CKSM",
