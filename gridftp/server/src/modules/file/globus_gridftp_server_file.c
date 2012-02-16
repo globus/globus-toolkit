@@ -55,7 +55,6 @@ typedef void
 
 typedef struct globus_l_gfs_file_cksm_monitor_s
 {
-
     globus_gfs_operation_t              op;
     globus_off_t                        offset;
     globus_off_t                        length;
@@ -64,9 +63,16 @@ typedef struct globus_l_gfs_file_cksm_monitor_s
     globus_size_t                       block_size;
     globus_l_gfs_file_cksm_cb_t         internal_cb;
     void *                              internal_cb_arg;
+    
+    globus_callback_handle_t            marker_handle;
+    int                                 marker_freq;
+    globus_bool_t                       send_marker;
+    globus_off_t                        total_bytes;
+    
     MD5_CTX                             mdctx;
     globus_byte_t                       buffer[1];
 } globus_l_gfs_file_cksm_monitor_t;
+
 typedef struct 
 {
     gss_cred_id_t                       cred;
@@ -1382,11 +1388,23 @@ globus_l_gfs_file_cksm_read_cb(
             eof = GLOBUS_TRUE;
         }
     }
-
+    monitor->total_bytes += nbytes;
+    
     MD5_Update(&monitor->mdctx, buffer, nbytes);
 
     if(!eof)
     {
+        if(monitor->send_marker)
+        {
+            monitor->send_marker = GLOBUS_FALSE;
+            
+            char                        count[128];
+            sprintf(count, "%"GLOBUS_OFF_T_FORMAT, monitor->total_bytes);
+            
+            globus_gridftp_server_intermediate_command(
+                monitor->op, GLOBUS_SUCCESS, count);
+        }
+
         result = globus_xio_register_read(
             handle,
             monitor->buffer,
@@ -1404,6 +1422,16 @@ globus_l_gfs_file_cksm_read_cb(
     }
     else
     {
+        if(monitor->marker_handle)
+        {
+            globus_callback_unregister(
+                monitor->marker_handle,
+                NULL,
+                NULL,
+                NULL);
+            monitor->marker_handle = NULL;
+        }
+        
         MD5_Final(md, &monitor->mdctx);
     
         globus_xio_register_close(
@@ -1450,6 +1478,15 @@ error_read:
 }
 
 
+static void
+globus_l_gfs_file_marker_cb(
+    void *                              user_arg)
+{
+    globus_l_gfs_file_cksm_monitor_t *  monitor;
+    
+    monitor = (globus_l_gfs_file_cksm_monitor_t *) user_arg;
+    monitor->send_marker = GLOBUS_TRUE;
+}
 
 static
 void
@@ -1459,6 +1496,7 @@ globus_l_gfs_file_open_cksm_cb(
     void *                              user_arg)
 {  
     globus_l_gfs_file_cksm_monitor_t *  monitor;
+    char *                              freq;
     GlobusGFSName(globus_l_gfs_file_open_cksm_cb);
     GlobusGFSFileDebugEnter();
     
@@ -1470,6 +1508,27 @@ globus_l_gfs_file_open_cksm_cb(
             "open", result);
         goto error_open;  
     }  
+    
+    globus_gridftp_server_get_update_interval(
+        monitor->op, &monitor->marker_freq);
+
+    if(monitor->marker_freq)
+    {
+        globus_result_t                     res;
+        globus_reltime_t                    delay;
+        
+        GlobusTimeReltimeSet(delay, monitor->marker_freq, 0);
+        res = globus_callback_register_periodic(
+            &monitor->marker_handle,
+            &delay,
+            &delay,
+            globus_l_gfs_file_marker_cb,
+            monitor);
+        if(res != GLOBUS_SUCCESS)
+        {
+            
+        }
+    }
     
     if(monitor->length >= 0)
     {

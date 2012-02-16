@@ -222,6 +222,7 @@ typedef struct globus_i_gsc_handle_opts_s
     globus_bool_t                           delayed_passive;
     globus_bool_t                           passive_only;
     int                                     perf_frequency;
+    int                                     retr_perf_frequency;
     int                                     restart_frequency;
     globus_gsc_layout_t                     layout;
     globus_size_t                           block_size;

@@ -3588,6 +3588,32 @@ globus_l_gfs_ipc_finished_reply_kickout(
 }
 
 static void
+globus_l_gfs_ipc_intermediate_reply_kickout(
+    void *                              user_arg)
+{
+    globus_gfs_ipc_request_t *          request;
+    GlobusGFSName(globus_l_gfs_ipc_event_reply_kickout);
+    GlobusGFSDebugEnter();
+
+    request = (globus_gfs_ipc_request_t *) user_arg;
+
+    /* call the user callback */
+    if(request->cb)
+    {
+        request->cb(
+            request->ipc,
+            request->ipc->cached_res,
+            request->reply,
+            request->user_arg);
+    }
+
+    globus_free(request->reply);
+
+    GlobusGFSDebugExit();
+}
+
+
+static void
 globus_l_gfs_ipc_event_reply_kickout(
     void *                              user_arg)
 {
@@ -3664,6 +3690,7 @@ globus_l_gfs_ipc_request_read_body_cb(
                 switch(request->last_type)
                 {
                     case GLOBUS_GFS_OP_FINAL_REPLY:
+                    case GLOBUS_GFS_OP_INTERMEDIATE_REPLY:
                         reply = globus_l_gfs_ipc_unpack_reply(ipc, buffer, len);
                         if(reply == NULL)
                         {
@@ -3672,8 +3699,33 @@ globus_l_gfs_ipc_request_read_body_cb(
                         }
                         reply->id = request->id;
                         request->reply = reply;
-                        ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
-                        reply_kickout = GLOBUS_TRUE;
+                        if((reply->code / 100) != 1)
+                        {
+                            ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
+                            reply_kickout = GLOBUS_TRUE;
+                        }
+                        else
+                        {
+                            globus_l_gfs_ipc_intermediate_reply_kickout(request);
+
+                            new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+                            if(new_buf == NULL)
+                            {
+                                goto error;
+                            }
+                            result = globus_xio_register_read(
+                                ipc->xio_handle,
+                                new_buf,
+                                GFS_IPC_HEADER_SIZE,
+                                GFS_IPC_HEADER_SIZE,
+                                NULL,
+                                globus_l_gfs_ipc_request_read_header_cb,
+                                request);
+                            if(result != GLOBUS_SUCCESS)
+                            {
+                                goto mem_error;
+                            }
+                        }
                         break;
 
                     case GLOBUS_GFS_OP_EVENT_REPLY:
@@ -3806,6 +3858,7 @@ globus_l_gfs_ipc_request_read_header_cb(
                 switch(type)
                 {
                     case GLOBUS_GFS_OP_FINAL_REPLY:
+                    case GLOBUS_GFS_OP_INTERMEDIATE_REPLY:
                         /* even tho there is only 1 outstanding request
                             we look it up in the table.  this is in
                             case we ever allow many outstanding requests 
@@ -3817,9 +3870,12 @@ globus_l_gfs_ipc_request_read_header_cb(
                             result = GlobusGFSErrorIPC();
                             goto error;
                         }
-                        rc = globus_handle_table_decrement_reference(
-                            &ipc->call_table, id);
-                        globus_assert(!rc);
+                        if(type != GLOBUS_GFS_OP_INTERMEDIATE_REPLY)
+                        {
+                            rc = globus_handle_table_decrement_reference(
+                                &ipc->call_table, id);
+                            globus_assert(!rc);
+                        }
                         request->last_type = type;
                         break;
                 
@@ -4663,7 +4719,8 @@ globus_l_gfs_ipc_reply_cb(
                     calling close.  again we do nothing. */
                 goto error_already;
                 break;
-
+            case GLOBUS_GFS_IPC_STATE_REPLY_WAIT:
+                break;
             default:
                 globus_assert(0 && "memory corruption?");
                 break;
@@ -4724,8 +4781,11 @@ globus_gfs_ipc_reply_finished(
     char                                ch;
     globus_result_t                     res;
     char *                              tmp_msg;
+    globus_bool_t                       intermediate;
     GlobusGFSName(globus_gfs_ipc_reply_finished);
     GlobusGFSDebugEnter();
+
+    intermediate = (reply->code / 100 == 1);
 
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc_handle->mutex);
@@ -4736,8 +4796,11 @@ globus_gfs_ipc_reply_finished(
                 send_event = GLOBUS_TRUE;
                 /* error state is same since we are returning error
                     giving user to try again */
-                error_state = GLOBUS_GFS_IPC_STATE_ERROR;
-                ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
+                if(!intermediate)
+                {
+                    error_state = GLOBUS_GFS_IPC_STATE_ERROR;
+                    ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
+                }
                 break;
 
             case GLOBUS_GFS_IPC_STATE_SESSION_REPLY:
@@ -4766,18 +4829,33 @@ globus_gfs_ipc_reply_finished(
         {
             /* if local register one shot to get out of recurisve call stack
                 troubles */
-            request = (globus_gfs_ipc_request_t *) 
-                globus_hashtable_remove(
-                &ipc->reply_table,
-                (void *)reply->id);
-            if(request == NULL)
+            if(!intermediate)
             {
-                res = GlobusGFSErrorParameter("request");
-                goto error;
+                request = (globus_gfs_ipc_request_t *) 
+                    globus_hashtable_remove(
+                    &ipc->reply_table,
+                    (void *)reply->id);
+                if(request == NULL)
+                {
+                    res = GlobusGFSErrorParameter("request");
+                    goto error;
+                }
+                /* don't need the request anymore */
+                globus_l_gfs_ipc_request_destroy(request);
             }
-            /* don't need the request anymore */
-            globus_l_gfs_ipc_request_destroy(request);
-
+            else
+            {
+                request = (globus_gfs_ipc_request_t *) 
+                    globus_hashtable_lookup(
+                    &ipc->reply_table,
+                    (void *)reply->id);
+                if(request == NULL)
+                {
+                    res = GlobusGFSErrorParameter("request");
+                    goto error;
+                }
+            }
+            
             /* pack the header */
             buffer = globus_malloc(ipc->buffer_size);
             if(buffer == NULL)
@@ -4786,8 +4864,16 @@ globus_gfs_ipc_reply_finished(
                 goto error;
             }
             ptr = buffer;
-            GFSEncodeChar(
-                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_FINAL_REPLY);
+            if(reply->code / 100 == 1)
+            {
+                GFSEncodeChar(
+                    buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_INTERMEDIATE_REPLY);
+            }
+            else
+            {
+                GFSEncodeChar(
+                    buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_FINAL_REPLY);
+            }
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->id);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 

@@ -590,8 +590,11 @@ globus_l_gfs_ipc_finished_cb(
         bounce_info->op,
         reply->result,
         reply);
-    globus_free(bounce_info->node_handle);
-    globus_free(bounce_info);
+    if(reply->code / 100 != 1)
+    {
+        globus_free(bounce_info->node_handle);
+        globus_free(bounce_info);
+    }
 
     GlobusGFSRemoteDebugExit();
 }

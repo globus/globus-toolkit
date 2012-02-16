@@ -2940,6 +2940,7 @@ globus_gridftp_server_control_start(
     strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOGQLN");
     server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
+    server_handle->opts.retr_perf_frequency = 0;
     server_handle->opts.restart_frequency = 5;
     server_handle->opts.receive_buf = 0;
     server_handle->opts.parallelism = 1;
