@@ -16,6 +16,7 @@ pkgtest_DATA = \
         usercert.pem userkey.pem
 
 EXTRA_DIST = TESTS.pl.in TESTS-junit.pl grid-proxy-utils-test.pl \
+	proxy-order-test.pl \
         $(pkgtest_DATA)
 
 test:
