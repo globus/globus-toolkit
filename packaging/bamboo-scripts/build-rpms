@@ -69,8 +69,8 @@ while getopts n:v:a:St:hg:qpl i; do
            ;;
         l)
            [ -d log-output ] || mkdir -p log-output
-           exec 1 >& log-output/build-rpms.out
-           exec 2 >& log-output/build-rpms.err
+           exec 1> log-output/build-rpms.out
+           exec 2> log-output/build-rpms.err
            ;;
     esac
 done
