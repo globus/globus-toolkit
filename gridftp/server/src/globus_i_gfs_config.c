@@ -628,7 +628,7 @@ globus_l_gfs_config_load_config_file(
                 rc = globus_args_bytestr_to_num(value, &tmp_off);
                 if(rc != 0)
                 {
-                    fprintf(stderr, "Invalid value for %s\n", 
+                    globus_gfs_log_exit_message("Invalid value for %s\n", 
                         option_list[i].option_name);
                     goto error_parse;
                 }                  
@@ -651,7 +651,7 @@ globus_l_gfs_config_load_config_file(
         }
         if(!found)
         {
-            fprintf(stderr, "Problem parsing config file %s: line %d. "
+            globus_gfs_log_exit_message("Problem parsing config file %s: line %d. "
                 "Unknown option '%s'.\n", 
                 filename, line_num, file_option);
             goto error_param;
@@ -665,7 +665,7 @@ globus_l_gfs_config_load_config_file(
 
 error_parse:
     fclose(fptr);
-    fprintf(stderr, "Problem parsing config file %s: line %d.\n", 
+    globus_gfs_log_exit_message("Problem parsing config file %s: line %d.\n", 
         filename, line_num);
 error_param:
     GlobusGFSDebugExitWithError();
@@ -764,7 +764,7 @@ globus_l_gfs_config_load_envs_from_file(
 
 error_parse:
     fclose(fptr);
-    fprintf(stderr, "Problem parsing environment from config file %s: line %d.\n", 
+    globus_gfs_log_exit_message("Problem parsing environment from config file %s: line %d.\n", 
         filename, line_num);
 
     return -1;
@@ -824,7 +824,7 @@ globus_l_gfs_config_load_config_env()
                 {
                     free(option);
                 }
-                fprintf(stderr, "Invalid value for %s\n", 
+                globus_gfs_log_exit_message("Invalid value for %s\n", 
                     option_list[i].option_name);
                 return -1;
             }                  
@@ -947,7 +947,7 @@ globus_l_gfs_config_load_commandline(
                     {
                         free(option);
                     }
-                    fprintf(stderr, "Option %s is missing a value\n", argp);
+                    globus_gfs_log_exit_message("Option %s is missing a value\n", argp);
                     return -1;
                 }
                 rc = globus_args_bytestr_to_num(argv[arg_num], &tmp_off);
@@ -957,7 +957,7 @@ globus_l_gfs_config_load_commandline(
                     {
                         free(option);
                     }
-                    fprintf(stderr, "Invalid value for %s\n", argp);
+                    globus_gfs_log_exit_message("Invalid value for %s\n", argp);
                     return -1;
                 }                  
                 option->int_value = (int) tmp_off;
@@ -970,7 +970,7 @@ globus_l_gfs_config_load_commandline(
                     {
                         free(option);
                     }
-                    fprintf(stderr, "Option %s is missing a value\n", argp);
+                    globus_gfs_log_exit_message("Option %s is missing a value\n", argp);
                     return -1;
                 }
                 option->value = globus_libc_strdup(argv[arg_num]);
@@ -997,8 +997,9 @@ globus_l_gfs_config_load_commandline(
             {
                 free(option);
             }
-            fprintf(stderr, 
-                "Unknown option on command line: %s\n", argv[arg_num]);
+            globus_gfs_log_exit_message(
+                "Unknown option on command line: %s\n",
+                argv[arg_num]);
             return -1;
         }
     }
@@ -2538,7 +2539,7 @@ globus_i_gfs_config_init(
     result = globus_l_gfs_config_misc();
     if(result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Error in post config setup:\n %s", 
+        globus_gfs_log_exit_message("Error in post config setup:\n %s", 
             globus_error_print_friendly(globus_error_peek(result)));
         goto error;
     }

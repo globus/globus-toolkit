@@ -39,6 +39,11 @@ globus_i_gfs_log_tr(
     char                                to);
 
 void
+globus_gfs_log_exit_message(
+    const char *                        format,
+    ...);
+
+void
 globus_gfs_log_event(
     globus_gfs_log_type_t               type,
     globus_gfs_log_event_type_t         event_type,

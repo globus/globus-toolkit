@@ -610,6 +610,56 @@ globus_gfs_log_message(
 }
 
 void
+globus_gfs_log_exit_message(
+    const char *                        format,
+    ...)
+{
+    va_list                             ap;
+    char *                              msg;
+    GlobusGFSName(globus_gfs_log_exit_message);
+    GlobusGFSDebugEnter();
+    
+    va_start(ap, format);
+    msg = globus_common_v_create_string(format, ap);
+    va_end(ap);
+
+    if(globus_l_gfs_log_handle && globus_l_gfs_log_file != stderr)
+    {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_ERR, 
+            "Server configuration error. %s",
+            msg);
+    }
+
+    if(globus_i_gfs_config_bool("inetd") || !globus_l_gfs_log_handle)
+    {
+        char *                          tmp;
+        char *                          out_msg;
+        tmp = globus_common_create_string(
+            "Server configuration error.\n\n%s\nPlease notify administrator.",
+            msg);
+        out_msg = globus_gsc_string_to_959(500, tmp, " ");
+        globus_libc_fprintf(stderr, out_msg);
+        globus_free(tmp);
+        globus_free(out_msg);
+    }
+    else
+    {
+        globus_libc_fprintf(stderr, "Server configuration error.\n%s", msg);
+    }
+    
+    globus_free(msg);
+
+    if(globus_l_gfs_log_handle)
+    {
+        globus_logging_flush(globus_l_gfs_log_handle);
+    }
+
+    GlobusGFSDebugExit();
+}
+
+
+void
 globus_gfs_log_result(
     globus_gfs_log_type_t               type,
     const char *                        lead,
