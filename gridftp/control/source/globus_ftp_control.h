@@ -354,7 +354,7 @@ typedef enum globus_ftp_data_connection_state_e
     GLOBUS_FTP_DATA_STATE_SEND_EOF /* not used for state at all */
 } globus_ftp_data_connection_state_t;
 
-#define GLOBUS_FTP_CONTROL_READ_BUFFER_SIZE 100
+#define GLOBUS_FTP_CONTROL_READ_BUFFER_SIZE 1000
 #define GLOBUS_FTP_CONTROL_HOSTENT_BUFFER_SIZE 8192
 
 typedef enum
