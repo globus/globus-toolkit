@@ -2,6 +2,10 @@
 
 set -e
 
+[ -d log-output ] || mkdir log-output
+exec 1> log-output/test-gram.out
+exec 2> log-output/test-gram.out
+
 cleanup_hooks=""
 
 cleanup()
