@@ -19,6 +19,7 @@
 #ifndef WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #else
 #include <winsock2.h>
 struct  sockaddr_un {
