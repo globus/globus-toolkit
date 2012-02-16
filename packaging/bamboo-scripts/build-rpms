@@ -1,8 +1,6 @@
 #! /bin/sh
 
 set -e
-set -x
-
 usage()
 {
     echo "Usage: $0 -n OSNAME -v OSVER [-a ARTIFACTROOT] [-S] [-t TAG]"
@@ -32,7 +30,7 @@ skip_packaging=""
 
 sign=1
 tag=""
-while getopts n:v:a:St:hg:qp i; do
+while getopts n:v:a:St:hg:qpl i; do
     case "$i" in
         n)
             osname="$OPTARG"
@@ -68,6 +66,11 @@ while getopts n:v:a:St:hg:qp i; do
            skip_checkout=1
            skip_bootstrap=1
            skip_packaging=1
+           ;;
+        l)
+           [ -d log-output ] || mkdir -p log-output
+           exec 1 >& log-output/build-rpms.out
+           exec 2 >& log-output/build-rpms.err
            ;;
     esac
 done
