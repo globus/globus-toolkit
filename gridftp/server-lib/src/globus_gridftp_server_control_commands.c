@@ -823,9 +823,17 @@ globus_l_gsc_cmd_stat_cb(
                 code = 250;
             }
             tmp_ptr = globus_i_gsc_mlsx_line(
-                stat_info, stat_count, op->server_handle->opts.mlsx_fact_str, uid);
+                stat_info, 
+                stat_count, 
+                op->server_handle->opts.mlsx_fact_str, 
+                uid, 
+                GLOBUS_TRUE);
             msg =  globus_common_create_string(
-                _FSMSL("Contents of %s\n%s"), op->path, tmp_ptr);
+                _FSMSL("%d-Contents of %s\r\n%s%d End.\r\n"), 
+                code, 
+                op->path, 
+                tmp_ptr,
+                code);
             globus_free(tmp_ptr);
         }
         else
@@ -853,7 +861,14 @@ globus_l_gsc_cmd_stat_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
+    if(user_arg == 2)
+    {
+        tmp_ptr = globus_libc_strdup(msg);
+    }
+    else
+    {
+        tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
+    }
     if(partial)
     {
         globus_i_gsc_intermediate_reply(op, tmp_ptr);

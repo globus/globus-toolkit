@@ -602,7 +602,8 @@ globus_i_gsc_mlsx_line(
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                 stat_count,
     const char *                        mlsx_fact_string,
-    uid_t                               uid);
+    uid_t                               uid,
+    globus_bool_t                       indent);
 
 void
 globus_i_guc_command_data_destroy(

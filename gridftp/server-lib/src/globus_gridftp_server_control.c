@@ -4138,7 +4138,8 @@ globus_i_gsc_mlsx_line(
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                 stat_count,
     const char *                        mlsx_fact_str,
-    uid_t                               uid)
+    uid_t                               uid,
+    globus_bool_t                       indent)
 {
     char *                              line;
     int                                 ctr;
@@ -4166,17 +4167,22 @@ globus_i_gsc_mlsx_line(
         if(line != NULL)
         {
             tmp_i = strlen(line);
-            if(buf_left < (tmp_i + 3))
+            if(buf_left < (tmp_i + 4))
             {
                 int                         ndx;
                 
                 ndx = tmp_ptr - buf;
-                buf_left += buf_len + tmp_i + 3;
-                buf_len += buf_len + tmp_i + 3;
+                buf_left += buf_len + tmp_i + 4;
+                buf_len += buf_len + tmp_i + 4;
                 buf = globus_libc_realloc(buf, buf_len);
                 tmp_ptr = buf + ndx;
             }
-    
+            if(indent)
+            {
+                *tmp_ptr = ' ';
+                tmp_ptr++;
+                buf_left--;
+            }
             memcpy(tmp_ptr, line, tmp_i);
             tmp_ptr[tmp_i++] = '\r';
             tmp_ptr[tmp_i++] = '\n';
@@ -5630,7 +5636,7 @@ globus_gridftp_server_control_list_buffer_alloc(
     else
     {
         *out_buf = globus_i_gsc_mlsx_line(
-            stat_info_array, stat_count, fact_str, uid);
+            stat_info_array, stat_count, fact_str, uid, GLOBUS_FALSE);
     }
 
     *out_size = strlen(*out_buf);
