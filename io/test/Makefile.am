@@ -9,6 +9,7 @@ SUBDIRS = \
 
 Scripts = \
 	TESTS.pl \
+	TESTS-junit.pl \
 	globus-io-authorization-test.pl \
         globus-io-file-test.pl \
         globus-io-tcp-test.pl \
