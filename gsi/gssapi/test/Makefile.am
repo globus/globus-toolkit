@@ -10,6 +10,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 Scripts= \
 	TESTS.pl \
+	TESTS-junit.pl \
         compare-name-test.pl \
         compare-name-test-gt2.pl \
         compare-name-test-rfc2818.pl \
