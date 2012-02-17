@@ -27,7 +27,6 @@ use vars qw(@tests);
              globus-common-mem-test.pl
 	     globus-common-module-test.pl
 	     globus-common-poll-test.pl 
-             globus-common-thread-test.pl
 	     globus-common-timedwait-test.pl
 	     globus-common-url-test.pl
 	     globus-common-error-stg-test.pl
