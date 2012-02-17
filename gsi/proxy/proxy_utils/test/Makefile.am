@@ -7,6 +7,7 @@ pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
 pkgtest_SCRIPTS = \
         TESTS.pl \
+        TESTS-junit.pl \
         grid-proxy-utils-test.pl \
         proxy-order-test.pl
 

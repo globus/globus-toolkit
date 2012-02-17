@@ -9,6 +9,6 @@ use vars qw(@tests);
 	     );
 
 my $harness = TAP::Harness::JUnit->new(
-    { xmlfile => 'globus-openssl-error-test.xml' });
+    { merge => 1, xmlfile => 'globus-openssl-error-test.xml' });
 
 $harness->runtests(@tests);

@@ -13,6 +13,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 Scripts= \
 	TESTS.pl \
+	TESTS-junit.pl \
 	globus-openssl-error-test.pl \
 	run-openssl-error-tests.pl
 

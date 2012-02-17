@@ -73,7 +73,8 @@ Scripts = 				\
 	run-http-tests.pl               \
 	run-xio-tests.pl                \
 	run-all-tests.pl                \
-	TESTS.pl
+	TESTS.pl                        \
+	TESTS-junit.pl
 
 test_SCRIPTS = $(Scripts)
 
