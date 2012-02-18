@@ -183,6 +183,13 @@ dnl
 AC_CHECK_FUNC(pthread_sigmask, AC_DEFINE(HAVE_PTHREAD_SIGMASK))
 
 dnl
+dnl Check for pidfile_open
+dnl
+AC_CHECK_DECL(pidfile_open, AC_DEFINE(HAVE_PIDFILE_DECL),  ,
+              [#include <libutil.h>])
+AC_SEARCH_LIBS(pidfile_open, util, AC_DEFINE(HAVE_PIDFILE))
+
+dnl
 dnl Check for OpenLDAP
 dnl
 
