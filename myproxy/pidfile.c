@@ -24,22 +24,27 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD: src/lib/libutil/pidfile.c,v 1.9.4.1.2.1 2011/11/11 04:20:22 kensmith Exp $");
+/*
+ * modified Feb 28 2012 by Jim Basney <jbasney@ncsa.uiuc.edu>
+ *
+ * replace #includes with myproxy_common.h
+ * add struct pidfh definition
+ * replace EDOOFUS with EINVAL
+ * use POSIX open()/fcntl() instead of flopen()
+ * return EINVAL if path==NULL
+ * add #if !defined(HAVE_PIDFILE) wrapper so we only build if needed
+ */
 
-#include <sys/param.h>
-#include <sys/file.h>
-#include <sys/stat.h>
+#if !defined(HAVE_PIDFILE)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <time.h>
-#include <err.h>
-#include <errno.h>
-#include <libutil.h>
+#include "myproxy_common.h"
+
+struct pidfh {
+	int	pf_fd;
+	char	pf_path[MAXPATHLEN + 1];
+	dev_t	pf_dev;
+	ino_t	pf_ino;
+};
 
 static int _pidfile_remove(struct pidfh *pfh, int freeit);
 
@@ -49,14 +54,14 @@ pidfile_verify(struct pidfh *pfh)
 	struct stat sb;
 
 	if (pfh == NULL || pfh->pf_fd == -1)
-		return (EDOOFUS);
+		return (EINVAL);
 	/*
 	 * Check remembered descriptor.
 	 */
 	if (fstat(pfh->pf_fd, &sb) == -1)
 		return (errno);
 	if (sb.st_dev != pfh->pf_dev || sb.st_ino != pfh->pf_ino)
-		return (EDOOFUS);
+		return (EINVAL);
 	return (0);
 }
 
@@ -86,21 +91,38 @@ pidfile_read(const char *path, pid_t *pidptr)
 	return (0);
 }
 
+/* Use fcntl() for POSIX file locking. Lock is released when file is closed. */
+static int
+lock_file(int fd)
+{
+    struct flock fl;
+    fl.l_type = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0;
+
+    if (fcntl(fd, F_SETLK, &fl) < 0 ) {
+	    return -1;
+    }
+    return 0;
+}
+
 struct pidfh *
 pidfile_open(const char *path, mode_t mode, pid_t *pidptr)
 {
 	struct pidfh *pfh;
 	struct stat sb;
-	int error, fd, len, count;
-	struct timespec rqtp;
+	int error, fd, len;
 
 	pfh = malloc(sizeof(*pfh));
 	if (pfh == NULL)
 		return (NULL);
 
-	if (path == NULL)
-		len = snprintf(pfh->pf_path, sizeof(pfh->pf_path),
-		    "/var/run/%s.pid", getprogname());
+	if (path == NULL) {
+        free(pfh);
+        errno = EINVAL;
+        return (NULL);
+    }
 	else
 		len = snprintf(pfh->pf_path, sizeof(pfh->pf_path),
 		    "%s", path);
@@ -112,31 +134,20 @@ pidfile_open(const char *path, mode_t mode, pid_t *pidptr)
 
 	/*
 	 * Open the PID file and obtain exclusive lock.
-	 * We truncate PID file here only to remove old PID immediatelly,
-	 * PID file will be truncated again in pidfile_write(), so
-	 * pidfile_write() can be called multiple times.
 	 */
-	fd = flopen(pfh->pf_path,
-	    O_WRONLY | O_CREAT | O_TRUNC | O_NONBLOCK, mode);
+	fd = open(pfh->pf_path, O_WRONLY | O_CREAT, mode);
 	if (fd == -1) {
-		count = 0;
-		rqtp.tv_sec = 0;
-		rqtp.tv_nsec = 5000000;
-		if (errno == EWOULDBLOCK && pidptr != NULL) {
-		again:
-			errno = pidfile_read(pfh->pf_path, pidptr);
-			if (errno == 0)
-				errno = EEXIST;
-			else if (errno == EAGAIN) {
-				if (++count <= 3) {
-					nanosleep(&rqtp, 0);
-					goto again;
-				}
-			}
-		}
 		free(pfh);
 		return (NULL);
 	}
+    if (lock_file(fd) < 0) {
+        if (errno == 0 || errno == EAGAIN) {
+            pidfile_read(pfh->pf_path, pidptr);
+            errno = EEXIST;
+        }
+		free(pfh);
+		return (NULL);
+    }
 	/*
 	 * Remember file information, so in pidfile_write() we are sure we write
 	 * to the proper descriptor.
@@ -252,3 +263,5 @@ pidfile_remove(struct pidfh *pfh)
 
 	return (_pidfile_remove(pfh, 1));
 }
+
+#endif /* !defined(HAVE_PIDFILE) */
