@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.77 $)
+AC_REVISION($Revision: 1.78 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -181,6 +181,13 @@ dnl
 dnl Check for pthread_sigmask
 dnl
 AC_CHECK_FUNC(pthread_sigmask, AC_DEFINE(HAVE_PTHREAD_SIGMASK))
+
+dnl
+dnl Check for pidfile_open
+dnl
+AC_CHECK_DECL(pidfile_open, AC_DEFINE(HAVE_PIDFILE_DECL),  ,
+              [#include <libutil.h>])
+AC_SEARCH_LIBS(pidfile_open, util, AC_DEFINE(HAVE_PIDFILE))
 
 dnl
 dnl Check for OpenLDAP
