@@ -101,4 +101,14 @@ typedef int socklen_t;
 #define va_copy(a,b) ((a) = (b))
 #endif
 
+#if defined(HAVE_PIDFILE_DECL)
+#include "libutil.h"
+#else
+struct pidfh;
+struct pidfh *pidfile_open(const char *path, mode_t mode, pid_t *pidptr);
+int pidfile_write(struct pidfh *pfh);
+int pidfile_close(struct pidfh *pfh);
+int pidfile_remove(struct pidfh *pfh);
+#endif
+
 #endif /* __MYPROXY_COMMON_H */
