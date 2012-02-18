@@ -50,6 +50,7 @@ LibSources= \
 	myproxy_server.h \
 	myproxy_server_config.c \
 	myproxy_usage.h \
+	pidfile.c \
 	plugin_common.c \
 	plugin_common.h \
 	port_getopt.h \
