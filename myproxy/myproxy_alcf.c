@@ -83,12 +83,15 @@ static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:Z:E:";
 static char *certfile   = NULL;  /* certificate file name */
 static char *keyfile    = NULL;  /* key file name */
 
+static char *storage_dir = NULL;
+
 static char version[] =
 "myproxy-alcf version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 void init_arguments(int argc, char *argv[], myproxy_creds_t *my_creds);
 int makeproxy(const char certfile[], const char keyfile[],
 	      const char proxyfile[]);
+int get_storage_dir_owner(uid_t *owner);
 
 int main(int argc, char *argv[])
 {
@@ -163,6 +166,7 @@ int main(int argc, char *argv[])
 	myproxy_log_verror();
 	fprintf (stderr, "Unable to store credentials. %s\n",
 		 verror_get_string()); 
+    goto cleanup;
     } else {
 	fprintf (stdout, "Credential stored successfully\n");
     }
@@ -191,6 +195,7 @@ init_arguments(int argc,
         {  
         case 's': /* set the credential storage directory */
 	    myproxy_set_storage_dir(optarg);
+        storage_dir = optarg;
 	    break;
 	
 	case 'c': /* credential file name*/
@@ -365,6 +370,7 @@ int makeproxy(const char certfile[], const char keyfile[],
     unsigned char *certbuf=NULL, *keybuf=NULL;
     char *certstart, *certend, *keystart, *keyend;
     int return_value = -1, size, rval, fd=0;
+    uid_t owner;
 
     /* Read the certificate(s) into a buffer. */
     if (buffer_from_file(certfile, &certbuf, NULL) < 0) {
@@ -376,6 +382,12 @@ int makeproxy(const char certfile[], const char keyfile[],
     if (buffer_from_file(keyfile, &keybuf, NULL) < 0) {
 	fprintf(stderr, "Failed to read %s\n", keyfile);
 	goto cleanup;
+    }
+
+    /* special case: run as root w/ non-root storage dir */
+    if (getuid() == 0 && get_storage_dir_owner(&owner) == 0 && owner != 0) {
+        seteuid(0);
+        setuid(owner);
     }
 
     /* Open the output file. */
@@ -480,4 +492,38 @@ int makeproxy(const char certfile[], const char keyfile[],
     if (fd >= 0) close(fd);
 
     return return_value;
+}
+
+
+/*
+ * get_storage_dir_owner
+ *
+ * Used to identify storage directory ownership mismatches before they
+ * become a problem, i.e., myproxy_get_storage_dir() will fail.
+ */
+int
+get_storage_dir_owner(uid_t *owner)
+{
+    const char *storage_dir = NULL;
+    struct stat s = {0};
+    int rval = -1;
+
+    assert(owner);
+
+    /* Just check a few places for now... */
+    if (storage_dir) {          /* if dir passed on command-line */
+        if (stat(storage_dir, &s) < 0) {
+            goto cleanup;       /* handle errors silently */
+        }
+    } else if (stat("/var/lib/myproxy", &s) == 0) {
+    } else if (stat("/var/myproxy", &s) == 0) {
+    } else {
+        goto cleanup;
+    }
+
+    *owner = s.st_uid;
+    rval = 0;
+
+ cleanup:
+    return rval;
 }

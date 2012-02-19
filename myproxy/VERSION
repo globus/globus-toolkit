@@ -29,6 +29,10 @@ v5.6 XX Xxx 2012
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7217)
   - fix section number in myproxy-admin-query man page
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7219)
+  - in myproxy-admin-load-credential, handle the case of running as
+    root but /var/lib/myproxy owned by non-root by switching to the
+    non-root user before writing the credential files
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7234)
 
 v5.5 5 Sep 2011
   - undo escaping of POSIX extended regular expression meta-characters
