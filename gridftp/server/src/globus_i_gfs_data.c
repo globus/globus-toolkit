@@ -5112,7 +5112,7 @@ globus_l_gfs_data_list_stat_cb(
         goto error;
     }
     
-    if(reply->type == GLOBUS_GFS_OP_STAT)
+    if(reply->code != 100)
     {
         bounce_info->final_stat = GLOBUS_TRUE;
     }
