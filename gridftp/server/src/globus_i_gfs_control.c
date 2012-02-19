@@ -789,6 +789,18 @@ globus_l_gfs_data_stat_cb(
             tmp_str);
         globus_free(tmp_str);
     }
+    else if(reply->code / 100 == 1)
+    {
+        globus_gridftp_server_control_finished_resource(
+            op,
+            reply->info.stat.stat_array,
+            reply->info.stat.stat_count,
+            reply->info.stat.uid,
+            reply->info.stat.gid_count,
+            reply->info.stat.gid_array,
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS,
+            GLOBUS_NULL);
+    }
     else
     {
         globus_gridftp_server_control_finished_resource(
@@ -801,17 +813,20 @@ globus_l_gfs_data_stat_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
-    
-    info = (globus_gfs_stat_info_t *) request->info;
-    if(info)
+
+    if(reply->code / 100 != 1)
     {
-        if(info->pathname)
+        info = (globus_gfs_stat_info_t *) request->info;
+        if(info)
         {
-            globus_free(info->pathname);
+            if(info->pathname)
+            {
+                globus_free(info->pathname);
+            }
+            globus_free(info);
         }
-        globus_free(info);
+        globus_l_gfs_request_info_destroy(request);
     }
-    globus_l_gfs_request_info_destroy(request);
 
     GlobusGFSDebugExit();
 }

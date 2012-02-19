@@ -483,24 +483,19 @@ globus_l_gfs_ipc_handle_destroy(
 
 static
 void
-globus_l_gfs_ipc_request_destroy(
-    globus_gfs_ipc_request_t *          request)
+globus_l_gfs_ipc_reply_destroy(
+    globus_gfs_finished_info_t *        reply)
 {
     globus_gfs_data_finished_info_t *   data_reply;
     globus_gfs_cmd_finshed_info_t *     command_reply;
     globus_gfs_stat_finished_info_t *   stat_reply;
-    globus_gfs_command_info_t *         cmd_info;
-    globus_gfs_transfer_info_t *        trans_info;
-    globus_gfs_data_info_t *            data_info;
-    globus_gfs_stat_info_t *            stat_info;
     int                                 ctr;
-    GlobusGFSName(globus_l_gfs_ipc_request_destroy);
+    GlobusGFSName(globus_l_gfs_ipc_reply_destroy);
     GlobusGFSDebugEnter();
 
-    /* if there is a reply struch clean it up */
-    if(request->reply != NULL)
+    if(reply != NULL)
     {
-        switch(request->reply->type)
+        switch(reply->type)
         {
             /* nothing to do for these */
             case GLOBUS_GFS_OP_RECV:
@@ -515,7 +510,7 @@ globus_l_gfs_ipc_request_destroy(
 
             case GLOBUS_GFS_OP_STAT:
                 stat_reply = (globus_gfs_stat_finished_info_t *)
-                    &request->reply->info.stat;
+                    &reply->info.stat;
                 if(stat_reply->stat_array != NULL)
                 {
                     for(ctr = 0; ctr < stat_reply->stat_count; ctr++)
@@ -539,7 +534,7 @@ globus_l_gfs_ipc_request_destroy(
                 break;
             case GLOBUS_GFS_OP_COMMAND:
                 command_reply = (globus_gfs_cmd_finshed_info_t *)
-                    &request->reply->info.command;
+                    &reply->info.command;
                 if(command_reply->created_dir != NULL)
                 {
                     globus_free(command_reply->created_dir);
@@ -552,7 +547,7 @@ globus_l_gfs_ipc_request_destroy(
 
             case GLOBUS_GFS_OP_PASSIVE:
                 data_reply = (globus_gfs_data_finished_info_t *)
-                    &request->reply->info.data;
+                    &reply->info.data;
                 if(data_reply->contact_strings != NULL)
                 {
                     for(ctr = 0; ctr < data_reply->cs_count; ctr++)
@@ -567,12 +562,31 @@ globus_l_gfs_ipc_request_destroy(
                 globus_assert(0 && "possible memory corruption");
                 break;
         }
-        if(request->reply->msg != NULL)
+        if(reply->msg != NULL)
         {
-            globus_free(request->reply->msg);
+            globus_free(reply->msg);
         }
-        globus_free(request->reply);
+        globus_free(reply);
     }
+    GlobusGFSDebugExit();
+}
+
+static
+void
+globus_l_gfs_ipc_request_destroy(
+    globus_gfs_ipc_request_t *          request)
+{
+    globus_gfs_command_info_t *         cmd_info;
+    globus_gfs_transfer_info_t *        trans_info;
+    globus_gfs_data_info_t *            data_info;
+    globus_gfs_stat_info_t *            stat_info;
+    int                                 ctr;
+    GlobusGFSName(globus_l_gfs_ipc_request_destroy);
+    GlobusGFSDebugEnter();
+
+    /* if there is a reply struch clean it up */
+    globus_l_gfs_ipc_reply_destroy(request->reply);
+    
     /* if there was an info structure clean it up */
     if(request->info_struct != NULL)
     {
@@ -3607,8 +3621,9 @@ globus_l_gfs_ipc_intermediate_reply_kickout(
             request->user_arg);
     }
 
-    globus_free(request->reply);
-
+    globus_l_gfs_ipc_reply_destroy(request->reply);
+    request->reply = NULL;
+    
     GlobusGFSDebugExit();
 }
 

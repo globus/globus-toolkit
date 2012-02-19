@@ -861,7 +861,7 @@ globus_l_gsc_cmd_stat_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    if(user_arg == 2)
+    if(user_arg == 2 && (code == 150 || code == 250))
     {
         tmp_ptr = globus_libc_strdup(msg);
     }
@@ -1430,7 +1430,7 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "windowsize=", sizeof("windowsize")-1) == 0)
+                strncmp(tmp_ptr, "windowsize=", sizeof("windowsize=")-1) == 0)
             {
                 if(sscanf(tmp_ptr, "%d;", &tmp_i) == 1)
                 {
@@ -1443,7 +1443,7 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "blocksize=", sizeof("blocksize")-1) == 0)
+                strncmp(tmp_ptr, "blocksize=", sizeof("blocksize=")-1) == 0)
             {
                 if(sscanf(tmp_ptr, "blocksize=%d;", &tmp_i) == 1)
                 {
@@ -1456,7 +1456,7 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "markers=", sizeof("markers")-1) == 0)
+                strncmp(tmp_ptr, "markers=", sizeof("markers=")-1) == 0)
             {
                 if(sscanf(tmp_ptr, "markers=%d;", &tmp_i) == 1)
                 {
@@ -1491,7 +1491,7 @@ globus_l_gsc_cmd_opts(
             *tmp_ptr = tolower(*tmp_ptr);
         }
         msg = _FSMSL("200 OPTS Command Successful.\r\n");
-        if(sscanf(cmd_a[2], "markers=%d", &tmp_i) == 1)
+        if(sscanf(cmd_a[2], "markers=%d;", &tmp_i) == 1)
         {
             char * freq_str = globus_common_create_string("%d", tmp_i);
             globus_libc_setenv("GFS_CKSM_MARKERS", freq_str, 1);
