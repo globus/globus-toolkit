@@ -12,6 +12,12 @@ v5.6 XX Xxx 2012
   - on myproxy-server daemon startup, don't exit original process
     until daemon child has completed initialization
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7240)
+  - improve myproxy-server pidfile creation: when root, write pidfile
+    by default to /var/run/myproxy.pid; write pidfile on startup
+    before detaching from parent process; lock pidfile to avoid
+    collisions; remove pidfile on SIGTERM shutdown
+    [LICENSE.pidfile added for pidfile.c from FreeBSD's libutil.]
+    (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7240)
   - allow escaping of '.' in regular expressions
     (https://bugzilla.mcs.anl.gov/globus/show_bug.cgi?id=7213)
   - when converting to POSIX extended regular expressions for DN

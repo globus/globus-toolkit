@@ -110,9 +110,7 @@ static char *timestamp(void);
 
 static int become_daemon_step1(void);
 static int become_daemon_step2(void);
-static int become_daemon_step3(void);
-
-static void write_pidfile(const char path[]);
+static int become_daemon_step3(char);
 
 static void write_pfile(const char path[], long val);
 
@@ -169,16 +167,18 @@ void check_and_store_credentials(const char              path[],
 
 static int debug = 0;
 static int readconfig = 1;      /* do we need to read config file? */
+static int cleanshutdown = 0;   /* should we shutdown? */
 static int startup_pipe[2];
+static int listenfd = -1;
 
 int
 main(int argc, char *argv[]) 
 {    
-    int   listenfd;
-    pid_t childpid;
+    pid_t childpid, otherpid;
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     sigset_t mysigset;
+    struct pidfh *pfh = NULL;
 
     myproxy_socket_attrs_t         *socket_attrs;
     myproxy_server_context_t       *server_context;
@@ -281,13 +281,40 @@ main(int argc, char *argv[])
        /* Initialize the server before becoming a daemon to catch
           errors before exit of parent process. */
        listenfd = myproxy_init_server(socket_attrs);
+
        /* Run as a daemon */
         if (!debug) {
             if (become_daemon_step2() < 0) {
                 my_failure("Error forking daemon.  Exiting.\n");
             }
         }
-       if (server_context->pidfile) write_pidfile(server_context->pidfile);
+        /* no exit() allowed before become_daemon_step3() call */
+
+       if (getuid() == 0 && !server_context->pidfile) {
+           server_context->pidfile = "/var/run/myproxy.pid";
+       }
+       if (server_context->pidfile) {
+           /* It'd be nice to call pidfile_open() before forking the
+              daemon process, but we'd lose our POSIX file lock on the
+              pidfile when the original process exits, so we
+              create/lock/write pidfile here after forking a new
+              daemon process. */
+           pfh = pidfile_open(server_context->pidfile, 0600, &otherpid);
+           if (pfh == NULL) {
+               if (errno == EEXIST) {
+                   myproxy_log("Daemon already running, pid=%ld, pidfile=%s.\n"
+                      "Use the -P option to run multiple "
+                      "myproxy-server instances with different pidfiles.",
+                      (long)otherpid, server_context->pidfile);
+                   if (!debug) become_daemon_step3(1); /* notify parent */
+                   exit(1);
+               }
+               /* If we cannot create pidfile from other reasons, only warn. */
+               myproxy_log("Cannot open or create pidfile %s",
+                           server_context->pidfile);
+           }
+       }
+       if (pfh) pidfile_write(pfh);
        if (server_context->portfile) {
            write_pfile(server_context->portfile, socket_attrs->psport);
        }
@@ -301,7 +328,7 @@ main(int argc, char *argv[])
        sigaddset(&mysigset, SIGHUP);
 
        if (!debug) {
-           become_daemon_step3(); /* all done with initialization */
+           become_daemon_step3(0); /* all done with initialization */
        }
 
        /* Set up concurrent server */
@@ -317,6 +344,7 @@ main(int argc, char *argv[])
 	  socket_attrs->socket_fd = accept(listenfd,
 					   (struct sockaddr *) &client_addr,
 					   &client_addr_len);
+      if (cleanshutdown) goto parent_exit;
      if (handle_config(server_context) < 0) {
           myproxy_log_verror();
           my_failure("error in handle_config()");
@@ -353,6 +381,7 @@ main(int argc, char *argv[])
 		close(2);
 	     }
 	     close(listenfd);
+         if (pfh) pidfile_close(pfh);
          if (server_context->request_timeout == 0) {
              alarm(MYPROXY_DEFAULT_TIMEOUT);
          } else if (server_context->request_timeout > 0) {
@@ -366,6 +395,9 @@ main(int argc, char *argv[])
 	  _exit(0);
        }
     }
+
+ parent_exit:
+    pidfile_remove(pfh);
     return 0;
 }   
 
@@ -1385,8 +1417,8 @@ Sigfunc *my_signal(int signo, Sigfunc *func)
     }
 } 
 
-/* Signal handlers here.  Beware of making library calls inside signal
-   handlers, as we could be interrupted at any point with a signal.
+/* Signal handlers here.
+   Call only asynchronous-safe functions!
    This means no logging! */
 void
 sig_chld(int signo) {
@@ -1402,7 +1434,8 @@ void sig_hup(int signo) {
 }
 
 void sig_exit(int signo) {
-    exit(0);
+    if (listenfd >= 0) close(listenfd); /* force break out of accept() */
+    cleanshutdown = 1;
 }
 
 
@@ -1477,7 +1510,7 @@ static int
 become_daemon_step2()
 {
     pid_t childpid;
-    char byte;
+    char byte = 1;
 
     /* Create a pipe to notify the original process when
       initialization is complete per
@@ -1491,13 +1524,16 @@ become_daemon_step2()
     childpid = fork();
     switch (childpid) {
     case 0:         /* child */
+      close(startup_pipe[0]);
       break;
     case -1:        /* error */
       perror("Error in fork()");
       return -1;
     default:        /* exit the original process */
+      close(startup_pipe[1]);
       read(startup_pipe[0], &byte, 1); /* wait for child to signal */
-      _exit(0);
+      close(startup_pipe[0]);
+      _exit(byte);
     }
 
     /* 2. Set session id to become a process group and session group leader */
@@ -1527,18 +1563,11 @@ become_daemon_step2()
 
 /* We're all done starting up, so signal the original process to exit. */
 static int
-become_daemon_step3()
+become_daemon_step3(char status)
 {
-    write(startup_pipe[1], "0", 1);
-    close(startup_pipe[0]);
+    write(startup_pipe[1], &status, 1);
     close(startup_pipe[1]);
     return 0;
-}
-
-static void
-write_pidfile(const char path[])
-{
-    write_pfile(path, (long) getpid());
 }
 
 static void
