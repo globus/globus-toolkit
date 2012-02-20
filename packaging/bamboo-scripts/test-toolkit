@@ -2,9 +2,6 @@
 
 set -e
 
-exec 1> test-toolkit.log
-exec 2>&1
-
 cleanup_hooks=""
 
 cleanup()
