@@ -113,7 +113,7 @@ export GPT_LOCATION=$GLOBUS_LOCATION
 
 env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} ./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
 # Make core and core-thr first, so we can use -j below
-make globus_core globus_core-thr
+env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} make globus_core globus_core-thr
 push_cleanup_hook "sudo rm -rf $GLOBUS_LOCATION"
 
 lrm_targets=""
