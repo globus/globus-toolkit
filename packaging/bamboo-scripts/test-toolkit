@@ -47,8 +47,9 @@ lrms="fork fork+"
 flavor="gcc64dbg"
 nightly=0
 installer_url=""
+profile=""
 
-while getopts "f:b:nl:i:" arg; do
+while getopts "pf:b:nl:i:" arg; do
     case "$arg" in
         f)
             flavor="$OPTARG"
@@ -61,6 +62,9 @@ while getopts "f:b:nl:i:" arg; do
             ;;
         i)
             installer_url="$OPTARG"
+            ;;
+        p)
+            profile=1
             ;;
         l)
             # if the argument to the -l parameter ends in "+", then we will
@@ -94,6 +98,7 @@ if [ "$nightly" -eq 0 -a -z "$installer_url" ]; then
     installer="gt$(cat fait_accompli/version)-all-source-installer"
     ./fait_accompli/installer.sh -a $installer_tag
     tar zcf "../nightly.tar.gz" "$installer"
+    rm -rf "$installer"
     cd ..
 else
     if [ "${installer_url}" = "" ]; then
@@ -108,7 +113,8 @@ cd "$installer_root"
 export GLOBUS_LOCATION=$(pwd)/globus-location
 export GPT_LOCATION=$GLOBUS_LOCATION
 
-./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
+
+env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} ./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
 # Make core and core-thr first, so we can use -j below
 make globus_core globus_core-thr
 push_cleanup_hook "sudo rm -rf $GLOBUS_LOCATION"
@@ -126,6 +132,7 @@ for lrm in $lrms; do
 done
 make -j2 prewsgram globus-data-management-server globus_simple_ca ${lrm_targets} prews-test
 make install
+buildroot="$(pwd)"
 
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 
@@ -176,11 +183,19 @@ test_pkgs="
     globus_gram_protocol_test"
 
 for testpkg in $test_pkgs; do
+    if [ "$profile" = 1 ]; then
+        lcov -z -d "$buildroot"
+    fi
+
     # Run these tests only once---they don't depend on the LRM
     cd "$testpkg"
     ./TESTS-junit.pl || test_results="$?"
     cp "$(echo $testpkg | sed -e 's/_/-/g').xml" "${artifactdir}" || true
     cd "$OLDPWD"
+
+    if [ "$profile" = 1 ]; then
+        lcov -c -d "$buildroot" -t "$testpkg" -o "${artifactdir}/${testpkg}.info"
+    fi
 done
 
 GATEKEEPER_CONTACT="$(sudo -E $(which globus-gatekeeper) \
@@ -237,6 +252,9 @@ for lrm in $lrms; do
     export CONTACT_LRM
 
     for test in globus_gram_client_test globus_gram_job_manager_test; do
+        if [ "$profile" = 1 ]; then
+            lcov -z -d "$buildroot"
+        fi
         cd "$test"
         ./TESTS-junit.pl || test_results="$?"
         for x in *.xml; do
@@ -246,7 +264,17 @@ for lrm in $lrms; do
             fi
         done
         cd "$OLDPWD"
+        if [ "$profile" = 1 ]; then
+            lcov -c -d "$buildroot" -t "${test}_${testsuffix}" \
+                 -o "${artifactdir}/${test}_${testsuffix}.info"
+        fi
     done
 done
+
+if [ "$profile" = 1 ]; then
+    cd "${artifactdir}"
+    genhtml -o coverage --show-details --legend \
+        --title "Tests for $(cat "$topdir"/fait_accompli/version")" *.info
+fi
 
 exit "$test_results"
