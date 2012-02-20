@@ -131,7 +131,8 @@ BuildMyProxyCVS()
     echo GPT flavor is $flavor.
     echo ==================================================
     echo Building MyProxy...
-    cd myproxy
+    cp -r myproxy myproxy.build
+    cd myproxy.build
     ./bootstrap
     ./configure --with-flavor=$flavor $MYPROXY_CONFIG_OPTS
     make dist
@@ -143,6 +144,7 @@ BuildMyProxyCVS()
 	gpt-build -verbose myproxy-*.tar.gz $flavor
     fi
     cd ..
+    rm -rf myproxy.build
 }
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildMyProxyCVSGT4"; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/gt4
