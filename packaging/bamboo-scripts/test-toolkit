@@ -271,7 +271,7 @@ done
 if [ "$profile" = 1 ]; then
     cd "${artifactdir}"
     genhtml -o coverage --show-details --legend \
-        --title "Tests for $(cat "$topdir"/fait_accompli/version")" *.info
+        --title "Tests for $(cat "$topdir/fait_accompli/version")" *.info
 fi
 
 exit "$test_results"
