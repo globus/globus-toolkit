@@ -95,9 +95,10 @@ if [ "$nightly" -eq 0 -a -z "$installer_url" ]; then
     cd packaging
     installer="gt$(cat fait_accompli/version)-all-source-installer"
     ./fait_accompli/installer.sh -a $installer_tag
-    tar zcf "../nightly.tar.gz" "$installer"
+    tar zcf "../${artifactdir}/${installer}.tar.gz" "$installer"
     rm -rf "$installer"
     cd ..
+    ln -s "${artifactdir}/${installer}.tar.gz" "nightly.tar.gz"
 else
     if [ "${installer_url}" = "" ]; then
         installer_url="http://www.globus.org/${branch}/nightly.tar.gz"
@@ -118,7 +119,7 @@ fi
 env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} ./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
 # Make core and core-thr first, so we can use -j below
 env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} make globus_core globus_core-thr
-push_cleanup_hook "sudo rm -rf $GLOBUS_LOCATION"
+push_cleanup_hook "sudo chown -R $(id -un) $GLOBUS_LOCATION"
 
 lrm_targets=""
 for lrm in $lrms; do
