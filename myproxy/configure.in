@@ -265,6 +265,7 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	web/Makefile
+	systemd/Makefile
 	man/Makefile
 	,
 	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
