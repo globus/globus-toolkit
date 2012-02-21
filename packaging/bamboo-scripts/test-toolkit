@@ -95,7 +95,7 @@ if [ "$nightly" -eq 0 -a -z "$installer_url" ]; then
     cd packaging
     installer="gt$(cat fait_accompli/version)-all-source-installer"
     ./fait_accompli/installer.sh -a $installer_tag
-    tar zcf "../${artifactdir}/${installer}.tar.gz" "$installer"
+    tar zcf "${artifactdir}/${installer}.tar.gz" "$installer"
     rm -rf "$installer"
     cd ..
     ln -s "${artifactdir}/${installer}.tar.gz" "nightly.tar.gz"
