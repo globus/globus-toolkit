@@ -34,6 +34,7 @@ trap cleanup EXIT
 
 topdir="$(pwd)"
 artifactdir="${topdir}/artifacts"
+lcovdir="${topdir}/coverage"
 mkdir -p "${artifactdir}"
 CVSROOT=:pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
 export CVSROOT
@@ -110,6 +111,9 @@ cd "$installer_root"
 export GLOBUS_LOCATION=$(pwd)/globus-location
 export GPT_LOCATION=$GLOBUS_LOCATION
 
+if [ "$profile" = 1 ]; then
+    mkdir "$lcovdir"
+fi
 
 env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} ./configure --prefix=$GLOBUS_LOCATION --with-flavor="$flavor"
 # Make core and core-thr first, so we can use -j below
@@ -191,7 +195,7 @@ for testpkg in $test_pkgs; do
     cd "$OLDPWD"
 
     if [ "$profile" = 1 ]; then
-        lcov -c -d "$buildroot" -t "$testpkg" -o "${artifactdir}/${testpkg}.info"
+        lcov -c -d "$buildroot" -t "$testpkg" -o "${lcovdir}/${testpkg}.info"
     fi
 done
 
@@ -263,15 +267,51 @@ for lrm in $lrms; do
         cd "$OLDPWD"
         if [ "$profile" = 1 ]; then
             lcov -c -d "$buildroot" -t "${test}_${testsuffix}" \
-                 -o "${artifactdir}/${test}_${testsuffix}.info"
+                 -o "${lcovdir}/${test}_${testsuffix}.info"
         fi
     done
 done
 
+# Try to generate gcov data for daemons
+if [ "$profile" = 1 ]; then
+    lcov -z -d "$buildroot"
+    sudo killall globus-gatekeeper
+    sudo lcov -c -d "$buildroot" -t "globus_gatekeeper" \
+         -o "${lcovdir}/globus_gatekeeper.info"
+
+    sudo lcov -z -d "$buildroot"
+    killall globus-job-manager
+    lcov -c -d "$buildroot" -t "globus_job_manager" \
+         -o "${lcovdir}/globus_job_manager.info"
+
+    sudo lcov -z -d "$buildroot"
+    sudo killall globus-gridftp-server
+    sudo lcov -c -d "$buildroot" -t "globus_gridftp_server" \
+         -o "${lcovdir}/globus_gridftp_server.info"
+
+    for seg_pidfile in "${GLOBUS_LOCATION}/var"/seg-*.pid; do
+        if [ -f "$seg_pidfile" ]; then
+            sudo lcov -z -d "$buildroot"
+            kill "$(cat $seg_pidfile)" || true
+            lrm="$(basename "$seg_pidfile" | sed -e 's|seg-||' -e 's|\.pid||')"
+            lcov -c -d "$buildroot" \
+                 -t "globus_scheduler_event_generator_$lrm" \
+                 -o "${lcovdir}/globus_scheduler_event_generator_$lrm.info"
+        fi
+    done
+fi
+
 if [ "$profile" = 1 ]; then
     cd "${artifactdir}"
+    mkdir lcov
+    for x in "${lcovdir}"/*.info; do
+        # some code includes bison.simple, which causes lcov to bark when it
+        # can't find it in the path on the machine the parser was built on
+        lcov -r "$x" "*bison*" -o lcov/"$(basename $x)"
+    done
     genhtml -o coverage --show-details --legend \
-        --title "Tests for $(cat "$topdir/fait_accompli/version")" *.info
+        --title "Tests for $(cat "$topdir/fait_accompli/version")" lcov/*.info || true
 fi
+
 
 exit "$test_results"
