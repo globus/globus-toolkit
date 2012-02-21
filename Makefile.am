@@ -7,6 +7,7 @@ SUBDIRS= \
 	pkgdata \
 	doxygen \
 	web \
+	systemd \
 	man
 
 LibSources= \

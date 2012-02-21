@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.78 $)
+AC_REVISION($Revision: 1.79 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -265,6 +265,7 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	web/Makefile
+	systemd/Makefile
 	man/Makefile
 	,
 	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
