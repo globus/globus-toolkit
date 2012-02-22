@@ -11,7 +11,11 @@ pkgtest_SCRIPTS = \
         grid-proxy-utils-test.pl \
         proxy-order-test.pl
 
-EXTRA_DIST = $(pkgtest_SCRIPTS)
+pkgtest_DATA = \
+        b38b4d8c.0 b38b4d8c.signing_policy \
+        usercert.pem userkey.pem
+
+EXTRA_DIST = $(pkgtest_SCRIPTS) $(pkgtest_DATA)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
