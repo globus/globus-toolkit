@@ -74,7 +74,7 @@ sub test_proxy_order
         print $proxy_fh $elements{$element};
     }
 
-    ok(system("$Globus::Core::Paths::$bindir/grid-proxy-info > /dev/null 2>&1") == 0, "proxy order $order");
+    ok(system("$Globus::Core::Paths::$bindir/grid-proxy-info") == 0, "proxy order $order");
 }
 
 my @permutations = qw(
