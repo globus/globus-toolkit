@@ -46,8 +46,9 @@ flavor="gcc64dbg"
 nightly=0
 installer_url=""
 profile=""
+skipgram=""
 
-while getopts "pf:b:nl:i:" arg; do
+while getopts "gpf:b:nl:i:" arg; do
     case "$arg" in
         f)
             flavor="$OPTARG"
@@ -71,6 +72,9 @@ while getopts "pf:b:nl:i:" arg; do
             if [ "${OPTARG}" != "${OPTARG%+}" ]; then
                 lrms="${lrms:+$lrms }${OPTARG%+}"
             fi
+            ;;
+        g)
+            skipgram=1
             ;;
         *)
             echo "Invalid option $arg" 1>&2
@@ -200,108 +204,113 @@ for testpkg in $test_pkgs; do
     fi
 done
 
-GATEKEEPER_CONTACT="$(sudo -E $(which globus-gatekeeper) \
-        -conf $GLOBUS_LOCATION/etc/globus-gatekeeper.conf)"
-GATEKEEPER_CONTACT="${GATEKEEPER_CONTACT#GRAM contact: }"
-push_cleanup_hook "sudo killall globus-gatekeeper"
-push_cleanup_hook "killall globus-job-manager"
+if [ "$skipgram" = "" ]; then
+    GATEKEEPER_CONTACT="$(sudo -E $(which globus-gatekeeper) \
+            -conf $GLOBUS_LOCATION/etc/globus-gatekeeper.conf)"
+    GATEKEEPER_CONTACT="${GATEKEEPER_CONTACT#GRAM contact: }"
+    push_cleanup_hook "sudo killall globus-gatekeeper"
+    push_cleanup_hook "killall globus-job-manager"
 
-servicedir="${GLOBUS_LOCATION}/etc/grid-services"
+    servicedir="${GLOBUS_LOCATION}/etc/grid-services"
 
 # Run client and job manager tests for each lrm which is configured
-for lrm in $lrms; do
-    # remove first two colon-separated fields to get the DN
-    CONTACT_DN="${GATEKEEPER_CONTACT#*:*:}"
-    # everything before the DN is the host:port
-    CONTACT_HOST_PORT="${GATEKEEPER_CONTACT%:$CONTACT_DN}"
+    for lrm in $lrms; do
+        # remove first two colon-separated fields to get the DN
+        CONTACT_DN="${GATEKEEPER_CONTACT#*:*:}"
+        # everything before the DN is the host:port
+        CONTACT_HOST_PORT="${GATEKEEPER_CONTACT%:$CONTACT_DN}"
 
-    seg_pidfile="${GLOBUS_LOCATION}/var/seg-${lrm%+}.pid"
-    servicefile="${servicedir}/jobmanager-${lrm%+}"
-    if [ ! -f "${servicefile}.bak" ]; then
-        cp "${servicefile}" "${servicefile}.bak"
-        sed -e "s/\$/ -disable-usagestats/" \
-            < "${servicefile}.bak" \
-            > "${servicefile}"
-    fi
-    testsuffix="${lrm%+}"
-
-    if [ "${lrm%+}" != "${lrm}" ]; then
-        # Using SEG
-        sed -e "s/\$/ -seg-module ${lrm%+}/" \
-            < "${servicefile}" \
-            > "${servicefile}-seg"
-        servicefile="${servicefile}-seg"
-
-        globus-job-manager-event-generator \
-            -scheduler "${lrm%+}" \
-            -background \
-            -pidfile "${seg_pidfile}"
-        push_cleanup_hook "kill \$(cat ${seg_pidfile}) || true"
-
-        testsuffix="${testsuffix}_SEG"
-
-        # Construct contact string with the lrm name and seg added to it
-        CONTACT_STRING="${CONTACT_HOST_PORT}/jobmanager-${lrm%+}-seg:${CONTACT_DN}"
-    else
-        # Construct contact string with the lrm name added to it
-        CONTACT_STRING="${CONTACT_HOST_PORT}/jobmanager-${lrm}:${CONTACT_DN}"
-    fi
-
-    # CONTACT_LRM can cause some tests to be skipped, if they use a feature
-    # that doesn't work with $lrm
-    CONTACT_LRM="${lrm%+}"
-    export CONTACT_STRING
-    export CONTACT_LRM
-
-    for test in globus_gram_client_test globus_gram_job_manager_test; do
-        if [ "$profile" = 1 ]; then
-            lcov -z -d "$buildroot"
+        seg_pidfile="${GLOBUS_LOCATION}/var/seg-${lrm%+}.pid"
+        servicefile="${servicedir}/jobmanager-${lrm%+}"
+        if [ ! -f "${servicefile}.bak" ]; then
+            cp "${servicefile}" "${servicefile}.bak"
+            sed -e "s/\$/ -disable-usagestats/" \
+                < "${servicefile}.bak" \
+                > "${servicefile}"
         fi
-        cd "$test"
-        ./TESTS-junit.pl || test_results="$?"
-        for x in *.xml; do
-            if [ -r "$x" ]; then
-                xname="${x%.xml}-${testsuffix}.xml"
-                sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${testsuffix}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${testsuffix}\"/"< "$x" > "${artifactdir}/$xname"
+        testsuffix="${lrm%+}"
+
+        if [ "${lrm%+}" != "${lrm}" ]; then
+            # Using SEG
+            sed -e "s/\$/ -seg-module ${lrm%+}/" \
+                < "${servicefile}" \
+                > "${servicefile}-seg"
+            servicefile="${servicefile}-seg"
+
+            globus-job-manager-event-generator \
+                -scheduler "${lrm%+}" \
+                -background \
+                -pidfile "${seg_pidfile}"
+            push_cleanup_hook "kill \$(cat ${seg_pidfile}) || true"
+
+            testsuffix="${testsuffix}_SEG"
+
+            # Construct contact string with the lrm name and seg added to it
+            CONTACT_STRING="${CONTACT_HOST_PORT}/jobmanager-${lrm%+}-seg:${CONTACT_DN}"
+        else
+            # Construct contact string with the lrm name added to it
+            CONTACT_STRING="${CONTACT_HOST_PORT}/jobmanager-${lrm}:${CONTACT_DN}"
+        fi
+
+        # CONTACT_LRM can cause some tests to be skipped, if they use a feature
+        # that doesn't work with $lrm
+        CONTACT_LRM="${lrm%+}"
+        export CONTACT_STRING
+        export CONTACT_LRM
+
+        for test in globus_gram_client_test globus_gram_job_manager_test; do
+            if [ "$profile" = 1 ]; then
+                lcov -z -d "$buildroot"
+            fi
+            cd "$test"
+            ./TESTS-junit.pl || test_results="$?"
+            for x in *.xml; do
+                if [ -r "$x" ]; then
+                    xname="${x%.xml}-${testsuffix}.xml"
+                    sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${testsuffix}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${testsuffix}\"/"< "$x" > "${artifactdir}/$xname"
+                fi
+            done
+            cd "$OLDPWD"
+            if [ "$profile" = 1 ]; then
+                lcov -c -d "$buildroot" -t "${test}_${testsuffix}" \
+                     -o "${lcovdir}/${test}_${testsuffix}.info"
             fi
         done
-        cd "$OLDPWD"
-        if [ "$profile" = 1 ]; then
-            lcov -c -d "$buildroot" -t "${test}_${testsuffix}" \
-                 -o "${lcovdir}/${test}_${testsuffix}.info"
-        fi
     done
-done
+fi # skip_gram = ""
 
 # Try to generate gcov data for daemons
 if [ "$profile" = 1 ]; then
     set +e
-    lcov -z -d "$buildroot"
-    sudo killall globus-gatekeeper
-    sudo lcov -c -d "$buildroot" -t "globus_gatekeeper" \
-         -o "${lcovdir}/globus_gatekeeper.info" || true
-
-    sudo lcov -z -d "$buildroot"
-    killall globus-job-manager
-    lcov -c -d "$buildroot" -t "globus_job_manager" \
-         -o "${lcovdir}/globus_job_manager.info" || true
 
     sudo lcov -z -d "$buildroot"
     sudo killall globus-gridftp-server
     sudo lcov -c -d "$buildroot" -t "globus_gridftp_server" \
          -o "${lcovdir}/globus_gridftp_server.info" || true
 
-    for seg_pidfile in "${GLOBUS_LOCATION}/var"/seg-*.pid; do
-        if [ -f "$seg_pidfile" ]; then
-            lrm="$(basename "$seg_pidfile" | sed -e 's|seg-||' -e 's|\.pid||')"
-            sudo lcov -z -d "$buildroot"
-            kill "$(cat $seg_pidfile)" || true
-            lcov -c -d "$buildroot" \
-                 -t "globus_scheduler_event_generator_$lrm" \
-                 -o "${lcovdir}/globus_scheduler_event_generator_$lrm.info" \
-                 || true
-        fi
-    done
+    if [ "$skip_gram" = "" ]; then
+        lcov -z -d "$buildroot"
+        sudo killall globus-gatekeeper
+        sudo lcov -c -d "$buildroot" -t "globus_gatekeeper" \
+             -o "${lcovdir}/globus_gatekeeper.info" || true
+
+        sudo lcov -z -d "$buildroot"
+        killall globus-job-manager
+        lcov -c -d "$buildroot" -t "globus_job_manager" \
+             -o "${lcovdir}/globus_job_manager.info" || true
+
+        for seg_pidfile in "${GLOBUS_LOCATION}/var"/seg-*.pid; do
+            if [ -f "$seg_pidfile" ]; then
+                lrm="$(basename "$seg_pidfile" | sed -e 's|seg-||' -e 's|\.pid||')"
+                sudo lcov -z -d "$buildroot"
+                kill "$(cat $seg_pidfile)" || true
+                lcov -c -d "$buildroot" \
+                     -t "globus_scheduler_event_generator_$lrm" \
+                     -o "${lcovdir}/globus_scheduler_event_generator_$lrm.info" \
+                     || true
+            fi
+        done
+    fi
 
     cd "${artifactdir}"
     mkdir lcov
