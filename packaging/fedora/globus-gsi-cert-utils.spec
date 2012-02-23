@@ -13,7 +13,7 @@
 Name:		globus-gsi-cert-utils
 %global _name %(tr - _ <<< %{name})
 Version:	8.2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library
 
 Group:		System Environment/Libraries
@@ -54,6 +54,7 @@ Group:		Applications/Internet
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 Requires:	openssl
 Requires:	globus-common >= 14
+Requires:	globus-common-progs >= 14
 
 %package devel
 Summary:	Globus Toolkit - Globus GSI Cert Utils Library Development Files
@@ -199,6 +200,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Feb 23 2012 Joseph Bester <bester@mcs.anl.gov> - 8.2-2
+- RIC-237: globus-gsi-cert-utils-progs RPM has missing dependency
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.2-1
 - RIC-226: Some dependencies are missing in GPT metadata
 - RIC-227: Potentially unsafe format strings in GSI
