@@ -125,6 +125,10 @@ env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} ./configure --prefix=$GLOBU
 env ${profile:+CFLAGS=--coverage LDFLAGS=--coverage} make globus_core globus_core-thr
 push_cleanup_hook "sudo chown -R $(id -un) $GLOBUS_LOCATION"
 
+make -j2 prewsgram globus-data-management-server globus_simple_ca prews-test
+make install
+buildroot="$(pwd)"
+
 lrm_targets=""
 for lrm in $lrms; do
     case "$lrm" in
@@ -132,13 +136,29 @@ for lrm in $lrms; do
             # Everything we test with SEG we test also without SEG
             ;;
         *)
-            lrm_targets="${lrm_targets:+$lrm_targets }gram5-${lrm}"
+            make gram5-${lrm}
+            make install
+            ;;
+        sge)
+            make gram5-sge
+            QSUB=/usr/bin/qsub-ge \
+            QSTAT=/usr/bin/qstat-ge \
+            QDEL=/usr/bin/qdel-ge \
+            QSELECT=/usr/bin/qselect-ge \
+            QHOST=/usr/bin/qhost \
+            QCONF=/usr/bin/qconf \
+            QACCT=/usr/bin/qacct \
+            make install
+            ;;
+        pbs)
+            make gram5-pbs
+            QSUB=/usr/bin/qsub-torque \
+            QSTAT=/usr/bin/qstat-torque \
+            QDEL=/usr/bin/qdel-torque \
+            make install
             ;;
     esac
 done
-make -j2 prewsgram globus-data-management-server globus_simple_ca ${lrm_targets} prews-test
-make install
-buildroot="$(pwd)"
 
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 
