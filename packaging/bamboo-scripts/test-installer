@@ -132,8 +132,8 @@ for flavor in ${flavors}; do
     ./configure --prefix="${topdir}/globus-location-${flavor}" \
                 --with-flavor="${flavor}"; 
     make;
-    ${profileflags} make globus_simple_ca;
-    ${profileflags} make install;
+    env ${profileflags} make globus_simple_ca;
+    env ${profileflags} make install;
     make distclean
     cd -
 done
@@ -193,9 +193,9 @@ sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATI
         testpkgname_no_ver=$(echo $testpkgname | sed -e 's/-.*//' -e 's/_/-/g')
         testprofname="$(echo $testpkgname | sed -e 's/-.*//')_${flavor}"
 
-        ${profileflags} ./configure --with-flavor=${flavor}
-        ${profileflags} make 
-        ${profileflags} make junit || true
+        env ${profileflags} ./configure --with-flavor=${flavor}
+        env ${profileflags} make 
+        env ${profileflags} make junit || true
         for x in "${testpkgname_no_ver}"*.xml; do
             if [ -f "$x" ]; then
                 sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
