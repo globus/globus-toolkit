@@ -7,18 +7,21 @@ umask 022
 PATH=$PATH:/usr/sbin:/sbin
 
 packagingdir="$(pwd)"
+coveragedir="${packagingdir}/coverage"
 bamboodir=$(pwd)/bamboo-scripts
 topdir=$(pwd)
 tmppath=$(pwd)/tmp
 testoutdir=$(pwd)/test-results
+mkdir -p "${coveragedir}"
 chmod a+x make-packages.pl fait_accompli/installer.sh gpt/build_gpt gpt/make_gpt_dist gpt/setup_gpt_dist gpt/packaging_tools/bootstrap gpt/check-gpt-prereqs
 
 chroot=""
 in_chroot=0
 flavors=""
 tag=""
+profileflags=""
 
-while getopts "ic:r:f:t:" i; do
+while getopts "ic:r:f:t:p" i; do
     case "$i" in
         i)
             in_chroot=1
@@ -38,6 +41,10 @@ while getopts "ic:r:f:t:" i; do
             tag="${OPTARG}"
             chroot_args="${chroot_args:+"$chroot_args "}-t ${OPTARG}"
             ;;
+        p)
+            profile=1
+            profileflags="CFLAGS=--coverage LDFLAGS=--coverage"
+            ;;
     esac
 done
 shift $(($OPTIND - 1))
@@ -49,6 +56,7 @@ fi
 
 mkdir -p $topdir
 mkdir -p $testoutdir
+mkdir -p $coveragedir
 
 # Reset home to this directory as it is a transient bamboo build dir
 HOME=$topdir
@@ -124,8 +132,8 @@ for flavor in ${flavors}; do
     ./configure --prefix="${topdir}/globus-location-${flavor}" \
                 --with-flavor="${flavor}"; 
     make;
-    make globus_simple_ca;
-    make install;
+    ${profileflags} make globus_simple_ca;
+    ${profileflags} make install;
     make distclean
     cd -
 done
@@ -175,18 +183,37 @@ sudo -E /bin/sh -c ". ${GLOBUS_LOCATION}/etc/globus-user-env.sh; ${GLOBUS_LOCATI
     mkdir -p "${flavortestoutdir}"
 
     for testpkg in $topdir/package-output/globus*_test-*.tar.gz; do
+        if [ "$profile" = 1 ]; then
+            lcov -z -d "${installer_dir}" || true
+        fi
+
         gzip -dc "$testpkg" | tar xf -
         testpkgname=$( basename $testpkg | sed -e 's/\.tar\.gz//' )
         cd $testpkgname
         testpkgname_no_ver=$(echo $testpkgname | sed -e 's/-.*//' -e 's/_/-/g')
-        ./configure --with-flavor=${flavor}
-        make 
-        make junit || true
+        testprofname="$(echo $testpkgname | sed -e 's/-.*//')_${flavor}"
+
+        ${profileflags} ./configure --with-flavor=${flavor}
+        ${profileflags} make 
+        ${profileflags} make junit || true
         for x in "${testpkgname_no_ver}"*.xml; do
             if [ -f "$x" ]; then
                 sed -e "s/<testsuite name=\"\([^\"]*\)\" /<testsuite name=\"\1_${flavor}\" /" -e "s/classname=\"\([^\"]*\)\"/classname=\"\1_${flavor}\"/"< "$x" > "${flavortestoutdir}/${x}"
             fi
         done
+        if [ "$profile" = 1 ]; then
+            lcov -c -d "${installer_dir}" -t "$testprofname" -o "${coveragedir}/${testprofname}.info" || true
+        fi
         cd ..
     done
 done
+
+if [ "$profile" = 1 ]; then
+    for prof in "${coveragedir}"/*.info; do
+        lcov -r "$prof" "*bison*" -o "${prof}.fixed" || true
+    done
+    cd "${coveragedir}"
+    mkdir -p report
+    genhtml -o report --show-details --legend \
+        --title "Tests for $(cat "$packagingdir/fait_accompli/version")" lcov/*.fixed || true
+fi
