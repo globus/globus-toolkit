@@ -135,12 +135,7 @@ for lrm in $lrms; do
         *+)
             # Everything we test with SEG we test also without SEG
             ;;
-        *)
-            make gram5-${lrm}
-            make install
-            ;;
         sge)
-            make gram5-sge
             QSUB=/usr/bin/qsub-ge \
             QSTAT=/usr/bin/qstat-ge \
             QDEL=/usr/bin/qdel-ge \
@@ -148,13 +143,16 @@ for lrm in $lrms; do
             QHOST=/usr/bin/qhost \
             QCONF=/usr/bin/qconf \
             QACCT=/usr/bin/qacct \
-            make install
+            make gram5-sge install
             ;;
         pbs)
-            make gram5-pbs
             QSUB=/usr/bin/qsub-torque \
             QSTAT=/usr/bin/qstat-torque \
             QDEL=/usr/bin/qdel-torque \
+            make gram5-pbs install
+            ;;
+        *)
+            make gram5-${lrm}
             make install
             ;;
     esac
