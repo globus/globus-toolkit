@@ -22,6 +22,7 @@
 =cut
 
 use strict;
+use Config;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test;
@@ -227,10 +228,15 @@ push(@tests, "basic_func(\"-v -s\",\"-v -s\",0,0);");
 push(@tests, "basic_func(\"-v -c\",\"-v -c\",0,0);");
 push(@tests, "basic_func(\"-i \'<anonymous>\'\",\"-a -i\'$identity\'\",0,0);");
 push(@tests, "basic_func(\"\",\"-a -i\'$identity\'\",1,0);");
+if ($Config{osname} ne 'solaris')
+{
+# hangs on solaris sometimes, but tests functionality that isn't used in the
+# toolkit at all
 push(@tests, "basic_func(\"-b\",\"-b\",0,0);");
 push(@tests, "basic_func(\"-b -g\",\"-b -g\",0,0);");
 push(@tests, "basic_func(\"-b -s\",\"-b -s\",1,0);");
 push(@tests, "basic_func(\"-b -c\",\"-b -c\",0,0);");
+}
 push(@tests, "basic_func(\"-g -P none\",\"-g -P none\",0,0);");
 push(@tests, "basic_func(\"-g -P integrity\",\"-g -P integrity\",0,0);");
 push(@tests, "basic_func(\"-g -P privacy\",\"-g -P privacy\",0,0);");
