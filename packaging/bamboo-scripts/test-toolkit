@@ -204,6 +204,7 @@ test_pkgs="
     globus_proxy_utils_test
     globus_xio_test
     globus_io_test
+    globus_ftp_client_test
     globus_gram_protocol_test"
 
 for testpkg in $test_pkgs; do
