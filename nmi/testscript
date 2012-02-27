@@ -87,7 +87,7 @@ if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT4"; then
     BuildGT
 fi
 if test -z "$_NMI_TASKNAME" -o "x$_NMI_TASKNAME" = "xBuildGT5"; then
-    installer="gt5.0.4-all-source-installer.tar.gz"
+    installer="gt5.0.5rc1-all-source-installer.tar.gz"
     GLOBUS_LOCATION="$_CONDOR_SCRATCH_DIR/gt5"
     installerdir="gt5-src"
     BuildGT
