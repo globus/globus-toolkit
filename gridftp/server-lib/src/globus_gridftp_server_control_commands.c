@@ -3623,4 +3623,5 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
     globus_gridftp_server_control_add_feature(server_handle, "LANG EN");    
     globus_gridftp_server_control_add_feature(server_handle, "UTF8");
+    globus_gridftp_server_control_add_feature(server_handle, "MLSC");
 }
