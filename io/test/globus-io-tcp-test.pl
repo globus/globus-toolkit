@@ -87,7 +87,7 @@ sub basic_func
        $ENV{X509_USER_KEY} = "";       
    }
    
-   my $command = "$server_prog $server_args |";
+   my $command = "$server_prog $server_args 2>/dev/null |";
    #print "Running server: $command\n";
    $server_pid = open(SERVER, $command);
 
@@ -101,7 +101,7 @@ sub basic_func
    chomp($port);
    $port =~ s/listening on port //;
 
-   $command = "$client_prog -h localhost -p $port $client_args |";
+   $command = "$client_prog -h localhost -p $port $client_args 2>/dev/null |";
    #print "Running client: $command\n";
    $client_pid = open(CLIENT, $command);
 
