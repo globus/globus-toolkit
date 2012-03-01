@@ -184,8 +184,6 @@ for f in `find . -name Makefile.am` ; do
       -e 's!\(lib[a-zA-Z_]*\)_$(GLOBUS_FLAVOR_NAME)\.la!\1.la!g' \
       -e 's!^\(lib[a-zA-Z_]*\)___GLOBUS_FLAVOR_NAME__la_!\1_la_!' -i $f
 done
-sed -e "s!<With_Flavors!<With_Flavors ColocateLibraries=\"no\"!" \
-  -i pkgdata/pkg_data_src.gpt.in
 
 %{_datadir}/globus/globus-bootstrap.sh
 
