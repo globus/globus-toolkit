@@ -1,2 +1,0 @@
-&(executable = /bin/echo)
- (arguments  = "Can you spare a $0.10")
