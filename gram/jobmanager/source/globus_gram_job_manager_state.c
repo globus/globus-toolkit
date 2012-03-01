@@ -2193,7 +2193,7 @@ globus_l_gram_gss_send_fd(
     lengthbuf[3] = length;
     
     if (!(length > 5 && header[0] <= 26 && header[0] >= 20
-          && ((header[1] == 3 && (header[2] == 0 || header[2] == 1))
+          && ((header[1] == 3)
           || (header[1] == 2 && header[2] == 0))))
     {
         written = 0;

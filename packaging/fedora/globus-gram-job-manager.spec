@@ -12,7 +12,7 @@
 
 Name:		globus-gram-job-manager
 %global _name %(tr - _ <<< %{name})
-Version:	13.21
+Version:	13.22
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GRAM Jobmanager
 
@@ -173,6 +173,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Mar 1 2012 Joseph Bester <bester@mcs.anl.gov> - 13.22-1
+- RIC-239: GSSAPI Token inspection fails when using TLS 1.2
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 13.21-1
 - GRAM-232: Incorrect directory permissions cause an infinite loop
 - GRAM-272: Allow site-specific RVF entries
