@@ -764,7 +764,7 @@ globus_l_xio_gsi_is_ssl_token(
 
     if(t[0] >= 20 &&
        t[0] <= 26 &&
-       t[1] == 3 && (t[2] == 0 || t[2] == 1))
+       t[1] == 3)
     {
         /* it's a SSL token */
         *length = (t[3] << 8) | t[4];

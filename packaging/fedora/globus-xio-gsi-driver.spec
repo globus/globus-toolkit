@@ -12,7 +12,7 @@
 
 Name:		globus-xio-gsi-driver
 %global _name %(tr - _ <<< %{name})
-Version:	2.2
+Version:	2.3
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO GSI Driver
 
@@ -181,6 +181,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Mar 1 2012 Joseph Bester <bester@mcs.anl.gov> - 2.3-1
+- RIC-239: GSSAPI Token inspection fails when using TLS 1.2
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 2.2-1
 - RIC-224: Eliminate some doxygen warnings
 
