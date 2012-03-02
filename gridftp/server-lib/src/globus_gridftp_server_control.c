@@ -462,6 +462,7 @@ globus_l_gsc_op_create(
     op->response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
     op->cmd_list = globus_list_concat(server_handle->all_cmd_list, cmd_list);
     op->ref = 1;
+    globus_mutex_init(&op->stat_lock, NULL);
 
     op->uid = -1;
     globus_range_list_init(&op->perf_range_list);
@@ -541,6 +542,7 @@ globus_i_gsc_op_destroy(
         {
             globus_free(op->gid_array);
         }
+        globus_mutex_destroy(&op->stat_lock);
 
         GlobusLServerRefDec(op->server_handle);
         globus_l_gsc_server_ref_check(op->server_handle);
@@ -5182,6 +5184,11 @@ globus_gridftp_server_control_finished_resource(
         return GlobusGridFTPServerErrorParameter("op");
     }
 
+    if(op->user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
+    {
+        globus_mutex_lock(&op->stat_lock);
+    }
+    
     op->response_type = response_code;
     op->response_msg = NULL;
     if(msg != NULL)
@@ -5241,7 +5248,14 @@ globus_gridftp_server_control_finished_resource(
     }
     if(op->stat_cb != NULL)
     {
-        GlobusLGSCRegisterInternalCB(op);
+        if(response_code == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
+        {
+            globus_l_gsc_internal_cb_kickout(op);
+        }
+        else
+        {
+            GlobusLGSCRegisterInternalCB(op);
+        }
     }
 
     GlobusGridFTPServerDebugExit();

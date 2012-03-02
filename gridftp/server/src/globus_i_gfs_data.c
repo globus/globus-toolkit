@@ -246,6 +246,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_bool_t                       final_stat;
     globus_bool_t                       begin_called;
     globus_off_t                        list_buffer_offset;
+    globus_mutex_t                      stat_lock;
 
     /* sort of a state cheat.  for case where:
         start_abort
@@ -2601,6 +2602,7 @@ globus_l_gfs_data_operation_init(
     globus_range_list_init(&op->stripe_range_list);
     op->recvd_bytes = 0;
     op->max_offset = -1;
+    globus_mutex_init(&op->stat_lock, NULL);
 
     *u_op = op;
 
@@ -2646,6 +2648,7 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->eof_count);
     }
+    globus_mutex_destroy(&op->stat_lock);
 
     globus_free(op);
 
@@ -2743,6 +2746,8 @@ globus_l_gfs_data_stat_kickout(
 
     memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
 
+    globus_mutex_lock(&bounce_info->op->stat_lock);
+
     if(!bounce_info->final_stat)
     {
         reply.code = 100;
@@ -2770,6 +2775,8 @@ globus_l_gfs_data_stat_kickout(
             bounce_info->op->ipc_handle,
             &reply);
     }
+
+    globus_mutex_unlock(&bounce_info->op->stat_lock);
 
     if(bounce_info->final_stat)
     {
@@ -5051,10 +5058,12 @@ globus_l_gfs_data_list_write_cb(
         globus_free(bounce_info->list_response);
     }
     
+    globus_mutex_lock(&op->stat_lock);
     if(bounce_info->final_stat)
     {
         finish = GLOBUS_TRUE;
     }
+    globus_mutex_unlock(&op->stat_lock);
     
     globus_free(bounce_info);
 
@@ -5118,14 +5127,13 @@ globus_l_gfs_data_list_stat_cb(
         bounce_info->final_stat = GLOBUS_TRUE;
     }
 
-    globus_mutex_lock(&op->session_handle->mutex);
+    globus_mutex_lock(&op->stat_lock);
     if(!op->begin_called)
     {
         op->begin_called = GLOBUS_TRUE;
         globus_gridftp_server_begin_transfer(op, 0, NULL);
     }
-    globus_mutex_unlock(&op->session_handle->mutex);
-
+    
     result = globus_gridftp_server_register_write(
         op,
         list_buffer,
@@ -5138,9 +5146,12 @@ globus_l_gfs_data_list_stat_cb(
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_gridftp_server_register_write", result);
+        globus_mutex_unlock(&op->stat_lock);
         goto error;
     }
     op->list_buffer_offset += buffer_len;
+
+    globus_mutex_unlock(&op->stat_lock);
 
     GlobusGFSDebugExit();
     return;
@@ -5198,7 +5209,7 @@ globus_gridftp_server_finished_stat_custom_list(
         data_op,
         bounce_info->list_response,
         list_response_len,
-        op->list_buffer_offset,
+        0,
         -1,
         globus_l_gfs_data_list_write_cb,
         bounce_info);
@@ -5208,7 +5219,6 @@ globus_gridftp_server_finished_stat_custom_list(
             "globus_gridftp_server_register_write", result);
         goto error;
     }
-    op->list_buffer_offset += list_response_len;
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
@@ -7464,6 +7474,7 @@ globus_gridftp_server_finished_stat_partial(
     GlobusGFSName(globus_gridftp_server_finished_stat_partial);
     GlobusGFSDebugEnter();
 
+    globus_mutex_lock(&op->stat_lock);
     if(result == GLOBUS_SUCCESS)
     {        
         stat_info = (globus_gfs_stat_info_t *) op->info_struct;
@@ -7580,7 +7591,8 @@ globus_gridftp_server_finished_stat_partial(
             "globus_callback_register_oneshot", result);
         goto error_oneshot;
     }
-    
+    globus_mutex_unlock(&op->stat_lock);
+
     globus_poll();
     
     GlobusGFSDebugExit();
@@ -7612,6 +7624,7 @@ globus_gridftp_server_finished_stat(
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
+    globus_mutex_lock(&op->stat_lock);
     if(result == GLOBUS_SUCCESS)
     {        
         stat_info = (globus_gfs_stat_info_t *) op->info_struct;
@@ -7738,6 +7751,7 @@ globus_gridftp_server_finished_stat(
             "globus_callback_register_oneshot", result);
         goto error_oneshot;
     }
+    globus_mutex_unlock(&op->stat_lock);
 
     GlobusGFSDebugExit();
     return;

@@ -2450,7 +2450,7 @@ globus_i_gfs_config_init(
          "%s/sbin/globus-gridftp-server",
          globus_module_getenv("GLOBUS_LOCATION"));
     }
-    else if(exec_name[0] == '.')
+    else if(exec_name[0] == '.' || strchr(exec_name, '/') == NULL)
     {
         exec_name = globus_common_create_string(
          "%s/%s", cwd_str, exec_name);
