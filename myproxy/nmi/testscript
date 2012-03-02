@@ -29,11 +29,15 @@ if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     export LIBPATH
 fi
 valgrind=""
-if test -d /prereq/valgrind-3.5.0/bin -a "x$NMI_PLATFORM" != "xx86_64_macos_10.5"; then
+if test -d /prereq/valgrind-3.5.0/bin; then
     PATH=/prereq/valgrind-3.5.0/bin:$PATH
     export PATH
-    valgrind="-valgrind"
 fi
+valgrind_path=`which valgrind 2>/dev/null`
+if test -x "$valgrind_path"; then
+    echo valgrind found at $valgrind_path
+    valgrind="-valgrind"
+fi    
 voms=""
 if test -r "${VOMS_LOCATION}/lib/libvomsc.so"; then
     voms="--with-voms=${VOMS_LOCATION}"
