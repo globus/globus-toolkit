@@ -639,6 +639,7 @@ globus_l_xio_file_close(
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_file_close);
 
     GlobusXIOFileDebugEnter();
@@ -649,10 +650,10 @@ globus_l_xio_file_close(
     
     if(!handle->converted)
     {
-        globus_xio_system_file_close(handle->fd);
+        res = globus_xio_system_file_close(handle->fd);
     }
     
-    globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
+    globus_xio_driver_finished_close(op, res);
     globus_l_xio_file_handle_destroy(handle);
     
     GlobusXIOFileDebugExit();
