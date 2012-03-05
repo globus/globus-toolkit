@@ -1,5 +1,0 @@
-#!/bin/sh
-DEST=globus-`globus-version`
-mkdir $DEST
-cp $GLOBUS_LOCATION/bin/*.exe $GLOBUS_LOCATION/sbin/*.exe $GLOBUS_LOCATION/bin/cygltdl_gcc32dbg-3.dll /bin/cygwin1.dll /bin/cyggcc_s-1.dll /bin/cygcrypto-*.dll /bin/cygssl-*.dll $DEST/
-zip -r $DEST.zip $DEST

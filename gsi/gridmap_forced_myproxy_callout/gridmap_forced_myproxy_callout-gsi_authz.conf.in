@@ -1,1 +1,0 @@
-globus_mapping libglobus_gridmap_forced_myproxy_callout_@GLOBUS_FLAVOR_NAME@.so globus_gridmap_forced_myproxy_callout
