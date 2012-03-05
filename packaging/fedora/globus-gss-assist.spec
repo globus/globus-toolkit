@@ -12,7 +12,7 @@
 
 Name:		globus-gss-assist
 %global _name %(tr - _ <<< %{name})
-Version:	8.3
+Version:	8.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GSSAPI Assist library
 
@@ -200,6 +200,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Thu Mar 1 2012 Joseph Bester <bester@mcs.anl.gov> - 8.4-1
+- RIC-239: GSSAPI Token inspection fails when using TLS 1.2
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.3-1
 - RIC-224: Eliminate some doxygen warnings
 - RIC-226: Some dependencies are missing in GPT metadata
