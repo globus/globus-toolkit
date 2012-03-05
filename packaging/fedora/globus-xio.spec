@@ -12,8 +12,8 @@
 
 Name:		globus-xio
 %global _name %(tr - _ <<< %{name})
-Version:	3.2
-Release:	5%{?dist}
+Version:	3.3
+Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus XIO Framework
 
 Group:		System Environment/Libraries
@@ -171,6 +171,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Mon Mar 05 2012 Joseph Bester <bester@mcs.anl.gov> - 3.3-1
+- RIC-240: fix memory leak when GLOBUS_XIO_ATTR_SET_CREDENTIAL is used
+- RIC-241: check return value of close()
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 3.2-5
 - Updated version numbers
 
