@@ -70,7 +70,7 @@ sub refresh_creds_test
 }
 push(@tests, "refresh_creds_test('$ENV{CONTACT_STRING}');");
 # Test might fail if LRM poll causes job to terminate during refresh
-push(@todo, "refresh_creds_test('$ENV{CONTACT_STRING}');");
+push(@todo, 1);
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
