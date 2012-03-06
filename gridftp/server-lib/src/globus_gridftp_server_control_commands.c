@@ -294,12 +294,14 @@ globus_l_gsc_cmd_prot(
     {
         case 'P':
         case 'S':
+        /*  no need to restrict this here
             if(op->server_handle->del_cred == NULL)
             {
                 msg = globus_common_create_string(
                     _FSMSL("536 %s protection level not supported.\r\n"), cmd_a[1]);
                 break;
             }
+        */
         case 'C':
             msg = globus_common_create_string(
                 _FSMSL("200 Protection level set to %c.\r\n"), *tmp_ptr);

@@ -87,6 +87,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Server will fork for each new connection.  Disabling this option is only recommended "
     "when debugging. Note that non-forked servers running as 'root' will only "
     "accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"fork_fallback", "fork_fallback", NULL, "fork-fallback", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL /* attempt to run non-forked if fork fails */, NULL, NULL, GLOBUS_FALSE, NULL},
  {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, 
     "Exit after a single connection.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"chroot_path", "chroot_path", NULL, "chroot-path", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, 
@@ -150,8 +152,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Maximum concurrent connections allowed.  Only applies when running in daemon "
     "mode.  Unlimited if not set.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
-    "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Disable all new connections.  For daemon mode, issue a SIGHUP to the server process after changing the config file "
+    "in order to not affect ongoing connections.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"offline_msg", "offline_msg", NULL, "offline-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Custom message to be displayed to clients when the server is offline via the "
     "connections_disabled or connections_max = 0 options.", NULL, NULL,GLOBUS_FALSE, NULL},
