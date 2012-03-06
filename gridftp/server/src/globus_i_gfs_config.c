@@ -2522,7 +2522,7 @@ globus_i_gfs_config_init(
          tmp_str);
         free(tmp_str);
     }
-    else if(exec_name[0] == '.')
+    else if(exec_name[0] == '.' || strchr(exec_name, '/') == NULL)
     {
         exec_name = globus_common_create_string(
          "%s/%s", cwd_str, exec_name);

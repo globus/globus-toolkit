@@ -812,7 +812,7 @@ globus_l_gsc_cmd_stat_cb(
                 op->path, tmp_ptr);
             globus_free(tmp_ptr);
         }
-        else if(user_arg == 2)
+        else if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
         {
             if(response_type == 
                 GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
@@ -864,7 +864,7 @@ globus_l_gsc_cmd_stat_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    if(user_arg == 2 && (code == 150 || code == 250))
+    if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD && (code == 150 || code == 250))
     {
         tmp_ptr = globus_libc_strdup(msg);
     }
@@ -874,10 +874,17 @@ globus_l_gsc_cmd_stat_cb(
     }
     if(partial)
     {
+        globus_mutex_lock(&op->server_handle->mutex);
         globus_i_gsc_intermediate_reply(op, tmp_ptr);
+        globus_mutex_unlock(&op->server_handle->mutex);
+        globus_mutex_unlock(&op->stat_lock);
     }
     else
     {
+        if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
+        {
+            globus_mutex_unlock(&op->stat_lock);
+        }
         globus_gsc_959_finished_command(op, tmp_ptr);
     }
     globus_free(tmp_ptr);
@@ -915,7 +922,7 @@ globus_l_gsc_cmd_stat(
     }
     else
     {
-        if(user_arg == 2)
+        if(user_arg == GLOBUS_L_GSC_OP_TYPE_MLSD)
         {
             mask = GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST;
         }
@@ -3298,7 +3305,7 @@ globus_i_gsc_add_commands(
         1,
         2,
         "MLSC [<sp> <filename>]",
-        (void *) 2);
+        (void *) GLOBUS_L_GSC_OP_TYPE_MLSD);
 
     globus_gsc_959_command_add(
         server_handle,
