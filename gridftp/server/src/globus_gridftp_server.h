@@ -232,6 +232,15 @@ typedef enum globus_gfs_layout_type_e
  */
 typedef globus_gridftp_server_control_stat_t    globus_gfs_stat_t;
 
+
+/*
+ *  globus_gfs_operation_info_t
+ * 
+ * Internal operation info.  This handle is passed with the info structs
+ * Its data should not be accessed.
+ */
+typedef struct globus_l_gfs_data_op_info_s *  globus_gfs_op_info_t;
+
 /*
  *  globus_gfs_data_finished_info_t
  * 
@@ -299,7 +308,6 @@ typedef struct globus_gfs_session_finished_info_s
     char *                              username;
     /** home directory of authenticated user */
     char *                              home_dir;
-    
 } globus_gfs_session_finished_info_t;
 
 /*
@@ -341,6 +349,9 @@ typedef struct globus_gfs_finished_info_s
         globus_gfs_stat_finished_info_t stat;
         globus_gfs_transfer_finished_info_t transfer;
     } info;
+
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_finished_info_t;
 
 /*
@@ -376,6 +387,9 @@ typedef struct globus_gfs_event_info_s
     int *                               eof_count;
     /** number of nodes (size of eof_count array) */    
     int                                 node_count;
+
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_event_info_t;
 
 /*
@@ -424,7 +438,16 @@ typedef struct globus_gfs_transfer_info_s
     char *                              expected_checksum;
     /** expected checksum algorithm */
     char *                              expected_checksum_alg;
+    
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_transfer_info_t;
+
+ 
+/*
+* maintain backward source compatibility after member rename
+*/
+#define rnfr_pathname from_pathname
 
 /*
  *  globus_gfs_command_info_t
@@ -460,6 +483,9 @@ typedef struct globus_gfs_command_info_s
 
     /** Authorization assertion */
     char *                              authz_assert; 
+
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_command_info_t;
 
 /*
@@ -507,6 +533,9 @@ typedef struct globus_gfs_data_info_s
     /* if this is set, the data channel will use it instead
         of the default session credential */
     gss_cred_id_t                       del_cred;
+
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_data_info_t;
 
 /*
@@ -526,6 +555,9 @@ typedef struct globus_gfs_stat_info_s
     globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
+
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_stat_info_t;
 
 typedef struct globus_gfs_session_info_s
@@ -538,6 +570,9 @@ typedef struct globus_gfs_session_info_s
     char *                              subject;
     char *                              cookie;
     char *                              host_id;
+
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_session_info_t;
 
 typedef enum globus_gfs_brain_reason_e
@@ -1801,6 +1836,8 @@ typedef struct globus_gfs_acl_object_desc_s
      * value is FALSE when not known or not used. */
     globus_bool_t                       final;
 
+    /** op info */
+    globus_gfs_op_info_t                op_info;
 } globus_gfs_acl_object_desc_t;
 
 /* return values for authorization functions */

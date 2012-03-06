@@ -276,6 +276,11 @@ typedef struct globus_l_gfs_data_operation_s
     globus_bool_t                       finished_delayed;
 } globus_l_gfs_data_operation_t;
 
+typedef struct globus_l_gfs_data_op_info_s
+{
+    
+} globus_l_gfs_data_op_info_t;
+
 typedef struct
 {
     globus_l_gfs_data_operation_t *     op;
