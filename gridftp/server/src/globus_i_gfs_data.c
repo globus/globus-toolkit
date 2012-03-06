@@ -2809,15 +2809,12 @@ globus_l_gfs_data_stat_kickout(
 
     memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
 
-    if(bounce_info->final_stat)
-    {        
-        reply.type = GLOBUS_GFS_OP_STAT;
-    }
-    else
+    if(!bounce_info->final_stat)
     {
-        reply.type = GLOBUS_GFS_OP_STAT_PARTIAL;
+        reply.code = 100;
     }
         
+    reply.type = GLOBUS_GFS_OP_STAT;
     reply.id = bounce_info->op->id;
     reply.result = bounce_info->error ?
         globus_error_put(bounce_info->error) : GLOBUS_SUCCESS;
@@ -2840,7 +2837,7 @@ globus_l_gfs_data_stat_kickout(
             &reply);
     }
 
-    if(reply.type == GLOBUS_GFS_OP_STAT)
+    if(bounce_info->final_stat)
     {
         globus_mutex_lock(&bounce_info->op->session_handle->mutex);
         {
@@ -5142,7 +5139,6 @@ globus_l_gfs_data_list_done(
         globus_free(tofree->pathname);
         globus_free(tofree);
     }
-    op->list_buffer_offset += buffer_len;
 
     while(op->root_paths)
     {
@@ -5561,7 +5557,7 @@ globus_l_gfs_data_list_stat_cb(
             goto error;
         }
         
-        if(reply->type == GLOBUS_GFS_OP_STAT)
+        if(reply->code != 100)
         {
             bounce_info->final_stat = GLOBUS_TRUE;
         }
@@ -5580,6 +5576,7 @@ globus_l_gfs_data_list_stat_cb(
                 "globus_gridftp_server_register_write", result);
             goto error;
         }
+        op->list_buffer_offset += buffer_len;
     } 
 
     GlobusGFSDebugExit();
@@ -7808,6 +7805,11 @@ globus_l_gfs_finished_command_kickout(
     
     if((reply.code / 100) == 1)
     {
+        if(op->cksm_response)
+        {
+            globus_free(op->cksm_response);
+            op->cksm_response = NULL;
+        }
         return;
     }
     globus_mutex_lock(&op->session_handle->mutex);
@@ -7892,17 +7894,19 @@ globus_gridftp_server_finished_stat_partial(
     {        
         stat_info = (globus_gfs_stat_info_t *) op->info_struct;
         
+        if(!stat_info->file_only && stat_count == 1 && stat_array && 
+            !S_ISDIR(stat_array[0].mode))
+        {
+            result = GlobusGFSErrorGeneric("Path is not a directory.");
+        }
+        else
+        {
         stat_copy = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
         if(stat_copy == NULL)
         {
             result = GlobusGFSErrorMemory("stat_copy");
         }
-        
-        if(!stat_info->file_only && stat_count == 1 && stat_array && 
-            !S_ISDIR(stat_array[0].mode))
-        {
-            result = GlobusGFSErrorGeneric("Path is not a directory.");
         }
     }
     
@@ -8626,13 +8630,23 @@ globus_gridftp_server_operation_finished(
 
     if(finished_info->code / 100 == 1)
     {
-        switch(op->command)
+        switch(finished_info->type)
         {
-          case GLOBUS_GFS_CMD_CKSM:
+          case GLOBUS_GFS_OP_COMMAND:
+            if(op->command == GLOBUS_GFS_CMD_CKSM)
+        {
             globus_gridftp_server_intermediate_command(
                 op, result, finished_info->info.command.checksum);
             return;
-            
+            }
+            break;
+          case GLOBUS_GFS_OP_STAT:
+            globus_gridftp_server_finished_stat_partial(
+                op, 
+                result, 
+                finished_info->info.stat.stat_array, 
+                finished_info->info.stat.stat_count);
+            return;
           default:
             break;
         }
