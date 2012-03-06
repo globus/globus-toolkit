@@ -886,6 +886,11 @@ error_init:
     GlobusGFSDebugExitWithError();
 }
 
+globus_result_t
+globus_i_gsc_cmd_intermediate_reply(
+    globus_gridftp_server_control_op_t  op,
+    char *                              reply_msg);
+
 static
 void
 globus_l_gfs_data_command_cb(
@@ -928,9 +933,27 @@ globus_l_gfs_data_command_cb(
                 "350 OK. Send SITE SYMLINKTO with symlink name.\r\n");
             break;
           case GLOBUS_GFS_CMD_CKSM:
-            msg = globus_common_create_string(
-                "213 %s\r\n", reply->info.command.checksum);
-            globus_gsc_959_finished_command(op, msg);
+            if(reply->code / 100 == 1)
+            {
+                struct timeval                          now;
+                gettimeofday(&now, NULL);
+                msg = globus_common_create_string(
+                    "%d-Status Marker\r\n"
+                    " Timestamp: %ld.%01ld\r\n"
+                    " Bytes Processed: %s\r\n"
+                    "%d End.\r\n",
+                    reply->code,
+                    now.tv_sec, now.tv_usec / 100000,
+                    reply->info.command.checksum,
+                    reply->code);
+                globus_i_gsc_cmd_intermediate_reply(op, msg);
+            }
+            else
+            {
+                msg = globus_common_create_string(
+                    "213 %s\r\n", reply->info.command.checksum);
+                globus_gsc_959_finished_command(op, msg);
+            }
             globus_free(msg);
             break;
 
@@ -951,6 +974,9 @@ globus_l_gfs_data_command_cb(
         globus_free(msg);
     }
     
+    if(reply->code / 100 == 1)
+        return;
+        
     if(info)
     {
         if(info->pathname)
@@ -1152,6 +1178,8 @@ globus_l_gfs_request_command(
     }
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
+        char *                          freq;
+        
         command_info->command = GLOBUS_GFS_CMD_CKSM;
         result = globus_l_gfs_get_full_path(
             instance, cmd_array[4], &command_info->pathname, GFS_L_READ);
@@ -1169,7 +1197,11 @@ globus_l_gfs_request_command(
             &command_info->cksm_length,
             GLOBUS_NULL);
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
-
+        
+        if((freq = globus_libc_getenv("GFS_CKSM_MARKERS")) != NULL)
+        {
+            command_info->chmod_mode = strtol(freq, NULL, 10);
+        }
     }
     else if(strcmp(cmd_array[0], "SCKS") == 0)
     {
