@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server-control
 %global _name %(tr - _ <<< %{name})
-Version:	2.4
+Version:	2.5
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server Library
 
@@ -115,6 +115,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Tue Mar 06 2012 Joseph Bester <bester@mcs.anl.gov> - 2.5-1
+- GRIDFTP-165: correct chunking of MLSC response
+- GRIDFTP-165: fix MLSC over split processes
+- GRIDFTP-198: performance improvements for control channel messages
+- GRIDFTP-201: Add heartbeat/status markers to CKSM and RETR
+- GRIDFTP-222: fix threaded issues with streaming dir info for mlsd and mlsc
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 2.4-1
 - RIC-226: Some dependencies are missing in GPT metadata
 
