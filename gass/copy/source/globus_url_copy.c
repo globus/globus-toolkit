@@ -1791,6 +1791,7 @@ globus_l_guc_transfer_kickout(
                 err = globus_error_peek(result);
             }
             
+            result = GLOBUS_SUCCESS;
             globus_l_url_copy_monitor_callback(
                 transfer_info, &transfer_info->handle->gass_copy_handle, err);
     }
@@ -2859,10 +2860,10 @@ globus_l_guc_transfer(
                 
             result = globus_l_guc_expand_single_url(transfer_info);
             if(result != GLOBUS_SUCCESS)
-            {
+            {   
                 err = globus_error_peek(result);
             }
-            
+            result = GLOBUS_SUCCESS;
             globus_l_url_copy_monitor_callback(
                 transfer_info, &handle->gass_copy_handle, err);
         }
@@ -4699,6 +4700,16 @@ globus_l_guc_expand_urls(
             expanded_url_pair->length = user_url_pair->length;
             expanded_url_pair->src_info = NULL;
             
+            if(guc_info->create_dest && !guc_info->dump_only_file)
+            {
+                result = globus_l_guc_create_dir(
+                    expanded_url_pair->dst_url, handle, guc_info);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_transfer;
+                }
+            }
+
             globus_fifo_enqueue(
                 &guc_info->expanded_url_list, 
                 expanded_url_pair);
@@ -5324,8 +5335,6 @@ error_too_many_matches:
             dst_url));                    
 error_mkdir:
 error_expand:
-    globus_mutex_lock(&g_monitor.mutex);
-    globus_mutex_unlock(&g_monitor.mutex);
 
     return result;                
 }
@@ -5869,10 +5878,11 @@ globus_l_guc_gass_attr_init(
                 ftp_attr, authz_assert, cache_authz_assert);
         }
 
-        if(subject  ||
+        if(url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP &&
+            (subject  ||
             url_info.user ||
             url_info.password ||
-            cred != GSS_C_NO_CREDENTIAL)
+            cred != GSS_C_NO_CREDENTIAL))
         {
             globus_ftp_client_operationattr_set_authorization(
                 ftp_attr,
@@ -5882,6 +5892,19 @@ globus_l_guc_gass_attr_init(
                 NULL,
                 subject);
         }
+        else if((url_info.scheme_type == GLOBUS_URL_SCHEME_FTP ||
+            url_info.scheme_type == GLOBUS_URL_SCHEME_SSHFTP) &&
+            url_info.user)
+        {
+            globus_ftp_client_operationattr_set_authorization(
+                ftp_attr,
+                GSS_C_NO_CREDENTIAL,
+                url_info.user,
+                url_info.password,
+                NULL,
+                NULL);
+        }
+
 
         if(guc_info->data_cred != GSS_C_NO_CREDENTIAL)
         {
