@@ -1458,6 +1458,21 @@ globus_l_gsc_cmd_opts(
                     done = GLOBUS_TRUE;
                 }
             }
+            else if(
+                strncmp(tmp_ptr, "markers=", sizeof("markers")-1) == 0)
+            {
+                if(sscanf(tmp_ptr, "markers=%d;", &tmp_i) == 1)
+                {
+                    char * freq_str = globus_common_create_string("%d", tmp_i);
+                    op->server_handle->opts.retr_perf_frequency = tmp_i;                    
+                    globus_libc_setenv("GFS_RETR_MARKERS", freq_str, 1);
+                }
+                else
+                {
+                    msg = _FSMSL("500 OPTS failed.\r\n");
+                    done = GLOBUS_TRUE;
+                }
+            }
             else
             {
                 msg = _FSMSL("500 OPTS failed.\r\n");
@@ -1470,6 +1485,23 @@ globus_l_gsc_cmd_opts(
                 done = GLOBUS_TRUE;
             }
             tmp_ptr++;
+        }
+    }
+    else if(strcmp("CKSM", cmd_a[1]) == 0)
+    {
+        for(tmp_ptr = cmd_a[2]; *tmp_ptr != '\0'; tmp_ptr++)
+        {
+            *tmp_ptr = tolower(*tmp_ptr);
+        }
+        msg = _FSMSL("200 OPTS Command Successful.\r\n");
+        if(sscanf(cmd_a[2], "markers=%d", &tmp_i) == 1)
+        {
+            char * freq_str = globus_common_create_string("%d", tmp_i);
+            globus_libc_setenv("GFS_CKSM_MARKERS", freq_str, 1);
+        }
+        else
+        {
+            msg = _FSMSL("500 OPTS failed.\r\n");
         }
     }
     else if(strcmp("PASV", cmd_a[1]) == 0 || 

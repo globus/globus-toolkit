@@ -79,13 +79,16 @@ globus_i_gsc_event_start_perf_restart(
 
     event = &op->event;
 
-    if(op->type != GLOBUS_L_GSC_OP_TYPE_RECV)
+    if(op->type != GLOBUS_L_GSC_OP_TYPE_RECV && op->type != GLOBUS_L_GSC_OP_TYPE_SEND)
     {
         return;
     }
 
     /* performance markers */
-    if(op->server_handle->opts.perf_frequency >= 0 &&
+    if(((op->type == GLOBUS_L_GSC_OP_TYPE_RECV && 
+            op->server_handle->opts.perf_frequency > 0) || 
+        (op->type == GLOBUS_L_GSC_OP_TYPE_SEND && 
+            op->server_handle->opts.retr_perf_frequency > 0)) &&
         event->event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF)
     {
         event->stripe_count = op->server_handle->stripe_count;
@@ -93,8 +96,16 @@ globus_i_gsc_event_start_perf_restart(
             sizeof(globus_off_t) * event->stripe_count, 1);
 
         /* register periodic for events */
-        GlobusTimeReltimeSet(
-            delay, op->server_handle->opts.perf_frequency, 0);
+        if(op->type == GLOBUS_L_GSC_OP_TYPE_SEND)
+        {
+            GlobusTimeReltimeSet(
+                delay, op->server_handle->opts.retr_perf_frequency, 0);
+        }
+        else
+        {
+            GlobusTimeReltimeSet(
+                delay, op->server_handle->opts.perf_frequency, 0);
+        }
         event->perf_running = GLOBUS_TRUE;
         res = globus_callback_register_periodic(
             &event->periodic_handle,
@@ -109,11 +120,12 @@ globus_i_gsc_event_start_perf_restart(
     }
 
     /* restart markers */
-    if(op->server_handle->opts.restart_frequency >= 0 &&
-        event->event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART)
+    if(op->server_handle->opts.restart_frequency > 0 &&
+        event->event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART &&
+        op->type == GLOBUS_L_GSC_OP_TYPE_RECV)
     {
         GlobusTimeReltimeSet(
-            delay, op->server_handle->opts.restart_frequency,0);
+            delay, op->server_handle->opts.restart_frequency, 0);
         event->restart_running = GLOBUS_TRUE;
         res = globus_callback_register_periodic(
             &event->restart_handle,

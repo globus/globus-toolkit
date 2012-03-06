@@ -90,7 +90,8 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_STAT_PARTIAL,
     GLOBUS_GFS_OP_BUFFER_SEND,
     GLOBUS_GFS_OP_HANDSHAKE,
-    GLOBUS_GFS_OP_SESSION_START_REPLY
+    GLOBUS_GFS_OP_SESSION_START_REPLY,
+    GLOBUS_GFS_OP_INTERMEDIATE_REPLY
 } globus_gfs_operation_type_t;
 
 /*
@@ -857,6 +858,11 @@ globus_gridftp_server_finished_command(
     globus_gfs_operation_t              op, 
     globus_result_t                     result,
     char *                              command_response);
+void
+globus_gridftp_server_intermediate_command(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    char *                              command_response);
     
 /*
  * finished stat
@@ -1080,6 +1086,11 @@ globus_gfs_data_get_file_stack_list(
     globus_gfs_operation_t              in_op,
     globus_list_t **                    out_list);
 
+void
+globus_gridftp_server_get_update_interval(
+    globus_gfs_operation_t              op,
+    int *                               interval);
+    
 /*
  * get read_range
  * 
