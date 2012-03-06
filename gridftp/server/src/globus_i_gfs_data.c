@@ -211,7 +211,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_off_t                        recvd_bytes;
     globus_range_list_t                 recvd_ranges;
     int                                 retr_markers;
-
+    
     globus_l_gfs_data_path_list_t *     path_list;
     globus_l_gfs_data_path_list_t *     current_path;
     globus_l_gfs_data_path_list_t *     root_paths;
@@ -2668,12 +2668,12 @@ globus_l_gfs_data_operation_init(
     globus_range_list_init(&op->stripe_range_list);
     op->recvd_bytes = 0;
     op->max_offset = -1;
+    globus_mutex_init(&op->stat_lock, NULL);
 
     *u_op = op;
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
-    globus_mutex_init(&op->stat_lock, NULL);
 
 error_alloc:
     GlobusGFSDebugExitWithError();
@@ -2714,12 +2714,12 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->eof_count);
     }
+    globus_mutex_destroy(&op->stat_lock);
 
     globus_free(op);
 
     GlobusGFSDebugExit();
 }
-    globus_mutex_destroy(&op->stat_lock);
 
 
 void
@@ -2812,13 +2812,13 @@ globus_l_gfs_data_stat_kickout(
 
     memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
 
+    globus_mutex_lock(&bounce_info->op->stat_lock);
+
     if(!bounce_info->final_stat)
     {
         reply.code = 100;
     }
         
-    globus_mutex_lock(&bounce_info->op->stat_lock);
-
     reply.type = GLOBUS_GFS_OP_STAT;
     reply.id = bounce_info->op->id;
     reply.result = bounce_info->error ?
@@ -2842,13 +2842,13 @@ globus_l_gfs_data_stat_kickout(
             &reply);
     }
 
+    globus_mutex_unlock(&bounce_info->op->stat_lock);
+
     if(bounce_info->final_stat)
     {
         globus_mutex_lock(&bounce_info->op->session_handle->mutex);
         {
             GFSDataOpDec(bounce_info->op, destroy_op, destroy_session);
-    globus_mutex_unlock(&bounce_info->op->stat_lock);
-
             remote_data_arg = globus_l_gfs_data_check(
                 bounce_info->op->session_handle, bounce_info->op->data_handle);
         }
@@ -5246,17 +5246,17 @@ globus_l_gfs_data_list_write_cb(
         globus_free(bounce_info->list_response);
     }
     
+    globus_mutex_lock(&op->stat_lock);
     if(bounce_info->final_stat && !globus_l_gfs_data_request_next_path(op))
     {
         finish = GLOBUS_TRUE;
     }
+    globus_mutex_unlock(&op->stat_lock);
     
-    globus_mutex_lock(&op->stat_lock);
     globus_free(bounce_info);
 
     if(op->delayed_error != GLOBUS_SUCCESS)
     {
-    globus_mutex_unlock(&op->stat_lock);
         result = op->delayed_error;
     }
     
@@ -5648,7 +5648,7 @@ globus_gridftp_server_finished_stat_custom_list(
         data_op,
         bounce_info->list_response,
         list_response_len,
-        op->list_buffer_offset,
+        0,
         -1,
         globus_l_gfs_data_list_write_cb,
         bounce_info);
