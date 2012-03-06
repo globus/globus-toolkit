@@ -289,7 +289,8 @@ typedef struct globus_i_gsc_op_s
 
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
-
+    globus_mutex_t                          stat_lock;
+    
     /* stuff for resource */
     int                                     uid;
     int                                     gid_count;
@@ -321,7 +322,7 @@ typedef struct globus_i_gsc_op_s
     globus_bool_t                           aborted;
     void *                                  abort_user_arg;
     void *                                  user_arg;
-
+    
     globus_i_gsc_data_t *                   data_destroy_obj;
 } globus_i_gsc_op_t;
 
