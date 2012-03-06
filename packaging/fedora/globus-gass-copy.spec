@@ -12,7 +12,7 @@
 
 Name:		globus-gass-copy
 %global _name %(tr - _ <<< %{name})
-Version:	8.3
+Version:	8.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus Gass Copy
 
@@ -198,6 +198,12 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Mar 06 2012 Joseph Bester <bester@mcs.anl.gov> - 8.4-1
+- GRIDFTP-200: mixing ftp:// with -cred fails
+- GRIDFTP-203: -create-dest fails when input is stdin
+- GRIDFTP-216: continue on error doesn't continue when a dir listing fails
+- GRIDFTP-220: don't attempt mkdir when dir is known to exist.
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 8.3-1
 - GRIDFTP-208: Add manpage for globus-url-copy
 - GRIDFTP-211: potentially unsafe format strings in globus-url-copy
