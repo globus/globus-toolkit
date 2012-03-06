@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	if(monitor.refresh_result != GLOBUS_SUCCESS)
 	{
 	    fprintf(stderr,
-		    "Error refrehsing credentials: %s.\n",
+		    "Error refreshing credentials: %s.\n",
 		    globus_gram_client_error_string(rc));
 
 	    goto destroy_callback_contact;
