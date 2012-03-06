@@ -2458,8 +2458,7 @@ globus_i_gfs_data_init()
         rc = globus_extension_activate(buf);
         if(rc != GLOBUS_SUCCESS)
         {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_ERR,
+            globus_gfs_log_exit_message(
                 "Unable to activate %s: %s\n",
                 buf,
                 globus_error_print_friendly(
@@ -2473,8 +2472,8 @@ globus_i_gfs_data_init()
 
     if(!globus_l_gfs_dsi)
     {
-        globus_gfs_log_message(
-           GLOBUS_GFS_LOG_ERR, "Couldn't find the %s extension\n", dsi_name);
+        globus_gfs_log_exit_message(
+           "Couldn't find the %s extension\n", dsi_name);
         exit(1);
     }
 
@@ -2566,11 +2565,11 @@ globus_i_gfs_data_init()
                         break;
                         
                     default:
-                        globus_gfs_log_message(
-                            GLOBUS_GFS_LOG_ERR,
+                        globus_gfs_log_exit_message(
                             "Path restriction entries must be full paths, "
                             "prefixed only with R, W, or RW. "
-                            "Ignoring '%s' entry.\n", ent_str);
+                            "The entry '%s' is invalid.\n", ent_str);
+                        exit(1);
                         done = GLOBUS_TRUE;
                         break;
                 }                

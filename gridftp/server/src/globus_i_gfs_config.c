@@ -821,7 +821,7 @@ globus_l_gfs_config_load_config_dir(
             rc = globus_l_gfs_config_load_config_file(full_path);
             if(rc == -2)
             {
-                fprintf(stderr, "Problem parsing config file %s: "
+                globus_gfs_log_exit_message("Problem parsing config file %s: "
                     "Unable to open file.\n", full_path);
             }
             if(rc < 0)
@@ -837,7 +837,7 @@ globus_l_gfs_config_load_config_dir(
     }
     else
     {
-        fprintf(stderr, "Problem reading files from config dir %s.\n", conf_dir);
+        globus_gfs_log_exit_message("Problem reading files from config dir %s.\n", conf_dir);
         result = GLOBUS_FAILURE;
     }
 
@@ -1068,7 +1068,7 @@ globus_l_gfs_config_load_commandline(
             {
                 free(option);
             }
-            fprintf(stderr, "Unknown option on command line: %s%s\n",
+            globus_gfs_log_exit_message("Unknown option on command line: %s%s\n",
                 negate ? "no-" : "", argp);
             return -1;
         }
