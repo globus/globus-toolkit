@@ -1,6 +1,0 @@
-#!/bin/sh
-. $GLOBUS_LOCATION/setup/globus/globus-sh-tools-vars.sh
-tmpcwd=`${GLOBUS_SH_PWD-pwd}`
-cd $GLOBUS_LOCATION/setup/globus_gcs_b38b4d8c_setup
-./setup-ssl-utils
-cd $tmpcwd

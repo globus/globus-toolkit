@@ -1,0 +1,2 @@
+method = scp
+scp_file = /home/jbasney/gt4.0.8-all-source-installer.tar.gz

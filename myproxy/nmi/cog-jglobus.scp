@@ -1,0 +1,2 @@
+method = scp
+scp_file = /home/jbasney/cog-jglobus-1.8.0-bin.tar.gz
