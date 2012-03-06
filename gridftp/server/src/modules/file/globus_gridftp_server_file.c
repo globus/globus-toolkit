@@ -1506,8 +1506,11 @@ globus_l_gfs_file_open_cksm_cb(
         goto error_open;  
     }  
     
-    globus_gridftp_server_get_update_interval(
-        monitor->op, &monitor->marker_freq);
+    if(monitor->op)
+    {   
+        globus_gridftp_server_get_update_interval(
+            monitor->op, &monitor->marker_freq);
+    }
 
     if(monitor->marker_freq)
     {
