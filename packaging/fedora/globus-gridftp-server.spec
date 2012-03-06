@@ -12,7 +12,7 @@
 
 Name:		globus-gridftp-server
 %global _name %(tr - _ <<< %{name})
-Version:	6.6
+Version:	6.7
 Release:	1%{?dist}
 Summary:	Globus Toolkit - Globus GridFTP Server
 
@@ -180,6 +180,23 @@ fi
 %defattr(-,root,root,-)
 
 %changelog
+* Tue Mar 06 2012 Joseph Bester <bester@mcs.anl.gov> - 6.7-1
+- GRIDFTP-164: improve dir streaming stability
+- GRIDFTP-165: correct chunking of MLSC response
+- GRIDFTP-165: fix MLSC over split processes
+- GRIDFTP-196: fix behaviour for syntax errors in server options
+- GRIDFTP-201: Add heartbeat/status markers to CKSM and RETR
+- GRIDFTP-209: Add manpage for globus-gridftp-server
+- GRIDFTP-212: GridFTP server doesn't build if PATH_MAX is not defined
+- GRIDFTP-217: fix -connections-disabled for inetd
+- GRIDFTP-218: add -fork-fallback
+- GRIDFTP-219: allow prot without gsi
+- GRIDFTP-221: backwards compatibility fix and future binary compatibility
+               stability additions
+- GRIDFTP-222: fix threaded issues with streaming dir info for mlsd and mlsc
+- RIC-226: Some dependencies are missing in GPT metadata
+- RIC-229: Clean up GPT metadata
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 6.6-1
 - GRIDFTP-209: Add manpage for globus-gridftp-server
 - GRIDFTP-212: GridFTP server doesn't build if PATH_MAX is not defined
