@@ -607,7 +607,8 @@ globus_i_gsc_mlsx_line(
     int                                 stat_count,
     const char *                        mlsx_fact_string,
     uid_t                               uid,
-    const char *                        base_path);
+    const char *                        base_path,
+    globus_bool_t                       indent);
 
 void
 globus_i_guc_command_data_destroy(
