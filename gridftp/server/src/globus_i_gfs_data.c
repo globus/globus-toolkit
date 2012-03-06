@@ -260,6 +260,7 @@ typedef struct globus_l_gfs_data_operation_s
     void *                              stat_wrapper;
     globus_bool_t                       final_stat;
     globus_bool_t                       begin_called;
+    globus_off_t                        list_buffer_offset;
 
     /* sort of a state cheat.  for case where:
         start_abort
@@ -5131,6 +5132,7 @@ globus_l_gfs_data_list_done(
         globus_free(tofree->pathname);
         globus_free(tofree);
     }
+    op->list_buffer_offset += buffer_len;
 
     while(op->root_paths)
     {
@@ -5636,6 +5638,7 @@ globus_gridftp_server_finished_stat_custom_list(
             "globus_gridftp_server_register_write", result);
         goto error;
     }
+    op->list_buffer_offset += list_response_len;
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
