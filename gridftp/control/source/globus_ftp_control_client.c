@@ -86,11 +86,12 @@ globus_l_ftp_control_write_cb(
 
 static globus_result_t 
 globus_l_ftp_control_response_init(
-    globus_ftp_control_response_t *        response);
+    globus_ftp_control_response_t *         response);
 
 static int 
 globus_l_ftp_control_end_of_reply(
-    globus_ftp_cc_handle_t *               cc_handle);
+    globus_ftp_cc_handle_t *                cc_handle,
+    int                                     hint);
 
 static void 
 globus_l_ftp_control_read_next(
@@ -782,7 +783,7 @@ globus_l_ftp_control_read_cb(
      * needed 
      */
     
-    if (nbytes < (cc_handle->response.response_buffer_size -
+    if(nbytes < (cc_handle->response.response_buffer_size -
                   cc_handle->response.response_length))
     {
         response_length = cc_handle->response.response_length;
@@ -792,12 +793,26 @@ globus_l_ftp_control_read_cb(
     }
     else
     {
+        /* Optimize our buffer growing for large MLSC replies. */
+        int current = cc_handle->response.response_length;
+        
+        /* Need at least this much to satisfy current read */
+        int new_size = current + nbytes + 1;
+        if(current < 1000000)
+        {
+            /* double each time */
+            int new_size_extra = current * 2;
+            new_size = GLOBUS_MAX(new_size, new_size_extra);
+        }
+        else
+        {
+            /* add 100K */
+            int new_size_extra = current + 100000;
+            new_size = GLOBUS_MAX(new_size, new_size_extra);
+        }
+
         new_buf = (globus_byte_t *)
-            globus_libc_malloc(sizeof(globus_byte_t)*
-                               (cc_handle->response.response_buffer_size + 
-                                (nbytes/
-                                 GLOBUS_I_FTP_CONTROL_BUF_INCR+1)*
-                                GLOBUS_I_FTP_CONTROL_BUF_INCR));
+            globus_libc_malloc(sizeof(globus_byte_t) * new_size);
         
         if(new_buf == GLOBUS_NULL)
         {
@@ -808,9 +823,7 @@ globus_l_ftp_control_read_cb(
             goto return_error;
         }
         
-        cc_handle->response.response_buffer_size+= 
-            (nbytes/GLOBUS_I_FTP_CONTROL_BUF_INCR+1)*
-            GLOBUS_I_FTP_CONTROL_BUF_INCR;
+        cc_handle->response.response_buffer_size = new_size;
 
         memcpy(new_buf, 
                cc_handle->response.response_buffer, 
@@ -834,7 +847,8 @@ globus_l_ftp_control_read_cb(
      * necessary decoding of protected replies.
      */
 
-    end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle);
+    end_of_reply=globus_l_ftp_control_end_of_reply(
+        cc_handle, cc_handle->response.response_length - nbytes);
 
     if(end_of_reply == -1)
     {
@@ -869,7 +883,7 @@ globus_l_ftp_control_read_cb(
 	    cc_handle->response.response_length=response_length
 		-end_of_reply;
 	    
-	    end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle);
+	    end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle, 0);
 
 	    if(end_of_reply == -1)
 	    {
@@ -933,7 +947,7 @@ globus_l_ftp_control_read_cb(
 		element= (globus_ftp_control_rw_queue_element_t *)
 		    globus_fifo_peek(&cc_handle->readers);
 
-		end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle);
+		end_of_reply=globus_l_ftp_control_end_of_reply(cc_handle, 0);
 
 		if(end_of_reply == -1)
 		{
@@ -1006,6 +1020,78 @@ return_error:
     return;
 }
 
+
+
+/* search backward in @buff looking for "\r\n".  If found, return
+   index of just past it.  Otherwise, return 0.
+*/
+static
+int
+globus_l_ftp_control_get_current_line_start(
+    const char *                        buff,
+    int                                 index)
+{
+    while(index >= 2)
+    {
+        if(buff[index - 1] == '\n' && buff[index - 2] == '\r')
+        {
+            return index;
+        }
+        index--;
+    }
+    return 0;
+}
+
+
+/* @buff response buffer
+   @len length of response buffer
+   @hint length of response buffer in last call, to optimize scans
+   @return True if response buffer has a final ftp line (NNN<space>...\r\n)
+*/
+static
+int
+globus_l_ftp_control_check_final_line_fast(
+    const char *                        buff,
+    int                                 len,
+    int                                 hint)
+{
+    int                                 line_start;
+    int                                 i;
+    
+    line_start = globus_l_ftp_control_get_current_line_start(buff, hint);
+
+    for(i = line_start; i < (len - 1); /* empty */)
+    {
+        if(buff[i] == '\r' && buff[i + 1] == '\n')
+        {
+            /* newline found */
+            int                         line_len = i - line_start;
+            
+            if(line_len >= 4 && buff[line_start + 3] == ' ' &&
+                isdigit(buff[line_start]) && 
+                isdigit(buff[line_start + 1])  &&
+                isdigit(buff[line_start + 2]))
+            {
+                /* final line found */
+                return 1;
+            } 
+            else
+            {
+                /* see if next line is a final */
+                line_start = i + 2;
+                i = line_start;
+            }
+        } 
+        else
+        {
+            i++;
+        }
+    }
+    /* no newline found */
+    return 0;
+}
+
+
 #ifdef GLOBUS_INTERNAL_DOC
 
 /**
@@ -1033,10 +1119,10 @@ return_error:
 
 #endif
 
-
 int 
 globus_l_ftp_control_end_of_reply(
-    globus_ftp_cc_handle_t *           cc_handle)
+    globus_ftp_cc_handle_t *            cc_handle,
+    int                                 hint)
 {
 
     int                                       current;
@@ -1055,8 +1141,8 @@ globus_l_ftp_control_end_of_reply(
     gss_qop_t                                 qop_state;
     globus_result_t                           rc;
 
-    /* could improve performance by saving last in between calls,
-     * so we only look at the last line.
+    /* To improve performance on large buffers, hint is used.  We look at the
+     * first line beginning before hint and all lines thereafter.
      */
     
     last=-1;
@@ -1064,6 +1150,17 @@ globus_l_ftp_control_end_of_reply(
     found=0;
     first=1;
     response=&cc_handle->response;
+
+    if(hint && response->response_length > hint)
+    {
+        if(!globus_l_ftp_control_check_final_line_fast(
+                (const char *) response->response_buffer, 
+                response->response_length, 
+                hint))
+        {
+            return 0;
+        }
+    }
 
 
     /* find the end of reply */
