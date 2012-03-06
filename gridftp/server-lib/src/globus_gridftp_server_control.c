@@ -5249,6 +5249,21 @@ globus_gridftp_server_control_finished_resource(
     
     if(res == GLOBUS_SUCCESS && op->stat_cb != NULL)
     {
+        if(op->stat_info != NULL)
+        {
+            for(ctr = 0; ctr < op->stat_count; ctr++)
+            {
+                if(op->stat_info[ctr].name != NULL)
+                {
+                    globus_free(op->stat_info[ctr].name);
+                }        
+                if(op->stat_info[ctr].symlink_target != NULL)
+                {
+                    globus_free(op->stat_info[ctr].symlink_target);
+                }
+            }            
+            globus_free(op->stat_info);
+        }
         op->stat_info = (globus_gridftp_server_control_stat_t *)
             globus_malloc(sizeof(globus_gridftp_server_control_stat_t) *
                 stat_count);
@@ -5263,6 +5278,10 @@ globus_gridftp_server_control_finished_resource(
         /* added gid stuff here, doesn't get pushed all the way through to
             the cwd or mlsd funcs yet, but that is all internal api so easy
             to change. */
+        if(op->gid_array)
+        {
+            globus_free(op->gid_array);
+        }
         op->gid_count = gid_count;
         if(gid_count != 0 && gid_array != NULL)
         {
@@ -5280,16 +5299,8 @@ globus_gridftp_server_control_finished_resource(
     }
     if(op->stat_cb != NULL)
     {
-        if(response_code == 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PARTIAL_SUCCESS)
-        {
-            globus_l_gsc_internal_cb_kickout(op);
-        }
-        else
-        {
             GlobusLGSCRegisterInternalCB(op);
         }
-    }
 
     GlobusGridFTPServerDebugExit();
     return GLOBUS_SUCCESS;
