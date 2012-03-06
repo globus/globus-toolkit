@@ -12,7 +12,7 @@
 
 Name:		globus-ftp-control
 %global _name %(tr - _ <<< %{name})
-Version:	4.3
+Version:	4.4
 Release:	1%{?dist}
 Summary:	Globus Toolkit - GridFTP Control Library
 
@@ -179,6 +179,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_docdir}/%{name}-%{version}/html
 
 %changelog
+* Tue Mar 06 2012 Joseph Bester <bester@mcs.anl.gov> - 4.4-1
+- GRIDFTP-199: improve globus_ftp_control control channel message processing to
+  better handle large messages.
+
 * Tue Feb 14 2012 Joseph Bester <bester@mcs.anl.gov> - 4.3-1
 - RIC-226: Some dependencies are missing in GPT metadata
 
