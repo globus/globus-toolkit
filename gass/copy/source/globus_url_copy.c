@@ -4540,17 +4540,19 @@ globus_l_guc_create_dir(
                 "Couldn't create destination: empty url path."));
         goto error;
     }
-    dst_mkurl = url;
+    dst_mkurl = globus_libc_strdup(url);
     while(rc == 0 && parsed_url.url_path != GLOBUS_NULL &&
         strrchr(parsed_url.url_path, '/') != parsed_url.url_path)
     {
-        dst_mkurl = globus_libc_strdup(dst_mkurl);
-
         dst_filename = strrchr(dst_mkurl, '/');
         if(dst_filename)
         {
-            *(dst_filename + 1) = '\0';
-            globus_list_insert(&mkdir_urls, dst_mkurl);
+            char *                      save_url;
+            save_url = globus_libc_strdup(dst_mkurl);
+
+            save_url[dst_filename - dst_mkurl + 1] = '\0';
+            globus_list_insert(&mkdir_urls, save_url);
+            
             *dst_filename = '\0';                       
         }
         
@@ -4561,7 +4563,8 @@ globus_l_guc_create_dir(
     {
         globus_url_destroy(&parsed_url);
     }
-
+    globus_free(dst_mkurl);
+    
     dst_mkurl = globus_libc_strdup(url);
     dst_filename = strrchr(dst_mkurl, '/');
     if(dst_filename && *(++dst_filename))
@@ -4577,11 +4580,9 @@ globus_l_guc_create_dir(
         
         dst_mkurl = globus_list_remove(&mkdir_urls, mkdir_urls);
         
-        globus_mutex_lock(&g_monitor.mutex);
-            already_exists = globus_hashtable_lookup(
-                &guc_info->mkdir_hash, dst_mkurl);
-        globus_mutex_unlock(&g_monitor.mutex);
-               
+        already_exists = globus_hashtable_lookup(
+            &guc_info->mkdir_hash, dst_mkurl);
+
         if(!already_exists)
         {
             if(handle->dest_ftp_attr)
