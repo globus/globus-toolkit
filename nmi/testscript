@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e # exit on any error
 LOGNAME=$USER
 export LOGNAME
 VOMS_LOCATION="$_CONDOR_SCRATCH_DIR/voms"
@@ -42,10 +41,6 @@ voms=""
 if test -r "${VOMS_LOCATION}/lib/libvomsc.so"; then
     voms="--with-voms=${VOMS_LOCATION}"
 fi
-# if test -d /prereq/perl-5.8.9/bin; then
-#     PATH=/prereq/perl-5.8.9/bin:$PATH
-#     export PATH
-# fi
 if test -d /prereq/java-1.5.0_08/bin; then
     JAVA_HOME=/prereq/java-1.5.0_08
     PATH=/prereq/java-1.5.0_08/bin:$PATH
