@@ -204,7 +204,7 @@ GSS_CALLCONV gss_export_cred(
         export_buffer->value = globus_common_create_string(
             "X509_USER_PROXY=%s",
             proxy_filename);
-        export_buffer->length = strlen((char *) export_buffer->value);
+        export_buffer->length = strlen(export_buffer->value)+1;
     }
     else
     {
